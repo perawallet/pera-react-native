@@ -85,7 +85,23 @@
                 "create": "Oluştur",
                 "save": "Kaydet"
             },
-            "empty": "Bu klasörde henüz dApp yok"
+            "empty": "Bu klasörde henüz dApp yok",
+            "menu": {
+                "title": "Klasör seçenekleri",
+                "open_label": "Klasör seçenekleri",
+                "rename": "Klasörü yeniden adlandır",
+                "rearrange": "dApp'leri yeniden sırala",
+                "delete": "Klasörü sil"
+            },
+            "rearrange": {
+                "title": "dApp'leri yeniden sırala",
+                "remove_label": "Bu klasörden çıkar: {{name}}"
+            },
+            "delete_confirm": {
+                "title": "Bu klasör silinsin mi?",
+                "body": "İçindeki dApp'ler favorilerinde kalır.",
+                "confirm": "Klasörü sil"
+            }
         },
         "favorites": {
             "title": "Favoriler",
@@ -105,7 +121,7 @@
         "add_to_folder": {
             "title": "Klasöre ekle",
             "new_folder": "Yeni klasör",
-            "done": "Tamam"
+            "added": "Klasöre eklendi: {{folder}}"
         }
     },
     "account_menu": {
@@ -454,6 +470,7 @@
             "asset_id": "Varlık ID",
             "token_id": "Token ID",
             "contract": "Sözleşme",
+            "standard": "Standart",
             "total_supply": "Toplam arz",
             "show_on": "Şurada göster",
             "explorer": "Pera Explorer",
@@ -521,6 +538,8 @@
             "nomatch_body": "Arama terimiyle eşleşen NFT bulunamadı",
             "network_empty_title": "NFT yok",
             "network_empty_body": "{{chain}} ağında hiç NFT’n yok.",
+            "refresh_error_title": "NFT’ler güncellenemedi",
+            "refresh_error_body": "Tekrar denemek için aşağı çek.",
             "suspicious_hidden_title": "Şüpheli NFT’ler gizlendi",
             "suspicious_hidden_body": "Pera bu NFT’leri olası spam veya dolandırıcılık olarak işaretledi. Görmek için Yönet > Filtrele’de Şüpheli NFT’leri göster seçeneğini aç.",
             "count": "{{count}} NFT",

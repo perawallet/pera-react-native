@@ -21,11 +21,14 @@ import { useDraggableAccountList } from './useDraggableAccountList'
 
 type DraggableAccountListProps = {
     accounts: WalletAccount[]
+    /** The finger lifted on a drag: its drop lands later, with `onReorder`. */
+    onDrop: () => void
     onReorder: (orderedIds: string[]) => void
 }
 
 export const DraggableAccountList = ({
     accounts,
+    onDrop,
     onReorder,
 }: DraggableAccountListProps) => {
     const insets = useSafeAreaInsets()
@@ -43,6 +46,7 @@ export const DraggableAccountList = ({
             data={accounts}
             renderItem={renderItem}
             keyExtractor={keyExtractor}
+            onRelease={onDrop}
             onDragEnd={handleDragEnd}
             activationDistance={10}
             showsVerticalScrollIndicator={false}

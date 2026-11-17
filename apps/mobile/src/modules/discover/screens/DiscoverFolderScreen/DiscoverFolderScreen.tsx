@@ -11,10 +11,11 @@
  */
 
 import { useLayoutEffect } from 'react'
-import { PWScreen } from '@components/core'
+import { PWIcon, PWScreen, PWTouchableOpacity } from '@components/core'
 import { useNavigation } from '@react-navigation/native'
 import { useLanguage } from '@hooks/useLanguage'
 import { FavoriteDappList } from '../../components/FavoriteDappList'
+import { useFolderMenu } from '../../hooks/useFolderMenu'
 import { FolderHeaderTitle } from './FolderHeaderTitle'
 import { useDiscoverFolderScreen } from './useDiscoverFolderScreen'
 
@@ -23,6 +24,7 @@ export const DiscoverFolderScreen = () => {
     // The screen's own navigation object: it owns this screen's header options.
     const navigation = useNavigation()
     const screen = useDiscoverFolderScreen()
+    const { openMenu } = useFolderMenu(screen.folderId)
     const name = screen.folder?.name ?? ''
     const count = screen.folder?.count ?? 0
 
@@ -34,8 +36,17 @@ export const DiscoverFolderScreen = () => {
                     count={count}
                 />
             ),
+            headerRight: () => (
+                <PWTouchableOpacity
+                    onPress={() => void openMenu()}
+                    testID='discover_folder_menu_button'
+                    accessibilityLabel={t('discover.folders.menu.open_label')}
+                >
+                    <PWIcon name='ellipsis' />
+                </PWTouchableOpacity>
+            ),
         })
-    }, [navigation, name, count])
+    }, [navigation, name, count, openMenu, t])
 
     return (
         <PWScreen

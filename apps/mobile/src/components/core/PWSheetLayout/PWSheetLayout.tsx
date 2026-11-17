@@ -20,6 +20,7 @@ import { useKeyboardState } from 'react-native-keyboard-controller'
 import { getTestProps } from '@utils/test-id-helper'
 import { PWView } from '../PWView'
 import { useStyles } from './styles'
+import { usePWSheetLayoutFooter } from './usePWSheetLayoutFooter'
 
 import type {
     LayoutChangeEvent,
@@ -52,7 +53,9 @@ export type PWSheetLayoutProps = {
  * Bottom-sheet layout with three stacked zones: an optional sticky `header`, a
  * scrollable `body`, and an optional sticky `footer` pinned below it. Mirrors
  * `PWScreen`'s `header`/`body`/`footer` slots for full screens. Open the sheet
- * with `autoCreateContainer: false` so the footer pins and the body scrolls.
+ * with `autoCreateContainer: false` so the footer pins and the body scrolls. In
+ * an `auto` sheet the footer is pinned over the bottom and the body is padded
+ * by its height, so the content-sized sheet counts the footer too.
  */
 export const PWSheetLayout = ({
     header,
@@ -75,11 +78,14 @@ export const PWSheetLayout = ({
     )
     const insets = useSafeAreaInsets()
     const isKeyboardVisible = useKeyboardState(state => state.isVisible)
+    const { overlaysFooter, footerInset, onFooterLayout } =
+        usePWSheetLayoutFooter(footer != null)
     const styles = useStyles({
         horizontalPadding,
         bottomInset: insets.bottom,
         hasFooter: footer != null,
         isKeyboardVisible,
+        footerInset,
     })
 
     const scrollable = (
@@ -109,7 +115,14 @@ export const PWSheetLayout = ({
     return (
         <PWView style={styles.root}>
             {scrollable}
-            <PWView style={styles.footer}>{footer}</PWView>
+            <PWView
+                style={[styles.footer, overlaysFooter && styles.pinnedFooter]}
+                onLayout={overlaysFooter ? onFooterLayout : undefined}
+                {...getTestProps(testID, 'footer')}
+                accessible={false}
+            >
+                {footer}
+            </PWView>
         </PWView>
     )
 }

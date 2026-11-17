@@ -44,8 +44,10 @@ export const CollectibleInfoSection = ({
         hasTotalSupply,
         onCreatorPressed,
         onCreatorLongPressed,
+        identityDisplay,
         onAssetIdPressed,
         onAssetIdLongPressed,
+        standardLabel,
         onOpenExplorer,
         totalSupplyAmount,
         totalSupplyUnit,
@@ -98,11 +100,36 @@ export const CollectibleInfoSection = ({
                 </PWText>
                 <PWText
                     variant='body'
-                    style={styles.infoValueAction}
+                    style={
+                        onAssetIdPressed
+                            ? styles.infoValueAction
+                            : styles.infoValue
+                    }
                 >
-                    {asset.assetId}
+                    {identityDisplay}
                 </PWText>
             </PWTouchableOpacity>
+            {standardLabel && (
+                <>
+                    <PWDivider style={styles.infoDivider} />
+                    <PWView style={styles.infoRow}>
+                        <PWText
+                            variant='body'
+                            truncate
+                            style={styles.infoLabel}
+                        >
+                            {t('asset_details.collectible.standard')}
+                        </PWText>
+                        <PWText
+                            variant='body'
+                            style={styles.infoValue}
+                            testID='collectible_standard'
+                        >
+                            {standardLabel}
+                        </PWText>
+                    </PWView>
+                </>
+            )}
             {hasTotalSupply && (
                 <>
                     <PWDivider style={styles.infoDivider} />

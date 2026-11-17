@@ -19,6 +19,8 @@ type StyleProps = {
     bottomInset: number
     hasFooter: boolean
     isKeyboardVisible: boolean
+    /** A pinned footer's height the body must clear (`auto` sheets only). */
+    footerInset: number
 }
 
 export const useStyles = makeStyles(
@@ -29,6 +31,7 @@ export const useStyles = makeStyles(
             bottomInset,
             hasFooter,
             isKeyboardVisible,
+            footerInset,
         }: StyleProps,
     ) => ({
         root: {
@@ -52,9 +55,9 @@ export const useStyles = makeStyles(
                     : theme.spacing[horizontalPadding],
             paddingTop: theme.spacing.xl,
             paddingBottom:
-                hasFooter || isKeyboardVisible
+                (hasFooter || isKeyboardVisible
                     ? theme.spacing.xl
-                    : theme.spacing.xl + bottomInset,
+                    : theme.spacing.xl + bottomInset) + footerInset,
         },
         // Bottom inset dropped when the keyboard is open (it already covers the
         // home indicator).
@@ -64,6 +67,15 @@ export const useStyles = makeStyles(
             paddingBottom: isKeyboardVisible
                 ? theme.spacing.xl
                 : theme.spacing.xl + bottomInset,
+        },
+        // An `auto` sheet measures only the scroll content, so its footer sits
+        // over the body's bottom padding instead of below the scroll.
+        pinnedFooter: {
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: theme.colors.background,
         },
     }),
 )

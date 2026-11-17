@@ -13,6 +13,7 @@
 import { Parser, parseDocument } from 'htmlparser2'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { toValidatedBrowserUrl } from '@modules/webview'
+import { emojiForName } from './martorEmoji'
 
 export type ArticleText = {
     type: 'text'
@@ -145,8 +146,10 @@ const collectInline = (
             }
             case 'img': {
                 const src = node.attribs.src
-                // Martor turns :rocket: into a small emoji image inside the
-                // sentence; keep it as its shortcode rather than a full-width image.
+                // Martor turns :rocket: into a small GitHub-hosted emoji image
+                // inside the sentence. Show its character instead (never load
+                // the image: it would leak the reader's IP to GitHub), or the
+                // shortcode for a name with no character.
                 if ((node.attribs.class ?? '').includes('emoji')) {
                     const name =
                         node.attribs.alt?.replace(/:/g, '') ||
@@ -155,7 +158,11 @@ const collectInline = (
                             .pop()
                             ?.replace(/\.\w+$/, '')
                     if (name)
-                        out.push({ type: 'text', value: `:${name}:`, ...marks })
+                        out.push({
+                            type: 'text',
+                            value: emojiForName(name) ?? `:${name}:`,
+                            ...marks,
+                        })
                 } else if (src) {
                     out.push({
                         type: 'image',

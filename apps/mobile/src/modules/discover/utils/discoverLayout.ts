@@ -13,3 +13,6 @@
 /** Figma "Discover – Home": every list row leads with a 40 pt icon or logo. */
 // lanekeep-ignore-next-line pera/no-numeric-sizes reason: the design's row leading size (40), between the xxl (36) and 3xl (48) tokens
 export const DISCOVER_ROW_LEAD_SIZE = 40
+
+/** A folder row's stacked dApp logos: 20 pt, as `ChainIconStack`'s icons. */
+export const DISCOVER_LOGO_STACK_SIZE = 20

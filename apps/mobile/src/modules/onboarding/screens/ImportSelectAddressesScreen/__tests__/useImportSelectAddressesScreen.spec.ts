@@ -529,6 +529,149 @@ describe('useImportSelectAddressesScreen — import mode', () => {
         })
     })
 
+    test('skips the rekeyed scan when discovery found the wallet active only off Algorand', async () => {
+        const evmActive = {
+            id: 'evm-active',
+            chains: {
+                algorand: {
+                    address: 'ADDR-E',
+                    keyPairId: 'w-1',
+                    enabledBy: 'created',
+                },
+                ethereum: {
+                    address: '0xE',
+                    keyPairId: 'w-1-evm',
+                    enabledBy: 'discovery',
+                },
+            },
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 5, keyIndex: 0 },
+            },
+        }
+        mockRouteParams.current = {
+            mode: 'import',
+            walletKeyId: 'w-1',
+            accounts: [evmActive],
+        }
+        mockCommitImport.mockResolvedValue([evmActive])
+        const { result } = renderHook(() => useImportSelectAddressesScreen())
+
+        await act(async () => {
+            await result.current.handleContinue()
+        })
+
+        expect(mockDiscoverDelegatedAccounts).not.toHaveBeenCalled()
+        expect(mockReplace).toHaveBeenCalledWith(
+            'NameAccount',
+            expect.anything(),
+        )
+    })
+
+    const evmOnlyFind = (id: string, address: string, account: number) => ({
+        id,
+        chains: {
+            algorand: { address, keyPairId: 'w-1', enabledBy: 'created' },
+            ethereum: {
+                address: `0x${id}`,
+                keyPairId: 'w-1-evm',
+                enabledBy: 'discovery',
+            },
+        },
+        custody: { kind: 'local', seed: 'bip39', hd: { account, keyIndex: 0 } },
+    })
+
+    test('still scans when discovery could not check Algorand', async () => {
+        const evmActive = evmOnlyFind('evm-unchecked', 'ADDR-U', 7)
+        mockRouteParams.current = {
+            mode: 'import',
+            walletKeyId: 'w-1',
+            accounts: [evmActive],
+            failedChainIds: ['algorand'],
+        }
+        mockCommitImport.mockResolvedValue([evmActive])
+        const { result } = renderHook(() => useImportSelectAddressesScreen())
+
+        await act(async () => {
+            await result.current.handleContinue()
+        })
+
+        expect(mockDiscoverDelegatedAccounts).toHaveBeenCalledWith({
+            accountAddresses: ['ADDR-U'],
+        })
+    })
+
+    test('still scans the held accounts of the same seed when only the selection is off Algorand', async () => {
+        const held = {
+            id: 'held',
+            name: 'Account #1',
+            chains: {
+                algorand: { address: 'ADDR-HELD-SIBLING', keyPairId: 'w-1' },
+            },
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
+        }
+        mockAllAccounts.current = [held] as never
+        const evmActive = evmOnlyFind('evm-new', 'ADDR-N', 8)
+        mockRouteParams.current = {
+            mode: 'import',
+            walletKeyId: 'w-1',
+            accounts: [evmActive],
+        }
+        mockCommitImport.mockResolvedValue([evmActive])
+        const { result } = renderHook(() => useImportSelectAddressesScreen())
+
+        await act(async () => {
+            await result.current.handleContinue()
+        })
+
+        expect(mockDiscoverDelegatedAccounts).toHaveBeenCalledWith({
+            accountAddresses: ['ADDR-N', 'ADDR-HELD-SIBLING'],
+        })
+    })
+
+    test('still scans when discovery found the wallet active on Algorand', async () => {
+        const algorandActive = {
+            id: 'algo-active',
+            chains: {
+                algorand: {
+                    address: 'ADDR-F',
+                    keyPairId: 'w-1',
+                    enabledBy: 'discovery',
+                },
+                ethereum: {
+                    address: '0xF',
+                    keyPairId: 'w-1-evm',
+                    enabledBy: 'discovery',
+                },
+            },
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 6, keyIndex: 0 },
+            },
+        }
+        mockRouteParams.current = {
+            mode: 'import',
+            walletKeyId: 'w-1',
+            accounts: [algorandActive],
+        }
+        mockCommitImport.mockResolvedValue([algorandActive])
+        const { result } = renderHook(() => useImportSelectAddressesScreen())
+
+        await act(async () => {
+            await result.current.handleContinue()
+        })
+
+        expect(mockDiscoverDelegatedAccounts).toHaveBeenCalledWith({
+            accountAddresses: ['ADDR-F'],
+        })
+    })
+
     test('offers to check the unchecked networks again only for an import that left some', () => {
         mockRouteParams.current = {
             ...mockRouteParams.current,

@@ -13,21 +13,25 @@
 import FolderIcon from '@assets/icons/discover/folder.svg'
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { DappLogoStack, type DappLogoStackProps } from '../DappLogoStack'
 import { useStyles } from './styles'
 
 export type FolderRowProps = {
     name: string
     count: number
+    /** The first dApps, their logos stacked before the count. */
+    previewDapps?: DappLogoStackProps['dapps']
     /** \`folder\`: the design's folder glyph; \`star\`: the All favorites entry. */
     icon: 'folder' | 'star'
     onPress: () => void
     testID?: string
 }
 
-/** A favorites folder (or the All favorites entry): icon, name, "N dApps", chevron. */
+/** A favorites folder (or the All favorites entry): icon, name, logos and "N dApps", chevron. */
 export const FolderRow = ({
     name,
     count,
+    previewDapps,
     icon,
     onPress,
     testID,
@@ -59,13 +63,21 @@ export const FolderRow = ({
                 >
                     {name}
                 </PWText>
-                <PWText
-                    variant='footnoteMedium'
-                    weight={400}
-                    style={styles.count}
-                >
-                    {t('discover.favorites.dapp_count', { count })}
-                </PWText>
+                <PWView style={styles.countRow}>
+                    {previewDapps ? (
+                        <DappLogoStack
+                            dapps={previewDapps}
+                            total={count}
+                        />
+                    ) : null}
+                    <PWText
+                        variant='footnoteMedium'
+                        weight={400}
+                        style={styles.count}
+                    >
+                        {t('discover.favorites.dapp_count', { count })}
+                    </PWText>
+                </PWView>
             </PWView>
             <PWView style={styles.chevron}>
                 <PWIcon

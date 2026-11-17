@@ -607,18 +607,18 @@ describe('algorandDeeplinkAdapter', () => {
 
     describe('toAssetRef', () => {
         it('maps digits to an Algorand asset ref', () => {
-            expect(adapter.toAssetRef('31566704')).toEqual({
+            expect(adapter.toAssetRef('31566704', 'algorand')).toEqual({
                 chainId: ALGORAND,
                 assetId: '31566704',
             })
         })
 
         it('canonicalises leading zeros', () => {
-            expect(adapter.toAssetRef('007')?.assetId).toBe('7')
+            expect(adapter.toAssetRef('007', 'algorand')?.assetId).toBe('7')
         })
 
         it.each(['-1', 'abc', ''])('refuses %j', raw => {
-            expect(adapter.toAssetRef(raw)).toBeUndefined()
+            expect(adapter.toAssetRef(raw, 'algorand')).toBeUndefined()
         })
     })
 })

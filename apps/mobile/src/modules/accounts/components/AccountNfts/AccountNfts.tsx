@@ -21,6 +21,7 @@ import {
     PWView,
 } from '@components/core'
 import { FilterSelection } from '@components/FilterSelection'
+import { InfoCallout } from '@components/InfoCallout'
 import { SearchInput } from '@components/SearchInput'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
@@ -48,6 +49,7 @@ export const AccountNfts = () => {
         canOptIn,
         isMultiChain,
         showEmptyState,
+        showRefreshNotice,
         shouldShowNetwork,
         listEmptyTitle,
         listEmptyBody,
@@ -186,6 +188,16 @@ export const AccountNfts = () => {
                             />
                         )}
                     </PWView>
+                    {showRefreshNotice && (
+                        <InfoCallout
+                            title={t(
+                                'account_details.nfts.refresh_error_title',
+                            )}
+                            body={t('account_details.nfts.refresh_error_body')}
+                            style={styles.refreshNotice}
+                            testID='nft_refresh_error'
+                        />
+                    )}
                     <PWFlatList
                         pauseSyncOnInteraction
                         ref={flatListRef}

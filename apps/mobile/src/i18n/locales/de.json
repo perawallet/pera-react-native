@@ -85,7 +85,23 @@
                 "create": "Erstellen",
                 "save": "Speichern"
             },
-            "empty": "Noch keine dApps in diesem Ordner"
+            "empty": "Noch keine dApps in diesem Ordner",
+            "menu": {
+                "title": "Ordneroptionen",
+                "open_label": "Ordneroptionen",
+                "rename": "Ordner umbenennen",
+                "rearrange": "dApps neu anordnen",
+                "delete": "Ordner löschen"
+            },
+            "rearrange": {
+                "title": "dApps neu anordnen",
+                "remove_label": "{{name}} aus diesem Ordner entfernen"
+            },
+            "delete_confirm": {
+                "title": "Diesen Ordner löschen?",
+                "body": "Seine dApps bleiben in deinen Favoriten.",
+                "confirm": "Ordner löschen"
+            }
         },
         "favorites": {
             "title": "Favoriten",
@@ -105,7 +121,7 @@
         "add_to_folder": {
             "title": "Zu Ordner hinzufügen",
             "new_folder": "Neuer Ordner",
-            "done": "Fertig"
+            "added": "Zu {{folder}} hinzugefügt"
         }
     },
     "account_menu": {
@@ -454,6 +470,7 @@
             "asset_id": "Asset-ID",
             "token_id": "Token-ID",
             "contract": "Smart Contract",
+            "standard": "Standard",
             "total_supply": "Gesamtangebot",
             "show_on": "Anzeigen auf",
             "explorer": "Pera Explorer",
@@ -521,6 +538,8 @@
             "nomatch_body": "Keine NFTs entsprechen deinem Suchbegriff",
             "network_empty_title": "Keine NFTs",
             "network_empty_body": "Du hast keine NFTs auf {{chain}}.",
+            "refresh_error_title": "NFTs konnten nicht aktualisiert werden",
+            "refresh_error_body": "Zum Wiederholen nach unten ziehen.",
             "suspicious_hidden_title": "Verdächtige NFTs ausgeblendet",
             "suspicious_hidden_body": "Pera hat diese NFTs als wahrscheinlichen Spam oder Betrug markiert. Um sie zu sehen, aktiviere „Verdächtige NFTs anzeigen“ unter Verwalten > Filter.",
             "count": "{{count}} NFTs",

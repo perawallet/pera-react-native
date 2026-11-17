@@ -305,11 +305,16 @@ patchedDependencies:
   # only seeds a script-directory lookup the inlined WASM never uses; guard it
   # with `typeof`. Drop once upstream's build stops emitting the bare read.
   "falcon-1024@0.2.0": patches/falcon-1024@0.2.0.patch
-  # RN 0.87 removed InteractionManager (undefined in release, a throw in dev),
-  # and the list calls it whenever its data's keys change, i.e. on every
-  # reorder. requestIdleCallback is RN's documented replacement. Patches the
-  # two builds Metro reads (`src` on native, `lib/module` on web); tests mock
-  # the package. Drop once upstream ships a release without it.
+  # Two fixes, each in the two builds Metro reads (`src` on native,
+  # `lib/module` on web); tests mock the package:
+  # - RN 0.87 removed InteractionManager (undefined in release, a throw in
+  #   dev), and the list calls it whenever its data's keys change, i.e. on
+  #   every reorder. requestIdleCallback is RN's documented replacement.
+  # - CellRendererComponent holds a cell's last drag offset until its next
+  #   onLayout, but a mapper that still saw the drag can write it back after
+  #   that onLayout, leaving rows shifted after a drop above the list
+  #   (Android). The held offset is used only until the list resets.
+  # Drop once upstream ships a release with both.
   "react-native-draggable-flatlist@4.0.3": patches/react-native-draggable-flatlist@4.0.3.patch
   # Type-only: 14.0.1 defaults the class's extra-props generic to `undefined`,
   # so `WebViewProps & undefined` is `never` and every JSX prop fails to
@@ -333,6 +338,22 @@ patchedDependencies:
   # has it (oblador/react-native-keychain#817). Only chosen by name, never by
   # default.
   "react-native-keychain@10.0.0": patches/react-native-keychain@10.0.0.patch
+  # Android 12L/13: registering the splash exit-animation listener makes the
+  # system hand its splash window to the app, and 12L/13 can hand over one it
+  # already removed; ActivityThread.syncTransferSplashscreenViewTransaction then
+  # crashes hiding a null leash (Android 14 aborts the handover instead). There
+  # the patch registers no listener, so the system plays its own exit animation.
+  # Gradle uses the prebuilt AAR unless apps/mobile's autolinking lists the
+  # package in `buildFromSource`; drop both once 13 is below minSdk or upstream
+  # skips the listener there.
+  "expo-splash-screen@58.0.11": patches/expo-splash-screen@58.0.11.patch
+  # Android: Fabric can mount a GestureHandlerRootView while MainActivity is
+  # being destroyed (an rn-screens header detach makes Reanimated flush mount
+  # operations), when its parent chain no longer reaches a RootView. Upstream
+  # throws "has not been mounted under ReactRootView" from onAttachedToWindow,
+  # crashing the destroy; the patch leaves the root disabled until the next
+  # attach. Still unguarded in 3.5.0. Drop once upstream handles it.
+  "react-native-gesture-handler@3.3.0": patches/react-native-gesture-handler@3.3.0.patch
   # Android: ScreenFragment.onDestroy never clears Screen.fragmentWrapper, and
   # Fabric's tagToViewState keeps the Screen view alive for the surface's
   # lifetime, so every dismissed screen's fragment (plus its view subtree) is

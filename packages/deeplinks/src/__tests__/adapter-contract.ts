@@ -139,7 +139,9 @@ export const deeplinkAdapterContractTests = (
             for (const input of corpus) {
                 const subject = makeAdapter()
                 expect(() => subject.canParse(input)).not.toThrow()
-                expect(() => subject.toAssetRef(input)).not.toThrow()
+                expect(() =>
+                    subject.toAssetRef(input, adapter.chainId),
+                ).not.toThrow()
                 expect(() => subject.parse(input)).not.toThrow()
 
                 const result = subject.parse(input)
@@ -171,7 +173,7 @@ export const deeplinkAdapterContractTests = (
                 }
             }
             for (const input of corpus) {
-                const ref = makeAdapter().toAssetRef(input)
+                const ref = makeAdapter().toAssetRef(input, adapter.chainId)
                 if (ref) expect(ref.chainId).toBe(adapter.chainId)
             }
         })

@@ -20,6 +20,9 @@ const installConnectionsApprovalRouterMock = vi.fn()
 const installConnectionsHeartbeatMock = vi.fn()
 const handleIntegrityAlarmMock = vi.fn().mockResolvedValue(undefined)
 const handleEnrolDeadlineAlarmMock = vi.fn().mockResolvedValue(undefined)
+const isSessionUnlockedMock = vi.fn().mockResolvedValue(true)
+const onLockStateChangedMock = vi.fn()
+const installLockStateHostMock = vi.fn()
 const loggerMock = vi.hoisted(() => ({
     debug: vi.fn(),
     info: vi.fn(),
@@ -38,6 +41,8 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
 
 vi.mock('@perawallet/wallet-extension-vault-chrome/vault/autolock', () => ({
     handleAutoLockAlarm: handleAutoLockAlarmMock,
+    isSessionUnlocked: isSessionUnlockedMock,
+    onLockStateChanged: onLockStateChangedMock,
 }))
 
 // index.ts pulls in the dapp relay + passkey relay wiring, which is out of
@@ -51,6 +56,7 @@ vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
         listen = vi.fn()
     },
     CONNECTIONS_CONTROL_SCOPE: 'pera-connections-control',
+    installLockStateHost: installLockStateHostMock,
     // connect-modal-pair.ts (pulled in transitively via ../index) imports
     // this guard directly — omitting it here is a trap: it's only touched
     // once a test actually delivers a message through the SW's listeners,
@@ -123,6 +129,7 @@ describe('background/index onAlarm routing', () => {
         ensureOffscreenDocumentMock.mockClear()
         handleIntegrityAlarmMock.mockClear()
         handleEnrolDeadlineAlarmMock.mockClear()
+        installLockStateHostMock.mockClear()
         Object.values(loggerMock).forEach(fn => fn.mockClear())
 
         globalThis.chrome = {
@@ -147,6 +154,13 @@ describe('background/index onAlarm routing', () => {
         } as any
 
         await import('../index')
+    })
+
+    it("relays the vault's lock state to the offscreen host from the worker's top level", () => {
+        expect(installLockStateHostMock).toHaveBeenCalledWith({
+            isUnlocked: isSessionUnlockedMock,
+            onLockStateChanged: onLockStateChangedMock,
+        })
     })
 
     it('still routes a non-heartbeat alarm to handleAutoLockAlarm', () => {

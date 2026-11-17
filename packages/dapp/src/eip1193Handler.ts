@@ -35,7 +35,6 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import type {
-    Connection,
     ConnectionId,
     ConnectionPeer,
 } from '@perawallet/wallet-extension-connections'
@@ -63,6 +62,7 @@ import {
 } from './eip1193Protocol'
 import {
     acknowledgedSiteWarningOf,
+    canSiteSeeAccounts,
     eip1193ConnectionIdOf,
     isEip1193Connection,
     isWorseSiteWarning,
@@ -96,6 +96,11 @@ export type Eip1193HandlerDeps = {
      * through an approval, where the warning shows. Absent, every site is clear.
      */
     siteWarningOf?: (origin: string) => Promise<SiteWarningLevel>
+    /**
+     * Read when the wallet pushes accounts to a page; a request carries its own
+     * reading on its context. A realm that never pushes passes `() => true`.
+     */
+    isWalletLocked: () => boolean | Promise<boolean>
     now?: () => number
     proposalTtlMs?: number
     requestTtlMs?: number
@@ -240,15 +245,6 @@ export const createEip1193ConnectionHandler = (
     const getConnection = (origin: string) =>
         getConnectionById(eip1193ConnectionIdOf(origin))
 
-    const hasNewSiteWarning = async (
-        connection: Connection,
-        origin: string,
-    ): Promise<boolean> =>
-        isWorseSiteWarning(
-            await readSiteWarning(deps.siteWarningOf, origin),
-            acknowledgedSiteWarningOf(connection),
-        )
-
     const scopeOf = (chainId: ChainId): ChainScope => ({
         chainId,
         networkId: deps.getNetworkId(chainId),
@@ -279,15 +275,17 @@ export const createEip1193ConnectionHandler = (
         return connection.accounts.filter(address => held.has(address))
     }
 
-    // A locked wallet and a site flagged since its approval both see nothing,
-    // wherever the accounts would have been reported from.
     const visibleAccounts = async (
         connection: Optional<Eip1193Connection>,
-        ctx: DappRequestContext,
+        isWalletLocked: boolean,
     ): Promise<string[]> =>
         connection &&
-        !ctx.isWalletLocked &&
-        !(await hasNewSiteWarning(connection, ctx.origin))
+        (await canSiteSeeAccounts(
+            isWalletLocked,
+            connection,
+            connection.origin.requesterOrigin,
+            deps.siteWarningOf,
+        ))
             ? reportedAccounts(connection)
             : []
 
@@ -1230,7 +1228,7 @@ export const createEip1193ConnectionHandler = (
                     respond,
                     jsonRpcResult(
                         request.id,
-                        await visibleAccounts(connection, ctx),
+                        await visibleAccounts(connection, ctx.isWalletLocked),
                     ),
                 )
             }
@@ -1251,7 +1249,10 @@ export const createEip1193ConnectionHandler = (
                         connection
                             ? grantOf(
                                   connection,
-                                  await visibleAccounts(connection, ctx),
+                                  await visibleAccounts(
+                                      connection,
+                                      ctx.isWalletLocked,
+                                  ),
                               )
                             : [],
                     ),
@@ -1403,10 +1404,25 @@ export const createEip1193ConnectionHandler = (
                 })
                 return
             }
+            if (notice.type === 'lock-changed') {
+                const accounts = await visibleAccounts(
+                    connection,
+                    notice.isLocked,
+                )
+                await deps.transport.notify(origin, {
+                    jsonrpc: '2.0',
+                    method: EIP1193_EVENT.accountsChanged,
+                    // The site check is a network call: a lock that landed
+                    // during it has already sent `[]`, which this must not overtake.
+                    params: (await deps.isWalletLocked()) ? [] : accounts,
+                })
+                return
+            }
             if (!isOnChain(connection, notice.chainId)) return
             if (!connection.accounts.some(a => notice.changed.includes(a))) {
                 return
             }
+            if (await deps.isWalletLocked()) return
             await deps.transport.notify(origin, {
                 jsonrpc: '2.0',
                 method: EIP1193_EVENT.accountsChanged,

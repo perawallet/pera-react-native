@@ -354,6 +354,60 @@ test('signTransactions opens the signing review and returns one signed transacti
     )
 })
 
+test('locking the wallet hides the account from the page until it unlocks', async () => {
+    const getAddresses = () =>
+        dappPage.evaluate(() =>
+            window.pera
+                .getAddresses()
+                .then(accounts => accounts.map(({ address }) => address)),
+        )
+
+    await clickThroughPinPrompt(page, page.getByTestId('tab_menu_button'))
+    await expect(page.getByTestId('menu_screen')).toBeVisible({
+        timeout: 20_000,
+    })
+    await clickThroughPinPrompt(page, page.getByTestId('menu_settings_button'))
+    await expect(page.getByTestId('settings_screen')).toBeVisible({
+        timeout: 20_000,
+    })
+    await clickThroughPinPrompt(
+        page,
+        page.getByTestId('settings_item_security'),
+    )
+    await expect(page.getByTestId('vault-security-screen')).toBeVisible({
+        timeout: 20_000,
+    })
+    await page.getByTestId('vault-security-lock-now').click()
+    await expect(page.getByTestId('unlock-password-input')).toBeVisible({
+        timeout: 20_000,
+    })
+
+    await expect
+        .poll(() => dappPage.locator('#events').textContent(), {
+            timeout: 20_000,
+        })
+        .toContain('accountsChanged:[];')
+    expect(await getAddresses()).toEqual([])
+
+    await page.getByTestId('unlock-password-input').fill(PASSWORD)
+    await page.getByTestId('unlock-submit').click()
+
+    await expect
+        .poll(() => dappPage.locator('#events').textContent(), {
+            timeout: 20_000,
+        })
+        .toContain(`accountsChanged:${JSON.stringify([grantedAddress])};`)
+    expect(await getAddresses()).toEqual([grantedAddress])
+
+    // The next test starts from the account screen.
+    await page.goto(`chrome-extension://${extensionId}/expanded.html`)
+    await expect(page.getByTestId('account_screen')).toBeVisible({
+        timeout: 30_000,
+    })
+    expect(pageErrors, 'page threw an uncaught error').toEqual([])
+    expect(dappPageErrors, 'dApp page threw an uncaught error').toEqual([])
+})
+
 test('the connection appears in Settings and revoking it notifies the page', async () => {
     await clickThroughPinPrompt(page, page.getByTestId('tab_menu_button'))
     await expect(page.getByTestId('menu_screen')).toBeVisible({

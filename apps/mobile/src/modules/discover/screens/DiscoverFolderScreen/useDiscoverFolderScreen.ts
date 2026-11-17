@@ -27,8 +27,9 @@ import {
 import type { DiscoverFavorite } from '../../types'
 
 export type UseDiscoverFolderScreenResult = UseFavoriteDappActionsResult & {
+    folderId: string
     /** Null once the folder is gone (deleted elsewhere); the screen then leaves. */
-    folder: Nullable<FolderRowItem>
+    folder: Nullable<Omit<FolderRowItem, 'previewDapps'>>
     dapps: DiscoverFavorite[]
 }
 
@@ -61,6 +62,7 @@ export const useDiscoverFolderScreen = (): UseDiscoverFolderScreenResult => {
 
     return {
         ...actions,
+        folderId,
         folder: folderRecord
             ? {
                   id: folderId,
