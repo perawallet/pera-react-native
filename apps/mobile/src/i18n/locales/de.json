@@ -36,7 +36,6 @@
     "discover": {
         "home": {
             "title": "Entdecken",
-            "top_dapps": "Top-dApps",
             "explore_dapps": "dApps entdecken",
             "news": "Neuigkeiten",
             "dapps_error": "Die empfohlenen dApps konnten nicht geladen werden",
@@ -78,45 +77,13 @@
             "website": "Website",
             "open": "Öffnen"
         },
-        "folders": {
-            "name_sheet": {
-                "title_new": "Neuer Ordner",
-                "title_rename": "Ordner umbenennen",
-                "placeholder": "Ordnername",
-                "create": "Erstellen",
-                "save": "Speichern"
-            },
-            "empty": "Noch keine dApps in diesem Ordner",
-            "menu": {
-                "title": "Ordneroptionen",
-                "open_label": "Ordneroptionen",
-                "rename": "Ordner umbenennen",
-                "rearrange": "dApps neu anordnen",
-                "delete": "Ordner löschen"
-            },
-            "rearrange": {
-                "title": "dApps neu anordnen",
-                "remove_label": "{{name}} aus diesem Ordner entfernen"
-            },
-            "delete_confirm": {
-                "title": "Diesen Ordner löschen?",
-                "body": "Seine dApps bleiben in deinen Favoriten.",
-                "confirm": "Ordner löschen"
-            }
-        },
         "favorites": {
             "title": "Favoriten",
-            "new_folder": "Neuer Ordner",
-            "all_favorites": "Alle Favoriten",
-            "dapp_count": "{{count}} dApps",
-            "dapp_count_one": "{{count}} dApp",
             "see_all": "Alle anzeigen",
             "empty_title": "Noch keine Favoriten",
             "empty_body": "Entdecke die dApps",
-            "all_folders_title": "Alle Ordner",
             "added_toast": {
-                "title": "Zu Favoriten hinzugefügt",
-                "body": "Tippe, um es einem Ordner hinzuzufügen"
+                "title": "Zu Favoriten hinzugefügt"
             },
             "search_placeholder": "Favoriten durchsuchen",
             "filter": {
@@ -132,11 +99,6 @@
                 "open_label": "Favoriten neu anordnen",
                 "remove_label": "{{name}} aus den Favoriten entfernen"
             }
-        },
-        "add_to_folder": {
-            "title": "Zu Ordner hinzufügen",
-            "new_folder": "Neuer Ordner",
-            "added": "Zu {{folder}} hinzugefügt"
         }
     },
     "account_menu": {

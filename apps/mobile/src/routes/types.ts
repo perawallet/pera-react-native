@@ -75,9 +75,7 @@ export type RootStackParamList = {
     DiscoverSearch: undefined
     DiscoverNews: undefined
     DiscoverNewsDetail: { newsId: string }
-    DiscoverFolder: { folderId: string }
     DiscoverAllFavorites: undefined
-    DiscoverAllFolders: undefined
     /** Native dApp directory; opens on `chainId` when it supports Discover. */
     DiscoverDapps: Optional<{ chainId?: ChainId }>
     BannersCarouselModal: Optional<{ bannerId?: string }>

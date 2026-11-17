@@ -114,7 +114,7 @@ export const RearrangeFavoritesSheet = () => {
                 left={
                     <PWButton
                         variant='linkPositive'
-                        title={t('common.cancel')}
+                        title={t('common.cancel.label')}
                         onPress={sheet.cancel}
                         paddingStyle='none'
                         testID='discover_rearrange_cancel'

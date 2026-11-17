@@ -36,7 +36,6 @@
     "discover": {
         "home": {
             "title": "Explorar",
-            "top_dapps": "dApps em destaque",
             "explore_dapps": "Explorar dApps",
             "news": "Notícias",
             "dapps_error": "Falha ao carregar os dApps em destaque",
@@ -78,45 +77,13 @@
             "website": "Site",
             "open": "Abrir"
         },
-        "folders": {
-            "name_sheet": {
-                "title_new": "Nova pasta",
-                "title_rename": "Renomear pasta",
-                "placeholder": "Nome da pasta",
-                "create": "Criar",
-                "save": "Salvar"
-            },
-            "empty": "Ainda não há dApps nesta pasta",
-            "menu": {
-                "title": "Opções da pasta",
-                "open_label": "Opções da pasta",
-                "rename": "Renomear pasta",
-                "rearrange": "Reorganizar dApps",
-                "delete": "Excluir pasta"
-            },
-            "rearrange": {
-                "title": "Reorganizar dApps",
-                "remove_label": "Remover {{name}} desta pasta"
-            },
-            "delete_confirm": {
-                "title": "Excluir esta pasta?",
-                "body": "Os dApps dela continuam nos seus favoritos.",
-                "confirm": "Excluir pasta"
-            }
-        },
         "favorites": {
             "title": "Favoritos",
-            "new_folder": "Nova pasta",
-            "all_favorites": "Todos os favoritos",
-            "dapp_count": "{{count}} dApps",
-            "dapp_count_one": "{{count}} dApp",
             "see_all": "Ver tudo",
             "empty_title": "Nenhum favorito ainda",
             "empty_body": "Comece a explorar os dApps",
-            "all_folders_title": "Todas as pastas",
             "added_toast": {
-                "title": "Adicionado aos favoritos",
-                "body": "Toque para adicioná-lo a uma pasta"
+                "title": "Adicionado aos favoritos"
             },
             "search_placeholder": "Buscar nos favoritos",
             "filter": {
@@ -132,11 +99,6 @@
                 "open_label": "Reorganizar favoritos",
                 "remove_label": "Remover {{name}} dos favoritos"
             }
-        },
-        "add_to_folder": {
-            "title": "Adicionar a uma pasta",
-            "new_folder": "Nova pasta",
-            "added": "Adicionado a {{folder}}"
         }
     },
     "account_menu": {

@@ -12,17 +12,15 @@
 
 import { makeStyles } from '@rneui/themed'
 import {
-    DISCOVER_LOGO_STACK_SIZE,
     DISCOVER_ROW_LEAD_SIZE,
     DISCOVER_TILE_LOGO_SIZE,
 } from '../../utils/discoverLayout'
 
-type StyleProps = { size: 'row' | 'tile' | 'stack' }
+type StyleProps = { size: 'row' | 'tile' }
 
 const SIDE = {
     row: DISCOVER_ROW_LEAD_SIZE,
     tile: DISCOVER_TILE_LOGO_SIZE,
-    stack: DISCOVER_LOGO_STACK_SIZE,
 }
 
 export const useStyles = makeStyles((theme, { size }: StyleProps) => {
@@ -31,11 +29,8 @@ export const useStyles = makeStyles((theme, { size }: StyleProps) => {
         logo: {
             width: side,
             height: side,
-            // Figma: rounded squares in rows and the grid, round in a stack.
-            borderRadius:
-                size === 'stack'
-                    ? theme.borderRadius.full
-                    : theme.borderRadius.md,
+            // Figma: rounded squares in rows and the grid.
+            borderRadius: theme.borderRadius.md,
             overflow: 'hidden',
             alignItems: 'center',
             justifyContent: 'center',

@@ -28,13 +28,6 @@ export enum DiscoverEvent {
     DappCategoryTap = 'discover_dapp_category_tap',
     DappDetailsButtonTap = 'discover_dapp_details_button_tap',
     DetailsCloseTap = 'discover_details_close_tap', // sic, the web app's name
-    FolderCreate = 'discover_folder_create',
-    FolderDappAdd = 'discover_folder_dapp_add',
-    FolderDappRemove = 'discover_folder_dapp_remove',
-    FolderRename = 'discover_folder_rename',
-    FolderDelete = 'discover_folder_delete',
-    FolderRearrange = 'discover_folder_rearrange',
-    FavoriteToastTap = 'discover_favorite_toast_tap',
     FavoritesCategorySelect = 'discover_favorites_category_select',
     FavoritesSortSelect = 'discover_favorites_sort_select',
     FavoritesRearrange = 'discover_favorites_rearrange',
@@ -76,9 +69,6 @@ export interface DiscoverRequiredPayloads {
     [DiscoverEvent.DetailsCloseTap]: {
         [Key.DappName]: string
         [Key.ChainId]?: ChainId
-    }
-    [DiscoverEvent.FolderRearrange]: {
-        [Key.RemovedCount]: number
     }
     /** `all` when the filter is cleared. */
     [DiscoverEvent.FavoritesCategorySelect]: { [Key.CategoryName]: string }

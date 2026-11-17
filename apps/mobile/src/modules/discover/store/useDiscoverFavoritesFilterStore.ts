@@ -11,7 +11,7 @@
  */
 
 import { create } from 'zustand'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import { registerStore, type Nullable } from '@perawallet/wallet-core-shared'
 import type { FavoritesSort } from './useDiscoverFavoritesStore'
 
 type DiscoverFavoritesFilterState = {
@@ -43,3 +43,10 @@ export const useDiscoverFavoritesFilterStore = create<
     setSort: sort => set({ sort }),
     reset: () => set(initialState),
 }))
+
+registerStore({
+    name: 'discover-favorites-filter-store',
+    // Never persisted: nothing to clear on disk.
+    clearStorage: () => undefined,
+    resetState: () => useDiscoverFavoritesFilterStore.getState().reset(),
+})
