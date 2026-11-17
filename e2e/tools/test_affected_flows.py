@@ -35,7 +35,7 @@ def test_a_module_path_selects_its_suites_without_a_test_id():
 
 def test_a_suite_file_and_a_resource_select_their_suites():
     selected, _, _ = classify(["e2e/tests/stake.robot", "e2e/resources/send_receive.resource"], SUITES)
-    assert selected == {"stake", "send_receive", "assets", "transactions"}
+    assert selected == {"stake", "send_receive", "assets", "transactions", "ethereum"}
 
 
 def test_shared_paths_select_everything():
