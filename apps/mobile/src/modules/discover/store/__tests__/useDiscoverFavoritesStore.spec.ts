@@ -16,6 +16,7 @@ import {
     FOLDER_NAME_MAX_LENGTH,
     migrateDiscoverFavorites,
     normalizeFolderName,
+    selectFavorites,
     selectFavoritesNewestFirst,
     selectFolderFavorites,
     selectFolderIdsForUrl,
@@ -39,6 +40,7 @@ describe('useDiscoverFavoritesStore', () => {
         useDiscoverFavoritesStore.setState({
             favorites: {},
             favoriteOrder: [],
+            visits: {},
             folders: {},
             folderOrder: [],
         })
@@ -125,7 +127,7 @@ describe('useDiscoverFavoritesStore', () => {
         expect(state.favoriteOrder).toEqual([])
     })
 
-    test('persists exactly the five state slices', async () => {
+    test('persists exactly the six state slices', async () => {
         useDiscoverFavoritesStore.getState().addFavorite(dapp('https://a.io'))
         const raw = await getProvider().keyValueStorage.getItem(
             'discover-favorites-store',
@@ -137,6 +139,7 @@ describe('useDiscoverFavoritesStore', () => {
             'folderOrder',
             'folders',
             'legacyImport',
+            'visits',
         ])
         expect(parsed.version).toBe(3)
     })
@@ -150,6 +153,67 @@ describe('useDiscoverFavoritesStore', () => {
                 f => f.name,
             ),
         ).toEqual(['B', 'A'])
+    })
+})
+
+describe('useDiscoverFavoritesStore visits and rearrange', () => {
+    const store = () => useDiscoverFavoritesStore.getState()
+    const A = 'https://a.io'
+    const B = 'https://b.io'
+    const C = 'https://c.io'
+
+    beforeEach(() => {
+        useDiscoverFavoritesStore.setState({
+            favorites: {},
+            favoriteOrder: [],
+            visits: {},
+            folders: {},
+            folderOrder: [],
+        })
+        ;[A, B, C].forEach(url => store().addFavorite(dapp(url, url)))
+    })
+
+    const urls = (sort: 'recent' | 'visits') =>
+        selectFavorites(store(), sort).map(f => f.url)
+
+    test('recordVisit counts opens of favorites only', () => {
+        store().recordVisit(B)
+        store().recordVisit('https://B.io/')
+        store().recordVisit('https://other.io')
+        expect(store().visits).toEqual({ [B]: 2 })
+    })
+
+    test('recent lists newest first', () => {
+        expect(urls('recent')).toEqual([C, B, A])
+    })
+
+    test('visits lists most opened first, ties in recent order', () => {
+        store().recordVisit(A)
+        store().recordVisit(A)
+        store().recordVisit(B)
+        expect(urls('visits')).toEqual([A, B, C])
+        store().recordVisit(C)
+        expect(urls('visits')).toEqual([A, C, B])
+    })
+
+    test('applyRearrange sets the newest-first order and removes the rest', () => {
+        store().recordVisit(B)
+        store().applyRearrange([A, C, 'https://unknown.io'])
+        expect(urls('recent')).toEqual([A, C])
+        expect(store().isFavorite(B)).toBe(false)
+        expect(store().visits).toEqual({})
+    })
+
+    test('a new favorite lands first after a rearrange', () => {
+        store().applyRearrange([A, B, C])
+        store().addFavorite(dapp('https://d.io', 'D'))
+        expect(urls('recent')).toEqual(['https://d.io', A, B, C])
+    })
+
+    test('removeFavorite drops its visit count', () => {
+        store().recordVisit(A)
+        store().removeFavorite(A)
+        expect(store().visits).toEqual({})
     })
 })
 
@@ -356,6 +420,7 @@ describe('useDiscoverFavoritesStore folders', () => {
         ).toEqual({
             favorites: { 'https://a.io': favorite },
             favoriteOrder: ['https://a.io'],
+            visits: {},
             folders: {},
             folderOrder: [],
             legacyImport: { status: 'pending', attempts: 0 },
@@ -371,6 +436,7 @@ describe('useDiscoverFavoritesStore folders', () => {
         }
         expect(migrateDiscoverFavorites(v2, 2)).toEqual({
             ...v2,
+            visits: {},
             legacyImport: { status: 'pending', attempts: 0 },
         })
     })
@@ -384,7 +450,10 @@ describe('useDiscoverFavoritesStore folders', () => {
             legacyImport: { status: 'pending', attempts: 0 },
         }
         expect(migrateDiscoverFavorites(v3, 3)).toBe(v3)
-        expect(migrateDiscoverFavorites({ junk: true }, 0)).toEqual(v3)
+        expect(migrateDiscoverFavorites({ junk: true }, 0)).toEqual({
+            ...v3,
+            visits: {},
+        })
     })
 })
 

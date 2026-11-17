@@ -25,8 +25,10 @@ import { normalizeDappUrl } from '../utils/normalizeDappUrl'
 export type DiscoverFavoritesState = {
     /** Keyed by `normalizeDappUrl(url)`. */
     favorites: Record<string, DiscoverFavorite>
-    /** The keys of `favorites`, in the order they were added. */
+    /** The keys of `favorites`, oldest first: added order, or Rearrange's. */
     favoriteOrder: string[]
+    /** How often each favorite was opened from Discover, by key. */
+    visits: Record<string, number>
     folders: Record<string, DiscoverFolder>
     /** The keys of `folders`, newest first. */
     folderOrder: string[]
@@ -54,6 +56,13 @@ type DiscoverFavoritesActions = {
     /** Returns the new state: `true` = now a favorite. */
     toggleFavorite(dapp: DiscoverDapp): boolean
     isFavorite(url: string): boolean
+    /** Counts an open of `url` for Most visited; no-op unless it is a favorite. */
+    recordVisit(url: string): void
+    /**
+     * Rearrange's Apply: the favorites in this newest-first order. Favorites
+     * missing from the list are removed; unknown keys are ignored.
+     */
+    applyRearrange(newestFirstKeys: readonly string[]): void
     /** Returns the new folder's id; throws when the trimmed name is empty or too long. */
     createFolder(name: string, initialUrl?: string): string
     /** Throws when the trimmed name is empty or too long. */
@@ -99,6 +108,7 @@ export const FOLDER_NAME_MAX_LENGTH = 40
 const initialState: DiscoverFavoritesState = {
     favorites: {},
     favoriteOrder: [],
+    visits: {},
     folders: {},
     folderOrder: [],
     legacyImport: pendingLegacyImport,
@@ -132,8 +142,11 @@ export const migrateDiscoverFavorites = (
 ): DiscoverFavoritesState => {
     if (version === STORE_VERSION) return persisted as DiscoverFavoritesState
     if (version === 2) {
-        const v2 = persisted as Omit<DiscoverFavoritesState, 'legacyImport'>
-        return { ...v2, legacyImport: pendingLegacyImport }
+        const v2 = persisted as Omit<
+            DiscoverFavoritesState,
+            'legacyImport' | 'visits'
+        >
+        return { ...v2, visits: {}, legacyImport: pendingLegacyImport }
     }
     if (version === 1) {
         const v1 = persisted as Pick<
@@ -143,6 +156,7 @@ export const migrateDiscoverFavorites = (
         return {
             favorites: v1.favorites,
             favoriteOrder: v1.favoriteOrder,
+            visits: {},
             folders: {},
             folderOrder: [],
             legacyImport: pendingLegacyImport,
@@ -178,6 +192,7 @@ export const useDiscoverFavoritesStore = create<DiscoverFavoritesStore>()(
                 if (key === null || !get().favorites[key]) return
                 set(state => {
                     const { [key]: _removed, ...favorites } = state.favorites
+                    const { [key]: _visits, ...visits } = state.visits
                     // A folder never holds a key that is not a favorite.
                     const folders = Object.fromEntries(
                         Object.entries(state.folders).map(([id, folder]) => [
@@ -197,6 +212,7 @@ export const useDiscoverFavoritesStore = create<DiscoverFavoritesStore>()(
                         favoriteOrder: state.favoriteOrder.filter(
                             k => k !== key,
                         ),
+                        visits,
                         folders,
                     }
                 })
@@ -212,6 +228,41 @@ export const useDiscoverFavoritesStore = create<DiscoverFavoritesStore>()(
             isFavorite: url => {
                 const key = normalizeDappUrl(url)
                 return key !== null && key in get().favorites
+            },
+            recordVisit: url => {
+                const key = normalizeDappUrl(url)
+                if (key === null || !get().favorites[key]) return
+                set(state => ({
+                    visits: {
+                        ...state.visits,
+                        [key]: (state.visits[key] ?? 0) + 1,
+                    },
+                }))
+            },
+            applyRearrange: newestFirstKeys => {
+                const { favorites, visits } = get()
+                const kept = [...new Set(newestFirstKeys)].filter(
+                    key => key in favorites,
+                )
+                const keep = new Set(kept)
+                set(state => ({
+                    favorites: Object.fromEntries(
+                        Object.entries(favorites).filter(([k]) => keep.has(k)),
+                    ),
+                    favoriteOrder: [...kept].reverse(),
+                    visits: Object.fromEntries(
+                        Object.entries(visits).filter(([k]) => keep.has(k)),
+                    ),
+                    folders: Object.fromEntries(
+                        Object.entries(state.folders).map(([id, folder]) => [
+                            id,
+                            {
+                                ...folder,
+                                items: folder.items.filter(k => keep.has(k)),
+                            },
+                        ]),
+                    ),
+                }))
             },
             createFolder: (rawName, initialUrl) => {
                 const name = requireFolderName(rawName)
@@ -329,6 +380,7 @@ export const useDiscoverFavoritesStore = create<DiscoverFavoritesStore>()(
             partialize: state => ({
                 favorites: state.favorites,
                 favoriteOrder: state.favoriteOrder,
+                visits: state.visits,
                 folders: state.folders,
                 folderOrder: state.folderOrder,
                 legacyImport: state.legacyImport,
@@ -351,6 +403,30 @@ export const selectUnsortedFavorites = (
         const favorite = state.favorites[key]
         return favorite ? [favorite] : []
     })
+
+/** How a favorites list is ordered: newest first, or most opened first. */
+export type FavoritesSort = 'recent' | 'visits'
+
+/**
+ * Favorites in `sort` order; `visits` ties keep the newest-first order. Call
+ * inside `useMemo`, not as a store selector.
+ */
+export const selectFavorites = (
+    state: Pick<
+        DiscoverFavoritesState,
+        'favorites' | 'favoriteOrder' | 'visits'
+    >,
+    sort: FavoritesSort,
+): DiscoverFavorite[] => {
+    const newestFirst = selectFavoritesNewestFirst(state)
+    if (sort === 'recent') return newestFirst
+    const countOf = (favorite: DiscoverFavorite) => {
+        const key = normalizeDappUrl(favorite.url)
+        return key === null ? 0 : (state.visits[key] ?? 0)
+    }
+    // Array.prototype.sort is stable, so ties keep the newest-first order.
+    return [...newestFirst].sort((a, b) => countOf(b) - countOf(a))
+}
 
 /** Favorites, newest first. Call inside `useMemo`, not as a store selector. */
 export const selectFavoritesNewestFirst = (
