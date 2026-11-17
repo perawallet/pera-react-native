@@ -160,7 +160,7 @@ broaden the selection. The existing release smoke gate still selects its one `re
 
 The workflow can be called by a native build workflow on main with freshly uploaded `android_app`
 and/or `ios_app` IDs and the BrowserStack secrets. It does not automatically test an old build on
-every source push. The nightly schedule (02:17 UTC) stays dormant until repository variables
+every source push. The nightly schedule (02:17 UTC) fails until repository variables
 `E2E_ANDROID_APP` and/or `E2E_IOS_APP` name uploaded E2E builds; keep those variables updated from
 the native build pipeline. Nightly runs test those configured builds, not an assumed current commit.
 No app is built or uploaded by the schedule itself.

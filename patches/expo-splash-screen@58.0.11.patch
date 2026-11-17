@@ -1,0 +1,18 @@
+diff --git a/android/src/main/java/expo/modules/splashscreen/SplashScreenManager.kt b/android/src/main/java/expo/modules/splashscreen/SplashScreenManager.kt
+index bc44b70db9510294ff487d8f458346c36f319e9d..383d5a33da1e2a6049b36911689fbe068de74ad6 100644
+--- a/android/src/main/java/expo/modules/splashscreen/SplashScreenManager.kt
++++ b/android/src/main/java/expo/modules/splashscreen/SplashScreenManager.kt
+@@ -41,6 +41,13 @@ object SplashScreenManager {
+       }
+     })
+ 
++    // Android 12L and 13 can hand over a splash window that was already removed, and
++    // ActivityThread then crashes on its null leash. Without a listener nothing is
++    // handed over and the system plays its own exit animation.
++    if (Build.VERSION.SDK_INT in Build.VERSION_CODES.S_V2..Build.VERSION_CODES.TIRAMISU) {
++      return
++    }
++
+     splashScreen.setOnExitAnimationListener { splashScreenViewProvider ->
+       val splashScreenView = splashScreenViewProvider.view
+       splashScreenView

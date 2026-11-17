@@ -252,10 +252,8 @@ export const createEvmDeeplinkAdapter = (
                     ?.chainId,
                 nativeAssetOf: nativeAssetOfEvmChain,
             }),
-        toAssetRef: (raw): Optional<AssetRef> =>
-            isAddress(raw)
-                ? { chainId: owner.row.id, assetId: getAddress(raw) }
-                : undefined,
+        toAssetRef: (raw, chainId): Optional<AssetRef> =>
+            isAddress(raw) ? { chainId, assetId: getAddress(raw) } : undefined,
     }
 }
 

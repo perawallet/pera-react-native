@@ -39,6 +39,10 @@ export const FavoriteDappList = ({
 
     return (
         <PWFlatList
+            // FlashList v2 anchors the viewport on the first visible row and
+            // re-applies it on every data change. Rearrange moves rows, so the
+            // anchor scrolled the moved row out of view (as in AccountMenu).
+            maintainVisibleContentPosition={{ disabled: true }}
             data={dapps}
             keyExtractor={dapp => dapp.url}
             contentContainerStyle={styles.list}
