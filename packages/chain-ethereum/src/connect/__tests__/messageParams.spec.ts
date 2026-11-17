@@ -284,7 +284,21 @@ describe('validateEthereumMessagePayload: typed-data chain', () => {
             ['a DAI-style permit', DAI_PERMIT_TYPED_DATA],
             ['an ERC-721 permit', ERC721_PERMIT_TYPED_DATA],
         ])('refuses %s whose type omits chainId', (_name, permit) => {
-            for (const chainId of [1, 5, undefined]) {
+            const messages = new Map([
+                [
+                    1,
+                    'eth_signTypedData_v4 domain chainId is not in its EIP712Domain type, so it binds no chain',
+                ],
+                [
+                    5,
+                    'eth_signTypedData_v4 domain chainId is not in its EIP712Domain type, so it binds no chain',
+                ],
+                [
+                    undefined,
+                    'eth_signTypedData_v4 permit domain binds no chainId',
+                ],
+            ])
+            for (const [chainId, message] of messages) {
                 const result = validate('sign-typed-data', [
                     SENDER,
                     declaring(permit, chainId),
@@ -293,6 +307,7 @@ describe('validateEthereumMessagePayload: typed-data chain', () => {
                 expect(result).toMatchObject({
                     ok: false,
                     failure: 'invalid-params',
+                    message,
                 })
             }
         })
@@ -306,7 +321,8 @@ describe('validateEthereumMessagePayload: typed-data chain', () => {
             expect(result).toMatchObject({
                 ok: false,
                 failure: 'invalid-params',
-                message: expect.stringContaining('binds no chain'),
+                message:
+                    'eth_signTypedData_v4 domain chainId is not in its EIP712Domain type, so it binds no chain',
             })
         })
 

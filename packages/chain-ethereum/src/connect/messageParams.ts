@@ -161,8 +161,6 @@ const domainChainRefusal = (
             'eth_signTypedData_v4 domain chainId is not the connected chain',
         )
     }
-    // Signed without a chain, a permit is valid on every chain whose token
-    // leaves the chain out of its domain separator.
     if (binding.kind === 'none' && isPermitTypedData(typedData)) {
         return invalid('eth_signTypedData_v4 permit domain binds no chainId')
     }
