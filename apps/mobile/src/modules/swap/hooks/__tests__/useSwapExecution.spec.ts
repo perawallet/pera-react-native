@@ -254,6 +254,36 @@ describe('useSwapExecution', () => {
             expect(outcome).toMatchObject({ kind: 'error', phase: 'prepare' })
             expect(result.current.status).toBe('error')
         })
+
+        it.each([
+            [
+                'a sponsor refusal',
+                new PeraNetworkError('client', { status: 400 }),
+            ],
+            [
+                'a sponsor outage',
+                new PeraNetworkError('server', { status: 503 }),
+            ],
+        ])(
+            'never blames the swap provider for %s while readying it',
+            async (_label, error) => {
+                const { result } = renderHook(() => useSwapExecution())
+
+                const outcome = await run(async () => {
+                    throw error
+                }, result.current)
+
+                expect(mockExecuteSwap).not.toHaveBeenCalled()
+                expect(outcome).toMatchObject({
+                    kind: 'error',
+                    phase: 'prepare',
+                    title: 'swap.execution.failed_title.prepare',
+                })
+                expect(outcome).not.toMatchObject({
+                    message: expect.stringMatching(/provider/),
+                })
+            },
+        )
     })
 
     it('runs the quote with localized signing copy', async () => {

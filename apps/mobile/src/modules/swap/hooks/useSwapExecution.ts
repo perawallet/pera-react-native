@@ -35,6 +35,7 @@ import { nativeAssetFor } from '@perawallet/wallet-core-assets'
 import {
     baseUnitsToDisplayUnits,
     formatNumber,
+    logger,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { useNodeErrorMessage } from '@hooks/useNodeErrorMessage'
@@ -189,8 +190,8 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                         title: stepTitle,
                     }
                 }
-                // The backend answered, so the chosen provider couldn't build
-                // this swap; the refusal code says what to do about it.
+                // The order call reached the router, so the refusal code says
+                // what to do about it; anything else keeps the generic copy.
                 case 'prepare-failed': {
                     const refusal = swapOrderRefusalOf(failure.error)
                     return {
@@ -270,15 +271,24 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                 try {
                     isPrepared = await prepareDestination()
                 } catch (error) {
-                    const { message, title } = describeFailure({
-                        phase: 'prepare',
-                        reason: 'prepare-failed',
+                    // Readying the destination (opt-in, sponsor call) isn't the
+                    // swap router, so its errors never read as a provider refusal.
+                    const stepTitle = t(FAILED_TITLE_KEY_BY_STEP.prepare)
+                    const { body: message } = resolveErrorCopy(
                         error,
-                    })
+                        t,
+                        stepTitle,
+                        getMessage,
+                    )
                     playFailure()
                     setStatus('error')
                     setError({ phase: 'prepare', message })
-                    return { kind: 'error', phase: 'prepare', message, title }
+                    return {
+                        kind: 'error',
+                        phase: 'prepare',
+                        message,
+                        title: stepTitle,
+                    }
                 }
                 if (!isPrepared || cancelRequestedRef.current) {
                     setStatus('idle')
@@ -297,7 +307,12 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             ) {
                 setStatus('preparing')
                 const offers = await createQuotes(quote.request).catch(
-                    (): SwapQuote[] => [],
+                    (error: unknown): SwapQuote[] => {
+                        logger.warn('Swap re-quote at confirm failed', {
+                            error,
+                        })
+                        return []
+                    },
                 )
                 if (cancelRequestedRef.current) {
                     setStatus('idle')
