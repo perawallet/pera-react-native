@@ -16,8 +16,8 @@ import { useStyles } from './styles'
 
 export type DappLogoProps = {
     logo: Nullable<string>
-    /** `row`: a list row's leading logo; `stack`: a logo in a folder row's stack. */
-    size?: 'row' | 'stack'
+    /** `row`: a list row's leading logo; `tile`: the home grid; `stack`: a logo stack. */
+    size?: 'row' | 'tile' | 'stack'
 }
 
 /** A dApp's round logo, or a globe when it has none. */
@@ -32,7 +32,9 @@ export const DappLogo = ({ logo, size = 'row' }: DappLogoProps) => {
         <PWView style={styles.logo}>
             <PWIcon
                 name='globe'
-                size={size === 'stack' ? 'xs' : undefined}
+                size={
+                    size === 'stack' ? 'xs' : size === 'tile' ? 'lg' : undefined
+                }
                 variant='secondary'
             />
         </PWView>

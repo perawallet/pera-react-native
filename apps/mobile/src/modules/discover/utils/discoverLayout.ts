@@ -16,3 +16,6 @@ export const DISCOVER_ROW_LEAD_SIZE = 40
 
 /** A folder row's stacked dApp logos: 20 pt, as `ChainIconStack`'s icons. */
 export const DISCOVER_LOGO_STACK_SIZE = 20
+
+/** Figma "Discover – Home": a favorite's logo in the grid. */
+export const DISCOVER_TILE_LOGO_SIZE = 56

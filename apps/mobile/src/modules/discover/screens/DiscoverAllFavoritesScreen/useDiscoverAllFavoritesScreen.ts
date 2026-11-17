@@ -10,28 +10,37 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
-import {
-    useFavoriteDappActions,
-    type UseFavoriteDappActionsResult,
-} from '../../hooks/useFavoriteDappActions'
-import {
-    selectFavoritesNewestFirst,
-    useDiscoverFavoritesStore,
-} from '../../store/useDiscoverFavoritesStore'
+import { useCallback, useState } from 'react'
+import { useDiscoverDirectory } from '../../hooks/useDiscoverDirectory'
+import { useFavoritesView } from '../../hooks/useFavoritesView'
+import { useOpenDapp } from '../../hooks/useOpenDapp'
 import type { DiscoverFavorite } from '../../types'
+import { normalizeDappUrl } from '../../utils/normalizeDappUrl'
 
-export type UseDiscoverAllFavoritesScreenResult =
-    UseFavoriteDappActionsResult & { dapps: DiscoverFavorite[] }
+export type UseDiscoverAllFavoritesScreenResult = {
+    dapps: DiscoverFavorite[]
+    query: string
+    setQuery: (query: string) => void
+    isVerified: (url: string) => boolean
+    openDapp: (dapp: DiscoverFavorite) => void
+}
 
+/** The Favorites screen: every favorite, searched and filtered by the shared chips. */
 export const useDiscoverAllFavoritesScreen =
     (): UseDiscoverAllFavoritesScreenResult => {
-        const actions = useFavoriteDappActions()
-        const favorites = useDiscoverFavoritesStore(s => s.favorites)
-        const favoriteOrder = useDiscoverFavoritesStore(s => s.favoriteOrder)
-        const dapps = useMemo(
-            () => selectFavoritesNewestFirst({ favorites, favoriteOrder }),
-            [favorites, favoriteOrder],
+        const [query, setQuery] = useState('')
+        const { dapps } = useFavoritesView({ query })
+        const { verifiedUrls } = useDiscoverDirectory()
+        const { openDapp: open } = useOpenDapp()
+
+        const isVerified = useCallback(
+            (url: string) => verifiedUrls.has(normalizeDappUrl(url) ?? ''),
+            [verifiedUrls],
         )
-        return { ...actions, dapps }
+        const openDapp = useCallback(
+            (dapp: DiscoverFavorite) => open(dapp, null),
+            [open],
+        )
+
+        return { dapps, query, setQuery, isVerified, openDapp }
     }

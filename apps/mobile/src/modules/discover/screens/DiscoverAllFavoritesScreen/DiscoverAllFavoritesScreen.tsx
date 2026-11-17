@@ -10,12 +10,19 @@
  limitations under the License
  */
 
-import { PWScreen } from '@components/core'
+import { PWFlatList, PWScreen, PWView } from '@components/core'
+import { EmptyView } from '@components/EmptyView'
+import { SearchInput } from '@components/SearchInput'
 import { useLanguage } from '@hooks/useLanguage'
-import { FavoriteDappList } from '../../components/FavoriteDappList'
+import { DappRow } from '../../components/DappRow'
+import { FavoritesFilterBar } from '../../components/FavoritesFilterBar'
+import { dappSubtitle } from '../../utils/dappSubtitle'
 import { useDiscoverAllFavoritesScreen } from './useDiscoverAllFavoritesScreen'
+import { useStyles } from './styles'
 
+/** Every favorite, with search and the category and sort chips (Figma "Favorites"). */
 export const DiscoverAllFavoritesScreen = () => {
+    const styles = useStyles()
     const { t } = useLanguage()
     const screen = useDiscoverAllFavoritesScreen()
 
@@ -24,13 +31,37 @@ export const DiscoverAllFavoritesScreen = () => {
             scroll='never'
             testID='discover_all_favorites_screen'
         >
-            <FavoriteDappList
-                dapps={screen.dapps}
-                isVerified={screen.isVerified}
-                onPress={screen.openDapp}
-                onUnfavorite={screen.unfavorite}
-                emptyText={t('discover.favorites.empty_body')}
-                testIDPrefix='discover_all_favorites_dapp'
+            <PWView style={styles.controls}>
+                <SearchInput
+                    value={screen.query}
+                    onChangeText={screen.setQuery}
+                    placeholder={t('discover.favorites.search_placeholder')}
+                    testID='discover_all_favorites_search'
+                />
+                <FavoritesFilterBar testID='discover_all_favorites_filters' />
+            </PWView>
+            <PWFlatList
+                data={screen.dapps}
+                keyExtractor={dapp => dapp.url}
+                contentContainerStyle={styles.list}
+                ListEmptyComponent={
+                    <EmptyView
+                        body={t('discover.favorites.empty_body')}
+                        style={styles.empty}
+                        testID='discover_all_favorites_dapp_empty'
+                    />
+                }
+                renderItem={({ item }) => (
+                    <DappRow
+                        dapp={item}
+                        subtitle={dappSubtitle(item)}
+                        isFavorite
+                        isVerified={screen.isVerified(item.url)}
+                        showChains={false}
+                        onPress={() => screen.openDapp(item)}
+                        testID={`discover_all_favorites_dapp_${item.url}`}
+                    />
+                )}
             />
         </PWScreen>
     )

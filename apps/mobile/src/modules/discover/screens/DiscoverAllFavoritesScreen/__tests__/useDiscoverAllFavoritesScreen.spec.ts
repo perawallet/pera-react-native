@@ -10,58 +10,81 @@
  limitations under the License
  */
 
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useOpenDapp } from '../../../hooks/useOpenDapp'
 import { useDiscoverDirectory } from '../../../hooks/useDiscoverDirectory'
 import { useDiscoverFavoritesStore } from '../../../store/useDiscoverFavoritesStore'
+import { useDiscoverFavoritesFilterStore } from '../../../store/useDiscoverFavoritesFilterStore'
+import type { DiscoverDapp } from '../../../types'
 import { useDiscoverAllFavoritesScreen } from '../useDiscoverAllFavoritesScreen'
 
-vi.mock('@analytics', async () => ({
-    ...(await vi.importActual<object>('@analytics')),
-    trackEvent: vi.fn(),
-}))
 vi.mock('../../../hooks/useOpenDapp', () => ({ useOpenDapp: vi.fn() }))
 vi.mock('../../../hooks/useDiscoverDirectory', () => ({
     useDiscoverDirectory: vi.fn(),
 }))
 
+const openDapp = vi.fn()
+
+const dapp = (
+    url: string,
+    name: string,
+    categories: string[],
+): DiscoverDapp => ({ url, name, logo: null, categories, chains: [] })
+
 describe('useDiscoverAllFavoritesScreen', () => {
     beforeEach(() => {
-        vi.mocked(useOpenDapp).mockReturnValue({ openDapp: vi.fn() } as never)
+        vi.clearAllMocks()
+        vi.mocked(useOpenDapp).mockReturnValue({ openDapp } as never)
         vi.mocked(useDiscoverDirectory).mockReturnValue({
-            verifiedUrls: new Set(),
+            verifiedUrls: new Set(['https://vestige.fi']),
         } as never)
-        useDiscoverFavoritesStore.setState({
-            favorites: {},
-            favoriteOrder: [],
-            folders: {},
-            folderOrder: [],
-        })
+        useDiscoverFavoritesStore.getState().resetState()
+        useDiscoverFavoritesFilterStore.getState().reset()
+        const add = useDiscoverFavoritesStore.getState().addFavorite
+        add(dapp('https://tinyman.org', 'Tinyman', ['DeFi']))
+        add(dapp('https://allo.info', 'allo', ['Explorer']))
+        add(dapp('https://vestige.fi', 'Vestige', ['DeFi']))
     })
 
-    it('lists every favorite, newest first', () => {
-        // Arrange
-        const add = useDiscoverFavoritesStore.getState().addFavorite
-        add({
-            url: 'https://a.io',
-            name: 'A',
-            logo: null,
-            categories: [],
-            chains: [],
-        })
-        add({
-            url: 'https://b.io',
-            name: 'B',
-            logo: null,
-            categories: [],
-            chains: [],
-        })
+    const names = (r: { current: { dapps: { name: string }[] } }) =>
+        r.current.dapps.map(d => d.name)
 
-        // Act
+    it('lists every favorite, newest first', () => {
         const { result } = renderHook(() => useDiscoverAllFavoritesScreen())
 
-        // Assert
-        expect(result.current.dapps.map(d => d.name)).toEqual(['B', 'A'])
+        expect(names(result)).toEqual(['Vestige', 'allo', 'Tinyman'])
+    })
+
+    it('searches together with the category filter', () => {
+        const { result } = renderHook(() => useDiscoverAllFavoritesScreen())
+
+        act(() => result.current.setQuery('i'))
+        expect(names(result)).toEqual(['Vestige', 'allo', 'Tinyman'])
+
+        act(() =>
+            useDiscoverFavoritesFilterStore.getState().setCategory('DeFi'),
+        )
+        act(() => result.current.setQuery('tiny'))
+        expect(names(result)).toEqual(['Tinyman'])
+        expect(result.current.query).toBe('tiny')
+    })
+
+    it('opens a favorite with no chain context', () => {
+        const { result } = renderHook(() => useDiscoverAllFavoritesScreen())
+
+        result.current.openDapp(result.current.dapps[0]!)
+
+        expect(openDapp).toHaveBeenCalledWith(
+            expect.objectContaining({ name: 'Vestige' }),
+            null,
+        )
+    })
+
+    it('reports verification by url', () => {
+        const { result } = renderHook(() => useDiscoverAllFavoritesScreen())
+
+        expect(result.current.isVerified('https://vestige.fi/')).toBe(true)
+        expect(result.current.isVerified('https://allo.info')).toBe(false)
     })
 })

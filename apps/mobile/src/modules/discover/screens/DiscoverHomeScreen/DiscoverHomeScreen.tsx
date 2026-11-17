@@ -33,7 +33,7 @@ import { FavoritesSection } from '../../components/FavoritesSection'
 import { LegacyFavoritesImporter } from '../../components/LegacyFavoritesImporter'
 import { RowDivider } from '../../components/RowDivider'
 import { NewsCard } from '../../components/NewsCard'
-import { dappHostOf } from '../../utils/normalizeDappUrl'
+import { dappSubtitle } from '../../utils/dappSubtitle'
 import { useStyles } from './styles'
 import {
     useDiscoverHomeScreen,
@@ -91,9 +91,7 @@ export const DiscoverHomeScreen = () => {
                         {index > 0 ? <RowDivider /> : null}
                         <DappRow
                             dapp={dapp}
-                            subtitle={
-                                dapp.categories[0] ?? dappHostOf(dapp.url)
-                            }
+                            subtitle={dappSubtitle(dapp)}
                             isFavorite={home.isFavorite(dapp.url)}
                             isVerified={home.isVerified(dapp.url)}
                             showChains={false}
@@ -147,7 +145,7 @@ export const DiscoverHomeScreen = () => {
 
                 <PWView style={styles.section}>
                     <DiscoverSectionHeader
-                        title={t('discover.home.top_dapps')}
+                        title={t('discover.home.explore_dapps')}
                         icon={<TopDappsIcon />}
                         onPress={home.openDappDirectory}
                         testID='discover_home_top_dapps_header'
