@@ -1,0 +1,114 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { useCallback, useRef, useState } from 'react'
+import { DiscoverEvent, trackEvent } from '@analytics'
+import { AnalyticsMetadataKey as Key } from '@analytics/events/metadata-keys'
+import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { useDiscoverFavoritesStore } from '../../store/useDiscoverFavoritesStore'
+import type { DiscoverFavorite } from '../../types'
+
+/** A row of the working list: the favorite's key and the favorite. */
+export type RearrangeFavoriteEntry = { key: string; dapp: DiscoverFavorite }
+
+export type UseRearrangeFavoritesSheetResult = {
+    entries: RearrangeFavoriteEntry[]
+    /** A drag started; Apply waits for its `reorder` (the drop) to land. */
+    beginDrag: () => void
+    reorder: (keys: string[]) => void
+    remove: (key: string) => void
+    apply: () => void
+    cancel: () => void
+}
+
+const readEntries = (): RearrangeFavoriteEntry[] => {
+    const { favorites, favoriteOrder } = useDiscoverFavoritesStore.getState()
+    return [...favoriteOrder].reverse().flatMap(key => {
+        const dapp = favorites[key]
+        return dapp ? [{ key, dapp }] : []
+    })
+}
+
+/**
+ * The Rearrange working list, newest first (the "Recently added" order). Read
+ * once at mount and kept local until Apply, so Cancel or a dismiss changes
+ * nothing; × only leaves the list until then.
+ */
+export const useRearrangeFavoritesSheet =
+    (): UseRearrangeFavoritesSheetResult => {
+        const { dismiss } = useBottomSheetResult<void>()
+        const applyRearrange = useDiscoverFavoritesStore(s => s.applyRearrange)
+        const [entries, setEntries] = useState(readEntries)
+        const initialCount = useRef(entries.length)
+        // The list reports a drop only once its settle animation ends, so
+        // Apply tapped in between would save the order from before the drag.
+        const entriesRef = useRef(entries)
+        const isDropSettling = useRef(false)
+        const isApplyPending = useRef(false)
+
+        const update = useCallback((next: RearrangeFavoriteEntry[]) => {
+            entriesRef.current = next
+            setEntries(next)
+        }, [])
+
+        const commit = useCallback(
+            (list: RearrangeFavoriteEntry[]) => {
+                applyRearrange(list.map(entry => entry.key))
+                trackEvent(DiscoverEvent.FavoritesRearrange, {
+                    [Key.RemovedCount]: initialCount.current - list.length,
+                })
+                dismiss()
+            },
+            [applyRearrange, dismiss],
+        )
+
+        const beginDrag = useCallback(() => {
+            isDropSettling.current = true
+        }, [])
+
+        const reorder = useCallback(
+            (keys: string[]) => {
+                const byKey = new Map(
+                    entriesRef.current.map(entry => [entry.key, entry]),
+                )
+                const next = keys.flatMap(key => {
+                    const entry = byKey.get(key)
+                    return entry ? [entry] : []
+                })
+                update(next)
+                isDropSettling.current = false
+                if (isApplyPending.current) {
+                    isApplyPending.current = false
+                    commit(next)
+                }
+            },
+            [commit, update],
+        )
+
+        const remove = useCallback(
+            (key: string) =>
+                update(entriesRef.current.filter(entry => entry.key !== key)),
+            [update],
+        )
+
+        const apply = useCallback(() => {
+            if (isDropSettling.current) {
+                isApplyPending.current = true
+                return
+            }
+            commit(entriesRef.current)
+        }, [commit])
+
+        const cancel = useCallback(() => dismiss(), [dismiss])
+
+        return { entries, beginDrag, reorder, remove, apply, cancel }
+    }

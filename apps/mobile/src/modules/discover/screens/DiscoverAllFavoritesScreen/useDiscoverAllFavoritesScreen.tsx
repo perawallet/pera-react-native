@@ -11,6 +11,8 @@
  */
 
 import { useCallback, useState } from 'react'
+import { useBottomSheet } from '@modules/bottom-sheet'
+import { RearrangeFavoritesSheet } from '../../components/RearrangeFavoritesSheet'
 import { useDiscoverDirectory } from '../../hooks/useDiscoverDirectory'
 import { useFavoritesView } from '../../hooks/useFavoritesView'
 import { useOpenDapp } from '../../hooks/useOpenDapp'
@@ -23,7 +25,16 @@ export type UseDiscoverAllFavoritesScreenResult = {
     setQuery: (query: string) => void
     isVerified: (url: string) => boolean
     openDapp: (dapp: DiscoverFavorite) => void
+    openRearrange: () => void
 }
+
+// Full height and no pan gestures, so a drag never fights the sheet.
+const REARRANGE_SHEET_OPTIONS = {
+    size: 'modal',
+    enablePanDownToClose: false,
+    enableContentPanningGesture: false,
+    autoCreateContainer: false,
+} as const
 
 /** The Favorites screen: every favorite, searched and filtered by the shared chips. */
 export const useDiscoverAllFavoritesScreen =
@@ -32,6 +43,7 @@ export const useDiscoverAllFavoritesScreen =
         const { dapps } = useFavoritesView({ query })
         const { verifiedUrls } = useDiscoverDirectory()
         const { openDapp: open } = useOpenDapp()
+        const { request } = useBottomSheet()
 
         const isVerified = useCallback(
             (url: string) => verifiedUrls.has(normalizeDappUrl(url) ?? ''),
@@ -42,5 +54,12 @@ export const useDiscoverAllFavoritesScreen =
             [open],
         )
 
-        return { dapps, query, setQuery, isVerified, openDapp }
+        const openRearrange = useCallback(() => {
+            void request({
+                contents: <RearrangeFavoritesSheet />,
+                options: REARRANGE_SHEET_OPTIONS,
+            })
+        }, [request])
+
+        return { dapps, query, setQuery, isVerified, openDapp, openRearrange }
     }

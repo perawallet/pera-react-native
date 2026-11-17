@@ -23,6 +23,11 @@ vi.mock('../../../hooks/useOpenDapp', () => ({ useOpenDapp: vi.fn() }))
 vi.mock('../../../hooks/useDiscoverDirectory', () => ({
     useDiscoverDirectory: vi.fn(),
 }))
+const request = vi.fn()
+vi.mock('@modules/bottom-sheet', async () => ({
+    ...(await vi.importActual('@modules/bottom-sheet')),
+    useBottomSheet: () => ({ request }),
+}))
 
 const openDapp = vi.fn()
 
@@ -86,5 +91,22 @@ describe('useDiscoverAllFavoritesScreen', () => {
 
         expect(result.current.isVerified('https://vestige.fi/')).toBe(true)
         expect(result.current.isVerified('https://allo.info')).toBe(false)
+    })
+
+    it('opens Rearrange as a full sheet without pan gestures', () => {
+        const { result } = renderHook(() => useDiscoverAllFavoritesScreen())
+
+        result.current.openRearrange()
+
+        expect(request).toHaveBeenCalledWith(
+            expect.objectContaining({
+                options: expect.objectContaining({
+                    size: 'modal',
+                    enablePanDownToClose: false,
+                    enableContentPanningGesture: false,
+                    autoCreateContainer: false,
+                }),
+            }),
+        )
     })
 })

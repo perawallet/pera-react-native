@@ -10,7 +10,15 @@
  limitations under the License
  */
 
-import { PWFlatList, PWScreen, PWView } from '@components/core'
+import { useLayoutEffect } from 'react'
+import { useNavigation } from '@react-navigation/native'
+import {
+    PWFlatList,
+    PWIcon,
+    PWScreen,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { SearchInput } from '@components/SearchInput'
 import { useLanguage } from '@hooks/useLanguage'
@@ -25,6 +33,25 @@ export const DiscoverAllFavoritesScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const screen = useDiscoverAllFavoritesScreen()
+    // The screen's own navigation object: it owns this screen's header options.
+    const navigation = useNavigation()
+    const { openRearrange } = screen
+
+    useLayoutEffect(() => {
+        navigation.setOptions({
+            headerRight: () => (
+                <PWTouchableOpacity
+                    onPress={openRearrange}
+                    testID='discover_all_favorites_rearrange'
+                    accessibilityLabel={t(
+                        'discover.favorites.rearrange.open_label',
+                    )}
+                >
+                    <PWIcon name='sliders' />
+                </PWTouchableOpacity>
+            ),
+        })
+    }, [navigation, openRearrange, t])
 
     return (
         <PWScreen
