@@ -450,6 +450,29 @@ describe('executeEvmSwap', () => {
         expect(context.reportOrder).toHaveBeenCalledWith(CANCELLED)
     })
 
+    it('stamps a failed approval signature with the approval step', async () => {
+        const node = fakeNode({ balance: RICH })
+        const context = contextOf(
+            orderOf([APPROVE_TX, SWAP_TX]),
+            request =>
+                request.error?.(new Error('device failed')) ??
+                Promise.resolve(),
+        )
+
+        const result = await run(context)
+
+        expect(result).toMatchObject({
+            failure: {
+                phase: 'signing',
+                reason: 'signing-failed',
+                step: 'approval',
+            },
+        })
+        expect(node.sentCount()).toBe(0)
+        await flushCancelReport()
+        expect(context.reportOrder).toHaveBeenCalledWith(CANCELLED)
+    })
+
     it('cancels with a stale quote when the order expires during the approval', async () => {
         const node = fakeNode({ balance: RICH })
         const context = contextOf({
