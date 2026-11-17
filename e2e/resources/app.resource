@@ -453,10 +453,13 @@ Switch Should Be
     Wait Until Page Contains Element    ${state}    timeout=10s
 
 Scroll Until Tappable
-    [Documentation]    Swipes up until the element's centre, where a tap lands, is inside the window.
-    ...                A row below the fold can be in the tree and report itself displayed, and
+    [Documentation]    Scrolls until the element's centre, where a tap lands, is inside the window.
+    ...                A row past the fold can be in the tree and report itself displayed, and
     ...                tapping it there lands on whatever is at its off-screen coordinates instead.
-    [Arguments]    ${locator}
+    ...                It scrolls toward wherever the element sits; ${toward} (end or start) only
+    ...                picks the way while the element is out of the tree, as Android lists only
+    ...                what is on screen.
+    [Arguments]    ${locator}    ${toward}=end
     ${height}=    Get Window Height
     ${width}=    Get Window Width
     FOR    ${i}    IN RANGE    6
@@ -471,8 +474,13 @@ Scroll Until Tappable
                 ${visible}=    Call Method    ${element}    is_displayed
                 IF    ${visible}    RETURN
             END
+            ${toward}=    Set Variable If    $y <= $height * 0.1    start    end
         END
-        Swipe By Percent    50    75    50    35    duration=600ms
+        IF    $toward == 'start'
+            Swipe By Percent    50    35    50    75    duration=600ms
+        ELSE
+            Swipe By Percent    50    75    50    35    duration=600ms
+        END
     END
     Fail    ${locator} never scrolled into view.
 

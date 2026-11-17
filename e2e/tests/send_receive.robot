@@ -74,9 +74,7 @@ Recipient Search Excludes The Sender And Offers The Other Account
     # has been scrolled through.
     ${listed}=    Run Keyword And Return Status    Scroll Until Present    tid=account_result_row_${FUNDED_ADDRESS}
     Should Not Be True    ${listed}    The recipient list offers the sending account.
-    FOR    ${_}    IN RANGE    6
-        Swipe By Percent    50    35    50    75    duration=400ms
-    END
+    Scroll Until Tappable    ${OTHER_RECIPIENT_ROW}    toward=start
     Wait Until Settled    ${OTHER_RECIPIENT_ROW}
     Tap    ${OTHER_RECIPIENT_ROW}
     Wait Until Page Contains Element    ${SEND_CONFIRM_SLIDE}    timeout=25s

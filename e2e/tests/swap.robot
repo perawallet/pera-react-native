@@ -437,7 +437,7 @@ Swap History Pair Fills The Form With Its Pair
     ${preset}=    Run Keyword And Return Status    Page Should Contain Element    ${RECEIVE_BALANCE_IS_USDC}
     # The pair strip was found by swiping to the bottom, which can leave the flip button off screen.
     IF    ${preset}
-        Scroll Until Tappable    ${SWAP_FLIP_BUTTON}
+        Scroll Until Tappable    ${SWAP_FLIP_BUTTON}    toward=start
         Tap    ${SWAP_FLIP_BUTTON}
     END
     Wait Until Page Does Not Contain Element    ${RECEIVE_BALANCE_IS_USDC}    timeout=15s
