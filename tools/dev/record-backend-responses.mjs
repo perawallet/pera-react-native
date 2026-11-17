@@ -34,6 +34,22 @@ const MAX_ROWS = 25
 const CHAIN = '(\\d+)'
 const ADDRESS = '(0x[0-9a-fA-F]{40})'
 
+const accountTransactions = (name, acceptsParams) => ({
+    name,
+    method: 'GET',
+    match: new RegExp(
+        `^(?:/api/v3)?/evm/${CHAIN}/accounts/${ADDRESS}/transactions/$`,
+    ),
+    path: ([, chainId, address]) =>
+        `/api/v3/evm/${chainId}/accounts/${address}/transactions/`,
+    pathParams: ([, chainId, address]) => ({
+        chainId: Number(chainId),
+        address,
+    }),
+    accepts: ({ params }) => acceptsParams(params),
+    tests: ['src/modules/evm/__tests__/transactions.test.ts'],
+})
+
 // The route tests mount the routers under varying prefixes, so the canonical
 // path is rebuilt from the captured one. NFT holdings and NFT metadata, which
 // the app also calls, are missing: the backend serves neither yet.
@@ -67,26 +83,19 @@ const ROUTES = [
         pathParams: ([, chainId]) => ({ chainId: Number(chainId) }),
         tests: ['src/modules/evm/__tests__/tokens.test.ts'],
     },
-    {
-        name: 'evm-account-transactions',
-        method: 'GET',
-        match: new RegExp(
-            `^(?:/api/v3)?/evm/${CHAIN}/accounts/${ADDRESS}/transactions/$`,
-        ),
-        path: ([, chainId, address]) =>
-            `/api/v3/evm/${chainId}/accounts/${address}/transactions/`,
-        pathParams: ([, chainId, address]) => ({
-            chainId: Number(chainId),
-            address,
-        }),
-        // Unfiltered pages only. An asset view (`asset_id`) is another shape:
-        // its ERC-20 rows carry no `from`, `to`, `value` or `method`.
-        accepts: ({ params }) =>
-            [...params.keys()].every(
-                key => key === 'cursor' || key === 'limit',
-            ),
-        tests: ['src/modules/evm/__tests__/transactions.test.ts'],
-    },
+    // Each asset view (`asset_id`) is its own shape, recorded apart from the
+    // unfiltered pages.
+    accountTransactions('evm-account-transactions', params =>
+        [...params.keys()].every(key => key === 'cursor' || key === 'limit'),
+    ),
+    accountTransactions(
+        'evm-account-transactions-native',
+        params => params.get('asset_id')?.includes('/slip44:') ?? false,
+    ),
+    accountTransactions(
+        'evm-account-transactions-erc20',
+        params => params.get('asset_id')?.includes('/erc20:') ?? false,
+    ),
     {
         name: 'evm-balance-history',
         method: 'POST',
