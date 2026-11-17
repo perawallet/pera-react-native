@@ -11,10 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-
-// Matches ChainIconStack's 20px icons and "+N" chip.
-// lanekeep-ignore-next-line pera/no-numeric-sizes reason: stacked logo size, as ChainIconStack
-export const DAPP_LOGO_STACK_SIZE = 20
+import { DISCOVER_LOGO_STACK_SIZE } from '../../utils/discoverLayout'
 
 export const useStyles = makeStyles(theme => ({
     stack: {
@@ -30,18 +27,9 @@ export const useStyles = makeStyles(theme => ({
     stacked: {
         marginLeft: -theme.spacing.xs,
     },
-    logo: {
-        width: DAPP_LOGO_STACK_SIZE,
-        height: DAPP_LOGO_STACK_SIZE,
-        borderRadius: theme.borderRadius.full,
-        overflow: 'hidden',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: theme.colors.layerGray,
-    },
     more: {
-        width: DAPP_LOGO_STACK_SIZE,
-        height: DAPP_LOGO_STACK_SIZE,
+        width: DISCOVER_LOGO_STACK_SIZE,
+        height: DISCOVER_LOGO_STACK_SIZE,
         borderRadius: theme.borderRadius.full,
         alignItems: 'center',
         justifyContent: 'center',

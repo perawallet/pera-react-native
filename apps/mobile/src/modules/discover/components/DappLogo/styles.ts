@@ -11,16 +11,25 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { DISCOVER_ROW_LEAD_SIZE } from '../../utils/discoverLayout'
+import {
+    DISCOVER_LOGO_STACK_SIZE,
+    DISCOVER_ROW_LEAD_SIZE,
+} from '../../utils/discoverLayout'
 
-export const useStyles = makeStyles(theme => ({
-    logo: {
-        width: DISCOVER_ROW_LEAD_SIZE,
-        height: DISCOVER_ROW_LEAD_SIZE,
-        borderRadius: theme.borderRadius.full,
-        overflow: 'hidden',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: theme.colors.layerGray,
-    },
-}))
+type StyleProps = { size: 'row' | 'stack' }
+
+export const useStyles = makeStyles((theme, { size }: StyleProps) => {
+    const side =
+        size === 'stack' ? DISCOVER_LOGO_STACK_SIZE : DISCOVER_ROW_LEAD_SIZE
+    return {
+        logo: {
+            width: side,
+            height: side,
+            borderRadius: theme.borderRadius.full,
+            overflow: 'hidden',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: theme.colors.layerGray,
+        },
+    }
+})

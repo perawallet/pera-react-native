@@ -10,22 +10,20 @@
  limitations under the License
  */
 
-import type { Nullable } from '@perawallet/wallet-core-shared'
-
-/** Logos a folder row shows before the "+N" chip, like `ChainIconStack`. */
+/** dApps a folder row previews before the "+N" chip, like `ChainIconStack`. */
 export const DAPP_LOGO_STACK_MAX = 3
 
-export type DappLogoStack = {
-    visible: Nullable<string>[]
-    /** dApps past the visible logos, shown as "+N". */
+export type DappLogoStack<T> = {
+    visible: T[]
+    /** dApps past the visible ones, shown as "+N". */
     hiddenCount: number
 }
 
-/** The logos to stack and how many dApps are left over, out of `total`. */
-export const dappLogoStack = (
-    logos: readonly Nullable<string>[],
+/** The dApps to stack and how many are left over, out of `total`. */
+export const dappLogoStack = <T>(
+    items: readonly T[],
     total: number,
-): DappLogoStack => {
-    const visible = logos.slice(0, DAPP_LOGO_STACK_MAX)
+): DappLogoStack<T> => {
+    const visible = items.slice(0, DAPP_LOGO_STACK_MAX)
     return { visible, hiddenCount: Math.max(0, total - visible.length) }
 }

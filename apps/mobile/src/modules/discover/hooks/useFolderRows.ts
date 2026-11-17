@@ -11,8 +11,10 @@
  */
 
 import { useMemo } from 'react'
-import type { Nullable } from '@perawallet/wallet-core-shared'
-import { useDiscoverFavoritesStore } from '../store/useDiscoverFavoritesStore'
+import {
+    selectFolderFavorites,
+    useDiscoverFavoritesStore,
+} from '../store/useDiscoverFavoritesStore'
 import type { DiscoverFavorite } from '../types'
 import { DAPP_LOGO_STACK_MAX } from '../utils/dappLogoStack'
 
@@ -20,23 +22,11 @@ export type FolderRowItem = {
     id: string
     name: string
     count: number
-    /** The first dApps' logos, in folder order, for the row's logo stack. */
-    logos: Nullable<string>[]
+    /** The first dApps, in folder order, for the row's logo stack. */
+    previewDapps: DiscoverFavorite[]
 }
 
-/** The logos of the first favorites under `keys`, for a row's logo stack. */
-export const logosOf = (
-    keys: readonly string[],
-    favorites: Readonly<Record<string, DiscoverFavorite>>,
-): Nullable<string>[] =>
-    keys
-        .flatMap(key => {
-            const favorite = favorites[key]
-            return favorite ? [favorite.logo] : []
-        })
-        .slice(0, DAPP_LOGO_STACK_MAX)
-
-/** Every folder as a row (name, dApp count, first logos), newest first. */
+/** Every folder as a row (name, dApp count, first dApps), newest first. */
 export const useFolderRows = (): FolderRowItem[] => {
     const folders = useDiscoverFavoritesStore(s => s.folders)
     const folderOrder = useDiscoverFavoritesStore(s => s.folderOrder)
@@ -51,7 +41,10 @@ export const useFolderRows = (): FolderRowItem[] => {
                               id,
                               name: folder.name,
                               count: folder.items.length,
-                              logos: logosOf(folder.items, favorites),
+                              previewDapps: selectFolderFavorites(
+                                  { favorites, folders },
+                                  id,
+                              ).slice(0, DAPP_LOGO_STACK_MAX),
                           },
                       ]
                     : []

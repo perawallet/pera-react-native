@@ -32,7 +32,7 @@ export const DiscoverAllFoldersScreen = () => {
                     <FolderRow
                         name={item.name}
                         count={item.count}
-                        logos={item.logos}
+                        previewDapps={item.previewDapps}
                         icon='folder'
                         onPress={() => screen.openFolder(item.id)}
                         testID={`discover_all_folders_${item.id}`}

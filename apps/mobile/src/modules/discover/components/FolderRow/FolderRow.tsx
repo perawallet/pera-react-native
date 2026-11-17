@@ -11,17 +11,16 @@
  */
 
 import FolderIcon from '@assets/icons/discover/folder.svg'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { DappLogoStack } from '../DappLogoStack'
+import { DappLogoStack, type DappLogoStackProps } from '../DappLogoStack'
 import { useStyles } from './styles'
 
 export type FolderRowProps = {
     name: string
     count: number
-    /** The first dApps' logos, stacked before the count. */
-    logos?: Nullable<string>[]
+    /** The first dApps, their logos stacked before the count. */
+    previewDapps?: DappLogoStackProps['dapps']
     /** \`folder\`: the design's folder glyph; \`star\`: the All favorites entry. */
     icon: 'folder' | 'star'
     onPress: () => void
@@ -32,7 +31,7 @@ export type FolderRowProps = {
 export const FolderRow = ({
     name,
     count,
-    logos,
+    previewDapps,
     icon,
     onPress,
     testID,
@@ -65,9 +64,9 @@ export const FolderRow = ({
                     {name}
                 </PWText>
                 <PWView style={styles.countRow}>
-                    {logos ? (
+                    {previewDapps ? (
                         <DappLogoStack
-                            logos={logos}
+                            dapps={previewDapps}
                             total={count}
                         />
                     ) : null}

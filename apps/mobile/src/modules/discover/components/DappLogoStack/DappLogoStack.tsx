@@ -10,22 +10,23 @@
  limitations under the License
  */
 
-import type { Nullable } from '@perawallet/wallet-core-shared'
-import { PWIcon, PWImage, PWText, PWView } from '@components/core'
+import { PWText, PWView } from '@components/core'
+import type { DiscoverFavorite } from '../../types'
 import { dappLogoStack } from '../../utils/dappLogoStack'
+import { DappLogo } from '../DappLogo'
 import { useStyles } from './styles'
 
 export type DappLogoStackProps = {
-    /** The first dApps' logos, in display order. */
-    logos: Nullable<string>[]
+    /** The first dApps, in display order. */
+    dapps: Pick<DiscoverFavorite, 'url' | 'logo'>[]
     /** Every dApp in the row, for the "+N" chip. */
     total: number
 }
 
 /** Up to three overlapped dApp logos and a "+N" chip, like `ChainIconStack`. */
-export const DappLogoStack = ({ logos, total }: DappLogoStackProps) => {
+export const DappLogoStack = ({ dapps, total }: DappLogoStackProps) => {
     const styles = useStyles()
-    const { visible, hiddenCount } = dappLogoStack(logos, total)
+    const { visible, hiddenCount } = dappLogoStack(dapps, total)
     if (visible.length === 0) return null
 
     return (
@@ -33,28 +34,16 @@ export const DappLogoStack = ({ logos, total }: DappLogoStackProps) => {
             style={styles.stack}
             testID='discover_logo_stack'
         >
-            {visible.map((logo, index) => (
+            {visible.map((dapp, index) => (
                 <PWView
-                    // Logos repeat and can be null; the slot is the identity.
-                    // oxlint-disable-next-line react/no-array-index-key -- fixed slots, never reordered in place
-                    key={index}
+                    key={dapp.url}
                     style={[styles.slot, index > 0 && styles.stacked]}
                     testID={`discover_logo_stack_logo_${index}`}
                 >
-                    {logo ? (
-                        <PWImage
-                            source={{ uri: logo }}
-                            style={styles.logo}
-                        />
-                    ) : (
-                        <PWView style={styles.logo}>
-                            <PWIcon
-                                name='globe'
-                                size='xs'
-                                variant='secondary'
-                            />
-                        </PWView>
-                    )}
+                    <DappLogo
+                        logo={dapp.logo}
+                        size='stack'
+                    />
                 </PWView>
             ))}
             {hiddenCount > 0 ? (

@@ -84,12 +84,19 @@ describe('useFavoritesSection', () => {
         // Assert
         expect(result.current.favoriteCount).toBe(2)
         expect(result.current.folders).toEqual([
-            { id: 'folder-1', name: 'One', count: 1, logos: [null] },
+            {
+                id: 'folder-1',
+                name: 'One',
+                count: 1,
+                previewDapps: [
+                    expect.objectContaining({ url: 'https://a.io' }),
+                ],
+            },
         ])
         expect(result.current.hasMore).toBe(false)
     })
 
-    it("gives each folder its first dApps' logos in folder order", () => {
+    it("previews each folder's first dApps in folder order", () => {
         store().addFavorite({
             ...dapp('https://a.io'),
             logo: 'https://a.io/l.png',
@@ -101,13 +108,12 @@ describe('useFavoritesSection', () => {
 
         const { result } = renderHook(() => useFavoritesSection())
 
-        expect(result.current.folders[0]?.logos).toEqual([
-            null,
-            'https://a.io/l.png',
-        ])
+        expect(
+            result.current.folders[0]?.previewDapps.map(d => d.logo),
+        ).toEqual([null, 'https://a.io/l.png'])
     })
 
-    it('gives All favorites the newest logos first, at most three', () => {
+    it('previews All favorites newest first, at most three', () => {
         ;['a', 'b', 'c', 'd'].forEach(name =>
             store().addFavorite({
                 ...dapp(`https://${name}.io`),
@@ -117,7 +123,7 @@ describe('useFavoritesSection', () => {
 
         const { result } = renderHook(() => useFavoritesSection())
 
-        expect(result.current.favoriteLogos).toEqual([
+        expect(result.current.favoritePreviewDapps.map(d => d.logo)).toEqual([
             'https://d.io/l.png',
             'https://c.io/l.png',
             'https://b.io/l.png',
