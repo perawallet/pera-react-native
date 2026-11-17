@@ -398,6 +398,9 @@ describe('Flow: The balance chart of an account on Algorand and Ethereum', () =>
         expect(
             screen.queryByText('common.wealth_chart.excludes_networks'),
         ).toBeNull()
+        expect(
+            screen.queryByText('common.wealth_chart.failed_networks'),
+        ).toBeNull()
         expect(screen.queryByText('common.error.title')).toBeNull()
         expect(
             screen.queryByText('common.network_unavailable.title'),

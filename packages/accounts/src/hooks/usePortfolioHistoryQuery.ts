@@ -44,9 +44,11 @@ export type UsePortfolioHistoryQueryResult = {
     error: Nullable<Error>
     /** True when a source's chain has no portfolio history and no other chain has points to plot beside it. */
     isUnavailableOnNetwork: boolean
-    /** Chains whose history failed or isn't served while another chain's loaded: `data` plots the rest without them. */
+    /** Chains whose network serves no history while another chain's loaded: `data` plots the rest without them. */
     excludedChainIds: ChainId[]
-    /** `excludedChainIds` isn't empty: `data` falls short of the total of every source. */
+    /** Chains whose history failed to load while another chain's loaded: `data` plots the rest without them until `refetch` brings them back. */
+    failedChainIds: ChainId[]
+    /** A chain is excluded or failed: `data` falls short of the total of every source. */
     isPartial: boolean
     refetch: () => void
 }
@@ -148,15 +150,22 @@ export const usePortfolioHistoryQuery = (
                 isPartial && isLeftOut[index] ? [] : [index],
             )
             const counted = countedIndexes.map(index => results[index]!)
-            const excludedChainIds = isPartial
-                ? [
-                      ...new Set(
-                          groups
-                              .filter((_, index) => isLeftOut[index])
-                              .map(({ scope }) => scope.chainId),
-                      ),
-                  ]
-                : EMPTY_CHAIN_IDS
+            const chainIdsWhere = (flags: boolean[]): ChainId[] =>
+                isPartial
+                    ? [
+                          ...new Set(
+                              groups
+                                  .filter((_, index) => flags[index])
+                                  .map(({ scope }) => scope.chainId),
+                          ),
+                      ]
+                    : EMPTY_CHAIN_IDS
+            // Which chain fails a read changes from one period to the next,
+            // so a failure is named apart from a network that serves no history.
+            const failedChainIds = chainIdsWhere(
+                failed.map((isFailed, index) => isFailed && !isUnserved[index]),
+            )
+            const excludedChainIds = chainIdsWhere(isUnserved)
             return {
                 hasSourceMissing: countedIndexes.some(
                     index => isUnserved[index],
@@ -174,6 +183,7 @@ export const usePortfolioHistoryQuery = (
                     preferredValue: usdToPreferred(usdValue),
                 })),
                 excludedChainIds,
+                failedChainIds,
                 // A chain that holds its error is being asked again, not
                 // loading for the first time.
                 isPending: countedIndexes.some(
@@ -223,6 +233,9 @@ export const usePortfolioHistoryQuery = (
     const excludedChainIds = isUnavailableOnNetwork
         ? EMPTY_CHAIN_IDS
         : combined.excludedChainIds
+    const failedChainIds = isUnavailableOnNetwork
+        ? EMPTY_CHAIN_IDS
+        : combined.failedChainIds
 
     return {
         // A disabled query keeps its cached (and persisted) points; the chart
@@ -238,7 +251,8 @@ export const usePortfolioHistoryQuery = (
         error: combined.error,
         isUnavailableOnNetwork,
         excludedChainIds,
-        isPartial: excludedChainIds.length > 0,
+        failedChainIds,
+        isPartial: excludedChainIds.length > 0 || failedChainIds.length > 0,
         refetch: combined.refetchServed,
     }
 }

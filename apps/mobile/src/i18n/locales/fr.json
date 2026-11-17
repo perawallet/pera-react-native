@@ -1233,6 +1233,7 @@
             "empty_body": "Un graphique apparaîtra ici dès que vous aurez un historique de solde",
             "asset_empty_body": "Un graphique apparaîtra ici dès que vous aurez un historique de solde pour cet actif sur ce compte",
             "excludes_networks": "Ce graphique n'inclut pas encore les actifs {{networks}}",
+            "failed_networks": "Impossible de charger l'historique {{networks}}, ce graphique ne l'inclut donc pas",
             "currency_unavailable_body": "Ce graphique n'est pas disponible en {{currency}} pour le moment"
         },
         "webview": {

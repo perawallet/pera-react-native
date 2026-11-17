@@ -248,7 +248,7 @@ describe('usePortfolioHistoryQuery', () => {
         ])
     })
 
-    it('names every chain it leaves out, whether its history failed or its network serves none', async () => {
+    it('names a chain whose history failed apart from one whose network serves none', async () => {
         const BASE: ChainScope = {
             chainId: 'base' as ChainId,
             networkId: 'mainnet',
@@ -268,11 +268,9 @@ describe('usePortfolioHistoryQuery', () => {
         )
 
         await waitFor(() =>
-            expect(result.current.excludedChainIds).toEqual([
-                ETHEREUM.chainId,
-                BASE.chainId,
-            ]),
+            expect(result.current.failedChainIds).toEqual([ETHEREUM.chainId]),
         )
+        expect(result.current.excludedChainIds).toEqual([BASE.chainId])
         expect(result.current.isUnavailableOnNetwork).toBe(false)
         expect(result.current.data).toEqual([
             { datetime: new Date(1), preferredValue: new Decimal(20) },
@@ -357,8 +355,9 @@ describe('usePortfolioHistoryQuery', () => {
         )
 
         await waitFor(() =>
-            expect(result.current.excludedChainIds).toEqual([ETHEREUM.chainId]),
+            expect(result.current.failedChainIds).toEqual([ETHEREUM.chainId]),
         )
+        expect(result.current.excludedChainIds).toEqual([])
         expect(result.current.isPartial).toBe(true)
         expect(result.current.isError).toBe(false)
         expect(result.current.isPending).toBe(false)
@@ -439,7 +438,7 @@ describe('usePortfolioHistoryQuery', () => {
         )
 
         await waitFor(() =>
-            expect(result.current.excludedChainIds).toEqual([ETHEREUM.chainId]),
+            expect(result.current.failedChainIds).toEqual([ETHEREUM.chainId]),
         )
         expect(result.current.isError).toBe(false)
         expect(result.current.isPending).toBe(true)
@@ -479,7 +478,7 @@ describe('usePortfolioHistoryQuery', () => {
                 { wrapper: stableWrapper() },
             )
             await waitFor(() =>
-                expect(result.current.excludedChainIds).toEqual([
+                expect(result.current.failedChainIds).toEqual([
                     ETHEREUM.chainId,
                 ]),
             )
@@ -493,12 +492,12 @@ describe('usePortfolioHistoryQuery', () => {
             expect(result.current.isPending).toBe(false)
             expect(result.current.isError).toBe(false)
             expect(result.current.isRetrying).toBe(false)
-            expect(result.current.excludedChainIds).toEqual([ETHEREUM.chainId])
+            expect(result.current.failedChainIds).toEqual([ETHEREUM.chainId])
 
             retried.resolve([point(1, '5')])
 
             await waitFor(() =>
-                expect(result.current.excludedChainIds).toEqual([]),
+                expect(result.current.failedChainIds).toEqual([]),
             )
             expect(result.current.isPartial).toBe(false)
             expect(result.current.data).toEqual([
@@ -564,7 +563,7 @@ describe('usePortfolioHistoryQuery', () => {
             await waitFor(() => expect(ethereumCalls).toBe(2))
 
             expect(result.current.isPartial).toBe(false)
-            expect(result.current.excludedChainIds).toEqual([])
+            expect(result.current.failedChainIds).toEqual([])
             expect(result.current.isError).toBe(true)
             expect(result.current.error).toBe(blocked)
             expect(result.current.isPending).toBe(false)

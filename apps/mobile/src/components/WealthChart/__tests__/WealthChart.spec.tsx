@@ -58,6 +58,7 @@ const mockHistory = (
         error: null,
         isUnavailableOnNetwork: false,
         excludedChainIds: [],
+        failedChainIds: [],
         isPartial: false,
         refetch: vi.fn(),
         ...overrides,
@@ -211,11 +212,32 @@ describe('WealthChart', () => {
         ).toBeTruthy()
     })
 
+    it('names a network whose history failed apart from left-out ones, with a retry', () => {
+        const refetch = vi.fn()
+        mockHistory({
+            failedChainIds: [ETHEREUM.chainId],
+            isPartial: true,
+            refetch,
+        })
+
+        renderChart()
+        fireEvent.click(screen.getByTestId('wealth-chart-failed-retry'))
+
+        expect(
+            screen.getByText(
+                /Couldn't load \w+ history, so this chart leaves it out/,
+            ),
+        ).toBeTruthy()
+        expect(screen.queryByText(/doesn't include/)).toBeNull()
+        expect(refetch).toHaveBeenCalledTimes(1)
+    })
+
     it('shows no note when every network is charted', () => {
         mockHistory({})
 
         renderChart()
 
         expect(screen.queryByText(/doesn't include/)).toBeNull()
+        expect(screen.queryByTestId('wealth-chart-failed-retry')).toBeNull()
     })
 })

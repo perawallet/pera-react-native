@@ -1233,6 +1233,7 @@
             "empty_body": "You will see a chart here once you have some balance history",
             "asset_empty_body": "You will see a chart here once you have some balance history for this asset on this account",
             "excludes_networks": "This chart doesn't include {{networks}} assets yet",
+            "failed_networks": "Couldn't load {{networks}} history, so this chart leaves it out",
             "currency_unavailable_body": "This chart isn't available in {{currency}} right now"
         },
         "webview": {

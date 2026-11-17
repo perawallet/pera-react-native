@@ -16,7 +16,7 @@ import { useStyles } from './styles'
 import { useChartCurrencyFallback } from '@hooks/useChartCurrencyFallback'
 import { useLanguage } from '@hooks/useLanguage'
 import { BalanceLineChart } from '@components/BalanceLineChart'
-import { PWText } from '@components/core'
+import { PWButton, PWText, PWView } from '@components/core'
 import { networkListOf } from '@modules/chain-ui'
 import {
     isIntegrityRequiredError,
@@ -73,6 +73,7 @@ export const WealthChart = memo(function WealthChart({
         refetch,
         isUnavailableOnNetwork,
         excludedChainIds,
+        failedChainIds,
     } = usePortfolioHistoryQuery(sources, period, currencyScope, enabled)
     const fallback = useChartCurrencyFallback(currencyScope, {
         isError,
@@ -87,9 +88,12 @@ export const WealthChart = memo(function WealthChart({
         [data],
     )
 
-    const excludedNetworks = useMemo(
-        () => networkListOf(excludedChainIds, t),
-        [excludedChainIds, t],
+    const { excludedNetworks, failedNetworks } = useMemo(
+        () => ({
+            excludedNetworks: networkListOf(excludedChainIds, t),
+            failedNetworks: networkListOf(failedChainIds, t),
+        }),
+        [excludedChainIds, failedChainIds, t],
     )
 
     return (
@@ -119,6 +123,24 @@ export const WealthChart = memo(function WealthChart({
                         networks: excludedNetworks,
                     })}
                 </PWText>
+            )}
+            {shouldShowExcludedNetworks && failedNetworks !== '' && (
+                <PWView style={themeStyle.failedNote}>
+                    <PWText
+                        variant='caption'
+                        style={themeStyle.excludedNote}
+                    >
+                        {t('common.wealth_chart.failed_networks', {
+                            networks: failedNetworks,
+                        })}
+                    </PWText>
+                    <PWButton
+                        variant='link'
+                        title={t('common.retry.label')}
+                        onPress={refetch}
+                        testID='wealth-chart-failed-retry'
+                    />
+                </PWView>
             )}
         </>
     )
