@@ -11,12 +11,23 @@
  */
 
 import { useState, useCallback, useRef } from 'react'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
+import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
+import { SubmissionError } from '@perawallet/wallet-core-signing'
 import {
+    isQuoteFresh,
+    pickRefreshedQuote,
+    SWAP_QUOTE_EXECUTION_MARGIN_MS,
     SwapAccountUnsupportedError,
     SwapCosignUnsupportedError,
+    swapFailureStepOf,
+    swapOrderRefusalOf,
+    useCreateQuotesMutation,
     useExecuteSwapMutation,
     type ExecuteSwapResult,
     type SwapExecutionFailure,
+    type SwapFailureStep,
+    type SwapOrderRefusal,
     type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
 import { AssetFrozenError } from '@perawallet/wallet-core-transactions'
@@ -24,7 +35,6 @@ import { nativeAssetFor } from '@perawallet/wallet-core-assets'
 import {
     baseUnitsToDisplayUnits,
     formatNumber,
-    isPeraNetworkError,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { useNodeErrorMessage } from '@hooks/useNodeErrorMessage'
@@ -76,10 +86,8 @@ export type SwapExecutionOutcome =
           kind: 'error'
           phase: SwapExecutionErrorPhase
           message: string
-          // The classification-aware title resolveErrorCopy computed, for
-          // failures specific enough to name themselves (the honest
-          // unknown-outcome headline, a frozen holding). Absent for the
-          // generic prepare/signing failures, which keep the caller's default.
+          // Names the step that stopped the swap (or the honest
+          // unknown-outcome headline); always set by this hook.
           title?: string
       }
 
@@ -105,11 +113,21 @@ type UseSwapExecutionResult = {
     reset: () => void
 }
 
-type DisplayedFailure = { message: string; title?: string }
+type DisplayedFailure = { message: string; title: string }
 
-const isProviderRejection = (error: unknown): boolean =>
-    isPeraNetworkError(error) &&
-    (error.kind === 'client' || error.kind === 'server')
+const FAILED_TITLE_KEY_BY_STEP: Record<SwapFailureStep, I18nKey> = {
+    prepare: i18nKey('swap.execution.failed_title.prepare'),
+    approval: i18nKey('swap.execution.failed_title.approval'),
+    swap: i18nKey('swap.execution.failed_title.swap'),
+}
+
+const BODY_KEY_BY_REFUSAL: Record<SwapOrderRefusal, I18nKey> = {
+    'insufficient-balance': i18nKey(
+        'swap.execution.order_insufficient_balance_body',
+    ),
+    'provider-unavailable': i18nKey('swap.execution.provider_unavailable_body'),
+    'provider-declined': i18nKey('swap.execution.provider_failed_body'),
+}
 
 // Status is set synchronously with the returned outcome rather than derived
 // from the mutation's result, which React Query publishes a macrotask later:
@@ -135,19 +153,20 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
     const { handleSubmitError, playFailure } = useTransactionOutcomeHaptics()
     const { mutateAsync: executeSwap, reset: resetMutation } =
         useExecuteSwapMutation()
+    const { mutateAsync: createQuotes } = useCreateQuotesMutation()
     const cancelRequestedRef = useRef(false)
 
     const describeFailure = useCallback(
         (failure: SwapExecutionFailure): DisplayedFailure => {
+            const stepTitle = t(
+                FAILED_TITLE_KEY_BY_STEP[swapFailureStepOf(failure)],
+            )
+            const copyOf = (error: unknown) =>
+                resolveErrorCopy(error, t, stepTitle, getMessage)
             switch (failure.reason) {
                 case 'asset-frozen': {
-                    const copy = resolveErrorCopy(
-                        new AssetFrozenError(failure.assetId),
-                        t,
-                        undefined,
-                        getMessage,
-                    )
-                    return { message: copy.body, title: copy.title }
+                    const copy = copyOf(new AssetFrozenError(failure.assetId))
+                    return { message: copy.body, title: stepTitle }
                 }
                 case 'insufficient-native-balance': {
                     const nativeAsset = nativeAssetFor(failure.chainId)
@@ -166,48 +185,69 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                             amount: `${sign}${integer}${fraction}`,
                             symbol,
                         }),
-                        title: t('swap.execution.insufficient_native_title', {
-                            symbol,
-                        }),
+                        title: stepTitle,
                     }
                 }
                 // The backend answered, so the chosen provider couldn't build
-                // this swap; another provider usually can.
+                // this swap; the refusal code says what to do about it.
                 case 'prepare-failed': {
-                    if (isProviderRejection(failure.error)) {
-                        return {
-                            message: t('swap.execution.provider_failed_body'),
-                        }
+                    const refusal = swapOrderRefusalOf(failure.error)
+                    return {
+                        message: refusal
+                            ? t(BODY_KEY_BY_REFUSAL[refusal])
+                            : copyOf(failure.error).body,
+                        title: stepTitle,
                     }
-                    const copy = resolveErrorCopy(
-                        failure.error,
-                        t,
-                        undefined,
-                        getMessage,
-                    )
-                    return { message: copy.body, title: copy.title }
+                }
+                case 'route-unverified': {
+                    return {
+                        message: t('swap.execution.route_unverified_body', {
+                            network:
+                                chainDisplayNameOf(failure.chainId) ??
+                                failure.chainId,
+                        }),
+                        title: stepTitle,
+                    }
+                }
+                case 'quote-mismatch': {
+                    return {
+                        message: t('swap.execution.quote_mismatch_body'),
+                        title: stepTitle,
+                    }
+                }
+                case 'no-signable-steps':
+                case 'unsupported-steps': {
+                    return {
+                        message: t('swap.execution.unsupported_order_body'),
+                        title: stepTitle,
+                    }
+                }
+                case 'signing-failed': {
+                    return {
+                        message: t('swap.execution.signing_failed_body'),
+                        title: stepTitle,
+                    }
                 }
                 // An offline failure surfaces its own copy — never the algod
                 // fallback, which would blame the node for a request that
-                // never reached it.
+                // never reached it. An unknown outcome keeps its own headline:
+                // "failed" would be a lie when the transaction may have landed.
                 case 'submission-failed':
                 case 'reverted': {
-                    const copy = resolveErrorCopy(
-                        failure.error,
-                        t,
-                        undefined,
-                        getMessage,
-                    )
-                    return { message: copy.body, title: copy.title }
-                }
-                case 'no-signable-steps':
-                case 'unsupported-steps':
-                case 'quote-mismatch':
-                case 'signing-failed': {
-                    return { message: t('swap.execution.error_body') }
+                    const copy = copyOf(failure.error)
+                    const isUnknownOutcome =
+                        failure.error instanceof SubmissionError &&
+                        failure.error.classification === 'unknown-outcome'
+                    return {
+                        message: copy.body,
+                        title: isUnknownOutcome ? copy.title : stepTitle,
+                    }
                 }
                 case 'quantum-blocked': {
-                    return { message: t(failure.translationKey) }
+                    return {
+                        message: t(failure.translationKey),
+                        title: stepTitle,
+                    }
                 }
             }
         },
@@ -237,9 +277,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                     playFailure()
                     setStatus('error')
                     setError({ phase: 'prepare', message })
-                    return title === undefined
-                        ? { kind: 'error', phase: 'prepare', message }
-                        : { kind: 'error', phase: 'prepare', message, title }
+                    return { kind: 'error', phase: 'prepare', message, title }
                 }
                 if (!isPrepared || cancelRequestedRef.current) {
                     setStatus('idle')
@@ -247,10 +285,35 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                 }
             }
 
+            // The form prices a quote once, and the destination step above can
+            // be slow: a quote about to lapse is re-priced rather than bounced.
+            let quoteToRun = quote
+            if (
+                !isQuoteFresh(
+                    quote,
+                    Date.now() + SWAP_QUOTE_EXECUTION_MARGIN_MS,
+                )
+            ) {
+                setStatus('preparing')
+                const offers = await createQuotes(quote.request).catch(
+                    (): SwapQuote[] => [],
+                )
+                if (cancelRequestedRef.current) {
+                    setStatus('idle')
+                    return { kind: 'cancelled' }
+                }
+                const refreshed = pickRefreshedQuote(quote, offers)
+                if (!refreshed) {
+                    setStatus('idle')
+                    return { kind: 'stale-quote' }
+                }
+                quoteToRun = refreshed
+            }
+
             let result: ExecuteSwapResult
             try {
                 result = await executeSwap({
-                    quote,
+                    quote: quoteToRun,
                     signingSource: {
                         name: t('swap.signing.source_name'),
                         description: t('swap.signing.source_description'),
@@ -300,14 +363,13 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                 }
                 const { message, title } = describeFailure(result.failure)
                 setError({ phase, message })
-                return title === undefined
-                    ? { kind: 'error', phase, message }
-                    : { kind: 'error', phase, message, title }
+                return { kind: 'error', phase, message, title }
             }
             return { kind: result.kind }
         },
         [
             executeSwap,
+            createQuotes,
             t,
             getMessage,
             describeFailure,

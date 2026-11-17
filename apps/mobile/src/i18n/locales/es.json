@@ -4258,9 +4258,18 @@
         },
         "execution": {
             "error_title": "Swap fallido",
-            "error_body": "Algo salió mal durante el swap. Vuelve a intentarlo.",
+            "failed_title": {
+                "prepare": "No se pudo iniciar el swap",
+                "approval": "Aprobación fallida",
+                "swap": "Swap fallido"
+            },
             "provider_failed_body": "Este proveedor no pudo completar el swap. Prueba con otro proveedor.",
-            "insufficient_native_title": "{{symbol}} insuficiente",
+            "provider_unavailable_body": "El proveedor no está disponible en este momento. Inténtalo de nuevo en unos instantes.",
+            "route_unverified_body": "Pera aún no puede verificar el contrato de swap de este proveedor en {{network}}, así que no se firmó nada. Prueba con otro proveedor o inténtalo de nuevo más tarde.",
+            "quote_mismatch_body": "Las transacciones del proveedor no coincidían con esta cotización, así que no se firmó nada. Inténtalo de nuevo o elige otro proveedor.",
+            "unsupported_order_body": "Pera no puede completar la orden de este proveedor, así que no se firmó nada. Elige otro proveedor.",
+            "signing_failed_body": "No se pudo firmar la transacción, así que no se envió. Inténtalo de nuevo.",
+            "order_insufficient_balance_body": "Tu saldo no cubre esta cantidad y la comisión de red. Prueba con una cantidad menor o añade fondos para la comisión.",
             "insufficient_native_body": "Esta cuenta necesita al menos {{amount}} {{symbol}} más para cubrir este swap, sus comisiones y el saldo mínimo. Añade más {{symbol}} y vuelve a intentarlo.",
             "success_title": "Swap completado",
             "success_body": "Swap de {{fromAsset}} a {{toAsset}} completado correctamente",
