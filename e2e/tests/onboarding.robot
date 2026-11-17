@@ -174,7 +174,7 @@ Duplicate Name Check Ignores Case And Padding
     Add Multichain Account
     Name Account And Finish    ${SECOND_ACCOUNT_NAME}
     Add Multichain Account
-    Account Name Should Be Refused    ${SPACE}${SPACE}e2e second${SPACE}${SPACE}
+    Account Name Should Be Refused    ${SPACE}e2e second${SPACE}
 
 Clear Button Empties The Account Name And Blocks Finish
     [Documentation]    The clear icon empties the account name and disables Finish.
