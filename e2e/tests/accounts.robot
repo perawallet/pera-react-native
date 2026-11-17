@@ -201,7 +201,7 @@ Watch Account Lists Algorand Alone And Offers No Key Actions
     Open Account Options
     Options Should Offer No Key Actions
     # An absence only counts once every row has been on screen, and the sheet outgrows it.
-    Scroll Until Tappable    ${OPTION_REMOVE}
+    Repeat Keyword    3 times    Swipe By Percent    50    75    50    30    duration=400ms
     Options Should Offer No Key Actions
 
 Funded Account Shows Portfolio And ALGO Holding

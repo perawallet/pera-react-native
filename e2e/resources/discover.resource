@@ -48,9 +48,14 @@ Open Discover
 Discover Should Be Loaded
     Wait Until Page Contains Element    ${DISCOVER_LOADED}    timeout=60s
     Page Should Not Contain Element    ${AGE_GATE_RETRY}
-    Page Should Not Contain Element    ${WEBVIEW_OFFLINE}
-    Page Should Not Contain Element    ${WEBVIEW_TIMEOUT}
-    Page Should Not Contain Element    ${WEBVIEW_UNAVAILABLE}
+    # The WebView is in the tree before its page answers and an error view only mounts after, so
+    # the views are watched for a few seconds. A slow failure past that still reads as loaded.
+    FOR    ${i}    IN RANGE    5
+        Page Should Not Contain Element    ${WEBVIEW_OFFLINE}
+        Page Should Not Contain Element    ${WEBVIEW_TIMEOUT}
+        Page Should Not Contain Element    ${WEBVIEW_UNAVAILABLE}
+        Sleep    1s
+    END
 
 Clear One-Time Flags
     [Documentation]    Developer > Debug Tools > Manage Cache: resets the age declaration and every

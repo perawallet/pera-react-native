@@ -20,6 +20,7 @@ ${ACCOUNT_OPTION_COPY_ADDRESS}          tid=account_network_algorand_copy
 # network row behind "See all", so that row cannot mark the sheet as open.
 ${ACCOUNT_OPTION_RENAME}                tid=account_option_rename-account
 ${ACCOUNT_ALGORAND_EXPAND}              tid=account_network_algorand_expand
+${ACCOUNT_ALGORAND_MIN_BALANCE}         tid=account_algorand_min_balance
 # The switcher row and the header trigger take their testID as accessibility label, which on iOS
 # hides the account name inside them; only the options sheet's title shows it on both platforms.
 ${ACCOUNT_SWITCHER_ROW_ANY}             xpath=//*[starts-with(@content-desc,'account_switcher_row_') or starts-with(@resource-id, 'account_switcher_row_') or starts-with(@name,'account_switcher_row_')]
@@ -352,8 +353,10 @@ Open Rescan For Rekeyed Accounts
     Tap    ${MORE_BUTTON}
     Wait Until Settled    ${ACCOUNT_ALGORAND_EXPAND}
     # An account on Algorand alone opens with this row already expanded; a tap would fold it.
-    ${expanded}=    Is Shown    ${SCAN_REKEYED_OPTION}
+    # The option can sit below the fold, out of Android's tree; the row's first child cannot.
+    ${expanded}=    Is Shown    ${ACCOUNT_ALGORAND_MIN_BALANCE}
     IF    not ${expanded}    Tap    ${ACCOUNT_ALGORAND_EXPAND}
+    Scroll Until Tappable    ${SCAN_REKEYED_OPTION}
     Wait Until Settled    ${SCAN_REKEYED_OPTION}
     Tap    ${SCAN_REKEYED_OPTION}
 

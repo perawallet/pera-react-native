@@ -441,6 +441,7 @@ Swap History Pair Fills The Form With Its Pair
         Tap    ${SWAP_FLIP_BUTTON}
     END
     Wait Until Page Does Not Contain Element    ${RECEIVE_BALANCE_IS_USDC}    timeout=15s
+    Scroll Until Tappable    ${ALGO_TO_USDC_CHIP}
     Tap    ${ALGO_TO_USDC_CHIP}
     Wait Until Page Contains Element    ${RECEIVE_BALANCE_IS_USDC}    timeout=15s
 

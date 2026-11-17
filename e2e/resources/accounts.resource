@@ -185,7 +185,8 @@ Open Algorand Account Option
     ...                An account on Algorand alone opens that row expanded, where a tap would fold it.
     [Arguments]    ${option}
     Open Account Options
-    ${expanded}=    Run Keyword And Return Status    Page Should Contain Element    ${option}
+    # The option itself can sit below the fold, out of Android's tree; the row's first child cannot.
+    ${expanded}=    Run Keyword And Return Status    Page Should Contain Element    ${OPTION_ALGORAND_MIN_BALANCE}
     IF    not ${expanded}
         Scroll Until Tappable    ${OPTION_ALGORAND_EXPAND}
         Tap    ${OPTION_ALGORAND_EXPAND}
@@ -218,6 +219,9 @@ Ensure Account On Ethereum
     Skip If    $ETHEREUM_OFFERED is False
     ...    The account cannot be put on Ethereum: this build is not multichain (CHAINS without ethereum).
     Open Account Options
+    # The passphrase action sits in the sheet's top row, which the scroll below takes out of
+    # Android's tree, so it is read first.
+    ${keyed}=    Run Keyword And Return Status    Page Should Contain Element    ${OPTION_VIEW_PASSPHRASE}
     # Android lists only what is on screen, so the row is scrolled to before its absence counts.
     ${offered}=    Run Keyword And Return Status    Scroll Until Present    ${ETHEREUM_ROW_OR_SEE_ALL}
     # Scrolling the whole sheet to find nothing is slow, and a build does not change mid-run, so
@@ -226,7 +230,6 @@ Ensure Account On Ethereum
     IF    ${offered}
         Set Global Variable    ${ETHEREUM_OFFERED}    ${True}
     ELSE
-        ${keyed}=    Run Keyword And Return Status    Scroll Until Present    ${OPTION_VIEW_PASSPHRASE}
         Should Be True    ${keyed}
         ...    The selected account offers no Ethereum and no passphrase: a case left a keyless account selected.
         Set Global Variable    ${ETHEREUM_OFFERED}    ${False}

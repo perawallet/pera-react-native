@@ -315,6 +315,7 @@ Open Swap History
     ${has_history}=    Run Keyword And Return Status
     ...    Wait Until Keyword Succeeds    20s    1s    Scroll Until Present    ${HISTORY_SEE_ALL}
     Skip If    not ${has_history}    This account has no swap history, so See all is not offered.
+    Scroll Until Tappable    ${HISTORY_SEE_ALL}
     Tap    ${HISTORY_SEE_ALL}
     Wait Until Page Contains Element    ${HISTORY_LIST}    timeout=15s
 
