@@ -383,6 +383,7 @@ const {
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
+    isRegisteredBottomSheetOpen: () => false,
     useBottomSheetStore: () => ({
         requestByType: mockRequestByType,
     }),

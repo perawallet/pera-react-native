@@ -48,7 +48,10 @@ import {
     PasskeyHDWalletRequiredContent,
 } from '@modules/settings'
 import { SendAccountSelectionContent } from '@modules/transactions'
-import { SendFundsContent } from '@modules/transactions/routes'
+import {
+    SEND_FUNDS_SHEET_ID,
+    SendFundsContent,
+} from '@modules/transactions/routes'
 
 export const registerAppBottomSheets = (): void => {
     registerBottomSheet('asset-opt-in', OptInConfirmationContent)
@@ -57,7 +60,11 @@ export const registerAppBottomSheets = (): void => {
         OptInAccountSelectionContent,
     )
     registerBottomSheet('account-actions', AccountActionsContent)
-    registerBottomSheet('send-funds', SendFundsContent)
+    // Same id as the in-app Send buttons: two Send sheets with different
+    // assets fight over the shared send store and crash with a render loop.
+    registerBottomSheet('send-funds', SendFundsContent, {
+        id: SEND_FUNDS_SHEET_ID,
+    })
     registerBottomSheet('send-account-selection', SendAccountSelectionContent)
     registerBottomSheet('deeplink-chain-selection', ChainSelectionContent)
     registerBottomSheet('bidali', BidaliContent)

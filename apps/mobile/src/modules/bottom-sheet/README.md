@@ -106,6 +106,14 @@ React callers can use the same path via `useBottomSheet().requestByType(...)`.
 Props are type-checked against the registry entry, so a typo or a missing field
 is a compile-time error.
 
+A `requestByType` call gets a fresh request id, so it never dedupes against the
+same sheet opened directly with `request({ id })`. When a sheet is opened both
+ways, register it with that id (`registerBottomSheet('send-funds',
+SendFundsContent, { id: SEND_FUNDS_SHEET_ID })`) so a second open joins the open
+sheet instead of stacking another. A request for a sheet that is already open
+is ignored, so a caller that writes shared state before opening checks
+`isRegisteredBottomSheetOpen(type)` first.
+
 For a worked example, the `ASSET_OPT_IN` case in
 `apps/mobile/src/modules/deeplink/hooks/useDeepLink.ts` and `useAddAssetView`'s
 `handleRequestAdd` both open `OptInConfirmationContent` through

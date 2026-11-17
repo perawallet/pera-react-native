@@ -13,7 +13,10 @@
 import { useCallback } from 'react'
 import type { Decimal } from 'decimal.js'
 import type { AssetRef, ChainId } from '@perawallet/wallet-core-chain-contract'
-import { useBottomSheetStore } from '@modules/bottom-sheet'
+import {
+    isRegisteredBottomSheetOpen,
+    useBottomSheetStore,
+} from '@modules/bottom-sheet'
 import { useSendFundsStore } from '@modules/transactions'
 
 export type SendFundsDeeplinkPrefill = {
@@ -59,6 +62,10 @@ export const useSendFundsDeeplink = (): SendFundsDeeplinkHandler => {
             note,
             shouldContinueToConfirm,
         }) => {
+            // The open Send reads the same store, so prefilling it would
+            // rewrite the user's recipient and amount under them.
+            if (isRegisteredBottomSheetOpen('send-funds')) return
+
             const sendFundsStore = useSendFundsStore.getState()
             // Reset stale prefill from a previous deeplink so a partial
             // prefill (e.g. address-only) doesn't inherit an old amount.
