@@ -126,13 +126,18 @@ fi
 DISTRIBUTION=$(./tools/release/resolve-distribution.sh)
 export DISTRIBUTION
 
-# The Fastfile reads ENV["RELEASE_NOTES"] for both the Firebase and Play
-# release notes, falling back to "Build <n>" only when the key is unset.
+# The Fastfile reads ENV["RELEASE_NOTES"] for the Firebase release notes
+# (Play's What's new reads CI_RELEASE_NOTES_SUMMARY alone), falling back to
+# "Build <n>" only when the key is unset.
 # Ruby's "" is truthy, so exporting an empty string here would defeat that
 # fallback outright whenever the allow_failure changelog job produced
 # nothing, and testers would get a build with blank notes instead of the
 # fallback label.
-if [ -n "${CI_OUT_CHANGELOG_TEXT:-}" ]; then
+# pera-admin's few-line summary of the release, when it has one for an rc or
+# stable tag, ahead of the changelog job's full list.
+if [ -n "${CI_RELEASE_NOTES_SUMMARY:-}" ]; then
+  export RELEASE_NOTES="$CI_RELEASE_NOTES_SUMMARY"
+elif [ -n "${CI_OUT_CHANGELOG_TEXT:-}" ]; then
   export RELEASE_NOTES="$CI_OUT_CHANGELOG_TEXT"
 fi
 

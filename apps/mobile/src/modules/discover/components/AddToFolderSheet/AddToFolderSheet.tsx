@@ -13,8 +13,7 @@
 import FolderIcon from '@assets/icons/discover/folder.svg'
 import FolderAddIcon from '@assets/icons/discover/folder-add.svg'
 import {
-    PWButton,
-    PWCheckbox,
+    PWIcon,
     PWSheetLayout,
     PWText,
     PWTouchableOpacity,
@@ -30,7 +29,7 @@ export type AddToFolderSheetProps = {
     url: string
 }
 
-/** Files a favorite into folders; each checkbox saves at once. */
+/** Files a favorite into a folder with one tap; resolves `AddToFolderSheetResult`. */
 export const AddToFolderSheet = ({ url }: AddToFolderSheetProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -43,14 +42,6 @@ export const AddToFolderSheet = ({ url }: AddToFolderSheetProps) => {
                 <SheetHeader
                     title={t('discover.add_to_folder.title')}
                     subtitle={sheet.dappName}
-                />
-            }
-            footer={
-                <PWButton
-                    variant='primary'
-                    title={t('discover.add_to_folder.done')}
-                    onPress={sheet.done}
-                    testID='discover_add_to_folder_done'
                 />
             }
         >
@@ -76,7 +67,9 @@ export const AddToFolderSheet = ({ url }: AddToFolderSheetProps) => {
                     <PWTouchableOpacity
                         key={folder.id}
                         style={styles.row}
-                        onPress={() => sheet.toggle(folder.id)}
+                        onPress={() => sheet.choose(folder.id)}
+                        disabled={folder.holdsDapp}
+                        accessibilityState={{ disabled: folder.holdsDapp }}
                         testID={`discover_add_to_folder_${folder.id}`}
                     >
                         <PWView style={styles.icon}>
@@ -89,11 +82,13 @@ export const AddToFolderSheet = ({ url }: AddToFolderSheetProps) => {
                         >
                             {folder.name}
                         </PWText>
-                        <PWCheckbox
-                            checked={folder.checked}
-                            onPress={() => sheet.toggle(folder.id)}
-                            testID={`discover_add_to_folder_${folder.id}_checkbox`}
-                        />
+                        {folder.holdsDapp ? (
+                            <PWIcon
+                                name='check'
+                                variant='positive'
+                                testID={`discover_add_to_folder_${folder.id}_check`}
+                            />
+                        ) : null}
                     </PWTouchableOpacity>
                 ))}
             </PWView>

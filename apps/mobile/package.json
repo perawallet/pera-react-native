@@ -250,6 +250,9 @@
       "android": {
         "exclude": [
           "@expensify/react-native-wallet"
+        ],
+        "buildFromSource": [
+          "expo-splash-screen"
         ]
       }
     }

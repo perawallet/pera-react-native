@@ -35,8 +35,12 @@ export interface DeeplinkChainAdapter {
     canParse(input: string): boolean
     /** Never throws; text that `canParse` declines is `malformed`. */
     parse(input: string): DeeplinkParseResult
-    /** Maps a chain-native asset id as a link spells it, or `undefined`. Never throws. */
-    toAssetRef(raw: string): Optional<AssetRef>
+    /**
+     * Maps a chain-native asset id as a link spells it, or `undefined`. Never
+     * throws. `chainId` is the link's chain: this adapter's own, or another
+     * chain sharing its `schemes`, which it serves too.
+     */
+    toAssetRef(raw: string, chainId: ChainId): Optional<AssetRef>
     /**
      * Builds the transaction a `chain-action` intent asks for; required of a
      * chain whose `parse` produces one. Throws {@link ChainActionBuildError}

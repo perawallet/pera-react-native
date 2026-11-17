@@ -22,6 +22,8 @@ import { PERA_LINK_CHAIN_ID, peraLinkChainFailure } from '../pera-link-chain'
 import {
     EVM_LINK_CAIP2,
     EVM_LINK_CHAIN_ID,
+    EVM_LINK_L2_CAIP2,
+    EVM_LINK_L2_CHAIN_ID,
     EVM_LINK_TESTNET_CAIP2,
     PERA_LINK_TESTNET_CAIP2,
     registerPeraLinkChains,
@@ -78,6 +80,69 @@ describe('Pera links with chain=', () => {
                 assetId: ERC20,
             })
         }
+    })
+
+    it("reads the asset id on a chain that shares another chain's adapter", () => {
+        const link = parseDeeplink(
+            `perawallet://app/asset-detail/?chain=${EVM_LINK_L2_CAIP2}&address=${EVM_ADDRESS}&assetId=${ERC20}`,
+        )
+
+        expect(link).toEqual({
+            type: DeeplinkType.ASSET_DETAIL,
+            sourceUrl: expect.any(String),
+            target: { chainId: EVM_LINK_L2_CHAIN_ID, networkId: 'mainnet' },
+            address: EVM_ADDRESS,
+            assetRef: { chainId: EVM_LINK_L2_CHAIN_ID, assetId: ERC20 },
+        })
+    })
+
+    describe("on a chain that shares another chain's adapter", () => {
+        const BASE_TARGET = {
+            chainId: EVM_LINK_L2_CHAIN_ID,
+            networkId: 'mainnet',
+        }
+        const BASE_TOKEN = { chainId: EVM_LINK_L2_CHAIN_ID, assetId: ERC20 }
+
+        it('pays a token on that chain', () => {
+            expect(
+                parseDeeplink(
+                    `perawallet://app/asset-transfer/?chain=${EVM_LINK_L2_CAIP2}&receiverAddress=${EVM_ADDRESS}&assetId=${ERC20}&amount=1000000`,
+                ),
+            ).toMatchObject({
+                type: DeeplinkType.TRANSFER,
+                target: BASE_TARGET,
+                receiverAddress: EVM_ADDRESS,
+                assetRef: BASE_TOKEN,
+            })
+        })
+
+        it('opts in to a token on that chain', () => {
+            expect(
+                parseDeeplink(
+                    `perawallet://app/asset-opt-in/?chain=${EVM_LINK_L2_CAIP2}&assetId=${ERC20}&address=${EVM_ADDRESS}`,
+                ),
+            ).toMatchObject({
+                type: DeeplinkType.ASSET_OPT_IN,
+                target: BASE_TARGET,
+                assetRef: BASE_TOKEN,
+            })
+        })
+
+        it('keeps both swap tokens on that chain', () => {
+            expect(
+                parseDeeplink(
+                    `perawallet://app/swap/?chain=${EVM_LINK_L2_CAIP2}&address=${EVM_ADDRESS}&assetInId=${ERC20}&assetOutId=${EVM_ADDRESS}`,
+                ),
+            ).toMatchObject({
+                type: DeeplinkType.SWAP,
+                target: BASE_TARGET,
+                assetInRef: BASE_TOKEN,
+                assetOutRef: {
+                    chainId: EVM_LINK_L2_CHAIN_ID,
+                    assetId: EVM_ADDRESS,
+                },
+            })
+        })
     })
 
     it('opens the native asset of the chain the link names when assetId is absent', () => {

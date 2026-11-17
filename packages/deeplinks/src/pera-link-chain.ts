@@ -19,7 +19,7 @@ import {
     type ChainPaymentData,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import { deeplinkAdapters } from './chain-adapter'
+import { deeplinkAdapters, type DeeplinkChainAdapter } from './chain-adapter'
 import type { ChainLinkTarget, DeeplinkParseFailure } from './models'
 import { readBaseUnits, readPeraAppLink } from './utils'
 
@@ -97,14 +97,26 @@ export const isPeraLinkAddress = (address: Optional<string>): boolean =>
     addressCodecs.has(PERA_LINK_CHAIN_ID) &&
     addressCodecs.get(PERA_LINK_CHAIN_ID).isValid(address)
 
-/** `undefined` when the id is not one the target chain spells, or its adapter isn't registered. */
+// Chains sharing a scheme register one adapter between them (every EVM chain
+// uses `ethereum:`), so a chain without its own is served by its scheme's owner.
+const deeplinkAdapterServing = (
+    chainId: ChainId,
+): Optional<DeeplinkChainAdapter> => {
+    if (deeplinkAdapters.has(chainId)) return deeplinkAdapters.get(chainId)
+    const { chains } = getProvider()
+    if (!chains.has(chainId)) return undefined
+    const { uriSchemes } = chains.get(chainId).descriptor
+    return deeplinkAdapters
+        .list()
+        .find(adapter => adapter.schemes.some(s => uriSchemes.includes(s)))
+}
+
+/** `undefined` when the id is not one the target chain spells, or no adapter serves it. */
 export const toLinkAssetRef = (
     target: ChainLinkTarget,
     raw: string,
 ): Optional<AssetRef> =>
-    deeplinkAdapters.has(target.chainId)
-        ? deeplinkAdapters.get(target.chainId).toAssetRef(raw)
-        : undefined
+    deeplinkAdapterServing(target.chainId)?.toAssetRef(raw, target.chainId)
 
 export const toPeraLinkAssetRef = (raw: string): Optional<AssetRef> =>
     toLinkAssetRef(peraLinkTarget(), raw)

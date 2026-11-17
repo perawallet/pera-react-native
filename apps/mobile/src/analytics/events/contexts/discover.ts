@@ -31,6 +31,9 @@ export enum DiscoverEvent {
     FolderCreate = 'discover_folder_create',
     FolderDappAdd = 'discover_folder_dapp_add',
     FolderDappRemove = 'discover_folder_dapp_remove',
+    FolderRename = 'discover_folder_rename',
+    FolderDelete = 'discover_folder_delete',
+    FolderRearrange = 'discover_folder_rearrange',
     FavoriteToastTap = 'discover_favorite_toast_tap',
     LegacyFavoritesImported = 'discover_legacy_favorites_imported',
     LegacyFavoritesImportFailed = 'discover_favorites_migration_failed',
@@ -70,6 +73,9 @@ export interface DiscoverRequiredPayloads {
     [DiscoverEvent.DetailsCloseTap]: {
         [Key.DappName]: string
         [Key.ChainId]?: ChainId
+    }
+    [DiscoverEvent.FolderRearrange]: {
+        [Key.RemovedCount]: number
     }
     [DiscoverEvent.LegacyFavoritesImported]: {
         [Key.ImportedCount]: number

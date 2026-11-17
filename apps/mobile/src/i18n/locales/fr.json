@@ -85,7 +85,23 @@
                 "create": "Créer",
                 "save": "Enregistrer"
             },
-            "empty": "Aucune dApp dans ce dossier pour le moment"
+            "empty": "Aucune dApp dans ce dossier pour le moment",
+            "menu": {
+                "title": "Options du dossier",
+                "open_label": "Options du dossier",
+                "rename": "Renommer le dossier",
+                "rearrange": "Réorganiser les dApps",
+                "delete": "Supprimer le dossier"
+            },
+            "rearrange": {
+                "title": "Réorganiser les dApps",
+                "remove_label": "Retirer {{name}} de ce dossier"
+            },
+            "delete_confirm": {
+                "title": "Supprimer ce dossier ?",
+                "body": "Ses dApps restent dans vos favoris.",
+                "confirm": "Supprimer le dossier"
+            }
         },
         "favorites": {
             "title": "Favoris",
@@ -105,7 +121,7 @@
         "add_to_folder": {
             "title": "Ajouter à un dossier",
             "new_folder": "Nouveau dossier",
-            "done": "Terminé"
+            "added": "Ajouté à {{folder}}"
         }
     },
     "account_menu": {

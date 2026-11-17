@@ -333,6 +333,15 @@ patchedDependencies:
   # has it (oblador/react-native-keychain#817). Only chosen by name, never by
   # default.
   "react-native-keychain@10.0.0": patches/react-native-keychain@10.0.0.patch
+  # Android 12L/13: registering the splash exit-animation listener makes the
+  # system hand its splash window to the app, and 12L/13 can hand over one it
+  # already removed; ActivityThread.syncTransferSplashscreenViewTransaction then
+  # crashes hiding a null leash (Android 14 aborts the handover instead). There
+  # the patch registers no listener, so the system plays its own exit animation.
+  # Gradle uses the prebuilt AAR unless apps/mobile's autolinking lists the
+  # package in `buildFromSource`; drop both once 13 is below minSdk or upstream
+  # skips the listener there.
+  "expo-splash-screen@58.0.11": patches/expo-splash-screen@58.0.11.patch
   # Android: Fabric can mount a GestureHandlerRootView while MainActivity is
   # being destroyed (an rn-screens header detach makes Reanimated flush mount
   # operations), when its parent chain no longer reaches a RootView. Upstream

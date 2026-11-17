@@ -338,12 +338,19 @@ describe('toAssetRef', () => {
     it('gives the checksummed ref for either spelling of a valid address', () => {
         const ref = { chainId: 'ethereum', assetId: TOKEN }
 
-        expect(adapter.toAssetRef(TOKEN)).toEqual(ref)
-        expect(adapter.toAssetRef(TOKEN_LOWER)).toEqual(ref)
+        expect(adapter.toAssetRef(TOKEN, 'ethereum')).toEqual(ref)
+        expect(adapter.toAssetRef(TOKEN_LOWER, 'ethereum')).toEqual(ref)
+    })
+
+    it("puts the ref on the chain the link names, not the adapter's", () => {
+        expect(adapter.toAssetRef(TOKEN, 'base')).toEqual({
+            chainId: 'base',
+            assetId: TOKEN,
+        })
     })
 
     it.each([BAD_CHECKSUM, 'native', ''])('gives nothing for %j', raw => {
-        expect(adapter.toAssetRef(raw)).toBeUndefined()
+        expect(adapter.toAssetRef(raw, 'ethereum')).toBeUndefined()
     })
 })
 

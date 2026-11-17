@@ -104,6 +104,54 @@ _ios_secrets: &ios_secrets
   - MAINNET_BAANX_CLIENT_KEY
   - MAINNET_BAANX_TENANT_ID
 
+# Explicit opt-in list for ios-staging after its Firebase profiles are provisioned.
+# Keep the shared names equal to ios_secrets; the Firebase lane reuses the
+# archive, and the existing App Store signing material must stay available.
+_ios_firebase_secrets: &ios_firebase_secrets
+  - APP_STORE_CONNECT_API_KEY_CONTENT_BASE64
+  - APP_STORE_CONNECT_API_KEY_ISSUER_ID
+  - APP_STORE_CONNECT_API_KEY_KEY_ID
+  - IOS_TEAM_ID
+  - IOS_CERTIFICATE_P12_BASE64
+  - IOS_CERTIFICATE_PASSWORD
+  - IOS_PROVISIONING_PROFILE_BASE64
+  - IOS_AUTOFILL_PROVISIONING_PROFILE_BASE64
+  # Read by the Fastfile to pin each target's profile; must name the profiles
+  # decoded from the two blobs above.
+  - IOS_PROVISIONING_PROFILE_NAME
+  - IOS_AUTOFILL_PROVISIONING_PROFILE_NAME
+  - IOS_GOOGLE_SERVICE_INFO_BASE64
+  - APP_STORE_APPLE_ID
+  - SLACK_WEBHOOK_URL
+  - MAINNET_BACKEND_URL
+  - TESTNET_BACKEND_URL
+  - BACKEND_API_KEY
+  - BACKUP_BASE_URL
+  - REOWN_PROJECT_ID
+  - MAINNET_BIDALI_API_KEY
+  - TESTNET_BIDALI_API_KEY
+  - MAINNET_CARD_W3CARD_APP_ID
+  - TESTNET_CARD_W3CARD_APP_ID
+  - MAINNET_CARD_KILLSWITCH_APP_ID
+  - TESTNET_CARD_KILLSWITCH_APP_ID
+  - MAINNET_CARD_AUTODRAW_PROGRAM_HASH
+  - TESTNET_CARD_AUTODRAW_PROGRAM_HASH
+  # See the android list.
+  - CARD_AUTODRAW_TEMPLATE_HASH
+  # Per environment. Unset, the Drive backup row reports itself unconfigured and
+  # app.config.builder drops the iCloud plugin, whose entitlements are fixed at
+  # build time.
+  - GOOGLE_IOS_CLIENT_ID
+  - IOS_ICLOUD_CONTAINER_ID
+  - TESTNET_BAANX_CLIENT_KEY
+  - MAINNET_BAANX_CLIENT_KEY
+  - MAINNET_BAANX_TENANT_ID
+  - FIREBASE_SERVICE_ACCOUNT_BASE64
+  - IOS_FIREBASE_PROVISIONING_PROFILE_BASE64
+  - IOS_FIREBASE_AUTOFILL_PROVISIONING_PROFILE_BASE64
+  - IOS_FIREBASE_PROVISIONING_PROFILE_NAME
+  - IOS_FIREBASE_AUTOFILL_PROVISIONING_PROFILE_NAME
+
 # tools/dev/validate-env.sh's web profile treats the Firebase Web SDK, GA4 and Sentry
 # names as optional because the extension degrades without them. They are
 # declared here anyway, which makes them required: the degradation is silent
@@ -309,7 +357,7 @@ pipelines:
         timeout_minutes: 60
       ios-staging:
         script: ci/jobs/ios.sh
-        needs: [test]
+        needs: [test, changelog]
         env:
           VALIDATE_PROFILE: ios
           ENVIRONMENT: staging
@@ -346,6 +394,9 @@ pipelines:
           OPTIMISM_SEPOLIA_RPC_URL: https://optimism-sepolia-rpc.publicnode.com,https://sepolia.optimism.io
           OPTIMISM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
           IOS_SCHEME: Pera7Staging
+          # Opt in only after adding the separate ad-hoc profile secrets:
+          # see docs/RELEASE.md, "iOS Firebase App Distribution".
+          # FIREBASE_IOS_DISTRIBUTION: 'true'
           # See ios-production.
           BUILD_NUMBER_OFFSET: '1000'
           SMOKE_PATCH_IPA: 'true'

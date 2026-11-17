@@ -317,6 +317,9 @@ patchedDependencies:
   '@walletconnect/jsonrpc-provider@1.0.14':
     hash: 2ef4eedc2eabcd66ab6069b87154f335141fe1ed2861fadb60274d13e0360145
     path: patches/@walletconnect__jsonrpc-provider@1.0.14.patch
+  expo-splash-screen@58.0.11:
+    hash: cdb12e5011fb1d0041690a8f54ff801a00429aed60cb04cc87210e4248dabcb1
+    path: patches/expo-splash-screen@58.0.11.patch
   falcon-1024@0.2.0:
     hash: 98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a
     path: patches/falcon-1024@0.2.0.patch
@@ -483,7 +486,7 @@ importers:
         version: 58.0.10(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))
       expo-splash-screen:
         specifier: 58.0.11
-        version: 58.0.11(expo@58.0.17)(typescript@7.0.2)
+        version: 58.0.11(patch_hash=cdb12e5011fb1d0041690a8f54ff801a00429aed60cb04cc87210e4248dabcb1)(expo@58.0.17)(typescript@7.0.2)
       msw:
         specifier: 'catalog:'
         version: 2.15.0(@types/node@26.1.2)(typescript@7.0.2)
@@ -974,7 +977,7 @@ importers:
         version: 58.0.4(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))
       expo-splash-screen:
         specifier: 58.0.11
-        version: 58.0.11(expo@58.0.17)(typescript@7.0.2)
+        version: 58.0.11(patch_hash=cdb12e5011fb1d0041690a8f54ff801a00429aed60cb04cc87210e4248dabcb1)(expo@58.0.17)(typescript@7.0.2)
       expo-sqlite:
         specifier: 'catalog:'
         version: 58.0.13(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)
@@ -16906,7 +16909,7 @@ snapshots:
 
   expo-server@58.0.5: {}
 
-  expo-splash-screen@58.0.11(expo@58.0.17)(typescript@7.0.2):
+  expo-splash-screen@58.0.11(patch_hash=cdb12e5011fb1d0041690a8f54ff801a00429aed60cb04cc87210e4248dabcb1)(expo@58.0.17)(typescript@7.0.2):
     dependencies:
       '@expo/config-plugins': 58.0.10(typescript@7.0.2)
       '@expo/image-utils': 0.12.5(typescript@7.0.2)
