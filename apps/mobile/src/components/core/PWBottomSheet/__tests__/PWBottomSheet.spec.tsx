@@ -20,6 +20,7 @@ import {
     type PWBottomSheetSize,
 } from '../PWBottomSheet'
 import { Text } from 'react-native'
+import { PWSheetSizeContext } from '../sheetSizeContext'
 
 // The shared mock's NotifierWrapper takes no ref; this one hands out a stable
 // handle per wrapper, as the real class-based NotifierRoot does.
@@ -406,6 +407,22 @@ describe('PWBottomSheet', () => {
         )
 
         expect(capturedProps.keyboardBehavior).toBe('interactive')
+    })
+
+    it('tells its content its size', () => {
+        const SizeProbe = () => (
+            <Text>{`size:${React.useContext(PWSheetSizeContext)}`}</Text>
+        )
+        render(
+            <PWBottomSheet
+                isVisible={true}
+                size='auto'
+            >
+                <SizeProbe />
+            </PWBottomSheet>,
+        )
+
+        expect(screen.getByText('size:auto')).toBeTruthy()
     })
 
     it('renders children when autoCreateContainer is false', () => {

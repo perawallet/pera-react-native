@@ -51,8 +51,9 @@ const { resolve, dismiss } = useBottomSheetResult<'confirm' | 'cancel'>()
     - A content-sized sheet (`size='auto'`) grows to fit and then scrolls, and
       uses the default container. A sheet whose body must scroll within a bound
       needs `autoCreateContainer={false}` so the scroll gets a definite height.
-      The `footer` slot only pins under that same flag; in an auto-sized sheet
-      put the buttons in the body instead.
+      The `footer` slot only pins under that same flag. In an `auto` sheet it is
+      pinned over the bottom and the body is padded by its height, so the
+      content-sized sheet counts the footer and never clips the body.
     - Exception: `ModelViewerBottomSheet` is a direct `BottomSheetModal` rather
       than a `PWBottomSheet`, so it owns its own inset.
 
