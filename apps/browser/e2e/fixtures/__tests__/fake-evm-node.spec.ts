@@ -11,7 +11,11 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { answerAggregate3, createFakeEvmNode } from '../fake-evm-node.mjs'
+import {
+    answerAggregate3,
+    CALL_RESULT,
+    createFakeEvmNode,
+} from '../fake-evm-node.mjs'
 
 const words = (...parts: string[]) => `0x${parts.join('')}`
 
@@ -101,5 +105,19 @@ describe('createFakeEvmNode', () => {
             id: 1,
             error: { code: 3, message: 'execution reverted' },
         })
+    })
+
+    it('answers a plain eth_call with one ABI word of 42', () => {
+        const node = createFakeEvmNode()
+
+        const reply = node.respond({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'eth_call',
+            params: [{ to: '0x000000000000000000000000000000000000dEaD' }],
+        })
+
+        expect(reply).toEqual({ jsonrpc: '2.0', id: 1, result: CALL_RESULT })
+        expect(BigInt(CALL_RESULT)).toBe(42n)
     })
 })
