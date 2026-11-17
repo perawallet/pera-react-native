@@ -34,10 +34,8 @@ import { LegacyFavoritesImporter } from '../../components/LegacyFavoritesImporte
 import { RowDivider } from '../../components/RowDivider'
 import { NewsCard } from '../../components/NewsCard'
 import { dappSubtitle } from '../../utils/dappSubtitle'
-import {
-    AccountHeaderToolbar,
-    useAccountDrawerPickerKind,
-} from '@modules/accounts'
+import { useAccountDrawerPickerKind } from '@modules/accounts'
+import { AccountHeaderToolbar } from '@modules/accounts/shell'
 import { useStyles } from './styles'
 import {
     useDiscoverHomeScreen,
