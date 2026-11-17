@@ -13,7 +13,7 @@
 import React, { useEffect, useRef } from 'react'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
-    isInteractiveSource,
+    isExternalCallbackSource,
     isSignRequestAwaitingPreflight,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
@@ -35,11 +35,11 @@ export const useTransactionRequestFAQDriver = () => {
     // overlay is up, so requesting while locked is safe.
     const openIdRef = useRef<Nullable<string>>(null)
 
+    // The sheet warns about requests from dApps, so the wallet's own flows (speed up, cancel,
+    // card, revoke, co-sign) neither open it nor use up its one showing.
     const candidate = pendingSignRequests.find(
         r =>
-            isInteractiveSource(r.sourceType) &&
-            r.type === 'transactions' &&
-            r.sourceType !== 'multisig-cosign',
+            isExternalCallbackSource(r.sourceType) && r.type === 'transactions',
     )
     // Held back with the review sheet, so it opens in the same commit and
     // stacks above it, and never for a request the chain check declines.

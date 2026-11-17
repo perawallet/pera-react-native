@@ -93,6 +93,34 @@ describe('useTransactionRequestFAQDriver', () => {
         expect(requestBottomSheetMock).not.toHaveBeenCalled()
     })
 
+    it.each(['walletconnect', 'webview', 'deeplink', 'injected'])(
+        'opens the FAQ for the first %s request',
+        sourceType => {
+            mockQueue([{ ...wcRequest, sourceType } as SignRequest])
+
+            renderHook(() => useTransactionRequestFAQDriver())
+
+            expect(requestBottomSheetMock).toHaveBeenCalledTimes(1)
+        },
+    )
+
+    it.each([
+        'replacement',
+        'card',
+        'gift-card',
+        'approval-revoke',
+        'multisig-cosign',
+    ])(
+        'keeps the FAQ unseen for a first %s request, which the wallet starts itself',
+        sourceType => {
+            mockQueue([{ ...wcRequest, sourceType } as SignRequest])
+
+            renderHook(() => useTransactionRequestFAQDriver())
+
+            expect(requestBottomSheetMock).not.toHaveBeenCalled()
+        },
+    )
+
     it('never opens the FAQ again once it has been seen', () => {
         preferences.hasSeenFAQ = true
         mockQueue([wcRequest])
