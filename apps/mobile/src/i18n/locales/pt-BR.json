@@ -3786,6 +3786,8 @@
             "fee_max": "Até <0/> · pago em {{symbol}}",
             "network_fee": "Taxa de rede",
             "nothing": "Nada",
+            "unknown": "Não dá para saber",
+            "unknown_receive_body": "O Pera não consegue saber o que você recebe deste app",
             "nothing_back_body": "Ativos saem da sua carteira e nada volta. Continue só se você esperava isso.",
             "nothing_back_title": "Você não recebe nada em troca",
             "permission_collection": "Todos os seus NFTs de {{collection}}",

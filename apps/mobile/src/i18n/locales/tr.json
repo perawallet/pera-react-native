@@ -3769,6 +3769,8 @@
             "fee_max": "En fazla <0/> · ödeme birimi: {{symbol}}",
             "network_fee": "Ağ ücreti",
             "nothing": "Hiçbir şey",
+            "unknown": "Bilinmiyor",
+            "unknown_receive_body": "Pera bu uygulamadan ne alacağını belirleyemiyor",
             "nothing_back_body": "Cüzdanından varlık çıkıyor ve karşılığında hiçbir şey gelmiyor. Bunu bekliyorsan devam et.",
             "nothing_back_title": "Karşılığında hiçbir şey almıyorsun",
             "permission_collection": "Tüm {{collection}} NFT’lerin",

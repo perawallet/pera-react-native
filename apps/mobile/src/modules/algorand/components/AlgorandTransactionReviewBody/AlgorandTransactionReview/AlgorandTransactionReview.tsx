@@ -98,6 +98,7 @@ export const AlgorandTransactionReview = ({
                 spend={impact.spend}
                 receive={impact.receive}
                 isLoading={!impact.hasImpact && impact.isSimulating}
+                isReceiveUnknown={impact.isReceiveUnknown}
             />
         )
     }

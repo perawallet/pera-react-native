@@ -155,6 +155,7 @@ describe('planner chain adapters', () => {
             hasCloseRemainder: false,
             closedAssetIds: [],
             createdAssets: [],
+            hasUntrackedReturn: false,
         }
         const adapter = registerFakePlannerAdapter({
             minFeeForSender: vi.fn(() => 4000n),
@@ -216,6 +217,7 @@ describe('planner helpers on a chain that registers no planner', () => {
             hasCloseRemainder: false,
             closedAssetIds: [],
             createdAssets: [],
+            hasUntrackedReturn: false,
         })
     })
 

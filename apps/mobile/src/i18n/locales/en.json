@@ -3769,6 +3769,8 @@
             "fee_max": "Up to <0/> · paid in {{symbol}}",
             "network_fee": "Network fee",
             "nothing": "Nothing",
+            "unknown": "Can't tell",
+            "unknown_receive_body": "Pera can't tell what you receive from this app",
             "nothing_back_body": "Assets leave your wallet and nothing comes back. Only continue if you expected that.",
             "nothing_back_title": "You get nothing back",
             "permission_collection": "All your {{collection}} NFTs",

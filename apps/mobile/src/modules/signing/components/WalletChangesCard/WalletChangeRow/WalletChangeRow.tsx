@@ -26,12 +26,15 @@ export type WalletChangeRowProps = {
     label: string
     /** Unset when nothing moves on this side. */
     item?: Optional<BalanceImpactItem>
+    /** With no item: the side may still change, but Pera can't tell how. */
+    isUnknown?: boolean
     testID?: string
 }
 
 export const WalletChangeRow = ({
     label,
     item,
+    isUnknown = false,
     testID,
 }: WalletChangeRowProps) => {
     const styles = useStyles()
@@ -54,7 +57,7 @@ export const WalletChangeRow = ({
             ) : (
                 <PWView style={styles.emptyIcon}>
                     <PWIcon
-                        name='minus'
+                        name={isUnknown ? 'question-mark' : 'minus'}
                         size='sm'
                         variant='secondary'
                     />
@@ -68,7 +71,18 @@ export const WalletChangeRow = ({
                         weight={600}
                         style={styles.amount}
                     >
-                        {t('signing.review.nothing')}
+                        {isUnknown
+                            ? t('signing.review.unknown')
+                            : t('signing.review.nothing')}
+                    </PWText>
+                )}
+                {!item && isUnknown && (
+                    <PWText
+                        variant='captionMedium'
+                        weight={400}
+                        style={styles.label}
+                    >
+                        {t('signing.review.unknown_receive_body')}
                     </PWText>
                 )}
                 {isPlainAmount && (

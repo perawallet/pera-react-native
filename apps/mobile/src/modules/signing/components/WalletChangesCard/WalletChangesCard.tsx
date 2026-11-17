@@ -24,12 +24,15 @@ export type WalletChangesCardProps = {
     receive: readonly BalanceImpactItem[]
     /** Shown in place of the rows while the changes are still being worked out. */
     isLoading?: boolean
+    /** An empty receive side may still hold something Pera can't see. */
+    isReceiveUnknown?: boolean
 }
 
 export const WalletChangesCard = ({
     spend,
     receive,
     isLoading = false,
+    isReceiveUnknown = false,
 }: WalletChangesCardProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -39,11 +42,13 @@ export const WalletChangesCard = ({
         items: readonly BalanceImpactItem[],
         label: string,
         testID: string,
+        isUnknown = false,
     ) =>
         items.length === 0 ? (
             <WalletChangeRow
                 label={label}
-                testID={`${testID}_nothing`}
+                isUnknown={isUnknown}
+                testID={`${testID}_${isUnknown ? 'unknown' : 'nothing'}`}
             />
         ) : (
             items.map(item => (
@@ -94,6 +99,7 @@ export const WalletChangesCard = ({
                 receive,
                 t('signing.review.you_receive'),
                 'review_wallet_receive',
+                isReceiveUnknown,
             )}
             {netChange && (
                 <PWView

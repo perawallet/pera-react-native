@@ -3761,6 +3761,8 @@
             "fee_max": "Bis zu <0/> · bezahlt in {{symbol}}",
             "network_fee": "Netzwerkgebühr",
             "nothing": "Nichts",
+            "unknown": "Unbekannt",
+            "unknown_receive_body": "Pera kann nicht erkennen, was du von dieser App erhältst",
             "nothing_back_body": "Assets verlassen deine Wallet und nichts kommt zurück. Fahre nur fort, wenn du das erwartest.",
             "nothing_back_title": "Du bekommst nichts zurück",
             "permission_collection": "Alle deine {{collection}}-NFTs",

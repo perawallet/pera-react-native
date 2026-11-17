@@ -75,6 +75,8 @@ export type UseBalanceImpactSummaryResult = {
      * partial impact.
      */
     simulationFailed: boolean
+    /** Nothing visibly comes back, but an app call may still credit the user, so "Nothing" would be a guess. */
+    isReceiveUnknown: boolean
 }
 
 export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
@@ -194,6 +196,7 @@ export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
             hasImpact: receive.length > 0 || spend.length > 0,
             isSimulating,
             simulationFailed,
+            isReceiveUnknown: receive.length === 0 && impact.hasUntrackedReturn,
         }
     }, [
         impact,

@@ -351,6 +351,12 @@ export type BalanceImpact = {
      * existing asset, so it produces no delta.
      */
     createdAssets: BalanceImpactCreatedAsset[]
+    /**
+     * A call in the group can give the user something no transfer shows, such
+     * as a position kept in app state, so an empty receive side is unknown
+     * rather than nothing.
+     */
+    hasUntrackedReturn: boolean
 }
 
 /** A dApp's request to sign transactions, as it sent it. */
@@ -1025,6 +1031,7 @@ const NO_BALANCE_IMPACT: BalanceImpact = {
     hasCloseRemainder: false,
     closedAssetIds: [],
     createdAssets: [],
+    hasUntrackedReturn: false,
 }
 
 /** No impact on a chain with no planner: there is nothing to compute it from. */

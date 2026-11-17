@@ -282,6 +282,38 @@ describe('useBalanceImpactSummary', () => {
         expect(result.current.simulationFailed).toBe(true)
     })
 
+    describe('when an app call sits in the group', () => {
+        const appCall = {
+            sender: USER,
+            fee: 1000n,
+            applicationTransaction: { applicationId: 1_167_143_153n },
+        } as unknown as PeraDisplayableTransaction
+
+        it('calls an empty receive side unknown, not nothing', () => {
+            mockTransactions([appCall, spendAlgo])
+
+            const { result } = renderHook(() => useBalanceImpactSummary())
+
+            expect(result.current.isReceiveUnknown).toBe(true)
+        })
+
+        it('keeps a receive side it can see as known', () => {
+            mockTransactions([appCall, spendAlgo, receiveNft])
+
+            const { result } = renderHook(() => useBalanceImpactSummary())
+
+            expect(result.current.isReceiveUnknown).toBe(false)
+        })
+    })
+
+    it('keeps "nothing" for a plain payment with nothing back', () => {
+        mockTransactions([spendAlgo])
+
+        const { result } = renderHook(() => useBalanceImpactSummary())
+
+        expect(result.current.isReceiveUnknown).toBe(false)
+    })
+
     it('surfaces a close-remainder sweep as a full-balance spend row', () => {
         mockTransactions([closeAlgo])
 

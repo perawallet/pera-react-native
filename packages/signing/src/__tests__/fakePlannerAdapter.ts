@@ -129,6 +129,7 @@ export const fakePlannerAdapter = (
         hasCloseRemainder: false,
         closedAssetIds: [],
         createdAssets: [],
+        hasUntrackedReturn: false,
     })),
     needsSimulation: vi.fn(() => false),
     simulateGroup: vi.fn(async () => []),

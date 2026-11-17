@@ -244,6 +244,22 @@ describe('computeBalanceImpact', () => {
         expect(totalFeeMicroAlgos).toBe(0n)
     })
 
+    it('marks a group with an app call as possibly returning what no transfer shows', () => {
+        const appCall = {
+            sender: USER,
+            fee: 1000n,
+            applicationTransaction: { applicationId: 1167143153n },
+        } as unknown as PeraDisplayableTransaction
+
+        expect(
+            computeBalanceImpact([appCall, payment()], users)
+                .hasUntrackedReturn,
+        ).toBe(true)
+        expect(
+            computeBalanceImpact([payment()], users).hasUntrackedReturn,
+        ).toBe(false)
+    })
+
     describe('asset creation', () => {
         it('credits every asset the user mints in the group', () => {
             const { createdAssets } = computeBalanceImpact(
