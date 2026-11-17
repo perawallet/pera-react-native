@@ -16,6 +16,7 @@ import {
     discoverAccounts,
     discoverDelegatedAccounts,
     discoverWalletCandidates,
+    isFoundActiveOnlyElsewhere,
     mergeWalletCandidates,
 } from '../account-discovery'
 import type { GetPublicKey } from '../chain-adapter'
@@ -691,5 +692,57 @@ describe('mergeWalletCandidates', () => {
         )
 
         expect(merged.failedChainIds).toEqual(['base'])
+    })
+})
+
+describe('isFoundActiveOnlyElsewhere', () => {
+    const accountOn = (
+        chains: Partial<Record<ChainId, 'discovery' | 'created'>>,
+    ): WalletAccount =>
+        ({
+            chains: Object.fromEntries(
+                Object.entries(chains).map(([chainId, enabledBy]) => [
+                    chainId,
+                    { address: `${chainId}-address`, enabledBy },
+                ]),
+            ),
+        }) as unknown as WalletAccount
+
+    it('is true when every account was found active only on other chains', () => {
+        const accounts = [
+            accountOn({ algorand: 'created', ethereum: 'discovery' }),
+            accountOn({ algorand: 'created', base: 'discovery' }),
+        ]
+
+        expect(
+            isFoundActiveOnlyElsewhere(accounts, 'algorand' as ChainId),
+        ).toBe(true)
+    })
+
+    it('is false when any account was found active on the chain', () => {
+        const accounts = [
+            accountOn({ algorand: 'created', ethereum: 'discovery' }),
+            accountOn({ algorand: 'discovery' }),
+        ]
+
+        expect(
+            isFoundActiveOnlyElsewhere(accounts, 'algorand' as ChainId),
+        ).toBe(false)
+    })
+
+    it('is false for an account discovery did not find active anywhere', () => {
+        const accounts = [
+            accountOn({ algorand: 'created', ethereum: 'created' }),
+        ]
+
+        expect(
+            isFoundActiveOnlyElsewhere(accounts, 'algorand' as ChainId),
+        ).toBe(false)
+    })
+
+    it('is false with no accounts', () => {
+        expect(isFoundActiveOnlyElsewhere([], 'algorand' as ChainId)).toBe(
+            false,
+        )
     })
 })

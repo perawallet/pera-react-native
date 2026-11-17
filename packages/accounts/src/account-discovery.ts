@@ -217,6 +217,26 @@ export async function discoverWalletCandidates({
 }
 
 /**
+ * True when wallet discovery found every account active on some chain and none
+ * active on `chainId`, so a lookup that only matters for accounts with history
+ * on that chain can be skipped. An account discovery
+ * did not stamp, such as the first account offered for want of activity or one
+ * imported another way, counts as unknown and keeps the lookup.
+ */
+export const isFoundActiveOnlyElsewhere = (
+    accounts: readonly WalletAccount[],
+    chainId: ChainId,
+): boolean =>
+    accounts.length > 0 &&
+    accounts.every(account => {
+        const entries = Object.entries(account.chains)
+        return (
+            entries.some(([, entry]) => entry?.enabledBy === 'discovery') &&
+            account.chains[chainId]?.enabledBy !== 'discovery'
+        )
+    })
+
+/**
  * A retry adds to the walk before it, so one that hears from fewer chains drops
  * no account found active: an index keeps every chain either walk read, and a
  * chain counts as checked once either walk heard from it.

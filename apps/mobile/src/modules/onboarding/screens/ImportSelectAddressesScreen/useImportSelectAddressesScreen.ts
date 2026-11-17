@@ -26,6 +26,7 @@ import {
     chainAccountOf,
     hdIndexOf,
     importableCandidate,
+    isFoundActiveOnlyElsewhere,
     signingKeyOn,
     useSyncCandidateAccounts,
     type LocalAccount,
@@ -275,8 +276,14 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                         ].filter(address => address !== ''),
                     ),
                 ]
-                const discoveredRekeyedAccounts =
-                    await scanRekeyed(scanAddresses)
+                // Nothing found active on Algorand has accounts rekeyed to it worth a wait; a
+                // later "Scan for rekeyed accounts" still finds any.
+                const discoveredRekeyedAccounts = isFoundActiveOnlyElsewhere(
+                    accountsToAdd,
+                    ALGORAND_CHAIN_ID,
+                )
+                    ? []
+                    : await scanRekeyed(scanAddresses)
 
                 if (
                     discoveredRekeyedAccounts === REKEY_SCAN_UNAVAILABLE ||
