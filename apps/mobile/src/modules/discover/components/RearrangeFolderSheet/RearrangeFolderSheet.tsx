@@ -51,7 +51,7 @@ export const RearrangeFolderSheet = ({
     const { remove, reorder } = sheet
 
     const renderItem = useCallback(
-        ({ item, drag, isActive }: RenderItemParams<RearrangeEntry>) => (
+        ({ item, drag }: RenderItemParams<RearrangeEntry>) => (
             <ScaleDecorator activeScale={0.97}>
                 <PWView
                     style={styles.row}
@@ -80,9 +80,10 @@ export const RearrangeFolderSheet = ({
                     >
                         {item.dapp.name}
                     </PWText>
+                    {/* Never toggles `disabled`: that remounts the touchable holding the
+                        touch, and the stale responder eats the next tap (Android). */}
                     <PWTouchableOpacity
                         onPressIn={drag}
-                        disabled={isActive}
                         style={styles.dragHandle}
                     >
                         <PWIcon

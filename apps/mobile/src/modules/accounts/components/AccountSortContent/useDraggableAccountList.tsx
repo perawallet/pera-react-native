@@ -40,7 +40,7 @@ export const useDraggableAccountList = ({
     const styles = useStyles()
 
     const renderItem = useCallback(
-        ({ item, drag, isActive }: RenderItemParams<WalletAccount>) => (
+        ({ item, drag }: RenderItemParams<WalletAccount>) => (
             <ScaleDecorator activeScale={0.97}>
                 <PWView
                     style={styles.draggableRow}
@@ -52,9 +52,10 @@ export const useDraggableAccountList = ({
                             showChevron={false}
                         />
                     </PWView>
+                    {/* Never toggles `disabled`: that remounts the touchable holding the
+                        touch, and the stale responder eats the next tap (Android). */}
                     <PWTouchableOpacity
                         onPressIn={drag}
-                        disabled={isActive}
                         style={styles.dragHandle}
                     >
                         <PWIcon
