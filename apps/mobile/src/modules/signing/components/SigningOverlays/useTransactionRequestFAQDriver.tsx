@@ -14,6 +14,7 @@ import React, { useEffect, useRef } from 'react'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     isExternalCallbackSource,
+    isInteractiveSource,
     isSignRequestAwaitingPreflight,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
@@ -35,12 +36,20 @@ export const useTransactionRequestFAQDriver = () => {
     // overlay is up, so requesting while locked is safe.
     const openIdRef = useRef<Nullable<string>>(null)
 
+    // The request the review sheet presents, the same pick as useSignRequestDriver: a dApp
+    // request queued behind the wallet's own speed up or card review must not open the FAQ
+    // over that review.
+    const presented = pendingSignRequests.find(r =>
+        isInteractiveSource(r.sourceType),
+    )
     // The sheet warns about requests from dApps, so the wallet's own flows (speed up, cancel,
     // card, revoke, co-sign) neither open it nor use up its one showing.
-    const candidate = pendingSignRequests.find(
-        r =>
-            isExternalCallbackSource(r.sourceType) && r.type === 'transactions',
-    )
+    const candidate =
+        presented &&
+        isExternalCallbackSource(presented.sourceType) &&
+        presented.type === 'transactions'
+            ? presented
+            : undefined
     // Held back with the review sheet, so it opens in the same commit and
     // stacks above it, and never for a request the chain check declines.
     const next =
