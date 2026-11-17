@@ -121,7 +121,7 @@
         "add_to_folder": {
             "title": "Klasöre ekle",
             "new_folder": "Yeni klasör",
-            "done": "Tamam"
+            "added": "Klasöre eklendi: {{folder}}"
         }
     },
     "account_menu": {

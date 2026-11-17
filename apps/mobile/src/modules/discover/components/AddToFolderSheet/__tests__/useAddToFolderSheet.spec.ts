@@ -59,81 +59,111 @@ describe('useAddToFolderSheet', () => {
         })
     })
 
-    it('lists folders newest first and checks the ones holding the dApp', () => {
-        // Arrange
+    it('lists folders newest first and marks the ones holding the dApp', () => {
         const holding = store().createFolder('Swap', URL)
         const other = store().createFolder('NFTs')
 
-        // Act
         const { result } = renderHook(() => useAddToFolderSheet({ url: URL }))
 
-        // Assert
         expect(result.current.dappName).toBe('Tinyman')
         expect(result.current.folders).toEqual([
-            { id: other, name: 'NFTs', checked: false },
-            { id: holding, name: 'Swap', checked: true },
+            { id: other, name: 'NFTs', holdsDapp: false },
+            { id: holding, name: 'Swap', holdsDapp: true },
         ])
     })
 
-    it('toggle files and unfiles the dApp immediately and tracks it', () => {
-        // Arrange
+    it('choose adds the dApp, tracks it and resolves with the folder name', () => {
         const id = store().createFolder('Swap')
         const { result } = renderHook(() => useAddToFolderSheet({ url: URL }))
 
-        // Act
-        act(() => result.current.toggle(id))
+        act(() => result.current.choose(id))
 
-        // Assert
         expect(store().folders[id]?.items).toEqual([URL])
-        expect(result.current.folders[0]?.checked).toBe(true)
         expect(trackEvent).toHaveBeenCalledWith(DiscoverEvent.FolderDappAdd)
-
-        act(() => result.current.toggle(id))
-        expect(store().folders[id]?.items).toEqual([])
-        expect(trackEvent).toHaveBeenCalledWith(DiscoverEvent.FolderDappRemove)
+        expect(resolve).toHaveBeenCalledWith({ folderName: 'Swap' })
     })
 
-    it('a new folder is created holding the dApp', async () => {
-        // Arrange
-        request.mockResolvedValue('Swap')
+    it('choose on a folder that already holds the dApp does nothing', () => {
+        const id = store().createFolder('Swap', URL)
         const { result } = renderHook(() => useAddToFolderSheet({ url: URL }))
 
-        // Act
+        act(() => result.current.choose(id))
+
+        expect(store().folders[id]?.items).toEqual([URL])
+        expect(trackEvent).not.toHaveBeenCalled()
+        expect(resolve).not.toHaveBeenCalled()
+    })
+
+    it('choose on a folder that is gone does nothing', () => {
+        const { result } = renderHook(() => useAddToFolderSheet({ url: URL }))
+
+        act(() => result.current.choose('missing'))
+
+        expect(trackEvent).not.toHaveBeenCalled()
+        expect(resolve).not.toHaveBeenCalled()
+    })
+
+    it('never removes the dApp from a folder', () => {
+        const first = store().createFolder('Swap', URL)
+        const second = store().createFolder('NFTs')
+        const { result } = renderHook(() => useAddToFolderSheet({ url: URL }))
+
+        act(() => result.current.choose(second))
+
+        expect(store().folders[first]?.items).toEqual([URL])
+        expect(store().folders[second]?.items).toEqual([URL])
+        expect(trackEvent).not.toHaveBeenCalledWith(
+            DiscoverEvent.FolderDappRemove,
+        )
+    })
+
+    it('a new folder is created holding the dApp and resolves with its name', async () => {
+        request.mockResolvedValue('NFTs')
+        const { result } = renderHook(() => useAddToFolderSheet({ url: URL }))
+
         await act(() => result.current.openNewFolder())
 
-        // Assert
         expect(store().folders['folder-1']).toMatchObject({
-            name: 'Swap',
+            name: 'NFTs',
             items: [URL],
         })
         expect(trackEvent).toHaveBeenCalledWith(DiscoverEvent.FolderCreate)
+        expect(resolve).toHaveBeenCalledWith({ folderName: 'NFTs' })
     })
 
-    it('a dismissed name sheet creates nothing', async () => {
+    it('a dismissed name sheet creates nothing and keeps the sheet open', async () => {
         request.mockResolvedValue(undefined)
         const { result } = renderHook(() => useAddToFolderSheet({ url: URL }))
 
         await act(() => result.current.openNewFolder())
 
         expect(store().folderOrder).toEqual([])
+        expect(resolve).not.toHaveBeenCalled()
+        expect(dismiss).not.toHaveBeenCalled()
+    })
+
+    it('ignores taps after the first choice while the sheet closes', async () => {
+        request.mockResolvedValue('NFTs')
+        const first = store().createFolder('Swap')
+        const second = store().createFolder('DEX')
+        const { result } = renderHook(() => useAddToFolderSheet({ url: URL }))
+
+        act(() => result.current.choose(first))
+        act(() => result.current.choose(second))
+        await act(() => result.current.openNewFolder())
+
+        expect(store().folders[first]?.items).toEqual([URL])
+        expect(store().folders[second]?.items).toEqual([])
+        expect(store().folderOrder).toHaveLength(2)
+        expect(resolve).toHaveBeenCalledTimes(1)
+        expect(resolve).toHaveBeenCalledWith({ folderName: 'Swap' })
     })
 
     it('closes itself when the dApp is no longer a favorite', () => {
-        // Arrange
         renderHook(() => useAddToFolderSheet({ url: URL }))
 
-        // Act
         act(() => store().removeFavorite(URL))
 
-        // Assert
         expect(dismiss).toHaveBeenCalledTimes(1)
-    })
-
-    it('done resolves the sheet', () => {
-        const { result } = renderHook(() => useAddToFolderSheet({ url: URL }))
-
-        result.current.done()
-
-        expect(resolve).toHaveBeenCalledWith('done')
     })
 })

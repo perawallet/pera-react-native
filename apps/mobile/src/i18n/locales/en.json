@@ -121,7 +121,7 @@
         "add_to_folder": {
             "title": "Add to Folder",
             "new_folder": "New folder",
-            "done": "Done"
+            "added": "Added to {{folder}}"
         }
     },
     "account_menu": {
