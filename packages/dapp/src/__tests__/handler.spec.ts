@@ -932,8 +932,13 @@ describe('DappConnectionHandler', () => {
             ).toBe(JsonRpcErrorCode.Unauthorized)
         })
 
-        it('shows a connected site no accounts while the wallet is locked', async () => {
-            const { transport, registry } = setup([connected()])
+        it('shows a connected site no accounts while the wallet is locked, without a site check', async () => {
+            const siteWarningOf = vi.fn(
+                async (): Promise<SiteWarningLevel> => 'blocked',
+            )
+            const { transport, registry } = setup([connected()], {
+                siteWarningOf,
+            })
             await registry.initialize()
 
             const response = await transport.send(
@@ -944,6 +949,7 @@ describe('DappConnectionHandler', () => {
             )
 
             expect(resultOf(response)).toEqual([])
+            expect(siteWarningOf).not.toHaveBeenCalled()
         })
 
         it('drops an approved address the wallet no longer lists as signing-capable', async () => {

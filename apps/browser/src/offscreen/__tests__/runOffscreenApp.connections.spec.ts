@@ -74,7 +74,7 @@ const {
     const lockState = {
         isLocked: vi.fn(() => false),
         subscribe: vi.fn(() => () => {}),
-        ready: Promise.resolve(),
+        ready: Promise.resolve<boolean | undefined>(false),
     }
     return {
         startConnectionsHost: vi.fn((_deps: ConnectionsHostDeps) => ({

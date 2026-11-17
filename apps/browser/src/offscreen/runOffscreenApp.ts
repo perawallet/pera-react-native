@@ -245,8 +245,7 @@ export const runOffscreenApp = async ({
     onConnectionsControlMessage(connectionsHost.handleControlMessage)
     // Baselines are taken here, after boot, so nothing restored is announced.
     watchWalletNotices(registry)
-    await lockState.ready
-    watchLockNotices(registry, lockState.isLocked(), lockState.subscribe)
+    watchLockNotices(registry, await lockState.ready, lockState.subscribe)
 
     logger.info('[offscreen] connections host started')
 }

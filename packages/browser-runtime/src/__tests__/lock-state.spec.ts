@@ -64,6 +64,25 @@ describe('lock state channel', () => {
         expect(state.isLocked()).toBe(true)
     })
 
+    it('passes on the first lock heard after the worker could not say', async () => {
+        isUnlocked.mockRejectedValue(new Error('session unavailable'))
+        const state = createOffscreenLockState(fake.chrome)
+        const listener = vi.fn()
+        state.subscribe(listener)
+
+        expect(await state.ready).toBeUndefined()
+        announce(false)
+        await vi.waitFor(() => expect(listener).toHaveBeenCalledWith(true))
+
+        expect(state.isLocked()).toBe(true)
+    })
+
+    it('resolves ready with the seeded state', async () => {
+        const state = createOffscreenLockState(fake.chrome)
+
+        expect(await state.ready).toBe(false)
+    })
+
     it('passes each lock and unlock on to subscribers', async () => {
         const state = createOffscreenLockState(fake.chrome)
         await state.ready

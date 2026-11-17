@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { isTrustedExtensionPageSender } from '@perawallet/wallet-extension-platform-chrome/messaging'
 
 // The offscreen document has no chrome.storage.session, where the vault's
@@ -23,7 +24,8 @@ type LockStateChange = {
     kind: 'changed'
     isLocked: boolean
 }
-type LockStateAnswer = { isLocked: boolean }
+/** Empty when the worker can't read the state. */
+type LockStateAnswer = { isLocked?: boolean }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null
@@ -37,7 +39,9 @@ const isLockStateChange = (value: unknown): value is LockStateChange =>
     value.kind === 'changed' &&
     typeof value.isLocked === 'boolean'
 
-const isLockStateAnswer = (value: unknown): value is LockStateAnswer =>
+const isKnownLockStateAnswer = (
+    value: unknown,
+): value is Required<LockStateAnswer> =>
     isRecord(value) && typeof value.isLocked === 'boolean'
 
 /**
@@ -58,13 +62,10 @@ export const installLockStateHost = ({
         (message, sender, sendResponse: (answer: LockStateAnswer) => void) => {
             if (!isLockStateQuery(message)) return false
             if (!isTrustedExtensionPageSender(sender, chromeLike)) return false
-            // A state that can't be read counts as locked.
-            void isUnlocked()
-                .then(
-                    unlocked => !unlocked,
-                    (): boolean => true,
-                )
-                .then(isLocked => sendResponse({ isLocked }))
+            void isUnlocked().then(
+                unlocked => sendResponse({ isLocked: !unlocked }),
+                () => sendResponse({}),
+            )
             return true
         },
     )
@@ -80,28 +81,33 @@ export const installLockStateHost = ({
 }
 
 export type OffscreenLockState = {
+    /** True while the state is unknown, so nothing reaches a page early. */
     isLocked: () => boolean
-    /** Called on each change after `ready`, never for the seed itself. */
+    /**
+     * Called on each change after `ready`, never for the seed itself. While
+     * the state is unknown, the first one heard counts as a change.
+     */
     subscribe: (listener: (isLocked: boolean) => void) => () => void
-    /** Settles once the worker has answered, or failed to. */
-    ready: Promise<void>
+    /** The seeded state once the worker has answered; undefined if it couldn't say. */
+    ready: Promise<Optional<boolean>>
 }
 
-/**
- * Offscreen side: mirrors the worker's lock state. Locked until the worker
- * answers, so nothing is pushed to a page before the state is known.
- */
+/** Offscreen side: mirrors the worker's lock state. */
 export const createOffscreenLockState = (
     chromeLike: typeof chrome = chrome,
 ): OffscreenLockState => {
     let isLocked = true
+    let isKnown = false
     let hasHeardChange = false
     let isSeeded = false
     const listeners = new Set<(isLocked: boolean) => void>()
 
     const apply = (next: boolean): void => {
-        if (next === isLocked) return
+        // An unknown state shows as locked, so a real lock after a failed seed
+        // would otherwise look like no change and never reach the pages.
+        if (isKnown && next === isLocked) return
         isLocked = next
+        isKnown = true
         if (isSeeded) listeners.forEach(listener => listener(next))
     }
 
@@ -117,13 +123,15 @@ export const createOffscreenLockState = (
     const ready = chromeLike.runtime.sendMessage(query).then(
         (answer: unknown) => {
             // A change that arrived while the query was in flight is newer.
-            if (!hasHeardChange && isLockStateAnswer(answer)) {
+            if (!hasHeardChange && isKnownLockStateAnswer(answer)) {
                 apply(answer.isLocked)
             }
             isSeeded = true
+            return isKnown ? isLocked : undefined
         },
         () => {
             isSeeded = true
+            return isKnown ? isLocked : undefined
         },
     )
 

@@ -309,7 +309,9 @@ and the granted accounts on unlock, and no `accountsChanged` carries accounts wh
 locked. A push has no request to carry the flag, so the offscreen document mirrors
 the lock state: the worker answers it once at boot and broadcasts each change,
 sending only the boolean (`packages/browser-runtime/src/lock-state.ts`). Until the
-worker answers, the mirror counts as locked. WalletConnect sessions are left
+worker answers, or if it can't read the state, the mirror counts as locked but
+unknown, so the first change it hears reaches pages even when it is a lock.
+WalletConnect sessions are left
 alone: the lock never withdraws their accounts.
 
 ### Approval queue

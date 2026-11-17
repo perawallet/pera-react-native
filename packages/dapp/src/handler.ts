@@ -182,15 +182,6 @@ export const createDappConnectionHandler = (
     const openProposals = new Set<string>()
     const pendingTimers = new Set<ReturnType<typeof setTimeout>>()
 
-    const hasNewSiteWarning = async (
-        connection: Connection,
-        origin: string,
-    ): Promise<boolean> =>
-        isWorseSiteWarning(
-            await readSiteWarning(deps.siteWarningOf, origin),
-            acknowledgedSiteWarningOf(connection),
-        )
-
     const getConnection = async (
         origin: string,
     ): Promise<Optional<DappConnection>> => {
@@ -636,22 +627,28 @@ export const createDappConnectionHandler = (
                 return handleSign(ctx, request, respond, 'sign-data')
             }
             case 'getAddresses': {
-                const existing = await getConnection(ctx.origin)
-                // A site flagged since its approval sees no accounts until it
-                // is approved again.
-                const connection =
-                    existing && !(await hasNewSiteWarning(existing, ctx.origin))
-                        ? existing
-                        : undefined
-                // A locked wallet shows a connected site no accounts, as
-                // `eth_accounts` does; signing still goes through the approval.
+                const connection = await getConnection(ctx.origin)
+                const isVisible =
+                    !!connection &&
+                    (await canSiteSeeAccounts(
+                        ctx.isWalletLocked,
+                        connection,
+                        ctx.origin,
+                        deps.siteWarningOf,
+                    ))
+                if (connection && isVisible) {
+                    return deliver(
+                        respond,
+                        jsonRpcResult(request.id, accountsFor(connection)),
+                    )
+                }
+                // Locked: no accounts, and signing still goes through the
+                // approval. Flagged since its approval: Unauthorized, so the
+                // site reconnects and the warning is shown before approval.
                 return deliver(
                     respond,
-                    connection
-                        ? jsonRpcResult(
-                              request.id,
-                              ctx.isWalletLocked ? [] : accountsFor(connection),
-                          )
+                    connection && ctx.isWalletLocked
+                        ? jsonRpcResult(request.id, [])
                         : jsonRpcError(
                               request.id,
                               JsonRpcErrorCode.Unauthorized,

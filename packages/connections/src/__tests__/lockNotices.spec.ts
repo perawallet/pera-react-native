@@ -16,7 +16,7 @@ import { watchLockNotices } from '../walletNotices'
 vi.mock('@perawallet/wallet-core-accounts', () => ({}))
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({}))
 
-const setup = (isLockedNow: boolean) => {
+const setup = (isLockedNow: boolean | undefined) => {
     const notify = vi.fn().mockResolvedValue(undefined)
     let emit: (isLocked: boolean) => void = () => {}
     const unsubscribe = vi.fn()
@@ -54,6 +54,16 @@ describe('watchLockNotices', () => {
 
         expect(notify.mock.calls).toEqual([
             [{ type: 'lock-changed', isLocked: false }],
+        ])
+    })
+
+    it('announces the first report when the starting state is unknown', () => {
+        const { notify, emit } = setup(undefined)
+
+        emit(true)
+
+        expect(notify.mock.calls).toEqual([
+            [{ type: 'lock-changed', isLocked: true }],
         ])
     })
 
