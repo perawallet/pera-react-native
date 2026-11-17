@@ -11,7 +11,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { maxUint256, stringToHex } from 'viem'
+import { getTypesForEIP712Domain, maxUint256, stringToHex } from 'viem'
 import {
     DAI_PERMIT_TYPED_DATA,
     EIP2612_PERMIT_TYPED_DATA,
@@ -254,6 +254,87 @@ describe('validateEthereumMessagePayload: typed-data chain', () => {
         ['an ERC-721 permit', ERC721_PERMIT_TYPED_DATA],
     ])('accepts %s bound to the connected chain', (_name, permit) => {
         expect(validate('sign-typed-data', [SENDER, permit]).ok).toBe(true)
+    })
+
+    describe('with a declared EIP712Domain', () => {
+        const declaring = <T extends { domain: object; types: object }>(
+            typedData: T,
+            chainId: unknown,
+            omitChainId = true,
+        ) => {
+            const { chainId: _chainId, ...rest } = typedData.domain as {
+                chainId?: unknown
+            }
+            const domain = chainId === undefined ? rest : { ...rest, chainId }
+            return {
+                ...typedData,
+                domain,
+                types: {
+                    EIP712Domain: getTypesForEIP712Domain({
+                        domain: omitChainId ? rest : { ...rest, chainId: 1 },
+                    }),
+                    ...typedData.types,
+                },
+            }
+        }
+
+        it.each([
+            ['an EIP-2612 permit', EIP2612_PERMIT_TYPED_DATA],
+            ['a Permit2 permit', PERMIT2_SINGLE_TYPED_DATA],
+            ['a DAI-style permit', DAI_PERMIT_TYPED_DATA],
+            ['an ERC-721 permit', ERC721_PERMIT_TYPED_DATA],
+        ])('refuses %s whose type omits chainId', (_name, permit) => {
+            for (const chainId of [1, 5, undefined]) {
+                const result = validate('sign-typed-data', [
+                    SENDER,
+                    declaring(permit, chainId),
+                ])
+
+                expect(result).toMatchObject({
+                    ok: false,
+                    failure: 'invalid-params',
+                })
+            }
+        })
+
+        it('refuses typed data whose type omits the chainId its domain names', () => {
+            const result = validate('sign-typed-data', [
+                SENDER,
+                declaring(MAIL_TYPED_DATA, 1),
+            ])
+
+            expect(result).toMatchObject({
+                ok: false,
+                failure: 'invalid-params',
+                message: expect.stringContaining('binds no chain'),
+            })
+        })
+
+        it('accepts typed data whose type and domain both omit chainId', () => {
+            const result = validate('sign-typed-data', [
+                SENDER,
+                declaring(MAIL_TYPED_DATA, undefined),
+            ])
+
+            expect(result.ok).toBe(true)
+        })
+
+        it('accepts a permit whose declared type holds chainId for the connected chain', () => {
+            const permit = declaring(EIP2612_PERMIT_TYPED_DATA, 1, false)
+
+            expect(validate('sign-typed-data', [SENDER, permit]).ok).toBe(true)
+        })
+
+        it('refuses a declared chainId for another chain', () => {
+            const permit = declaring(EIP2612_PERMIT_TYPED_DATA, 5, false)
+
+            const result = validate('sign-typed-data', [SENDER, permit])
+
+            expect(result).toMatchObject({
+                ok: false,
+                failure: 'invalid-params',
+            })
+        })
     })
 
     it('refuses typed data with a chainId when the network has no EIP-155 id', () => {
