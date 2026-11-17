@@ -12,3 +12,4 @@
 
 export { AccountHeaderToolbar } from './AccountHeaderToolbar'
 export type { AccountHeaderToolbarProps } from './AccountHeaderToolbar'
+export type { AccountHeaderToolbarEvents } from './useAccountHeaderToolbar'

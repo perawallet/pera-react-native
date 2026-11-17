@@ -100,6 +100,24 @@ describe('Flow: Discover Favorites screen', () => {
         await flush()
     })
 
+    it('Given favorites, when a query matches none, then No results shows instead of the explore prompt', async () => {
+        renderFavorites()
+        await screen.findByTestId(
+            'discover_all_favorites_dapp_https://vestige.example',
+        )
+
+        fireEvent.change(screen.getByTestId('discover_all_favorites_search'), {
+            target: { value: 'zzz' },
+        })
+
+        const empty = await screen.findByTestId(
+            'discover_all_favorites_dapp_empty',
+        )
+        expect(empty.textContent).toContain('discover.search.no_results')
+        expect(empty.textContent).not.toContain('discover.favorites.empty_body')
+        await flush()
+    })
+
     it('Given Rearrange, when a dApp is removed and Apply is tapped, then it leaves favorites', async () => {
         renderFavorites()
         fireEvent.click(

@@ -33,6 +33,8 @@ export enum DiscoverEvent {
     FavoritesRearrange = 'discover_favorites_rearrange',
     LegacyFavoritesImported = 'discover_legacy_favorites_imported',
     LegacyFavoritesImportFailed = 'discover_favorites_migration_failed',
+    QrScan = 'discover_qr_scan', // Opened the QR scanner from the Discover header
+    PasteLink = 'discover_paste_link_tap', // Tapped paste-a-link in the Discover header
 }
 
 /** Why one legacy favorites import attempt failed. */

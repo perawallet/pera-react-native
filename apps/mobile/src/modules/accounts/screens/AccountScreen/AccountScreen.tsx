@@ -28,8 +28,14 @@ import { ConfettiAnimation } from '@modules/accounts/components/ConfettiAnimatio
 import { AccountTabNavigator } from '@modules/accounts/components/AccountTabNavigator'
 import { HomeBannersStrip } from '@modules/banners'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { HomeEvent } from '@analytics'
 
 const AnimatedPWView = Animated.createAnimatedComponent(PWView)
+
+const HOME_HEADER_EVENTS = {
+    qrScan: HomeEvent.QrScan,
+    pasteLink: HomeEvent.PasteLink,
+} as const
 
 export const AccountScreen = () => {
     const insets = useSafeAreaInsets()
@@ -78,6 +84,7 @@ export const AccountScreen = () => {
             >
                 <AccountHeaderToolbar
                     testIDPrefix='account_screen'
+                    events={HOME_HEADER_EVENTS}
                     style={styles.iconBar}
                 />
                 <PWView style={styles.tabNavigator}>

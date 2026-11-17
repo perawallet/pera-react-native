@@ -24,7 +24,6 @@ import { SearchInput } from '@components/SearchInput'
 import { useLanguage } from '@hooks/useLanguage'
 import { DappRow } from '../../components/DappRow'
 import { FavoritesFilterBar } from '../../components/FavoritesFilterBar'
-import { dappSubtitle } from '../../utils/dappSubtitle'
 import { useDiscoverAllFavoritesScreen } from './useDiscoverAllFavoritesScreen'
 import { useStyles } from './styles'
 
@@ -68,12 +67,21 @@ export const DiscoverAllFavoritesScreen = () => {
                 <FavoritesFilterBar testID='discover_all_favorites_filters' />
             </PWView>
             <PWFlatList
+                // FlashList v2 re-anchors on the first visible row on every
+                // data change. This list only reorders (Rearrange, sort) or
+                // narrows (search, category) and never prepends, so anchoring
+                // only drags the viewport.
+                maintainVisibleContentPosition={{ disabled: true }}
                 data={screen.dapps}
                 keyExtractor={dapp => dapp.url}
                 contentContainerStyle={styles.list}
                 ListEmptyComponent={
                     <EmptyView
-                        body={t('discover.favorites.empty_body')}
+                        body={
+                            screen.isFilteredOut
+                                ? t('discover.search.no_results')
+                                : t('discover.favorites.empty_body')
+                        }
                         style={styles.empty}
                         testID='discover_all_favorites_dapp_empty'
                     />
@@ -81,7 +89,7 @@ export const DiscoverAllFavoritesScreen = () => {
                 renderItem={({ item }) => (
                     <DappRow
                         dapp={item}
-                        subtitle={dappSubtitle(item)}
+                        subtitle={screen.subtitleOf(item)}
                         isFavorite
                         isVerified={screen.isVerified(item.url)}
                         showChains={false}

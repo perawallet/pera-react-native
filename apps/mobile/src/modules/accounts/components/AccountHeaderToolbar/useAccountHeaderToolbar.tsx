@@ -11,10 +11,20 @@
  */
 
 import { useCallback } from 'react'
-import { trackEvent, HomeEvent } from '@analytics'
+import { trackEvent, type DiscoverEvent, type HomeEvent } from '@analytics'
 import { useModalState } from '@hooks/useModalState'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { PasteLinkContent } from '@modules/menu'
+
+/** The host screen's own events, so each screen's header taps stay apart. */
+export type AccountHeaderToolbarEvents = {
+    qrScan: HomeEvent.QrScan | DiscoverEvent.QrScan
+    pasteLink: HomeEvent.PasteLink | DiscoverEvent.PasteLink
+}
+
+export type UseAccountHeaderToolbarParams = {
+    events: AccountHeaderToolbarEvents
+}
 
 export type UseAccountHeaderToolbarResult = {
     isScannerOpen: boolean
@@ -24,17 +34,19 @@ export type UseAccountHeaderToolbarResult = {
 }
 
 /** The account header's QR scanner and paste-link actions, with their events. */
-export const useAccountHeaderToolbar = (): UseAccountHeaderToolbarResult => {
+export const useAccountHeaderToolbar = ({
+    events,
+}: UseAccountHeaderToolbarParams): UseAccountHeaderToolbarResult => {
     const scanner = useModalState()
     const { request } = useBottomSheet()
 
     const openScanner = useCallback(() => {
-        trackEvent(HomeEvent.QrScan)
+        trackEvent(events.qrScan)
         scanner.open()
-    }, [scanner])
+    }, [scanner, events.qrScan])
 
     const openPasteLink = useCallback(() => {
-        trackEvent(HomeEvent.PasteLink)
+        trackEvent(events.pasteLink)
         void request({
             contents: <PasteLinkContent />,
             options: {
@@ -43,7 +55,7 @@ export const useAccountHeaderToolbar = (): UseAccountHeaderToolbarResult => {
                 autoCreateContainer: false,
             },
         })
-    }, [request])
+    }, [request, events.pasteLink])
 
     return {
         isScannerOpen: scanner.isOpen,

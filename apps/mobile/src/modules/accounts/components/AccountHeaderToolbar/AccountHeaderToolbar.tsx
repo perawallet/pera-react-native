@@ -17,12 +17,17 @@ import { QRScannerView } from '@components/QRScannerView'
 import { NotificationsIcon } from '@modules/messages'
 import { routeCapabilities } from '@routes/capabilities'
 import { AccountSelection } from '../AccountSelection'
-import { useAccountHeaderToolbar } from './useAccountHeaderToolbar'
+import {
+    useAccountHeaderToolbar,
+    type AccountHeaderToolbarEvents,
+} from './useAccountHeaderToolbar'
 import { useStyles } from './styles'
 
 export type AccountHeaderToolbarProps = {
     /** Prefix of every button's test id, e.g. `account_screen`. */
     testIDPrefix: string
+    /** The host screen's QR and paste-link events. */
+    events: AccountHeaderToolbarEvents
     style?: StyleProp<ViewStyle>
 }
 
@@ -32,10 +37,11 @@ export type AccountHeaderToolbarProps = {
  */
 export const AccountHeaderToolbar = ({
     testIDPrefix,
+    events,
     style,
 }: AccountHeaderToolbarProps) => {
     const styles = useStyles()
-    const toolbar = useAccountHeaderToolbar()
+    const toolbar = useAccountHeaderToolbar({ events })
 
     return (
         <>

@@ -24,9 +24,12 @@ export type UseFavoritesFilterBarResult = {
     openSort: () => void
 }
 
+// Both sheets render PWSheetLayout, which scrolls only without gorhom's
+// auto container.
 const FILTER_SHEET_OPTIONS = {
     size: 'auto',
     enablePanDownToClose: true,
+    autoCreateContainer: false,
 } as const
 
 /** The two favorites chips: the current category and sort, each opening its sheet. */

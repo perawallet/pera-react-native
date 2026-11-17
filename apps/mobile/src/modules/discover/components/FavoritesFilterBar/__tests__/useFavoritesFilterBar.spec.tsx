@@ -64,4 +64,27 @@ describe('useFavoritesFilterBar', () => {
 
         expect(request).toHaveBeenCalledTimes(2)
     })
+
+    // PWSheetLayout scrolls only without gorhom's auto container; jsdom
+    // cannot show a sheet that does not scroll.
+    it('opens both sheets without the auto container', () => {
+        const { result } = renderHook(() => useFavoritesFilterBar())
+
+        act(() => result.current.openCategories())
+        act(() => result.current.openSort())
+
+        const options = {
+            size: 'auto',
+            enablePanDownToClose: true,
+            autoCreateContainer: false,
+        }
+        expect(request).toHaveBeenNthCalledWith(
+            1,
+            expect.objectContaining({ options }),
+        )
+        expect(request).toHaveBeenNthCalledWith(
+            2,
+            expect.objectContaining({ options }),
+        )
+    })
 })

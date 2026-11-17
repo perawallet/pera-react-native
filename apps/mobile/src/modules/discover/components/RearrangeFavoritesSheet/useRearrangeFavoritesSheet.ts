@@ -54,6 +54,9 @@ export const useRearrangeFavoritesSheet =
         const entriesRef = useRef(entries)
         const isDropSettling = useRef(false)
         const isApplyPending = useRef(false)
+        // The sheet stays mounted through its close animation, so a second
+        // Apply tap must not save and track again.
+        const hasCommitted = useRef(false)
 
         const update = useCallback((next: RearrangeFavoriteEntry[]) => {
             entriesRef.current = next
@@ -62,6 +65,8 @@ export const useRearrangeFavoritesSheet =
 
         const commit = useCallback(
             (list: RearrangeFavoriteEntry[]) => {
+                if (hasCommitted.current) return
+                hasCommitted.current = true
                 const keys = list.map(entry => entry.key)
                 const kept = new Set(keys)
                 const removed = initialKeys.current.filter(

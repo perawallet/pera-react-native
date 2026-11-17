@@ -16,13 +16,19 @@ import { RearrangeFavoritesSheet } from '../../components/RearrangeFavoritesShee
 import { useDiscoverDirectory } from '../../hooks/useDiscoverDirectory'
 import { useFavoritesView } from '../../hooks/useFavoritesView'
 import { useOpenDapp } from '../../hooks/useOpenDapp'
+import { useDiscoverFavoritesStore } from '../../store/useDiscoverFavoritesStore'
 import type { DiscoverFavorite } from '../../types'
-import { normalizeDappUrl } from '../../utils/normalizeDappUrl'
+import { dappSubtitle } from '../../utils/dappSubtitle'
+import { dappHostOf, normalizeDappUrl } from '../../utils/normalizeDappUrl'
 
 export type UseDiscoverAllFavoritesScreenResult = {
     dapps: DiscoverFavorite[]
     query: string
     setQuery: (query: string) => void
+    /** No row matches the search or category, though favorites exist. */
+    isFilteredOut: boolean
+    /** A row's second line: the domain when the search matched only that. */
+    subtitleOf: (dapp: DiscoverFavorite) => string
     isVerified: (url: string) => boolean
     openDapp: (dapp: DiscoverFavorite) => void
     openRearrange: () => void
@@ -41,6 +47,9 @@ export const useDiscoverAllFavoritesScreen =
     (): UseDiscoverAllFavoritesScreenResult => {
         const [query, setQuery] = useState('')
         const { dapps } = useFavoritesView({ query })
+        const hasFavorites = useDiscoverFavoritesStore(
+            s => s.favoriteOrder.length > 0,
+        )
         const { verifiedUrls } = useDiscoverDirectory()
         const { openDapp: open } = useOpenDapp()
         const { request } = useBottomSheet()
@@ -54,6 +63,19 @@ export const useDiscoverAllFavoritesScreen =
             [open],
         )
 
+        const subtitleOf = useCallback(
+            (dapp: DiscoverFavorite) => {
+                const needle = query.trim().toLowerCase()
+                const host = dappHostOf(dapp.url)
+                return needle !== '' &&
+                    !dapp.name.toLowerCase().includes(needle) &&
+                    host.toLowerCase().includes(needle)
+                    ? host
+                    : dappSubtitle(dapp)
+            },
+            [query],
+        )
+
         const openRearrange = useCallback(() => {
             void request({
                 contents: <RearrangeFavoritesSheet />,
@@ -61,5 +83,14 @@ export const useDiscoverAllFavoritesScreen =
             })
         }, [request])
 
-        return { dapps, query, setQuery, isVerified, openDapp, openRearrange }
+        return {
+            dapps,
+            query,
+            setQuery,
+            isFilteredOut: hasFavorites && dapps.length === 0,
+            subtitleOf,
+            isVerified,
+            openDapp,
+            openRearrange,
+        }
     }

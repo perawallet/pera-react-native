@@ -12,7 +12,7 @@
 
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { HomeEvent, trackEvent } from '@analytics'
+import { DiscoverEvent, HomeEvent, trackEvent } from '@analytics'
 import { useAccountHeaderToolbar } from '../useAccountHeaderToolbar'
 
 const request = vi.fn()
@@ -25,11 +25,18 @@ vi.mock('@analytics', async () => ({
     trackEvent: vi.fn(),
 }))
 
+const HOME_EVENTS = {
+    qrScan: HomeEvent.QrScan,
+    pasteLink: HomeEvent.PasteLink,
+} as const
+
 describe('useAccountHeaderToolbar', () => {
     beforeEach(() => vi.clearAllMocks())
 
     it('opens and closes the QR scanner, tracking the open', () => {
-        const { result } = renderHook(() => useAccountHeaderToolbar())
+        const { result } = renderHook(() =>
+            useAccountHeaderToolbar({ events: HOME_EVENTS }),
+        )
         expect(result.current.isScannerOpen).toBe(false)
 
         act(() => result.current.openScanner())
@@ -41,7 +48,9 @@ describe('useAccountHeaderToolbar', () => {
     })
 
     it('opens the paste-link sheet and tracks it', () => {
-        const { result } = renderHook(() => useAccountHeaderToolbar())
+        const { result } = renderHook(() =>
+            useAccountHeaderToolbar({ events: HOME_EVENTS }),
+        )
 
         act(() => result.current.openPasteLink())
 
@@ -55,5 +64,23 @@ describe('useAccountHeaderToolbar', () => {
                 },
             }),
         )
+    })
+
+    it("tracks the host screen's own events", () => {
+        const { result } = renderHook(() =>
+            useAccountHeaderToolbar({
+                events: {
+                    qrScan: DiscoverEvent.QrScan,
+                    pasteLink: DiscoverEvent.PasteLink,
+                },
+            }),
+        )
+
+        act(() => result.current.openScanner())
+        act(() => result.current.openPasteLink())
+
+        expect(trackEvent).toHaveBeenCalledWith(DiscoverEvent.QrScan)
+        expect(trackEvent).toHaveBeenCalledWith(DiscoverEvent.PasteLink)
+        expect(trackEvent).not.toHaveBeenCalledWith(HomeEvent.QrScan)
     })
 })

@@ -22,6 +22,7 @@ import {
     PWText,
     PWView,
 } from '@components/core'
+import { DiscoverEvent } from '@analytics'
 import { EmptyView } from '@components/EmptyView'
 import { FilterSelection } from '@components/FilterSelection'
 import { SearchInputTrigger } from '@components/SearchInputTrigger'
@@ -43,6 +44,12 @@ import {
 } from './useDiscoverHomeScreen'
 
 const LOADING_ROW_COUNT = 4
+
+// Discover's header taps stay out of the Home tab's metrics.
+const DISCOVER_HEADER_EVENTS = {
+    qrScan: DiscoverEvent.QrScan,
+    pasteLink: DiscoverEvent.PasteLink,
+} as const
 
 export const DiscoverHomeScreen = () => {
     const styles = useStyles()
@@ -127,7 +134,10 @@ export const DiscoverHomeScreen = () => {
             scroll='never'
             testID='discover_home_screen'
         >
-            <AccountHeaderToolbar testIDPrefix='discover_home' />
+            <AccountHeaderToolbar
+                testIDPrefix='discover_home'
+                events={DISCOVER_HEADER_EVENTS}
+            />
             <PWScrollView
                 contentContainerStyle={styles.content}
                 refreshControl={

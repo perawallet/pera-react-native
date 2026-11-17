@@ -104,6 +104,16 @@ describe('useRearrangeFavoritesSheet', () => {
         expect(recent()).toEqual([D, C, A])
     })
 
+    it('a second Apply tap during the close animation does nothing', () => {
+        const { result } = renderHook(() => useRearrangeFavoritesSheet())
+
+        act(() => result.current.apply())
+        act(() => result.current.apply())
+
+        expect(trackEvent).toHaveBeenCalledTimes(1)
+        expect(dismiss).toHaveBeenCalledTimes(1)
+    })
+
     it('apply while a drop settles saves the dropped order', () => {
         const { result } = renderHook(() => useRearrangeFavoritesSheet())
 

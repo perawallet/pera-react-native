@@ -75,6 +75,32 @@ describe('useDiscoverAllFavoritesScreen', () => {
         expect(result.current.query).toBe('tiny')
     })
 
+    it('tells a search with no matches apart from having no favorites', () => {
+        const { result } = renderHook(() => useDiscoverAllFavoritesScreen())
+        expect(result.current.isFilteredOut).toBe(false)
+
+        act(() => result.current.setQuery('zzz'))
+        expect(names(result)).toEqual([])
+        expect(result.current.isFilteredOut).toBe(true)
+
+        act(() => useDiscoverFavoritesStore.getState().resetState())
+        expect(result.current.isFilteredOut).toBe(false)
+    })
+
+    it('shows the domain under a row the search matched only by domain', () => {
+        const { result } = renderHook(() => useDiscoverAllFavoritesScreen())
+        const allo = () =>
+            result.current.dapps.find(d => d.name === 'allo') as never
+
+        expect(result.current.subtitleOf(allo())).toBe('Explorer')
+
+        act(() => result.current.setQuery('allo'))
+        expect(result.current.subtitleOf(allo())).toBe('Explorer')
+
+        act(() => result.current.setQuery('.INFO'))
+        expect(result.current.subtitleOf(allo())).toBe('allo.info')
+    })
+
     it('opens a favorite with no chain context', () => {
         const { result } = renderHook(() => useDiscoverAllFavoritesScreen())
 
