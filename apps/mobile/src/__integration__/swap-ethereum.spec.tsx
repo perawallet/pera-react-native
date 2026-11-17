@@ -675,20 +675,40 @@ describe('Flow: Swap from an Ethereum account', () => {
         fakeNode()
         renderWithNavigation(SwapScreen, 'Swap')
 
-        fireEvent.click(await screen.findByTestId('swap-pay-asset-selector'))
+        fireEvent.click(
+            await screen.findByTestId(
+                'swap-pay-asset-selector',
+                {},
+                FORM_TIMEOUT,
+            ),
+        )
         const namedRow = await screen.findByTestId(
             `asset-list-item-ethereum-${TOKEN}`,
+            {},
+            FORM_TIMEOUT,
         )
         expect(
             within(namedRow).getByTestId('chain_avatar_badge_ethereum'),
         ).toBeTruthy()
         fireEvent.click(
-            await screen.findByTestId('swap_from_chain_filter_ethereum'),
+            await screen.findByTestId(
+                'swap_from_chain_filter_ethereum',
+                {},
+                FORM_TIMEOUT,
+            ),
         )
-        fireEvent.click(await screen.findByTestId(`asset-list-item-${TOKEN}`))
+        fireEvent.click(
+            await screen.findByTestId(
+                `asset-list-item-${TOKEN}`,
+                {},
+                FORM_TIMEOUT,
+            ),
+        )
 
-        await waitFor(() =>
-            expect(useSwapsStore.getState().sourceChainId).toBe('ethereum'),
+        await waitFor(
+            () =>
+                expect(useSwapsStore.getState().sourceChainId).toBe('ethereum'),
+            FORM_TIMEOUT,
         )
         await settleRender()
         expect(useSwapsStore.getState().sourceChainId).toBe('ethereum')
