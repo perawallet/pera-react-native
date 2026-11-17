@@ -39,7 +39,7 @@
             "explore_dapps": "dApp’leri keşfet",
             "news": "Haberler",
             "dapps_error": "Öne çıkan dApp’ler yüklenemedi",
-            "dapps_empty": "{{chain}} ağında henüz dApp yok"
+            "dapps_empty_open_url": "{{chain}} için henüz listelenmiş dApp yok. Herhangi bir dApp’i açmak için URL’sini yukarıya yaz."
         },
         "dapp_row": {
             "favorite": "Favorilere ekle",

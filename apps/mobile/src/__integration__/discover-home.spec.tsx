@@ -333,7 +333,7 @@ describe('Flow: Discover home', () => {
         await flush()
     })
 
-    it('Given an empty Ethereum list, when its chip is tapped, then the empty copy shows', async () => {
+    it('Given an empty Ethereum list, when its chip is tapped, then the empty copy points to typing a URL', async () => {
         useHandlers({ ethereum: { response: [], status: 200 } })
         renderHome()
         await screen.findByTestId(rowOf('Tinyman'))
@@ -341,7 +341,7 @@ describe('Flow: Discover home', () => {
         fireEvent.click(screen.getByTestId('discover_chain_filter_ethereum'))
 
         expect(
-            await screen.findByText('discover.home.dapps_empty'),
+            await screen.findByText('discover.home.dapps_empty_open_url'),
         ).toBeTruthy()
         await flush()
     })

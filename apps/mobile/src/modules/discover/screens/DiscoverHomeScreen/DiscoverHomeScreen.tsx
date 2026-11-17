@@ -87,7 +87,7 @@ export const DiscoverHomeScreen = () => {
         if (topDapps.dapps.length === 0) {
             return (
                 <EmptyView
-                    body={t('discover.home.dapps_empty', {
+                    body={t('discover.home.dapps_empty_open_url', {
                         chain: home.selectedChainName,
                     })}
                     style={styles.emptyDapps}

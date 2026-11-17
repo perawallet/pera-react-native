@@ -85,7 +85,7 @@ export const DiscoverDappsScreen = () => {
                 body={
                     screen.selectedChainId === null
                         ? t('discover.search.no_results')
-                        : t('discover.home.dapps_empty', {
+                        : t('discover.home.dapps_empty_open_url', {
                               chain: screen.selectedChainName,
                           })
                 }

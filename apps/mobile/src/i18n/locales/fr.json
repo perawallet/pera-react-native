@@ -39,7 +39,7 @@
             "explore_dapps": "Explorer les dApps",
             "news": "Actualités",
             "dapps_error": "Échec du chargement des dApps en vedette",
-            "dapps_empty": "Aucune dApp sur {{chain}} pour le moment"
+            "dapps_empty_open_url": "Aucune dApp répertoriée sur {{chain}} pour le moment. Ouvrez n’importe quelle dApp en saisissant son URL ci-dessus."
         },
         "dapp_row": {
             "favorite": "Ajouter aux favoris",
