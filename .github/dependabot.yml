@@ -158,6 +158,11 @@ updates:
       # plugin ships a release accepting ^10, or if it stops being loaded.
       - dependency-name: eslint
         update-types: [version-update:semver-major]
+      # babel-preset-expo, @react-native/babel-preset and every Babel plugin in
+      # the tree are 7.x and assert `^7.0.0-0`, so a Babel 8 core throws in
+      # every Metro bundle. Babel majors move with an Expo SDK that supports 8.
+      - dependency-name: "@babel/*"
+        update-types: [version-update:semver-major]
       # @types/node must track the Node runtime pinned in .tool-versions (currently 22).
       # Auto-bumping past the runtime LTS just produces red builds.
       - dependency-name: "@types/node"
