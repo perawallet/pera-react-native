@@ -87,7 +87,8 @@ export type SwapExecutionOutcome =
           phase: SwapExecutionErrorPhase
           message: string
           // Names the step that stopped the swap (or the honest
-          // unknown-outcome headline); always set by this hook.
+          // unknown-outcome headline); always set by this hook. Optional so
+          // callers keep their own fallback title for outcomes they construct.
           title?: string
       }
 
@@ -330,7 +331,12 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                 ) {
                     throw error
                 }
-                const copy = resolveErrorCopy(error, t, undefined, getMessage)
+                const copy = resolveErrorCopy(
+                    error,
+                    t,
+                    t(FAILED_TITLE_KEY_BY_STEP.prepare),
+                    getMessage,
+                )
                 playFailure()
                 setStatus('error')
                 setError({ phase: 'prepare', message: copy.body })

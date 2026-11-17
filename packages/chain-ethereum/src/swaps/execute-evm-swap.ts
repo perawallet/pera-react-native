@@ -401,8 +401,8 @@ export const executeEvmSwap = async ({
     const { onOrderSubmitting, onOrderRejected } = context
 
     // With nothing declared the check would refuse any order, so don't create
-    // one. It sits above the freshness check so an unverifiable route never
-    // shows "Quote refreshed" first.
+    // one. It sits above the freshness check so a lapsed quote still reports
+    // the unverifiable route rather than stale-quote.
     if (routeContracts.length === 0) {
         return failed({
             phase: 'prepare',

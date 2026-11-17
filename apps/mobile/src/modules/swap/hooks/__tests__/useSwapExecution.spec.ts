@@ -12,7 +12,7 @@
 
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { renderHook, act } from '@test-utils/render'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import type {
     ExecuteSwapResult,
@@ -126,9 +126,6 @@ vi.mock('@hooks/useLanguage', () => ({
     }),
 }))
 
-// Stamped once so two quotes with one id compare equal.
-const FETCHED_AT = Date.now()
-
 const makeQuote = (quoteId: string, overrides: Partial<SwapQuote> = {}) =>
     ({
         quoteId,
@@ -136,7 +133,7 @@ const makeQuote = (quoteId: string, overrides: Partial<SwapQuote> = {}) =>
         request: { sourceAddress: 'SENDER' },
         amountOut: new Decimal('1000'),
         minimumAmountOut: new Decimal('990'),
-        fetchedAt: FETCHED_AT,
+        fetchedAt: Date.now(),
         expiresAt: null,
         ...overrides,
     }) as unknown as SwapQuote
@@ -177,10 +174,17 @@ const holdExecution = () => {
 const nodeError = Object.assign(new Error('node'), { code: 'node_error' })
 
 describe('useSwapExecution', () => {
+    // Only Date is frozen: two quotes with one id compare equal, and a slow
+    // worker can't age a fixture into the re-quote margin mid-file.
     beforeEach(() => {
+        vi.useFakeTimers({ toFake: ['Date'] })
         vi.clearAllMocks()
         mockCreateQuotes.mockResolvedValue([])
         resolveWith({ kind: 'success', orderId: '1', txIds: ['tx-1'] })
+    })
+
+    afterEach(() => {
+        vi.useRealTimers()
     })
 
     it('starts with idle status', () => {
@@ -1003,7 +1007,11 @@ describe('useSwapExecution', () => {
         const outcome = await executeOnce(result.current.execute)
 
         expect(outcome).toEqual(
-            expect.objectContaining({ kind: 'error', phase: 'prepare' }),
+            expect.objectContaining({
+                kind: 'error',
+                phase: 'prepare',
+                title: 'swap.execution.failed_title.prepare',
+            }),
         )
         expect(result.current.status).toBe('error')
         expect(mockTxError).toHaveBeenCalledTimes(1)
