@@ -67,7 +67,14 @@ ${OPTION_ETHEREUM_ROW}              tid=account_network_ethereum
 ${OPTION_ALGORAND_QR}               tid=account_network_algorand_qr
 ${OPTION_ALGORAND_MIN_BALANCE}      tid=account_algorand_min_balance
 ${OPTION_REKEY}                     tid=account_option_rekey-account
+${OPTION_ETHEREUM_EXPAND}           tid=account_network_ethereum_expand
+${OPTION_TOKEN_APPROVALS}           tid=account_option_token-approvals
+${TOKEN_APPROVALS_SCREEN}           tid=token_approvals_screen
+${TOKEN_APPROVALS_RETRY}            tid=token_approvals_retry
+# An account with no approvals shows the empty state; one with approvals, their spender rows.
+${TOKEN_APPROVALS_LOADED}           xpath=//*[@text='No open approvals' or @label='No open approvals' or starts-with(@content-desc,'token_approval_spender_') or starts-with(@resource-id,'token_approval_spender_') or starts-with(@name,'token_approval_spender_') or @name='token_approvals_retry' or @resource-id='token_approvals_retry' or @content-desc='token_approvals_retry']
 ${NETWORKS_TITLE}                   tid=account_networks_title
+${ETHEREUM_OFFERED}                 ${None}
 # Networks the account could be on but is not yet are folded behind this row.
 ${NETWORKS_SEE_ALL}                 tid=account_networks_see_all
 ${ETHEREUM_ROW_OR_SEE_ALL}          xpath=//*[@name='account_network_ethereum' or @resource-id='account_network_ethereum' or @content-desc='account_network_ethereum' or @name='account_networks_see_all' or @resource-id='account_networks_see_all' or @content-desc='account_networks_see_all']
@@ -208,9 +215,14 @@ Ensure Account On Ethereum
     ...                the network when the build offers it and skipping when it does not. What a
     ...                multichain screen lacks cannot tell a build without Ethereum from a broken
     ...                screen; this sheet can.
+    Skip If    $ETHEREUM_OFFERED is False
+    ...    The account cannot be put on Ethereum: this build is not multichain (CHAINS without ethereum).
     Open Account Options
     # Android lists only what is on screen, so the row is scrolled to before its absence counts.
     ${offered}=    Run Keyword And Return Status    Scroll Until Present    ${ETHEREUM_ROW_OR_SEE_ALL}
+    # Scrolling the whole sheet to find nothing is slow, and a build does not change mid-run. Only
+    # key accounts come here, which can all go on Ethereum where the build ships it.
+    Set Global Variable    ${ETHEREUM_OFFERED}    ${offered}
     Skip If    not ${offered}
     ...    The account cannot be put on Ethereum: this build is not multichain (CHAINS without ethereum).
     ${folded}=    Run Keyword And Return Status    Page Should Contain Element    ${NETWORKS_SEE_ALL}

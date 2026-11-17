@@ -45,6 +45,7 @@ Sign Up Confirm Stays Disabled Without A Valid Email
     [Documentation]    Stops at an invalid email: Confirm sends a real sign-up request.
     [Tags]    id:card.sign-up.validation    p2
     Open Card Sign Up
+    Wait Until Page Contains Element    ${CARD_ONBOARDING_CONFIRM_OR_JOIN}    timeout=15s
     ${waitlisted}=    Run Keyword And Return Status    Page Should Contain Element    ${CARD_ONBOARDING_WAITLIST_JOIN}
     Skip If    ${waitlisted}    This device's region is on the card waitlist, where the form offers Join in place of Confirm.
     Expect Element    ${CARD_ONBOARDING_EMAIL_CONFIRM}    disabled    timeout=5s
@@ -100,9 +101,8 @@ Card Overview Offers A Way To Fund The Card
 Card Details Lists The Card's State And Its Management Rows
     [Tags]    id:card.dashboard.details    p1
     Open Card Details Tab
-    ${reveal}=    Run Keyword And Return Status    Page Should Contain Element    ${CARD_REVEAL_BUTTON}
-    ${notice}=    Run Keyword And Return Status    Page Should Contain Element    ${CARD_ISSUANCE_NOTICE_ANY}
-    Should Be True    ${reveal} or ${notice}    Card Details offers neither Reveal nor an issuance notice.
+    Wait Until Page Contains Element    ${CARD_REVEAL_OR_NOTICE}    timeout=20s
+    ...    error=Card Details offers neither Reveal nor an issuance notice.
     Scroll Until Present    ${CARD_ACCOUNTS_DETAILS_ROW}
     Scroll Until Present    ${CARD_REPORT_LOST_ROW}
 

@@ -25,6 +25,8 @@ ${CARD_ONBOARDING_COUNTRY_FIELD}    tid=card-onboarding-country-field
 ${CARD_ONBOARDING_EMAIL_CONFIRM}    tid=card-onboarding-email-confirm
 # A region on the card waitlist gets this button in place of Confirm.
 ${CARD_ONBOARDING_WAITLIST_JOIN}    tid=card-onboarding-waitlist-join
+# The form settles on one of the two once the region's country is preselected.
+${CARD_ONBOARDING_CONFIRM_OR_JOIN}  xpath=//*[@name='card-onboarding-email-confirm' or @resource-id='card-onboarding-email-confirm' or @content-desc='card-onboarding-email-confirm' or @name='card-onboarding-waitlist-join' or @resource-id='card-onboarding-waitlist-join' or @content-desc='card-onboarding-waitlist-join']
 # The country picker is a searchable sheet with no testID of its own.
 ${CARD_COUNTRY_SEARCH_INPUT}        tid=searchable-list-search-input
 
@@ -47,6 +49,7 @@ ${CARD_ACCOUNT_DETAILS_SHEET}       tid=card_account_details_sheet
 ${CARD_REVEAL_BUTTON}               tid=pera_card_reveal_button
 # Every state a card that cannot be revealed yet is in (pending, issuing, failed, rejected, under review).
 ${CARD_ISSUANCE_NOTICE_ANY}         xpath=//*[starts-with(@content-desc,'pera_card_issuance_') or starts-with(@resource-id,'pera_card_issuance_') or starts-with(@name,'pera_card_issuance_')]
+${CARD_REVEAL_OR_NOTICE}            xpath=//*[@name='pera_card_reveal_button' or @resource-id='pera_card_reveal_button' or @content-desc='pera_card_reveal_button' or starts-with(@content-desc,'pera_card_issuance_') or starts-with(@resource-id,'pera_card_issuance_') or starts-with(@name,'pera_card_issuance_')]
 ${CARD_ADD_FUNDS_SCREEN}            tid=card-add-funds
 ${CARD_ADD_FUNDS_DEPOSIT}           tid=card_add_funds_deposit_button
 ${CARD_ADD_FUNDS_ASSET_CHIP}        tid=card-add-funds-asset-selector

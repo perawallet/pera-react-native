@@ -84,13 +84,16 @@ Skip Unless Backend Keyed
 Open Cloud Backup
     [Documentation]    Settings row, turning the flag on first when the row is not offered.
     Open Settings
-    ${offered}=    Run Keyword And Return Status    Page Should Contain Element    ${CB_SETTINGS_ROW}
+    # Android lists only the rows on screen, so a row below the fold reads as not offered.
+    ${offered}=    Run Keyword And Return Status    Scroll Until Present    ${CB_SETTINGS_ROW}
     IF    not ${offered}
         Enable Cloud Backup Flag
         Open Settings
+        ${offered}=    Run Keyword And Return Status    Scroll Until Present    ${CB_SETTINGS_ROW}
     END
-    Page Should Contain Element    ${CB_SETTINGS_ROW}
-    ...    message=The Cloud Backup row is still missing from Settings with enable_cloud_backup overridden on.
+    Should Be True    ${offered}
+    ...    The Cloud Backup row is still missing from Settings with enable_cloud_backup overridden on.
+    Scroll Until Tappable    ${CB_SETTINGS_ROW}
     Tap    ${CB_SETTINGS_ROW}
     Wait Until Page Contains Element    ${CB_ENTRY_ANY}    timeout=20s
 
