@@ -194,6 +194,7 @@ type SetupOptions = {
     networks?: Partial<Record<ChainId, NetworkId>>
     disabled?: ChainId[]
     siteWarningOf?: (origin: string) => Promise<SiteWarningLevel>
+    isWalletLocked?: () => boolean
     now?: () => number
 }
 
@@ -224,6 +225,7 @@ const setup = (seed: Connection[] = [], options: SetupOptions = {}) => {
                 name: address,
             })),
         siteWarningOf: options.siteWarningOf,
+        isWalletLocked: options.isWalletLocked ?? (() => false),
         now: options.now ?? (() => 1_000_000),
         proposalTtlMs: 1_000,
         requestTtlMs: 1_000,
@@ -2379,6 +2381,76 @@ describe('createEip1193ConnectionHandler', () => {
             })
             expect(notificationsOf(transport, 'accountsChanged')).toEqual([
                 { origin: ORIGIN, params: [ADDR_X] },
+            ])
+        })
+
+        it('pushes no accounts while the wallet is locked', async () => {
+            const { transport, handler, registry } = setup(
+                [connectedOn('ethereum', [ADDR_X, ADDR_Y])],
+                { isWalletLocked: () => true },
+            )
+            await registry.initialize()
+            await handler.notify?.(ID, {
+                type: 'accounts-changed',
+                chainId: 'ethereum',
+                accounts: [ADDR_X],
+                changed: [ADDR_Y],
+            })
+            expect(transport.notifications).toHaveLength(0)
+        })
+
+        it('withdraws the accounts when the wallet locks and hands them back when it unlocks', async () => {
+            const { transport, handler, registry } = setup([
+                connectedOn('ethereum', [ADDR_X]),
+            ])
+            await registry.initialize()
+            await handler.notify?.(ID, { type: 'lock-changed', isLocked: true })
+            await handler.notify?.(ID, {
+                type: 'lock-changed',
+                isLocked: false,
+            })
+            expect(notificationsOf(transport, 'accountsChanged')).toEqual([
+                { origin: ORIGIN, params: [] },
+                { origin: ORIGIN, params: [ADDR_X] },
+            ])
+        })
+
+        it('sends no accounts on unlock when the wallet locks again during the site check', async () => {
+            let isLocked = false
+            const { transport, handler, registry } = setup(
+                [connectedOn('ethereum', [ADDR_X])],
+                {
+                    siteWarningOf: async () => {
+                        isLocked = true
+                        return 'clear'
+                    },
+                    isWalletLocked: () => isLocked,
+                },
+            )
+            await registry.initialize()
+
+            await handler.notify?.(ID, {
+                type: 'lock-changed',
+                isLocked: false,
+            })
+
+            expect(notificationsOf(transport, 'accountsChanged')).toEqual([
+                { origin: ORIGIN, params: [] },
+            ])
+        })
+
+        it('keeps the accounts from a site flagged since its approval when the wallet unlocks', async () => {
+            const { transport, handler, registry } = setup(
+                [connectedOn('ethereum', [ADDR_X])],
+                { siteWarningOf: async () => 'blocked' },
+            )
+            await registry.initialize()
+            await handler.notify?.(ID, {
+                type: 'lock-changed',
+                isLocked: false,
+            })
+            expect(notificationsOf(transport, 'accountsChanged')).toEqual([
+                { origin: ORIGIN, params: [] },
             ])
         })
 

@@ -31,6 +31,12 @@ export {
     type ExpandedFlow,
 } from './navigation'
 export {
+    LOCK_STATE_SCOPE,
+    createOffscreenLockState,
+    installLockStateHost,
+    type OffscreenLockState,
+} from './lock-state'
+export {
     TAB_RESUME_DONE_SCOPE,
     TAB_RESUME_RESULT_SESSION_KEY,
     TAB_RESUME_SESSION_KEY,
