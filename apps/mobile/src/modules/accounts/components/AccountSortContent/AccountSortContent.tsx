@@ -28,7 +28,7 @@ export const AccountSortContent = (_: AccountSortContentProps = {}) => {
         sortMode,
         sortedAccounts,
         handleSortModeChange,
-        beginReorder,
+        beginDrop,
         handleReorder,
         commitChanges,
         t,
@@ -73,7 +73,7 @@ export const AccountSortContent = (_: AccountSortContentProps = {}) => {
                         </PWText>
                         <DraggableAccountList
                             accounts={sortedAccounts}
-                            onDragBegin={beginReorder}
+                            onDrop={beginDrop}
                             onReorder={handleReorder}
                         />
                     </>

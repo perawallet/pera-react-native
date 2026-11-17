@@ -25,8 +25,8 @@ export type UseRearrangeFolderSheetParams = { folderId: string }
 
 export type UseRearrangeFolderSheetResult = {
     entries: RearrangeEntry[]
-    /** A drag started; Done waits for its `reorder` (the drop) to land. */
-    beginDrag: () => void
+    /** A drag was released; Done waits for its `reorder` (the drop) to land. */
+    beginDrop: () => void
     reorder: (keys: string[]) => void
     remove: (key: string) => void
     done: () => void
@@ -63,7 +63,7 @@ export const useRearrangeFolderSheet = ({
         setEntries(next)
     }, [])
 
-    const beginDrag = useCallback(() => {
+    const beginDrop = useCallback(() => {
         isDropSettling.current = true
     }, [])
 
@@ -97,7 +97,12 @@ export const useRearrangeFolderSheet = ({
         }
         resolve(entriesRef.current.map(entry => entry.key))
     }, [resolve])
-    const cancel = useCallback(() => dismiss(), [dismiss])
+    // The list stays mounted through the close animation, so a drop that
+    // lands then must not resolve the order the user just cancelled.
+    const cancel = useCallback(() => {
+        isDonePending.current = false
+        dismiss()
+    }, [dismiss])
 
-    return { entries, beginDrag, reorder, remove, done, cancel }
+    return { entries, beginDrop, reorder, remove, done, cancel }
 }

@@ -48,7 +48,7 @@ export const RearrangeFolderSheet = ({
     const insets = useSafeAreaInsets()
     const styles = useStyles({ bottomInset: insets.bottom })
     const sheet = useRearrangeFolderSheet({ folderId })
-    const { remove, reorder, beginDrag } = sheet
+    const { remove, reorder, beginDrop } = sheet
 
     const renderItem = useCallback(
         ({ item, drag }: RenderItemParams<RearrangeEntry>) => (
@@ -123,7 +123,7 @@ export const RearrangeFolderSheet = ({
                 data={sheet.entries}
                 renderItem={renderItem}
                 keyExtractor={keyOf}
-                onDragBegin={beginDrag}
+                onRelease={beginDrop}
                 onDragEnd={handleDragEnd}
                 activationDistance={10}
                 showsVerticalScrollIndicator={false}

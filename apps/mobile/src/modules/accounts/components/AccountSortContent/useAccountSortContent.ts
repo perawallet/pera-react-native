@@ -53,8 +53,8 @@ type UseAccountSortContentResult = {
     sortMode: AccountSortMode
     sortedAccounts: WalletAccount[]
     handleSortModeChange: (mode: AccountSortMode) => void
-    /** A drag started; a commit waits for its `handleReorder` (the drop). */
-    beginReorder: () => void
+    /** A drag was released; a commit waits for its `handleReorder` (the drop). */
+    beginDrop: () => void
     handleReorder: (orderedIds: string[]) => void
     /** Writes the draft, then calls `onCommitted` (once a settling drop lands). */
     commitChanges: (onCommitted?: () => void) => void
@@ -78,14 +78,20 @@ export const useAccountSortContent = (): UseAccountSortContentResult => {
     const [draftSortMode, setDraftSortMode] = useState(sortMode)
     const [draftAccounts, setDraftAccounts] = useState(sortedAccounts)
 
-    const handleSortModeChange = useCallback((mode: AccountSortMode) => {
-        setDraftSortMode(mode)
-    }, [])
-
     // The list reports a drop only once its settle animation ends, so Apply
     // tapped in between would commit the order from before the drag.
     const isDropSettling = useRef(false)
     const pendingCommit = useRef<(accounts: WalletAccount[]) => void>(null)
+
+    const handleSortModeChange = useCallback((mode: AccountSortMode) => {
+        // Leaving manual unmounts the list, so a settling drop never lands:
+        // drop the wait, or Apply would stay dead.
+        if (mode !== AccountSortModes.manual) {
+            isDropSettling.current = false
+            pendingCommit.current = null
+        }
+        setDraftSortMode(mode)
+    }, [])
 
     const commit = useCallback(
         (orderedAccounts: WalletAccount[]) => {
@@ -97,7 +103,7 @@ export const useAccountSortContent = (): UseAccountSortContentResult => {
         [draftSortMode, setSortMode, setManualAccountOrder],
     )
 
-    const beginReorder = useCallback(() => {
+    const beginDrop = useCallback(() => {
         isDropSettling.current = true
     }, [])
 
@@ -136,7 +142,7 @@ export const useAccountSortContent = (): UseAccountSortContentResult => {
         sortMode: draftSortMode,
         sortedAccounts: draftAccounts,
         handleSortModeChange,
-        beginReorder,
+        beginDrop,
         handleReorder,
         commitChanges,
         t,

@@ -100,7 +100,7 @@ describe('useAccountSortContent', () => {
         const onCommitted = vi.fn()
 
         act(() => result.current.handleSortModeChange('manual'))
-        act(() => result.current.beginReorder())
+        act(() => result.current.beginDrop())
         act(() => result.current.commitChanges(onCommitted))
         expect(h.setManualAccountOrder).not.toHaveBeenCalled()
         expect(onCommitted).not.toHaveBeenCalled()
@@ -117,11 +117,28 @@ describe('useAccountSortContent', () => {
         const onCommitted = vi.fn()
 
         act(() => result.current.handleSortModeChange('manual'))
-        act(() => result.current.beginReorder())
+        act(() => result.current.beginDrop())
         act(() => result.current.handleReorder(['id2', 'id1']))
         act(() => result.current.commitChanges(onCommitted))
 
         expect(h.setManualAccountOrder).toHaveBeenCalledWith(['id2', 'id1'])
         expect(onCommitted).toHaveBeenCalledTimes(1)
+    })
+
+    it('drops a pending apply when the sort leaves manual', () => {
+        // Leaving manual unmounts the list, so the settling drop never lands.
+        const { result } = renderHook(() => useAccountSortContent())
+        const stale = vi.fn()
+        const onCommitted = vi.fn()
+
+        act(() => result.current.handleSortModeChange('manual'))
+        act(() => result.current.beginDrop())
+        act(() => result.current.commitChanges(stale))
+        act(() => result.current.handleSortModeChange('balanceDesc'))
+        act(() => result.current.commitChanges(onCommitted))
+
+        expect(h.setSortMode).toHaveBeenCalledWith('balanceDesc')
+        expect(onCommitted).toHaveBeenCalledTimes(1)
+        expect(stale).not.toHaveBeenCalled()
     })
 })

@@ -110,7 +110,7 @@ describe('useRearrangeFolderSheet', () => {
             useRearrangeFolderSheet({ folderId }),
         )
 
-        act(() => result.current.beginDrag())
+        act(() => result.current.beginDrop())
         act(() => result.current.done())
         expect(resolve).not.toHaveBeenCalled()
 
@@ -120,12 +120,25 @@ describe('useRearrangeFolderSheet', () => {
         expect(resolve).toHaveBeenCalledWith([K2, K1])
     })
 
+    it('a cancel during a settling drop discards the pending done', () => {
+        const { result } = renderHook(() =>
+            useRearrangeFolderSheet({ folderId }),
+        )
+
+        act(() => result.current.beginDrop())
+        act(() => result.current.done())
+        act(() => result.current.cancel())
+        act(() => result.current.reorder([K2, K1]))
+
+        expect(resolve).not.toHaveBeenCalled()
+    })
+
     it('resolves at once when no drag is settling', () => {
         const { result } = renderHook(() =>
             useRearrangeFolderSheet({ folderId }),
         )
 
-        act(() => result.current.beginDrag())
+        act(() => result.current.beginDrop())
         act(() => result.current.reorder([K2, K1]))
         act(() => result.current.done())
 

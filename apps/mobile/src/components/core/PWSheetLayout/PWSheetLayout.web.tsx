@@ -100,7 +100,13 @@ export const PWSheetLayout = ({
     return (
         <PWView style={styles.root}>
             {scrollable}
-            <PWView style={styles.footer}>{footer}</PWView>
+            <PWView
+                style={styles.footer}
+                {...getTestProps(testID, 'footer')}
+                accessible={false}
+            >
+                {footer}
+            </PWView>
         </PWView>
     )
 }
