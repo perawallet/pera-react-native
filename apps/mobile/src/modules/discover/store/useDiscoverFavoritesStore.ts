@@ -63,6 +63,11 @@ type DiscoverFavoritesActions = {
     /** No-op unless `url` is a favorite and the folder exists. */
     setDappInFolder(id: string, url: string, inFolder: boolean): void
     /**
+     * Rearrange's Done: the folder's dApps in this order. Keys that are not
+     * favorites any more are dropped, each key is kept once.
+     */
+    setFolderItems(id: string, keys: readonly string[]): void
+    /**
      * Adds the legacy favorites that are not favorites yet, in no folder, so
      * newest-first lists show them after the native ones in the given order;
      * marks the import done.
@@ -253,6 +258,15 @@ export const useDiscoverFavoritesStore = create<DiscoverFavoritesStore>()(
                 const items = inFolder
                     ? [...folder.items, key]
                     : folder.items.filter(k => k !== key)
+                set(state => ({
+                    folders: { ...state.folders, [id]: { ...folder, items } },
+                }))
+            },
+            setFolderItems: (id, keys) => {
+                const folder = get().folders[id]
+                if (!folder) return
+                const { favorites } = get()
+                const items = [...new Set(keys)].filter(key => key in favorites)
                 set(state => ({
                     folders: { ...state.folders, [id]: { ...folder, items } },
                 }))

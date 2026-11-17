@@ -85,7 +85,23 @@
                 "create": "Create",
                 "save": "Save"
             },
-            "empty": "No dApps in this folder yet"
+            "empty": "No dApps in this folder yet",
+            "menu": {
+                "title": "Folder options",
+                "open_label": "Folder options",
+                "rename": "Rename Folder",
+                "rearrange": "Rearrange dApps",
+                "delete": "Delete Folder"
+            },
+            "rearrange": {
+                "title": "Rearrange dApps",
+                "remove_label": "Remove {{name}} from this folder"
+            },
+            "delete_confirm": {
+                "title": "Delete this folder?",
+                "body": "Its dApps stay in your favorites.",
+                "confirm": "Delete Folder"
+            }
         },
         "favorites": {
             "title": "Favorites",

@@ -22,6 +22,7 @@ import { AddToFolderSheet } from '../components/AddToFolderSheet'
 import { useDiscoverFavoritesStore } from '../store/useDiscoverFavoritesStore'
 import type { DiscoverDapp } from '../types'
 import { dappEventPayload } from '../utils/discoverAnalytics'
+import { SCROLLING_AUTO_SHEET_OPTIONS } from '../utils/sheetOptions'
 
 // lanekeep-ignore-next-line pera/no-numeric-sizes reason: a duration in ms, not a size
 const FOLDER_TOAST_DURATION_MS = 5000
@@ -61,12 +62,7 @@ export const useToggleDiscoverFavorite =
                             }
                             void request({
                                 contents: <AddToFolderSheet url={url} />,
-                                options: {
-                                    size: 'auto',
-                                    enablePanDownToClose: true,
-                                    // PWSheetLayout scrolls only without the auto container.
-                                    autoCreateContainer: false,
-                                },
+                                options: SCROLLING_AUTO_SHEET_OPTIONS,
                             })
                         },
                     },
