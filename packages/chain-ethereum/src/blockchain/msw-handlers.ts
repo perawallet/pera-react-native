@@ -19,12 +19,15 @@ import {
     encodeFunctionResult,
     erc20Abi,
     getAddress,
+    getTransactionType,
     isAddress,
     isAddressEqual,
     keccak256,
     multicall3Abi,
+    numberToHex,
     parseAbi,
     parseTransaction,
+    recoverTransactionAddress,
     serializeTransaction,
     toFunctionSelector,
     type Address,
@@ -32,6 +35,7 @@ import {
     type RpcFeeHistory,
     type RpcTransaction,
     type RpcTransactionReceipt,
+    type TransactionSerializable,
 } from 'viem'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { MULTICALL3_ADDRESS } from './utils/erc20'
@@ -137,6 +141,47 @@ export const evmRpcTransaction = (
         s: '0x1',
         ...overrides,
     }) as RpcTransaction
+
+const RPC_TRANSACTION_TYPE = {
+    legacy: '0x0',
+    eip2930: '0x1',
+    eip1559: '0x2',
+    eip4844: '0x3',
+    eip7702: '0x4',
+} as const
+
+// Keys stay in the keystore; any curve point's x recovers to some sender.
+const STAND_IN_SIGNATURE = {
+    r: '0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798',
+    s: '0x1',
+    v: 27n,
+    yParity: 0,
+} as const
+
+/** `tx` mined and signed, with the `hash` and `from` its signed bytes give. */
+export const evmSignedRpcTransaction = async (
+    tx: TransactionSerializable,
+): Promise<RpcTransaction> => {
+    const raw = serializeTransaction(tx, STAND_IN_SIGNATURE)
+    const { data, to, gas = 0n, ...fields } = parseTransaction(raw)
+    return evmRpcTransaction({
+        gas: numberToHex(gas),
+        gasPrice: '0x0',
+        ...Object.fromEntries(
+            Object.entries(fields).map(([key, value]) => [
+                key,
+                typeof value === 'bigint' || typeof value === 'number'
+                    ? numberToHex(value)
+                    : value,
+            ]),
+        ),
+        hash: keccak256(raw),
+        from: await recoverTransactionAddress({ serializedTransaction: raw }),
+        type: RPC_TRANSACTION_TYPE[getTransactionType(tx)],
+        to: to ?? null,
+        input: data ?? '0x',
+    } as Partial<RpcTransaction> & { hash: Hex })
+}
 
 /** A mined, successful receipt; pass the fields the test asserts on. */
 export const evmTransactionReceipt = (

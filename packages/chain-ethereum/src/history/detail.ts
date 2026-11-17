@@ -11,7 +11,15 @@
  */
 
 import type { Decimal } from 'decimal.js'
-import { isHash, TransactionNotFoundError } from 'viem'
+import {
+    isHash,
+    keccak256,
+    recoverTransactionAddress,
+    serializeTransaction,
+    TransactionNotFoundError,
+    type Transaction,
+    type TransactionSerializable,
+} from 'viem'
 import type {
     ChainContext,
     ChainScope,
@@ -23,10 +31,20 @@ import type { EvmChain } from '../chains/types'
 import { ethereumMinedViewOf } from '../signing/review'
 import { toEthereumNative } from '../signing/transaction-view'
 
+// viem's legacy serializer ignores a signature left on the transaction.
+const serializeSigned = (tx: Transaction) =>
+    serializeTransaction({ ...tx, data: tx.input } as TransactionSerializable, {
+        r: tx.r,
+        s: tx.s,
+        v: tx.v,
+        yParity: tx.yParity,
+    })
+
 /**
  * The transaction as the node holds it, read for a detail screen: the
  * calldata is what the history row lacks. Null when the node has no such
- * transaction (pruned, or not on this network); every other failure rejects.
+ * transaction (pruned, or not on this network) or answers with one whose
+ * signed fields don't hash to `txId`; every other failure rejects.
  */
 export const readEvmTransactionDetail = async (
     ctx: ChainContext,
@@ -40,10 +58,15 @@ export const readEvmTransactionDetail = async (
     const client = createEvmClient(scope, ctx, chain)
     try {
         const tx = await client.getTransaction({ hash: txId })
+        // The node's `hash` and `from` are its word; only the signed fields bind.
+        const serializedTransaction = serializeSigned(tx)
+        if (keccak256(serializedTransaction) !== txId.toLowerCase()) return null
         return toEthereumNative(
             ethereumMinedViewOf(
                 {
-                    from: tx.from,
+                    from: await recoverTransactionAddress({
+                        serializedTransaction,
+                    }),
                     to: tx.to ?? undefined,
                     data: tx.input,
                     value: tx.value,
