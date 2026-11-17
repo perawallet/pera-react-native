@@ -169,6 +169,13 @@ updates:
         update-types: [version-update:semver-major]
       - dependency-name: "@rneui/themed"
         update-types: [version-update:semver-major]
+      # 0.x minors break the provisioning adapter's API (Apple's add-card result
+      # type and addCardToGoogleWallet's arity both change by 0.3), so a minor is
+      # a hand migration with an add-to-wallet device test on both platforms.
+      - dependency-name: "@expensify/react-native-wallet"
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
       # jsdom 29 rewrote CSSOM using a Proxy; array-index set traps return
       # falsish and React DOM 19's setValueForStyle trips strict-mode throws.
       # Stay on 27 until jsdom fixes the regression or React DOM changes.
