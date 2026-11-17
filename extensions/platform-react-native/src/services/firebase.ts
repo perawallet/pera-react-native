@@ -91,6 +91,16 @@ type AwaitableRemoteConfig = RemoteConfig & {
 // token fetch so cold-start degrades to a no-token result instead of stalling.
 const FCM_TOKEN_FETCH_TIMEOUT_MS = 5000
 
+// Startup waits this long for a fresh fetch once an earlier launch has
+// activated values, instead of the full bound only a first launch needs. The
+// fetch keeps running and activates when it lands.
+const REMOTE_CONFIG_REFRESH_WAIT_MS = 1000
+
+type RemoteConfigFetch = {
+    fetched: Promise<void>
+    hasEarlierFetch: boolean
+}
+
 // RNFB messaging owns remote pushes: it fires onMessage, onNotificationOpenedApp
 // and getInitialNotification for them. expo-notifications also sees them on
 // iOS, where it chains the notification-center delegate with RNFB, so it acts
@@ -140,7 +150,8 @@ export class RNFirebaseService
         PushNotificationService
 {
     remoteConfig: Nullable<RemoteConfig> = null
-    private remoteConfigInitInFlight: Nullable<Promise<void>> = null
+    private remoteConfigInitInFlight: Nullable<Promise<RemoteConfigFetch>> =
+        null
     messaging: Nullable<Messaging> = null
     analytics: Nullable<Analytics> = null
     private isAnalyticsCollectionEnabled = false
@@ -201,20 +212,29 @@ export class RNFirebaseService
     /**
      * Single-flight: a second concurrent fetch makes Firebase cancel the one
      * already in flight (the same NSURLErrorCancelled that broke this before),
-     * so overlapping callers share one initialization. Cleared on settle, so a
-     * later call still refetches.
+     * so overlapping callers share one initialization. Cleared once the fetch
+     * settles, so a later call still refetches.
      */
     async initializeRemoteConfig(): Promise<void> {
-        this.remoteConfigInitInFlight ??= this.fetchRemoteConfig().finally(
-            () => {
+        this.remoteConfigInitInFlight ??= this.startRemoteConfigFetch().catch(
+            (error: unknown) => {
                 this.remoteConfigInitInFlight = null
+                throw error
             },
         )
 
-        return this.remoteConfigInitInFlight
+        const { fetched, hasEarlierFetch } = await this.remoteConfigInitInFlight
+        if (!hasEarlierFetch) {
+            return fetched
+        }
+        await withTimeout(
+            fetched,
+            REMOTE_CONFIG_REFRESH_WAIT_MS,
+            'remote config refresh',
+        ).catch(() => {})
     }
 
-    private async fetchRemoteConfig(): Promise<void> {
+    private async startRemoteConfigFetch(): Promise<RemoteConfigFetch> {
         const remoteConfig = getRemoteConfig() as AwaitableRemoteConfig
         this.remoteConfig = remoteConfig
 
@@ -235,17 +255,32 @@ export class RNFirebaseService
         })
         await remoteConfig.setDefaults(remoteConfigDefaultsRegistry.all())
 
-        try {
-            await fetchAndActivate(remoteConfig)
-        } catch (error) {
-            // Best-effort — cached/default values still serve. Logged because a
-            // silent catch here is what hid the failure above: every remote
-            // value quietly degraded to its default with no signal at all.
-            logger.warn(
-                'Remote Config fetch failed; serving cached or default values',
-                { source: 'FirebaseService.initializeRemoteConfig', error },
+        // Read before the fetch, which updates it. Android reports -1 and iOS 0
+        // when nothing has ever been fetched.
+        const hasEarlierFetch = remoteConfig.fetchTimeMillis > 0
+
+        const fetched = fetchAndActivate(remoteConfig)
+            .then(
+                () => {},
+                (error: unknown) => {
+                    // Best-effort — cached/default values still serve. Logged
+                    // because a silent catch here is what hid the failure
+                    // above: every remote value quietly degraded to its default
+                    // with no signal at all.
+                    logger.warn(
+                        'Remote Config fetch failed; serving cached or default values',
+                        {
+                            source: 'FirebaseService.initializeRemoteConfig',
+                            error,
+                        },
+                    )
+                },
             )
-        }
+            .finally(() => {
+                this.remoteConfigInitInFlight = null
+            })
+
+        return { fetched, hasEarlierFetch }
     }
 
     getStringValue(key: string, fallback?: string): string {
