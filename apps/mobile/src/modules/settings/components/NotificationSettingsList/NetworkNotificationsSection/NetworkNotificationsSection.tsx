@@ -31,7 +31,7 @@ export const NetworkNotificationsSection = (): Nullable<ReactElement> => {
 
     return (
         <PWView
-            style={styles.networkSection}
+            style={styles.header}
             testID='settings_notifications_networks'
         >
             <PWText

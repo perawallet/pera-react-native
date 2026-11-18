@@ -11,15 +11,10 @@
  */
 
 import { useCallback, useRef, useState } from 'react'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import {
-    buildDeviceAccountRegistrations,
-    useDevice,
-    useDeviceStore,
-} from '@perawallet/wallet-core-device'
-import { useNotificationPreferences } from '@perawallet/wallet-core-messages'
+import { useDevice, useDeviceStore } from '@perawallet/wallet-core-device'
 import { assertOnline } from '@perawallet/wallet-core-shared'
+import { useDeviceAccountRegistrations } from '@hooks/useDeviceAccountRegistrations'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 
@@ -50,8 +45,7 @@ export const clearNetworkNotificationToggleGuardForTests = (): void => {
 export const useNetworkNotificationToggle =
     (): UseNetworkNotificationToggleResult => {
         const setChainMuted = useDeviceStore(state => state.setChainMuted)
-        const { disabledAccounts } = useNotificationPreferences()
-        const accounts = useAllAccounts()
+        const accountRegistrations = useDeviceAccountRegistrations()
         const { registerDevice } = useDevice()
         const { showError } = useErrorToast()
         const { t } = useLanguage()
@@ -78,12 +72,7 @@ export const useNetworkNotificationToggle =
 
                     // The registration reads the store's muted chains when it
                     // runs, so the write above is what it sends.
-                    await registerDevice(
-                        buildDeviceAccountRegistrations(
-                            accounts,
-                            disabledAccounts,
-                        ),
-                    )
+                    await registerDevice(accountRegistrations)
                     return true
                 } catch (error) {
                     setChainMuted(chainId, enabled)
@@ -95,14 +84,7 @@ export const useNetworkNotificationToggle =
                     setPendingChains([...ownPendingChainsRef.current])
                 }
             },
-            [
-                setChainMuted,
-                accounts,
-                disabledAccounts,
-                registerDevice,
-                showError,
-                t,
-            ],
+            [setChainMuted, accountRegistrations, registerDevice, showError, t],
         )
 
         const isTogglePending = useCallback(

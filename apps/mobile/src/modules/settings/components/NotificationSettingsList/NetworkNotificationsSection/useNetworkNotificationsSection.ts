@@ -33,7 +33,7 @@ export type UseNetworkNotificationsSectionResult = {
 
 export const useNetworkNotificationsSection =
     (): UseNetworkNotificationsSectionResult => {
-        const mutableChainIds = useChainsDeviceCanMute()
+        const chainsDeviceCanMute = useChainsDeviceCanMute()
         const mutedChainIds = useDeviceStore(state => state.mutedChainIds)
         const { toggleNetworkNotification, isTogglePending } =
             useNetworkNotificationToggle()
@@ -44,14 +44,14 @@ export const useNetworkNotificationsSection =
         const networks = useMemo(
             () =>
                 isPushSupported
-                    ? mutableChainIds.map(chainId => ({
+                    ? chainsDeviceCanMute.map(chainId => ({
                           chainId,
                           displayName:
                               getProvider().chains.get(chainId).descriptor
                                   .displayName,
                       }))
                     : [],
-            [isPushSupported, mutableChainIds],
+            [isPushSupported, chainsDeviceCanMute],
         )
 
         const isNetworkEnabled = useCallback(

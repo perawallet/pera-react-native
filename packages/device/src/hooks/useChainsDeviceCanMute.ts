@@ -20,8 +20,9 @@ import { canMuteChainInDeviceRegistration } from './endpoints'
 
 /**
  * Registered chains, in registry order, whose pushes this device can mute on
- * the current deployment. Reads the v4 gate through the remote-config store so
- * a flip re-renders, and keeps its identity until the set changes.
+ * the current deployment. Subscribes through the remote-config store, which
+ * holds overrides only (a fetched value is re-read on the next render), and
+ * keeps its identity until the set changes.
  */
 export const useChainsDeviceCanMute = (): ChainId[] => {
     const deployment = useWalletDeployment()
