@@ -65,6 +65,16 @@ export const routerChainIdOf = (scope: ChainScope): string => {
     return caip2
 }
 
+/** {@link routerChainIdOf}, or null when the router has no id for `scope`'s network, e.g. a custom node. */
+export const routerChainIdOrNull = (scope: ChainScope): Nullable<string> => {
+    try {
+        return routerChainIdOf(scope)
+    } catch (error) {
+        if (error instanceof PeraServiceUnavailableError) return null
+        throw error
+    }
+}
+
 /** The router's account id (CAIP-10) for `address` on `scope`. */
 export const routerAccountId = (scope: ChainScope, address: string): string =>
     `${routerChainIdOf(scope)}:${address}`
