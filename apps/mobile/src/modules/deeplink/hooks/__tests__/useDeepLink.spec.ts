@@ -1458,6 +1458,111 @@ describe('useDeepLink', () => {
         })
     })
 
+    describe('TRANSACTION_DETAIL deeplink', () => {
+        const STORED_ADDRESS = '0xfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359'
+        const HASH = `0x${'ab'.repeat(32)}`
+        const link = (address = STORED_ADDRESS) => ({
+            type: DeeplinkType.TRANSACTION_DETAIL,
+            target: { chainId: 'ethereum', networkId: 'mainnet' },
+            address,
+            transactionId: HASH,
+            assetRef: { chainId: 'ethereum', assetId: '0xusdc' },
+        })
+        const open = async (
+            parsed: unknown,
+            source: 'deeplink' | 'notification' = 'notification',
+        ) => {
+            ;(parseDeeplink as Mock).mockReturnValue(parsed)
+            const onError = vi.fn()
+            const { result } = renderHook(() => useDeepLink())
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    'perawallet://app/asset-detail',
+                    false,
+                    source,
+                    onError,
+                )
+            })
+            return { onError }
+        }
+
+        beforeEach(() => {
+            accountsState.accounts = [
+                {
+                    id: 'eth-account',
+                    chains: { ethereum: { address: STORED_ADDRESS } },
+                },
+            ]
+        })
+
+        it("selects the wallet's account and opens the transaction from its stored address", async () => {
+            await open(link())
+
+            expect(accountsState.setSelectedAccountId).toHaveBeenCalledWith(
+                'eth-account',
+            )
+            expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
+                scope: { chainId: 'ethereum', networkId: 'mainnet' },
+                transactionId: HASH,
+                accountAddress: STORED_ADDRESS,
+            })
+        })
+
+        it('is not blocked when it comes from a notification', async () => {
+            const { onError } = await open(link(), 'notification')
+
+            expect(onError).not.toHaveBeenCalled()
+            expect(mockNavigate).toHaveBeenCalledTimes(1)
+        })
+
+        it('opens the asset detail when the address is not in the wallet', async () => {
+            await open(link('0x0000000000000000000000000000000000000001'))
+
+            expect(accountsState.setSelectedAccountId).not.toHaveBeenCalled()
+            expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+                screen: 'Home',
+                params: {
+                    screen: 'AssetDetails',
+                    params: { assetId: '0xusdc', chainId: 'ethereum' },
+                },
+            })
+        })
+
+        it("opens the chain's native asset detail when the link names no token", async () => {
+            await open({
+                ...link('0x0000000000000000000000000000000000000001'),
+                assetRef: undefined,
+            })
+
+            expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+                screen: 'Home',
+                params: {
+                    screen: 'AssetDetails',
+                    params: { assetId: '0', chainId: 'ethereum' },
+                },
+            })
+        })
+
+        it('opens the asset detail when the chain reads no history', async () => {
+            capabilityState.turnOff('history')
+
+            await open(link())
+
+            expect(mockNavigate).toHaveBeenCalledWith(
+                'TabBar',
+                expect.objectContaining({
+                    params: expect.objectContaining({
+                        screen: 'AssetDetails',
+                    }),
+                }),
+            )
+            expect(mockNavigate).not.toHaveBeenCalledWith(
+                'TransactionDetails',
+                expect.anything(),
+            )
+        })
+    })
+
     it('should handle INTERNAL_BROWSER deeplink', async () => {
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.INTERNAL_BROWSER,

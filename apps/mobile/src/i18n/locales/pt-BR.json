@@ -3923,6 +3923,10 @@
         },
         "record_detail": {
             "read_failed": "Não foi possível ler da rede os detalhes da chamada desta transação.",
+            "not_found": {
+                "title": "Transação não encontrada",
+                "body": "A Pera não encontrou esta transação no histórico da conta. Uma nova transação pode levar um minuto para aparecer, então tente novamente em breve."
+            },
             "inferred_notice": "Nome deduzido das variações de saldo. A Pera não conseguiu ler a chamada em si.",
             "transaction_id": "ID da transação",
             "quantity": "Quantidade",

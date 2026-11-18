@@ -3906,6 +3906,10 @@
         },
         "record_detail": {
             "read_failed": "Impossible de lire depuis le réseau les détails de l’appel de cette transaction.",
+            "not_found": {
+                "title": "Transaction introuvable",
+                "body": "Pera n’a pas trouvé cette transaction dans l’historique du compte. Une nouvelle transaction peut mettre une minute à apparaître ; veuillez réessayer dans un instant."
+            },
             "inferred_notice": "Nom déduit des variations de solde. Pera n’a pas pu lire l’appel lui-même.",
             "transaction_id": "ID de transaction",
             "quantity": "Quantité",

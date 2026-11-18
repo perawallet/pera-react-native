@@ -49,7 +49,7 @@ import {
     useSelectedAccountId,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { AssetRef, ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useSwapChainResolver } from '@perawallet/wallet-core-swaps'
 import {
     isRegisteredBottomSheetOpen,
@@ -372,6 +372,26 @@ export const useDeepLink = (): UseDeepLinkResult => {
             if (chainId) await openAddressActions(chainId, address)
         }
 
+        const openAssetDetail = (
+            chainId: ChainId,
+            address: string,
+            assetRef: Optional<AssetRef>,
+        ) => {
+            selectAccountByAddress(chainId, address)
+            navigateToScreen(replaceCurrentScreen, 'TabBar', {
+                screen: 'Home',
+                params: {
+                    screen: 'AssetDetails',
+                    params: {
+                        assetId:
+                            assetRef?.assetId ??
+                            nativeAssetFor(chainId).assetId,
+                        chainId,
+                    },
+                },
+            })
+        }
+
         try {
             parsedData = parseDeeplink(url)
 
@@ -603,20 +623,48 @@ export const useDeepLink = (): UseDeepLinkResult => {
 
                 case DeeplinkType.ASSET_DETAIL:
                 case DeeplinkType.ASSET_TRANSACTIONS: {
+                    openAssetDetail(
+                        parsedData.target.chainId,
+                        parsedData.address,
+                        parsedData.assetRef,
+                    )
+                    break
+                }
+
+                case DeeplinkType.TRANSACTION_DETAIL: {
                     const { chainId } = parsedData.target
-                    selectAccountByAddress(chainId, parsedData.address)
-                    navigateToScreen(replaceCurrentScreen, 'TabBar', {
-                        screen: 'Home',
-                        params: {
-                            screen: 'AssetDetails',
-                            params: {
-                                assetId:
-                                    parsedData.assetRef?.assetId ??
-                                    nativeAssetFor(chainId).assetId,
-                                chainId,
-                            },
+                    const account = findLinkedAccount(
+                        chainId,
+                        parsedData.address,
+                    )
+                    // The stored address, not the link's: History reads from it.
+                    const accountAddress = account
+                        ? chainAccountOf(account, chainId)?.address
+                        : undefined
+                    if (
+                        !account ||
+                        !accountAddress ||
+                        !isAllowed({
+                            chain: { chainId, capability: 'history' },
+                        })
+                    ) {
+                        openAssetDetail(
+                            chainId,
+                            parsedData.address,
+                            parsedData.assetRef,
+                        )
+                        break
+                    }
+                    setSelectedAccountId(account.id)
+                    navigateToScreen(
+                        replaceCurrentScreen,
+                        'TransactionDetails',
+                        {
+                            scope: getSelectedScope(chainId),
+                            transactionId: parsedData.transactionId,
+                            accountAddress,
                         },
-                    })
+                    )
                     break
                 }
 

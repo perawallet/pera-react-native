@@ -38,6 +38,8 @@ import {
 } from '@perawallet/wallet-core-shared'
 import {
     summarizeHistoryItem,
+    TransactionDetailNotFoundError,
+    useTransactionRecordByIdQuery,
     type SuspectedPoisoning,
 } from '@perawallet/wallet-core-transactions'
 import {
@@ -100,7 +102,8 @@ export const useTransactionDetailsScreen =
             groupId,
             isExternal,
             historyTransaction,
-            historyRecord,
+            historyRecord: paramRecord,
+            accountAddress,
             suspectedPoisoning,
         } = route.params
         const addressReuseGuard = useSuspectedAddressReuseGuard({
@@ -132,8 +135,26 @@ export const useTransactionDetailsScreen =
             scope,
             transactionId: transactionId ?? '',
             historyTransaction,
-            isEnabled: !paramTransaction && !!transactionId && !historyRecord,
+            isEnabled: !paramTransaction && !!transactionId && !paramRecord,
         })
+
+        // A chain that renders only from a record has no fetch by id, so a link
+        // naming just the id finds the record in the account's history.
+        const isRecordLookup =
+            !!chainTransactionDetails?.RecordDetailBody &&
+            !chainUseTransactionDetail &&
+            !!transactionId &&
+            !!accountAddress &&
+            !paramTransaction &&
+            !historyTransaction &&
+            !paramRecord
+        const lookup = useTransactionRecordByIdQuery({
+            accountAddress: accountAddress ?? '',
+            scope,
+            transactionId: transactionId ?? '',
+            isEnabled: isRecordLookup,
+        })
+        const historyRecord = paramRecord ?? lookup.data
 
         const { hasInternet } = useNetworkStatus()
         // The signing flow's in-memory object is authoritative (unsigned txns
@@ -171,6 +192,29 @@ export const useTransactionDetailsScreen =
             if (transaction) {
                 return { kind: 'content', transaction }
             }
+            if (isRecordLookup) {
+                if (lookup.isPaused || (lookup.isError && !hasInternet)) {
+                    return { kind: 'offline' }
+                }
+                if (lookup.isError) {
+                    return lookup.error instanceof
+                        TransactionDetailNotFoundError
+                        ? {
+                              kind: 'error',
+                              titleKey: i18nKey(
+                                  'transactions.record_detail.not_found.title',
+                              ),
+                              bodyKey: i18nKey(
+                                  'transactions.record_detail.not_found.body',
+                              ),
+                          }
+                        : {
+                              kind: 'error',
+                              ...getNetworkErrorMessageKeys(lookup.error),
+                          }
+                }
+                if (lookup.isLoading) return { kind: 'loading' }
+            }
             // Offline wins over a stale error: a device that goes offline
             // carrying a prior error (e.g. `timeout`) must show the offline
             // surface, not a dead Retry that just re-pauses. Mirrors the
@@ -200,6 +244,11 @@ export const useTransactionDetailsScreen =
             historyRecord,
             RecordDetailBody,
             transaction,
+            isRecordLookup,
+            lookup.isPaused,
+            lookup.isError,
+            lookup.error,
+            lookup.isLoading,
             detail.isError,
             detail.error,
             detail.isPaused,
@@ -226,8 +275,8 @@ export const useTransactionDetailsScreen =
             if (!useNetworkStatusStore.getState().hasInternet) {
                 return
             }
-            void detail.refetch()
-        }, [detail])
+            void (isRecordLookup ? lookup.refetch() : detail.refetch())
+        }, [detail, lookup, isRecordLookup])
 
         return {
             renderState,

@@ -3906,6 +3906,10 @@
         },
         "record_detail": {
             "read_failed": "Bu işlemin çağrı ayrıntıları ağdan okunamadı.",
+            "not_found": {
+                "title": "İşlem bulunamadı",
+                "body": "Pera bu işlemi hesabın geçmişinde bulamadı. Yeni bir işlemin görünmesi bir dakika sürebilir, bu yüzden kısa süre sonra tekrar dene."
+            },
             "inferred_notice": "Ad, bakiye değişikliklerinden çıkarıldı. Pera çağrının kendisini okuyamadı.",
             "transaction_id": "İşlem Kimliği",
             "quantity": "Adet",
