@@ -190,12 +190,12 @@ Choosing A Pay Asset Returns To The Form
 Flip Swaps Pay And Receive And Flips Back
     [Tags]    id:swap.asset.flip    swap-asset    p1
     Open Swap
+    Choose USDC To Receive
+    Page Should Not Contain Element    ${PAY_IS_USDC}
     Tap    ${SWAP_FLIP_BUTTON}
-    Wait Until Page Contains Element    ${SWAP_PAY_INPUT}    timeout=15s
-    Page Should Contain Element    ${SWAP_PAY_ASSET_SELECTOR}
-    Page Should Contain Element    ${SWAP_RECEIVE_ASSET_SELECTOR}
+    Wait Until Page Contains Element    ${PAY_IS_USDC}    timeout=15s
     Tap    ${SWAP_FLIP_BUTTON}
-    Wait Until Page Contains Element    ${SWAP_PAY_INPUT}    timeout=15s
+    Wait Until Page Does Not Contain Element    ${PAY_IS_USDC}    timeout=15s
 
 Pay Picker Leaves Out An Asset The Account Does Not Hold
     [Tags]    id:swap.asset.pay-held-only    swap-asset    p1

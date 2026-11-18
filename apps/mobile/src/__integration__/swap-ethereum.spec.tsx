@@ -28,6 +28,7 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainContext } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { SwapQuote, SwapStatus } from '@perawallet/wallet-core-swaps'
+import { http, HttpResponse } from 'msw'
 import { server } from '@test-utils/msw-server'
 import type { SwapExecutionOutcome } from '@modules/swap/hooks/useSwapExecution'
 
@@ -104,6 +105,7 @@ const { chainOverridesKey, useRemoteConfigStore } =
     await import('@perawallet/wallet-core-remote-config')
 const { usePreferences } = await import('@perawallet/wallet-core-settings')
 const {
+    SWAP_ROUTER_PATH,
     swapChainAdapters,
     useSwapOrderTracker,
     useSwapsStore,
@@ -733,6 +735,80 @@ describe('Flow: Swap from an Ethereum account', () => {
             sourceChainId: 'ethereum',
             fromAsset: TOKEN,
             pairAccountId: second.id,
+        })
+    })
+
+    it('Given an account on two chains swapping ALGO into ETH on its own Ethereum address, when it taps flip, then the swap pays ETH on Ethereum into ALGO on Algorand and quotes the carried amount', async () => {
+        await selectTwoChainAccount()
+        await seedSenderEther('10000000000000000000')
+        fakeNode()
+        useSwapsStore.getState().setFromAsset('0')
+        useSwapsStore.getState().setToAsset(ETH_ASSET, ETH_SCOPE)
+        const quoteRequests: Array<Record<string, string>> = []
+        server.use(
+            http.post(`*${SWAP_ROUTER_PATH}quotes/`, async ({ request }) => {
+                const body = (await request.json()) as Record<string, string>
+                quoteRequests.push(body)
+                const isEthSource = body.source_asset_id.startsWith('eip155')
+                return HttpResponse.json({
+                    results: [
+                        {
+                            ...tokenToEtherOffer,
+                            source_asset: routerAsset(
+                                body.source_asset_id,
+                                isEthSource ? 'ETH' : 'ALGO',
+                                isEthSource ? 18 : 6,
+                            ),
+                            destination_asset: routerAsset(
+                                body.destination_asset_id,
+                                isEthSource ? 'ALGO' : 'ETH',
+                                isEthSource ? 6 : 18,
+                            ),
+                            source_amount: body.source_amount,
+                            destination_amount_expected: isEthSource
+                                ? '400000'
+                                : '2500000000000000',
+                            destination_amount_minimum: null,
+                        },
+                    ],
+                })
+            }),
+        )
+        renderWithNavigation(SwapScreen, 'Swap')
+
+        fireEvent.change(await screen.findByTestId('swap-pay-input'), {
+            target: { value: '1' },
+        })
+        await waitFor(
+            () =>
+                expect(
+                    screen.getByTestId('swap-receive-amount').textContent,
+                ).not.toBe('0.00'),
+            FORM_TIMEOUT,
+        )
+        fireEvent.click(screen.getByTestId('swap-flip-button'))
+
+        await waitFor(
+            () =>
+                expect(
+                    (screen.getByTestId('swap-pay-input') as HTMLInputElement)
+                        .value,
+                ).toBe('0.0025'),
+            FORM_TIMEOUT,
+        )
+        await waitFor(
+            () =>
+                expect(quoteRequests.at(-1)).toMatchObject({
+                    source_asset_id: expect.stringMatching(/^eip155:/),
+                    source_amount: '2500000000000000',
+                }),
+            FORM_TIMEOUT,
+        )
+        expect(useSwapsStore.getState()).toMatchObject({
+            sourceChainId: 'ethereum',
+            fromAsset: ETH_ASSET,
+            toAsset: '0',
+            toAssetScope: ALGO_SCOPE,
         })
     })
 

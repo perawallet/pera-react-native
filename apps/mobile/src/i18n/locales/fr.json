@@ -4209,7 +4209,10 @@
             "to": "Vers",
             "balance_label": "Solde : <0/>",
             "max": "MAX",
-            "select_asset": "Choisir"
+            "select_asset": "Choisir",
+            "flip": "Inverser payer et recevoir",
+            "flip_unavailable_title": "Impossible d’inverser ce swap",
+            "flip_unavailable_body": "Ce compte ne peut pas payer depuis le réseau {{network}}."
         },
         "asset_selection": {
             "swap_from_title": "Échanger depuis",

@@ -41,6 +41,8 @@ ${USDC_RECEIVE_ROW}                 tid=swap-asset-item-31566704
 # Only the receive side's balance carries the receive asset's unit; "ALGO to USDC" in Top Swaps
 # would match a bare USDC text anywhere.
 ${RECEIVE_IS_USDC}                  xpath=//*[@text='Balance: ' or @label='Balance: ']/following-sibling::*[contains(@text,'USDC') or contains(@label,'USDC')]
+# The selector's label is the asset's unit; iOS folds it into the touchable, Android keeps a child.
+${PAY_IS_USDC}                      xpath=//*[@content-desc='swap-pay-asset-selector' or @resource-id='swap-pay-asset-selector' or @name='swap-pay-asset-selector'][descendant-or-self::*[contains(@text,'USDC') or contains(@label,'USDC')]]
 
 ${CONFIG_APPLY}                     tid=swap-config-apply
 ${CONFIG_SLIPPAGE_INPUT}            tid=swap-config-slippage-input
