@@ -15,21 +15,39 @@ import type { ComponentType } from 'react'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import type { BottomSheetRegistry } from '../types'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const entries = new Map<string, ComponentType<any>>()
+type RegisterBottomSheetOptions = {
+    /**
+     * Opens the sheet under this request id, so it dedupes against a sheet
+     * opened directly with the same id instead of stacking a second instance.
+     */
+    id?: string
+}
+
+type RegistryEntry = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    component: ComponentType<any>
+    id?: string
+}
+
+const entries = new Map<string, RegistryEntry>()
 
 export const registerBottomSheet = <K extends keyof BottomSheetRegistry>(
     type: K,
     component: ComponentType<BottomSheetRegistry[K]>,
+    options: RegisterBottomSheetOptions = {},
 ): void => {
-    entries.set(type as string, component)
+    entries.set(type as string, { component, id: options.id })
 }
 
 export const getRegisteredBottomSheet = (
     type: string,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Optional<ComponentType<any>> => {
-    return entries.get(type)
+    return entries.get(type)?.component
+}
+
+export const getRegisteredBottomSheetId = (type: string): Optional<string> => {
+    return entries.get(type)?.id
 }
 
 /** Tests only — never call from production code. */

@@ -24,26 +24,36 @@ export type WalletChangesCardProps = {
     receive: readonly BalanceImpactItem[]
     /** Shown in place of the rows while the changes are still being worked out. */
     isLoading?: boolean
+    /** An empty receive side may still hold something Pera can't see. */
+    isReceiveUnknown?: boolean
 }
 
 export const WalletChangesCard = ({
     spend,
     receive,
     isLoading = false,
+    isReceiveUnknown = false,
 }: WalletChangesCardProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
     const { netChange, isNetNeutral } = useWalletChangesCard(spend, receive)
 
-    const sideOf = (
-        items: readonly BalanceImpactItem[],
-        label: string,
-        testID: string,
-    ) =>
+    const sideOf = ({
+        items,
+        label,
+        testID,
+        isReceiveUnknown = false,
+    }: {
+        items: readonly BalanceImpactItem[]
+        label: string
+        testID: string
+        isReceiveUnknown?: boolean
+    }) =>
         items.length === 0 ? (
             <WalletChangeRow
                 label={label}
-                testID={`${testID}_nothing`}
+                isReceiveUnknown={isReceiveUnknown}
+                testID={`${testID}_${isReceiveUnknown ? 'unknown' : 'nothing'}`}
             />
         ) : (
             items.map(item => (
@@ -82,7 +92,11 @@ export const WalletChangesCard = ({
             >
                 {t('signing.review.changes_title')}
             </PWText>
-            {sideOf(spend, t('signing.review.you_send'), 'review_wallet_send')}
+            {sideOf({
+                items: spend,
+                label: t('signing.review.you_send'),
+                testID: 'review_wallet_send',
+            })}
             <PWView style={styles.arrow}>
                 <PWIcon
                     name='arrow-down'
@@ -90,11 +104,12 @@ export const WalletChangesCard = ({
                     variant='secondary'
                 />
             </PWView>
-            {sideOf(
-                receive,
-                t('signing.review.you_receive'),
-                'review_wallet_receive',
-            )}
+            {sideOf({
+                items: receive,
+                label: t('signing.review.you_receive'),
+                testID: 'review_wallet_receive',
+                isReceiveUnknown,
+            })}
             {netChange && (
                 <PWView
                     style={styles.net}

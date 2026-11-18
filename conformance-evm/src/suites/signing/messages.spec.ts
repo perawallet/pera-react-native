@@ -20,7 +20,7 @@ import {
 import type { Hex, TypedDataDefinition } from 'viem'
 import { describe, expect, it } from 'vitest'
 import {
-    parseDomainChainId,
+    domainChainBindingOf,
     personalSignMessageRequest,
     typedDataMessageRequest,
 } from '@perawallet/wallet-core-chain-ethereum/signing/messages'
@@ -325,14 +325,20 @@ describe('evm message signing conformance', () => {
         })
 
         it('parses a domain chainId from number, bigint, decimal and hex text', () => {
-            expect(parseDomainChainId(undefined)).toBeUndefined()
+            const bindingOf = (chainId?: unknown) =>
+                domainChainBindingOf({ domain: { chainId } })
+
+            expect(bindingOf()).toEqual({ kind: 'none' })
             for (const input of [84_532, 84_532n, '84532', '0x14a34']) {
-                expect(parseDomainChainId(input)).toBe(84_532n)
+                expect(bindingOf(input)).toEqual({
+                    kind: 'bound',
+                    chainId: 84_532n,
+                })
             }
-            expect(() => parseDomainChainId({})).toThrow(
+            expect(() => bindingOf({})).toThrow(
                 'The typed-data message payload is malformed',
             )
-            expect(() => parseDomainChainId('not a number')).toThrow(
+            expect(() => bindingOf('not a number')).toThrow(
                 'The typed-data message payload is malformed',
             )
         })

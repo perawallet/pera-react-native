@@ -48,8 +48,11 @@ const mockHistory = (
         error: null,
         isUnavailableOnNetwork: false,
         excludedChainIds: [],
+        failedChainIds: [],
+        isRetryingFailed: false,
         isPartial: false,
         refetch: vi.fn(),
+        refetchFailed: vi.fn(),
         ...overrides,
     })
 

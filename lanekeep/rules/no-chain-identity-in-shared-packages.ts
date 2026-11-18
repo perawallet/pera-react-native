@@ -145,6 +145,11 @@ const ALLOWED: readonly Allowed[] = [
         reason: 'Holds a resumed amount until the form is on the chain it was entered on; compares two passed values, never a named chain.',
     },
     {
+        file: 'packages/swaps/src/store/store.ts',
+        text: 'flippedPayAmount?.chainId !== chainId',
+        reason: 'Hands a flipped amount only to the form on the chain it was carried to; compares two passed values, never a named chain.',
+    },
+    {
         file: 'apps/mobile/src/components/PreferredAmount/usePreferredAmount.ts',
         text: 'assetScope.chainId === currencyScope.chainId',
         reason: "Asks whether the asset lives on the currency's chain; compares two passed scopes, never a named chain.",

@@ -1233,6 +1233,7 @@
             "empty_body": "Bakiye geçmişin olduğunda burada bir grafik göreceksin",
             "asset_empty_body": "Bu hesapta bu varlık için bakiye geçmişin olduğunda burada bir grafik göreceksin",
             "excludes_networks": "Bu grafik henüz {{networks}} varlıklarını içermiyor",
+            "failed_networks": "{{networks}} geçmişi yüklenemedi, bu yüzden bu grafikte yer almıyor",
             "currency_unavailable_body": "Bu grafik şu anda {{currency}} para biriminde kullanılamıyor"
         },
         "webview": {
@@ -3790,6 +3791,8 @@
             "title_clawback": "Geri alma",
             "title_contract_interaction": "Sözleşme etkileşimi",
             "token_contract": "Token sözleşmesi: {{symbol}}",
+            "unknown": "Bilinmiyor",
+            "unknown_receive_body": "Pera bu uygulamadan ne alacağını belirleyemiyor",
             "unverified": "Doğrulanmamış",
             "you_receive": "Alacağın",
             "you_send": "Göndereceğin",
@@ -4209,7 +4212,10 @@
             "to": "Hedef",
             "balance_label": "Bakiye: <0/>",
             "max": "MAKS",
-            "select_asset": "Seç"
+            "select_asset": "Seç",
+            "flip": "Ödenen ve alınanı değiştir",
+            "flip_unavailable_title": "Bu takas ters çevrilemiyor",
+            "flip_unavailable_body": "Bu hesap {{network}} ağından ödeme yapamıyor."
         },
         "asset_selection": {
             "swap_from_title": "Kaynak varlık",

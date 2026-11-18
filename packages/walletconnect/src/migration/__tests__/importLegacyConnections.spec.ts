@@ -156,10 +156,7 @@ describe('importLegacyConnections', () => {
         expect((await store.list())[0].id).toBe('a')
     })
 
-    it('carries the legacy last-active date rather than re-dating every record', async () => {
-        // The settings list sorts on `lastActiveAt` and prints it, so dropping
-        // it re-sorts an upgrading user's whole list into creation order under
-        // a wrong date.
+    it('dates a record by the import rather than its approval, so the idle rule keeps a session still in use', async () => {
         const storage = makeStorage()
         const blob: { state: { walletConnectConnections: unknown[] } } =
             JSON.parse(legacyBlob(['a']))
@@ -170,27 +167,15 @@ describe('importLegacyConnections', () => {
         record.lastActiveAt = '2026-03-04T05:06:07.000Z'
         storage.setItem(LEGACY_STORE_KEY, JSON.stringify(blob))
         const store = createConnectionStore({ storage })
+        const before = Date.now()
 
         await importLegacyConnections({ storage, store, sessionKeys })
 
         const [connection] = await store.list()
-        expect(connection.lastActiveAt).toBe(
-            Date.parse('2026-03-04T05:06:07.000Z'),
-        )
+        expect(connection.lastActiveAt).toBeGreaterThanOrEqual(before)
         expect(connection.createdAt).toBe(
             Date.parse('2026-01-01T00:00:00.000Z'),
         )
-    })
-
-    it('falls back to the creation date when the record has no last-active date', async () => {
-        const storage = makeStorage()
-        storage.setItem(LEGACY_STORE_KEY, legacyBlob(['a']))
-        const store = createConnectionStore({ storage })
-
-        await importLegacyConnections({ storage, store, sessionKeys })
-
-        const [connection] = await store.list()
-        expect(connection.lastActiveAt).toBe(connection.createdAt)
     })
 
     it('never writes the session key into the record', async () => {

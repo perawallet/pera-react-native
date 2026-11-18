@@ -22,4 +22,7 @@ export const useStyles = makeStyles(theme => ({
         textAlign: 'center',
         marginTop: theme.spacing.sm,
     },
+    failedNote: {
+        alignItems: 'center',
+    },
 }))

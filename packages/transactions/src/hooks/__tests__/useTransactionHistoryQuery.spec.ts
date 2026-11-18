@@ -38,6 +38,10 @@ vi.mock('../../history-adapter', () => ({
 
 // The real module reaches the accounts package, which needs a platform provider.
 vi.mock('../../pending-history', () => ({ MAX_PENDING_HISTORY_ROWS: 50 }))
+vi.mock('../historyReadRetry', async importOriginal => ({
+    ...(await importOriginal<typeof import('../historyReadRetry')>()),
+    historyReadRetryDelay: () => 0,
+}))
 
 const mockGetTransactionHistory = vi.hoisted(() => vi.fn())
 const mockPersistTransactions = vi.hoisted(() => vi.fn())

@@ -11,6 +11,12 @@ ${SETTINGS_ITEM_WALLET_CONNECT}         tid=settings_item_walletconnect_sessions
 ${SETTINGS_ITEM_PASSKEYS}               tid=settings_item_passkeys
 ${SETTINGS_ITEM_CURRENCY}               tid=settings_item_currency
 ${SETTINGS_ITEM_THEME}                  tid=settings_item_theme
+${SETTINGS_ITEM_LANGUAGE}               tid=settings_item_language
+${LANGUAGE_SYSTEM_RADIO}                tid=settings_language_system_radio
+${LANGUAGE_TURKISH_RADIO}               tid=settings_language_tr_radio
+# The rows keep their testIDs in every language; the screen's title is what the switch changes.
+${LANGUAGE_TITLE_TURKISH}               xpath=//*[@text='Dil' or @label='Dil']
+${LANGUAGE_TITLE_ENGLISH}               xpath=//*[@text='Language' or @label='Language']
 ${SETTINGS_ITEM_RATE_APP}               tid=settings_item_rate_pera_wallet
 ${SETTINGS_ITEM_TERMS}                  tid=settings_item_terms_and_services
 ${SETTINGS_ITEM_PRIVACY}                tid=settings_item_privacy_policy
