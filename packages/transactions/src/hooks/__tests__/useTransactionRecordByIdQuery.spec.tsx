@@ -151,9 +151,8 @@ describe('useTransactionRecordByIdQuery', () => {
         const { result } = renderLookup()
 
         await waitFor(() => expect(result.current.isError).toBe(true))
-        // One quiet re-read follows the first failed lookup.
         expect(mocks.getMinedTransactionHistory).toHaveBeenCalledTimes(
-            MAX_RECORD_LOOKUP_PAGES * 2,
+            MAX_RECORD_LOOKUP_PAGES,
         )
         expect(result.current.error).toBeInstanceOf(
             TransactionDetailNotFoundError,

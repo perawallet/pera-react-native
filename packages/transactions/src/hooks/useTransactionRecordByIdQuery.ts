@@ -68,7 +68,10 @@ export const useTransactionRecordByIdQuery = ({
             transactionId,
         ),
         enabled: isEnabled && !!accountAddress && !!transactionId,
-        retry: shouldRetryHistoryRead,
+        // A re-read a second later won't find a transaction the backend hasn't indexed; Retry is the user's way.
+        retry: (failureCount, error) =>
+            !(error instanceof TransactionDetailNotFoundError) &&
+            shouldRetryHistoryRead(failureCount, error),
         retryDelay: historyReadRetryDelay,
         queryFn: async ({ signal }): Promise<TransactionRecord> => {
             let page: Optional<PageRef>

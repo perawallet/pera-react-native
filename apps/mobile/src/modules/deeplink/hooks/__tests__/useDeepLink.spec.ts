@@ -1496,7 +1496,10 @@ describe('useDeepLink', () => {
         })
 
         it("selects the wallet's account and opens the transaction from its stored address", async () => {
-            await open(link())
+            const { onError } = await open(link())
+
+            expect(onError).not.toHaveBeenCalled()
+            expect(mockNavigate).toHaveBeenCalledTimes(1)
 
             expect(accountsState.setSelectedAccountId).toHaveBeenCalledWith(
                 'eth-account',
@@ -1506,13 +1509,6 @@ describe('useDeepLink', () => {
                 transactionId: HASH,
                 accountAddress: STORED_ADDRESS,
             })
-        })
-
-        it('is not blocked when it comes from a notification', async () => {
-            const { onError } = await open(link(), 'notification')
-
-            expect(onError).not.toHaveBeenCalled()
-            expect(mockNavigate).toHaveBeenCalledTimes(1)
         })
 
         it('opens the asset detail when the address is not in the wallet', async () => {
@@ -1553,6 +1549,7 @@ describe('useDeepLink', () => {
                 expect.objectContaining({
                     params: expect.objectContaining({
                         screen: 'AssetDetails',
+                        params: { assetId: '0xusdc', chainId: 'ethereum' },
                     }),
                 }),
             )
