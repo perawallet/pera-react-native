@@ -37,6 +37,7 @@ import {
     makeProbeFailuresDue,
     reconcileEthereumSubmissions,
     type ProbeFailureStreaks,
+    type ProbeRotation,
     type SubmissionSettledHandlers,
 } from './reconcile'
 import { resumeEthereumCallBatches } from '../connect/callBatch/executor'
@@ -65,6 +66,7 @@ export const createEvmBroadcasterAdapter = (
     const clientFor = (scope: ChainScope) => createEvmClient(scope, ctx, chain)
     const settleHandlers: SubmissionSettledHandlers = new Map()
     const probeFailures: ProbeFailureStreaks = new Map()
+    const probeRotation: ProbeRotation = new Set()
     const nativeSymbol = chain.row.nativeAsset.symbol
 
     // Logs the node's error rather than the SubmissionError wrapper:
@@ -202,6 +204,7 @@ export const createEvmBroadcasterAdapter = (
                 chain,
                 settleHandlers,
                 probeFailures,
+                probeRotation,
                 getClient: clientFor,
                 tokenSightings: options.tokenSightings,
             })
