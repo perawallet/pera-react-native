@@ -43,17 +43,19 @@ export const useBackupReminderWriteDownScreen =
         const route =
             useRoute<RouteProp<BackupStackParamList, 'BackupWriteDown'>>()
         const address = route.params?.address
+        const accountId = route.params?.accountId
         const { t } = useLanguage()
         const { isMultiNetwork } = usePassphraseReach({
             address: address ?? '',
+            accountId,
         })
 
         const onContinue = useCallback(() => {
             if (address) {
                 trackEvent(OnboardingEvent.UnderstandPassphrase)
-                navigation.navigate('BackupMnemonic', { address })
+                navigation.navigate('BackupMnemonic', { address, accountId })
             }
-        }, [navigation, address])
+        }, [navigation, address, accountId])
 
         return {
             body: isMultiNetwork

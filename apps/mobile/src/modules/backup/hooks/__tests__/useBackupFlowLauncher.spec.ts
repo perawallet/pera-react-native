@@ -22,7 +22,7 @@ vi.mock('@react-navigation/native', () => ({
 import { useBackupFlowLauncher } from '../useBackupFlowLauncher'
 
 describe('useBackupFlowLauncher', () => {
-    test('navigates to BackupWallet stack with account address', () => {
+    test('navigates to BackupWallet stack with account address and id', () => {
         const { result } = renderHook(() => useBackupFlowLauncher())
 
         const account: WalletAccount = {
@@ -38,7 +38,7 @@ describe('useBackupFlowLauncher', () => {
 
         expect(mockNavigate).toHaveBeenCalledWith('BackupWallet', {
             screen: 'BackupInfo',
-            params: { address: 'ADDR_1' },
+            params: { address: 'ADDR_1', accountId: 'algo25-account' },
         })
     })
 
@@ -58,7 +58,7 @@ describe('useBackupFlowLauncher', () => {
 
         expect(mockNavigate).toHaveBeenCalledWith('BackupWallet', {
             screen: 'BackupInfo',
-            params: { address: '0xETH_ADDR' },
+            params: { address: '0xETH_ADDR', accountId: 'evm-account' },
         })
     })
 })
