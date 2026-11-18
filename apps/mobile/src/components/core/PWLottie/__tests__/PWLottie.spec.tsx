@@ -12,6 +12,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import React, { forwardRef, useImperativeHandle } from 'react'
+import { Platform } from 'react-native'
 import { render, screen } from '@test-utils/render'
 import { PWLottie } from '../PWLottie'
 
@@ -113,12 +114,13 @@ describe('PWLottie', () => {
         expect(screen.getByTestId('lottie').dataset.webStyle).toBe(undefined)
     })
 
-    it('pauses an autoplaying loop when it stops being visible and resumes it when it returns', () => {
+    it('pauses an autoplaying loop when it stops being visible and lets autoPlay restart it', () => {
         const { rerender } = render(
             <PWLottie
                 source={mockSource}
                 autoPlay
                 loop
+                testID='lottie'
             />,
         )
         expect(mockPause).not.toHaveBeenCalled()
@@ -129,9 +131,11 @@ describe('PWLottie', () => {
                 source={mockSource}
                 autoPlay
                 loop
+                testID='lottie'
             />,
         )
         expect(mockPause).toHaveBeenCalledTimes(1)
+        expect(screen.getByTestId('lottie').dataset.autoPlay).toBe('false')
 
         visibility.isVisible = true
         rerender(
@@ -139,12 +143,13 @@ describe('PWLottie', () => {
                 source={mockSource}
                 autoPlay
                 loop
+                testID='lottie'
             />,
         )
-        expect(mockResume).toHaveBeenCalledTimes(1)
+        expect(screen.getByTestId('lottie').dataset.autoPlay).toBe('true')
     })
 
-    it('does not autoplay a loop mounted while hidden, and plays it once visible', () => {
+    it('keeps autoPlay on after a loop mounted hidden becomes visible and gets a new source', () => {
         visibility.isVisible = false
         const { rerender } = render(
             <PWLottie
@@ -155,7 +160,6 @@ describe('PWLottie', () => {
             />,
         )
         expect(screen.getByTestId('lottie').dataset.autoPlay).toBe('false')
-        expect(mockPlay).not.toHaveBeenCalled()
 
         visibility.isVisible = true
         rerender(
@@ -166,8 +170,44 @@ describe('PWLottie', () => {
                 testID='lottie'
             />,
         )
-        expect(mockPlay).toHaveBeenCalledTimes(1)
-        expect(mockResume).not.toHaveBeenCalled()
+        rerender(
+            <PWLottie
+                source={{ ...mockSource, nm: 'retinted' }}
+                autoPlay
+                loop
+                testID='lottie'
+            />,
+        )
+
+        expect(screen.getByTestId('lottie').dataset.autoPlay).toBe('true')
+    })
+
+    it('plays a loop explicitly on web once visible, where autoplay is read only at load', () => {
+        const originalOS = Platform.OS
+        Platform.OS = 'web'
+        try {
+            visibility.isVisible = false
+            const { rerender } = render(
+                <PWLottie
+                    source={mockSource}
+                    autoPlay
+                    loop
+                />,
+            )
+            expect(mockPlay).not.toHaveBeenCalled()
+
+            visibility.isVisible = true
+            rerender(
+                <PWLottie
+                    source={mockSource}
+                    autoPlay
+                    loop
+                />,
+            )
+            expect(mockPlay).toHaveBeenCalledTimes(1)
+        } finally {
+            Platform.OS = originalOS
+        }
     })
 
     it('leaves a one-shot animation alone when it stops being visible', () => {
@@ -175,6 +215,7 @@ describe('PWLottie', () => {
             <PWLottie
                 source={mockSource}
                 autoPlay
+                testID='lottie'
             />,
         )
 
@@ -183,47 +224,11 @@ describe('PWLottie', () => {
             <PWLottie
                 source={mockSource}
                 autoPlay
-            />,
-        )
-        visibility.isVisible = true
-        rerender(
-            <PWLottie
-                source={mockSource}
-                autoPlay
+                testID='lottie'
             />,
         )
 
         expect(mockPause).not.toHaveBeenCalled()
-        expect(mockResume).not.toHaveBeenCalled()
-    })
-
-    it('pauses again when a hidden loop gets a new source, which restarts it natively', () => {
-        const { rerender } = render(
-            <PWLottie
-                source={mockSource}
-                autoPlay
-                loop
-            />,
-        )
-        visibility.isVisible = false
-        rerender(
-            <PWLottie
-                source={mockSource}
-                autoPlay
-                loop
-            />,
-        )
-        mockPause.mockClear()
-
-        rerender(
-            <PWLottie
-                source={{ ...mockSource, nm: 'retinted' }}
-                autoPlay
-                loop
-            />,
-        )
-
-        expect(mockPause).toHaveBeenCalledTimes(1)
-        expect(mockResume).not.toHaveBeenCalled()
+        expect(screen.getByTestId('lottie').dataset.autoPlay).toBe('true')
     })
 })

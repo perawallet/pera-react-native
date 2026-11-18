@@ -11,8 +11,8 @@
  */
 
 import LottieView from 'lottie-react-native'
-import { useEffect, useRef, useState, type ComponentProps } from 'react'
-import { StyleSheet } from 'react-native'
+import { useEffect, useRef, type ComponentProps } from 'react'
+import { Platform, StyleSheet } from 'react-native'
 import { useIsAnimationVisible } from '@hooks/useIsAnimationVisible'
 import './configureLottieWasm'
 
@@ -31,37 +31,25 @@ export const PWLottie = (props: PWLottieProps) => {
     // Only autoplaying loops are paused: a one-shot animation ends on its own,
     // and resuming one that already finished would replay it.
     const isPausable = Boolean(autoPlay && loop)
-    // Native autoplay can start after the first effect runs, so an animation
-    // mounted hidden must not autoplay at all rather than be paused at once.
-    const [isVisibleAtMount] = useState(isVisible)
-    // resume() only continues a paused animation; one that never ran needs play().
-    const hasStarted = useRef(Boolean(autoPlay && (isVisibleAtMount || !loop)))
-    const isPaused = useRef(false)
 
-    // Also re-run on a new source: loading one restarts an autoplaying view,
-    // which would otherwise keep animating while hidden.
+    // Native views start playing when autoPlay flips to true and replay on a new
+    // source only while it is true, so autoPlay tracks visibility and hiding
+    // just pauses. dotlottie-react reads autoplay once at load, so web plays.
     useEffect(() => {
         if (!isPausable) return
         if (!isVisible) {
-            isPaused.current = true
             lottieRef.current?.pause()
-            return
-        }
-        if (!hasStarted.current) {
-            hasStarted.current = true
+        } else if (Platform.OS === 'web') {
             lottieRef.current?.play()
-        } else if (isPaused.current) {
-            lottieRef.current?.resume()
         }
-        isPaused.current = false
-    }, [isPausable, isVisible, source])
+    }, [isPausable, isVisible])
 
     return (
         <LottieView
             {...rest}
             source={source}
             ref={lottieRef}
-            autoPlay={isPausable ? isVisibleAtMount : autoPlay}
+            autoPlay={isPausable ? isVisible : autoPlay}
             loop={loop}
             style={style}
             webStyle={
