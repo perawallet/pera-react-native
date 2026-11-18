@@ -21,7 +21,7 @@ import type { Persister } from '@tanstack/react-query-persist-client'
 // laxer policy otherwise rehydrate for up to `reactQueryPersistenceAge`.
 // And when a query key changes shape: entries are stored by key hash, so ones
 // written under the old shape are never read again yet outlive that same age.
-export const PERSISTED_CACHE_BUSTER = 'price-history-points'
+export const PERSISTED_CACHE_BUSTER = 'verified-address-names'
 
 /**
  * What each query-key prefix may write to the persisted cache, which is
