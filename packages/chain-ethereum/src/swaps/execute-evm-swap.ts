@@ -54,7 +54,12 @@ import type { EvmChain } from '../chains/types'
 import type { EthereumTransactionPayload } from '../signing/adapter'
 import { decodeEvmStandardCall } from '../signing/standard-calls'
 import type { EvmTransferCall } from '../transfer/builder'
-import { readTransferGasAndPresets } from '../transfer/fees'
+import {
+    readEvmSurcharge,
+    readTransferGasAndPresets,
+    SURCHARGE_HEADROOM,
+    type EvmPricedTransaction,
+} from '../transfer/fees'
 import { allocateEthereumNonce } from '../transfer/nonce-pool'
 import {
     ETHEREUM_CONFIRMATION_TIMEOUT_MS,
@@ -172,7 +177,7 @@ const requestSignature = (
         addSignRequest(request)
     })
 
-/** `maxCost` in wei: what the signature could spend of the native asset. */
+/** `maxCost` in wei: what the transaction could spend of the native asset, an OP-stack surcharge with its headroom included. */
 type BuiltCall = { unsigned: UnsignedTransaction; maxCost: bigint }
 
 const buildCall = async (
@@ -190,23 +195,29 @@ const buildCall = async (
         readTransferGasAndPresets(client, transfer, chain, scope.networkId),
     ])
     const { maxFeePerGas, maxPriorityFeePerGas } = fees.presets.normal
+    const transaction: EvmPricedTransaction = {
+        type: 'eip1559',
+        chainId,
+        nonce,
+        to,
+        value,
+        data,
+        gas: fees.gasLimit,
+        maxFeePerGas,
+        maxPriorityFeePerGas,
+    }
+    const surcharge = await readEvmSurcharge(client, chain, transaction)
     const payload: EthereumTransactionPayload = {
         from: sender,
-        transaction: {
-            type: 'eip1559',
-            chainId,
-            nonce,
-            to,
-            value,
-            data,
-            gas: fees.gasLimit,
-            maxFeePerGas,
-            maxPriorityFeePerGas,
-        },
+        transaction,
+        ...(surcharge > 0n && { surcharge }),
     }
     return {
         unsigned: { scope, payload, summary, chainData: { family: 'evm' } },
-        maxCost: value + fees.gasLimit * maxFeePerGas,
+        maxCost:
+            value +
+            fees.gasLimit * maxFeePerGas +
+            SURCHARGE_HEADROOM * surcharge,
     }
 }
 

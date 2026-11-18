@@ -43,7 +43,11 @@ import { createEvmClient } from '../blockchain/utils/createEvmClient'
 import type { EvmChain } from '../chains/types'
 import type { EthereumTransactionPayload } from '../signing/adapter'
 import { ethereumCallSummary } from '../signing/review'
-import { readEvmFeePresets, type EvmPricedTransaction } from './fees'
+import {
+    readEvmFeePresets,
+    readEvmSurcharge,
+    type EvmPricedTransaction,
+} from './fees'
 import { readReceipt } from './receipt'
 import { cancelSummary } from './summary'
 
@@ -153,6 +157,23 @@ const readFastFees = async (
     return presets.fast
 }
 
+const pricedPayload = async (
+    ctx: ChainContext,
+    chain: EvmChain,
+    context: BuildContext,
+    from: Address,
+    transaction: TransactionSerializableEIP1559,
+): Promise<EthereumTransactionPayload> => {
+    const surcharge = await readEvmSurcharge(
+        createEvmClient(context.scope, ctx, chain),
+        chain,
+        transaction as EvmPricedTransaction,
+    ).catch((error: unknown) => {
+        throw toEvmError(error, chain.row.nativeAsset.symbol)
+    })
+    return { from, transaction, ...(surcharge > 0n && { surcharge }) }
+}
+
 /**
  * The first nonce below the pending transaction's that the node holds
  * nothing at and no send of the wallet holds open or saw mined. The node's pending count
@@ -218,15 +239,18 @@ export const buildEvmGapFill = async (
     )
     if (request.sequence >= original.nonce) throw new InvalidSendParamsError()
     const fast = await readFastFees(ctx, chain, context)
-    const payload: EthereumTransactionPayload = {
+    const payload = await pricedPayload(
+        ctx,
+        chain,
+        context,
         from,
-        transaction: cancelAt(from, {
+        cancelAt(from, {
             type: 'eip1559',
             chainId: original.chainId,
             nonce: request.sequence,
             ...fast,
         }),
-    }
+    )
     return [
         {
             scope: context.scope,
@@ -271,7 +295,7 @@ export const buildEvmReplacement = async (
               gas: original.gas,
               accessList: original.accessList,
           }
-    const payload: EthereumTransactionPayload = { from, transaction }
+    const payload = await pricedPayload(ctx, chain, context, from, transaction)
     const summary = isCancel
         ? cancelSummary(from, chain.descriptor.nativeAsset.ref)
         : (request.summary ??
