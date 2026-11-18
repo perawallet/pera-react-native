@@ -2186,6 +2186,58 @@ describe('createEip1193ConnectionHandler', () => {
             })
         })
 
+        describe('wallet_requestPermissions replacing the grant', () => {
+            const regrant = async (
+                context: Awaited<ReturnType<typeof connected>>,
+                account: string,
+            ) => {
+                const pending = context.transport.send(
+                    ORIGIN,
+                    'wallet_requestPermissions',
+                    [{ eth_accounts: {} }],
+                )
+                await flush()
+                await context.proposals[0].approve([account])
+                await pending
+                await flush()
+            }
+
+            it('hands the request on screen back and declines the ones queued behind it', async () => {
+                const context = await connected()
+                const head = context.sign()
+                const queued = context.sign()
+                await flush()
+
+                await regrant(context, ADDR_Y)
+
+                const [raised] = raisedOf(context.messages)
+                expect(context.messages).toContainEqual({
+                    kind: 'request-withdrawn',
+                    connectionId: raised!.connectionId,
+                    correlationId: raised!.correlationId,
+                })
+                expect(head.response).toBeUndefined()
+                expect(errorOf(queued.response!)?.code).toBe(
+                    EIP1193_ERROR_CODE.userRejected,
+                )
+            })
+
+            it('keeps the site’s requests when the same account is granted again', async () => {
+                const context = await connected()
+                const head = context.sign()
+                const queued = context.sign()
+                await flush()
+
+                await regrant(context, ADDR_X)
+
+                expect(context.messages).not.toContainEqual(
+                    expect.objectContaining({ kind: 'request-withdrawn' }),
+                )
+                expect(head.response).toBeUndefined()
+                expect(queued.response).toBeUndefined()
+            })
+        })
+
         it('an answer that cannot be encoded answers -32603 and advances the queue', async () => {
             const { messages, sign } = await connected()
             const adapter = dappRequestChainAdapters.get('ethereum')

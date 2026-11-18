@@ -512,12 +512,23 @@ export const createEip1193ConnectionHandler = (
                     },
                     origin: { requesterOrigin: origin },
                 }
+                // Re-read: the account may have changed while the sheet was open.
+                const replaced = await getConnection(origin)
                 try {
                     await store().upsert(connection)
                 } finally {
                     // Freed only once the record exists: a second tab
                     // claiming the slot mid-upsert would open a second approval.
                     releaseSlot()
+                }
+                // Store first, then withdraw, as on an account change: the
+                // site's reviews were raised under the grant just replaced.
+                if (
+                    replaced &&
+                    (!isSameList(replaced.accounts, granted) ||
+                        !isOnChain(replaced, chain.scope.chainId))
+                ) {
+                    withdrawSiteQueue(connection.id)
                 }
                 // Other tabs of the site learn the grant here; the requesting
                 // one also reads it off the answer.
