@@ -107,6 +107,9 @@ export { fetchAndPersistTransactions } from './sync/transaction-syncer'
 // Export CSV export functionality
 export {
     fetchTransactionsCsv,
+    buildCsvQueryParams,
+    countCsvRows,
+    generateFilename,
     CsvExportError,
     CSV_MIME_TYPE,
     DEFAULT_CSV_FILENAME,

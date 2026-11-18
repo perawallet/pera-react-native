@@ -110,10 +110,14 @@ describe.each(EVM_TEST_CHAINS)('the $row.id module', chain => {
             'notifications',
             'assetFavorites',
             'priceAlerts',
-            'csvExport',
         ] as const) {
             expect(module.supportedCapabilities).not.toContain(capability)
         }
+    })
+
+    it('leaves the CSV export off until remote config switches it on', () => {
+        expect(module.capabilityDefaults.csvExport).toBe(false)
+        expect(module.supportedCapabilities).toContain('csvExport')
     })
 
     it('declares its own pinning kill switch, off until remote config turns it on', () => {

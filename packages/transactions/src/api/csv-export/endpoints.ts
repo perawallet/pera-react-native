@@ -17,11 +17,22 @@ import {
 import {
     AppError,
     ErrorCategory,
+    getNetworkErrorMessageKeys,
+    isPeraNetworkError,
     isRawPlatformNetworkError,
     queryClient,
+    type ErrorMetadata,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import type { ExportCsvParams, CsvExportResult } from './types'
 import { generateFilename, buildCsvQueryParams, countCsvRows } from './utils'
+
+// A 5xx names itself; the rest keep the generic copy, never the backend's text.
+const copyOf = (error: Optional<Error>): Partial<ErrorMetadata> => {
+    if (!isPeraNetworkError(error) || error.kind !== 'server') return {}
+    const { titleKey, bodyKey } = getNetworkErrorMessageKeys(error)
+    return { titleKey, messageKey: bodyKey }
+}
 
 export class CsvExportError extends AppError {
     public statusCode?: number
@@ -33,7 +44,11 @@ export class CsvExportError extends AppError {
         url?: string,
         originalError?: Error,
     ) {
-        super(message, { category: ErrorCategory.NETWORK }, originalError)
+        super(
+            message,
+            { category: ErrorCategory.NETWORK, ...copyOf(originalError) },
+            originalError,
+        )
         this.name = 'CsvExportError'
         this.statusCode = statusCode
         this.url = url

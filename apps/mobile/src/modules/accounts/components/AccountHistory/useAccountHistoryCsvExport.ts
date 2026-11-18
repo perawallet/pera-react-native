@@ -10,35 +10,38 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { useCallback, useMemo } from 'react'
+import {
+    toScopeKey,
+    type ChainId,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     chainDisplayNameOf,
     useChainCapability,
+    useChainCapabilityCheck,
     useIsCapabilityRestricted,
 } from '@perawallet/wallet-core-chain-shared'
 import {
     CSV_MIME_TYPE,
     useCsvExportMutation,
 } from '@perawallet/wallet-core-transactions'
-import {
-    PeraServiceUnavailableError,
-    type Optional,
-} from '@perawallet/wallet-core-shared'
+import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
 import {
     trackEvent,
     AccountDetailsEvent,
     AnalyticsMetadataKey,
 } from '@analytics'
+import { useBottomSheet } from '@modules/bottom-sheet'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { shareFile } from '@utils/shareFile'
+import type { HistorySource } from './useAccountHistoryRows'
 
 export type UseAccountHistoryCsvExportParams = {
     scope: ChainScope
-    accountAddress: Optional<string>
-    /** Rows from `scope`'s network alone. */
-    transactionCount: number
+    /** One per network the rows can come from; `scope`'s alone off a merged history. */
+    sources: HistorySource[]
     isMerged: boolean
 }
 
@@ -49,14 +52,20 @@ export type UseAccountHistoryCsvExportResult = {
     csvExportTitle: string
 }
 
+const CHAIN_SELECTION_SHEET_OPTIONS = {
+    size: 'auto',
+    enablePanDownToClose: true,
+    autoCreateContainer: false,
+} as const
+
 export const useAccountHistoryCsvExport = ({
     scope,
-    accountAddress,
-    transactionCount,
+    sources,
     isMerged,
 }: UseAccountHistoryCsvExportParams): UseAccountHistoryCsvExportResult => {
     const { t } = useLanguage()
     const { showError } = useErrorToast()
+    const { requestByType } = useBottomSheet()
 
     const {
         exportCsv,
@@ -80,27 +89,9 @@ export const useAccountHistoryCsvExport = ({
         },
     })
 
-    const handleExportCsv = useCallback(() => {
-        trackEvent(AccountDetailsEvent.TransactionDownload, {
-            [AnalyticsMetadataKey.ChainId]: scope.chainId,
-        })
-        // Guarding the request would silence's central toast too, so
-        // the reason has to be raised here or the button would do nothing.
-        if (isUnavailableOnNetwork) {
-            showError(
-                new PeraServiceUnavailableError(scope),
-                t('common.network_unavailable.title'),
-            )
-            return
-        }
-        if (accountAddress) {
-            exportCsv({ accountAddress })
-        }
-    }, [accountAddress, exportCsv, isUnavailableOnNetwork, scope, showError, t])
-
     // The Pera export-history endpoint returns 404 for an empty history, so
-    // the action waits for rows; `transactionCount > 0` rather than `!isEmpty`
-    // also keeps it hidden through the initial load instead of flickering.
+    // a network is offered once it has rows; counting rows rather than
+    // `!isEmpty` also keeps the action hidden through the initial load.
     // A chain whose build has no CSV export hides the action outright; one that
     // only restricts it on this network (BetaNet, custom) keeps it to explain why.
     const hasCsvExport = useChainCapability(scope.chainId, 'csvExport')
@@ -108,14 +99,88 @@ export const useAccountHistoryCsvExport = ({
         scope.chainId,
         'csvExport',
     )
-    const isCsvExportVisible =
-        transactionCount > 0 && (hasCsvExport || isCsvExportRestricted)
-    // Export is per network, so on a merged history the action names the one it covers.
-    const csvExportTitle = isMerged
-        ? t('asset_details.transaction_list.csv_on_network', {
-              network: chainDisplayNameOf(scope.chainId) ?? scope.chainId,
-          })
-        : t('asset_details.transaction_list.csv')
+    // Another network on a merged history is offered only where it can export.
+    const hasCapability = useChainCapabilityCheck()
+    const scopeKey = toScopeKey(scope)
+    // Keyed by a string, since the checker is a new function every render.
+    const exportableKeys = sources
+        .filter(
+            source =>
+                source.transactionCount > 0 &&
+                (toScopeKey(source.scope) === scopeKey
+                    ? hasCsvExport || isCsvExportRestricted
+                    : hasCapability({
+                          chain: {
+                              chainId: source.scope.chainId,
+                              capability: 'csvExport',
+                          },
+                      })),
+        )
+        .map(source => toScopeKey(source.scope))
+        .join()
+    const exportable = useMemo(
+        () =>
+            sources.filter(source =>
+                exportableKeys.split(',').includes(toScopeKey(source.scope)),
+            ),
+        [sources, exportableKeys],
+    )
+    const isCsvExportVisible = exportable.length > 0
+    // Export is per network, so on a merged history the action names the one
+    // it covers, or asks which when several have rows.
+    const csvExportTitle =
+        isMerged && exportable.length === 1
+            ? t('asset_details.transaction_list.csv_on_network', {
+                  network:
+                      chainDisplayNameOf(exportable[0].scope.chainId) ??
+                      exportable[0].scope.chainId,
+              })
+            : t('asset_details.transaction_list.csv')
+
+    const exportFrom = useCallback(
+        (source: HistorySource) => {
+            const isOwnScope = toScopeKey(source.scope) === scopeKey
+            trackEvent(AccountDetailsEvent.TransactionDownload, {
+                [AnalyticsMetadataKey.ChainId]: source.scope.chainId,
+            })
+            // Guarding the request would silence its central toast too, so
+            // the reason has to be raised here or the button would do nothing.
+            if (isOwnScope && isUnavailableOnNetwork) {
+                showError(
+                    new PeraServiceUnavailableError(scope),
+                    t('common.network_unavailable.title'),
+                )
+                return
+            }
+            exportCsv({
+                accountAddress: source.address,
+                ...(!isOwnScope && { scope: source.scope }),
+            })
+        },
+        [exportCsv, isUnavailableOnNetwork, scope, scopeKey, showError, t],
+    )
+
+    const handleExportCsv = useCallback(() => {
+        if (exportable.length <= 1) {
+            if (exportable[0]) exportFrom(exportable[0])
+            return
+        }
+        void requestByType<'deeplink-chain-selection', ChainId>(
+            'deeplink-chain-selection',
+            {
+                chainIds: exportable.map(source => source.scope.chainId),
+                title: t('chain_selection.title'),
+            },
+            CHAIN_SELECTION_SHEET_OPTIONS,
+        ).then(chainId => {
+            const picked =
+                chainId &&
+                new Map(
+                    exportable.map(source => [source.scope.chainId, source]),
+                ).get(chainId)
+            if (picked) exportFrom(picked)
+        })
+    }, [exportable, exportFrom, requestByType, t])
 
     return {
         handleExportCsv,

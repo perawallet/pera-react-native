@@ -16,11 +16,11 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
-    fetchTransactionsCsv,
     CsvExportError,
     type DateRange,
     type CsvExportResult,
 } from '../api/csv-export'
+import { historyChainAdapters } from '../history-adapter'
 
 /**
  * Parameters for the useCsvExportMutation hook.
@@ -37,8 +37,10 @@ export type UseCsvExportMutationParams = {
  * Parameters for the export mutation function.
  */
 export type ExportMutationParams = {
-    /** The Algorand account address to export */
+    /** The account address on the exported network */
     accountAddress: string
+    /** Another network than the hook's `scope`, as on a merged history; the caller checks its `csvExport`. */
+    scope?: ChainScope
     /** Optional date range filter */
     dateRange?: DateRange
     /** Optional custom filename */
@@ -123,14 +125,17 @@ export const useCsvExportMutation = (
         // mutation's own onError handler (toast). Kept explicit so the
         // toast-only contract is obvious next to the mutationFn.
         throwOnError: false,
-        mutationFn: async (exportParams: ExportMutationParams) => {
-            return fetchTransactionsCsv({
-                accountAddress: exportParams.accountAddress,
-                dateRange: exportParams.dateRange,
-                filename: exportParams.filename,
-                assetId: exportParams.assetId,
-                scope,
-            })
+        mutationFn: async ({
+            scope: exportScope = scope,
+            ...exportParams
+        }: ExportMutationParams) => {
+            const { exportCsv } = historyChainAdapters.get(exportScope.chainId)
+            if (!exportCsv) {
+                throw new CsvExportError(
+                    `${exportScope.chainId} has no CSV export`,
+                )
+            }
+            return exportCsv({ ...exportParams, scope: exportScope })
         },
         onSuccess: result => {
             onSuccess?.(result)
@@ -153,7 +158,7 @@ export const useCsvExportMutation = (
     const { mutate } = mutation
     const exportCsv = useCallback(
         (exportParams: ExportMutationParams) => {
-            if (isUnavailableOnNetwork) return
+            if (!exportParams.scope && isUnavailableOnNetwork) return
             mutate(exportParams)
         },
         [isUnavailableOnNetwork, mutate],

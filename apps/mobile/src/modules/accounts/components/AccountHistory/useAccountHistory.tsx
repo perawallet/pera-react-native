@@ -119,7 +119,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     const {
         rows,
         transactionCount,
-        scopeTransactionCount,
+        historySources,
         isLoading,
         isFetched,
         isFetchingNextPage,
@@ -134,7 +134,6 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         isLoadIntegrityBlocked,
         suspectedPoisoningById,
         scope,
-        accountAddress,
         networkChainId,
         isMerged,
         chainFilterOptions,
@@ -165,8 +164,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         csvExportTitle,
     } = useAccountHistoryCsvExport({
         scope,
-        accountAddress,
-        transactionCount: scopeTransactionCount,
+        sources: historySources,
         isMerged,
     })
 
