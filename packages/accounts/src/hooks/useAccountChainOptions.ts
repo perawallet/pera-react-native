@@ -80,8 +80,8 @@ const leadWithOwnAddress = (
  * The chains a flow can use the account on: its enabled chains, then the ones
  * it could enable within `reach`, each in registry order and limited to
  * `isOn`. When the account's own chain isn't its first held one, the enabled
- * chains sharing the own chain's address lead. A hardware account offers only its enabled chains, since a new one
- * needs its device.
+ * chains sharing the own chain's address lead. A hardware account offers only
+ * its enabled chains, since a new one needs its device.
  */
 export const accountChainOptions = (
     account: WalletAccount,

@@ -151,11 +151,12 @@ export const useAccountOptions = ({
         anyChain: 'multisig',
     })
     const isRekeyed = isDelegatedAccount(account, scope.chainId)
-    const canBackUpMnemonic = useCapability({
-        chain: { chainId: scope.chainId, capability: 'mnemonicBackup' },
-    })
+    // The phrase lives on the chain that backs it up, not on the account's own chain.
+    const passphraseScope = useAccountCapabilityScope(account, 'mnemonicBackup')
     const showPassphrase =
-        canBackUpMnemonic && !isRekeyed && hasRecoverySeed(account)
+        passphraseScope !== null &&
+        !isDelegatedAccount(account, passphraseScope.chainId) &&
+        hasRecoverySeed(account)
     const canUndoRekey = canRekey && isRekeyed && canSign
     const privateKeyScope = useAccountCapabilityScope(account, 'privateKeys')
     const showPrivateKey =
@@ -171,14 +172,21 @@ export const useAccountOptions = ({
     const authAccount = useFindAccountByAddress(authority ?? '', scope)
 
     const handleViewPassphrase = useCallback(() => {
+        if (!passphraseScope) return
         trackEvent(AccountOptionsEvent.ViewPassphrase, {
             [AnalyticsMetadataKey.ChainId]: accountChainId,
         })
         // Dismiss the options menu first so we don't end up with the menu
         // sheet stacked under the PIN/acknowledge/display sheets.
         onClose()
-        void openViewPassphraseFlow(address)
-    }, [onClose, openViewPassphraseFlow, address, accountChainId])
+        void openViewPassphraseFlow(addressOn(account, passphraseScope) ?? '')
+    }, [
+        onClose,
+        openViewPassphraseFlow,
+        account,
+        passphraseScope,
+        accountChainId,
+    ])
 
     const handleViewPrivateKey = useCallback(() => {
         if (!privateKeyScope) return

@@ -16,6 +16,7 @@ import {
     accountChainIdOf,
     chainAccountOf,
     ownAddressOf,
+    secondaryChainIdsOf,
     useAccountHoldingSources,
     useAccountValueTotalsQuery,
     useFailedFirstReadChainIds,
@@ -26,7 +27,11 @@ import {
     addressCodecs,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import {
+    chainDisplayNameOf,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
     crossChainTotalOf,
@@ -38,6 +43,8 @@ export type DiscoveredAddressLine = {
     displayAddress: string
     /** The chains holding `address`, in registry order. */
     chainIds: ChainId[]
+    /** Set on a secondary address: the network the passphrase also gives it on. */
+    secondaryNetworkName: Optional<string>
 }
 
 export type UseDiscoveredAccountRowResult = {
@@ -77,11 +84,25 @@ export const useDiscoveredAccountRow = (
                         ? addressCodecs.get(id).truncate(address)
                         : address,
                     chainIds: [id],
+                    secondaryNetworkName: undefined,
                 })
             }
         }
-        return lines
-    }, [account, registeredChainIds])
+        const secondaryChainIds = secondaryChainIdsOf(
+            account,
+            registeredChainIds,
+        )
+        for (const line of lines) {
+            const [first] = line.chainIds
+            if (first !== undefined && secondaryChainIds.includes(first)) {
+                line.secondaryNetworkName = chainDisplayNameOf(first) ?? first
+            }
+        }
+        return [
+            ...lines.filter(line => line.chainIds.includes(chainId)),
+            ...lines.filter(line => !line.chainIds.includes(chainId)),
+        ]
+    }, [account, registeredChainIds, chainId])
 
     const total = useMemo(
         () =>

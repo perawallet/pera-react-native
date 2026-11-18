@@ -2559,6 +2559,7 @@
             "import_button": "Konten importieren",
             "go_to_wallet": "Zum Wallet",
             "total_value": "<0/> insgesamt",
+            "also_gives_address": "Mit dieser Passphrase erhältst du auch eine {{network}}-Adresse",
             "all_imported_title": "Bereits in deinem Wallet",
             "all_imported_body": "Alle Konten aus diesem Wallet sind bereits in Pera. Ist eines als Beobachtungskonto hinzugefügt, entferne es zuerst und importiere es dann erneut, um es mit vollem Zugriff hinzuzufügen.",
             "unchecked_networks_title": "Nicht geprüft: {{networks}}",

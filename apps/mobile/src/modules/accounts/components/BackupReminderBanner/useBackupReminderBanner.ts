@@ -13,6 +13,7 @@
 import { useCallback } from 'react'
 import {
     type WalletAccount,
+    useAccountCapabilityScope,
     useAccountScope,
 } from '@perawallet/wallet-core-accounts'
 
@@ -28,8 +29,13 @@ export type UseBackupReminderBannerResult = {
 export const useBackupReminderBanner = (
     account: WalletAccount,
 ): UseBackupReminderBannerResult => {
-    const scope = useAccountScope(account, useHomeChainScope().chainId)
-    const isVisible = useShouldPromptMnemonicBackup(account, scope)
+    const ownScope = useAccountScope(account, useHomeChainScope().chainId)
+    // The phrase is backed up on the chain that mints it, not on the account's own chain.
+    const backupScope = useAccountCapabilityScope(account, 'mnemonicBackup')
+    const isVisible = useShouldPromptMnemonicBackup(
+        account,
+        backupScope ?? ownScope,
+    )
     const launch = useBackupFlowLauncher()
 
     const onPress = useCallback(() => launch(account), [launch, account])

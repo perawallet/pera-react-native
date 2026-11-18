@@ -24,4 +24,8 @@ export const useStyles = makeStyles(theme => ({
     text: {
         color: theme.colors.textGray,
     },
+    secondaryNote: {
+        color: theme.colors.textGray,
+        marginTop: theme.spacing.xs,
+    },
 }))

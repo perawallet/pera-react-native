@@ -18,6 +18,7 @@ import {
 import {
     getAccountDisplayName,
     addressOn,
+    useAccountCapabilityScope,
     useAccountChainId,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -110,7 +111,14 @@ export const useAccountDisplay = ({
     const renderSecondary = compact || Boolean(dedupedSecondary)
 
     const ownScope = useSelectedScope(accountChainId)
-    const shouldPromptBackup = useShouldPromptMnemonicBackup(account, ownScope)
+    const backupScope = useAccountCapabilityScope(
+        account ?? null,
+        'mnemonicBackup',
+    )
+    const shouldPromptBackup = useShouldPromptMnemonicBackup(
+        account,
+        backupScope ?? ownScope,
+    )
     // Every non-`sm` account-icon size renders the 40px round-icon format
     // (the account-selector size); `sm` is the 24px format, too small for a
     // legible badge.

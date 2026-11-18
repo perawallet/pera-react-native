@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import {
-    chainAccountOf,
+    ownAddressOf,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
@@ -36,9 +36,7 @@ export const ConnectAccountPickerContent = ({
 }: ConnectAccountPickerContentProps) => {
     const { resolve } = useBottomSheetResult<string>()
     const selected = accounts.find(({ id }) => id === selectedAccountId)
-    const highlightedAddress = selected
-        ? chainAccountOf(selected, chainId)?.address
-        : undefined
+    const highlightedAddress = selected ? ownAddressOf(selected) : undefined
 
     const handleSelect = useCallback(
         (account: WalletAccount) => resolve(account.id),

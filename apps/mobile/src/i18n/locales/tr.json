@@ -2567,6 +2567,7 @@
             "import_button": "Hesapları içe aktar",
             "go_to_wallet": "Cüzdana git",
             "total_value": "Toplam <0/>",
+            "also_gives_address": "Bu passphrase size ayrıca bir {{network}} adresi verir",
             "all_imported_title": "Zaten cüzdanında",
             "all_imported_body": "Bu cüzdandaki tüm hesaplar zaten Pera’da. Biri izleme hesabı olarak eklendiyse önce onu kaldır, ardından tam erişimle eklemek için yeniden içe aktar.",
             "unchecked_networks_title": "Kontrol edilemeyen ağlar: {{networks}}",

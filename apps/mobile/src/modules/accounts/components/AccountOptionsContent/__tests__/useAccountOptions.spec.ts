@@ -719,6 +719,56 @@ describe('useAccountOptions', () => {
                 'view-passphrase',
             )
         })
+
+        describe('an account found active only on Ethereum', () => {
+            const evmFirstAccount: WalletAccount = {
+                id: 'acc-evm-first',
+                name: '',
+                chains: {
+                    algorand: {
+                        address: 'HDALGOADDRESS',
+                        keyPairId: 'key-algo',
+                        enabledBy: 'created',
+                    },
+                    [ETHEREUM_CHAIN_ID]: {
+                        address: ETH_ADDRESS,
+                        keyPairId: 'key-eth',
+                        enabledBy: 'discovery',
+                    },
+                },
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
+            }
+
+            it('keeps view-passphrase on the chain that backs the phrase up', () => {
+                const { result } = render(evmFirstAccount)
+
+                const passphraseOption = sheetOptionsOf(result.current).find(
+                    o => o.id === 'view-passphrase',
+                )
+                act(() => {
+                    passphraseOption?.onPress()
+                })
+
+                expect(passphraseOption).toBeDefined()
+                expect(mockOpenViewPassphraseFlow).toHaveBeenCalledWith(
+                    'HDALGOADDRESS',
+                )
+            })
+
+            it('hides view-passphrase when the phrase chain has mnemonic backup off', () => {
+                setCapabilityOverrides({ mnemonicBackup: false })
+
+                const { result } = render(evmFirstAccount)
+
+                expect(
+                    sheetOptionsOf(result.current).map(o => o.id),
+                ).not.toContain('view-passphrase')
+            })
+        })
     })
 
     describe('network rows', () => {

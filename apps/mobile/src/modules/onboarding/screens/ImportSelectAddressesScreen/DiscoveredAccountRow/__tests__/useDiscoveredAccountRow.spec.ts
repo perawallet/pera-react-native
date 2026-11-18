@@ -28,6 +28,8 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
     useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
+    chainDisplayNameOf: (chainId: string) =>
+        chainId === 'algorand' ? 'Algorand' : chainId,
 }))
 vi.mock('@perawallet/wallet-core-chain-contract', async importOriginal => ({
     ...(await importOriginal<
@@ -100,6 +102,68 @@ describe('useDiscoveredAccountRow', () => {
                 chainIds: ['ethereum', 'base'],
             },
         ])
+    })
+
+    it('leads with the 0x line and marks the Algorand line as secondary when only EVM was found active', () => {
+        const evmFirst = account({
+            algorand: {
+                address: ALGO_ADDRESS,
+                keyPairId: 'k-a',
+                enabledBy: 'created',
+            },
+            ethereum: {
+                address: EVM_ADDRESS,
+                keyPairId: 'k-e',
+                enabledBy: 'discovery',
+            },
+        } as LocalAccount['chains'])
+
+        const { result } = renderHook(() => useDiscoveredAccountRow(evmFirst))
+
+        expect(result.current.addressLines).toEqual([
+            {
+                address: EVM_ADDRESS,
+                displayAddress: '0xEV…',
+                chainIds: ['ethereum'],
+                secondaryNetworkName: undefined,
+            },
+            {
+                address: ALGO_ADDRESS,
+                displayAddress: 'ALGO…',
+                chainIds: ['algorand'],
+                secondaryNetworkName: 'Algorand',
+            },
+        ])
+        expect(result.current.testAddress).toBe(EVM_ADDRESS)
+    })
+
+    it('keeps registry order and adds no secondary note when Algorand was found active', () => {
+        const algorandActive = account({
+            algorand: {
+                address: ALGO_ADDRESS,
+                keyPairId: 'k-a',
+                enabledBy: 'discovery',
+            },
+            ethereum: {
+                address: EVM_ADDRESS,
+                keyPairId: 'k-e',
+                enabledBy: 'discovery',
+            },
+        } as LocalAccount['chains'])
+
+        const { result } = renderHook(() =>
+            useDiscoveredAccountRow(algorandActive),
+        )
+
+        expect(result.current.addressLines.map(line => line.address)).toEqual([
+            ALGO_ADDRESS,
+            EVM_ADDRESS,
+        ])
+        expect(
+            result.current.addressLines.every(
+                line => line.secondaryNetworkName === undefined,
+            ),
+        ).toBe(true)
     })
 
     it('totals the holdings across chains in the preferred currency', () => {

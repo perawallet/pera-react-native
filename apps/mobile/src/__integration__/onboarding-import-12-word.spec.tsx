@@ -17,6 +17,7 @@ import { Notifier } from 'react-native-notifier'
 import {
     chainAccountOf,
     hdIndexOf,
+    ownAddressOf,
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
 import { evmRpcHandlers } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
@@ -163,7 +164,7 @@ describe('Flow: Onboarding → Import a 12-word seed', () => {
         vi.mocked(Notifier.showNotification).mockClear()
     })
 
-    it("Given a 12-word seed used on Ethereum at its first two addresses, when the user imports it and keeps the selection, then Universal Wallet accounts hold Algorand and Ethereum at MetaMask's addresses, in order", async () => {
+    it("Given a 12-word seed used on Ethereum at its first two addresses, when the user imports it and keeps the selection, then each card leads with its 0x address and notes the Algorand one, and Universal Wallet accounts hold Algorand and Ethereum at MetaMask's addresses, in order", async () => {
         const algorandAddress0 = await deriveTestHDAddress(
             0,
             0,
@@ -228,6 +229,26 @@ describe('Flow: Onboarding → Import a 12-word seed', () => {
             first.compareDocumentPosition(second) &
                 Node.DOCUMENT_POSITION_FOLLOWING,
         ).toBeTruthy()
+        for (const [evmAddress, algorandAddress] of [
+            [HD_12_ETHEREUM_ADDRESS_0, algorandAddress0],
+            [HD_12_ETHEREUM_ADDRESS_1, algorandAddress1],
+        ]) {
+            const evmLine = screen.getByTestId(
+                `import_select_addresses_address_${evmAddress}`,
+            )
+            const algorandLine = screen.getByTestId(
+                `import_select_addresses_address_${algorandAddress}`,
+            )
+            expect(
+                evmLine.compareDocumentPosition(algorandLine) &
+                    Node.DOCUMENT_POSITION_FOLLOWING,
+            ).toBeTruthy()
+            expect(
+                screen.getByTestId(
+                    `import_select_addresses_secondary_note_${algorandAddress}`,
+                ),
+            ).toBeTruthy()
+        }
 
         fireEvent.click(
             screen.getByTestId('import_select_addresses_continue_button'),
@@ -257,6 +278,8 @@ describe('Flow: Onboarding → Import a 12-word seed', () => {
         expect(chainAccountOf(account1, 'ethereum')?.address).toBe(
             HD_12_ETHEREUM_ADDRESS_1,
         )
+        expect(ownAddressOf(account0)).toBe(HD_12_ETHEREUM_ADDRESS_0)
+        expect(ownAddressOf(account1)).toBe(HD_12_ETHEREUM_ADDRESS_1)
         await waitFor(() => expect(walk).toHaveBeenCalledOnce())
         await walk.mock.results[0].value
     })
