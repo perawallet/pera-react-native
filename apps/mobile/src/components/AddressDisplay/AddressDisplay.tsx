@@ -37,6 +37,10 @@ import {
 
 export type AddressDisplayProps = {
     address: string
+    /**
+     * How the address reads under a name or contact, and alone unless
+     * `unnamedAddressFormat` says otherwise. `full` wraps instead of truncating.
+     */
     addressFormat?: AddressFormat
     displayType?: AddressDisplayType
     showCopy?: boolean
@@ -199,7 +203,7 @@ export const AddressDisplay = ({
                             variant='footnoteMedium'
                             weight={400}
                             style={styles.secondaryText}
-                            truncate
+                            truncate={addressFormat !== 'full'}
                             ellipsizeMode='middle'
                         >
                             {truncatedAddress}
@@ -237,7 +241,7 @@ export const AddressDisplay = ({
                             variant='footnoteMedium'
                             weight={400}
                             style={styles.secondaryText}
-                            truncate
+                            truncate={addressFormat !== 'full'}
                             ellipsizeMode='middle'
                         >
                             {truncatedAddress}
@@ -249,7 +253,7 @@ export const AddressDisplay = ({
                         weight={textProps?.variant ? undefined : 500}
                         {...textProps}
                         style={[styles.unnamedAddress, textProps?.style]}
-                        truncate={unnamedAddressFormat !== 'full'}
+                        truncate={(unnamedAddressFormat ?? addressFormat) !== 'full'}
                         ellipsizeMode='middle'
                     >
                         {unnamedAddress}

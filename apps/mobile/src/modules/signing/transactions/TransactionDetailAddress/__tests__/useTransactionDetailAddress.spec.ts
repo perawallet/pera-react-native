@@ -19,6 +19,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Contact } from '@perawallet/wallet-core-contacts'
+import { useNameForAddressQuery } from '@perawallet/wallet-core-names'
 import { useTransactionDetailAddress } from '../useTransactionDetailAddress'
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
@@ -34,6 +35,10 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
     getChainDescriptor: () => ({ family: 'evm' }),
+}))
+
+vi.mock('@perawallet/wallet-core-names', () => ({
+    useNameForAddressQuery: vi.fn(),
 }))
 
 const mockContacts: { contacts: Contact[] } = { contacts: [] }
@@ -53,6 +58,9 @@ describe('useTransactionDetailAddress', () => {
         vi.mocked(useFindAccountByAddress).mockReset()
         vi.mocked(getAccountDisplayName).mockReset()
         mockContacts.contacts = []
+        vi.mocked(useNameForAddressQuery)
+            .mockReset()
+            .mockReturnValue({ data: [], isPending: false })
     })
 
     it("Given the user's own address, then it names that account", () => {
@@ -69,6 +77,8 @@ describe('useTransactionDetailAddress', () => {
             ownAccount: ACCOUNT,
             ownAccountName: 'Savings',
             contact: undefined,
+            addressName: undefined,
+            isAddressInFull: false,
         })
     })
 
@@ -83,6 +93,8 @@ describe('useTransactionDetailAddress', () => {
             ownAccount: null,
             ownAccountName: undefined,
             contact: undefined,
+            addressName: undefined,
+            isAddressInFull: false,
         })
         expect(getAccountDisplayName).not.toHaveBeenCalled()
     })
@@ -101,4 +113,50 @@ describe('useTransactionDetailAddress', () => {
 
         expect(result.current.contact).toBe(contact)
     })
+
+    it('Given a verified name and no account or contact, then it returns the name and asks for the full address', () => {
+        vi.mocked(useFindAccountByAddress).mockReturnValue(null)
+        vi.mocked(useNameForAddressQuery).mockReturnValue({
+            data: [{ name: 'alice.eth', source: 'ens', image: '' }],
+            isPending: false,
+        })
+
+        const { result } = renderHook(() =>
+            useTransactionDetailAddress(ADDRESS, SCOPE),
+        )
+
+        expect(useNameForAddressQuery).toHaveBeenCalledWith(SCOPE, ADDRESS, {
+            enabled: true,
+        })
+        expect(result.current.addressName).toBe('alice.eth')
+        expect(result.current.isAddressInFull).toBe(true)
+    })
+
+    it.each([
+        ['an own account', ACCOUNT, []],
+        [
+            'a contact',
+            null,
+            [{ name: 'Alice', addresses: { evm: ADDRESS } } as unknown as Contact],
+        ],
+    ])(
+        'Given %s holds the address, then no name lookup runs and the address is not forced to full',
+        (_label, account, contacts) => {
+            vi.mocked(useFindAccountByAddress).mockReturnValue(account)
+            vi.mocked(getAccountDisplayName).mockReturnValue('Savings')
+            mockContacts.contacts = contacts
+
+            const { result } = renderHook(() =>
+                useTransactionDetailAddress(ADDRESS, SCOPE),
+            )
+
+            expect(useNameForAddressQuery).toHaveBeenCalledWith(
+                SCOPE,
+                ADDRESS,
+                { enabled: false },
+            )
+            expect(result.current.addressName).toBeUndefined()
+            expect(result.current.isAddressInFull).toBe(false)
+        },
+    )
 })

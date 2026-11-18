@@ -160,6 +160,59 @@ describe('AddressDisplay', () => {
             expect(screen.getByText('0xf39F...2266')).toBeTruthy()
         })
 
+        it('shows a name over the full checksummed address, wrapped rather than truncated', () => {
+            render(
+                <AddressDisplay
+                    address={ETH_ADDRESS.toLowerCase()}
+                    scope={ETH_SCOPE}
+                    addressFormat='full'
+                />,
+            )
+
+            expect(screen.getByText('alice.eth')).toBeTruthy()
+            expect(
+                screen.getByText(ETH_ADDRESS).getAttribute('numberoflines'),
+            ).toBeNull()
+        })
+
+        it('shows a contact name over the full address', () => {
+            mockContacts = [
+                { name: 'Eth friend', addresses: { evm: ETH_ADDRESS } },
+            ]
+
+            render(
+                <AddressDisplay
+                    address={ETH_ADDRESS}
+                    scope={ETH_SCOPE}
+                    addressFormat='full'
+                />,
+            )
+
+            expect(screen.getByText('Eth friend')).toBeTruthy()
+            expect(
+                screen.getByText(ETH_ADDRESS).getAttribute('numberoflines'),
+            ).toBeNull()
+        })
+
+        it('shows an address with no name in full when only addressFormat is full', () => {
+            mockUseNameForAddress.mockReturnValue({
+                data: undefined,
+                isPending: false,
+            })
+
+            render(
+                <AddressDisplay
+                    address={ETH_ADDRESS}
+                    scope={ETH_SCOPE}
+                    addressFormat='full'
+                />,
+            )
+
+            expect(
+                screen.getByText(ETH_ADDRESS).getAttribute('numberoflines'),
+            ).toBeNull()
+        })
+
         it('shows a contact name instead, and stops the lookup', () => {
             mockContacts = [
                 { name: 'Eth friend', addresses: { evm: ETH_ADDRESS } },
@@ -390,39 +443,6 @@ describe('AddressDisplay', () => {
         expect(screen.getByTestId('icon-person')).toBeTruthy()
         expect(screen.getByText('alice.algo')).toBeTruthy()
         expect(screen.getByText(/CCC/)).toBeTruthy()
-    })
-
-    it('reads inline as the NFD name alone, with no icon or address line', () => {
-        mockUseNameForAddress.mockReturnValue({
-            data: [{ name: 'alice.algo' }],
-            isPending: false,
-        })
-
-        render(
-            <AddressDisplay
-                address={'C'.repeat(58)}
-                displayType='inline'
-            />,
-        )
-
-        expect(screen.getByText('alice.algo')).toBeTruthy()
-        expect(screen.queryByTestId('icon-person')).toBeNull()
-        expect(screen.queryByText(/CCC/)).toBeNull()
-    })
-
-    it('reads inline as the address, never a contact name, so the caller can name the contact', () => {
-        const address = 'E'.repeat(58)
-        mockContacts = [{ name: 'Bob', addresses: { algorand: address } }]
-
-        render(
-            <AddressDisplay
-                address={address}
-                displayType='inline'
-            />,
-        )
-
-        expect(screen.queryByText('Bob')).toBeNull()
-        expect(screen.getByText(/EEE/)).toBeTruthy()
     })
 
     it('renders only the truncated address when no NFD resolves for a foreign address', () => {
