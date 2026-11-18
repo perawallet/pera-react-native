@@ -85,7 +85,23 @@
                 "create": "Erstellen",
                 "save": "Speichern"
             },
-            "empty": "Noch keine dApps in diesem Ordner"
+            "empty": "Noch keine dApps in diesem Ordner",
+            "menu": {
+                "title": "Ordneroptionen",
+                "open_label": "Ordneroptionen",
+                "rename": "Ordner umbenennen",
+                "rearrange": "dApps neu anordnen",
+                "delete": "Ordner löschen"
+            },
+            "rearrange": {
+                "title": "dApps neu anordnen",
+                "remove_label": "{{name}} aus diesem Ordner entfernen"
+            },
+            "delete_confirm": {
+                "title": "Diesen Ordner löschen?",
+                "body": "Seine dApps bleiben in deinen Favoriten.",
+                "confirm": "Ordner löschen"
+            }
         },
         "favorites": {
             "title": "Favoriten",
@@ -105,7 +121,7 @@
         "add_to_folder": {
             "title": "Zu Ordner hinzufügen",
             "new_folder": "Neuer Ordner",
-            "done": "Fertig"
+            "added": "Zu {{folder}} hinzugefügt"
         }
     },
     "account_menu": {
@@ -4185,7 +4201,10 @@
             "to": "An",
             "balance_label": "Guthaben: <0/>",
             "max": "MAX",
-            "select_asset": "Auswählen"
+            "select_asset": "Auswählen",
+            "flip": "Zahlen und Erhalten tauschen",
+            "flip_unavailable_title": "Tausch lässt sich nicht umkehren",
+            "flip_unavailable_body": "Dein Konto kann nicht über das {{network}}-Netzwerk bezahlen."
         },
         "asset_selection": {
             "swap_from_title": "Tauschen von",
@@ -4250,9 +4269,18 @@
         },
         "execution": {
             "error_title": "Tausch fehlgeschlagen",
-            "error_body": "Beim Tausch ist ein Fehler aufgetreten. Bitte versuche es erneut.",
+            "failed_title": {
+                "prepare": "Tausch konnte nicht gestartet werden",
+                "approval": "Freigabe fehlgeschlagen",
+                "swap": "Tausch fehlgeschlagen"
+            },
             "provider_failed_body": "Dieser Anbieter konnte den Tausch nicht durchführen. Versuche es mit einem anderen Anbieter.",
-            "insufficient_native_title": "Unzureichendes {{symbol}}",
+            "provider_unavailable_body": "Der Anbieter ist gerade nicht verfügbar. Versuche es gleich noch einmal.",
+            "route_unverified_body": "Pera kann den Vertrag dieses Anbieters für den Tausch auf {{network}} noch nicht überprüfen, deshalb wurde nichts signiert. Versuche einen anderen Anbieter oder versuche es später erneut.",
+            "quote_mismatch_body": "Die Transaktionen des Anbieters passten nicht zu diesem Angebot, deshalb wurde nichts signiert. Versuche es erneut oder wähle einen anderen Anbieter.",
+            "unsupported_order_body": "Pera kann die Bestellung dieses Anbieters nicht abschließen, deshalb wurde nichts signiert. Wähle einen anderen Anbieter.",
+            "signing_failed_body": "Die Transaktion konnte nicht signiert werden, deshalb wurde sie nicht gesendet. Versuche es erneut.",
+            "order_insufficient_balance_body": "Dein Guthaben reicht für diesen Betrag und die Netzwerkgebühr nicht aus. Versuche einen kleineren Betrag oder füge Guthaben für die Gebühr hinzu.",
             "insufficient_native_body": "Dieses Konto benötigt mindestens {{amount}} {{symbol}} mehr, um diesen Tausch, die Gebühren und das Mindestguthaben zu decken. Füge mehr {{symbol}} hinzu und versuche es erneut.",
             "success_title": "Tausch abgeschlossen",
             "success_body": "Tausch von {{fromAsset}} zu {{toAsset}} erfolgreich abgeschlossen",

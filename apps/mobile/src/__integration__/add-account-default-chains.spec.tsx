@@ -20,13 +20,7 @@ import {
     it,
     vi,
 } from 'vitest'
-import {
-    act,
-    fireEvent,
-    renderHook,
-    screen,
-    waitFor,
-} from '@testing-library/react'
+import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
 import { http, type RequestHandler } from 'msw'
 
 import {
@@ -51,6 +45,7 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import { server } from '@test-utils/msw-server'
+import { pressIcon } from '@test-utils/pressIcon'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { isElementDisabled } from '@test-utils/rnw'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
@@ -193,18 +188,6 @@ const theOnlyAccount = (): WalletAccount => {
     const { accounts } = useAccountsStore.getState()
     expect(accounts).toHaveLength(1)
     return accounts[0]!
-}
-
-// A sheet header's close icon is an svg whose onPress jsdom never dispatches.
-const pressIcon = (testID: string): void => {
-    const icon = screen.getByTestId(testID) as unknown as Record<
-        string,
-        { onPress: () => void }
-    >
-    const propsKey = Object.keys(icon).find(key =>
-        key.startsWith('__reactProps'),
-    )!
-    act(() => icon[propsKey]!.onPress())
 }
 
 // Imports the recovery phrase active on Ethereum and Base, up to naming it,

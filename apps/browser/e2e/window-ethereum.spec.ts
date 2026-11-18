@@ -36,6 +36,8 @@ import {
 import { settlePinPrompt } from './pin-prompt'
 import {
     BALANCE_WEI,
+    BLOCK_NUMBER,
+    CALL_RESULT,
     E2E_EVM_RPC_PORT,
     E2E_EVM_RPC_URL,
     createFakeEvmNode,
@@ -236,6 +238,23 @@ test('the provider answers EIP-1193 requests with no connection yet', async () =
             ),
     )
     expect(refusal).toBe(4200)
+    // Reads spend the wallet's keyed node quota, so a site that hasn't
+    // connected gets 4100 rather than the node's answer.
+    const unconnectedRead = await page.evaluate(() =>
+        (
+            window as {
+                ethereum?: {
+                    request(args: { method: string }): Promise<unknown>
+                }
+            }
+        ).ethereum
+            ?.request({ method: 'eth_blockNumber' })
+            .then(
+                () => null,
+                (error: { code?: number }) => error.code,
+            ),
+    )
+    expect(unconnectedRead).toBe(4100)
     await page.close()
 })
 
@@ -420,6 +439,59 @@ test.describe('signing from a connected dApp', () => {
 
         expect(balance.code, balance.message).toBeUndefined()
         expect(balance.result).toBe(`0x${BALANCE_WEI.toString(16)}`)
+    })
+
+    test('a connected dApp gets the node answer for every kind of read it sends', async () => {
+        const call = { to: '0x000000000000000000000000000000000000dEaD' }
+        const reads: Array<[string, unknown[], unknown]> = [
+            ['eth_blockNumber', [], `0x${BLOCK_NUMBER.toString(16)}`],
+            ['eth_call', [call, 'latest'], CALL_RESULT],
+            ['eth_getCode', [call.to, 'latest'], '0x'],
+            ['eth_estimateGas', [{ ...call, from: address }], '0x5208'],
+            ['eth_getTransactionReceipt', [`0x${'ab'.repeat(32)}`], null],
+            ['net_version', [], String(Number(BigInt(hexChainId)))],
+        ]
+
+        for (const [method, params] of reads) {
+            await startRequest(`read:${method}`, { method, params })
+        }
+
+        for (const [method, , expected] of reads) {
+            const outcome = await outcomeOf(`read:${method}`)
+            expect(
+                outcome.code,
+                `${method}: ${outcome.message}`,
+            ).toBeUndefined()
+            expect(outcome.result, method).toEqual(expected)
+        }
+    })
+
+    test('a method outside the read list still returns 4200 to a connected dApp', async () => {
+        await startRequest('newFilter', {
+            method: 'eth_newFilter',
+            params: [{}],
+        })
+
+        expect((await outcomeOf('newFilter')).code).toBe(4200)
+    })
+
+    test("wallet_getPermissions returns the site's eth_accounts grant", async () => {
+        await startRequest('permissions', { method: 'wallet_getPermissions' })
+
+        const permissions = await outcomeOf('permissions')
+
+        expect(permissions.code, permissions.message).toBeUndefined()
+        expect(permissions.result).toEqual([
+            expect.objectContaining({
+                parentCapability: 'eth_accounts',
+                caveats: [
+                    {
+                        type: 'restrictReturnedAccounts',
+                        value: [address],
+                    },
+                ],
+            }),
+        ])
     })
 
     test('a connected dApp sends a transaction and gets the hash back', async () => {
@@ -617,6 +689,33 @@ test.describe('signing from a connected dApp', () => {
 
         await dappPage.waitForTimeout(NO_APPROVAL_WAIT_MS)
         expect(context.pages()).toHaveLength(pagesBefore)
+    })
+
+    test('a locked wallet shows the dApp no accounts, and reads still answer', async () => {
+        await walletPage.bringToFront()
+        await walletPage.getByTestId('tab_menu_button').click()
+        await walletPage.getByTestId('menu_settings_button').click()
+        await walletPage.getByTestId('settings_item_security').click()
+        await walletPage.getByTestId('vault-security-lock-now').click()
+        await expect(
+            walletPage.getByTestId('unlock-password-input'),
+        ).toBeVisible({ timeout: 20_000 })
+
+        await startRequest('lockedAccounts', { method: 'eth_accounts' })
+        await startRequest('lockedRead', { method: 'eth_blockNumber' })
+
+        expect((await outcomeOf('lockedAccounts')).result).toEqual([])
+        expect((await outcomeOf('lockedRead')).result).toBe(
+            `0x${BLOCK_NUMBER.toString(16)}`,
+        )
+
+        await walletPage.getByTestId('unlock-password-input').fill(PASSWORD)
+        await walletPage.getByTestId('unlock-submit').click()
+        await expect(
+            walletPage.getByTestId('unlock-password-input'),
+        ).not.toBeVisible({ timeout: 20_000 })
+        await startRequest('unlockedAccounts', { method: 'eth_accounts' })
+        expect((await outcomeOf('unlockedAccounts')).result).toEqual([address])
     })
 
     // Last, because it closes the wallet tab the earlier tests drive. The

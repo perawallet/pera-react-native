@@ -14,6 +14,11 @@ import { render, screen } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
 import { ExpandablePanel } from '../ExpandablePanel'
 import { Text } from 'react-native'
+import { useIsInHiddenContainer } from '@hooks/useIsAnimationVisible'
+
+const HiddenProbe = () => (
+    <Text>{useIsInHiddenContainer() ? 'hidden' : 'shown'}</Text>
+)
 
 describe('ExpandablePanel', () => {
     // lanekeep-ignore-next-line pera/no-primitive-retest reason: the one smoke test for a component with no other case
@@ -24,5 +29,21 @@ describe('ExpandablePanel', () => {
             </ExpandablePanel>,
         )
         expect(screen.getByText('Panel Content')).toBeTruthy()
+    })
+
+    it('marks its content hidden while collapsed so animations inside pause', () => {
+        const { rerender } = render(
+            <ExpandablePanel isExpanded={false}>
+                <HiddenProbe />
+            </ExpandablePanel>,
+        )
+        expect(screen.getByText('hidden')).toBeTruthy()
+
+        rerender(
+            <ExpandablePanel isExpanded={true}>
+                <HiddenProbe />
+            </ExpandablePanel>,
+        )
+        expect(screen.getByText('shown')).toBeTruthy()
     })
 })

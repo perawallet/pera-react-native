@@ -10,13 +10,14 @@
  limitations under the License
  */
 
+import type { Decimal } from 'decimal.js'
 import type {
     ChainId,
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { swapAdapterFor } from '../chain-adapter'
-import type { SwapAccountPair } from '../models'
+import type { SwapAccountPair, SwapCrossChainFlip } from '../models'
 import { useSwapsStore } from '../store'
 
 type UseSwapsResult = {
@@ -30,6 +31,11 @@ type UseSwapsResult = {
     setToAsset: (toAsset: string, toAssetScope?: Nullable<ChainScope>) => void
     setSourceAsset: (chainId: ChainId, fromAsset: string) => void
     setAccountPair: (pair: SwapAccountPair) => void
+    flipAcrossChains: (flip: SwapCrossChainFlip) => void
+    takeFlippedPayAmount: (
+        chainId: ChainId,
+        assetId: string,
+    ) => Nullable<Decimal>
     setSlippage: (slippage: Nullable<string>) => void
     setIsLocalCurrencyInput: (value: boolean) => void
     /** Restores the default pay/receive pair, keeping the user's settings. */
@@ -54,6 +60,10 @@ export const useSwaps = (scope: ChainScope): UseSwapsResult => {
     const setSourceAsset = useSwapsStore(state => state.setSourceAsset)
     const pairAccountId = useSwapsStore(state => state.pairAccountId)
     const setAccountPair = useSwapsStore(state => state.setAccountPair)
+    const flipAcrossChains = useSwapsStore(state => state.flipAcrossChains)
+    const takeFlippedPayAmount = useSwapsStore(
+        state => state.takeFlippedPayAmount,
+    )
     const setSlippage = useSwapsStore(state => state.setSlippage)
     const setIsLocalCurrencyInput = useSwapsStore(
         state => state.setIsLocalCurrencyInput,
@@ -70,6 +80,8 @@ export const useSwaps = (scope: ChainScope): UseSwapsResult => {
         setToAsset,
         setSourceAsset,
         setAccountPair,
+        flipAcrossChains,
+        takeFlippedPayAmount,
         setSlippage,
         setIsLocalCurrencyInput,
         resetAssetPair,

@@ -16,7 +16,18 @@ import { render, fireEvent, screen, act } from '@test-utils/render'
 import { PWTapToConfirm } from '../PWTapToConfirm'
 
 vi.mock('lottie-react-native', () => ({
-    default: ({ testID }: { testID?: string }) => <div data-testid={testID} />,
+    default: ({
+        testID,
+        autoPlay,
+    }: {
+        testID?: string
+        autoPlay?: boolean
+    }) => (
+        <div
+            data-testid={testID}
+            data-auto-play={String(autoPlay)}
+        />
+    ),
 }))
 
 vi.mock('@assets/animations/pera-transaction-loading.json', () => ({
@@ -286,10 +297,20 @@ describe('PWTapToConfirm', () => {
         expect(onConfirm).not.toHaveBeenCalled()
     })
 
-    it('mounts the Pera lottie animation when loading', () => {
+    it('plays the Pera lottie animation only while loading', () => {
         renderTapToConfirm({ isLoading: true })
 
-        expect(screen.getByTestId('pw-tap-to-confirm-lottie')).toBeTruthy()
+        expect(
+            screen.getByTestId('pw-tap-to-confirm-lottie').dataset.autoPlay,
+        ).toBe('true')
+    })
+
+    it('keeps the faded-out lottie animation paused while idle', () => {
+        renderTapToConfirm()
+
+        expect(
+            screen.getByTestId('pw-tap-to-confirm-lottie').dataset.autoPlay,
+        ).toBe('false')
     })
 
     it('mounts the check icon when confirmed', () => {

@@ -112,6 +112,9 @@ Create Wallet Named
     Clear Text    ${ACCOUNT_NAME_INPUT}
     Input Text    ${ACCOUNT_NAME_INPUT}    ${name}
     Dismiss Keyboard
+    # The button rides above the keyboard and drops back as it closes: a tap aimed at where it was
+    # lands on nothing, and the screen stays put with no error.
+    Wait Until Settled    ${ACCOUNT_FINISH_BUTTON}
     Tap    ${ACCOUNT_FINISH_BUTTON}
     Wait Until Page Contains Element    ${MENU_TAB}    timeout=60s
 
@@ -311,6 +314,7 @@ Name Account And Finish
     [Arguments]    ${name}
     Type Account Name    ${name}
     Dismiss Keyboard
+    Wait Until Settled    ${ACCOUNT_FINISH_BUTTON}
     Tap    ${ACCOUNT_FINISH_BUTTON}
     Wait Until Page Does Not Contain Element    ${ACCOUNT_FINISH_BUTTON}    timeout=30s
     Wait Until Page Contains Element    ${ACCOUNT_SELECTION_BUTTON}    timeout=30s
@@ -360,7 +364,7 @@ Open Rescan For Rekeyed Accounts
     Wait Until Settled    ${SCAN_REKEYED_OPTION}
     Tap    ${SCAN_REKEYED_OPTION}
 
-Open Node Settings
+Open Node Settings From Menu
     Tap    ${MENU_TAB}
     Wait Until Page Contains Element    ${MENU_SETTINGS_BUTTON}    timeout=15s
     Tap    ${MENU_SETTINGS_BUTTON}

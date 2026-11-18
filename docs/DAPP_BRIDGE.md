@@ -67,11 +67,11 @@ used only when it derives the account's own address.
 A `txns` entry is an ARC-0001 wallet transaction,
 `{ txn, signers?, authAddr?, msig?, stxn?, message? }`, with `txn` base64.
 
-Events are delivered as JSON-RPC notifications (no `id`). **Only `disconnect`
-`{}` is emitted today**, when the record is removed. `accountsChanged`
-`{ accounts }` and `networkChanged` `{ network }` are reserved: the handler can
-send them, but nothing in the extension produces the `WalletNotice` that would, so
-an SDK must not wait on either. Re-read `getAddresses()` instead.
+Events are delivered as JSON-RPC notifications (no `id`): `disconnect` `{}` when
+the record is removed, `networkChanged` `{ network }` when the wallet's Algorand
+network moves, and `accountsChanged` `{ accounts }` when the wallet gains or
+loses one of the site's accounts, and on lock and unlock (see
+[Permissions and the locked wallet](#permissions-and-the-locked-wallet)).
 
 `requestTransactionSigning` and the ARC-60 form of `requestDataSigning` keep the
 in-app webview bridge's param and result shapes (see
@@ -299,11 +299,20 @@ worker reads the vault's `SESSION_UNLOCKED_KEY` flag from session storage, which
 the offscreen document cannot reach, and the in-app browser reads the app lock.
 The flag is written and removed with the master key, so the worker never reads
 the key: every page request triggers the check, and a read would copy the key
-into the worker's heap. A state that can't be read counts as locked. While locked, `eth_accounts` and `wallet_getPermissions` return
-nothing and a reconnect goes through the approval; reads still answer, since they
-reveal no account. Nothing is pushed on lock or unlock: a page sees the change on
-its next `eth_accounts`, so a dApp that doesn't poll stays disconnected until it
-reloads.
+into the worker's heap. A state that can't be read counts as locked. While locked, `eth_accounts`,
+`wallet_getPermissions` and `window.pera`'s `getAddresses` return no account and a
+reconnect goes through the approval; reads still answer, since they reveal no
+account, and signing requests still open the approval, which unlocks first.
+
+Connected pages on both providers get `accountsChanged` with an empty list on lock
+and the granted accounts on unlock, and no `accountsChanged` carries accounts while
+locked. A push has no request to carry the flag, so the offscreen document mirrors
+the lock state: the worker answers it once at boot and broadcasts each change,
+sending only the boolean (`packages/browser-runtime/src/lock-state.ts`). Until the
+worker answers, or if it can't read the state, the mirror counts as locked but
+unknown, so the first change it hears reaches pages even when it is a lock.
+WalletConnect sessions are left
+alone: the lock never withdraws their accounts.
 
 ### Approval queue
 

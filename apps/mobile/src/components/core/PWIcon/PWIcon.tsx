@@ -29,6 +29,7 @@ export const PWIcon = ({
     size = 'md',
     variant = 'primary',
     onPress,
+    disabled,
     dismissKeyboardOnPress = true,
     ...rest
 }: PWIconProps) => {
@@ -89,7 +90,7 @@ export const PWIcon = ({
     if (!IconComponent) return null
 
     const resolvedSize = getIconPixelSize(theme, size)
-    const resolvedColor = rest.disabled
+    const resolvedColor = disabled
         ? disabledColors[variant]
         : variantColors[variant]
 
@@ -127,6 +128,9 @@ export const PWIcon = ({
             height={resolvedSize}
             color={resolvedColor}
             onPress={onPress ? handlePress : undefined}
+            // Any non-null `disabled` makes react-native-svg a touch responder,
+            // which takes the tap from a pressable wrapping a plain icon.
+            {...(onPress ? { disabled } : undefined)}
             {...decorativeAccessibilityProps}
             {...restProps}
             style={resolvedStyle}

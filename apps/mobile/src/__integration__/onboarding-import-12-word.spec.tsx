@@ -198,6 +198,13 @@ describe('Flow: Onboarding → Import a 12-word seed', () => {
             }),
         )
 
+        // The walk the import leaves running derives keys until it ends, so the
+        // next test's empty keystore must wait for it.
+        const walk = vi.spyOn(
+            useAccountsStore.getState(),
+            'discoverWalletAccounts',
+        )
+
         await enterTwelveWordSeed(HD_TEST_MNEMONIC_12_WORDS)
         expect(screen.queryByTestId('import_account_word_input_12')).toBeNull()
         fireEvent.click(screen.getByTestId('import_account_import_button'))
@@ -250,6 +257,8 @@ describe('Flow: Onboarding → Import a 12-word seed', () => {
         expect(chainAccountOf(account1, 'ethereum')?.address).toBe(
             HD_12_ETHEREUM_ADDRESS_1,
         )
+        await waitFor(() => expect(walk).toHaveBeenCalledOnce())
+        await walk.mock.results[0].value
     })
 
     it('Given 12 words whose checksum is wrong, when the user taps Recover, then an error toast is raised and nothing is created', async () => {

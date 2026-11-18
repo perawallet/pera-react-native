@@ -13,16 +13,20 @@
 // Native Discover favorites in folders: a folder lists its dApps under a
 // header that shows the folder's own name, unstarring removes a dApp from the
 // folder and from favorites, All favorites lists newest first, and All folders
-// opens a folder.
+// opens a folder. The header's "…" menu renames, rearranges and deletes a
+// folder without ever removing a favorite.
 
 import { beforeEach, describe, expect, it } from 'vitest'
-import { act, fireEvent, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { mockDiscoverProjects } from '@perawallet/wallet-core-projects/test-handlers'
 import { server } from '@test-utils/msw-server'
+import { pressIcon } from '@test-utils/pressIcon'
 import { render } from '@test-utils/render'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { headeredScreen } from '@routes/screen-options'
+import { BottomSheetManager } from '@modules/bottom-sheet'
+import { useBottomSheetStore } from '@modules/bottom-sheet/store/bottomSheetStore'
 import { useDiscoverFavoritesStore } from '@modules/discover/store/useDiscoverFavoritesStore'
 import type { DiscoverDapp } from '@modules/discover/types'
 
@@ -51,23 +55,130 @@ const flush = () =>
 
 const HeaderedStack = createNativeStackNavigator()
 
-/** The folder screen under the app's real navigation header. */
+/** The folder screen under the app's real navigation header, with the sheet host. */
 const renderFolderWithHeader = (folderId: string) =>
     render(
-        <HeaderedStack.Navigator>
-            <HeaderedStack.Screen
-                name='DiscoverFolder'
-                component={DiscoverFolderScreen}
-                initialParams={{ folderId }}
-                options={headeredScreen('discover.favorites.title')}
-            />
-        </HeaderedStack.Navigator>,
+        <>
+            <BottomSheetManager />
+            <HeaderedStack.Navigator>
+                <HeaderedStack.Screen
+                    name='DiscoverFolder'
+                    component={DiscoverFolderScreen}
+                    initialParams={{ folderId }}
+                    options={headeredScreen('discover.favorites.title')}
+                />
+            </HeaderedStack.Navigator>
+        </>,
     )
+
+const TINYMAN = 'https://tinyman.example'
+const FOLKS = 'https://folks.example'
+
+/** A folder holding Tinyman then Folks, opened under its header. */
+const openSwapFolder = async () => {
+    store().addFavorite(dapp('Tinyman'))
+    store().addFavorite(dapp('Folks'))
+    const id = store().createFolder('Swap', TINYMAN)
+    store().setDappInFolder(id, FOLKS, true)
+    renderFolderWithHeader(id)
+    await screen.findByTestId('discover_folder_title')
+    return id
+}
+
+const chooseFromMenu = async (choice: string) => {
+    fireEvent.click(screen.getByTestId('discover_folder_menu_button'))
+    fireEvent.click(await screen.findByTestId(`discover_folder_menu_${choice}`))
+}
 
 describe('Flow: Discover favorite folders', () => {
     beforeEach(() => {
         server.use(mockDiscoverProjects({ response: [] }))
         store().resetState()
+    })
+
+    it('Given a folder, when its menu button is tapped twice, then one menu opens', async () => {
+        await openSwapFolder()
+
+        fireEvent.click(screen.getByTestId('discover_folder_menu_button'))
+        fireEvent.click(screen.getByTestId('discover_folder_menu_button'))
+
+        await screen.findByTestId('discover_folder_menu_rename')
+        await flush()
+        // The button's double-press guard keeps the second tap from stacking
+        // a second menu; the sheet stack is the truth, not the painted DOM.
+        expect(
+            useBottomSheetStore.getState().requests.filter(r => r.isVisible),
+        ).toHaveLength(1)
+    })
+
+    it('Given a folder, when it is renamed from its menu, then the header shows the new name', async () => {
+        const id = await openSwapFolder()
+
+        await chooseFromMenu('rename')
+        const input = await screen.findByTestId('discover_folder_name_input')
+        expect((input as HTMLInputElement).value).toBe('Swap')
+        fireEvent.change(input, { target: { value: ' DEX ' } })
+        fireEvent.click(screen.getByTestId('discover_folder_name_submit'))
+
+        await waitFor(() => {
+            expect(
+                screen.getByTestId('discover_folder_title').textContent,
+            ).toBe('DEX')
+        })
+        expect(store().folders[id]?.name).toBe('DEX')
+        await flush()
+    })
+
+    it('Given a folder, when it is deleted from its menu, then it leaves the screen and its dApps stay favorites', async () => {
+        const id = await openSwapFolder()
+
+        await chooseFromMenu('delete')
+        fireEvent.click(
+            await screen.findByTestId('discover_delete_folder_confirm'),
+        )
+
+        await waitFor(() => {
+            expect(store().folders[id]).toBeUndefined()
+        })
+        expect(store().isFavorite(TINYMAN)).toBe(true)
+        expect(store().isFavorite(FOLKS)).toBe(true)
+        await flush()
+    })
+
+    it('Given a folder with two dApps, when one is taken out in Rearrange and Done is tapped, then only the other is listed and both are still favorites', async () => {
+        const id = await openSwapFolder()
+
+        await chooseFromMenu('rearrange')
+        fireEvent.click(
+            await screen.findByTestId(`discover_rearrange_remove_${TINYMAN}`),
+        )
+        fireEvent.click(screen.getByTestId('discover_rearrange_done'))
+
+        await waitFor(() => {
+            expect(
+                screen.queryByTestId(`discover_folder_dapp_${TINYMAN}`),
+            ).toBeNull()
+        })
+        expect(screen.getByTestId(`discover_folder_dapp_${FOLKS}`)).toBeTruthy()
+        expect(store().folders[id]?.items).toEqual([FOLKS])
+        expect(store().isFavorite(TINYMAN)).toBe(true)
+        await flush()
+    })
+
+    it('Given a folder, when Rearrange is cancelled, then nothing changes', async () => {
+        const id = await openSwapFolder()
+
+        await chooseFromMenu('rearrange')
+        fireEvent.click(
+            await screen.findByTestId(`discover_rearrange_remove_${TINYMAN}`),
+        )
+        pressIcon('discover_rearrange_header-close')
+
+        await waitFor(() => {
+            expect(screen.queryByTestId('discover_rearrange_done')).toBeNull()
+        })
+        expect(store().folders[id]?.items).toEqual([TINYMAN, FOLKS])
+        await flush()
     })
 
     it('Given a folder named web3.apps, then the header shows that name and its dApp count, and its dApps are listed', async () => {
@@ -125,6 +236,32 @@ describe('Flow: Discover favorite folders', () => {
             'discover_all_favorites_dapp_https://folks.example',
             'discover_all_favorites_dapp_https://tinyman.example',
         ])
+        await flush()
+    })
+
+    it('Given a folder with four dApps, then its row stacks three logos and +1', async () => {
+        const urls = ['Tinyman', 'Folks', 'Pact', 'Vestige'].map(name => {
+            store().addFavorite(dapp(name))
+            return `https://${name.toLowerCase()}.example`
+        })
+        const id = store().createFolder('DeFi')
+        urls.forEach(url => store().setDappInFolder(id, url, true))
+        store().createFolder('Empty')
+        renderWithNavigation(DiscoverAllFoldersScreen, 'DiscoverAllFolders')
+
+        const row = await screen.findByTestId(`discover_all_folders_${id}`)
+        expect(
+            within(row).getAllByTestId(/^discover_logo_stack_logo_/),
+        ).toHaveLength(3)
+        expect(
+            within(row).getByTestId('discover_logo_stack_more').textContent,
+        ).toBe('+1')
+        const emptyId = store().folderOrder[0]!
+        expect(
+            within(
+                screen.getByTestId(`discover_all_folders_${emptyId}`),
+            ).queryByTestId('discover_logo_stack'),
+        ).toBeNull()
         await flush()
     })
 

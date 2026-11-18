@@ -40,6 +40,10 @@ declared `secrets`. Nothing else from the daemon's environment reaches it.
 whether or not the reading job declares it as a `need`. `notify.sh` relies on
 this to report on jobs it never lists in `needs`.
 
+`CI_RELEASE_NOTES_SUMMARY` is set only for a build of an rc or stable tag whose
+notes pera-admin has a current summary of: `- ` bullet lines, at most 500
+characters. A job falls back to its own changelog when it is absent.
+
 Resolve Node from `.tool-versions` inside each job. Inheriting the daemon's
 Node changes host globals under the test suite.
 

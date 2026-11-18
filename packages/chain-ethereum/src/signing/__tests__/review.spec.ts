@@ -1079,6 +1079,67 @@ describe("a dApp's standard token calls", () => {
         })
     })
 
+    describe('with the shipped EVM capability defaults', () => {
+        const SHIPPED: ReviewContext = {
+            ...CONTEXT,
+            capabilities: evmCapabilityDefaults,
+        }
+
+        it('reviews approve(spender, MaxUint256) as an unlimited approval with its warning', async () => {
+            const { reviewed, summary } = await reviewOne(
+                unsigned(APPROVE),
+                SHIPPED,
+            )
+
+            expect(summary).toMatchObject({
+                kind: 'approval',
+                title: { key: 'transactions.list_item.approval' },
+                counterparty: SPENDER,
+            })
+            expect(reviewed.warnings).toEqual([
+                expect.objectContaining({
+                    type: 'token-approval',
+                    severity: 'danger',
+                    message: expect.stringContaining('all of this token'),
+                }),
+            ])
+        })
+
+        it('reviews setApprovalForAll(operator, true) as collection-wide access with its warning', async () => {
+            const { reviewed, summary } = await reviewOne(
+                unsigned(SET_APPROVAL_FOR_ALL),
+                SHIPPED,
+            )
+
+            expect(summary).toMatchObject({
+                kind: 'approval',
+                title: { key: 'transactions.list_item.approval' },
+                counterparty: SPENDER,
+            })
+            expect(reviewed.warnings).toEqual([
+                expect.objectContaining({
+                    type: 'token-approval',
+                    severity: 'danger',
+                    message: expect.stringContaining('in this collection'),
+                }),
+            ])
+        })
+
+        it('reviews setApprovalForAll(operator, false) as a revocation without a warning', async () => {
+            const { reviewed, summary } = await reviewOne(
+                unsigned(SET_APPROVAL_FOR_ALL_REVOKE),
+                SHIPPED,
+            )
+
+            expect(summary).toMatchObject({
+                kind: 'approval',
+                title: { key: 'transactions.list_item.revoke_approval' },
+                counterparty: SPENDER,
+            })
+            expect(reviewed.warnings).toEqual([])
+        })
+    })
+
     describe('with contractDecoding off', () => {
         it('reviews an unlimited approve as an approval with a danger warning, behind review', async () => {
             const { reviewed, summary } = await reviewOne(
@@ -1211,11 +1272,11 @@ describe("a dApp's standard token calls", () => {
     ])(
         'reviews %s the same with contractDecoding on',
         async (_, transaction) => {
-            const shipped = await reviewOne(unsigned(transaction), CONTEXT)
+            const undecoded = await reviewOne(unsigned(transaction), CONTEXT)
             const decoding = await reviewOne(unsigned(transaction), DECODING)
 
-            expect(shipped.summary).toEqual(decoding.summary)
-            expect(shipped.reviewed.warnings).toEqual(
+            expect(undecoded.summary).toEqual(decoding.summary)
+            expect(undecoded.reviewed.warnings).toEqual(
                 decoding.reviewed.warnings,
             )
         },

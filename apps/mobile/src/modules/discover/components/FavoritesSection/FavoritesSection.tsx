@@ -13,6 +13,7 @@
 import { Fragment } from 'react'
 import FavoritesIcon from '@assets/icons/discover/favorites.svg'
 import FolderAddIcon from '@assets/icons/discover/folder-add.svg'
+import { useTheme } from '@rneui/themed'
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
@@ -25,6 +26,7 @@ import { useStyles } from './styles'
 /** The Discover home's Favorites: All favorites, the newest folders, See all. */
 export const FavoritesSection = () => {
     const styles = useStyles()
+    const { theme } = useTheme()
     const { t } = useLanguage()
     const section = useFavoritesSection()
 
@@ -35,6 +37,7 @@ export const FavoritesSection = () => {
                       key: 'all',
                       name: t('discover.favorites.all_favorites'),
                       count: section.favoriteCount,
+                      previewDapps: section.favoritePreviewDapps,
                       icon: 'star' as const,
                       onPress: section.openAllFavorites,
                       testID: 'discover_home_all_favorites',
@@ -45,6 +48,7 @@ export const FavoritesSection = () => {
             key: folder.id,
             name: folder.name,
             count: folder.count,
+            previewDapps: folder.previewDapps,
             icon: 'folder' as const,
             onPress: () => section.openFolder(folder.id),
             testID: `discover_home_folder_${folder.id}`,
@@ -61,7 +65,7 @@ export const FavoritesSection = () => {
                 icon={<FavoritesIcon />}
                 action={{
                     label: t('discover.favorites.new_folder'),
-                    icon: <FolderAddIcon />,
+                    icon: <FolderAddIcon color={theme.colors.linkPrimary} />,
                     onPress: () => {
                         void section.openNewFolder()
                     },

@@ -160,7 +160,7 @@ broaden the selection. The existing release smoke gate still selects its one `re
 
 The workflow can be called by a native build workflow on main with freshly uploaded `android_app`
 and/or `ios_app` IDs and the BrowserStack secrets. It does not automatically test an old build on
-every source push. The nightly schedule (02:17 UTC) stays dormant until repository variables
+every source push. The nightly schedule (02:17 UTC) fails until repository variables
 `E2E_ANDROID_APP` and/or `E2E_IOS_APP` name uploaded E2E builds; keep those variables updated from
 the native build pipeline. Nightly runs test those configured builds, not an assumed current commit.
 No app is built or uploaded by the schedule itself.
@@ -183,6 +183,20 @@ run before merging; `--format json` feeds a script. When a module or package get
 suite starts covering a new module, extend the tables in the script and its test.
 Pass `--base <ref>` with `--files` to include testIDs removed or renamed since that ref. CI includes
 both sides of a file rename and reads the PR base revision, so deleted source still selects its flows.
+
+## Ethereum
+
+`tests/ethereum.robot` runs in the nightly pool: a committed seed must derive the expected 0x address, and a
+Sepolia self-send must reach History as pending and then confirmed.
+
+- The build must be a staging E2E build that ships Ethereum (`CHAINS` and the `ETHEREUM_*` variables, as in
+  the staging jobs of `ci/pipelines.yml`).
+- The send case needs one dedicated Universal wallet per platform, its first account holding Sepolia ETH, in
+  the `E2E_ETHEREUM_FUNDED_MNEMONIC_ANDROID` and `E2E_ETHEREUM_FUNDED_MNEMONIC_IOS` secrets. Without the
+  secret the case skips and shows as skipped in the report.
+- BrowserStack's session video shows the phrase as it is typed, so these wallets hold Sepolia ETH only.
+- Sepolia rather than the fake EVM node: a cloud device cannot reach a node on the CI runner, and mined
+  history comes from the backend, which never sees a local node's transactions.
 
 ## Navigation trace
 

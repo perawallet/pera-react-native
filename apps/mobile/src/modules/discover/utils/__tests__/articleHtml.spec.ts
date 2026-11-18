@@ -191,14 +191,34 @@ describe('parseArticleHtml edge cases', () => {
         ).toEqual([{ type: 'image', src: 'https://pera.test/b.png', alt: 'b' }])
     })
 
-    it('keeps an emoji image inline as its shortcode', () => {
+    it('turns an emoji image into its character', () => {
         expect(
             parseArticleHtml(
                 '<p>Launch <img class="marked-emoji" src="https://github.githubassets.com/images/icons/emoji/rocket.png"> now</p>',
             ),
-        ).toEqual([
-            { type: 'paragraph', children: [text('Launch :rocket: now')] },
-        ])
+        ).toEqual([{ type: 'paragraph', children: [text('Launch 🚀 now')] }])
+    })
+
+    it('keeps the sign of a signed emoji name', () => {
+        expect(
+            parseArticleHtml(
+                '<p>Vote <img class="marked-emoji" src="https://github.githubassets.com/images/icons/emoji/-1.png"></p>',
+            ),
+        ).toEqual([{ type: 'paragraph', children: [text('Vote 👎')] }])
+    })
+
+    it('keeps an emoji with no character as its shortcode', () => {
+        expect(
+            parseArticleHtml(
+                '<p>Hi <img class="marked-emoji" alt=":octocat:" src="https://github.githubassets.com/images/icons/emoji/octocat.png"></p>',
+            ),
+        ).toEqual([{ type: 'paragraph', children: [text('Hi :octocat:')] }])
+    })
+
+    it('drops an emoji image with no name', () => {
+        expect(
+            parseArticleHtml('<p>Hi <img class="marked-emoji"></p>'),
+        ).toEqual([{ type: 'paragraph', children: [text('Hi')] }])
     })
 
     it('keeps the spaces at the edges of a link', () => {

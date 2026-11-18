@@ -85,7 +85,23 @@
                 "create": "Oluştur",
                 "save": "Kaydet"
             },
-            "empty": "Bu klasörde henüz dApp yok"
+            "empty": "Bu klasörde henüz dApp yok",
+            "menu": {
+                "title": "Klasör seçenekleri",
+                "open_label": "Klasör seçenekleri",
+                "rename": "Klasörü yeniden adlandır",
+                "rearrange": "dApp'leri yeniden sırala",
+                "delete": "Klasörü sil"
+            },
+            "rearrange": {
+                "title": "dApp'leri yeniden sırala",
+                "remove_label": "Bu klasörden çıkar: {{name}}"
+            },
+            "delete_confirm": {
+                "title": "Bu klasör silinsin mi?",
+                "body": "İçindeki dApp'ler favorilerinde kalır.",
+                "confirm": "Klasörü sil"
+            }
         },
         "favorites": {
             "title": "Favoriler",
@@ -105,7 +121,7 @@
         "add_to_folder": {
             "title": "Klasöre ekle",
             "new_folder": "Yeni klasör",
-            "done": "Tamam"
+            "added": "Klasöre eklendi: {{folder}}"
         }
     },
     "account_menu": {
@@ -4193,7 +4209,10 @@
             "to": "Hedef",
             "balance_label": "Bakiye: <0/>",
             "max": "MAKS",
-            "select_asset": "Seç"
+            "select_asset": "Seç",
+            "flip": "Ödenen ve alınanı değiştir",
+            "flip_unavailable_title": "Bu takas ters çevrilemiyor",
+            "flip_unavailable_body": "Bu hesap {{network}} ağından ödeme yapamıyor."
         },
         "asset_selection": {
             "swap_from_title": "Kaynak varlık",
@@ -4258,9 +4277,18 @@
         },
         "execution": {
             "error_title": "Swap başarısız",
-            "error_body": "Swap sırasında bir şeyler ters gitti. Lütfen tekrar dene.",
+            "failed_title": {
+                "prepare": "Swap başlatılamadı",
+                "approval": "Onay başarısız",
+                "swap": "Swap başarısız"
+            },
             "provider_failed_body": "Bu sağlayıcı swap işlemini tamamlayamadı. Başka bir sağlayıcı dene.",
-            "insufficient_native_title": "Yetersiz {{symbol}}",
+            "provider_unavailable_body": "Sağlayıcı şu anda kullanılamıyor. Biraz sonra tekrar dene.",
+            "route_unverified_body": "Pera bu sağlayıcının {{network}} ağındaki swap sözleşmesini henüz doğrulayamıyor, bu yüzden hiçbir şey imzalanmadı. Başka bir sağlayıcı dene veya daha sonra tekrar dene.",
+            "quote_mismatch_body": "Sağlayıcının işlemleri bu teklifle eşleşmedi, bu yüzden hiçbir şey imzalanmadı. Tekrar dene veya başka bir sağlayıcı seç.",
+            "unsupported_order_body": "Pera bu sağlayıcının siparişini tamamlayamıyor, bu yüzden hiçbir şey imzalanmadı. Başka bir sağlayıcı seç.",
+            "signing_failed_body": "İşlem imzalanamadı, bu yüzden gönderilmedi. Tekrar dene.",
+            "order_insufficient_balance_body": "Bakiyen bu tutarı ve ağ ücretini karşılamıyor. Daha küçük bir tutar dene veya ücret için bakiye ekle.",
             "insufficient_native_body": "Bu hesapta bu swap işlemini, ücretleri ve minimum bakiyeyi karşılamak için en az {{amount}} {{symbol}} daha gerekiyor. Daha fazla {{symbol}} ekle ve tekrar dene.",
             "success_title": "Swap tamamlandı",
             "success_body": "Swap başarıyla tamamlandı: {{fromAsset}} → {{toAsset}}",

@@ -48,6 +48,8 @@ ${RECEIVE_BALANCE_IS_USDC}          xpath=//*[@name='swap-receive-balance' or @r
 ${PAY_CHAIN_FILTER}                 tid=swap_from_chain_filter
 ${RECEIVE_CHAIN_FILTER}             tid=swap_to_chain_filter
 ${OTHER_CHAIN_RECEIVE_CHIP}         xpath=(//*[(starts-with(@content-desc,'swap_to_chain_filter_') or starts-with(@resource-id,'swap_to_chain_filter_') or starts-with(@name,'swap_to_chain_filter_')) and not(contains(concat(@content-desc,@resource-id,@name),'_all')) and not(contains(concat(@content-desc,@resource-id,@name),'_algorand'))])[1]
+# The selector's label is the asset's unit; iOS folds it into the touchable, Android keeps a child.
+${PAY_IS_USDC}                      xpath=//*[@content-desc='swap-pay-asset-selector' or @resource-id='swap-pay-asset-selector' or @name='swap-pay-asset-selector'][descendant-or-self::*[contains(@text,'USDC') or contains(@label,'USDC')]]
 
 ${CONFIG_APPLY}                     tid=swap-config-apply
 ${CONFIG_SLIPPAGE_INPUT}            tid=swap-config-slippage-input

@@ -18,10 +18,14 @@ import { bottomSheetNotifier } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { AddToFolderSheet } from '../components/AddToFolderSheet'
+import {
+    AddToFolderSheet,
+    type AddToFolderSheetResult,
+} from '../components/AddToFolderSheet'
 import { useDiscoverFavoritesStore } from '../store/useDiscoverFavoritesStore'
 import type { DiscoverDapp } from '../types'
 import { dappEventPayload } from '../utils/discoverAnalytics'
+import { SCROLLING_AUTO_SHEET_OPTIONS } from '../utils/sheetOptions'
 
 // lanekeep-ignore-next-line pera/no-numeric-sizes reason: a duration in ms, not a size
 const FOLDER_TOAST_DURATION_MS = 5000
@@ -37,6 +41,26 @@ export const useToggleDiscoverFavorite =
         const { successToast } = useToast()
         const { request } = useBottomSheet()
         const { t } = useLanguage()
+
+        // The confirmation reads the notifier after the sheet closed, so it shows
+        // above whatever sheet is underneath (the in-app browser, say).
+        const openAddToFolder = useCallback(
+            async (url: string) => {
+                const result = await request<AddToFolderSheetResult>({
+                    contents: <AddToFolderSheet url={url} />,
+                    options: SCROLLING_AUTO_SHEET_OPTIONS,
+                })
+                if (!result) return
+                successToast(
+                    t('discover.add_to_folder.added', {
+                        folder: result.folderName,
+                    }),
+                    '',
+                    { notifier: bottomSheetNotifier.current ?? undefined },
+                )
+            },
+            [request, successToast, t],
+        )
 
         // Starring stays one tap; the toast is the optional way into folders.
         const offerFolders = useCallback(
@@ -59,20 +83,12 @@ export const useToggleDiscoverFavorite =
                             ) {
                                 return
                             }
-                            void request({
-                                contents: <AddToFolderSheet url={url} />,
-                                options: {
-                                    size: 'auto',
-                                    enablePanDownToClose: true,
-                                    // PWSheetLayout scrolls only without the auto container.
-                                    autoCreateContainer: false,
-                                },
-                            })
+                            void openAddToFolder(url)
                         },
                     },
                 )
             },
-            [successToast, request, t],
+            [successToast, openAddToFolder, t],
         )
 
         return useCallback(

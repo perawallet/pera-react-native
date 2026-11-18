@@ -11,22 +11,44 @@
  */
 
 import { useMemo } from 'react'
-import { useDiscoverFavoritesStore } from '../store/useDiscoverFavoritesStore'
+import {
+    selectFolderFavorites,
+    useDiscoverFavoritesStore,
+} from '../store/useDiscoverFavoritesStore'
+import type { DiscoverFavorite } from '../types'
+import { DAPP_LOGO_STACK_MAX } from '../utils/dappLogoStack'
 
-export type FolderRowItem = { id: string; name: string; count: number }
+export type FolderRowItem = {
+    id: string
+    name: string
+    count: number
+    /** The first dApps, in folder order, for the row's logo stack. */
+    previewDapps: DiscoverFavorite[]
+}
 
-/** Every folder as a row (name and dApp count), newest first. */
+/** Every folder as a row (name, dApp count, first dApps), newest first. */
 export const useFolderRows = (): FolderRowItem[] => {
     const folders = useDiscoverFavoritesStore(s => s.folders)
     const folderOrder = useDiscoverFavoritesStore(s => s.folderOrder)
+    const favorites = useDiscoverFavoritesStore(s => s.favorites)
     return useMemo(
         () =>
             folderOrder.flatMap(id => {
                 const folder = folders[id]
                 return folder
-                    ? [{ id, name: folder.name, count: folder.items.length }]
+                    ? [
+                          {
+                              id,
+                              name: folder.name,
+                              count: folder.items.length,
+                              previewDapps: selectFolderFavorites(
+                                  { favorites, folders },
+                                  id,
+                              ).slice(0, DAPP_LOGO_STACK_MAX),
+                          },
+                      ]
                     : []
             }),
-        [folders, folderOrder],
+        [folders, folderOrder, favorites],
     )
 }

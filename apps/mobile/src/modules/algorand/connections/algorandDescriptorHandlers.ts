@@ -49,5 +49,6 @@ export const createAlgorandDescriptorHandlers = ({
                 ? customNodeAdapters.get(ALGORAND_CHAIN_ID).read()?.genesisHash
                 : undefined,
         getAccounts: () => [],
+        isWalletLocked: () => true,
     }),
 ]

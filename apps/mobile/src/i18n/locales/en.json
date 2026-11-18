@@ -85,7 +85,23 @@
                 "create": "Create",
                 "save": "Save"
             },
-            "empty": "No dApps in this folder yet"
+            "empty": "No dApps in this folder yet",
+            "menu": {
+                "title": "Folder options",
+                "open_label": "Folder options",
+                "rename": "Rename Folder",
+                "rearrange": "Rearrange dApps",
+                "delete": "Delete Folder"
+            },
+            "rearrange": {
+                "title": "Rearrange dApps",
+                "remove_label": "Remove {{name}} from this folder"
+            },
+            "delete_confirm": {
+                "title": "Delete this folder?",
+                "body": "Its dApps stay in your favorites.",
+                "confirm": "Delete Folder"
+            }
         },
         "favorites": {
             "title": "Favorites",
@@ -105,7 +121,7 @@
         "add_to_folder": {
             "title": "Add to Folder",
             "new_folder": "New folder",
-            "done": "Done"
+            "added": "Added to {{folder}}"
         }
     },
     "account_menu": {
@@ -4193,7 +4209,10 @@
             "to": "To",
             "balance_label": "Balance: <0/>",
             "max": "MAX",
-            "select_asset": "Select"
+            "select_asset": "Select",
+            "flip": "Flip pay and receive",
+            "flip_unavailable_title": "Can't flip this swap",
+            "flip_unavailable_body": "This account can't pay from the {{network}} network."
         },
         "asset_selection": {
             "swap_from_title": "Swap From",
@@ -4258,9 +4277,18 @@
         },
         "execution": {
             "error_title": "Swap Failed",
-            "error_body": "Something went wrong during the swap. Please try again.",
+            "failed_title": {
+                "prepare": "Couldn't start the swap",
+                "approval": "Approval failed",
+                "swap": "Swap failed"
+            },
             "provider_failed_body": "This provider couldn't complete the swap. Try another provider.",
-            "insufficient_native_title": "Insufficient {{symbol}}",
+            "provider_unavailable_body": "The provider is unavailable right now. Try again in a moment.",
+            "route_unverified_body": "Pera can't verify this provider's swap contract on {{network}} yet, so nothing was signed. Try another provider or try again later.",
+            "quote_mismatch_body": "The provider's transactions didn't match this quote, so nothing was signed. Try again or choose another provider.",
+            "unsupported_order_body": "Pera can't complete this provider's order, so nothing was signed. Choose another provider.",
+            "signing_failed_body": "The transaction couldn't be signed, so it wasn't sent. Try again.",
+            "order_insufficient_balance_body": "Your balance can't cover this amount and the network fee. Try a smaller amount or add funds for the fee.",
             "insufficient_native_body": "This account needs at least {{amount}} more {{symbol}} to cover this swap, its fees, and the minimum balance. Add more {{symbol}} and try again.",
             "success_title": "Swap Complete",
             "success_body": "{{fromAsset}} to {{toAsset}} swap successfully completed",

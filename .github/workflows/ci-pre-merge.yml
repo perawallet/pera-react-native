@@ -836,6 +836,16 @@ jobs:
             bash "${suite}"
           done
 
+      # The Fastfile's lanes against recorded actions: the runner's Ruby and its
+      # bundled minitest, no fastlane gems.
+      - name: Fastlane lane tests
+        run: |
+          set -euo pipefail
+          for suite in tools/__tests__/*.test.rb; do
+            echo "── ${suite}"
+            ruby "${suite}"
+          done
+
       # The shell harness above only exercises synthetic fixtures; this checks
       # the real pnpm-workspace.yaml for patch/catalog drift.
       - name: Check patch pins
