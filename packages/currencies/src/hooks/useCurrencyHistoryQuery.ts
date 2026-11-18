@@ -13,6 +13,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
 import type { HistoryPeriod, Nullable } from '@perawallet/wallet-core-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { fetchCurrencyHistory } from '../api/currencies'
 import type { CurrencyHistoryPoint } from '../models'
 import { currencyQueryKeys } from './querykeys'
@@ -29,9 +30,13 @@ export type UseCurrencyHistoryQueryResult = {
 export const useCurrencyHistoryQuery = (
     currencyId: string,
     period: HistoryPeriod,
-    enabled = true,
+    isRequested = true,
 ): UseCurrencyHistoryQueryResult => {
     const deployment = useWalletDeployment()
+    // The backend refuses web tokens on this route, and the extension would
+    // read that 403 as a rejected token and re-mint; web keeps the current rate.
+    const enabled =
+        isRequested && getProvider().deviceInfo.getDevicePlatform() !== 'web'
     const query = useQuery({
         queryKey: currencyQueryKeys.history(deployment, currencyId, period),
         queryFn: ({ signal }): Promise<CurrencyHistoryPoint[]> =>

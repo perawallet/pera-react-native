@@ -27,6 +27,13 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     }),
 }))
 
+const mockPlatform = vi.hoisted(() => ({ value: 'ios' }))
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        deviceInfo: { getDevicePlatform: () => mockPlatform.value },
+    }),
+}))
+
 const mockCurrency = vi.hoisted(() => ({ preferredCurrency: 'EUR' }))
 vi.mock('../useCurrency', () => ({
     useCurrency: () => ({
@@ -63,6 +70,7 @@ describe('useHistoricUsdToPreferred', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockCurrency.preferredCurrency = 'EUR'
+        mockPlatform.value = 'ios'
         queryClient = new QueryClient({
             defaultOptions: { queries: { retry: false } },
         })
@@ -212,6 +220,23 @@ describe('useHistoricUsdToPreferred', () => {
             { wrapper },
         )
 
+        expect(mockFetchCurrencyHistory).not.toHaveBeenCalled()
+    })
+
+    it('asks for no rates on web and converts with the current rate', () => {
+        mockPlatform.value = 'web'
+        const { result } = renderHook(
+            () => useHistoricUsdToPreferred(ALGORAND, 'one-week'),
+            { wrapper },
+        )
+
+        expect(result.current.isPending).toBe(false)
+        expect(
+            result.current.usdToPreferredAt(
+                new Decimal('1'),
+                at('2026-11-01T12:00:00Z'),
+            ),
+        ).toEqual(new Decimal('10'))
         expect(mockFetchCurrencyHistory).not.toHaveBeenCalled()
     })
 })
