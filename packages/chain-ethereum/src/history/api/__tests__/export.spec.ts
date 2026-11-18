@@ -146,16 +146,19 @@ describe('fetchEvmHistoryCsv', () => {
         expect(filename).toBe('TRUNCATED-Transactions-1-0xd8da--6045-Pera.csv')
     })
 
-    it('never takes a served name that reaches outside its directory', async () => {
-        serveCsv('../escape.csv')
+    it.each(['../escape.csv', '"receipt.csv/escape.csv"', 'receipt.csv.exe'])(
+        'refuses the invalid served filename %s',
+        async served => {
+            serveCsv(served)
 
-        const { filename } = await fetchEvmHistoryCsv(ETHEREUM, {
-            accountAddress: ME,
-            scope: MAINNET,
-        })
+            const { filename } = await fetchEvmHistoryCsv(ETHEREUM, {
+                accountAddress: ME,
+                scope: MAINNET,
+            })
 
-        expect(filename).toBe(`${ME}.csv`)
-    })
+            expect(filename).toBe(`${ME}.csv`)
+        },
+    )
 
     it('carries the busy-network copy on a 429', async () => {
         serveError(429, 'upstream_rate_limited')

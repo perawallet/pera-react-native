@@ -36,7 +36,8 @@ export const exportHistoryPath = (
 
 // The name is written into the cache directory, so only a bare file name is
 // taken. It carries the backend's `TRUNCATED-` prefix on a cut-short export.
-const SERVED_FILENAME = /filename="?([\w.-]+\.csv)"?/
+const SERVED_FILENAME =
+    /(?:^|;)\s*filename\s*=\s*(?:"([\w.-]+\.csv)"|([\w.-]+\.csv))\s*(?:;|$)/i
 
 /** Rejects with `CsvExportError`, carrying the 429 and 5xx copy for the toast. */
 export const fetchEvmHistoryCsv = async (
@@ -80,9 +81,10 @@ export const fetchEvmHistoryCsv = async (
                 url,
             )
         }
-        const served = SERVED_FILENAME.exec(
+        const servedFilename = SERVED_FILENAME.exec(
             response.headers?.get('content-disposition') ?? '',
-        )?.[1]
+        )
+        const served = servedFilename?.[1] ?? servedFilename?.[2]
         return {
             csvContent,
             filename:
