@@ -537,13 +537,15 @@ export const executeEvmSwap = async ({
             return outcome
         }
         reported.push({ scope, txHash: outcome, purpose: APPROVAL_PURPOSE })
+    }
 
-        // The wait can outlast the swap's deadline, and past it the swap reverts
-        // at the user's gas. The grant stays: it covers the re-quoted swap too.
-        if (!isQuoteFresh(quote) || isOrderExpired(order)) {
-            cancelOrder()
-            return { kind: 'stale-quote' }
-        }
+    // Past the order's deadline the swap reverts at the user's gas. An approval's
+    // wait or the final signature, a Ledger's above all, can outlast it, so it is
+    // checked before the swap is signed and again before it is sent. A grant
+    // stays: it covers the re-quoted swap too.
+    if (!isQuoteFresh(quote) || isOrderExpired(order)) {
+        cancelOrder()
+        return { kind: 'stale-quote' }
     }
 
     const { sourceAsset, sourceAmount } = quote.request
@@ -566,6 +568,11 @@ export const executeEvmSwap = async ({
     if (!isSignedCall(outcome)) {
         cancelOrder()
         return outcome
+    }
+    // Only the deadline: the signed swap already carries the minimum out the quote's TTL guards.
+    if (isOrderExpired(order)) {
+        cancelOrder()
+        return { kind: 'stale-quote' }
     }
 
     let swapTxId: string

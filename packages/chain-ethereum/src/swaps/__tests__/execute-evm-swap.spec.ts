@@ -506,6 +506,56 @@ describe('executeEvmSwap', () => {
         expect(context.reportOrder).toHaveBeenCalledWith(CANCELLED)
     })
 
+    it('sends no swap whose order has expired when it needs no approval', async () => {
+        const node = fakeNode({ balance: RICH, callResult: allowance(AMOUNT) })
+        const context = contextOf({
+            ...orderOf([APPROVE_TX, SWAP_TX]),
+            expiresAt: Date.now() - 1,
+        })
+
+        const result = await run(context)
+
+        expect(result).toEqual({ kind: 'stale-quote' })
+        expect(context.signed).toEqual([])
+        expect(node.sentCount()).toBe(0)
+        await flushCancelReport()
+        expect(context.reportOrder).toHaveBeenCalledWith(CANCELLED)
+    })
+
+    it('sends no swap whose order expires while it is being signed', async () => {
+        const node = fakeNode({ balance: RICH, callResult: allowance(AMOUNT) })
+        const order = {
+            ...orderOf([APPROVE_TX, SWAP_TX]),
+            expiresAt: Date.now() + 60_000,
+        }
+        const context = contextOf(order, async request => {
+            order.expiresAt = Date.now() - 1
+            await signs(request)
+        })
+
+        const result = await run(context)
+
+        expect(result).toEqual({ kind: 'stale-quote' })
+        expect(context.signed.map(tx => tx.summary?.kind)).toEqual(['swap'])
+        expect(node.sentCount()).toBe(0)
+        expect(context.onOrderSubmitting).not.toHaveBeenCalled()
+        await flushCancelReport()
+        expect(context.reportOrder).toHaveBeenCalledWith(CANCELLED)
+    })
+
+    it('sends a swap whose order is still live once signed', async () => {
+        const node = fakeNode({ balance: RICH, callResult: allowance(AMOUNT) })
+        const context = contextOf({
+            ...orderOf([APPROVE_TX, SWAP_TX]),
+            expiresAt: Date.now() + 60_000,
+        })
+
+        const result = await run(context)
+
+        expect(result.kind).toBe('success')
+        expect(node.sentCount()).toBe(1)
+    })
+
     it('cancels when the swap is rejected after the approval landed', async () => {
         const node = fakeNode({ balance: RICH })
         const context = contextOf(
