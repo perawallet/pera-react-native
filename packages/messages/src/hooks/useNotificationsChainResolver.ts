@@ -12,7 +12,6 @@
 
 import { useCallback } from 'react'
 import {
-    accountChainIdOf,
     useRegisteredChainIds,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -22,8 +21,9 @@ import { isSentInDeviceRegistration } from '@perawallet/wallet-core-device'
 import type { Optional } from '@perawallet/wallet-core-shared'
 
 /**
- * The account's own chain when device registration sends its address there,
- * else `undefined`. Not the `notifications` capability: registration ignores
+ * The first held chain, in registry order, whose address device registration
+ * sends, else `undefined`. Not the own chain: an account found active only on
+ * Ethereum still has its Algorand address registered under the v3 API. Not the `notifications` capability: registration ignores
  * it, so an address registered while it is off (by default or at runtime) can
  * still be pushed to and keeps its mute control.
  */
@@ -34,10 +34,9 @@ export const useNotificationsChainResolver = (): ((
     const deployment = useWalletDeployment()
     return useCallback(
         (account: WalletAccount) => {
-            const chainId = accountChainIdOf(account, registeredChainIds)
-            return isSentInDeviceRegistration(account, chainId, deployment)
-                ? chainId
-                : undefined
+            return registeredChainIds.find(chainId =>
+                isSentInDeviceRegistration(account, chainId, deployment),
+            )
         },
         [registeredChainIds, deployment],
     )
