@@ -69,7 +69,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
 }))
 
 vi.mock('@perawallet/wallet-core-names', () => ({
-    useNameForAddressQuery: () => ({ data: undefined }),
+    useNameForAddressQuery: () => ({ data: [], isPending: false }),
 }))
 
 vi.mock('@perawallet/wallet-core-projects', async () => ({
