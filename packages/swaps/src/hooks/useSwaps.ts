@@ -10,17 +10,14 @@
  limitations under the License
  */
 
+import type { Decimal } from 'decimal.js'
 import type {
     ChainId,
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { swapAdapterFor } from '../chain-adapter'
-import type {
-    SwapAccountPair,
-    SwapCrossChainFlip,
-    SwapFlippedPayAmount,
-} from '../models'
+import type { SwapAccountPair, SwapCrossChainFlip } from '../models'
 import { useSwapsStore } from '../store'
 
 type UseSwapsResult = {
@@ -35,7 +32,10 @@ type UseSwapsResult = {
     setSourceAsset: (chainId: ChainId, fromAsset: string) => void
     setAccountPair: (pair: SwapAccountPair) => void
     flipAcrossChains: (flip: SwapCrossChainFlip) => void
-    takeFlippedPayAmount: () => Nullable<SwapFlippedPayAmount>
+    takeFlippedPayAmount: (
+        chainId: ChainId,
+        assetId: string,
+    ) => Nullable<Decimal>
     setSlippage: (slippage: Nullable<string>) => void
     setIsLocalCurrencyInput: (value: boolean) => void
     /** Restores the default pay/receive pair, keeping the user's settings. */

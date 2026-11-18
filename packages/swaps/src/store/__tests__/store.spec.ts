@@ -182,9 +182,59 @@ describe('swaps/store', () => {
             })
 
             expect(
-                useSwapsStore.getState().takeFlippedPayAmount()?.amount,
+                useSwapsStore
+                    .getState()
+                    .takeFlippedPayAmount('ethereum', 'native'),
             ).toEqual(new Decimal('7'))
-            expect(useSwapsStore.getState().takeFlippedPayAmount()).toBeNull()
+            expect(
+                useSwapsStore
+                    .getState()
+                    .takeFlippedPayAmount('ethereum', 'native'),
+            ).toBeNull()
+        })
+
+        test.each([
+            ['another chain', 'base', 'native'],
+            ['another asset', 'ethereum', '0xusdc'],
+        ] as const)(
+            'keeps the carried amount when a form on %s asks for it',
+            (_, chainId, assetId) => {
+                useSwapsStore.getState().flipAcrossChains({
+                    sourceChainId: 'ethereum',
+                    fromAsset: 'native',
+                    toAsset: '0',
+                    toAssetScope: ALGO_SCOPE,
+                    payAmount: new Decimal('7'),
+                })
+
+                expect(
+                    useSwapsStore
+                        .getState()
+                        .takeFlippedPayAmount(chainId, assetId),
+                ).toBeNull()
+                expect(
+                    useSwapsStore.getState().flippedPayAmount?.amount,
+                ).toEqual(new Decimal('7'))
+            },
+        )
+
+        test('picking a source chain or asset forgets an untaken amount', () => {
+            const flip = () =>
+                useSwapsStore.getState().flipAcrossChains({
+                    sourceChainId: 'ethereum',
+                    fromAsset: 'native',
+                    toAsset: '0',
+                    toAssetScope: ALGO_SCOPE,
+                    payAmount: new Decimal('7'),
+                })
+
+            flip()
+            useSwapsStore.getState().setSourceChainId('algorand')
+            expect(useSwapsStore.getState().flippedPayAmount).toBeNull()
+
+            flip()
+            useSwapsStore.getState().setSourceAsset('algorand', '0')
+            expect(useSwapsStore.getState().flippedPayAmount).toBeNull()
         })
 
         test('resetState forgets an untaken amount', () => {

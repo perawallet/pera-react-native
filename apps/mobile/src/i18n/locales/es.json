@@ -4210,6 +4210,7 @@
             "balance_label": "Saldo: <0/>",
             "max": "MÁX",
             "select_asset": "Elegir",
+            "flip": "Invertir pagar y recibir",
             "flip_unavailable_title": "No se puede invertir este swap",
             "flip_unavailable_body": "Esta cuenta no puede pagar desde la red de {{network}}."
         },

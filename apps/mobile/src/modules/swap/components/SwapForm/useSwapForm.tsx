@@ -84,7 +84,8 @@ type UseSwapFormResult = {
     /** Where the receive asset lives: the swap scope, or another chain's. */
     receiveScope: ChainScope
     receivingAccount: Nullable<WalletAccount>
-    isDirectionDisabled: boolean
+    /** Why the pair can't flip, shown on press and read by screen readers; null when it can. */
+    flipUnavailableReason: Nullable<string>
     isChainShown: boolean
     isReceivingAccountShown: boolean
     payAmount: Nullable<Decimal>
@@ -341,17 +342,10 @@ export const useSwapForm = (
     }, [fromAsset, scope.chainId])
 
     // A cross-chain flip remounts the form on the new chain, so its amount
-    // arrives through the store. It is applied only by the form on the chain and
-    // asset it was meant for, and never reopens a confirmation.
+    // arrives through the store. It never reopens a confirmation.
     useEffect(() => {
-        const flipped = takeFlippedPayAmount()
-        if (
-            flipped &&
-            flipped.chainId === scope.chainId &&
-            flipped.assetId === fromAsset
-        ) {
-            setPayAmount(flipped.amount)
-        }
+        const flipped = takeFlippedPayAmount(scope.chainId, fromAsset)
+        if (flipped) setPayAmount(flipped)
     }, [scope.chainId, fromAsset, takeFlippedPayAmount])
 
     // Leaving the tab must clear the form: the screen stays mounted, so without
@@ -430,18 +424,20 @@ export const useSwapForm = (
         })
     }, [scope.chainId])
 
-    const canFlip =
+    const flipUnavailableReason =
         !isCrossChain || sourceChainIds.includes(receiveScope.chainId)
+            ? null
+            : t('swap.form.flip_unavailable_body', {
+                  network:
+                      chainDisplayNameOf(receiveScope.chainId) ??
+                      receiveScope.chainId,
+              })
 
     const handleSwapDirection = useCallback(() => {
-        if (!canFlip) {
+        if (flipUnavailableReason) {
             infoToast(
                 t('swap.form.flip_unavailable_title'),
-                t('swap.form.flip_unavailable_body', {
-                    network:
-                        chainDisplayNameOf(receiveScope.chainId) ??
-                        receiveScope.chainId,
-                }),
+                flipUnavailableReason,
             )
             return
         }
@@ -465,7 +461,7 @@ export const useSwapForm = (
         setSelectedProviderName(null)
         resetQuotes()
     }, [
-        canFlip,
+        flipUnavailableReason,
         isCrossChain,
         infoToast,
         t,
@@ -936,7 +932,7 @@ export const useSwapForm = (
         receiveAssetId: toAsset,
         receiveScope,
         receivingAccount,
-        isDirectionDisabled: !canFlip,
+        flipUnavailableReason,
         isChainShown: isCrossChain || sourceChainIds.length > 1,
         isReceivingAccountShown: isCrossChain,
         payAmount,

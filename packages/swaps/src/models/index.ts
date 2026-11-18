@@ -65,14 +65,17 @@ export type SwapsState = BaseStoreState & {
     setReceivingAccountId: (id: Nullable<string>) => void
     /** Clears the pair and the receiving account: they belong to the old chain. */
     setSourceChainId: (chainId: Nullable<ChainId>) => void
-    /** Pays with `fromAsset` on `chainId`; clears the receive side and receiving account: they belong to the old chain. */
+    /** Pays with `fromAsset` on `chainId`; clears the receive side, receiving account and any carried flip amount: they belong to the old chain. */
     setSourceAsset: (chainId: ChainId, fromAsset: string) => void
     /** Pays with `fromAsset` on `chainId` from `accountId`, receiving `toAsset` when given, else the default. */
     setAccountPair: (pair: SwapAccountPair) => void
     /** Reverses a cross-chain pair in one write: the swap moves to the receive chain, and the receiving account is cleared. */
     flipAcrossChains: (flip: SwapCrossChainFlip) => void
-    /** Returns the carried amount and clears it. */
-    takeFlippedPayAmount: () => Nullable<SwapFlippedPayAmount>
+    /** Hands the carried amount to the form on its chain and asset, once; any other form leaves it in place. */
+    takeFlippedPayAmount: (
+        chainId: ChainId,
+        assetId: string,
+    ) => Nullable<Decimal>
     setSlippage: (slippage: Nullable<string>) => void
     setIsLocalCurrencyInput: (value: boolean) => void
 }

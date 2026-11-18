@@ -4210,6 +4210,7 @@
             "balance_label": "Solde : <0/>",
             "max": "MAX",
             "select_asset": "Choisir",
+            "flip": "Inverser payer et recevoir",
             "flip_unavailable_title": "Impossible d’inverser ce swap",
             "flip_unavailable_body": "Ce compte ne peut pas payer depuis le réseau {{network}}."
         },

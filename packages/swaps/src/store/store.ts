@@ -60,6 +60,7 @@ export const useSwapsStore: UseBoundStore<
                     toAssetScope: null,
                     receivingAccountId: null,
                     pairAccountId: null,
+                    flippedPayAmount: null,
                 }),
             setSourceAsset: (sourceChainId: ChainId, fromAsset: string) =>
                 set({
@@ -69,6 +70,7 @@ export const useSwapsStore: UseBoundStore<
                     toAssetScope: null,
                     receivingAccountId: null,
                     pairAccountId: null,
+                    flippedPayAmount: null,
                 }),
             setAccountPair: ({
                 accountId,
@@ -84,6 +86,7 @@ export const useSwapsStore: UseBoundStore<
                     toAssetScope: toAssetScope ?? null,
                     receivingAccountId: null,
                     pairAccountId: accountId,
+                    flippedPayAmount: null,
                 }),
             flipAcrossChains: flip =>
                 set({
@@ -100,10 +103,16 @@ export const useSwapsStore: UseBoundStore<
                           }
                         : null,
                 }),
-            takeFlippedPayAmount: () => {
+            takeFlippedPayAmount: (chainId, assetId) => {
                 const { flippedPayAmount } = get()
-                if (flippedPayAmount) set({ flippedPayAmount: null })
-                return flippedPayAmount
+                if (
+                    flippedPayAmount?.chainId !== chainId ||
+                    flippedPayAmount.assetId !== assetId
+                ) {
+                    return null
+                }
+                set({ flippedPayAmount: null })
+                return flippedPayAmount.amount
             },
             setSlippage: (slippage: Nullable<string>) => set({ slippage }),
             setIsLocalCurrencyInput: (value: boolean) =>

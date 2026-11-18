@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
@@ -18,15 +19,15 @@ type SwapFormControlsProps = {
     onSwapPress: () => void
     onMaxPress: () => void
     onConfigurePress: () => void
-    /** The account can't pay from the receive asset's chain; pressing explains why. */
-    isDirectionDisabled?: boolean
+    /** Set when the account can't pay from the receive asset's chain; pressing explains why. */
+    flipUnavailableReason?: Nullable<string>
 }
 
 export const SwapFormControls = ({
     onSwapPress,
     onMaxPress,
     onConfigurePress,
-    isDirectionDisabled = false,
+    flipUnavailableReason = null,
 }: SwapFormControlsProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
@@ -36,14 +37,18 @@ export const SwapFormControls = ({
             <PWTouchableOpacity
                 style={styles.swapDirectionButton}
                 onPress={onSwapPress}
-                accessibilityState={{ disabled: isDirectionDisabled }}
+                // Not accessibilityState.disabled: TalkBack won't click a disabled
+                // node, so the press that explains the refusal would be unreachable.
+                accessibilityRole='button'
+                accessibilityLabel={t('swap.form.flip')}
+                accessibilityHint={flipUnavailableReason ?? undefined}
                 testID='swap-flip-button'
             >
                 <PWIcon
                     name='swap'
                     size='sm'
                     style={styles.swapDirectionIcon}
-                    disabled={isDirectionDisabled}
+                    disabled={!!flipUnavailableReason}
                 />
             </PWTouchableOpacity>
 

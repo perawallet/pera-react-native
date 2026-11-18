@@ -4202,6 +4202,7 @@
             "balance_label": "Guthaben: <0/>",
             "max": "MAX",
             "select_asset": "Auswählen",
+            "flip": "Zahlen und Erhalten tauschen",
             "flip_unavailable_title": "Tausch lässt sich nicht umkehren",
             "flip_unavailable_body": "Dein Konto kann nicht über das {{network}}-Netzwerk bezahlen."
         },

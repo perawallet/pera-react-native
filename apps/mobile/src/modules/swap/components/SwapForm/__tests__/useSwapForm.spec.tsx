@@ -357,7 +357,9 @@ describe('useSwapForm', () => {
 
             act(() => result.current.handleSwapDirection())
 
-            expect(result.current.isDirectionDisabled).toBe(true)
+            expect(result.current.flipUnavailableReason).toBe(
+                'swap.form.flip_unavailable_body',
+            )
             expect(result.current.isChainShown).toBe(true)
             expect(result.current.isReceivingAccountShown).toBe(true)
             expect(mockInfoToast).toHaveBeenCalledWith(
@@ -405,7 +407,7 @@ describe('useSwapForm', () => {
             mockSourceChainIds = ['algorand', 'ethereum']
             const { result } = renderHook(() => useSwapForm(SCOPE))
 
-            expect(result.current.isDirectionDisabled).toBe(false)
+            expect(result.current.flipUnavailableReason).toBeNull()
             act(() => result.current.handleSwapDirection())
 
             expect(mockFlipAcrossChains).toHaveBeenCalledWith({
@@ -463,11 +465,7 @@ describe('useSwapForm', () => {
     })
 
     it('takes the pay amount a cross-chain flip carried to this chain and asset', () => {
-        mockTakeFlippedPayAmount.mockReturnValue({
-            chainId: 'algorand',
-            assetId: '0',
-            amount: new Decimal(7),
-        })
+        mockTakeFlippedPayAmount.mockReturnValue(new Decimal(7))
 
         const { result } = renderHook(() => useSwapForm(SCOPE))
 
@@ -475,11 +473,7 @@ describe('useSwapForm', () => {
     })
 
     it('requests a quote for the pay amount a cross-chain flip carried', async () => {
-        mockTakeFlippedPayAmount.mockReturnValue({
-            chainId: 'algorand',
-            assetId: '0',
-            amount: new Decimal(7),
-        })
+        mockTakeFlippedPayAmount.mockReturnValue(new Decimal(7))
 
         renderHook(() => useSwapForm(SCOPE))
 
@@ -489,34 +483,16 @@ describe('useSwapForm', () => {
         )
     })
 
-    it('ignores a carried pay amount meant for another asset', () => {
-        mockTakeFlippedPayAmount.mockReturnValue({
-            chainId: 'algorand',
-            assetId: '31566704',
-            amount: new Decimal(7),
-        })
+    it('asks for the carried pay amount on its own chain and pay asset', () => {
+        renderHook(() => useSwapForm(SCOPE))
 
-        const { result } = renderHook(() => useSwapForm(SCOPE))
-
-        expect(result.current.payAmount).toBeNull()
-    })
-
-    it('ignores a carried pay amount meant for another chain', () => {
-        mockTakeFlippedPayAmount.mockReturnValue({
-            chainId: 'ethereum',
-            assetId: '0',
-            amount: new Decimal(7),
-        })
-
-        const { result } = renderHook(() => useSwapForm(SCOPE))
-
-        expect(result.current.payAmount).toBeNull()
+        expect(mockTakeFlippedPayAmount).toHaveBeenCalledWith('algorand', '0')
     })
 
     it('leaves the direction swap on for a pair on one chain', () => {
         const { result } = renderHook(() => useSwapForm(SCOPE))
 
-        expect(result.current.isDirectionDisabled).toBe(false)
+        expect(result.current.flipUnavailableReason).toBeNull()
         expect(result.current.isChainShown).toBe(false)
         expect(result.current.isReceivingAccountShown).toBe(false)
     })
