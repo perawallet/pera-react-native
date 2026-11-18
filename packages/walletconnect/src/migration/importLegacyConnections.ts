@@ -117,16 +117,9 @@ const reconstructRecord = (
         ? parsedCreatedAt
         : Date.now()
 
-    // Settings sorts on `lastActiveAt`; defaulting it would re-sort the list.
-    // Both timestamps are ISO strings on the blob (`createJSONStorage` has no `Date` reviver).
-    const lastActiveAtValue = top.lastActiveAt
-    const parsedLastActiveAt =
-        typeof lastActiveAtValue === 'string'
-            ? Date.parse(lastActiveAtValue)
-            : NaN
-    const lastActiveAt = Number.isFinite(parsedLastActiveAt)
-        ? parsedLastActiveAt
-        : createdAt
+    // The legacy store stamped `lastActiveAt` at approval and never bumped it, so
+    // carrying it would let the idle rule end a session still in daily use.
+    const lastActiveAt = Date.now()
 
     return {
         clientId,
