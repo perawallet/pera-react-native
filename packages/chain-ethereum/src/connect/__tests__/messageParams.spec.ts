@@ -365,6 +365,55 @@ describe('validateEthereumMessagePayload: typed-data chain', () => {
     })
 })
 
+describe('validateEthereumMessagePayload: typed-data values', () => {
+    const wrapped = (typed: any, change: (copy: any) => void) => {
+        const copy = structuredClone(typed)
+        change(copy)
+        return copy
+    }
+
+    it.each([
+        [
+            'an EIP-2612 value',
+            wrapped(EIP2612_PERMIT_TYPED_DATA, copy => {
+                copy.message.value = [copy.message.value]
+            }),
+        ],
+        [
+            'a PermitSingle amount',
+            wrapped(PERMIT2_SINGLE_TYPED_DATA, copy => {
+                copy.message.details.amount = [copy.message.details.amount]
+            }),
+        ],
+        [
+            'a DAI allowed flag',
+            wrapped(DAI_PERMIT_TYPED_DATA, copy => {
+                copy.message.allowed = [true]
+            }),
+        ],
+        [
+            'an amount of a document that is not a permit',
+            {
+                domain: MAIL_TYPED_DATA.domain,
+                types: { Order: [{ name: 'amount', type: 'uint256' }] },
+                primaryType: 'Order',
+                message: { amount: ['5'] },
+            },
+        ],
+    ])('refuses %s that is array-wrapped', (_name, typedData) => {
+        const result = validate('sign-typed-data', [
+            SENDER,
+            JSON.stringify(typedData),
+        ])
+
+        expect(result).toMatchObject({
+            ok: false,
+            failure: 'invalid-params',
+            message: expect.stringContaining('does not match its type'),
+        })
+    })
+})
+
 describe('validateEthereumMessagePayload: session accounts', () => {
     it.each([
         ['sign-message', ['0x68656c6c6f', SENDER]],

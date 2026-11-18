@@ -24,6 +24,7 @@ import type { EvmChain } from '../chains/types'
 import { isRecord } from './adapter'
 import { toAllowanceAmount } from './allowance'
 import { knownSpenderOf } from './known-contracts'
+import { readTypedDataInteger } from './typedDataValues'
 
 const PERMIT2_ADDRESS = '0x000000000022D473030F116dDEE9F6B43aC78BA3'
 
@@ -120,21 +121,9 @@ const matches = (
             actual[index].name === name && actual[index].type === type,
     )
 
-// WalletConnect JSON-parses the payload, so a uint arrives as a string or number.
 const toUint = (value: unknown): Optional<bigint> => {
-    if (
-        typeof value !== 'bigint' &&
-        typeof value !== 'number' &&
-        (typeof value !== 'string' || value.trim() === '')
-    ) {
-        return undefined
-    }
-    try {
-        const uint = BigInt(value)
-        return uint < 0n ? undefined : uint
-    } catch {
-        return undefined
-    }
+    const uint = readTypedDataInteger(value)
+    return uint === undefined || uint < 0n ? undefined : uint
 }
 
 const toAddress = (value: unknown): Optional<string> =>
