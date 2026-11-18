@@ -15,9 +15,12 @@ import {
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    createConcurrencyLimit,
     logger,
     mapWithConcurrency,
     partition,
+    type ConcurrencyLimit,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import { hasPeraBackend } from '@perawallet/wallet-core-config'
 import { fetchAddressNames } from '../api'
@@ -36,6 +39,11 @@ import {
 // Not the `../services` barrel: it reaches `nameBatchQueue` -> this file, an import cycle.
 import { verifyNameAddress } from '../services/verifyNameAddress'
 
+// One gate for every batch: concurrent batches and scope partitions would
+// otherwise each run their own set of checks against the same RPCs. Built on
+// first use so importing this module needs nothing from shared.
+let verificationGate: Optional<ConcurrencyLimit>
+
 /**
  * Backend names are the backend's word alone, so each is checked against the
  * chain's own forward record. `mismatch` becomes "no name"; `unavailable` (or a
@@ -45,17 +53,16 @@ const keepVerifiedNames = async (
     entries: NameCacheEntry[],
     scope: ChainScope,
 ): Promise<NameCacheEntry[]> => {
-    const verdicts = await mapWithConcurrency(
-        entries,
-        NAME_VERIFY_CONCURRENCY,
-        async entry =>
-            entry.name
-                ? verifyNameAddress({
-                      name: entry.name.name,
-                      address: entry.address,
-                      scope,
-                  })
+    verificationGate ??= createConcurrencyLimit(NAME_VERIFY_CONCURRENCY)
+    const limitVerifications = verificationGate
+    const verdicts = await Promise.allSettled(
+        entries.map(async ({ name, address }) =>
+            name
+                ? limitVerifications(() =>
+                      verifyNameAddress({ name: name.name, address, scope }),
+                  )
                 : 'verified',
+        ),
     )
 
     return entries.flatMap((entry, index) => {

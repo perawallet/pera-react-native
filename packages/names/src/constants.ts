@@ -17,9 +17,8 @@ export const NAME_BULK_CHUNK_SIZE = 50
 export const NAME_BULK_CONCURRENCY = 2
 
 /**
- * Max forward checks in flight per batch. Each is a chain read (ENS on Ethereum L1,
- * NFD over the registry and algod), so a long history list must not burst them.
- * The total in flight is `NAME_BULK_CONCURRENCY * NAME_VERIFY_CONCURRENCY`.
+ * Max forward checks in flight across the whole app. Each is one or more chain
+ * reads, so a long history list, or several chains at once, must not burst them.
  */
 export const NAME_VERIFY_CONCURRENCY = 4
 

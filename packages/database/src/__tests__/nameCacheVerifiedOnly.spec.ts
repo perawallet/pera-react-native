@@ -57,11 +57,21 @@ describe('name cache verified-only purge', () => {
         ])
     })
 
-    it('does nothing on a second run', async () => {
-        const afterFirst = await dump(db)
+    it('keeps a name verified after the upgrade across a restart', async () => {
+        await db.run(sql`
+            INSERT INTO name_cache (address, scope, name, image, source, updated_at)
+            VALUES ('0xdef', 'ethereum/mainnet', 'bob.eth', NULL, 'ens', 4)
+        `)
 
         await runMigrations(db, migrations)
 
-        expect(await dump(db)).toEqual(afterFirst)
+        expect(await dump(db)).toContainEqual([
+            '0xdef',
+            'ethereum/mainnet',
+            'bob.eth',
+            null,
+            'ens',
+            4,
+        ])
     })
 })

@@ -301,6 +301,49 @@ describe('fetchAndPersistNames', () => {
 
             expect(peak).toBe(NAME_VERIFY_CONCURRENCY)
         })
+
+        it('shares the NAME_VERIFY_CONCURRENCY cap across concurrent syncs', async () => {
+            const first = Array.from({ length: NAME_VERIFY_CONCURRENCY }, (_, i) =>
+                makeAddress(i),
+            )
+            const second = Array.from(
+                { length: NAME_VERIFY_CONCURRENCY },
+                (_, i) => makeAddress(i + NAME_VERIFY_CONCURRENCY),
+            )
+            mockFetchAddressNames.mockImplementation(
+                async ({ addresses }: { addresses: string[] }) =>
+                    addresses.map(address => ({ address, name: ALICE })),
+            )
+            const releases: Array<() => void> = []
+            let inFlight = 0
+            let peak = 0
+            mockVerify.mockImplementation(
+                () =>
+                    new Promise(resolve => {
+                        inFlight += 1
+                        peak = Math.max(peak, inFlight)
+                        releases.push(() => {
+                            inFlight -= 1
+                            resolve('verified')
+                        })
+                    }),
+            )
+
+            const done = Promise.all([
+                fetchAndPersistNames(first, ALGORAND_MAINNET),
+                fetchAndPersistNames(second, ALGORAND_MAINNET),
+            ])
+            while (mockUpsertNameEntries.mock.calls.length < 2) {
+                await vi.waitFor(() =>
+                    expect(releases.length).toBeGreaterThan(0),
+                )
+                releases.splice(0).forEach(release => release())
+                await new Promise(resolve => setTimeout(resolve, 0))
+            }
+            await done
+
+            expect(peak).toBe(NAME_VERIFY_CONCURRENCY)
+        })
     })
 })
 
