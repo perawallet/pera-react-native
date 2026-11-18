@@ -10,9 +10,7 @@
  limitations under the License
  */
 
-import LottieView from 'lottie-react-native'
-
-import { PWScreen, PWText, PWView } from '@components/core'
+import { PWLottie, PWScreen, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import peraTransactionLoading from '@assets/animations/pera-transaction-loading.json'
 import { useStyles } from './styles'
@@ -28,7 +26,7 @@ export const ClaimProcessingScreen = () => {
         <PWScreen scroll='never'>
             <PWView style={styles.contentContainer}>
                 <PWView style={styles.spinnerCircle}>
-                    <LottieView
+                    <PWLottie
                         autoPlay
                         loop
                         source={peraTransactionLoading}

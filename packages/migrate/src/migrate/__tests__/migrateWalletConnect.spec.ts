@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { LegacyWalletConnectV1Session } from '@perawallet/wallet-extension-platform'
 import type { Connection } from '@perawallet/wallet-extension-connections'
@@ -148,6 +148,8 @@ const existingV1 = (id: string, handshakeTopic: string): Connection => ({
     },
 })
 
+const MIGRATED_AT = 1_800_000_000_000
+
 describe('migrateWalletConnect', () => {
     beforeEach(() => {
         keystoreCommit.mockReset()
@@ -164,6 +166,12 @@ describe('migrateWalletConnect', () => {
     })
 
     it('maps an Android-shaped session field-by-field, preferring currentKey and approvedAccounts', async () => {
+        vi.useFakeTimers({ toFake: ['Date'] })
+        vi.setSystemTime(MIGRATED_AT)
+        onTestFinished(() => {
+            vi.useRealTimers()
+        })
+
         const result = await migrateWalletConnect([buildSession()], 'algorand')
 
         expect(result).toEqual({ imported: 1, skipped: 0 })
@@ -183,7 +191,8 @@ describe('migrateWalletConnect', () => {
             secretRef: 'wc1-session-key:client-1',
             status: 'active',
             createdAt: 1_700_000_000_000,
-            lastActiveAt: 1_700_000_000_000,
+            // The native export has no activity time, so the migration stands in.
+            lastActiveAt: MIGRATED_AT,
             metadata: {
                 bridge: 'https://bridge.walletconnect.org',
                 handshakeTopic: 'topic-1',

@@ -23,7 +23,10 @@ export { useBottomSheet } from './hooks/useBottomSheet'
 export { useBottomSheetResult } from './hooks/useBottomSheetResult'
 export { useBottomSheetPanDownEnabled } from './hooks/useBottomSheetPanDownEnabled'
 export { useBottomSheetSize } from './hooks/useBottomSheetSize'
-export { useBottomSheetStore } from './store/bottomSheetStore'
+export {
+    isRegisteredBottomSheetOpen,
+    useBottomSheetStore,
+} from './store/bottomSheetStore'
 
 export { registerBottomSheet } from './registry/registry'
 
