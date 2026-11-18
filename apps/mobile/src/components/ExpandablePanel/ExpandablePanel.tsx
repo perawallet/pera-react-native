@@ -11,6 +11,10 @@
  */
 
 import { PWView } from '@components/core'
+import {
+    HiddenContainerProvider,
+    useIsInHiddenContainer,
+} from '@hooks/useIsAnimationVisible'
 import React, { type PropsWithChildren } from 'react'
 import type { StyleProp, ViewStyle } from 'react-native'
 import Animated from 'react-native-reanimated'
@@ -30,6 +34,7 @@ export const ExpandablePanel = ({
     containerStyle,
 }: ExpandablePanelProps) => {
     const styles = useStyles()
+    const isParentHidden = useIsInHiddenContainer()
     const { collapsableStyle, onLayout } = useExpandablePanel({
         isExpanded,
         onStateChangeEnd,
@@ -48,7 +53,9 @@ export const ExpandablePanel = ({
                 onLayout={onLayout}
                 pointerEvents={isExpanded ? 'auto' : 'none'}
             >
-                {children}
+                <HiddenContainerProvider value={isParentHidden || !isExpanded}>
+                    {children}
+                </HiddenContainerProvider>
             </PWView>
         </Animated.View>
     )
