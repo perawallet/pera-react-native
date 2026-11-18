@@ -37,12 +37,10 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import {
-    AppError,
     type Maybe,
     type Nullable,
     type Optional,
     displayUnitsToBaseUnits,
-    isRetryableError,
     formatCurrency,
     ZERO_DECIMAL,
 } from '@perawallet/wallet-core-shared'
@@ -85,6 +83,7 @@ import type { SendFundsStackParamList } from '@modules/transactions/routes/send-
 import { useLanguage } from '@hooks/useLanguage'
 import { NeutralSendFeeSection } from './NeutralSendFeeSection'
 import { useSendTotal, type UseSendTotalResult } from './useSendTotal'
+import { feeErrorCopy } from '@modules/transactions/utils/feeErrorCopy'
 
 type useTransactionConfirmationScreenResult = {
     asset: Maybe<PeraAsset>
@@ -388,26 +387,10 @@ export const useTransactionConfirmationScreen =
             isFeeCoverageChecked &&
             (!maxFeeAmount || !nativeSpendable || !baseUnitAmount)
 
-        // An error that names its situation (a node refusing the send for its balance, a revert)
-        // shows its own copy; anything else reads as the network not answering.
         const feeError = useMemo((): Optional<FeeErrorNotice> => {
             if (!isFeeCoverageChecked || !isFeeError) return undefined
-            const { titleKey, messageKey, params } =
-                feeEstimateError instanceof AppError
-                    ? feeEstimateError.metadata
-                    : {}
-            if (titleKey && messageKey) {
-                return {
-                    title: t(titleKey, params),
-                    body: t(messageKey, params),
-                    canRetry: isRetryableError(feeEstimateError),
-                    isRetrying: isFeeRetrying,
-                }
-            }
             return {
-                title: t('send_funds.confirmation.fee_unavailable.title'),
-                body: t('send_funds.confirmation.fee_unavailable.body'),
-                canRetry: true,
+                ...feeErrorCopy(feeEstimateError, t),
                 isRetrying: isFeeRetrying,
             }
         }, [
