@@ -26,6 +26,7 @@ const quote = (overrides: Partial<RampQuote>): RampQuote => ({
     destinationAmount: new Decimal(500),
     sourceValueInUsd: null,
     destinationValueInUsd: null,
+    expiresAt: null,
     ...overrides,
 })
 

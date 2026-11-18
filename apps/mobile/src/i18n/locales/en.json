@@ -4379,7 +4379,9 @@
             "no_payment_methods": "No payment methods available for your device.",
             "amount_below_min": "Amount must be greater than {{min}}",
             "amount_below_min_unknown": "Amount is below the provider's minimum",
-            "amount_above_max": "Amount must be less than {{max}}"
+            "amount_above_max": "Amount must be less than {{max}}",
+            "quote_refreshed_title": "Quote refreshed",
+            "quote_refreshed_body": "That quote had expired, so we fetched a new price. Review it and tap Proceed again."
         },
         "pair_selection": {
             "title_to": "To",

@@ -4379,7 +4379,9 @@
             "no_payment_methods": "No hay métodos de pago disponibles para tu dispositivo.",
             "amount_below_min": "La cantidad debe ser mayor que {{min}}",
             "amount_below_min_unknown": "La cantidad es inferior al mínimo del proveedor",
-            "amount_above_max": "La cantidad debe ser menor que {{max}}"
+            "amount_above_max": "La cantidad debe ser menor que {{max}}",
+            "quote_refreshed_title": "Cotización actualizada",
+            "quote_refreshed_body": "Esa cotización había caducado, así que obtuvimos un precio nuevo. Revísalo y toca Continuar de nuevo."
         },
         "pair_selection": {
             "title_to": "A",

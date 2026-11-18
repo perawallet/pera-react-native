@@ -133,6 +133,7 @@ export const useOnrampForm = (
         selectPaymentMethod,
         isBestOffer,
         resolveQuoteLimit,
+        refreshQuotes,
     } = useOnrampQuotes({
         pair: selectedPair,
         sourceAmount,
@@ -169,6 +170,7 @@ export const useOnrampForm = (
         sourceAmount,
         destinationAmount,
         isMeld,
+        refreshQuotes,
         onNavigateToHistory,
     })
 

@@ -218,6 +218,7 @@ const makeMeldQuote = (
     destinationAmount: new Decimal(500),
     sourceValueInUsd: new Decimal(100),
     destinationValueInUsd: new Decimal(80),
+    expiresAt: null,
     ...overrides,
 })
 

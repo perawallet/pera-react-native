@@ -35,6 +35,8 @@ const mockCreateRampOrder = vi.fn()
 const mockRememberDepositInstructions = vi.fn()
 const mockEnsureOptIn = vi.fn()
 const mockErrorToast = vi.fn()
+const mockInfoToast = vi.fn()
+const mockRefreshQuotes = vi.fn()
 
 const { mockRequestBottomSheet } = vi.hoisted(() => ({
     mockRequestBottomSheet: vi.fn(),
@@ -174,7 +176,7 @@ vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
         errorToast: mockErrorToast,
         successToast: vi.fn(),
-        infoToast: vi.fn(),
+        infoToast: mockInfoToast,
         showToast: vi.fn(),
     }),
 }))
@@ -211,6 +213,7 @@ const meldQuote: RampQuote = {
     destinationAmount: new Decimal(500),
     sourceValueInUsd: null,
     destinationValueInUsd: null,
+    expiresAt: null,
 }
 
 const xoQuote: RampQuote = { ...meldQuote, kind: 'xo', quoteId: 'x1' }
@@ -221,6 +224,7 @@ const defaultProps: Parameters<typeof useOnrampConfirm>[0] = {
     sourceAmount: new Decimal(100),
     destinationAmount: new Decimal(500),
     isMeld: true,
+    refreshQuotes: mockRefreshQuotes,
 }
 
 describe('useOnrampConfirm', () => {
@@ -249,6 +253,67 @@ describe('useOnrampConfirm', () => {
         )
         expect(result.current.isConfirming).toBe(false)
     })
+
+    it('re-quotes instead of ordering a quote that expired before the order', async () => {
+        const { result } = renderHook(() =>
+            useOnrampConfirm({
+                ...defaultProps,
+                selectedQuote: { ...meldQuote, expiresAt: Date.now() - 1 },
+            }),
+        )
+
+        await act(async () => {
+            await result.current.handleConfirm()
+        })
+
+        expect(mockCreateRampOrder).not.toHaveBeenCalled()
+        expect(mockRefreshQuotes).toHaveBeenCalledTimes(1)
+        expect(mockInfoToast).toHaveBeenCalledWith(
+            'onramp.form.quote_refreshed_title',
+            'onramp.form.quote_refreshed_body',
+        )
+    })
+
+    it('re-quotes when the quote expires while the opt-in sheet is open', async () => {
+        vi.useFakeTimers({ toFake: ['Date'] })
+        const expiresAt = Date.now() + 60_000
+        mockEnsureOptIn.mockImplementation(async () => {
+            vi.setSystemTime(expiresAt)
+            return true
+        })
+        const { result } = renderHook(() =>
+            useOnrampConfirm({
+                ...defaultProps,
+                selectedQuote: { ...meldQuote, expiresAt },
+            }),
+        )
+
+        await act(async () => {
+            await result.current.handleConfirm()
+        })
+        vi.useRealTimers()
+
+        expect(mockCreateRampOrder).not.toHaveBeenCalled()
+        expect(mockRefreshQuotes).toHaveBeenCalledTimes(1)
+    })
+
+    it.each(['quote_not_found', 'quote_already_used'])(
+        'recovers from a %s refusal by re-quoting, not by a toast to retry',
+        async backendCode => {
+            mockCreateRampOrder.mockRejectedValueOnce(
+                new PeraNetworkError('client', { status: 404, backendCode }),
+            )
+            const { result } = renderHook(() => useOnrampConfirm(defaultProps))
+
+            await act(async () => {
+                await result.current.handleConfirm()
+            })
+
+            expect(mockRefreshQuotes).toHaveBeenCalledTimes(1)
+            expect(mockErrorToast).not.toHaveBeenCalled()
+            expect(result.current.isConfirming).toBe(false)
+        },
+    )
 
     it("shows the app's own copy, not the backend's diagnostic, for a 5xx", async () => {
         mockCreateRampOrder.mockRejectedValueOnce(

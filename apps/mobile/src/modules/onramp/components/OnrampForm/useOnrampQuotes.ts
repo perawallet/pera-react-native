@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Platform } from 'react-native'
+import { AppState, Platform } from 'react-native'
 import { Decimal } from 'decimal.js'
 import {
     useCreateRampQuoteMutation,
@@ -19,6 +19,7 @@ import {
     filterQuotesByPaymentMethod,
     isSourceAmountTooHighError,
     isQuotableRampAmount,
+    isRampQuoteExpired,
     isSourceAmountTooLowError,
     pickBestQuote,
     RAMP_MAX_LIMIT_PROBE_AMOUNT,
@@ -71,6 +72,8 @@ type UseOnrampQuotesResult = {
      * probe fails.
      */
     resolveQuoteLimit: (bound: 'min' | 'max') => Promise<Nullable<Decimal>>
+    /** Re-fetches quotes for the unchanged inputs (expired-quote recovery). */
+    refreshQuotes: () => void
 }
 
 /**
@@ -98,6 +101,12 @@ export const useOnrampQuotes = ({
     const [quotesError, setQuotesError] = useState<Nullable<string>>(null)
     const [quoteLimits, setQuoteLimits] =
         useState<Nullable<RampQuoteLimits>>(null)
+    // Bumping it re-runs the fetch effect for the same inputs.
+    const [refreshCount, setRefreshCount] = useState(0)
+    const refreshQuotes = useCallback(
+        () => setRefreshCount(count => count + 1),
+        [],
+    )
 
     // React Query v5 mutateAsync is referentially stable, so it can sit in the
     // effect dependency list without retriggering it.
@@ -178,9 +187,20 @@ export const useOnrampQuotes = ({
                     const result = await createQuote(request)
                     if (requestId !== requestIdRef.current) return
 
-                    const filtered = result.filter(
-                        quote => !excludedIds.includes(quote.paymentMethod.id),
-                    )
+                    const now = Date.now()
+                    // A quote that is already past its expiry on arrival means
+                    // the device clock is off, so the router's answer to the
+                    // order is the only reliable expiry for it.
+                    const filtered = result
+                        .filter(
+                            quote =>
+                                !excludedIds.includes(quote.paymentMethod.id),
+                        )
+                        .map(quote =>
+                            isRampQuoteExpired(quote, now)
+                                ? { ...quote, expiresAt: null }
+                                : quote,
+                        )
                     setQuotes(filtered)
                     setQuotesError(
                         filtered.length === 0
@@ -225,7 +245,36 @@ export const useOnrampQuotes = ({
         }, ONRAMP_QUOTE_DEBOUNCE_TIME)
 
         return () => clearTimeout(timeoutId)
-    }, [quoteRequestFor, sourceDecimals, amountKey, createQuote, t])
+    }, [
+        quoteRequestFor,
+        sourceDecimals,
+        amountKey,
+        createQuote,
+        t,
+        refreshCount,
+    ])
+
+    // An idle form re-quotes when the first quote expires; a backgrounded app
+    // may have missed that timer, so foregrounding re-checks.
+    useEffect(() => {
+        const expiries = quotes.flatMap(quote =>
+            quote.expiresAt === null ? [] : [quote.expiresAt],
+        )
+        if (expiries.length === 0) return
+        const timeoutId = setTimeout(
+            refreshQuotes,
+            Math.max(0, Math.min(...expiries) - Date.now()),
+        )
+        const subscription = AppState.addEventListener('change', state => {
+            if (state === 'active' && quotes.some(q => isRampQuoteExpired(q))) {
+                refreshQuotes()
+            }
+        })
+        return () => {
+            clearTimeout(timeoutId)
+            subscription.remove()
+        }
+    }, [quotes, refreshQuotes])
 
     // A probe answer for a pair the user has since left must not set limits.
     const pairIdRef = useRef(pairId)
@@ -320,5 +369,6 @@ export const useOnrampQuotes = ({
         selectPaymentMethod,
         isBestOffer,
         resolveQuoteLimit,
+        refreshQuotes,
     }
 }

@@ -19,7 +19,10 @@ import {
     type Nullable,
     type Maybe,
 } from '@perawallet/wallet-core-shared'
-import { resolveRouterErrorBody } from '@perawallet/wallet-core-swaps'
+import {
+    isSwapQuoteGoneError,
+    resolveRouterErrorBody,
+} from '@perawallet/wallet-core-swaps'
 
 import { unwrapNetworkError } from './unwrap'
 
@@ -129,6 +132,10 @@ export function resolveRampQuoteLimits(
     const { min, max } = raw.limits
     return min === null && max === null ? null : raw.limits
 }
+
+/** The order call refused the quote as expired or already used: re-quote rather than retry it. */
+export const isRampQuoteGoneError = (error: unknown): boolean =>
+    isSwapQuoteGoneError(error)
 
 // The backend translates 4xx messages only; a 5xx message is an English
 // diagnostic that can name the upstream.

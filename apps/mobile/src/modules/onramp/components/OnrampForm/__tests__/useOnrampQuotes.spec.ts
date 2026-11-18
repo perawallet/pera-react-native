@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { AppState } from 'react-native'
 import { renderHook, act } from '@test-utils/render'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
@@ -60,6 +61,7 @@ const quote = (quoteId: string, kind: RampQuote['kind']): RampQuote => ({
     destinationAmount: new Decimal(10),
     sourceValueInUsd: null,
     destinationValueInUsd: null,
+    expiresAt: null,
 })
 
 const DEBOUNCE_MS = 500
@@ -91,6 +93,60 @@ describe('useOnrampQuotes', () => {
 
     afterEach(() => {
         vi.useRealTimers()
+    })
+
+    it('re-quotes the unchanged inputs once the earliest quote expires', async () => {
+        const now = Date.now()
+        mockCreateQuote.mockResolvedValue([
+            { ...quote('x1', 'xo'), expiresAt: now + 60_000 + DEBOUNCE_MS },
+            { ...quote('x2', 'xo'), expiresAt: now + 120_000 },
+        ])
+        render()
+        await settle()
+        expect(mockCreateQuote).toHaveBeenCalledTimes(1)
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(60_000)
+        })
+        await settle()
+
+        expect(mockCreateQuote).toHaveBeenCalledTimes(2)
+    })
+
+    it('re-quotes on returning to the foreground with an expired quote', async () => {
+        let onChange: (state: string) => void = () => {}
+        vi.spyOn(AppState, 'addEventListener').mockImplementation(
+            (_type, handler) => {
+                onChange = handler as (state: string) => void
+                return { remove: vi.fn() }
+            },
+        )
+        mockCreateQuote.mockResolvedValue([
+            { ...quote('x1', 'xo'), expiresAt: Date.now() + 60_000 },
+        ])
+        render()
+        await settle()
+
+        // Timers don't run while the app is suspended; only the clock moves.
+        vi.setSystemTime(Date.now() + 120_000)
+        act(() => onChange('active'))
+        await settle()
+
+        expect(mockCreateQuote).toHaveBeenCalledTimes(2)
+    })
+
+    it('does not loop on a quote that arrives already expired', async () => {
+        mockCreateQuote.mockResolvedValue([
+            { ...quote('x1', 'xo'), expiresAt: Date.now() - 1 },
+        ])
+        const { result } = render()
+        await settle()
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(10 * DEBOUNCE_MS)
+        })
+
+        expect(mockCreateQuote).toHaveBeenCalledTimes(1)
+        expect(result.current.selectedQuote?.expiresAt).toBeNull()
     })
 
     it("shows the app's own copy, not the backend's diagnostic, for a 5xx", async () => {
