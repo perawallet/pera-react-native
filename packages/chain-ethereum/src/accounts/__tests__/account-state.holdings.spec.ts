@@ -511,6 +511,68 @@ describe('fetchAccountState holdings the read had no source for', () => {
         expect(state.unrefreshedHoldings?.includes(USDC)).toBe(false)
     })
 
+    it('keeps a stored listed token whose balance call reverts or answers malformed data, with the token list on', async () => {
+        storedHoldings.ids = [USDC, BROKEN, SHORT, DAI]
+        server.use(
+            ...rpcAtBlock(
+                '0x64',
+                erc20CallResponder({
+                    [USDC]: token(60n),
+                    [SHORT]: { ...token(5n), shortReturn: true },
+                    [DAI]: token(0n),
+                }),
+            ),
+            ...whitelist(USDC, BROKEN, SHORT, DAI),
+        )
+        const ops = createEthereumAccountStateOps(
+            testChainContext({ services: ['assets', 'nfts'] }),
+            ETHEREUM,
+        )
+
+        const state = await ops.fetchAccountState(ADDRESS, SCOPE, HINT)
+
+        expect(state.holdings.map(h => h.assetId)).toEqual(['native', USDC])
+        expect(state.unrefreshedHoldings?.includes(BROKEN)).toBe(true)
+        expect(state.unrefreshedHoldings?.includes(SHORT)).toBe(true)
+        expect(state.unrefreshedHoldings?.includes(DAI)).toBe(false)
+        expect(state.unrefreshedHoldings?.includes(USDC)).toBe(false)
+        expect(state.unrefreshedHoldings?.error).toBeInstanceOf(Error)
+        expect(state.unrefreshedHoldings?.error).not.toMatchObject({
+            service: expect.anything(),
+        })
+    })
+
+    it('keeps a stored off-list token whose balance call reverts inside a passing aggregate, with the token list on', async () => {
+        storedHoldings.ids = [BROKEN]
+        server.use(
+            ...rpcAtBlock('0x64', erc20CallResponder({ [USDC]: token(1n) })),
+            ...whitelist(USDC),
+        )
+        const ops = createEthereumAccountStateOps(
+            testChainContext({ services: ['assets', 'nfts'] }),
+            ETHEREUM,
+        )
+
+        const state = await ops.fetchAccountState(ADDRESS, SCOPE, HINT)
+
+        expect(state.unrefreshedHoldings?.includes(BROKEN)).toBe(true)
+    })
+
+    it('does not keep a listed token it never stored when its balance call reverts', async () => {
+        server.use(
+            ...rpcAtBlock('0x64', erc20CallResponder({ [USDC]: token(1n) })),
+            ...whitelist(USDC, BROKEN),
+        )
+        const ops = createEthereumAccountStateOps(
+            testChainContext({ services: ['assets', 'nfts'] }),
+            ETHEREUM,
+        )
+
+        const state = await ops.fetchAccountState(ADDRESS, SCOPE, HINT)
+
+        expect(state.unrefreshedHoldings).toBeUndefined()
+    })
+
     it('keeps stored NFTs when the scope has no NFT service', async () => {
         server.use(...rpcAtBlock('0x64'), ...whitelist())
         const ops = createEthereumAccountStateOps(

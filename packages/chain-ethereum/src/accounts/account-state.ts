@@ -119,15 +119,15 @@ const unrefreshedOf = (
     readTokenIds: ReadonlySet<string>,
     nfts: NftRead,
     storedReadError: Optional<unknown>,
-    unreadOffList: ReadonlyMap<string, unknown>,
+    unreadTokens: ReadonlyMap<string, unknown>,
 ): Optional<UnrefreshedHoldings> => {
     const missed: UnrefreshedHoldings[] = []
-    // A rejected read says nothing about the balance, so the row stays as it is.
-    if (unreadOffList.size > 0) {
+    // A failed read says nothing about the balance, so the row stays as it is.
+    if (unreadTokens.size > 0) {
         missed.push({
             includes: assetId =>
-                isAddress(assetId) && unreadOffList.has(getAddress(assetId)),
-            error: unreadOffList.values().next().value,
+                isAddress(assetId) && unreadTokens.has(getAddress(assetId)),
+            error: unreadTokens.values().next().value,
         })
     }
     // Without the stored ids, a token held off the list was not read at all.
@@ -368,7 +368,7 @@ type WholeListRead = {
 }
 
 type OffListRead = {
-    balances: Map<string, Map<string, bigint>>
+    balances: Map<string, Omit<HolderBalances, 'wei'>>
     /** Tokens whose read rejected, by checksummed id, with why. */
     unread: Map<string, unknown>
 }
@@ -387,10 +387,13 @@ const readOffListBalances = async (
     const result: OffListRead = { balances: new Map(), unread: new Map() }
     if (tokenIds.length === 0) return result
     const take = (read: Map<string, HolderBalances>): void => {
-        for (const [holder, { tokens }] of read) {
-            const entry =
-                result.balances.get(holder) ?? new Map<string, bigint>()
-            tokens.forEach((balance, id) => entry.set(id, balance))
+        for (const [holder, { tokens, unread }] of read) {
+            const entry = result.balances.get(holder) ?? {
+                tokens: new Map<string, bigint>(),
+                unread: new Set<string>(),
+            }
+            tokens.forEach((balance, id) => entry.tokens.set(id, balance))
+            unread.forEach(id => entry.unread.add(id))
             result.balances.set(holder, entry)
         }
     }
@@ -642,9 +645,14 @@ const readBatch = async (
         const holder = (
             isPassDue[index] ? wholeListRead.balances : heldListedBalances
         ).get(getAddress(read.address))!
-        offListRead.balances
-            .get(getAddress(read.address))
-            ?.forEach((balance, id) => holder.tokens.set(id, balance))
+        const offList = offListRead.balances.get(getAddress(read.address))
+        offList?.tokens.forEach((balance, id) => holder.tokens.set(id, balance))
+        const unreadTokens = new Map(unreadKept)
+        for (const id of [...holder.unread, ...(offList?.unread ?? [])]) {
+            if (keptIds.has(id)) {
+                unreadTokens.set(id, new Error(`balanceOf unreadable: ${id}`))
+            }
+        }
         read.resolve(
             toSnapshot(
                 chain.nativeAsset.assetId,
@@ -662,7 +670,7 @@ const readBatch = async (
                     new Set(holder.tokens.keys()),
                     nfts[index],
                     stored.error,
-                    unreadKept,
+                    unreadTokens,
                 ),
                 scanEnds[index],
             ),
