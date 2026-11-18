@@ -812,6 +812,41 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                 ])
             })
 
+            it('Given an account holding Ethereum but not Base, when it connects to a proposal requiring Ethereum and naming Base as optional, then the session carries only Ethereum', async () => {
+                const ethereumOnly: WalletAccount = {
+                    ...ETHEREUM_ACCOUNT,
+                    chains: { ethereum: ETHEREUM_ACCOUNT.chains.ethereum },
+                }
+                useAccountsStore
+                    .getState()
+                    .setAccounts([ALGORAND_ACCOUNT, ethereumOnly])
+                await mountProvider()
+                const walletKit = await propose({
+                    requiredNamespaces: {
+                        eip155: {
+                            chains: [ETH_MAINNET],
+                            methods: ['eth_sendTransaction'],
+                            events: [],
+                        },
+                    },
+                    optionalNamespaces: {
+                        eip155: {
+                            chains: [BASE_MAINNET],
+                            methods: ['eth_sendTransaction'],
+                            events: [],
+                        },
+                    },
+                })
+                await selectRows(ethereumOnly)
+                await connect(walletKit)
+
+                const { eip155 } = approvedNamespaces(walletKit)
+                expect(eip155.chains).toEqual([ETH_MAINNET])
+                expect(eip155.accounts).toEqual([
+                    `${ETH_MAINNET}:${CHECKSUMMED_ETH_ADDRESS}`,
+                ])
+            })
+
             it('Given a session that holds only Base, when the dApp asks from Base to switch to Ethereum, then the user is asked and allowing it adds the network', async () => {
                 await mountProvider()
                 const walletKit = await propose({
