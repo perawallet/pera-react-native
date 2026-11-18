@@ -210,6 +210,18 @@ describe('hasUnreadableTypedDataValue', () => {
             },
         ],
         [
+            'a struct-typed field holding an array',
+            {
+                ...MAIL_TYPED_DATA,
+                types: {
+                    Order: [{ name: 'note', type: 'Note' }],
+                    Note: [{ name: 'text', type: 'string' }],
+                },
+                primaryType: 'Order',
+                message: { note: [] },
+            },
+        ],
+        [
             'an array-typed field holding a string',
             edit(PERMIT2_BATCH_TYPED_DATA, copy => {
                 copy.message.details = 'none'

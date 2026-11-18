@@ -43,7 +43,9 @@ const isUnreadable = (types: Types, type: string, value: unknown): boolean => {
     const struct = types[type]
     if (Array.isArray(struct)) {
         // The readers resolve an array-looking name first, so they would show this struct empty.
-        if (type.endsWith(']') || !isRecord(value)) return true
+        if (type.endsWith(']') || !isRecord(value) || Array.isArray(value)) {
+            return true
+        }
         // viem hashes `value[name]` for any declared field, so an entry the walk
         // cannot follow by name and type must be refused, not skipped.
         return struct.some(
