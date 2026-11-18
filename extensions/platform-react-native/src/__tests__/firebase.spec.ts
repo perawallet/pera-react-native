@@ -185,6 +185,7 @@ describe('RNFirebaseService', () => {
 
                 it('stops waiting on a slow fetch after a second when an earlier launch fetched', async () => {
                     const infoSpy = vi.spyOn(logger, 'info')
+                    const logEventSpy = vi.spyOn(service, 'logEvent')
                     withLastFetchTime(1_700_000_000_000)
                     mockFetchAndActivate.mockImplementationOnce(neverSettles)
                     const onReady = vi.fn()
@@ -198,6 +199,9 @@ describe('RNFirebaseService', () => {
                     expect(infoSpy).toHaveBeenCalledWith(
                         'Remote Config refresh still running; serving the previous launch values this session',
                         expect.anything(),
+                    )
+                    expect(logEventSpy).toHaveBeenCalledWith(
+                        'remote_config_refresh_capped',
                     )
                 })
 

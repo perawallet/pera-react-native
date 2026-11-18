@@ -236,6 +236,7 @@ export class RNFirebaseService
             REMOTE_CONFIG_REFRESH_WAIT_MS,
             'remote config refresh',
         ).catch(() => {
+            this.logEvent('remote_config_refresh_capped')
             logger.info(
                 'Remote Config refresh still running; serving the previous launch values this session',
                 { source: 'FirebaseService.initializeRemoteConfig' },
@@ -264,8 +265,10 @@ export class RNFirebaseService
         })
         await remoteConfig.setDefaults(remoteConfigDefaultsRegistry.all())
 
-        // Read before the fetch, which updates it. Android reports -1 and iOS 0
-        // when nothing has ever been fetched.
+        // RNFB's fetchTimeMillis is a JS cache seeded at -1 and only refreshed by
+        // the constants native returns, so read it after the awaited setters and
+        // before the fetch updates it. Native reports -1 (Android) / 0 (iOS) when
+        // nothing was fetched.
         const hasEarlierFetch = remoteConfig.fetchTimeMillis > 0
 
         const fetched = fetchAndActivate(remoteConfig)
