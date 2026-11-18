@@ -435,7 +435,7 @@ const planTypedData = (
         )
     }
     // A signature over another chain's domain would be valid there. The message
-    // echoes the dApp's own spelling of the id, not the parsed value.
+    // echoes domain.chainId as hashed (raw under a declared EIP712Domain), not binding.chainId.
     if (
         binding.kind === 'bound' &&
         binding.chainId !== BigInt(eip155ChainIdOf(request.scope, chain))
