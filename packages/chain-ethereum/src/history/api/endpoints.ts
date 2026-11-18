@@ -45,16 +45,23 @@ export type EvmHistoryPage = {
     next: Nullable<string>
 }
 
-// One gate for every EVM chain and every reader of a page: each page costs the
+// One gate for every EVM chain and every paged reader: each page costs the
 // backend several upstream explorer calls under one shared rate limit, so the
 // All view asking every chain at once got most of its pages refused.
+// Discovery's single-row lookup, `fetchHasHistory`, keeps its own cap.
 const HISTORY_PAGES_IN_FLIGHT = 2
 let historyPageGate: Optional<ConcurrencyLimit>
 
 // Built on first use, so importing the module runs nothing.
-const gatedHistoryPage: ConcurrencyLimit = task => {
+const gatedHistoryPage: ConcurrencyLimit = (task, options) => {
     historyPageGate ??= createConcurrencyLimit(HISTORY_PAGES_IN_FLIGHT)
-    return historyPageGate(task)
+    return historyPageGate(task, options)
+}
+
+export type HistoryPageReadOptions = {
+    signal?: AbortSignal
+    /** No one waits on it, as with a token scan, so it queues behind every other read. */
+    isBackground?: boolean
 }
 
 /**
@@ -67,36 +74,39 @@ export const fetchHistoryPage = async (
     chain: EvmChain,
     address: string,
     page?: PageRef,
-    signal?: AbortSignal,
+    { signal, isBackground = false }: HistoryPageReadOptions = {},
 ): Promise<EvmHistoryPage> => {
     signal?.throwIfAborted()
-    const { data } = await gatedHistoryPage(async () => {
-        // A read can become obsolete while another chain owns the shared slots.
-        signal?.throwIfAborted()
-        const headers = await buildIntegrityHeadersWhenReady()
-        signal?.throwIfAborted()
-        return queryClient<unknown>({
-            backend: 'pera',
-            service: HISTORY_SERVICE,
-            scope,
-            method: 'GET',
-            url: historyPath(
-                eip155ChainIdOf(scope, chain),
-                address.toLowerCase(),
-            ),
-            params: page && {
-                cursor: page.cursor,
-                ...(page.limit !== undefined && {
-                    limit: Math.min(
-                        Math.max(page.limit, 1),
-                        HISTORY_MAX_PAGE_SIZE,
-                    ),
-                }),
-            },
-            headers,
-            signal,
-        })
-    })
+    const { data } = await gatedHistoryPage(
+        async () => {
+            // A read can become obsolete while another chain owns the shared slots.
+            signal?.throwIfAborted()
+            const headers = await buildIntegrityHeadersWhenReady()
+            signal?.throwIfAborted()
+            return queryClient<unknown>({
+                backend: 'pera',
+                service: HISTORY_SERVICE,
+                scope,
+                method: 'GET',
+                url: historyPath(
+                    eip155ChainIdOf(scope, chain),
+                    address.toLowerCase(),
+                ),
+                params: page && {
+                    cursor: page.cursor,
+                    ...(page.limit !== undefined && {
+                        limit: Math.min(
+                            Math.max(page.limit, 1),
+                            HISTORY_MAX_PAGE_SIZE,
+                        ),
+                    }),
+                },
+                headers,
+                signal,
+            })
+        },
+        { isPriority: !isBackground },
+    )
     const { next, results } = evmHistoryPageSchema.parse(data)
     return {
         items: results.flatMap(row => {

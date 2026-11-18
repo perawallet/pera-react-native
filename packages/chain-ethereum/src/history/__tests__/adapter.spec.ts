@@ -34,6 +34,7 @@ import {
 import { evmCapabilityDefaults } from '../../capability-defaults'
 import { createEvmHistoryAdapter, getEvmTransactionHistory } from '../adapter'
 import { ETHEREUM } from '../../__tests__/evm-chains'
+import { fetchHistoryPage } from '../api/endpoints'
 import { evmHistoryItem, evmNftTransferLeg } from '../api/msw-handlers'
 import {
     evmRpcHandlers,
@@ -433,6 +434,55 @@ describe('getEvmTransactionHistory', () => {
         } finally {
             releases.forEach(release => release())
             await Promise.allSettled([first, second, obsolete, foreground])
+        }
+    })
+
+    it('reads a page someone is waiting on before a queued background scan page', async () => {
+        const started: string[] = []
+        const releases = new Map<string, () => void>()
+        server.use(
+            http.get(
+                `${PERA_URL}/api/v3/evm/:chainId/accounts/:address/transactions/`,
+                async ({ request }) => {
+                    const cursor = new URL(request.url).searchParams.get(
+                        'cursor',
+                    )!
+                    started.push(cursor)
+                    await new Promise<void>(resolve =>
+                        releases.set(cursor, resolve),
+                    )
+                    return HttpResponse.json({ next: null, results: [] })
+                },
+            ),
+        )
+        const read = (cursor: string) =>
+            getEvmTransactionHistory(ETHEREUM, ME, MAINNET, { cursor })
+        const first = read('first')
+        const second = read('second')
+        let background: Promise<unknown> | undefined
+        let foreground: Promise<unknown> | undefined
+        try {
+            await vi.waitFor(() => expect(started).toEqual(['first', 'second']))
+            background = fetchHistoryPage(
+                MAINNET,
+                ETHEREUM,
+                ME,
+                { cursor: 'background' },
+                { isBackground: true },
+            )
+            foreground = read('foreground')
+
+            releases.get('first')!()
+
+            await vi.waitFor(() =>
+                expect(started).toEqual(['first', 'second', 'foreground']),
+            )
+        } finally {
+            for (const cursor of ['second', 'foreground', 'background']) {
+                await vi.waitFor(() => expect(releases.has(cursor)).toBe(true))
+                releases.get(cursor)!()
+            }
+            await Promise.allSettled([first, second, background, foreground])
         }
     })
 

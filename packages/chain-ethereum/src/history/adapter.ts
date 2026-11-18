@@ -89,7 +89,7 @@ export const getEvmTransactionHistory = async (
         chain,
         address,
         page,
-        signal,
+        { signal },
     )
     return {
         items: items.flatMap(item =>
