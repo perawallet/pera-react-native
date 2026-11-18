@@ -45,15 +45,16 @@ describe('useImageMemoryReleaseOnHide', () => {
         expect(mockClearMemoryCache).not.toHaveBeenCalled()
     })
 
-    it('clears the memory cache after the commit that hides the surface', () => {
+    it('clears the memory cache once the release delay has passed after hiding', () => {
         const { rerender } = renderHook(
             ({ isVisible }) => useImageMemoryReleaseOnHide(isVisible),
             { initialProps: { isVisible: true } },
         )
 
         rerender({ isVisible: false })
+        vi.advanceTimersByTime(499)
         expect(mockClearMemoryCache).not.toHaveBeenCalled()
-        vi.runAllTimers()
+        vi.advanceTimersByTime(1)
 
         expect(mockClearMemoryCache).toHaveBeenCalledTimes(1)
     })

@@ -13,10 +13,12 @@
 import { useEffect, useRef } from 'react'
 import { Image } from 'expo-image'
 
-// Deferred past the commit: the native image views are torn down after it, and
-// a clear that lands first finds their bitmaps still in use.
-const clearMemoryCacheAfterCommit = () => {
-    setTimeout(() => void Image.clearMemoryCache(), 0)
+const RELEASE_DELAY_MS = 500
+
+// Best-effort delay: the native image views are released on the UI thread some
+// time after the commit, and a clear that lands first finds their bitmaps in use.
+const clearMemoryCacheSoon = () => {
+    setTimeout(() => void Image.clearMemoryCache(), RELEASE_DELAY_MS)
 }
 
 /**
@@ -29,13 +31,13 @@ export const useImageMemoryReleaseOnHide = (isVisible: boolean): void => {
     const wasVisible = useRef(isVisible)
 
     useEffect(() => {
-        if (wasVisible.current && !isVisible) clearMemoryCacheAfterCommit()
+        if (wasVisible.current && !isVisible) clearMemoryCacheSoon()
         wasVisible.current = isVisible
     }, [isVisible])
 
     useEffect(
         () => () => {
-            if (wasVisible.current) clearMemoryCacheAfterCommit()
+            if (wasVisible.current) clearMemoryCacheSoon()
         },
         [],
     )
