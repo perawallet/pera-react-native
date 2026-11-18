@@ -35,6 +35,7 @@ import {
     type RpcFeeHistory,
     type RpcTransaction,
     type RpcTransactionReceipt,
+    type Signature,
     type TransactionSerializable,
 } from 'viem'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
@@ -158,23 +159,37 @@ const STAND_IN_SIGNATURE = {
     yParity: 0,
 } as const
 
-/** `tx` mined and signed, with the `hash` and `from` its signed bytes give. */
+const toRpcQuantities = (value: unknown): unknown => {
+    if (typeof value === 'bigint' || typeof value === 'number') {
+        return numberToHex(value)
+    }
+    if (Array.isArray(value)) return value.map(toRpcQuantities)
+    if (value !== null && typeof value === 'object') {
+        return Object.fromEntries(
+            Object.entries(value).map(([key, item]) => [
+                key,
+                toRpcQuantities(item),
+            ]),
+        )
+    }
+    return value
+}
+
+/**
+ * `tx` mined and signed, with the `hash` and `from` its signed bytes give. Pass
+ * a `signature` precomputed over `tx` to choose the sender; the default
+ * recovers to an arbitrary one.
+ */
 export const evmSignedRpcTransaction = async (
     tx: TransactionSerializable,
+    signature: Signature = STAND_IN_SIGNATURE,
 ): Promise<RpcTransaction> => {
-    const raw = serializeTransaction(tx, STAND_IN_SIGNATURE)
+    const raw = serializeTransaction(tx, signature)
     const { data, to, gas = 0n, ...fields } = parseTransaction(raw)
     return evmRpcTransaction({
         gas: numberToHex(gas),
         gasPrice: '0x0',
-        ...Object.fromEntries(
-            Object.entries(fields).map(([key, value]) => [
-                key,
-                typeof value === 'bigint' || typeof value === 'number'
-                    ? numberToHex(value)
-                    : value,
-            ]),
-        ),
+        ...(toRpcQuantities(fields) as object),
         hash: keccak256(raw),
         from: await recoverTransactionAddress({ serializedTransaction: raw }),
         type: RPC_TRANSACTION_TYPE[getTransactionType(tx)],

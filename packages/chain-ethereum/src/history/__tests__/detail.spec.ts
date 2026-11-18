@@ -15,7 +15,9 @@ import { Decimal } from 'decimal.js'
 import {
     encodeFunctionData,
     erc20Abi,
+    keccak256,
     maxUint256,
+    serializeTransaction,
     type Hex,
     type TransactionSerializable,
 } from 'viem'
@@ -24,6 +26,7 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     EvmRpcErrorFixture,
     evmRpcHandlers,
+    evmRpcTransaction,
     evmSignedRpcTransaction,
     type EvmRpcResponder,
 } from '../../blockchain/msw-handlers'
@@ -125,6 +128,22 @@ describe('readEvmTransactionDetail', () => {
                 blobVersionedHashes: [`0x01${'cd'.repeat(31)}`],
             },
         ],
+        [
+            'EIP-7702',
+            {
+                type: 'eip7702',
+                authorizationList: [
+                    {
+                        address: USDC,
+                        chainId: 1,
+                        nonce: 1,
+                        r: HASH,
+                        s: HASH,
+                        yParity: 0,
+                    },
+                ],
+            },
+        ],
     ] as const)('reads a %s transaction', async (_, fields) => {
         const tx = await evmSignedRpcTransaction(
             call({
@@ -194,6 +213,49 @@ describe('readEvmTransactionDetail', () => {
         node({ ...revoke, hash: grant.hash })
 
         expect(await read(grant.hash)).toBeNull()
+    })
+
+    it.each([
+        ['an OP-stack deposit', '0x7e'],
+        ['an Arbitrum internal transaction', '0x6a'],
+    ] as const)(
+        'returns null for %s, which viem cannot rebuild',
+        async (_, type) => {
+            node(
+                evmRpcTransaction({
+                    hash: HASH,
+                    type: type as '0x0',
+                    v: '0x0',
+                    r: '0x0',
+                    s: '0x0',
+                }),
+            )
+
+            expect(await read(HASH)).toBeNull()
+        },
+    )
+
+    it('returns null for a transaction whose signature recovers no sender', async () => {
+        const raw = serializeTransaction(
+            call({ ...PRE_EIP1559, type: 'legacy', gasPrice: 1n }),
+            { r: '0x0', s: '0x1', v: 27n },
+        )
+        const hash = keccak256(raw)
+        node(
+            evmRpcTransaction({
+                hash,
+                chainId: '0x1',
+                nonce: '0x7',
+                to: USDC,
+                gas: '0xea60',
+                gasPrice: '0x1',
+                v: '0x25',
+                r: '0x0',
+                s: '0x1',
+            }),
+        )
+
+        expect(await read(hash)).toBeNull()
     })
 
     it('takes the sender from the signature, not from the node', async () => {

@@ -149,7 +149,8 @@ const { AccountHistory } =
 const { useAccountHistory } =
     await import('@modules/accounts/components/AccountHistory/useAccountHistory')
 
-const ETH_ADDRESS = '0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed'
+// The address of the throwaway key 0x11…11, which signed the node copies below.
+const ETH_ADDRESS = '0x19e7e376e7c213b7e7e7e46cc70a5dd086daff2a'
 const COUNTERPARTY = '0x1111111111111111111111111111111111111111'
 
 const ETH_ACCOUNT: WalletAccount = {
@@ -166,19 +167,33 @@ const SPENDER = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
 // approve(SPENDER, amount), hard-coded because viem isn't an apps/mobile dependency.
 const approveData = (amount: string): `0x${string}` =>
     `0x095ea7b3${SPENDER.slice(2).toLowerCase().padStart(64, '0')}${amount.padStart(64, '0')}`
-// The node's copy of an entry; the entry's hash is the one its signed bytes give.
-const nodeCopyOf = (to: `0x${string}`, data: `0x${string}`) =>
-    evmSignedRpcTransaction({
-        chainId: 1,
-        to,
-        data,
-        gas: 60_000n,
-        gasPrice: 1n,
-    })
+// The node's copy of an entry, signed by ETH_ADDRESS: viem's `signTransaction`
+// with its key, precomputed since keys may not be held in test code.
+const nodeCopyOf = (
+    to: `0x${string}`,
+    data: `0x${string}`,
+    [r, s, yParity]: readonly [`0x${string}`, `0x${string}`, 0 | 1],
+) =>
+    evmSignedRpcTransaction(
+        { chainId: 1, to, data, gas: 60_000n, gasPrice: 1n },
+        { r, s, yParity, v: 27n + BigInt(yParity) },
+    )
 const [APPROVE_TX, REVOKE_TX, SWAP_TX] = await Promise.all([
-    nodeCopyOf(USDC, approveData('f'.repeat(64))),
-    nodeCopyOf(USDC, approveData('0')),
-    nodeCopyOf(COUNTERPARTY, '0x38ed1739'),
+    nodeCopyOf(USDC, approveData('f'.repeat(64)), [
+        '0xab1cd14de0adb6a5e6d55eeee23af59d7e85f0e4fbca5c1593028b57adc5001b',
+        '0x1dea2f54324e77cdf481b26fc139c69b809310acac28db01d01f764faadbffd3',
+        1,
+    ]),
+    nodeCopyOf(USDC, approveData('0'), [
+        '0xa53079d984b14e97d38324ce5b25669bb8c030fd42a8c283b7279518dc17fef0',
+        '0x6a7cb65dc35e6a4519cddf468876d6d6cbc84203ba669b83476d872b8696529b',
+        0,
+    ]),
+    nodeCopyOf(COUNTERPARTY, '0x38ed1739', [
+        '0xea8abadc5ac9f4a2ee6e6922718d7e8a74b104ef0d6712d0e5b8e3a8ffd6dd65',
+        '0x3f6b3892e213060295a456804fea5e2924e4571824184fd093c8b0686b93fb5b',
+        0,
+    ]),
 ])
 
 const received = (n: number, blockTime: string): EvmHistoryItemResponse =>

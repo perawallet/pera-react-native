@@ -17,6 +17,7 @@ import {
     recoverTransactionAddress,
     serializeTransaction,
     TransactionNotFoundError,
+    type Address,
     type Transaction,
     type TransactionSerializable,
 } from 'viem'
@@ -40,11 +41,26 @@ const serializeSigned = (tx: Transaction) =>
         yParity: tx.yParity,
     })
 
+// The node's `hash` and `from` are its word; only the signed fields bind. A
+// type viem can't rebuild (an L2's own, like an OP-stack deposit) binds nothing.
+const signedSenderOf = async (
+    tx: Transaction,
+    txId: string,
+): Promise<Nullable<Address>> => {
+    try {
+        const serializedTransaction = serializeSigned(tx)
+        if (keccak256(serializedTransaction) !== txId.toLowerCase()) return null
+        return await recoverTransactionAddress({ serializedTransaction })
+    } catch {
+        return null
+    }
+}
+
 /**
  * The transaction as the node holds it, read for a detail screen: the
  * calldata is what the history row lacks. Null when the node has no such
  * transaction (pruned, or not on this network) or answers with one whose
- * signed fields don't hash to `txId`; every other failure rejects.
+ * signed fields don't hash to `txId` or can't be rebuilt; a failed read rejects.
  */
 export const readEvmTransactionDetail = async (
     ctx: ChainContext,
@@ -56,26 +72,24 @@ export const readEvmTransactionDetail = async (
     // A withdrawal's id is not a hash, and there is no transaction to read for it.
     if (!isHash(txId)) return null
     const client = createEvmClient(scope, ctx, chain)
+    let tx: Transaction
     try {
-        const tx = await client.getTransaction({ hash: txId })
-        // The node's `hash` and `from` are its word; only the signed fields bind.
-        const serializedTransaction = serializeSigned(tx)
-        if (keccak256(serializedTransaction) !== txId.toLowerCase()) return null
-        return toEthereumNative(
-            ethereumMinedViewOf(
-                {
-                    from: await recoverTransactionAddress({
-                        serializedTransaction,
-                    }),
-                    to: tx.to ?? undefined,
-                    data: tx.input,
-                    value: tx.value,
-                },
-                feePaid,
-            ),
-        )
+        tx = await client.getTransaction({ hash: txId })
     } catch (error) {
         if (error instanceof TransactionNotFoundError) return null
         throw error
     }
+    const from = await signedSenderOf(tx, txId)
+    if (!from) return null
+    return toEthereumNative(
+        ethereumMinedViewOf(
+            {
+                from,
+                to: tx.to ?? undefined,
+                data: tx.input,
+                value: tx.value,
+            },
+            feePaid,
+        ),
+    )
 }
