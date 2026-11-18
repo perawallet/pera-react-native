@@ -31,6 +31,7 @@ import {
     accountChainIdOf,
     accountValueOf,
     ownAddressOf,
+    secondaryChainIdsOf,
     useSigningAccountsOnAnyChain,
 } from '../useAccountChain'
 
@@ -88,7 +89,111 @@ describe('accountChainIdOf', () => {
     })
 })
 
+type Stamp = 'created' | 'discovery'
+
+const stamped = (stamps: Partial<Record<ChainId, Stamp>>): WalletAccount => ({
+    id: 'stamped',
+    custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
+    chains: Object.fromEntries(
+        Object.entries(stamps).map(([chainId, enabledBy]) => [
+            chainId,
+            {
+                address: chainId === 'algorand' ? 'ALGO-ADDR' : ETH_ADDRESS,
+                keyPairId: `${chainId}-key`,
+                enabledBy,
+            },
+        ]),
+    ) as WalletAccount['chains'],
+})
+const REGISTRY: ChainId[] = ['algorand', 'ethereum', 'base']
+
+describe('accountChainIdOf with discovery stamps', () => {
+    it.each([
+        [
+            'only a later chain was found active',
+            { algorand: 'created', ethereum: 'discovery' },
+            'ethereum',
+        ],
+        [
+            'every chain was found active',
+            { algorand: 'discovery', ethereum: 'discovery' },
+            'algorand',
+        ],
+        [
+            'the first chain was found active',
+            { algorand: 'discovery', ethereum: 'created' },
+            'algorand',
+        ],
+        [
+            'nothing was found active',
+            { algorand: 'created', ethereum: 'created' },
+            'algorand',
+        ],
+        [
+            'an unstamped record',
+            { algorand: undefined, ethereum: undefined },
+            'algorand',
+        ],
+        [
+            'only the last chain was found active',
+            { algorand: 'created', ethereum: 'created', base: 'discovery' },
+            'base',
+        ],
+    ] as const)('resolves when %s', (_label, stamps, expected) => {
+        expect(accountChainIdOf(stamped(stamps), REGISTRY)).toBe(expected)
+    })
+
+    it('ignores a discovery stamp on a chain that is not registered', () => {
+        expect(
+            accountChainIdOf(
+                stamped({ algorand: 'created', ethereum: 'discovery' }),
+                ['algorand'],
+            ),
+        ).toBe('algorand')
+    })
+})
+
+describe('secondaryChainIdsOf', () => {
+    it('lists the held chains with another address once discovery put a later chain first', () => {
+        expect(
+            secondaryChainIdsOf(
+                stamped({ algorand: 'created', ethereum: 'discovery' }),
+                REGISTRY,
+            ),
+        ).toEqual(['algorand'])
+    })
+
+    it.each([
+        [
+            'active on the first chain',
+            { algorand: 'discovery', ethereum: 'discovery' },
+        ],
+        ['unstamped', { algorand: undefined, ethereum: undefined }],
+    ] as const)('is empty when the account is %s', (_label, stamps) => {
+        expect(secondaryChainIdsOf(stamped(stamps), REGISTRY)).toEqual([])
+    })
+
+    it('is empty when every held chain shares the own chain address', () => {
+        expect(
+            secondaryChainIdsOf(
+                stamped({ ethereum: 'created', base: 'discovery' }),
+                REGISTRY,
+            ),
+        ).toEqual([])
+    })
+})
+
 describe('ownAddressOf', () => {
+    it('reads the 0x address of an account found active only on its second chain', () => {
+        register('algorand', 'ethereum')
+
+        expect(
+            ownAddressOf(
+                stamped({ algorand: 'created', ethereum: 'discovery' }),
+            ),
+        ).toBe(ETH_ADDRESS)
+    })
+
     it("reads the account's address on its own chain", () => {
         register('algorand', 'ethereum')
 

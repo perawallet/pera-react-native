@@ -92,6 +92,7 @@ export const useHDImportSession = (
                 walletKeyId: prepared.keyId,
                 rootKey: handOffSecret(prepared.rootKey),
                 entropy: handOffSecret(prepared.entropy),
+                wordCount: mnemonicIndices?.length,
             })
             return { walletKeyId: prepared.keyId }
         },
@@ -114,7 +115,7 @@ export const useHDImportSession = (
             if (!pending || pending.walletKeyId !== walletKeyId) {
                 throw new HDImportSessionNotFoundError(walletKeyId)
             }
-            const chainIds = hdDiscoveryChains()
+            const chainIds = hdDiscoveryChains(pending.wordCount)
             let discovered: LocalAccount[]
             let failedChainIds: WalletCandidates['failedChainIds'] = []
             let isOriginFallback = false

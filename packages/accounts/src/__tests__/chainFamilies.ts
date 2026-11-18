@@ -22,6 +22,7 @@ import {
     type ChainId,
     type KeyDerivation,
 } from '@perawallet/wallet-core-chain-contract'
+import { SeedScheme } from '@perawallet/wallet-core-kms/constants'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     accountsChainAdapters,
@@ -199,6 +200,16 @@ export const registerChainFamilies = (
         families.checkActivity.set(chainId, checkActivity)
         accountsChainAdapters.register({
             chainId,
+            localKeyKinds: [
+                {
+                    seed: SeedScheme.Bip39,
+                    signingScheme: family === 'evm' ? 'secp256k1' : 'ed25519',
+                    isHd: true,
+                    mnemonicWordCounts: [24, 12],
+                    ...(family === 'evm' ? { typicalWordCounts: [12] } : {}),
+                    isAutoDetected: true,
+                },
+            ],
             checkActivity,
             hdKeyPairId: (seedKeyId: string, { account, keyIndex }: HdIndex) =>
                 familyHdKeyId(seedKeyId, family, account, keyIndex),

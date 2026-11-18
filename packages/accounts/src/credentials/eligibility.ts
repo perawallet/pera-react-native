@@ -179,12 +179,14 @@ export const eligibleChainsInFamily = (account: WalletAccount): ChainId[] => {
 }
 
 /**
- * The chains an HD wallet's discovery walk probes, in registry order: every
- * registered chain a BIP39 seed mints on that has an accounts adapter.
+ * The chains an HD wallet's discovery walk probes: every registered chain a
+ * BIP39 seed mints on that has an accounts adapter, in registry order. Given
+ * the imported phrase's `wordCount`, the chains whose HD key kind lists it as
+ * typical come first, so that a batch derives and probes them first.
  */
-export const hdDiscoveryChains = (): ChainId[] => {
+export const hdDiscoveryChains = (wordCount?: number): ChainId[] => {
     const { chains } = getProvider()
-    return chains
+    const walked = chains
         .list()
         .map(({ id }) => id)
         .filter(
@@ -192,6 +194,13 @@ export const hdDiscoveryChains = (): ChainId[] => {
                 seedMintableScheme(id) !== undefined &&
                 accountsChainAdapters.has(id),
         )
+    if (wordCount === undefined) return walked
+    const isTypical = (chainId: ChainId): boolean =>
+        accountsChainAdapters
+            .get(chainId)
+            .localKeyKinds.find(kind => kind.isHd)
+            ?.typicalWordCounts?.includes(wordCount) === true
+    return [...walked.filter(isTypical), ...walked.filter(id => !isTypical(id))]
 }
 
 /** Whether the chain is registered and flagged to be enabled on a new account unasked. */

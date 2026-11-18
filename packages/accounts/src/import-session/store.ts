@@ -29,6 +29,8 @@ export type HDImportSession = {
     walletKeyId: string
     rootKey: Uint8Array
     entropy: Uint8Array
+    /** The length of the imported phrase; absent when the session was started without one. */
+    wordCount?: number
     /** The indexes the user was offered, so a later walk can tell which they declined. */
     discoveredIndexes?: HdIndex[]
     /** Whether the seed is already in the keystore, so commit mustn't save it again and cancel must remove it. */
