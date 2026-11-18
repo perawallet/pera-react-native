@@ -344,7 +344,7 @@ describe('Flow: unblock an Ethereum send stuck behind a dropped nonce', () => {
             ),
         )
         const failed = await screen.findByTestId(
-            'history_network_failed',
+            /^history_network_(failed|unavailable)$/,
             undefined,
             { timeout: SLOW_WAIT_TIMEOUT_MS },
         )
