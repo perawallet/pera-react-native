@@ -12,3 +12,4 @@
 
 export { CollectibleThumbnail } from './CollectibleThumbnail'
 export type { CollectibleThumbnailProps } from './CollectibleThumbnail'
+export { CollectibleImageVisibilityContext } from './CollectibleImageVisibilityContext'
