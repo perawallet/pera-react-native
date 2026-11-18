@@ -508,6 +508,88 @@ describe('useTransactionRecordsQuery', () => {
                 ]),
             )
         })
+
+        test('keeps a failed first page failed while it is re-read', async () => {
+            const failure = new PeraNetworkError('server', { status: 503 })
+            mocks.getMinedTransactionHistory.mockRejectedValue(failure)
+            const { result } = mount()
+            await waitFor(() => expect(result.current.isError).toBe(true))
+
+            let release: (value: { items: TransactionRecord[] }) => void = () =>
+                undefined
+            mocks.getMinedTransactionHistory.mockReturnValue(
+                new Promise(resolve => {
+                    release = resolve
+                }),
+            )
+            act(() => result.current.refetch())
+
+            await waitFor(() => expect(result.current.isFetching).toBe(true))
+            expect(result.current.isError).toBe(true)
+            expect(result.current.error).toBe(failure)
+            expect(result.current.isLoading).toBe(false)
+
+            await act(async () => release({ items: [record('A', JAN_10)] }))
+
+            await waitFor(() => expect(result.current.isError).toBe(false))
+            expect(result.current.error).toBeNull()
+            expect(result.current.records.map(r => r.id)).toEqual(['A'])
+        })
+
+        test('a hook mounted on a failed read reports the failure from its first render', async () => {
+            const failure = new PeraServiceUnavailableError(SCOPE)
+            mocks.getMinedTransactionHistory.mockRejectedValue(failure)
+            const first = mount()
+            await waitFor(() => expect(first.result.current.isError).toBe(true))
+            first.unmount()
+
+            mocks.getMinedTransactionHistory.mockReturnValue(
+                new Promise(() => undefined),
+            )
+            const renders: Array<{
+                isError: boolean
+                error: unknown
+                isFetching: boolean
+            }> = []
+            const second = renderHook(
+                () => {
+                    const { isError, error, isFetching } =
+                        useTransactionRecordsQuery({
+                            accountAddress: ADDRESS,
+                            scope: SCOPE,
+                        })
+                    renders.push({ isError, error, isFetching })
+                    return null
+                },
+                { wrapper },
+            )
+
+            expect(renders[0]).toEqual({
+                isError: true,
+                error: failure,
+                isFetching: true,
+            })
+            second.unmount()
+        })
+
+        test('a cancelled re-read keeps the original error', async () => {
+            const failure = new PeraNetworkError('server', { status: 503 })
+            mocks.getMinedTransactionHistory.mockRejectedValue(failure)
+            const { result } = mount()
+            await waitFor(() => expect(result.current.isError).toBe(true))
+
+            mocks.getMinedTransactionHistory.mockImplementation(
+                () => new Promise(() => undefined),
+            )
+            act(() => result.current.refetch())
+            await waitFor(() => expect(result.current.isFetching).toBe(true))
+            await act(() => queryClient.cancelQueries())
+            act(() => result.current.refetch())
+            await waitFor(() => expect(result.current.isFetching).toBe(true))
+
+            expect(result.current.isError).toBe(true)
+            expect(result.current.error).toBe(failure)
+        })
     })
 
     describe('background refetch', () => {
