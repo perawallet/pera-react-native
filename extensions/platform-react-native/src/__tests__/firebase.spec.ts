@@ -91,6 +91,7 @@ import * as messaging from '@react-native-firebase/messaging'
 import * as crashlytics from '@react-native-firebase/crashlytics'
 import * as notifications from 'expo-notifications'
 import { remoteConfigDefaultsRegistry } from '@perawallet/wallet-extension-platform'
+import { logger } from '@perawallet/wallet-core-shared'
 
 describe('RNFirebaseService', () => {
     let service: RNFirebaseService
@@ -183,6 +184,7 @@ describe('RNFirebaseService', () => {
                 })
 
                 it('stops waiting on a slow fetch after a second when an earlier launch fetched', async () => {
+                    const infoSpy = vi.spyOn(logger, 'info')
                     withLastFetchTime(1_700_000_000_000)
                     mockFetchAndActivate.mockImplementationOnce(neverSettles)
                     const onReady = vi.fn()
@@ -193,6 +195,10 @@ describe('RNFirebaseService', () => {
 
                     await vi.advanceTimersByTimeAsync(1)
                     expect(onReady).toHaveBeenCalled()
+                    expect(infoSpy).toHaveBeenCalledWith(
+                        'Remote Config refresh still running; serving the previous launch values this session',
+                        expect.anything(),
+                    )
                 })
 
                 it('waits for the fetch on a first launch', async () => {
@@ -215,9 +221,15 @@ describe('RNFirebaseService', () => {
                     expect(onReady).toHaveBeenCalled()
                 })
 
-                it('starts no second fetch while the one it stopped waiting on is still running', async () => {
+                it('starts no second fetch while the one it stopped waiting on is still running, then refetches once it lands', async () => {
                     withLastFetchTime(1_700_000_000_000)
-                    mockFetchAndActivate.mockImplementationOnce(neverSettles)
+                    let finishFirstFetch = (_: boolean) => {}
+                    mockFetchAndActivate.mockImplementationOnce(
+                        () =>
+                            new Promise<boolean>(resolve => {
+                                finishFirstFetch = resolve
+                            }),
+                    )
 
                     const first = service.initializeRemoteConfig()
                     await vi.advanceTimersByTimeAsync(1000)
@@ -225,8 +237,13 @@ describe('RNFirebaseService', () => {
                     const second = service.initializeRemoteConfig()
                     await vi.advanceTimersByTimeAsync(1000)
                     await second
-
                     expect(mockFetchAndActivate).toHaveBeenCalledTimes(1)
+
+                    finishFirstFetch(true)
+                    await vi.advanceTimersByTimeAsync(0)
+
+                    await service.initializeRemoteConfig()
+                    expect(mockFetchAndActivate).toHaveBeenCalledTimes(2)
                 })
             })
 

@@ -214,6 +214,10 @@ export class RNFirebaseService
      * already in flight (the same NSURLErrorCancelled that broke this before),
      * so overlapping callers share one initialization. Cleared once the fetch
      * settles, so a later call still refetches.
+     *
+     * Once an earlier launch has activated values, resolves after at most
+     * `REMOTE_CONFIG_REFRESH_WAIT_MS` even if the fetch has not landed: reads
+     * then serve the previous launch's values, and the fetch activates late.
      */
     async initializeRemoteConfig(): Promise<void> {
         this.remoteConfigInitInFlight ??= this.startRemoteConfigFetch().catch(
@@ -231,7 +235,12 @@ export class RNFirebaseService
             fetched,
             REMOTE_CONFIG_REFRESH_WAIT_MS,
             'remote config refresh',
-        ).catch(() => {})
+        ).catch(() => {
+            logger.info(
+                'Remote Config refresh still running; serving the previous launch values this session',
+                { source: 'FirebaseService.initializeRemoteConfig' },
+            )
+        })
     }
 
     private async startRemoteConfigFetch(): Promise<RemoteConfigFetch> {

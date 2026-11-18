@@ -124,9 +124,10 @@ export const RemoteConfigDefaults: Readonly<
 
 export interface RemoteConfigService {
     // Async on every implementation (both fetch-and-activate against a remote
-    // backend), and both platform extensions already await it in their
-    // `initialize()` — declaring it `void` here only hid that from the type
-    // checker and let a caller read flags before activation had landed.
+    // backend), and both platform extensions await it in their `initialize()`.
+    // Resolving does not guarantee this launch's fetch has activated: an
+    // implementation may stop waiting on a slow refetch once an earlier launch
+    // activated values, so reads can serve those until the fetch lands.
     initializeRemoteConfig(): Promise<void>
     getStringValue(key: string, fallback?: string): string
     getBooleanValue(key: string, fallback?: boolean): boolean
