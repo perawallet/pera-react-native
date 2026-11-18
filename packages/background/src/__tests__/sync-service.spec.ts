@@ -1248,16 +1248,33 @@ describe('SyncService', () => {
             expect(fetchAndPersistAccount).toHaveBeenCalledWith(
                 'ADDR1',
                 MAINNET,
+                {},
             )
             expect(fetchAndPersistAccount).toHaveBeenCalledWith(
                 'ADDR2',
                 TESTNET,
+                {},
             )
             expect(invalidateAccountQueries).toHaveBeenCalledTimes(1)
         })
     })
 
     describe('refreshAccounts', () => {
+        it('hands a refresh the user asked for down to each account read', async () => {
+            const { fetchAndPersistAccount } =
+                await import('@perawallet/wallet-core-accounts')
+
+            await service.refreshAccounts(['ADDR1'], TESTNET, {
+                isUserRefresh: true,
+            })
+
+            expect(fetchAndPersistAccount).toHaveBeenCalledWith(
+                'ADDR1',
+                TESTNET,
+                { isUserRefresh: true },
+            )
+        })
+
         it('returns early when given an empty address list', async () => {
             const { fetchAndPersistAccount } =
                 await import('@perawallet/wallet-core-accounts')
@@ -1281,14 +1298,16 @@ describe('SyncService', () => {
             await service.refreshAccounts(['ADDR1', 'ADDR2'], TESTNET)
 
             expect(fetchAndPersistAccount).toHaveBeenCalledTimes(2)
-            expect(fetchAndPersistAccount).toHaveBeenCalledWith('ADDR1', {
-                chainId: 'algorand',
-                networkId: 'testnet',
-            })
-            expect(fetchAndPersistAccount).toHaveBeenCalledWith('ADDR2', {
-                chainId: 'algorand',
-                networkId: 'testnet',
-            })
+            expect(fetchAndPersistAccount).toHaveBeenCalledWith(
+                'ADDR1',
+                { chainId: 'algorand', networkId: 'testnet' },
+                {},
+            )
+            expect(fetchAndPersistAccount).toHaveBeenCalledWith(
+                'ADDR2',
+                { chainId: 'algorand', networkId: 'testnet' },
+                {},
+            )
             expect(fetchAndPersistTransactions).toHaveBeenCalledTimes(2)
             expect(fetchAndPersistTransactions).toHaveBeenCalledWith('ADDR1', {
                 chainId: 'algorand',
@@ -2116,10 +2135,11 @@ describe('SyncService', () => {
             ported.stop()
 
             expect(fetchAndPersistAccount).toHaveBeenCalledTimes(1)
-            expect(fetchAndPersistAccount).toHaveBeenCalledWith('PORT1', {
-                chainId: 'algorand',
-                networkId: 'testnet',
-            })
+            expect(fetchAndPersistAccount).toHaveBeenCalledWith(
+                'PORT1',
+                { chainId: 'algorand', networkId: 'testnet' },
+                {},
+            )
             expect(stores.setChangeCursor).toHaveBeenCalledWith(TESTNET, 77)
             expect(mockSetRefreshRound).not.toHaveBeenCalled()
             expect(stores.setLastSyncAt).toHaveBeenCalledWith(

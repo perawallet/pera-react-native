@@ -35,6 +35,11 @@ import {
 } from '@perawallet/wallet-core-shared'
 import type { AssetSyncKind } from '../polling/models'
 
+export type RefreshOptions = {
+    /** A refresh the user asked for (pull-to-refresh), so reads skip the backend's caches. */
+    isUserRefresh?: boolean
+}
+
 /**
  * Max concurrent per-account history requests within the transactions phase.
  *
@@ -134,12 +139,13 @@ export const syncAccountsPhase = async (
     addresses: string[],
     scope: ChainScope,
     phase: string,
+    options: RefreshOptions = {},
 ): Promise<AccountPhaseResult> => {
     const { maxConcurrentStateReads } = accountsChainAdapters.get(scope.chainId)
     const results = await mapWithConcurrency(
         addresses,
         maxConcurrentStateReads ?? addresses.length,
-        address => fetchAndPersistAccount(address, scope),
+        address => fetchAndPersistAccount(address, scope, options),
     )
     logPhaseFailures(phase, results, scope, i => addresses[i])
 

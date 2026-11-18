@@ -41,7 +41,11 @@ import {
 } from '@perawallet/wallet-core-shared'
 import type { EvmChainId } from '@perawallet/wallet-core-chain-contract'
 import type { EvmChain } from '../chains/types'
-import { ASSETS_SERVICE, NFTS_SERVICE } from '../assets/api/endpoints'
+import {
+    ASSETS_SERVICE,
+    NFTS_SERVICE,
+    type NftHoldingsListing,
+} from '../assets/api/endpoints'
 import {
     cachedWhitelist,
     listedTokenIds,
@@ -94,6 +98,8 @@ type PendingRead = {
     isPersisted: boolean
     /** The account has no stored chain state yet. */
     isFirstSync: boolean
+    /** The user asked for this read, so the backend's caches are skipped. */
+    isUserRefresh: boolean
     resolve: (snapshot: AccountStateSnapshot) => void
     reject: (error: unknown) => void
 }
@@ -277,6 +283,10 @@ type Detection = {
     listedPassAt: Map<string, number>
     /** Accounts read with only their held tokens since their last whole-list pass. */
     owedListedPasses: Set<string>
+    /** Each account's last NFT list, by `backfillKey`, answered again while its page one is unchanged. */
+    nftListings: Map<string, NftHoldingsListing>
+    /** When each account whose NFT read failed is read again, by `backfillKey`. */
+    nftRetryAt: Map<string, number>
 }
 
 const isScanDue = (detection: Detection, key: string): boolean => {
@@ -307,6 +317,33 @@ const isListedPassDue = (detection: Detection, key: string): boolean => {
 // since; once its pass is due, the next change signal asks for one.
 const isListedPassOwed = (detection: Detection, key: string): boolean =>
     detection.owedListedPasses.has(key) && isListedPassDue(detection, key)
+
+// A failed NFT read keeps the stored list, and nothing on chain may come to
+// ask for another: a 429 waits out part of the backend's 10-minute window.
+const NFT_READ_RETRY_MS = 2 * 60_000
+
+const isNftRetryDue = (detection: Detection, key: string): boolean => {
+    const at = detection.nftRetryAt.get(key)
+    return at !== undefined && detection.now() >= at
+}
+
+const recordNftReads = (
+    detection: Detection,
+    keys: readonly string[],
+    reads: readonly NftRead[],
+): void =>
+    reads.forEach((read, index) => {
+        const key = keys[index]!
+        if (read?.status === 'fulfilled') {
+            detection.nftListings.set(key, read.value.listing)
+            detection.nftRetryAt.delete(key)
+        } else if (
+            read?.status === 'rejected' &&
+            !isPeraServiceUnavailableError(read.reason)
+        ) {
+            detection.nftRetryAt.set(key, detection.now() + NFT_READ_RETRY_MS)
+        }
+    })
 
 const latestOf = (a: Optional<number>, b: Optional<number>): Optional<number> =>
     a === undefined || b === undefined ? (a ?? b) : Math.max(a, b)
@@ -446,12 +483,21 @@ const readBatch = async (
     }
     // Settled per address, so one account's NFT outage never fails another's
     // read, nor its own balances.
+    const nftKeys = reads.map(read => backfillKey(scope, read.address))
     const nftReads: Promise<NftRead[]> = services.has(NFTS_SERVICE)
         ? Promise.allSettled(
-              reads.map(({ address }) =>
-                  readNftHoldings(scope, chain, address),
+              reads.map((read, index) =>
+                  readNftHoldings(scope, chain, read.address, {
+                      forceRefresh: read.isUserRefresh,
+                      prior: detection.nftListings.get(nftKeys[index]!),
+                  }),
               ),
-          ).then(settled => persistNftReads(scope, settled))
+          )
+              .then(settled => persistNftReads(scope, settled))
+              .then(settled => {
+                  recordNftReads(detection, nftKeys, settled)
+                  return settled
+              })
         : Promise.resolve(reads.map(() => undefined))
     // Cleared before the sightings are read, so a scan finishing mid-read
     // still asks for another one.
@@ -732,6 +778,7 @@ const coalescedAccountReads = (
                 addedTokenIds: hint.addedTokenIds ?? [],
                 isPersisted: hint.isPersisted === true,
                 isFirstSync: hint.priorChainState === undefined,
+                isUserRefresh: hint.isUserRefresh === true,
                 tokenScanBlock:
                     hint.priorChainState?.family === 'evm'
                         ? hint.priorChainState.tokenScanBlock
@@ -793,6 +840,15 @@ const fetchChangeSignal = (
                     isScanDue(detection, accountKey)
                 )
             })
+        ) {
+            return { changed: true, cursor }
+        }
+        if (
+            cursor !== null &&
+            ctx.getPeraBackend(scope).services.has(NFTS_SERVICE) &&
+            addresses.some(address =>
+                isNftRetryDue(detection, backfillKey(scope, address)),
+            )
         ) {
             return { changed: true, cursor }
         }
@@ -887,6 +943,8 @@ export const createEthereumAccountStateOps = (
         budget: scanBudget,
         listedPassAt: new Map(),
         owedListedPasses: new Set(),
+        nftListings: new Map(),
+        nftRetryAt: new Map(),
     }
     return {
         chainId: chain.row.id,

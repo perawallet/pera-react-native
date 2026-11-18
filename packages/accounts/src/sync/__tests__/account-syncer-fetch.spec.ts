@@ -252,6 +252,18 @@ describe('fetchAndPersistAccount', () => {
         )
     })
 
+    it('tells the chain when the user asked for the read', async () => {
+        await fetchAndPersistAccount('ADDR1', MAINNET_SCOPE, {
+            isUserRefresh: true,
+        })
+
+        expect(fetchAccountState()).toHaveBeenCalledWith(
+            'ADDR1',
+            MAINNET_SCOPE,
+            expect.objectContaining({ isUserRefresh: true }),
+        )
+    })
+
     it('propagates a failed chain read without persisting anything', async () => {
         fetchAccountState().mockRejectedValue(new Error('429'))
 

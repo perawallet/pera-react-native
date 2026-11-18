@@ -21,6 +21,7 @@ import {
     queryClient,
     type HistoryPeriod,
     type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import { DISCOVERY_LOOKUP_BOUNDS } from '../../accounts/discovery-bounds'
 import { eip155ChainIdOf, toCaip19 } from '../../blockchain/utils/caip19'
@@ -143,23 +144,41 @@ export const fetchWhitelist = async (
     return results.flatMap(row => toWhitelistRow(row, scope, chain) ?? [])
 }
 
+export type NftHoldingsListing = {
+    /** Page one as the backend answered it. */
+    pageOne: string
+    items: NftItemSchemaOutput[]
+}
+
+export type NftHoldingsOptions = {
+    forceRefresh?: boolean
+    prior?: NftHoldingsListing
+}
+
 /**
  * Every NFT `address` holds on the scope's chain, across all pages; a row
- * this client can't read is skipped. Rejects on a failed page, so a partial
- * list never stands in for the whole: with a `PeraServiceUnavailableError` when
- * the chain has no NFT reads, and a plain `Error` on a malformed `next`.
+ * this client can't read is skipped. `prior` is answered again, with no cursor
+ * page read, when page one is unchanged; `forceRefresh` skips the backend's
+ * page-one cache and `prior`, for a refresh the user asked for. Rejects on a
+ * failed page, so a partial list never stands in for the whole: with a
+ * `PeraServiceUnavailableError` when the chain has no NFT reads, and a plain
+ * `Error` on a malformed `next`.
  */
 export const fetchNftHoldings = async (
     scope: ChainScope,
     chain: EvmChain,
     address: string,
-): Promise<NftItemSchemaOutput[]> => {
+    { forceRefresh = false, prior }: NftHoldingsOptions = {},
+): Promise<NftHoldingsListing> => {
     const url = nftHoldingsPath(
         eip155ChainIdOf(scope, chain),
         address.toLowerCase(),
     )
     const items = new Map<string, NftItemSchemaOutput>()
-    let cursor: Nullable<string> = null
+    let params: Optional<Record<string, string>> = forceRefresh
+        ? { force_refresh: 'true' }
+        : undefined
+    let pageOne = ''
     for (let page = 0; page < NFT_HOLDINGS_MAX_PAGES; page++) {
         const { data } = await queryClient<unknown>({
             backend: 'pera',
@@ -167,7 +186,7 @@ export const fetchNftHoldings = async (
             scope,
             method: 'GET',
             url,
-            params: cursor === null ? undefined : { cursor },
+            params,
             headers: await buildIntegrityHeadersWhenReady(),
         }).catch((error: unknown) => {
             // The chain has no NFT reads: the same as a scope without the
@@ -178,14 +197,20 @@ export const fetchNftHoldings = async (
             throw error
         })
         const { results, next } = nftHoldingsPageSchema.parse(data)
+        if (page === 0) {
+            pageOne = JSON.stringify(data)
+            // The backend drops its cached page one on a transfer, while every
+            // cursor page is uncached and counts against the device's limit.
+            if (!forceRefresh && prior?.pageOne === pageOne) return prior
+        }
         for (const row of results) {
             const parsed = nftItemSchema.safeParse(row)
             if (parsed.success) {
                 items.set(parsed.data.asset_id.toLowerCase(), parsed.data)
             }
         }
-        if (next === null) return [...items.values()]
-        cursor = nftCursorOf(next)
+        if (next === null) return { pageOne, items: [...items.values()] }
+        params = { cursor: nftCursorOf(next) }
     }
     throw new Error(
         `Pera NFT holdings for ${scope.chainId}/${scope.networkId} ran past ${NFT_HOLDINGS_MAX_PAGES} pages`,

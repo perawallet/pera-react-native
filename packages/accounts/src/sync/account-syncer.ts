@@ -67,12 +67,17 @@ const inFlight = new Map<string, Promise<AccountSyncResult>>()
 export function fetchAndPersistAccount(
     address: string,
     scope: ChainScope,
+    { isUserRefresh = false }: { isUserRefresh?: boolean } = {},
 ): Promise<AccountSyncResult> {
     const key = `${toScopeKey(scope)}:${address}`
     const existing = inFlight.get(key)
     if (existing) return existing
 
-    const promise = doFetchAndPersistAccount(address, scope).finally(() => {
+    const promise = doFetchAndPersistAccount(
+        address,
+        scope,
+        isUserRefresh,
+    ).finally(() => {
         inFlight.delete(key)
     })
     inFlight.set(key, promise)
@@ -217,6 +222,7 @@ async function readAddedTokenIds(
 async function doFetchAndPersistAccount(
     address: string,
     scope: ChainScope,
+    isUserRefresh: boolean,
 ): Promise<AccountSyncResult> {
     // The prior row tells the chain how large the account was at its last sync
     // (which can decide its read strategy) and feeds the changed-account diff.
@@ -237,6 +243,7 @@ async function doFetchAndPersistAccount(
             priorChainState: prior?.chainData,
             addedTokenIds,
             isPersisted: true,
+            ...(isUserRefresh && { isUserRefresh }),
         })
         .catch(async (error: unknown) => {
             if (!prior) {
