@@ -1335,6 +1335,68 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     })
                 })
 
+                it("Given a USDC transfer on Base, when it is reviewed, then the network row, the fee's coin and the token amount are read on Base, not Ethereum", async () => {
+                    const BASE_USDC =
+                        '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
+                    // transfer(RECIPIENT, 5_000_000)
+                    const data = `0xa9059cbb${RECIPIENT.slice(2).toLowerCase().padStart(64, '0')}${(5_000_000).toString(16).padStart(64, '0')}`
+                    await upsertAssets({
+                        items: [
+                            {
+                                ...nativeAssetFor('ethereum'),
+                                assetId: BASE_USDC,
+                                name: 'USD Coin',
+                                unitName: 'USDC',
+                                decimals: 6,
+                            },
+                        ],
+                        scope: { chainId: 'base', networkId: 'mainnet' },
+                    })
+                    setCapabilityOverrides(
+                        { dappConnect: true, contractDecoding: true },
+                        'base',
+                    )
+                    const walletKit = await settleOnBase()
+                    renderSignReview()
+
+                    sendTransaction(
+                        walletKit,
+                        {
+                            from: CHECKSUMMED_ETH_ADDRESS,
+                            to: BASE_USDC,
+                            value: '0x0',
+                            data,
+                        },
+                        BASE_MAINNET,
+                    )
+                    await queued()
+
+                    await waitFor(
+                        () => {
+                            expect(reviewTitle()).toBe(
+                                'transactions.list_item.send',
+                            )
+                        },
+                        { timeout: 5000 },
+                    )
+                    expect(
+                        screen.getAllByTestId('review_network')[0].textContent,
+                    ).toContain('Base')
+                    expect(
+                        screen.getAllByTestId('ethereum_review_fee')[0]
+                            .textContent,
+                    ).toContain('"symbol":"ETH"')
+
+                    await openTechnicalDetails()
+                    await waitFor(() => {
+                        expect(
+                            screen.getAllByTestId(
+                                'transaction_detail_amount',
+                            )[0].textContent,
+                        ).toContain('5.00 USDC')
+                    })
+                })
+
                 it('Given a queued Base request, when the user rejects it, then the dApp receives 4001', async () => {
                     const walletKit = await settleOnBase()
                     sendTransaction(
