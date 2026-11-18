@@ -158,9 +158,19 @@ export type DomainChainBinding =
     | { kind: 'none' }
     | { kind: 'unsigned' }
 
+// A non-integer `chainId` field (e.g. `string`) hashes as keccak256 of its text,
+// which is the same on every chain, so only an integer type binds a chain.
+const INTEGER_TYPE = /^u?int\d*$/
+
 const declaresChainId = (declared: unknown): boolean =>
     Array.isArray(declared) &&
-    declared.some(field => isRecord(field) && field.name === 'chainId')
+    declared.some(
+        field =>
+            isRecord(field) &&
+            field.name === 'chainId' &&
+            typeof field.type === 'string' &&
+            INTEGER_TYPE.test(field.type),
+    )
 
 // viem hashes only the fields a declared `EIP712Domain` lists, whatever the
 // domain's values hold, so the value alone can't say which chain is signed.

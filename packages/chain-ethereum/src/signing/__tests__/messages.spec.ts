@@ -158,7 +158,8 @@ describe('domainChainBindingOf', () => {
 
     it.each([
         ['uint256', 1],
-        ['string', '1'],
+        ['uint64', 1],
+        ['int256', 1],
     ])('binds a declared %s chainId field', (type, chainId) => {
         const declared = [...THREE_FIELDS, { name: 'chainId', type }]
 
@@ -167,6 +168,17 @@ describe('domainChainBindingOf', () => {
             chainId: 1n,
         })
     })
+
+    it.each(['string', 'bytes32', 'address'])(
+        'leaves a declared %s chainId field unsigned, as it hashes no chain',
+        type => {
+            const declared = [...THREE_FIELDS, { name: 'chainId', type }]
+
+            expect(domainChainBindingOf(withTypes(declared, '1'))).toEqual({
+                kind: 'unsigned',
+            })
+        },
+    )
 
     it.each([
         ['a type that omits chainId', THREE_FIELDS],
@@ -295,7 +307,7 @@ describe('ethereumMessageSignerAdapter.plan', () => {
         const declared = [
             { name: 'name', type: 'string' },
             { name: 'version', type: 'string' },
-            { name: 'chainId', type: 'string' },
+            { name: 'chainId', type: 'uint256' },
             { name: 'verifyingContract', type: 'address' },
         ]
         const request = typedDataMessageRequest(MAINNET, SENDER, {
@@ -544,17 +556,24 @@ describe('ethereumMessageSignerAdapter.plan with a declared EIP712Domain', () =>
         },
     })
 
-    it.each([
-        ['uint256', '1'],
-        ['string', '1'],
-    ])('hashes a %s chainId exactly as declared', (chainIdType, chainId) => {
-        const typedData = declared(chainIdType, chainId)
+    it('hashes a uint256 chainId exactly as declared', () => {
+        const typedData = declared('uint256', '1')
         const [item] = adapter.plan(
             typedDataMessageRequest(MAINNET, SENDER, typedData),
             context,
         )
 
         expect(bytesToHex(item.payload)).toBe(hashTypedData(typedData as never))
+    })
+
+    it('refuses a string chainId, which hashes as text and binds no chain', () => {
+        const request = typedDataMessageRequest(
+            MAINNET,
+            SENDER,
+            declared('string', '1'),
+        )
+
+        expect(() => adapter.plan(request, context)).toThrow(/binds no chain/)
     })
 
     it('refuses a domain-only signature, which binds no message', () => {
