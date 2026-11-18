@@ -563,3 +563,90 @@ describe('Ethereum transaction replacement surcharge', () => {
         },
     )
 })
+
+describe('Ethereum cancel gas', () => {
+    const ARBITRUM = evmChainOf('arbitrum')
+    const { r, s, yParity } = parseTransaction(VIEM_TRANSFER_NONCE_2)
+    const rawTransaction = serializeTransaction(
+        { ...TRANSFER, nonce: 2, chainId: eip155IdOf(ARBITRUM) },
+        { r: r as Hex, s: s as Hex, yParity: yParity ?? 0 },
+    )
+    const arbitrum = { scope: evmScopeOf(ARBITRUM) }
+
+    const useEstimate = (gas: Hex) => {
+        const estimates: unknown[] = []
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: TEST_RPC_URL,
+                responses: {
+                    eth_chainId: toHex(eip155IdOf(ARBITRUM)),
+                    eth_feeHistory: CHEAP_MARKET,
+                    eth_estimateGas: params => {
+                        estimates.push(params[0])
+                        return gas
+                    },
+                },
+            }),
+        )
+        return estimates
+    }
+
+    it.each([
+        [
+            'cancel',
+            () =>
+                buildEvmReplacement(
+                    testChainContext({ chain: ARBITRUM }),
+                    ARBITRUM,
+                    { kind: 'cancel', rawTransaction },
+                    arbitrum,
+                ),
+        ],
+        [
+            'unblock',
+            () =>
+                buildEvmGapFill(
+                    testChainContext({ chain: ARBITRUM }),
+                    ARBITRUM,
+                    { rawTransaction, sequence: 1 },
+                    arbitrum,
+                ),
+        ],
+    ] as const)(
+        'signs the %s with the estimate, padded as a send, where it is above 21,000',
+        async (_kind, build) => {
+            const from = await recoverTransactionAddress({
+                serializedTransaction: rawTransaction,
+            })
+            const estimates = useEstimate(toHex(30_000n))
+
+            const [built] = await build()
+
+            expect(built.payload).toMatchObject({
+                transaction: { to: from, value: 0n, gas: 36_000n },
+            })
+            expect(estimates).toEqual([
+                expect.objectContaining({
+                    from,
+                    to: from,
+                    value: '0x0',
+                }),
+            ])
+        },
+    )
+
+    it('never signs a cancel below 21,000', async () => {
+        useEstimate(toHex(20_000n))
+
+        const [built] = await buildEvmReplacement(
+            testChainContext({ chain: ARBITRUM }),
+            ARBITRUM,
+            { kind: 'cancel', rawTransaction },
+            arbitrum,
+        )
+
+        expect(built.payload).toMatchObject({
+            transaction: { gas: CANCEL_GAS },
+        })
+    })
+})
