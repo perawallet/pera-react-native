@@ -104,8 +104,8 @@ export const createHistoryScanBudget = (
 ): HistoryScanBudget => {
     let windowStart = now()
     let used = 0
-    // When each waiting account was first refused, and last asked.
-    const waiting = new Map<string, { since: number; seen: number }>()
+    // Insertion order keeps the queue stable even when requests share a clock tick.
+    const waiting = new Map<string, number>()
     return {
         take: key => {
             const at = now()
@@ -115,28 +115,23 @@ export const createHistoryScanBudget = (
             }
             // An account still due asks again each interval; one that stopped
             // asking (removed, its chain turned off) gives up its place.
-            waiting.forEach(({ seen }, waiter) => {
+            waiting.forEach((seen, waiter) => {
                 if (at - seen >= 2 * TOKEN_SCAN_INTERVAL_MS) {
                     waiting.delete(waiter)
                 }
             })
-            const own = key === undefined ? undefined : waiting.get(key)
             let ahead = 0
-            waiting.forEach(({ since }, waiter) => {
-                if (
-                    waiter !== key &&
-                    (own === undefined || since < own.since)
-                ) {
-                    ahead++
-                }
-            })
+            for (const waiter of waiting.keys()) {
+                if (waiter === key) break
+                ahead++
+            }
             if (limit - used > ahead) {
                 used++
                 if (key !== undefined) waiting.delete(key)
                 return true
             }
             if (key !== undefined) {
-                waiting.set(key, { since: own?.since ?? at, seen: at })
+                waiting.set(key, at)
             }
             return false
         },

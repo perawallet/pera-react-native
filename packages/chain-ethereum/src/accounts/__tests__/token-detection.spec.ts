@@ -210,6 +210,21 @@ describe('createHistoryScanBudget', () => {
         expect(budget.take('a')).toBe(false)
         expect(budget.take('b')).toBe(true)
     })
+
+    it('serves waiters in the order they joined even when their requests share a clock tick', () => {
+        let now = 0
+        const budget = createHistoryScanBudget(1, 1000, () => now)
+        expect(budget.take()).toBe(true)
+        expect(budget.take('first')).toBe(false)
+        expect(budget.take('second')).toBe(false)
+
+        now = 1000
+        expect(budget.take('second')).toBe(false)
+        expect(budget.take('first')).toBe(true)
+
+        now = 2000
+        expect(budget.take('second')).toBe(true)
+    })
 })
 
 describe('scanReceivedTokens', () => {
