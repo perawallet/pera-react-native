@@ -37,8 +37,10 @@ import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-chain-algo
 
 import { closestPressable, isElementDisabled } from '@test-utils/rnw'
 import {
-    deriveTestHDAddress,
     HD_TEST_ADDRESS,
+    HD_TEST_ADDRESS_1,
+    HD_TEST_ADDRESS_2,
+    HD_TEST_MNEMONIC_24,
     HD_TEST_MNEMONIC_24_WORDS,
     INVALID_HD_MNEMONIC_24_WORDS,
     REKEY_TARGET_ADDRESS,
@@ -115,14 +117,15 @@ const waitForImportButtonEnabled = async () => {
     })
 }
 
-const startHDImportThroughMnemonic = async (words: string[]) => {
+const startHDImportWithPastedMnemonic = async () => {
     renderHDImportFromOnboarding()
     await openImportOptionsSheet()
     await waitFor(() => screen.getByTestId('import_options_hd_wallet_button'))
     fireEvent.click(screen.getByTestId('import_options_hd_wallet_button'))
     await advanceThroughImportInfo()
-    await waitFor(() => screen.getByTestId('import_account_word_input_0'))
-    typeWordsIndividually(words)
+    fireEvent.change(await screen.findByTestId('import_account_word_input_0'), {
+        target: { value: HD_TEST_MNEMONIC_24 },
+    })
     await waitForImportButtonEnabled()
     fireEvent.click(screen.getByTestId('import_account_import_button'))
 }
@@ -278,28 +281,7 @@ describe('Flow: Onboarding → Import HD wallet', () => {
             },
         ])
 
-        renderHDImportFromOnboarding()
-
-        await openImportOptionsSheet()
-        await waitFor(() =>
-            screen.getByTestId('import_options_hd_wallet_button'),
-        )
-        fireEvent.click(screen.getByTestId('import_options_hd_wallet_button'))
-
-        await advanceThroughImportInfo()
-
-        await waitFor(() => screen.getByTestId('import_account_word_input_0'))
-        typeWordsIndividually(HD_TEST_MNEMONIC_24_WORDS)
-
-        await waitFor(() => {
-            expect(
-                isElementDisabled(
-                    screen.getByTestId('import_account_import_button'),
-                ),
-            ).toBe(false)
-        })
-
-        fireEvent.click(screen.getByTestId('import_account_import_button'))
+        await startHDImportWithPastedMnemonic()
 
         await waitFor(
             () => {
@@ -329,14 +311,14 @@ describe('Flow: Onboarding → Import HD wallet', () => {
     })
 
     it('Given discovery finds three derived addresses, when the user keeps the default selection and continues, then all three are persisted', async () => {
-        // Pre-compute the addresses discovery would surface for keyIndex
+        // Use the addresses discovery should surface for keyIndex
         // 0–2 of account 0. We mock fast-lookup to return `account_exists`
         // for these three; the catch-all returns false so the scan stops
         // after the first key-gap of 5 misses, leaving exactly three
         // candidates in the selection list.
         const addr0 = HD_TEST_ADDRESS // (account 0, keyIndex 0)
-        const addr1 = await deriveTestHDAddress(0, 1)
-        const addr2 = await deriveTestHDAddress(0, 2)
+        const addr1 = HD_TEST_ADDRESS_1
+        const addr2 = HD_TEST_ADDRESS_2
 
         server.use(
             mockAccountFastLookup({
@@ -359,7 +341,7 @@ describe('Flow: Onboarding → Import HD wallet', () => {
             mockIndexerSearchForAccounts(),
         )
 
-        await startHDImportThroughMnemonic(HD_TEST_MNEMONIC_24_WORDS)
+        await startHDImportWithPastedMnemonic()
 
         // All three checkboxes render, every new account preselected.
         await waitFor(
@@ -413,8 +395,8 @@ describe('Flow: Onboarding → Import HD wallet', () => {
 
     it('Given discovery finds three derived addresses, when the user deselects the first two, then only that address is persisted', async () => {
         const addr0 = HD_TEST_ADDRESS
-        const addr1 = await deriveTestHDAddress(0, 1)
-        const addr2 = await deriveTestHDAddress(0, 2)
+        const addr1 = HD_TEST_ADDRESS_1
+        const addr2 = HD_TEST_ADDRESS_2
 
         server.use(
             mockAccountFastLookup({
@@ -436,7 +418,7 @@ describe('Flow: Onboarding → Import HD wallet', () => {
             mockIndexerSearchForAccounts(),
         )
 
-        await startHDImportThroughMnemonic(HD_TEST_MNEMONIC_24_WORDS)
+        await startHDImportWithPastedMnemonic()
 
         await waitFor(
             () => {
@@ -502,7 +484,7 @@ describe('Flow: Onboarding → Import HD wallet', () => {
             }),
         )
 
-        await startHDImportThroughMnemonic(HD_TEST_MNEMONIC_24_WORDS)
+        await startHDImportWithPastedMnemonic()
 
         await waitFor(
             () => {
@@ -541,8 +523,8 @@ describe('Flow: Onboarding → Import HD wallet', () => {
 
     it('Given discovery finds three derived addresses each with a rekey, when the user commits the selection, then both screens flow into ImportRekeyedAddresses', async () => {
         const addr0 = HD_TEST_ADDRESS
-        const addr1 = await deriveTestHDAddress(0, 1)
-        const addr2 = await deriveTestHDAddress(0, 2)
+        const addr1 = HD_TEST_ADDRESS_1
+        const addr2 = HD_TEST_ADDRESS_2
 
         server.use(
             mockAccountFastLookup({
@@ -571,7 +553,7 @@ describe('Flow: Onboarding → Import HD wallet', () => {
             }),
         )
 
-        await startHDImportThroughMnemonic(HD_TEST_MNEMONIC_24_WORDS)
+        await startHDImportWithPastedMnemonic()
 
         await waitFor(
             () => {

@@ -252,6 +252,9 @@ describe('Flow: Card sign in', () => {
                     { status: 200 },
                 ),
             ),
+            http.get('*/v1/auth/register', () =>
+                HttpResponse.json({ verificationState: 'REJECTED' }),
+            ),
         )
 
         renderSignIn()
