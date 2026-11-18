@@ -16,6 +16,7 @@ import {
     CHART_PATH,
     nftHoldingsPath,
     NFTS_PATH,
+    TOKEN_SEARCH_PATH,
     whitelistPath,
 } from './endpoints'
 import type {
@@ -56,6 +57,11 @@ export type PeraEvmAssetFixtures = {
      * with that status.
      */
     charts?: Record<string, ChartPointResponse[]> | number
+    /**
+     * Token search pages, whatever the query; none by default. A number fails
+     * every search with that status.
+     */
+    tokenSearch?: AssetItemResponse[][] | number
 }
 
 const BAYC = '0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d'
@@ -95,6 +101,7 @@ export const evmNftItem = (
 })
 
 const NFT_CURSOR = /^page:(\d+)$/
+const SEARCH_CURSOR = /^search:(\d+)$/
 
 /**
  * How the backend answers a token it has no metadata for: a blank item, never
@@ -210,6 +217,7 @@ export const peraEvmAssetHandlers = ({
     nftHoldings = {},
     nfts = {},
     charts = {},
+    tokenSearch = [[]],
 }: PeraEvmAssetFixtures = {}): RequestHandler[] => {
     const base = baseUrl.replace(/\/+$/, '')
     return [
@@ -274,6 +282,29 @@ export const peraEvmAssetHandlers = ({
                 })
             },
         ),
+        http.get(`${base}${TOKEN_SEARCH_PATH}`, ({ request }) => {
+            const refused = rejectUnauthenticated(request)
+            if (refused) return refused
+            if (typeof tokenSearch === 'number') return failWith(tokenSearch)
+            const cursor = new URL(request.url).searchParams.get('cursor')
+            const index =
+                cursor === null ? 0 : Number(SEARCH_CURSOR.exec(cursor)?.[1])
+            const results = tokenSearch[index]
+            if (!results) {
+                return HttpResponse.json(
+                    { error: 'Invalid cursor', code: 'invalid_cursor' },
+                    { status: 422 },
+                )
+            }
+            const nextUrl = new URL(request.url)
+            nextUrl.searchParams.set('cursor', `search:${index + 1}`)
+            return HttpResponse.json({
+                next:
+                    index + 1 < tokenSearch.length ? nextUrl.toString() : null,
+                previous: null,
+                results,
+            })
+        }),
         http.get(`${base}${CHART_PATH}`, ({ request }) => {
             const refused = rejectUnauthenticated(request)
             if (refused) return refused

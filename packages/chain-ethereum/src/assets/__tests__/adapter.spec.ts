@@ -46,7 +46,7 @@ import {
     evmScopeOf,
 } from '../../__tests__/evm-chains'
 
-import { ASSETS_PATH } from '../api/endpoints'
+import { ASSETS_PATH, TOKEN_SEARCH_PATH } from '../api/endpoints'
 import type { AssetItemResponse, WhitelistItemResponse } from '../api/schema'
 import {
     evmNftItem,
@@ -94,7 +94,7 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
 vi.mock('@perawallet/wallet-core-config', async importOriginal =>
     (await import('../../__tests__/pera-backend')).withEthereumPeraBackend(
         importOriginal,
-        ['nfts'],
+        ['nfts', 'tokenSearch'],
     ),
 )
 
@@ -1756,6 +1756,152 @@ describe('NFTs', () => {
 // The same code serves every EVM chain, so what a tester sees on Base is what
 // each of these reads off the wire: the chain's own EIP-155 id in the path, and
 // the backend's refusal told apart from a build with no assets service.
+describe('token search', () => {
+    const SERVICES = ['assets', 'tokenSearch']
+    const BASE_USDC = `eip155:8453/erc20:${USDC.toLowerCase()}`
+    const searchWith = (
+        params: { query: string; cursor?: string },
+        services = SERVICES,
+    ) =>
+        createEthereumAssetsAdapter(testChainContext({ services }), ETHEREUM)
+            .search!(params, SCOPE)
+    const searchRequests = (urls: string[]) =>
+        urls
+            .map(url => new URL(url))
+            .filter(url => url.pathname === TOKEN_SEARCH_PATH)
+            .map(url => Object.fromEntries(url.searchParams))
+
+    it("pages the backend's search on the chain, with each result's tier", async () => {
+        server.use(
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                tokenSearch: [
+                    [
+                        { ...unknownAssetItem(ETH_CAIP19), name: 'Ether' },
+                        usdcFromPera,
+                    ],
+                    [
+                        {
+                            ...daiFromPera,
+                            verification_tier: 'unverified',
+                        },
+                    ],
+                ],
+            }),
+        )
+        const urls = recordRequests()
+
+        const first = await searchWith({ query: ' usd ' })
+        const second = await searchWith({
+            query: ' usd ',
+            cursor: first.nextCursor,
+        })
+
+        expect(first.results).toEqual([
+            expect.objectContaining({
+                assetId: ETHEREUM_NATIVE_ASSET.assetId,
+                name: ETHEREUM_NATIVE_ASSET.name,
+                unitName: ETHEREUM_NATIVE_ASSET.unitName,
+            }),
+            expect.objectContaining({
+                assetId: USDC,
+                name: 'Pera USD Coin',
+                peraMetadata: expect.objectContaining({
+                    verificationTier: 'verified',
+                    logo: 'https://pera.test/usdc.png',
+                }),
+            }),
+        ])
+        expect(first.nextCursor).toBe('search:1')
+        expect(second).toEqual({
+            results: [
+                expect.objectContaining({
+                    assetId: DAI,
+                    peraMetadata: expect.objectContaining({
+                        verificationTier: 'unverified',
+                    }),
+                }),
+            ],
+            nextCursor: undefined,
+        })
+        expect(searchRequests(urls)).toEqual([
+            { q: 'usd', chains: 'eip155:1' },
+            { q: 'usd', chains: 'eip155:1', cursor: 'search:1' },
+        ])
+    })
+
+    it('drops an item of another chain or one this client cannot read', async () => {
+        server.use(
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                tokenSearch: [
+                    [
+                        { ...usdcFromPera, asset_id: BASE_USDC },
+                        {
+                            ...daiFromPera,
+                            verification_tier: 'trusted',
+                        } as unknown as AssetItemResponse,
+                        usdcFromPera,
+                    ],
+                ],
+            }),
+        )
+
+        const page = await searchWith({ query: 'usd' })
+
+        expect(page.results.map(asset => asset.assetId)).toEqual([USDC])
+    })
+
+    it.each([
+        ['an empty query', ''],
+        ['a single character', 'u'],
+        ['an address', USDC.toLowerCase()],
+        ['the start of an address', '0x6b17'],
+    ])('answers %s from the token list, without a search', async (_, query) => {
+        server.use(
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                whitelist: { 1: [nativeWhitelistItem(1)] },
+                tokenSearch: 500,
+            }),
+            ...rpc({ [USDC]: usdcOnChain }),
+        )
+        const urls = recordRequests()
+
+        await searchWith({ query })
+
+        expect(searchRequests(urls)).toEqual([])
+    })
+
+    it('filters the token list when the build lists no token search for the chain', async () => {
+        server.use(
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                tokenSearch: 500,
+            }),
+        )
+        const urls = recordRequests()
+
+        const page = await searchWith({ query: 'eth' }, ['assets'])
+
+        expect(page.results.map(asset => asset.assetId)).toEqual([
+            ETHEREUM_NATIVE_ASSET.assetId,
+        ])
+        expect(searchRequests(urls)).toEqual([])
+    })
+
+    it('rejects when the search fails', async () => {
+        server.use(
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                tokenSearch: 503,
+            }),
+        )
+
+        await expect(searchWith({ query: 'usd' })).rejects.toThrow()
+    })
+})
+
 describe('search on every EVM chain and network', () => {
     const NETWORKS = EVM_TEST_CHAINS.flatMap(chain =>
         (['mainnet', 'testnet'] as const).map(

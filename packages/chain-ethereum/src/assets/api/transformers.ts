@@ -127,21 +127,33 @@ export const toWhitelistRow = (
     if (type !== 'native' && type !== 'erc20') return null
     const assetId = appAssetIdOfListed(item, scope, chain)
     if (assetId === null) return null
-    return {
-        assetId,
-        type,
-        asset: {
-            assetId,
-            name: item.name ?? undefined,
-            unitName: item.unit_name ?? undefined,
-            decimals: item.fraction_decimals ?? undefined,
-            peraMetadata: {
-                logo: item.logo,
-                verificationTier: item.verification_tier,
-                type: PeraAssetType.standard_asset,
-            },
-        },
-    }
+    return { assetId, type, asset: toDisplayableAsset(assetId, item) }
+}
+
+const toDisplayableAsset = (
+    assetId: string,
+    item: AssetItemSchemaOutput,
+): DisplayableAsset => ({
+    assetId,
+    name: item.name ?? undefined,
+    unitName: item.unit_name ?? undefined,
+    decimals: item.fraction_decimals ?? undefined,
+    peraMetadata: {
+        logo: item.logo,
+        verificationTier: item.verification_tier,
+        type: PeraAssetType.standard_asset,
+    },
+})
+
+/** Null for an item that isn't a token or native coin of the scope's chain. */
+export const toSearchResult = (
+    item: AssetItemSchemaOutput,
+    scope: ChainScope,
+    chain: EvmChain,
+): Nullable<DisplayableAsset> => {
+    const assetId = appAssetIdOf(item.asset_id, scope, chain)
+    if (assetId === null || isEvmNftAssetId(assetId)) return null
+    return toDisplayableAsset(assetId, item)
 }
 
 export type NftHolding = {
