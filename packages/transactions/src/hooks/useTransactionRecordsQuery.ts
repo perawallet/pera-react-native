@@ -66,6 +66,7 @@ export type UseTransactionRecordsQueryResult = {
     isFetched: boolean
     isFetching: boolean
     isFetchingNextPage: boolean
+    /** Stays true while a failed first page is re-read, unlike TanStack's. */
     isError: boolean
     /** The failure is a later page's: page one, and the wallet's sends merged into it, stand. */
     isNextPageError: boolean
@@ -343,7 +344,10 @@ export const useTransactionRecordsQuery = ({
                 }
                 throw error
             }
-            if (cachedQuery) failedFirstPageErrors.delete(cachedQuery)
+            // A cancelled read can still answer; the read that replaces it owns the error.
+            if (cachedQuery && !signal.aborted) {
+                failedFirstPageErrors.delete(cachedQuery)
+            }
             const { page, hasReachedLoadedPages } = read
             if (!loaded || !hasReachedLoadedPages) return page
 

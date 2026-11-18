@@ -590,6 +590,39 @@ describe('useTransactionRecordsQuery', () => {
             expect(result.current.isError).toBe(true)
             expect(result.current.error).toBe(failure)
         })
+
+        test('a cancelled re-read that answers keeps the error until the replacing read settles', async () => {
+            const failure = new PeraNetworkError('server', { status: 503 })
+            mocks.getMinedTransactionHistory.mockRejectedValue(failure)
+            const { result, rerender } = mount()
+            await waitFor(() => expect(result.current.isError).toBe(true))
+
+            let releaseCancelled: (value: {
+                items: TransactionRecord[]
+            }) => void = () => undefined
+            mocks.getMinedTransactionHistory.mockReturnValueOnce(
+                new Promise(resolve => {
+                    releaseCancelled = resolve
+                }),
+            )
+            act(() => result.current.refetch())
+            await waitFor(() => expect(result.current.isFetching).toBe(true))
+            await act(() => queryClient.cancelQueries())
+            mocks.getMinedTransactionHistory.mockReturnValueOnce(
+                new Promise(() => undefined),
+            )
+            act(() => result.current.refetch())
+            await waitFor(() => expect(result.current.isFetching).toBe(true))
+
+            await act(async () =>
+                releaseCancelled({ items: [record('A', JAN_10)] }),
+            )
+            rerender()
+
+            expect(result.current.isError).toBe(true)
+            expect(result.current.error).toBe(failure)
+            expect(result.current.isLoading).toBe(false)
+        })
     })
 
     describe('background refetch', () => {
