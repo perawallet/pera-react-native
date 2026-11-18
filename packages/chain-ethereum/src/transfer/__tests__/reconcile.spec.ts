@@ -1274,6 +1274,32 @@ describe('reconcileEthereumSubmissions', () => {
             ])
         })
 
+        it("marks the sender's NFT list stale once when mined and once when final", async () => {
+            await record()
+            node({
+                head: 5,
+                eth_getTransactionReceipt: evmTransactionReceipt({
+                    transactionHash: HASH,
+                }),
+            })
+            const tokenSightings = createTokenSightings()
+
+            await reconcileWithSightings(tokenSightings)
+            expect(tokenSightings.takeSend(SCOPE, SENDER)).toBe(true)
+
+            await reconcileWithSightings(tokenSightings)
+            expect(tokenSightings.takeSend(SCOPE, SENDER)).toBe(false)
+
+            node({
+                eth_getTransactionReceipt: evmTransactionReceipt({
+                    transactionHash: HASH,
+                }),
+            })
+            await reconcileWithSightings(tokenSightings)
+            expect(await statuses()).toEqual(['confirmed'])
+            expect(tokenSightings.takeSend(SCOPE, SENDER)).toBe(true)
+        })
+
         it('records nothing for a reverted transaction', async () => {
             await record()
             node({

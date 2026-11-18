@@ -35,7 +35,12 @@ const HISTORY_SCAN_WINDOW_MS = 10 * 60_000
 const sightingKey = (scope: ChainScope, address: string): string =>
     `${scope.chainId}/${scope.networkId}/${address.toLowerCase()}`
 
-/** Tokens seen arriving at an address, for the session; the next account read includes them. */
+/**
+ * Tokens seen arriving at an address, for the session; the next account read
+ * includes them. A mined send also marks its sender's NFT list stale: a
+ * transfer past page one leaves page one as it was, so the next read lists
+ * every page.
+ */
 export type TokenSightings = {
     record(
         scope: ChainScope,
@@ -43,10 +48,15 @@ export type TokenSightings = {
         tokenIds: readonly string[],
     ): void
     of(scope: ChainScope, address: string): readonly string[]
+    recordSend(scope: ChainScope, address: string): void
+    hasSend(scope: ChainScope, address: string): boolean
+    /** True once per recorded send. */
+    takeSend(scope: ChainScope, address: string): boolean
 }
 
 export const createTokenSightings = (): TokenSightings => {
     const seen = new Map<string, Set<string>>()
+    const sends = new Set<string>()
     return {
         record: (scope, address, tokenIds) => {
             if (tokenIds.length === 0) return
@@ -58,6 +68,11 @@ export const createTokenSightings = (): TokenSightings => {
         of: (scope, address) => [
             ...(seen.get(sightingKey(scope, address)) ?? []),
         ],
+        recordSend: (scope, address) => {
+            sends.add(sightingKey(scope, address))
+        },
+        hasSend: (scope, address) => sends.has(sightingKey(scope, address)),
+        takeSend: (scope, address) => sends.delete(sightingKey(scope, address)),
     }
 }
 

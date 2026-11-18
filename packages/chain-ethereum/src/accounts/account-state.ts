@@ -484,6 +484,11 @@ const readBatch = async (
     // Settled per address, so one account's NFT outage never fails another's
     // read, nor its own balances.
     const nftKeys = reads.map(read => backfillKey(scope, read.address))
+    reads.forEach((read, index) => {
+        if (detection.sightings.takeSend(scope, read.address)) {
+            detection.nftListings.delete(nftKeys[index]!)
+        }
+    })
     const nftReads: Promise<NftRead[]> = services.has(NFTS_SERVICE)
         ? Promise.allSettled(
               reads.map((read, index) =>
@@ -846,8 +851,10 @@ const fetchChangeSignal = (
         if (
             cursor !== null &&
             ctx.getPeraBackend(scope).services.has(NFTS_SERVICE) &&
-            addresses.some(address =>
-                isNftRetryDue(detection, backfillKey(scope, address)),
+            addresses.some(
+                address =>
+                    isNftRetryDue(detection, backfillKey(scope, address)) ||
+                    detection.sightings.hasSend(scope, address),
             )
         ) {
             return { changed: true, cursor }

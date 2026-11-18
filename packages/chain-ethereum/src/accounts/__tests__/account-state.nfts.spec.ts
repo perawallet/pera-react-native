@@ -27,6 +27,7 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { upsertAssets } from '@perawallet/wallet-core-assets'
 import { isPeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
 import { createEthereumAccountStateOps } from '../account-state'
+import { createTokenSightings } from '../token-detection'
 import { evmNftItem } from '../../assets/api/msw-handlers'
 import { peraEvmHandlers } from '../msw-handlers'
 import { evmRpcHandlers } from '../../blockchain/msw-handlers'
@@ -310,14 +311,15 @@ describe('fetchAccountState NFT pages', () => {
                 blockFollowing: { refresh: false },
             }),
         )
+        const tokenSightings = createTokenSightings()
         const ops = createEthereumAccountStateOps(
             testChainContext({
                 services: ['assets', 'nfts', 'blockFollowing'],
             }),
             ETHEREUM,
-            { now: () => clock.now },
+            { now: () => clock.now, tokenSightings },
         )
-        return { clock, ops }
+        return { clock, ops, tokenSightings }
     }
 
     afterEach(() => server.events.removeAllListeners())
@@ -336,6 +338,22 @@ describe('fetchAccountState NFT pages', () => {
             SWORD,
         ])
         expect(state.unrefreshedHoldings).toBeUndefined()
+    })
+
+    it('reads every page again after a mined send, and only once', async () => {
+        const { ops, tokenSightings } = setup({ [FIRST]: [[ape], [swords]] })
+        await ops.fetchAccountState(FIRST, SCOPE, HINT)
+        const queries = nftQueries()
+
+        tokenSightings.recordSend(SCOPE, FIRST)
+        await expect(
+            ops.fetchChangeSignal([FIRST], SCOPE, 100),
+        ).resolves.toEqual({ changed: true, cursor: 100 })
+        await ops.fetchAccountState(FIRST, SCOPE, HINT)
+        expect(queries).toEqual(['', '?cursor=page%3A1'])
+
+        await ops.fetchAccountState(FIRST, SCOPE, HINT)
+        expect(queries).toEqual(['', '?cursor=page%3A1', ''])
     })
 
     it('asks the backend to skip its cache, and reads every page, on a refresh the user asked for', async () => {
