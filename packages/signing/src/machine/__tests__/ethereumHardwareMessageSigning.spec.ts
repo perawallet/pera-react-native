@@ -31,6 +31,7 @@ import {
 import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 import { bytesToHex } from '@perawallet/wallet-core-shared'
 import {
+    DAI_PERMIT_TYPED_DATA,
     MAIL_TYPED_DATA,
     SENDER,
     VIEM_HELLO_WORLD,
@@ -195,18 +196,15 @@ describe('signing an Ethereum message on a Ledger through the machine', () => {
         ).resolves.toBe(true)
     })
 
-    it('refuses typed data for another chain before connecting the device', async () => {
+    const refusalOf = async (typedData: unknown) => {
         const { registry, connect } = registryFor()
         const request: MessageSignRequest = {
-            id: 'eth-ledger-polygon',
+            id: 'eth-ledger-refused',
             type: 'message',
             transport: 'callback',
             sourceType: 'walletconnect',
             transportId: 'c1',
-            message: typedDataMessageRequest(MAINNET, SENDER, {
-                ...MAIL_TYPED_DATA,
-                domain: { ...MAIL_TYPED_DATA.domain, chainId: 137 },
-            }),
+            message: typedDataMessageRequest(MAINNET, SENDER, typedData),
             approve: vi.fn(),
         }
         const input = {
@@ -240,10 +238,35 @@ describe('signing an Ethereum message on a Ledger through the machine', () => {
 
         const snapshot = actor.getSnapshot()
         expect(snapshot.matches('failed')).toBe(true)
-        expect(String(snapshot.context.error?.message)).toContain(
-            'The typed data is for EIP-155 chain 137, not mainnet',
-        )
         expect(connect).not.toHaveBeenCalled()
         expect(request.approve).not.toHaveBeenCalled()
+        return String(snapshot.context.error?.message)
+    }
+
+    it('refuses typed data for another chain before connecting the device', async () => {
+        const message = await refusalOf({
+            ...MAIL_TYPED_DATA,
+            domain: { ...MAIL_TYPED_DATA.domain, chainId: 137 },
+        })
+
+        expect(message).toContain(
+            'The typed data is for EIP-155 chain 137, not mainnet',
+        )
+    })
+
+    it('refuses a permit whose declared domain type omits chainId before connecting the device', async () => {
+        const message = await refusalOf({
+            ...DAI_PERMIT_TYPED_DATA,
+            types: {
+                EIP712Domain: [
+                    { name: 'name', type: 'string' },
+                    { name: 'version', type: 'string' },
+                    { name: 'verifyingContract', type: 'address' },
+                ],
+                ...DAI_PERMIT_TYPED_DATA.types,
+            },
+        })
+
+        expect(message).toContain('binds no chain')
     })
 })
