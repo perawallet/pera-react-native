@@ -16,8 +16,9 @@ import {
     useCloudBackupContactImport,
     useCloudBackupImport,
     useResolveHdSeedForBackup,
+    useCompleteCloudBackupRestoreMutation,
+    usePrepareCloudBackupRestoreMutation,
     useResolveMnemonicForBackup,
-    useRestoreCloudBackupMutation,
 } from '@perawallet/wallet-core-backup'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useLocalKeyTransactionSigner } from '@perawallet/wallet-core-signing'
@@ -40,8 +41,10 @@ export const useScenarioContext = (
     const { signTransactions } = useLocalKeyTransactionSigner()
     const { createHdWalletAccount, createSingleKeyAccount } =
         useCreateAccount(scope)
-    const { mutateAsync: restoreCloudBackup } =
-        useRestoreCloudBackupMutation(scope)
+    const { mutateAsync: prepareRestore } =
+        usePrepareCloudBackupRestoreMutation()
+    const { mutateAsync: completeRestore } =
+        useCompleteCloudBackupRestoreMutation(scope)
     const { importAccounts } = useCloudBackupImport(scope)
     const { importContacts } = useCloudBackupContactImport()
     const resolveMnemonic = useResolveMnemonicForBackup(ALGORAND_CHAIN_ID)
@@ -51,7 +54,8 @@ export const useScenarioContext = (
         signTransactions,
         createHdWalletAccount,
         createSingleKeyAccount,
-        restoreCloudBackup,
+        prepareRestore,
+        completeRestore,
         importAccounts,
         importContacts,
         resolveMnemonic,
@@ -61,7 +65,8 @@ export const useScenarioContext = (
         signTransactions,
         createHdWalletAccount,
         createSingleKeyAccount,
-        restoreCloudBackup,
+        prepareRestore,
+        completeRestore,
         importAccounts,
         importContacts,
         resolveMnemonic,
@@ -77,8 +82,10 @@ export const useScenarioContext = (
                 latest.current.createHdWalletAccount(...args),
             createSingleKeyAccount: (...args) =>
                 latest.current.createSingleKeyAccount(...args),
-            restoreCloudBackup: variables =>
-                latest.current.restoreCloudBackup(variables),
+            restoreCloudBackup: async variables => {
+                await latest.current.prepareRestore(variables)
+                return latest.current.completeRestore('all')
+            },
             backupSyncDeps: {
                 importAccounts: (...args) =>
                     latest.current.importAccounts(...args),

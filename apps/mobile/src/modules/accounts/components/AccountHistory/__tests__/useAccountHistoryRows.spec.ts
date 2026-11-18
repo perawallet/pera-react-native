@@ -74,6 +74,9 @@ const history = (
     isLoadFailed: false,
     isLoadUnavailable: false,
     isLoadIntegrityBlocked: false,
+    isRefreshFailed: false,
+    isRefreshUnavailable: false,
+    failedNetworkNames: [],
     hasNextPage: false,
     isSearchPaused: false,
     fetchNextPage: vi.fn(),
@@ -192,22 +195,34 @@ describe('useAccountHistoryRows', () => {
         expect(single.fetchNextPage).not.toHaveBeenCalled()
     })
 
-    it('names networks that failed while others show, and leaves a total failure to the load-failed state', () => {
+    it('names networks a merged history failed to read while others show', () => {
         mockSources.current = TWO_NETWORKS
         vi.mocked(useMergedTransactionHistoryRows).mockReturnValue(
-            mergedHistory({ failedChainIds: ['ethereum'] }),
+            mergedHistory({
+                failedChainIds: ['ethereum'],
+                failedNetworkNames: ['Ethereum'],
+            }),
         )
 
-        const { result, rerender } = renderHook(() => useAccountHistoryRows({}))
+        const { result } = renderHook(() => useAccountHistoryRows({}))
 
         expect(result.current.failedNetworkNames).toEqual(['Ethereum'])
+    })
 
-        vi.mocked(useMergedTransactionHistoryRows).mockReturnValue(
-            mergedHistory({ failedChainIds: ['ethereum'], isLoadFailed: true }),
+    it('names its own network when a single history fails with its sends still listed', () => {
+        mockHistoryScope.current = ETHEREUM
+        vi.mocked(useTransactionHistoryRows).mockReturnValue(
+            history({
+                isError: true,
+                isRefreshFailed: true,
+                failedNetworkNames: ['Ethereum'],
+            }),
         )
-        rerender()
 
-        expect(result.current.failedNetworkNames).toEqual([])
+        const { result } = renderHook(() => useAccountHistoryRows({}))
+
+        expect(result.current.isMerged).toBe(false)
+        expect(result.current.failedNetworkNames).toEqual(['Ethereum'])
     })
 
     it('reads only the chip network once one is picked', () => {

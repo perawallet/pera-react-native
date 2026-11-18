@@ -23,8 +23,10 @@ import {
 } from '../accounts/address-codec'
 import { isRecord } from '../signing/adapter'
 import { isPermitTypedData } from '../signing/permits'
+import { hasUnreadableTypedDataValue } from '../signing/typedDataValues'
 import {
-    parseDomainChainId,
+    domainChainBindingOf,
+    type DomainChainBinding,
     type EthereumPersonalSignPayload,
 } from '../signing/messages'
 import { ETHEREUM_WC_V2_METHOD } from './walletConnect'
@@ -133,24 +135,37 @@ const validatePersonalSign = (
 
 export type EthereumMessageSession = { eip155ChainId: Optional<number> }
 
-const hasDomainChainId = (typedData: Record<string, unknown>): boolean =>
-    isRecord(typedData.domain) && typedData.domain.chainId !== undefined
-
 // A malformed chainId counts as another chain: `plan` would refuse it later.
-const isBoundToOtherChain = (
+const domainChainRefusal = (
     typedData: Record<string, unknown>,
     session: EthereumMessageSession,
-): boolean => {
-    const { domain } = typedData
-    if (!isRecord(domain) || domain.chainId === undefined) return false
-    if (session.eip155ChainId === undefined) return true
+): Optional<Refusal> => {
+    let binding: DomainChainBinding
     try {
-        return (
-            parseDomainChainId(domain.chainId) !== BigInt(session.eip155ChainId)
-        )
+        binding = domainChainBindingOf(typedData)
     } catch {
-        return true
+        return invalid(
+            'eth_signTypedData_v4 domain chainId is not the connected chain',
+        )
     }
+    if (binding.kind === 'unsigned') {
+        return invalid(
+            'eth_signTypedData_v4 domain chainId is not in its EIP712Domain type, so it binds no chain',
+        )
+    }
+    if (
+        binding.kind === 'bound' &&
+        (session.eip155ChainId === undefined ||
+            binding.chainId !== BigInt(session.eip155ChainId))
+    ) {
+        return invalid(
+            'eth_signTypedData_v4 domain chainId is not the connected chain',
+        )
+    }
+    if (binding.kind === 'none' && isPermitTypedData(typedData)) {
+        return invalid('eth_signTypedData_v4 permit domain binds no chainId')
+    }
+    return undefined
 }
 
 const validateSignTypedData = (
@@ -178,16 +193,13 @@ const validateSignTypedData = (
     if (!isWithinTypedDataBudget(typedData)) {
         return invalid('eth_signTypedData_v4 typedData is too large')
     }
-    if (isBoundToOtherChain(typedData, session)) {
+    if (hasUnreadableTypedDataValue(typedData)) {
         return invalid(
-            'eth_signTypedData_v4 domain chainId is not the connected chain',
+            'eth_signTypedData_v4 typedData has a value that does not match its type',
         )
     }
-    // Signed without a chain, a permit is valid on every chain whose token
-    // leaves the chain out of its domain separator.
-    if (!hasDomainChainId(typedData) && isPermitTypedData(typedData)) {
-        return invalid('eth_signTypedData_v4 permit domain names no chainId')
-    }
+    const refusal = domainChainRefusal(typedData, session)
+    if (refusal) return refusal
     return {
         ok: true,
         request: {

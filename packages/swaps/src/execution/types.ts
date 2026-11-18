@@ -33,6 +33,9 @@ export type SwapExecutionProgress =
     | 'submitting'
     | 'updating-status'
 
+/** Which of the wallet's own transactions a failure concerns. */
+export type SwapTransactionStep = 'approval' | 'swap'
+
 /**
  * Why an execution failed. Carries data, not copy: the display layer owns
  * the wording, so a raw `error` is kept only where it classifies itself
@@ -47,17 +50,36 @@ export type SwapExecutionFailure =
           chainId: ChainId
           /** Shortfall in base units of the native asset. */
           shortfall: Decimal
+          step?: SwapTransactionStep
       }
-    | { phase: 'prepare'; reason: 'prepare-failed'; error: unknown }
+    | {
+          phase: 'prepare'
+          reason: 'prepare-failed'
+          error: unknown
+          step?: SwapTransactionStep
+      }
     | { phase: 'prepare'; reason: 'no-signable-steps' }
     // A step this client can't run, or one on another chain: refused whole.
     | { phase: 'prepare'; reason: 'unsupported-steps' }
     | { phase: 'prepare'; reason: 'quote-mismatch' }
+    // An order that would call a contract the app hasn't declared for this
+    // route: refused before anything is signed.
+    | { phase: 'prepare'; reason: 'route-unverified'; chainId: ChainId }
     | { phase: 'signing'; reason: 'quantum-blocked'; translationKey: I18nKey }
-    | { phase: 'signing'; reason: 'signing-failed' }
-    | { phase: 'submission'; reason: 'submission-failed'; error: unknown }
+    | { phase: 'signing'; reason: 'signing-failed'; step?: SwapTransactionStep }
+    | {
+          phase: 'submission'
+          reason: 'submission-failed'
+          error: unknown
+          step?: SwapTransactionStep
+      }
     // Mined and reverted: a final failure, unlike a submit that got no answer.
-    | { phase: 'submission'; reason: 'reverted'; error: unknown }
+    | {
+          phase: 'submission'
+          reason: 'reverted'
+          error: unknown
+          step?: SwapTransactionStep
+      }
 
 export type ExecuteSwapResult =
     | { kind: 'success'; orderId: string; txIds: string[] }

@@ -19,6 +19,7 @@ export {
     EvmRpcErrorFixture,
     evmRpcHandlers,
     evmRpcTransaction,
+    evmSignedRpcTransaction,
     evmTransactionReceipt,
     readRawEvmTransaction,
     type Erc20Fixture,
@@ -45,6 +46,7 @@ export {
     evmNftItem,
     nativeWhitelistItem,
     unknownAssetItem,
+    unknownNftItem,
     type PeraEvmAssetFixtures,
 } from './assets/api/msw-handlers'
 export {

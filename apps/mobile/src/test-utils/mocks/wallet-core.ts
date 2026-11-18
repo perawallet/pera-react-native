@@ -120,7 +120,12 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
     const { formatSwapRate, swapRate } = await vi.importActual<
         typeof import('@packages/swaps/src/utils/swapQuoteHelpers')
     >('@packages/swaps/src/utils/swapQuoteHelpers')
-    const { swapFeeOf } = await vi.importActual<
+    const {
+        swapFeeOf,
+        swapNetworkFeeUsd,
+        swapNetworkFeeSharePercent,
+        HIGH_NETWORK_FEE_SHARE_PERCENT,
+    } = await vi.importActual<
         typeof import('@packages/swaps/src/utils/swapFees')
     >('@packages/swaps/src/utils/swapFees')
     const { isSwapOrderSettled } = await vi.importActual<
@@ -132,14 +137,22 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
     const { resolveRouterErrorBody } = await vi.importActual<
         typeof import('@packages/swaps/src/api/router-error')
     >('@packages/swaps/src/api/router-error')
+    // Chain adapters subclass it at load, so it must exist before any spec runs.
+    const { SwapQuoteMismatchError } = await vi.importActual<
+        typeof import('@packages/swaps/src/errors')
+    >('@packages/swaps/src/errors')
     return {
         useSwaps: vi.fn(),
         isSwappableAsset: vi.fn(() => true),
         swapQuoteFailureOf,
         resolveRouterErrorBody,
+        SwapQuoteMismatchError,
         formatSwapRate,
         swapRate,
         swapFeeOf,
+        swapNetworkFeeUsd,
+        swapNetworkFeeSharePercent,
+        HIGH_NETWORK_FEE_SHARE_PERCENT,
         isSwapOrderSettled,
         scopeOfSwapAsset: ({
             chainId,
@@ -1007,6 +1020,7 @@ vi.mock('@perawallet/wallet-core-currencies', async () => {
             data: { usdPrice: new Decimal(1) },
             isPending: false,
         })),
+        imitatedCurrencyOf: vi.fn(() => null),
     }
 })
 

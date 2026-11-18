@@ -32,8 +32,13 @@ import type { SwapHistoryItem, SwapQuote } from './models'
 
 /** What a swap costs on its source chain beyond the amount paid. */
 export type SwapSourceCost = {
-    /** Base units of the source chain's native asset; a ceiling, not a quote. */
+    /** Base units of the source chain's native asset; a ceiling, not a quote. Shortfall checks use it. */
     networkFee: Decimal
+    /**
+     * Base units of the source chain's native asset: what the swap is likely to
+     * pay, priced at the current base fee rather than the signed maximum.
+     */
+    expectedNetworkFee: Decimal
     /** Base units of the native asset the account is short by; null when it can pay. */
     shortfall: Nullable<Decimal>
     needsSpendApproval: boolean

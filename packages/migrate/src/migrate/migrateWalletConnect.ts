@@ -181,6 +181,7 @@ export const migrateWalletConnect = async (
     // step complete whenever nothing escapes, which would orphan an already
     // committed session key with no retry path. Attempt the rest, then rethrow.
     let firstFailure: Nullable<Error> = null
+    const migratedAt = Date.now()
 
     for (const session of sessions) {
         const reconstructed = toConnection(session)
@@ -213,8 +214,10 @@ export const migrateWalletConnect = async (
                 accounts: reconstructed.accounts,
                 secretRef,
                 createdAt: reconstructed.createdAt,
-                // The native export records no last-activity time.
-                lastActiveAt: reconstructed.createdAt,
+                // The native export has no activity time; its creation date would let
+                // the idle rule end a session still in use. The cost is that migrated
+                // rows tie in the list's last-active ordering, which `createdAt` kept.
+                lastActiveAt: migratedAt,
                 metadata: {
                     bridge: reconstructed.bridge,
                     handshakeTopic: reconstructed.topic,

@@ -11,7 +11,7 @@
  */
 
 import {
-    resolveSigningAccount,
+    resolveGroupSigningAccount,
     signGroupsBySignerAccount,
     type LocalKeySignerInput,
     type SigningResult,
@@ -47,10 +47,9 @@ export const signLocalKeyGroups = async (
             // classifies cosign groups by the participant's own type, but
             // routing through the same helper keeps signing correct if the
             // dispatch logic ever changes.
-            const accountForSigning = resolveSigningAccount(
+            const accountForSigning = resolveGroupSigningAccount(
+                group,
                 signerAccount,
-                group.source,
-                group.data.type,
                 allAccounts,
                 scope.chainId,
             )

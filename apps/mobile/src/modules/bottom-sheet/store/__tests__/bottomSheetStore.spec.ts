@@ -13,7 +13,7 @@
 // @vitest-environment node
 
 import { createElement } from 'react'
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { afterEach, describe, it, expect, beforeEach, vi } from 'vitest'
 
 import {
     registerBottomSheet,
@@ -33,12 +33,19 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     }
 })
 
-import { useBottomSheetStore } from '../bottomSheetStore'
+import {
+    isRegisteredBottomSheetOpen,
+    useBottomSheetStore,
+} from '../bottomSheetStore'
 
 describe('bottomSheetStore', () => {
     beforeEach(() => {
         useBottomSheetStore.getState().resetState()
         useBottomSheetStore.getState().registerBottomSheetHost()
+    })
+
+    afterEach(() => {
+        clearBottomSheetRegistryForTests()
     })
 
     it('starts with an empty stack', () => {
@@ -180,7 +187,60 @@ describe('bottomSheetStore', () => {
         const element = requests[0].contents as any
         expect(element.type).toBe(Fake)
         expect(element.props).toEqual({ label: 'Hi' })
-        clearBottomSheetRegistryForTests()
+    })
+
+    it('requestByType opens under the id the type was registered with, so an open sheet is not stacked', () => {
+        const Fake = ({ label }: { label: string }) =>
+            createElement('span', null, label)
+        registerBottomSheet('fake' as never, Fake as never, { id: 'fixed' })
+        useBottomSheetStore.getState().request({ id: 'fixed', contents: 'A' })
+
+        useBottomSheetStore
+            .getState()
+            .requestByType('fake' as never, { label: 'Hi' } as never)
+
+        const { requests } = useBottomSheetStore.getState()
+        expect(requests).toHaveLength(1)
+        expect(requests[0].contents).toBe('A')
+    })
+
+    describe('isRegisteredBottomSheetOpen', () => {
+        const Fake = () => createElement('span')
+
+        it('is true while the sheet under the registered id is visible', () => {
+            registerBottomSheet('fake' as never, Fake as never, { id: 'fixed' })
+            useBottomSheetStore
+                .getState()
+                .request({ id: 'fixed', contents: 'A' })
+
+            expect(isRegisteredBottomSheetOpen('fake' as never)).toBe(true)
+        })
+
+        it('is false once that sheet is on its way out', () => {
+            registerBottomSheet('fake' as never, Fake as never, { id: 'fixed' })
+            useBottomSheetStore
+                .getState()
+                .request({ id: 'fixed', contents: 'A' })
+            useBottomSheetStore.getState().dismiss('fixed')
+
+            expect(isRegisteredBottomSheetOpen('fake' as never)).toBe(false)
+        })
+
+        it('is false when nothing is open under the registered id', () => {
+            registerBottomSheet('fake' as never, Fake as never, { id: 'fixed' })
+            useBottomSheetStore
+                .getState()
+                .request({ id: 'other', contents: 'A' })
+
+            expect(isRegisteredBottomSheetOpen('fake' as never)).toBe(false)
+        })
+
+        it('is false for a type registered without an id', () => {
+            registerBottomSheet('fake' as never, Fake as never)
+            useBottomSheetStore.getState().request({ contents: 'A' })
+
+            expect(isRegisteredBottomSheetOpen('fake' as never)).toBe(false)
+        })
     })
 
     it('requestByType throws synchronously when the type is unknown', () => {

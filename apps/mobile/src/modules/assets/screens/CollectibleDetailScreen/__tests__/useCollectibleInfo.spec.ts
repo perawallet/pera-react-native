@@ -10,11 +10,12 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import { useCollectibleInfo } from '../useCollectibleInfo'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 
 const mockPushWebView = vi.fn()
 const mockOpenURL = vi.fn()
@@ -95,12 +96,27 @@ vi.mock('@modules/chain-ui', () => ({
 }))
 
 const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
+const ETHEREUM_SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
+const CONTRACT = '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D'
+
+// The shape `ethereumCollectibleDetailsDisplay` has (pinned in the Ethereum
+// chain-ui spec); the real one pulls React Native into this spec.
+const ethereumCollectibleDetailsDisplay = {
+    identityLabelKey: 'asset_details.collectible.token_id',
+    creatorLabelKey: 'asset_details.collectible.contract',
+    hasTotalSupply: false,
+    explorerLabelKey: null,
+    isIdentityLinked: false,
+    identityOf: (assetId: string) => assetId.split('/')[1] ?? assetId,
+    standardLabels: { erc721: 'ERC-721', erc1155: 'ERC-1155' },
+}
 
 const ALGORAND_DISPLAY = {
     identityLabelKey: 'asset_details.collectible.asset_id',
     creatorLabelKey: 'asset_details.collectible.creator',
     hasTotalSupply: true,
     explorerLabelKey: 'asset_details.collectible.explorer',
+    isIdentityLinked: true,
 }
 
 const makeAsset = (): PeraAsset =>
@@ -125,6 +141,10 @@ describe('useCollectibleInfo', () => {
         mockChainUi.collectibleDetails = ALGORAND_DISPLAY
     })
 
+    afterEach(() => {
+        vi.mocked(truncateAlgorandAddress).mockImplementation(a => a)
+    })
+
     describe('on a network with no explorer', () => {
         beforeEach(() => {
             mockExplorer.base = ''
@@ -144,7 +164,7 @@ describe('useCollectibleInfo', () => {
                 useCollectibleInfo(makeAsset(), SCOPE),
             )
 
-            result.current.onAssetIdPressed()
+            result.current.onAssetIdPressed?.()
 
             expect(mockNavigate).toHaveBeenCalled()
         })
@@ -215,7 +235,7 @@ describe('useCollectibleInfo', () => {
             useCollectibleInfo(makeAsset(), SCOPE),
         )
 
-        result.current.onAssetIdPressed()
+        result.current.onAssetIdPressed?.()
 
         expect(mockNavigate).toHaveBeenCalledWith('AssetDetails', {
             assetId: '12345',
@@ -272,13 +292,92 @@ describe('useCollectibleInfo', () => {
                 }),
             )
 
-            result.current.onAssetIdPressed()
+            result.current.onAssetIdPressed?.()
 
             expect(mockNavigate).toHaveBeenCalledWith('AssetDetails', {
                 assetId: '12345',
                 chainId: 'ethereum',
                 isCollectible: true,
             })
+        })
+    })
+
+    describe('identity row', () => {
+        it('shows the asset id and no standard row where the chain lists none', () => {
+            const { result } = renderHook(() =>
+                useCollectibleInfo(makeAsset(), SCOPE),
+            )
+
+            expect(result.current.identityDisplay).toBe('12345')
+            expect(result.current.standardLabel).toBeUndefined()
+            expect(result.current.onAssetIdPressed).toBeDefined()
+        })
+
+        it('shows only the token id of an Ethereum NFT, labelled with its standard, and does not link it', () => {
+            mockChainUi.collectibleDetails = ethereumCollectibleDetailsDisplay
+            const asset = {
+                ...makeAsset(),
+                assetId: `${CONTRACT}/42`,
+                peraMetadata: {
+                    isDeleted: false,
+                    verificationTier: 'verified',
+                    type: 'collectible',
+                    collectible: { standard: 'erc1155' },
+                },
+            } as PeraAsset
+            const { result } = renderHook(() =>
+                useCollectibleInfo(asset, ETHEREUM_SCOPE),
+            )
+
+            expect(result.current).toMatchObject({
+                identityLabelKey: 'asset_details.collectible.token_id',
+                identityDisplay: '42',
+                standardLabel: 'ERC-1155',
+            })
+            expect(result.current.onAssetIdPressed).toBeUndefined()
+        })
+
+        it('shortens a 78-digit token id on the row and copies it whole', () => {
+            mockChainUi.collectibleDetails = ethereumCollectibleDetailsDisplay
+            // The shared mock of the package returns its input unchanged.
+            vi.mocked(truncateAlgorandAddress).mockImplementation(
+                (address, max = 11) =>
+                    `${address.slice(0, max / 2)}...${address.slice(-max / 2)}`,
+            )
+            const tokenId = '9'.repeat(78)
+            const asset = {
+                ...makeAsset(),
+                assetId: `${CONTRACT}/${tokenId}`,
+            } as PeraAsset
+            const { result } = renderHook(() =>
+                useCollectibleInfo(asset, ETHEREUM_SCOPE),
+            )
+
+            result.current.onAssetIdLongPressed()
+
+            expect(result.current.identityDisplay).toBe(
+                `${'9'.repeat(10)}...${'9'.repeat(10)}`,
+            )
+            expect(mockCopyToClipboard).toHaveBeenCalledWith(tokenId)
+        })
+
+        it('shows no standard row for a standard the chain does not name', () => {
+            mockChainUi.collectibleDetails = ethereumCollectibleDetailsDisplay
+            const asset = {
+                ...makeAsset(),
+                assetId: `${CONTRACT}/1`,
+                peraMetadata: {
+                    isDeleted: false,
+                    verificationTier: 'verified',
+                    type: 'collectible',
+                    collectible: { standard: 'arc3' },
+                },
+            } as PeraAsset
+            const { result } = renderHook(() =>
+                useCollectibleInfo(asset, ETHEREUM_SCOPE),
+            )
+
+            expect(result.current.standardLabel).toBeUndefined()
         })
     })
 

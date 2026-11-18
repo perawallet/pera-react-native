@@ -163,18 +163,52 @@ const appAssetIdOf = (
     }
 }
 
-// `image/png` → `png`; the media list keeps no file name to read it from.
-const extensionOf = (mimeType: Nullable<string>): string =>
-    mimeType?.split('/')[1]?.split(';')[0]?.trim() ?? ''
+const MIME_MEDIA_TYPES: readonly CollectibleMediaType[] = [
+    'image',
+    'video',
+    'audio',
+    'model',
+]
+
+// The backend's media entries carry no type. A missing `mime_type` is an image
+// only when it is the primary image, the one entry whose kind is known.
+const mediaTypeOf = (
+    entry: NftItemSchemaOutput['media'][number],
+    primaryImageUrl: Nullable<string>,
+): CollectibleMediaType => {
+    const prefix = entry.mime_type?.split('/')[0]?.trim().toLowerCase()
+    const known = MIME_MEDIA_TYPES.find(type => type === prefix)
+    if (known) return known
+    return primaryImageUrl !== null && entry.url === primaryImageUrl
+        ? 'image'
+        : 'unknown'
+}
+
+// `image/png` → `png`, else the URL path's own extension.
+const extensionOf = (entry: NftItemSchemaOutput['media'][number]): string => {
+    const subtype = entry.mime_type?.split('/')[1]?.split(';')[0]?.trim()
+    if (subtype) return subtype
+    return (
+        new URL(entry.url).pathname.match(/\.([A-Za-z0-9]+)$/)?.[1] ?? ''
+    ).toLowerCase()
+}
+
+/** Whether the backend knows anything of the token; it answers a blank item for one it doesn't. */
+export const isDescribedNftItem = (item: NftItemSchemaOutput): boolean =>
+    item.name !== null ||
+    item.description !== null ||
+    item.primary_image !== null ||
+    item.media.length > 0 ||
+    item.traits.length > 0
 
 const toCollectible = (item: NftItemSchemaOutput): PeraCollectible => {
     const primaryImage =
         item.primary_image?.preview_url ?? item.primary_image?.url ?? undefined
     const media: CollectibleMedia[] = item.media.map(entry => ({
-        type: entry.type,
+        type: mediaTypeOf(entry, item.primary_image?.url ?? null),
         downloadUrl: entry.url,
         previewUrl: entry.preview_url ?? undefined,
-        extension: extensionOf(entry.mime_type),
+        extension: extensionOf(entry),
     }))
     const mediaType: CollectibleMediaType =
         media[0]?.type ?? (primaryImage ? 'image' : 'unknown')
@@ -189,7 +223,7 @@ const toCollectible = (item: NftItemSchemaOutput): PeraCollectible => {
             : undefined,
         description: item.description ?? undefined,
         traits: item.traits.map(trait => ({
-            displayName: trait.name ?? undefined,
+            displayName: trait.trait_type ?? undefined,
             displayValue: trait.value,
         })),
         media,
@@ -231,7 +265,7 @@ export const toNftHolding = (
     scope: ChainScope,
     chain: EvmChain,
 ): Nullable<NftHolding> => {
-    if (item.balance === undefined) return null
+    if (item.balance === null) return null
     const amount = new Decimal(item.balance)
     if (amount.isZero()) return null
     const asset = toNftAsset(item, scope, chain)

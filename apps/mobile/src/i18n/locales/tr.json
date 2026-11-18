@@ -76,6 +76,52 @@
             "about": "Hakkında",
             "website": "Web sitesi",
             "open": "Aç"
+        },
+        "folders": {
+            "name_sheet": {
+                "title_new": "Yeni klasör",
+                "title_rename": "Klasörü yeniden adlandır",
+                "placeholder": "Klasör adı",
+                "create": "Oluştur",
+                "save": "Kaydet"
+            },
+            "empty": "Bu klasörde henüz dApp yok",
+            "menu": {
+                "title": "Klasör seçenekleri",
+                "open_label": "Klasör seçenekleri",
+                "rename": "Klasörü yeniden adlandır",
+                "rearrange": "dApp'leri yeniden sırala",
+                "delete": "Klasörü sil"
+            },
+            "rearrange": {
+                "title": "dApp'leri yeniden sırala",
+                "remove_label": "Bu klasörden çıkar: {{name}}"
+            },
+            "delete_confirm": {
+                "title": "Bu klasör silinsin mi?",
+                "body": "İçindeki dApp'ler favorilerinde kalır.",
+                "confirm": "Klasörü sil"
+            }
+        },
+        "favorites": {
+            "title": "Favoriler",
+            "new_folder": "Yeni klasör",
+            "all_favorites": "Tüm favoriler",
+            "dapp_count": "{{count}} dApp",
+            "dapp_count_one": "{{count}} dApp",
+            "see_all": "Tümünü gör",
+            "empty_title": "Henüz favorin yok",
+            "empty_body": "dApp'leri keşfetmeye başla",
+            "all_folders_title": "Tüm klasörler",
+            "added_toast": {
+                "title": "Favorilere eklendi",
+                "body": "Bir klasöre eklemek için dokun"
+            }
+        },
+        "add_to_folder": {
+            "title": "Klasöre ekle",
+            "new_folder": "Yeni klasör",
+            "added": "Klasöre eklendi: {{folder}}"
         }
     },
     "account_menu": {
@@ -346,7 +392,12 @@
         }
     },
     "asset": {
-        "deleted_label": "(Silindi)"
+        "deleted_label": "(Silindi)",
+        "imitated_currency": {
+            "marker": "Gerçek {{code}} değil",
+            "title": "Bu varlık {{code}} değil",
+            "body": "Birim adı {{code}} olsa da herkesin oluşturabileceği ayrı bir varlıktır. Bunu almak sana hiç {{code}} kazandırmaz."
+        }
     },
     "asset_details": {
         "about": {
@@ -404,6 +455,7 @@
             "empty_body": "İşlem bulunamadı",
             "empty_on_network_body": "{{network}} ağında henüz işlem yok",
             "network_failed": "{{networks}} ağındaki işlemler yüklenemedi",
+            "network_unavailable": "{{networks}} ağında işlemler kullanılamıyor",
             "offline_empty_title": "Çevrimdışısın",
             "offline_empty_body": "Bu cihazda henüz kayıtlı işlem yok. Yeniden çevrimiçi olduğunda görünecekler.",
             "search_paused_body": "Yakın geçmişte işlem bulunamadı.",
@@ -418,6 +470,7 @@
             "asset_id": "Varlık ID",
             "token_id": "Token ID",
             "contract": "Sözleşme",
+            "standard": "Standart",
             "total_supply": "Toplam arz",
             "show_on": "Şurada göster",
             "explorer": "Pera Explorer",
@@ -485,6 +538,8 @@
             "nomatch_body": "Arama terimiyle eşleşen NFT bulunamadı",
             "network_empty_title": "NFT yok",
             "network_empty_body": "{{chain}} ağında hiç NFT’n yok.",
+            "refresh_error_title": "NFT’ler güncellenemedi",
+            "refresh_error_body": "Tekrar denemek için aşağı çek.",
             "suspicious_hidden_title": "Şüpheli NFT’ler gizlendi",
             "suspicious_hidden_body": "Pera bu NFT’leri olası spam veya dolandırıcılık olarak işaretledi. Görmek için Yönet > Filtrele’de Şüpheli NFT’leri göster seçeneğini aç.",
             "count": "{{count}} NFT",
@@ -1060,6 +1115,19 @@
             "update_to_restore": "{{count}} hesabı daha geri yüklemek için Pera’yı güncelle.",
             "update_to_restore_one": "{{count}} hesabı daha geri yüklemek için Pera’yı güncelle."
         },
+        "restore_accounts": {
+            "title": "Geri yüklenecek hesapları seç",
+            "description": "Bu yedeklemede {{count}} hesap var. Bu cihaza hangilerini eklemek istediğini seç.",
+            "description_one": "Bu yedeklemede {{count}} hesap var. Bu cihaza eklemek isteyip istemediğini seç.",
+            "description_empty": "Bu yedeklemede hesap yok. Kişileri ve ayarları bu cihaza eklenecek.",
+            "all_accounts": "Tüm hesaplar",
+            "selected_accounts": "Seçili hesaplar",
+            "left_out_hint": "Seçmediğin hesaplar yedeklemede kalır. Onları daha sonra Bulut yedekleme üzerinden bu cihaza ekleyebilirsin.",
+            "device_notice_title": "Bu cihazdaki hesapların yedeklenecek",
+            "device_notice_body": "Bu cihazdaki {{count}} hesap bu yedeklemeye eklenecek. Yedekleme ifadesine ve şifreleme anahtarına sahip olan herkes, kurtarma passphrase’leri ve özel anahtarları dahil bu hesaplara erişebilir.",
+            "device_notice_body_one": "Bu cihazdaki hesap bu yedeklemeye eklenecek. Yedekleme ifadesine ve şifreleme anahtarına sahip olan herkes, kurtarma passphrase’i veya özel anahtarı dahil bu hesaba erişebilir.",
+            "restore": "Geri yükle"
+        },
         "restore_scan": {
             "title": "QR kodu tara",
             "instructions": "Diğer cihazında Bulut yedekleme ekranını aç, “Diğer cihazlarla eşitle” seçeneğini seç ve gösterilen kodu tara.",
@@ -1165,6 +1233,7 @@
             "empty_body": "Bakiye geçmişin olduğunda burada bir grafik göreceksin",
             "asset_empty_body": "Bu hesapta bu varlık için bakiye geçmişin olduğunda burada bir grafik göreceksin",
             "excludes_networks": "Bu grafik henüz {{networks}} varlıklarını içermiyor",
+            "failed_networks": "{{networks}} geçmişi yüklenemedi, bu yüzden bu grafikte yer almıyor",
             "currency_unavailable_body": "Bu grafik şu anda {{currency}} para biriminde kullanılamıyor"
         },
         "webview": {
@@ -3636,6 +3705,7 @@
             "body": "Bu bir paylaşılan hesap ve imzalayan hesaplarından hiçbiri cüzdanında yok. Bu hesap için işlem imzalamak üzere bir imzalayan hesap ekle.",
             "rekeyed_auth_missing_body": "Bu hesap şu adrese rekey edilmiş: {{authAddress}}. Bu adres bu cüzdanda olmadığı için hesap işlem imzalayamaz. Bu hesap için imzalamak üzere auth hesabını içe aktar.",
             "rekeyed_auth_watch_body": "Bu hesap, imzalama anahtarı bulunmayan bir izleme hesabına rekey edilmiş. Bu hesap için imzalamak üzere auth hesabının anahtarını içe aktar.",
+            "signer_key_missing_body": "Bu işlem {{authAddress}} hesabının kendi anahtarıyla imzalanmalı, ancak bu anahtar bu cüzdanda yok.",
             "signer_missing_body": "Bu istek, cüzdanında olmayan bir hesabın imzasını gerektiriyor, bu yüzden burada imzalanamaz."
         },
         "transaction_request_faq": {
@@ -3721,6 +3791,8 @@
             "title_clawback": "Geri alma",
             "title_contract_interaction": "Sözleşme etkileşimi",
             "token_contract": "Token sözleşmesi: {{symbol}}",
+            "unknown": "Bilinmiyor",
+            "unknown_receive_body": "Pera bu uygulamadan ne alacağını belirleyemiyor",
             "unverified": "Doğrulanmamış",
             "you_receive": "Alacağın",
             "you_send": "Göndereceğin",
@@ -4140,7 +4212,10 @@
             "to": "Hedef",
             "balance_label": "Bakiye: <0/>",
             "max": "MAKS",
-            "select_asset": "Seç"
+            "select_asset": "Seç",
+            "flip": "Ödenen ve alınanı değiştir",
+            "flip_unavailable_title": "Bu takas ters çevrilemiyor",
+            "flip_unavailable_body": "Bu hesap {{network}} ağından ödeme yapamıyor."
         },
         "asset_selection": {
             "swap_from_title": "Kaynak varlık",
@@ -4188,8 +4263,11 @@
             "confirm_swap": "Swap’ı onayla",
             "slide_to_confirm": "Onaylamak için kaydır",
             "high_price_impact_warning": "Bu swap’ın fiyat etkisi yüksek. Beklediğinden belirgin şekilde daha az token alabilirsin.",
+            "high_network_fee_warning": "Ağ ücreti (~{{fee}}) bu swap’ın %{{percent}} kadarı. Yine de devam edebilirsin.",
             "quote_error": "Teklifler alınamadı. Lütfen tekrar dene.",
             "amount_too_low": "Tutar, {{network}} ağında swap için çok düşük. Minimum {{amount}} {{unit}}.",
+            "amount_too_low_fiat": "Tutar, {{network}} ağında swap için çok düşük. Minimum {{amount}} {{unit}} (~{{fiat}}).",
+            "use_minimum": "Minimumu kullan",
             "amount_too_low_unknown": "Tutar, {{network}} ağında swap için çok düşük. Daha yüksek bir tutar veya daha düşük ücretli bir ağ dene.",
             "amount_too_high": "Tutar swap için çok yüksek. Maksimum {{amount}} {{unit}}.",
             "amount_too_high_unknown": "Tutar swap için çok yüksek. Daha düşük bir tutar dene.",
@@ -4202,9 +4280,18 @@
         },
         "execution": {
             "error_title": "Swap başarısız",
-            "error_body": "Swap sırasında bir şeyler ters gitti. Lütfen tekrar dene.",
+            "failed_title": {
+                "prepare": "Swap başlatılamadı",
+                "approval": "Onay başarısız",
+                "swap": "Swap başarısız"
+            },
             "provider_failed_body": "Bu sağlayıcı swap işlemini tamamlayamadı. Başka bir sağlayıcı dene.",
-            "insufficient_native_title": "Yetersiz {{symbol}}",
+            "provider_unavailable_body": "Sağlayıcı şu anda kullanılamıyor. Biraz sonra tekrar dene.",
+            "route_unverified_body": "Pera bu sağlayıcının {{network}} ağındaki swap sözleşmesini henüz doğrulayamıyor, bu yüzden hiçbir şey imzalanmadı. Başka bir sağlayıcı dene veya daha sonra tekrar dene.",
+            "quote_mismatch_body": "Sağlayıcının işlemleri bu teklifle eşleşmedi, bu yüzden hiçbir şey imzalanmadı. Tekrar dene veya başka bir sağlayıcı seç.",
+            "unsupported_order_body": "Pera bu sağlayıcının siparişini tamamlayamıyor, bu yüzden hiçbir şey imzalanmadı. Başka bir sağlayıcı seç.",
+            "signing_failed_body": "İşlem imzalanamadı, bu yüzden gönderilmedi. Tekrar dene.",
+            "order_insufficient_balance_body": "Bakiyen bu tutarı ve ağ ücretini karşılamıyor. Daha küçük bir tutar dene veya ücret için bakiye ekle.",
             "insufficient_native_body": "Bu hesapta bu swap işlemini, ücretleri ve minimum bakiyeyi karşılamak için en az {{amount}} {{symbol}} daha gerekiyor. Daha fazla {{symbol}} ekle ve tekrar dene.",
             "success_title": "Swap tamamlandı",
             "success_body": "Swap başarıyla tamamlandı: {{fromAsset}} → {{toAsset}}",
@@ -4266,6 +4353,10 @@
         "receiving_account": {
             "title": "Alıcı hesap",
             "label": "Alınacak hesap"
+        },
+        "source_account": {
+            "title": "Hesap seç",
+            "subtitle": "Bu varlığa sahip <0>{{accounts}} hesabın</0> var. Devam etmek için birini seç."
         }
     },
     "onramp": {

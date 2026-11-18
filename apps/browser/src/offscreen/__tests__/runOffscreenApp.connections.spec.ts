@@ -56,6 +56,9 @@ const {
     eip1193Handler,
     createEip1193ConnectionHandler,
     watchWalletNotices,
+    watchLockNotices,
+    lockState,
+    createOffscreenLockState,
     chainCapabilities,
     importLegacyDappPermissions,
     registerChainAdapters,
@@ -68,6 +71,11 @@ const {
     const dappTransport = { onRequest: vi.fn(), notify: vi.fn() }
     const dappHandler = { kind: 'dapp' }
     const eip1193Handler = { kind: 'dapp-eip1193' }
+    const lockState = {
+        isLocked: vi.fn(() => false),
+        subscribe: vi.fn(() => () => {}),
+        ready: Promise.resolve<boolean | undefined>(false),
+    }
     return {
         startConnectionsHost: vi.fn((_deps: ConnectionsHostDeps) => ({
             handleControlMessage,
@@ -111,6 +119,12 @@ const {
             (_options: unknown) => eip1193Handler,
         ),
         watchWalletNotices: vi.fn(() => () => {}),
+        watchLockNotices: vi.fn(
+            (_registry: unknown, _isLockedNow: boolean, _subscribe: unknown) =>
+                () => {},
+        ),
+        lockState,
+        createOffscreenLockState: vi.fn(() => lockState),
         chainCapabilities: vi.fn((_chainId: string) => ({ dappConnect: true })),
         importLegacyDappPermissions: vi.fn(async () => ({ imported: 0 })),
         registerChainAdapters: vi.fn(),
@@ -122,6 +136,7 @@ vi.mock('../connections/connectionsHost', () => ({ startConnectionsHost }))
 
 vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
     createChromeDappTransport,
+    createOffscreenLockState,
     onLocalStorageKeyChanged,
     onConnectionsControlMessage,
     sendConnectionApprovalRequest,
@@ -229,6 +244,7 @@ vi.mock('@perawallet/wallet-core-connections', () => ({
     createConnectionRegistry,
     bootConnections,
     watchWalletNotices,
+    watchLockNotices,
 }))
 vi.mock('@perawallet/wallet-core-walletconnect', () => ({
     createWalletConnectV1Handler,
@@ -440,6 +456,23 @@ describe('runOffscreenApp connections wiring', () => {
         expect(watchWalletNotices).toHaveBeenCalledWith(registry)
         expect(bootConnections.mock.invocationCallOrder[0]).toBeLessThan(
             watchWalletNotices.mock.invocationCallOrder[0] ?? 0,
+        )
+    })
+
+    it('hands both dApp handlers the mirrored lock state and announces its changes once seeded', async () => {
+        await boot()
+
+        const dappOptions = createDappConnectionHandler.mock.calls[0]?.[0] as {
+            isWalletLocked: unknown
+        }
+        const eip1193Options = createEip1193ConnectionHandler.mock
+            .calls[0]?.[0] as { isWalletLocked: unknown }
+        expect(dappOptions.isWalletLocked).toBe(lockState.isLocked)
+        expect(eip1193Options.isWalletLocked).toBe(lockState.isLocked)
+        expect(watchLockNotices).toHaveBeenCalledWith(
+            registry,
+            false,
+            lockState.subscribe,
         )
     })
 

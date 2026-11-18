@@ -37,7 +37,12 @@ import {
     renderHook,
 } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
-import { Address, Transaction, TransactionType } from 'algosdk'
+import {
+    Address,
+    OnApplicationComplete,
+    Transaction,
+    TransactionType,
+} from 'algosdk'
 import {
     useSigningRequest,
     type AuthDataSignRequest,
@@ -188,6 +193,24 @@ export const buildPaymentTransaction = ({
             ...(closeRemainderTo
                 ? { closeRemainderTo: Address.fromString(closeRemainderTo) }
                 : {}),
+        },
+    })
+
+export const buildApplicationCallTransaction = ({
+    sender = REVIEW_SIGNER_ADDRESS,
+    note,
+}: {
+    sender?: string
+    note?: string
+} = {}): Transaction =>
+    new Transaction({
+        type: TransactionType.appl,
+        sender: Address.fromString(sender),
+        suggestedParams: { ...BASE_TX_PARAMS, fee: 1000n },
+        note: note ? new TextEncoder().encode(note) : undefined,
+        appCallParams: {
+            appIndex: 123n,
+            onComplete: OnApplicationComplete.NoOpOC,
         },
     })
 

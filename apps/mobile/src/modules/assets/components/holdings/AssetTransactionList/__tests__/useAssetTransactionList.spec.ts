@@ -198,6 +198,7 @@ describe('useAssetTransactionList', () => {
             isFetching: false,
             isFetchingNextPage: false,
             isError: false,
+            isNextPageError: false,
             error: null,
             hasNextPage: false,
             isSearchPaused: false,
@@ -1142,12 +1143,53 @@ describe('useAssetTransactionList', () => {
                 isFetching: false,
                 isFetchingNextPage: false,
                 isError: false,
+                isNextPageError: false,
                 error: null,
                 hasNextPage: false,
                 isSearchPaused: false,
                 fetchNextPage: mockFetchNextPage,
                 refetch: vi.fn(),
             })
+        })
+
+        it('names the network over the rows when a refresh fails, offering a retry only where one can help', () => {
+            const failWith = (error: Error) =>
+                vi.mocked(useTransactionRecordsQuery).mockReturnValue({
+                    records: [record],
+                    isLoading: false,
+                    isFetched: true,
+                    isFetching: false,
+                    isFetchingNextPage: false,
+                    isError: true,
+                    isNextPageError: false,
+                    error,
+                    hasNextPage: false,
+                    isSearchPaused: false,
+                    fetchNextPage: mockFetchNextPage,
+                    refetch: vi.fn(),
+                })
+            const mount = () =>
+                renderHook(() =>
+                    useAssetTransactionList({
+                        scope: ETH_SCOPE,
+                        account: ethAccount,
+                        asset: usdc,
+                    }),
+                )
+
+            failWith(new Error('503'))
+            const failed = mount()
+
+            expect(failed.result.current.isLoadFailed).toBe(false)
+            expect(failed.result.current.failedNetworkNames).toEqual([
+                'Ethereum',
+            ])
+            expect(failed.result.current.isFailedRetryable).toBe(true)
+
+            failWith(new PeraServiceUnavailableError(ETH_SCOPE))
+            const unavailable = mount()
+
+            expect(unavailable.result.current.isFailedRetryable).toBe(false)
         })
 
         it("lists the asset's records, filtered by asset, never the row cache", () => {
@@ -1196,6 +1238,7 @@ describe('useAssetTransactionList', () => {
                 isFetching: false,
                 isFetchingNextPage: false,
                 isError: false,
+                isNextPageError: false,
                 error: null,
                 hasNextPage: true,
                 isSearchPaused: true,

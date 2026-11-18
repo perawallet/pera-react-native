@@ -15,13 +15,13 @@ import { ProjectVerificationIcon } from '@modules/projects'
 import {
     PWButton,
     PWIcon,
-    PWImage,
     PWText,
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import type { DiscoverDapp } from '../../types'
+import { DappLogo } from '../DappLogo'
 import { useStyles } from './styles'
 
 export type DappRowProps = {
@@ -62,23 +62,12 @@ export const DappRow = ({
                 onPress={onPress}
                 testID={testID ? `${testID}_open` : undefined}
             >
-                {dapp.logo ? (
-                    <PWImage
-                        source={{ uri: dapp.logo }}
-                        style={styles.logo}
-                    />
-                ) : (
-                    <PWView style={styles.logo}>
-                        <PWIcon
-                            name='globe'
-                            variant='secondary'
-                        />
-                    </PWView>
-                )}
+                <DappLogo logo={dapp.logo} />
                 <PWView style={styles.info}>
                     <PWView style={styles.titleRow}>
                         <PWText
-                            variant='h4'
+                            variant='bodyLarge'
+                            weight={500}
                             numberOfLines={1}
                             style={styles.title}
                         >
@@ -95,7 +84,8 @@ export const DappRow = ({
                         ) : null}
                     </PWView>
                     <PWText
-                        variant='caption'
+                        variant='footnoteMedium'
+                        weight={400}
                         numberOfLines={1}
                         style={styles.subtitle}
                     >
@@ -127,7 +117,8 @@ export const DappRow = ({
             >
                 <PWIcon
                     name={isFavorite ? 'star-filled' : 'star'}
-                    variant={isFavorite ? 'favorite' : 'secondary'}
+                    size='sm'
+                    variant={isFavorite ? 'favorite' : 'tertiary'}
                 />
             </PWTouchableOpacity>
         </PWView>

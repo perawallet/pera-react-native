@@ -19,6 +19,7 @@ import {
 } from '@tanstack/react-query'
 import type {
     ChainScope,
+    Page,
     PageRef,
     TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
@@ -32,21 +33,25 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import {
-    getPendingTransactionRecords,
-    getTransactionHistoryWithPending,
+    getMinedTransactionHistory,
+    mergePendingRecords,
 } from '../pending-history'
 import { isFeePaidByAccount } from '../utils/fee'
-import { shouldRetryHistoryRead } from './historyReadRetry'
+import {
+    historyReadRetryDelay,
+    shouldRetryHistoryRead,
+} from './historyReadRetry'
 import {
     consumeFullRefetchRequest,
     requestFullRefetch,
     transactionQueryKeys,
 } from './querykeys'
+import { usePendingTransactionRecordsQuery } from './usePendingTransactionRecordsQuery'
 
 export type UseTransactionRecordsQueryParams = {
     accountAddress: string
     scope: ChainScope
-    /** Kept client-side: the records backends take no asset filter. */
+    /** Sent to the chain, which may ignore it, and kept client-side either way. */
     assetId?: string
     /** `YYYY-MM-DD`, inclusive, UTC. */
     afterTime?: string
@@ -64,6 +69,8 @@ export type UseTransactionRecordsQueryResult = {
     isFetching: boolean
     isFetchingNextPage: boolean
     isError: boolean
+    /** The failure is a later page's: page one, and the wallet's sends merged into it, stand. */
+    isNextPageError: boolean
     error: Nullable<Error>
     hasNextPage: boolean
     /**
@@ -76,6 +83,8 @@ export type UseTransactionRecordsQueryResult = {
     refetch: () => void
 }
 
+// The chain's records only: the wallet's own sends are merged in on read, from
+// their own query, so a failed backend read never takes them away.
 type RecordsPage = {
     records: TransactionRecord[]
     next: Nullable<PageRef>
@@ -91,8 +100,8 @@ type RecordsRead = { page: RecordsPage; hasReachedLoadedPages: boolean }
 // the cursor would turn every hit into a backend read.
 const mergedPagesByCursor = new WeakMap<PageRef, RecordsPage>()
 
-// A record that leaves page one without a replacement (a pruned failed send)
-// stays until a full re-read. `next` is never touched, so every cursor holds.
+// A record that leaves page one without a replacement stays until a full
+// re-read. `next` is never touched, so every cursor holds.
 const mergeRefreshedFirstPage = (
     loaded: RecordsPage[],
     refreshed: RecordsPage,
@@ -138,8 +147,9 @@ const unixMsOf = (isoDate?: string): Optional<number> => {
 
 /**
  * History for a chain that keeps no cached rows (see `hasCachedHistoryRows`),
- * read page by page from the chain's `getTransactionHistory` with the wallet's
- * own broadcasts merged into page one.
+ * read page by page from the chain's `getTransactionHistory`, with the wallet's
+ * own sends merged in from the submission ledger. Those show whatever the
+ * backend does: a failed read leaves them listed beside the error.
  *
  * A refetch re-reads from the head only as far as the newest record page one
  * last listed and merges by id, keeping the loaded pages and their cursors; it
@@ -167,17 +177,21 @@ export const useTransactionRecordsQuery = ({
         assetId !== undefined && isNativeAssetId(scope.chainId, assetId)
 
     // A record with no timestamp has no time to rule it out by, so the date range keeps it.
-    const isKept = (record: TransactionRecord): boolean =>
-        (assetId === undefined ||
-            involvesAsset(record, assetId) ||
-            (isNativeFilter &&
-                movesNothing(record) &&
-                isFeePaidByAccount(record, accountAddress))) &&
-        (record.timestamp === undefined ||
-            ((fromMs === undefined || record.timestamp >= fromMs) &&
-                (untilMs === undefined || record.timestamp < untilMs)))
+    const isKept = useCallback(
+        (record: TransactionRecord): boolean =>
+            (assetId === undefined ||
+                involvesAsset(record, assetId) ||
+                (isNativeFilter &&
+                    movesNothing(record) &&
+                    isFeePaidByAccount(record, accountAddress))) &&
+            (record.timestamp === undefined ||
+                ((fromMs === undefined || record.timestamp >= fromMs) &&
+                    (untilMs === undefined || record.timestamp < untilMs))),
+        [assetId, isNativeFilter, accountAddress, fromMs, untilMs],
+    )
 
     const queryClient = useQueryClient()
+    const isActive = isEnabled && !!accountAddress
     const contractDecoding = useChainCapability(
         scope.chainId,
         'contractDecoding',
@@ -204,12 +218,35 @@ export const useTransactionRecordsQuery = ({
         const records: TransactionRecord[] = []
         for (let read = 1; ; read++) {
             signal.throwIfAborted()
-            const { items, minedItems, next } =
-                await getTransactionHistoryWithPending(
+            let mined: Page<TransactionRecord>
+            try {
+                mined = await getMinedTransactionHistory(
                     accountAddress,
                     scope,
                     page,
+                    { assetId, signal },
                 )
+            } catch (error) {
+                // The pages read so far kept nothing, so an empty page resuming
+                // at the failed cursor spares a retry re-reading them. A
+                // refresh's pages replace page one, so it still throws.
+                if (
+                    read === 1 ||
+                    signal.aborted ||
+                    loadedNewestMinedId !== undefined
+                ) {
+                    throw error
+                }
+                return {
+                    page: {
+                        records,
+                        next: page ?? null,
+                        ...(newestMinedId !== undefined && { newestMinedId }),
+                    },
+                    hasReachedLoadedPages: false,
+                }
+            }
+            const { items: minedItems, next } = mined
             // The first read can be empty with a next page, so the newest id
             // is the first one any read lists.
             if (pageParam === null) newestMinedId ??= minedItems[0]?.id
@@ -218,15 +255,12 @@ export const useTransactionRecordsQuery = ({
                     ? -1
                     : minedItems.findIndex(r => r.id === loadedNewestMinedId)
             const hasReachedLoadedPages = loadedAt !== -1
-            // Mined records from the loaded newest on are already loaded. The
-            // wallet's own sends stay: their status may have changed.
+            // Records from the loaded newest on are already loaded.
             const loadedIds = new Set(
                 hasReachedLoadedPages
                     ? minedItems.slice(loadedAt).map(r => r.id)
                     : [],
             )
-            // Mined records only: a wallet send merged into page one can
-            // predate the range while the next page still holds records in it.
             const isPastRange =
                 fromMs !== undefined &&
                 minedItems.some(
@@ -235,7 +269,7 @@ export const useTransactionRecordsQuery = ({
                         record.timestamp < fromMs,
                 )
             records.push(
-                ...items.filter(r => !loadedIds.has(r.id)).filter(isKept),
+                ...minedItems.filter(r => !loadedIds.has(r.id)).filter(isKept),
             )
             const nextPage = isPastRange ? undefined : next
             const isDone =
@@ -281,14 +315,9 @@ export const useTransactionRecordsQuery = ({
                 ) {
                     throw new PeraNetworkError('offline')
                 }
-                // A cold start has nothing to lose: networkMode 'always' lets
-                // it show the ledger's own sends, all there is offline.
-                const pending = await getPendingTransactionRecords({
-                    address: accountAddress,
-                    scope,
-                    listedIds: new Set(),
-                })
-                return { records: pending.filter(isKept), next: null }
+                // A cold start has nothing to lose: an empty page reads as the
+                // offline empty state, and the ledger's sends list beside it.
+                return { records: [], next: null }
             }
 
             if (pageParam !== null) {
@@ -347,12 +376,23 @@ export const useTransactionRecordsQuery = ({
         getNextPageParam: (lastPage: RecordsPage) => lastPage.next ?? undefined,
         networkMode: 'always',
         retry: shouldRetryHistoryRead,
-        enabled: isEnabled && !!accountAddress,
+        retryDelay: historyReadRetryDelay,
+        enabled: isActive,
     })
 
-    const records = useMemo(
+    const { records: pendingRecords, refetch: refetchPending } =
+        usePendingTransactionRecordsQuery({
+            accountAddress,
+            scope,
+            isEnabled: isActive,
+        })
+    const minedRecords = useMemo(
         () => query.data?.pages.flatMap(page => page.records) ?? [],
         [query.data],
+    )
+    const records = useMemo(
+        () => mergePendingRecords(pendingRecords.filter(isKept), minedRecords),
+        [pendingRecords, minedRecords, isKept],
     )
 
     // A page that found nothing changes no visible row, so `onEndReached`
@@ -390,7 +430,10 @@ export const useTransactionRecordsQuery = ({
         () => void fetchNextPage(),
         [fetchNextPage],
     )
-    const handleRefetch = useCallback(() => void refetch(), [refetch])
+    const handleRefetch = useCallback(() => {
+        refetchPending()
+        void refetch()
+    }, [refetch, refetchPending])
 
     return {
         records,
@@ -399,6 +442,7 @@ export const useTransactionRecordsQuery = ({
         isFetching,
         isFetchingNextPage: query.isFetchingNextPage,
         isError,
+        isNextPageError: query.isFetchNextPageError,
         error: query.error,
         hasNextPage,
         isSearchPaused,

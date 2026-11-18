@@ -28,6 +28,7 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainContext } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { SwapQuote, SwapStatus } from '@perawallet/wallet-core-swaps'
+import { http, HttpResponse } from 'msw'
 import { server } from '@test-utils/msw-server'
 import type { SwapExecutionOutcome } from '@modules/swap/hooks/useSwapExecution'
 
@@ -104,6 +105,7 @@ const { chainOverridesKey, useRemoteConfigStore } =
     await import('@perawallet/wallet-core-remote-config')
 const { usePreferences } = await import('@perawallet/wallet-core-settings')
 const {
+    SWAP_ROUTER_PATH,
     swapChainAdapters,
     useSwapOrderTracker,
     useSwapsStore,
@@ -147,7 +149,9 @@ const { useSwapExecution } =
     await import('@modules/swap/hooks/useSwapExecution')
 const {
     ETH_SCOPE,
+    ETHEREUM_SECOND,
     ETHEREUM_SENDER,
+    seedEtherAt,
     seedEthereumAssets,
     seedSenderEther,
     RECEIVER,
@@ -258,6 +262,13 @@ const routerAsset = (assetId: string, unitName: string, decimals: number) => ({
     cross_chain_asset_group: null,
 })
 
+type RouterFee = {
+    kind: 'pera' | 'network' | 'provider'
+    asset_id: string
+    amount: string
+    usd_value: Nullable<string>
+}
+
 const tokenToEtherOffer = {
     quote_id: 'quote-eth-1',
     aggregator: 'xo-v4',
@@ -271,9 +282,9 @@ const tokenToEtherOffer = {
     source_amount: TOKEN_UNITS.toString(),
     destination_amount_expected: '5000000000000000',
     destination_amount_minimum: '4900000000000000',
-    source_amount_usd_value: null,
-    destination_amount_usd_value: null,
-    fees: [],
+    source_amount_usd_value: null as Nullable<string>,
+    destination_amount_usd_value: null as Nullable<string>,
+    fees: [] as RouterFee[],
     funding_method: 'wallet_transaction',
     expires_at: null,
     deposit_address: null,
@@ -400,7 +411,7 @@ const startHost = async (): Promise<HostApi> => {
 }
 
 /** Takes a token swap from the real form as far as the open confirmation. */
-const openConfirmation = async () => {
+const openConfirmation = async (offer = tokenToEtherOffer) => {
     selectSender(ETHEREUM_SENDER)
     await seedSenderEther('10000000000000000000')
     await insertAssetHolding({
@@ -411,9 +422,7 @@ const openConfirmation = async () => {
     })
     useSwapsStore.getState().setFromAsset(TOKEN)
     useSwapsStore.getState().setToAsset(ETH_ASSET)
-    server.use(
-        mockCreateSwapQuotes({ response: { results: [tokenToEtherOffer] } }),
-    )
+    server.use(mockCreateSwapQuotes({ response: { results: [offer] } }))
     mockEthereumSwapOrder([APPROVE_TX, TOKEN_SWAP_TX])
     spyOnSwapSubmissionAndReports()
     renderWithNavigation(SwapFormHost, 'SwapFormHost')
@@ -548,7 +557,32 @@ describe('Flow: Swap from an Ethereum account', () => {
         ).toBe(true)
     })
 
-    it('Given the router says the amount is too small, when the quote is refused, then the form says the amount is too small and offers neither Swap nor Retry', async () => {
+    it('Given a network fee above 10% of the swap, when the confirmation opens, then it warns about the fee and can still be confirmed', async () => {
+        fakeNode()
+        await openConfirmation({
+            ...tokenToEtherOffer,
+            source_amount_usd_value: '1',
+            fees: [
+                {
+                    kind: 'network',
+                    asset_id: 'eip155:1/slip44:60',
+                    amount: '1000000000000000',
+                    usd_value: '5',
+                },
+            ],
+        })
+
+        expect(
+            await screen.findByTestId(
+                'swap-confirm-high-network-fee',
+                undefined,
+                FORM_TIMEOUT,
+            ),
+        ).toBeTruthy()
+        expect(screen.queryByTestId('swap-confirm-insufficient-fee')).toBeNull()
+    })
+
+    it('Given the router says the amount is too small, when the quote is refused, then the form names the minimum, offers neither Swap nor Retry, and Use minimum fills it', async () => {
         await typeAmountOnTokenToEtherForm()
         server.use(
             mockCreateSwapQuotes({
@@ -568,9 +602,18 @@ describe('Flow: Swap from an Ethereum account', () => {
             undefined,
             FORM_TIMEOUT,
         )
-        expect(error.textContent).toBe('swap.quote.amount_too_low')
+        expect(error.textContent).toContain('swap.quote.amount_too_low')
         expect(screen.queryByTestId('swap-button')).toBeNull()
         expect(screen.queryByTestId('swap-quote-retry')).toBeNull()
+
+        fireEvent.click(screen.getByTestId('swap-quote-use-minimum'))
+
+        await waitFor(() =>
+            expect(
+                (screen.getByTestId('swap-pay-input') as HTMLInputElement)
+                    .value,
+            ).toBe('0.002'),
+        )
     })
 
     it('Given the route is switched off, when the user taps Retry after it returns, then the error clears and the swap can be confirmed', async () => {
@@ -650,6 +693,125 @@ describe('Flow: Swap from an Ethereum account', () => {
         expect(useSwapsStore.getState().fromAsset).toBe(TOKEN)
     })
 
+    it('Given two accounts holding the same token, when the user picks it and chooses the second account, then the swap pays from that account with the token', async () => {
+        const second = ETHEREUM_SECOND
+        useAccountsStore.getState().setAccounts([ETHEREUM_SENDER, second])
+        useAccountsStore.getState().setSelectedAccountId(ETHEREUM_SENDER.id)
+        await seedSenderEther('10000000000000000000')
+        await seedEtherAt(RECEIVER, '10000000000000000000')
+        for (const [accountAddress, amount] of [
+            [SENDER, '100000000'],
+            [RECEIVER, '250000000'],
+        ]) {
+            await insertAssetHolding({
+                accountAddress,
+                assetId: TOKEN,
+                scope: ETH_SCOPE,
+                amount: new Decimal(amount),
+            })
+        }
+        fakeNode()
+        // Ethereum's default receive asset is the token, which the pay picker leaves out.
+        useSwapsStore.getState().setFromAsset(ETH_ASSET)
+        useSwapsStore.getState().setToAsset(ETH_ASSET)
+        renderWithNavigation(SwapScreen, 'Swap')
+
+        fireEvent.click(await screen.findByTestId('swap-pay-asset-selector'))
+        fireEvent.click(await screen.findByTestId(`asset-list-item-${TOKEN}`))
+        expect(
+            await screen.findByTestId('swap_source_account_header-title'),
+        ).toBeTruthy()
+        fireEvent.click(
+            await screen.findByTestId(`swap_source_account_${second.id}`),
+        )
+
+        await waitFor(() =>
+            expect(useAccountsStore.getState().selectedAccountId).toBe(
+                second.id,
+            ),
+        )
+        await settleRender()
+        expect(useSwapsStore.getState()).toMatchObject({
+            sourceChainId: 'ethereum',
+            fromAsset: TOKEN,
+            pairAccountId: second.id,
+        })
+    })
+
+    it('Given an account on two chains swapping ALGO into ETH on its own Ethereum address, when it taps flip, then the swap pays ETH on Ethereum into ALGO on Algorand and quotes the carried amount', async () => {
+        await selectTwoChainAccount()
+        await seedSenderEther('10000000000000000000')
+        fakeNode()
+        useSwapsStore.getState().setFromAsset('0')
+        useSwapsStore.getState().setToAsset(ETH_ASSET, ETH_SCOPE)
+        const quoteRequests: Array<Record<string, string>> = []
+        server.use(
+            http.post(`*${SWAP_ROUTER_PATH}quotes/`, async ({ request }) => {
+                const body = (await request.json()) as Record<string, string>
+                quoteRequests.push(body)
+                const isEthSource = body.source_asset_id.startsWith('eip155')
+                return HttpResponse.json({
+                    results: [
+                        {
+                            ...tokenToEtherOffer,
+                            source_asset: routerAsset(
+                                body.source_asset_id,
+                                isEthSource ? 'ETH' : 'ALGO',
+                                isEthSource ? 18 : 6,
+                            ),
+                            destination_asset: routerAsset(
+                                body.destination_asset_id,
+                                isEthSource ? 'ALGO' : 'ETH',
+                                isEthSource ? 6 : 18,
+                            ),
+                            source_amount: body.source_amount,
+                            destination_amount_expected: isEthSource
+                                ? '400000'
+                                : '2500000000000000',
+                            destination_amount_minimum: null,
+                        },
+                    ],
+                })
+            }),
+        )
+        renderWithNavigation(SwapScreen, 'Swap')
+
+        fireEvent.change(await screen.findByTestId('swap-pay-input'), {
+            target: { value: '1' },
+        })
+        await waitFor(
+            () =>
+                expect(
+                    screen.getByTestId('swap-receive-amount').textContent,
+                ).not.toBe('0.00'),
+            FORM_TIMEOUT,
+        )
+        fireEvent.click(screen.getByTestId('swap-flip-button'))
+
+        await waitFor(
+            () =>
+                expect(
+                    (screen.getByTestId('swap-pay-input') as HTMLInputElement)
+                        .value,
+                ).toBe('0.0025'),
+            FORM_TIMEOUT,
+        )
+        await waitFor(
+            () =>
+                expect(quoteRequests.at(-1)).toMatchObject({
+                    source_asset_id: expect.stringMatching(/^eip155:/),
+                    source_amount: '2500000000000000',
+                }),
+            FORM_TIMEOUT,
+        )
+        expect(useSwapsStore.getState()).toMatchObject({
+            sourceChainId: 'ethereum',
+            fromAsset: ETH_ASSET,
+            toAsset: '0',
+            toAssetScope: ALGO_SCOPE,
+        })
+    })
+
     it('Given an Ethereum asset with no Algorand pairs, when Swap To shows the Algorand chip, then it explains why and moves the swap to Algorand', async () => {
         await selectTwoChainAccount()
         await seedSenderEther('10000000000000000000')
@@ -722,10 +884,37 @@ describe('Flow: Swap from an Ethereum account', () => {
 
         const outcome = await api.execute(tokenToEtherQuote())
 
-        expect(outcome).toMatchObject({ kind: 'error', phase: 'prepare' })
+        expect(outcome).toMatchObject({
+            kind: 'error',
+            phase: 'prepare',
+            title: 'swap.execution.failed_title.prepare',
+            message: 'swap.execution.route_unverified_body',
+        })
         expect(sent).toEqual([])
         expect(kmsCore.sign).not.toHaveBeenCalled()
         await waitFor(() => expect(reports).toEqual([{ status: 'cancelled' }]))
+    })
+
+    it('Given the shipped route table, when an ERC-20 swap runs, then nothing is ordered or signed and the error names the unverified route', async () => {
+        vi.mocked(swapChainAdapters.get('ethereum').executeSwap).mockRestore()
+        selectSender(ETHEREUM_SENDER)
+        await seedSenderEther('10000000000000000000')
+        const api = await startHost()
+        const sent = fakeNode()
+        mockEthereumSwapOrder([APPROVE_TX, TOKEN_SWAP_TX])
+        const { reports } = spyOnSwapSubmissionAndReports()
+
+        const outcome = await api.execute(tokenToEtherQuote())
+
+        expect(outcome).toMatchObject({
+            kind: 'error',
+            phase: 'prepare',
+            title: 'swap.execution.failed_title.prepare',
+            message: 'swap.execution.route_unverified_body',
+        })
+        expect(kmsCore.sign).not.toHaveBeenCalled()
+        expect(sent).toEqual([])
+        expect(reports).toEqual([])
     })
 
     it("Given ether swapped into the account's own Algorand address, when the swap runs, then the order is tracked until completed", async () => {

@@ -25,7 +25,8 @@ const {
     setMnemonicMock,
     clearDraftMock,
     showToastMock,
-    onDoneMock,
+    navigateMock,
+    requirePinMock,
     openMock,
     closeMock,
     modalRef,
@@ -39,7 +40,8 @@ const {
         setMnemonicMock: vi.fn(),
         clearDraftMock: vi.fn(),
         showToastMock: vi.fn(),
-        onDoneMock: vi.fn(),
+        navigateMock: vi.fn(),
+        requirePinMock: vi.fn(),
         modalRef,
         openMock: vi.fn(() => modalRef.setIsOpen?.(true)),
         closeMock: vi.fn(() => modalRef.setIsOpen?.(false)),
@@ -48,7 +50,7 @@ const {
 })
 
 let restoreCallbacks: {
-    onSuccess: (result: { summary: unknown }) => void
+    onSuccess: () => void
     onError: (error: unknown) => void
 }
 
@@ -60,8 +62,7 @@ vi.mock('@perawallet/wallet-core-backup', async importOriginal => ({
             setMnemonic: setMnemonicMock,
             clearDraft: clearDraftMock,
         }),
-    useRestoreCloudBackupMutation: (
-        _scope: unknown,
+    usePrepareCloudBackupRestoreMutation: (
         options: typeof restoreCallbacks,
     ) => {
         restoreCallbacks = options
@@ -69,6 +70,17 @@ vi.mock('@perawallet/wallet-core-backup', async importOriginal => ({
     },
 }))
 vi.mock('@components/QRScannerView', () => ({ scannerNotifier }))
+vi.mock('@react-navigation/native', () => ({
+    useNavigation: () => ({ navigate: navigateMock }),
+}))
+vi.mock('@hooks/useNavigationLock', () => ({
+    useNavigationLock: () => ({ allowProgrammaticNavigation: () => {} }),
+}))
+vi.mock('@modules/security', () => ({
+    useRequirePinVerification: () => ({
+        requirePinVerification: requirePinMock,
+    }),
+}))
 // Real state, spied entry points: the close must be observably ordered against
 // the sheet request, which a plain `isOpen` assertion cannot see.
 vi.mock('@hooks/useModalState', async () => {
@@ -120,7 +132,7 @@ const CONTENTS = {
 const restartScanning = vi.fn()
 
 const renderScanScreen = () =>
-    renderHook(() => useCloudBackupRestoreScanScreen({ onDone: onDoneMock }))
+    renderHook(() => useCloudBackupRestoreScanScreen())
 
 describe('useCloudBackupRestoreScanScreen', () => {
     beforeEach(() => {
@@ -128,6 +140,7 @@ describe('useCloudBackupRestoreScanScreen', () => {
         scannerNotifier.current = null
         parseMock.mockReturnValue({ version: 1 })
         requestSheetMock.mockResolvedValue(CONTENTS)
+        requirePinMock.mockResolvedValue(true)
     })
 
     test('keeps the camera closed until the user asks for it, so the instructions are readable', () => {
@@ -182,7 +195,7 @@ describe('useCloudBackupRestoreScanScreen', () => {
         expect(restartScanning).toHaveBeenCalled()
     })
 
-    test('writes the phrase before restoring with the envelope salt and config', async () => {
+    test('verifies the PIN, then writes the phrase before restoring with the envelope salt and config', async () => {
         const { result } = renderScanScreen()
         act(() => result.current.handleOpenScanner())
 
@@ -190,6 +203,7 @@ describe('useCloudBackupRestoreScanScreen', () => {
             result.current.handleScanned('ENVELOPE', restartScanning),
         )
 
+        expect(requirePinMock).toHaveBeenCalledTimes(1)
         expect(setMnemonicMock).toHaveBeenCalledWith(['w1', 'w2', 'w3'])
         // The envelope's own config, not the build default: a backup made
         // under other parameters derives a different backupId otherwise.
@@ -218,6 +232,18 @@ describe('useCloudBackupRestoreScanScreen', () => {
         )
     })
 
+    test('neither keeps the phrase nor restores when the PIN is not verified', async () => {
+        requirePinMock.mockResolvedValue(false)
+        const { result } = renderScanScreen()
+
+        await act(() =>
+            result.current.handleScanned('ENVELOPE', restartScanning),
+        )
+
+        expect(setMnemonicMock).not.toHaveBeenCalled()
+        expect(restoreMock).not.toHaveBeenCalled()
+    })
+
     test('resumes scanning and does not restore when the code sheet is cancelled', async () => {
         requestSheetMock.mockResolvedValue(undefined)
         const { result } = renderScanScreen()
@@ -230,23 +256,15 @@ describe('useCloudBackupRestoreScanScreen', () => {
         expect(result.current.isScannerVisible).toBe(true)
     })
 
-    test('clears the draft and hands the exit back to the caller once restored', () => {
+    test('opens the account choice once the backup is downloaded', () => {
         renderScanScreen()
 
-        act(() =>
-            restoreCallbacks.onSuccess({
-                summary: { imported: 1, skippedDuplicate: 0, failed: [] },
-            }),
-        )
+        act(() => restoreCallbacks.onSuccess())
 
-        expect(showToastMock).toHaveBeenCalledWith(
-            expect.objectContaining({
-                title: 'cloud_backup.restore.success',
-                type: 'success',
-            }),
+        expect(navigateMock).toHaveBeenCalledWith(
+            'CloudBackupRestoreSelectAccounts',
         )
-        expect(clearDraftMock).toHaveBeenCalled()
-        expect(onDoneMock).toHaveBeenCalled()
+        expect(clearDraftMock).not.toHaveBeenCalled()
     })
 
     test('reports a failed restore by category and stays on the screen', () => {
@@ -262,6 +280,6 @@ describe('useCloudBackupRestoreScanScreen', () => {
                 type: 'error',
             }),
         )
-        expect(onDoneMock).not.toHaveBeenCalled()
+        expect(navigateMock).not.toHaveBeenCalled()
     })
 })

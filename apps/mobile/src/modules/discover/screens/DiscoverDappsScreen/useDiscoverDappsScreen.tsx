@@ -13,7 +13,10 @@
 import { useCallback, useMemo, useState } from 'react'
 import { Linking } from 'react-native'
 import { useRoute, type RouteProp } from '@react-navigation/native'
-import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
+import {
+    chainDisplayNameOf,
+    getChainDescriptor,
+} from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     i18nKey,
@@ -29,6 +32,7 @@ import type { FilterOption } from '@components/FilterSelection'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { chainUiFor } from '@modules/chain-ui'
 import { toChainFilterOptions } from '@modules/assets'
 import type { RootStackParamList } from '@routes/types'
 import {
@@ -49,10 +53,6 @@ import {
     type DirectoryDapp,
 } from '../../utils/dappDirectory'
 import { normalizeDappUrl } from '../../utils/normalizeDappUrl'
-
-// The web app's verification form; it opens outside the app, as on the web.
-const APPLY_FOR_DISCOVER_URL =
-    'https://explorer.perawallet.app/project-verification/'
 
 // English labels go to analytics so events do not split by language.
 const SORTS: { id: DappSort; labelKey: I18nKey; analyticsName: string }[] = [
@@ -96,6 +96,7 @@ export type UseDiscoverDappsScreenResult = {
     openDapp: (dapp: DiscoverDapp) => void
     openDetails: (item: DirectoryDapp) => Promise<void>
     openSearch: () => void
+    canApplyForDiscover: boolean
     applyForDiscover: () => void
 }
 
@@ -134,6 +135,17 @@ export const useDiscoverDappsScreen = (): UseDiscoverDappsScreenResult => {
         selectedChainId === null
             ? ''
             : (chainDisplayNameOf(selectedChainId) ?? selectedChainId)
+
+    // Without chain chips the list is the one Discover chain's.
+    const listChainId =
+        chainOptions.length === 0
+            ? (discoverChainIds[0] ?? null)
+            : selectedChainId
+    const applyUrl =
+        listChainId === null
+            ? undefined
+            : chainUiFor(getChainDescriptor(listChainId).family)
+                  .discoverApplyUrl
 
     const all = useMemo(
         () => toDirectoryDapps(directory.projects),
@@ -275,12 +287,13 @@ export const useDiscoverDappsScreen = (): UseDiscoverDappsScreenResult => {
         navigation.navigate('DiscoverSearch')
     }, [navigation])
     const applyForDiscover = useCallback(() => {
+        if (applyUrl === undefined) return
         trackEvent(DiscoverEvent.ApplyForVerificationTap, {
             [Key.Category]: 'project',
         })
-        // oxlint-disable-next-line pera/no-unvalidated-open-url -- a constant Pera URL
-        void Linking.openURL(APPLY_FOR_DISCOVER_URL)
-    }, [])
+        // oxlint-disable-next-line pera/no-unvalidated-open-url -- a constant Pera URL from the chain UI
+        void Linking.openURL(applyUrl)
+    }, [applyUrl])
     const directoryRefetch = directory.refetch
     const retry = useCallback(() => {
         void directoryRefetch()
@@ -312,6 +325,7 @@ export const useDiscoverDappsScreen = (): UseDiscoverDappsScreenResult => {
         openDapp,
         openDetails,
         openSearch,
+        canApplyForDiscover: applyUrl !== undefined,
         applyForDiscover,
     }
 }

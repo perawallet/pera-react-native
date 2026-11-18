@@ -29,6 +29,8 @@ export type NewsCardProps = {
     onPress?: () => void
     /** The full-width list card's "Read" cue, as the web news list. */
     showReadAction?: boolean
+    /** \`plain\`: the home carousel card of the design, an image over bare text; \`card\` (default): the news list card. */
+    variant?: 'card' | 'plain'
     testID?: string
 }
 
@@ -38,14 +40,16 @@ export const NewsCard = ({
     dateDisplay,
     onPress,
     showReadAction = false,
+    variant = 'card',
     testID,
 }: NewsCardProps) => {
     const styles = useStyles()
+    const isPlain = variant === 'plain'
     const { t } = useLanguage()
 
     return (
         <PWTouchableOpacity
-            style={styles.card}
+            style={isPlain ? undefined : styles.card}
             onPress={onPress}
             disabled={onPress === undefined}
             testID={testID}
@@ -53,21 +57,25 @@ export const NewsCard = ({
             {banner ? (
                 <PWImage
                     source={{ uri: banner }}
-                    style={styles.banner}
+                    style={[styles.banner, isPlain && styles.plainBanner]}
                 />
             ) : (
-                <PWView style={styles.banner} />
+                <PWView
+                    style={[styles.banner, isPlain && styles.plainBanner]}
+                />
             )}
-            <PWView style={styles.body}>
+            <PWView style={isPlain ? styles.plainBody : styles.body}>
                 <PWText
-                    variant='h4'
+                    variant={isPlain ? 'bodyLarge' : 'h4'}
+                    weight={isPlain ? 500 : undefined}
                     numberOfLines={2}
                 >
                     {title}
                 </PWText>
                 <PWView style={styles.footer}>
                     <PWText
-                        variant='caption'
+                        variant={isPlain ? 'footnoteMedium' : 'caption'}
+                        weight={isPlain ? 400 : undefined}
                         style={styles.date}
                     >
                         {dateDisplay}

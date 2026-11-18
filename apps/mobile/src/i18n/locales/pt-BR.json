@@ -76,6 +76,52 @@
             "about": "Sobre",
             "website": "Site",
             "open": "Abrir"
+        },
+        "folders": {
+            "name_sheet": {
+                "title_new": "Nova pasta",
+                "title_rename": "Renomear pasta",
+                "placeholder": "Nome da pasta",
+                "create": "Criar",
+                "save": "Salvar"
+            },
+            "empty": "Ainda não há dApps nesta pasta",
+            "menu": {
+                "title": "Opções da pasta",
+                "open_label": "Opções da pasta",
+                "rename": "Renomear pasta",
+                "rearrange": "Reorganizar dApps",
+                "delete": "Excluir pasta"
+            },
+            "rearrange": {
+                "title": "Reorganizar dApps",
+                "remove_label": "Remover {{name}} desta pasta"
+            },
+            "delete_confirm": {
+                "title": "Excluir esta pasta?",
+                "body": "Os dApps dela continuam nos seus favoritos.",
+                "confirm": "Excluir pasta"
+            }
+        },
+        "favorites": {
+            "title": "Favoritos",
+            "new_folder": "Nova pasta",
+            "all_favorites": "Todos os favoritos",
+            "dapp_count": "{{count}} dApps",
+            "dapp_count_one": "{{count}} dApp",
+            "see_all": "Ver tudo",
+            "empty_title": "Nenhum favorito ainda",
+            "empty_body": "Comece a explorar os dApps",
+            "all_folders_title": "Todas as pastas",
+            "added_toast": {
+                "title": "Adicionado aos favoritos",
+                "body": "Toque para adicioná-lo a uma pasta"
+            }
+        },
+        "add_to_folder": {
+            "title": "Adicionar a uma pasta",
+            "new_folder": "Nova pasta",
+            "added": "Adicionado a {{folder}}"
         }
     },
     "account_menu": {
@@ -346,7 +392,12 @@
         }
     },
     "asset": {
-        "deleted_label": "(Excluído)"
+        "deleted_label": "(Excluído)",
+        "imitated_currency": {
+            "marker": "Não é {{code}} real",
+            "title": "Este ativo não é {{code}}",
+            "body": "O nome da unidade dele é {{code}}, mas é um ativo diferente que qualquer pessoa pode ter criado. Recebê-lo não dá a você nenhum {{code}}."
+        }
     },
     "asset_details": {
         "about": {
@@ -404,6 +455,7 @@
             "empty_body": "Nenhuma transação encontrada",
             "empty_on_network_body": "Ainda não há transações em {{network}}",
             "network_failed": "Não foi possível carregar as transações em {{networks}}",
+            "network_unavailable": "As transações não estão disponíveis em {{networks}}",
             "offline_empty_title": "Você está offline",
             "offline_empty_body": "Ainda não há transações salvas neste dispositivo. Elas aparecerão quando você voltar a ficar online.",
             "search_paused_body": "Nenhuma transação encontrada no histórico recente.",
@@ -418,6 +470,7 @@
             "asset_id": "ID do ativo",
             "token_id": "ID do token",
             "contract": "Contrato",
+            "standard": "Padrão",
             "total_supply": "Fornecimento total",
             "show_on": "Ver em",
             "explorer": "Pera Explorer",
@@ -485,6 +538,8 @@
             "nomatch_body": "Nenhum NFT corresponde à sua busca",
             "network_empty_title": "Nenhum NFT",
             "network_empty_body": "Você não tem nenhum NFT na rede {{chain}}.",
+            "refresh_error_title": "Não foi possível atualizar os NFTs",
+            "refresh_error_body": "Puxe para baixo para tentar novamente.",
             "suspicious_hidden_title": "NFTs suspeitos ocultos",
             "suspicious_hidden_body": "A Pera marcou estes NFTs como possível spam ou golpe. Para vê-los, ative Exibir NFTs suspeitos em Gerenciar > Filtrar.",
             "count": "{{count}} NFTs",
@@ -1060,6 +1115,19 @@
             "update_to_restore": "Atualize o Pera para restaurar mais {{count}} contas.",
             "update_to_restore_one": "Atualize o Pera para restaurar mais {{count}} conta."
         },
+        "restore_accounts": {
+            "title": "Escolha as contas para restaurar",
+            "description": "Este backup contém {{count}} contas. Escolha quais adicionar a este dispositivo.",
+            "description_one": "Este backup contém {{count}} conta. Escolha se quer adicioná-la a este dispositivo.",
+            "description_empty": "Este backup não contém contas. Os contatos e as configurações dele serão adicionados a este dispositivo.",
+            "all_accounts": "Todas as contas",
+            "selected_accounts": "Contas selecionadas",
+            "left_out_hint": "As contas que você não escolher continuam no backup. Você pode adicioná-las a este dispositivo depois, em Backup na nuvem.",
+            "device_notice_title": "As contas deste dispositivo entrarão no backup",
+            "device_notice_body": "As {{count}} contas deste dispositivo serão adicionadas a este backup. Qualquer pessoa com a frase de backup e a chave de criptografia dele poderá acessá-las, incluindo as passphrases de recuperação e as chaves privadas.",
+            "device_notice_body_one": "A conta deste dispositivo será adicionada a este backup. Qualquer pessoa com a frase de backup e a chave de criptografia dele poderá acessá-la, incluindo a passphrase de recuperação ou a chave privada.",
+            "restore": "Restaurar"
+        },
         "restore_scan": {
             "title": "Escanear código QR",
             "instructions": "Abra Backup na nuvem no seu outro dispositivo, escolha “Sincronizar com outros dispositivos” e escaneie o código exibido.",
@@ -1165,6 +1233,7 @@
             "empty_body": "Você verá um gráfico aqui quando tiver histórico de saldo",
             "asset_empty_body": "Você verá um gráfico aqui quando tiver histórico de saldo deste ativo nesta conta",
             "excludes_networks": "Este gráfico ainda não inclui os ativos de {{networks}}",
+            "failed_networks": "Não foi possível carregar o histórico de {{networks}}, então este gráfico não o inclui",
             "currency_unavailable_body": "Este gráfico não está disponível em {{currency}} no momento"
         },
         "webview": {
@@ -3653,6 +3722,7 @@
             "body": "Esta é uma conta compartilhada e nenhuma das contas signatárias está na sua wallet. Adicione uma conta signatária para assinar transações por ela.",
             "rekeyed_auth_missing_body": "Esta conta passou por rekey para {{authAddress}}, que não está nesta wallet, então ela não pode assinar transações. Importe a conta de autorização para assinar por ela.",
             "rekeyed_auth_watch_body": "Esta conta passou por rekey para uma conta de observação, que não possui chave de assinatura. Importe a chave da conta de autorização para assinar por ela.",
+            "signer_key_missing_body": "Esta transação precisa ser assinada com a chave própria de {{authAddress}}, que não está nesta wallet.",
             "signer_missing_body": "Esta solicitação precisa da assinatura de uma conta que não está na sua wallet, então não pode ser assinada aqui."
         },
         "transaction_request_faq": {
@@ -3738,6 +3808,8 @@
             "title_clawback": "Recuperação",
             "title_contract_interaction": "Interação com contrato",
             "token_contract": "Contrato do token {{symbol}}",
+            "unknown": "Não dá para saber",
+            "unknown_receive_body": "O Pera não consegue saber o que você recebe deste app",
             "unverified": "Não verificado",
             "you_receive": "Você recebe",
             "you_send": "Você envia",
@@ -4162,7 +4234,10 @@
             "to": "Para",
             "balance_label": "Saldo: <0/>",
             "max": "MÁX",
-            "select_asset": "Selecionar"
+            "select_asset": "Selecionar",
+            "flip": "Inverter pagar e receber",
+            "flip_unavailable_title": "Não é possível inverter esta conversão",
+            "flip_unavailable_body": "Esta conta não pode pagar pela rede {{network}}."
         },
         "asset_selection": {
             "swap_from_title": "Converter de",
@@ -4210,8 +4285,11 @@
             "confirm_swap": "Confirmar conversão",
             "slide_to_confirm": "Arraste para confirmar",
             "high_price_impact_warning": "Esta conversão tem um impacto alto no preço. Você pode receber bem menos tokens do que o esperado.",
+            "high_network_fee_warning": "A taxa de rede (~{{fee}}) é {{percent}}% desta conversão. Você ainda pode continuar.",
             "quote_error": "Não foi possível obter cotações. Tente novamente.",
             "amount_too_low": "Valor pequeno demais para converter na {{network}}. O mínimo é {{amount}} {{unit}}.",
+            "amount_too_low_fiat": "Valor pequeno demais para converter na {{network}}. O mínimo é {{amount}} {{unit}} (~{{fiat}}).",
+            "use_minimum": "Usar mínimo",
             "amount_too_low_unknown": "Valor pequeno demais para converter na {{network}}. Tente um valor maior ou uma rede com taxas menores.",
             "amount_too_high": "Valor grande demais para converter. O máximo é {{amount}} {{unit}}.",
             "amount_too_high_unknown": "Valor grande demais para converter. Tente um valor menor.",
@@ -4224,9 +4302,18 @@
         },
         "execution": {
             "error_title": "Falha na conversão",
-            "error_body": "Algo deu errado durante a conversão. Tente novamente.",
+            "failed_title": {
+                "prepare": "Não foi possível iniciar a conversão",
+                "approval": "Falha na aprovação",
+                "swap": "Falha na conversão"
+            },
             "provider_failed_body": "Este provedor não conseguiu concluir a conversão. Tente outro provedor.",
-            "insufficient_native_title": "{{symbol}} insuficiente",
+            "provider_unavailable_body": "O provedor está indisponível no momento. Tente novamente em instantes.",
+            "route_unverified_body": "A Pera ainda não consegue verificar o contrato de conversão deste provedor na rede {{network}}, então nada foi assinado. Tente outro provedor ou tente novamente mais tarde.",
+            "quote_mismatch_body": "As transações do provedor não correspondiam a esta cotação, então nada foi assinado. Tente novamente ou escolha outro provedor.",
+            "unsupported_order_body": "A Pera não consegue concluir o pedido deste provedor, então nada foi assinado. Escolha outro provedor.",
+            "signing_failed_body": "Não foi possível assinar a transação, então ela não foi enviada. Tente novamente.",
+            "order_insufficient_balance_body": "Seu saldo não cobre este valor e a taxa de rede. Tente um valor menor ou adicione fundos para a taxa.",
             "insufficient_native_body": "Esta conta precisa de pelo menos {{amount}} {{symbol}} a mais para cobrir esta conversão, as taxas e o saldo mínimo. Adicione mais {{symbol}} e tente novamente.",
             "success_title": "Conversão concluída",
             "success_body": "Conversão de {{fromAsset}} para {{toAsset}} concluída com sucesso",
@@ -4288,6 +4375,10 @@
         "receiving_account": {
             "title": "Conta de recebimento",
             "label": "Receber em"
+        },
+        "source_account": {
+            "title": "Selecione uma conta",
+            "subtitle": "Você tem <0>{{accounts}} contas</0> com este ativo. Escolha uma para continuar."
         }
     },
     "onramp": {

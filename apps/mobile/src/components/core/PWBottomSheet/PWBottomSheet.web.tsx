@@ -18,13 +18,7 @@
 // cooperation is unnecessary here, so PWInBottomSheetContext deliberately
 // stays at its default (false) — PWScrollView et al. then render plain
 // primitives instead of gorhom internals.
-import React, {
-    createRef,
-    useCallback,
-    useEffect,
-    useRef,
-    useState,
-} from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
     Animated,
     Easing,
@@ -32,11 +26,12 @@ import {
     Pressable,
     useWindowDimensions,
 } from 'react-native'
-import { type NotifierRoot, NotifierWrapper } from 'react-native-notifier'
+import { NotifierWrapper } from 'react-native-notifier'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { PWView } from '@components/core/PWView'
 import { useStyles } from './styles.web'
 import type { PWBottomSheetProps, PWBottomSheetSize } from './sheet-types'
+import { useSheetNotifierRef } from './sheetNotifier'
 
 // Same ref contract as the native module (index.ts re-exports it), and for the
 // same reason: react-native-web portals this sheet's Modal to document.body,
@@ -46,7 +41,7 @@ import type { PWBottomSheetProps, PWBottomSheetSize } from './sheet-types'
 // otherwise fall back to that buried global notifier and paint behind the open
 // sheet, i.e. be invisible exactly when they matter most. Populated by the
 // NotifierWrapper mounted inside the Modal below.
-export const bottomSheetNotifier = createRef<Nullable<NotifierRoot>>()
+export { bottomSheetNotifier } from './sheetNotifier'
 export type { PWBottomSheetProps, PWBottomSheetSize }
 
 // Mirrors SHEET_MAX_RATIO in the native PWBottomSheet.tsx.
@@ -75,6 +70,7 @@ export const PWBottomSheet = ({
     // soft keyboard itself.
 }: PWBottomSheetProps): Nullable<React.JSX.Element> => {
     const { height } = useWindowDimensions()
+    const notifierRef = useSheetNotifierRef()
     const maxHeight = Math.round(height * SHEET_MAX_RATIO)
     const styles = useStyles({ maxHeight, isFixed: size !== 'auto' })
 
@@ -183,7 +179,7 @@ export const PWBottomSheet = ({
                         concern with nothing to contribute inside a web modal. */}
                     <NotifierWrapper
                         omitGlobalMethodsHookup
-                        ref={bottomSheetNotifier}
+                        ref={notifierRef}
                     >
                         <PWView
                             testID={testID}

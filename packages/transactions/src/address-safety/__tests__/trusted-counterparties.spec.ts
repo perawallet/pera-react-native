@@ -25,7 +25,10 @@ import {
     getAssetPricesByIds,
     getAssetsByIds,
 } from '@perawallet/wallet-core-assets'
-import { historyChainAdapters } from '../../history-adapter'
+import {
+    historyChainAdapters,
+    type HistoryReadOptions,
+} from '../../history-adapter'
 import {
     fetchTrustedCounterparties,
     isTrustedTransfer,
@@ -62,6 +65,7 @@ const USD_PRICES: Record<string, string> = {
 }
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    getChainCapabilities: () => ({}),
     getChainDescriptor: (chainId: string) => ({
         id: chainId,
         nativeAsset: { ref: { chainId, assetId: 'native' } },
@@ -130,6 +134,7 @@ const getTransactionHistory =
             address: string,
             scope: ChainScope,
             page?: PageRef,
+            options?: HistoryReadOptions,
         ) => Promise<Page<TransactionRecord>>
     >()
 
@@ -467,6 +472,21 @@ describe('fetchTrustedCounterparties', () => {
         expect(await trustedFor()).toEqual([])
         expect(getTransactionHistory).toHaveBeenCalledTimes(
             MAX_COUNTERPARTY_HISTORY_PAGES,
+        )
+    })
+
+    it('hands each page read the signal, so an abort cancels the page in flight', async () => {
+        historyOf([])
+        const controller = new AbortController()
+
+        await fetchTrustedCounterparties({
+            accountAddress: ME,
+            scope: SCOPE,
+            signal: controller.signal,
+        })
+
+        expect(getTransactionHistory.mock.calls[0]?.[3]?.signal).toBe(
+            controller.signal,
         )
     })
 

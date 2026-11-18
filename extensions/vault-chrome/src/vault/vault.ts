@@ -35,7 +35,6 @@ import {
     clearSessionMasterKey,
     isSessionUnlocked,
     putSessionMasterKey,
-    SESSION_UNLOCKED_KEY,
 } from './session'
 
 // PBKDF2 parameters for reading legacy `version: 1` blobs. No longer written —
@@ -466,23 +465,4 @@ export const changePassword = async (
     }
 }
 
-/**
- * Subscribes to lock-state transitions across ALL extension contexts (the
- * popup learns when the background auto-lock fires, and vice versa).
- * Returns an unsubscribe function.
- */
-export const onLockStateChanged = (
-    listener: (isUnlocked: boolean) => void,
-): (() => void) => {
-    const handler = (
-        changes: Record<string, chrome.storage.StorageChange>,
-        areaName: string,
-    ): void => {
-        if (areaName !== 'session') return
-        const change = changes[SESSION_UNLOCKED_KEY]
-        if (!change) return
-        listener(change.newValue !== undefined)
-    }
-    chrome.storage.onChanged.addListener(handler)
-    return () => chrome.storage.onChanged.removeListener(handler)
-}
+export { onLockStateChanged } from './session'

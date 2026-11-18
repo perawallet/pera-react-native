@@ -30,6 +30,7 @@ import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { useWebViewStore } from '@modules/webview'
 import { useDiscoverFavoritesStore } from '@modules/discover/store/useDiscoverFavoritesStore'
+import { resetLegacyImportAttemptForTests } from '@modules/discover/hooks/useLegacyFavoritesImport'
 
 // The integration setup registers whichever chains config enables.
 vi.mock('@perawallet/wallet-core-config', async importOriginal => {
@@ -128,6 +129,18 @@ const renderHome = () =>
             {
                 name: 'DiscoverDapps',
                 component: () => <div data-testid='dapps_screen' />,
+            },
+            {
+                name: 'DiscoverFolder',
+                component: () => <div data-testid='folder_screen' />,
+            },
+            {
+                name: 'DiscoverAllFavorites',
+                component: () => <div data-testid='all_favorites_screen' />,
+            },
+            {
+                name: 'DiscoverAllFolders',
+                component: () => <div data-testid='all_folders_screen' />,
             },
         ],
     })
@@ -356,6 +369,96 @@ describe('Flow: Discover home', () => {
                 screen.getAllByLabelText('discover.dapp_row.unfavorite'),
             ).toHaveLength(1)
         })
+        await flush()
+    })
+
+    it('Given the legacy favorites are not imported yet, then the native home mounts the hidden importer once the directory settles', async () => {
+        resetLegacyImportAttemptForTests()
+        useHandlers()
+        renderHome()
+
+        expect(
+            await screen.findByTestId('discover_legacy_favorites_importer'),
+        ).toBeTruthy()
+        await flush()
+    })
+
+    it('Given the legacy favorites were imported, then the home mounts no importer', async () => {
+        resetLegacyImportAttemptForTests()
+        useDiscoverFavoritesStore.getState().importLegacyFavorites([], {})
+        useHandlers()
+        renderHome()
+
+        expect(await screen.findByTestId('discover_home_search')).toBeTruthy()
+        await flush()
+        expect(
+            screen.queryByTestId('discover_legacy_favorites_importer'),
+        ).toBeNull()
+    })
+
+    it('Given nothing favorited, then Favorites shows its empty state and New Folder', async () => {
+        useHandlers()
+        renderHome()
+
+        expect(
+            await screen.findByTestId('discover_home_favorites_empty'),
+        ).toBeTruthy()
+        expect(screen.getByTestId('discover_home_new_folder')).toBeTruthy()
+        expect(screen.queryByTestId('discover_home_all_favorites')).toBeNull()
+        await flush()
+    })
+
+    it('Given a favorite and five folders, then All favorites, the newest four folders and See all show', async () => {
+        const store = useDiscoverFavoritesStore.getState()
+        store.addFavorite({
+            url: 'https://tinyman.example',
+            name: 'Tinyman',
+            logo: null,
+            categories: [],
+            chains: [],
+        })
+        const ids = ['A', 'B', 'C', 'D', 'E'].map(name =>
+            store.createFolder(name),
+        )
+        useHandlers()
+        renderHome()
+
+        await screen.findByTestId('discover_home_all_favorites')
+        expect(screen.queryByTestId('discover_home_favorites_empty')).toBeNull()
+        ids.slice(1).forEach(id =>
+            expect(
+                screen.getByTestId(`discover_home_folder_${id}`),
+            ).toBeTruthy(),
+        )
+        expect(
+            screen.queryByTestId(`discover_home_folder_${ids[0]}`),
+        ).toBeNull()
+
+        fireEvent.click(screen.getByTestId('discover_home_folders_see_all'))
+        expect(await screen.findByTestId('all_folders_screen')).toBeTruthy()
+        await flush()
+    })
+
+    it('Given the New Folder action, when a name is entered and created, then the folder leads the list and opens', async () => {
+        useHandlers()
+        renderHome()
+        fireEvent.click(await screen.findByTestId('discover_home_new_folder'))
+
+        const input = await screen.findByTestId('discover_folder_name_input')
+        fireEvent.change(input, { target: { value: '  Swap ' } })
+        fireEvent.click(screen.getByTestId('discover_folder_name_submit'))
+
+        await waitFor(() => {
+            expect(
+                useDiscoverFavoritesStore.getState().folderOrder,
+            ).toHaveLength(1)
+        })
+        const [id] = useDiscoverFavoritesStore.getState().folderOrder
+        expect(useDiscoverFavoritesStore.getState().folders[id!]?.name).toBe(
+            'Swap',
+        )
+        fireEvent.click(await screen.findByTestId(`discover_home_folder_${id}`))
+        expect(await screen.findByTestId('folder_screen')).toBeTruthy()
         await flush()
     })
 

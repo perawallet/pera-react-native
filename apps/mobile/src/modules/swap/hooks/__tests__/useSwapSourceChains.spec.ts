@@ -11,49 +11,31 @@
  */
 
 import { renderHook } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-    useAccountChainOptionsResolver,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { describe, expect, it, vi } from 'vitest'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useSwapSourceChains } from '../useSwapSourceChains'
+
+const sourceChainsOf = vi.hoisted(() => vi.fn(() => ['algorand', 'base']))
+
+vi.mock('@perawallet/wallet-core-swaps', () => ({
+    useSwapSourceChainsResolver: () => sourceChainsOf,
+}))
 
 const ACCOUNT = { id: 'account' } as unknown as WalletAccount
 
 describe('useSwapSourceChains', () => {
-    const optionsOf = vi.fn()
-
-    beforeEach(() => {
-        optionsOf.mockReset()
-        vi.mocked(useAccountChainOptionsResolver).mockReturnValue(optionsOf)
-    })
-
-    it('asks only for chains the account can sign a swap on', () => {
-        optionsOf.mockReturnValue([])
-
-        renderHook(() => useSwapSourceChains(ACCOUNT))
-
-        expect(useAccountChainOptionsResolver).toHaveBeenCalledWith('swap', {
-            isSignerRequired: true,
-        })
-    })
-
-    it('keeps the enabled chains', () => {
-        optionsOf.mockReturnValue([
-            { chainId: 'algorand', isEnabled: true },
-            { chainId: 'ethereum', isEnabled: false },
-            { chainId: 'base', isEnabled: true },
-        ])
-
+    it("resolves the account's swap source chains", () => {
         const { result } = renderHook(() => useSwapSourceChains(ACCOUNT))
 
         expect(result.current).toEqual(['algorand', 'base'])
     })
 
     it('has no chains without an account', () => {
+        sourceChainsOf.mockClear()
+
         const { result } = renderHook(() => useSwapSourceChains(null))
 
         expect(result.current).toEqual([])
-        expect(optionsOf).not.toHaveBeenCalled()
+        expect(sourceChainsOf).not.toHaveBeenCalled()
     })
 })

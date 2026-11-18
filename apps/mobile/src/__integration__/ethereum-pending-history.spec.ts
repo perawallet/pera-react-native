@@ -14,6 +14,7 @@
 // broadcast, survives an offline read, and gives way to the chain's own row.
 // The flow enters at the broadcaster's submit transport.
 
+import { createElement, type ReactNode } from 'react'
 import {
     afterAll,
     beforeAll,
@@ -23,6 +24,7 @@ import {
     it,
     vi,
 } from 'vitest'
+import { renderHook, waitFor } from '@testing-library/react'
 import {
     i18nKey,
     type ChainContext,
@@ -57,8 +59,10 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
 // mock exists, and the client reads its deployments once, so every module under
 // test is loaded afresh.
 vi.resetModules()
-const { getPendingTransactionRecords, getTransactionHistoryWithPending } =
+const { getPendingTransactionRecords, useTransactionRecordsQuery } =
     await import('@perawallet/wallet-core-transactions')
+const { QueryClientProvider } = await import('@tanstack/react-query')
+const { createTestQueryClient } = await import('@test-utils/render')
 const { evmHistoryItem, evmRpcHandlers, evmTransactionReceipt } =
     await import('@perawallet/wallet-core-chain-ethereum/test-handlers')
 const { createEvmBroadcasterAdapter } =
@@ -112,6 +116,29 @@ const serveHistory = (results: EvmHistoryItemResponse[]) =>
         ),
     )
 
+// What History lists once its read settles with `hash` among the records.
+const historyOf = async (address: string, hash: string) => {
+    const client = createTestQueryClient()
+    const wrapper = ({ children }: { children: ReactNode }) =>
+        createElement(QueryClientProvider, { client }, children)
+    const { result, unmount } = renderHook(
+        () =>
+            useTransactionRecordsQuery({
+                accountAddress: address,
+                scope: SCOPE,
+            }),
+        { wrapper },
+    )
+    await waitFor(() => {
+        expect(result.current.isFetched).toBe(true)
+        expect(result.current.records.map(record => record.id)).toContain(hash)
+    })
+    const { records } = result.current
+    unmount()
+    client.clear()
+    return records
+}
+
 describe('Flow: an Ethereum send in history', () => {
     beforeAll(async () => {
         await setupTestDatabase()
@@ -143,13 +170,10 @@ describe('Flow: an Ethereum send in history', () => {
         serveHistory([])
 
         // The ledger holds the checksummed sender; the stored address is lowercase.
-        const page = await getTransactionHistoryWithPending(
-            SENDER.toLowerCase(),
-            SCOPE,
-        )
+        const items = await historyOf(SENDER.toLowerCase(), hash)
 
-        expect(page.items).toHaveLength(1)
-        expect(page.items[0]).toMatchObject({
+        expect(items).toHaveLength(1)
+        expect(items[0]).toMatchObject({
             id: hash,
             status: 'pending',
             summary: { title: { key: SUMMARY_TITLE } },
@@ -163,7 +187,6 @@ describe('Flow: an Ethereum send in history', () => {
         const records = await getPendingTransactionRecords({
             address: SENDER.toLowerCase(),
             scope: SCOPE,
-            listedIds: new Set(),
         })
 
         expect(records.map(record => record.id)).toEqual([hash])
@@ -192,12 +215,7 @@ describe('Flow: an Ethereum send in history', () => {
                 evmChainOf('ethereum'),
             ).reconcileOpenSubmissions()
         const recordOf = async () =>
-            (
-                await getTransactionHistoryWithPending(
-                    SENDER.toLowerCase(),
-                    SCOPE,
-                )
-            ).items[0]
+            (await historyOf(SENDER.toLowerCase(), hash))[0]
 
         await reconcile()
         const confirming = await recordOf()
@@ -221,12 +239,9 @@ describe('Flow: an Ethereum send in history', () => {
         const hash = await broadcast()
         serveHistory([evmHistoryItem({ hash, from: SENDER })])
 
-        const page = await getTransactionHistoryWithPending(
-            SENDER.toLowerCase(),
-            SCOPE,
-        )
+        const items = await historyOf(SENDER.toLowerCase(), hash)
 
-        const matching = page.items.filter(record => record.id === hash)
+        const matching = items.filter(record => record.id === hash)
         expect(matching).toHaveLength(1)
         expect(matching[0].status).toBe('confirmed')
     })

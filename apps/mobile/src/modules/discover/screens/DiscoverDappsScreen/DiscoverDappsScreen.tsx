@@ -154,7 +154,7 @@ export const DiscoverDappsScreen = () => {
         </PWView>
     )
 
-    const footer = (
+    const footer = screen.canApplyForDiscover ? (
         <PWView
             style={styles.apply}
             testID='discover_dapps_apply'
@@ -169,7 +169,7 @@ export const DiscoverDappsScreen = () => {
                 testID='discover_dapps_apply_button'
             />
         </PWView>
-    )
+    ) : null
 
     return (
         <PWScreen

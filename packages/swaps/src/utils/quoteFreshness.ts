@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Decimal } from 'decimal.js'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { SwapQuote } from '../models'
 
 /**
@@ -27,3 +29,25 @@ export const isQuoteFresh = (
     quote.fetchedAt !== undefined &&
     nowMs - quote.fetchedAt <= SWAP_QUOTE_TTL_MS &&
     nowMs < (quote.expiresAt ?? Number.POSITIVE_INFINITY)
+
+/** The life a quote needs at confirm to get through preflight and order creation. */
+export const SWAP_QUOTE_EXECUTION_MARGIN_MS = 15_000
+
+const floorOf = (quote: SwapQuote): Decimal =>
+    quote.minimumAmountOut ?? quote.amountOut
+
+/**
+ * A fresh offer the user didn't confirm may run only when it is the same
+ * provider's and its guaranteed floor is no lower than the confirmed one.
+ */
+export const pickRefreshedQuote = (
+    confirmed: SwapQuote,
+    offers: readonly SwapQuote[],
+    nowMs: number = Date.now(),
+): Nullable<SwapQuote> =>
+    offers.find(
+        offer =>
+            offer.provider === confirmed.provider &&
+            isQuoteFresh(offer, nowMs) &&
+            floorOf(offer).gte(floorOf(confirmed)),
+    ) ?? null

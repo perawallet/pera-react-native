@@ -10,18 +10,18 @@
  limitations under the License
  */
 
-import { useCallback, useMemo, type ReactElement } from 'react'
+import { useCallback, type ReactElement } from 'react'
 import {
-    useDistinctPairsHistoryQuery,
-    useSwaps,
-    type SwapAsset,
-    type SwapDistinctPairItem,
+    useRecentSwapPairsQuery,
+    useSwapsStore,
+    type SwapHistoryPair,
 } from '@perawallet/wallet-core-swaps'
-import { addressOn, useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import {
-    toScopeKey,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+    addressOn,
+    useSelectedAccount,
+    useSelectedAccountId,
+} from '@perawallet/wallet-core-accounts'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { PWView } from '@components/core'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { SwapHistoryContent } from '@modules/swap/components/SwapHistoryContent'
@@ -31,15 +31,15 @@ import { SwapPairChip } from './SwapPairChip'
 import { useStyles } from './styles'
 
 export type UseSwapPairHistoryWidgetResult = {
-    pairs: SwapDistinctPairItem[]
+    pairs: SwapHistoryPair[]
     isLoading: boolean
     isError: boolean
     isEnabled: boolean
     address: string
-    handlePairPress: (pair: SwapDistinctPairItem) => void
+    handlePairPress: (pair: SwapHistoryPair) => void
     handleSeeAllPress: () => void
-    renderPair: (params: { item: SwapDistinctPairItem }) => ReactElement
-    keyExtractor: (item: SwapDistinctPairItem) => string
+    renderPair: (params: { item: SwapHistoryPair }) => ReactElement
+    keyExtractor: (item: SwapHistoryPair) => string
     renderSeparator: () => ReactElement
 }
 
@@ -47,37 +47,33 @@ export const useSwapPairHistoryWidget = (
     scope: ChainScope,
 ): UseSwapPairHistoryWidgetResult => {
     const selectedAccount = useSelectedAccount()
-    const { setFromAsset, setToAsset } = useSwaps(scope)
+    const { setSelectedAccountId } = useSelectedAccountId()
+    const setAccountPair = useSwapsStore(state => state.setAccountPair)
     const address = selectedAccount
         ? (addressOn(selectedAccount, scope) ?? '')
         : ''
     const { request: requestBottomSheet } = useBottomSheet()
     const styles = useStyles()
 
-    const { data, isLoading, isError } = useDistinctPairsHistoryQuery(
-        address,
-        scope,
-    )
-    // A chip refills this scope's pair, so a pair with a leg elsewhere can't be one.
-    const scopeKey = toScopeKey(scope)
-    const pairs = useMemo(() => {
-        const isOnScope = (asset: SwapAsset) =>
-            toScopeKey(asset.ref) === scopeKey
-        return (data ?? []).filter(
-            pair => isOnScope(pair.assetIn) && isOnScope(pair.assetOut),
-        )
-    }, [data, scopeKey])
+    const { pairs, isLoading, isError, isEnabled } = useRecentSwapPairsQuery()
 
     const handlePairPress = useCallback(
-        (pair: SwapDistinctPairItem) => {
+        (pair: SwapHistoryPair) => {
             trackEvent(SwapEvent.SelectHistory, {
-                [AnalyticsMetadataKey.ChainId]: scope.chainId,
+                [AnalyticsMetadataKey.ChainId]: pair.assetIn.ref.chainId,
                 [AnalyticsMetadataKey.SwapPairing]: `${pair.assetIn.unitName}/${pair.assetOut.unitName}`,
             })
-            setFromAsset(pair.assetIn.assetId)
-            setToAsset(pair.assetOut.assetId)
+            setAccountPair({
+                accountId: pair.accountId,
+                chainId: pair.assetIn.ref.chainId,
+                fromAsset: pair.assetIn.assetId,
+                toAsset: pair.assetOut.assetId,
+            })
+            if (pair.accountId !== selectedAccount?.id) {
+                setSelectedAccountId(pair.accountId)
+            }
         },
-        [scope.chainId, setFromAsset, setToAsset],
+        [setAccountPair, selectedAccount?.id, setSelectedAccountId],
     )
 
     const handleSeeAllPress = useCallback(() => {
@@ -101,7 +97,7 @@ export const useSwapPairHistoryWidget = (
     }, [address, scope, requestBottomSheet])
 
     const renderPair = useCallback(
-        ({ item }: { item: SwapDistinctPairItem }) => (
+        ({ item }: { item: SwapHistoryPair }) => (
             <SwapPairChip
                 assetIn={item.assetIn}
                 assetOut={item.assetOut}
@@ -112,7 +108,7 @@ export const useSwapPairHistoryWidget = (
     )
 
     const keyExtractor = useCallback(
-        (item: SwapDistinctPairItem) => item.pairKey,
+        (item: SwapHistoryPair) => item.pairKey,
         [],
     )
 
@@ -125,7 +121,7 @@ export const useSwapPairHistoryWidget = (
         pairs,
         isLoading,
         isError,
-        isEnabled: address.length > 0,
+        isEnabled,
         address,
         handlePairPress,
         handleSeeAllPress,

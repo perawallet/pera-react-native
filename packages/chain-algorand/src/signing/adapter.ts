@@ -53,6 +53,7 @@ import { calculateTotalFee, detectHighGroupFee } from './fees'
 import {
     getRekeyedUnsignableReason,
     resolveAllSignerAddresses,
+    resolveSigningAccounts,
 } from './getRekeyedUnsignableReason'
 import { encodeDelegatedLsigAccount, programSigningPayload } from './lsig'
 import { mergeSigningResults } from './mergeSigningResults'
@@ -116,6 +117,7 @@ export const algorandReviewerAdapter: ReviewerChainAdapter = {
     aggregateTransactionWarnings: (transactions, ...rest) =>
         aggregateTransactionWarnings(transactions.map(algorandViewOf), ...rest),
     resolveAllSignerAddresses,
+    resolveSigningAccounts,
     getDelegatedUnsignableReason: getRekeyedUnsignableReason,
     decodeArbitraryDataForDisplay,
     reviewedAddresses: algorandReviewedAddresses,

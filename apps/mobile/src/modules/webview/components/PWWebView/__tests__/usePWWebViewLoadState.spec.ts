@@ -41,6 +41,28 @@ describe('usePWWebViewLoadState', () => {
         useNetworkStatusStore.setState({ hasInternet: true })
     })
 
+    it('reports a loaded document only after it succeeds, and removes readiness for a server error', () => {
+        const { result } = renderHook(() =>
+            usePWWebViewLoadState({ onReload: vi.fn() }),
+        )
+
+        act(() => result.current.handleLoadStart())
+        act(() => vi.advanceTimersByTime(WEBVIEW_LOADING_TIMEOUT_MS + 1))
+        expect(result.current.isDocumentLoaded).toBe(false)
+
+        act(() => result.current.handleLoadEnd())
+        expect(result.current.isDocumentLoaded).toBe(false)
+
+        act(() => result.current.handleDocumentLoaded(PAGE_URL))
+        expect(result.current.isDocumentLoaded).toBe(true)
+
+        act(() =>
+            result.current.handleHttpError({ url: PAGE_URL, statusCode: 503 }),
+        )
+        act(() => result.current.handleDocumentLoaded(PAGE_URL))
+        expect(result.current.isDocumentLoaded).toBe(false)
+    })
+
     it('shows the offline surface when mounted offline with no document', () => {
         useNetworkStatusStore.setState({ hasInternet: false })
         const { result } = renderHook(() =>

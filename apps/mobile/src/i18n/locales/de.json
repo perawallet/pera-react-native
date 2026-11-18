@@ -76,6 +76,52 @@
             "about": "Über",
             "website": "Website",
             "open": "Öffnen"
+        },
+        "folders": {
+            "name_sheet": {
+                "title_new": "Neuer Ordner",
+                "title_rename": "Ordner umbenennen",
+                "placeholder": "Ordnername",
+                "create": "Erstellen",
+                "save": "Speichern"
+            },
+            "empty": "Noch keine dApps in diesem Ordner",
+            "menu": {
+                "title": "Ordneroptionen",
+                "open_label": "Ordneroptionen",
+                "rename": "Ordner umbenennen",
+                "rearrange": "dApps neu anordnen",
+                "delete": "Ordner löschen"
+            },
+            "rearrange": {
+                "title": "dApps neu anordnen",
+                "remove_label": "{{name}} aus diesem Ordner entfernen"
+            },
+            "delete_confirm": {
+                "title": "Diesen Ordner löschen?",
+                "body": "Seine dApps bleiben in deinen Favoriten.",
+                "confirm": "Ordner löschen"
+            }
+        },
+        "favorites": {
+            "title": "Favoriten",
+            "new_folder": "Neuer Ordner",
+            "all_favorites": "Alle Favoriten",
+            "dapp_count": "{{count}} dApps",
+            "dapp_count_one": "{{count}} dApp",
+            "see_all": "Alle anzeigen",
+            "empty_title": "Noch keine Favoriten",
+            "empty_body": "Entdecke die dApps",
+            "all_folders_title": "Alle Ordner",
+            "added_toast": {
+                "title": "Zu Favoriten hinzugefügt",
+                "body": "Tippe, um es einem Ordner hinzuzufügen"
+            }
+        },
+        "add_to_folder": {
+            "title": "Zu Ordner hinzufügen",
+            "new_folder": "Neuer Ordner",
+            "added": "Zu {{folder}} hinzugefügt"
         }
     },
     "account_menu": {
@@ -346,7 +392,12 @@
         }
     },
     "asset": {
-        "deleted_label": "(Gelöscht)"
+        "deleted_label": "(Gelöscht)",
+        "imitated_currency": {
+            "marker": "Imitiert {{code}}",
+            "title": "Dieses Asset ist nicht {{code}}",
+            "body": "Sein Einheitenname ist {{code}}, aber es ist ein eigenständiges Asset, das jeder erstellt haben könnte. Wenn du es erhältst, bekommst du kein {{code}}."
+        }
     },
     "asset_details": {
         "about": {
@@ -404,6 +455,7 @@
             "empty_body": "Keine Transaktionen gefunden",
             "empty_on_network_body": "Noch keine Transaktionen auf {{network}}",
             "network_failed": "Transaktionen auf {{networks}} konnten nicht geladen werden",
+            "network_unavailable": "Transaktionen sind auf {{networks}} nicht verfügbar",
             "offline_empty_title": "Du bist offline",
             "offline_empty_body": "Auf diesem Gerät sind noch keine Transaktionen gespeichert. Sie erscheinen, sobald du wieder online bist.",
             "search_paused_body": "Keine Transaktionen im jüngsten Verlauf gefunden.",
@@ -418,6 +470,7 @@
             "asset_id": "Asset-ID",
             "token_id": "Token-ID",
             "contract": "Smart Contract",
+            "standard": "Standard",
             "total_supply": "Gesamtangebot",
             "show_on": "Anzeigen auf",
             "explorer": "Pera Explorer",
@@ -485,6 +538,8 @@
             "nomatch_body": "Keine NFTs entsprechen deinem Suchbegriff",
             "network_empty_title": "Keine NFTs",
             "network_empty_body": "Du hast keine NFTs auf {{chain}}.",
+            "refresh_error_title": "NFTs konnten nicht aktualisiert werden",
+            "refresh_error_body": "Zum Wiederholen nach unten ziehen.",
             "suspicious_hidden_title": "Verdächtige NFTs ausgeblendet",
             "suspicious_hidden_body": "Pera hat diese NFTs als wahrscheinlichen Spam oder Betrug markiert. Um sie zu sehen, aktiviere „Verdächtige NFTs anzeigen“ unter Verwalten > Filter.",
             "count": "{{count}} NFTs",
@@ -1052,6 +1107,19 @@
             "update_to_restore": "Aktualisiere Pera, um {{count}} weitere Konten wiederherzustellen.",
             "update_to_restore_one": "Aktualisiere Pera, um {{count}} weiteres Konto wiederherzustellen."
         },
+        "restore_accounts": {
+            "title": "Wähle die Konten zum Wiederherstellen",
+            "description": "Dieses Backup enthält {{count}} Konten. Wähle, welche du zu diesem Gerät hinzufügen möchtest.",
+            "description_one": "Dieses Backup enthält {{count}} Konto. Wähle, ob du es zu diesem Gerät hinzufügen möchtest.",
+            "description_empty": "Dieses Backup enthält keine Konten. Seine Kontakte und Einstellungen werden zu diesem Gerät hinzugefügt.",
+            "all_accounts": "Alle Konten",
+            "selected_accounts": "Ausgewählte Konten",
+            "left_out_hint": "Nicht ausgewählte Konten bleiben im Backup. Du kannst sie später über Cloud-Backup zu diesem Gerät hinzufügen.",
+            "device_notice_title": "Deine Konten auf diesem Gerät werden gesichert",
+            "device_notice_body": "Die {{count}} Konten auf diesem Gerät werden zu diesem Backup hinzugefügt. Wer die Passphrase und den Backup-Schlüssel dieses Backups hat, kann auf sie zugreifen, einschließlich ihrer Wiederherstellungsphrasen und privaten Schlüssel.",
+            "device_notice_body_one": "Das Konto auf diesem Gerät wird zu diesem Backup hinzugefügt. Wer die Passphrase und den Backup-Schlüssel dieses Backups hat, kann darauf zugreifen, einschließlich seiner Wiederherstellungsphrase oder seines privaten Schlüssels.",
+            "restore": "Wiederherstellen"
+        },
         "restore_scan": {
             "title": "QR-Code scannen",
             "instructions": "Öffne Cloud-Backup auf deinem anderen Gerät, wähle „Mit anderen Geräten synchronisieren“ und scanne den angezeigten Code.",
@@ -1157,6 +1225,7 @@
             "empty_body": "Sobald ein Guthabenverlauf vorliegt, wird hier ein Diagramm angezeigt",
             "asset_empty_body": "Sobald für dieses Asset auf diesem Konto ein Guthabenverlauf vorliegt, wird hier ein Diagramm angezeigt",
             "excludes_networks": "Dieses Diagramm enthält noch keine {{networks}}-Assets",
+            "failed_networks": "Der Verlauf von {{networks}} konnte nicht geladen werden und fehlt daher in diesem Diagramm",
             "currency_unavailable_body": "Dieses Diagramm ist in {{currency}} derzeit nicht verfügbar"
         },
         "webview": {
@@ -3628,6 +3697,7 @@
             "body": "Dies ist ein Gemeinschaftskonto, und keines seiner Signier-Konten befindet sich in deinem Wallet. Füge ein Signier-Konto hinzu, um Transaktionen dafür zu signieren.",
             "rekeyed_auth_missing_body": "Dieses Konto ist zu {{authAddress}} rekeyed, das sich nicht in diesem Wallet befindet, daher kann es keine Transaktionen signieren. Importiere das Auth-Konto, um dafür zu signieren.",
             "rekeyed_auth_watch_body": "Dieses Konto ist zu einem reinen Beobachtungskonto rekeyed, das keinen Signaturschlüssel besitzt. Importiere den Schlüssel des Auth-Kontos, um dafür zu signieren.",
+            "signer_key_missing_body": "Diese Transaktion muss mit dem eigenen Schlüssel von {{authAddress}} signiert werden, der sich nicht in diesem Wallet befindet.",
             "signer_missing_body": "Diese Anfrage braucht eine Signatur von einem Konto, das nicht in deinem Wallet ist, daher kann sie hier nicht signiert werden."
         },
         "transaction_request_faq": {
@@ -3713,6 +3783,8 @@
             "title_clawback": "Clawback",
             "title_contract_interaction": "Smart-Contract-Interaktion",
             "token_contract": "{{symbol}}-Token-Contract",
+            "unknown": "Unbekannt",
+            "unknown_receive_body": "Pera kann nicht erkennen, was du von dieser App erhältst",
             "unverified": "Nicht verifiziert",
             "you_receive": "Du erhältst",
             "you_send": "Du sendest",
@@ -4132,7 +4204,10 @@
             "to": "An",
             "balance_label": "Guthaben: <0/>",
             "max": "MAX",
-            "select_asset": "Auswählen"
+            "select_asset": "Auswählen",
+            "flip": "Zahlen und Erhalten tauschen",
+            "flip_unavailable_title": "Tausch lässt sich nicht umkehren",
+            "flip_unavailable_body": "Dein Konto kann nicht über das {{network}}-Netzwerk bezahlen."
         },
         "asset_selection": {
             "swap_from_title": "Tauschen von",
@@ -4180,8 +4255,11 @@
             "confirm_swap": "Tausch bestätigen",
             "slide_to_confirm": "Zum Bestätigen wischen",
             "high_price_impact_warning": "Dieser Tausch hat eine hohe Preisauswirkung. Du erhältst möglicherweise deutlich weniger Token als erwartet.",
+            "high_network_fee_warning": "Die Netzwerkgebühr (~{{fee}}) beträgt {{percent}} % dieses Tauschs. Du kannst trotzdem fortfahren.",
             "quote_error": "Angebote konnten nicht abgerufen werden. Bitte versuche es erneut.",
             "amount_too_low": "Betrag zu klein für einen Tausch auf {{network}}. Das Minimum beträgt {{amount}} {{unit}}.",
+            "amount_too_low_fiat": "Betrag zu klein für einen Tausch auf {{network}}. Das Minimum beträgt {{amount}} {{unit}} (~{{fiat}}).",
+            "use_minimum": "Minimum verwenden",
             "amount_too_low_unknown": "Betrag zu klein für einen Tausch auf {{network}}. Versuche einen höheren Betrag oder ein Netzwerk mit niedrigeren Gebühren.",
             "amount_too_high": "Betrag zu groß für einen Tausch. Das Maximum beträgt {{amount}} {{unit}}.",
             "amount_too_high_unknown": "Betrag zu groß für einen Tausch. Versuche einen kleineren Betrag.",
@@ -4194,9 +4272,18 @@
         },
         "execution": {
             "error_title": "Tausch fehlgeschlagen",
-            "error_body": "Beim Tausch ist ein Fehler aufgetreten. Bitte versuche es erneut.",
+            "failed_title": {
+                "prepare": "Tausch konnte nicht gestartet werden",
+                "approval": "Freigabe fehlgeschlagen",
+                "swap": "Tausch fehlgeschlagen"
+            },
             "provider_failed_body": "Dieser Anbieter konnte den Tausch nicht durchführen. Versuche es mit einem anderen Anbieter.",
-            "insufficient_native_title": "Unzureichendes {{symbol}}",
+            "provider_unavailable_body": "Der Anbieter ist gerade nicht verfügbar. Versuche es gleich noch einmal.",
+            "route_unverified_body": "Pera kann den Vertrag dieses Anbieters für den Tausch auf {{network}} noch nicht überprüfen, deshalb wurde nichts signiert. Versuche einen anderen Anbieter oder versuche es später erneut.",
+            "quote_mismatch_body": "Die Transaktionen des Anbieters passten nicht zu diesem Angebot, deshalb wurde nichts signiert. Versuche es erneut oder wähle einen anderen Anbieter.",
+            "unsupported_order_body": "Pera kann die Bestellung dieses Anbieters nicht abschließen, deshalb wurde nichts signiert. Wähle einen anderen Anbieter.",
+            "signing_failed_body": "Die Transaktion konnte nicht signiert werden, deshalb wurde sie nicht gesendet. Versuche es erneut.",
+            "order_insufficient_balance_body": "Dein Guthaben reicht für diesen Betrag und die Netzwerkgebühr nicht aus. Versuche einen kleineren Betrag oder füge Guthaben für die Gebühr hinzu.",
             "insufficient_native_body": "Dieses Konto benötigt mindestens {{amount}} {{symbol}} mehr, um diesen Tausch, die Gebühren und das Mindestguthaben zu decken. Füge mehr {{symbol}} hinzu und versuche es erneut.",
             "success_title": "Tausch abgeschlossen",
             "success_body": "Tausch von {{fromAsset}} zu {{toAsset}} erfolgreich abgeschlossen",
@@ -4258,6 +4345,10 @@
         "receiving_account": {
             "title": "Empfangskonto",
             "label": "Empfangen auf"
+        },
+        "source_account": {
+            "title": "Konto auswählen",
+            "subtitle": "Du hast <0>{{accounts}} Konten</0> mit diesem Asset. Wähle eines aus, um fortzufahren."
         }
     },
     "onramp": {

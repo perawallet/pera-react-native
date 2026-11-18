@@ -17,6 +17,7 @@ import { startDatabaseHost } from '@perawallet/wallet-extension-platform-chrome'
 import {
     broadcastConnectionsEvent,
     createChromeDappTransport,
+    createOffscreenLockState,
     onConnectionsControlMessage,
     onLocalStorageKeyChanged,
     sendConnectionApprovalRequest,
@@ -52,6 +53,7 @@ import type {
 import {
     bootConnections,
     createConnectionRegistry,
+    watchLockNotices,
     watchWalletNotices,
 } from '@perawallet/wallet-core-connections'
 import {
@@ -175,6 +177,7 @@ export const runOffscreenApp = async ({
         getSelectedScope(chainId).networkId
     const siteWarningOf = async (origin: string): Promise<SiteWarningLevel> =>
         (await assessSiteSafety({ urls: [origin] })).kind
+    const lockState = createOffscreenLockState()
     registry.register(
         createWalletConnectV1Handler({
             chainId: ALGORAND_CHAIN_ID,
@@ -191,6 +194,7 @@ export const runOffscreenApp = async ({
                 getCustomNetworkConfig()?.genesisHash,
             getAccounts: () => signingAccountAddressesOn(ALGORAND_CHAIN_ID),
             siteWarningOf,
+            isWalletLocked: lockState.isLocked,
         }),
     )
     registry.register(
@@ -202,6 +206,7 @@ export const runOffscreenApp = async ({
                 provider.chains.capabilities(chainId).dappConnect,
             getAccounts: signingAccountAddressesOn,
             siteWarningOf,
+            isWalletLocked: lockState.isLocked,
         }),
     )
     const connectionsHost = startConnectionsHost({
@@ -240,6 +245,7 @@ export const runOffscreenApp = async ({
     onConnectionsControlMessage(connectionsHost.handleControlMessage)
     // Baselines are taken here, after boot, so nothing restored is announced.
     watchWalletNotices(registry)
+    watchLockNotices(registry, await lockState.ready, lockState.subscribe)
 
     logger.info('[offscreen] connections host started')
 }

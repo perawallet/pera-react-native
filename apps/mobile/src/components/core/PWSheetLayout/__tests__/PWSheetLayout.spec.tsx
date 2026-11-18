@@ -14,6 +14,7 @@ import { describe, it, expect } from 'vitest'
 import { PWText } from '@components/core/PWText'
 import { render, screen } from '@test-utils/render'
 import { PWSheetLayout } from '../PWSheetLayout'
+import { PWSheetSizeContext } from '../../PWBottomSheet/sheetSizeContext'
 
 describe('PWSheetLayout', () => {
     it('renders the header above the body', () => {
@@ -46,5 +47,39 @@ describe('PWSheetLayout', () => {
 
         expect(screen.getByText('Body')).toBeTruthy()
         expect(screen.getByText('Footer')).toBeTruthy()
+    })
+
+    it('pins the footer over the bottom of an auto sheet', () => {
+        render(
+            <PWSheetSizeContext.Provider value='auto'>
+                <PWSheetLayout
+                    footer={<PWText>Footer</PWText>}
+                    testID='layout'
+                >
+                    <PWText>Body</PWText>
+                </PWSheetLayout>
+            </PWSheetSizeContext.Provider>,
+        )
+
+        const footer = getComputedStyle(screen.getByTestId('layout_footer'))
+        expect(footer.position).toBe('absolute')
+        expect(footer.bottom).toBe('0px')
+    })
+
+    it('stacks the footer under the body in a modal sheet', () => {
+        render(
+            <PWSheetSizeContext.Provider value='modal'>
+                <PWSheetLayout
+                    footer={<PWText>Footer</PWText>}
+                    testID='layout'
+                >
+                    <PWText>Body</PWText>
+                </PWSheetLayout>
+            </PWSheetSizeContext.Provider>,
+        )
+
+        expect(
+            getComputedStyle(screen.getByTestId('layout_footer')).position,
+        ).not.toBe('absolute')
     })
 })

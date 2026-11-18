@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { CollectibleStandard } from '@perawallet/wallet-core-assets'
 import type { I18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
@@ -20,4 +21,10 @@ export type CollectibleDetailsDisplay = {
     hasTotalSupply: boolean
     /** Null shows the explorer link's domain instead. */
     explorerLabelKey: Nullable<I18nKey>
+    /** The identity row opens the asset's own details screen. */
+    isIdentityLinked: boolean
+    /** What the identity row shows and copies; the asset id when absent. */
+    identityOf?: (assetId: string) => string
+    /** No standard row when absent or when the collectible's standard isn't listed. */
+    standardLabels?: Readonly<Partial<Record<CollectibleStandard, string>>>
 }

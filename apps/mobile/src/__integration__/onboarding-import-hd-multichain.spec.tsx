@@ -264,6 +264,33 @@ describe('Flow: Import HD wallet → discover the other chains it was used on', 
         })
     })
 
+    it("Given Ethereum's node fails once, when the user imports the seed, then the account used on Ethereum alone is listed and nothing is left unchecked", async () => {
+        const ethereumOnlyAddress = await ethereumAddressAt(2, 0)
+        serveSeedActivity(ethereumOnlyAddress)
+        server.use(
+            http.post(
+                ETHEREUM_RPC_URL,
+                () => new HttpResponse(null, { status: 503 }),
+                { once: true },
+            ),
+        )
+
+        await reachSelection()
+
+        await waitFor(
+            () =>
+                expect(
+                    screen.getByTestId(
+                        `import_select_addresses_address_${ethereumOnlyAddress}`,
+                    ),
+                ).toBeTruthy(),
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+        expect(
+            screen.queryByTestId('import_select_addresses_unchecked_networks'),
+        ).toBeNull()
+    })
+
     it('Given Ethereum was unreachable during the search, when the user checks it again once it answers, then the account used on Ethereum alone is listed and nothing is left unchecked', async () => {
         const ethereumOnlyAddress = await ethereumAddressAt(2, 0)
         server.use(

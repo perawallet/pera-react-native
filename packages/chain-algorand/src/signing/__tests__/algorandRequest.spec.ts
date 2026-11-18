@@ -22,6 +22,7 @@ import { algorandPlannerAdapter, algorandReviewerAdapter } from '../adapter'
 import {
     algorandRequestOf,
     algorandSignedForAddresses,
+    algorandSigningSlotsOf,
     algorandTransactionsOf,
     readAlgorandTransactionsData,
 } from '../algorandRequest'
@@ -140,13 +141,13 @@ describe('algorandSignedForAddresses', () => {
             algorandSignedForAddresses(
                 request([asUnsignedAlgorandTransaction(GROUP[0])]),
             ),
-        ).toEqual([SENDER.toString()])
+        ).toEqual([{ address: SENDER.toString(), isSigner: false }])
     })
 
     it.each([
-        ['the sender', SENDER.toString()],
-        ['the authority the payload names', AUTH],
-    ])('takes an override naming %s', (_, override) => {
+        ['the sender, as the account it signs for', SENDER.toString(), false],
+        ['the authority the payload names, as its signer', AUTH, true],
+    ])('takes an override naming %s', (_, override, isSigner) => {
         expect(
             algorandSignedForAddresses(
                 request(
@@ -158,7 +159,24 @@ describe('algorandSignedForAddresses', () => {
                     new Map([[0, override]]),
                 ),
             ),
-        ).toEqual([override])
+        ).toEqual([{ address: override, isSigner }])
+    })
+
+    // An ARC-0001 `authAddr` naming the sender: the sender's own key signs,
+    // not the account the wallet last saw it rekeyed to.
+    it('takes an override naming the sender as its own signer when the payload signs with the sender', () => {
+        expect(
+            algorandSignedForAddresses(
+                request(
+                    [
+                        asUnsignedAlgorandTransaction(GROUP[0], {
+                            authorizer: SENDER.toString(),
+                        }),
+                    ],
+                    new Map([[0, SENDER.toString()]]),
+                ),
+            ),
+        ).toEqual([{ address: SENDER.toString(), isSigner: true }])
     })
 
     it("refuses an override naming an account the payload doesn't sign with", () => {
@@ -170,6 +188,26 @@ describe('algorandSignedForAddresses', () => {
                 ),
             ),
         ).toThrow(InvalidSignableDataError)
+    })
+})
+
+describe('algorandSigningSlotsOf', () => {
+    // The pipeline refuses such a request itself, so a review check skips it.
+    it("is null for an override the payload doesn't sign with", () => {
+        expect(
+            algorandSigningSlotsOf({
+                ...neutralRequest({
+                    txs: [asUnsignedAlgorandTransaction(GROUP[0])],
+                }),
+                chainData: {
+                    algorand: {
+                        signerOverrides: new Map([
+                            [0, makeTestAddress(9).toString()],
+                        ]),
+                    },
+                },
+            } as Parameters<typeof algorandSigningSlotsOf>[0]),
+        ).toBeNull()
     })
 })
 

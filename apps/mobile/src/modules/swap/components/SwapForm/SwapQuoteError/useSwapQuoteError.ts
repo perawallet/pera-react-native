@@ -11,18 +11,22 @@
  */
 
 import { Decimal } from 'decimal.js'
-import { useAssetsQuery, type PeraAsset } from '@perawallet/wallet-core-assets'
+import {
+    useAssetPricesQuery,
+    useAssetsQuery,
+    type PeraAsset,
+} from '@perawallet/wallet-core-assets'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import type { SwapQuoteFailure } from '@perawallet/wallet-core-swaps'
 import {
     baseUnitsToDisplayUnits,
-    formatCurrency,
-    resolveAssetDisplayPrecision,
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
+import { formatSwapLimit } from '@modules/swap/utils/formatSwapLimit'
+import { useSwapFiatText } from '@modules/swap/hooks/useSwapFiatText'
 
 export type UseSwapQuoteErrorParams = {
     failure: SwapQuoteFailure
@@ -42,26 +46,6 @@ const labelOf = (asset: Optional<PeraAsset>, assetId: string): string =>
 
 type LimitParams = { limit: string; unit: string }
 
-// A minimum rounds up and a maximum down, so the limit shown is one the
-// router accepts.
-const formatLimit = (
-    limit: Decimal,
-    decimals: number,
-    rounding: Decimal.Rounding,
-    locale: string,
-): string => {
-    const display = baseUnitsToDisplayUnits(limit, decimals)
-    const precision = resolveAssetDisplayPrecision(display, decimals)
-    return formatCurrency(
-        display.toDecimalPlaces(precision, rounding),
-        precision,
-        '',
-        locale,
-        false,
-        0,
-    )
-}
-
 export const useSwapQuoteError = ({
     failure,
     scope,
@@ -78,6 +62,12 @@ export const useSwapQuoteError = ({
         [receiveAssetId],
         { fetchMissing: true },
     )
+    const { data: payPrices } = useAssetPricesQuery(
+        scope,
+        [payAssetId],
+        failure.kind === 'amount-too-low' && failure.minimum !== null,
+    )
+    const toFiatText = useSwapFiatText(scope)
     const payAsset: Optional<PeraAsset> = payAssets.get(payAssetId)
     const receiveAsset: Optional<PeraAsset> = receiveAssets.get(receiveAssetId)
     const network = chainDisplayNameOf(scope.chainId) ?? ''
@@ -89,7 +79,7 @@ export const useSwapQuoteError = ({
         limit === null || !payAsset
             ? null
             : {
-                  limit: formatLimit(
+                  limit: formatSwapLimit(
                       limit,
                       payAsset.decimals,
                       rounding,
@@ -98,17 +88,37 @@ export const useSwapQuoteError = ({
                   unit: labelOf(payAsset, payAssetId),
               }
 
+    // Rounded up like the token amount, so the fiat never reads below the floor.
+    // A zero price is an unpriced token, not a free one.
+    const minimumFiat = (minimum: Decimal): Nullable<string> => {
+        const usdPrice = payPrices?.get(payAssetId)?.usdPrice
+        if (!payAsset || !usdPrice?.greaterThan(0)) return null
+        return toFiatText(
+            baseUnitsToDisplayUnits(minimum, payAsset.decimals).mul(usdPrice),
+            Decimal.ROUND_UP,
+        )
+    }
+
     const resolveMessage = (): string => {
         switch (failure.kind) {
             case 'amount-too-low': {
                 const limit = limitParams(failure.minimum, Decimal.ROUND_UP)
-                return limit
-                    ? t('swap.quote.amount_too_low', {
+                if (!limit || !failure.minimum) {
+                    return t('swap.quote.amount_too_low_unknown', { network })
+                }
+                const fiat = minimumFiat(failure.minimum)
+                return fiat
+                    ? t('swap.quote.amount_too_low_fiat', {
+                          network,
+                          amount: limit.limit,
+                          unit: limit.unit,
+                          fiat,
+                      })
+                    : t('swap.quote.amount_too_low', {
                           network,
                           amount: limit.limit,
                           unit: limit.unit,
                       })
-                    : t('swap.quote.amount_too_low_unknown', { network })
             }
             case 'amount-too-high': {
                 const limit = limitParams(failure.maximum, Decimal.ROUND_DOWN)

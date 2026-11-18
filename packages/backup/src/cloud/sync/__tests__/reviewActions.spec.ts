@@ -43,6 +43,7 @@ import {
     importContactFromBackup,
     importFromBackup,
     importPasskeyFromBackup,
+    holdAccountsInBackup,
     keepAccountInBackup,
     keepContactInBackup,
     keepPasskeyInBackup,
@@ -1290,6 +1291,43 @@ describe('an account record on two chains', () => {
             [recordKey(1)]: hdRecord(...OTHER),
             [secretsKey(SEED)]: hdSeedSecrets(SEED),
         }),
+    })
+
+    describe('holdAccountsInBackup', () => {
+        it('holds a left-out account and the seed no restored account derives from', () => {
+            const state = withSeed(withRecord(createEmptySyncState('b'), CHILD))
+
+            const next = holdAccountsInBackup(state, ['CHILD'], [])
+
+            expect(next.items[recordKey(0)]).toMatchObject({
+                pendingImport: true,
+                isDirty: false,
+                status: BackupItemStatus.ACTIVE,
+            })
+            expect(next.items[secretsKey(SEED)].pendingImport).toBe(true)
+        })
+
+        it('keeps the seed live while a restored account derives from it', () => {
+            const state = withSeed(
+                withRecord(withRecord(createEmptySyncState('b'), CHILD), OTHER),
+            )
+
+            const next = holdAccountsInBackup(state, ['CHILD'], ['OTHER'])
+
+            expect(next.items[recordKey(0)].pendingImport).toBe(true)
+            expect(next.items[recordKey(1)].pendingImport).toBeUndefined()
+            expect(next.items[secretsKey(SEED)].pendingImport).toBeUndefined()
+        })
+
+        it('leaves a tombstoned key alone', () => {
+            const state = withRecord(createEmptySyncState('b'), CHILD, {
+                status: BackupItemStatus.IGNORED,
+            })
+
+            const next = holdAccountsInBackup(state, ['CHILD'], [])
+
+            expect(next.items[recordKey(0)].pendingImport).toBeUndefined()
+        })
     })
 
     describe('deleteFromBackup', () => {

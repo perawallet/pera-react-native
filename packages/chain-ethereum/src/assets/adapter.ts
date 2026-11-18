@@ -60,7 +60,12 @@ import {
     PRICES_SERVICE,
 } from './api/endpoints'
 import { cachedWhitelist, type ListedTokens } from './api/whitelist-cache'
-import { toAssetMetadata, toNftAsset, toPriceRow } from './api/transformers'
+import {
+    isDescribedNftItem,
+    toAssetMetadata,
+    toNftAsset,
+    toPriceRow,
+} from './api/transformers'
 import { NATIVE_ASSET_ID } from '../chains/create-evm-chain'
 
 // Token metadata rarely changes; the same window as Algorand's asset cache.
@@ -309,7 +314,8 @@ const isNftStandard = (value: unknown): value is EvmNftStandard =>
     NFT_STANDARDS.includes(value as EvmNftStandard)
 
 // The id doesn't carry its standard; the cached row may, and otherwise one
-// request asks for both and takes whichever the backend knows.
+// request asks for both. The backend answers a blank item for a token it
+// doesn't know under that standard, so only a described item counts.
 const fetchNftMetadata = async (
     chain: EvmChain,
     assetId: string,
@@ -323,7 +329,7 @@ const fetchNftMetadata = async (
         chain,
         standards.map(each => toCaip19(assetId, scope, chain, each)),
     )
-    const item = items.find(each => each !== null)
+    const item = items.find(each => each !== null && isDescribedNftItem(each))
     return item ? toNftAsset(item, scope, chain) : null
 }
 

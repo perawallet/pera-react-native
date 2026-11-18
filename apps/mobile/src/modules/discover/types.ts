@@ -30,3 +30,11 @@ export type DiscoverDapp = {
 }
 
 export type DiscoverFavorite = DiscoverDapp & { addedAt: number }
+
+/** A favorites folder; `items` are favorite keys (`normalizeDappUrl`), in folder order. */
+export type DiscoverFolder = {
+    id: string
+    name: string
+    items: string[]
+    createdAt: number
+}

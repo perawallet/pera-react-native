@@ -13,6 +13,21 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { encryptItemPayload } from '../../crypto/itemPayload'
 
+const decryptedKeys = vi.fn()
+vi.mock('../../crypto/itemPayload', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('../../crypto/itemPayload')>()
+    return {
+        ...actual,
+        decryptItemPayload: (
+            ...args: Parameters<typeof actual.decryptItemPayload>
+        ) => {
+            decryptedKeys(args[1].key)
+            return actual.decryptItemPayload(...args)
+        },
+    }
+})
+
 const fetchManifest = vi.fn()
 const fetchDelta = vi.fn()
 const readItems = vi.fn()
@@ -34,7 +49,12 @@ import {
     SETTINGS_ITEM_ID,
     BackupAccountType,
 } from '../../models'
-import { pullBackupItems, buildPulledAccounts } from '../pullBackupItems'
+import {
+    buildPulledAccounts,
+    fetchBackupItems,
+    previewBackupAccounts,
+    pullBackupItems,
+} from '../pullBackupItems'
 import {
     registerAlgorandAccountsAdapter,
     registerEthereumAccountsAdapter,
@@ -278,6 +298,74 @@ describe('pullBackupItems on an account record', () => {
         ).toEqual([
             ['WALGO', 'watch'],
             ['WALGO', 'watch'],
+        ])
+    })
+
+    it('previews a record as one account with its name and every chain, decrypting no secret', async () => {
+        registerEthereumBackupChain()
+        serving([
+            [recordKey(HD_IDENTITY), hdRecord],
+            [
+                secretsKey('SEED'),
+                {
+                    type: BackupAccountType.hdSeed,
+                    address: 'SEED',
+                    seed: 'ff',
+                    entropy: 'ee',
+                },
+            ],
+        ])
+        const fetched = await fetchBackupItems({
+            backupId,
+            deviceId: 'device-1',
+        })
+        decryptedKeys.mockClear()
+
+        const preview = previewBackupAccounts(fetched, {
+            backupId,
+            encryptionKey: encKey,
+        })
+
+        expect(preview).toEqual([
+            {
+                group: HD_IDENTITY,
+                name: 'Both',
+                chains: [
+                    { chain: 'algorand', address: 'ALGO' },
+                    { chain: 'ethereum', address: '0xabc' },
+                ],
+            },
+        ])
+        expect(decryptedKeys).toHaveBeenCalledWith(recordKey(HD_IDENTITY))
+        expect(decryptedKeys).not.toHaveBeenCalledWith(secretsKey('SEED'))
+    })
+
+    it('previews an unnamed account with no name', async () => {
+        registerEthereumBackupChain()
+        serving([
+            [
+                recordKey('WALGO'),
+                {
+                    formatVersion: 2,
+                    customName: null,
+                    chains: [
+                        { chain: 'algorand', type: 'watch', address: 'WALGO' },
+                    ],
+                },
+            ],
+        ])
+
+        const preview = previewBackupAccounts(
+            await fetchBackupItems({ backupId, deviceId: 'device-1' }),
+            { backupId, encryptionKey: encKey },
+        )
+
+        expect(preview).toEqual([
+            {
+                group: 'WALGO',
+                name: null,
+                chains: [{ chain: 'algorand', address: 'WALGO' }],
+            },
         ])
     })
 

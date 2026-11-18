@@ -47,6 +47,7 @@ export const AssetClaimDetailScreen = () => {
         receiverAccount,
         isClaimBlocked,
         isRejectBlocked,
+        imitatedCurrency,
         handleClaim,
         canBuy,
         handleAddFunds,
@@ -170,6 +171,23 @@ export const AssetClaimDetailScreen = () => {
                     usdPrice={request.usdValue ?? undefined}
                 />
             </PWView>
+
+            {imitatedCurrency !== null && (
+                <InfoCallout
+                    icon='warning'
+                    iconVariant='warning'
+                    iconSize='sm'
+                    titleVariant='bodySemibold'
+                    title={t('asset.imitated_currency.title', {
+                        code: imitatedCurrency,
+                    })}
+                    body={t('asset.imitated_currency.body', {
+                        code: imitatedCurrency,
+                    })}
+                    style={styles.imitatedCurrencyCallout}
+                    testID='asset_inbox_claim_imitated_currency'
+                />
+            )}
 
             {request.id && (
                 <>

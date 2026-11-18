@@ -18,6 +18,7 @@ import {
 import {
     logger,
     toError,
+    withTimeout,
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
@@ -58,6 +59,7 @@ import {
     WalletConnectUnsupportedMethodError,
     WalletConnectUnsupportedNetworkError,
 } from '../shared/errors'
+import { IDLE_END_TIMEOUT_MS, isIdleSession } from '../shared/idleSession'
 import { toPeer } from '../shared/peer'
 import {
     walletConnectSupportFor,
@@ -1262,9 +1264,9 @@ export const createWalletConnectV2Handler = (
     /**
      * Ends a settled session with the peer. Never throws: every caller has
      * already decided the session is over, and a dead relay must not undo
-     * that.
+     * that. Resolves whether the relay took it.
      */
-    const endSession = async (topic: string): Promise<void> => {
+    const endSession = async (topic: string): Promise<boolean> => {
         try {
             // Started if need be: a session ended only in the store would be
             // restored from the relay the moment the client starts.
@@ -1273,11 +1275,13 @@ export const createWalletConnectV2Handler = (
                 topic,
                 reason: requireSdk().getSdkError('USER_DISCONNECTED'),
             })
+            return true
         } catch (error) {
             logger.warn('[WC v2] disconnecting a session failed', {
                 connectionId: topic,
                 error,
             })
+            return false
         }
     }
 
@@ -1538,14 +1542,37 @@ export const createWalletConnectV2Handler = (
         }
 
         const existing = await storedById()
+        const now = Date.now()
         const restored: WalletConnectV2Connection[] = []
+        const idle: WalletConnectV2Connection[] = []
         for (const session of Object.values(walletKit.getActiveSessions())) {
             const record = toConnection(
                 session,
                 existing.get(session.topic) ?? null,
             )
-            if (record) restored.push(record)
+            if (!record) continue
+            if (isIdleSession(record, now)) idle.push(record)
+            else restored.push(record)
         }
+        // Omitting a record deletes it, so one the relay did not take is kept:
+        // WalletKit would otherwise hand the live session back next launch with
+        // no stored dates, restarting its idle clock. Bounded so a dead relay
+        // costs a retry, not the boot.
+        const ended = await Promise.all(
+            idle.map(record => {
+                logger.warn('[WC v2] ending an idle session', {
+                    connectionId: record.id,
+                })
+                return withTimeout(
+                    endSession(record.id),
+                    IDLE_END_TIMEOUT_MS,
+                    'ending an idle WalletConnect v2 session',
+                ).catch(() => false)
+            }),
+        )
+        idle.forEach((record, index) => {
+            if (!ended[index]) restored.push(record)
+        })
         return restored
     }
 
@@ -1723,6 +1750,8 @@ export const createWalletConnectV2Handler = (
         id: ConnectionId,
         notice: WalletNotice,
     ): Promise<void> => {
+        // A WalletConnect session's accounts are not withdrawn by the app lock.
+        if (notice.type === 'lock-changed') return
         const walletKit = client
         const current = kit.currentContext()
         const chain = v2ChainFor(walletNoticeChainId(notice))
