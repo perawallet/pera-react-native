@@ -22,6 +22,10 @@ const TAG = '0026_name_cache'
 const migrationsBefore = (tag: string): MigrationConfig =>
     Object.fromEntries(Object.entries(migrations).filter(([t]) => t < tag))
 
+// Stops at the rename: later migrations change what the table holds.
+const migrationsThrough = (tag: string): MigrationConfig =>
+    Object.fromEntries(Object.entries(migrations).filter(([t]) => t <= tag))
+
 const dump = (db: Database, table: string) =>
     db.values<unknown[]>(
         sql.raw(
@@ -46,7 +50,7 @@ describe('name cache table rename', () => {
                    ('NONE', 'algorand/mainnet', NULL, NULL, NULL, 3)
         `)
         before = await dump(db, 'nfd_cache')
-        await runMigrations(db, migrations)
+        await runMigrations(db, migrationsThrough(TAG))
     })
 
     afterEach(() => {
@@ -76,7 +80,7 @@ describe('name cache table rename', () => {
     })
 
     it('does nothing on a second run', async () => {
-        await runMigrations(db, migrations)
+        await runMigrations(db, migrationsThrough(TAG))
 
         expect(await dump(db, 'name_cache')).toEqual(before)
     })

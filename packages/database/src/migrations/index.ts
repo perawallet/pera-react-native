@@ -39,6 +39,7 @@ import m0023 from './0023_phishing_list_domains.sql?raw'
 import m0024 from './0024_phishing_list_addresses.sql?raw'
 import m0025 from './0025_account_added_tokens.sql?raw'
 import m0026 from './0026_name_cache.sql?raw'
+import m0027 from './0027_name_cache_verified_only.sql?raw'
 
 // Rows cached before the close_amount column heal in place via the chain
 // backfill (chain-algorand's history-cache/close-amount-backfill.ts) — no
@@ -110,4 +111,6 @@ export const migrations: MigrationConfig = {
     '0025_account_added_tokens': m0025,
     // Renamed in place, so cached names, the primary key and its index carry over with no refetch.
     '0026_name_cache': m0026,
+    // Names cached before the chain check were the backend's word alone; dropping them makes the next lookup verify each. Negatives stay.
+    '0027_name_cache_verified_only': m0027,
 }
