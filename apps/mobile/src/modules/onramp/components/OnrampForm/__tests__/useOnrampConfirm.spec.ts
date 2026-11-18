@@ -14,7 +14,10 @@ import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Linking } from 'react-native'
 import { Decimal } from 'decimal.js'
-import { NoConnectionError } from '@perawallet/wallet-core-shared'
+import {
+    NoConnectionError,
+    PeraNetworkError,
+} from '@perawallet/wallet-core-shared'
 import type { RampQuote } from '@perawallet/wallet-core-onramp'
 import { registerAlgorandRampAdapter } from '@test-utils/rampChainAdapter'
 import {
@@ -245,6 +248,28 @@ describe('useOnrampConfirm', () => {
             'errors.network.no_connection.body',
         )
         expect(result.current.isConfirming).toBe(false)
+    })
+
+    it("shows the app's own copy, not the backend's diagnostic, for a 5xx", async () => {
+        mockCreateRampOrder.mockRejectedValueOnce(
+            new PeraNetworkError('server', {
+                status: 503,
+                backendCode: 'upstream_unavailable',
+                originalError: Object.assign(new Error('http'), {
+                    data: {
+                        error: 'Meld is unavailable, try again shortly',
+                        code: 'upstream_unavailable',
+                    },
+                }),
+            }),
+        )
+        const { result } = renderHook(() => useOnrampConfirm(defaultProps))
+
+        await act(async () => {
+            await result.current.handleConfirm()
+        })
+
+        expect(mockErrorToast).toHaveBeenCalledWith('', 'errors.general.body')
     })
 
     // Companion to the null case below: without this, "did not opt in" would

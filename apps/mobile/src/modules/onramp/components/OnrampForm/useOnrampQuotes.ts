@@ -202,7 +202,8 @@ export const useOnrampQuotes = ({
                                 ? t('onramp.form.amount_above_max', {
                                       max: limits.max.toString(),
                                   })
-                                : toOnrampUserMessage(error)
+                                : (toOnrampUserMessage(error) ??
+                                      t('errors.general.body'))
                         }
                         if (limits?.min) {
                             return t('onramp.form.amount_below_min', {
@@ -212,7 +213,10 @@ export const useOnrampQuotes = ({
                         if (isSourceAmountTooLowError(error)) {
                             return t('onramp.form.amount_below_min_unknown')
                         }
-                        return toOnrampUserMessage(error)
+                        return (
+                            toOnrampUserMessage(error) ??
+                            t('errors.general.body')
+                        )
                     }
                     setQuotesError(quoteErrorMessageOf())
                     setIsQuoting(false)

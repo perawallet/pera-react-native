@@ -209,7 +209,10 @@ export const useOnrampConfirm = ({
                     t('errors.network.no_connection.body'),
                 )
             } else {
-                errorToast('', toOnrampUserMessage(error))
+                errorToast(
+                    '',
+                    toOnrampUserMessage(error) ?? t('errors.general.body'),
+                )
             }
         } finally {
             setIsConfirming(false)

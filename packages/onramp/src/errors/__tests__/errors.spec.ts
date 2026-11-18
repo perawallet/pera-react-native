@@ -43,18 +43,12 @@ describe('toOnrampUserMessage', () => {
         expect(toOnrampUserMessage(err)).toBe('Payment method not available.')
     })
 
-    it('returns a generic fallback for an unknown Error', () => {
-        expect(toOnrampUserMessage(new Error('boom'))).toMatch(
-            /something went wrong/i,
-        )
-    })
-
-    it('returns a generic fallback for a non-error value', () => {
-        expect(toOnrampUserMessage(undefined)).toMatch(/something went wrong/i)
-    })
-
-    it('returns a generic fallback for null', () => {
-        expect(toOnrampUserMessage(null)).toMatch(/something went wrong/i)
+    it.each([
+        ['an unknown Error', new Error('boom')],
+        ['undefined', undefined],
+        ['null', null],
+    ])('has no message for %s', (_name, error) => {
+        expect(toOnrampUserMessage(error)).toBeNull()
     })
 
     it('maps RampAttestationRequiredError to the onramp wording', () => {
@@ -69,7 +63,6 @@ describe('toOnrampUserMessage', () => {
 
     it.each([
         ['pair_restricted_in_country', 403, 'Not available in your country.'],
-        ['route_unavailable', 503, 'No route is available right now.'],
         ['invalid_status_transition', 409, 'The order cannot be cancelled.'],
     ])('surfaces the router message of a %s error', (code, status, message) => {
         const httpError = {
@@ -80,6 +73,31 @@ describe('toOnrampUserMessage', () => {
 
         expect(toOnrampUserMessage(httpError)).toBe(message)
     })
+
+    it.each([
+        ['route_unavailable', 'The XO route is temporarily unavailable'],
+        ['upstream_unavailable', 'Meld is unavailable, try again shortly'],
+    ])(
+        "has no message for a 5xx %s, whose text is the backend's English diagnostic",
+        (code, message) => {
+            const body = { error: message, code }
+            const wrapped = new PeraNetworkError('server', {
+                status: 503,
+                originalError: Object.assign(new Error('http'), {
+                    data: body,
+                }),
+            })
+
+            expect(toOnrampUserMessage(wrapped)).toBeNull()
+            expect(
+                toOnrampUserMessage({
+                    name: 'HTTPError',
+                    status: 503,
+                    data: body,
+                }),
+            ).toBeNull()
+        },
+    )
 
     it('maps server-side integrity-token rejections to the attestation wording', () => {
         const httpError = {
@@ -117,8 +135,7 @@ describe('toOnrampUserMessage', () => {
             detail: {},
         })
 
-        expect(result).not.toContain('{')
-        expect(result).toMatch(/something went wrong/i)
+        expect(result).toBeNull()
     })
 })
 

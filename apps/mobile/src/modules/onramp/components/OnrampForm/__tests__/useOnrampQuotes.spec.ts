@@ -15,6 +15,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import {
     NoConnectionError,
+    PeraNetworkError,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import {
@@ -90,6 +91,24 @@ describe('useOnrampQuotes', () => {
 
     afterEach(() => {
         vi.useRealTimers()
+    })
+
+    it("shows the app's own copy, not the backend's diagnostic, for a 5xx", async () => {
+        mockCreateQuote.mockRejectedValue(
+            new PeraNetworkError('server', {
+                status: 503,
+                originalError: Object.assign(new Error('http'), {
+                    data: {
+                        error: 'Meld is unavailable, try again shortly',
+                        code: 'upstream_unavailable',
+                    },
+                }),
+            }),
+        )
+        const { result } = render()
+        await settle()
+
+        expect(result.current.quotesError).toBe('errors.general.body')
     })
 
     it('quotes a deposit pair again for every new amount', async () => {
