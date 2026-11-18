@@ -18,14 +18,16 @@ import {
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
+import { isAccountNotOnDeviceError } from '@perawallet/wallet-core-swaps'
 
 import { getRampHistory, type RampHistoryPage } from '../api'
 import type { OnrampStatus, RampHistoryItem } from '../models'
 import { onrampQueryKeys } from './querykeys'
 
 // While orders settle the list polls every 10s; on a 404 (the backend has not
-// yet materialised a history record for this device/account) it backs off to
-// 60s to avoid hammering an endpoint that is expected to be empty.
+// yet materialised a history record for this device/account) or an account
+// the device's registration doesn't hold yet, it backs off to 60s to avoid
+// hammering an endpoint that is expected to refuse.
 const POLL_INTERVAL_MS = 10_000
 const NOT_FOUND_POLL_INTERVAL_MS = 60_000
 
@@ -36,7 +38,7 @@ export const getRampHistoryRefetchIntervalMs = (
     isActive: boolean,
 ): number | false => {
     if (!isActive) return false
-    return isNotFoundError(error)
+    return isNotFoundError(error) || isAccountNotOnDeviceError(error)
         ? NOT_FOUND_POLL_INTERVAL_MS
         : POLL_INTERVAL_MS
 }
@@ -60,6 +62,8 @@ export type UseRampHistoryInfiniteQueryResult = {
     isLoading: boolean
     isFetchingNextPage: boolean
     isError: boolean
+    /** The router doesn't hold this account on this device, so it has no history to give. */
+    isAccountNotOnDevice: boolean
     error: Nullable<Error>
     hasNextPage: boolean
     fetchNextPage: () => void
@@ -104,6 +108,7 @@ export const useRampHistoryInfiniteQuery = ({
         isLoading: query.isLoading,
         isFetchingNextPage: query.isFetchingNextPage,
         isError: query.isError,
+        isAccountNotOnDevice: isAccountNotOnDeviceError(query.error),
         error: query.error,
         hasNextPage: query.hasNextPage ?? false,
         fetchNextPage: () => void query.fetchNextPage(),

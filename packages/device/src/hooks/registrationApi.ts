@@ -28,3 +28,7 @@ export const isDeviceRegistrationV4Enabled = (): boolean =>
         getProvider().remoteConfig,
         useRemoteConfigStore.getState().configOverrides,
     ).getBooleanValue(RemoteConfigKeys.enable_device_registration_v4, !isProd)
+
+/** {@link isDeviceRegistrationV4Enabled}, re-rendering when a fetched value or a developer override flips it. */
+export const useIsDeviceRegistrationV4Enabled = (): boolean =>
+    useRemoteConfigStore(() => isDeviceRegistrationV4Enabled())

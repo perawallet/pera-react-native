@@ -18,6 +18,11 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { CHAIN_IDS } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScopes } from '@perawallet/wallet-core-chain-shared'
+import { deploymentOf } from '@perawallet/wallet-core-config'
+import {
+    isSentInDeviceRegistration,
+    useIsDeviceRegistrationV4Enabled,
+} from '@perawallet/wallet-core-device'
 import { isSwapChain } from '../chain-adapter'
 import type { SwapAccountAddressWithId } from '../models'
 
@@ -37,17 +42,29 @@ export const useSwapAccountsAddresses = (
         [accounts],
     )
     const scopes = useSelectedScopes(chainIds)
+    // Remote Config can flip this after mount, and it decides which chains registration sends.
+    const isRegistrationV4 = useIsDeviceRegistrationV4Enabled()
 
     return useMemo(
         () =>
             accounts.flatMap(account =>
                 scopes.flatMap(scope => {
                     const address = addressOn(account, scope)
-                    return address
-                        ? [{ scope, address, accountId: account.id }]
-                        : []
+                    if (!address) return []
+                    const deployment = deploymentOf(scope)
+                    const isOnDevice =
+                        deployment !== null &&
+                        isSentInDeviceRegistration(
+                            account,
+                            scope.chainId,
+                            deployment,
+                            isRegistrationV4,
+                        )
+                    return [
+                        { scope, address, accountId: account.id, isOnDevice },
+                    ]
                 }),
             ),
-        [accounts, scopes],
+        [accounts, scopes, isRegistrationV4],
     )
 }

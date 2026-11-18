@@ -15,17 +15,22 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     useSwapAccountsAddresses,
-    type SwapAccountAddress,
+    type SwapAccountAddressOnDevice,
 } from '@perawallet/wallet-core-swaps'
 
 /** The account's address on each swap chain it lives on, at that chain's selected network. */
 export const useSwapAccountAddresses = (
     account: Nullable<WalletAccount>,
-): SwapAccountAddress[] => {
+): SwapAccountAddressOnDevice[] => {
     const accounts = useMemo(() => (account ? [account] : []), [account])
     const addresses = useSwapAccountsAddresses(accounts)
     return useMemo(
-        () => addresses.map(({ scope, address }) => ({ scope, address })),
+        () =>
+            addresses.map(({ scope, address, isOnDevice }) => ({
+                scope,
+                address,
+                isOnDevice,
+            })),
         [addresses],
     )
 }

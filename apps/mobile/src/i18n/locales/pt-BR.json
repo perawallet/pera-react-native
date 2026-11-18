@@ -4356,6 +4356,10 @@
                     "title": "Nenhuma conversão ainda",
                     "body": "Seu histórico de conversões aparecerá aqui."
                 },
+                "not_on_device": {
+                    "title": "Histórico ainda indisponível",
+                    "body": "Esta conta ainda não está configurada neste dispositivo, por isso não foi possível carregar o histórico de conversões. Tente novamente mais tarde."
+                },
                 "error": {
                     "title": "Algo deu errado",
                     "body": "Não foi possível carregar seu histórico de conversões. Tente novamente."
@@ -4504,6 +4508,8 @@
             "for": "por",
             "empty_title": "Nenhuma transação ainda",
             "empty_body": "Suas transações de compra aparecerão aqui.",
+            "not_on_device_title": "Histórico ainda indisponível",
+            "not_on_device_body": "Esta conta ainda não está configurada neste dispositivo, por isso não foi possível carregar o histórico de compras. Tente novamente mais tarde.",
             "error_title": "Algo deu errado",
             "error_body": "Não foi possível carregar seu histórico de compras. Tente novamente."
         }

@@ -4326,6 +4326,10 @@
                     "title": "Noch keine Tauschvorgänge",
                     "body": "Dein Tauschverlauf wird hier angezeigt."
                 },
+                "not_on_device": {
+                    "title": "Verlauf noch nicht verfügbar",
+                    "body": "Dieses Konto ist auf diesem Gerät noch nicht eingerichtet, daher kann sein Tauschverlauf nicht geladen werden. Bitte versuche es später erneut."
+                },
                 "error": {
                     "title": "Etwas ist schiefgelaufen",
                     "body": "Wir konnten deinen Tauschverlauf nicht laden. Bitte versuche es erneut."
@@ -4474,6 +4478,8 @@
             "for": "für",
             "empty_title": "Noch keine Transaktionen",
             "empty_body": "Deine Kauftransaktionen werden hier angezeigt.",
+            "not_on_device_title": "Verlauf noch nicht verfügbar",
+            "not_on_device_body": "Dieses Konto ist auf diesem Gerät noch nicht eingerichtet, daher kann sein Kaufverlauf nicht geladen werden. Bitte versuche es später erneut.",
             "error_title": "Etwas ist schiefgelaufen",
             "error_body": "Wir konnten deinen Kaufverlauf nicht laden. Bitte versuche es erneut."
         }

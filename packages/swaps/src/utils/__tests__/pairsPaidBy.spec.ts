@@ -38,8 +38,8 @@ const pair = (
     }) as unknown as SwapDistinctPairItem
 
 const PAYERS = [
-    { scope: ALGO, address: 'MAIN', accountId: 'main' },
-    { scope: ETH, address: '0xAbC', accountId: 'other' },
+    { scope: ALGO, address: 'MAIN', accountId: 'main', isOnDevice: true },
+    { scope: ETH, address: '0xAbC', accountId: 'other', isOnDevice: true },
 ]
 const canPayAnywhere = () => true
 

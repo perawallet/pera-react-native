@@ -223,6 +223,14 @@ describe('isSentInDeviceRegistration', () => {
         )
     })
 
+    it('follows the API version it is given over the current flag', () => {
+        mocks.isV4 = true
+
+        expect(
+            isSentInDeviceRegistration(onEthereum, 'ethereum', 'live', false),
+        ).toBe(false)
+    })
+
     it('is false for an account its chain declines to register', () => {
         deviceChainAdapters.reset()
         deviceChainAdapters.register({

@@ -20,9 +20,15 @@ import type { DeviceAccountRegistration } from '../../models'
 const mockRegisterDevice = vi.fn()
 const registrationApi = vi.hoisted(() => ({ isV4: false }))
 
-vi.mock('../registrationApi', () => ({
-    isDeviceRegistrationV4Enabled: () => registrationApi.isV4,
-}))
+vi.mock('../registrationApi', async () => {
+    const { useRemoteConfigStore } =
+        await import('@perawallet/wallet-core-remote-config')
+    return {
+        isDeviceRegistrationV4Enabled: () => registrationApi.isV4,
+        useIsDeviceRegistrationV4Enabled: () =>
+            useRemoteConfigStore(() => registrationApi.isV4),
+    }
+})
 const mockClearDevicePushToken = vi.fn()
 
 vi.mock('../useDevice', () => ({
