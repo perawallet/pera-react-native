@@ -40,9 +40,9 @@ const merge = (left: Probed, right: Probed): Probed => ({
     failures: [...left.failures, ...right.failures],
 })
 
-// Halving a refused list finds one refused account in about 2·log2(n)
-// requests rather than one per account, so a large batch doesn't trip the
-// router's rate limit.
+// Halving finds one refused account in about 2·log2(n) requests, so a large
+// batch doesn't trip the router's rate limit. Refusals tend to cover a whole
+// chain, which is why the caller groups the list by chain before halving.
 const halvesOf = async <T>(
     accounts: string[],
     read: OwnedAccountsReader<T>,
@@ -87,8 +87,12 @@ export const readForOwnedAccounts = async <T>(
         if (!isAccountNotOnDeviceError(error) || accounts.length < 2) {
             throw error
         }
-        const { accepted, failures } = await halvesOf(accounts, read)
+        // A router account id leads with its chain's CAIP-2 id, so sorting groups by chain.
+        const byChain = [...accounts].sort()
+        const { accepted, failures } = await halvesOf(byChain, read)
         if (accepted.length === 0) throw failures.at(0) ?? error
-        return { value: await read(accepted), accounts: accepted }
+        const isAccepted = new Set(accepted)
+        const owned = accounts.filter(account => isAccepted.has(account))
+        return { value: await read(owned), accounts: owned }
     }
 }

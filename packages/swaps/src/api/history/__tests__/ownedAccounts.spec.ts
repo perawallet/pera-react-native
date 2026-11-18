@@ -91,6 +91,23 @@ describe('swaps/readForOwnedAccounts', () => {
         expect(read.mock.calls.length).toBeLessThanOrEqual(12)
     })
 
+    test('costs no more than one probe per account when a whole interleaved chain is refused', async () => {
+        const accounts = Array.from({ length: 10 }, (_, index) => [
+            `algorand:${index}`,
+            `eip155:${index}`,
+        ]).flat()
+        const read = routerHolding(
+            accounts.filter(account => account.startsWith('algorand:')),
+        )
+
+        const result = await readForOwnedAccounts(accounts, read)
+
+        expect(result.accounts).toEqual(
+            accounts.filter(account => account.startsWith('algorand:')),
+        )
+        expect(read.mock.calls.length).toBeLessThanOrEqual(22)
+    })
+
     test('leaves out an account whose probe failed otherwise while another is read', async () => {
         const read = vi.fn(async (accounts: string[], _limit?: number) => {
             if (accounts.length > 1) throw notOnDevice()
