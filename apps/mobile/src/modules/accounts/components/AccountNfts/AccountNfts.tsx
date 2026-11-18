@@ -11,6 +11,7 @@
  */
 
 import React, { useCallback } from 'react'
+import type { SharedValue } from 'react-native-reanimated'
 import {
     PWButton,
     PWFlatList,
@@ -23,9 +24,12 @@ import {
 import { FilterSelection } from '@components/FilterSelection'
 import { InfoCallout } from '@components/InfoCallout'
 import { SearchInput } from '@components/SearchInput'
+import { useImageMemoryReleaseOnHide } from '@hooks/useImageMemoryReleaseOnHide'
 import { useLanguage } from '@hooks/useLanguage'
+import { CollectibleImageVisibilityContext } from '@modules/assets'
 import { useStyles } from './styles'
 import { useAccountNfts } from './useAccountNfts'
+import { useIsPageOnScreen } from '../../hooks/useIsPageOnScreen'
 import { NftEmptyState } from '../NftEmptyState'
 import { GallerySkeleton } from './GallerySkeleton'
 import { EmptyView } from '@components/EmptyView'
@@ -37,7 +41,16 @@ import { GalleryCell } from './GalleryCell'
 const keyExtractor = (item: AccountCollectibleLiteRow) =>
     `${item.scope.chainId}:${item.assetId}`
 
-export const AccountNfts = () => {
+export type AccountNftsProps = {
+    /** The account pager's offset, in pages. */
+    offset: SharedValue<number>
+    pageIndex: number
+}
+
+export const AccountNfts = ({ offset, pageIndex }: AccountNftsProps) => {
+    // Read here, not in the pager, so a swipe re-renders only this page.
+    const isOnScreen = useIsPageOnScreen(offset, pageIndex)
+    useImageMemoryReleaseOnHide(isOnScreen)
     const styles = useStyles()
     const { t } = useLanguage()
     const {
@@ -93,157 +106,165 @@ export const AccountNfts = () => {
     }
 
     return (
-        <PWView style={styles.container}>
-            {showEmptyState ? (
-                <NftEmptyState
-                    isMultiChain={isMultiChain}
-                    onOptInPress={canOptIn ? openAddNftSheet : undefined}
-                />
-            ) : (
-                <>
-                    <PWView style={styles.headerContainer}>
-                        <PWView style={styles.titleBar}>
-                            <PWView style={styles.titleBarTitleContainer}>
-                                <PWText
-                                    variant='body'
-                                    truncate
-                                >
-                                    {t('account_details.nfts.count', {
-                                        count: collectibleCount,
-                                    })}
-                                </PWText>
-                            </PWView>
-                            <PWView style={styles.titleBarActions}>
-                                <PWTouchableOpacity
-                                    style={styles.manageButton}
-                                    onPress={() => void openManageSheet()}
-                                >
-                                    <PWIcon
-                                        name='sliders'
-                                        size='sm'
-                                        variant='positive'
-                                    />
-                                    <PWText style={styles.manageText}>
-                                        {t('account_details.nfts.manage')}
+        // Mounted thumbnails keep their decoded bitmaps, so off screen they
+        // unmount while the rows, scroll and search stay as they were.
+        <CollectibleImageVisibilityContext.Provider value={isOnScreen}>
+            <PWView style={styles.container}>
+                {showEmptyState ? (
+                    <NftEmptyState
+                        isMultiChain={isMultiChain}
+                        onOptInPress={canOptIn ? openAddNftSheet : undefined}
+                    />
+                ) : (
+                    <>
+                        <PWView style={styles.headerContainer}>
+                            <PWView style={styles.titleBar}>
+                                <PWView style={styles.titleBarTitleContainer}>
+                                    <PWText
+                                        variant='body'
+                                        truncate
+                                    >
+                                        {t('account_details.nfts.count', {
+                                            count: collectibleCount,
+                                        })}
                                     </PWText>
-                                </PWTouchableOpacity>
-                                {canOptIn && (
-                                    <PWButton
-                                        icon='plus'
-                                        variant='helper'
-                                        paddingStyle='dense'
-                                        onPress={openAddNftSheet}
-                                    />
-                                )}
-                            </PWView>
-                        </PWView>
-                        <PWView style={styles.searchRow}>
-                            <PWView style={styles.searchInputContainer}>
-                                <SearchInput
-                                    value={searchFilter}
-                                    placeholder={t(
-                                        'account_details.nfts.search_placeholder',
+                                </PWView>
+                                <PWView style={styles.titleBarActions}>
+                                    <PWTouchableOpacity
+                                        style={styles.manageButton}
+                                        onPress={() => void openManageSheet()}
+                                    >
+                                        <PWIcon
+                                            name='sliders'
+                                            size='sm'
+                                            variant='positive'
+                                        />
+                                        <PWText style={styles.manageText}>
+                                            {t('account_details.nfts.manage')}
+                                        </PWText>
+                                    </PWTouchableOpacity>
+                                    {canOptIn && (
+                                        <PWButton
+                                            icon='plus'
+                                            variant='helper'
+                                            paddingStyle='dense'
+                                            onPress={openAddNftSheet}
+                                        />
                                     )}
-                                    onChangeText={setSearchFilter}
+                                </PWView>
+                            </PWView>
+                            <PWView style={styles.searchRow}>
+                                <PWView style={styles.searchInputContainer}>
+                                    <SearchInput
+                                        value={searchFilter}
+                                        placeholder={t(
+                                            'account_details.nfts.search_placeholder',
+                                        )}
+                                        onChangeText={setSearchFilter}
+                                    />
+                                </PWView>
+                                <PWView style={styles.layoutToggle}>
+                                    <PWTouchableOpacity
+                                        style={[
+                                            styles.layoutToggleButton,
+                                            styles.layoutToggleButtonLeft,
+                                            isGrid &&
+                                                styles.layoutToggleButtonActive,
+                                        ]}
+                                        onPress={() => setGalleryLayout('grid')}
+                                    >
+                                        <PWIcon
+                                            name='grid-view'
+                                            size='sm'
+                                        />
+                                    </PWTouchableOpacity>
+                                    <PWTouchableOpacity
+                                        style={[
+                                            styles.layoutToggleButton,
+                                            styles.layoutToggleButtonRight,
+                                            !isGrid &&
+                                                styles.layoutToggleButtonActive,
+                                        ]}
+                                        onPress={() => setGalleryLayout('list')}
+                                    >
+                                        <PWIcon
+                                            name='list-view'
+                                            size='sm'
+                                        />
+                                    </PWTouchableOpacity>
+                                </PWView>
+                            </PWView>
+                            {chainFilterOptions.length > 0 && (
+                                <FilterSelection
+                                    options={chainFilterOptions}
+                                    selectedValue={selectedChainId}
+                                    onSelect={setSelectedChainId}
+                                    contentContainerStyle={styles.chainFilter}
+                                    testID='nft_network_filter'
                                 />
-                            </PWView>
-                            <PWView style={styles.layoutToggle}>
-                                <PWTouchableOpacity
-                                    style={[
-                                        styles.layoutToggleButton,
-                                        styles.layoutToggleButtonLeft,
-                                        isGrid &&
-                                            styles.layoutToggleButtonActive,
-                                    ]}
-                                    onPress={() => setGalleryLayout('grid')}
-                                >
-                                    <PWIcon
-                                        name='grid-view'
-                                        size='sm'
-                                    />
-                                </PWTouchableOpacity>
-                                <PWTouchableOpacity
-                                    style={[
-                                        styles.layoutToggleButton,
-                                        styles.layoutToggleButtonRight,
-                                        !isGrid &&
-                                            styles.layoutToggleButtonActive,
-                                    ]}
-                                    onPress={() => setGalleryLayout('list')}
-                                >
-                                    <PWIcon
-                                        name='list-view'
-                                        size='sm'
-                                    />
-                                </PWTouchableOpacity>
-                            </PWView>
+                            )}
                         </PWView>
-                        {chainFilterOptions.length > 0 && (
-                            <FilterSelection
-                                options={chainFilterOptions}
-                                selectedValue={selectedChainId}
-                                onSelect={setSelectedChainId}
-                                contentContainerStyle={styles.chainFilter}
-                                testID='nft_network_filter'
+                        {showRefreshNotice && (
+                            <InfoCallout
+                                title={t(
+                                    'account_details.nfts.refresh_error_title',
+                                )}
+                                body={t(
+                                    'account_details.nfts.refresh_error_body',
+                                )}
+                                style={styles.refreshNotice}
+                                testID='nft_refresh_error'
                             />
                         )}
-                    </PWView>
-                    {showRefreshNotice && (
-                        <InfoCallout
-                            title={t(
-                                'account_details.nfts.refresh_error_title',
-                            )}
-                            body={t('account_details.nfts.refresh_error_body')}
-                            style={styles.refreshNotice}
-                            testID='nft_refresh_error'
+                        <PWFlatList
+                            pauseSyncOnInteraction
+                            ref={flatListRef}
+                            // Keyed on the layout ONLY. Sorting and searching just
+                            // reorder/narrow `data`, which FlashList handles, so
+                            // keying on them threw the whole list and its recycle
+                            // pool away on every debounced keystroke — the cost
+                            // this fixes. The layout toggle is different: it flips
+                            // numColumns between 2 and 1, which FlashList cannot do
+                            // in place, and without the remount rows keep the other
+                            // layout's measured heights and render large gaps.
+                            key={galleryLayout}
+                            // FlashList v2 anchors the viewport on whichever row was
+                            // first visible and re-applies that anchor on every data
+                            // change. A re-sort keeps every row and moves all of
+                            // them, so the anchor dragged the user to wherever their
+                            // old top row now lived — the bottom, going A-Z → Z-A.
+                            // The gallery never prepends, so anchoring
+                            // has nothing here to protect.
+                            maintainVisibleContentPosition={{ disabled: true }}
+                            data={collectibles}
+                            renderItem={renderItem}
+                            ItemSeparatorComponent={
+                                isGrid ? null : ListSeparator
+                            }
+                            numColumns={isGrid ? GRID_COLUMNS : 1}
+                            keyExtractor={keyExtractor}
+                            automaticallyAdjustKeyboardInsets
+                            contentContainerStyle={styles.contentContainer}
+                            refreshControl={
+                                <PWRefreshControl
+                                    isRefreshing={isRefreshing}
+                                    onRefresh={handleRefresh}
+                                />
+                            }
+                            ListEmptyComponent={
+                                <EmptyView
+                                    title={listEmptyTitle}
+                                    body={listEmptyBody}
+                                    loadingView={
+                                        <GallerySkeleton isGrid={isGrid} />
+                                    }
+                                    isLoading={isPending}
+                                />
+                            }
                         />
-                    )}
-                    <PWFlatList
-                        pauseSyncOnInteraction
-                        ref={flatListRef}
-                        // Keyed on the layout ONLY. Sorting and searching just
-                        // reorder/narrow `data`, which FlashList handles, so
-                        // keying on them threw the whole list and its recycle
-                        // pool away on every debounced keystroke — the cost
-                        // this fixes. The layout toggle is different: it flips
-                        // numColumns between 2 and 1, which FlashList cannot do
-                        // in place, and without the remount rows keep the other
-                        // layout's measured heights and render large gaps.
-                        key={galleryLayout}
-                        // FlashList v2 anchors the viewport on whichever row was
-                        // first visible and re-applies that anchor on every data
-                        // change. A re-sort keeps every row and moves all of
-                        // them, so the anchor dragged the user to wherever their
-                        // old top row now lived — the bottom, going A-Z → Z-A.
-                        // The gallery never prepends, so anchoring
-                        // has nothing here to protect.
-                        maintainVisibleContentPosition={{ disabled: true }}
-                        data={collectibles}
-                        renderItem={renderItem}
-                        ItemSeparatorComponent={isGrid ? null : ListSeparator}
-                        numColumns={isGrid ? GRID_COLUMNS : 1}
-                        keyExtractor={keyExtractor}
-                        automaticallyAdjustKeyboardInsets
-                        contentContainerStyle={styles.contentContainer}
-                        refreshControl={
-                            <PWRefreshControl
-                                isRefreshing={isRefreshing}
-                                onRefresh={handleRefresh}
-                            />
-                        }
-                        ListEmptyComponent={
-                            <EmptyView
-                                title={listEmptyTitle}
-                                body={listEmptyBody}
-                                loadingView={
-                                    <GallerySkeleton isGrid={isGrid} />
-                                }
-                                isLoading={isPending}
-                            />
-                        }
-                    />
-                </>
-            )}
-        </PWView>
+                    </>
+                )}
+            </PWView>
+        </CollectibleImageVisibilityContext.Provider>
     )
 }

@@ -12,7 +12,9 @@
 
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
+import { createElement, type ReactNode } from 'react'
 import { useCollectibleThumbnail } from '../useCollectibleThumbnail'
+import { CollectibleImageVisibilityContext } from '../CollectibleImageVisibilityContext'
 
 describe('useCollectibleThumbnail', () => {
     it('returns the url untouched when no image width is given', () => {
@@ -76,5 +78,23 @@ describe('useCollectibleThumbnail', () => {
 
         expect(result.current.showPlaceholder).toBe(false)
         expect(result.current.imageUrl).toBe('https://example.com/fresh.png')
+    })
+
+    it('hides the image while its gallery is off screen', () => {
+        const wrapper = ({ children }: { children: ReactNode }) =>
+            createElement(
+                CollectibleImageVisibilityContext.Provider,
+                { value: false },
+                children,
+            )
+        const { result } = renderHook(
+            () =>
+                useCollectibleThumbnail({
+                    thumbnailUrl: 'https://example.com/nft.png',
+                }),
+            { wrapper },
+        )
+
+        expect(result.current.isImageHidden).toBe(true)
     })
 })
