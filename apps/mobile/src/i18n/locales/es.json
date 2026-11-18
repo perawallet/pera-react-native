@@ -3791,6 +3791,8 @@
             "title_clawback": "Recuperación",
             "title_contract_interaction": "Interacción con contrato",
             "token_contract": "Contrato del token {{symbol}}",
+            "unknown": "No se sabe",
+            "unknown_receive_body": "Pera no puede saber qué recibes de esta app",
             "unverified": "No verificado",
             "you_receive": "Recibes",
             "you_send": "Envías",

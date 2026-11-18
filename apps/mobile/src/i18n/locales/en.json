@@ -3791,6 +3791,8 @@
             "title_clawback": "Clawback",
             "title_contract_interaction": "Contract interaction",
             "token_contract": "{{symbol}} token contract",
+            "unknown": "Can't tell",
+            "unknown_receive_body": "Pera can't tell what you receive from this app",
             "unverified": "Unverified",
             "you_receive": "You receive",
             "you_send": "You send",

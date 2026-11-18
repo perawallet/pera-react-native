@@ -3791,6 +3791,8 @@
             "title_clawback": "Geri alma",
             "title_contract_interaction": "Sözleşme etkileşimi",
             "token_contract": "Token sözleşmesi: {{symbol}}",
+            "unknown": "Bilinmiyor",
+            "unknown_receive_body": "Pera bu uygulamadan ne alacağını belirleyemiyor",
             "unverified": "Doğrulanmamış",
             "you_receive": "Alacağın",
             "you_send": "Göndereceğin",

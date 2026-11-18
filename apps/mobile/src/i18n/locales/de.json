@@ -3783,6 +3783,8 @@
             "title_clawback": "Clawback",
             "title_contract_interaction": "Smart-Contract-Interaktion",
             "token_contract": "{{symbol}}-Token-Contract",
+            "unknown": "Unbekannt",
+            "unknown_receive_body": "Pera kann nicht erkennen, was du von dieser App erhältst",
             "unverified": "Nicht verifiziert",
             "you_receive": "Du erhältst",
             "you_send": "Du sendest",

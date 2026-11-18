@@ -3791,6 +3791,8 @@
             "title_clawback": "Récupération",
             "title_contract_interaction": "Interaction avec un contrat",
             "token_contract": "Contrat du jeton {{symbol}}",
+            "unknown": "Inconnu",
+            "unknown_receive_body": "Pera ne peut pas savoir ce que vous recevez de cette app",
             "unverified": "Non vérifié",
             "you_receive": "Vous recevez",
             "you_send": "Vous envoyez",

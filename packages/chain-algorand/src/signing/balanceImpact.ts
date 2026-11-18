@@ -48,6 +48,7 @@ export const computeBalanceImpact = (
     let totalFeeMicroAlgos = 0n
     const closedAssets = new Set<string>()
     const createdAssets: BalanceImpactCreatedAsset[] = []
+    let hasUntrackedReturn = false
 
     const move = (assetId: string, amount: bigint): void => {
         if (amount === 0n) return
@@ -103,6 +104,10 @@ export const computeBalanceImpact = (
                 decimals: Number(acfg.params?.decimals ?? 0),
             })
         }
+
+        // An app can credit the caller in its own state (a lending deposit, a
+        // staking position) without sending anything back.
+        if (tx.applicationTransaction && senderIsUser) hasUntrackedReturn = true
     }
 
     const deltas: BalanceImpactDelta[] = [...net.entries()]
@@ -115,5 +120,6 @@ export const computeBalanceImpact = (
         hasCloseRemainder: closedAssets.size > 0,
         closedAssetIds: [...closedAssets],
         createdAssets,
+        hasUntrackedReturn,
     }
 }
