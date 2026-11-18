@@ -16,6 +16,13 @@ export const NAME_BULK_CHUNK_SIZE = 50
 /** Max bulk-read requests in flight when a lookup spans several chunks. */
 export const NAME_BULK_CONCURRENCY = 2
 
+/**
+ * Max forward checks in flight per batch. Each is a chain read (ENS on Ethereum L1,
+ * NFD over the registry and algod), so a long history list must not burst them.
+ * The total in flight is `NAME_BULK_CONCURRENCY * NAME_VERIFY_CONCURRENCY`.
+ */
+export const NAME_VERIFY_CONCURRENCY = 4
+
 /** How long a cached row (positive or negative) is considered fresh. */
 export const NAME_CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24h
 

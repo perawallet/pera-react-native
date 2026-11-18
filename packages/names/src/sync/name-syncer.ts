@@ -14,7 +14,11 @@ import {
     addressCodecs,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { mapWithConcurrency, partition } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    mapWithConcurrency,
+    partition,
+} from '@perawallet/wallet-core-shared'
 import { hasPeraBackend } from '@perawallet/wallet-core-config'
 import { fetchAddressNames } from '../api'
 import { nameServiceAdapterFor } from '../chain-adapter'
@@ -22,17 +26,58 @@ import {
     NAME_BULK_CHUNK_SIZE,
     NAME_BULK_CONCURRENCY,
     NAME_CACHE_TTL_MS,
+    NAME_VERIFY_CONCURRENCY,
 } from '../constants'
 import {
     getStaleOrMissingAddresses,
     upsertNameEntries,
     type NameCacheEntry,
 } from '../db'
+// Not the `../services` barrel: it reaches `nameBatchQueue` -> this file, an import cycle.
+import { verifyNameAddress } from '../services/verifyNameAddress'
 
 /**
- * Bulk-fetches names for the given addresses and persists them to the
- * `name_cache` table. Skips addresses that are already cached and still fresh,
- * so calling this on every sync tick is cheap in steady state.
+ * Backend names are the backend's word alone, so each is checked against the
+ * chain's own forward record. `mismatch` becomes "no name"; `unavailable` (or a
+ * rejected check) drops the entry so an outage is never cached as "no name".
+ */
+const keepVerifiedNames = async (
+    entries: NameCacheEntry[],
+    scope: ChainScope,
+): Promise<NameCacheEntry[]> => {
+    const verdicts = await mapWithConcurrency(
+        entries,
+        NAME_VERIFY_CONCURRENCY,
+        async entry =>
+            entry.name
+                ? verifyNameAddress({
+                      name: entry.name.name,
+                      address: entry.address,
+                      scope,
+                  })
+                : 'verified',
+    )
+
+    return entries.flatMap((entry, index) => {
+        const verdict = verdicts[index]
+        if (verdict.status === 'rejected' || verdict.value === 'unavailable') {
+            return []
+        }
+        if (verdict.value === 'mismatch') {
+            logger.warn(
+                'Address name dropped: its forward record names another address',
+                { name: entry.name?.name, chainId: scope.chainId },
+            )
+            return [{ address: entry.address, name: null }]
+        }
+        return [entry]
+    })
+}
+
+/**
+ * Bulk-fetches names for the given addresses and persists the ones the chain
+ * confirms to the `name_cache` table. Skips addresses that are already cached
+ * and still fresh, so calling this on every sync tick is cheap in steady state.
  */
 export async function fetchAndPersistNames(
     addresses: string[],
@@ -81,6 +126,9 @@ export async function fetchAndPersistNames(
             name: hitMap.get(codec.normalize(address)) ?? null,
         }))
 
-        await upsertNameEntries({ scope, entries })
+        await upsertNameEntries({
+            scope,
+            entries: await keepVerifiedNames(entries, scope),
+        })
     })
 }

@@ -12,7 +12,10 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { fetchAndPersistNames } from '../name-syncer'
-import { NAME_BULK_CHUNK_SIZE } from '../../constants'
+import {
+    NAME_BULK_CHUNK_SIZE,
+    NAME_VERIFY_CONCURRENCY,
+} from '../../constants'
 import { registerFakeNameServiceAdapter } from '../../__tests__/fakeNameServiceAdapter'
 
 const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
@@ -20,6 +23,7 @@ const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
 const mockFetchAddressNames = vi.hoisted(() => vi.fn())
 const mockUpsertNameEntries = vi.hoisted(() => vi.fn())
 const mockGetStaleOrMissingAddresses = vi.hoisted(() => vi.fn())
+const mockVerify = vi.hoisted(() => vi.fn())
 
 vi.mock('../../api', () => ({
     fetchAddressNames: mockFetchAddressNames,
@@ -37,9 +41,14 @@ const ADDR_A = 'A'.repeat(58)
 const ADDR_B = 'B'.repeat(58)
 const ADDR_C = 'C'.repeat(58)
 
+const ALICE = { name: 'alice.algo', image: '', source: 'nfd' }
+
 describe('fetchAndPersistNames', () => {
     beforeEach(() => {
-        registerFakeNameServiceAdapter()
+        mockVerify.mockReset().mockResolvedValue('verified')
+        registerFakeNameServiceAdapter({
+            verifyForwardResolution: mockVerify,
+        })
         mockFetchAddressNames.mockReset()
         mockUpsertNameEntries.mockReset().mockResolvedValue(undefined)
         mockGetStaleOrMissingAddresses
@@ -191,6 +200,105 @@ describe('fetchAndPersistNames', () => {
 
         // The successful batch should still write
         expect(mockUpsertNameEntries).toHaveBeenCalledTimes(1)
+    })
+
+    describe('forward check', () => {
+        it('persists a mismatching name as no name', async () => {
+            mockFetchAddressNames.mockResolvedValue([
+                { address: ADDR_A, name: ALICE },
+            ])
+            mockVerify.mockResolvedValue('mismatch')
+
+            await fetchAndPersistNames([ADDR_A], ALGORAND_MAINNET)
+
+            expect(mockUpsertNameEntries.mock.calls[0][0].entries).toEqual([
+                { address: ADDR_A, name: null },
+            ])
+        })
+
+        it('writes nothing for an unavailable check but still persists the rest of the batch', async () => {
+            mockFetchAddressNames.mockResolvedValue([
+                { address: ADDR_A, name: ALICE },
+                { address: ADDR_B, name: { ...ALICE, name: 'bob.algo' } },
+            ])
+            mockVerify.mockImplementation(async ({ name }) =>
+                name === 'alice.algo' ? 'unavailable' : 'verified',
+            )
+
+            await fetchAndPersistNames([ADDR_A, ADDR_B], ALGORAND_MAINNET)
+
+            expect(mockUpsertNameEntries.mock.calls[0][0].entries).toEqual([
+                {
+                    address: ADDR_B,
+                    name: { ...ALICE, name: 'bob.algo' },
+                },
+            ])
+        })
+
+        it('treats a rejected check as unavailable', async () => {
+            mockFetchAddressNames.mockResolvedValue([
+                { address: ADDR_A, name: ALICE },
+            ])
+            mockVerify.mockRejectedValue(new Error('rpc down'))
+
+            await fetchAndPersistNames([ADDR_A], ALGORAND_MAINNET)
+
+            expect(mockUpsertNameEntries.mock.calls[0][0].entries).toEqual([])
+        })
+
+        it('never checks an address without a name', async () => {
+            mockFetchAddressNames.mockResolvedValue([])
+
+            await fetchAndPersistNames([ADDR_A], ALGORAND_MAINNET)
+
+            expect(mockVerify).not.toHaveBeenCalled()
+        })
+
+        it('checks the address as asked when the backend answered in another case', async () => {
+            mockFetchAddressNames.mockResolvedValue([
+                { address: ADDR_A.toLowerCase(), name: ALICE },
+            ])
+
+            await fetchAndPersistNames([ADDR_A], ALGORAND_MAINNET)
+
+            expect(mockVerify).toHaveBeenCalledWith(
+                expect.objectContaining({ name: 'alice.algo', address: ADDR_A }),
+            )
+        })
+
+        it('keeps no more than NAME_VERIFY_CONCURRENCY checks in flight', async () => {
+            const addresses = Array.from(
+                { length: NAME_VERIFY_CONCURRENCY * 3 },
+                (_, i) => makeAddress(i),
+            )
+            mockFetchAddressNames.mockResolvedValue(
+                addresses.map(address => ({ address, name: ALICE })),
+            )
+            const releases: Array<() => void> = []
+            let inFlight = 0
+            let peak = 0
+            mockVerify.mockImplementation(
+                () =>
+                    new Promise(resolve => {
+                        inFlight += 1
+                        peak = Math.max(peak, inFlight)
+                        releases.push(() => {
+                            inFlight -= 1
+                            resolve('verified')
+                        })
+                    }),
+            )
+
+            const done = fetchAndPersistNames(addresses, ALGORAND_MAINNET)
+            while (mockUpsertNameEntries.mock.calls.length === 0) {
+                await vi.waitFor(() => expect(releases.length).toBeGreaterThan(0))
+                releases.splice(0).forEach(release => release())
+                await new Promise(resolve => setTimeout(resolve, 0))
+            }
+            await done
+
+            expect(peak).toBe(NAME_VERIFY_CONCURRENCY)
+        })
     })
 })
 

@@ -32,7 +32,8 @@ const NO_RESULTS: AddressName[] = []
 
 /**
  * The address's name on the scope's chain, from whichever service names that
- * chain. Never reaches a node: names come from Pera's backend.
+ * chain. Names come from Pera's backend and are cached only once the chain's
+ * own forward record maps them back to the address.
  *
  * The batch queue coalesces enqueues that land in the same microtask.
  * Putting an `await` (e.g. an SQLite cache check) BEFORE `enqueue` would
