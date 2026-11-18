@@ -17,6 +17,7 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 import { deeplinkAdapters } from '../chain-adapter'
 import { DeeplinkType, linkTargetOf } from '../links'
+import { parsePerawalletAppUri } from '../new-parser'
 import { parseDeeplink } from '../parser'
 import { PERA_LINK_CHAIN_ID, peraLinkChainFailure } from '../pera-link-chain'
 import {
@@ -156,6 +157,53 @@ describe('Pera links with chain=', () => {
             target: { chainId: EVM_LINK_CHAIN_ID, networkId: 'mainnet' },
             address: EVM_ADDRESS,
             assetRef: undefined,
+        })
+    })
+
+    describe('with a transactionId', () => {
+        const HASH = `0x${'ab'.repeat(32)}`
+
+        it('opens that transaction, keeping the token the link names', () => {
+            const link = parseDeeplink(
+                `perawallet://app/asset-detail/?chain=${EVM_LINK_CAIP2}&address=${EVM_ADDRESS}&assetId=${ERC20}&transactionId=${HASH}`,
+            )
+
+            expect(link).toEqual({
+                type: DeeplinkType.TRANSACTION_DETAIL,
+                sourceUrl: expect.any(String),
+                target: { chainId: EVM_LINK_CHAIN_ID, networkId: 'mainnet' },
+                address: EVM_ADDRESS,
+                transactionId: HASH,
+                assetRef: { chainId: EVM_LINK_CHAIN_ID, assetId: ERC20 },
+            })
+        })
+
+        it('leaves assetRef absent without assetId', () => {
+            const link = parseDeeplink(
+                `perawallet://app/asset-detail/?chain=${EVM_LINK_CAIP2}&address=${EVM_ADDRESS}&transactionId=${HASH}`,
+            )
+
+            expect(link).toMatchObject({
+                type: DeeplinkType.TRANSACTION_DETAIL,
+                transactionId: HASH,
+                assetRef: undefined,
+            })
+        })
+
+        it('falls back to the asset detail when transactionId is empty', () => {
+            const link = parseDeeplink(
+                `perawallet://app/asset-detail/?chain=${EVM_LINK_CAIP2}&address=${EVM_ADDRESS}&transactionId=`,
+            )
+
+            expect(link?.type).toBe(DeeplinkType.ASSET_DETAIL)
+        })
+
+        it('rejects an asset id the chain does not spell', () => {
+            expect(
+                parsePerawalletAppUri(
+                    `perawallet://app/asset-detail/?chain=${EVM_LINK_CAIP2}&address=${EVM_ADDRESS}&assetId=31566704&transactionId=${HASH}`,
+                ),
+            ).toBeNull()
         })
     })
 

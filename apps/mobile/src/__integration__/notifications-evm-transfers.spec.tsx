@@ -83,11 +83,21 @@ const assetDetailUrl = (chain: string, assetId?: string): string =>
     `perawallet://app/asset-detail/?chain=${encodeURIComponent(chain)}&address=${ETHEREUM_ADDRESS_LOWER}` +
     (assetId ? `&assetId=${assetId}` : '')
 
+const TX_HASH = `0x${'ab'.repeat(32)}`
+const withTransactionId = (url: string): string =>
+    `${url}&transactionId=${TX_HASH}`
+
 const RECEIVED_URL = assetDetailUrl('eip155:1')
 const SENT_URL = assetDetailUrl('eip155:1', TOKEN.toLowerCase())
 const FAILED_URL = assetDetailUrl('eip155:1')
 const SEPOLIA_URL = assetDetailUrl('eip155:11155111')
 const BASE_SENT_URL = assetDetailUrl('eip155:8453', TOKEN.toLowerCase())
+const RECEIVED_TX_URL = withTransactionId(RECEIVED_URL)
+const SENT_TX_URL = withTransactionId(SENT_URL)
+const FAILED_TX_URL = withTransactionId(FAILED_URL)
+const SEPOLIA_TX_URL = withTransactionId(SEPOLIA_URL)
+// Algorand's own notification URL, which the legacy parser reads.
+const ALGORAND_LEGACY_URL = `perawallet://asset/transactions?account=${ALGO25_TEST_ADDRESS}&asset=31566704&transactionId=ALGOTXID`
 
 const evmRow = (
     id: string,
@@ -132,6 +142,24 @@ const EVM_ROWS = [
         'Transaction successful: 10 USDC to 0x1234…5678 on Base',
         BASE_SENT_URL,
     ),
+    evmRow(
+        '305',
+        'evm-transfer-received',
+        '1 ETH received from 0xabcd…ef01',
+        RECEIVED_TX_URL,
+    ),
+    evmRow(
+        '306',
+        'evm-transfer-sent',
+        'Transaction successful: 5 USDC to 0xabcd…ef01',
+        SENT_TX_URL,
+    ),
+    evmRow(
+        '307',
+        'evm-transfer-failed',
+        'Transaction failed: 2 ETH to 0xabcd…ef01',
+        FAILED_TX_URL,
+    ),
 ]
 
 const assetDetailsRoute = (assetId: string, chainId = 'ethereum') => ({
@@ -141,6 +169,13 @@ const assetDetailsRoute = (assetId: string, chainId = 'ethereum') => ({
         params: { assetId, chainId },
     },
 })
+
+const transactionDetailsAction = () =>
+    StackActions.replace('TransactionDetails', {
+        scope: { chainId: 'ethereum', networkId: 'mainnet' },
+        transactionId: TX_HASH,
+        accountAddress: ETHEREUM_ADDRESS,
+    })
 
 type UseDeepLink = ReturnType<typeof useDeepLink>
 const captured: {
@@ -251,6 +286,29 @@ describe('Flow: Ethereum transfer notifications', () => {
             )
         })
 
+        it.each(['305', '306', '307'])(
+            'When row %s, whose link carries a transaction hash, is pressed, then that transaction opens on its chain',
+            async id => {
+                const dispatch = vi
+                    .spyOn(navigationRef, 'dispatch')
+                    .mockImplementation(() => undefined)
+                renderWithNavigation(NotificationsScreen, 'Notifications')
+
+                fireEvent.click(
+                    await screen.findByTestId(`notification_row_${id}`),
+                )
+
+                await waitFor(() =>
+                    expect(dispatch).toHaveBeenCalledWith(
+                        transactionDetailsAction(),
+                    ),
+                )
+                expect(useAccountsStore.getState().selectedAccountId).toBe(
+                    ETHEREUM_ACCOUNT.id,
+                )
+            },
+        )
+
         // Base has no deeplink adapter of its own; Ethereum's serves its links.
         it("When a sent row on another EVM chain is pressed, then that chain's token screen opens", async () => {
             const dispatch = vi
@@ -301,6 +359,72 @@ describe('Flow: Ethereum transfer notifications', () => {
             expect(onError).not.toHaveBeenCalled()
             expect(useAccountsStore.getState().selectedAccountId).toBe(
                 ETHEREUM_ACCOUNT.id,
+            )
+        })
+
+        it('When its link carries a transaction hash, then that transaction is pushed on top of the open screen', async () => {
+            const navigate = vi
+                .spyOn(navigationRef, 'navigate')
+                .mockImplementation(() => undefined)
+            const dispatch = vi
+                .spyOn(navigationRef, 'dispatch')
+                .mockImplementation(() => undefined)
+            const onError = vi.fn()
+
+            await captured.handleDeepLink!(
+                RECEIVED_TX_URL,
+                false,
+                'notification',
+                onError,
+            )
+
+            expect(dispatch).toHaveBeenCalledWith(
+                StackActions.push('TransactionDetails', {
+                    scope: { chainId: 'ethereum', networkId: 'mainnet' },
+                    transactionId: TX_HASH,
+                    accountAddress: ETHEREUM_ADDRESS,
+                }),
+            )
+            expect(navigate).not.toHaveBeenCalled()
+            expect(onError).not.toHaveBeenCalled()
+        })
+
+        it('When its link carries a hash but names another network, then it is refused silently', async () => {
+            const navigate = vi
+                .spyOn(navigationRef, 'navigate')
+                .mockImplementation(() => undefined)
+            const onError = vi.fn()
+
+            await captured.handleDeepLink!(
+                SEPOLIA_TX_URL,
+                false,
+                'notification',
+                onError,
+            )
+
+            expect(onError).toHaveBeenCalledTimes(1)
+            expect(navigate).not.toHaveBeenCalled()
+            expect(Notifier.showNotification).not.toHaveBeenCalled()
+        })
+
+        it("When it is Algorand's legacy transaction link, then the asset screen opens as before", async () => {
+            const navigate = vi
+                .spyOn(navigationRef, 'navigate')
+                .mockImplementation(() => undefined)
+
+            await captured.handleDeepLink!(
+                ALGORAND_LEGACY_URL,
+                false,
+                'notification',
+            )
+
+            expect(navigate).toHaveBeenCalledWith(
+                'TabBar',
+                assetDetailsRoute('31566704', 'algorand'),
+            )
+            expect(navigate).not.toHaveBeenCalledWith(
+                'TransactionDetails',
+                expect.anything(),
             )
         })
 

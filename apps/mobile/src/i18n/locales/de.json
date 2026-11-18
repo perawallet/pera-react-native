@@ -3875,6 +3875,10 @@
         },
         "record_detail": {
             "read_failed": "Die Aufrufdetails dieser Transaktion konnten nicht aus dem Netzwerk gelesen werden.",
+            "not_found": {
+                "title": "Transaktion nicht gefunden",
+                "body": "Pera konnte diese Transaktion im Verlauf des Kontos nicht finden. Eine neue Transaktion kann eine Minute brauchen, bis sie erscheint. Versuche es in Kürze erneut."
+            },
             "inferred_notice": "Aus den Guthabenänderungen abgeleitet. Pera konnte den Aufruf selbst nicht lesen.",
             "transaction_id": "Transaktions-ID",
             "quantity": "Menge",
