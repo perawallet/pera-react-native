@@ -43,45 +43,62 @@ const dedupeByChainAddress = (
 
 /**
  * `chainOf` gives the CAIP-2 id of a chain on the deployment the request goes
- * to; an account on a chain it can't name is left out rather than refused.
+ * to; an account or mute on a chain it can't name is left out rather than
+ * refused.
  */
 export const toDeviceRegistrationRequest = (
     registration: DeviceRegistration,
     chainOf: (chainId: ChainId) => Nullable<string>,
-): DeviceRegistrationRequest => ({
-    ...(registration.id !== undefined ? { id: registration.id } : {}),
-    push_token: registration.pushToken,
-    platform: registration.platform,
-    locale: registration.locale,
-    app_version: registration.appVersion,
-    // Omitted rather than truncated: the backend stores what it is sent and
-    // marks the choice explicit, so a sliced code would stick as a currency
-    // that never existed. Dropping it leaves the column null and falls back.
-    ...(registration.currency &&
-    registration.currency.length <= MAX_CURRENCY_LENGTH
-        ? { currency: registration.currency }
-        : {}),
-    accounts: dedupeByChainAddress(registration.accounts).flatMap(account => {
-        const chain = chainOf(account.chainId)
-        if (chain === null) return []
-        return [
-            {
-                address: account.address,
-                chain,
-                account_type: account.accountType,
-                receive_notifications: account.receiveNotifications,
-            },
-        ]
-    }),
-})
+): DeviceRegistrationRequest => {
+    const accounts = dedupeByChainAddress(registration.accounts).flatMap(
+        account => {
+            const chain = chainOf(account.chainId)
+            if (chain === null) return []
+            return [
+                {
+                    address: account.address,
+                    chain,
+                    account_type: account.accountType,
+                    receive_notifications: account.receiveNotifications,
+                },
+            ]
+        },
+    )
+    // A mute on a chain with no account item changes no push, and dropping it
+    // keeps the chain-refusal fallback from 422ing on a mute it just removed.
+    const accountChains = new Set(accounts.map(account => account.chain))
+    const mutedChains = registration.mutedChainIds.flatMap(chainId => {
+        const chain = chainOf(chainId)
+        return chain !== null && accountChains.has(chain) ? [chain] : []
+    })
+    return {
+        ...(registration.id !== undefined ? { id: registration.id } : {}),
+        push_token: registration.pushToken,
+        platform: registration.platform,
+        locale: registration.locale,
+        app_version: registration.appVersion,
+        // Omitted rather than truncated: the backend stores what it is sent and
+        // marks the choice explicit, so a sliced code would stick as a currency
+        // that never existed. Dropping it leaves the column null and falls back.
+        ...(registration.currency &&
+        registration.currency.length <= MAX_CURRENCY_LENGTH
+            ? { currency: registration.currency }
+            : {}),
+        accounts,
+        muted_chains: [...new Set(mutedChains)],
+    }
+}
 
 export const toV3DeviceRegistrationRequest = (
     registration: DeviceRegistration,
     isOnV3: (chainId: ChainId) => boolean,
 ): V3DeviceRegistrationRequest => {
-    const { accounts, ...device } = toDeviceRegistrationRequest(
-        registration,
-        chainId => (isOnV3(chainId) ? chainId : null),
+    const {
+        accounts,
+        muted_chains: _mutedChains,
+        ...device
+    } = toDeviceRegistrationRequest(registration, chainId =>
+        isOnV3(chainId) ? chainId : null,
     )
     return {
         ...device,

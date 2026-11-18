@@ -79,6 +79,12 @@ export const useDeviceRegistration = (
         .sort()
         .join('\n')
 
+    // A mute change re-registers like an account change; sorted so reordering
+    // the same set doesn't.
+    const mutedChainsKey = useDeviceStore(state =>
+        [...state.mutedChainIds].sort().join(','),
+    )
+
     // Switching API versions changes what the backend holds (v3 carries only
     // the chains it always did), so a flip must re-register. Selected through
     // the overrides store so a developer override re-renders too; a fetched
@@ -139,6 +145,7 @@ export const useDeviceRegistration = (
             })
     }, [
         accountsKey,
+        mutedChainsKey,
         locale,
         deployment,
         isV4,
