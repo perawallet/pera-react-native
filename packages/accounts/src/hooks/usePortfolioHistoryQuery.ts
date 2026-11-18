@@ -17,7 +17,7 @@ import type {
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapabilityCheck } from '@perawallet/wallet-core-chain-shared'
-import { useCurrency } from '@perawallet/wallet-core-currencies'
+import { useHistoricUsdToPreferred } from '@perawallet/wallet-core-currencies'
 import {
     isChainRefusedError,
     isIntegrityRequiredError,
@@ -86,7 +86,8 @@ export const usePortfolioHistoryQuery = (
     currencyScope: ChainScope,
     enabled = true,
 ): UsePortfolioHistoryQueryResult => {
-    const { usdToPreferred } = useCurrency(currencyScope)
+    const { usdToPreferredAt, isPending: isRatesPending } =
+        useHistoricUsdToPreferred(currencyScope, period, enabled)
     const check = useChainCapabilityCheck()
     const groups = useMemo(() => groupByScope(sources), [sources])
     const offFlags = groups.map(
@@ -183,10 +184,13 @@ export const usePortfolioHistoryQuery = (
                     : sumPortfolioHistories(
                           counted.map(result => result.data ?? []),
                       )
-                ).map(({ timestamp, usdValue }) => ({
-                    datetime: new Date(timestamp),
-                    preferredValue: usdToPreferred(usdValue),
-                })),
+                ).map(({ timestamp, usdValue }) => {
+                    const datetime = new Date(timestamp)
+                    return {
+                        datetime,
+                        preferredValue: usdToPreferredAt(usdValue, datetime),
+                    }
+                }),
                 excludedChainIds,
                 failedChainIds,
                 // A chain that holds its error is being asked again, not
@@ -220,7 +224,7 @@ export const usePortfolioHistoryQuery = (
                 },
             }
         },
-        [usdToPreferred, groups, queryHashes, isOff],
+        [usdToPreferredAt, groups, queryHashes, isOff],
     )
 
     const combined = useQueries({
@@ -258,7 +262,7 @@ export const usePortfolioHistoryQuery = (
         isPending:
             !enabled || isUnavailableOnNetwork || groups.length === 0
                 ? false
-                : combined.isPending,
+                : combined.isPending || isRatesPending,
         isError: combined.isError,
         isRetrying: combined.isRetrying,
         isPaused: combined.isPaused,

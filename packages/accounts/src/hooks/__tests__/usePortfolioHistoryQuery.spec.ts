@@ -40,9 +40,15 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
             !chainsWithoutHistory.has(chain.chainId),
 }))
 
+const mockRates = vi.hoisted(() => ({
+    isPending: false,
+    rateAt: (_datetime: Date): number => 2,
+}))
 vi.mock('@perawallet/wallet-core-currencies', () => ({
-    useCurrency: () => ({
-        usdToPreferred: (amount: Decimal) => amount.mul(2),
+    useHistoricUsdToPreferred: () => ({
+        usdToPreferredAt: (amount: Decimal, datetime: Date) =>
+            amount.mul(mockRates.rateAt(datetime)),
+        isPending: mockRates.isPending,
     }),
 }))
 
@@ -83,6 +89,47 @@ describe('usePortfolioHistoryQuery', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         chainsWithoutHistory.clear()
+        mockRates.isPending = false
+        mockRates.rateAt = () => 2
+    })
+
+    it("converts each point with its own day's rate", async () => {
+        mockRates.rateAt = datetime => (datetime.getTime() === 1 ? 3 : 5)
+        history.mockResolvedValue([point(1, '10'), point(2, '10')])
+
+        const { result } = renderHook(
+            () =>
+                usePortfolioHistoryQuery(
+                    [{ address: 'ALGO', scope: ALGORAND }],
+                    'one-month',
+                    ALGORAND,
+                ),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+        expect(result.current.data).toEqual([
+            { datetime: new Date(1), preferredValue: new Decimal(30) },
+            { datetime: new Date(2), preferredValue: new Decimal(50) },
+        ])
+    })
+
+    it("stays pending while the period's rates load", async () => {
+        mockRates.isPending = true
+        history.mockResolvedValue([point(1, '10')])
+
+        const { result } = renderHook(
+            () =>
+                usePortfolioHistoryQuery(
+                    [{ address: 'ALGO', scope: ALGORAND }],
+                    'one-month',
+                    ALGORAND,
+                ),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(history).toHaveBeenCalled())
+        expect(result.current.isPending).toBe(true)
     })
 
     it("sums each chain's history and converts it to the preferred currency", async () => {
