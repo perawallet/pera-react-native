@@ -19,6 +19,7 @@ import {
 } from '@tanstack/react-query'
 import type {
     ChainScope,
+    Page,
     PageRef,
     TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
@@ -217,10 +218,35 @@ export const useTransactionRecordsQuery = ({
         const records: TransactionRecord[] = []
         for (let read = 1; ; read++) {
             signal.throwIfAborted()
-            const { items: minedItems, next } =
-                await getMinedTransactionHistory(accountAddress, scope, page, {
-                    signal,
-                })
+            let mined: Page<TransactionRecord>
+            try {
+                mined = await getMinedTransactionHistory(
+                    accountAddress,
+                    scope,
+                    page,
+                    { signal },
+                )
+            } catch (error) {
+                // The pages read so far kept nothing, so an empty page resuming
+                // at the failed cursor spares a retry re-reading them. A
+                // refresh's pages replace page one, so it still throws.
+                if (
+                    read === 1 ||
+                    signal.aborted ||
+                    loadedNewestMinedId !== undefined
+                ) {
+                    throw error
+                }
+                return {
+                    page: {
+                        records,
+                        next: page ?? null,
+                        ...(newestMinedId !== undefined && { newestMinedId }),
+                    },
+                    hasReachedLoadedPages: false,
+                }
+            }
+            const { items: minedItems, next } = mined
             // The first read can be empty with a next page, so the newest id
             // is the first one any read lists.
             if (pageParam === null) newestMinedId ??= minedItems[0]?.id

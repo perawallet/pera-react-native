@@ -24,8 +24,12 @@ export const HISTORY_RATE_LIMITED_RETRY_LIMIT = 3
 
 const RATE_LIMITED_BASE_DELAY_MS = 2000
 
+// The backend also answers an upstream explorer's rate limit as 503
+// `upstream_unavailable`, a code no other history service sends.
 const isRateLimited = (error: Error): boolean =>
-    isPeraNetworkError(error) && error.status === 429
+    isPeraNetworkError(error) &&
+    (error.status === 429 ||
+        (error.status === 503 && error.backendCode === 'upstream_unavailable'))
 
 // The app's query default is no retry, so a read that raced something not yet
 // ready at launch would show the error state. A service the network doesn't

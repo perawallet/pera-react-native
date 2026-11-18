@@ -41,6 +41,20 @@ describe('shouldRetryHistoryRead', () => {
         expect(shouldRetryHistoryRead(3, RATE_LIMITED)).toBe(false)
     })
 
+    it("retries the backend's 503 for an upstream rate limit like a 429", () => {
+        const upstream = new PeraNetworkError('server', {
+            status: 503,
+            backendCode: 'upstream_unavailable',
+        })
+        expect(shouldRetryHistoryRead(2, upstream)).toBe(true)
+        expect(
+            shouldRetryHistoryRead(
+                1,
+                new PeraNetworkError('server', { status: 503 }),
+            ),
+        ).toBe(false)
+    })
+
     it('never retries a Pera service the network lacks', () => {
         expect(
             shouldRetryHistoryRead(0, new PeraServiceUnavailableError(SCOPE)),

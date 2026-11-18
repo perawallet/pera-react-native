@@ -346,6 +346,35 @@ describe('useTransactionRecordsQuery', () => {
         )
     })
 
+    test('resumes a walk at the page that failed, without re-reading the empty pages before it', async () => {
+        mocks.getMinedTransactionHistory
+            .mockResolvedValueOnce({ items: [], next: { cursor: 'c1' } })
+            .mockResolvedValueOnce({ items: [], next: { cursor: 'c2' } })
+            .mockRejectedValueOnce(new Error('history service refused'))
+            .mockResolvedValueOnce({ items: [record('A', JAN_10)] })
+
+        const { result } = renderHook(
+            () =>
+                useTransactionRecordsQuery({
+                    accountAddress: ADDRESS,
+                    scope: SCOPE,
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() =>
+            expect(result.current.records.map(r => r.id)).toEqual(['A']),
+        )
+        expect(
+            mocks.getMinedTransactionHistory.mock.calls.map(call => call[2]),
+        ).toEqual([
+            undefined,
+            { cursor: 'c1' },
+            { cursor: 'c2' },
+            { cursor: 'c2' },
+        ])
+    })
+
     test('pauses the search after its fetch budget and resumes on fetchNextPage', async () => {
         mocks.getMinedTransactionHistory.mockImplementation(
             async (_address, _scope, page?: { cursor: string }) => ({
