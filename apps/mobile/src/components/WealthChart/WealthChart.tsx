@@ -16,7 +16,7 @@ import { useStyles } from './styles'
 import { useChartCurrencyFallback } from '@hooks/useChartCurrencyFallback'
 import { useLanguage } from '@hooks/useLanguage'
 import { BalanceLineChart } from '@components/BalanceLineChart'
-import { PWText } from '@components/core'
+import { PWButton, PWText, PWView } from '@components/core'
 import { networkListOf } from '@modules/chain-ui'
 import {
     isIntegrityRequiredError,
@@ -39,7 +39,7 @@ export type WealthChartProps = {
     onSelectionChanged: (item: Nullable<PortfolioValueHistoryItem>) => void
     /** Gate the (slow) history fetch on chart visibility. */
     enabled?: boolean
-    /** Names the networks the chart leaves out, under the chart. */
+    /** Names the networks the chart doesn't cover yet, under the chart. A network whose history failed is named either way, with a retry. */
     shouldShowExcludedNetworks?: boolean
 }
 
@@ -73,6 +73,9 @@ export const WealthChart = memo(function WealthChart({
         refetch,
         isUnavailableOnNetwork,
         excludedChainIds,
+        failedChainIds,
+        isRetryingFailed,
+        refetchFailed,
     } = usePortfolioHistoryQuery(sources, period, currencyScope, enabled)
     const fallback = useChartCurrencyFallback(currencyScope, {
         isError,
@@ -86,10 +89,16 @@ export const WealthChart = memo(function WealthChart({
         () => data.filter(point => point.preferredValue !== null),
         [data],
     )
+    // Matches BalanceLineChart's own 'chart' state: while it shows its error or
+    // loading state, its Retry is the only one on screen.
+    const isPlotting = plottablePoints.length > 0
 
-    const excludedNetworks = useMemo(
-        () => networkListOf(excludedChainIds, t),
-        [excludedChainIds, t],
+    const { excludedNetworks, failedNetworks } = useMemo(
+        () => ({
+            excludedNetworks: networkListOf(excludedChainIds, t),
+            failedNetworks: networkListOf(failedChainIds, t),
+        }),
+        [excludedChainIds, failedChainIds, t],
     )
 
     return (
@@ -110,15 +119,36 @@ export const WealthChart = memo(function WealthChart({
                 errorBody={fallback.errorBody}
                 style={themeStyle.container}
             />
-            {shouldShowExcludedNetworks && excludedNetworks !== '' && (
-                <PWText
-                    variant='caption'
-                    style={themeStyle.excludedNote}
-                >
-                    {t('common.wealth_chart.excludes_networks', {
-                        networks: excludedNetworks,
-                    })}
-                </PWText>
+            {isPlotting &&
+                shouldShowExcludedNetworks &&
+                excludedNetworks !== '' && (
+                    <PWText
+                        variant='caption'
+                        style={themeStyle.excludedNote}
+                    >
+                        {t('common.wealth_chart.excludes_networks', {
+                            networks: excludedNetworks,
+                        })}
+                    </PWText>
+                )}
+            {isPlotting && failedNetworks !== '' && (
+                <PWView style={themeStyle.failedNote}>
+                    <PWText
+                        variant='caption'
+                        style={themeStyle.excludedNote}
+                    >
+                        {t('common.wealth_chart.failed_networks', {
+                            networks: failedNetworks,
+                        })}
+                    </PWText>
+                    <PWButton
+                        variant='link'
+                        title={t('common.retry.label')}
+                        onPress={refetchFailed}
+                        isLoading={isRetryingFailed}
+                        testID='wealth-chart-failed-retry'
+                    />
+                </PWView>
             )}
         </>
     )
