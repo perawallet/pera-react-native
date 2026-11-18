@@ -170,9 +170,11 @@ describe('Flow: Discover dApp directory', () => {
         fireEvent.click(screen.getByTestId('discover_dapps_chain_ethereum'))
 
         expect(await screen.findByTestId('discover_dapps_empty')).toBeTruthy()
+        // Two sentences: the 3-line cap would ellipsize the instruction.
         expect(
-            screen.getByText('discover.home.dapps_empty_open_url'),
-        ).toBeTruthy()
+            screen.getByText('discover.home.dapps_empty_open_url').style
+                .webkitLineClamp,
+        ).toBe('')
         expect(
             screen.queryByTestId('discover_dapps_category_filter'),
         ).toBeNull()

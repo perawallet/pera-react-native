@@ -340,9 +340,11 @@ describe('Flow: Discover home', () => {
 
         fireEvent.click(screen.getByTestId('discover_chain_filter_ethereum'))
 
-        expect(
-            await screen.findByText('discover.home.dapps_empty_open_url'),
-        ).toBeTruthy()
+        const body = await screen.findByText(
+            'discover.home.dapps_empty_open_url',
+        )
+        // Two sentences: the 3-line cap would ellipsize the instruction.
+        expect(body.style.webkitLineClamp).toBe('')
         await flush()
     })
 

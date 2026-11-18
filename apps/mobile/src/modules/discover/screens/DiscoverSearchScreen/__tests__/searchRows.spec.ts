@@ -57,6 +57,17 @@ describe('toSearchRows', () => {
         expect(kinds(typing({ filter: 'dapps' }))).toEqual(['noResults'])
     })
 
+    // Deliberate for now: the typed-url row is All-only, so the filtered tabs
+    // keep No results for a domain nothing lists.
+    it.each(['dapps', 'markets'] as const)(
+        'shows No results under %s for a domain nothing matches',
+        filter => {
+            expect(
+                kinds(typing({ filter, typedUrl: 'https://aave.org' })),
+            ).toEqual(['noResults'])
+        },
+    )
+
     it('shows the loading row, not No results, while a search runs', () => {
         expect(
             kinds(

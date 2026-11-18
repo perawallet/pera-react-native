@@ -90,6 +90,7 @@ export const DiscoverHomeScreen = () => {
                     body={t('discover.home.dapps_empty_open_url', {
                         chain: home.selectedChainName,
                     })}
+                    shouldTruncateBody={false}
                     style={styles.emptyDapps}
                     testID='discover_home_dapps_empty'
                 />

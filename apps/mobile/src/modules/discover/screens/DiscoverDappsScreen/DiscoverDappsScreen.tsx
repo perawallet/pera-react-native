@@ -89,6 +89,7 @@ export const DiscoverDappsScreen = () => {
                               chain: screen.selectedChainName,
                           })
                 }
+                shouldTruncateBody={false}
                 style={styles.empty}
                 testID='discover_dapps_empty'
             />
