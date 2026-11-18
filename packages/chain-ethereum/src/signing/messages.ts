@@ -434,13 +434,14 @@ const planTypedData = (
             "The typed data's domain chainId is not in its EIP712Domain type, so the signature binds no chain",
         )
     }
-    // A signature over another chain's domain would be valid there.
+    // A signature over another chain's domain would be valid there. The message
+    // echoes the dApp's own spelling of the id, not the parsed value.
     if (
         binding.kind === 'bound' &&
         binding.chainId !== BigInt(eip155ChainIdOf(request.scope, chain))
     ) {
         throw new Error(
-            `The typed data is for EIP-155 chain ${binding.chainId}, not ${request.scope.networkId}`,
+            `The typed data is for EIP-155 chain ${typedData.domain?.chainId}, not ${request.scope.networkId}`,
         )
     }
     // Signed without a chain, a permit is valid on every chain whose token

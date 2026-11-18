@@ -291,6 +291,24 @@ describe('ethereumMessageSignerAdapter.plan', () => {
         },
     )
 
+    it('echoes the spelling of a chainId its declared EIP712Domain hashes as given', () => {
+        const declared = [
+            { name: 'name', type: 'string' },
+            { name: 'version', type: 'string' },
+            { name: 'chainId', type: 'string' },
+            { name: 'verifyingContract', type: 'address' },
+        ]
+        const request = typedDataMessageRequest(MAINNET, SENDER, {
+            ...MAIL_TYPED_DATA,
+            domain: { ...MAIL_TYPED_DATA.domain, chainId: '0x5' },
+            types: { EIP712Domain: declared, ...MAIL_TYPED_DATA.types },
+        })
+
+        expect(() => adapter.plan(request, context)).toThrow(
+            'The typed data is for EIP-155 chain 0x5, not mainnet',
+        )
+    })
+
     it('refuses mainnet typed data on Sepolia', () => {
         expect(() =>
             adapter.plan(
