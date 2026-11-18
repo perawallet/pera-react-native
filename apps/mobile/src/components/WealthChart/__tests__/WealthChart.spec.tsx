@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { Decimal } from 'decimal.js'
 import { fireEvent, render, screen } from '@test-utils/render'
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
 // Ensure i18n is initialised so t() resolves real strings in this test's module graph.
@@ -41,6 +42,10 @@ const ETHEREUM: ChainScope = {
     chainId: 'ethereum' as ChainId,
     networkId: 'mainnet',
 }
+const PLOTTED = [
+    { datetime: new Date(1), preferredValue: new Decimal(10) },
+    { datetime: new Date(2), preferredValue: new Decimal(12) },
+]
 const SOURCES = [
     { address: 'ALGO', scope: ALGORAND },
     { address: '0xeth', scope: ETHEREUM },
@@ -59,8 +64,10 @@ const mockHistory = (
         isUnavailableOnNetwork: false,
         excludedChainIds: [],
         failedChainIds: [],
+        isRetryingFailed: false,
         isPartial: false,
         refetch: vi.fn(),
+        refetchFailed: vi.fn(),
         ...overrides,
     })
 
@@ -188,7 +195,11 @@ describe('WealthChart', () => {
     })
 
     it('names the networks the chart leaves out', () => {
-        mockHistory({ excludedChainIds: [ETHEREUM.chainId], isPartial: true })
+        mockHistory({
+            data: PLOTTED,
+            excludedChainIds: [ETHEREUM.chainId],
+            isPartial: true,
+        })
 
         renderChart()
 
@@ -199,6 +210,7 @@ describe('WealthChart', () => {
 
     it('joins several left-out networks with a translated conjunction', () => {
         mockHistory({
+            data: PLOTTED,
             excludedChainIds: [ETHEREUM.chainId, 'base' as ChainId],
             isPartial: true,
         })
@@ -212,12 +224,15 @@ describe('WealthChart', () => {
         ).toBeTruthy()
     })
 
-    it('names a network whose history failed apart from left-out ones, with a retry', () => {
+    it('names a network whose history failed apart from left-out ones, with a retry that asks for it alone', () => {
         const refetch = vi.fn()
+        const refetchFailed = vi.fn()
         mockHistory({
+            data: PLOTTED,
             failedChainIds: [ETHEREUM.chainId],
             isPartial: true,
             refetch,
+            refetchFailed,
         })
 
         renderChart()
@@ -229,7 +244,104 @@ describe('WealthChart', () => {
             ),
         ).toBeTruthy()
         expect(screen.queryByText(/doesn't include/)).toBeNull()
-        expect(refetch).toHaveBeenCalledTimes(1)
+        expect(refetchFailed).toHaveBeenCalledTimes(1)
+        expect(refetch).not.toHaveBeenCalled()
+    })
+
+    it('holds the failed network retry while that history is being asked again', () => {
+        const refetch = vi.fn()
+        const refetchFailed = vi.fn()
+        mockHistory({
+            data: PLOTTED,
+            failedChainIds: [ETHEREUM.chainId],
+            isPartial: true,
+            isRetryingFailed: true,
+            refetch,
+            refetchFailed,
+        })
+
+        renderChart()
+        fireEvent.click(screen.getByTestId('wealth-chart-failed-retry'))
+
+        expect(refetchFailed).not.toHaveBeenCalled()
+        expect(refetch).not.toHaveBeenCalled()
+    })
+
+    it('names a network the chart does not cover and one whose history failed together, with one retry', () => {
+        mockHistory({
+            data: PLOTTED,
+            excludedChainIds: ['base' as ChainId],
+            failedChainIds: [ETHEREUM.chainId],
+            isPartial: true,
+        })
+
+        renderChart()
+
+        expect(
+            screen.getByText(/This chart doesn't include \w+ assets yet/),
+        ).toBeTruthy()
+        expect(
+            screen.getByText(
+                /Couldn't load \w+ history, so this chart leaves it out/,
+            ),
+        ).toBeTruthy()
+        expect(screen.getAllByTestId('wealth-chart-failed-retry')).toHaveLength(
+            1,
+        )
+    })
+
+    it('leaves the notes out while the chart shows its own loading state', () => {
+        mockHistory({
+            isPending: true,
+            excludedChainIds: ['base' as ChainId],
+            failedChainIds: [ETHEREUM.chainId],
+            isPartial: true,
+        })
+
+        renderChart()
+
+        expect(screen.queryByText(/doesn't include/)).toBeNull()
+        expect(screen.queryByText(/Couldn't load/)).toBeNull()
+        expect(screen.queryByTestId('wealth-chart-failed-retry')).toBeNull()
+    })
+
+    it('leaves the failed network retry out while the chart shows its own currency error', () => {
+        vi.mocked(useCurrency).mockReturnValue({
+            ...defaultCurrency(ALGORAND),
+            isRateUnavailable: true,
+        })
+        mockHistory({
+            data: [{ datetime: new Date(1), preferredValue: null }],
+            failedChainIds: [ETHEREUM.chainId],
+            isPartial: true,
+        })
+
+        renderChart()
+
+        expect(screen.getAllByTestId('balance-chart-retry')).toHaveLength(1)
+        expect(screen.queryByTestId('wealth-chart-failed-retry')).toBeNull()
+    })
+
+    it('names a network whose history failed even where the chart leaves uncovered networks unnamed', () => {
+        mockHistory({
+            data: PLOTTED,
+            excludedChainIds: ['base' as ChainId],
+            failedChainIds: [ETHEREUM.chainId],
+            isPartial: true,
+        })
+
+        render(
+            <WealthChart
+                sources={SOURCES}
+                currencyScope={ALGORAND}
+                period='one-week'
+                onSelectionChanged={vi.fn()}
+                shouldShowExcludedNetworks={false}
+            />,
+        )
+
+        expect(screen.queryByText(/doesn't include/)).toBeNull()
+        expect(screen.getByTestId('wealth-chart-failed-retry')).toBeTruthy()
     })
 
     it('shows no note when every network is charted', () => {

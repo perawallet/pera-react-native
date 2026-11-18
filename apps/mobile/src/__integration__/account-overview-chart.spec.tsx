@@ -377,7 +377,7 @@ describe('Flow: The balance chart of an account on Algorand and Ethereum', () =>
         ).toBeNull()
     })
 
-    it('Given Ethereum history fails, when the chart is shown, then it plots Algorand without naming Ethereum, and shows no change', async () => {
+    it("Given Ethereum history fails, when the chart is shown, then it plots Algorand, says Ethereum couldn't load with a retry, and shows no change", async () => {
         serveHistory({
             algorand: [
                 { datetime: '2026-10-20T00:00:00Z', usd_value: '10' },
@@ -392,14 +392,16 @@ describe('Flow: The balance chart of an account on Algorand and Ethereum', () =>
 
         renderHeader(true)
 
-        await waitFor(() => expect(requests.ethereum).toBeGreaterThan(0), {
-            timeout: SLOW_WAIT_TIMEOUT_MS,
-        })
+        expect(
+            await screen.findByText(
+                'common.wealth_chart.failed_networks',
+                undefined,
+                { timeout: SLOW_WAIT_TIMEOUT_MS },
+            ),
+        ).toBeTruthy()
+        expect(screen.getByTestId('wealth-chart-failed-retry')).toBeTruthy()
         expect(
             screen.queryByText('common.wealth_chart.excludes_networks'),
-        ).toBeNull()
-        expect(
-            screen.queryByText('common.wealth_chart.failed_networks'),
         ).toBeNull()
         expect(screen.queryByText('common.error.title')).toBeNull()
         expect(

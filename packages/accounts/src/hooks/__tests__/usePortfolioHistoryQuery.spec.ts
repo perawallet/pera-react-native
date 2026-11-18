@@ -464,11 +464,15 @@ describe('usePortfolioHistoryQuery', () => {
             return ({ children }: { children: React.ReactNode }) =>
                 React.createElement(QueryClientProvider, { client }, children)
         }
-        it('keeps charting the other chains until it answers', async () => {
+        it('keeps charting the other chains until it answers, asking again for the failed chain alone', async () => {
             const retried = pendingHistory()
             let ethereumCalls = 0
+            let algorandCalls = 0
             history.mockImplementation(async (_addresses, _period, scope) => {
-                if (scope.chainId === ALGORAND.chainId) return [point(1, '10')]
+                if (scope.chainId === ALGORAND.chainId) {
+                    algorandCalls += 1
+                    return [point(1, '10')]
+                }
                 ethereumCalls += 1
                 if (ethereumCalls === 1) throw new Error('history down')
                 return retried.promise
@@ -483,15 +487,19 @@ describe('usePortfolioHistoryQuery', () => {
                 ]),
             )
 
-            act(() => result.current.refetch())
+            expect(result.current.isRetryingFailed).toBe(false)
+
+            act(() => result.current.refetchFailed())
             await waitFor(() => expect(ethereumCalls).toBe(2))
 
+            expect(algorandCalls).toBe(1)
             expect(result.current.data).toEqual([
                 { datetime: new Date(1), preferredValue: new Decimal(20) },
             ])
             expect(result.current.isPending).toBe(false)
             expect(result.current.isError).toBe(false)
             expect(result.current.isRetrying).toBe(false)
+            expect(result.current.isRetryingFailed).toBe(true)
             expect(result.current.failedChainIds).toEqual([ETHEREUM.chainId])
 
             retried.resolve([point(1, '5')])
@@ -499,6 +507,7 @@ describe('usePortfolioHistoryQuery', () => {
             await waitFor(() =>
                 expect(result.current.failedChainIds).toEqual([]),
             )
+            expect(result.current.isRetryingFailed).toBe(false)
             expect(result.current.isPartial).toBe(false)
             expect(result.current.data).toEqual([
                 { datetime: new Date(1), preferredValue: new Decimal(30) },

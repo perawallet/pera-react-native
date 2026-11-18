@@ -46,11 +46,15 @@ export type UsePortfolioHistoryQueryResult = {
     isUnavailableOnNetwork: boolean
     /** Chains whose network serves no history while another chain's loaded: `data` plots the rest without them. */
     excludedChainIds: ChainId[]
-    /** Chains whose history failed to load while another chain's loaded: `data` plots the rest without them until `refetch` brings them back. */
+    /** Chains whose history failed to load while another chain's loaded: `data` plots the rest without them until `refetchFailed` brings them back. */
     failedChainIds: ChainId[]
+    /** A chain in `failedChainIds` is being read again; `isRetrying` doesn't cover it, since the chart leaves it out. */
+    isRetryingFailed: boolean
     /** A chain is excluded or failed: `data` falls short of the total of every source. */
     isPartial: boolean
     refetch: () => void
+    /** Asks again for the chains in `failedChainIds` only. */
+    refetchFailed: () => void
 }
 
 const EMPTY_CHAIN_IDS: ChainId[] = []
@@ -162,9 +166,10 @@ export const usePortfolioHistoryQuery = (
                     : EMPTY_CHAIN_IDS
             // Which chain fails a read changes from one period to the next,
             // so a failure is named apart from a network that serves no history.
-            const failedChainIds = chainIdsWhere(
-                failed.map((isFailed, index) => isFailed && !isUnserved[index]),
+            const isFailedOnly = failed.map(
+                (isFailed, index) => isFailed && !isUnserved[index],
             )
+            const failedChainIds = chainIdsWhere(isFailedOnly)
             const excludedChainIds = chainIdsWhere(isUnserved)
             return {
                 hasSourceMissing: countedIndexes.some(
@@ -193,6 +198,9 @@ export const usePortfolioHistoryQuery = (
                 isRetrying: countedIndexes.some(
                     index => holdsError[index] && results[index]?.isFetching,
                 ),
+                isRetryingFailed: results.some(
+                    (result, index) => isFailedOnly[index] && result.isFetching,
+                ),
                 isPaused: counted.some(result => result.isPaused),
                 error:
                     failures[
@@ -203,6 +211,11 @@ export const usePortfolioHistoryQuery = (
                 refetchServed: () => {
                     results.forEach((result, index) => {
                         if (!isOff[index]) void result.refetch()
+                    })
+                },
+                refetchFailed: () => {
+                    results.forEach((result, index) => {
+                        if (isFailedOnly[index]) void result.refetch()
                     })
                 },
             }
@@ -252,7 +265,10 @@ export const usePortfolioHistoryQuery = (
         isUnavailableOnNetwork,
         excludedChainIds,
         failedChainIds,
+        isRetryingFailed:
+            failedChainIds.length > 0 && combined.isRetryingFailed,
         isPartial: excludedChainIds.length > 0 || failedChainIds.length > 0,
         refetch: combined.refetchServed,
+        refetchFailed: combined.refetchFailed,
     }
 }
