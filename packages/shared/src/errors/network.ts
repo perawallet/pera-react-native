@@ -21,6 +21,7 @@ import {
 import { isRawPlatformNetworkError } from './expected'
 import { isIntegrityRequiredError } from './integrity'
 import { isPeraServiceUnavailableError } from './pera-service'
+import type { Nullable, Optional } from '../utils/types'
 
 /**
  * Thrown by `assertOnline` before a mutation reaches the transport, so offline
@@ -92,6 +93,17 @@ type PeraNetworkErrorOptions = {
     originalError?: Error
     backendType?: string
     backendCode?: string
+    retryAfterMs?: number
+}
+
+// Delta-seconds or an HTTP date, per RFC 9110.
+const parseRetryAfterMs = (header: Nullable<string>): Optional<number> => {
+    if (header === null) return undefined
+    const seconds = Number(header)
+    const ms = Number.isNaN(seconds)
+        ? Date.parse(header) - Date.now()
+        : seconds * 1000
+    return Number.isFinite(ms) ? Math.max(ms, 0) : undefined
 }
 
 /**
@@ -112,6 +124,8 @@ export class PeraNetworkError extends AppError {
      * `unknown_chain`), parsed by {@link fromKyErrorWithBody}.
      */
     public readonly backendCode?: string
+    /** The response's `Retry-After`, when it sent one. */
+    public readonly retryAfterMs?: number
 
     constructor(
         kind: PeraNetworkErrorKind,
@@ -120,6 +134,7 @@ export class PeraNetworkError extends AppError {
             originalError,
             backendType,
             backendCode,
+            retryAfterMs,
         }: PeraNetworkErrorOptions = {},
     ) {
         super(
@@ -136,6 +151,7 @@ export class PeraNetworkError extends AppError {
         this.status = status
         this.backendType = backendType
         this.backendCode = backendCode
+        this.retryAfterMs = retryAfterMs
     }
 
     /**
@@ -157,7 +173,13 @@ export class PeraNetworkError extends AppError {
             const status = error.response?.status
             const kind: PeraNetworkErrorKind =
                 (status ?? 0) >= 500 ? 'server' : 'client'
-            return new PeraNetworkError(kind, { status, originalError })
+            return new PeraNetworkError(kind, {
+                status,
+                originalError,
+                retryAfterMs: parseRetryAfterMs(
+                    error.response?.headers?.get('Retry-After') ?? null,
+                ),
+            })
         }
         return new PeraNetworkError('unknown', { originalError })
     }
@@ -199,6 +221,7 @@ export class PeraNetworkError extends AppError {
                 originalError: error instanceof Error ? error : undefined,
                 backendType,
                 backendCode,
+                retryAfterMs: base.retryAfterMs,
             })
         } catch {
             return base

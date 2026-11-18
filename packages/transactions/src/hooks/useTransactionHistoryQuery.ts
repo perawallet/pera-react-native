@@ -24,7 +24,10 @@ import {
     fetchMoreTransactions,
 } from '../history-adapter'
 import { MAX_PENDING_HISTORY_ROWS } from '../pending-history'
-import { shouldRetryHistoryRead } from './historyReadRetry'
+import {
+    historyReadRetryDelay,
+    shouldRetryHistoryRead,
+} from './historyReadRetry'
 import { transactionQueryKeys } from './querykeys'
 import {
     TransactionHistoryStatuses,
@@ -479,6 +482,7 @@ export const useTransactionHistoryQuery = (
         // rather than rejecting.
         networkMode: 'always',
         retry: shouldRetryHistoryRead,
+        retryDelay: historyReadRetryDelay,
         enabled: isEnabled && !!accountAddress,
     })
 

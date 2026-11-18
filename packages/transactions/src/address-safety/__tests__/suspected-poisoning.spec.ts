@@ -55,6 +55,7 @@ const USD_PRICES: Record<string, string> = {
 }
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    getChainCapabilities: () => ({}),
     getChainDescriptor: (chainId: string) => ({
         id: chainId,
         nativeAsset: { ref: { chainId, assetId: 'native' } },

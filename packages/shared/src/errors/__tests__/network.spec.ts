@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { HTTPError, NetworkError, TimeoutError } from 'ky'
 import { AppError, ErrorCategory, ErrorSeverity } from '../base'
 import { isExpectedError } from '../expected'
@@ -84,6 +84,35 @@ describe('PeraNetworkError.fromKyError', () => {
         const err = PeraNetworkError.fromKyError(makeHttpError(429))
         expect(err.kind).toBe('client')
         expect(err.status).toBe(429)
+    })
+
+    it('reads Retry-After as delta-seconds or an HTTP date', () => {
+        const withRetryAfter = (value: string) =>
+            new HTTPError(
+                new Response(null, {
+                    status: 429,
+                    headers: { 'Retry-After': value },
+                }) as never,
+                {} as Request,
+                {} as never,
+            )
+        vi.useFakeTimers({ now: Date.parse('2026-11-18T10:00:00Z') })
+
+        expect(
+            PeraNetworkError.fromKyError(withRetryAfter('7')).retryAfterMs,
+        ).toBe(7000)
+        expect(
+            PeraNetworkError.fromKyError(
+                withRetryAfter('Wed, 18 Nov 2026 10:00:30 GMT'),
+            ).retryAfterMs,
+        ).toBe(30_000)
+        expect(
+            PeraNetworkError.fromKyError(withRetryAfter('soon')).retryAfterMs,
+        ).toBeUndefined()
+        expect(
+            PeraNetworkError.fromKyError(makeHttpError(429)).retryAfterMs,
+        ).toBeUndefined()
+        vi.useRealTimers()
     })
 
     it('classifies HTTP 500 as server with status preserved (retryable)', () => {
