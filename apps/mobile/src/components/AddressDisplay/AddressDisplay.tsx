@@ -39,7 +39,8 @@ export type AddressDisplayProps = {
     address: string
     /**
      * How the address reads under a name or contact, and alone unless
-     * `unnamedAddressFormat` says otherwise. `full` wraps instead of truncating.
+     * `unnamedAddressFormat` says otherwise. `full` wraps instead of truncating,
+     * except on the icon and secondary-address layouts, which still truncate.
      */
     addressFormat?: AddressFormat
     displayType?: AddressDisplayType

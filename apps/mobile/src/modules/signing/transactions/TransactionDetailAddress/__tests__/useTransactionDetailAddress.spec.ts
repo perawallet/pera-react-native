@@ -164,4 +164,36 @@ describe('useTransactionDetailAddress', () => {
             expect(result.current.isAddressInFull).toBe(false)
         },
     )
+
+    it.each([
+        ['an own account', ACCOUNT, []],
+        [
+            'a contact',
+            null,
+            [
+                {
+                    name: 'Alice',
+                    addresses: { evm: ADDRESS },
+                } as unknown as Contact,
+            ],
+        ],
+    ])(
+        'Given %s holds the address and a name is already cached for it, then no name is shown beside it',
+        (_label, account, contacts) => {
+            vi.mocked(useFindAccountByAddress).mockReturnValue(account)
+            vi.mocked(getAccountDisplayName).mockReturnValue('Savings')
+            mockContacts.contacts = contacts
+            vi.mocked(useNameForAddressQuery).mockReturnValue({
+                data: [{ name: 'alice.eth', source: 'ens', image: '' }],
+                isPending: false,
+            })
+
+            const { result } = renderHook(() =>
+                useTransactionDetailAddress(ADDRESS, SCOPE),
+            )
+
+            expect(result.current.addressName).toBeUndefined()
+            expect(result.current.isAddressInFull).toBe(false)
+        },
+    )
 })

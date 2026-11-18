@@ -205,17 +205,35 @@ const serveNames = (namesByChain: NamesByChain, status = 200) =>
 const askedAddresses = () =>
     requests.flatMap(body => body.addresses.map(a => a.toLowerCase()))
 
-const rpcCalls: Promise<{ host: string; body: string }>[] = []
-const trackRpc = ({ request }: { request: Request }) => {
+const rpcCalls: Promise<{
+    host: string
+    body: string
+    requestId: string
+}>[] = []
+const answeredRequestIds = new Set<string>()
+const trackRpc = ({
+    request,
+    requestId,
+}: {
+    request: Request
+    requestId: string
+}) => {
     const { hostname } = new URL(request.url)
     if (hostname.endsWith('.rpc.test')) {
         rpcCalls.push(
             request
                 .clone()
                 .text()
-                .then(body => ({ host: hostname, body: body.toLowerCase() })),
+                .then(body => ({
+                    host: hostname,
+                    body: body.toLowerCase(),
+                    requestId,
+                })),
         )
     }
+}
+const trackAnswer = ({ requestId }: { requestId: string }) => {
+    answeredRequestIds.add(requestId)
 }
 
 // Reads of the ENS Universal Resolver, which every forward check makes.
@@ -223,6 +241,20 @@ const ensReads = async () =>
     (await Promise.all(rpcCalls)).flatMap(({ host, body }) =>
         Array<string>(body.split(ENS_UNIVERSAL_RESOLVER).length - 1).fill(host),
     )
+
+// Reads the mock server has answered, so a verdict can have been reached.
+const answeredEnsReads = async () =>
+    (await Promise.all(rpcCalls)).filter(
+        ({ requestId, body }) =>
+            answeredRequestIds.has(requestId) &&
+            body.includes(ENS_UNIVERSAL_RESOLVER),
+    )
+
+// Lets the verdict reach the cache and the screen once the answer is in.
+const settle = () =>
+    act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 500))
+    })
 
 // Forward records on Ethereum L1, the one place ENS is read for every EVM chain.
 const serveEns = (records: EnsRecordFixture[]) =>
@@ -265,7 +297,9 @@ describe('Flow: ENS primary names for EVM addresses', () => {
         await resetTestDatabase()
         requests.length = 0
         rpcCalls.length = 0
+        answeredRequestIds.clear()
         server.events.on('request:start', trackRpc)
+        server.events.on('response:mocked', trackAnswer)
         server.use(
             ...evmRpcHandlers({
                 responses: { eth_getTransactionByHash: () => null },
@@ -275,6 +309,7 @@ describe('Flow: ENS primary names for EVM addresses', () => {
 
     afterEach(() => {
         server.events.removeListener('request:start', trackRpc)
+        server.events.removeListener('response:mocked', trackAnswer)
         useAccountsStore.getState().setAccounts([])
     })
 
@@ -393,11 +428,15 @@ describe('Flow: ENS primary names for EVM addresses', () => {
     })
 
     it('Given the backend names a counterparty vitalik.eth whose ENS record points elsewhere, when History opens, then its rows show the truncated address, vitalik.eth shows nowhere, and its detail row shows no name', async () => {
-        serveNames({ [ETHEREUM_CAIP2]: { [ALICE]: 'vitalik.eth' } })
-        serveEns([record('vitalik.eth', BOB)])
+        serveNames({
+            [ETHEREUM_CAIP2]: { [ALICE]: 'vitalik.eth', [CAROL]: 'carol.eth' },
+        })
+        serveEns([record('vitalik.eth', BOB), record('carol.eth', CAROL)])
         server.use(
             ...peraEvmHistoryHandlers({
-                history: { [OWN_ADDRESS]: [[received(1, ALICE)]] },
+                history: {
+                    [OWN_ADDRESS]: [[received(1, ALICE), received(2, CAROL)]],
+                },
             }),
         )
         useAccount(ETH_ACCOUNT)
@@ -408,9 +447,11 @@ describe('Flow: ENS primary names for EVM addresses', () => {
             undefined,
             { timeout: SLOW_WAIT_TIMEOUT_MS },
         )
-        await waitFor(async () => expect(await ensReads()).toHaveLength(1), {
-            timeout: SLOW_WAIT_TIMEOUT_MS,
-        })
+        // Carol shares the batch, so her name showing means the verdict on Alice's is in.
+        await waitFor(
+            () => expect(rowText(hashOf(2))).toContain('carol.eth'),
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
         expect(rowText(hashOf(1))).toContain(truncated('ethereum', ALICE))
         expect(screen.queryByText(/vitalik\.eth/)).toBeNull()
 
@@ -610,11 +651,11 @@ describe('Flow: ENS primary names for EVM addresses', () => {
             const recipient = await reviewSendTo(UNKNOWN_RECIPIENT)
 
             await waitFor(
-                async () => expect(await ensReads()).toHaveLength(1),
-                {
-                    timeout: SLOW_WAIT_TIMEOUT_MS,
-                },
+                async () =>
+                    expect(await answeredEnsReads()).toHaveLength(1),
+                { timeout: SLOW_WAIT_TIMEOUT_MS },
             )
+            await settle()
             expect(recipient.textContent).toContain(
                 full('ethereum', UNKNOWN_RECIPIENT),
             )

@@ -53,7 +53,8 @@ export const useTransactionDetailAddress = (
     const { data: names } = useNameForAddressQuery(scope, address, {
         enabled: !ownAccount && !contact,
     })
-    const addressName = names.at(0)?.name
+    // `enabled: false` still returns data another screen cached under the same key.
+    const addressName = ownAccount || contact ? undefined : names.at(0)?.name
 
     return {
         ownAccount,

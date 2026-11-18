@@ -54,6 +54,7 @@ const targetOf = (target: AlgorandReviewTarget): ReactNode => {
             return (
                 <AddressDisplay
                     address={target.address}
+                    addressFormat='full'
                     hugContent
                     testID='algorand_review_target'
                 />

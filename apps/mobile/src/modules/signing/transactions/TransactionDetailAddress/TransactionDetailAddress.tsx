@@ -21,7 +21,7 @@ import { useTransactionDetailAddress } from './useTransactionDetailAddress'
 export type TransactionDetailAddressProps = {
     address: string
     scope: ChainScope
-    /** Prefixes the account or contact line's test id. */
+    /** Prefixes the account, contact or verified name line's test id. */
     testID?: string
 }
 
