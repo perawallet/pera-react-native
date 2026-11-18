@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { renderHook, act } from '@test-utils/render'
+import { renderHook, act, waitFor } from '@test-utils/render'
 import { afterEach, describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { useSwapForm } from '../useSwapForm'
@@ -24,6 +24,8 @@ const mockSetAccountPair = vi.fn()
 const mockSetSelectedAccountId = vi.fn()
 let mockPairAccountId: string | null = null
 const mockSetToAsset = vi.fn()
+const mockFlipAcrossChains = vi.fn()
+const mockTakeFlippedPayAmount = vi.fn()
 const mockSetSlippage = vi.fn()
 const mockResetQuoteMutation = vi.fn()
 const mockCreateQuotes = vi.fn()
@@ -111,6 +113,8 @@ vi.mock('@perawallet/wallet-core-swaps', async () => ({
         setSourceAsset: mockSetSourceAsset,
         pairAccountId: mockPairAccountId,
         setAccountPair: mockSetAccountPair,
+        flipAcrossChains: mockFlipAcrossChains,
+        takeFlippedPayAmount: mockTakeFlippedPayAmount,
         setSlippage: mockSetSlippage,
         setIsLocalCurrencyInput: mockSetIsLocalCurrencyInput,
         resetAssetPair: mockResetAssetPair,
@@ -217,7 +221,8 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
     useNetworkStore: { getState: () => ({ network: 'mainnet' }) },
-    chainDisplayNameOf: () => 'Algorand',
+    chainDisplayNameOf: (chainId: string) =>
+        chainId === 'ethereum' ? 'Ethereum' : 'Algorand',
 }))
 
 vi.mock('../../../utils/formatSwapLimit', () => ({
@@ -331,6 +336,7 @@ describe('useSwapForm', () => {
         focusEffectCleanup = null
         mockIsFocused = false
         mockReceiveTarget = sameScopeTarget()
+        mockTakeFlippedPayAmount.mockReturnValue(null)
     })
 
     describe('receiving on another chain', () => {
@@ -346,7 +352,7 @@ describe('useSwapForm', () => {
             }
         })
 
-        it('disables the direction swap, since the account can only pay on its own chain', () => {
+        it('disables the flip and says why when the account cannot pay on the receive chain', () => {
             const { result } = renderHook(() => useSwapForm(SCOPE))
 
             act(() => result.current.handleSwapDirection())
@@ -354,8 +360,64 @@ describe('useSwapForm', () => {
             expect(result.current.isDirectionDisabled).toBe(true)
             expect(result.current.isChainShown).toBe(true)
             expect(result.current.isReceivingAccountShown).toBe(true)
+            expect(mockInfoToast).toHaveBeenCalledWith(
+                'swap.form.flip_unavailable_title',
+                'swap.form.flip_unavailable_body',
+            )
             expect(mockSetFromAsset).not.toHaveBeenCalled()
+            expect(mockFlipAcrossChains).not.toHaveBeenCalled()
             expect(mockHaptics.light).not.toHaveBeenCalled()
+        })
+
+        it('carries the quoted receive amount onto the flipped chain', async () => {
+            mockSourceChainIds = ['algorand', 'ethereum']
+            mockFromAsset = '31566704'
+            mockToAsset = '0'
+            mockCreateQuotes.mockResolvedValue([
+                {
+                    provider: 'tinyman',
+                    amountOut: new Decimal('7000000'),
+                    assetIn: {
+                        assetId: '31566704',
+                        unitName: 'USDC',
+                        decimals: 6,
+                    },
+                    assetOut: { assetId: '0', unitName: 'ALGO', decimals: 6 },
+                },
+            ])
+            const { result } = renderHook(() => useSwapForm(SCOPE))
+
+            await act(async () => {
+                result.current.handlePayAmountChange(new Decimal(5))
+            })
+            act(() => result.current.handleSwapDirection())
+
+            expect(mockFlipAcrossChains).toHaveBeenCalledWith({
+                sourceChainId: 'ethereum',
+                fromAsset: '0',
+                toAsset: '31566704',
+                toAssetScope: SCOPE,
+                payAmount: new Decimal(7),
+            })
+        })
+
+        it('flips onto the receive chain when the account can pay there', () => {
+            mockSourceChainIds = ['algorand', 'ethereum']
+            const { result } = renderHook(() => useSwapForm(SCOPE))
+
+            expect(result.current.isDirectionDisabled).toBe(false)
+            act(() => result.current.handleSwapDirection())
+
+            expect(mockFlipAcrossChains).toHaveBeenCalledWith({
+                sourceChainId: 'ethereum',
+                fromAsset: '0',
+                toAsset: '0',
+                toAssetScope: SCOPE,
+                payAmount: null,
+            })
+            expect(mockHaptics.light).toHaveBeenCalledTimes(1)
+            expect(mockInfoToast).not.toHaveBeenCalled()
+            expect(mockSetFromAsset).not.toHaveBeenCalled()
         })
 
         it('hides the receive asset from the pay picker on its own chain only', async () => {
@@ -398,6 +460,57 @@ describe('useSwapForm', () => {
                 expect.objectContaining({ fee: new Decimal(100_000) }),
             )
         })
+    })
+
+    it('takes the pay amount a cross-chain flip carried to this chain and asset', () => {
+        mockTakeFlippedPayAmount.mockReturnValue({
+            chainId: 'algorand',
+            assetId: '0',
+            amount: new Decimal(7),
+        })
+
+        const { result } = renderHook(() => useSwapForm(SCOPE))
+
+        expect(result.current.payAmount).toEqual(new Decimal(7))
+    })
+
+    it('requests a quote for the pay amount a cross-chain flip carried', async () => {
+        mockTakeFlippedPayAmount.mockReturnValue({
+            chainId: 'algorand',
+            assetId: '0',
+            amount: new Decimal(7),
+        })
+
+        renderHook(() => useSwapForm(SCOPE))
+
+        await waitFor(() => expect(mockCreateQuotes).toHaveBeenCalled())
+        expect(mockCreateQuotes.mock.calls[0][0].sourceAmount).toEqual(
+            new Decimal('7000000'),
+        )
+    })
+
+    it('ignores a carried pay amount meant for another asset', () => {
+        mockTakeFlippedPayAmount.mockReturnValue({
+            chainId: 'algorand',
+            assetId: '31566704',
+            amount: new Decimal(7),
+        })
+
+        const { result } = renderHook(() => useSwapForm(SCOPE))
+
+        expect(result.current.payAmount).toBeNull()
+    })
+
+    it('ignores a carried pay amount meant for another chain', () => {
+        mockTakeFlippedPayAmount.mockReturnValue({
+            chainId: 'ethereum',
+            assetId: '0',
+            amount: new Decimal(7),
+        })
+
+        const { result } = renderHook(() => useSwapForm(SCOPE))
+
+        expect(result.current.payAmount).toBeNull()
     })
 
     it('leaves the direction swap on for a pair on one chain', () => {
@@ -499,6 +612,20 @@ describe('useSwapForm', () => {
         })
 
         expect(mockHaptics.light).toHaveBeenCalledTimes(1)
+    })
+
+    it('clears both amounts when a pair is flipped before any quote', () => {
+        const { result } = renderHook(() => useSwapForm(SCOPE))
+
+        act(() => {
+            result.current.handlePayAmountChange(new Decimal(10))
+        })
+        act(() => {
+            result.current.handleSwapDirection()
+        })
+
+        expect(result.current.payAmount).toBeNull()
+        expect(result.current.receiveAmount).toBeNull()
     })
 
     it('handleSwapDirection swaps assets and amounts', () => {

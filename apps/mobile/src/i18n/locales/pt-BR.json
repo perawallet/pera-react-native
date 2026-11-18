@@ -4231,7 +4231,9 @@
             "to": "Para",
             "balance_label": "Saldo: <0/>",
             "max": "MÁX",
-            "select_asset": "Selecionar"
+            "select_asset": "Selecionar",
+            "flip_unavailable_title": "Não é possível inverter esta conversão",
+            "flip_unavailable_body": "Esta conta não pode pagar pela rede {{network}}."
         },
         "asset_selection": {
             "swap_from_title": "Converter de",

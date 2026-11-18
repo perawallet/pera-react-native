@@ -4209,7 +4209,9 @@
             "to": "To",
             "balance_label": "Balance: <0/>",
             "max": "MAX",
-            "select_asset": "Select"
+            "select_asset": "Select",
+            "flip_unavailable_title": "Can't flip this swap",
+            "flip_unavailable_body": "This account can't pay from the {{network}} network."
         },
         "asset_selection": {
             "swap_from_title": "Swap From",

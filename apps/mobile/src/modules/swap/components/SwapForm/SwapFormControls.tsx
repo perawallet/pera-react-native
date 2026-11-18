@@ -18,7 +18,7 @@ type SwapFormControlsProps = {
     onSwapPress: () => void
     onMaxPress: () => void
     onConfigurePress: () => void
-    /** A cross-chain pair can't flip: the account pays only from its swap scope. */
+    /** The account can't pay from the receive asset's chain; pressing explains why. */
     isDirectionDisabled?: boolean
 }
 
@@ -36,7 +36,7 @@ export const SwapFormControls = ({
             <PWTouchableOpacity
                 style={styles.swapDirectionButton}
                 onPress={onSwapPress}
-                disabled={isDirectionDisabled}
+                accessibilityState={{ disabled: isDirectionDisabled }}
                 testID='swap-flip-button'
             >
                 <PWIcon

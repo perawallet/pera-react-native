@@ -4209,7 +4209,9 @@
             "to": "A",
             "balance_label": "Saldo: <0/>",
             "max": "MÁX",
-            "select_asset": "Elegir"
+            "select_asset": "Elegir",
+            "flip_unavailable_title": "No se puede invertir este swap",
+            "flip_unavailable_body": "Esta cuenta no puede pagar desde la red de {{network}}."
         },
         "asset_selection": {
             "swap_from_title": "Intercambiar desde",
