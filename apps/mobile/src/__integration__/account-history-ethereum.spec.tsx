@@ -1124,6 +1124,83 @@ describe('Flow: History on an Ethereum account', () => {
             })
         })
 
+        describe('opened by a link that names only its id', () => {
+            const renderById = (transactionId: string) =>
+                renderWithNavigation(
+                    TransactionDetailsScreen,
+                    'TransactionDetails',
+                    {
+                        queryClient,
+                        initialParams: {
+                            scope: SCOPE,
+                            transactionId,
+                            accountAddress: ETH_ADDRESS,
+                        },
+                    },
+                )
+
+            it('Given the hash is on the first history page, when the screen opens, then it renders that record', async () => {
+                serveApprovals()
+                renderById(APPROVE_HASH)
+
+                await screen.findByTestId('transaction_detail_fee', undefined, {
+                    timeout: SLOW_WAIT_TIMEOUT_MS,
+                })
+                expect(
+                    screen.getAllByText('transactions.list_item.approve_asset'),
+                ).not.toHaveLength(0)
+            })
+
+            it('Given the hash is on the second history page, when the screen opens, then it renders after reading that page', async () => {
+                server.use(
+                    ...peraEvmHistoryHandlers({
+                        history: {
+                            [ETH_ADDRESS]: [
+                                [
+                                    {
+                                        ...approval(REVOKE_HASH),
+                                        block_time: '2026-01-06T00:00:00Z',
+                                    },
+                                ],
+                                [approval(APPROVE_HASH)],
+                            ],
+                        },
+                    }),
+                    ...evmRpcHandlers({
+                        responses: {
+                            eth_getTransactionByHash: params =>
+                                nodeCopies.get(String(params[0])) ?? null,
+                        },
+                    }),
+                )
+                renderById(APPROVE_HASH)
+
+                await screen.findByTestId('transaction_detail_fee', undefined, {
+                    timeout: SLOW_WAIT_TIMEOUT_MS,
+                })
+                expect(
+                    screen.getAllByText('transactions.list_item.approve_asset'),
+                ).not.toHaveLength(0)
+            })
+
+            it('Given no page lists the hash, when the screen opens, then it says the transaction was not found and offers Retry', async () => {
+                serveApprovals()
+                renderById(hashOf(99))
+
+                await screen.findByTestId(
+                    'transaction_details_error_view',
+                    undefined,
+                    { timeout: SLOW_WAIT_TIMEOUT_MS },
+                )
+                expect(
+                    screen.getByText(
+                        'transactions.record_detail.not_found.title',
+                    ),
+                ).toBeTruthy()
+                expect(screen.getByText('common.retry.label')).toBeTruthy()
+            })
+        })
+
         describe('with contractDecoding off', () => {
             beforeEach(() => {
                 setCapabilityOverrides({ contractDecoding: false }, 'ethereum')
