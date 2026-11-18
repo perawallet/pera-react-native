@@ -39,12 +39,6 @@ ${OPT_IN_ACCOUNT_ROW}           xpath=(//*[starts-with(@resource-id,'opt_in_acco
 ${OPT_IN_CONFIRM}               tid=opt_in_confirm
 ${OPT_IN_COPY_ID}               tid=opt_in_copy_id
 
-${MENU_PASTE_LINK_BUTTON}       tid=menu_paste_link_button
-${PASTE_LINK_INPUT}             tid=paste-link-input
-${PASTE_LINK_SUBMIT}            tid=paste-link-submit
-${PASTE_LINK_ERROR}             tid=paste-link-error
-
-
 *** Keywords ***
 Start On Settings
     [Documentation]    A screen in another tab, so landing on Home is a real navigation.
@@ -79,25 +73,26 @@ Input Should Hold
     ...    timeout=${timeout}
 
 Add Contact Form Should Be Prefilled
-    [Documentation]    The link's label becomes the contact name, and its address arrives as a
-    ...                chain row rather than in the input: a contact holds one address per chain
-    ...                family now, and the input only appears while a new one is being added.
-    ...                The row truncates, so compare the ends it does show.
     [Arguments]    ${timeout}=15s
     Wait Until Page Contains Element    ${CONTACT_NAME_INPUT}    timeout=${timeout}
     Input Should Hold    contact_name_input    ${LINK_LABEL}
     Wait Until Page Contains Element    ${CONTACT_ADDRESS_ROW_ALGORAND}    timeout=${timeout}
-    # The row is a container; its address sits in a child text node, so reading the row itself
-    # gives back an empty string on Android.
-    ${shown}=    Text Under    ${CONTACT_ADDRESS_ROW_ALGORAND}
-    # iOS exposes the row's chain name and its remove control but not the address itself, so
-    # there is nothing to compare against there. Android renders it, and the check has teeth.
-    Skip If    $LINK_ADDRESS[:5] not in $shown and $LINK_ADDRESS[-5:] not in $shown
-    ...    App gap: the address row exposes only "${shown}" on this platform, so the prefilled address cannot be read back.
-    Should Contain    ${shown}    ${{ $LINK_ADDRESS[:5] }}
-    ...    msg=The prefilled address row reads "${shown}", which does not start with ${LINK_ADDRESS}.
-    Should Contain    ${shown}    ${{ $LINK_ADDRESS[-5:] }}
-    ...    msg=The prefilled address row reads "${shown}", which does not end with ${LINK_ADDRESS}.
+
+Save Prefilled Link Contact
+    # The persisted row exposes the full address even when the prefilled row's truncated
+    # address is absent from the native accessibility tree.
+    Dismiss Keyboard
+    Wait Until Settled    ${ADD_CONTACT_BUTTON}
+    Tap    ${ADD_CONTACT_BUTTON}
+    Wait Until Page Does Not Contain Element    ${CONTACT_NAME_INPUT}    timeout=15s
+    ${row}=    Contact Row    ${LINK_ADDRESS}
+    ${listed}=    Run Keyword And Return Status    Page Should Contain Element    ${row}
+    IF    not ${listed}
+        # A cold link can open Add Contact without a Contacts list to return to.
+        Go Home
+        Open Contacts From Menu
+    END
+    Contact Row Should Be Listed    ${LINK_ADDRESS}
 
 Send Amount Should Be Prefilled
     [Documentation]    The deeplink opens Send on the amount step with ALGO already chosen.
@@ -111,32 +106,17 @@ Next Should Be Refused For Lack Of Funds
     [Documentation]    The suite wallet is unfunded: Next must stop on the amount step, never reach the
     ...                confirm slider.
     Wait Until Settled    ${SEND_NEXT}
-    Tap    ${SEND_NEXT}
-    Wait Until Page Contains Element    ${INSUFFICIENT_BALANCE}    timeout=15s
-    Page Should Contain Element    ${SEND_NEXT}
-    Page Should Not Contain Element    ${SEND_CONFIRM}
-
-Paste Link
-    [Documentation]    Menu > Paste a Link: the in-app entry that accepts what the QR scanner accepts.
-    [Arguments]    ${text}
-    Open Paste Link
-    Submit Pasted Link    ${text}
-
-Open Paste Link
-    Go Home
-    Tap    ${MENU_TAB}
-    Wait Until Page Contains Element    ${MENU_PASTE_LINK_BUTTON}    timeout=15s
-    Wait Until Settled    ${MENU_PASTE_LINK_BUTTON}
-    Tap    ${MENU_PASTE_LINK_BUTTON}
-    Wait Until Settled    ${PASTE_LINK_INPUT}
-
-Submit Pasted Link
-    [Arguments]    ${text}
-    Clear Text    ${PASTE_LINK_INPUT}
-    Input Text    ${PASTE_LINK_INPUT}    ${text}
-    Dismiss Keyboard
-    Wait Until Settled    ${PASTE_LINK_SUBMIT}
-    Tap    ${PASTE_LINK_SUBMIT}
+    # The first tap can be swallowed as the sheet finishes appearing. Retry only
+    # when it stayed on the same step and there was no rejection toast.
+    FOR    ${attempt}    IN RANGE    2
+        Tap    ${SEND_NEXT}
+        ${refused}=    Run Keyword And Return Status
+        ...    Wait Until Page Contains Element    ${INSUFFICIENT_BALANCE}    timeout=5s
+        Page Should Contain Element    ${SEND_NEXT}
+        Page Should Not Contain Element    ${SEND_CONFIRM}
+        IF    ${refused}    RETURN
+    END
+    Fail    Next stayed on the amount step without showing the insufficient-balance message.
 
 Turn Pin Off After Test
     Capture Failure Screenshot

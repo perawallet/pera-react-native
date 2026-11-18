@@ -20,8 +20,17 @@ ${BIOMETRIC_TOGGLE}             tid=${BIOMETRIC_TOGGLE_ID}
 
 
 *** Keywords ***
+Prepare Camera Permission Denial
+    Require Camera Permission Control
+    # Flag the attempt before revoking. Some Android versions revoke and then
+    # skip when they cannot suppress the permission dialog.
+    Set Test Variable    \${E2E_CAMERA_PERMISSION_TOUCHED}    ${True}
+    Deny Camera Permission
+
 Restore Camera Permission
     Capture Failure Screenshot
+    ${touched}=    Get Variable Value    \${E2E_CAMERA_PERMISSION_TOUCHED}    ${False}
+    IF    not ${touched}    RETURN
     Grant Camera Permission
     Relaunch Pera
 
@@ -33,10 +42,14 @@ Open Passphrase
     Open Account Option    ${OPTION_VIEW_PASSPHRASE}
     Acknowledge And Reveal Passphrase
 
+Start On Biometric Security
+    Enroll Biometrics
+    Start On Security
+    Set Test Variable    \${E2E_BIOMETRIC_PIN_TOUCHED}    ${True}
+
 Require Biometric Switch
     [Documentation]    The switch shows only with a PIN set and a biometric enrolled on the device, and
     ...                the screen reads availability on mount, so reopen it after enrolling.
-    Enroll Biometrics
     Go Home
     Open Security Settings
     ${shown}=    Run Keyword And Return Status
@@ -59,6 +72,8 @@ Biometric Match Should Unlock
 Turn Biometrics And Pin Off
     [Documentation]    Removing the PIN deletes the biometric unlock with it (usePinCode).
     Capture Failure Screenshot
+    ${touched}=    Get Variable Value    \${E2E_BIOMETRIC_PIN_TOUCHED}    ${False}
+    IF    not ${touched}    RETURN
     Turn Pin Off
 
 Dismiss Camera Denied Sheet

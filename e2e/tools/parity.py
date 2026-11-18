@@ -4,7 +4,7 @@ Usage: python e2e/tools/parity.py results/final-android results/final-ios
 
 Each argument is a pass directory, or a single output.xml.
 
-Exits non-zero when a scenario did not pass on both platforms, or ran on only one.
+Exits non-zero for an incomplete run, a pass/fail divergence, or a missing scenario.
 """
 
 import sys
@@ -36,6 +36,11 @@ def outputs_under(path):
     suite at a time and never against the pass it is meant to gate.
     """
     path = Path(path)
+    root = path.parent if path.is_file() else path
+    if (root / ".incomplete").exists() or (
+        path.is_file() and (root.parent / ".incomplete").exists()
+    ):
+        sys.exit(f"{root}: the runner marked this pass incomplete")
     if path.is_file():
         return [path]
     files = sorted(path.glob("output.xml")) + sorted(path.glob("*/output.xml"))
@@ -45,12 +50,10 @@ def outputs_under(path):
 
 
 def collect(path):
-    status = {}
+    visitor = _Collect()
     for output in outputs_under(path):
-        visitor = _Collect()
         ExecutionResult(str(output)).visit(visitor)
-        status.update(visitor.status)
-    return status
+    return visitor.status
 
 
 def verdict(a, i):

@@ -35,7 +35,7 @@ New Contact Is Saved With Its Name And Address
     Open Add Contact From Empty State
     Fill Contact Form    ${NEW_CONTACT_NAME}    ${FIXTURE_CONTACT_ADDRESS}
     Tap    ${ADD_CONTACT_BUTTON}
-    Contact Row Should Be Listed    ${FIXTURE_CONTACT_ADDRESS}
+    Wait Until Page Does Not Contain Element    ${CONTACT_NAME_INPUT}    timeout=15s
     Open Contact    ${FIXTURE_CONTACT_ADDRESS}
     Contact Should Show Name    ${NEW_CONTACT_NAME}
 

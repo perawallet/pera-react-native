@@ -1,4 +1,4 @@
-from flaky import classify, unreadable_reasons
+from flaky import classify, collect, unreadable_reasons
 
 
 def test_a_case_that_passes_once_and_fails_once_is_flaky():
@@ -37,6 +37,13 @@ def test_a_pass_whose_driver_session_died_cannot_be_compared():
     # enough: half the cases in a real run carried this and a share test missed it by a
     # hair, which is not a margin to rest the judgement on.
     assert unreadable_reasons(case_count=12, setup_failures=0, session_lost=1)
+
+
+def test_a_marked_pass_is_rejected_before_loading_partial_output(tmp_path):
+    (tmp_path / ".incomplete").touch()
+    (tmp_path / "output.xml").write_text("<partial")
+
+    assert collect(tmp_path) == ({}, ["the runner marked this pass incomplete"])
 
 
 def test_one_suite_collapsing_does_not_condemn_the_whole_pass():

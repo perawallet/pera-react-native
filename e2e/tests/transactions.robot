@@ -35,10 +35,19 @@ Bell Opens The Notifications Center
     Open Notifications Center
 
 Inbox Shows The Empty State On A New Account
-    [Tags]    id:transactions.inbox.empty    p1
+    [Documentation]    Opening Inbox must work on every build. Its empty state requires
+    ...                backend device registration, so only a keyed build must wait for it.
+    [Tags]    id:transactions.inbox.empty    p1    needs-backend
     Open Notifications Center
-    Tap    ${INBOX_TAB}
-    Wait Until Page Contains Element    ${INBOX_EMPTY_STATE}    timeout=30s
+    Open Inbox
+    IF    $BACKEND_KEYED
+        Wait Until Page Contains Element    ${INBOX_EMPTY_STATE}    timeout=30s
+    ELSE
+        ${empty}=    Run Keyword And Return Status
+        ...    Wait Until Page Contains Element    ${INBOX_EMPTY_STATE}    timeout=3s
+        Skip If    not $empty
+        ...    The empty Inbox requires device registration. Set PERA_E2E_BACKEND_KEYED=1 for a build carrying the backend API key.
+    END
     Page Should Not Contain Element    ${ASA_INBOX_ITEM}
 
 Funded History Lists Real Transactions

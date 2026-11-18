@@ -104,6 +104,47 @@ test('add-account deep-link lands on the real add-account screen', async () => {
     await addAccountPage.close()
 })
 
+test('paste-link validates input and opens a corrected contact link', async () => {
+    const page = await context.newPage()
+    await page.goto(`chrome-extension://${extensionId}/expanded.html`)
+    await page.getByTestId('tab_menu_button').click()
+    await page.getByTestId('menu_paste_link_button').click()
+
+    const input = page.getByTestId('paste-link-input')
+    const submit = page.getByTestId('paste-link-submit')
+    const error = page.getByTestId('paste-link-error')
+
+    await expect(input).toHaveValue('')
+    await expect(submit).toHaveAttribute('aria-disabled', 'true')
+    await input.fill('   ')
+    await expect(submit).toHaveAttribute('aria-disabled', 'true')
+
+    const invalid = 'not a link at all'
+    await input.fill(invalid)
+    await submit.click()
+    await expect(error).toHaveText(
+        "That doesn't look like a link Pera can open.",
+    )
+    await expect(input).toBeVisible()
+    await expect(input).toHaveValue(invalid)
+
+    const name = 'E2E Link Contact'
+    const address = 'CBLWUBRWCWNKZ2Y2Q5HFKN7XISNBVAN47422MZOKH5OGCZ3H5JYLTDPLOA'
+    await input.fill(
+        `perawallet://app/add-contact?address=${address}&label=${encodeURIComponent(name)}`,
+    )
+    await expect(error).toBeHidden()
+    await input.press('Enter')
+
+    await expect(page.getByTestId('contact_name_input')).toHaveValue(name)
+    await expect(input).toBeHidden()
+    const addressRow = page.getByTestId('contact_address_row_algorand')
+    await expect(addressRow).toBeVisible()
+    await expect(addressRow).toContainText(address.slice(0, 5))
+    await expect(addressRow).toContainText(address.slice(-5))
+    await page.close()
+})
+
 // User-feedback round 2 #3: ?flow=scan lands on the dedicated full-page
 // scanner route — not the old scanner-sheet-over-the-menu.
 test('expanded.html?flow=scan lands on the full-page scanner', async () => {
