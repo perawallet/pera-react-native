@@ -23,7 +23,6 @@ import {
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import type { FilterOption } from '@components/FilterSelection'
 import { useSyncRefresh } from '@hooks/useSyncRefresh'
@@ -64,8 +63,6 @@ export type UseAccountHistoryRowsResult = Omit<
     handleSelectChain: (chainId: Nullable<ChainId>) => void
     /** One per network on a merged history; mount a `TransactionHistoryFeed` for each. */
     historyFeeds: HistoryFeedProps[]
-    /** Display names of the networks a merged history couldn't read, while the others' rows show. */
-    failedNetworkNames: string[]
     handleLoadMore: () => void
     handleSearchOlder: () => void
     handleRefresh: () => void
@@ -139,21 +136,11 @@ export const useAccountHistoryRows = ({
         fetchNextPage,
     ])
 
-    const { scopeByTransactionId, failedChainIds } = merged
+    const { scopeByTransactionId } = merged
     const scopeOf = useCallback(
         (transactionId: string) =>
             (isMerged && scopeByTransactionId.get(transactionId)) || scope,
         [isMerged, scopeByTransactionId, scope],
-    )
-    // Every network failing is the full load-failed state instead.
-    const failedNetworkNames = useMemo(
-        () =>
-            isMerged && !merged.isLoadFailed
-                ? failedChainIds.map(
-                      chainId => chainDisplayNameOf(chainId) ?? chainId,
-                  )
-                : [],
-        [isMerged, merged.isLoadFailed, failedChainIds],
     )
 
     return {
@@ -167,6 +154,8 @@ export const useAccountHistoryRows = ({
         isLoadFailed: history.isLoadFailed,
         isLoadUnavailable: history.isLoadUnavailable,
         isLoadIntegrityBlocked: history.isLoadIntegrityBlocked,
+        isRefreshFailed: history.isRefreshFailed,
+        isRefreshUnavailable: history.isRefreshUnavailable,
         hasNextPage,
         isSearchPaused,
         retry: history.retry,
@@ -179,7 +168,7 @@ export const useAccountHistoryRows = ({
         chainFilterOptions,
         handleSelectChain,
         historyFeeds: merged.feeds,
-        failedNetworkNames,
+        failedNetworkNames: history.failedNetworkNames,
         handleLoadMore,
         handleSearchOlder: isMerged ? merged.searchOlder : fetchNextPage,
         handleRefresh: isMerged ? merged.refresh : singleRefresh.refresh,

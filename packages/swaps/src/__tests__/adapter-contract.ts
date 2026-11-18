@@ -95,6 +95,13 @@ export const swapContractTests = (
             })
 
             expect(cost === null || !cost.networkFee.isNegative()).toBe(true)
+            expect(
+                cost === null ||
+                    (!cost.expectedNetworkFee.isNegative() &&
+                        cost.expectedNetworkFee.lessThanOrEqualTo(
+                            cost.networkFee,
+                        )),
+            ).toBe(true)
             expect(cost?.shortfall?.isNegative() ?? false).toBe(false)
         })
 

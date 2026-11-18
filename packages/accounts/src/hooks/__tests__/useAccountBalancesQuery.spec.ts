@@ -24,6 +24,7 @@ import {
     useAccountBalancesQuery,
     useAccountAssetBalanceQuery,
     useAccountHoldingsAcrossChainsQuery,
+    useAccountsHoldingsAcrossChainsQuery,
 } from '../useAccountBalancesQuery'
 import {
     onlineManager,
@@ -824,6 +825,42 @@ describe('useAccountHoldingsAcrossChainsQuery', () => {
 
         expect(result.current.assetBalances.map(b => b.scope.chainId)).toEqual([
             'algorand',
+        ])
+    })
+
+    it('tags each holding with the account and address it belongs to', async () => {
+        mockGetAccountHoldingsPage.mockImplementation(
+            async ({ accountAddress }: { accountAddress: string }) =>
+                accountAddress === 'ALGO2'
+                    ? [algoRow(5_000_000, 1)]
+                    : [algoRow(3_000_000, 1)],
+        )
+        const first = buildTestAccount(
+            { kind: 'watch' },
+            { algorand: { address: 'ALGO1' } },
+            { id: 'first' },
+        )
+        const second = buildTestAccount(
+            { kind: 'watch' },
+            { algorand: { address: 'ALGO2' } },
+            { id: 'second' },
+        )
+
+        const { result } = renderHook(
+            () => useAccountsHoldingsAcrossChainsQuery([first, second]),
+            { wrapper: createWrapper() },
+        )
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+
+        expect(
+            result.current.assetBalances.map(b => ({
+                accountId: b.accountId,
+                address: b.address,
+                amount: b.amount,
+            })),
+        ).toEqual([
+            { accountId: 'first', address: 'ALGO1', amount: new Decimal(3) },
+            { accountId: 'second', address: 'ALGO2', amount: new Decimal(5) },
         ])
     })
 

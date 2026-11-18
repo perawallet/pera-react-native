@@ -67,6 +67,7 @@ export const useSwapScreen = (): UseSwapScreenResult => {
     )
     const sourceChainId = useSwapsStore(state => state.sourceChainId)
     const setSourceChainId = useSwapsStore(state => state.setSourceChainId)
+    const pairAccountId = useSwapsStore(state => state.pairAccountId)
     const selectedAccount = useSelectedAccount()
     const scope = useSwapSourceScope(selectedAccount)
     const signingAccounts = useSwapSigningAccounts()
@@ -75,7 +76,9 @@ export const useSwapScreen = (): UseSwapScreenResult => {
 
     // A chain change the store didn't make, such as an account switch, keeps the
     // old chain's pair: the form remounts while focused, past both of its resets.
+    // A pair picked together with its account is the exception: it is for the new one.
     const swapChainId = scope?.chainId
+    const selectedAccountId = selectedAccount?.id
     const previousChainsRef = useRef({ swapChainId, sourceChainId })
     useEffect(() => {
         const previous = previousChainsRef.current
@@ -84,11 +87,18 @@ export const useSwapScreen = (): UseSwapScreenResult => {
             previous.swapChainId &&
             swapChainId &&
             previous.swapChainId !== swapChainId &&
-            previous.sourceChainId === sourceChainId
+            previous.sourceChainId === sourceChainId &&
+            pairAccountId !== selectedAccountId
         ) {
             setSourceChainId(sourceChainId)
         }
-    }, [swapChainId, sourceChainId, setSourceChainId])
+    }, [
+        swapChainId,
+        sourceChainId,
+        setSourceChainId,
+        pairAccountId,
+        selectedAccountId,
+    ])
 
     // Before the seeding effects: a chain change clears the pair they write.
     const routeSourceChainId = route.params?.assetIn?.chainId

@@ -65,8 +65,7 @@ void i18n.use(initReactI18next).init({
     resources,
     lng: BASE_LOCALE,
     fallbackLng: BASE_LOCALE,
-    // Some en strings are deliberately empty (e.g. the copy-toast body);
-    // without this they render as the raw key.
+    // Some keys are intentionally empty; i18next 27 would otherwise render the key.
     returnEmptyString: true,
     interpolation: {
         escapeValue: false, // react already safes from xss

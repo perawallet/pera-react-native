@@ -27,8 +27,10 @@ import {
 import { toError, type Optional } from '@perawallet/wallet-core-shared'
 import { recordReviewApproval } from '../db/repository'
 import {
+    groupSignerKeyOf,
     isInteractiveSource,
     isKeyedByPlanner,
+    signerKeyOf,
     type SignableGroup,
     type SigningResult,
     type SourceCallbacks,
@@ -39,12 +41,20 @@ import {
     GenesisHashMismatchError,
     HardwareWalletError,
     InvalidSignableDataError,
+    SignerKeyMissingError,
     SigningError,
 } from '../pipeline/errors'
-import { plannerAdapterForScope, plannerChainAdapters } from '../chain-adapter'
+import {
+    plannerAdapterForScope,
+    plannerChainAdapters,
+    type SignedFor,
+} from '../chain-adapter'
 import { isPlannerSigned } from './utils/isPlannerSigned'
-import { resolveSigningAccount } from './utils/resolveSigningAccount'
-import { resolveSignerCredential } from './utils/resolveSignerCredential'
+import { resolveGroupSigningAccount } from './utils/resolveSigningAccount'
+import {
+    hasSignerCredential,
+    resolveSignerCredential,
+} from './utils/resolveSignerCredential'
 import type {
     GroupSignerMap,
     SigningMachineContext,
@@ -80,7 +90,8 @@ export const buildGroupSignerMap = (
 ): GroupSignerMap => {
     const map: GroupSignerMap = new Map()
     for (const group of groups) {
-        if (map.has(group.signerAddress)) continue
+        const key = groupSignerKeyOf(group)
+        if (map.has(key)) continue
         const signerAccount = findAccountByAddressOn(
             allAccounts,
             chainId,
@@ -92,19 +103,20 @@ export const buildGroupSignerMap = (
                 'signer account not found in wallet',
             )
         }
-        const authAccount = isKeyedByPlanner(group.data)
-            ? signerAccount
-            : resolveSigningAccount(
-                  signerAccount,
-                  group.source,
-                  group.data.type,
-                  allAccounts,
-                  chainId,
-              )
-        map.set(
-            group.signerAddress,
-            resolveSignerCredential(authAccount, chainId),
+        const authAccount = resolveGroupSigningAccount(
+            group,
+            signerAccount,
+            allAccounts,
+            chainId,
         )
+        if (
+            group.data.type === 'transactions' &&
+            group.data.isKeyedBySigner &&
+            !hasSignerCredential(authAccount, chainId)
+        ) {
+            throw new SignerKeyMissingError(group.signerAddress)
+        }
+        map.set(key, resolveSignerCredential(authAccount, chainId))
     }
     return map
 }
@@ -316,35 +328,42 @@ const buildUnsignedTransactionGroups = (
 
     const bySigner = new Map<
         string,
-        { txs: UnsignedTransaction[]; indices: number[] }
+        SignedFor & { txs: UnsignedTransaction[]; indices: number[] }
     >()
     for (const [i, tx] of request.txs.entries()) {
-        const signerAddress = signedForKeys
+        const signedFor = signedForKeys
             ? signedForKeys[i]
             : heldPlannedSigner(plannedSigners[i], allAccounts, scope)
-        if (!signerAddress) continue
+        if (!signedFor) continue
 
-        const entry = bySigner.get(signerAddress) ?? { txs: [], indices: [] }
+        const key = signerKeyOf(signedFor.address, signedFor.isSigner)
+        const entry = bySigner.get(key) ?? {
+            ...signedFor,
+            txs: [],
+            indices: [],
+        }
         entry.txs.push(tx)
         entry.indices.push(i)
-        bySigner.set(signerAddress, entry)
+        bySigner.set(key, entry)
     }
 
-    return [...bySigner.entries()].map(([signerAddress, { txs, indices }]) => ({
-        data: {
-            type: 'transactions',
-            transactions: txs,
-            ...(signedForKeys && {
-                chainData: plannerAdapterForScope(scope).signableGroupChainData(
-                    request,
-                    indices,
-                ),
-            }),
-        },
-        source,
-        signerAddress,
-        originalIndices: indices,
-    }))
+    return [...bySigner.values()].map(
+        ({ address: signerAddress, isSigner, txs, indices }) => ({
+            data: {
+                type: 'transactions',
+                transactions: txs,
+                ...(signedForKeys && {
+                    chainData: plannerAdapterForScope(
+                        scope,
+                    ).signableGroupChainData(request, indices),
+                }),
+                ...(isSigner && { isKeyedBySigner: true as const }),
+            },
+            source,
+            signerAddress,
+            originalIndices: indices,
+        }),
+    )
 }
 
 // Keyed to the first key the wallet can sign with here, else the first it
@@ -353,7 +372,7 @@ const heldPlannedSigner = (
     signers: string[],
     allAccounts: WalletAccount[],
     scope: ChainScope,
-): Optional<string> => {
+): Optional<SignedFor> => {
     const held = [...new Set(signers)].flatMap(
         signer =>
             findAccountByAddressOn(allAccounts, scope.chainId, signer) ?? [],
@@ -361,7 +380,10 @@ const heldPlannedSigner = (
     const account =
         held.find(candidate => candidate.custody.kind === 'local') ?? held[0]
     // The wallet's spelling, so the group key and every later lookup agree.
-    return account && chainAccountOf(account, scope.chainId)?.address
+    const address = account && chainAccountOf(account, scope.chainId)?.address
+    // Without chain data the group is keyed by planner, which already signs
+    // as `address`; the flag only marks groups that carry chain data.
+    return address === undefined ? undefined : { address, isSigner: false }
 }
 
 /**
@@ -384,7 +406,7 @@ const signedForAddresses = (
     request: UnsignedTransactionSignRequest,
     allAccounts: WalletAccount[],
     scope: ChainScope,
-): Optional<Optional<string>[]> => {
+): Optional<Optional<SignedFor>[]> => {
     if (!plannerChainAdapters.has(scope.chainId)) return undefined
     const addresses = plannerChainAdapters
         .get(scope.chainId)
@@ -396,8 +418,8 @@ const signedForAddresses = (
             a => chainAccountOf(a, scope.chainId)?.address ?? [],
         ),
     )
-    return addresses.map(address =>
-        knownAddresses.has(address) ? address : undefined,
+    return addresses.map(signedFor =>
+        knownAddresses.has(signedFor.address) ? signedFor : undefined,
     )
 }
 
@@ -556,7 +578,7 @@ export const resolveInitialContext = (
     const planned = transactionGroups.filter(group =>
         isPlannerSigned(
             group,
-            groupSigners.get(group.signerAddress),
+            groupSigners.get(groupSignerKeyOf(group)),
             input.scope.chainId,
         ),
     )

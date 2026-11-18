@@ -20,6 +20,7 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import type { HistoryChainAdapter } from '@perawallet/wallet-core-transactions'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import { isEvmNftAssetId, toCaip19 } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
 import { fetchHistoryPage } from './api/endpoints'
 import type { EvmHistoryItem } from './api/schema'
@@ -59,8 +60,10 @@ const toRecords = (
             ...(item.block_number !== undefined && {
                 blockNumber: item.block_number,
             }),
-            // No `from` means the row is known only from a transfer log, so
-            // another address signed it and the gas was never this account's.
+            // No `from` means the row is known only from a transfer log. Read
+            // unfiltered, another address signed it and the gas was never this
+            // account's; an ERC-20 view names no sender on any row, so there
+            // the account's own sends lose their fee and initiator too.
             fee:
                 item.fee === null || item.from === null
                     ? undefined
@@ -70,6 +73,30 @@ const toRecords = (
             chainData: { family: 'evm', ...(nft && { nft }) },
         },
     ]
+}
+
+// Only an ERC-20's view is asked for. The backend filters no NFT view, and its
+// native view strips the other assets' legs from each row, so a token send
+// would read as a call that moved nothing and stay in the native History.
+const filterIdOf = (
+    assetId: Optional<string>,
+    scope: ChainScope,
+    chain: EvmChain,
+): Optional<string> => {
+    if (
+        assetId === undefined ||
+        assetId === chain.nativeAsset.assetId ||
+        isEvmNftAssetId(assetId)
+    ) {
+        return undefined
+    }
+    // An id this client can't place still filters client-side; a thrown read
+    // would fail the screen instead of listing nothing.
+    try {
+        return toCaip19(assetId, scope, chain)
+    } catch {
+        return undefined
+    }
 }
 
 /**
@@ -82,8 +109,17 @@ export const getEvmTransactionHistory = async (
     scope: ChainScope,
     page?: PageRef,
     isDecoding = false,
+    assetId?: string,
+    signal?: AbortSignal,
 ): Promise<Page<TransactionRecord>> => {
-    const { items, next } = await fetchHistoryPage(scope, chain, address, page)
+    const caip19AssetId = filterIdOf(assetId, scope, chain)
+    const { items, next } = await fetchHistoryPage(
+        scope,
+        chain,
+        address,
+        page,
+        { caip19AssetId, signal },
+    )
     return {
         items: items.flatMap(item =>
             toRecords(item, address, scope, chain, isDecoding),
@@ -109,6 +145,8 @@ export const createEvmHistoryAdapter = (
             scope,
             page,
             options?.capabilities.contractDecoding ?? false,
+            options?.assetId,
+            options?.signal,
         ),
     getTransactionDetail: (txId, scope, record) =>
         readEvmTransactionDetail(ctx, chain, scope, txId, record.fee),

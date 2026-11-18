@@ -11,6 +11,7 @@
  */
 
 import { z } from 'zod'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export const assetItemSchema = z.object({
     /** CAIP-19. */
@@ -87,16 +88,23 @@ const isHttpsUrl = (value: string): boolean => {
 
 export const httpsUrlOrNull = z
     .string()
-    .nullable()
-    .transform(value => (value !== null && isHttpsUrl(value) ? value : null))
+    .nullish()
+    .transform(value =>
+        typeof value === 'string' && isHttpsUrl(value) ? value : null,
+    )
+
+const nullishString = z
+    .string()
+    .nullish()
+    .transform(value => value ?? null)
 
 const evmAddress = z.string().regex(/^0x[0-9a-fA-F]{40}$/)
 
+// The backend's media entries carry no type; it is derived from `mime_type`.
 const nftMediaSchema = z.object({
-    type: z.enum(['image', 'video', 'audio', 'model', 'unknown']),
     url: httpsUrlOrNull,
     preview_url: httpsUrlOrNull,
-    mime_type: z.string().nullable(),
+    mime_type: nullishString,
 })
 
 type NftMediaOutput = z.output<typeof nftMediaSchema> & { url: string }
@@ -111,37 +119,75 @@ const nftMediaListSchema = z.array(z.unknown()).transform(entries =>
     }),
 )
 
+const nftTraitSchema = z.object({
+    trait_type: nullishString,
+    value: z.union([z.string(), z.number()]).transform(String),
+})
+
+// One unreadable trait drops itself, not the token.
+const nftTraitListSchema = z.array(z.unknown()).transform(entries =>
+    entries.flatMap(entry => {
+        const parsed = nftTraitSchema.safeParse(entry)
+        return parsed.success ? [parsed.data] : []
+    }),
+)
+
+/** The backend's documented NFT item, on both the holdings and metadata routes. */
+export type NftItemResponse = {
+    /** CAIP-19: `eip155:{chain}/{erc721|erc1155}:{contract}/{token id}`. */
+    asset_id: string
+    standard: 'erc721' | 'erc1155'
+    token_id: string
+    /** Base units, decimal; null on the metadata route, which isn't per account. */
+    // lanekeep-ignore-next-line pera/amount-types reason: JSON wire response shape
+    balance: Nullable<string>
+    name: Nullable<string>
+    description: Nullable<string>
+    collection: {
+        address: string
+        name: Nullable<string>
+        symbol: Nullable<string>
+        verification_tier: 'unverified' | 'verified' | 'suspicious'
+    }
+    primary_image: Nullable<{ url: string; preview_url: Nullable<string> }>
+    media: {
+        url: string
+        preview_url: Nullable<string>
+        mime_type: Nullable<string>
+    }[]
+    traits: { trait_type: Nullable<string>; value: string }[]
+    acquired_at: Nullable<string>
+    explorer_url: Nullable<string>
+    cross_chain_asset_group: null
+}
+
 export const nftItemSchema = z.object({
     /** CAIP-19: `eip155:{chain}/{erc721|erc1155}:{contract}/{token id}`. */
     asset_id: z.string(),
     standard: z.enum(['erc721', 'erc1155']),
-    /** Base units, decimal. Absent on the metadata endpoint. */
-    balance: z.string().regex(/^\d+$/).optional(),
-    name: z.string().nullable(),
-    description: z.string().nullable(),
+    balance: z
+        .string()
+        .regex(/^\d+$/)
+        .nullish()
+        .transform(value => value ?? null),
+    name: nullishString,
+    description: nullishString,
     collection: z.object({
         address: evmAddress,
-        name: z.string().nullable(),
-        symbol: z.string().nullable(),
+        name: nullishString,
+        symbol: nullishString,
         verification_tier: z.enum(['unverified', 'verified', 'suspicious']),
     }),
     primary_image: z
         .object({ url: httpsUrlOrNull, preview_url: httpsUrlOrNull })
-        .nullable(),
+        .nullish()
+        .transform(value => value ?? null),
     media: nftMediaListSchema,
-    traits: z.array(
-        z.object({
-            name: z.string().nullable(),
-            value: z.union([z.string(), z.number()]).transform(String),
-        }),
-    ),
-    acquired_at: z.iso.datetime({ offset: true }).nullable().optional(),
+    traits: nftTraitListSchema,
     explorer_url: httpsUrlOrNull,
 })
 
 export type NftItemSchemaOutput = z.output<typeof nftItemSchema>
-
-export type NftItemResponse = z.input<typeof nftItemSchema>
 
 // Rows are checked one by one, so one unreadable token drops itself rather
 // than the whole holdings read.

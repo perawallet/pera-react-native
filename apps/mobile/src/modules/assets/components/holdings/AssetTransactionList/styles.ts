@@ -39,6 +39,9 @@ export const useStyles = makeStyles(theme => ({
     container: {
         paddingHorizontal: theme.spacing.xl,
     },
+    failedNotice: {
+        marginBottom: theme.spacing.md,
+    },
     emptyView: {
         minHeight: theme.spacing['5xl'],
     },

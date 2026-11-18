@@ -183,6 +183,7 @@ export const AssetHoldings = ({
                                 scope={scope}
                                 period={period}
                                 onSelectionChanged={setSelectedPoint}
+                                enabled={isChartShown}
                             />
                             <ChartPeriodSelection
                                 value={period}

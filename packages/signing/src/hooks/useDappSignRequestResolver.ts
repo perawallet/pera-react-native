@@ -15,6 +15,7 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     addressOn,
     hasCustody,
+    isDelegatedAccount,
     useAllAccounts,
     useSigningAccounts,
     type WalletAccount,
@@ -56,6 +57,18 @@ export const useDappSignRequestResolver = (
         () => addressesOn(signingAccounts, scope),
         [signingAccounts, scope],
     )
+    const heldAddresses = useMemo(
+        () => addressesOn(allAccounts, scope),
+        [allAccounts, scope],
+    )
+    const delegatedAddresses = useMemo(
+        () =>
+            addressesOn(
+                allAccounts.filter(a => isDelegatedAccount(a, scope.chainId)),
+                scope,
+            ),
+        [allAccounts, scope],
+    )
     const multisigAddresses = useMemo(
         () =>
             addressesOn(
@@ -70,8 +83,16 @@ export const useDappSignRequestResolver = (
                 signableAddresses,
                 multisigAddresses,
                 authorizedAddresses: options.authorizedAddresses,
+                heldAddresses,
+                delegatedAddresses,
                 maxTransactions: options.maxTransactions,
             }),
-        [scope, signableAddresses, multisigAddresses],
+        [
+            scope,
+            signableAddresses,
+            multisigAddresses,
+            heldAddresses,
+            delegatedAddresses,
+        ],
     )
 }

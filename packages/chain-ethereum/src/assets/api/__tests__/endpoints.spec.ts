@@ -22,14 +22,20 @@ import {
 import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { PeraNetworkError } from '@perawallet/wallet-core-shared'
+import {
+    isPeraServiceUnavailableError,
+    PeraNetworkError,
+} from '@perawallet/wallet-core-shared'
 import {
     fetchAssetItems,
+    fetchHasNftHoldings,
     fetchNftHoldings,
     fetchNftItems,
     fetchWhitelist,
     NFT_HOLDINGS_MAX_PAGES,
+    nftCursorOf,
 } from '../endpoints'
+import { isDescribedNftItem } from '../transformers'
 import {
     evmNftItem,
     nativeWhitelistItem,
@@ -337,14 +343,48 @@ describe('fetchNftHoldings', () => {
         expect(items).toHaveLength(1)
     })
 
-    it.each([502, 429])('rejects on a %s', async status => {
+    it('keeps paging past an empty page that names a next one', async () => {
+        server.use(
+            ...peraEvmAssetHandlers({
+                baseUrl: PERA_URL,
+                nftHoldings: { [HOLDER.toLowerCase()]: [[], [ape('7')]] },
+            }),
+        )
+
+        const items = await fetchNftHoldings(SCOPE, ETHEREUM, HOLDER)
+
+        expect(items.map(item => item.asset_id)).toEqual([
+            `eip155:1/erc721:${BAYC}/7`,
+        ])
+    })
+
+    it.each([
+        [502, undefined],
+        [503, 'upstream_unavailable'],
+        [429, 'upstream_rate_limited'],
+    ])('rejects on a %s', async (status, backendCode) => {
         server.use(
             ...peraEvmAssetHandlers({ baseUrl: PERA_URL, nftHoldings: status }),
         )
 
-        await expect(
-            fetchNftHoldings(SCOPE, ETHEREUM, HOLDER),
-        ).rejects.toBeInstanceOf(PeraNetworkError)
+        const error = await fetchNftHoldings(SCOPE, ETHEREUM, HOLDER).catch(
+            (reason: unknown) => reason,
+        )
+
+        expect(error).toBeInstanceOf(PeraNetworkError)
+        expect((error as PeraNetworkError).backendCode).toBe(backendCode)
+    })
+
+    it('reads a 422 nft_not_supported as a scope without the nfts service', async () => {
+        server.use(
+            ...peraEvmAssetHandlers({ baseUrl: PERA_URL, nftHoldings: 422 }),
+        )
+
+        const error = await fetchNftHoldings(SCOPE, ETHEREUM, HOLDER).catch(
+            (reason: unknown) => reason,
+        )
+
+        expect(isPeraServiceUnavailableError(error)).toBe(true)
     })
 
     it('rejects a cursor that never ends', async () => {
@@ -352,7 +392,10 @@ describe('fetchNftHoldings', () => {
         server.use(
             http.get(`${PERA_URL}/api/v3/evm/1/accounts/:address/nfts/`, () => {
                 requests++
-                return HttpResponse.json({ next: 'again', results: [] })
+                return HttpResponse.json({
+                    next: `${PERA_URL}/api/v3/evm/1/accounts/x/nfts/?cursor=again`,
+                    results: [],
+                })
             }),
         )
 
@@ -361,13 +404,71 @@ describe('fetchNftHoldings', () => {
         ).rejects.toThrow()
         expect(requests).toBe(NFT_HOLDINGS_MAX_PAGES)
     })
+
+    it('rejects a next that is not a URL with a cursor', async () => {
+        server.use(
+            http.get(`${PERA_URL}/api/v3/evm/1/accounts/:address/nfts/`, () =>
+                HttpResponse.json({ next: 'page:1', results: [] }),
+            ),
+        )
+
+        await expect(
+            fetchNftHoldings(SCOPE, ETHEREUM, HOLDER),
+        ).rejects.toThrow()
+    })
+})
+
+describe('nftCursorOf', () => {
+    it('reads the cursor from a full next URL', () => {
+        expect(
+            nftCursorOf(
+                'https://pera.test/api/v3/evm/1/accounts/x/nfts/?cursor=abc%3D',
+            ),
+        ).toBe('abc=')
+    })
+
+    it.each([
+        'page:1',
+        'https://pera.test/nfts/',
+        'https://pera.test/?cursor=',
+    ])('throws on %s', next => {
+        expect(() => nftCursorOf(next)).toThrow()
+    })
+})
+
+describe('fetchHasNftHoldings', () => {
+    it('is true for a first page with an item or a next page, false for none', async () => {
+        server.use(
+            ...peraEvmAssetHandlers({
+                baseUrl: PERA_URL,
+                nftHoldings: { [HOLDER.toLowerCase()]: [[ape('1')]] },
+            }),
+        )
+
+        await expect(
+            fetchHasNftHoldings(SCOPE, ETHEREUM, HOLDER),
+        ).resolves.toBe(true)
+        await expect(
+            fetchHasNftHoldings(SCOPE, ETHEREUM, '0x' + '1'.repeat(40)),
+        ).resolves.toBe(false)
+    })
+
+    it('answers false for a chain without NFT reads', async () => {
+        server.use(
+            ...peraEvmAssetHandlers({ baseUrl: PERA_URL, nftHoldings: 422 }),
+        )
+
+        await expect(
+            fetchHasNftHoldings(SCOPE, ETHEREUM, HOLDER),
+        ).resolves.toBe(false)
+    })
 })
 
 describe('fetchNftItems', () => {
     const known = `eip155:1/erc721:${BAYC}/1`
     const unknown = `eip155:1/erc1155:${BAYC}/1`
 
-    it('answers in request order, null for an unknown id', async () => {
+    it('answers in request order, a blank item for an unknown id', async () => {
         server.use(
             ...peraEvmAssetHandlers({
                 baseUrl: PERA_URL,
@@ -377,8 +478,46 @@ describe('fetchNftItems', () => {
 
         const items = await fetchNftItems(SCOPE, ETHEREUM, [unknown, known])
 
-        expect(items[0]).toBeNull()
+        expect(items[0]).toMatchObject({
+            asset_id: unknown,
+            name: null,
+            primary_image: null,
+            media: [],
+            traits: [],
+        })
+        expect(items[0] !== null && isDescribedNftItem(items[0])).toBe(false)
         expect(items[1]?.asset_id).toBe(known)
+    })
+
+    it('parses a null balance and a described item with live-shaped traits and media', async () => {
+        server.use(
+            ...peraEvmAssetHandlers({
+                baseUrl: PERA_URL,
+                nfts: { [known]: ape('1') },
+            }),
+        )
+
+        const [item] = await fetchNftItems(SCOPE, ETHEREUM, [known])
+
+        expect(item?.balance).toBeNull()
+        expect(item?.traits).toEqual([
+            { trait_type: 'Background', value: 'Orange' },
+        ])
+        expect(item?.media).toHaveLength(1)
+    })
+
+    it.each([
+        [503, 'upstream_unavailable'],
+        [429, 'upstream_rate_limited'],
+    ])('rejects with the backend code on a %s', async (status, backendCode) => {
+        server.use(...peraEvmAssetHandlers({ baseUrl: PERA_URL, nfts: status }))
+
+        const error = await fetchNftItems(SCOPE, ETHEREUM, [known]).catch(
+            (reason: unknown) => reason,
+        )
+
+        expect(error).toBeInstanceOf(PeraNetworkError)
+        expect((error as PeraNetworkError).backendCode).toBe(backendCode)
     })
 
     it('rejects a misaligned answer', async () => {

@@ -22,6 +22,7 @@ import {
     FeeAdjustmentDeliveryError,
     HardwareWalletError,
     SIGNING_ERROR_KEYS,
+    SignerKeyMissingError,
     SigningError,
     TransportError,
 } from '../errors'
@@ -121,5 +122,15 @@ describe('signing errors carry user-facing keys', () => {
             address: 'ADDR',
             reason: 'no keys',
         })
+    })
+
+    it('SignerKeyMissingError names the signer whose own key is missing', () => {
+        const error = new SignerKeyMissingError('ADDR')
+
+        expect(error).toBeInstanceOf(CannotSignError)
+        expect(error.metadata.messageKey).toBe(
+            'signing.cannot_sign.signer_key_missing_body',
+        )
+        expect(error.metadata.params).toMatchObject({ authAddress: 'ADDR' })
     })
 })

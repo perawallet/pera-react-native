@@ -38,7 +38,7 @@ export type TransportActorInput = {
      * Looked up in allAccounts to determine transport routing.
      */
     signerAddress: string
-    isKeyedByPlanner: boolean
+    isKeyedBySigner: boolean
     /** All user accounts — used to resolve the signer WalletAccount */
     allAccounts: WalletAccount[]
     /** Selects the correct transport (algod, callback, multisig, etc.) */
@@ -74,7 +74,7 @@ export const transportActor = fromPromise<TransportResult, TransportActorInput>(
             signingResults,
             source,
             signerAddress,
-            isKeyedByPlanner,
+            isKeyedBySigner,
             allAccounts,
             createTransport,
             scope,
@@ -91,7 +91,7 @@ export const transportActor = fromPromise<TransportResult, TransportActorInput>(
             )
         }
 
-        // A group keyed by its planner already names the key holder. Otherwise,
+        // A group keyed by its signer already names the key holder. Otherwise,
         // transport routing and multisig-template keying must follow the SAME
         // account the signing dispatcher routed on: the account whose key (or
         // multisig template) authorizes the signature. resolveSigningAccount
@@ -102,7 +102,7 @@ export const transportActor = fromPromise<TransportResult, TransportActorInput>(
         // participants or off-chain data (`arbitrary-data`, `auth-data`).
         // Non-rekeyed accounts self-resolve.
         const signedType = signingResults[0]?.signedData.type ?? 'transactions'
-        const authAccount = isKeyedByPlanner
+        const authAccount = isKeyedBySigner
             ? signerAccount
             : resolveSigningAccount(
                   signerAccount,

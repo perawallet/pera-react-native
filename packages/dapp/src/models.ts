@@ -66,6 +66,22 @@ export const readSiteWarning = async (
 ): Promise<SiteWarningLevel> =>
     check ? check(origin).catch((): SiteWarningLevel => 'blocked') : 'clear'
 
+/**
+ * A locked wallet, or a site flagged worse than at its approval, shows the
+ * site no accounts. Locked short-circuits, so no site check runs.
+ */
+export const canSiteSeeAccounts = async (
+    isWalletLocked: boolean,
+    connection: Connection,
+    origin: string,
+    siteWarningOf: Optional<(origin: string) => Promise<SiteWarningLevel>>,
+): Promise<boolean> =>
+    !isWalletLocked &&
+    !isWorseSiteWarning(
+        await readSiteWarning(siteWarningOf, origin),
+        acknowledgedSiteWarningOf(connection),
+    )
+
 export type DappConnection = Connection & { kind: typeof DAPP_KIND }
 
 /** The site's own chain; its network is whichever one the wallet has selected for it. */

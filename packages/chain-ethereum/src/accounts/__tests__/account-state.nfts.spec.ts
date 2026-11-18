@@ -25,6 +25,7 @@ import { setupServer } from 'msw/node'
 import { getAddress, type Hex } from 'viem'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { upsertAssets } from '@perawallet/wallet-core-assets'
+import { isPeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
 import { createEthereumAccountStateOps } from '../account-state'
 import { evmNftItem } from '../../assets/api/msw-handlers'
 import { peraEvmHandlers } from '../msw-handlers'
@@ -194,6 +195,75 @@ describe('fetchAccountState NFT holdings', () => {
         expect(state.unrefreshedHoldings?.error).toMatchObject({
             status: 502,
         })
+    })
+
+    it('reads every page of a cursor-paged list, including an empty page between items', async () => {
+        server.use(
+            ...rpc(),
+            ...peraEvmHandlers({
+                baseUrl: TEST_PERA_URL,
+                nftHoldings: { [FIRST]: [[ape], [], [swords]] },
+            }),
+        )
+        const ops = createEthereumAccountStateOps(
+            testChainContext({ services: ['assets', 'nfts'] }),
+            ETHEREUM,
+        )
+
+        const state = await ops.fetchAccountState(FIRST, SCOPE, HINT)
+
+        expect(state.holdings.map(h => h.assetId)).toEqual([
+            'native',
+            APE,
+            SWORD,
+        ])
+        expect(state.unrefreshedHoldings).toBeUndefined()
+    })
+
+    it.each([503, 429])(
+        'keeps the stored NFTs, and only them, when the backend answers %s',
+        async status => {
+            server.use(
+                ...rpc(),
+                ...peraEvmHandlers({
+                    baseUrl: TEST_PERA_URL,
+                    nftHoldings: status,
+                }),
+            )
+            const ops = createEthereumAccountStateOps(
+                testChainContext({ services: ['assets', 'nfts'] }),
+                ETHEREUM,
+            )
+
+            const state = await ops.fetchAccountState(FIRST, SCOPE, HINT)
+
+            expect(state.holdings.map(h => h.assetId)).toEqual(['native'])
+            expect(state.unrefreshedHoldings?.includes(APE)).toBe(true)
+            expect(
+                state.unrefreshedHoldings?.includes(
+                    '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+                ),
+            ).toBe(false)
+            expect(state.unrefreshedHoldings?.error).toMatchObject({ status })
+        },
+    )
+
+    it('treats a chain without NFT reads as a scope without the service', async () => {
+        server.use(
+            ...rpc(),
+            ...peraEvmHandlers({ baseUrl: TEST_PERA_URL, nftHoldings: 422 }),
+        )
+        const ops = createEthereumAccountStateOps(
+            testChainContext({ services: ['assets', 'nfts'] }),
+            ETHEREUM,
+        )
+
+        const state = await ops.fetchAccountState(FIRST, SCOPE, HINT)
+
+        expect(
+            isPeraServiceUnavailableError(state.unrefreshedHoldings?.error),
+        ).toBe(true)
+        expect(state.unrefreshedHoldings?.includes(APE)).toBe(true)
     })
 
     it('leaves the NFTs unrefreshed when their metadata cannot be written', async () => {

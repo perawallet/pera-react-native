@@ -37,7 +37,11 @@ import { AsbImportResultScreen } from '@modules/onboarding/screens/AsbImportResu
 import { PeraWebImportInfoScreen } from '@modules/onboarding/screens/PeraWebImportInfoScreen'
 import { PeraWebImportLoadingScreen } from '@modules/onboarding/screens/PeraWebImportLoadingScreen'
 import { PeraWebImportResultScreen } from '@modules/onboarding/screens/PeraWebImportResultScreen'
-import { CloudBackupRestorePassphraseScreen } from '@modules/cloud-backup/routes'
+import {
+    CloudBackupRestoreEncryptionKeyScreen,
+    CloudBackupRestorePassphraseScreen,
+    CloudBackupRestoreScanScreen,
+} from '@modules/cloud-backup/routes'
 import {
     LedgerInstructionsScreen,
     LedgerPairScreen,
@@ -49,8 +53,7 @@ import {
 } from '@modules/ledger'
 
 import type { ImportFlowParamList } from './types'
-import { ImportFlowRestoreEncryptionKeyRoute } from './ImportFlowRestoreEncryptionKeyRoute'
-import { ImportFlowRestoreScanRoute } from './ImportFlowRestoreScanRoute'
+import { ImportFlowRestoreSelectAccountsRoute } from './ImportFlowRestoreSelectAccountsRoute'
 
 export const withAccountErrorBoundary = <P extends object>(
     WrappedComponent: React.ComponentType<P>,
@@ -132,10 +135,12 @@ const CloudBackupRestorePassphraseScreenWithErrorBoundary =
     withAccountErrorBoundary(CloudBackupRestorePassphraseScreen)
 
 const CloudBackupRestoreEncryptionKeyScreenWithErrorBoundary =
-    withAccountErrorBoundary(ImportFlowRestoreEncryptionKeyRoute)
+    withAccountErrorBoundary(CloudBackupRestoreEncryptionKeyScreen)
 const CloudBackupRestoreScanScreenWithErrorBoundary = withAccountErrorBoundary(
-    ImportFlowRestoreScanRoute,
+    CloudBackupRestoreScanScreen,
 )
+const CloudBackupRestoreSelectAccountsScreenWithErrorBoundary =
+    withAccountErrorBoundary(ImportFlowRestoreSelectAccountsRoute)
 
 /**
  * Names of every screen registered by `renderImportFlowScreens`. Used by the
@@ -169,6 +174,7 @@ export const IMPORT_FLOW_SCREEN_NAMES = [
     'CloudBackupRestorePassphrase',
     'CloudBackupRestoreEncryptionKey',
     'CloudBackupRestoreScan',
+    'CloudBackupRestoreSelectAccounts',
 ] as const satisfies ReadonlyArray<keyof ImportFlowParamList>
 
 export type ImportFlowStack = ReturnType<
@@ -349,6 +355,11 @@ export const renderImportFlowScreens = (
             name='CloudBackupRestoreScan'
             options={{ title: '' }}
             component={CloudBackupRestoreScanScreenWithErrorBoundary}
+        />
+        <Stack.Screen
+            name='CloudBackupRestoreSelectAccounts'
+            options={{ title: '' }}
+            component={CloudBackupRestoreSelectAccountsScreenWithErrorBoundary}
         />
     </>
 )

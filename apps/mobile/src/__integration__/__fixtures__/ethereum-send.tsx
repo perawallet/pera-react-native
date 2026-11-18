@@ -54,6 +54,18 @@ export const ETHEREUM_SENDER: WalletAccount = {
     name: 'Eth sender',
 }
 
+// A second HD account holding at RECEIVER, for flows that choose between accounts.
+export const ETHEREUM_SECOND: WalletAccount = {
+    id: 'eth-second',
+    custody: {
+        kind: 'local',
+        seed: SeedScheme.Bip39,
+        hd: { account: 1, keyIndex: 0 },
+    },
+    chains: { ethereum: { address: RECEIVER, keyPairId: 'eth-key-2' } },
+    name: 'Second',
+}
+
 export const ALGORAND_SENDER: WalletAccount = {
     id: 'algo-sender',
     custody: { kind: 'local', seed: null },
@@ -120,7 +132,6 @@ export const sentRecord = async () => {
     const [record] = await getPendingTransactionRecords({
         address: SENDER,
         scope: ETH_SCOPE,
-        listedIds: new Set(),
     })
     return record
 }
@@ -143,13 +154,17 @@ export const seedEthereumAssets = async () => {
 }
 
 // The confirm step checks the synced native balance covers the worst-case fee.
-export const seedSenderEther = (wei: string) =>
+// A stored chain state also keeps the account from syncing on its first read;
+// with no Pera services (as on CI) that sync goes to the node, which drops seeded tokens.
+export const seedEtherAt = (accountAddress: string, wei: string) =>
     upsertAccountChainState({
-        accountAddress: SENDER,
+        accountAddress,
         scope: ETH_SCOPE,
         nativeBalance: new Decimal(wei),
         chainData: { family: 'evm', nonce: { latest: 0, pending: 0 } },
     })
+
+export const seedSenderEther = (wei: string) => seedEtherAt(SENDER, wei)
 
 type Screen = Parameters<typeof renderWithNavigation>[0]
 

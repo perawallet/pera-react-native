@@ -85,3 +85,18 @@ Group Sign Request Opens The Signing Review
     Page Should Contain Element    ${SIGNING_CONFIRM_SLIDE}
     Tap    ${SIGNING_REJECT_BUTTON}
     Wait Until Page Does Not Contain Element    ${SIGNING_REJECT_BUTTON}    timeout=25s
+
+EVM Transfer Review Shows Amount Sender Asset And Fee
+    [Documentation]    The approved account must hold ETH on the harness's network, or the review
+    ...                has no amount to show. Rejects at the end: confirming would broadcast.
+    [Tags]    id:walletconnect.evm.transfer-review    p1    needs-funded    wip
+    Connect WC EVM Session
+    Send WC Request    /evm/send-transaction
+    Wait For Sign Sheet    ${SIGNING_REJECT_BUTTON}
+    Page Should Contain Element    ${REVIEW_FROM}
+    Page Should Contain Element    ${ETHEREUM_REVIEW_FEE}
+    Wait Until Page Contains Element    ${REVIEW_SEND_ROW}    timeout=30s
+    ${sent}=    Text Under    ${REVIEW_SEND_ROW}
+    Number In    ${sent}
+    Tap    ${SIGNING_REJECT_BUTTON}
+    Wait Until Page Does Not Contain Element    ${SIGNING_REJECT_BUTTON}    timeout=25s

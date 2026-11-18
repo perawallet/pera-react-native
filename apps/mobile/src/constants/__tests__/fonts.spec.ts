@@ -35,7 +35,7 @@ describe('fontFamilies', () => {
 
         expect(fontFamilies.DMSANS[400]).toBe('DMSans-Regular')
         expect(fontFamilies.DMSANS[500]).toBe('DMSans-Medium')
-        expect(fontFamilies.DMSANS[600]).toBe('DMSans-SemiBold')
+        expect(fontFamilies.DMSANS[600]).toBe('DMSans18pt-SemiBold')
         expect(fontFamilies.DMSANS[700]).toBe('DMSans-Bold')
     })
 

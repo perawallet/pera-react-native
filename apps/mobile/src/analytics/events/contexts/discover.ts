@@ -28,7 +28,23 @@ export enum DiscoverEvent {
     DappCategoryTap = 'discover_dapp_category_tap',
     DappDetailsButtonTap = 'discover_dapp_details_button_tap',
     DetailsCloseTap = 'discover_details_close_tap', // sic, the web app's name
+    FolderCreate = 'discover_folder_create',
+    FolderDappAdd = 'discover_folder_dapp_add',
+    FolderDappRemove = 'discover_folder_dapp_remove',
+    FolderRename = 'discover_folder_rename',
+    FolderDelete = 'discover_folder_delete',
+    FolderRearrange = 'discover_folder_rearrange',
+    FavoriteToastTap = 'discover_favorite_toast_tap',
+    LegacyFavoritesImported = 'discover_legacy_favorites_imported',
+    LegacyFavoritesImportFailed = 'discover_favorites_migration_failed',
 }
+
+/** Why one legacy favorites import attempt failed. */
+export type LegacyImportFailureReason =
+    | 'timeout'
+    | 'load_error'
+    | 'http_error'
+    | 'malformed'
 
 type DappPayload = {
     [Key.DappName]: string
@@ -57,6 +73,19 @@ export interface DiscoverRequiredPayloads {
     [DiscoverEvent.DetailsCloseTap]: {
         [Key.DappName]: string
         [Key.ChainId]?: ChainId
+    }
+    [DiscoverEvent.FolderRearrange]: {
+        [Key.RemovedCount]: number
+    }
+    [DiscoverEvent.LegacyFavoritesImported]: {
+        [Key.ImportedCount]: number
+        [Key.SkippedCount]: number
+        [Key.AlreadyFavoriteCount]: number
+        [Key.UnreadableKeyCount]: number
+    }
+    [DiscoverEvent.LegacyFavoritesImportFailed]: {
+        [Key.AttemptCount]: number
+        [Key.FailureReason]: LegacyImportFailureReason
     }
 }
 

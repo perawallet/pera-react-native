@@ -51,8 +51,9 @@ const { resolve, dismiss } = useBottomSheetResult<'confirm' | 'cancel'>()
     - A content-sized sheet (`size='auto'`) grows to fit and then scrolls, and
       uses the default container. A sheet whose body must scroll within a bound
       needs `autoCreateContainer={false}` so the scroll gets a definite height.
-      The `footer` slot only pins under that same flag; in an auto-sized sheet
-      put the buttons in the body instead.
+      The `footer` slot only pins under that same flag. In an `auto` sheet it is
+      pinned over the bottom and the body is padded by its height, so the
+      content-sized sheet counts the footer and never clips the body.
     - Exception: `ModelViewerBottomSheet` is a direct `BottomSheetModal` rather
       than a `PWBottomSheet`, so it owns its own inset.
 
@@ -105,6 +106,14 @@ React callers can use the same path via `useBottomSheet().requestByType(...)`.
 
 Props are type-checked against the registry entry, so a typo or a missing field
 is a compile-time error.
+
+A `requestByType` call gets a fresh request id, so it never dedupes against the
+same sheet opened directly with `request({ id })`. When a sheet is opened both
+ways, register it with that id (`registerBottomSheet('send-funds',
+SendFundsContent, { id: SEND_FUNDS_SHEET_ID })`) so a second open joins the open
+sheet instead of stacking another. A request for a sheet that is already open
+is ignored, so a caller that writes shared state before opening checks
+`isRegisteredBottomSheetOpen(type)` first.
 
 For a worked example, the `ASSET_OPT_IN` case in
 `apps/mobile/src/modules/deeplink/hooks/useDeepLink.ts` and `useAddAssetView`'s

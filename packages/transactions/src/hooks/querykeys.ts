@@ -67,6 +67,9 @@ export const transactionQueryKeys = {
             { accountAddress, scope, ...filters },
         ] as const,
 
+    pendingRecords: (accountAddress: string, scope: ChainScope) =>
+        [MODULE_PREFIX, 'pending-records', { accountAddress, scope }] as const,
+
     detail: (scope: ChainScope, transactionId: string) =>
         [MODULE_PREFIX, 'detail', { scope, transactionId }] as const,
 

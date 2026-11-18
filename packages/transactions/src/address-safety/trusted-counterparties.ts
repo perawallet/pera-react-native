@@ -20,6 +20,7 @@ import {
     type TransactionRecord,
     type TransactionSummary,
 } from '@perawallet/wallet-core-chain-contract'
+import { getChainCapabilities } from '@perawallet/wallet-core-chain-shared'
 import {
     baseUnitsToDisplayUnits,
     type Optional,
@@ -166,6 +167,7 @@ export const fetchTrustedCounterparties = async ({
             accountAddress,
             scope,
             page,
+            { capabilities: getChainCapabilities(scope.chainId), signal },
         )
         const transfers = result.items.flatMap(record =>
             toCounterpartyTransfer(record, accountAddress, codec),

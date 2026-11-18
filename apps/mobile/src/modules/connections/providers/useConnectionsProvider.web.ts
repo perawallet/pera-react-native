@@ -58,6 +58,7 @@ export const useConnectionsProvider = (): ConnectionRegistryClient => {
                     getNetworkId,
                     isDappConnectEnabled: () => false,
                     getAccounts: () => [],
+                    isWalletLocked: () => true,
                 }),
             ],
         })

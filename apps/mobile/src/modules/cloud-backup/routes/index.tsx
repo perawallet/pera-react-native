@@ -32,10 +32,11 @@ import { CloudBackupContactsReviewScreen } from '../screens/CloudBackupContactsR
 import { CloudBackupPasskeysScreen } from '../screens/CloudBackupPasskeysScreen'
 import { CloudBackupPasskeysReviewScreen } from '../screens/CloudBackupPasskeysReviewScreen'
 import { CloudBackupRestorePassphraseScreen } from '../screens/CloudBackupRestorePassphraseScreen'
+import { CloudBackupRestoreEncryptionKeyScreen } from '../screens/CloudBackupRestoreEncryptionKeyScreen'
+import { CloudBackupRestoreScanScreen } from '../screens/CloudBackupRestoreScanScreen'
 import { useCloudBackupInitialRoute } from '../hooks/useCloudBackupInitialRoute'
 import type { CloudBackupStackParamList } from './types'
-import { CloudBackupRestoreEncryptionKeyRoute } from './CloudBackupRestoreEncryptionKeyRoute'
-import { CloudBackupRestoreScanRoute } from './CloudBackupRestoreScanRoute'
+import { CloudBackupRestoreSelectAccountsRoute } from './CloudBackupRestoreSelectAccountsRoute'
 import { CloudBackupCloseButton } from './CloudBackupCloseButton'
 
 export type { CloudBackupStackParamList } from './types'
@@ -155,22 +156,31 @@ export const CloudBackupStackNavigator = () => {
                 options={{
                     title: '',
                 }}
-                component={CloudBackupRestoreEncryptionKeyRoute}
+                component={CloudBackupRestoreEncryptionKeyScreen}
             />
             <CloudBackupStack.Screen
                 name='CloudBackupRestoreScan'
                 options={{
                     title: '',
                 }}
-                component={CloudBackupRestoreScanRoute}
+                component={CloudBackupRestoreScanScreen}
+            />
+            <CloudBackupStack.Screen
+                name='CloudBackupRestoreSelectAccounts'
+                options={{
+                    title: '',
+                }}
+                component={CloudBackupRestoreSelectAccountsRoute}
             />
         </CloudBackupStack.Navigator>
     )
 }
 
 // Restore screens the onboarding import flow mounts in its own stack.
-export { CloudBackupRestoreEncryptionKeyScreen } from '../screens/CloudBackupRestoreEncryptionKeyScreen'
 export { CloudBackupRestorePassphraseScreen } from '../screens/CloudBackupRestorePassphraseScreen'
-export { CloudBackupRestoreScanScreen } from '../screens/CloudBackupRestoreScanScreen'
-
-export { CloudBackupRestoreEncryptionKeyRoute, CloudBackupRestoreScanRoute }
+export { CloudBackupRestoreSelectAccountsScreen } from '../screens/CloudBackupRestoreSelectAccountsScreen'
+export {
+    CloudBackupRestoreEncryptionKeyScreen,
+    CloudBackupRestoreScanScreen,
+    CloudBackupRestoreSelectAccountsRoute,
+}

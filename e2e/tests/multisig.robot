@@ -22,7 +22,8 @@ ${NAME_ALL_OWN}         Msig All Own
 ${NAME_SIGNABLE}        Msig Signable
 ${NAME_IMPORTED}        Msig Imported
 ${NAME_MANAGED}         Msig Managed
-${DEFAULT_NAME}         Shared Account
+# Numbered one past the highest shared account number in use.
+${DEFAULT_NAME}         Shared Account #
 
 
 *** Test Cases ***

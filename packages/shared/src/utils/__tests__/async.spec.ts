@@ -456,6 +456,21 @@ describe('createConcurrencyLimit', () => {
         expect(peak()).toBe(2)
     })
 
+    it('admits a priority task ahead of every waiter queued before it', async () => {
+        const limit = createConcurrencyLimit(1)
+        const { task, tick, releaseOne } = gate()
+        const order: number[] = []
+        const run = (n: number, isPriority = false) =>
+            limit(task(n), { isPriority }).then(value => order.push(value))
+
+        const all = Promise.all([run(1), run(2), run(3, true), run(4, true)])
+        await tick()
+        for (let i = 0; i < 4; i++) await releaseOne()
+        await all
+
+        expect(order).toEqual([1, 3, 4, 2])
+    })
+
     it('frees the slot when a task rejects', async () => {
         const limit = createConcurrencyLimit(1)
         const boom = new Error('boom')

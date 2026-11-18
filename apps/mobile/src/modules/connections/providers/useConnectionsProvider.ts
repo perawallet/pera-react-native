@@ -21,6 +21,7 @@ import { config } from '@perawallet/wallet-core-config'
 import {
     createConnectionRegistry,
     useConnectionSigningAdapter,
+    watchLockNotices,
     watchWalletNotices,
     type ConnectionRegistry,
 } from '@perawallet/wallet-core-connections'
@@ -29,7 +30,11 @@ import { createWalletConnectV1Handler } from '@perawallet/wallet-core-walletconn
 // lanekeep-ignore-next-line pera/no-wc-imports-in-connections-module reason: the composition root is the one place the app names a handler
 import { createWalletConnectV2Handler } from '@perawallet/wallet-core-walletconnect/v2'
 import { createEip1193ConnectionHandler } from '@perawallet/wallet-core-dapp'
-import { isAppLocked, whenAppUnlocked } from '@perawallet/wallet-core-security'
+import {
+    isAppLocked,
+    useSecurityStore,
+    whenAppUnlocked,
+} from '@perawallet/wallet-core-security'
 import { assessSiteSafety } from '@perawallet/wallet-core-site-safety'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -107,6 +112,7 @@ export const useConnectionsProvider = (): ConnectionRegistry => {
                 getAccounts: signingAccountAddressesOn,
                 siteWarningOf: async origin =>
                     (await assessSiteSafety({ urls: [origin] })).kind,
+                isWalletLocked: isAppLocked,
             }),
         )
         registryRef.current = registry
@@ -127,6 +133,15 @@ export const useConnectionsProvider = (): ConnectionRegistry => {
         showTransaction,
     })
     useEffect(() => watchWalletNotices(registry), [registry])
+    useEffect(
+        () =>
+            watchLockNotices(registry, isAppLocked(), listener =>
+                useSecurityStore.subscribe(state =>
+                    listener(state.isAppLockActive),
+                ),
+            ),
+        [registry],
+    )
     useConnectionsBoot(registry)
     const proposals = useProposalQueue(registry)
     useConnectionErrorToasts(registry, proposals)

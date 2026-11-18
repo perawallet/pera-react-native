@@ -18,18 +18,23 @@ import {
     BottomSheetView,
 } from '@gorhom/bottom-sheet'
 import { PWView } from '@components/core/PWView'
-import { createRef, useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { isIOS } from '@utils/platform'
+import {
+    HiddenContainerProvider,
+    useIsAnimationVisible,
+} from '@hooks/useIsAnimationVisible'
 import { useStyles } from './styles'
 import { Keyboard, useWindowDimensions, View } from 'react-native'
-import { type NotifierRoot, NotifierWrapper } from 'react-native-notifier'
+import { NotifierWrapper } from 'react-native-notifier'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWInBottomSheetContext } from './inSheetContext'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import { PWSheetSizeContext } from './sheetSizeContext'
+import { useSheetNotifierRef } from './sheetNotifier'
 import type { PWBottomSheetProps, PWBottomSheetSize } from './sheet-types'
 
-export const bottomSheetNotifier = createRef<Nullable<NotifierRoot>>()
+export { bottomSheetNotifier } from './sheetNotifier'
 export type { PWBottomSheetProps, PWBottomSheetSize } from './sheet-types'
 
 type DefaultPropsReturn = {
@@ -71,9 +76,13 @@ export const PWBottomSheet = ({
     avoidKeyboard = true,
 }: PWBottomSheetProps) => {
     const bottomSheetModalRef = useRef<BottomSheetModal>(null)
+    const notifierRef = useSheetNotifierRef()
     const insets = useSafeAreaInsets()
     const { height: windowHeight } = useWindowDimensions()
     const defaults = DEFAULT_PROPS[size]
+    // Read here, above the portal: inside the sheet the owner's screen focus
+    // and lock state are out of reach.
+    const isOwnerVisible = useIsAnimationVisible()
 
     // Against the container `topInset` has already shortened, the basis of
     // `modal`'s percentage snap point too: a whole-window ratio leaves a tall
@@ -210,32 +219,38 @@ export const PWBottomSheet = ({
         >
             <NotifierWrapper
                 omitGlobalMethodsHookup
-                ref={bottomSheetNotifier}
+                ref={notifierRef}
                 componentProps={{ ContainerComponent: SafeAreaView }}
             >
                 <PWInBottomSheetContext.Provider value={true}>
-                    <PWView style={styles.contentWrapper}>
-                        {isFullScreen && avoidKeyboard ? (
-                            // Fixed-height sheets shrink to the space above the
-                            // keyboard via keyboard-controller — the app's single
-                            // keyboard owner (KeyboardProvider). gorhom's own
-                            // keyboardBehavior is inert while it's active (and is
-                            // switched to `extend` above when it is not). Skipped
-                            // for `auto` (content-sized) sheets, where a
-                            // height-based avoider would collapse to zero.
-                            <KeyboardAvoidingView
-                                behavior={isIOS() ? 'padding' : 'height'}
-                                keyboardVerticalOffset={
-                                    isIOS() ? insets.bottom : 0
-                                }
-                                style={styles.keyboardAvoider}
-                            >
-                                {sheetContent}
-                            </KeyboardAvoidingView>
-                        ) : (
-                            sheetContent
-                        )}
-                    </PWView>
+                    <HiddenContainerProvider value={!isOwnerVisible}>
+                        <PWSheetSizeContext.Provider value={size}>
+                            <PWView style={styles.contentWrapper}>
+                                {isFullScreen && avoidKeyboard ? (
+                                    // Fixed-height sheets shrink to the space above the
+                                    // keyboard via keyboard-controller — the app's single
+                                    // keyboard owner (KeyboardProvider). gorhom's own
+                                    // keyboardBehavior is inert while it's active (and is
+                                    // switched to `extend` above when it is not). Skipped
+                                    // for `auto` (content-sized) sheets, where a
+                                    // height-based avoider would collapse to zero.
+                                    <KeyboardAvoidingView
+                                        behavior={
+                                            isIOS() ? 'padding' : 'height'
+                                        }
+                                        keyboardVerticalOffset={
+                                            isIOS() ? insets.bottom : 0
+                                        }
+                                        style={styles.keyboardAvoider}
+                                    >
+                                        {sheetContent}
+                                    </KeyboardAvoidingView>
+                                ) : (
+                                    sheetContent
+                                )}
+                            </PWView>
+                        </PWSheetSizeContext.Provider>
+                    </HiddenContainerProvider>
                 </PWInBottomSheetContext.Provider>
             </NotifierWrapper>
         </BottomSheetModal>

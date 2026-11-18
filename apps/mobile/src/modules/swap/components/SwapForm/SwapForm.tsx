@@ -37,7 +37,7 @@ export const SwapForm = ({ scope, initialPayAmount }: SwapFormProps) => {
         receiveAssetId,
         receiveScope,
         receivingAccount,
-        isDirectionDisabled,
+        flipUnavailableReason,
         isChainShown,
         isReceivingAccountShown,
         payAmount,
@@ -52,6 +52,8 @@ export const SwapForm = ({ scope, initialPayAmount }: SwapFormProps) => {
         hasInsufficientBalance,
         isLocalCurrencyInput,
         handleRetryQuote,
+        canUseMinimum,
+        handleUseMinimum,
         handlePayAmountChange,
         handlePayAmountFocus,
         handleSwapDirection,
@@ -92,7 +94,7 @@ export const SwapForm = ({ scope, initialPayAmount }: SwapFormProps) => {
                     onSwapPress={handleSwapDirection}
                     onMaxPress={handleMaxPress}
                     onConfigurePress={handleOpenConfig}
-                    isDirectionDisabled={isDirectionDisabled}
+                    flipUnavailableReason={flipUnavailableReason}
                 />
 
                 <SwapAmountSection
@@ -145,6 +147,7 @@ export const SwapForm = ({ scope, initialPayAmount }: SwapFormProps) => {
                     receiveScope={receiveScope}
                     receiveAssetId={receiveAssetId}
                     onRetry={handleRetryQuote}
+                    onUseMinimum={canUseMinimum ? handleUseMinimum : undefined}
                 />
             )}
 

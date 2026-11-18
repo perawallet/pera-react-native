@@ -23,20 +23,10 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: theme.spacing.md,
-    },
-    logo: {
-        width: theme.spacing.xxl,
-        height: theme.spacing.xxl,
-        borderRadius: theme.spacing.sm,
-        overflow: 'hidden',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: theme.colors.layerGray,
+        gap: theme.spacing.lg,
     },
     info: {
         flex: 1,
-        gap: theme.spacing.xxs,
     },
     titleRow: {
         flexDirection: 'row',
@@ -50,6 +40,6 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textGray,
     },
     star: {
-        padding: theme.spacing.xs,
+        padding: theme.spacing.sm,
     },
 }))

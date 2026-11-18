@@ -90,6 +90,32 @@ describe('formatSwapRate', () => {
         expect(rate).toMatch(/^1 ALGO ≈ 0\.3\d* USDC$/)
     })
 
+    it('rounds a tiny rate to six significant digits', () => {
+        const rate = formatSwapRate(
+            makeSwapQuote({
+                amountIn: new Decimal('10434241'),
+                amountOut: new Decimal('5252641435984084'),
+                assetIn: { unitName: 'USDC', decimals: 6 },
+                assetOut: { unitName: 'ETH', decimals: 18 },
+            }),
+        )
+
+        expect(rate).toBe('1 USDC ≈ 0.000503404 ETH')
+    })
+
+    it('never rounds the integer part of a large rate', () => {
+        const rate = formatSwapRate(
+            makeSwapQuote({
+                amountIn: new Decimal('1000000'),
+                amountOut: new Decimal('95123450000'),
+                assetIn: { unitName: 'ETH', decimals: 6 },
+                assetOut: { unitName: 'USDC', decimals: 6 },
+            }),
+        )
+
+        expect(rate).toBe('1 ETH ≈ 95,123.45 USDC')
+    })
+
     it('renders a dash when the rate is unknown', () => {
         expect(
             formatSwapRate(makeSwapQuote({ assetIn: { decimals: undefined } })),

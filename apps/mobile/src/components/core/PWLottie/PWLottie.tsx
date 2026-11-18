@@ -11,9 +11,11 @@
  */
 
 import LottieView from 'lottie-react-native'
-import type { ComponentProps } from 'react'
+import { useEffect, useRef, type ComponentProps } from 'react'
 import { StyleSheet } from 'react-native'
+import { useIsAnimationVisible } from '@hooks/useIsAnimationVisible'
 import './configureLottieWasm'
+import { shouldPlayOnVisible } from './shouldPlayOnVisible'
 
 export type PWLottieProps = ComponentProps<typeof LottieView>
 
@@ -24,10 +26,32 @@ export type PWLottieProps = ComponentProps<typeof LottieView>
 // (rather than at every call site) fixes it once; harmless on native, whose
 // codegen'd view doesn't recognize `webStyle` and drops it.
 export const PWLottie = (props: PWLottieProps) => {
-    const { style, webStyle, ...rest } = props
+    const { style, webStyle, autoPlay, loop, source, ...rest } = props
+    const lottieRef = useRef<LottieView>(null)
+    const isVisible = useIsAnimationVisible()
+    // Only autoplaying loops are paused: a one-shot animation ends on its own,
+    // and resuming one that already finished would replay it.
+    const isPausable = Boolean(autoPlay && loop)
+
+    // Native views start playing when autoPlay flips to true and replay on a new
+    // source only while it is true, so autoPlay tracks visibility and hiding
+    // just pauses.
+    useEffect(() => {
+        if (!isPausable) return
+        if (!isVisible) {
+            lottieRef.current?.pause()
+        } else if (shouldPlayOnVisible) {
+            lottieRef.current?.play()
+        }
+    }, [isPausable, isVisible])
+
     return (
         <LottieView
             {...rest}
+            source={source}
+            ref={lottieRef}
+            autoPlay={isPausable ? isVisible : autoPlay}
+            loop={loop}
             style={style}
             webStyle={
                 webStyle ??

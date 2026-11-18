@@ -344,6 +344,29 @@ describe('Flow: an eip155 dApp asks for a message signature', () => {
         expect(kmsCore.sign).not.toHaveBeenCalled()
     })
 
+    it('Given a connected session, when the dApp sends a Permit2 PermitSingle whose declared EIP712Domain leaves out chainId, then it is answered -32602 and no review opens', async () => {
+        const walletKit = await connectSession()
+
+        send(walletKit, 'eth_signTypedData_v4', [
+            SENDER,
+            JSON.stringify({
+                ...PERMIT2_SINGLE_TYPED_DATA,
+                types: {
+                    EIP712Domain: [
+                        { name: 'name', type: 'string' },
+                        { name: 'verifyingContract', type: 'address' },
+                    ],
+                    ...PERMIT2_SINGLE_TYPED_DATA.types,
+                },
+            }),
+        ])
+
+        const response = await answerOf(walletKit)
+        expect(response.error).toMatchObject({ code: -32_602 })
+        expect(screen.queryByTestId('sign-request-view')).toBeNull()
+        expect(kmsCore.sign).not.toHaveBeenCalled()
+    })
+
     it('Given a connected session, when the dApp sends a Permit2 PermitSingle for an unlimited amount, then the review shows the spend-approval warning with the spender, an unlimited amount and its deadline, and cancelling answers 4001', async () => {
         const walletKit = await connectSession()
 

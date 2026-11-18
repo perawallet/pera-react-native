@@ -12,11 +12,12 @@
 
 import type { StyleProp, ViewStyle } from 'react-native'
 import Animated from 'react-native-reanimated'
-import LottieView from 'lottie-react-native'
 import { PWIcon } from '@components/core/PWIcon'
+import { PWLottie } from '@components/core/PWLottie'
 import { PWText } from '@components/core/PWText'
 import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
 import { TAP_TO_CONFIRM_ARMED_TIMEOUT } from '@constants/ui'
+import { HiddenContainerProvider } from '@hooks/useIsAnimationVisible'
 import peraTransactionLoading from '@assets/animations/pera-transaction-loading.json'
 import { useStyles } from './styles'
 import { usePWTapToConfirm } from './usePWTapToConfirm'
@@ -129,13 +130,16 @@ export const PWTapToConfirm = ({
                 style={[styles.fillLayer, loadingContentStyle]}
                 pointerEvents='none'
             >
-                <LottieView
-                    autoPlay
-                    loop
-                    source={peraTransactionLoading}
-                    style={styles.lottie}
-                    testID='pw-tap-to-confirm-lottie'
-                />
+                {/* Mounted at all times and faded by opacity, so it must be told it is hidden. */}
+                <HiddenContainerProvider value={!isLoading}>
+                    <PWLottie
+                        autoPlay
+                        loop
+                        source={peraTransactionLoading}
+                        style={styles.lottie}
+                        testID='pw-tap-to-confirm-lottie'
+                    />
+                </HiddenContainerProvider>
             </Animated.View>
 
             <Animated.View

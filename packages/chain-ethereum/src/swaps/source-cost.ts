@@ -68,21 +68,23 @@ export const estimateEvmSwapSourceCost = async ({
     const owner = getAddress(sourceAddress)
     const amount = toBigInt(sourceAmount)
     const isNative = isNativeAsset(sourceAsset, chain.descriptor)
-    const [balance, { presets }, allowances] = await Promise.all([
-        client.getBalance({ address: owner }),
-        readEvmFeePresets(client, chain, scope.networkId),
-        isNative
-            ? []
-            : Promise.all(
-                  routeContracts.map(spender =>
-                      readEvmAllowance(client, {
-                          token: getAddress(sourceAsset.assetId),
-                          owner,
-                          spender,
-                      }),
+    const [balance, { baseFeePerGas, presets }, allowances] = await Promise.all(
+        [
+            client.getBalance({ address: owner }),
+            readEvmFeePresets(client, chain, scope.networkId),
+            isNative
+                ? []
+                : Promise.all(
+                      routeContracts.map(spender =>
+                          readEvmAllowance(client, {
+                              token: getAddress(sourceAsset.assetId),
+                              owner,
+                              spender,
+                          }),
+                      ),
                   ),
-              ),
-    ])
+        ],
+    )
     // Which contract an order will name isn't known yet, so any one short counts.
     const needsSpendApproval =
         !isNative &&
@@ -92,8 +94,12 @@ export const estimateEvmSwapSourceCost = async ({
         SWAP_CALL_GAS_CEILING +
         (needsSpendApproval ? SWAP_APPROVAL_GAS_CEILING : 0n)
     const networkFee = gas * presets.normal.maxFeePerGas
+    // maxFeePerGas carries 2× base-fee headroom; a block charges the base fee itself.
+    const expectedNetworkFee =
+        gas * (baseFeePerGas + presets.normal.maxPriorityFeePerGas)
     return {
         networkFee: toDecimal(networkFee),
+        expectedNetworkFee: toDecimal(expectedNetworkFee),
         shortfall: evmShortfallOf(
             balance,
             networkFee + (isNative ? amount : 0n),

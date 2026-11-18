@@ -91,6 +91,7 @@ import * as messaging from '@react-native-firebase/messaging'
 import * as crashlytics from '@react-native-firebase/crashlytics'
 import * as notifications from 'expo-notifications'
 import { remoteConfigDefaultsRegistry } from '@perawallet/wallet-extension-platform'
+import { logger } from '@perawallet/wallet-core-shared'
 
 describe('RNFirebaseService', () => {
     let service: RNFirebaseService
@@ -159,6 +160,95 @@ describe('RNFirebaseService', () => {
 
                 await service.initializeRemoteConfig()
                 expect(mockFetchAndActivate).toHaveBeenCalledTimes(2)
+            })
+
+            describe('startup wait', () => {
+                const neverSettles = () => new Promise<boolean>(() => {})
+
+                const withLastFetchTime = (fetchTimeMillis: number) => {
+                    vi.mocked(remoteConfig.getRemoteConfig).mockReturnValueOnce(
+                        {
+                            setConfigSettings: mockSetConfigSettings,
+                            setDefaults: mockSetDefaults,
+                            fetchTimeMillis,
+                        } as any,
+                    )
+                }
+
+                beforeEach(() => {
+                    vi.useFakeTimers()
+                })
+
+                afterEach(() => {
+                    vi.useRealTimers()
+                })
+
+                it('stops waiting on a slow fetch after a second when an earlier launch fetched', async () => {
+                    const infoSpy = vi.spyOn(logger, 'info')
+                    const logEventSpy = vi.spyOn(service, 'logEvent')
+                    withLastFetchTime(1_700_000_000_000)
+                    mockFetchAndActivate.mockImplementationOnce(neverSettles)
+                    const onReady = vi.fn()
+
+                    void service.initializeRemoteConfig().then(onReady)
+                    await vi.advanceTimersByTimeAsync(999)
+                    expect(onReady).not.toHaveBeenCalled()
+
+                    await vi.advanceTimersByTimeAsync(1)
+                    expect(onReady).toHaveBeenCalled()
+                    expect(infoSpy).toHaveBeenCalledWith(
+                        'Remote Config refresh still running; serving the previous launch values this session',
+                        expect.anything(),
+                    )
+                    expect(logEventSpy).toHaveBeenCalledWith(
+                        'remote_config_refresh_capped',
+                    )
+                })
+
+                it('waits for the fetch on a first launch', async () => {
+                    withLastFetchTime(-1)
+                    let finishFetch = (_: boolean) => {}
+                    mockFetchAndActivate.mockImplementationOnce(
+                        () =>
+                            new Promise<boolean>(resolve => {
+                                finishFetch = resolve
+                            }),
+                    )
+                    const onReady = vi.fn()
+
+                    void service.initializeRemoteConfig().then(onReady)
+                    await vi.advanceTimersByTimeAsync(10_000)
+                    expect(onReady).not.toHaveBeenCalled()
+
+                    finishFetch(true)
+                    await vi.advanceTimersByTimeAsync(0)
+                    expect(onReady).toHaveBeenCalled()
+                })
+
+                it('starts no second fetch while the one it stopped waiting on is still running, then refetches once it lands', async () => {
+                    withLastFetchTime(1_700_000_000_000)
+                    let finishFirstFetch = (_: boolean) => {}
+                    mockFetchAndActivate.mockImplementationOnce(
+                        () =>
+                            new Promise<boolean>(resolve => {
+                                finishFirstFetch = resolve
+                            }),
+                    )
+
+                    const first = service.initializeRemoteConfig()
+                    await vi.advanceTimersByTimeAsync(1000)
+                    await first
+                    const second = service.initializeRemoteConfig()
+                    await vi.advanceTimersByTimeAsync(1000)
+                    await second
+                    expect(mockFetchAndActivate).toHaveBeenCalledTimes(1)
+
+                    finishFirstFetch(true)
+                    await vi.advanceTimersByTimeAsync(0)
+
+                    await service.initializeRemoteConfig()
+                    expect(mockFetchAndActivate).toHaveBeenCalledTimes(2)
+                })
             })
 
             it('seeds the bundled defaults so unfetched keys still resolve', async () => {

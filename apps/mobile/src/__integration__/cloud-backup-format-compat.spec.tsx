@@ -16,7 +16,7 @@
 // this one cannot read.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { Notifier } from 'react-native-notifier'
 import { server } from '@test-utils/msw-server'
@@ -67,17 +67,15 @@ import { useDeviceStore } from '@perawallet/wallet-core-device'
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 import { CloudBackupScreen } from '@modules/cloud-backup/screens/CloudBackupScreen'
-import {
-    CloudBackupRestorePassphraseScreen,
-    CloudBackupRestoreEncryptionKeyRoute,
-} from '@modules/cloud-backup/routes'
-import { CloudBackupOverviewScreen } from '@modules/cloud-backup/screens/CloudBackupOverviewScreen'
 import { CloudBackupAccountsReviewScreen } from '@modules/cloud-backup/screens/CloudBackupAccountsReviewScreen'
 
 import {
     BACKUP_MNEMONIC,
     BACKUP_SALT,
+    confirmRestoreAccounts,
+    enterRestoreCredentials,
     renderQueryHook,
+    restoreFlowScreens,
     seedHDWalletAccounts,
 } from './__fixtures__/cloudBackup'
 import {
@@ -95,40 +93,12 @@ type Keys = Awaited<ReturnType<typeof deriveBackupKeys>>
 
 const renderCloudBackupFlow = () =>
     renderWithNavigation(CloudBackupScreen, 'CloudBackupHome', {
-        additionalScreens: [
-            {
-                name: 'CloudBackupRestorePassphrase',
-                component: CloudBackupRestorePassphraseScreen,
-            },
-            {
-                name: 'CloudBackupRestoreEncryptionKey',
-                component: CloudBackupRestoreEncryptionKeyRoute,
-            },
-            {
-                name: 'CloudBackupOverview',
-                component: CloudBackupOverviewScreen,
-            },
-        ],
+        additionalScreens: restoreFlowScreens,
     })
 
 const runRestoreFlow = async () => {
-    fireEvent.click(screen.getByTestId('cloud_backup_restore_option'))
-    fireEvent.click(
-        await screen.findByTestId('cloud_backup_restore_sheet_manual'),
-    )
-    await waitFor(() => screen.getByTestId('cloud_backup_restore_word_input_0'))
-    BACKUP_MNEMONIC.forEach((word, index) => {
-        fireEvent.change(
-            screen.getByTestId(`cloud_backup_restore_word_input_${index}`),
-            { target: { value: word } },
-        )
-    })
-    fireEvent.click(
-        screen.getByTestId('cloud_backup_restore_passphrase_continue'),
-    )
-    const keyInput = await screen.findByTestId('cloud_backup_restore_key_input')
-    fireEvent.change(keyInput, { target: { value: BACKUP_SALT } })
-    fireEvent.click(screen.getByTestId('cloud_backup_restore_key_button'))
+    await enterRestoreCredentials()
+    await confirmRestoreAccounts()
 }
 
 const toastTitles = () =>

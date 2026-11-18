@@ -84,6 +84,19 @@ describe('Flow: Discover — content that fails to load', () => {
         vi.restoreAllMocks()
     })
 
+    it('reports Discover as loaded only after its document has loaded', async () => {
+        const url = await renderDiscover()
+
+        act(() => webViewProps().onLoadStart({ nativeEvent: { url } }))
+        expect(screen.queryByTestId('pw-webview-loaded')).toBeNull()
+
+        act(() =>
+            webViewProps().onLoad({ nativeEvent: { url, title: 'Discover' } }),
+        )
+
+        expect(screen.getByTestId('pw-webview-loaded')).toBeTruthy()
+    })
+
     it('Given the page never finishes loading, when the load budget runs out, then an error with Reload shows and Reload reloads the page', async () => {
         vi.useFakeTimers({ shouldAdvanceTime: true })
         const url = await renderDiscover()
@@ -94,6 +107,7 @@ describe('Flow: Discover — content that fails to load', () => {
         })
 
         const timeout = await screen.findByTestId('pw-webview-timeout')
+        expect(screen.queryByTestId('pw-webview-loaded')).toBeNull()
         fireEvent.click(within(timeout).getByText('common.webview.reload'))
 
         expect(webViewMethods.reload).toHaveBeenCalledTimes(1)
@@ -115,6 +129,7 @@ describe('Flow: Discover — content that fails to load', () => {
         })
 
         const unavailable = await screen.findByTestId('pw-webview-unavailable')
+        expect(screen.queryByTestId('pw-webview-loaded')).toBeNull()
         fireEvent.click(within(unavailable).getByText('common.webview.reload'))
 
         expect(webViewMethods.reload).toHaveBeenCalledTimes(1)

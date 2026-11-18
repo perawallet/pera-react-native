@@ -324,6 +324,7 @@ const deliverReady = async (
                 assembledBytes,
                 handoff.recovery.indicesToSign,
                 handoff.recovery.totalLength,
+                handoff.recovery.passthrough,
             )
             await delivery.deliverResult(
                 handoff.recovery.clientId,

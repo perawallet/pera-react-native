@@ -308,7 +308,7 @@ describe('Flow: Portfolio chart across Algorand and Ethereum', () => {
         ).toBe(true)
     })
 
-    it("Given Ethereum's history fails, when the chart is shown, then it plots Algorand, names Ethereum as left out, and shows no change", async () => {
+    it("Given Ethereum's history fails, when the chart is shown, then it plots Algorand, says Ethereum couldn't load with a retry, and shows no change", async () => {
         serveAlgorandHistory()
         serveEthereumHistory(503)
 
@@ -317,11 +317,15 @@ describe('Flow: Portfolio chart across Algorand and Ethereum', () => {
 
         expect(
             await screen.findByText(
-                'common.wealth_chart.excludes_networks',
+                'common.wealth_chart.failed_networks',
                 undefined,
                 { timeout: SLOW_WAIT_TIMEOUT_MS },
             ),
         ).toBeTruthy()
+        expect(screen.getByTestId('wealth-chart-failed-retry')).toBeTruthy()
+        expect(
+            screen.queryByText('common.wealth_chart.excludes_networks'),
+        ).toBeNull()
         expect(screen.queryByTestId('balance-chart-retry')).toBeNull()
         // The change would cover Algorand alone beside a total that includes ETH.
         expect(screen.queryByTestId('portfolio_change_line')).toBeNull()

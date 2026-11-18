@@ -11,29 +11,30 @@
  */
 
 import { renderHook } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useSwapAccountAddresses } from '../useSwapAccountAddresses'
 
-const TWO_CHAIN: WalletAccount = {
-    id: 'both',
-    name: '',
-    custody: { kind: 'local', seed: null },
-    chains: {
-        algorand: { address: 'ALGO_ADDR', keyPairId: 'k1' },
-        ethereum: { address: '0xETH', keyPairId: 'k2' },
-    },
-}
+const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
+
+vi.mock('@perawallet/wallet-core-swaps', () => ({
+    useSwapAccountsAddresses: (accounts: WalletAccount[]) =>
+        accounts.map(account => ({
+            scope: SCOPE,
+            address: `${account.id}-address`,
+            accountId: account.id,
+        })),
+}))
 
 describe('useSwapAccountAddresses', () => {
-    it('lists the account on every swap chain it has an address on', () => {
-        const { result } = renderHook(() => useSwapAccountAddresses(TWO_CHAIN))
+    it("lists the account's swap addresses without the account tag", () => {
+        const account = { id: 'main' } as WalletAccount
 
-        expect(result.current.map(entry => entry.address)).toEqual([
-            'ALGO_ADDR',
-            '0xETH',
+        const { result } = renderHook(() => useSwapAccountAddresses(account))
+
+        expect(result.current).toEqual([
+            { scope: SCOPE, address: 'main-address' },
         ])
-        expect(result.current[1].scope.chainId).toBe('ethereum')
     })
 
     it('lists nothing without an account', () => {

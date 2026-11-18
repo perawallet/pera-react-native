@@ -10,12 +10,17 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { getAddress } from 'viem'
 import type {
     TransactionSummary,
     UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
+import {
+    accountsChainAdapters,
+    type AccountsChainAdapter,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 import { createEvmSigningReviewerAdapter } from '../signingReviewer'
 import { ETHEREUM } from '../../__tests__/evm-chains'
@@ -90,6 +95,36 @@ describe('ethereumSigningReviewerAdapter', () => {
         expect(reviewer.resolveAllSignerAddresses(request)).toEqual([
             getAddress(SENDER),
         ])
+    })
+
+    it('resolves each signer to the held account with that address, and nothing for one not held', () => {
+        const request = {
+            type: 'transactions',
+            txs: [unsigned()],
+        } as unknown as TransactionSignRequest
+        const held = {
+            id: 'held',
+            name: '',
+            custody: { kind: 'local', seed: null },
+            chains: {
+                [ETHEREUM.row.id]: {
+                    address: getAddress(SENDER),
+                    keyPairId: 'key-held',
+                },
+            },
+        } as unknown as WalletAccount
+        // No rekeys on Ethereum: a held account signs as itself.
+        accountsChainAdapters.register({
+            chainId: ETHEREUM.row.id,
+            resolveSigner: (account: WalletAccount) => ({
+                kind: 'ok',
+                signer: account,
+            }),
+        } as unknown as AccountsChainAdapter)
+        onTestFinished(() => accountsChainAdapters.reset())
+
+        expect(reviewer.resolveSigningAccounts(request, [held])).toEqual([held])
+        expect(reviewer.resolveSigningAccounts(request, [])).toEqual([])
     })
 
     it('shows non-hex data and binary hex as hex, and printable hex as text', () => {

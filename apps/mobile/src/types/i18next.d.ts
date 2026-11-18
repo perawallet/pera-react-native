@@ -12,12 +12,12 @@
 
 import 'i18next'
 
+// Keeps the i18next 26 typings. Resources aren't typed, so strict interpolation
+// checks can't see a key's variables and only reject `t` as a
+// `(key, options?) => string` callback; `returnEmptyString` matches init().
 declare module 'i18next' {
     interface CustomTypeOptions {
-        // Strict checks make TFunction unassignable to the app's looser
-        // `(key: string, options?) => string` translate helpers.
         strictInterpolationChecks: false
-        // Must match `returnEmptyString` in i18n/index.ts.
         returnEmptyString: true
     }
 }

@@ -28,14 +28,14 @@ export const AccountSortContent = (_: AccountSortContentProps = {}) => {
         sortMode,
         sortedAccounts,
         handleSortModeChange,
+        beginDrop,
         handleReorder,
         commitChanges,
         t,
     } = useAccountSortContent()
 
     const handleDone = useCallback(() => {
-        commitChanges()
-        dismiss()
+        commitChanges(dismiss)
     }, [commitChanges, dismiss])
 
     return (
@@ -73,6 +73,7 @@ export const AccountSortContent = (_: AccountSortContentProps = {}) => {
                         </PWText>
                         <DraggableAccountList
                             accounts={sortedAccounts}
+                            onDrop={beginDrop}
                             onReorder={handleReorder}
                         />
                     </>

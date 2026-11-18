@@ -1,0 +1,314 @@
+{
+    "request": {
+        "method": "GET",
+        "path": "/api/v3/evm/1/accounts/0xd8da6bf26964af9d7eed9e03e53415d37aa96045/transactions/",
+        "pathParams": {
+            "chainId": 1,
+            "address": "0xd8da6bf26964af9d7eed9e03e53415d37aa96045"
+        },
+        "params": {
+            "limit": "50",
+            "asset_id": "eip155:1/slip44:60"
+        }
+    },
+    "recordedFrom": "algorand-backend@c7cdc8fb9",
+    "recordedAt": "2026-11-17T15:22:14Z",
+    "response": {
+        "next": null,
+        "previous": null,
+        "results": [
+            {
+                "kind": "withdrawal",
+                "hash": null,
+                "block_number": 26103513,
+                "block_time": "2026-10-02T08:41:47Z",
+                "from": null,
+                "to": null,
+                "value": null,
+                "fee": null,
+                "status": "success",
+                "method": null,
+                "token_transfers": [],
+                "internal_transfers": [],
+                "nft_transfers": [],
+                "withdrawals": [
+                    {
+                        "index": 145096839,
+                        "validator_index": 1721948,
+                        "amount": "14078859000000000"
+                    },
+                    {
+                        "index": 145096838,
+                        "validator_index": 1721947,
+                        "amount": "14085090000000000"
+                    },
+                    {
+                        "index": 145096837,
+                        "validator_index": 1721942,
+                        "amount": "14069123000000000"
+                    },
+                    {
+                        "index": 145096836,
+                        "validator_index": 1721941,
+                        "amount": "14068535000000000"
+                    },
+                    {
+                        "index": 145096835,
+                        "validator_index": 1721940,
+                        "amount": "14068852000000000"
+                    },
+                    {
+                        "index": 145096834,
+                        "validator_index": 1721939,
+                        "amount": "14074927000000000"
+                    },
+                    {
+                        "index": 145096833,
+                        "validator_index": 1721938,
+                        "amount": "14084892000000000"
+                    },
+                    {
+                        "index": 145096832,
+                        "validator_index": 1721937,
+                        "amount": "14078741000000000"
+                    },
+                    {
+                        "index": 145096831,
+                        "validator_index": 1721936,
+                        "amount": "14072675000000000"
+                    },
+                    {
+                        "index": 145096830,
+                        "validator_index": 1721935,
+                        "amount": "14078797000000000"
+                    },
+                    {
+                        "index": 145096829,
+                        "validator_index": 1721934,
+                        "amount": "14079214000000000"
+                    },
+                    {
+                        "index": 145096828,
+                        "validator_index": 1721933,
+                        "amount": "14075061000000000"
+                    },
+                    {
+                        "index": 145096827,
+                        "validator_index": 1721927,
+                        "amount": "14066561000000000"
+                    }
+                ],
+                "balance_impacts": [
+                    {
+                        "asset_id": "eip155:1/slip44:60",
+                        "amount": "182981327000000000"
+                    }
+                ]
+            },
+            {
+                "kind": "withdrawal",
+                "hash": null,
+                "block_number": 26103512,
+                "block_time": "2026-10-02T08:41:35Z",
+                "from": null,
+                "to": null,
+                "value": null,
+                "fee": null,
+                "status": "success",
+                "method": null,
+                "token_transfers": [],
+                "internal_transfers": [],
+                "nft_transfers": [],
+                "withdrawals": [
+                    {
+                        "index": 145096826,
+                        "validator_index": 1721926,
+                        "amount": "14056618000000000"
+                    },
+                    {
+                        "index": 145096825,
+                        "validator_index": 1721925,
+                        "amount": "14056229000000000"
+                    },
+                    {
+                        "index": 145096824,
+                        "validator_index": 1721924,
+                        "amount": "14060746000000000"
+                    },
+                    {
+                        "index": 145096823,
+                        "validator_index": 1721923,
+                        "amount": "14068647000000000"
+                    },
+                    {
+                        "index": 145096822,
+                        "validator_index": 1721922,
+                        "amount": "14058651000000000"
+                    },
+                    {
+                        "index": 145096821,
+                        "validator_index": 1721921,
+                        "amount": "14054267000000000"
+                    },
+                    {
+                        "index": 145096820,
+                        "validator_index": 1721920,
+                        "amount": "14046680000000000"
+                    }
+                ],
+                "balance_impacts": [
+                    {
+                        "asset_id": "eip155:1/slip44:60",
+                        "amount": "98401838000000000"
+                    }
+                ]
+            },
+            {
+                "kind": "transaction",
+                "hash": "0x4cb3f2185d827e9ebb274080502b100a448b04cdbbade9fee4fb9559e1627a79",
+                "block_number": 26086665,
+                "block_time": "2026-09-30T00:19:23Z",
+                "from": "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
+                "to": "0x6b175474e89094c44da98b954eedeac495271d0f",
+                "value": "0",
+                "fee": "14791726829000",
+                "status": "success",
+                "method": "transfer",
+                "token_transfers": [],
+                "internal_transfers": [],
+                "nft_transfers": [],
+                "withdrawals": [],
+                "balance_impacts": [
+                    {
+                        "asset_id": "eip155:1/slip44:60",
+                        "amount": "-14791726829000"
+                    }
+                ]
+            },
+            {
+                "kind": "transaction",
+                "hash": "0x9923356a458f1407ebc867eacc0552c45e49a034031ff76f35c69701a4f0b26c",
+                "block_number": 26086664,
+                "block_time": "2026-09-30T00:19:11Z",
+                "from": "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
+                "to": "0x23617e59a5925b2a4bf75d73ff6711cd0b29de85",
+                "value": "5630782449832405",
+                "fee": "52397766665622",
+                "status": "success",
+                "method": "execute",
+                "token_transfers": [],
+                "internal_transfers": [
+                    {
+                        "from": "0x23617e59a5925b2a4bf75d73ff6711cd0b29de85",
+                        "to": "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
+                        "value": "3325939343085",
+                        "status": "success"
+                    }
+                ],
+                "nft_transfers": [],
+                "withdrawals": [],
+                "balance_impacts": [
+                    {
+                        "asset_id": "eip155:1/slip44:60",
+                        "amount": "-5679854277154942"
+                    }
+                ]
+            },
+            {
+                "kind": "transaction",
+                "hash": "0x1898a8f78035520aaca54f8de028dae569423684e9a05d93d0480cdff8561a82",
+                "block_number": 26060963,
+                "block_time": "2026-09-26T10:14:59Z",
+                "from": null,
+                "to": null,
+                "value": null,
+                "fee": null,
+                "status": "success",
+                "method": null,
+                "token_transfers": [],
+                "internal_transfers": [
+                    {
+                        "from": "0xe7351fd770a37282b91d153ee690b63579d6dd7f",
+                        "to": "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
+                        "value": "3851709670571604",
+                        "status": "success"
+                    }
+                ],
+                "nft_transfers": [],
+                "withdrawals": [],
+                "balance_impacts": [
+                    {
+                        "asset_id": "eip155:1/slip44:60",
+                        "amount": "3851709670571604"
+                    }
+                ]
+            },
+            {
+                "kind": "transaction",
+                "hash": "0x1d9b1e01c0a9b6c1db492b533cf565bbccfcfb00e5b8f5f684a5ab724d5e3c8e",
+                "block_number": 25529739,
+                "block_time": "2026-07-14T08:38:59Z",
+                "from": "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
+                "to": "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
+                "value": "0",
+                "fee": "10701517797114",
+                "status": "success",
+                "method": "executeBySender",
+                "token_transfers": [],
+                "internal_transfers": [],
+                "nft_transfers": [],
+                "withdrawals": [],
+                "balance_impacts": [
+                    {
+                        "asset_id": "eip155:1/slip44:60",
+                        "amount": "-10701517797114"
+                    }
+                ]
+            },
+            {
+                "kind": "transaction",
+                "hash": "0x1405dd5856ba83f0c53c76c2e672ce0e729ccf71e35bf62d649f4f223b4dd9cf",
+                "block_number": 25529268,
+                "block_time": "2026-07-14T07:04:23Z",
+                "from": "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
+                "to": null,
+                "value": "0",
+                "fee": "127005771722914",
+                "status": "success",
+                "method": "0x61010060",
+                "token_transfers": [],
+                "internal_transfers": [],
+                "nft_transfers": [],
+                "withdrawals": [],
+                "balance_impacts": [
+                    {
+                        "asset_id": "eip155:1/slip44:60",
+                        "amount": "-127005771722914"
+                    }
+                ]
+            },
+            {
+                "kind": "transaction",
+                "hash": "0x38bfc2877f17514c8354fa7dd93e7d59a02007b6cc3d0cc3d2040b656c1584d9",
+                "block_number": 25001113,
+                "block_time": "2026-05-01T15:52:47Z",
+                "from": "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
+                "to": "0x7a250d5630b4cf539739df2c5dacb4c659f2488d",
+                "value": "0",
+                "fee": "80994475920072",
+                "status": "failed",
+                "method": "swapExactTokensForETHSupportingFeeOnTransferTokens",
+                "token_transfers": [],
+                "internal_transfers": [],
+                "nft_transfers": [],
+                "withdrawals": [],
+                "balance_impacts": [
+                    {
+                        "asset_id": "eip155:1/slip44:60",
+                        "amount": "-80994475920072"
+                    }
+                ]
+            }
+        ]
+    }
+}

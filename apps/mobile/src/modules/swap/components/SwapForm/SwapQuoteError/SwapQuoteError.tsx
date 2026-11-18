@@ -20,9 +20,15 @@ import { useStyles } from './styles'
 
 export type SwapQuoteErrorProps = UseSwapQuoteErrorParams & {
     onRetry: () => void
+    /** Absent when the account can't reach the router's minimum. */
+    onUseMinimum?: () => void
 }
 
-export const SwapQuoteError = ({ onRetry, ...params }: SwapQuoteErrorProps) => {
+export const SwapQuoteError = ({
+    onRetry,
+    onUseMinimum,
+    ...params
+}: SwapQuoteErrorProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
     const { message, canRetry } = useSwapQuoteError(params)
@@ -44,8 +50,18 @@ export const SwapQuoteError = ({ onRetry, ...params }: SwapQuoteErrorProps) => {
                     paddingStyle='dense'
                     title={t('swap.quote.retry')}
                     onPress={onRetry}
-                    style={styles.retryButton}
+                    style={styles.actionButton}
                     testID='swap-quote-retry'
+                />
+            )}
+            {onUseMinimum && (
+                <PWButton
+                    variant='secondary'
+                    paddingStyle='dense'
+                    title={t('swap.quote.use_minimum')}
+                    onPress={onUseMinimum}
+                    style={styles.actionButton}
+                    testID='swap-quote-use-minimum'
                 />
             )}
         </PWView>

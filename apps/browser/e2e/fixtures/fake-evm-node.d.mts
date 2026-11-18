@@ -35,6 +35,12 @@ export declare const createFakeEvmNode: () => FakeEvmNode
 /** What the fake node answers `eth_getBalance` with, for every address. */
 export declare const BALANCE_WEI: bigint
 
+/** What the fake node answers `eth_blockNumber` with. */
+export declare const BLOCK_NUMBER: bigint
+
+/** What the fake node answers a plain `eth_call` with: one ABI word of 42. */
+export declare const CALL_RESULT: string
+
 export declare const E2E_EVM_RPC_PORT: number
 export declare const E2E_EVM_RPC_URL: string
 

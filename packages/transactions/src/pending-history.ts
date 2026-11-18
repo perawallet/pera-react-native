@@ -26,7 +26,10 @@ import {
     getChainCapabilities,
     getChainDescriptor,
 } from '@perawallet/wallet-core-chain-shared'
-import { historyChainAdapters } from './history-adapter'
+import {
+    historyChainAdapters,
+    type HistoryReadOptions,
+} from './history-adapter'
 import type { TransactionHistoryStatus } from './models/types'
 import {
     confirmingNotice,
@@ -35,9 +38,9 @@ import {
 } from './utils/statusNotice'
 
 /**
- * Ceiling on synthesized pending rows per first-page fetch. Concurrent
- * in-flight groups for one account are a handful at most, so this only caps
- * the pathological case rather than shaping normal output.
+ * Ceiling on rows per ledger read, newest first. Resolved sends count until
+ * retention prunes them, but a send rate that reaches this is pathological, so
+ * it only caps that case rather than shaping normal output.
  */
 export const MAX_PENDING_HISTORY_ROWS = 50
 
@@ -81,22 +84,17 @@ const noticeOf = (
 export type GetPendingTransactionRecordsParams = {
     address: string
     scope: ChainScope
-    /** Ids the chain's history already lists; an attempt sharing any of its txids with them is left out. */
-    listedIds: ReadonlySet<string>
 }
 
 /**
  * Attempts the wallet broadcast for `address`, as history records, newest
  * first. Reads SQLite only, so it works offline. Resolved attempts
- * (confirmed, failed, replaced) stay until the chain lists them or retention
- * prunes them: the reconciler confirms a send before a cached history page
- * does, and a failed or replaced one is never listed, so it shows until
- * pruned.
+ * (confirmed, failed, replaced) stay until retention prunes them; a send the
+ * chain lists is left to the chain's record by {@link mergePendingRecords}.
  */
 export const getPendingTransactionRecords = async ({
     address,
     scope,
-    listedIds,
 }: GetPendingTransactionRecordsParams): Promise<TransactionRecord[]> => {
     const attempts = await getSubmissionAttemptsWithHistoryEntry({ scope })
     // A gas chain records the fee it signed for, the most the send can be charged.
@@ -112,7 +110,7 @@ export const getPendingTransactionRecords = async ({
             sender === null ||
             !isSameAddress(scope.chainId, sender, address) ||
             txIds.length === 0 ||
-            txIds.some(id => listedIds.has(id) || seen.has(id))
+            txIds.some(id => seen.has(id))
         ) {
             continue
         }
@@ -155,35 +153,34 @@ const mergeNewestFirst = (
     return [...merged, ...ledger.slice(next)]
 }
 
-export type HistoryPageWithPending = Page<TransactionRecord> & {
-    /** The chain's own records on this page, before the wallet's sends were merged in. */
-    minedItems: TransactionRecord[]
+/**
+ * The wallet's own sends merged by time into the chain's records, both newest
+ * first. A send the chain already lists is left to the chain's record. Matched
+ * by id, a send's first txid: a record-backed chain sends one transaction per
+ * attempt.
+ */
+export const mergePendingRecords = (
+    pending: TransactionRecord[],
+    mined: TransactionRecord[],
+): TransactionRecord[] => {
+    if (pending.length === 0) return mined
+    const minedIds = new Set(mined.map(record => record.id))
+    return mergeNewestFirst(
+        pending.filter(record => !minedIds.has(record.id)),
+        mined,
+    )
 }
 
-/**
- * The chain's history page, with this wallet's own broadcasts merged into
- * page one by time so a send shows before the backend lists it. A rejected mined page
- * rejects; a caller that must render offline reads
- * {@link getPendingTransactionRecords} itself.
- */
-export const getTransactionHistoryWithPending = async (
+/** One page of the chain's own history, with none of the wallet's sends merged in. */
+export const getMinedTransactionHistory = (
     address: string,
     scope: ChainScope,
     page?: PageRef,
-): Promise<HistoryPageWithPending> => {
-    const adapter = historyChainAdapters.get(scope.chainId)
-    const mined = await adapter.getTransactionHistory(address, scope, page, {
-        capabilities: getChainCapabilities(scope.chainId),
-    })
-    if (page) return { ...mined, minedItems: mined.items }
-    const pending = await getPendingTransactionRecords({
-        address,
-        scope,
-        listedIds: new Set(mined.items.map(record => record.id)),
-    })
-    return {
-        ...mined,
-        items: mergeNewestFirst(pending, mined.items),
-        minedItems: mined.items,
-    }
-}
+    options?: Pick<HistoryReadOptions, 'assetId' | 'signal'>,
+): Promise<Page<TransactionRecord>> =>
+    historyChainAdapters
+        .get(scope.chainId)
+        .getTransactionHistory(address, scope, page, {
+            capabilities: getChainCapabilities(scope.chainId),
+            ...options,
+        })

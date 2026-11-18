@@ -13,6 +13,7 @@
 // @vitest-environment jsdom
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import { Decimal } from 'decimal.js'
 
 // Stores register once, at import, and vitest clears mock calls before every
 // test, so registrations are kept here rather than on a vi.fn().
@@ -50,6 +51,48 @@ describe('swaps/store', () => {
         expect(result.current.toAsset).toBeNull()
     })
 
+    test('setAccountPair pins the pair to the account it was picked for', () => {
+        useSwapsStore.getState().setAccountPair({
+            accountId: 'account-2',
+            chainId: 'ethereum',
+            fromAsset: 'native',
+            toAsset: '0xusdc',
+        })
+
+        expect(useSwapsStore.getState()).toMatchObject({
+            sourceChainId: 'ethereum',
+            fromAsset: 'native',
+            toAsset: '0xusdc',
+            pairAccountId: 'account-2',
+        })
+    })
+
+    test('setAccountPair keeps a receive asset on another network when given one', () => {
+        const base = { chainId: 'base', networkId: 'mainnet' } as const
+        useSwapsStore.getState().setAccountPair({
+            accountId: 'account-2',
+            chainId: 'ethereum',
+            fromAsset: 'native',
+            toAsset: 'native',
+            toAssetScope: base,
+        })
+
+        expect(useSwapsStore.getState().toAssetScope).toEqual(base)
+    })
+
+    test('setSourceChainId unpins the pair from its account', () => {
+        const store = useSwapsStore.getState()
+        store.setAccountPair({
+            accountId: 'account-2',
+            chainId: 'ethereum',
+            fromAsset: 'native',
+        })
+
+        store.setSourceChainId('algorand')
+
+        expect(useSwapsStore.getState().pairAccountId).toBeNull()
+    })
+
     test('setSourceChainId clears the pair and where it was going', () => {
         const store = useSwapsStore.getState()
         store.setFromAsset('1234')
@@ -84,6 +127,129 @@ describe('swaps/store', () => {
             slippage: '0.5',
         })
         useSwapsStore.getState().setSlippage(null)
+    })
+
+    describe('flipAcrossChains', () => {
+        const ALGO_SCOPE = {
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        } as const
+
+        test('moves the swap to the receive chain with the pair reversed', () => {
+            useSwapsStore.getState().setReceivingAccountId('account-1')
+
+            useSwapsStore.getState().flipAcrossChains({
+                sourceChainId: 'ethereum',
+                fromAsset: 'native',
+                toAsset: '0',
+                toAssetScope: ALGO_SCOPE,
+                payAmount: new Decimal('7'),
+            })
+
+            expect(useSwapsStore.getState()).toMatchObject({
+                sourceChainId: 'ethereum',
+                fromAsset: 'native',
+                toAsset: '0',
+                toAssetScope: ALGO_SCOPE,
+                receivingAccountId: null,
+                flippedPayAmount: {
+                    chainId: 'ethereum',
+                    assetId: 'native',
+                    amount: new Decimal('7'),
+                },
+            })
+        })
+
+        test('carries nothing without a pay amount', () => {
+            useSwapsStore.getState().flipAcrossChains({
+                sourceChainId: 'ethereum',
+                fromAsset: 'native',
+                toAsset: '0',
+                toAssetScope: ALGO_SCOPE,
+                payAmount: null,
+            })
+
+            expect(useSwapsStore.getState().flippedPayAmount).toBeNull()
+        })
+
+        test('hands the carried amount over once', () => {
+            useSwapsStore.getState().flipAcrossChains({
+                sourceChainId: 'ethereum',
+                fromAsset: 'native',
+                toAsset: '0',
+                toAssetScope: ALGO_SCOPE,
+                payAmount: new Decimal('7'),
+            })
+
+            expect(
+                useSwapsStore
+                    .getState()
+                    .takeFlippedPayAmount('ethereum', 'native'),
+            ).toEqual(new Decimal('7'))
+            expect(
+                useSwapsStore
+                    .getState()
+                    .takeFlippedPayAmount('ethereum', 'native'),
+            ).toBeNull()
+        })
+
+        test.each([
+            ['another chain', 'base', 'native'],
+            ['another asset', 'ethereum', '0xusdc'],
+        ] as const)(
+            'keeps the carried amount when a form on %s asks for it',
+            (_, chainId, assetId) => {
+                useSwapsStore.getState().flipAcrossChains({
+                    sourceChainId: 'ethereum',
+                    fromAsset: 'native',
+                    toAsset: '0',
+                    toAssetScope: ALGO_SCOPE,
+                    payAmount: new Decimal('7'),
+                })
+
+                expect(
+                    useSwapsStore
+                        .getState()
+                        .takeFlippedPayAmount(chainId, assetId),
+                ).toBeNull()
+                expect(
+                    useSwapsStore.getState().flippedPayAmount?.amount,
+                ).toEqual(new Decimal('7'))
+            },
+        )
+
+        test('picking a source chain or asset forgets an untaken amount', () => {
+            const flip = () =>
+                useSwapsStore.getState().flipAcrossChains({
+                    sourceChainId: 'ethereum',
+                    fromAsset: 'native',
+                    toAsset: '0',
+                    toAssetScope: ALGO_SCOPE,
+                    payAmount: new Decimal('7'),
+                })
+
+            flip()
+            useSwapsStore.getState().setSourceChainId('algorand')
+            expect(useSwapsStore.getState().flippedPayAmount).toBeNull()
+
+            flip()
+            useSwapsStore.getState().setSourceAsset('algorand', '0')
+            expect(useSwapsStore.getState().flippedPayAmount).toBeNull()
+        })
+
+        test('resetState forgets an untaken amount', () => {
+            useSwapsStore.getState().flipAcrossChains({
+                sourceChainId: 'ethereum',
+                fromAsset: 'native',
+                toAsset: '0',
+                toAssetScope: ALGO_SCOPE,
+                payAmount: new Decimal('7'),
+            })
+
+            useSwapsStore.getState().resetState()
+
+            expect(useSwapsStore.getState().flippedPayAmount).toBeNull()
+        })
     })
 
     test('resetState forgets the chosen source chain', () => {

@@ -20,6 +20,7 @@ import {
     getSelectedScope,
     useNetworkStore,
 } from '@perawallet/wallet-core-chain-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { dappRequestChainAdapters } from './dappRequest'
 import type { ConnectionRegistry } from './registry'
 
@@ -96,4 +97,23 @@ export const watchWalletNotices = (
         unsubscribeNetwork()
         unsubscribeAccounts()
     }
+}
+
+/**
+ * Feeds the registry a `lock-changed` notice on each lock or unlock reported
+ * by `subscribe`, never one repeating `isLockedNow` or the last reported
+ * state. An undefined `isLockedNow` is unknown, so the first report always
+ * goes through. Returns the unsubscribe.
+ */
+export const watchLockNotices = (
+    registry: Pick<ConnectionRegistry, 'notify'>,
+    isLockedNow: Optional<boolean>,
+    subscribe: (listener: (isLocked: boolean) => void) => () => void,
+): (() => void) => {
+    let last = isLockedNow
+    return subscribe(isLocked => {
+        if (isLocked === last) return
+        last = isLocked
+        void registry.notify({ type: 'lock-changed', isLocked })
+    })
 }

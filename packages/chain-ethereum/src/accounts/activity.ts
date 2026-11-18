@@ -31,23 +31,33 @@ import {
     NFTS_SERVICE,
 } from '../assets/api/endpoints'
 import type { ListedTokenIds } from '../assets/api/whitelist-cache'
+import { toRpcTransportError } from '../blockchain/errors/toRpcTransportError'
 import { createEvmClient } from '../blockchain/utils/createEvmClient'
 import { readBalances } from '../blockchain/utils/erc20'
 import { fetchHasHistory, HISTORY_SERVICE } from '../history/api/endpoints'
+import { withDiscoveryReadCeiling } from './discovery-bounds'
 
-/** True when the native balance or the latest nonce is above zero. */
+/**
+ * True when the native balance or the latest nonce is above zero. A node that
+ * didn't answer rejects with a typed network error, so the walk can tell a
+ * temporary failure from a broken request.
+ */
 export const readNativeFootprint = async (
-    ctx: ChainContext,
+    ctx: Pick<ChainContext, 'getEndpoints' | 'timeouts'>,
     chain: EvmChain,
     address: string,
     scope: ChainScope,
 ): Promise<boolean> => {
     const client = createEvmClient(scope, ctx, chain)
-    const [balance, nonce] = await Promise.all([
-        client.getBalance({ address: address as Address }),
-        client.getTransactionCount({ address: address as Address }),
-    ])
-    return balance > 0n || nonce > 0
+    try {
+        const [balance, nonce] = await Promise.all([
+            client.getBalance({ address: address as Address }),
+            client.getTransactionCount({ address: address as Address }),
+        ])
+        return balance > 0n || nonce > 0
+    } catch (error) {
+        throw toRpcTransportError(error) ?? error
+    }
 }
 
 type Quiet = { address: string; index: number }
@@ -80,7 +90,7 @@ const peraLookup = (
  * holds any. Rejects when the whitelist, the block or the pass fails.
  */
 const readTokenHoldings = async (
-    ctx: ChainContext,
+    ctx: Pick<ChainContext, 'getEndpoints' | 'timeouts'>,
     chain: EvmChain,
     listedTokenIds: ListedTokenIds,
     scope: ChainScope,
@@ -145,9 +155,10 @@ export const createEvmActivityCheck =
             )
         }
 
+        const discoveryReadCtx = withDiscoveryReadCeiling(ctx)
         const footprints = await Promise.allSettled(
             addresses.map(address =>
-                readNativeFootprint(ctx, chain, address, scope),
+                readNativeFootprint(discoveryReadCtx, chain, address, scope),
             ),
         )
         footprints.forEach((result, index) => take(index, result))
@@ -175,7 +186,7 @@ export const createEvmActivityCheck =
                 if (services.has(ASSETS_SERVICE)) {
                     sources.push(
                         readTokenHoldings(
-                            ctx,
+                            discoveryReadCtx,
                             chain,
                             listedTokenIds,
                             scope,

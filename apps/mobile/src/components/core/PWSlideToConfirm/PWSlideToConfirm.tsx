@@ -13,9 +13,10 @@
 import { View, type StyleProp, type ViewStyle } from 'react-native'
 import { GestureDetector } from 'react-native-gesture-handler'
 import Animated from 'react-native-reanimated'
-import LottieView from 'lottie-react-native'
 import { PWIcon } from '@components/core/PWIcon'
+import { PWLottie } from '@components/core/PWLottie'
 import { PWText } from '@components/core/PWText'
+import { HiddenContainerProvider } from '@hooks/useIsAnimationVisible'
 import peraTransactionLoading from '@assets/animations/pera-transaction-loading.json'
 import { getTestProps } from '@utils/test-id-helper'
 import { THUMB_SIZE, TRACK_INSET, useStyles } from './styles'
@@ -131,13 +132,16 @@ export const PWSlideToConfirm = ({
                 style={[styles.centerLayer, loadingContentStyle]}
                 pointerEvents='none'
             >
-                <LottieView
-                    autoPlay
-                    loop
-                    source={peraTransactionLoading}
-                    style={styles.lottie}
-                    testID='pw-slide-to-confirm-lottie'
-                />
+                {/* Mounted at all times and faded by opacity, so it must be told it is hidden. */}
+                <HiddenContainerProvider value={!isLoading}>
+                    <PWLottie
+                        autoPlay
+                        loop
+                        source={peraTransactionLoading}
+                        style={styles.lottie}
+                        testID='pw-slide-to-confirm-lottie'
+                    />
+                </HiddenContainerProvider>
             </Animated.View>
 
             <Animated.View

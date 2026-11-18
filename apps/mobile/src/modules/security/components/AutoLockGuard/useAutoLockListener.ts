@@ -14,7 +14,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePinCode, useSecurityStore } from '@perawallet/wallet-core-security'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { clearAccountsStore, useDeleteAllData } from '@hooks/useDeleteAllData'
-import { AppState, type AppStateStatus } from 'react-native'
+import { AppState, Keyboard, type AppStateStatus } from 'react-native'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import {
     type AppStateValue,
@@ -70,6 +70,13 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
         },
         [setAppLockActive, setPresentationHeld],
     )
+    // The app stays mounted under the lock overlay, so a focused field keeps
+    // first-responder status and iOS brings its keyboard back over the PIN pad.
+    useEffect(() => {
+        if (isLocked) {
+            Keyboard.dismiss()
+        }
+    }, [isLocked])
     const appState = useRef<AppStateValue>(AppState.currentState)
     const appStatePlatform = useRef(getAppStatePlatform()).current
     const isForegroundCheckInFlight = useRef(false)

@@ -37,14 +37,10 @@ export const TransactionListHeader = ({
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
-    const { hasImpact, isSimulating, simulationFailed } =
-        useBalanceImpactSummary()
-
-    // Hide the whole section (and its flanking divider) when no assets change
-    // hands, so the layout doesn't show two dividers around an empty gap. A
-    // failed simulation has no impact to show but does have a warning to render,
-    // which would otherwise be suppressed — leaving the group with no values.
-    const showBalanceImpact = hasImpact || isSimulating || simulationFailed
+    // Hide the whole section (and its flanking divider) when the summary
+    // renders nothing, so the layout doesn't show two dividers around an empty
+    // gap. `hasSummary` is the same rule BalanceImpactSummary renders by.
+    const { hasSummary } = useBalanceImpactSummary()
 
     return (
         <>
@@ -67,7 +63,7 @@ export const TransactionListHeader = ({
 
             <PWDivider color={theme.colors.layerGray} />
 
-            {showBalanceImpact && (
+            {hasSummary && (
                 <>
                     <PWView style={styles.balanceImpactContainer}>
                         <BalanceImpactSummary />

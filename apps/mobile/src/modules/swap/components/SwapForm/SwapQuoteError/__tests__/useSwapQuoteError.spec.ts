@@ -38,8 +38,15 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
 }))
 
 let mockAssets: Map<string, unknown>
+let mockPrices: Map<string, unknown>
 vi.mock('@perawallet/wallet-core-assets', () => ({
     useAssetsQuery: () => ({ data: mockAssets }),
+    useAssetPricesQuery: () => ({ data: mockPrices }),
+}))
+
+vi.mock('@modules/swap/hooks/useSwapFiatText', () => ({
+    useSwapFiatText: () => (usd: Decimal, rounding: Decimal.Rounding) =>
+        `USD ${usd.toDecimalPlaces(2, rounding).toFixed(2)}`,
 }))
 
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
@@ -68,6 +75,7 @@ describe('useSwapQuoteError', () => {
             ['pay', asset('USDC', 6)],
             ['receive', asset('ETH', 18)],
         ])
+        mockPrices = new Map()
     })
 
     it('names the minimum of a too-low amount in the pay asset', () => {
@@ -83,6 +91,35 @@ describe('useSwapQuoteError', () => {
                 unit: 'USDC',
             })}`,
         )
+    })
+
+    it('adds the minimum in the preferred currency once the pay asset has a price', () => {
+        mockPrices.set('pay', { usdPrice: new Decimal('0.999') })
+
+        const { message } = render({
+            kind: 'amount-too-low',
+            minimum: new Decimal(8_992_523),
+        })
+
+        expect(message).toBe(
+            `swap.quote.amount_too_low_fiat|${JSON.stringify({
+                network: 'Ethereum',
+                amount: '8.992523',
+                unit: 'USDC',
+                fiat: 'USD 8.99',
+            })}`,
+        )
+    })
+
+    it('leaves the fiat out for a pay asset priced at zero', () => {
+        mockPrices.set('pay', { usdPrice: new Decimal(0) })
+
+        const { message } = render({
+            kind: 'amount-too-low',
+            minimum: new Decimal(8_992_523),
+        })
+
+        expect(message).toContain('swap.quote.amount_too_low|')
     })
 
     it('rounds an 18-decimal minimum up to the display precision', () => {

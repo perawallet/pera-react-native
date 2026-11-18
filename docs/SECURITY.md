@@ -91,10 +91,13 @@ The key store signs only the 32 bytes Ethereum's planner hashed from the transac
 parsed out of the request (`packages/chain-ethereum/src/signing/digests.ts`), never a hash the request
 carries. Before hashing, the planner refuses a transaction whose EIP-155 chain id, or typed data whose
 domain chain id, isn't the request's network, since a signature for another chain would be valid
-there. The message signer supports `personal_sign` and `eth_signTypedData_v4` only, so `eth_sign`,
-which signs a caller's raw hash, is refused. After signing, the planner recovers the signer from the
-signature and refuses a result that doesn't recover to the sender. How a request's summary is proven
-from its calldata is in [Architecture](ARCHITECTURE.md#each-chain-reviews-its-own-requests).
+there. It counts the domain chain id only when the hashed `EIP712Domain` type includes it, and refuses
+typed data naming a chain id its declared type leaves out, and any permit whose hashed domain binds
+no chain, for local keys and Ledger alike. The message signer supports
+`personal_sign` and `eth_signTypedData_v4` only, so `eth_sign`, which signs a caller's raw hash, is
+refused. After signing, the planner recovers the signer from the signature and refuses a result that
+doesn't recover to the sender. How a request's summary is proven from its calldata is in
+[Architecture](ARCHITECTURE.md#each-chain-reviews-its-own-requests).
 
 ### RPC trust
 

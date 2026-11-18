@@ -76,6 +76,52 @@
             "about": "Acerca de",
             "website": "Sitio web",
             "open": "Abrir"
+        },
+        "folders": {
+            "name_sheet": {
+                "title_new": "Nueva carpeta",
+                "title_rename": "Cambiar nombre de la carpeta",
+                "placeholder": "Nombre de la carpeta",
+                "create": "Crear",
+                "save": "Guardar"
+            },
+            "empty": "Aún no hay dApps en esta carpeta",
+            "menu": {
+                "title": "Opciones de la carpeta",
+                "open_label": "Opciones de la carpeta",
+                "rename": "Cambiar nombre de la carpeta",
+                "rearrange": "Reordenar dApps",
+                "delete": "Eliminar carpeta"
+            },
+            "rearrange": {
+                "title": "Reordenar dApps",
+                "remove_label": "Quitar {{name}} de esta carpeta"
+            },
+            "delete_confirm": {
+                "title": "¿Eliminar esta carpeta?",
+                "body": "Sus dApps seguirán en tus favoritos.",
+                "confirm": "Eliminar carpeta"
+            }
+        },
+        "favorites": {
+            "title": "Favoritos",
+            "new_folder": "Nueva carpeta",
+            "all_favorites": "Todos los favoritos",
+            "dapp_count": "{{count}} dApps",
+            "dapp_count_one": "{{count}} dApp",
+            "see_all": "Ver todo",
+            "empty_title": "Aún no tienes favoritos",
+            "empty_body": "Empieza a explorar las dApps",
+            "all_folders_title": "Todas las carpetas",
+            "added_toast": {
+                "title": "Añadido a favoritos",
+                "body": "Toca para añadirlo a una carpeta"
+            }
+        },
+        "add_to_folder": {
+            "title": "Añadir a una carpeta",
+            "new_folder": "Nueva carpeta",
+            "added": "Añadido a {{folder}}"
         }
     },
     "account_menu": {
@@ -346,7 +392,12 @@
         }
     },
     "asset": {
-        "deleted_label": "(Eliminado)"
+        "deleted_label": "(Eliminado)",
+        "imitated_currency": {
+            "marker": "No es {{code}} real",
+            "title": "Este activo no es {{code}}",
+            "body": "Su nombre de unidad es {{code}}, pero es un activo distinto que cualquiera podría haber creado. Recibirlo no te da ningún {{code}}."
+        }
     },
     "asset_details": {
         "about": {
@@ -404,6 +455,7 @@
             "empty_body": "No se encontraron transacciones",
             "empty_on_network_body": "Aún no hay transacciones en {{network}}",
             "network_failed": "No se pudieron cargar las transacciones en {{networks}}",
+            "network_unavailable": "Las transacciones no están disponibles en {{networks}}",
             "offline_empty_title": "Estás sin conexión",
             "offline_empty_body": "Todavía no hay transacciones guardadas en este dispositivo. Aparecerán cuando vuelvas a estar en línea.",
             "search_paused_body": "No se encontraron transacciones en el historial reciente.",
@@ -418,6 +470,7 @@
             "asset_id": "ID del activo",
             "token_id": "ID del token",
             "contract": "Contrato",
+            "standard": "Estándar",
             "total_supply": "Suministro total",
             "show_on": "Ver en",
             "explorer": "Pera Explorer",
@@ -485,6 +538,8 @@
             "nomatch_body": "Ningún NFT coincide con tu búsqueda",
             "network_empty_title": "Sin NFT",
             "network_empty_body": "No tienes ningún NFT en {{chain}}.",
+            "refresh_error_title": "No se pudieron actualizar los NFT",
+            "refresh_error_body": "Desliza hacia abajo para intentarlo de nuevo.",
             "suspicious_hidden_title": "NFT sospechosos ocultos",
             "suspicious_hidden_body": "Pera ha marcado estos NFT como posible spam o estafa. Para verlos, activa Mostrar NFT sospechosos en Gestionar > Filtrar.",
             "count": "{{count}} NFT",
@@ -1060,6 +1115,19 @@
             "update_to_restore": "Actualiza Pera para restaurar {{count}} cuentas más.",
             "update_to_restore_one": "Actualiza Pera para restaurar {{count}} cuenta más."
         },
+        "restore_accounts": {
+            "title": "Elige las cuentas que quieres restaurar",
+            "description": "Esta copia de seguridad contiene {{count}} cuentas. Elige cuáles añadir a este dispositivo.",
+            "description_one": "Esta copia de seguridad contiene {{count}} cuenta. Elige si quieres añadirla a este dispositivo.",
+            "description_empty": "Esta copia de seguridad no contiene cuentas. Sus contactos y ajustes se añadirán a este dispositivo.",
+            "all_accounts": "Todas las cuentas",
+            "selected_accounts": "Cuentas seleccionadas",
+            "left_out_hint": "Las cuentas que no elijas se quedan en la copia de seguridad. Puedes añadirlas a este dispositivo más tarde desde Copia de seguridad en la nube.",
+            "device_notice_title": "Las cuentas de este dispositivo se incluirán en la copia de seguridad",
+            "device_notice_body": "Las {{count}} cuentas de este dispositivo se añadirán a esta copia de seguridad. Cualquiera que tenga su frase de copia de seguridad y su clave de cifrado podrá acceder a ellas, incluidas sus passphrases de recuperación y claves privadas.",
+            "device_notice_body_one": "La cuenta de este dispositivo se añadirá a esta copia de seguridad. Cualquiera que tenga su frase de copia de seguridad y su clave de cifrado podrá acceder a ella, incluida su passphrase de recuperación o clave privada.",
+            "restore": "Restaurar"
+        },
         "restore_scan": {
             "title": "Escanear código QR",
             "instructions": "Abre Copia de seguridad en la nube en tu otro dispositivo, elige «Sincronizar con otros dispositivos» y escanea el código que aparece.",
@@ -1165,6 +1233,7 @@
             "empty_body": "Aquí verás un gráfico cuando tengas historial de saldo",
             "asset_empty_body": "Aquí verás un gráfico cuando tengas historial de saldo de este activo en esta cuenta",
             "excludes_networks": "Este gráfico aún no incluye los activos de {{networks}}",
+            "failed_networks": "No se pudo cargar el historial de {{networks}}, así que este gráfico no lo incluye",
             "currency_unavailable_body": "Este gráfico no está disponible en {{currency}} por ahora"
         },
         "webview": {
@@ -3636,6 +3705,7 @@
             "body": "Esta es una cuenta compartida y ninguna de sus cuentas firmantes está en tu wallet. Añade una cuenta firmante para firmar transacciones por ella.",
             "rekeyed_auth_missing_body": "Esta cuenta está con rekey a {{authAddress}}, que no está en esta wallet, por lo que no puede firmar transacciones. Importa la cuenta auth para firmar por ella.",
             "rekeyed_auth_watch_body": "Esta cuenta está con rekey a una cuenta de solo observación, que no tiene clave de firma. Importa la clave de la cuenta auth para firmar por ella.",
+            "signer_key_missing_body": "Esta transacción debe firmarse con la clave propia de {{authAddress}}, que no está en esta wallet.",
             "signer_missing_body": "Esta solicitud necesita la firma de una cuenta que no está en tu wallet, así que no se puede firmar aquí."
         },
         "transaction_request_faq": {
@@ -3721,6 +3791,8 @@
             "title_clawback": "Recuperación",
             "title_contract_interaction": "Interacción con contrato",
             "token_contract": "Contrato del token {{symbol}}",
+            "unknown": "No se sabe",
+            "unknown_receive_body": "Pera no puede saber qué recibes de esta app",
             "unverified": "No verificado",
             "you_receive": "Recibes",
             "you_send": "Envías",
@@ -4140,7 +4212,10 @@
             "to": "A",
             "balance_label": "Saldo: <0/>",
             "max": "MÁX",
-            "select_asset": "Elegir"
+            "select_asset": "Elegir",
+            "flip": "Invertir pagar y recibir",
+            "flip_unavailable_title": "No se puede invertir este swap",
+            "flip_unavailable_body": "Esta cuenta no puede pagar desde la red de {{network}}."
         },
         "asset_selection": {
             "swap_from_title": "Intercambiar desde",
@@ -4188,8 +4263,11 @@
             "confirm_swap": "Confirmar swap",
             "slide_to_confirm": "Desliza para confirmar",
             "high_price_impact_warning": "Este swap tiene un alto impacto en el precio. Puedes recibir muchos menos tokens de lo esperado.",
+            "high_network_fee_warning": "La comisión de red (~{{fee}}) es el {{percent}} % de este swap. Puedes continuar de todos modos.",
             "quote_error": "No se pudieron obtener cotizaciones. Vuelve a intentarlo.",
             "amount_too_low": "El importe es demasiado pequeño para un swap en {{network}}. El mínimo es {{amount}} {{unit}}.",
+            "amount_too_low_fiat": "El importe es demasiado pequeño para un swap en {{network}}. El mínimo es {{amount}} {{unit}} (~{{fiat}}).",
+            "use_minimum": "Usar mínimo",
             "amount_too_low_unknown": "El importe es demasiado pequeño para un swap en {{network}}. Prueba con un importe mayor o una red con comisiones más bajas.",
             "amount_too_high": "El importe es demasiado grande para un swap. El máximo es {{amount}} {{unit}}.",
             "amount_too_high_unknown": "El importe es demasiado grande para un swap. Prueba con un importe menor.",
@@ -4202,9 +4280,18 @@
         },
         "execution": {
             "error_title": "Swap fallido",
-            "error_body": "Algo salió mal durante el swap. Vuelve a intentarlo.",
+            "failed_title": {
+                "prepare": "No se pudo iniciar el swap",
+                "approval": "Aprobación fallida",
+                "swap": "Swap fallido"
+            },
             "provider_failed_body": "Este proveedor no pudo completar el swap. Prueba con otro proveedor.",
-            "insufficient_native_title": "{{symbol}} insuficiente",
+            "provider_unavailable_body": "El proveedor no está disponible en este momento. Inténtalo de nuevo en unos instantes.",
+            "route_unverified_body": "Pera aún no puede verificar el contrato de swap de este proveedor en {{network}}, así que no se firmó nada. Prueba con otro proveedor o inténtalo de nuevo más tarde.",
+            "quote_mismatch_body": "Las transacciones del proveedor no coincidían con esta cotización, así que no se firmó nada. Inténtalo de nuevo o elige otro proveedor.",
+            "unsupported_order_body": "Pera no puede completar la orden de este proveedor, así que no se firmó nada. Elige otro proveedor.",
+            "signing_failed_body": "No se pudo firmar la transacción, así que no se envió. Inténtalo de nuevo.",
+            "order_insufficient_balance_body": "Tu saldo no cubre esta cantidad y la comisión de red. Prueba con una cantidad menor o añade fondos para la comisión.",
             "insufficient_native_body": "Esta cuenta necesita al menos {{amount}} {{symbol}} más para cubrir este swap, sus comisiones y el saldo mínimo. Añade más {{symbol}} y vuelve a intentarlo.",
             "success_title": "Swap completado",
             "success_body": "Swap de {{fromAsset}} a {{toAsset}} completado correctamente",
@@ -4266,6 +4353,10 @@
         "receiving_account": {
             "title": "Cuenta receptora",
             "label": "Recibir en"
+        },
+        "source_account": {
+            "title": "Selecciona una cuenta",
+            "subtitle": "Tienes <0>{{accounts}} cuentas</0> con este activo. Elige una para continuar."
         }
     },
     "onramp": {

@@ -1236,9 +1236,9 @@ workflows:
     - APP_ENV: staging
     - CHAINS: algorand,ethereum,base,bsc,arbitrum,avalanche,polygon,optimism
     - ETHEREUM_MAINNET_RPC_URL: https://ethereum-rpc.publicnode.com,https://mainnet.gateway.tenderly.co
-    - ETHEREUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
+    - ETHEREUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,nfts,contracts,simulations
     - ETHEREUM_SEPOLIA_RPC_URL: https://ethereum-sepolia-rpc.publicnode.com,https://sepolia.gateway.tenderly.co
-    - ETHEREUM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
+    - ETHEREUM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing,nfts,contracts,simulations
     - BASE_MAINNET_RPC_URL: https://base-rpc.publicnode.com,https://mainnet.base.org
     - BASE_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - BASE_SEPOLIA_RPC_URL: https://base-sepolia-rpc.publicnode.com,https://sepolia.base.org
@@ -1391,9 +1391,9 @@ workflows:
     - APP_ENV: staging
     - CHAINS: algorand,ethereum,base,bsc,arbitrum,avalanche,polygon,optimism
     - ETHEREUM_MAINNET_RPC_URL: https://ethereum-rpc.publicnode.com,https://mainnet.gateway.tenderly.co
-    - ETHEREUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
+    - ETHEREUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,nfts,contracts,simulations
     - ETHEREUM_SEPOLIA_RPC_URL: https://ethereum-sepolia-rpc.publicnode.com,https://sepolia.gateway.tenderly.co
-    - ETHEREUM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
+    - ETHEREUM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing,nfts,contracts,simulations
     - BASE_MAINNET_RPC_URL: https://base-rpc.publicnode.com,https://mainnet.base.org
     - BASE_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - BASE_SEPOLIA_RPC_URL: https://base-sepolia-rpc.publicnode.com,https://sepolia.base.org
@@ -1563,9 +1563,9 @@ workflows:
     - APP_ENV: staging
     - CHAINS: algorand,ethereum,base,bsc,arbitrum,avalanche,polygon,optimism
     - ETHEREUM_MAINNET_RPC_URL: https://ethereum-rpc.publicnode.com,https://mainnet.gateway.tenderly.co
-    - ETHEREUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
+    - ETHEREUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,nfts,contracts,simulations
     - ETHEREUM_SEPOLIA_RPC_URL: https://ethereum-sepolia-rpc.publicnode.com,https://sepolia.gateway.tenderly.co
-    - ETHEREUM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
+    - ETHEREUM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing,nfts,contracts,simulations
     - BASE_MAINNET_RPC_URL: https://base-rpc.publicnode.com,https://mainnet.base.org
     - BASE_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - BASE_SEPOLIA_RPC_URL: https://base-sepolia-rpc.publicnode.com,https://sepolia.base.org

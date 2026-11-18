@@ -22,21 +22,15 @@ const { exitAccountFlowMock, capturedOnDone } = vi.hoisted(() => ({
 
 // Stubs: what is under test is the wiring the registration supplies, not what
 // the restore screens render.
-vi.mock('@modules/cloud-backup/screens/CloudBackupRestoreScanScreen', () => ({
-    CloudBackupRestoreScanScreen: ({ onDone }: { onDone: () => void }) => {
-        capturedOnDone.set('CloudBackupRestoreScan', onDone)
-        return null
-    },
-}))
 vi.mock(
-    '@modules/cloud-backup/screens/CloudBackupRestoreEncryptionKeyScreen',
+    '@modules/cloud-backup/screens/CloudBackupRestoreSelectAccountsScreen',
     () => ({
-        CloudBackupRestoreEncryptionKeyScreen: ({
+        CloudBackupRestoreSelectAccountsScreen: ({
             onDone,
         }: {
             onDone: () => void
         }) => {
-            capturedOnDone.set('CloudBackupRestoreEncryptionKey', onDone)
+            capturedOnDone.set('CloudBackupRestoreSelectAccounts', onDone)
             return null
         },
     }),
@@ -183,10 +177,8 @@ describe('cloud-backup restore screens registered in the import flow', () => {
         capturedOnDone.clear()
     })
 
-    it.each([
-        'CloudBackupRestoreScan',
-        'CloudBackupRestoreEncryptionKey',
-    ] as const)('exits %s through the import flow exit', name => {
+    it('exits the account choice through the import flow exit', () => {
+        const name = 'CloudBackupRestoreSelectAccounts'
         const Stack = createNativeStackNavigator<ImportFlowParamList>()
         const screens = collectScreenChildren(
             renderImportFlowScreens(Stack, allowAll, 'algorand'),

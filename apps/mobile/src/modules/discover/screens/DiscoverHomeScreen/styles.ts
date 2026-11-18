@@ -14,17 +14,14 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     content: {
-        gap: theme.spacing.md,
+        gap: theme.spacing.xl,
         paddingTop: theme.spacing.md,
-    },
-    title: {
-        paddingBottom: theme.spacing.xs,
+        paddingBottom: theme.spacing.xl,
     },
     section: {
-        gap: theme.spacing.sm,
-    },
-    chips: {
-        paddingVertical: theme.spacing.xs,
+        gap: theme.spacing.md,
+        // Sections sit 40 apart (content gap 24 + 16).
+        marginTop: theme.spacing.lg,
     },
     emptyDapps: {
         paddingVertical: theme.spacing.lg,
@@ -32,6 +29,6 @@ export const useStyles = makeStyles(theme => ({
     newsCard: {
         // lanekeep-ignore-next-line pera/no-numeric-sizes reason: news card width (about two thirds of a phone screen, so the next card peeks)
         width: 240,
-        marginRight: theme.spacing.md,
+        marginRight: theme.spacing.lg,
     },
 }))

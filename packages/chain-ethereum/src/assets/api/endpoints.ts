@@ -17,6 +17,7 @@ import type { PriceHistoryPoint } from '@perawallet/wallet-core-assets'
 import {
     CHART_QUERY_TIMEOUT_MS,
     isPeraNetworkError,
+    PeraServiceUnavailableError,
     queryClient,
     type HistoryPeriod,
     type Nullable,
@@ -60,6 +61,24 @@ export const nftHoldingsPath = (
     eip155ChainId: number | string,
     address: string,
 ): string => `/api/v3/evm/${eip155ChainId}/accounts/${address}/nfts/`
+
+/**
+ * The cursor a holdings page's `next` URL carries. Throws on anything else, so
+ * a malformed page fails the read instead of looping.
+ */
+export const nftCursorOf = (next: string): string => {
+    const cursor = new URL(next).searchParams.get('cursor')
+    if (cursor === null || cursor === '') {
+        throw new Error('Pera NFT holdings page named no cursor in `next`')
+    }
+    return cursor
+}
+
+/** A chain the backend runs no NFT reads for answers 422 `nft_not_supported`. */
+export const isNftNotSupportedError = (error: unknown): boolean =>
+    isPeraNetworkError(error) &&
+    error.status === 422 &&
+    error.backendCode === 'nft_not_supported'
 
 /**
  * One entry per id, in request order, null where the row is one this client
@@ -126,8 +145,9 @@ export const fetchWhitelist = async (
 
 /**
  * Every NFT `address` holds on the scope's chain, across all pages; a row
- * this client can't read is skipped. Rejects with a `PeraNetworkError` on a
- * failed page, so a partial list never stands in for the whole.
+ * this client can't read is skipped. Rejects on a failed page, so a partial
+ * list never stands in for the whole: with a `PeraServiceUnavailableError` when
+ * the chain has no NFT reads, and a plain `Error` on a malformed `next`.
  */
 export const fetchNftHoldings = async (
     scope: ChainScope,
@@ -149,6 +169,13 @@ export const fetchNftHoldings = async (
             url,
             params: cursor === null ? undefined : { cursor },
             headers: await buildIntegrityHeadersWhenReady(),
+        }).catch((error: unknown) => {
+            // The chain has no NFT reads: the same as a scope without the
+            // service, so the syncer keeps stored rows instead of flagging.
+            if (isNftNotSupportedError(error)) {
+                throw new PeraServiceUnavailableError(scope, NFTS_SERVICE)
+            }
+            throw error
         })
         const { results, next } = nftHoldingsPageSchema.parse(data)
         for (const row of results) {
@@ -158,7 +185,7 @@ export const fetchNftHoldings = async (
             }
         }
         if (next === null) return [...items.values()]
-        cursor = next
+        cursor = nftCursorOf(next)
     }
     throw new Error(
         `Pera NFT holdings for ${scope.chainId}/${scope.networkId} ran past ${NFT_HOLDINGS_MAX_PAGES} pages`,
@@ -167,7 +194,8 @@ export const fetchNftHoldings = async (
 
 /**
  * Whether `address` holds any NFT the backend lists: one GET of the first
- * page, never a cursor. Rejects with a `PeraNetworkError` on a failed request.
+ * page, never a cursor. Resolves `false` when the chain has no NFT reads;
+ * rejects with a `PeraNetworkError` on any other failed request.
  */
 export const fetchHasNftHoldings = async (
     scope: ChainScope,
@@ -175,21 +203,26 @@ export const fetchHasNftHoldings = async (
     address: string,
     signal?: AbortSignal,
 ): Promise<boolean> => {
-    const { data } = await queryClient<unknown>({
-        backend: 'pera',
-        service: NFTS_SERVICE,
-        scope,
-        method: 'GET',
-        url: nftHoldingsPath(
-            eip155ChainIdOf(scope, chain),
-            address.toLowerCase(),
-        ),
-        headers: await buildIntegrityHeadersWhenReady(),
-        signal,
-        ...DISCOVERY_LOOKUP_BOUNDS,
-    })
-    const { results, next } = nftHoldingsPageSchema.parse(data)
-    return results.length > 0 || next !== null
+    try {
+        const { data } = await queryClient<unknown>({
+            backend: 'pera',
+            service: NFTS_SERVICE,
+            scope,
+            method: 'GET',
+            url: nftHoldingsPath(
+                eip155ChainIdOf(scope, chain),
+                address.toLowerCase(),
+            ),
+            headers: await buildIntegrityHeadersWhenReady(),
+            signal,
+            ...DISCOVERY_LOOKUP_BOUNDS,
+        })
+        const { results, next } = nftHoldingsPageSchema.parse(data)
+        return results.length > 0 || next !== null
+    } catch (error) {
+        if (isNftNotSupportedError(error)) return false
+        throw error
+    }
 }
 
 /**

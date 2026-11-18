@@ -15,7 +15,7 @@ catalog:
   # fails Lint until that package is dropped from the PR; a matching `ignore`
   # entry in .github/dependabot.yml stops the bot proposing it.
 
-  "@algorandfoundation/algokit-utils": 9.2.2
+  "@algorandfoundation/algokit-utils": 9.2.3
   "@algorandfoundation/dp256": 1.1.0
   "@algorandfoundation/keystore-core": 1.0.0-canary.5
   "@algorandfoundation/keystore-web": 1.0.0-canary.6
@@ -25,7 +25,7 @@ catalog:
   "@algorandfoundation/react-native-passkey-autofill": 1.0.0-canary.29
   "@algorandfoundation/wallet-provider": 1.0.0-canary.6
   "@algorandfoundation/xhd-wallet-api": ^2.0.0-canary.1
-  "@lottiefiles/dotlottie-react": 0.20.0
+  "@lottiefiles/dotlottie-react": 0.21.1
   "@babel/runtime": ^7.29.2
   "@expensify/react-native-wallet": 0.1.41
   "@expo/app-integrity": 58.0.2
@@ -33,7 +33,7 @@ catalog:
   "@ledgerhq/errors": ^6.35.0
   # Exact: each release pins its own axios and @ledgerhq/* dependencies exactly,
   # so a range would drift the Ledger transport copies out from under it.
-  "@ledgerhq/hw-app-eth": 7.11.1
+  "@ledgerhq/hw-app-eth": 7.12.1
   "@ledgerhq/hw-transport-web-ble": ^6.35.0
   "@ledgerhq/hw-transport-webhid": ^6.36.0
   "@ledgerhq/react-native-hid": 6.39.5
@@ -79,7 +79,7 @@ catalog:
   "@types/react": ~19.3.0
   "@types/w3c-web-hid": ^1.0.7
   "@types/web-bluetooth": ^0.0.22
-  "@vitejs/plugin-react": 6.2.1
+  "@vitejs/plugin-react": 6.3.0
   "@vitest/coverage-v8": ^5.0.3
   # Kept in step with "@reown/walletkit" above; see the note there.
   # pin: follows @reown/walletkit
@@ -112,11 +112,11 @@ catalog:
   expo: 58.0.17
   expo-application: 58.1.2
   expo-device: 58.0.5
-  expo-local-authentication: 58.0.2
+  expo-local-authentication: 58.0.3
   expo-localization: 58.0.5
-  expo-notifications: 58.1.6
-  expo-sqlite: 58.0.13
-  fake-indexeddb: 6.2.7
+  expo-notifications: 58.1.9
+  expo-sqlite: 58.0.18
+  fake-indexeddb: 6.2.8
   falcon-1024: 0.2.0
   # 3.33.1 and 3.34.0 fail the required Dead Code job on an unchanged
   # .fallowrc.jsonc (unused exports and files that 3.30.0 doesn't report); raise
@@ -127,16 +127,16 @@ catalog:
   htmlparser2: 12.0.0
   jsdom: ^30.0.1
   ky: ^2.0.2
-  lanekeep: 0.14.0
+  lanekeep: 0.15.0
   msw: ^2.14.6
-  oxfmt: ^0.75.0
+  oxfmt: ^0.78.0
   punycode: ^2.3.1
   react: 19.3.0
   react-dom: 19.3.0
   react-native: 0.88.0
   react-native-mmkv: 4.3.2
-  react-native-quick-base64: 3.0.0
-  react-native-quick-crypto: 1.1.6
+  react-native-quick-base64: 3.0.1
+  react-native-quick-crypto: 1.1.9
   react-native-ssl-public-key-pinning: 1.2.6
   tsx: ^4.22.3
   tweetnacl: ^1.0.3
@@ -173,6 +173,12 @@ auditConfig:
     # @expo/metro-file-map, which match our own build globs, never user input,
     # and never ship to a device. Drop this entry once braces publishes a fix.
     - GHSA-vfj7-8cjw-p6xm # braces: stack exhaustion via deeply nested patterns
+    # picomatch has no patched release (first_patched_version: null; npm's
+    # latest is 4.0.7). Its consumers are metro, vite, vitest, @expo/cli and the
+    # glob helpers under them, which match our own build globs, never user
+    # input, and never ship to a device. Drop this entry once picomatch
+    # publishes a fix.
+    - GHSA-fc5q-39xc-vjpf # picomatch: ReDoS through single-branch repeated extglobs
     # zod 3.x has no patched release (fixed only in 4.6.6). The only 3.x copy is
     # @expo/cli's, which never ships to a device; the zod override floors every
     # 4.x copy. Drop this entry once @expo/cli moves to zod 4.
@@ -185,6 +191,12 @@ auditConfig:
     # to a device. Drop both once @expo/config-plugins moves to glob 14.
     - GHSA-3g3m-2fjr-6pw4 # glob: AbortSignal cancellation bypass
     - GHSA-g3hv-75wg-m249 # minimatch: denial of service via globparts amplification
+    # The advisory covers every picomatch up to 4.0.7 and names 4.0.8 as the fix,
+    # which is not on npm yet (latest is 4.0.7), so no override can reach it. Its consumers are build and test tooling only
+    # (@expo/cli, @expo/metro-config, micromatch, anymatch, tinyglobby, fdir,
+    # vite, vitest, jest-util), which match our own globs, never user input, and
+    # never ship to a device. Drop this entry once patched releases are out.
+    - GHSA-fc5q-39xc-vjpf # picomatch: ReDoS through single-branch repeated extglobs
 
 minimumReleaseAgeExclude:
   # @algorandfoundation/keystore is deliberately NOT listed: nothing in the
@@ -305,11 +317,16 @@ patchedDependencies:
   # only seeds a script-directory lookup the inlined WASM never uses; guard it
   # with `typeof`. Drop once upstream's build stops emitting the bare read.
   "falcon-1024@0.2.0": patches/falcon-1024@0.2.0.patch
-  # RN 0.87 removed InteractionManager (undefined in release, a throw in dev),
-  # and the list calls it whenever its data's keys change, i.e. on every
-  # reorder. requestIdleCallback is RN's documented replacement. Patches the
-  # two builds Metro reads (`src` on native, `lib/module` on web); tests mock
-  # the package. Drop once upstream ships a release without it.
+  # Two fixes, each in the two builds Metro reads (`src` on native,
+  # `lib/module` on web); tests mock the package:
+  # - RN 0.87 removed InteractionManager (undefined in release, a throw in
+  #   dev), and the list calls it whenever its data's keys change, i.e. on
+  #   every reorder. requestIdleCallback is RN's documented replacement.
+  # - CellRendererComponent holds a cell's last drag offset until its next
+  #   onLayout, but a mapper that still saw the drag can write it back after
+  #   that onLayout, leaving rows shifted after a drop above the list
+  #   (Android). The held offset is used only until the list resets.
+  # Drop once upstream ships a release with both.
   "react-native-draggable-flatlist@4.0.3": patches/react-native-draggable-flatlist@4.0.3.patch
   # Type-only: 14.0.1 defaults the class's extra-props generic to `undefined`,
   # so `WebViewProps & undefined` is `never` and every JSX prop fails to
@@ -333,6 +350,22 @@ patchedDependencies:
   # has it (oblador/react-native-keychain#817). Only chosen by name, never by
   # default.
   "react-native-keychain@10.0.0": patches/react-native-keychain@10.0.0.patch
+  # Android 12L/13: registering the splash exit-animation listener makes the
+  # system hand its splash window to the app, and 12L/13 can hand over one it
+  # already removed; ActivityThread.syncTransferSplashscreenViewTransaction then
+  # crashes hiding a null leash (Android 14 aborts the handover instead). There
+  # the patch registers no listener, so the system plays its own exit animation.
+  # Gradle uses the prebuilt AAR unless apps/mobile's autolinking lists the
+  # package in `buildFromSource`; drop both once 13 is below minSdk or upstream
+  # skips the listener there.
+  "expo-splash-screen@58.0.13": patches/expo-splash-screen@58.0.13.patch
+  # Android: Fabric can mount a GestureHandlerRootView while MainActivity is
+  # being destroyed (an rn-screens header detach makes Reanimated flush mount
+  # operations), when its parent chain no longer reaches a RootView. Upstream
+  # throws "has not been mounted under ReactRootView" from onAttachedToWindow,
+  # crashing the destroy; the patch leaves the root disabled until the next
+  # attach. Still unguarded in 3.5.0. Drop once upstream handles it.
+  "react-native-gesture-handler@3.3.0": patches/react-native-gesture-handler@3.3.0.patch
   # Android: ScreenFragment.onDestroy never clears Screen.fragmentWrapper, and
   # Fabric's tagToViewState keeps the Screen view alive for the surface's
   # lifetime, so every dismissed screen's fragment (plus its view subtree) is
@@ -474,8 +507,8 @@ overrides:
   # copy whose JS would drive the 3.5.1 native code apps/mobile autolinks.
   react-native-ble-plx: 3.5.1
   react-native-nitro-modules: 0.37.1
-  react-native-quick-base64: 3.0.0
-  react-native-quick-crypto: 1.1.6
+  react-native-quick-base64: 3.0.1
+  react-native-quick-crypto: 1.1.9
   # Eight advisories patched in 8.12.2 (TLS validation, cache poisoning, DoS).
   undici@>=8.0.0 <8.12.2: 8.12.2
   uuid@<14: 14.0.0

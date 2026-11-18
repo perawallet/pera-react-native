@@ -1,8 +1,8 @@
 *** Settings ***
-Documentation       On a multichain build (the staging builds the smoke suite runs on) Discover is a native
-...                 home (search, Top dApps, News) behind the shared age gate; an Algorand-only build keeps
-...                 the Discover web app. Only the home screen's presence is asserted; its lists come from
-...                 the live API.
+Documentation       Discover sits behind the shared age gate. A multichain build (one whose CHAINS lists
+...                 more than Algorand) shows the native home (search, Top dApps, News); an Algorand-only
+...                 build, the default, keeps the Discover web app. Either counts as loaded, so the cases
+...                 hold on both; only the screen's presence is asserted, since its content is live.
 Resource            settings.resource
 
 
@@ -14,7 +14,11 @@ ${MORE_BUTTON}              tid=more_button
 # The declaration's buttons have no testID (ConfirmActionContent takes no confirmTestID here).
 ${AGE_GATE_CONFIRM}         xpath=//*[@text='I am 18 or older' or @label='I am 18 or older']
 ${AGE_GATE_RETRY}           tid=age-gate-retry
-${DISCOVER_HOME}            tid=discover_home_screen
+${WEBVIEW_OFFLINE}          tid=pw-webview-offline
+${WEBVIEW_TIMEOUT}          tid=pw-webview-timeout
+${WEBVIEW_UNAVAILABLE}      tid=pw-webview-unavailable
+# The web marker appears only after a successful main-frame document load.
+${DISCOVER_LOADED}          xpath=//*[@name='discover_home_screen' or @resource-id='discover_home_screen' or @content-desc='discover_home_screen' or @name='pw-webview-loaded' or @resource-id='pw-webview-loaded' or @content-desc='pw-webview-loaded']
 # The Debug Tools row to Manage Cache has no testID.
 ${DEBUG_TOOLS_MANAGE_CACHE}     xpath=//*[@text='Manage Cache' or @label='Manage Cache']
 ${CLEAR_ONE_TIME_FLAGS}         tid=manage_cache_clear_flags_button
@@ -39,11 +43,14 @@ Open Past Age Gate
     Fail    ${destination} did not appear after opening ${entry}.
 
 Open Discover
-    Open Past Age Gate    ${DISCOVER_TAB}    ${DISCOVER_HOME}
+    Open Past Age Gate    ${DISCOVER_TAB}    ${DISCOVER_LOADED}
 
-Discover Home Should Be Loaded
-    Wait Until Page Contains Element    ${DISCOVER_HOME}    timeout=60s
+Discover Should Be Loaded
+    Wait Until Page Contains Element    ${DISCOVER_LOADED}    timeout=60s
     Page Should Not Contain Element    ${AGE_GATE_RETRY}
+    Page Should Not Contain Element    ${WEBVIEW_OFFLINE}
+    Page Should Not Contain Element    ${WEBVIEW_TIMEOUT}
+    Page Should Not Contain Element    ${WEBVIEW_UNAVAILABLE}
 
 Clear One-Time Flags
     [Documentation]    Developer > Debug Tools > Manage Cache: resets the age declaration and every
