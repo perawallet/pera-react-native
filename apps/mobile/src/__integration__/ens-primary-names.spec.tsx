@@ -448,10 +448,9 @@ describe('Flow: ENS primary names for EVM addresses', () => {
             { timeout: SLOW_WAIT_TIMEOUT_MS },
         )
         // Carol shares the batch, so her name showing means the verdict on Alice's is in.
-        await waitFor(
-            () => expect(rowText(hashOf(2))).toContain('carol.eth'),
-            { timeout: SLOW_WAIT_TIMEOUT_MS },
-        )
+        await waitFor(() => expect(rowText(hashOf(2))).toContain('carol.eth'), {
+            timeout: SLOW_WAIT_TIMEOUT_MS,
+        })
         expect(rowText(hashOf(1))).toContain(truncated('ethereum', ALICE))
         expect(screen.queryByText(/vitalik\.eth/)).toBeNull()
 
@@ -651,8 +650,7 @@ describe('Flow: ENS primary names for EVM addresses', () => {
             const recipient = await reviewSendTo(UNKNOWN_RECIPIENT)
 
             await waitFor(
-                async () =>
-                    expect(await answeredEnsReads()).toHaveLength(1),
+                async () => expect(await answeredEnsReads()).toHaveLength(1),
                 { timeout: SLOW_WAIT_TIMEOUT_MS },
             )
             await settle()
