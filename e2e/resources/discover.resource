@@ -17,8 +17,8 @@ ${AGE_GATE_RETRY}           tid=age-gate-retry
 ${WEBVIEW_OFFLINE}          tid=pw-webview-offline
 ${WEBVIEW_TIMEOUT}          tid=pw-webview-timeout
 ${WEBVIEW_UNAVAILABLE}      tid=pw-webview-unavailable
-# The native home or the web app's WebView, whichever this build's Discover tab renders.
-${DISCOVER_LOADED}          xpath=//*[@name='discover_home_screen' or @resource-id='discover_home_screen' or @content-desc='discover_home_screen'] | //android.webkit.WebView | //XCUIElementTypeWebView
+# The web marker appears only after a successful main-frame document load.
+${DISCOVER_LOADED}          xpath=//*[@name='discover_home_screen' or @resource-id='discover_home_screen' or @content-desc='discover_home_screen' or @name='pw-webview-loaded' or @resource-id='pw-webview-loaded' or @content-desc='pw-webview-loaded']
 # The Debug Tools row to Manage Cache has no testID.
 ${DEBUG_TOOLS_MANAGE_CACHE}     xpath=//*[@text='Manage Cache' or @label='Manage Cache']
 ${CLEAR_ONE_TIME_FLAGS}         tid=manage_cache_clear_flags_button
@@ -48,14 +48,9 @@ Open Discover
 Discover Should Be Loaded
     Wait Until Page Contains Element    ${DISCOVER_LOADED}    timeout=60s
     Page Should Not Contain Element    ${AGE_GATE_RETRY}
-    # The WebView is in the tree before its page answers and an error view only mounts after, so
-    # the views are watched for a few seconds. A slow failure past that still reads as loaded.
-    FOR    ${i}    IN RANGE    5
-        Page Should Not Contain Element    ${WEBVIEW_OFFLINE}
-        Page Should Not Contain Element    ${WEBVIEW_TIMEOUT}
-        Page Should Not Contain Element    ${WEBVIEW_UNAVAILABLE}
-        Sleep    1s
-    END
+    Page Should Not Contain Element    ${WEBVIEW_OFFLINE}
+    Page Should Not Contain Element    ${WEBVIEW_TIMEOUT}
+    Page Should Not Contain Element    ${WEBVIEW_UNAVAILABLE}
 
 Clear One-Time Flags
     [Documentation]    Developer > Debug Tools > Manage Cache: resets the age declaration and every

@@ -434,14 +434,18 @@ Swap History Pair Fills The Form With Its Pair
     Open Swap With Pair History
     ${listed}=    Run Keyword And Return Status    Page Should Contain Element    ${ALGO_TO_USDC_CHIP}
     Skip If    not ${listed}    The swap history strip offers no ALGO to USDC pair to check against.
-    # The pair strip was found by swiping to the bottom, which can leave the flip button and the
-    # receive balance off screen, where Android no longer lists them.
-    Scroll Until Tappable    ${SWAP_FLIP_BUTTON}    toward=start
+    # Android removes the balance from its tree while the history strip is on screen.
+    Scroll Until Tappable    ${RECEIVE_BALANCE}    toward=start
     ${preset}=    Run Keyword And Return Status    Page Should Contain Element    ${RECEIVE_BALANCE_IS_USDC}
-    IF    ${preset}    Tap    ${SWAP_FLIP_BUTTON}
+    IF    ${preset}
+        Scroll Until Tappable    ${SWAP_FLIP_BUTTON}    toward=start
+        Tap    ${SWAP_FLIP_BUTTON}
+        Scroll Until Tappable    ${RECEIVE_BALANCE}
+    END
     Wait Until Page Does Not Contain Element    ${RECEIVE_BALANCE_IS_USDC}    timeout=15s
     Scroll Until Tappable    ${ALGO_TO_USDC_CHIP}
     Tap    ${ALGO_TO_USDC_CHIP}
+    Scroll Until Tappable    ${RECEIVE_BALANCE}    toward=start
     Wait Until Page Contains Element    ${RECEIVE_BALANCE_IS_USDC}    timeout=15s
 
 Swap History Pair Chip Shows Its Pair Label

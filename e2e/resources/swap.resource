@@ -43,8 +43,8 @@ ${USDC_RECEIVE_ROW}                 tid=swap-asset-item-31566704
 # Only the receive side's balance carries the receive asset's unit; "ALGO to USDC" in Top Swaps
 # would match a bare USDC text anywhere.
 ${RECEIVE_IS_USDC}                  xpath=//*[@text='Balance: ' or @label='Balance: ']/following-sibling::*[contains(@text,'USDC') or contains(@label,'USDC')]
-# The second Balance label is the receive side's; ${RECEIVE_IS_USDC} also matches a USDC pay side.
-${RECEIVE_BALANCE_IS_USDC}          xpath=(//*[@text='Balance: ' or @label='Balance: '])[2]/following-sibling::*[contains(@text,'USDC') or contains(@label,'USDC')]
+${RECEIVE_BALANCE}                  tid=swap-receive-balance
+${RECEIVE_BALANCE_IS_USDC}          xpath=//*[@name='swap-receive-balance' or @resource-id='swap-receive-balance' or @content-desc='swap-receive-balance']//*[contains(@text,'USDC') or contains(@label,'USDC')]
 ${PAY_CHAIN_FILTER}                 tid=swap_from_chain_filter
 ${RECEIVE_CHAIN_FILTER}             tid=swap_to_chain_filter
 ${OTHER_CHAIN_RECEIVE_CHIP}         xpath=(//*[(starts-with(@content-desc,'swap_to_chain_filter_') or starts-with(@resource-id,'swap_to_chain_filter_') or starts-with(@name,'swap_to_chain_filter_')) and not(contains(concat(@content-desc,@resource-id,@name),'_all')) and not(contains(concat(@content-desc,@resource-id,@name),'_algorand'))])[1]

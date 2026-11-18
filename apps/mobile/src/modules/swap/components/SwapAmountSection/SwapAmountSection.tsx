@@ -169,7 +169,10 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
             label={isPay ? t('swap.form.you_pay') : t('swap.form.you_receive')}
             amountSize='h2'
             headerTrailing={
-                <PWView style={styles.balanceWrapper}>
+                <PWView
+                    style={styles.balanceWrapper}
+                    testID={isPay ? 'swap-pay-balance' : 'swap-receive-balance'}
+                >
                     <PWText
                         variant='body'
                         style={styles.balance}

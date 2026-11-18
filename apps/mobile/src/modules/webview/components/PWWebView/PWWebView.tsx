@@ -40,7 +40,13 @@ export const PWWebView = (props: PWWebViewProps) => {
     const styles = useStyles({ bottomInset })
 
     return (
-        <PWView style={styles.flex}>
+        <PWView
+            style={styles.flex}
+            // Always set: a testID that appears on load would un-flatten this view and reparent the web view.
+            testID={
+                loadState.isDocumentLoaded ? 'pw-webview-loaded' : 'pw-webview'
+            }
+        >
             {showControls && (
                 <WebViewTitleBar
                     onCloseRequested={onCloseRequested}

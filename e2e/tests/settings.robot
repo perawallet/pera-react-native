@@ -59,6 +59,8 @@ Language Can Be Switched And Back
     [Documentation]    Switches to Turkish and back to following the device, which the suite runs in
     ...                English. A device set to another language skips rather than leave it changed.
     [Tags]    id:settings.language.switch    p1
+    ${language_offered}=    Run Keyword And Return Status    Scroll To    ${SETTINGS_ITEM_LANGUAGE}
+    Skip If    not ${language_offered}    Language selection is not enabled on this build.
     Open From Settings    ${SETTINGS_ITEM_LANGUAGE}    ${LANGUAGE_SYSTEM_RADIO}
     ${follows_device}=    Switch Is On    ${LANGUAGE_SYSTEM_RADIO}
     Skip If    not ${follows_device}    The app is set to a chosen language, which this case would have to undo.
