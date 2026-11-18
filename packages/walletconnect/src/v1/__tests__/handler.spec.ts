@@ -42,7 +42,10 @@ import {
     type WalletConnectConnectorRegistry,
 } from '../../connection/connectorRegistry'
 import { dappRequestAdapterFor } from '../../shared/chainSupport'
-import { IDLE_SESSION_TIMEOUT_MS } from '../../shared/idleSession'
+import {
+    IDLE_END_TIMEOUT_MS,
+    IDLE_SESSION_TIMEOUT_MS,
+} from '../../shared/idleSession'
 import { toPeer } from '../../shared/peer'
 
 // Spied, not replaced: the point is proving the handler reaches the one
@@ -135,10 +138,8 @@ const wc = vi.hoisted(() => {
 
     class FakeConnector {
         static instances: FakeConnector[] = []
-        // The real client reports a restored session as connected; off by
-        // default so the suites that flip it by hand keep doing so.
-        static connectRestored = false
         static killSessionFails = false
+        static killSessionHangs = false
 
         readonly version = 1
         clientId = 'client-1'
@@ -170,6 +171,7 @@ const wc = vi.hoisted(() => {
             if (FakeConnector.killSessionFails) {
                 throw new Error('peer unreachable')
             }
+            if (FakeConnector.killSessionHangs) await new Promise(() => {})
         })
         transportClose = vi.fn()
 
@@ -190,9 +192,9 @@ const wc = vi.hoisted(() => {
             if (options.session?.clientId) {
                 this.clientId = options.session.clientId
             }
-            if (options.session && FakeConnector.connectRestored) {
-                this.connected = true
-            }
+            // The real client copies `connected` off the restored session, and
+            // `restore.ts` always builds it connected.
+            if (options.session) this.connected = true
             FakeConnector.instances.push(this)
         }
 
@@ -639,8 +641,8 @@ describe('walletconnect v1 handler behaviour', () => {
         secrets.clear()
         keys.clear()
         wc.FakeConnector.instances.length = 0
-        wc.FakeConnector.connectRestored = false
         wc.FakeConnector.killSessionFails = false
+        wc.FakeConnector.killSessionHangs = false
         vi.clearAllMocks()
     })
 
@@ -1045,7 +1047,6 @@ describe('walletconnect v1 handler behaviour', () => {
         }
         const { onError, onMessage } = await setupRestored([onTestNet])
         const connector = lastConnector()
-        connector.connected = true
 
         connector.emit('algo_signTxn', null, { id: 12, ...SIGN_TXN_FRAME })
         await flush()
@@ -1160,7 +1161,6 @@ describe('walletconnect v1 handler behaviour', () => {
         keys.set('c1', 'restored-key')
         const { handler } = await setupRestored([SEEDED])
         const connector = lastConnector()
-        connector.connected = true
         await handler.teardown()
 
         const onMessage = vi.fn<(message: RawInboundMessage) => void>()
@@ -1431,7 +1431,6 @@ describe('walletconnect v1 handler behaviour', () => {
         }
 
         it('ends a session idle past the timeout and keeps a recent one', async () => {
-            wc.FakeConnector.connectRestored = true
             keys.set('idle', 'idle-key')
             keys.set('recent', 'recent-key')
 
@@ -1451,7 +1450,6 @@ describe('walletconnect v1 handler behaviour', () => {
         })
 
         it('still finishes booting and drops the record when the dApp cannot be told', async () => {
-            wc.FakeConnector.connectRestored = true
             wc.FakeConnector.killSessionFails = true
             keys.set('idle', 'idle-key')
 
@@ -1463,9 +1461,24 @@ describe('walletconnect v1 handler behaviour', () => {
             expect(onError).not.toHaveBeenCalled()
         })
 
-        it('removes an idle session whose key is gone without contacting the dApp', async () => {
-            wc.FakeConnector.connectRestored = true
+        it('stops waiting on a dApp that never acknowledges, so the boot completes', async () => {
+            vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+            onTestFinished(() => {
+                vi.useRealTimers()
+            })
+            wc.FakeConnector.killSessionHangs = true
+            keys.set('idle', 'idle-key')
+            keys.set('recent', 'recent-key')
 
+            const booting = boot([IDLE, RECENT])
+            await vi.advanceTimersByTimeAsync(IDLE_END_TIMEOUT_MS)
+            const { store } = await booting
+
+            expect(connectorOf('idle').killSession).toHaveBeenCalled()
+            expect((await store.list()).map(({ id }) => id)).toEqual(['recent'])
+        })
+
+        it('removes an idle session whose key is gone without contacting the dApp', async () => {
             const { store } = await boot([IDLE])
 
             expect(wc.FakeConnector.instances).toHaveLength(0)
@@ -1477,7 +1490,6 @@ describe('walletconnect v1 handler behaviour', () => {
         keys.set('c1', 'restored-key')
         const { handler, records } = await setupRestored([SEEDED])
         const connector = lastConnector()
-        connector.connected = true
 
         await handler.disconnect('c1')
 
@@ -1906,7 +1918,6 @@ describe('walletconnect v1 handler behaviour', () => {
             const harness = await setup([SEEDED], { answeredRequests })
             await harness.handler.restore()
             const connector = lastConnector()
-            connector.connected = true
             return { ...harness, connector }
         }
 

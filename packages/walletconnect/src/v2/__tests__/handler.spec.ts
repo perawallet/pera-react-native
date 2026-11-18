@@ -10,7 +10,15 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+    onTestFinished,
+    vi,
+    type Mock,
+} from 'vitest'
 import { MemoryKeyValueStorage } from '@perawallet/wallet-extension-platform/test-utils'
 import { memoryStore } from '@perawallet/wallet-core-connections/testing'
 import {
@@ -39,7 +47,10 @@ import {
     WALLET_CONNECT_V2_KIND,
 } from '../connection'
 import { dappRequestAdapterFor } from '../../shared/chainSupport'
-import { IDLE_SESSION_TIMEOUT_MS } from '../../shared/idleSession'
+import {
+    IDLE_END_TIMEOUT_MS,
+    IDLE_SESSION_TIMEOUT_MS,
+} from '../../shared/idleSession'
 import {
     WalletConnectError,
     WalletConnectRequestExpiredError,
@@ -470,7 +481,30 @@ describe('restore', () => {
         })
     })
 
-    it('does not wait on the relay to end an idle session', async () => {
+    it('keeps an idle session the relay refused, with its stored dates, so the next launch retries', async () => {
+        const walletKit = createFakeWalletKit({ [TOPIC]: makeSession() })
+        walletKit.disconnectSession.mockRejectedValue(new Error('relay down'))
+        const { handler } = makeHandler({ walletKit })
+        const idle = storedV2Record({
+            lastActiveAt: Date.now() - IDLE_SESSION_TIMEOUT_MS - 1,
+        })
+        await handler.initialize(makeContext(memoryStore([idle])))
+
+        const restored = await handler.restore()
+
+        expect(restored).toHaveLength(1)
+        expect(restored[0]).toMatchObject({
+            id: TOPIC,
+            createdAt: idle.createdAt,
+            lastActiveAt: idle.lastActiveAt,
+        })
+    })
+
+    it('stops waiting on a relay that never answers and keeps the session', async () => {
+        vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+        onTestFinished(() => {
+            vi.useRealTimers()
+        })
         const walletKit = createFakeWalletKit({ [TOPIC]: makeSession() })
         walletKit.disconnectSession.mockReturnValue(new Promise(() => {}))
         const { handler } = makeHandler({ walletKit })
@@ -479,7 +513,10 @@ describe('restore', () => {
         })
         await handler.initialize(makeContext(memoryStore([idle])))
 
-        await expect(handler.restore()).resolves.toEqual([])
+        const restoring = handler.restore()
+        await vi.advanceTimersByTimeAsync(IDLE_END_TIMEOUT_MS)
+
+        expect((await restoring).map(({ id }) => id)).toEqual([TOPIC])
     })
 
     it('strips the CAIP-10 prefix off every approved account', async () => {

@@ -117,8 +117,10 @@ const reconstructRecord = (
         ? parsedCreatedAt
         : Date.now()
 
-    // The legacy store stamped `lastActiveAt` at approval and never bumped it, so
-    // carrying it would let the idle rule end a session still in daily use.
+    // The legacy value was stamped at approval and never bumped, so carrying it
+    // would let the idle rule end a session still in daily use, and clamping it
+    // to the window only defers that to the next launch. It is replaced, and
+    // upgraders lose the list's last-active ordering once.
     const lastActiveAt = Date.now()
 
     return {

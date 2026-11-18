@@ -215,7 +215,8 @@ export const migrateWalletConnect = async (
                 secretRef,
                 createdAt: reconstructed.createdAt,
                 // The native export has no activity time; its creation date would let
-                // the idle rule end a session still in use.
+                // the idle rule end a session still in use. The cost is that migrated
+                // rows tie in the list's last-active ordering, which `createdAt` kept.
                 lastActiveAt: migratedAt,
                 metadata: {
                     bridge: reconstructed.bridge,

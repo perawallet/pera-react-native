@@ -15,7 +15,11 @@ import type {
     ChainScope,
     NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
-import { logger, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    withTimeout,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import type { ConnectionId } from '@perawallet/wallet-extension-connections'
 import { createHandlerKit } from '@perawallet/wallet-core-connections/handlerKit'
 import { getProvider } from '@perawallet/wallet-extension-provider'
@@ -24,7 +28,7 @@ import {
     createWalletConnectConnector,
 } from '../connection'
 import { isV1ChainIdAcceptable } from '../shared/chainSupport'
-import { isIdleSession } from '../shared/idleSession'
+import { IDLE_END_TIMEOUT_MS, isIdleSession } from '../shared/idleSession'
 import { redactWalletConnectUri, walletConnectLogContext } from '../shared/uri'
 import { WalletConnectError } from '../shared/errors'
 import { createV1ConnectorBinding } from './binding'
@@ -145,20 +149,29 @@ export const createWalletConnectV1Handler = (
     }
 
     // v1 sessions never expire and each holds a bridge socket, so an abandoned
-    // one is ended here, revived first because only a live connector can tell
-    // the dApp.
+    // one is ended here. Revived first, because only a live connector can tell
+    // the dApp; that opens its socket, so a request the bridge queued can replay
+    // and briefly prompt for a session about to end. The client's `killSession`
+    // only encrypts and queues the frame today; the bound keeps a client that
+    // waits for an ack from hanging the boot, at the cost of a lingering key.
     const restore = async () => {
         const sessions = await restoreSessions()
         const now = Date.now()
         const idle = sessions.filter(session => isIdleSession(session, now))
-        await Promise.allSettled(
-            idle.map(({ id }) => {
-                logger.warn('[WC v1] ending an idle session', {
-                    connectionId: id,
-                })
-                return disconnect(id)
-            }),
-        )
+        await withTimeout(
+            Promise.allSettled(
+                idle.map(({ id }) => {
+                    logger.warn('[WC v1] ending an idle session', {
+                        connectionId: id,
+                    })
+                    return disconnect(id)
+                }),
+            ),
+            IDLE_END_TIMEOUT_MS,
+            'ending idle WalletConnect v1 sessions',
+        ).catch((error: unknown) => {
+            logger.warn('[WC v1] idle sessions are still ending', { error })
+        })
         return sessions.filter(session => !idle.includes(session))
     }
 

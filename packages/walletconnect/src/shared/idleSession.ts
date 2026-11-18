@@ -17,6 +17,12 @@ import type { Connection } from '@perawallet/wallet-extension-connections'
 export const IDLE_SESSION_TIMEOUT_MS = 90 * ONE_DAY
 
 /**
+ * Longest a launch waits on a peer to hear an idle session ended; a stalled
+ * relay or bridge then costs one retry next launch, never the boot.
+ */
+export const IDLE_END_TIMEOUT_MS = 3000
+
+/**
  * Strict, so exactly the timeout is kept; a `lastActiveAt` ahead of `now`
  * (a clock moved back) is never idle. Both are epoch milliseconds.
  */
