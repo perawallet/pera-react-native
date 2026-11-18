@@ -357,7 +357,7 @@ describe('Flow: History on an Ethereum account', () => {
                     },
                 ],
             })
-        const nodeCopies = new Map([
+        const nodeCopies = new Map<string, typeof APPROVE_TX>([
             [APPROVE_HASH, APPROVE_TX],
             [REVOKE_HASH, REVOKE_TX],
         ])
