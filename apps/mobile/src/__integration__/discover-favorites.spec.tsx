@@ -118,6 +118,33 @@ describe('Flow: Discover Favorites screen', () => {
         await flush()
     })
 
+    // Round logos ship with transparent corners; a backdrop would show
+    // through them, so only the globe of a logo-less dApp gets one.
+    it('Given a favorite with a logo and one without, then only the globe sits on a gray backdrop', async () => {
+        store().addFavorite({
+            ...dapp('Logoed', 'DeFi'),
+            logo: 'https://logoed.example/logo.png',
+        })
+        renderFavorites()
+
+        const logoed = await screen.findByTestId(
+            'discover_all_favorites_dapp_https://logoed.example',
+        )
+        // react-native-web applies a background color as an r-backgroundColor class.
+        const hasBackdrop = (el: Element | null) =>
+            el?.className.includes('r-backgroundColor') ?? false
+        const image = logoed.querySelector('[data-testid="expo-image"]')
+        expect(image).not.toBeNull()
+        expect(hasBackdrop(image?.parentElement ?? null)).toBe(false)
+
+        const plain = screen.getByTestId(
+            'discover_all_favorites_dapp_https://tinyman.example',
+        )
+        const globe = plain.querySelector('svg')
+        expect(hasBackdrop(globe?.parentElement ?? null)).toBe(true)
+        await flush()
+    })
+
     it('Given Rearrange, when a dApp is removed and Apply is tapped, then it leaves favorites', async () => {
         renderFavorites()
         fireEvent.click(

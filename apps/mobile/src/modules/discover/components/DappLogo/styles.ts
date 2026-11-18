@@ -34,6 +34,10 @@ export const useStyles = makeStyles((theme, { size }: StyleProps) => {
             overflow: 'hidden',
             alignItems: 'center',
             justifyContent: 'center',
+        },
+        // Only behind the globe: round logos ship with transparent corners,
+        // and a backdrop would show through them.
+        placeholder: {
             backgroundColor: theme.colors.layerGray,
         },
     }

@@ -24,7 +24,7 @@ import {
 import { useStyles } from './styles'
 
 export type AccountHeaderToolbarProps = {
-    /** Prefix of every button's test id, e.g. `account_screen`. */
+    /** Prefix of every button's test id, e.g. `account_screen`. Render it edge to edge. */
     testIDPrefix: string
     /** The host screen's QR and paste-link events. */
     events: AccountHeaderToolbarEvents

@@ -85,7 +85,6 @@ export const AccountScreen = () => {
                 <AccountHeaderToolbar
                     testIDPrefix='account_screen'
                     events={HOME_HEADER_EVENTS}
-                    style={styles.iconBar}
                 />
                 <PWView style={styles.tabNavigator}>
                     <AccountTabNavigator

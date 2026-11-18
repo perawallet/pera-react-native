@@ -13,9 +13,12 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
+    // The header sits edge to edge and brings its own inset, so it lands in
+    // the same place on every host screen.
     bar: {
         flexGrow: 0,
         flexShrink: 0,
+        paddingHorizontal: theme.spacing.lg,
     },
     section: {
         flexDirection: 'row',

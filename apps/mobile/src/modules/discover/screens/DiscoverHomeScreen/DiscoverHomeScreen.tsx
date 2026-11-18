@@ -132,6 +132,8 @@ export const DiscoverHomeScreen = () => {
     return (
         <PWScreen
             scroll='never'
+            // The header runs edge to edge like Home's; the content pads itself.
+            horizontalPadding='none'
             testID='discover_home_screen'
         >
             <AccountHeaderToolbar

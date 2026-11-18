@@ -31,7 +31,7 @@ export const DappLogo = ({ logo, size = 'row' }: DappLogoProps) => {
             style={styles.logo}
         />
     ) : (
-        <PWView style={styles.logo}>
+        <PWView style={[styles.logo, styles.placeholder]}>
             <PWIcon
                 name='globe'
                 size={GLOBE_SIZE[size]}

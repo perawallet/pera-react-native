@@ -38,9 +38,6 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
         contentWithBanner: {
             paddingTop: theme.spacing.sm,
         },
-        iconBar: {
-            paddingHorizontal: theme.spacing.lg,
-        },
         tabNavigator: {
             flex: 1,
             marginTop: theme.spacing.xs,
