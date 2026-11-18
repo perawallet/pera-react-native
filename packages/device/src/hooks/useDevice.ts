@@ -173,6 +173,9 @@ export const useDevice = () => {
             locale: getActiveLocale(),
             appVersion: deviceInfoService.getAppVersion(),
             currency: notificationCurrency,
+            // Read live: the queued task may run after a mute toggle wrote the
+            // store, and a render-scoped snapshot would send the stale set.
+            mutedChainIds: useDeviceStore.getState().mutedChainIds,
         }),
         [deviceInfoService, pushToken, notificationCurrency],
     )
