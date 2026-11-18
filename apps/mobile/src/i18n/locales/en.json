@@ -39,7 +39,7 @@
             "explore_dapps": "Explore dApps",
             "news": "News",
             "dapps_error": "Failed loading featured dApps",
-            "dapps_empty": "No dApps on {{chain}} yet"
+            "dapps_empty_open_url": "No dApps listed on {{chain}} yet. Open any dApp by typing its URL above."
         },
         "dapp_row": {
             "favorite": "Add to favorites",
