@@ -238,6 +238,45 @@ describe('Flow: the account options sheet lists the account on each network', ()
         ).toBeTruthy()
     })
 
+    it('Given an HD account on Ethereum alone, when the user taps View passphrase, then the flow reveals its words', async () => {
+        const hd = await seedHdAccount()
+        const ethereumOnly: WalletAccount = {
+            ...hd,
+            chains: {
+                ethereum: {
+                    address: '0x9858EfFD232B4033E47d90003D41EC34EcaEda94',
+                    keyPairId: chainAccountOf(hd, 'algorand')?.keyPairId,
+                },
+            },
+        }
+        useAccountsStore.getState().setAccounts([ethereumOnly])
+
+        render(<AccountOptionsHost account={ethereumOnly} />)
+
+        fireEvent.click(
+            await screen.findByTestId('account_option_view-passphrase'),
+        )
+        await screen.findByTestId('passphrase_acknowledge_bottom_sheet_reveal')
+        for (let i = 0; i < 4; i++) {
+            fireEvent.click(
+                screen.getByTestId(
+                    `passphrase_acknowledge_bottom_sheet_row_${i}`,
+                ),
+            )
+        }
+        fireEvent.click(
+            screen.getByTestId('passphrase_acknowledge_bottom_sheet_reveal'),
+        )
+
+        expect(
+            await screen.findByTestId(
+                'view_passphrase_bottom_sheet_grid',
+                {},
+                { timeout: SLOW_WAIT_TIMEOUT_MS },
+            ),
+        ).toBeTruthy()
+    })
+
     it('Given an Algorand watch account, then it offers no passphrase, no rekey section and no Ethereum to add', async () => {
         const watch: WalletAccount = {
             id: 'watch',

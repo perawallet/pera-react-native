@@ -536,6 +536,10 @@ describe('useAccountOptions', () => {
             )
         })
 
+        it('offers no view-passphrase, since a raw key has no phrase', () => {
+            expect(idsFor(privateKeyAccount)).not.toContain('view-passphrase')
+        })
+
         it('offers it for no HD, Algo25 or watch account', () => {
             const hdAccount: WalletAccount = {
                 id: 'acc-hd',
@@ -712,12 +716,57 @@ describe('useAccountOptions', () => {
             )
         })
 
-        it('offers no view-passphrase on an HD account, since its chain has no mnemonic backup', () => {
+        it('opens the passphrase of an HD account at its 0x address, though its chain has no mnemonic backup', () => {
+            const { result } = render(ethHdAccount)
+
+            act(() => {
+                sheetOptionsOf(result.current)
+                    .find(o => o.id === 'view-passphrase')
+                    ?.onPress()
+            })
+
+            expect(mockOpenViewPassphraseFlow).toHaveBeenCalledWith(ETH_ADDRESS)
+        })
+
+        it('offers no view-passphrase on a watch account', () => {
+            const { result } = render(ethWatchAccount)
+
+            expect(sheetOptionsOf(result.current).map(o => o.id)).not.toContain(
+                'view-passphrase',
+            )
+        })
+
+        it('offers no view-passphrase when mnemonic backup is off on every chain', () => {
+            setCapabilityOverrides({ mnemonicBackup: false })
+
             const { result } = render(ethHdAccount)
 
             expect(sheetOptionsOf(result.current).map(o => o.id)).not.toContain(
                 'view-passphrase',
             )
+        })
+
+        it('opens the passphrase at the 0x address when its Algorand side is rekeyed', () => {
+            const universal: WalletAccount = {
+                ...ethHdAccount,
+                chains: {
+                    algorand: {
+                        address: 'REKEYEDADDRESS',
+                        keyPairId: 'key-algo-hd',
+                    },
+                    ...ethHdAccount.chains,
+                },
+            }
+            const { result } = render(universal)
+
+            act(() => {
+                sheetOptionsOf(result.current)
+                    .find(o => o.id === 'view-passphrase')
+                    ?.onPress()
+            })
+
+            expect(result.current.isRekeyed).toBe(true)
+            expect(mockOpenViewPassphraseFlow).toHaveBeenCalledWith(ETH_ADDRESS)
         })
     })
 
