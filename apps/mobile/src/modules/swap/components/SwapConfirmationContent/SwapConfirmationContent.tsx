@@ -110,6 +110,62 @@ export const SwapConfirmationContent = ({
                     }
                 />
             }
+            footer={
+                <PWView style={styles.footer}>
+                    {hasHighPriceImpact && (
+                        <PWView
+                            style={styles.warningBanner}
+                            testID='swap-confirm-warning'
+                        >
+                            <PWText style={styles.warningText}>
+                                {t('swap.quote.high_price_impact_warning')}
+                            </PWText>
+                        </PWView>
+                    )}
+
+                    {highNetworkFeeMessage && (
+                        <PWView
+                            style={styles.warningBanner}
+                            testID='swap-confirm-high-network-fee'
+                        >
+                            <PWText style={styles.warningText}>
+                                {highNetworkFeeMessage}
+                            </PWText>
+                        </PWView>
+                    )}
+
+                    {needsSpendApproval && (
+                        <PWView
+                            style={styles.noteBanner}
+                            testID='swap-confirm-spend-approval-note'
+                        >
+                            <PWText variant='caption'>
+                                {t('swap.quote.spend_approval_note')}
+                            </PWText>
+                        </PWView>
+                    )}
+
+                    {insufficientFeeMessage && (
+                        <PWView
+                            style={styles.warningBanner}
+                            testID='swap-confirm-insufficient-fee'
+                        >
+                            <PWText style={styles.warningText}>
+                                {insufficientFeeMessage}
+                            </PWText>
+                        </PWView>
+                    )}
+                    <ConfirmAction
+                        title={t('swap.quote.slide_to_confirm')}
+                        onConfirm={() => void handleSlideConfirm()}
+                        isLoading={isProcessing}
+                        isDisabled={insufficientFeeMessage !== null}
+                        isConfirmed={swapStatus === 'success'}
+                        style={CONFIRM_ACTION_LAYOUT}
+                        testID='swap-confirm-slide'
+                    />
+                </PWView>
+            }
         >
             <PWView style={styles.assetsGroup}>
                 <SwapAssetSection
@@ -156,70 +212,14 @@ export const SwapConfirmationContent = ({
                 priceImpactStyle={priceImpactStyle}
             />
 
-            {hasHighPriceImpact && (
-                <PWView
-                    style={styles.warningBanner}
-                    testID='swap-confirm-warning'
-                >
-                    <PWText style={styles.warningText}>
-                        {t('swap.quote.high_price_impact_warning')}
-                    </PWText>
-                </PWView>
-            )}
-
-            {highNetworkFeeMessage && (
-                <PWView
-                    style={styles.warningBanner}
-                    testID='swap-confirm-high-network-fee'
-                >
-                    <PWText style={styles.warningText}>
-                        {highNetworkFeeMessage}
-                    </PWText>
-                </PWView>
-            )}
-
             {crossChainNote && (
                 <PWView
-                    style={styles.noteBanner}
+                    style={[styles.noteBanner, styles.bodyBanner]}
                     testID='swap-confirm-cross-chain-note'
                 >
                     <PWText variant='caption'>{crossChainNote}</PWText>
                 </PWView>
             )}
-
-            {needsSpendApproval && (
-                <PWView
-                    style={styles.noteBanner}
-                    testID='swap-confirm-spend-approval-note'
-                >
-                    <PWText variant='caption'>
-                        {t('swap.quote.spend_approval_note')}
-                    </PWText>
-                </PWView>
-            )}
-
-            {insufficientFeeMessage && (
-                <PWView
-                    style={styles.warningBanner}
-                    testID='swap-confirm-insufficient-fee'
-                >
-                    <PWText style={styles.warningText}>
-                        {insufficientFeeMessage}
-                    </PWText>
-                </PWView>
-            )}
-
-            <PWView style={styles.confirmButton}>
-                <ConfirmAction
-                    title={t('swap.quote.slide_to_confirm')}
-                    onConfirm={() => void handleSlideConfirm()}
-                    isLoading={isProcessing}
-                    isDisabled={insufficientFeeMessage !== null}
-                    isConfirmed={swapStatus === 'success'}
-                    style={CONFIRM_ACTION_LAYOUT}
-                    testID='swap-confirm-slide'
-                />
-            </PWView>
         </PWSheetLayout>
     )
 }
