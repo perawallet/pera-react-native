@@ -48,6 +48,7 @@ ${BEFORE_CREATE_GO_BACK_BUTTON}         tid=before_create_go_back_button
 
 ${ACCOUNT_OPTION_COPY_ADDRESS}          tid=account_network_algorand_copy
 ${ACCOUNT_ALGORAND_EXPAND}              tid=account_network_algorand_expand
+${ACCOUNT_ALGORAND_MIN_BALANCE}         tid=account_algorand_min_balance
 ${ACCOUNT_OPTION_SHARED_DETAIL}         tid=account_option_shared-account-detail
 ${ACCOUNT_OPTION_EXPORT}                tid=account_option_export-share-account
 ${ACCOUNT_OPTION_REKEY}                 tid=account_option_rekey-account
@@ -392,8 +393,11 @@ Tap Account Option
     Tap    ${option}
 
 Expand Algorand Network
-    [Documentation]    Rekey sits in the Algorand network row, behind its chevron.
-    Tap Account Option    ${ACCOUNT_ALGORAND_EXPAND}
+    [Documentation]    Rekey sits in the Algorand network row, behind its chevron. A shared account is
+    ...                on Algorand alone, and that row then opens expanded, where a tap would fold it.
+    # Rekey itself can sit below the fold, out of Android's tree; the row's first child cannot.
+    ${expanded}=    Run Keyword And Return Status    Page Should Contain Element    ${ACCOUNT_ALGORAND_MIN_BALANCE}
+    IF    not ${expanded}    Tap Account Option    ${ACCOUNT_ALGORAND_EXPAND}
 
 Open Shared Account Detail
     Open Account Options

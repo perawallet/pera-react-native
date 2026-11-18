@@ -14,23 +14,27 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 
-const { mockRequestByType, sendFundsStore } = vi.hoisted(() => ({
-    mockRequestByType: vi.fn(),
-    sendFundsStore: {
-        reset: vi.fn(),
-        setDestination: vi.fn(),
-        setNote: vi.fn(),
-        setSelectedAsset: vi.fn(),
-        setChainId: vi.fn(),
-        setCanSelectAsset: vi.fn(),
-        setAmount: vi.fn(),
-        setPendingAmountBaseUnits: vi.fn(),
-        setShouldContinueToConfirm: vi.fn(),
-    },
-}))
+const { mockRequestByType, mockIsSheetOpen, sendFundsStore } = vi.hoisted(
+    () => ({
+        mockRequestByType: vi.fn(),
+        mockIsSheetOpen: vi.fn(() => false),
+        sendFundsStore: {
+            reset: vi.fn(),
+            setDestination: vi.fn(),
+            setNote: vi.fn(),
+            setSelectedAsset: vi.fn(),
+            setChainId: vi.fn(),
+            setCanSelectAsset: vi.fn(),
+            setAmount: vi.fn(),
+            setPendingAmountBaseUnits: vi.fn(),
+            setShouldContinueToConfirm: vi.fn(),
+        },
+    }),
+)
 
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheetStore: () => ({ requestByType: mockRequestByType }),
+    isRegisteredBottomSheetOpen: mockIsSheetOpen,
 }))
 
 vi.mock('@modules/transactions', () => ({
@@ -42,6 +46,25 @@ import { useSendFundsDeeplink } from '../useSendFundsDeeplink'
 describe('useSendFundsDeeplink', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockIsSheetOpen.mockReturnValue(false)
+    })
+
+    it('leaves an open Send untouched and opens nothing', () => {
+        mockIsSheetOpen.mockReturnValue(true)
+        const { result } = renderHook(() => useSendFundsDeeplink())
+
+        result.current({
+            asset: { chainId: 'algorand', assetId: '31566704' },
+            destination: 'RECEIVER',
+            amount: new Decimal('1'),
+        })
+
+        expect(mockIsSheetOpen).toHaveBeenCalledWith('send-funds')
+        expect(sendFundsStore.reset).not.toHaveBeenCalled()
+        expect(sendFundsStore.setDestination).not.toHaveBeenCalled()
+        expect(sendFundsStore.setSelectedAsset).not.toHaveBeenCalled()
+        expect(sendFundsStore.setAmount).not.toHaveBeenCalled()
+        expect(mockRequestByType).not.toHaveBeenCalled()
     })
 
     it('prefills the send after clearing an older prefill, then opens the sheet', () => {

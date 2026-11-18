@@ -59,6 +59,36 @@ ${WATCH_INFO_CREATE_BUTTON}         tid=watch_info_create_button
 
 
 ${OPTION_ALGORAND_EXPAND}           tid=account_network_algorand_expand
+# Rendered only for an account that is on Ethereum; a not-yet-added network shows _add instead.
+${OPTION_ETHEREUM_COPY}             tid=account_network_ethereum_copy
+${OPTION_ETHEREUM_ADD}              tid=account_network_ethereum_add
+${OPTION_ETHEREUM_QR}               tid=account_network_ethereum_qr
+${OPTION_ETHEREUM_ROW}              tid=account_network_ethereum
+${OPTION_ALGORAND_QR}               tid=account_network_algorand_qr
+${OPTION_ALGORAND_MIN_BALANCE}      tid=account_algorand_min_balance
+${OPTION_REKEY}                     tid=account_option_rekey-account
+${OPTION_ETHEREUM_EXPAND}           tid=account_network_ethereum_expand
+${OPTION_TOKEN_APPROVALS}           tid=account_option_token-approvals
+${TOKEN_APPROVALS_SCREEN}           tid=token_approvals_screen
+${TOKEN_APPROVALS_RETRY}            tid=token_approvals_retry
+# An account with no approvals shows the empty state; one with approvals, their spender rows.
+${TOKEN_APPROVALS_LOADED}           xpath=//*[@text='No open approvals' or @label='No open approvals' or starts-with(@content-desc,'token_approval_spender_') or starts-with(@resource-id,'token_approval_spender_') or starts-with(@name,'token_approval_spender_') or @name='token_approvals_retry' or @resource-id='token_approvals_retry' or @content-desc='token_approvals_retry']
+${NETWORKS_TITLE}                   tid=account_networks_title
+${ETHEREUM_OFFERED}                 ${None}
+# Networks the account could be on but is not yet are folded behind this row.
+${NETWORKS_SEE_ALL}                 tid=account_networks_see_all
+${ETHEREUM_ROW_OR_SEE_ALL}          xpath=//*[@name='account_network_ethereum' or @resource-id='account_network_ethereum' or @content-desc='account_network_ethereum' or @name='account_networks_see_all' or @resource-id='account_networks_see_all' or @content-desc='account_networks_see_all']
+${ACCOUNT_TYPE_INFO_LEARN_MORE}     tid=account-type-info-learn-more-button
+# The toggle carries no testID.
+${SEE_WALLET_STRUCTURE}             xpath=//*[@text='See wallet structure' or @label='See wallet structure']
+${STRUCTURE_ROW_ANY}                xpath=//*[starts-with(@content-desc,'account_structure_row_') or starts-with(@resource-id,'account_structure_row_') or starts-with(@name,'account_structure_row_')]
+${STRUCTURE_ETHEREUM_ICON}          tid=chain_icon_stack_ethereum
+
+# Shown only for an account on two or more chains.
+${ASSET_NETWORK_FILTER}             tid=asset_network_filter
+${ASSET_NETWORK_FILTER_ALL}         tid=asset_network_filter_all
+${ASSET_NETWORK_FILTER_ALGORAND}    tid=asset_network_filter_algorand
+${ASSET_NETWORK_FILTER_ETHEREUM}    tid=asset_network_filter_ethereum
 
 
 *** Keywords ***
@@ -152,10 +182,15 @@ Open Account Option
 
 Open Algorand Account Option
     [Documentation]    Rekey and rekeyed-account scan sit in the Algorand network row, behind its chevron.
+    ...                An account on Algorand alone opens that row expanded, where a tap would fold it.
     [Arguments]    ${option}
     Open Account Options
-    Scroll Until Tappable    ${OPTION_ALGORAND_EXPAND}
-    Tap    ${OPTION_ALGORAND_EXPAND}
+    # The option itself can sit below the fold, out of Android's tree; the row's first child cannot.
+    ${expanded}=    Run Keyword And Return Status    Page Should Contain Element    ${OPTION_ALGORAND_MIN_BALANCE}
+    IF    not ${expanded}
+        Scroll Until Tappable    ${OPTION_ALGORAND_EXPAND}
+        Tap    ${OPTION_ALGORAND_EXPAND}
+    END
     Scroll Until Tappable    ${option}
     Tap    ${option}
 
@@ -176,12 +211,90 @@ Account Name Should Be
     Open Account Options
     Wait Until Page Contains    ${name}    timeout=10s
 
+Ensure Account On Ethereum
+    [Documentation]    Leaves the account options open with the selected account on Ethereum, adding
+    ...                the network when the build offers it and skipping when it does not. What a
+    ...                multichain screen lacks cannot tell a build without Ethereum from a broken
+    ...                screen; this sheet can.
+    Skip If    $ETHEREUM_OFFERED is False
+    ...    The account cannot be put on Ethereum: this build is not multichain (CHAINS without ethereum).
+    Open Account Options
+    # The passphrase action sits in the sheet's top row, which the scroll below takes out of
+    # Android's tree, so it is read first.
+    ${keyed}=    Run Keyword And Return Status    Page Should Contain Element    ${OPTION_VIEW_PASSPHRASE}
+    # Android lists only what is on screen, so the row is scrolled to before its absence counts.
+    ${offered}=    Run Keyword And Return Status    Scroll Until Present    ${ETHEREUM_ROW_OR_SEE_ALL}
+    # Scrolling the whole sheet to find nothing is slow, and a build does not change mid-run, so
+    # the answer is kept. A keyless account offers no Ethereum on any build, so a "no" is kept
+    # only when the sheet proves the account has a key, and fails loudly otherwise.
+    IF    ${offered}
+        Set Global Variable    ${ETHEREUM_OFFERED}    ${True}
+    ELSE
+        Should Be True    ${keyed}
+        ...    The selected account offers no Ethereum and no passphrase: a case left a keyless account selected.
+        Set Global Variable    ${ETHEREUM_OFFERED}    ${False}
+    END
+    Skip If    not ${offered}
+    ...    The account cannot be put on Ethereum: this build is not multichain (CHAINS without ethereum).
+    ${folded}=    Run Keyword And Return Status    Page Should Contain Element    ${NETWORKS_SEE_ALL}
+    IF    ${folded}
+        Scroll Until Tappable    ${NETWORKS_SEE_ALL}
+        Tap    ${NETWORKS_SEE_ALL}
+        Wait Until Page Contains Element    ${OPTION_ETHEREUM_ROW}    timeout=10s
+    END
+    ${addable}=    Run Keyword And Return Status    Page Should Contain Element    ${OPTION_ETHEREUM_ADD}
+    IF    ${addable}
+        Scroll Until Tappable    ${OPTION_ETHEREUM_ADD}
+        Tap    ${OPTION_ETHEREUM_ADD}
+        # Deriving the Ethereum key can ask for the PIN.
+        Unlock With Known Pins
+    END
+    Wait Until Page Contains Element    ${OPTION_ETHEREUM_COPY}    timeout=60s
+
+Options Should Offer No Key Actions
+    [Documentation]    With the account options open: nothing to reveal, rekey or derive Ethereum from.
+    Page Should Not Contain Element    ${OPTION_ETHEREUM_ROW}
+    Page Should Not Contain Element    ${NETWORKS_SEE_ALL}
+    Page Should Not Contain Element    ${OPTION_VIEW_PASSPHRASE}
+    Page Should Not Contain Element    ${OPTION_REKEY}
+
+Select Another Account Than
+    [Documentation]    From Home, selects the first account in the switcher that is not ${address}.
+    [Arguments]    ${address}
+    Open Account Switcher
+    @{addresses}=    Switcher Addresses
+    FOR    ${candidate}    IN    @{addresses}
+        IF    $candidate != $address
+            ${row}=    Switcher Row    ${candidate}
+            Tap    ${row}
+            Wait Until Switcher Closed
+            RETURN
+        END
+    END
+    Go Home
+
 Receive Should Show Address
     [Documentation]    The receive screen prints the selected account's full address.
     [Arguments]    ${address}
     Tap    ${RECEIVE_BUTTON}
-    Wait Until Page Contains Element    ${RECEIVE_COPY_ADDRESS_BUTTON}    timeout=20s
+    Choose Algorand If Asked    receive    ${RECEIVE_COPY_ADDRESS_BUTTON}
     Wait Until Page Contains    ${address}    timeout=10s
+
+Choose Algorand If Asked
+    [Documentation]    Send and Receive open on a network picker when the account could use more
+    ...                than one chain, as on a multichain build. Algorand is picked by chain id, not
+    ...                as the first row: these flows assert Algorand behaviour.
+    [Arguments]    ${flow}    ${next}
+    ${row}=    Set Variable    ${flow}_chain_row_algorand
+    ${next_id}=    Bare Test Id    ${next}
+    Wait Until Page Contains Element
+    ...    xpath=//*[@name='${row}' or @resource-id='${row}' or @content-desc='${row}' or @name='${next_id}' or @resource-id='${next_id}' or @content-desc='${next_id}']
+    ...    timeout=20s
+    ${asked}=    Run Keyword And Return Status    Page Should Contain Element    tid=${row}
+    IF    ${asked}
+        Wait Until Settled    tid=${row}
+        Tap Until    tid=${row}    ${next}    timeout=20s
+    END
 
 Open Menu
     Wait Until Page Contains Element    ${MENU_TAB}    timeout=30s

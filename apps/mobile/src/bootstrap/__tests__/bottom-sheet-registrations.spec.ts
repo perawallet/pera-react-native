@@ -14,6 +14,7 @@ import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { OptInConfirmationContent } from '@modules/assets'
+import { SEND_FUNDS_SHEET_ID } from '@modules/transactions/routes'
 import { registerAppBottomSheets } from '../bottom-sheet-registrations'
 
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
@@ -45,5 +46,17 @@ describe('bottom-sheet registrations', () => {
             accountAddress: 'AAA',
             scope: SCOPE,
         })
+    })
+
+    it("'send-funds' opened by type joins the open Send sheet instead of stacking a second one", () => {
+        useBottomSheetStore
+            .getState()
+            .request({ id: SEND_FUNDS_SHEET_ID, contents: 'open send' })
+
+        useBottomSheetStore.getState().requestByType('send-funds', {})
+
+        const { requests } = useBottomSheetStore.getState()
+        expect(requests).toHaveLength(1)
+        expect(requests[0].contents).toBe('open send')
     })
 })

@@ -10,7 +10,15 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+    onTestFinished,
+    vi,
+    type Mock,
+} from 'vitest'
 import { MemoryKeyValueStorage } from '@perawallet/wallet-extension-platform/test-utils'
 import { memoryStore } from '@perawallet/wallet-core-connections/testing'
 import {
@@ -26,6 +34,7 @@ import type {
     Connection,
     ConnectionOrigin,
 } from '@perawallet/wallet-extension-connections'
+import { ONE_DAY } from '@perawallet/wallet-core-config'
 import { logger } from '@perawallet/wallet-core-shared'
 import type {
     WalletKitEvent,
@@ -38,6 +47,10 @@ import {
     WALLET_CONNECT_V2_KIND,
 } from '../connection'
 import { dappRequestAdapterFor } from '../../shared/chainSupport'
+import {
+    IDLE_END_TIMEOUT_MS,
+    IDLE_SESSION_TIMEOUT_MS,
+} from '../../shared/idleSession'
 import {
     WalletConnectError,
     WalletConnectRequestExpiredError,
@@ -156,7 +169,7 @@ const storedV2Record = (overrides: Partial<Connection> = {}): Connection => ({
     accounts: [ADDRESS],
     status: 'active',
     createdAt: 1_700_000_000_000,
-    lastActiveAt: 1_700_000_500_000,
+    lastActiveAt: Date.now(),
     metadata: {
         topic: TOPIC,
         chains: [MAINNET_CHAIN_ID],
@@ -279,6 +292,36 @@ describe('deferred start', () => {
         await flush()
 
         expect((await store.list()).map(({ id }) => id)).toEqual([OTHER_TOPIC])
+    })
+
+    it('ends an idle session only after the gate opens', async () => {
+        const { startWhen, open } = gate()
+        const walletKit = createFakeWalletKit({ [TOPIC]: makeSession() })
+        const { handler, createWalletKit } = makeHandler({
+            walletKit,
+            startWhen,
+        })
+        const store = memoryStore([
+            storedV2Record({
+                lastActiveAt: Date.now() - IDLE_SESSION_TIMEOUT_MS - 1,
+            }),
+        ])
+        const registry = createConnectionRegistry({ store })
+        registry.register(handler)
+
+        await registry.initialize()
+
+        expect(createWalletKit).not.toHaveBeenCalled()
+        expect((await store.list()).map(({ id }) => id)).toEqual([TOPIC])
+
+        open()
+        await flush()
+
+        expect(await store.list()).toEqual([])
+        expect(walletKit.disconnectSession).toHaveBeenCalledWith({
+            topic: TOPIC,
+            reason: expect.objectContaining({ code: 6000 }),
+        })
     })
 
     it('loads nothing at boot without v2 sessions, and starts on the first pairing', async () => {
@@ -410,6 +453,71 @@ describe('restore', () => {
         })
         expect(record.createdAt).toBe(stored.createdAt)
         expect(record.lastActiveAt).toBe(stored.lastActiveAt)
+    })
+
+    it('ends a session idle past the timeout and leaves it out of the restore', async () => {
+        const walletKit = createFakeWalletKit({
+            [TOPIC]: makeSession(),
+            [OTHER_TOPIC]: makeSession({ topic: OTHER_TOPIC }),
+        })
+        const { handler } = makeHandler({ walletKit })
+        const idle = storedV2Record({
+            lastActiveAt: Date.now() - IDLE_SESSION_TIMEOUT_MS - 1,
+        })
+        const recent = storedV2Record({
+            id: OTHER_TOPIC,
+            lastActiveAt: Date.now() - 10 * ONE_DAY,
+            metadata: { ...idle.metadata, topic: OTHER_TOPIC },
+        })
+        await handler.initialize(makeContext(memoryStore([idle, recent])))
+
+        const restored = await handler.restore()
+        await flush()
+
+        expect(restored.map(({ id }) => id)).toEqual([OTHER_TOPIC])
+        expect(walletKit.disconnectSession).toHaveBeenCalledTimes(1)
+        expect(walletKit.disconnectSession).toHaveBeenCalledWith({
+            topic: TOPIC,
+            reason: expect.objectContaining({ code: 6000 }),
+        })
+    })
+
+    it('keeps an idle session the relay refused, with its stored dates, so the next launch retries', async () => {
+        const walletKit = createFakeWalletKit({ [TOPIC]: makeSession() })
+        walletKit.disconnectSession.mockRejectedValue(new Error('relay down'))
+        const { handler } = makeHandler({ walletKit })
+        const idle = storedV2Record({
+            lastActiveAt: Date.now() - IDLE_SESSION_TIMEOUT_MS - 1,
+        })
+        await handler.initialize(makeContext(memoryStore([idle])))
+
+        const restored = await handler.restore()
+
+        expect(restored).toHaveLength(1)
+        expect(restored[0]).toMatchObject({
+            id: TOPIC,
+            createdAt: idle.createdAt,
+            lastActiveAt: idle.lastActiveAt,
+        })
+    })
+
+    it('stops waiting on a relay that never answers and keeps the session', async () => {
+        vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+        onTestFinished(() => {
+            vi.useRealTimers()
+        })
+        const walletKit = createFakeWalletKit({ [TOPIC]: makeSession() })
+        walletKit.disconnectSession.mockReturnValue(new Promise(() => {}))
+        const { handler } = makeHandler({ walletKit })
+        const idle = storedV2Record({
+            lastActiveAt: Date.now() - IDLE_SESSION_TIMEOUT_MS - 1,
+        })
+        await handler.initialize(makeContext(memoryStore([idle])))
+
+        const restoring = handler.restore()
+        await vi.advanceTimersByTimeAsync(IDLE_END_TIMEOUT_MS)
+
+        expect((await restoring).map(({ id }) => id)).toEqual([TOPIC])
     })
 
     it('strips the CAIP-10 prefix off every approved account', async () => {
@@ -851,7 +959,9 @@ describe('session requests', () => {
     it('stamps the stored record with the request time', async () => {
         // The settings list sorts on `lastActiveAt`, so without this it stays
         // in approval order for the life of the session.
-        const stored = storedV2Record()
+        const stored = storedV2Record({
+            lastActiveAt: Date.now() - ONE_DAY,
+        })
         const { request, store } = await openSession({ seed: [stored] })
 
         await request()

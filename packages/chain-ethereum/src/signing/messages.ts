@@ -68,7 +68,7 @@ import {
     typedDataDigest,
     type EvmDigestKind,
 } from './digests'
-import { spendApprovalOf } from './permits'
+import { isPermitTypedData, spendApprovalOf } from './permits'
 import { toViemSignature } from './sign'
 import { hasUnreadableTypedDataValue } from './typedDataValues'
 
@@ -132,7 +132,7 @@ const readPersonalSign = (payload: unknown): EthereumPersonalSignPayload => {
 
 const MALFORMED_TYPED_DATA = 'The typed-data message payload is malformed'
 
-export const parseDomainChainId = (chainId: unknown): Optional<bigint> => {
+const parseDomainChainId = (chainId: unknown): Optional<bigint> => {
     if (chainId === undefined) return undefined
     if (
         typeof chainId !== 'number' &&
@@ -146,6 +146,51 @@ export const parseDomainChainId = (chainId: unknown): Optional<bigint> => {
     } catch (error) {
         throw new Error(MALFORMED_TYPED_DATA, { cause: error })
     }
+}
+
+/**
+ * How a typed-data domain's `chainId` reaches the signed hash. `bound.chainId`
+ * is the EIP-155 chain the hashed domain carries. `none` means the domain names
+ * no chainId. `unsigned` means `domain.chainId` is given but a declared
+ * `EIP712Domain` leaves it out of the hash, so it binds nothing.
+ */
+export type DomainChainBinding =
+    | { kind: 'bound'; chainId: bigint }
+    | { kind: 'none' }
+    | { kind: 'unsigned' }
+
+// A non-integer `chainId` field (e.g. `string`) hashes as keccak256 of its text,
+// which is the same on every chain, so only an integer type binds a chain.
+const INTEGER_TYPE = /^u?int\d*$/
+
+const declaresChainId = (declared: unknown): boolean =>
+    Array.isArray(declared) &&
+    declared.some(
+        field =>
+            isRecord(field) &&
+            field.name === 'chainId' &&
+            typeof field.type === 'string' &&
+            INTEGER_TYPE.test(field.type),
+    )
+
+// viem hashes only the fields a declared `EIP712Domain` lists, whatever the
+// domain's values hold, so the value alone can't say which chain is signed.
+// Throws only for a `bound` chainId that is not a number, bigint or integer string.
+export const domainChainBindingOf = (
+    typedData: unknown,
+): DomainChainBinding => {
+    if (!isRecord(typedData) || !isRecord(typedData.domain)) {
+        return { kind: 'none' }
+    }
+    const { chainId } = typedData.domain
+    if (chainId === undefined) return { kind: 'none' }
+    const declared = isRecord(typedData.types)
+        ? typedData.types.EIP712Domain
+        : undefined
+    if (declared !== undefined && !declaresChainId(declared)) {
+        return { kind: 'unsigned' }
+    }
+    return { kind: 'bound', chainId: parseDomainChainId(chainId) as bigint }
 }
 
 // When the dApp declares no `EIP712Domain`, viem derives the domain's types
@@ -398,14 +443,27 @@ const planTypedData = (
     forDevice: boolean,
 ): PlannedMessage => {
     const typedData = readTypedData(request.payload)
-    const domainChainId = typedData.domain?.chainId
-    // A signature over another chain's domain would be valid there.
+    const binding = domainChainBindingOf(typedData)
+    if (binding.kind === 'unsigned') {
+        throw new Error(
+            "The typed data's domain chainId is not in its EIP712Domain type, so the signature binds no chain",
+        )
+    }
+    // A signature over another chain's domain would be valid there. The message
+    // echoes domain.chainId as hashed (raw under a declared EIP712Domain), not binding.chainId.
     if (
-        domainChainId !== undefined &&
-        BigInt(domainChainId) !== BigInt(eip155ChainIdOf(request.scope, chain))
+        binding.kind === 'bound' &&
+        binding.chainId !== BigInt(eip155ChainIdOf(request.scope, chain))
     ) {
         throw new Error(
-            `The typed data is for EIP-155 chain ${domainChainId}, not ${request.scope.networkId}`,
+            `The typed data is for EIP-155 chain ${typedData.domain?.chainId}, not ${request.scope.networkId}`,
+        )
+    }
+    // Signed without a chain, a permit is valid on every chain whose token
+    // leaves the chain out of its domain separator.
+    if (binding.kind === 'none' && isPermitTypedData(typedData)) {
+        throw new Error(
+            "The permit's domain binds no chain, so its signature would be valid on every chain",
         )
     }
     try {

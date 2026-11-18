@@ -2604,7 +2604,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                         accounts: [ALGO25_TEST_ADDRESS],
                         status: 'active',
                         createdAt: 1,
-                        lastActiveAt: 1,
+                        lastActiveAt: Date.now(),
                         metadata: {
                             topic: ALGORAND_ONLY_TOPIC,
                             chains: [MAINNET_CHAIN_ID],

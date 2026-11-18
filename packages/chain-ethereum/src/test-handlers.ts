@@ -19,6 +19,7 @@ export {
     EvmRpcErrorFixture,
     evmRpcHandlers,
     evmRpcTransaction,
+    evmSignedRpcTransaction,
     evmTransactionReceipt,
     readRawEvmTransaction,
     type Erc20Fixture,

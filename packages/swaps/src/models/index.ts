@@ -21,6 +21,24 @@ import type {
     NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
 
+/** A pay amount (display units of `assetId`) for the form that mounts on `chainId` after a flip. */
+export type SwapFlippedPayAmount = {
+    chainId: ChainId
+    assetId: string
+    amount: Decimal
+}
+
+export type SwapCrossChainFlip = {
+    /** The old receive chain, which the flipped swap pays from. */
+    sourceChainId: ChainId
+    fromAsset: string
+    toAsset: string
+    /** The old swap scope, where the flipped swap pays out. */
+    toAssetScope: ChainScope
+    /** Display units of `fromAsset`; null carries nothing. */
+    payAmount: Nullable<Decimal>
+}
+
 export type SwapsState = BaseStoreState & {
     /** null until the user picks one: the chain's native asset. */
     fromAsset: Nullable<string>
@@ -40,15 +58,24 @@ export type SwapsState = BaseStoreState & {
     pairAccountId: Nullable<string>
     slippage: Nullable<string>
     isLocalCurrencyInput: boolean
+    /** Handed to the form that remounts on the flipped chain; never persisted. */
+    flippedPayAmount: Nullable<SwapFlippedPayAmount>
     setFromAsset: (fromAsset: string) => void
     setToAsset: (toAsset: string, toAssetScope?: Nullable<ChainScope>) => void
     setReceivingAccountId: (id: Nullable<string>) => void
     /** Clears the pair and the receiving account: they belong to the old chain. */
     setSourceChainId: (chainId: Nullable<ChainId>) => void
-    /** Pays with `fromAsset` on `chainId`; clears the receive side and receiving account: they belong to the old chain. */
+    /** Pays with `fromAsset` on `chainId`; clears the receive side, receiving account and any carried flip amount: they belong to the old chain. */
     setSourceAsset: (chainId: ChainId, fromAsset: string) => void
     /** Pays with `fromAsset` on `chainId` from `accountId`, receiving `toAsset` when given, else the default. */
     setAccountPair: (pair: SwapAccountPair) => void
+    /** Reverses a cross-chain pair in one write: the swap moves to the receive chain, and the receiving account is cleared. */
+    flipAcrossChains: (flip: SwapCrossChainFlip) => void
+    /** Hands the carried amount to the form on its chain and asset, once; any other form leaves it in place. */
+    takeFlippedPayAmount: (
+        chainId: ChainId,
+        assetId: string,
+    ) => Nullable<Decimal>
     setSlippage: (slippage: Nullable<string>) => void
     setIsLocalCurrencyInput: (value: boolean) => void
 }

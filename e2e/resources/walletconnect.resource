@@ -20,6 +20,11 @@ ${SIGNING_REJECT_BUTTON}            tid=signing_reject_button
 ${SIGNING_CONFIRM_SLIDE}            tid=signing-confirm-slide
 ${ARBITRARY_CONFIRM_SLIDE}          tid=arbitrary-data-confirm-slide
 ${ARBITRARY_REJECT_BUTTON}          tid=arbitrary-data-reject-button
+${WC_EVM_ACCOUNT_ROW}               tid=wc_evm_account_row
+${REVIEW_FROM}                      tid=review_from
+${ETHEREUM_REVIEW_FEE}              tid=ethereum_review_fee
+# One row per asset sent, suffixed with its asset id; _nothing stands in when nothing is sent.
+${REVIEW_SEND_ROW}                  xpath=//*[(starts-with(@name,'review_wallet_send_') or starts-with(@content-desc,'review_wallet_send_') or starts-with(@resource-id,'review_wallet_send_')) and not(@name='review_wallet_send_nothing') and not(@content-desc='review_wallet_send_nothing') and not(@resource-id='review_wallet_send_nothing')]
 
 ${MENU_SETTINGS_BUTTON}             tid=menu_settings_button
 ${SETTINGS_WC_SESSIONS}             tid=settings_item_walletconnect_sessions
@@ -40,7 +45,10 @@ Start Pera For WalletConnect
     Start Pera With Wallet
 
 Open WC Approval Sheet
-    ${deeplink}=    Fresh WC Deeplink
+    [Arguments]    ${deeplink}=${EMPTY}
+    IF    not $deeplink
+        ${deeplink}=    Fresh WC Deeplink
+    END
     Open Deeplink    ${deeplink}
     Wait Until Settled    ${WC_CONNECT_BUTTON}
 
@@ -102,3 +110,22 @@ WC Sessions Should Be Empty
     ...                when the socket idled during navigation.
     Wait Until Page Contains Element    ${WC_EMPTY_CONNECT_BUTTON}    timeout=90s
     Page Should Not Contain Element    ${WC_SESSION_ITEM}
+
+Connect WC EVM Session
+    [Documentation]    EVM requests reach the wallet only over a WalletConnect v2 session on eip155,
+    ...                which the harness opens at /evm/uri. A harness without it answers 404.
+    TRY
+        ${session}=    Send Harness Request    /evm/uri
+    EXCEPT    *HTTP Error 404*    type=GLOB
+        Skip    The WC harness has no /evm/uri: an EVM request needs a WalletConnect v2 (eip155) dApp session.
+    END
+    ${deeplink}=    Evaluate    'perawallet-wc://wc?uri=' + urllib.parse.quote($session['uri'], safe='')
+    ...    modules=urllib.parse
+    Open WC Approval Sheet    ${deeplink}
+    # EVM chains go to one account, preset to the selected one; its row opens a picker, so leave it.
+    Page Should Contain Element    ${WC_EVM_ACCOUNT_ROW}
+    Tap    ${WC_CONNECT_BUTTON}
+    Wait Until Page Contains Element    ${WC_SUCCESS}    timeout=30s
+    Wait Until Keyword Succeeds    20s    1s    Harness Should Be Connected
+    Close Sheet
+    Wait Until Page Does Not Contain Element    ${WC_SUCCESS}    timeout=10s

@@ -28,6 +28,7 @@ import {
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { nativeAssetFor, useAssetsQuery } from '@perawallet/wallet-core-assets'
+import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 import { useSpendableBalanceQuery } from '@perawallet/wallet-core-transactions'
 import {
@@ -83,7 +84,8 @@ type UseSwapFormResult = {
     /** Where the receive asset lives: the swap scope, or another chain's. */
     receiveScope: ChainScope
     receivingAccount: Nullable<WalletAccount>
-    isDirectionDisabled: boolean
+    /** Why the pair can't flip, shown on press and read by screen readers; null when it can. */
+    flipUnavailableReason: Nullable<string>
     isChainShown: boolean
     isReceivingAccountShown: boolean
     payAmount: Nullable<Decimal>
@@ -139,6 +141,8 @@ export const useSwapForm = (
         setToAsset,
         setSourceAsset,
         setAccountPair,
+        flipAcrossChains,
+        takeFlippedPayAmount,
         setSlippage,
         setIsLocalCurrencyInput,
         resetAssetPair,
@@ -337,6 +341,13 @@ export const useSwapForm = (
         setPayAmount(pending.amount)
     }, [fromAsset, scope.chainId])
 
+    // A cross-chain flip remounts the form on the new chain, so its amount
+    // arrives through the store. It never reopens a confirmation.
+    useEffect(() => {
+        const flipped = takeFlippedPayAmount(scope.chainId, fromAsset)
+        if (flipped) setPayAmount(flipped)
+    }, [scope.chainId, fromAsset, takeFlippedPayAmount])
+
     // Leaving the tab must clear the form: the screen stays mounted, so without
     // this the next visit opens on the previous session's amounts. A source
     // chain change remounts the form while focused, and must keep what it set.
@@ -413,23 +424,53 @@ export const useSwapForm = (
         })
     }, [scope.chainId])
 
+    const flipUnavailableReason =
+        !isCrossChain || sourceChainIds.includes(receiveScope.chainId)
+            ? null
+            : t('swap.form.flip_unavailable_body', {
+                  network:
+                      chainDisplayNameOf(receiveScope.chainId) ??
+                      receiveScope.chainId,
+              })
+
     const handleSwapDirection = useCallback(() => {
-        if (isCrossChain) return
+        if (flipUnavailableReason) {
+            infoToast(
+                t('swap.form.flip_unavailable_title'),
+                flipUnavailableReason,
+            )
+            return
+        }
         haptics.light()
+        if (isCrossChain) {
+            flipAcrossChains({
+                sourceChainId: receiveScope.chainId,
+                fromAsset: toAsset,
+                toAsset: fromAsset,
+                toAssetScope: scope,
+                payAmount: receiveAmount,
+            })
+            return
+        }
         previousFromAssetRef.current = toAsset
         isPercentageFillRef.current = false
         setFromAsset(toAsset)
         setToAsset(fromAsset)
         setPayAmount(receiveAmount)
-        setReceiveAmount(payAmount)
+        setReceiveAmount(null)
         setSelectedProviderName(null)
         resetQuotes()
     }, [
+        flipUnavailableReason,
         isCrossChain,
+        infoToast,
+        t,
+        receiveScope.chainId,
+        scope,
         haptics,
+        flipAcrossChains,
         fromAsset,
         toAsset,
-        payAmount,
         receiveAmount,
         setFromAsset,
         setToAsset,
@@ -891,7 +932,7 @@ export const useSwapForm = (
         receiveAssetId: toAsset,
         receiveScope,
         receivingAccount,
-        isDirectionDisabled: isCrossChain,
+        flipUnavailableReason,
         isChainShown: isCrossChain || sourceChainIds.length > 1,
         isReceivingAccountShown: isCrossChain,
         payAmount,

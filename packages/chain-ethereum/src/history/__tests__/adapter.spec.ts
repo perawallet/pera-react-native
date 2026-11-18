@@ -37,7 +37,7 @@ import { ETHEREUM } from '../../__tests__/evm-chains'
 import { evmHistoryItem, evmNftTransferLeg } from '../api/msw-handlers'
 import {
     evmRpcHandlers,
-    evmRpcTransaction,
+    evmSignedRpcTransaction,
 } from '../../blockchain/msw-handlers'
 import { TEST_RPC_URL, testChainContext } from '../../__tests__/context'
 
@@ -428,17 +428,16 @@ describe('with contractDecoding', () => {
     })
 
     it("reads a record's transaction from the node, with the fee the history gave", async () => {
-        serve([[swap]])
+        const mined = await evmSignedRpcTransaction({
+            chainId: 1,
+            to: PEER,
+            gasPrice: 1n,
+        })
+        serve([[{ ...swap, hash: mined.hash }]])
         server.use(
             ...evmRpcHandlers({
                 rpcUrl: TEST_RPC_URL,
-                responses: {
-                    eth_getTransactionByHash: evmRpcTransaction({
-                        hash: hash(2) as `0x${string}`,
-                        from: ME,
-                        to: PEER,
-                    }),
-                },
+                responses: { eth_getTransactionByHash: mined },
             }),
         )
         const adapter = createEvmHistoryAdapter(ETHEREUM, testChainContext())

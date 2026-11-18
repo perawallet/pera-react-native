@@ -108,6 +108,8 @@ export const algorandChainUi: ChainUi = {
     swapAssetSearchPlaceholder: i18nKey(
         'swap.asset_selection.search_placeholder',
     ),
+    // The web app's Project Verification form, which takes Algorand projects only.
+    discoverApplyUrl: 'https://explorer.perawallet.app/project-verification/',
     wrongNetworkAddress: {
         titleKey: i18nKey('address_entry.wrong_network.title.algorand'),
         bodyKey: i18nKey('address_entry.wrong_network.body.algorand'),
