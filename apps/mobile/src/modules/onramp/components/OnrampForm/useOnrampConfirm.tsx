@@ -136,6 +136,13 @@ export const useOnrampConfirm = ({
             // so an account switched since the quote was made must not order.
             if (currentAddress !== selectedAccountAddress) return
 
+            // Preparing an account can submit an opt-in. Refresh first if
+            // the quote already expired, including while accepting Terms.
+            if (isRampQuoteExpired(selectedQuote)) {
+                requote()
+                return
+            }
+
             // The destination has no asset on this network, so there is
             // nothing to prepare or fund: bail out quietly.
             const destinationAsset = rampTokenAsset(
@@ -171,7 +178,7 @@ export const useOnrampConfirm = ({
                 return
             }
 
-            // The Terms and opt-in sheets can outlast the quote.
+            // The opt-in confirmation can outlast the quote.
             if (isRampQuoteExpired(selectedQuote)) {
                 requote()
                 return

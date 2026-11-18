@@ -254,7 +254,7 @@ describe('useOnrampConfirm', () => {
         expect(result.current.isConfirming).toBe(false)
     })
 
-    it('re-quotes instead of ordering a quote that expired before the order', async () => {
+    it('re-quotes before preparing the account when the quote already expired', async () => {
         const { result } = renderHook(() =>
             useOnrampConfirm({
                 ...defaultProps,
@@ -266,6 +266,7 @@ describe('useOnrampConfirm', () => {
             await result.current.handleConfirm()
         })
 
+        expect(mockEnsureOptIn).not.toHaveBeenCalled()
         expect(mockCreateRampOrder).not.toHaveBeenCalled()
         expect(mockRefreshQuotes).toHaveBeenCalledTimes(1)
         expect(mockInfoToast).toHaveBeenCalledWith(
