@@ -297,6 +297,18 @@ describe('useBalanceImpactSummary', () => {
             expect(result.current.isReceiveUnknown).toBe(true)
         })
 
+        it('keeps an unknown receive separate from known asset movements', () => {
+            mockTransactions([appCall])
+
+            const { result } = renderHook(() => useBalanceImpactSummary())
+
+            expect(result.current.isReceiveUnknown).toBe(true)
+            expect(result.current.hasImpact).toBe(false)
+            expect(result.current.receive).toEqual([])
+            expect(result.current.spend).toEqual([])
+            expect(result.current.isSimulating).toBe(false)
+        })
+
         it('keeps a receive side it can see as known', () => {
             mockTransactions([appCall, spendAlgo, receiveNft])
 

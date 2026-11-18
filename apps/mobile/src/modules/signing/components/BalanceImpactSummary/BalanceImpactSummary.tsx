@@ -37,14 +37,14 @@ export const BalanceImpactSummary = () => {
         )
     }
 
-    if (!hasImpact && !isSimulating) return null
+    if (!hasImpact && !isSimulating && !isReceiveUnknown) return null
 
     return (
         <PWView testID='balance-impact-summary'>
             <WalletChangesCard
                 spend={spend}
                 receive={receive}
-                isLoading={!hasImpact}
+                isLoading={!hasImpact && isSimulating}
                 isReceiveUnknown={isReceiveUnknown}
             />
         </PWView>

@@ -15,8 +15,8 @@
 // up end-to-end: outgoing payments surface on the "You send" side.
 // BalanceImpactSummary is what the multi-transaction group view
 // (TransactionListScreen) renders, so the group review is what we exercise here.
-// (Integration i18n returns keys verbatim.) A group where nothing changes hands
-// hides the summary entirely.
+// (Integration i18n returns keys verbatim.) A group with no movements hides the
+// summary unless an app call leaves its receive side unknown.
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { within } from '@testing-library/react'
@@ -30,6 +30,7 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
+    buildApplicationCallTransaction,
     buildPaymentTransaction,
     buildTransactionSignRequest,
     renderSignReview,
@@ -45,7 +46,9 @@ import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand/descri
 import {
     mockAlgodAccountInformation,
     mockAlgodTransactionParams,
+    mockTransactionHistory,
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
+import { mockApplication } from '@perawallet/wallet-core-projects/test-handlers'
 
 describe('Flow: balance-impact summary in the review sheet', () => {
     beforeAll(async () => {
@@ -66,6 +69,15 @@ describe('Flow: balance-impact summary in the review sheet', () => {
             mockAlgodAccountInformation({
                 address: REVIEW_SIGNER_ADDRESS,
                 response: { amount: 50_000_000, 'min-balance': 100_000 },
+            }),
+            mockTransactionHistory({
+                accountAddress: REVIEW_SIGNER_ADDRESS,
+                response: {
+                    current_round: 1000,
+                    next: null,
+                    previous: null,
+                    results: [],
+                },
             }),
         )
     })
@@ -131,4 +143,56 @@ describe('Flow: balance-impact summary in the review sheet', () => {
 
         expect(screen.queryByTestId('balance-impact-summary')).toBeNull()
     })
+
+    it.each([1, 2])(
+        'shows the unknown receive after simulating %i app calls with no asset movements',
+        async transactionCount => {
+            await seedAlgo25Signer()
+            server.use(
+                mockApplication({
+                    applicationId: '123',
+                    response: {
+                        application_id: '123',
+                        name: 'Test App',
+                        project: {
+                            name: 'Test Project',
+                            url: 'https://example.com',
+                            description: '',
+                            short_description: '',
+                            logo_png: '',
+                            verification_tier: 'verified',
+                        },
+                    },
+                }),
+            )
+            const { request } = buildTransactionSignRequest({
+                txs: Array.from(
+                    { length: transactionCount },
+                    buildApplicationCallTransaction,
+                ),
+            })
+
+            renderSignReview(request)
+
+            await waitFor(
+                () => {
+                    const changes = screen.getByTestId('review_wallet_changes')
+                    expect(
+                        within(changes).getByTestId(
+                            'review_wallet_receive_unknown',
+                        ).textContent,
+                    ).toContain('signing.review.unknown_receive_body')
+                    expect(
+                        within(changes).queryByTestId(
+                            'review_wallet_receive_nothing',
+                        ),
+                    ).toBeNull()
+                    expect(
+                        screen.queryByTestId('review_wallet_changes_loading'),
+                    ).toBeNull()
+                },
+                { timeout: 10_000 },
+            )
+        },
+    )
 })

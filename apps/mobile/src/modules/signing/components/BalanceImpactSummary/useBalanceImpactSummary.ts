@@ -66,6 +66,7 @@ export type BalanceImpactItem = {
 export type UseBalanceImpactSummaryResult = {
     receive: BalanceImpactItem[]
     spend: BalanceImpactItem[]
+    /** Known asset movements; an unknown receive can still need a summary. */
     hasImpact: boolean
     /** True while the transaction simulation is still resolving inner txns. */
     isSimulating: boolean
