@@ -30,7 +30,6 @@ import {
     useMergedTransactionHistoryRows,
     useTransactionHistoryRows,
     type HistoryFeedProps,
-    type UseMergedTransactionHistoryRowsResult,
     type UseTransactionHistoryRowsResult,
 } from '@modules/transactions'
 import { useHomeChainScope } from '@hooks/useHomeChainScope'
@@ -47,12 +46,9 @@ type FailureNames = Pick<
 >
 
 // A single network's failure is one a Retry can clear unless it has no history service.
-const failureNamesOf = (
-    history:
-        | UseMergedTransactionHistoryRowsResult
-        | UseTransactionHistoryRowsResult,
+const singleFailureNamesOf = (
+    history: UseTransactionHistoryRowsResult,
 ): FailureNames => {
-    if ('unavailableNetworkNames' in history) return history
     if (history.isRefreshUnavailable) {
         return {
             failedNetworkNames: NO_NETWORK_NAMES,
@@ -166,9 +162,9 @@ export const useAccountHistoryRows = ({
         fetchNextPage,
     ])
 
-    const { failedNetworkNames, unavailableNetworkNames } = failureNamesOf(
-        isMerged ? merged : single,
-    )
+    const { failedNetworkNames, unavailableNetworkNames } = isMerged
+        ? merged
+        : singleFailureNamesOf(single)
 
     const { scopeByTransactionId } = merged
     const scopeOf = useCallback(
@@ -188,7 +184,9 @@ export const useAccountHistoryRows = ({
         isLoadFailed: history.isLoadFailed,
         isLoadUnavailable: history.isLoadUnavailable,
         isLoadIntegrityBlocked: history.isLoadIntegrityBlocked,
-        isRefreshFailed: history.isRefreshFailed,
+        isRefreshFailed:
+            history.isRefreshFailed &&
+            (isMerged || !single.isRefreshUnavailable),
         hasNextPage,
         isSearchPaused,
         retry: history.retry,

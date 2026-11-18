@@ -246,6 +246,7 @@ describe('useAccountHistoryRows', () => {
 
         expect(result.current.unavailableNetworkNames).toEqual(['Ethereum'])
         expect(result.current.failedNetworkNames).toEqual([])
+        expect(result.current.isRefreshFailed).toBe(false)
     })
 
     it('reads only the chip network once one is picked', () => {

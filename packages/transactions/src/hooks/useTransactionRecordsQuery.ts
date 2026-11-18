@@ -15,6 +15,7 @@ import {
     useInfiniteQuery,
     useQueryClient,
     onlineManager,
+    hashKey,
     type InfiniteData,
     type Query,
 } from '@tanstack/react-query'
@@ -283,10 +284,6 @@ export const useTransactionRecordsQuery = ({
                 return merged
             }
 
-            const cachedQuery = queryClient
-                .getQueryCache()
-                .find({ queryKey, exact: true })
-
             if (!onlineManager.isOnline()) {
                 // A refetch rebuilds from page one and stops at the first page
                 // with no cursor, so an offline page here would drop every page
@@ -299,7 +296,10 @@ export const useTransactionRecordsQuery = ({
                 }
                 // A cold start has nothing to lose: an empty page reads as the
                 // offline empty state, and the ledger's sends list beside it.
-                if (cachedQuery) failedFirstPageErrors.delete(cachedQuery)
+                const coldQuery = queryClient
+                    .getQueryCache()
+                    .get(hashKey(queryKey))
+                if (coldQuery) failedFirstPageErrors.delete(coldQuery)
                 return { records: [], next: null }
             }
 
@@ -307,6 +307,9 @@ export const useTransactionRecordsQuery = ({
                 return (await readPage(pageParam, signal)).page
             }
 
+            const cachedQuery = queryClient
+                .getQueryCache()
+                .get(hashKey(queryKey))
             const isFullRefetch =
                 cachedQuery !== undefined &&
                 consumeFullRefetchRequest(cachedQuery)
@@ -396,7 +399,7 @@ export const useTransactionRecordsQuery = ({
     } = query
     const rereadQuery =
         isActive && query.isPending && isFetched
-            ? queryClient.getQueryCache().find({ queryKey, exact: true })
+            ? queryClient.getQueryCache().get(hashKey(queryKey))
             : undefined
     const keptError = rereadQuery && failedFirstPageErrors.get(rereadQuery)
     const pages = query.data?.pages ?? []
