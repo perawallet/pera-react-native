@@ -20,6 +20,7 @@ import type {
     ChainId,
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
+import { useHistoricUsdToPreferred } from '@perawallet/wallet-core-currencies'
 import {
     IntegrityRequiredError,
     PeraNetworkError,
@@ -45,11 +46,11 @@ const mockRates = vi.hoisted(() => ({
     rateAt: (_datetime: Date): number => 2,
 }))
 vi.mock('@perawallet/wallet-core-currencies', () => ({
-    useHistoricUsdToPreferred: () => ({
+    useHistoricUsdToPreferred: vi.fn(() => ({
         usdToPreferredAt: (amount: Decimal, datetime: Date) =>
             amount.mul(mockRates.rateAt(datetime)),
         isPending: mockRates.isPending,
-    }),
+    })),
 }))
 
 const ALGORAND: ChainScope = {
@@ -249,6 +250,11 @@ describe('usePortfolioHistoryQuery', () => {
         expect(result.current.isPending).toBe(false)
         expect(result.current.excludedChainIds).toEqual([])
         expect(history).not.toHaveBeenCalled()
+        expect(useHistoricUsdToPreferred).toHaveBeenLastCalledWith(
+            ALGORAND,
+            'one-day',
+            false,
+        )
     })
 
     it('drops the cached sum once a chain is switched off, so the chart does not keep drawing it', async () => {
@@ -773,5 +779,10 @@ describe('usePortfolioHistoryQuery', () => {
         expect(result.current.isPending).toBe(false)
         expect(result.current.data).toEqual([])
         expect(history).not.toHaveBeenCalled()
+        expect(useHistoricUsdToPreferred).toHaveBeenLastCalledWith(
+            ALGORAND,
+            'one-day',
+            false,
+        )
     })
 })

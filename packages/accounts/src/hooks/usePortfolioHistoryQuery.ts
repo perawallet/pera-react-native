@@ -86,8 +86,6 @@ export const usePortfolioHistoryQuery = (
     currencyScope: ChainScope,
     enabled = true,
 ): UsePortfolioHistoryQueryResult => {
-    const { usdToPreferredAt, isPending: isRatesPending } =
-        useHistoricUsdToPreferred(currencyScope, period, enabled)
     const check = useChainCapabilityCheck()
     const groups = useMemo(() => groupByScope(sources), [sources])
     const offFlags = groups.map(
@@ -99,6 +97,12 @@ export const usePortfolioHistoryQuery = (
     const offKey = offFlags.join()
     // eslint-disable-next-line react-hooks/exhaustive-deps -- offKey re-runs the memo: check is a new function every render
     const isOff = useMemo(() => offFlags, [offKey])
+    const { usdToPreferredAt, isPending: isRatesPending } =
+        useHistoricUsdToPreferred(
+            currencyScope,
+            period,
+            enabled && isOff.some(off => !off),
+        )
 
     const queryKeys = useMemo(
         () =>
