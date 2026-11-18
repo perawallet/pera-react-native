@@ -53,7 +53,7 @@ vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-names', () => ({
-    useNameForAddressQuery: () => ({ data: undefined }),
+    useNameForAddressQuery: () => ({ data: [], isPending: false }),
 }))
 
 const mockNetworkConfig = { explorerUrl: 'https://explorer.test' }

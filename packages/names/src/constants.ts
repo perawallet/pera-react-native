@@ -16,6 +16,19 @@ export const NAME_BULK_CHUNK_SIZE = 50
 /** Max bulk-read requests in flight when a lookup spans several chunks. */
 export const NAME_BULK_CONCURRENCY = 2
 
+/**
+ * Max forward checks in flight across the whole app. Each is one or more chain
+ * reads, so a long history list, or several chains at once, must not burst them.
+ */
+export const NAME_VERIFY_CONCURRENCY = 4
+
+/**
+ * How long an address whose forward check could not complete is left alone. An
+ * outage on a user's RPC or a rate-limited registry otherwise repeats every
+ * read on each new lookup.
+ */
+export const NAME_UNAVAILABLE_BACKOFF_MS = 5 * 60 * 1000
+
 /** How long a cached row (positive or negative) is considered fresh. */
 export const NAME_CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24h
 

@@ -11,9 +11,9 @@
  */
 
 // An EVM address reads as its verified ENS primary name wherever an NFD name
-// would show, through the same batched, cached lookup, with the names coming
-// from Pera's backend and never from a node. Copy is asserted by key: this
-// project renders i18n keys.
+// would show, through the same batched, cached lookup. The names come from
+// Pera's backend and show only once ENS on Ethereum L1 resolves each back to
+// the address. Copy is asserted by key: this project renders i18n keys.
 
 import {
     afterAll,
@@ -26,11 +26,18 @@ import {
     vi,
 } from 'vitest'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { EvmHistoryItemResponse } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
+import { Decimal } from 'decimal.js'
+import type {
+    EnsRecordFixture,
+    EvmHistoryItemResponse,
+} from '@perawallet/wallet-core-chain-ethereum/test-handlers'
 import type { AddressNamesRequestBody } from '@perawallet/wallet-core-names/test-handlers'
 import { server } from '@test-utils/msw-server'
 import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
-import { ENS_UNIVERSAL_RESOLVER } from './__fixtures__/ens-send'
+import { COIN_TYPE_BASE, ENS_UNIVERSAL_RESOLVER } from './__fixtures__/ens-send'
+
+const L1_RPC = 'https://mainnet.rpc.test/'
+const DEFAULT_EVM_COIN_TYPE = 1n << 31n
 
 vi.mock('@perawallet/wallet-core-config', async importOriginal => {
     const withBackend = await (
@@ -85,10 +92,15 @@ const { act, fireEvent, renderHook, screen, waitFor } =
 const { useAccountsStore } = await import('@perawallet/wallet-core-accounts')
 const { addressCodecs } = await import('@perawallet/wallet-core-chain-contract')
 const { useContacts } = await import('@perawallet/wallet-core-contacts')
-const { evmHistoryItem, evmRpcHandlers } =
-    await import('@perawallet/wallet-core-chain-ethereum/test-handlers')
+const {
+    ensResolverCallResponder,
+    EvmRpcErrorFixture,
+    evmHistoryItem,
+    evmRpcHandlers,
+} = await import('@perawallet/wallet-core-chain-ethereum/test-handlers')
 const { mockAddressNames } =
     await import('@perawallet/wallet-core-names/test-handlers')
+const { getNameByAddress } = await import('@perawallet/wallet-core-names')
 const { peraEvmHistoryHandlers } =
     await import('@packages/chain-ethereum/src/history/api/msw-handlers')
 const { renderWithNavigation } =
@@ -96,6 +108,21 @@ const { renderWithNavigation } =
 const { closestPressable } = await import('@test-utils/rnw')
 const { resetTestDatabase, setupTestDatabase, teardownTestDatabase } =
     await import('@test-utils/database-setup')
+const { useSendFundsStore } = await import('@modules/transactions')
+const { TransactionConfirmationScreen } =
+    await import('@modules/transactions/screens/send-funds/TransactionConfirmationScreen/TransactionConfirmationScreen')
+const { TransactionProcessingScreen } =
+    await import('@modules/transactions/screens/send-funds/TransactionProcessingScreen/TransactionProcessingScreen')
+const { TransactionSuccessScreen } =
+    await import('@modules/transactions/routes')
+const {
+    ETHEREUM_SENDER,
+    renderSendConfirmationStack,
+    seedEthereumAssets,
+    seedSenderEther,
+    selectSender,
+    UNKNOWN_RECIPIENT,
+} = await import('./__fixtures__/ethereum-send')
 const { TransactionDetailsScreen } = await import('@modules/signing/routes')
 const { AccountHistory } =
     await import('@modules/accounts/components/AccountHistory/AccountHistory')
@@ -103,6 +130,7 @@ const { ViewContactScreen } =
     await import('@modules/contacts/screens/ViewContactScreen/ViewContactScreen')
 
 const ETHEREUM_CAIP2 = 'eip155:1'
+const ETHEREUM_MAINNET = { chainId: 'ethereum', networkId: 'mainnet' } as const
 const BASE_CAIP2 = 'eip155:8453'
 
 const OWN_ADDRESS = '0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed'
@@ -179,18 +207,78 @@ const serveNames = (namesByChain: NamesByChain, status = 200) =>
 const askedAddresses = () =>
     requests.flatMap(body => body.addresses.map(a => a.toLowerCase()))
 
-const rpcBodies: Promise<string>[] = []
-const trackRpc = ({ request }: { request: Request }) => {
-    if (new URL(request.url).hostname.endsWith('.rpc.test')) {
-        rpcBodies.push(request.clone().text())
+const rpcCalls: Promise<{
+    host: string
+    body: string
+    requestId: string
+}>[] = []
+const answeredRequestIds = new Set<string>()
+const trackRpc = ({
+    request,
+    requestId,
+}: {
+    request: Request
+    requestId: string
+}) => {
+    const { hostname } = new URL(request.url)
+    if (hostname.endsWith('.rpc.test')) {
+        rpcCalls.push(
+            request
+                .clone()
+                .text()
+                .then(body => ({
+                    host: hostname,
+                    body: body.toLowerCase(),
+                    requestId,
+                })),
+        )
     }
 }
+const trackAnswer = ({ requestId }: { requestId: string }) => {
+    answeredRequestIds.add(requestId)
+}
+
+// Reads of the ENS Universal Resolver, which every forward check makes.
+const ensReads = async () =>
+    (await Promise.all(rpcCalls)).flatMap(({ host, body }) =>
+        Array<string>(body.split(ENS_UNIVERSAL_RESOLVER).length - 1).fill(host),
+    )
+
+// Reads the mock server has answered, so a verdict can have been reached.
+const answeredEnsReads = async () =>
+    (await Promise.all(rpcCalls)).filter(
+        ({ requestId, body }) =>
+            answeredRequestIds.has(requestId) &&
+            body.includes(ENS_UNIVERSAL_RESOLVER),
+    )
+
+// Forward records on Ethereum L1, the one place ENS is read for every EVM chain.
+const serveEns = (records: EnsRecordFixture[]) =>
+    server.use(
+        ...evmRpcHandlers({
+            rpcUrl: L1_RPC,
+            responses: { eth_call: ensResolverCallResponder(records) },
+        }),
+    )
+
+const record = (
+    name: string,
+    address: string,
+    coinType = 60n,
+): EnsRecordFixture => ({
+    name,
+    address: address as EnsRecordFixture['address'],
+    coinType,
+})
 
 // Rows show the checksummed spelling, whatever case the address was handed in.
 const truncated = (chainId: 'ethereum' | 'base', address: string) => {
     const codec = addressCodecs.get(chainId)
     return codec.truncate(codec.normalize(address))
 }
+
+const full = (chainId: 'ethereum' | 'base', address: string) =>
+    addressCodecs.get(chainId).normalize(address)
 
 describe('Flow: ENS primary names for EVM addresses', () => {
     beforeAll(async () => {
@@ -204,8 +292,10 @@ describe('Flow: ENS primary names for EVM addresses', () => {
     beforeEach(async () => {
         await resetTestDatabase()
         requests.length = 0
-        rpcBodies.length = 0
+        rpcCalls.length = 0
+        answeredRequestIds.clear()
         server.events.on('request:start', trackRpc)
+        server.events.on('response:mocked', trackAnswer)
         server.use(
             ...evmRpcHandlers({
                 responses: { eth_getTransactionByHash: () => null },
@@ -215,6 +305,7 @@ describe('Flow: ENS primary names for EVM addresses', () => {
 
     afterEach(() => {
         server.events.removeListener('request:start', trackRpc)
+        server.events.removeListener('response:mocked', trackAnswer)
         useAccountsStore.getState().setAccounts([])
     })
 
@@ -250,7 +341,7 @@ describe('Flow: ENS primary names for EVM addresses', () => {
         return names[counterparty] ?? truncated('ethereum', counterparty)
     }
 
-    it('Given 50 rows over 5 counterparties, 4 of them named, when History opens, then each is asked about once, the unnamed one stays truncated, no node is asked, and reopening the app asks nothing again', async () => {
+    it('Given 50 rows over 5 counterparties, 4 of them named, when History opens, then each is asked about once, the unnamed one stays truncated, ENS reads each named one once, and reopening the app asks neither the names route nor ENS again', async () => {
         const names = {
             [ALICE]: 'alice.eth',
             [BOB]: 'bob.eth',
@@ -258,6 +349,11 @@ describe('Flow: ENS primary names for EVM addresses', () => {
             [DAVE]: 'dave.eth',
         }
         serveNames({ [ETHEREUM_CAIP2]: names })
+        serveEns(
+            Object.entries(names).map(([address, name]) =>
+                record(name, address),
+            ),
+        )
         serveFiftyReceipts()
         useAccount(ETH_ACCOUNT)
 
@@ -282,9 +378,10 @@ describe('Flow: ENS primary names for EVM addresses', () => {
             asked.filter(a => COUNTERPARTIES.some(c => c === a)),
         ).toHaveLength(COUNTERPARTIES.length)
         expect(requests.every(body => body.chain === ETHEREUM_CAIP2)).toBe(true)
-        expect(await Promise.all(rpcBodies)).toEqual([])
+        expect(await ensReads()).toHaveLength(Object.keys(names).length)
 
         const askedBefore = requests.length
+        const readsBefore = (await ensReads()).length
         first.unmount()
         renderHistory()
 
@@ -292,10 +389,12 @@ describe('Flow: ENS primary names for EVM addresses', () => {
             timeout: SLOW_WAIT_TIMEOUT_MS,
         })
         expect(requests).toHaveLength(askedBefore)
+        expect(await ensReads()).toHaveLength(readsBefore)
     })
 
-    it('Given a row from alice.eth, when it is opened, then the sender shows the name and no node is asked to resolve it', async () => {
+    it('Given a row from alice.eth, when it is opened, then the sender shows the full address with the verified name beneath it', async () => {
         serveNames({ [ETHEREUM_CAIP2]: { [ALICE]: 'alice.eth' } })
+        serveEns([record('alice.eth', ALICE)])
         server.use(
             ...peraEvmHistoryHandlers({
                 history: { [OWN_ADDRESS]: [[received(1, ALICE)]] },
@@ -314,16 +413,85 @@ describe('Flow: ENS primary names for EVM addresses', () => {
         await waitFor(
             () =>
                 expect(
-                    screen.getByTestId('transaction_detail_from').textContent,
+                    screen.getByTestId('transaction_detail_from_name')
+                        .textContent,
                 ).toContain('alice.eth'),
             { timeout: SLOW_WAIT_TIMEOUT_MS },
         )
-        const bodies = await Promise.all(rpcBodies)
         expect(
-            bodies.some(body =>
-                body.toLowerCase().includes(ENS_UNIVERSAL_RESOLVER),
-            ),
-        ).toBe(false)
+            screen.getByTestId('transaction_detail_from').textContent,
+        ).toContain(full('ethereum', ALICE))
+    })
+
+    it('Given the backend names a counterparty vitalik.eth whose ENS record points elsewhere, when History opens, then its rows show the truncated address, vitalik.eth shows nowhere, and its detail row shows no name', async () => {
+        serveNames({
+            [ETHEREUM_CAIP2]: { [ALICE]: 'vitalik.eth', [CAROL]: 'carol.eth' },
+        })
+        serveEns([record('vitalik.eth', BOB), record('carol.eth', CAROL)])
+        server.use(
+            ...peraEvmHistoryHandlers({
+                history: {
+                    [OWN_ADDRESS]: [[received(1, ALICE), received(2, CAROL)]],
+                },
+            }),
+        )
+        useAccount(ETH_ACCOUNT)
+        renderHistory()
+
+        const row = await screen.findByTestId(
+            `transaction_row_${hashOf(1)}`,
+            undefined,
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+        // Carol shares the batch, so her name showing means the verdict on Alice's is in.
+        await waitFor(() => expect(rowText(hashOf(2))).toContain('carol.eth'), {
+            timeout: SLOW_WAIT_TIMEOUT_MS,
+        })
+        expect(rowText(hashOf(1))).toContain(truncated('ethereum', ALICE))
+        expect(screen.queryByText(/vitalik\.eth/)).toBeNull()
+
+        fireEvent.click(closestPressable(row) ?? row)
+
+        await screen.findByTestId('transaction_detail_from', undefined, {
+            timeout: SLOW_WAIT_TIMEOUT_MS,
+        })
+        expect(screen.queryByTestId('transaction_detail_from_name')).toBeNull()
+        expect(screen.queryByText(/vitalik\.eth/)).toBeNull()
+    })
+
+    it('Given ENS cannot be read, when History opens, then named counterparties show truncated', async () => {
+        serveNames({ [ETHEREUM_CAIP2]: { [ALICE]: 'alice.eth' } })
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: L1_RPC,
+                responses: {
+                    eth_call: new EvmRpcErrorFixture(-32_000, 'node down'),
+                },
+            }),
+        )
+        server.use(
+            ...peraEvmHistoryHandlers({
+                history: { [OWN_ADDRESS]: [[received(1, ALICE)]] },
+            }),
+        )
+        useAccount(ETH_ACCOUNT)
+
+        renderHistory()
+
+        await waitFor(
+            async () => expect(await answeredEnsReads()).not.toHaveLength(0),
+            {
+                timeout: SLOW_WAIT_TIMEOUT_MS,
+            },
+        )
+        await waitFor(
+            () =>
+                expect(rowText(hashOf(1))).toContain(
+                    truncated('ethereum', ALICE),
+                ),
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+        expect(screen.queryByText(/alice\.eth/)).toBeNull()
     })
 
     it('Given the names route answers 503, when History opens, then every counterparty shows truncated with no error state', async () => {
@@ -359,6 +527,10 @@ describe('Flow: ENS primary names for EVM addresses', () => {
             [BASE_CAIP2]: { [ALICE]: 'alice.base.eth', [BOB]: 'bob.eth' },
             [ETHEREUM_CAIP2]: { [CAROL]: 'carol.eth' },
         })
+        serveEns([
+            record('alice.base.eth', ALICE, COIN_TYPE_BASE),
+            record('bob.eth', BOB, DEFAULT_EVM_COIN_TYPE),
+        ])
         server.use(
             ...peraEvmHistoryHandlers({
                 history: {
@@ -387,11 +559,14 @@ describe('Flow: ENS primary names for EVM addresses', () => {
         expect(screen.queryByText('carol.eth')).toBeNull()
         expect(requests.length).toBeGreaterThan(0)
         expect(requests.every(body => body.chain === BASE_CAIP2)).toBe(true)
-        expect(await Promise.all(rpcBodies)).toEqual([])
+        const reads = await ensReads()
+        expect(reads.length).toBeGreaterThan(0)
+        expect(reads.every(host => host === 'mainnet.rpc.test')).toBe(true)
     })
 
     it('Given a contact with an EVM address named alice.eth, when it is viewed, then its name shows under an ENS heading', async () => {
         serveNames({ [ETHEREUM_CAIP2]: { [ALICE]: 'alice.eth' } })
+        serveEns([record('alice.eth', ALICE)])
         const contacts = renderHook(() => useContacts()).result
         act(() => {
             contacts.current.addContact({
@@ -415,5 +590,80 @@ describe('Flow: ENS primary names for EVM addresses', () => {
         expect(section.textContent).toContain('contacts.view_contact.ens_label')
         expect(section.textContent).toContain('alice.eth')
         expect(requests.every(body => body.chain === ETHEREUM_CAIP2)).toBe(true)
+    })
+
+    describe('on the send confirmation', () => {
+        const reviewSendTo = async (destination: string) => {
+            await seedEthereumAssets()
+            await seedSenderEther('10000000000000000000')
+            selectSender(ETHEREUM_SENDER)
+            useSendFundsStore
+                .getState()
+                .setSelectedAsset({ chainId: 'ethereum', assetId: 'native' })
+            useSendFundsStore.getState().setAmount(new Decimal('0.5'))
+            useSendFundsStore.getState().setDestination(destination)
+            useSendFundsStore.getState().setSendMode('normal')
+
+            renderSendConfirmationStack({
+                confirmation: TransactionConfirmationScreen,
+                processing: TransactionProcessingScreen,
+                success: TransactionSuccessScreen,
+            })
+            return screen.findByTestId('send_confirm_recipient')
+        }
+
+        afterEach(() => {
+            useSendFundsStore.getState().reset()
+        })
+
+        it('Given a recipient whose backend name alice.eth ENS confirms, when the user reviews the send, then it shows the name and the full checksummed address', async () => {
+            serveNames({
+                [ETHEREUM_CAIP2]: {
+                    [UNKNOWN_RECIPIENT.toLowerCase()]: 'alice.eth',
+                },
+            })
+            serveEns([record('alice.eth', UNKNOWN_RECIPIENT)])
+
+            const recipient = await reviewSendTo(UNKNOWN_RECIPIENT)
+
+            await waitFor(
+                () => expect(recipient.textContent).toContain('alice.eth'),
+                { timeout: SLOW_WAIT_TIMEOUT_MS },
+            )
+            expect(recipient.textContent).toContain(
+                full('ethereum', UNKNOWN_RECIPIENT),
+            )
+        })
+
+        it('Given the backend names the recipient alice.eth but its ENS record points elsewhere, when the user reviews the send, then it shows the full address and no name', async () => {
+            serveNames({
+                [ETHEREUM_CAIP2]: {
+                    [UNKNOWN_RECIPIENT.toLowerCase()]: 'alice.eth',
+                },
+            })
+            serveEns([record('alice.eth', ALICE)])
+
+            const recipient = await reviewSendTo(UNKNOWN_RECIPIENT)
+
+            await waitFor(
+                async () => expect(await answeredEnsReads()).toHaveLength(1),
+                { timeout: SLOW_WAIT_TIMEOUT_MS },
+            )
+            // The mismatch is cached as "no name" once its verdict is in.
+            await waitFor(
+                async () =>
+                    expect(
+                        await getNameByAddress({
+                            address: UNKNOWN_RECIPIENT,
+                            scope: ETHEREUM_MAINNET,
+                        }),
+                    ).toMatchObject({ name: null }),
+                { timeout: SLOW_WAIT_TIMEOUT_MS },
+            )
+            expect(recipient.textContent).toContain(
+                full('ethereum', UNKNOWN_RECIPIENT),
+            )
+            expect(screen.queryByText(/alice\.eth/)).toBeNull()
+        })
     })
 })

@@ -21,6 +21,7 @@ const nameService = vi.hoisted(() => ({ isEnabled: true }))
 
 vi.mock('../../services/nameBatchQueue', () => ({
     nameBatchQueue: { enqueue: mockEnqueue },
+    NAME_UNAVAILABLE: 'unavailable',
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
@@ -248,5 +249,30 @@ describe('useNameForAddressQuery', () => {
 
         expect(initialData).toEqual([])
         expect(result.current.data).toBe(initialData)
+    })
+
+    it('does not cache an unavailable answer as an empty result', async () => {
+        mockEnqueue.mockResolvedValueOnce('unavailable').mockResolvedValue({
+            name: 'alice.algo',
+            image: '',
+            source: 'nfd',
+        })
+        const first = renderHook(
+            () => useNameForAddressQuery(ALGORAND_TESTNET, VALID_ADDRESS),
+            { wrapper },
+        )
+        await waitFor(() => expect(mockEnqueue).toHaveBeenCalledTimes(1))
+        await waitFor(() => expect(first.result.current.isPending).toBe(false))
+        first.unmount()
+
+        const second = renderHook(
+            () => useNameForAddressQuery(ALGORAND_TESTNET, VALID_ADDRESS),
+            { wrapper },
+        )
+
+        await waitFor(() =>
+            expect(second.result.current.data.at(0)?.name).toBe('alice.algo'),
+        )
+        expect(first.result.current.data).toEqual([])
     })
 })

@@ -22,6 +22,7 @@ import {
     useContacts,
     type Contact,
 } from '@perawallet/wallet-core-contacts'
+import { useNameForAddressQuery } from '@perawallet/wallet-core-names'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 export type UseTransactionDetailAddressResult = {
@@ -29,6 +30,10 @@ export type UseTransactionDetailAddressResult = {
     ownAccountName: Optional<string>
     /** Unset for one of the wallet's own accounts, which names it instead. */
     contact: Optional<Contact>
+    /** The chain-verified name; unset when an account or contact names the address. */
+    addressName: Optional<string>
+    /** A name stands beside the address, so the address is shown in full to compare. */
+    isAddressInFull: boolean
 }
 
 export const useTransactionDetailAddress = (
@@ -45,11 +50,19 @@ export const useTransactionDetailAddress = (
               getChainDescriptor(scope.chainId).family,
           )
 
+    const { data: names } = useNameForAddressQuery(scope, address, {
+        enabled: !ownAccount && !contact,
+    })
+    // `enabled: false` still returns data another screen cached under the same key.
+    const addressName = ownAccount || contact ? undefined : names.at(0)?.name
+
     return {
         ownAccount,
         ownAccountName: ownAccount
             ? getAccountDisplayName(ownAccount, scope.chainId)
             : undefined,
         contact,
+        addressName,
+        isAddressInFull: !!addressName,
     }
 }

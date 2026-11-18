@@ -26,6 +26,15 @@ import {
 import type { AddressName } from '../models'
 
 /**
+ * Answer for an address whose forward check could not complete. Distinct from
+ * `null` ("no name") so the query layer can refuse to cache it, and so an
+ * older, expired row is not read back in its place.
+ */
+export const NAME_UNAVAILABLE = 'unavailable'
+
+export type NameLookup = Nullable<AddressName> | typeof NAME_UNAVAILABLE
+
+/**
  * On-demand name lookup batch queue. Used by `useNameForAddressQuery` to coalesce
  * address lookups into a single bulk names HTTP call.
  *
@@ -37,19 +46,18 @@ import type { AddressName } from '../models'
  */
 // Partitioned by the scope key, not the scope: BatchQueue groups by Map identity,
 // so equal-but-distinct scope objects would never share a batch.
-export const nameBatchQueue = new BatchQueue<
-    string,
-    Nullable<AddressName>,
-    ChainScopeKey
->(
+export const nameBatchQueue = new BatchQueue<string, NameLookup, ChainScopeKey>(
     async (addresses, scopeKey) => {
         const scope = parseScopeKey(scopeKey)
-        await fetchAndPersistNames(addresses, scope)
+        const unavailable = await fetchAndPersistNames(addresses, scope)
 
         const rows = await getNamesByAddresses({ addresses, scope })
-        const map = new Map<string, Nullable<AddressName>>()
+        const map = new Map<string, NameLookup>()
         for (const row of rows) {
             map.set(row.address, row.name)
+        }
+        for (const address of unavailable) {
+            map.set(address, NAME_UNAVAILABLE)
         }
         return map
     },

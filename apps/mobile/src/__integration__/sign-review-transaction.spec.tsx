@@ -38,7 +38,6 @@ import {
     seedAlgo25Signer,
 } from '@test-utils/signing-review'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import {
     mockAlgodAccountInformation,
     mockAlgodTransactionParams,
@@ -87,7 +86,7 @@ describe('Flow: interactive transaction review (WalletConnect → review sheet)'
         )
         expect(
             within(screen.getByTestId('algorand_review_target')).getByText(
-                truncateAlgorandAddress(REVIEW_RECEIVER_ADDRESS),
+                REVIEW_RECEIVER_ADDRESS,
             ),
         ).toBeTruthy()
         expect(

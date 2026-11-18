@@ -223,6 +223,23 @@ describe('queryClient query error policy', () => {
         expect(errorSpy).not.toHaveBeenCalled()
     })
 
+    it('does not log a failure its query marks as expected', async () => {
+        const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {})
+
+        const { result } = renderHook(
+            () =>
+                useQuery({
+                    queryKey: ['expected-failure'],
+                    queryFn: () => Promise.reject(new Error('expected')),
+                    meta: { isExpectedFailure: true },
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(errorSpy).not.toHaveBeenCalled()
+    })
+
     it('still logs an unrelated query failure centrally', async () => {
         const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {})
 

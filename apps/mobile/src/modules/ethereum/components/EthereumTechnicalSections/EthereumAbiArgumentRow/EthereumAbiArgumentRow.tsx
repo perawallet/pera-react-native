@@ -63,8 +63,8 @@ export const EthereumAbiArgumentRow = ({
                     <AddressDisplay
                         address={value.value}
                         displayType='full'
-                        // An address the user doesn't know is compared in full, never truncated.
-                        unnamedAddressFormat='full'
+                        // An address is compared in full, under its name too, never truncated.
+                        addressFormat='full'
                         scope={scope}
                     />
                 )

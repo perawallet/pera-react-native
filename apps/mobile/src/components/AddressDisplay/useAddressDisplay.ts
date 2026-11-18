@@ -42,11 +42,8 @@ import { KeyValueAlignmentContext } from '@components/KeyValueRow'
 import { useHomeChainScope } from '@hooks/useHomeChainScope'
 
 export type AddressFormat = 'short' | 'long' | 'full'
-/**
- * `simple` skips the wallet's own accounts; `inline` also skips contacts and
- * reads as one line, a name standing in for the address.
- */
-export type AddressDisplayType = 'full' | 'simple' | 'inline' | 'address-only'
+/** `simple` skips the wallet's own accounts. */
+export type AddressDisplayType = 'full' | 'simple' | 'address-only'
 
 type UseAddressDisplayProps = {
     address: string
@@ -167,17 +164,23 @@ export const useAddressDisplay = ({
         ? getChainDescriptor(addressScope.chainId).family
         : undefined
     const contact = useMemo(() => {
-        if (isAddressOnly || displayType === 'inline') {
+        if (isAddressOnly) {
             return null
         }
         return findContactByAddress(contacts, address, contactFamily) ?? null
-    }, [isAddressOnly, displayType, address, contacts, contactFamily])
+    }, [isAddressOnly, address, contacts, contactFamily])
 
+    const isNameLookupEnabled = !isAddressOnly && !account && !contact
     const { data: addressNames } = useNameForAddressQuery(scope, address, {
-        enabled: !isAddressOnly && !account && !contact,
+        enabled: isNameLookupEnabled,
     })
 
-    const addressName = useMemo(() => addressNames?.at(0)?.name, [addressNames])
+    // `enabled: false` still returns data another screen cached under the same
+    // key, which would name an address the caller asked to show bare.
+    const addressName = useMemo(
+        () => (isNameLookupEnabled ? addressNames?.at(0)?.name : undefined),
+        [isNameLookupEnabled, addressNames],
+    )
 
     const truncatedAddress = useMemo(
         () => formatAddress(address, addressFormat, scope.chainId),
@@ -216,16 +219,13 @@ export const useAddressDisplay = ({
         [account, contact, addressName, truncatedAddress, showSecondaryAddress],
     )
 
-    // Inline, a name reads as the address itself: one line, no avatar.
-    const isNameInline = displayType === 'inline' && !!addressName
-
     return {
         chainId: scope.chainId,
         account,
         contact,
-        addressName: isNameInline ? undefined : addressName,
+        addressName,
         truncatedAddress,
-        unnamedAddress: isNameInline ? addressName : unnamedAddress,
+        unnamedAddress,
         fallbackIconName,
         copyIcon: { size: isEndAligned ? 'sm' : 'md', onPress: copyAddress },
         unifiedLabels,
