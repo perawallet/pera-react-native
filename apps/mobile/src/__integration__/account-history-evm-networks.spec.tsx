@@ -320,15 +320,19 @@ describe('Flow: History on an account with every EVM network', () => {
         })
 
         const { gate, release } = holdRead()
+        let heldReads = 0
         server.use(
             serveChain('bsc', async () => {
+                heldReads += 1
                 await gate
                 return rows('bsc')
             }),
         )
         fireEvent.click(within(failed).getByText('common.retry.label'))
+        await waitFor(() => expect(heldReads).toBeGreaterThan(0), {
+            timeout: SLOW_WAIT_TIMEOUT_MS,
+        })
 
-        await new Promise(resolve => setTimeout(resolve, 200))
         expect(screen.getByTestId('history_network_failed')).toBeTruthy()
         expect(screen.getByTestId('history_network_unavailable')).toBeTruthy()
 
