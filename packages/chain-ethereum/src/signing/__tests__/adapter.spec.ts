@@ -323,3 +323,29 @@ describe('readEvmReviewTransaction fee estimate', () => {
         expect(plan(priced)).toEqual(plan(unsigned(TRANSFER)))
     })
 })
+
+describe('readEvmReviewTransaction surcharge', () => {
+    const withSurcharge = (surcharge: unknown) =>
+        unsigned(TRANSFER, {
+            payload: { from: SENDER, transaction: TRANSFER, surcharge },
+        })
+
+    it('passes a surcharge through', () => {
+        expect(
+            readEvmReviewTransaction(withSurcharge(7n), ETHEREUM).surcharge,
+        ).toBe(7n)
+    })
+
+    it.each([
+        ['a number', 7],
+        ['a negative', -1n],
+    ])('refuses %s', (_label, surcharge) => {
+        expect(() =>
+            readEvmReviewTransaction(withSurcharge(surcharge), ETHEREUM),
+        ).toThrow('The EVM transaction payload is malformed')
+    })
+
+    it('signs the same bytes with or without it', () => {
+        expect(plan(withSurcharge(7n))).toEqual(plan(unsigned(TRANSFER)))
+    })
+})

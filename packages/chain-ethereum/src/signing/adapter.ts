@@ -78,6 +78,13 @@ export type EthereumTransactionPayload = {
      * fail. Signed with a fallback gas limit, so nothing signed comes from it.
      */
     revertedEstimate?: EthereumRevertedEstimate
+    /**
+     * Display-only, in wei: what an OP-stack chain charges on top of gas (the
+     * L1 data and operator fees) as the oracle priced this transaction at
+     * build time. It isn't capped by anything signed and is priced again at
+     * inclusion. Absent where the chain charges none.
+     */
+    surcharge?: bigint
 }
 
 export const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -143,6 +150,13 @@ export const readEvmReviewTransaction = (
     ) {
         throw new Error('The EVM transaction payload is malformed')
     }
+    const surcharge = payload.surcharge
+    if (
+        surcharge !== undefined &&
+        (typeof surcharge !== 'bigint' || surcharge < 0n)
+    ) {
+        throw new Error('The EVM transaction payload is malformed')
+    }
     return {
         from: getAddress(payload.from),
         transaction,
@@ -162,6 +176,7 @@ export const readEvmReviewTransaction = (
                 }),
             },
         }),
+        ...(surcharge !== undefined && { surcharge }),
     }
 }
 
