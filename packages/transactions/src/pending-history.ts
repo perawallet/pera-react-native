@@ -176,7 +176,7 @@ export const getMinedTransactionHistory = (
     address: string,
     scope: ChainScope,
     page?: PageRef,
-    options?: Pick<HistoryReadOptions, 'signal'>,
+    options?: Pick<HistoryReadOptions, 'assetId' | 'signal'>,
 ): Promise<Page<TransactionRecord>> =>
     historyChainAdapters
         .get(scope.chainId)

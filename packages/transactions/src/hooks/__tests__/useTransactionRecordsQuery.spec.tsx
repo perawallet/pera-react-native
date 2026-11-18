@@ -1006,6 +1006,59 @@ describe('useTransactionRecordsQuery', () => {
         expect(result.current.hasNextPage).toBe(false)
     })
 
+    test('asks the chain for the filtered asset on every page it reads', async () => {
+        mocks.getMinedTransactionHistory
+            .mockResolvedValueOnce({ items: [], next: { cursor: 'c1' } })
+            .mockResolvedValueOnce({ items: [record('USDC', JAN_10, USDC)] })
+
+        const { result } = renderHook(
+            () =>
+                useTransactionRecordsQuery({
+                    accountAddress: ADDRESS,
+                    scope: SCOPE,
+                    assetId: USDC,
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() =>
+            expect(result.current.records.map(r => r.id)).toEqual(['USDC']),
+        )
+        expect(mocks.getMinedTransactionHistory.mock.calls).toEqual([
+            [
+                ADDRESS,
+                SCOPE,
+                undefined,
+                { assetId: USDC, signal: expect.anything() },
+            ],
+            [
+                ADDRESS,
+                SCOPE,
+                { cursor: 'c1' },
+                { assetId: USDC, signal: expect.anything() },
+            ],
+        ])
+    })
+
+    test('settles on an empty list when the asset has no history', async () => {
+        mocks.getMinedTransactionHistory.mockResolvedValueOnce({ items: [] })
+
+        const { result } = renderHook(
+            () =>
+                useTransactionRecordsQuery({
+                    accountAddress: ADDRESS,
+                    scope: SCOPE,
+                    assetId: USDC,
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isFetched).toBe(true))
+        expect(result.current.records).toEqual([])
+        expect(result.current.hasNextPage).toBe(false)
+        expect(result.current.isError).toBe(false)
+    })
+
     test('keeps a call the account paid gas for in the native asset’s History, but not one another address sent', async () => {
         mocks.getMinedTransactionHistory.mockResolvedValueOnce({
             items: [

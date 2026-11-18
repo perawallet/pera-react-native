@@ -51,7 +51,7 @@ import { usePendingTransactionRecordsQuery } from './usePendingTransactionRecord
 export type UseTransactionRecordsQueryParams = {
     accountAddress: string
     scope: ChainScope
-    /** Kept client-side: the records backends take no asset filter. */
+    /** Sent to the chain, which may ignore it, and kept client-side either way. */
     assetId?: string
     /** `YYYY-MM-DD`, inclusive, UTC. */
     afterTime?: string
@@ -224,7 +224,7 @@ export const useTransactionRecordsQuery = ({
                     accountAddress,
                     scope,
                     page,
-                    { signal },
+                    { assetId, signal },
                 )
             } catch (error) {
                 // The pages read so far kept nothing, so an empty page resuming

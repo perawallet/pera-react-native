@@ -59,6 +59,8 @@ const gatedHistoryPage: ConcurrencyLimit = (task, options) => {
 }
 
 export type HistoryPageReadOptions = {
+    /** CAIP-19, native or ERC-20 only. The backend binds the cursor to it, so every page must send it. */
+    caip19AssetId?: string
     signal?: AbortSignal
     /** No one waits on it, as with a token scan, so it queues behind every other read. */
     isBackground?: boolean
@@ -74,7 +76,11 @@ export const fetchHistoryPage = async (
     chain: EvmChain,
     address: string,
     page?: PageRef,
-    { signal, isBackground = false }: HistoryPageReadOptions = {},
+    {
+        caip19AssetId,
+        signal,
+        isBackground = false,
+    }: HistoryPageReadOptions = {},
 ): Promise<EvmHistoryPage> => {
     signal?.throwIfAborted()
     const { data } = await gatedHistoryPage(
@@ -92,13 +98,16 @@ export const fetchHistoryPage = async (
                     eip155ChainIdOf(scope, chain),
                     address.toLowerCase(),
                 ),
-                params: page && {
-                    cursor: page.cursor,
-                    ...(page.limit !== undefined && {
+                params: {
+                    ...(page && { cursor: page.cursor }),
+                    ...(page?.limit !== undefined && {
                         limit: Math.min(
                             Math.max(page.limit, 1),
                             HISTORY_MAX_PAGE_SIZE,
                         ),
+                    }),
+                    ...(caip19AssetId !== undefined && {
+                        asset_id: caip19AssetId,
                     }),
                 },
                 headers,

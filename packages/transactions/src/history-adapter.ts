@@ -140,6 +140,12 @@ export interface HistoryChainDataCodec {
 export type HistoryReadOptions = {
     /** The scope's capabilities now; a chain reads the ones that change how it words a row. */
     capabilities: ChainCapabilities
+    /**
+     * One asset's history, as the app's asset id, for a chain whose backend
+     * can filter by asset. A chain may ignore it, so the caller still filters
+     * what comes back.
+     */
+    assetId?: string
     signal?: AbortSignal
 }
 

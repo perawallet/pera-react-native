@@ -329,6 +329,21 @@ describe('getMinedTransactionHistory', () => {
         expect(getSubmissionAttemptsWithHistoryEntry).not.toHaveBeenCalled()
     })
 
+    it('hands the chain the asset the read is filtered to', async () => {
+        getTransactionHistory.mockResolvedValue({ items: [] })
+
+        await getMinedTransactionHistory(ADDRESS, SCOPE, undefined, {
+            assetId: '0xUSDC',
+        })
+
+        expect(getTransactionHistory).toHaveBeenCalledWith(
+            ADDRESS,
+            SCOPE,
+            undefined,
+            { capabilities: CAPABILITIES, assetId: '0xUSDC' },
+        )
+    })
+
     it('hands the chain the cancellation signal alongside its capabilities', async () => {
         const signal = new AbortController().signal
         getTransactionHistory.mockResolvedValue({ items: [] })
