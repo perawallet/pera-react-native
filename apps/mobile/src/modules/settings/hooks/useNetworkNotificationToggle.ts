@@ -10,13 +10,11 @@
  limitations under the License
  */
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback } from 'react'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useDevice, useDeviceStore } from '@perawallet/wallet-core-device'
-import { assertOnline } from '@perawallet/wallet-core-shared'
 import { useDeviceAccountRegistrations } from '@hooks/useDeviceAccountRegistrations'
-import { useErrorToast } from '@hooks/useErrorToast'
-import { useLanguage } from '@hooks/useLanguage'
+import { useGuardedToggle } from '@hooks/useGuardedToggle'
 
 export type UseNetworkNotificationToggleResult = {
     /**
@@ -47,49 +45,20 @@ export const useNetworkNotificationToggle =
         const setChainMuted = useDeviceStore(state => state.setChainMuted)
         const accountRegistrations = useDeviceAccountRegistrations()
         const { registerDevice } = useDevice()
-        const { showError } = useErrorToast()
-        const { t } = useLanguage()
-
-        const ownPendingChainsRef = useRef<Set<ChainId>>(new Set())
-        const [pendingChains, setPendingChains] = useState<readonly ChainId[]>(
-            [],
-        )
+        const { runToggle, isTogglePending } = useGuardedToggle(inFlightChains)
 
         const toggleNetworkNotification = useCallback(
-            async (chainId: ChainId, enabled: boolean): Promise<boolean> => {
-                if (inFlightChains.has(chainId)) return false
-
-                inFlightChains.add(chainId)
-                ownPendingChainsRef.current.add(chainId)
-                setPendingChains([...ownPendingChainsRef.current])
-                setChainMuted(chainId, !enabled)
-
-                try {
-                    // Registration runs under networkMode 'always' and Android
-                    // offline doesn't reject promptly, so fail before it to
-                    // keep the rollback below reachable.
-                    assertOnline()
-
+            (chainId: ChainId, enabled: boolean): Promise<boolean> =>
+                runToggle([chainId], {
+                    write: () => setChainMuted(chainId, !enabled),
                     // The registration reads the store's muted chains when it
                     // runs, so the write above is what it sends.
-                    await registerDevice(accountRegistrations)
-                    return true
-                } catch (error) {
-                    setChainMuted(chainId, enabled)
-                    showError(error, t('common.error.title'))
-                    return false
-                } finally {
-                    inFlightChains.delete(chainId)
-                    ownPendingChainsRef.current.delete(chainId)
-                    setPendingChains([...ownPendingChainsRef.current])
-                }
-            },
-            [setChainMuted, accountRegistrations, registerDevice, showError, t],
-        )
-
-        const isTogglePending = useCallback(
-            (chainId: ChainId): boolean => pendingChains.includes(chainId),
-            [pendingChains],
+                    commit: async () => {
+                        await registerDevice(accountRegistrations)
+                    },
+                    rollback: () => setChainMuted(chainId, enabled),
+                }),
+            [runToggle, setChainMuted, accountRegistrations, registerDevice],
         )
 
         return { toggleNetworkNotification, isTogglePending }
