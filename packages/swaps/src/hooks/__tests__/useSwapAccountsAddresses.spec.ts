@@ -21,6 +21,23 @@ vi.mock('../../chain-adapter', () => ({
         chainId === 'algorand' || chainId === 'ethereum',
 }))
 
+vi.mock('@perawallet/wallet-core-config', () => ({
+    deploymentOf: () => 'mainnet',
+}))
+
+const registration = vi.hoisted(() => ({ isV4: false }))
+
+// Like v3, which registers only Algorand; v4 also sends Ethereum.
+vi.mock('@perawallet/wallet-core-device', () => ({
+    isSentInDeviceRegistration: (
+        _account: unknown,
+        chainId: string,
+        _deployment: string,
+        isV4: boolean,
+    ) => chainId === 'algorand' || isV4,
+    useIsDeviceRegistrationV4Enabled: () => registration.isV4,
+}))
+
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useSelectedScopes: (chainIds: string[]) =>
         chainIds.map(chainId => ({ chainId, networkId: 'mainnet' })),
@@ -61,6 +78,49 @@ describe('swaps/useSwapAccountsAddresses', () => {
             ['both', '0xETH', 'ethereum'],
             ['algo', 'OTHER', 'algorand'],
         ])
+    })
+
+    test('marks the addresses device registration sends', () => {
+        const both = account('both', {
+            algorand: { address: 'ALGO_ADDR', keyPairId: 'k1' },
+            ethereum: { address: '0xETH', keyPairId: 'k2' },
+        })
+
+        const { result } = renderHook(() => useSwapAccountsAddresses([both]))
+
+        expect(
+            result.current.map(({ address, isOnDevice }) => [
+                address,
+                isOnDevice,
+            ]),
+        ).toEqual([
+            ['ALGO_ADDR', true],
+            ['0xETH', false],
+        ])
+    })
+
+    test('marks the addresses again when the registration API flips', () => {
+        const both = account('both', {
+            algorand: { address: 'ALGO_ADDR', keyPairId: 'k1' },
+            ethereum: { address: '0xETH', keyPairId: 'k2' },
+        })
+        const accounts = [both]
+        const { result, rerender } = renderHook(() =>
+            useSwapAccountsAddresses(accounts),
+        )
+        expect(result.current.map(entry => entry.isOnDevice)).toEqual([
+            true,
+            false,
+        ])
+
+        registration.isV4 = true
+        rerender()
+
+        expect(result.current.map(entry => entry.isOnDevice)).toEqual([
+            true,
+            true,
+        ])
+        registration.isV4 = false
     })
 
     test('lists nothing without accounts', () => {

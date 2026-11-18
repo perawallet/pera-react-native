@@ -22,6 +22,7 @@ import {
 } from 'vitest'
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 import React from 'react'
@@ -101,6 +102,33 @@ describe('onramp/useRampHistoryInfiniteQuery', () => {
         expect(result.current.hasNextPage).toBe(false)
     })
 
+    test('flags an account the device does not hold', async () => {
+        server.use(
+            http.get('*/history/', () =>
+                HttpResponse.json(
+                    {
+                        error: 'Not an account of this device',
+                        code: 'account_not_on_device',
+                    },
+                    { status: 422 },
+                ),
+            ),
+        )
+
+        const { result } = renderHook(
+            () =>
+                useRampHistoryInfiniteQuery({
+                    scope: SCOPE,
+                    deviceId: 'device-1',
+                    accountAddress: ACCOUNT,
+                }),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(result.current.isAccountNotOnDevice).toBe(true)
+    })
+
     test('is disabled without deviceId or accountAddress', async () => {
         const { result } = renderHook(
             () =>
@@ -121,6 +149,14 @@ describe('getRampHistoryRefetchIntervalMs', () => {
     test('backs off to 60s on a 404 PeraNetworkError (post-migration shape)', () => {
         const notFound = new PeraNetworkError('client', { status: 404 })
         expect(getRampHistoryRefetchIntervalMs(notFound, true)).toBe(60_000)
+    })
+
+    test('backs off to 60s while the device does not hold the account', () => {
+        const notOnDevice = new PeraNetworkError('client', {
+            status: 422,
+            backendCode: 'account_not_on_device',
+        })
+        expect(getRampHistoryRefetchIntervalMs(notOnDevice, true)).toBe(60_000)
     })
 
     test('polls at 10s for a non-404 error while active', () => {

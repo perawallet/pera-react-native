@@ -4311,6 +4311,10 @@
                     "title": "Henüz swap yok",
                     "body": "Swap geçmişin burada görünecek."
                 },
+                "not_on_device": {
+                    "title": "Geçmiş henüz kullanılamıyor",
+                    "body": "Bu hesap bu cihazda henüz ayarlanmadı, bu yüzden swap geçmişi yüklenemiyor. Lütfen daha sonra tekrar dene."
+                },
                 "error": {
                     "title": "Bir şeyler ters gitti",
                     "body": "Swap geçmişin yüklenemedi. Lütfen tekrar dene."
@@ -4459,6 +4463,8 @@
             "for": "karşılığında",
             "empty_title": "Henüz işlem yok",
             "empty_body": "Satın alma işlemlerin burada görünecek.",
+            "not_on_device_title": "Geçmiş henüz kullanılamıyor",
+            "not_on_device_body": "Bu hesap bu cihazda henüz ayarlanmadı, bu yüzden satın alma geçmişi yüklenemiyor. Lütfen daha sonra tekrar dene.",
             "error_title": "Bir şeyler ters gitti",
             "error_body": "Satın alma geçmişin yüklenemedi. Lütfen tekrar dene."
         }

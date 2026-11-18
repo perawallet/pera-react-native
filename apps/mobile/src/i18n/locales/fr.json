@@ -4311,6 +4311,10 @@
                     "title": "Aucun swap pour le moment",
                     "body": "Votre historique de swaps apparaîtra ici."
                 },
+                "not_on_device": {
+                    "title": "Historique pas encore disponible",
+                    "body": "Ce compte n’est pas encore configuré sur cet appareil, son historique de swaps ne peut donc pas être chargé. Veuillez réessayer plus tard."
+                },
                 "error": {
                     "title": "Une erreur est survenue",
                     "body": "Nous n’avons pas pu charger votre historique de swaps. Veuillez réessayer."
@@ -4459,6 +4463,8 @@
             "for": "pour",
             "empty_title": "Aucune transaction pour le moment",
             "empty_body": "Vos transactions d’achat apparaîtront ici.",
+            "not_on_device_title": "Historique pas encore disponible",
+            "not_on_device_body": "Ce compte n’est pas encore configuré sur cet appareil, son historique d’achats ne peut donc pas être chargé. Veuillez réessayer plus tard.",
             "error_title": "Une erreur est survenue",
             "error_body": "Nous n’avons pas pu charger votre historique d’achats. Veuillez réessayer."
         }

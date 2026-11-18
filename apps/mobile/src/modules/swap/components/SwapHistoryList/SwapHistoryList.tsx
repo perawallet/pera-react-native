@@ -45,6 +45,7 @@ export const SwapHistoryList = ({
         keyExtractor,
         handleItemPress,
         handleEndReached,
+        shouldShowNotOnDeviceState,
         shouldShowErrorState,
         shouldShowEmptyState,
     } = useSwapHistoryList({ scope, address, onClose })
@@ -63,6 +64,16 @@ export const SwapHistoryList = ({
         () => <PWView style={styles.itemSeparator} />,
         [styles.itemSeparator],
     )
+
+    if (shouldShowNotOnDeviceState) {
+        return (
+            <EmptyView
+                icon='info'
+                title={t('swap.history.list.not_on_device.title')}
+                body={t('swap.history.list.not_on_device.body')}
+            />
+        )
+    }
 
     if (shouldShowErrorState) {
         return (

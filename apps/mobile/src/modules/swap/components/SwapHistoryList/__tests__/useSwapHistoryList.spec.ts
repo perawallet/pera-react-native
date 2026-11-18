@@ -24,13 +24,19 @@ const { SCOPE, ETH_SCOPE } = vi.hoisted(() => ({
     ETH_SCOPE: { chainId: 'ethereum', networkId: 'mainnet' } as const,
 }))
 
-const { mockExplorerUrlFor, mockPushWebView, mockTrackEvent, mockHistory } =
-    vi.hoisted(() => ({
-        mockExplorerUrlFor: vi.fn(),
-        mockPushWebView: vi.fn(),
-        mockTrackEvent: vi.fn(),
-        mockHistory: vi.fn(),
-    }))
+const {
+    mockExplorerUrlFor,
+    mockPushWebView,
+    mockTrackEvent,
+    mockHistory,
+    mockAddresses,
+} = vi.hoisted(() => ({
+    mockExplorerUrlFor: vi.fn(),
+    mockPushWebView: vi.fn(),
+    mockTrackEvent: vi.fn(),
+    mockHistory: vi.fn(),
+    mockAddresses: { current: [] as unknown[] },
+}))
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
     swapExplorerUrlFor: mockExplorerUrlFor,
@@ -38,10 +44,7 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
 }))
 
 vi.mock('../../../hooks/useSwapAccountAddresses', () => ({
-    useSwapAccountAddresses: () => [
-        { scope: SCOPE, address: 'ADDR' },
-        { scope: ETH_SCOPE, address: '0xETH' },
-    ],
+    useSwapAccountAddresses: () => mockAddresses.current,
 }))
 
 vi.mock('@modules/webview', () => ({
@@ -63,6 +66,7 @@ const historyOf = (swaps: SwapHistoryItem[]) => ({
     swaps,
     isLoading: false,
     isError: false,
+    isAccountNotOnDevice: false,
     isFetchingNextPage: false,
     hasNextPage: false,
     fetchNextPage: vi.fn(),
@@ -72,10 +76,61 @@ describe('useSwapHistoryList', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockHistory.mockReturnValue(historyOf([]))
+        mockAddresses.current = [
+            { scope: SCOPE, address: 'ADDR', isOnDevice: true },
+            { scope: ETH_SCOPE, address: '0xETH', isOnDevice: true },
+        ]
     })
 
     it('reads every swap-chain address of the account, the swap scope first', () => {
         renderHook(() =>
+            useSwapHistoryList({
+                scope: ETH_SCOPE,
+                address: '0xETH',
+                onClose: vi.fn(),
+            }),
+        )
+
+        expect(mockHistory).toHaveBeenCalledWith(
+            [
+                { scope: ETH_SCOPE, address: '0xETH', isOnDevice: true },
+                { scope: SCOPE, address: 'ADDR', isOnDevice: true },
+            ],
+            VISIBLE_SWAP_STATUSES,
+        )
+    })
+
+    it('carries whether device registration sends each address', () => {
+        mockAddresses.current = [
+            { scope: SCOPE, address: 'ADDR', isOnDevice: true },
+            { scope: ETH_SCOPE, address: '0xETH', isOnDevice: false },
+        ]
+
+        renderHook(() =>
+            useSwapHistoryList({
+                scope: ETH_SCOPE,
+                address: '0xETH',
+                onClose: vi.fn(),
+            }),
+        )
+
+        expect(mockHistory).toHaveBeenCalledWith(
+            [
+                { scope: ETH_SCOPE, address: '0xETH', isOnDevice: false },
+                { scope: SCOPE, address: 'ADDR', isOnDevice: true },
+            ],
+            VISIBLE_SWAP_STATUSES,
+        )
+    })
+
+    it('shows the not-on-device state instead of the error or empty state', () => {
+        mockHistory.mockReturnValue({
+            ...historyOf([]),
+            isError: true,
+            isAccountNotOnDevice: true,
+        })
+
+        const { result } = renderHook(() =>
             useSwapHistoryList({
                 scope: SCOPE,
                 address: 'ADDR',
@@ -83,13 +138,9 @@ describe('useSwapHistoryList', () => {
             }),
         )
 
-        expect(mockHistory).toHaveBeenCalledWith(
-            [
-                { scope: SCOPE, address: 'ADDR' },
-                { scope: ETH_SCOPE, address: '0xETH' },
-            ],
-            VISIBLE_SWAP_STATUSES,
-        )
+        expect(result.current.shouldShowNotOnDeviceState).toBe(true)
+        expect(result.current.shouldShowErrorState).toBe(false)
+        expect(result.current.shouldShowEmptyState).toBe(false)
     })
 
     it('hides rows naming an asset this wallet cannot resolve', () => {

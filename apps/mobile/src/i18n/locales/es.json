@@ -4311,6 +4311,10 @@
                     "title": "Aún no hay swaps",
                     "body": "Tu historial de swaps aparecerá aquí."
                 },
+                "not_on_device": {
+                    "title": "Historial aún no disponible",
+                    "body": "Esta cuenta aún no está configurada en este dispositivo, así que no podemos cargar su historial de swaps. Vuelve a intentarlo más tarde."
+                },
                 "error": {
                     "title": "Algo salió mal",
                     "body": "No pudimos cargar tu historial de swaps. Vuelve a intentarlo."
@@ -4459,6 +4463,8 @@
             "for": "por",
             "empty_title": "Aún no hay transacciones",
             "empty_body": "Tus transacciones de compra aparecerán aquí.",
+            "not_on_device_title": "Historial aún no disponible",
+            "not_on_device_body": "Esta cuenta aún no está configurada en este dispositivo, así que no podemos cargar su historial de compras. Vuelve a intentarlo más tarde.",
             "error_title": "Algo salió mal",
             "error_body": "No pudimos cargar tu historial de compras. Vuelve a intentarlo."
         }
