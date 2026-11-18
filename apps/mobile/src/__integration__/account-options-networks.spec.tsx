@@ -238,18 +238,25 @@ describe('Flow: the account options sheet lists the account on each network', ()
         ).toBeTruthy()
     })
 
-    it('Given an HD account on Ethereum alone, when the user taps View passphrase, then the flow reveals its words', async () => {
+    it('reveals the Ethereum HD seed when a Base watch account holds the same address', async () => {
         const hd = await seedHdAccount()
+        const address = '0x9858EfFD232B4033E47d90003D41EC34EcaEda94'
         const ethereumOnly: WalletAccount = {
             ...hd,
             chains: {
                 ethereum: {
-                    address: '0x9858EfFD232B4033E47d90003D41EC34EcaEda94',
+                    address,
                     keyPairId: chainAccountOf(hd, 'algorand')?.keyPairId,
                 },
             },
         }
-        useAccountsStore.getState().setAccounts([ethereumOnly])
+        const watchOnBase: WalletAccount = {
+            ...ethereumOnly,
+            id: 'watch-on-base',
+            custody: { kind: 'watch' },
+            chains: { base: { address } },
+        }
+        useAccountsStore.getState().setAccounts([watchOnBase, ethereumOnly])
 
         render(<AccountOptionsHost account={ethereumOnly} />)
 

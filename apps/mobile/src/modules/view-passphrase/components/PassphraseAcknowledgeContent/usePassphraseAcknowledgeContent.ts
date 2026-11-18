@@ -20,6 +20,7 @@ import { usePassphraseReach } from '@modules/backup'
 
 export type UsePassphraseAcknowledgeContentParams = {
     address: string
+    accountId?: string
 }
 
 export type UsePassphraseAcknowledgeContentResult = {
@@ -52,9 +53,13 @@ const buildInitialChecked = (rowCount: number): boolean[] =>
 
 export const usePassphraseAcknowledgeContent = ({
     address,
+    accountId,
 }: UsePassphraseAcknowledgeContentParams): UsePassphraseAcknowledgeContentResult => {
     const { t } = useLanguage()
-    const { isMultiNetwork, networkNames } = usePassphraseReach({ address })
+    const { isMultiNetwork, networkNames } = usePassphraseReach({
+        address,
+        accountId,
+    })
     const [checked, setChecked] = useState<boolean[]>(() =>
         buildInitialChecked(ROW_COUNT),
     )

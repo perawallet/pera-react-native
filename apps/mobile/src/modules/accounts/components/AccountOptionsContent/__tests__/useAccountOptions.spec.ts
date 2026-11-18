@@ -725,7 +725,10 @@ describe('useAccountOptions', () => {
                     ?.onPress()
             })
 
-            expect(mockOpenViewPassphraseFlow).toHaveBeenCalledWith(ETH_ADDRESS)
+            expect(mockOpenViewPassphraseFlow).toHaveBeenCalledWith(
+                ETH_ADDRESS,
+                ethHdAccount.id,
+            )
         })
 
         it('offers no view-passphrase on a watch account', () => {
@@ -766,7 +769,10 @@ describe('useAccountOptions', () => {
             })
 
             expect(result.current.isRekeyed).toBe(true)
-            expect(mockOpenViewPassphraseFlow).toHaveBeenCalledWith(ETH_ADDRESS)
+            expect(mockOpenViewPassphraseFlow).toHaveBeenCalledWith(
+                ETH_ADDRESS,
+                universal.id,
+            )
         })
     })
 
@@ -1529,6 +1535,7 @@ describe('useAccountOptions', () => {
             expect(mockOnClose).toHaveBeenCalled()
             expect(mockOpenViewPassphraseFlow).toHaveBeenCalledWith(
                 addressOf(algo25Account),
+                algo25Account.id,
             )
         })
 

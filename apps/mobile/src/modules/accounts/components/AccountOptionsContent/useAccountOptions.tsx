@@ -186,8 +186,14 @@ export const useAccountOptions = ({
         // Dismiss the options menu first so we don't end up with the menu
         // sheet stacked under the PIN/acknowledge/display sheets.
         onClose()
-        void openViewPassphraseFlow(passphraseAddress)
-    }, [onClose, openViewPassphraseFlow, passphraseAddress, accountChainId])
+        void openViewPassphraseFlow(passphraseAddress, account.id)
+    }, [
+        onClose,
+        openViewPassphraseFlow,
+        passphraseAddress,
+        account.id,
+        accountChainId,
+    ])
 
     const handleViewPrivateKey = useCallback(() => {
         if (!privateKeyScope) return
