@@ -512,13 +512,24 @@ export const createEip1193ConnectionHandler = (
                     },
                     origin: { requesterOrigin: origin },
                 }
-                // Re-read: the account may have changed while the sheet was open.
-                const replaced = await getConnection(origin)
+                let replaced: Optional<Eip1193Connection>
                 try {
+                    // The account may have changed while the sheet was open.
+                    replaced = await getConnection(origin)
                     await store().upsert(connection)
+                } catch (error) {
+                    void deliver(
+                        respond,
+                        jsonRpcError(
+                            request.id,
+                            EIP1193_ERROR_CODE.internal,
+                            'Could not save the connection',
+                        ),
+                    )
+                    throw error
                 } finally {
-                    // Freed only once the record exists: a second tab
-                    // claiming the slot mid-upsert would open a second approval.
+                    // Keep the slot through the write attempt so another tab
+                    // cannot open an approval while the grant is changing.
                     releaseSlot()
                 }
                 // Store first, then withdraw, as on an account change: the

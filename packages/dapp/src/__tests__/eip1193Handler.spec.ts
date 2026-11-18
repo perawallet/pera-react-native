@@ -1373,6 +1373,32 @@ describe('createEip1193ConnectionHandler', () => {
             expect(proposals).toHaveLength(0)
         })
 
+        it('frees the site’s slot when the approval cannot re-read its grant', async () => {
+            const { transport, registry, store, proposals } = setup([
+                connectedOn('ethereum'),
+            ])
+            await registry.initialize()
+            const pending = ask(transport)
+            await flush()
+            vi.spyOn(store, 'get').mockRejectedValueOnce(
+                new Error('store down'),
+            )
+
+            await expect(proposals[0].approve([ADDR_Y])).rejects.toThrow(
+                'store down',
+            )
+            const retry = ask(transport)
+            await flush()
+            expect(proposals).toHaveLength(2)
+            expect(errorOf(await pending)?.code).toBe(
+                EIP1193_ERROR_CODE.internal,
+            )
+            await proposals[1].approve([ADDR_Y])
+            expect(resultOf(await retry)).toMatchObject([
+                { parentCapability: 'eth_accounts' },
+            ])
+        })
+
         it('frees the site’s slot when it throws before the proposal is handed over', async () => {
             const { transport, registry, store, proposals } = setup()
             await registry.initialize()
