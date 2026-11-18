@@ -70,7 +70,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import { useIsGiftCardsEnabled } from '@hooks/useIsGiftCardsEnabled'
 import { useCapabilityCheck } from '@hooks/useCapability'
-import { navigateHome, navigateToScreen } from '../navigateToScreen'
+import { navigateHome, navigateToScreen, pushScreen } from '../navigateToScreen'
 import { capabilityRequirementForDeeplink } from '../capability-policy'
 import {
     useAssetOptInDeeplink,
@@ -656,15 +656,18 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         break
                     }
                     setSelectedAccountId(account.id)
-                    navigateToScreen(
-                        replaceCurrentScreen,
-                        'TransactionDetails',
-                        {
-                            scope: getSelectedScope(chainId),
-                            transactionId: parsedData.transactionId,
-                            accountAddress,
-                        },
-                    )
+                    const params = {
+                        scope: getSelectedScope(chainId),
+                        transactionId: parsedData.transactionId,
+                        accountAddress,
+                    }
+                    // `navigate` would reuse an open TransactionDetails and swap its params,
+                    // which breaks the screen when the other chain's detail hook differs.
+                    if (replaceCurrentScreen) {
+                        navigateToScreen(true, 'TransactionDetails', params)
+                    } else {
+                        pushScreen('TransactionDetails', params)
+                    }
                     break
                 }
 

@@ -362,9 +362,12 @@ describe('Flow: Ethereum transfer notifications', () => {
             )
         })
 
-        it('When its link carries a transaction hash, then that transaction opens', async () => {
+        it('When its link carries a transaction hash, then that transaction is pushed on top of the open screen', async () => {
             const navigate = vi
                 .spyOn(navigationRef, 'navigate')
+                .mockImplementation(() => undefined)
+            const dispatch = vi
+                .spyOn(navigationRef, 'dispatch')
                 .mockImplementation(() => undefined)
             const onError = vi.fn()
 
@@ -375,11 +378,14 @@ describe('Flow: Ethereum transfer notifications', () => {
                 onError,
             )
 
-            expect(navigate).toHaveBeenCalledWith('TransactionDetails', {
-                scope: { chainId: 'ethereum', networkId: 'mainnet' },
-                transactionId: TX_HASH,
-                accountAddress: ETHEREUM_ADDRESS,
-            })
+            expect(dispatch).toHaveBeenCalledWith(
+                StackActions.push('TransactionDetails', {
+                    scope: { chainId: 'ethereum', networkId: 'mainnet' },
+                    transactionId: TX_HASH,
+                    accountAddress: ETHEREUM_ADDRESS,
+                }),
+            )
+            expect(navigate).not.toHaveBeenCalled()
             expect(onError).not.toHaveBeenCalled()
         })
 

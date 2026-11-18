@@ -1499,16 +1499,40 @@ describe('useDeepLink', () => {
             const { onError } = await open(link())
 
             expect(onError).not.toHaveBeenCalled()
-            expect(mockNavigate).toHaveBeenCalledTimes(1)
-
             expect(accountsState.setSelectedAccountId).toHaveBeenCalledWith(
                 'eth-account',
             )
-            expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
-                scope: { chainId: 'ethereum', networkId: 'mainnet' },
-                transactionId: HASH,
-                accountAddress: STORED_ADDRESS,
+            expect(vi.mocked(StackActions.push)).toHaveBeenCalledTimes(1)
+            expect(vi.mocked(StackActions.push)).toHaveBeenCalledWith(
+                'TransactionDetails',
+                {
+                    scope: { chainId: 'ethereum', networkId: 'mainnet' },
+                    transactionId: HASH,
+                    accountAddress: STORED_ADDRESS,
+                },
+            )
+            expect(mockDispatch).toHaveBeenCalledTimes(1)
+            expect(mockNavigate).not.toHaveBeenCalled()
+        })
+
+        it('replaces the current screen when asked to', async () => {
+            ;(parseDeeplink as Mock).mockReturnValue(link())
+            const { result } = renderHook(() => useDeepLink())
+
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    'perawallet://app/asset-detail',
+                    true,
+                    'notification',
+                )
             })
+
+            expect(vi.mocked(StackActions.replace)).toHaveBeenCalledWith(
+                'TransactionDetails',
+                expect.objectContaining({ transactionId: HASH }),
+            )
+            expect(vi.mocked(StackActions.push)).not.toHaveBeenCalled()
+            expect(mockNavigate).not.toHaveBeenCalled()
         })
 
         it('opens the asset detail when the address is not in the wallet', async () => {

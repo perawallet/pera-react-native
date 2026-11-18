@@ -268,6 +268,8 @@ export const useTransactionDetailsScreen =
             [navigation, scope, groupId],
         )
 
+        const refetchLookup = lookup.refetch
+        const refetchDetail = detail.refetch
         const handleRetry = useCallback(() => {
             // Offline: skip the doomed request (30 s timeout) — the offline
             // copy on screen already promises a refresh on reconnect. Matches
@@ -275,8 +277,8 @@ export const useTransactionDetailsScreen =
             if (!useNetworkStatusStore.getState().hasInternet) {
                 return
             }
-            void (isRecordLookup ? lookup.refetch() : detail.refetch())
-        }, [detail, lookup, isRecordLookup])
+            void (isRecordLookup ? refetchLookup() : refetchDetail())
+        }, [refetchDetail, refetchLookup, isRecordLookup])
 
         return {
             renderState,
