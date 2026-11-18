@@ -84,8 +84,8 @@ export type UseAccountHistoryResult = {
     historyFeeds: HistoryFeedProps[]
     /** Networks that couldn't be read while rows show; retried by `handleRetry`. */
     failedNetworkNames: string[]
-    /** False on a network without the service, where a retry can only fail again. */
-    isFailedRetryable: boolean
+    /** Networks without a history service: named apart from failures, with no retry. */
+    unavailableNetworkNames: string[]
     /** What an empty history says, naming the network when narrowed to one. */
     emptyBody: string
     /**
@@ -129,7 +129,6 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         isLoadFailed,
         isLoadUnavailable,
         isLoadIntegrityBlocked,
-        isRefreshUnavailable,
         suspectedPoisoningById,
         scope,
         accountAddress,
@@ -139,6 +138,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         handleSelectChain,
         historyFeeds,
         failedNetworkNames,
+        unavailableNetworkNames,
         handleLoadMore,
         handleSearchOlder,
         handleRefresh,
@@ -196,7 +196,9 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     // `!hasNextPage` too: an empty local cache still has an API page
     // queued behind it, and calling that empty would flash the wrong
     // answer for the length of one request.
-    const isEmpty = isFetched && !hasNextPage && transactionCount === 0
+    // A failed read is never empty, even while it is re-read.
+    const isEmpty =
+        isFetched && !isLoadFailed && !hasNextPage && transactionCount === 0
     const isOfflineEmpty = isEmpty && !hasInternet
     // The failed read happened offline, so it gets the offline copy, not the error one.
     const isLoadOffline = isLoadFailed && !hasInternet
@@ -282,7 +284,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         isMerged,
         historyFeeds,
         failedNetworkNames,
-        isFailedRetryable: !isRefreshUnavailable,
+        unavailableNetworkNames,
         emptyBody,
         isOfflineEmpty,
         handleExportCsv,

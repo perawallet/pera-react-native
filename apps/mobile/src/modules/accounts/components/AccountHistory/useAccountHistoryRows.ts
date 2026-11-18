@@ -30,6 +30,7 @@ import {
     useMergedTransactionHistoryRows,
     useTransactionHistoryRows,
     type HistoryFeedProps,
+    type UseMergedTransactionHistoryRowsResult,
     type UseTransactionHistoryRowsResult,
 } from '@modules/transactions'
 import { useHomeChainScope } from '@hooks/useHomeChainScope'
@@ -38,6 +39,31 @@ import { useAssetListViewStore } from '../../hooks/useAssetListViewStore'
 import { useSelectedNetworkSource } from '../../hooks/useSelectedNetworkSource'
 
 const NO_SOURCES: readonly AccountHoldingSource[] = []
+const NO_NETWORK_NAMES: string[] = []
+
+type FailureNames = Pick<
+    UseAccountHistoryRowsResult,
+    'failedNetworkNames' | 'unavailableNetworkNames'
+>
+
+// A single network's failure is one a Retry can clear unless it has no history service.
+const failureNamesOf = (
+    history:
+        | UseMergedTransactionHistoryRowsResult
+        | UseTransactionHistoryRowsResult,
+): FailureNames => {
+    if ('unavailableNetworkNames' in history) return history
+    if (history.isRefreshUnavailable) {
+        return {
+            failedNetworkNames: NO_NETWORK_NAMES,
+            unavailableNetworkNames: history.failedNetworkNames,
+        }
+    }
+    return {
+        failedNetworkNames: history.failedNetworkNames,
+        unavailableNetworkNames: NO_NETWORK_NAMES,
+    }
+}
 
 export type UseAccountHistoryRowsParams = {
     /** `YYYY-MM-DD`, inclusive. */
@@ -48,8 +74,12 @@ export type UseAccountHistoryRowsParams = {
 
 export type UseAccountHistoryRowsResult = Omit<
     UseTransactionHistoryRowsResult,
-    'fetchNextPage'
+    'fetchNextPage' | 'isRefreshUnavailable' | 'failedNetworkNames'
 > & {
+    /** Networks a Retry can reach that failed while rows show. */
+    failedNetworkNames: string[]
+    /** Networks without a history service; named apart from failures, with no Retry. */
+    unavailableNetworkNames: string[]
     /** The chip's network, or the account's own chain on All; on a merged history only analytics and CSV read it. */
     scope: ChainScope
     accountAddress: Optional<string>
@@ -136,6 +166,10 @@ export const useAccountHistoryRows = ({
         fetchNextPage,
     ])
 
+    const { failedNetworkNames, unavailableNetworkNames } = failureNamesOf(
+        isMerged ? merged : single,
+    )
+
     const { scopeByTransactionId } = merged
     const scopeOf = useCallback(
         (transactionId: string) =>
@@ -155,7 +189,6 @@ export const useAccountHistoryRows = ({
         isLoadUnavailable: history.isLoadUnavailable,
         isLoadIntegrityBlocked: history.isLoadIntegrityBlocked,
         isRefreshFailed: history.isRefreshFailed,
-        isRefreshUnavailable: history.isRefreshUnavailable,
         hasNextPage,
         isSearchPaused,
         retry: history.retry,
@@ -168,7 +201,8 @@ export const useAccountHistoryRows = ({
         chainFilterOptions,
         handleSelectChain,
         historyFeeds: merged.feeds,
-        failedNetworkNames: history.failedNetworkNames,
+        failedNetworkNames,
+        unavailableNetworkNames,
         handleLoadMore,
         handleSearchOlder: isMerged ? merged.searchOlder : fetchNextPage,
         handleRefresh: isMerged ? merged.refresh : singleRefresh.refresh,

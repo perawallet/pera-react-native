@@ -93,6 +93,8 @@ const mergedHistory = (
     isRefreshing: false,
     scopeByTransactionId: new Map(),
     failedChainIds: [],
+    unavailableChainIds: [],
+    unavailableNetworkNames: [],
     feeds: [],
     searchOlder: vi.fn(),
     refresh: vi.fn(),
@@ -195,18 +197,21 @@ describe('useAccountHistoryRows', () => {
         expect(single.fetchNextPage).not.toHaveBeenCalled()
     })
 
-    it('names networks a merged history failed to read while others show', () => {
+    it('names networks a merged history failed to read, apart from ones without the service', () => {
         mockSources.current = TWO_NETWORKS
         vi.mocked(useMergedTransactionHistoryRows).mockReturnValue(
             mergedHistory({
                 failedChainIds: ['ethereum'],
                 failedNetworkNames: ['Ethereum'],
+                unavailableChainIds: ['base'],
+                unavailableNetworkNames: ['Base'],
             }),
         )
 
         const { result } = renderHook(() => useAccountHistoryRows({}))
 
         expect(result.current.failedNetworkNames).toEqual(['Ethereum'])
+        expect(result.current.unavailableNetworkNames).toEqual(['Base'])
     })
 
     it('names its own network when a single history fails with its sends still listed', () => {
@@ -223,6 +228,24 @@ describe('useAccountHistoryRows', () => {
 
         expect(result.current.isMerged).toBe(false)
         expect(result.current.failedNetworkNames).toEqual(['Ethereum'])
+        expect(result.current.unavailableNetworkNames).toEqual([])
+    })
+
+    it('names its own network as unavailable, not failed, when a single history has no service', () => {
+        mockHistoryScope.current = ETHEREUM
+        vi.mocked(useTransactionHistoryRows).mockReturnValue(
+            history({
+                isError: true,
+                isRefreshFailed: true,
+                isRefreshUnavailable: true,
+                failedNetworkNames: ['Ethereum'],
+            }),
+        )
+
+        const { result } = renderHook(() => useAccountHistoryRows({}))
+
+        expect(result.current.unavailableNetworkNames).toEqual(['Ethereum'])
+        expect(result.current.failedNetworkNames).toEqual([])
     })
 
     it('reads only the chip network once one is picked', () => {
