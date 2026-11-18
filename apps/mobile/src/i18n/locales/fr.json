@@ -36,7 +36,7 @@
     "discover": {
         "home": {
             "title": "Discover",
-            "top_dapps": "dApps populaires",
+            "explore_dapps": "Explorer les dApps",
             "news": "Actualités",
             "dapps_error": "Échec du chargement des dApps en vedette",
             "dapps_empty": "Aucune dApp sur {{chain}} pour le moment"
@@ -77,51 +77,28 @@
             "website": "Site web",
             "open": "Ouvrir"
         },
-        "folders": {
-            "name_sheet": {
-                "title_new": "Nouveau dossier",
-                "title_rename": "Renommer le dossier",
-                "placeholder": "Nom du dossier",
-                "create": "Créer",
-                "save": "Enregistrer"
-            },
-            "empty": "Aucune dApp dans ce dossier pour le moment",
-            "menu": {
-                "title": "Options du dossier",
-                "open_label": "Options du dossier",
-                "rename": "Renommer le dossier",
-                "rearrange": "Réorganiser les dApps",
-                "delete": "Supprimer le dossier"
-            },
-            "rearrange": {
-                "title": "Réorganiser les dApps",
-                "remove_label": "Retirer {{name}} de ce dossier"
-            },
-            "delete_confirm": {
-                "title": "Supprimer ce dossier ?",
-                "body": "Ses dApps restent dans vos favoris.",
-                "confirm": "Supprimer le dossier"
-            }
-        },
         "favorites": {
             "title": "Favoris",
-            "new_folder": "Nouveau dossier",
-            "all_favorites": "Tous les favoris",
-            "dapp_count": "{{count}} dApps",
-            "dapp_count_one": "{{count}} dApp",
             "see_all": "Tout voir",
             "empty_title": "Aucun favori pour le moment",
             "empty_body": "Commencez à explorer les dApps",
-            "all_folders_title": "Tous les dossiers",
             "added_toast": {
-                "title": "Ajouté aux favoris",
-                "body": "Touchez pour l’ajouter à un dossier"
+                "title": "Ajouté aux favoris"
+            },
+            "search_placeholder": "Rechercher dans les favoris",
+            "filter": {
+                "all_categories": "Toutes les catégories",
+                "categories_title": "Catégories",
+                "all": "Toutes",
+                "sort_title": "Trier par",
+                "sort_recent": "Ajoutées récemment",
+                "sort_visits": "Les plus visitées"
+            },
+            "rearrange": {
+                "title": "Réorganiser",
+                "open_label": "Réorganiser les favoris",
+                "remove_label": "Retirer {{name}} des favoris"
             }
-        },
-        "add_to_folder": {
-            "title": "Ajouter à un dossier",
-            "new_folder": "Nouveau dossier",
-            "added": "Ajouté à {{folder}}"
         }
     },
     "account_menu": {

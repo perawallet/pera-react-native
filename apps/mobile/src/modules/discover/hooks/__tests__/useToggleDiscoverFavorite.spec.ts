@@ -10,12 +10,11 @@
  limitations under the License
  */
 
-import { act, renderHook } from '@testing-library/react'
+import { renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DiscoverEvent, trackEvent } from '@analytics'
 import { bottomSheetNotifier } from '@components/core'
 import { useToast } from '@hooks/useToast'
-import { useBottomSheet } from '@modules/bottom-sheet'
 import { useDiscoverFavoritesStore } from '../../store/useDiscoverFavoritesStore'
 import type { DiscoverDapp } from '../../types'
 import { useToggleDiscoverFavorite } from '../useToggleDiscoverFavorite'
@@ -25,25 +24,11 @@ vi.mock('@analytics', async () => ({
     trackEvent: vi.fn(),
 }))
 vi.mock('@hooks/useToast', () => ({ useToast: vi.fn() }))
-// Keeps interpolation visible, so a toast's folder name can be asserted.
 vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({
-        t: (key: string, params?: Record<string, unknown>) =>
-            params ? `${key} ${JSON.stringify(params)}` : key,
-    }),
+    useLanguage: () => ({ t: (key: string) => key }),
 }))
-vi.mock('@modules/bottom-sheet', () => ({ useBottomSheet: vi.fn() }))
 
 const successToast = vi.fn()
-const request = vi.fn()
-
-/** The onPress the toast was shown with. */
-const toastOnPress = (): (() => void) => {
-    const options = successToast.mock.calls.at(-1)?.[2] as {
-        onPress: () => void
-    }
-    return options.onPress
-}
 
 const dapp: DiscoverDapp = {
     url: 'https://a.io',
@@ -55,15 +40,9 @@ const dapp: DiscoverDapp = {
 
 describe('useToggleDiscoverFavorite', () => {
     beforeEach(() => {
-        useDiscoverFavoritesStore.setState({
-            favorites: {},
-            favoriteOrder: [],
-            folders: {},
-            folderOrder: [],
-        })
+        useDiscoverFavoritesStore.getState().resetState()
         vi.clearAllMocks()
         vi.mocked(useToast).mockReturnValue({ successToast } as never)
-        vi.mocked(useBottomSheet).mockReturnValue({ request } as never)
     })
 
     afterEach(() => {
@@ -99,8 +78,22 @@ describe('useToggleDiscoverFavorite', () => {
 
         expect(successToast).toHaveBeenCalledWith(
             'discover.favorites.added_toast.title',
-            'discover.favorites.added_toast.body',
-            expect.objectContaining({ onPress: expect.any(Function) }),
+            '',
+            { notifier: undefined },
+        )
+    })
+
+    it('shows the toast above an open sheet', () => {
+        const sheet = { showNotification: vi.fn() }
+        bottomSheetNotifier.current = sheet as never
+        const { result } = renderHook(() => useToggleDiscoverFavorite())
+
+        result.current(dapp, null)
+
+        expect(successToast).toHaveBeenCalledWith(
+            'discover.favorites.added_toast.title',
+            '',
+            { notifier: sheet },
         )
     })
 
@@ -112,68 +105,5 @@ describe('useToggleDiscoverFavorite', () => {
         result.current(dapp, null)
 
         expect(successToast).not.toHaveBeenCalled()
-    })
-
-    it('tapping the toast opens Add to folder for that dApp and tracks it', () => {
-        const { result } = renderHook(() => useToggleDiscoverFavorite())
-        result.current(dapp, null)
-
-        toastOnPress()()
-
-        expect(request).toHaveBeenCalledTimes(1)
-        expect(trackEvent).toHaveBeenCalledWith(DiscoverEvent.FavoriteToastTap)
-    })
-
-    it('opens Add to folder without the auto container, so a long folder list scrolls', () => {
-        const { result } = renderHook(() => useToggleDiscoverFavorite())
-        result.current(dapp, null)
-
-        toastOnPress()()
-
-        expect(request.mock.calls[0]?.[0].options).toEqual({
-            size: 'auto',
-            enablePanDownToClose: true,
-            autoCreateContainer: false,
-        })
-    })
-
-    it('shows "Added to {folder}" once the sheet resolves, above the sheet underneath', async () => {
-        const lower = { showNotification: vi.fn() }
-        // The Add to folder sheet closes, handing the notifier back to the sheet below.
-        request.mockImplementation(() => {
-            bottomSheetNotifier.current = lower as never
-            return Promise.resolve({ folderName: 'Swap' })
-        })
-        const { result } = renderHook(() => useToggleDiscoverFavorite())
-        result.current(dapp, null)
-
-        await act(async () => toastOnPress()())
-
-        expect(successToast).toHaveBeenLastCalledWith(
-            'discover.add_to_folder.added {"folder":"Swap"}',
-            '',
-            { notifier: lower },
-        )
-    })
-
-    it('shows nothing when the sheet is dismissed', async () => {
-        request.mockResolvedValue(undefined)
-        const { result } = renderHook(() => useToggleDiscoverFavorite())
-        result.current(dapp, null)
-
-        await act(async () => toastOnPress()())
-
-        expect(successToast).toHaveBeenCalledTimes(1)
-    })
-
-    it('tapping the toast after unstarring opens nothing', () => {
-        const { result } = renderHook(() => useToggleDiscoverFavorite())
-        result.current(dapp, null)
-        const onPress = toastOnPress()
-        result.current(dapp, null)
-
-        onPress()
-
-        expect(request).not.toHaveBeenCalled()
     })
 })

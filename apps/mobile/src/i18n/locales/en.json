@@ -36,7 +36,7 @@
     "discover": {
         "home": {
             "title": "Discover",
-            "top_dapps": "Top dApps",
+            "explore_dapps": "Explore dApps",
             "news": "News",
             "dapps_error": "Failed loading featured dApps",
             "dapps_empty": "No dApps on {{chain}} yet"
@@ -77,51 +77,28 @@
             "website": "Website",
             "open": "Open"
         },
-        "folders": {
-            "name_sheet": {
-                "title_new": "New Folder",
-                "title_rename": "Rename Folder",
-                "placeholder": "Folder name",
-                "create": "Create",
-                "save": "Save"
-            },
-            "empty": "No dApps in this folder yet",
-            "menu": {
-                "title": "Folder options",
-                "open_label": "Folder options",
-                "rename": "Rename Folder",
-                "rearrange": "Rearrange dApps",
-                "delete": "Delete Folder"
-            },
-            "rearrange": {
-                "title": "Rearrange dApps",
-                "remove_label": "Remove {{name}} from this folder"
-            },
-            "delete_confirm": {
-                "title": "Delete this folder?",
-                "body": "Its dApps stay in your favorites.",
-                "confirm": "Delete Folder"
-            }
-        },
         "favorites": {
             "title": "Favorites",
-            "new_folder": "New Folder",
-            "all_favorites": "All favorites",
-            "dapp_count": "{{count}} dApps",
-            "dapp_count_one": "{{count}} dApp",
             "see_all": "See all",
             "empty_title": "No favorites yet",
             "empty_body": "Start exploring the dApps",
-            "all_folders_title": "All Folders",
             "added_toast": {
-                "title": "Added to favorites",
-                "body": "Tap to add it to a folder"
+                "title": "Added to favorites"
+            },
+            "search_placeholder": "Search favorites",
+            "filter": {
+                "all_categories": "All categories",
+                "categories_title": "Categories",
+                "all": "All",
+                "sort_title": "Sort by",
+                "sort_recent": "Recently added",
+                "sort_visits": "Most visited"
+            },
+            "rearrange": {
+                "title": "Rearrange",
+                "open_label": "Rearrange favorites",
+                "remove_label": "Remove {{name}} from favorites"
             }
-        },
-        "add_to_folder": {
-            "title": "Add to Folder",
-            "new_folder": "New folder",
-            "added": "Added to {{folder}}"
         }
     },
     "account_menu": {
