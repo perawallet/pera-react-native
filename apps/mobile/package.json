@@ -170,7 +170,7 @@
     "react-native-get-random-values": "2.1.0",
     "react-native-gifted-charts": "^1.4.81",
     "react-native-keyboard-controller": "1.22.7",
-    "react-native-keychain": "10.0.0",
+    "react-native-keychain": "11.0.0",
     "react-native-mmkv": "catalog:",
     "react-native-nitro-image": "0.15.2",
     "react-native-nitro-modules": "0.37.1",
