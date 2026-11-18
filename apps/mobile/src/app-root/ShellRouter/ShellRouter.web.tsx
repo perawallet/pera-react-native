@@ -34,6 +34,7 @@ import { WebMainRoutes } from '@routes/WebMainRoutes.web'
 import { useOnboardingExpandedFlowNavigation } from '@routes/useExpandedFlowNavigation.web'
 import { DappRequestRoutes } from '@modules/dapp'
 import { subscribeToIntegrityReady } from '@hooks/useIntegrityAccessStore.web'
+import { useNavigationDocumentTitle } from '@hooks/useNavigationDocumentTitle'
 import { useWebAppShell } from '../../useWebAppShell.web'
 import { ApprovalPlaceholder } from '../ApprovalPlaceholder'
 import { MainSurfaceLifecycle } from '../MainSurfaceLifecycle'
@@ -42,6 +43,7 @@ export const ShellRouter = (): React.JSX.Element => {
     const { shellState, fcmToken } = useWebAppShell()
     const { t } = useLanguage()
     const isDarkMode = useIsDarkMode()
+    const documentTitle = useNavigationDocumentTitle()
     // Not the shared `routes/navigationRef`: global handlers (deep links,
     // notification taps) only know main-shell routes, and binding it here would
     // turn their isReady()===false no-op during onboarding into a bad navigate.
@@ -113,6 +115,7 @@ export const ShellRouter = (): React.JSX.Element => {
                     {/* Themed so React Navigation's DefaultTheme grey background
                         doesn't paint the onboarding scene. */}
                     <NavigationContainer
+                        documentTitle={documentTitle}
                         ref={onboardingNavigationRef}
                         theme={getNavigationTheme(
                             isDarkMode ? 'dark' : 'light',

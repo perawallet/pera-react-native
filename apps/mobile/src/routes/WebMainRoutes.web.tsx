@@ -43,6 +43,7 @@ import {
     MESSAGES_REQUIREMENTS,
     rekeyRequirementFor,
 } from '@hooks/capabilityRequirements'
+import { useNavigationDocumentTitle } from '@hooks/useNavigationDocumentTitle'
 import { TransactionDetailsScreen } from '@modules/signing/routes'
 import { GroupTransactionListScreen } from '@modules/algorand/routes'
 import { StakingScreen } from '@modules/staking'
@@ -89,6 +90,7 @@ export const WebMainRoutes = ({
     fcmToken,
 }: WebMainRoutesProps): React.JSX.Element => {
     const isDarkMode = useIsDarkMode()
+    const documentTitle = useNavigationDocumentTitle()
     const isPeraCardEnabled = useIsPeraCardEnabled()
     const isAllowed = useCapabilityCheck()
     const rekeyRequirement = rekeyRequirementFor(ALGORAND_CHAIN_ID)
@@ -110,6 +112,7 @@ export const WebMainRoutes = ({
 
     return (
         <NavigationContainer
+            documentTitle={documentTitle}
             ref={navigationRef}
             theme={navTheme}
             onReady={handleReady}
