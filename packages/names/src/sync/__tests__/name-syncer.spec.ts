@@ -303,8 +303,9 @@ describe('fetchAndPersistNames', () => {
         })
 
         it('shares the NAME_VERIFY_CONCURRENCY cap across concurrent syncs', async () => {
-            const first = Array.from({ length: NAME_VERIFY_CONCURRENCY }, (_, i) =>
-                makeAddress(i),
+            const first = Array.from(
+                { length: NAME_VERIFY_CONCURRENCY },
+                (_, i) => makeAddress(i),
             )
             const second = Array.from(
                 { length: NAME_VERIFY_CONCURRENCY },
