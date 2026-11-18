@@ -67,6 +67,13 @@ Require Regular Pin
 Open Security Settings
     Open Settings
     Tap    ${SETTINGS_SECURITY_ITEM}
+    ${opened}=    Run Keyword And Return Status
+    ...    Wait Until Page Contains Element    ${PIN_TOGGLE}    timeout=5s
+    IF    ${opened}    RETURN
+    # XCUITest can report a successful click while Settings remains visible.
+    ${still_on_settings}=    Run Keyword And Return Status
+    ...    Expect Element    ${SETTINGS_SECURITY_ITEM}    visible    timeout=1ms    retry_interval=0s    loglevel=NONE
+    IF    ${still_on_settings}    Tap    ${SETTINGS_SECURITY_ITEM}
     Wait Until Page Contains Element    ${PIN_TOGGLE}    timeout=15s
 
 Require Duress Pin Feature
