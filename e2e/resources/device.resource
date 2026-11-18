@@ -50,7 +50,6 @@ Start On Biometric Security
 Require Biometric Switch
     [Documentation]    The switch shows only with a PIN set and a biometric enrolled on the device, and
     ...                the screen reads availability on mount, so reopen it after enrolling.
-    Go Home
     Open Security Settings
     ${shown}=    Run Keyword And Return Status
     ...    Wait Until Page Contains Element    ${BIOMETRIC_TOGGLE}    timeout=5s
