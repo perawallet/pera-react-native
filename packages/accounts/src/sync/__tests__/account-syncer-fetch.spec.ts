@@ -264,6 +264,47 @@ describe('fetchAndPersistAccount', () => {
         )
     })
 
+    it('queues one forced read after a routine read of the same account', async () => {
+        const routineRead = Promise.withResolvers<AccountStateSnapshot>()
+        const fetch = fetchAccountState().mockReturnValueOnce(
+            routineRead.promise,
+        )
+        const routine = fetchAndPersistAccount('ADDR1', MAINNET_SCOPE)
+        await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1))
+
+        const refresh = { isUserRefresh: true }
+        const forced = fetchAndPersistAccount('ADDR1', MAINNET_SCOPE, refresh)
+        expect(forced).not.toBe(routine)
+        expect(fetchAndPersistAccount('ADDR1', MAINNET_SCOPE, refresh)).toBe(
+            forced,
+        )
+        expect(fetch).toHaveBeenCalledTimes(1)
+
+        routineRead.resolve(snapshot({ observedRound: 1111 }))
+        await expect(routine).resolves.toMatchObject({ observedRound: 1111 })
+        await expect(forced).resolves.toMatchObject({ observedRound: 1234 })
+        expect(fetch).toHaveBeenCalledTimes(2)
+        expect(fetch).toHaveBeenLastCalledWith(
+            'ADDR1',
+            MAINNET_SCOPE,
+            expect.objectContaining(refresh),
+        )
+    })
+
+    it('runs a queued forced read even if the earlier routine read fails', async () => {
+        const fetch = fetchAccountState().mockRejectedValueOnce(
+            new Error('429'),
+        )
+        const routine = fetchAndPersistAccount('ADDR1', MAINNET_SCOPE)
+        const forced = fetchAndPersistAccount('ADDR1', MAINNET_SCOPE, {
+            isUserRefresh: true,
+        })
+
+        await expect(routine).rejects.toThrow('429')
+        await expect(forced).resolves.toMatchObject({ observedRound: 1234 })
+        expect(fetch).toHaveBeenCalledTimes(2)
+    })
+
     it('propagates a failed chain read without persisting anything', async () => {
         fetchAccountState().mockRejectedValue(new Error('429'))
 
