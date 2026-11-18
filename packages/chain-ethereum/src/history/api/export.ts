@@ -16,6 +16,7 @@ import {
     isPeraNetworkError,
     queryClient,
     type Optional,
+    type RequestConfiguration,
 } from '@perawallet/wallet-core-shared'
 import {
     buildCsvQueryParams,
@@ -38,6 +39,14 @@ export const exportHistoryPath = (
 // taken. It carries the backend's `TRUNCATED-` prefix on a cut-short export.
 const SERVED_FILENAME =
     /(?:^|;)\s*filename\s*=\s*(?:"([\w.-]+\.csv)"|([\w.-]+\.csv))\s*(?:;|$)/i
+
+// The backend builds the whole file before it answers, so a long history
+// outlasts ky's 10 s default; a retry would rerun the export and spend the
+// device's export allowance again.
+export const EVM_HISTORY_EXPORT_BOUNDS = {
+    timeout: 60_000,
+    retry: { limit: 0 },
+} satisfies Pick<RequestConfiguration, 'timeout' | 'retry'>
 
 /** Rejects with `CsvExportError`, carrying the 429 and 5xx copy for the toast. */
 export const fetchEvmHistoryCsv = async (
@@ -72,6 +81,7 @@ export const fetchEvmHistoryCsv = async (
             headers: await buildIntegrityHeadersWhenReady(),
             signal,
             responseType: 'text',
+            ...EVM_HISTORY_EXPORT_BOUNDS,
         })
         const csvContent = response.data
         if (!csvContent?.trim()) {

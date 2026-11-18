@@ -20,7 +20,7 @@ import {
     vi,
 } from 'vitest'
 import { getAddress } from 'viem'
-import { http, HttpResponse } from 'msw'
+import { delay, http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { CsvExportError } from '@perawallet/wallet-core-transactions'
@@ -32,7 +32,7 @@ import {
 import { ETHEREUM } from '../../../__tests__/evm-chains'
 import { testChainContext } from '../../../__tests__/context'
 import { createEvmHistoryAdapter } from '../../adapter'
-import { fetchEvmHistoryCsv } from '../export'
+import { EVM_HISTORY_EXPORT_BOUNDS, fetchEvmHistoryCsv } from '../export'
 
 vi.mock('@perawallet/wallet-core-config', async importOriginal =>
     (await import('../../../__tests__/pera-backend')).withEthereumPeraBackend(
@@ -48,7 +48,10 @@ const CSV = '"Date","Chain"\r\n"2026-01-01 00:00:00","Ethereum"\r\n'
 
 const server = setupServer()
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
-afterEach(() => server.resetHandlers())
+afterEach(() => {
+    vi.useRealTimers()
+    server.resetHandlers()
+})
 afterAll(() => server.close())
 
 const serveCsv = (filename: string, onRequest?: (request: Request) => void) =>
@@ -64,12 +67,16 @@ const serveCsv = (filename: string, onRequest?: (request: Request) => void) =>
         }),
     )
 
-const serveError = (status: number, code: string) =>
+const serveError = (status: number, code: string) => {
+    const requests = { count: 0 }
     server.use(
-        http.get(ROUTE, () =>
-            HttpResponse.json({ error: 'refused', code }, { status }),
-        ),
+        http.get(ROUTE, () => {
+            requests.count += 1
+            return HttpResponse.json({ error: 'refused', code }, { status })
+        }),
     )
+    return requests
+}
 
 const exportCsvError = async (): Promise<CsvExportError> =>
     fetchEvmHistoryCsv(ETHEREUM, {
@@ -172,15 +179,36 @@ describe('fetchEvmHistoryCsv', () => {
         })
     })
 
-    it('carries the server-error copy on a 503', async () => {
-        serveError(503, 'upstream_unavailable')
+    it('carries the server-error copy on a 503 without rerunning the export', async () => {
+        const requests = serveError(503, 'upstream_unavailable')
 
         const error = await exportCsvError()
 
+        expect(requests.count).toBe(1)
         expect(error.metadata).toMatchObject({
             titleKey: 'errors.api.server_error.title',
             messageKey: 'errors.api.server_error.body',
         })
+    })
+
+    it('waits past the default timeout for the backend to build the file', async () => {
+        vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+        server.use(
+            http.get(ROUTE, async () => {
+                await delay(EVM_HISTORY_EXPORT_BOUNDS.timeout - 1000)
+                return new HttpResponse(CSV, {
+                    headers: { 'Content-Type': 'text/csv' },
+                })
+            }),
+        )
+
+        const outcome = fetchEvmHistoryCsv(ETHEREUM, {
+            accountAddress: ME,
+            scope: MAINNET,
+        })
+        await vi.advanceTimersByTimeAsync(EVM_HISTORY_EXPORT_BOUNDS.timeout)
+
+        await expect(outcome).resolves.toMatchObject({ csvContent: CSV })
     })
 
     it.each([
