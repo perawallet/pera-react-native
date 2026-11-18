@@ -32,8 +32,13 @@ export const TransactionDetailAddress = ({
     testID,
 }: TransactionDetailAddressProps) => {
     const styles = useStyles()
-    const { ownAccount, ownAccountName, contact, addressName, isAddressInFull } =
-        useTransactionDetailAddress(address, scope)
+    const {
+        ownAccount,
+        ownAccountName,
+        contact,
+        addressName,
+        isAddressInFull,
+    } = useTransactionDetailAddress(address, scope)
 
     return (
         <PWView style={styles.container}>

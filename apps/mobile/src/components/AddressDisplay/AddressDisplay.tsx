@@ -253,7 +253,9 @@ export const AddressDisplay = ({
                         weight={textProps?.variant ? undefined : 500}
                         {...textProps}
                         style={[styles.unnamedAddress, textProps?.style]}
-                        truncate={(unnamedAddressFormat ?? addressFormat) !== 'full'}
+                        truncate={
+                            (unnamedAddressFormat ?? addressFormat) !== 'full'
+                        }
                         ellipsizeMode='middle'
                     >
                         {unnamedAddress}

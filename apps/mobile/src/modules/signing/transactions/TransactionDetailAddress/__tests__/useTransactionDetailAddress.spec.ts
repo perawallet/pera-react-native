@@ -137,7 +137,12 @@ describe('useTransactionDetailAddress', () => {
         [
             'a contact',
             null,
-            [{ name: 'Alice', addresses: { evm: ADDRESS } } as unknown as Contact],
+            [
+                {
+                    name: 'Alice',
+                    addresses: { evm: ADDRESS },
+                } as unknown as Contact,
+            ],
         ],
     ])(
         'Given %s holds the address, then no name lookup runs and the address is not forced to full',

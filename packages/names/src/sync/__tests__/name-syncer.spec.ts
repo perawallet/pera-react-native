@@ -12,10 +12,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { fetchAndPersistNames } from '../name-syncer'
-import {
-    NAME_BULK_CHUNK_SIZE,
-    NAME_VERIFY_CONCURRENCY,
-} from '../../constants'
+import { NAME_BULK_CHUNK_SIZE, NAME_VERIFY_CONCURRENCY } from '../../constants'
 import { registerFakeNameServiceAdapter } from '../../__tests__/fakeNameServiceAdapter'
 
 const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
@@ -262,7 +259,10 @@ describe('fetchAndPersistNames', () => {
             await fetchAndPersistNames([ADDR_A], ALGORAND_MAINNET)
 
             expect(mockVerify).toHaveBeenCalledWith(
-                expect.objectContaining({ name: 'alice.algo', address: ADDR_A }),
+                expect.objectContaining({
+                    name: 'alice.algo',
+                    address: ADDR_A,
+                }),
             )
         })
 
@@ -291,7 +291,9 @@ describe('fetchAndPersistNames', () => {
 
             const done = fetchAndPersistNames(addresses, ALGORAND_MAINNET)
             while (mockUpsertNameEntries.mock.calls.length === 0) {
-                await vi.waitFor(() => expect(releases.length).toBeGreaterThan(0))
+                await vi.waitFor(() =>
+                    expect(releases.length).toBeGreaterThan(0),
+                )
                 releases.splice(0).forEach(release => release())
                 await new Promise(resolve => setTimeout(resolve, 0))
             }
