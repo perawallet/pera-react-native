@@ -34,6 +34,7 @@ import {
     createTokenSightings,
     receivedTokenIdsOf,
     scanReceivedTokens,
+    TOKEN_SCAN_INTERVAL_MS,
     TOKEN_SCAN_MAX_PAGES,
 } from '../token-detection'
 import {
@@ -169,6 +170,45 @@ describe('createHistoryScanBudget', () => {
         ])
         now = 1_000
         expect(budget.take()).toBe(true)
+    })
+
+    it('serves every account in turn when more ask each interval than a window allows', () => {
+        let now = 0
+        const budget = createHistoryScanBudget(30, 10 * 60_000, () => now)
+        const keys = Array.from({ length: 31 }, (_, index) =>
+            index % 2 === 0
+                ? `ethereum/mainnet/${index}`
+                : `base/mainnet/${index}`,
+        )
+        const attemptedAt = new Map<string, number>()
+        const served = new Set<string>()
+
+        for (; now <= 30 * 60_000; now += 5 * 60_000) {
+            keys.forEach(key => {
+                const last = attemptedAt.get(key)
+                if (last !== undefined && now - last < TOKEN_SCAN_INTERVAL_MS) {
+                    return
+                }
+                attemptedAt.set(key, now)
+                if (budget.take(key)) served.add(key)
+            })
+        }
+
+        expect(served.size).toBe(keys.length)
+    })
+
+    it('holds the units left for a waiting account rather than another page of a running scan', () => {
+        let now = 0
+        const budget = createHistoryScanBudget(2, 1_000, () => now)
+
+        expect(budget.take('a')).toBe(true)
+        expect(budget.take()).toBe(true)
+        expect(budget.take('b')).toBe(false)
+        now = 1_000
+        expect(budget.take()).toBe(true)
+        expect(budget.take()).toBe(false)
+        expect(budget.take('a')).toBe(false)
+        expect(budget.take('b')).toBe(true)
     })
 })
 

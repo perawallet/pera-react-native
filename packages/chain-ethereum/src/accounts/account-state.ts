@@ -263,7 +263,7 @@ const persistNftReads = async (
 
 type Detection = {
     now: () => number
-    /** When each account's received-token scan last started, by `backfillKey`. */
+    /** When each account's received-token scan last started or was refused by the budget, by `backfillKey`; the budget's line, not this, decides who goes first. */
     lastScanAt: Map<string, number>
     /** End of each account's latest finished scan, by `backfillKey`; a read persists it. */
     scannedBlocks: Map<string, number>
