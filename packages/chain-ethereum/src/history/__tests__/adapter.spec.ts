@@ -379,6 +379,101 @@ describe('getEvmTransactionHistory', () => {
         expect(pages).toHaveLength(5)
         expect(mostInFlight).toBe(2)
     })
+
+    it('skips a cancelled queued page and lets the foreground read take its slot', async () => {
+        const started: string[] = []
+        const releases = new Map<string, () => void>()
+        server.use(
+            http.get(
+                `${PERA_URL}/api/v3/evm/:chainId/accounts/:address/transactions/`,
+                async ({ request }) => {
+                    const cursor = new URL(request.url).searchParams.get(
+                        'cursor',
+                    )!
+                    started.push(cursor)
+                    if (cursor !== 'foreground') {
+                        await new Promise<void>(resolve =>
+                            releases.set(cursor, resolve),
+                        )
+                    }
+                    return HttpResponse.json({ next: null, results: [] })
+                },
+            ),
+        )
+        const adapter = createEvmHistoryAdapter(ETHEREUM, testChainContext())
+        const read = (cursor: string, signal?: AbortSignal) =>
+            adapter.getTransactionHistory(
+                ME,
+                MAINNET,
+                { cursor },
+                {
+                    capabilities: evmCapabilityDefaults,
+                    signal,
+                },
+            )
+        const first = read('first')
+        const second = read('second')
+        const controller = new AbortController()
+        let obsolete: Promise<unknown> | undefined
+        let foreground: Promise<unknown> | undefined
+        try {
+            await vi.waitFor(() => expect(started).toEqual(['first', 'second']))
+            obsolete = read('obsolete', controller.signal).catch(error => error)
+            foreground = read('foreground')
+            controller.abort()
+
+            releases.get('first')!()
+
+            await vi.waitFor(() =>
+                expect(started).toEqual(['first', 'second', 'foreground']),
+            )
+            expect(await obsolete).toHaveProperty('name', 'AbortError')
+            await foreground
+            expect(started).toEqual(['first', 'second', 'foreground'])
+        } finally {
+            releases.forEach(release => release())
+            await Promise.allSettled([first, second, obsolete, foreground])
+        }
+    })
+
+    it('cancels an active HTTP read without waiting for its response', async () => {
+        let received: Request | undefined
+        let release: (() => void) | undefined
+        server.use(
+            http.get(
+                `${PERA_URL}/api/v3/evm/:chainId/accounts/:address/transactions/`,
+                async ({ request }) => {
+                    received = request
+                    await new Promise<void>(resolve => {
+                        release = resolve
+                    })
+                    return HttpResponse.json({ next: null, results: [] })
+                },
+            ),
+        )
+        const adapter = createEvmHistoryAdapter(ETHEREUM, testChainContext())
+        const controller = new AbortController()
+        const read = adapter
+            .getTransactionHistory(ME, MAINNET, undefined, {
+                capabilities: evmCapabilityDefaults,
+                signal: controller.signal,
+            })
+            .then(
+                () => 'fulfilled',
+                () => 'rejected',
+            )
+        try {
+            await vi.waitFor(() => expect(received).toBeDefined())
+
+            controller.abort()
+
+            await vi.waitFor(() => expect(received?.signal.aborted).toBe(true))
+            expect(await read).toBe('rejected')
+        } finally {
+            release?.()
+            await read
+        }
+    })
 })
 
 describe('with contractDecoding', () => {

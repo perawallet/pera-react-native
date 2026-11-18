@@ -218,7 +218,9 @@ export const useTransactionRecordsQuery = ({
         for (let read = 1; ; read++) {
             signal.throwIfAborted()
             const { items: minedItems, next } =
-                await getMinedTransactionHistory(accountAddress, scope, page)
+                await getMinedTransactionHistory(accountAddress, scope, page, {
+                    signal,
+                })
             // The first read can be empty with a next page, so the newest id
             // is the first one any read lists.
             if (pageParam === null) newestMinedId ??= minedItems[0]?.id

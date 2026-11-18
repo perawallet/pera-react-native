@@ -151,6 +151,31 @@ describe('useTransactionRecordsQuery', () => {
         queryClient.clear()
     })
 
+    test('aborts the chain history read when its list unmounts', async () => {
+        let signal: AbortSignal | undefined
+        mocks.getMinedTransactionHistory.mockImplementation(
+            (_address, _scope, _page, options) => {
+                signal = options.signal
+                return new Promise(() => {})
+            },
+        )
+
+        const { unmount } = renderHook(
+            () =>
+                useTransactionRecordsQuery({
+                    accountAddress: ADDRESS,
+                    scope: SCOPE,
+                }),
+            { wrapper },
+        )
+        await waitFor(() => expect(signal).toBeDefined())
+        expect(signal?.aborted).toBe(false)
+
+        unmount()
+
+        expect(signal?.aborted).toBe(true)
+    })
+
     test('starts a fresh list when contractDecoding flips, so loaded rows never keep the old labels', async () => {
         mocks.getMinedTransactionHistory.mockResolvedValue({
             items: [record('A', JAN_10)],
@@ -209,6 +234,7 @@ describe('useTransactionRecordsQuery', () => {
             ADDRESS,
             SCOPE,
             { cursor: 'c1' },
+            { signal: expect.anything() },
         )
         expect(result.current.hasNextPage).toBe(false)
     })
@@ -275,6 +301,7 @@ describe('useTransactionRecordsQuery', () => {
             ADDRESS,
             SCOPE,
             { cursor: `c${MAX_RECORD_PAGE_READS}` },
+            { signal: expect.anything() },
         )
     })
 
@@ -593,6 +620,7 @@ describe('useTransactionRecordsQuery', () => {
                 ADDRESS,
                 SCOPE,
                 undefined,
+                { signal: expect.anything() },
             )
             expect(result.current.records.map(r => r.id)).toEqual([
                 'B',
@@ -830,6 +858,7 @@ describe('useTransactionRecordsQuery', () => {
                     ADDRESS,
                     SCOPE,
                     { cursor: 'c1' },
+                    { signal: expect.anything() },
                 ),
             )
             serve(backend)

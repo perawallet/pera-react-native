@@ -67,9 +67,15 @@ export const fetchHistoryPage = async (
     chain: EvmChain,
     address: string,
     page?: PageRef,
+    signal?: AbortSignal,
 ): Promise<EvmHistoryPage> => {
-    const { data } = await gatedHistoryPage(async () =>
-        queryClient<unknown>({
+    signal?.throwIfAborted()
+    const { data } = await gatedHistoryPage(async () => {
+        // A read can become obsolete while another chain owns the shared slots.
+        signal?.throwIfAborted()
+        const headers = await buildIntegrityHeadersWhenReady()
+        signal?.throwIfAborted()
+        return queryClient<unknown>({
             backend: 'pera',
             service: HISTORY_SERVICE,
             scope,
@@ -87,9 +93,10 @@ export const fetchHistoryPage = async (
                     ),
                 }),
             },
-            headers: await buildIntegrityHeadersWhenReady(),
-        }),
-    )
+            headers,
+            signal,
+        })
+    })
     const { next, results } = evmHistoryPageSchema.parse(data)
     return {
         items: results.flatMap(row => {

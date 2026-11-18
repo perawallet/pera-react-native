@@ -26,7 +26,10 @@ import {
     getChainCapabilities,
     getChainDescriptor,
 } from '@perawallet/wallet-core-chain-shared'
-import { historyChainAdapters } from './history-adapter'
+import {
+    historyChainAdapters,
+    type HistoryReadOptions,
+} from './history-adapter'
 import type { TransactionHistoryStatus } from './models/types'
 import {
     confirmingNotice,
@@ -173,9 +176,11 @@ export const getMinedTransactionHistory = (
     address: string,
     scope: ChainScope,
     page?: PageRef,
+    options?: Pick<HistoryReadOptions, 'signal'>,
 ): Promise<Page<TransactionRecord>> =>
     historyChainAdapters
         .get(scope.chainId)
         .getTransactionHistory(address, scope, page, {
             capabilities: getChainCapabilities(scope.chainId),
+            ...options,
         })

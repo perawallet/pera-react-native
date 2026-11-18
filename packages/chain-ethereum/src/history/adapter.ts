@@ -82,8 +82,15 @@ export const getEvmTransactionHistory = async (
     scope: ChainScope,
     page?: PageRef,
     isDecoding = false,
+    signal?: AbortSignal,
 ): Promise<Page<TransactionRecord>> => {
-    const { items, next } = await fetchHistoryPage(scope, chain, address, page)
+    const { items, next } = await fetchHistoryPage(
+        scope,
+        chain,
+        address,
+        page,
+        signal,
+    )
     return {
         items: items.flatMap(item =>
             toRecords(item, address, scope, chain, isDecoding),
@@ -109,6 +116,7 @@ export const createEvmHistoryAdapter = (
             scope,
             page,
             options?.capabilities.contractDecoding ?? false,
+            options?.signal,
         ),
     getTransactionDetail: (txId, scope, record) =>
         readEvmTransactionDetail(ctx, chain, scope, txId, record.fee),

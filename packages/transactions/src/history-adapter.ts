@@ -140,6 +140,7 @@ export interface HistoryChainDataCodec {
 export type HistoryReadOptions = {
     /** The scope's capabilities now; a chain reads the ones that change how it words a row. */
     capabilities: ChainCapabilities
+    signal?: AbortSignal
 }
 
 /** The chain-specific history source; registered by the chain package. */
