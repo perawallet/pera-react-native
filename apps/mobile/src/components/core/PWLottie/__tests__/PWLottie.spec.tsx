@@ -10,26 +10,52 @@
  limitations under the License
  */
 
-import { describe, expect, it, vi } from 'vitest'
-import React from 'react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import React, { forwardRef, useImperativeHandle } from 'react'
 import { render, screen } from '@test-utils/render'
 import { PWLottie } from '../PWLottie'
 
+const { mockPause, mockResume, mockPlay, visibility } = vi.hoisted(() => ({
+    mockPause: vi.fn(),
+    mockResume: vi.fn(),
+    mockPlay: vi.fn(),
+    visibility: { isVisible: true },
+}))
+
+vi.mock('@hooks/useIsAnimationVisible', () => ({
+    useIsAnimationVisible: () => visibility.isVisible,
+}))
+
 vi.mock('lottie-react-native', () => ({
-    default: ({
-        testID,
-        style,
-        webStyle,
-    }: {
-        testID?: string
-        style?: unknown
-        webStyle?: unknown
-    }) => (
-        <div
-            data-testid={testID ?? 'lottie-view'}
-            data-style={JSON.stringify(style)}
-            data-web-style={JSON.stringify(webStyle)}
-        />
+    default: forwardRef(
+        (
+            {
+                testID,
+                style,
+                webStyle,
+                autoPlay,
+            }: {
+                testID?: string
+                style?: unknown
+                webStyle?: unknown
+                autoPlay?: boolean
+            },
+            ref,
+        ) => {
+            useImperativeHandle(ref, () => ({
+                pause: mockPause,
+                resume: mockResume,
+                play: mockPlay,
+            }))
+            return (
+                <div
+                    data-testid={testID ?? 'lottie-view'}
+                    data-style={JSON.stringify(style)}
+                    data-web-style={JSON.stringify(webStyle)}
+                    data-auto-play={String(autoPlay)}
+                />
+            )
+        },
     ),
 }))
 
@@ -49,6 +75,11 @@ const mockSource = {
 const mockStyle = { width: 160, height: 46 }
 
 describe('PWLottie', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        visibility.isVisible = true
+    })
+
     it('renders and forwards props to LottieView', () => {
         render(
             <PWLottie
@@ -80,5 +111,119 @@ describe('PWLottie', () => {
             />,
         )
         expect(screen.getByTestId('lottie').dataset.webStyle).toBe(undefined)
+    })
+
+    it('pauses an autoplaying loop when it stops being visible and resumes it when it returns', () => {
+        const { rerender } = render(
+            <PWLottie
+                source={mockSource}
+                autoPlay
+                loop
+            />,
+        )
+        expect(mockPause).not.toHaveBeenCalled()
+
+        visibility.isVisible = false
+        rerender(
+            <PWLottie
+                source={mockSource}
+                autoPlay
+                loop
+            />,
+        )
+        expect(mockPause).toHaveBeenCalledTimes(1)
+
+        visibility.isVisible = true
+        rerender(
+            <PWLottie
+                source={mockSource}
+                autoPlay
+                loop
+            />,
+        )
+        expect(mockResume).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not autoplay a loop mounted while hidden, and plays it once visible', () => {
+        visibility.isVisible = false
+        const { rerender } = render(
+            <PWLottie
+                source={mockSource}
+                autoPlay
+                loop
+                testID='lottie'
+            />,
+        )
+        expect(screen.getByTestId('lottie').dataset.autoPlay).toBe('false')
+        expect(mockPlay).not.toHaveBeenCalled()
+
+        visibility.isVisible = true
+        rerender(
+            <PWLottie
+                source={mockSource}
+                autoPlay
+                loop
+                testID='lottie'
+            />,
+        )
+        expect(mockPlay).toHaveBeenCalledTimes(1)
+        expect(mockResume).not.toHaveBeenCalled()
+    })
+
+    it('leaves a one-shot animation alone when it stops being visible', () => {
+        const { rerender } = render(
+            <PWLottie
+                source={mockSource}
+                autoPlay
+            />,
+        )
+
+        visibility.isVisible = false
+        rerender(
+            <PWLottie
+                source={mockSource}
+                autoPlay
+            />,
+        )
+        visibility.isVisible = true
+        rerender(
+            <PWLottie
+                source={mockSource}
+                autoPlay
+            />,
+        )
+
+        expect(mockPause).not.toHaveBeenCalled()
+        expect(mockResume).not.toHaveBeenCalled()
+    })
+
+    it('pauses again when a hidden loop gets a new source, which restarts it natively', () => {
+        const { rerender } = render(
+            <PWLottie
+                source={mockSource}
+                autoPlay
+                loop
+            />,
+        )
+        visibility.isVisible = false
+        rerender(
+            <PWLottie
+                source={mockSource}
+                autoPlay
+                loop
+            />,
+        )
+        mockPause.mockClear()
+
+        rerender(
+            <PWLottie
+                source={{ ...mockSource, nm: 'retinted' }}
+                autoPlay
+                loop
+            />,
+        )
+
+        expect(mockPause).toHaveBeenCalledTimes(1)
+        expect(mockResume).not.toHaveBeenCalled()
     })
 })
