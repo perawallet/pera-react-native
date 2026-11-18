@@ -676,6 +676,14 @@ export const createWalletConnectV2Handler = (
         })
     }
 
+    const signableOnChain = (
+        chainId: ChainId,
+        addresses: readonly string[],
+    ): string[] =>
+        addressesOnChain(chainId, addresses).filter(
+            address => !canSignWith || canSignWith(chainId, address),
+        )
+
     /**
      * Resolves a switch target across every chain of the request's namespace.
      * A chain the session lacks must also be connectable, the rule a new
@@ -723,6 +731,17 @@ export const createWalletConnectV2Handler = (
             refuseRequest(topic, id, 'UNSUPPORTED_CHAINS', null, {
                 support: target.support,
                 failure: 'unselected-chain',
+            })
+            return
+        }
+
+        if (
+            !isHeld &&
+            signableOnChain(target.chainId, record.accounts).length === 0
+        ) {
+            refuseRequest(topic, id, 'UNSUPPORTED_CHAINS', null, {
+                support: target.support,
+                failure: 'unauthorized-account',
             })
             return
         }
@@ -854,14 +873,22 @@ export const createWalletConnectV2Handler = (
 
     /**
      * Adds `caip2` to the session's namespace for `chain`, for the addresses
-     * the session already holds on it and never a new account. `updateSession`
-     * is awaited but not its `acknowledged()`: a backgrounded dApp may never ack.
+     * the session already holds on it that can sign there, and never a new
+     * account. `updateSession` is awaited but not its `acknowledged()`: a
+     * backgrounded dApp may never ack.
      */
     const includeChainInSession = async (
         record: WalletConnectV2Connection,
         chain: WalletConnectV2Chain,
         caip2: string,
     ): Promise<void> => {
+        const signable = signableOnChain(chain.chainId, record.accounts)
+        if (signable.length === 0) {
+            throw new ConnectionsError(
+                'unauthorized-account',
+                'The wallet cannot sign for this session on that chain',
+            )
+        }
         const walletKit = requireClient()
         const session = walletKit.getActiveSessions()[
             record.id
@@ -883,8 +910,8 @@ export const createWalletConnectV2Handler = (
                     chains: [...(namespace.chains ?? []), caip2],
                     accounts: dedupe([
                         ...namespace.accounts,
-                        ...addressesOnChain(chain.chainId, record.accounts).map(
-                            address => toCaip10Account(caip2, address),
+                        ...signable.map(address =>
+                            toCaip10Account(caip2, address),
                         ),
                     ]),
                 },
