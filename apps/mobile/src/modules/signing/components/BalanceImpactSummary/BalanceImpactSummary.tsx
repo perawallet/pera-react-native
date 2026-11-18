@@ -17,8 +17,17 @@ import { useBalanceImpactSummary } from './useBalanceImpactSummary'
 
 /** The request's expected balance impact across all its transactions. */
 export const BalanceImpactSummary = () => {
-    const { receive, spend, hasImpact, isSimulating, simulationFailed } =
-        useBalanceImpactSummary()
+    const {
+        receive,
+        spend,
+        hasImpact,
+        isSimulating,
+        simulationFailed,
+        isReceiveUnknown,
+        hasSummary,
+    } = useBalanceImpactSummary()
+
+    if (!hasSummary) return null
 
     // Simulation resolves the inner txns that carry the receive side. If it
     // failed, the impact is incomplete (spend may show, receive is unknown) —
@@ -31,14 +40,13 @@ export const BalanceImpactSummary = () => {
         )
     }
 
-    if (!hasImpact && !isSimulating) return null
-
     return (
         <PWView testID='balance-impact-summary'>
             <WalletChangesCard
                 spend={spend}
                 receive={receive}
-                isLoading={!hasImpact}
+                isLoading={!hasImpact && isSimulating}
+                isReceiveUnknown={isReceiveUnknown}
             />
         </PWView>
     )

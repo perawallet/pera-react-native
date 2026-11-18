@@ -11,7 +11,14 @@
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { bytesToHex, concat, hashTypedData, keccak256, toHex } from 'viem'
+import {
+    bytesToHex,
+    concat,
+    getTypesForEIP712Domain,
+    hashTypedData,
+    keccak256,
+    toHex,
+} from 'viem'
 import type { Hex } from 'viem'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
@@ -28,16 +35,19 @@ import { UnknownEvmNetworkError } from '../../blockchain'
 import { decodeEthereumLedgerMessage } from '../../ledger/messagePayload'
 import {
     createEvmMessageSignerAdapter,
+    domainChainBindingOf,
     personalSignMessageRequest,
     typedDataMessageRequest,
 } from '../messages'
 import {
     DAI_PERMIT_TYPED_DATA,
     EIP2612_PERMIT_TYPED_DATA,
+    ERC721_PERMIT_TYPED_DATA,
     ETHEREUM_SIGNER_ACCOUNT,
     MAIL_TYPED_DATA,
     PERMIT2_ADDRESS,
     PERMIT2_SINGLE_NO_DEADLINE_TYPED_DATA,
+    PERMIT2_SINGLE_TYPED_DATA,
     PERMIT_SPENDER,
     PERMIT_USDC,
     SENDER,
@@ -66,6 +76,32 @@ const mailWithChainId = (chainId: unknown, scope = MAINNET) =>
         domain: { ...MAIL_TYPED_DATA.domain, chainId },
     })
 
+// A dApp's own `EIP712Domain`, listing only the fields its domain holds, so
+// a `chainId` in the values is not hashed.
+const declaringDomain = <T extends { domain: object; types: object }>(
+    typedData: T,
+    chainId?: unknown,
+) => {
+    const { chainId: _chainId, ...domain } = typedData.domain as {
+        chainId?: unknown
+    }
+    return {
+        ...typedData,
+        domain: chainId === undefined ? domain : { ...domain, chainId },
+        types: {
+            EIP712Domain: getTypesForEIP712Domain({ domain }),
+            ...typedData.types,
+        },
+    }
+}
+
+const PERMITS = [
+    ['EIP-2612', EIP2612_PERMIT_TYPED_DATA],
+    ['DAI-style', DAI_PERMIT_TYPED_DATA],
+    ['ERC-721', ERC721_PERMIT_TYPED_DATA],
+    ['Permit2 single', PERMIT2_SINGLE_TYPED_DATA],
+] as const
+
 const signAndAssemble = async (request: MessageRequest) => {
     const signatures = adapter
         .plan(request, context)
@@ -77,6 +113,107 @@ const signAndAssemble = async (request: MessageRequest) => {
         }))
     return await adapter.assemble(request, signatures)
 }
+
+describe('domainChainBindingOf', () => {
+    const THREE_FIELDS = [
+        { name: 'name', type: 'string' },
+        { name: 'version', type: 'string' },
+        { name: 'verifyingContract', type: 'address' },
+    ]
+    const withTypes = (types: unknown, chainId?: unknown) => ({
+        ...MAIL_TYPED_DATA,
+        domain:
+            chainId === undefined
+                ? { name: 'x', version: '1' }
+                : { ...MAIL_TYPED_DATA.domain, chainId },
+        types: { EIP712Domain: types, ...MAIL_TYPED_DATA.types },
+    })
+
+    it.each([1, '1', '0x1'])(
+        'binds an undeclared domain chainId given as %s',
+        chainId => {
+            expect(
+                domainChainBindingOf({
+                    ...MAIL_TYPED_DATA,
+                    domain: { ...MAIL_TYPED_DATA.domain, chainId },
+                }),
+            ).toEqual({ kind: 'bound', chainId: 1n })
+        },
+    )
+
+    it('names no chain for an undeclared domain without a chainId', () => {
+        const { chainId: _chainId, ...domain } = MAIL_TYPED_DATA.domain
+
+        expect(domainChainBindingOf({ ...MAIL_TYPED_DATA, domain })).toEqual({
+            kind: 'none',
+        })
+    })
+
+    it.each([[undefined], ['text'], [{ types: {} }]])(
+        'names no chain for %j, which has no domain',
+        input => {
+            expect(domainChainBindingOf(input)).toEqual({ kind: 'none' })
+        },
+    )
+
+    it.each([
+        ['uint256', 1],
+        ['uint64', 1],
+        ['int256', 1],
+    ])('binds a declared %s chainId field', (type, chainId) => {
+        const declared = [...THREE_FIELDS, { name: 'chainId', type }]
+
+        expect(domainChainBindingOf(withTypes(declared, chainId))).toEqual({
+            kind: 'bound',
+            chainId: 1n,
+        })
+    })
+
+    it.each(['string', 'bytes32', 'address'])(
+        'leaves a declared %s chainId field unsigned, as it hashes no chain',
+        type => {
+            const declared = [...THREE_FIELDS, { name: 'chainId', type }]
+
+            expect(domainChainBindingOf(withTypes(declared, '1'))).toEqual({
+                kind: 'unsigned',
+            })
+        },
+    )
+
+    it.each([
+        ['a type that omits chainId', THREE_FIELDS],
+        ['an empty type', []],
+        ['a type that is not an array', { name: 'string' }],
+        ['a null type', null],
+    ])('leaves chainId unsigned under %s', (_name, declared) => {
+        expect(domainChainBindingOf(withTypes(declared, 1))).toEqual({
+            kind: 'unsigned',
+        })
+    })
+
+    it('names no chain when the type and the domain both omit chainId', () => {
+        expect(domainChainBindingOf(withTypes(THREE_FIELDS))).toEqual({
+            kind: 'none',
+        })
+    })
+
+    it('throws for a bound chainId that is not a chain id', () => {
+        const typedData = {
+            ...MAIL_TYPED_DATA,
+            domain: { ...MAIL_TYPED_DATA.domain, chainId: 'abc' },
+        }
+
+        expect(() => domainChainBindingOf(typedData)).toThrow(
+            'The typed-data message payload is malformed',
+        )
+    })
+
+    it('does not read an unsigned chainId', () => {
+        expect(domainChainBindingOf(withTypes(THREE_FIELDS, 'abc'))).toEqual({
+            kind: 'unsigned',
+        })
+    })
+})
 
 describe('ethereumMessageSignerAdapter signatures', () => {
     it.each([
@@ -165,6 +302,24 @@ describe('ethereumMessageSignerAdapter.plan', () => {
             ).toThrow('The typed data is for EIP-155 chain 5, not mainnet')
         },
     )
+
+    it('echoes the spelling of a chainId its declared EIP712Domain hashes as given', () => {
+        const declared = [
+            { name: 'name', type: 'string' },
+            { name: 'version', type: 'string' },
+            { name: 'chainId', type: 'uint256' },
+            { name: 'verifyingContract', type: 'address' },
+        ]
+        const request = typedDataMessageRequest(MAINNET, SENDER, {
+            ...MAIL_TYPED_DATA,
+            domain: { ...MAIL_TYPED_DATA.domain, chainId: '0x5' },
+            types: { EIP712Domain: declared, ...MAIL_TYPED_DATA.types },
+        })
+
+        expect(() => adapter.plan(request, context)).toThrow(
+            'The typed data is for EIP-155 chain 0x5, not mainnet',
+        )
+    })
 
     it('refuses mainnet typed data on Sepolia', () => {
         expect(() =>
@@ -261,6 +416,54 @@ describe('ethereumMessageSignerAdapter.plan', () => {
     })
 })
 
+describe('ethereumMessageSignerAdapter.plan with a chain the domain type leaves out', () => {
+    const plan = (typedData: unknown) =>
+        adapter.plan(
+            typedDataMessageRequest(MAINNET, SENDER, typedData),
+            context,
+        )
+
+    it.each([1, 5])(
+        'refuses typed data naming chain %s that its EIP712Domain type omits',
+        chainId => {
+            expect(() =>
+                plan(declaringDomain(MAIL_TYPED_DATA, chainId)),
+            ).toThrow(
+                "The typed data's domain chainId is not in its EIP712Domain type, so the signature binds no chain",
+            )
+        },
+    )
+
+    it.each(PERMITS)(
+        'refuses a %s permit whose type omits chainId',
+        (_name, permit) => {
+            expect(() => plan(declaringDomain(permit, 1))).toThrow(
+                /binds no chain/,
+            )
+            expect(() => plan(declaringDomain(permit))).toThrow(
+                /binds no chain/,
+            )
+        },
+    )
+
+    it('refuses a permit that names no chain and declares none', () => {
+        const { chainId: _chainId, ...domain } =
+            EIP2612_PERMIT_TYPED_DATA.domain
+
+        expect(() => plan({ ...EIP2612_PERMIT_TYPED_DATA, domain })).toThrow(
+            "The permit's domain binds no chain, so its signature would be valid on every chain",
+        )
+    })
+
+    it('still signs chain-less typed data that is not a permit', () => {
+        const typedData = declaringDomain(MAIL_TYPED_DATA)
+
+        const [item] = plan(typedData)
+
+        expect(bytesToHex(item.payload)).toBe(hashTypedData(typedData as never))
+    })
+})
+
 describe('ethereumMessageSignerAdapter.plan device payload', () => {
     const ledger: WalletAccount = {
         id: 'ledger',
@@ -322,6 +525,20 @@ describe('ethereumMessageSignerAdapter.plan device payload', () => {
         ).toBe(bytesToHex(item.payload))
         expect(hashTypedData(device.typedData)).toBe(bytesToHex(item.payload))
     })
+
+    it.each([
+        ['a permit', declaringDomain(EIP2612_PERMIT_TYPED_DATA, 1)],
+        ['typed data', declaringDomain(MAIL_TYPED_DATA, 1)],
+    ])(
+        'refuses %s whose type omits chainId, with no device payload',
+        (_name, typedData) => {
+            const request = typedDataMessageRequest(MAINNET, SENDER, typedData)
+
+            expect(() => adapter.plan(request, ledgerContext)).toThrow(
+                /binds no chain/,
+            )
+        },
+    )
 })
 
 describe('ethereumMessageSignerAdapter.plan with a declared EIP712Domain', () => {
@@ -339,17 +556,24 @@ describe('ethereumMessageSignerAdapter.plan with a declared EIP712Domain', () =>
         },
     })
 
-    it.each([
-        ['uint256', '1'],
-        ['string', '1'],
-    ])('hashes a %s chainId exactly as declared', (chainIdType, chainId) => {
-        const typedData = declared(chainIdType, chainId)
+    it('hashes a uint256 chainId exactly as declared', () => {
+        const typedData = declared('uint256', '1')
         const [item] = adapter.plan(
             typedDataMessageRequest(MAINNET, SENDER, typedData),
             context,
         )
 
         expect(bytesToHex(item.payload)).toBe(hashTypedData(typedData as never))
+    })
+
+    it('refuses a string chainId, which hashes as text and binds no chain', () => {
+        const request = typedDataMessageRequest(
+            MAINNET,
+            SENDER,
+            declared('string', '1'),
+        )
+
+        expect(() => adapter.plan(request, context)).toThrow(/binds no chain/)
     })
 
     it('refuses a domain-only signature, which binds no message', () => {

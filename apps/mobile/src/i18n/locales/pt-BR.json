@@ -1233,6 +1233,7 @@
             "empty_body": "Você verá um gráfico aqui quando tiver histórico de saldo",
             "asset_empty_body": "Você verá um gráfico aqui quando tiver histórico de saldo deste ativo nesta conta",
             "excludes_networks": "Este gráfico ainda não inclui os ativos de {{networks}}",
+            "failed_networks": "Não foi possível carregar o histórico de {{networks}}, então este gráfico não o inclui",
             "currency_unavailable_body": "Este gráfico não está disponível em {{currency}} no momento"
         },
         "webview": {
@@ -3808,6 +3809,8 @@
             "title_clawback": "Recuperação",
             "title_contract_interaction": "Interação com contrato",
             "token_contract": "Contrato do token {{symbol}}",
+            "unknown": "Não dá para saber",
+            "unknown_receive_body": "O Pera não consegue saber o que você recebe deste app",
             "unverified": "Não verificado",
             "you_receive": "Você recebe",
             "you_send": "Você envia",
@@ -4232,7 +4235,10 @@
             "to": "Para",
             "balance_label": "Saldo: <0/>",
             "max": "MÁX",
-            "select_asset": "Selecionar"
+            "select_asset": "Selecionar",
+            "flip": "Inverter pagar e receber",
+            "flip_unavailable_title": "Não é possível inverter esta conversão",
+            "flip_unavailable_body": "Esta conta não pode pagar pela rede {{network}}."
         },
         "asset_selection": {
             "swap_from_title": "Converter de",

@@ -1225,6 +1225,7 @@
             "empty_body": "Sobald ein Guthabenverlauf vorliegt, wird hier ein Diagramm angezeigt",
             "asset_empty_body": "Sobald für dieses Asset auf diesem Konto ein Guthabenverlauf vorliegt, wird hier ein Diagramm angezeigt",
             "excludes_networks": "Dieses Diagramm enthält noch keine {{networks}}-Assets",
+            "failed_networks": "Der Verlauf von {{networks}} konnte nicht geladen werden und fehlt daher in diesem Diagramm",
             "currency_unavailable_body": "Dieses Diagramm ist in {{currency}} derzeit nicht verfügbar"
         },
         "webview": {
@@ -3783,6 +3784,8 @@
             "title_clawback": "Clawback",
             "title_contract_interaction": "Smart-Contract-Interaktion",
             "token_contract": "{{symbol}}-Token-Contract",
+            "unknown": "Unbekannt",
+            "unknown_receive_body": "Pera kann nicht erkennen, was du von dieser App erhältst",
             "unverified": "Nicht verifiziert",
             "you_receive": "Du erhältst",
             "you_send": "Du sendest",
@@ -4202,7 +4205,10 @@
             "to": "An",
             "balance_label": "Guthaben: <0/>",
             "max": "MAX",
-            "select_asset": "Auswählen"
+            "select_asset": "Auswählen",
+            "flip": "Zahlen und Erhalten tauschen",
+            "flip_unavailable_title": "Tausch lässt sich nicht umkehren",
+            "flip_unavailable_body": "Dein Konto kann nicht über das {{network}}-Netzwerk bezahlen."
         },
         "asset_selection": {
             "swap_from_title": "Tauschen von",

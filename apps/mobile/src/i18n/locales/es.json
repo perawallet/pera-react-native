@@ -1233,6 +1233,7 @@
             "empty_body": "Aquí verás un gráfico cuando tengas historial de saldo",
             "asset_empty_body": "Aquí verás un gráfico cuando tengas historial de saldo de este activo en esta cuenta",
             "excludes_networks": "Este gráfico aún no incluye los activos de {{networks}}",
+            "failed_networks": "No se pudo cargar el historial de {{networks}}, así que este gráfico no lo incluye",
             "currency_unavailable_body": "Este gráfico no está disponible en {{currency}} por ahora"
         },
         "webview": {
@@ -3791,6 +3792,8 @@
             "title_clawback": "Recuperación",
             "title_contract_interaction": "Interacción con contrato",
             "token_contract": "Contrato del token {{symbol}}",
+            "unknown": "No se sabe",
+            "unknown_receive_body": "Pera no puede saber qué recibes de esta app",
             "unverified": "No verificado",
             "you_receive": "Recibes",
             "you_send": "Envías",
@@ -4210,7 +4213,10 @@
             "to": "A",
             "balance_label": "Saldo: <0/>",
             "max": "MÁX",
-            "select_asset": "Elegir"
+            "select_asset": "Elegir",
+            "flip": "Invertir pagar y recibir",
+            "flip_unavailable_title": "No se puede invertir este swap",
+            "flip_unavailable_body": "Esta cuenta no puede pagar desde la red de {{network}}."
         },
         "asset_selection": {
             "swap_from_title": "Intercambiar desde",

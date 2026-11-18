@@ -1233,6 +1233,7 @@
             "empty_body": "You will see a chart here once you have some balance history",
             "asset_empty_body": "You will see a chart here once you have some balance history for this asset on this account",
             "excludes_networks": "This chart doesn't include {{networks}} assets yet",
+            "failed_networks": "Couldn't load {{networks}} history, so this chart leaves it out",
             "currency_unavailable_body": "This chart isn't available in {{currency}} right now"
         },
         "webview": {
@@ -3791,6 +3792,8 @@
             "title_clawback": "Clawback",
             "title_contract_interaction": "Contract interaction",
             "token_contract": "{{symbol}} token contract",
+            "unknown": "Can't tell",
+            "unknown_receive_body": "Pera can't tell what you receive from this app",
             "unverified": "Unverified",
             "you_receive": "You receive",
             "you_send": "You send",
@@ -4210,7 +4213,10 @@
             "to": "To",
             "balance_label": "Balance: <0/>",
             "max": "MAX",
-            "select_asset": "Select"
+            "select_asset": "Select",
+            "flip": "Flip pay and receive",
+            "flip_unavailable_title": "Can't flip this swap",
+            "flip_unavailable_body": "This account can't pay from the {{network}} network."
         },
         "asset_selection": {
             "swap_from_title": "Swap From",

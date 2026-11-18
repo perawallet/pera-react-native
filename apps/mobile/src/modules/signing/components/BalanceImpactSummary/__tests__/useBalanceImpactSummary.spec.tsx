@@ -218,6 +218,7 @@ describe('useBalanceImpactSummary', () => {
             fetchMissing: true,
         })
         expect(result.current.hasImpact).toBe(false)
+        expect(result.current.hasSummary).toBe(false)
     })
 
     it('splits movements into spend and receive sections', () => {
@@ -272,6 +273,7 @@ describe('useBalanceImpactSummary', () => {
         const { result } = renderHook(() => useBalanceImpactSummary())
 
         expect(result.current.isSimulating).toBe(true)
+        expect(result.current.hasSummary).toBe(true)
     })
 
     it('passes through the simulation-failed flag', () => {
@@ -280,6 +282,60 @@ describe('useBalanceImpactSummary', () => {
         const { result } = renderHook(() => useBalanceImpactSummary())
 
         expect(result.current.simulationFailed).toBe(true)
+        expect(result.current.hasSummary).toBe(true)
+    })
+
+    describe('when an app call sits in the group', () => {
+        const appCall = {
+            sender: USER,
+            fee: 1000n,
+            applicationTransaction: { applicationId: 1_167_143_153n },
+        } as unknown as PeraDisplayableTransaction
+
+        it('calls an empty receive side unknown, not nothing', () => {
+            mockTransactions([appCall, spendAlgo])
+
+            const { result } = renderHook(() => useBalanceImpactSummary())
+
+            expect(result.current.isReceiveUnknown).toBe(true)
+        })
+
+        it('keeps an unknown receive separate from known asset movements', () => {
+            mockTransactions([appCall])
+
+            const { result } = renderHook(() => useBalanceImpactSummary())
+
+            expect(result.current.isReceiveUnknown).toBe(true)
+            expect(result.current.hasImpact).toBe(false)
+            expect(result.current.receive).toEqual([])
+            expect(result.current.spend).toEqual([])
+            expect(result.current.isSimulating).toBe(false)
+            expect(result.current.hasSummary).toBe(true)
+        })
+
+        it('keeps a receive side it can see as known', () => {
+            mockTransactions([appCall, spendAlgo, receiveNft])
+
+            const { result } = renderHook(() => useBalanceImpactSummary())
+
+            expect(result.current.isReceiveUnknown).toBe(false)
+        })
+
+        it("keeps nothing when only the dApp's account makes the app call", () => {
+            mockTransactions([{ ...appCall, sender: OTHER }, spendAlgo])
+
+            const { result } = renderHook(() => useBalanceImpactSummary())
+
+            expect(result.current.isReceiveUnknown).toBe(false)
+        })
+    })
+
+    it('keeps "nothing" for a plain payment with nothing back', () => {
+        mockTransactions([spendAlgo])
+
+        const { result } = renderHook(() => useBalanceImpactSummary())
+
+        expect(result.current.isReceiveUnknown).toBe(false)
     })
 
     it('surfaces a close-remainder sweep as a full-balance spend row', () => {

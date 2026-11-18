@@ -20,7 +20,10 @@ import {
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useContacts, type Contact } from '@perawallet/wallet-core-contacts'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
-import { useBottomSheet } from '@modules/bottom-sheet'
+import {
+    isRegisteredBottomSheetOpen,
+    useBottomSheet,
+} from '@modules/bottom-sheet'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCapability } from '@hooks/useCapability'
 import { useLanguage } from '@hooks/useLanguage'
@@ -115,6 +118,8 @@ export const useAccountActions = ({
 
     const openSendTransaction = useCallback(() => {
         onClose()
+        // The open Send reads the same store; leave it as the user left it.
+        if (isRegisteredBottomSheetOpen('send-funds')) return
         if (!chainId) {
             openSendFrom(undefined)
             return

@@ -51,7 +51,10 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useSwapChainResolver } from '@perawallet/wallet-core-swaps'
-import { useBottomSheetStore } from '@modules/bottom-sheet'
+import {
+    isRegisteredBottomSheetOpen,
+    useBottomSheetStore,
+} from '@modules/bottom-sheet'
 import { BIDALI_SHEET_OPTIONS } from '@modules/gift-card'
 import { usePendingSignaturesSheet } from '@modules/multisig'
 import { useSendAccountResolver } from '@modules/transactions'
@@ -290,6 +293,9 @@ export const useDeepLink = (): UseDeepLinkResult => {
             parsedType: string,
         ) => {
             const open = (account: WalletAccount) => {
+                // Checked again: the picker and enableChain settle later, and
+                // a Send the user opened meanwhile must keep its sender.
+                if (isRegisteredBottomSheetOpen('send-funds')) return
                 setSelectedAccountId(account.id)
                 openSendFunds({ ...prefill, chainId })
             }
@@ -312,6 +318,9 @@ export const useDeepLink = (): UseDeepLinkResult => {
             prefill: SendFundsDeeplinkPrefill,
             parsedType: string,
         ): boolean => {
+            // An open Send reads the selected account live, so a link must not
+            // pick or switch a sender under it.
+            if (isRegisteredBottomSheetOpen('send-funds')) return true
             const resolution = resolveSender(chainId)
             if (resolution.kind === 'none') {
                 showError({

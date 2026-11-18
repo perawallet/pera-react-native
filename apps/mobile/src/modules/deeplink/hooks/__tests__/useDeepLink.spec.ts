@@ -382,7 +382,12 @@ const {
     mockSendFundsReset: vi.fn(),
 }))
 
+const { mockIsSheetOpen } = vi.hoisted(() => ({
+    mockIsSheetOpen: vi.fn(() => false),
+}))
+
 vi.mock('@modules/bottom-sheet', () => ({
+    isRegisteredBottomSheetOpen: mockIsSheetOpen,
     useBottomSheetStore: () => ({
         requestByType: mockRequestByType,
     }),
@@ -2901,6 +2906,7 @@ describe('useDeepLink', () => {
 
         afterEach(() => {
             deeplinkAdapters.reset()
+            mockIsSheetOpen.mockReturnValue(false)
         })
 
         const ethereumTransfer = {
@@ -3043,6 +3049,52 @@ describe('useDeepLink', () => {
                 expect.anything(),
                 expect.anything(),
             )
+        })
+
+        it('leaves an open Send on its sender: no picker, no chain enabled, no account switched', async () => {
+            mockIsSheetOpen.mockReturnValue(true)
+            mockEnableChain.mockResolvedValue({ id: 'hd-account' })
+            sendAccount.resolution = {
+                kind: 'picker',
+                accounts: [ETHEREUM_ACCOUNT, OTHER_ETHEREUM_ACCOUNT],
+            }
+            ;(parseDeeplink as Mock).mockReturnValue(ethereumTransfer)
+
+            const { onSuccess, onError } = await dispatch(
+                ethereumTransfer.sourceUrl,
+            )
+            await act(async () => {})
+
+            expect(mockIsSheetOpen).toHaveBeenCalledWith('send-funds')
+            expect(sendAccount.pick).not.toHaveBeenCalled()
+            expect(mockEnableChain).not.toHaveBeenCalled()
+            expect(accountsState.setSelectedAccountId).not.toHaveBeenCalled()
+            expect(mockSendFundsReset).not.toHaveBeenCalled()
+            expect(mockRequestByType).not.toHaveBeenCalled()
+            expect(onSuccess).toHaveBeenCalledTimes(1)
+            expect(onError).not.toHaveBeenCalled()
+        })
+
+        it('keeps the sender of a Send opened while the account picker was up', async () => {
+            let pickSender: (account: unknown) => void = () => undefined
+            sendAccount.pick.mockReturnValue(
+                new Promise(resolve => {
+                    pickSender = resolve
+                }),
+            )
+            sendAccount.resolution = {
+                kind: 'picker',
+                accounts: [ETHEREUM_ACCOUNT, OTHER_ETHEREUM_ACCOUNT],
+            }
+            ;(parseDeeplink as Mock).mockReturnValue(ethereumTransfer)
+
+            await dispatch(ethereumTransfer.sourceUrl)
+            mockIsSheetOpen.mockReturnValue(true)
+            await act(async () => pickSender(OTHER_ETHEREUM_ACCOUNT))
+
+            expect(sendAccount.pick).toHaveBeenCalled()
+            expect(accountsState.setSelectedAccountId).not.toHaveBeenCalled()
+            expect(mockRequestByType).not.toHaveBeenCalled()
         })
 
         it('opens no send when the account picker is dismissed', async () => {

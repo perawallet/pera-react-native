@@ -32,6 +32,8 @@ ${NOTHING_TO_SWAP_TOAST}            xpath=//*[(starts-with(@text,'Nothing to swa
 ${ASSET_SEARCH_INPUT}               tid=searchable-list-search-input
 ${PAY_ASSET_ROW_ANY}                xpath=//*[starts-with(@content-desc,'asset-list-item-') or starts-with(@resource-id,'asset-list-item-') or starts-with(@name,'asset-list-item-')]
 ${PAY_ASSET_ROW_PREFIX}             asset-list-item-
+${SOURCE_ACCOUNT_HEADER}            tid=swap_source_account_header
+${SOURCE_ACCOUNT_ROW_ANY}           xpath=//*[(starts-with(@content-desc,'swap_source_account_') or starts-with(@resource-id,'swap_source_account_') or starts-with(@name,'swap_source_account_')) and not(contains(concat(@content-desc,@resource-id,@name),'header'))]
 ${RECEIVE_ASSET_ROW_ANY}            xpath=//*[starts-with(@content-desc,'swap-asset-item-') or starts-with(@resource-id,'swap-asset-item-') or starts-with(@name,'swap-asset-item-')]
 ${NO_MATCHING_ASSETS}               xpath=//*[@text='No Matching Assets' or @label='No Matching Assets']
 ${NO_MATCH_SEARCH}                  ZZQXNOMATCH9999
@@ -41,6 +43,13 @@ ${USDC_RECEIVE_ROW}                 tid=swap-asset-item-31566704
 # Only the receive side's balance carries the receive asset's unit; "ALGO to USDC" in Top Swaps
 # would match a bare USDC text anywhere.
 ${RECEIVE_IS_USDC}                  xpath=//*[@text='Balance: ' or @label='Balance: ']/following-sibling::*[contains(@text,'USDC') or contains(@label,'USDC')]
+${RECEIVE_BALANCE}                  tid=swap-receive-balance
+${RECEIVE_BALANCE_IS_USDC}          xpath=//*[@name='swap-receive-balance' or @resource-id='swap-receive-balance' or @content-desc='swap-receive-balance']//*[contains(@text,'USDC') or contains(@label,'USDC')]
+${PAY_CHAIN_FILTER}                 tid=swap_from_chain_filter
+${RECEIVE_CHAIN_FILTER}             tid=swap_to_chain_filter
+${OTHER_CHAIN_RECEIVE_CHIP}         xpath=(//*[(starts-with(@content-desc,'swap_to_chain_filter_') or starts-with(@resource-id,'swap_to_chain_filter_') or starts-with(@name,'swap_to_chain_filter_')) and not(contains(concat(@content-desc,@resource-id,@name),'_all')) and not(contains(concat(@content-desc,@resource-id,@name),'_algorand'))])[1]
+# The selector's label is the asset's unit; iOS folds it into the touchable, Android keeps a child.
+${PAY_IS_USDC}                      xpath=//*[@content-desc='swap-pay-asset-selector' or @resource-id='swap-pay-asset-selector' or @name='swap-pay-asset-selector'][descendant-or-self::*[contains(@text,'USDC') or contains(@label,'USDC')]]
 
 ${CONFIG_APPLY}                     tid=swap-config-apply
 ${CONFIG_SLIPPAGE_INPUT}            tid=swap-config-slippage-input
@@ -59,23 +68,34 @@ ${PROVIDER_OPTION_OTHER}            xpath=(//*[((starts-with(@content-desc,'swap
 ${PROVIDER_TITLE_AUTO}              xpath=//*[@text='Provider (Best price available)' or @label='Provider (Best price available)']
 ${PROVIDER_TITLE_MANUAL}            xpath=//*[@text='Provider' or @label='Provider']
 
-${TOP_PAIRS}                        tid=swap-top-pairs
-${TOP_PAIRS_TITLE}                  xpath=//*[@text='Top 5 Swaps' or @label='Top 5 Swaps']
-# The trailing hyphen keeps the swap-top-pairs-skeleton-N placeholders out.
-${TOP_PAIR_FIRST}                   xpath=(//*[starts-with(@content-desc, 'swap-top-pair-') or starts-with(@resource-id, 'swap-top-pair-') or starts-with(@name,'swap-top-pair-')])[1]
 ${HISTORY_WIDGET}                   tid=swap-pair-history-widget
 ${HISTORY_SEE_ALL}                  tid=swap-pair-history-see-all
 ${HISTORY_LIST}                     tid=swap-history-list
 ${HISTORY_EMPTY}                    xpath=//*[@text='No swaps yet' or @label='No swaps yet']
+${HISTORY_TITLE}                    xpath=//*[@text='Swap History' or @label='Swap History']
+${HISTORY_STRIP_ERROR}              xpath=//*[@text="Couldn't load swap history." or @label="Couldn't load swap history."]
+${PAIR_CHIP_PREFIX}                 swap-pair-chip-
+${PAIR_CHIP_FIRST}                  xpath=(//*[starts-with(@content-desc,'swap-pair-chip-') or starts-with(@resource-id,'swap-pair-chip-') or starts-with(@name,'swap-pair-chip-')])[1]
+# ALGO is asset 0 on Algorand; the chip id is swap-pair-chip-<in>-<out>.
+${ALGO_TO_USDC_CHIP}                tid=swap-pair-chip-0-31566704
 ${HISTORY_ROW_FIRST}                xpath=(//*[starts-with(@content-desc, 'swap-history-item-') or starts-with(@resource-id, 'swap-history-item-') or starts-with(@name,'swap-history-item-')])[1]
 
 ${CONFIRM_SLIDE}                    tid=swap-confirm-slide
 ${CONFIRM_WARNING}                  tid=swap-confirm-warning
 ${CONFIRM_CLOSE}                    tid=swap-confirm-close
+${CONFIRM_ROUTE}                    tid=swap-confirm-route
+${CONFIRM_RECEIVE_ACCOUNT}          tid=swap-confirm-receive-account
+${CONFIRM_CROSS_CHAIN_NOTE}         tid=swap-confirm-cross-chain-note
+${CONFIRM_SPEND_APPROVAL_NOTE}      tid=swap-confirm-spend-approval-note
+${CONFIRM_NETWORK_FEE}              tid=swap-confirm-network-fee
+${CONFIRM_PROVIDER_FEE}             tid=swap-confirm-provider-fee
 ${CONFIRM_TITLE}                    xpath=//*[@text='Confirm Swap' or @label='Confirm Swap']
-@{CONFIRM_LABELS}                   Rate    Minimum Received    Pera Fee    Price Impact    Slippage Tolerance
-@{CONFIRM_VALUE_IDS}                swap-confirm-rate    swap-confirm-provider    swap-confirm-slippage
-...                                 swap-confirm-price-impact    swap-confirm-min-received    swap-confirm-pera-fee
+# Label to value testID. Only Provider and Slippage Tolerance render on every route; the others
+# render when the provider reports them.
+&{CONFIRM_ROWS}                     Rate=swap-confirm-rate    Provider=swap-confirm-provider
+...                                 Slippage Tolerance=swap-confirm-slippage    Price Impact=swap-confirm-price-impact
+...                                 Minimum Received=swap-confirm-min-received    Pera Fee=swap-confirm-pera-fee
+@{CONFIRM_ALWAYS_IDS}               swap-confirm-provider    swap-confirm-slippage
 
 ${QUOTE_TIMEOUT}                    45
 # Quote fetches are debounced, so an absent CTA only proves something once this has passed.
@@ -147,14 +167,6 @@ Extract Number
     ${num}=    Evaluate
     ...    (lambda m: float(m.group(0).replace(',', '')) if m else None)(re.search(r'[0-9][0-9,]*(?:[.][0-9]+)?', $raw))
     RETURN    ${num}
-
-Top Pair Row With Volume
-    [Documentation]    Joined text of the first top pair row once it shows a volume, which renders
-    ...                after the pair label, when the currency rates have loaded.
-    ${text}=    Text Inside    ${TOP_PAIR_FIRST.replace('xpath=', '')}
-    ${volume}=    Extract Number    ${text}
-    Should Not Be Equal    ${volume}    ${None}    The top pair row shows no volume: "${text}".
-    RETURN    ${text}
 
 Text Inside
     [Documentation]    Joined text of an element's descendants, for rows whose own node carries no text.
@@ -301,9 +313,11 @@ Restore Auto Provider
     Wait Until Page Contains Element    ${PROVIDER_TITLE_AUTO}    timeout=15s
 
 Open Swap History
+    # The strip renders last in the form, below the fold on a small screen.
     ${has_history}=    Run Keyword And Return Status
-    ...    Wait Until Page Contains Element    ${HISTORY_SEE_ALL}    timeout=15s
+    ...    Wait Until Keyword Succeeds    20s    1s    Scroll Until Present    ${HISTORY_SEE_ALL}
     Skip If    not ${has_history}    This account has no swap history, so See all is not offered.
+    Scroll Until Tappable    ${HISTORY_SEE_ALL}
     Tap    ${HISTORY_SEE_ALL}
     Wait Until Page Contains Element    ${HISTORY_LIST}    timeout=15s
 
@@ -314,3 +328,49 @@ Open Confirmation
     Expect Element    ${SWAP_BUTTON}    enabled    timeout=30s
     Tap    ${SWAP_BUTTON}
     Wait Until Settled    ${CONFIRM_SLIDE}
+
+Chain Filter Should Be Absent
+    [Documentation]    With an asset picker open, passes when it offers no chain filter and skips when the wallet swaps on several networks.
+    [Arguments]    ${filter}
+    ${shown}=    Run Keyword And Return Status    Page Should Contain Element    ${filter}
+    Skip If    ${shown}    This wallet can swap on several networks, so the filter is offered; the case listing its chips covers it.
+
+Chain Filter Should List All And Each Network
+    [Documentation]    With an asset picker open, its chain filter must offer All plus at least two networks.
+    [Arguments]    ${filter}
+    ${shown}=    Run Keyword And Return Status    Wait Until Page Contains Element    ${filter}    timeout=10s
+    Skip If    not ${shown}    This build or wallet swaps on one network only, so there is no chain filter to check.
+    ${id}=    Bare Test Id    ${filter}
+    Page Should Contain Element    tid=${id}_all
+    ${chips}=    Rows With Prefix    ${id}_
+    ${found}=    Get Webelements    ${chips}
+    ${count}=    Get Length    ${found}
+    Should Be True    ${count} > 2
+    ...    The chain filter offers ${count} chip(s); All plus two networks is the least it may show.
+
+Open Swap With Pair History
+    [Documentation]    Opens Swap on the funded wallet and skips unless its swap history strip offers a pair.
+    Open Swap With Funded Account
+    ${chips}=    Rows With Prefix    ${PAIR_CHIP_PREFIX}
+    ${shown}=    Run Keyword And Return Status
+    ...    Wait Until Keyword Succeeds    20s    1s    Scroll Until Present    ${chips}
+    Skip If    not ${shown}    This wallet has no swap history, so the pair strip is not offered.
+
+Open Cross Chain Confirmation
+    [Documentation]    Picks a receive asset on another network for the funded wallet and opens the confirmation of its quote.
+    Open Swap With Funded Account
+    Open Receive Asset Picker
+    ${multichain}=    Run Keyword And Return Status    Wait Until Page Contains Element    ${RECEIVE_CHAIN_FILTER}    timeout=10s
+    Skip If    not ${multichain}    This build or wallet offers no other network to receive on.
+    Tap    ${OTHER_CHAIN_RECEIVE_CHIP}
+    Receive Rows Or Skip
+    Tap    ${RECEIVE_ASSET_ROW_ANY}
+    Wait Until Page Does Not Contain Element    ${ASSET_SEARCH_INPUT}    timeout=15s
+    Enter Amount And Wait For Quote    ${FUNDED_PAY_AMOUNT}
+    Expect Element    ${SWAP_BUTTON}    enabled    timeout=30s
+    Tap    ${SWAP_BUTTON}
+    Wait Until Settled    ${CONFIRM_SLIDE}
+
+Open Ethereum Swap Confirmation
+    [Documentation]    Skips until a funded Ethereum account holding an ERC-20 without a spend allowance is available to the suite.
+    Skip    Needs a funded Ethereum account holding an ERC-20 with no spend allowance; no wallet or fixture provides one yet.

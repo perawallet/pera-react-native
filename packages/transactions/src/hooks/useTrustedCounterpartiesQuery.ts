@@ -36,8 +36,8 @@ export type UseTrustedCounterpartiesQueryResult = {
     hasSenderHistory: boolean
 }
 
-// A history page has no abort of its own, so the deadline rejects at once and
-// the abort stops any further pages.
+// The abort cancels the page in flight and any after it; the race still
+// rejects at once, since valuing a page's transfers takes no signal.
 const withDeadline = async <T>(
     read: (signal: AbortSignal) => Promise<T>,
     querySignal: AbortSignal,

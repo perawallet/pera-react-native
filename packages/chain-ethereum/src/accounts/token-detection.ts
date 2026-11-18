@@ -173,6 +173,7 @@ export const scanReceivedTokens = async (
             chain,
             address,
             cursor === undefined ? undefined : { cursor },
+            { isBackground: true },
         )
         let isReachedMarker = false
         for (const item of items) {

@@ -328,6 +328,20 @@ describe('getMinedTransactionHistory', () => {
         )
         expect(getSubmissionAttemptsWithHistoryEntry).not.toHaveBeenCalled()
     })
+
+    it('hands the chain the cancellation signal alongside its capabilities', async () => {
+        const signal = new AbortController().signal
+        getTransactionHistory.mockResolvedValue({ items: [] })
+
+        await getMinedTransactionHistory(ADDRESS, SCOPE, undefined, { signal })
+
+        expect(getTransactionHistory).toHaveBeenCalledWith(
+            ADDRESS,
+            SCOPE,
+            undefined,
+            { capabilities: CAPABILITIES, signal },
+        )
+    })
 })
 
 describe('mergePendingRecords', () => {
