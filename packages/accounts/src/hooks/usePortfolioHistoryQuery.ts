@@ -228,8 +228,9 @@ export const usePortfolioHistoryQuery = (
         // A disabled query keeps its cached (and persisted) points; the chart
         // draws data ahead of the unavailable state, so a kill switch must drop them.
         data: isUnavailableOnNetwork ? [] : combined.data,
+        // TanStack reports a disabled query with no data as pending; it's idle, not loading.
         isPending:
-            isUnavailableOnNetwork || groups.length === 0
+            !enabled || isUnavailableOnNetwork || groups.length === 0
                 ? false
                 : combined.isPending,
         isError: combined.isError,

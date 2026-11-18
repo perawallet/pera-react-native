@@ -687,6 +687,26 @@ describe('usePortfolioHistoryQuery', () => {
 
         expect(history).not.toHaveBeenCalled()
         expect(result.current.data).toEqual([])
+        expect(result.current.isPending).toBe(false)
+    })
+
+    it('starts loading as soon as it is enabled', () => {
+        history.mockReturnValue(new Promise(() => {}))
+        const { result, rerender } = renderHook(
+            ({ enabled }: { enabled: boolean }) =>
+                usePortfolioHistoryQuery(
+                    [{ address: 'ALGO', scope: ALGORAND }],
+                    'one-day',
+                    ALGORAND,
+                    enabled,
+                ),
+            { wrapper, initialProps: { enabled: false } },
+        )
+        expect(result.current.isPending).toBe(false)
+
+        rerender({ enabled: true })
+
+        expect(result.current.isPending).toBe(true)
     })
 
     it('is settled and empty with no sources', () => {
