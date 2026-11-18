@@ -12,9 +12,10 @@
 
 import LottieView from 'lottie-react-native'
 import { useEffect, useRef, type ComponentProps } from 'react'
-import { Platform, StyleSheet } from 'react-native'
+import { StyleSheet } from 'react-native'
 import { useIsAnimationVisible } from '@hooks/useIsAnimationVisible'
 import './configureLottieWasm'
+import { shouldPlayOnVisible } from './shouldPlayOnVisible'
 
 export type PWLottieProps = ComponentProps<typeof LottieView>
 
@@ -34,12 +35,12 @@ export const PWLottie = (props: PWLottieProps) => {
 
     // Native views start playing when autoPlay flips to true and replay on a new
     // source only while it is true, so autoPlay tracks visibility and hiding
-    // just pauses. dotlottie-react reads autoplay once at load, so web plays.
+    // just pauses.
     useEffect(() => {
         if (!isPausable) return
         if (!isVisible) {
             lottieRef.current?.pause()
-        } else if (Platform.OS === 'web') {
+        } else if (shouldPlayOnVisible) {
             lottieRef.current?.play()
         }
     }, [isPausable, isVisible])

@@ -12,15 +12,23 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import React, { forwardRef, useImperativeHandle } from 'react'
-import { Platform } from 'react-native'
 import { render, screen } from '@test-utils/render'
 import { PWLottie } from '../PWLottie'
 
-const { mockPause, mockResume, mockPlay, visibility } = vi.hoisted(() => ({
-    mockPause: vi.fn(),
-    mockResume: vi.fn(),
-    mockPlay: vi.fn(),
-    visibility: { isVisible: true },
+const { mockPause, mockResume, mockPlay, visibility, platform } = vi.hoisted(
+    () => ({
+        mockPause: vi.fn(),
+        mockResume: vi.fn(),
+        mockPlay: vi.fn(),
+        visibility: { isVisible: true },
+        platform: { isWeb: false },
+    }),
+)
+
+vi.mock('../shouldPlayOnVisible', () => ({
+    get shouldPlayOnVisible() {
+        return platform.isWeb
+    },
 }))
 
 vi.mock('@hooks/useIsAnimationVisible', () => ({
@@ -183,8 +191,7 @@ describe('PWLottie', () => {
     })
 
     it('plays a loop explicitly on web once visible, where autoplay is read only at load', () => {
-        const originalOS = Platform.OS
-        Platform.OS = 'web'
+        platform.isWeb = true
         try {
             visibility.isVisible = false
             const { rerender } = render(
@@ -206,7 +213,7 @@ describe('PWLottie', () => {
             )
             expect(mockPlay).toHaveBeenCalledTimes(1)
         } finally {
-            Platform.OS = originalOS
+            platform.isWeb = false
         }
     })
 
