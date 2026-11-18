@@ -46,11 +46,7 @@ export type NameLookup = Nullable<AddressName> | typeof NAME_UNAVAILABLE
  */
 // Partitioned by the scope key, not the scope: BatchQueue groups by Map identity,
 // so equal-but-distinct scope objects would never share a batch.
-export const nameBatchQueue = new BatchQueue<
-    string,
-    NameLookup,
-    ChainScopeKey
->(
+export const nameBatchQueue = new BatchQueue<string, NameLookup, ChainScopeKey>(
     async (addresses, scopeKey) => {
         const scope = parseScopeKey(scopeKey)
         const unavailable = await fetchAndPersistNames(addresses, scope)

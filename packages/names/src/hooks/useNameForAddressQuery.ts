@@ -17,6 +17,11 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { config } from '@perawallet/wallet-core-config'
+import {
+    AppError,
+    ErrorCategory,
+    ErrorSeverity,
+} from '@perawallet/wallet-core-shared'
 import { nameServiceAdapterFor } from '../chain-adapter'
 import { NAME_UNAVAILABLE, nameBatchQueue } from '../services/nameBatchQueue'
 import { nameQueryKeys } from './querykeys'
@@ -27,10 +32,13 @@ export type UseNameForAddressQueryResult = {
     isPending: boolean
 }
 
-class NameUnavailableError extends Error {
+class NameUnavailableError extends AppError {
     constructor() {
-        super('The name could not be verified against its chain')
-        this.name = 'NameUnavailableError'
+        super('The name could not be verified against its chain', {
+            severity: ErrorSeverity.LOW,
+            category: ErrorCategory.BLOCKCHAIN,
+            retryable: true,
+        })
     }
 }
 
