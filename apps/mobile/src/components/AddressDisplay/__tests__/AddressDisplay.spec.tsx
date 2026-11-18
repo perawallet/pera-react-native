@@ -196,7 +196,7 @@ describe('AddressDisplay', () => {
 
         it('shows no name for an address-only display even when another screen cached one', () => {
             mockUseNameForAddress.mockReturnValue({
-                data: [{ name: 'alice.eth', image: '', source: 'ens' }],
+                data: [{ name: 'alice.eth' }],
                 isPending: false,
             })
 
