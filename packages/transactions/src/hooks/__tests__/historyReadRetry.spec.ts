@@ -86,4 +86,24 @@ describe('historyReadRetryDelay', () => {
         vi.spyOn(Math, 'random').mockReturnValue(0.999)
         expect(historyReadRetryDelay(0, RATE_LIMITED)).toBeLessThan(3000)
     })
+
+    it("waits the response's Retry-After when it sent one", () => {
+        vi.spyOn(Math, 'random').mockReturnValue(0)
+        const error = new PeraNetworkError('client', {
+            status: 429,
+            retryAfterMs: 20_000,
+        })
+
+        expect(historyReadRetryDelay(0, error)).toBe(20_000)
+    })
+
+    it('caps a long Retry-After at 30s', () => {
+        vi.spyOn(Math, 'random').mockReturnValue(0)
+        const error = new PeraNetworkError('client', {
+            status: 429,
+            retryAfterMs: 600_000,
+        })
+
+        expect(historyReadRetryDelay(0, error)).toBe(30_000)
+    })
 })
