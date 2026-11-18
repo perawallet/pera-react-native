@@ -174,7 +174,8 @@ const unrefreshedOf = (
         : undefined
 }
 
-type StoredTokenIds = { ids: string[]; error: Optional<unknown> }
+/** `ids` is per read, in the reads' order. */
+type StoredTokenIds = { ids: string[][]; error: Optional<unknown> }
 
 // The stored rows are the record of tokens held off the list (detected ones)
 // and, without the token list, of every token; they name the contracts the RPC
@@ -186,13 +187,17 @@ const storedTokenIdsOf = async (
     nativeAssetId: string,
 ): Promise<StoredTokenIds> => {
     try {
-        const held = await getAccountHeldAssets({
-            sources: reads.map(({ address }) => ({ address, scope })),
-        })
+        const held = await Promise.all(
+            reads.map(({ address }) =>
+                getAccountHeldAssets({ sources: [{ address, scope }] }),
+            ),
+        )
         return {
-            ids: held
-                .map(row => row.assetId)
-                .filter(id => id !== nativeAssetId && !isEvmNftAssetId(id)),
+            ids: held.map(rows =>
+                rows
+                    .map(row => row.assetId)
+                    .filter(id => id !== nativeAssetId && !isEvmNftAssetId(id)),
+            ),
             error: undefined,
         }
     } catch (error) {
@@ -200,7 +205,7 @@ const storedTokenIdsOf = async (
             scope,
             error,
         })
-        return { ids: [], error }
+        return { ids: reads.map(() => []), error }
     }
 }
 
@@ -499,7 +504,7 @@ const readBatch = async (
     // Added, stored and detected tokens: the syncer shows an added one at
     // zero, and stored ids keep a detected token read until its balance is gone.
     const held = checksummed([
-        ...stored.ids,
+        ...stored.ids.flat(),
         ...reads.flatMap(read => [
             ...read.addedTokenIds,
             ...detection.sightings.of(scope, read.address),
@@ -545,11 +550,11 @@ const readBatch = async (
     // keeping through a failed read; a sighted one that keeps failing (a
     // broken contract, a spam airdrop) must not hold the account's refresh in
     // a failed state every tick.
-    const keptIds = new Set(
-        checksummed([
-            ...stored.ids,
-            ...reads.flatMap(read => read.addedTokenIds),
-        ]),
+    const keptIds = reads.map(
+        (read, index) =>
+            new Set(
+                checksummed([...stored.ids[index]!, ...read.addedTokenIds]),
+            ),
     )
     // A whole-list pass that fails still leaves the held tokens to read: what
     // it would have added is discovery, and losing that must not fail the
@@ -620,10 +625,10 @@ const readBatch = async (
             ),
             nftReads,
         ])
-    const unreadKept = new Map<string, unknown>()
-    offListRead.unread.forEach((error, id) => {
-        if (keptIds.has(id)) unreadKept.set(id, error)
-        else logger.debug('Sighted token unreadable; leaving it out', { id })
+    offListRead.unread.forEach((_, id) => {
+        if (!keptIds.some(kept => kept.has(id))) {
+            logger.debug('Sighted token unreadable; leaving it out', { id })
+        }
     })
     const isWholeList = (index: number): boolean =>
         isPassDue[index]! && wholeListRead.isWholeList
@@ -653,9 +658,13 @@ const readBatch = async (
         ).get(getAddress(read.address))!
         const offList = offListRead.balances.get(getAddress(read.address))
         offList?.tokens.forEach((balance, id) => holder.tokens.set(id, balance))
-        const unreadTokens = new Map(unreadKept)
+        const kept = keptIds[index]!
+        const unreadTokens = new Map<string, unknown>()
+        offListRead.unread.forEach((error, id) => {
+            if (kept.has(id)) unreadTokens.set(id, error)
+        })
         for (const id of [...holder.unread, ...(offList?.unread ?? [])]) {
-            if (keptIds.has(id)) {
+            if (kept.has(id)) {
                 unreadTokens.set(id, new Error(`balanceOf unreadable: ${id}`))
             }
         }
