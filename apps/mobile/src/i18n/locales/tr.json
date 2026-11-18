@@ -3751,6 +3751,8 @@
             "nothing_back_title": "Karşılığında hiçbir şey almıyorsun",
             "permission_collection": "Tüm {{collection}} NFT’lerin",
             "permission_collection_note": "Bu koleksiyondaki tüm NFT’lerini, bu izni kaldırana kadar şimdi ve daha sonra taşıyabilir.",
+            "permission_increase": "Ek harcama izni verilen: {{spender}}",
+            "permission_increase_note": "Bu tutar {{spender}} için mevcut harcama iznine eklenir, bu yüzden toplam limit daha yüksek olabilir.",
             "permission_no_change": "Bu işlemle cüzdanından hiçbir token çıkmaz.",
             "permission_revoke": "Harcama izni kaldırılıyor: {{spender}}",
             "permission_spender": "Harcama izni verilen: {{spender}}",

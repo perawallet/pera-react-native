@@ -499,13 +499,29 @@ describe('useEthereumSimulationSection', () => {
     })
 
     describe('an approval the call decodes to', () => {
-        const decoded = presentationOf({
-            standardCall: {
-                kind: 'token-approval',
-                contract: USDC,
-                spender: PERMIT2,
-            } as never,
-        })
+        const tokenApprovalOf = (amount?: Decimal, isIncrease?: boolean) =>
+            presentationOf({
+                standardCall: {
+                    kind: 'token-approval',
+                    contract: USDC,
+                    spender: PERMIT2,
+                    spendApproval: {
+                        spender: PERMIT2,
+                        allowances: [
+                            {
+                                assetRef: {
+                                    chainId: 'ethereum',
+                                    assetId: USDC,
+                                },
+                                amount,
+                            },
+                        ],
+                        isLongLived: true,
+                    },
+                    ...(isIncrease && { isIncrease }),
+                },
+            })
+        const decoded = tokenApprovalOf()
         const permit2Approval = {
             contract: USDC,
             spender: PERMIT2,
@@ -545,6 +561,92 @@ describe('useEthereumSimulationSection', () => {
             if (state.status !== 'success') return
             expect(state.spend).toHaveLength(1)
             expect(state.approvals.map(a => a.spender)).toEqual([OTHER])
+        })
+
+        it("matches an unlimited approve to the simulator's raw maximum", () => {
+            answering({
+                data: success({
+                    approvalChanges: [
+                        {
+                            ...permit2Approval,
+                            amount: new Decimal((2n ** 256n - 1n).toString()),
+                        },
+                    ],
+                }),
+            })
+
+            expect(render(decoded)).toEqual({ status: 'hidden' })
+        })
+
+        it('keeps a simulated allowance that differs from the one the approve names', () => {
+            answering({
+                data: success({
+                    approvalChanges: [
+                        { ...permit2Approval, amount: new Decimal(2_000_000) },
+                    ],
+                }),
+            })
+
+            expect(
+                render(tokenApprovalOf(new Decimal(1_000_000))),
+            ).toMatchObject({
+                status: 'success',
+                approvals: [
+                    {
+                        spender: PERMIT2,
+                        grant: { kind: 'amount', amount: new Decimal(2) },
+                    },
+                ],
+            })
+        })
+
+        it('keeps the allowance an increase results in, which its calldata cannot know', () => {
+            answering({
+                data: success({
+                    approvalChanges: [
+                        {
+                            ...permit2Approval,
+                            amount: new Decimal(10_000_000_000),
+                        },
+                    ],
+                }),
+            })
+
+            expect(
+                render(tokenApprovalOf(new Decimal(1_000_000_000), true)),
+            ).toMatchObject({
+                status: 'success',
+                approvals: [
+                    {
+                        spender: PERMIT2,
+                        grant: {
+                            kind: 'amount',
+                            amount: new Decimal(10_000),
+                            isBaseUnits: false,
+                        },
+                    },
+                ],
+            })
+        })
+
+        it('keeps an increase from a first allowance even when the total equals the increase', () => {
+            answering({
+                data: success({
+                    approvalChanges: [
+                        {
+                            ...permit2Approval,
+                            amount: new Decimal(1_000_000_000),
+                        },
+                    ],
+                }),
+            })
+
+            expect(
+                render(tokenApprovalOf(new Decimal(1_000_000_000), true)),
+            ).toMatchObject({
+                status: 'success',
+                approvals: [{ grant: { amount: new Decimal(1000) } }],
+            })
         })
 
         it('matches a collection-wide grant by its operator', () => {

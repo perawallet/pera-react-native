@@ -3768,6 +3768,8 @@
             "nothing_back_title": "Você não recebe nada em troca",
             "permission_collection": "Todos os seus NFTs de {{collection}}",
             "permission_collection_note": "Ele poderá mover todos os NFTs desta coleção que você tem, agora e depois, até você remover esta permissão.",
+            "permission_increase": "{{spender}} poderá gastar mais este valor",
+            "permission_increase_note": "Isso se soma ao que {{spender}} já pode gastar, então o limite total pode ser maior.",
             "permission_no_change": "Nenhum token sai da sua carteira com esta transação.",
             "permission_revoke": "{{spender}} não poderá mais gastar",
             "permission_spender": "{{spender}} poderá gastar",

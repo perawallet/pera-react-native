@@ -71,7 +71,7 @@ export type {
 } from './simulation/types'
 export type { EvmChain, EvmChainRow, EvmFeeStrategy } from './chains/types'
 export { createEvmChainModule, ethereumModule, evmChainModules } from './module'
-export { spendApprovalOfCall } from './signing/allowance'
+export { spendApprovalOfCall, toAllowanceAmount } from './signing/allowance'
 export {
     contractActionTitleKeyOf,
     hidesUnknownContractNotice,

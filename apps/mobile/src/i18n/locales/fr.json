@@ -3751,6 +3751,8 @@
             "nothing_back_title": "Vous ne recevez rien en retour",
             "permission_collection": "Tous vos NFT {{collection}}",
             "permission_collection_note": "Il pourra déplacer chaque NFT de cette collection que vous détenez, maintenant et plus tard, jusqu’à ce que vous retiriez cette autorisation.",
+            "permission_increase": "{{spender}} pourra dépenser ce montant en plus",
+            "permission_increase_note": "Ce montant s’ajoute à ce que {{spender}} peut déjà dépenser, sa limite totale peut donc être plus élevée.",
             "permission_no_change": "Aucun jeton ne quitte votre portefeuille avec cette transaction.",
             "permission_revoke": "{{spender}} ne pourra plus dépenser",
             "permission_spender": "{{spender}} pourra dépenser",
