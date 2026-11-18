@@ -38,17 +38,22 @@ export const WalletChangesCard = ({
     const { t } = useLanguage()
     const { netChange, isNetNeutral } = useWalletChangesCard(spend, receive)
 
-    const sideOf = (
-        items: readonly BalanceImpactItem[],
-        label: string,
-        testID: string,
-        isUnknown = false,
-    ) =>
+    const sideOf = ({
+        items,
+        label,
+        testID,
+        isReceiveUnknown = false,
+    }: {
+        items: readonly BalanceImpactItem[]
+        label: string
+        testID: string
+        isReceiveUnknown?: boolean
+    }) =>
         items.length === 0 ? (
             <WalletChangeRow
                 label={label}
-                isUnknown={isUnknown}
-                testID={`${testID}_${isUnknown ? 'unknown' : 'nothing'}`}
+                isReceiveUnknown={isReceiveUnknown}
+                testID={`${testID}_${isReceiveUnknown ? 'unknown' : 'nothing'}`}
             />
         ) : (
             items.map(item => (
@@ -87,7 +92,11 @@ export const WalletChangesCard = ({
             >
                 {t('signing.review.changes_title')}
             </PWText>
-            {sideOf(spend, t('signing.review.you_send'), 'review_wallet_send')}
+            {sideOf({
+                items: spend,
+                label: t('signing.review.you_send'),
+                testID: 'review_wallet_send',
+            })}
             <PWView style={styles.arrow}>
                 <PWIcon
                     name='arrow-down'
@@ -95,12 +104,12 @@ export const WalletChangesCard = ({
                     variant='secondary'
                 />
             </PWView>
-            {sideOf(
-                receive,
-                t('signing.review.you_receive'),
-                'review_wallet_receive',
+            {sideOf({
+                items: receive,
+                label: t('signing.review.you_receive'),
+                testID: 'review_wallet_receive',
                 isReceiveUnknown,
-            )}
+            })}
             {netChange && (
                 <PWView
                     style={styles.net}

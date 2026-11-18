@@ -218,6 +218,7 @@ describe('useBalanceImpactSummary', () => {
             fetchMissing: true,
         })
         expect(result.current.hasImpact).toBe(false)
+        expect(result.current.hasSummary).toBe(false)
     })
 
     it('splits movements into spend and receive sections', () => {
@@ -272,6 +273,7 @@ describe('useBalanceImpactSummary', () => {
         const { result } = renderHook(() => useBalanceImpactSummary())
 
         expect(result.current.isSimulating).toBe(true)
+        expect(result.current.hasSummary).toBe(true)
     })
 
     it('passes through the simulation-failed flag', () => {
@@ -280,6 +282,7 @@ describe('useBalanceImpactSummary', () => {
         const { result } = renderHook(() => useBalanceImpactSummary())
 
         expect(result.current.simulationFailed).toBe(true)
+        expect(result.current.hasSummary).toBe(true)
     })
 
     describe('when an app call sits in the group', () => {
@@ -307,10 +310,19 @@ describe('useBalanceImpactSummary', () => {
             expect(result.current.receive).toEqual([])
             expect(result.current.spend).toEqual([])
             expect(result.current.isSimulating).toBe(false)
+            expect(result.current.hasSummary).toBe(true)
         })
 
         it('keeps a receive side it can see as known', () => {
             mockTransactions([appCall, spendAlgo, receiveNft])
+
+            const { result } = renderHook(() => useBalanceImpactSummary())
+
+            expect(result.current.isReceiveUnknown).toBe(false)
+        })
+
+        it("keeps nothing when only the dApp's account makes the app call", () => {
+            mockTransactions([{ ...appCall, sender: OTHER }, spendAlgo])
 
             const { result } = renderHook(() => useBalanceImpactSummary())
 

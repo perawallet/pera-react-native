@@ -24,7 +24,10 @@ export const BalanceImpactSummary = () => {
         isSimulating,
         simulationFailed,
         isReceiveUnknown,
+        hasSummary,
     } = useBalanceImpactSummary()
+
+    if (!hasSummary) return null
 
     // Simulation resolves the inner txns that carry the receive side. If it
     // failed, the impact is incomplete (spend may show, receive is unknown) —
@@ -36,8 +39,6 @@ export const BalanceImpactSummary = () => {
             </PWView>
         )
     }
-
-    if (!hasImpact && !isSimulating && !isReceiveUnknown) return null
 
     return (
         <PWView testID='balance-impact-summary'>

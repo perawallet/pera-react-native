@@ -78,6 +78,8 @@ export type UseBalanceImpactSummaryResult = {
     simulationFailed: boolean
     /** Nothing visibly comes back, but an app call may still credit the user, so "Nothing" would be a guess. */
     isReceiveUnknown: boolean
+    /** The one rule for whether a view renders the summary (and its dividers). */
+    hasSummary: boolean
 }
 
 export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
@@ -191,13 +193,22 @@ export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
         ])
         const spend = order(items.filter(item => item.direction === 'spend'))
 
+        const hasImpact = receive.length > 0 || spend.length > 0
+        const isReceiveUnknown =
+            receive.length === 0 && impact.hasUntrackedReturn
+
         return {
             receive,
             spend,
-            hasImpact: receive.length > 0 || spend.length > 0,
+            hasImpact,
             isSimulating,
             simulationFailed,
-            isReceiveUnknown: receive.length === 0 && impact.hasUntrackedReturn,
+            isReceiveUnknown,
+            hasSummary:
+                hasImpact ||
+                isSimulating ||
+                simulationFailed ||
+                isReceiveUnknown,
         }
     }, [
         impact,

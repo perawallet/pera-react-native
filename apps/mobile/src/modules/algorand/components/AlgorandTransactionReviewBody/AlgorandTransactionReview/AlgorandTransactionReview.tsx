@@ -92,11 +92,7 @@ export const AlgorandTransactionReview = ({
     let changes: ReactNode = null
     if (impact.simulationFailed) {
         changes = <PreviewUnavailableCard />
-    } else if (
-        impact.hasImpact ||
-        impact.isSimulating ||
-        impact.isReceiveUnknown
-    ) {
+    } else if (impact.hasSummary) {
         changes = (
             <WalletChangesCard
                 spend={impact.spend}

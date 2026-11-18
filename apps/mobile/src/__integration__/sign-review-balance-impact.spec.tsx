@@ -36,6 +36,7 @@ import {
     renderSignReview,
     screen,
     waitFor,
+    REVIEW_RECEIVER_ADDRESS,
     REVIEW_SIGNER_ADDRESS,
     seedAlgo25Signer,
     drainPendingSignRequests,
@@ -49,6 +50,23 @@ import {
     mockTransactionHistory,
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { mockApplication } from '@perawallet/wallet-core-projects/test-handlers'
+
+const mockTestApp = () =>
+    mockApplication({
+        applicationId: '123',
+        response: {
+            application_id: '123',
+            name: 'Test App',
+            project: {
+                name: 'Test Project',
+                url: 'https://example.com',
+                description: '',
+                short_description: '',
+                logo_png: '',
+                verification_tier: 'verified',
+            },
+        },
+    })
 
 describe('Flow: balance-impact summary in the review sheet', () => {
     beforeAll(async () => {
@@ -148,27 +166,10 @@ describe('Flow: balance-impact summary in the review sheet', () => {
         'shows the unknown receive after simulating %i app calls with no asset movements',
         async transactionCount => {
             await seedAlgo25Signer()
-            server.use(
-                mockApplication({
-                    applicationId: '123',
-                    response: {
-                        application_id: '123',
-                        name: 'Test App',
-                        project: {
-                            name: 'Test Project',
-                            url: 'https://example.com',
-                            description: '',
-                            short_description: '',
-                            logo_png: '',
-                            verification_tier: 'verified',
-                        },
-                    },
-                }),
-            )
+            server.use(mockTestApp())
             const { request } = buildTransactionSignRequest({
-                txs: Array.from(
-                    { length: transactionCount },
-                    buildApplicationCallTransaction,
+                txs: Array.from({ length: transactionCount }, (_, index) =>
+                    buildApplicationCallTransaction({ note: String(index) }),
                 ),
             })
 
@@ -195,4 +196,36 @@ describe('Flow: balance-impact summary in the review sheet', () => {
             )
         },
     )
+
+    it("keeps 'nothing' on the receive side when only the dApp's account makes the app call", async () => {
+        await seedAlgo25Signer()
+        server.use(mockTestApp())
+        const { request } = buildTransactionSignRequest({
+            txs: [
+                buildPaymentTransaction(),
+                buildApplicationCallTransaction({
+                    sender: REVIEW_RECEIVER_ADDRESS,
+                }),
+            ],
+        })
+
+        renderSignReview(request)
+
+        await waitFor(
+            () => {
+                const changes = screen.getByTestId('review_wallet_changes')
+                expect(
+                    within(changes).getByTestId(
+                        'review_wallet_receive_nothing',
+                    ),
+                ).toBeTruthy()
+                expect(
+                    within(changes).queryByTestId(
+                        'review_wallet_receive_unknown',
+                    ),
+                ).toBeNull()
+            },
+            { timeout: 10_000 },
+        )
+    })
 })

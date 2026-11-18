@@ -196,11 +196,18 @@ export const buildPaymentTransaction = ({
         },
     })
 
-export const buildApplicationCallTransaction = (): Transaction =>
+export const buildApplicationCallTransaction = ({
+    sender = REVIEW_SIGNER_ADDRESS,
+    note,
+}: {
+    sender?: string
+    note?: string
+} = {}): Transaction =>
     new Transaction({
         type: TransactionType.appl,
-        sender: Address.fromString(REVIEW_SIGNER_ADDRESS),
+        sender: Address.fromString(sender),
         suggestedParams: { ...BASE_TX_PARAMS, fee: 1000n },
+        note: note ? new TextEncoder().encode(note) : undefined,
         appCallParams: {
             appIndex: 123n,
             onComplete: OnApplicationComplete.NoOpOC,

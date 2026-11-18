@@ -107,7 +107,7 @@ export const computeBalanceImpact = (
 
         // An app can credit the caller in its own state (a lending deposit, a
         // staking position) without sending anything back.
-        if (tx.applicationTransaction) hasUntrackedReturn = true
+        if (tx.applicationTransaction && senderIsUser) hasUntrackedReturn = true
     }
 
     const deltas: BalanceImpactDelta[] = [...net.entries()]

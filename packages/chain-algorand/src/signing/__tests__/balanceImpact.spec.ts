@@ -260,6 +260,19 @@ describe('computeBalanceImpact', () => {
         ).toBe(false)
     })
 
+    it('keeps the receive side known when only an app account makes the app call', () => {
+        const appCallByApp = {
+            sender: OTHER,
+            fee: 1000n,
+            applicationTransaction: { applicationId: 1167143153n },
+        } as unknown as PeraDisplayableTransaction
+
+        expect(
+            computeBalanceImpact([appCallByApp, payment()], users)
+                .hasUntrackedReturn,
+        ).toBe(false)
+    })
+
     describe('asset creation', () => {
         it('credits every asset the user mints in the group', () => {
             const { createdAssets } = computeBalanceImpact(
