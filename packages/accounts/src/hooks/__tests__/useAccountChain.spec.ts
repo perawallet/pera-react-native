@@ -135,6 +135,16 @@ describe('accountChainIdOf with discovery stamps', () => {
             'algorand',
         ],
         [
+            'a restore stamped the first chain and a later discovery found another',
+            { algorand: 'restore', ethereum: 'restore', base: 'discovery' },
+            'algorand',
+        ],
+        [
+            'the first chain was added by the user and a later one was found active',
+            { algorand: 'user', ethereum: 'discovery' },
+            'algorand',
+        ],
+        [
             'only the last chain was found active',
             { algorand: 'created', ethereum: 'created', base: 'discovery' },
             'base',

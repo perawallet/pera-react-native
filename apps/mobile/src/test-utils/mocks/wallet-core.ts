@@ -572,13 +572,20 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
     // Registry order, like the real resolver, so a record holding several chains
     // resolves the same way in specs as in the app.
     const REGISTRY_ORDER = ['algorand', 'ethereum']
-    const accountChainIdOf = (account: any): string =>
-        REGISTRY_ORDER.find(
-            chainId => account?.chains?.[chainId]?.enabledBy === 'discovery',
-        ) ??
-        REGISTRY_ORDER.find(chainId => account?.chains?.[chainId]) ??
-        Object.keys(account?.chains ?? {})[0] ??
-        'algorand'
+    const accountChainIdOf = (account: any): string => {
+        const firstHeld = REGISTRY_ORDER.find(
+            chainId => account?.chains?.[chainId],
+        )
+        if (firstHeld === undefined) {
+            return Object.keys(account?.chains ?? {})[0] ?? 'algorand'
+        }
+        if (account.chains[firstHeld].enabledBy !== 'created') return firstHeld
+        return (
+            REGISTRY_ORDER.find(
+                chainId => account.chains[chainId]?.enabledBy === 'discovery',
+            ) ?? firstHeld
+        )
+    }
     const secondaryChainIdsOf = (account: any): string[] => {
         const held = REGISTRY_ORDER.filter(
             chainId => account?.chains?.[chainId],

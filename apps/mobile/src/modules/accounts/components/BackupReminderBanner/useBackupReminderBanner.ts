@@ -30,7 +30,7 @@ export const useBackupReminderBanner = (
     account: WalletAccount,
 ): UseBackupReminderBannerResult => {
     const ownScope = useAccountScope(account, useHomeChainScope().chainId)
-    // The phrase is backed up on the chain that mints it, not on the account's own chain.
+    // The chain with mnemonicBackup switched on, which may not be the account's own chain.
     const backupScope = useAccountCapabilityScope(account, 'mnemonicBackup')
     const isVisible = useShouldPromptMnemonicBackup(
         account,

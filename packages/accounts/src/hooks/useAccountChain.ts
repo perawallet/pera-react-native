@@ -27,23 +27,33 @@ import { useRegisteredChainIds } from './accountChainEntries'
 import { useSigningAccountsOn } from './useSigningAccounts'
 
 /**
- * The account's own chain: the first registered chain, in registry order, that
- * discovery found active, else the first it has an address on. Enabling a chain
- * later adds an entry to the same record, so this is not the only one. The
- * fallback covers a record with no chain registered in this build; a stored
- * record always holds at least one.
+ * The account's own chain: the first held chain in registry order, unless
+ * that entry was only a default (`'created'`) and discovery found a later
+ * chain active, which then leads. Any other stamp on the first held chain
+ * keeps it, so a later discovery or a restore cannot move an account that has
+ * activity there. The fallback covers a record with no chain registered in
+ * this build; a stored record always holds at least one.
  */
 export const accountChainIdOf = (
     account: WalletAccount,
     registeredChainIds: readonly ChainId[],
-): ChainId =>
-    registeredChainIds.find(
-        chainId => chainAccountOf(account, chainId)?.enabledBy === 'discovery',
-    ) ??
-    registeredChainIds.find(
+): ChainId => {
+    const firstHeld = registeredChainIds.find(
         chainId => chainAccountOf(account, chainId) !== undefined,
-    ) ??
-    (Object.keys(account.chains)[0] as ChainId)
+    )
+    if (firstHeld === undefined) {
+        return Object.keys(account.chains)[0] as ChainId
+    }
+    if (chainAccountOf(account, firstHeld)?.enabledBy !== 'created') {
+        return firstHeld
+    }
+    return (
+        registeredChainIds.find(
+            chainId =>
+                chainAccountOf(account, chainId)?.enabledBy === 'discovery',
+        ) ?? firstHeld
+    )
+}
 
 /**
  * The held chains, in registry order, whose address differs from the own
