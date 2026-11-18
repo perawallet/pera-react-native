@@ -134,4 +134,43 @@ describe('PWIcon forwarded props', () => {
 
         expect(getCapturedProps().importantForAccessibility).toBeUndefined()
     })
+
+    it('does not forward disabled to an icon with no onPress of its own', () => {
+        render(
+            <ThemeProvider theme={theme}>
+                <RealPWIcon
+                    name='algo'
+                    disabled={false}
+                />
+            </ThemeProvider>,
+            { bare: true },
+        )
+        expect('disabled' in getCapturedProps()).toBe(false)
+
+        render(
+            <ThemeProvider theme={theme}>
+                <RealPWIcon
+                    name='algo'
+                    disabled
+                />
+            </ThemeProvider>,
+            { bare: true },
+        )
+        expect('disabled' in getCapturedProps()).toBe(false)
+    })
+
+    it('forwards disabled to a pressable icon', () => {
+        render(
+            <ThemeProvider theme={theme}>
+                <RealPWIcon
+                    name='algo'
+                    onPress={vi.fn()}
+                    disabled
+                />
+            </ThemeProvider>,
+            { bare: true },
+        )
+
+        expect(getCapturedProps().disabled).toBe(true)
+    })
 })

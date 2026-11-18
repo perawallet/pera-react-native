@@ -146,6 +146,7 @@ export type HistoryReadOptions = {
      * what comes back.
      */
     assetId?: string
+    signal?: AbortSignal
 }
 
 /** The chain-specific history source; registered by the chain package. */

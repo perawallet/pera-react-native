@@ -24,7 +24,10 @@ import type {
     InternalRequest,
     PresentationHoldOwner,
 } from '../types'
-import { getRegisteredBottomSheet } from '../registry/registry'
+import {
+    getRegisteredBottomSheet,
+    getRegisteredBottomSheetId,
+} from '../registry/registry'
 
 type BottomSheetState = {
     requests: InternalRequest[]
@@ -138,6 +141,7 @@ export const useBottomSheetStore: UseBoundStore<StoreApi<BottomSheetStore>> =
                 )
             }
             return useBottomSheetStore.getState().request({
+                id: getRegisteredBottomSheetId(type as string),
                 contents: createElement(component, props),
                 options,
             })
@@ -230,3 +234,18 @@ export const useBottomSheetStore: UseBoundStore<StoreApi<BottomSheetStore>> =
             pendingValues.clear()
         },
     }))
+
+/**
+ * Whether the sheet registered under `type` is open and not on its way out.
+ * Always false for a type registered without an id: its requests get fresh
+ * ids, so there is no single sheet to look for.
+ */
+export const isRegisteredBottomSheetOpen = (
+    type: keyof BottomSheetRegistry,
+): boolean => {
+    const id = getRegisteredBottomSheetId(type as string)
+    if (id === undefined) return false
+    return useBottomSheetStore
+        .getState()
+        .requests.some(request => request.id === id && request.isVisible)
+}

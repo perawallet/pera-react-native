@@ -12,6 +12,7 @@
 
 import FolderIcon from '@assets/icons/discover/folder.svg'
 import FolderAddIcon from '@assets/icons/discover/folder-add.svg'
+import { useTheme } from '@rneui/themed'
 import {
     PWIcon,
     PWSheetLayout,
@@ -32,6 +33,7 @@ export type AddToFolderSheetProps = {
 /** Files a favorite into a folder with one tap; resolves `AddToFolderSheetResult`. */
 export const AddToFolderSheet = ({ url }: AddToFolderSheetProps) => {
     const styles = useStyles()
+    const { theme } = useTheme()
     const { t } = useLanguage()
     const sheet = useAddToFolderSheet({ url })
 
@@ -54,7 +56,7 @@ export const AddToFolderSheet = ({ url }: AddToFolderSheetProps) => {
                     testID='discover_add_to_folder_new'
                 >
                     <PWView style={styles.icon}>
-                        <FolderAddIcon />
+                        <FolderAddIcon color={theme.colors.linkPrimary} />
                     </PWView>
                     <PWText
                         variant='h4'

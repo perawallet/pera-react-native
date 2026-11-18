@@ -1233,6 +1233,7 @@
             "empty_body": "Aquí verás un gráfico cuando tengas historial de saldo",
             "asset_empty_body": "Aquí verás un gráfico cuando tengas historial de saldo de este activo en esta cuenta",
             "excludes_networks": "Este gráfico aún no incluye los activos de {{networks}}",
+            "failed_networks": "No se pudo cargar el historial de {{networks}}, así que este gráfico no lo incluye",
             "currency_unavailable_body": "Este gráfico no está disponible en {{currency}} por ahora"
         },
         "webview": {
@@ -3790,6 +3791,8 @@
             "title_clawback": "Recuperación",
             "title_contract_interaction": "Interacción con contrato",
             "token_contract": "Contrato del token {{symbol}}",
+            "unknown": "No se sabe",
+            "unknown_receive_body": "Pera no puede saber qué recibes de esta app",
             "unverified": "No verificado",
             "you_receive": "Recibes",
             "you_send": "Envías",
@@ -4209,7 +4212,10 @@
             "to": "A",
             "balance_label": "Saldo: <0/>",
             "max": "MÁX",
-            "select_asset": "Elegir"
+            "select_asset": "Elegir",
+            "flip": "Invertir pagar y recibir",
+            "flip_unavailable_title": "No se puede invertir este swap",
+            "flip_unavailable_body": "Esta cuenta no puede pagar desde la red de {{network}}."
         },
         "asset_selection": {
             "swap_from_title": "Intercambiar desde",
@@ -4274,9 +4280,18 @@
         },
         "execution": {
             "error_title": "Swap fallido",
-            "error_body": "Algo salió mal durante el swap. Vuelve a intentarlo.",
+            "failed_title": {
+                "prepare": "No se pudo iniciar el swap",
+                "approval": "Aprobación fallida",
+                "swap": "Swap fallido"
+            },
             "provider_failed_body": "Este proveedor no pudo completar el swap. Prueba con otro proveedor.",
-            "insufficient_native_title": "{{symbol}} insuficiente",
+            "provider_unavailable_body": "El proveedor no está disponible en este momento. Inténtalo de nuevo en unos instantes.",
+            "route_unverified_body": "Pera aún no puede verificar el contrato de swap de este proveedor en {{network}}, así que no se firmó nada. Prueba con otro proveedor o inténtalo de nuevo más tarde.",
+            "quote_mismatch_body": "Las transacciones del proveedor no coincidían con esta cotización, así que no se firmó nada. Inténtalo de nuevo o elige otro proveedor.",
+            "unsupported_order_body": "Pera no puede completar la orden de este proveedor, así que no se firmó nada. Elige otro proveedor.",
+            "signing_failed_body": "No se pudo firmar la transacción, así que no se envió. Inténtalo de nuevo.",
+            "order_insufficient_balance_body": "Tu saldo no cubre esta cantidad y la comisión de red. Prueba con una cantidad menor o añade fondos para la comisión.",
             "insufficient_native_body": "Esta cuenta necesita al menos {{amount}} {{symbol}} más para cubrir este swap, sus comisiones y el saldo mínimo. Añade más {{symbol}} y vuelve a intentarlo.",
             "success_title": "Swap completado",
             "success_body": "Swap de {{fromAsset}} a {{toAsset}} completado correctamente",

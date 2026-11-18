@@ -108,8 +108,12 @@ export type WalletNotice =
           changed: string[]
       }
     | { type: 'network-changed'; scope: ChainScope }
+    /** Applies to every chain: a locked wallet shows a site no accounts. */
+    | { type: 'lock-changed'; isLocked: boolean }
 
-export const walletNoticeChainId = (notice: WalletNotice): ChainId =>
+export type ChainWalletNotice = Exclude<WalletNotice, { type: 'lock-changed' }>
+
+export const walletNoticeChainId = (notice: ChainWalletNotice): ChainId =>
     notice.type === 'network-changed' ? notice.scope.chainId : notice.chainId
 
 export type ConnectionEvent =

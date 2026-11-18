@@ -50,6 +50,8 @@ export type ChainUi = {
     addressSearchPlaceholder?: I18nKey
     /** Unset, the swap asset search uses copy that names every ID format. */
     swapAssetSearchPlaceholder?: I18nKey
+    /** Where the family's projects apply to be listed; unset, its Discover dApp list ends without Apply. */
+    discoverApplyUrl?: string
 }
 
 /** The slots whose every reader holds a chain id, so one chain may replace its family's. */

@@ -47,6 +47,10 @@ vi.mock('../../pending-history', async importOriginal => ({
     getPendingTransactionRecords: mocks.getPendingTransactionRecords,
     getMinedTransactionHistory: mocks.getMinedTransactionHistory,
 }))
+vi.mock('../historyReadRetry', async importOriginal => ({
+    ...(await importOriginal<typeof import('../historyReadRetry')>()),
+    historyReadRetryDelay: () => 0,
+}))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     subscribeToSubmissionLedger: (listener: () => void) => {
@@ -147,6 +151,31 @@ describe('useTransactionRecordsQuery', () => {
         queryClient.clear()
     })
 
+    test('aborts the chain history read when its list unmounts', async () => {
+        let signal: AbortSignal | undefined
+        mocks.getMinedTransactionHistory.mockImplementation(
+            (_address, _scope, _page, options) => {
+                signal = options.signal
+                return new Promise(() => {})
+            },
+        )
+
+        const { unmount } = renderHook(
+            () =>
+                useTransactionRecordsQuery({
+                    accountAddress: ADDRESS,
+                    scope: SCOPE,
+                }),
+            { wrapper },
+        )
+        await waitFor(() => expect(signal).toBeDefined())
+        expect(signal?.aborted).toBe(false)
+
+        unmount()
+
+        expect(signal?.aborted).toBe(true)
+    })
+
     test('starts a fresh list when contractDecoding flips, so loaded rows never keep the old labels', async () => {
         mocks.getMinedTransactionHistory.mockResolvedValue({
             items: [record('A', JAN_10)],
@@ -205,7 +234,7 @@ describe('useTransactionRecordsQuery', () => {
             ADDRESS,
             SCOPE,
             { cursor: 'c1' },
-            undefined,
+            { signal: expect.anything() },
         )
         expect(result.current.hasNextPage).toBe(false)
     })
@@ -272,7 +301,7 @@ describe('useTransactionRecordsQuery', () => {
             ADDRESS,
             SCOPE,
             { cursor: `c${MAX_RECORD_PAGE_READS}` },
-            undefined,
+            { signal: expect.anything() },
         )
     })
 
@@ -315,6 +344,35 @@ describe('useTransactionRecordsQuery', () => {
         expect(mocks.getMinedTransactionHistory).toHaveBeenCalledTimes(
             callsAtFailure + 1,
         )
+    })
+
+    test('resumes a walk at the page that failed, without re-reading the empty pages before it', async () => {
+        mocks.getMinedTransactionHistory
+            .mockResolvedValueOnce({ items: [], next: { cursor: 'c1' } })
+            .mockResolvedValueOnce({ items: [], next: { cursor: 'c2' } })
+            .mockRejectedValueOnce(new Error('history service refused'))
+            .mockResolvedValueOnce({ items: [record('A', JAN_10)] })
+
+        const { result } = renderHook(
+            () =>
+                useTransactionRecordsQuery({
+                    accountAddress: ADDRESS,
+                    scope: SCOPE,
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() =>
+            expect(result.current.records.map(r => r.id)).toEqual(['A']),
+        )
+        expect(
+            mocks.getMinedTransactionHistory.mock.calls.map(call => call[2]),
+        ).toEqual([
+            undefined,
+            { cursor: 'c1' },
+            { cursor: 'c2' },
+            { cursor: 'c2' },
+        ])
     })
 
     test('pauses the search after its fetch budget and resumes on fetchNextPage', async () => {
@@ -591,7 +649,7 @@ describe('useTransactionRecordsQuery', () => {
                 ADDRESS,
                 SCOPE,
                 undefined,
-                undefined,
+                { signal: expect.anything() },
             )
             expect(result.current.records.map(r => r.id)).toEqual([
                 'B',
@@ -829,7 +887,7 @@ describe('useTransactionRecordsQuery', () => {
                     ADDRESS,
                     SCOPE,
                     { cursor: 'c1' },
-                    undefined,
+                    { signal: expect.anything() },
                 ),
             )
             serve(backend)
@@ -967,8 +1025,18 @@ describe('useTransactionRecordsQuery', () => {
             expect(result.current.records.map(r => r.id)).toEqual(['USDC']),
         )
         expect(mocks.getMinedTransactionHistory.mock.calls).toEqual([
-            [ADDRESS, SCOPE, undefined, USDC],
-            [ADDRESS, SCOPE, { cursor: 'c1' }, USDC],
+            [
+                ADDRESS,
+                SCOPE,
+                undefined,
+                { assetId: USDC, signal: expect.anything() },
+            ],
+            [
+                ADDRESS,
+                SCOPE,
+                { cursor: 'c1' },
+                { assetId: USDC, signal: expect.anything() },
+            ],
         ])
     })
 

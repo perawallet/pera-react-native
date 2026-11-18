@@ -28,6 +28,7 @@ const {
     mockPickSender,
     mockSetSelectedAccountId,
     mockFirstUnreachableChainsNote,
+    mockIsSheetOpen,
     accountsRef,
     contactsRef,
 } = vi.hoisted(() => ({
@@ -41,6 +42,7 @@ const {
     mockPickSender: vi.fn(),
     mockSetSelectedAccountId: vi.fn(),
     mockFirstUnreachableChainsNote: vi.fn(),
+    mockIsSheetOpen: vi.fn(() => false),
     accountsRef: { accounts: [] as unknown[] },
     contactsRef: { contacts: [] as Contact[] },
 }))
@@ -60,6 +62,7 @@ vi.mock('@hooks/useAppNavigation', () => ({
 
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: () => ({ requestByType: mockRequestByType }),
+    isRegisteredBottomSheetOpen: mockIsSheetOpen,
 }))
 
 vi.mock('@perawallet/wallet-core-contacts', () => ({
@@ -94,6 +97,7 @@ describe('useAccountActions', () => {
         contactsRef.contacts = []
         accountsRef.accounts = [SENDER]
         mockFirstUnreachableChainsNote.mockReturnValue(null)
+        mockIsSheetOpen.mockReturnValue(false)
         useRemoteConfigStore.getState().resetState()
     })
 
@@ -185,6 +189,31 @@ describe('useAccountActions', () => {
             {},
             expect.objectContaining({ size: 'modal' }),
         )
+    })
+
+    it('openSendTransaction closes the actions and leaves an open Send untouched', () => {
+        mockIsSheetOpen.mockReturnValue(true)
+        mockResolveSender.mockReturnValue({
+            kind: 'picker',
+            accounts: [SENDER, OTHER_SENDER],
+        })
+        const { result } = renderHook(() =>
+            useAccountActions({
+                address: ADDRESS,
+                onClose,
+                chainId: 'algorand',
+            }),
+        )
+
+        act(() => result.current.openSendTransaction())
+
+        expect(onClose).toHaveBeenCalled()
+        expect(mockIsSheetOpen).toHaveBeenCalledWith('send-funds')
+        expect(mockPickSender).not.toHaveBeenCalled()
+        expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
+        expect(mockReset).not.toHaveBeenCalled()
+        expect(mockSetDestination).not.toHaveBeenCalled()
+        expect(mockRequestByType).not.toHaveBeenCalled()
     })
 
     describe('with the address chain known', () => {

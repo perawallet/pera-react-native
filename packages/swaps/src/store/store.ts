@@ -15,7 +15,7 @@ import type {
     ChainId,
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import type { SwapsState } from '../models'
+import type { SwapFlippedPayAmount, SwapsState } from '../models'
 import {
     guardedPersist,
     registerStore,
@@ -36,13 +36,14 @@ const initialState = {
     pairAccountId: null as Nullable<string>,
     slippage: null as Nullable<string>,
     isLocalCurrencyInput: false,
+    flippedPayAmount: null as Nullable<SwapFlippedPayAmount>,
 }
 
 export const useSwapsStore: UseBoundStore<
     WithPersist<StoreApi<SwapsState>, unknown>
 > = create<SwapsState>()(
     guardedPersist(
-        set => ({
+        (set, get) => ({
             ...initialState,
             setFromAsset: (fromAsset: string) => set({ fromAsset }),
             setToAsset: (
@@ -59,6 +60,7 @@ export const useSwapsStore: UseBoundStore<
                     toAssetScope: null,
                     receivingAccountId: null,
                     pairAccountId: null,
+                    flippedPayAmount: null,
                 }),
             setSourceAsset: (sourceChainId: ChainId, fromAsset: string) =>
                 set({
@@ -68,6 +70,7 @@ export const useSwapsStore: UseBoundStore<
                     toAssetScope: null,
                     receivingAccountId: null,
                     pairAccountId: null,
+                    flippedPayAmount: null,
                 }),
             setAccountPair: ({
                 accountId,
@@ -83,7 +86,34 @@ export const useSwapsStore: UseBoundStore<
                     toAssetScope: toAssetScope ?? null,
                     receivingAccountId: null,
                     pairAccountId: accountId,
+                    flippedPayAmount: null,
                 }),
+            flipAcrossChains: flip =>
+                set({
+                    sourceChainId: flip.sourceChainId,
+                    fromAsset: flip.fromAsset,
+                    toAsset: flip.toAsset,
+                    toAssetScope: flip.toAssetScope,
+                    receivingAccountId: null,
+                    flippedPayAmount: flip.payAmount
+                        ? {
+                              chainId: flip.sourceChainId,
+                              assetId: flip.fromAsset,
+                              amount: flip.payAmount,
+                          }
+                        : null,
+                }),
+            takeFlippedPayAmount: (chainId, assetId) => {
+                const { flippedPayAmount } = get()
+                if (
+                    flippedPayAmount?.chainId !== chainId ||
+                    flippedPayAmount.assetId !== assetId
+                ) {
+                    return null
+                }
+                set({ flippedPayAmount: null })
+                return flippedPayAmount.amount
+            },
             setSlippage: (slippage: Nullable<string>) => set({ slippage }),
             setIsLocalCurrencyInput: (value: boolean) =>
                 set({ isLocalCurrencyInput: value }),

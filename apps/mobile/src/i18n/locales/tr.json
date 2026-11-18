@@ -1233,6 +1233,7 @@
             "empty_body": "Bakiye geçmişin olduğunda burada bir grafik göreceksin",
             "asset_empty_body": "Bu hesapta bu varlık için bakiye geçmişin olduğunda burada bir grafik göreceksin",
             "excludes_networks": "Bu grafik henüz {{networks}} varlıklarını içermiyor",
+            "failed_networks": "{{networks}} geçmişi yüklenemedi, bu yüzden bu grafikte yer almıyor",
             "currency_unavailable_body": "Bu grafik şu anda {{currency}} para biriminde kullanılamıyor"
         },
         "webview": {
@@ -3790,6 +3791,8 @@
             "title_clawback": "Geri alma",
             "title_contract_interaction": "Sözleşme etkileşimi",
             "token_contract": "Token sözleşmesi: {{symbol}}",
+            "unknown": "Bilinmiyor",
+            "unknown_receive_body": "Pera bu uygulamadan ne alacağını belirleyemiyor",
             "unverified": "Doğrulanmamış",
             "you_receive": "Alacağın",
             "you_send": "Göndereceğin",
@@ -4209,7 +4212,10 @@
             "to": "Hedef",
             "balance_label": "Bakiye: <0/>",
             "max": "MAKS",
-            "select_asset": "Seç"
+            "select_asset": "Seç",
+            "flip": "Ödenen ve alınanı değiştir",
+            "flip_unavailable_title": "Bu takas ters çevrilemiyor",
+            "flip_unavailable_body": "Bu hesap {{network}} ağından ödeme yapamıyor."
         },
         "asset_selection": {
             "swap_from_title": "Kaynak varlık",
@@ -4274,9 +4280,18 @@
         },
         "execution": {
             "error_title": "Swap başarısız",
-            "error_body": "Swap sırasında bir şeyler ters gitti. Lütfen tekrar dene.",
+            "failed_title": {
+                "prepare": "Swap başlatılamadı",
+                "approval": "Onay başarısız",
+                "swap": "Swap başarısız"
+            },
             "provider_failed_body": "Bu sağlayıcı swap işlemini tamamlayamadı. Başka bir sağlayıcı dene.",
-            "insufficient_native_title": "Yetersiz {{symbol}}",
+            "provider_unavailable_body": "Sağlayıcı şu anda kullanılamıyor. Biraz sonra tekrar dene.",
+            "route_unverified_body": "Pera bu sağlayıcının {{network}} ağındaki swap sözleşmesini henüz doğrulayamıyor, bu yüzden hiçbir şey imzalanmadı. Başka bir sağlayıcı dene veya daha sonra tekrar dene.",
+            "quote_mismatch_body": "Sağlayıcının işlemleri bu teklifle eşleşmedi, bu yüzden hiçbir şey imzalanmadı. Tekrar dene veya başka bir sağlayıcı seç.",
+            "unsupported_order_body": "Pera bu sağlayıcının siparişini tamamlayamıyor, bu yüzden hiçbir şey imzalanmadı. Başka bir sağlayıcı seç.",
+            "signing_failed_body": "İşlem imzalanamadı, bu yüzden gönderilmedi. Tekrar dene.",
+            "order_insufficient_balance_body": "Bakiyen bu tutarı ve ağ ücretini karşılamıyor. Daha küçük bir tutar dene veya ücret için bakiye ekle.",
             "insufficient_native_body": "Bu hesapta bu swap işlemini, ücretleri ve minimum bakiyeyi karşılamak için en az {{amount}} {{symbol}} daha gerekiyor. Daha fazla {{symbol}} ekle ve tekrar dene.",
             "success_title": "Swap tamamlandı",
             "success_body": "Swap başarıyla tamamlandı: {{fromAsset}} → {{toAsset}}",

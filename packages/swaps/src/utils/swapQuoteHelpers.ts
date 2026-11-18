@@ -23,6 +23,8 @@ import type { SwapQuote } from '../models'
 // Display precision for a rate whose out asset came back without decimals.
 const UNKNOWN_DECIMALS_RATE_PRECISION = 6
 
+const RATE_SIGNIFICANT_DIGITS = 6
+
 export const pickBestByAmountOut = (quotes: SwapQuote[]): Nullable<SwapQuote> =>
     quotes.reduce<Nullable<SwapQuote>>((prev, curr) => {
         if (!curr.amountOut) return prev
@@ -56,9 +58,17 @@ export const formatSwapRate = (quote: SwapQuote): string => {
     if (!rate) return '-'
     const outDecimals =
         quote.assetOut.decimals ?? UNKNOWN_DECIMALS_RATE_PRECISION
+    // Significant digits keep a tiny rate readable, but never round the integer part.
+    const decimals = Math.min(
+        Math.max(
+            rate.toSignificantDigits(RATE_SIGNIFICANT_DIGITS).decimalPlaces(),
+            DEFAULT_PRECISION,
+        ),
+        outDecimals,
+    )
     const { sign, integer, fraction } = formatNumber(
         rate,
-        outDecimals,
+        decimals,
         undefined,
         DEFAULT_PRECISION,
     )

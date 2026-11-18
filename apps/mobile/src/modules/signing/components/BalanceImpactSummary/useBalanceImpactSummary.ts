@@ -66,6 +66,7 @@ export type BalanceImpactItem = {
 export type UseBalanceImpactSummaryResult = {
     receive: BalanceImpactItem[]
     spend: BalanceImpactItem[]
+    /** Known asset movements; an unknown receive can still need a summary. */
     hasImpact: boolean
     /** True while the transaction simulation is still resolving inner txns. */
     isSimulating: boolean
@@ -75,6 +76,10 @@ export type UseBalanceImpactSummaryResult = {
      * partial impact.
      */
     simulationFailed: boolean
+    /** Nothing visibly comes back, but an app call may still credit the user, so "Nothing" would be a guess. */
+    isReceiveUnknown: boolean
+    /** The one rule for whether a view renders the summary (and its dividers). */
+    hasSummary: boolean
 }
 
 export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
@@ -188,12 +193,22 @@ export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
         ])
         const spend = order(items.filter(item => item.direction === 'spend'))
 
+        const hasImpact = receive.length > 0 || spend.length > 0
+        const isReceiveUnknown =
+            receive.length === 0 && impact.hasUntrackedReturn
+
         return {
             receive,
             spend,
-            hasImpact: receive.length > 0 || spend.length > 0,
+            hasImpact,
             isSimulating,
             simulationFailed,
+            isReceiveUnknown,
+            hasSummary:
+                hasImpact ||
+                isSimulating ||
+                simulationFailed ||
+                isReceiveUnknown,
         }
     }, [
         impact,

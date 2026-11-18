@@ -1233,6 +1233,7 @@
             "empty_body": "Un graphique apparaîtra ici dès que vous aurez un historique de solde",
             "asset_empty_body": "Un graphique apparaîtra ici dès que vous aurez un historique de solde pour cet actif sur ce compte",
             "excludes_networks": "Ce graphique n'inclut pas encore les actifs {{networks}}",
+            "failed_networks": "Impossible de charger l'historique {{networks}}, ce graphique ne l'inclut donc pas",
             "currency_unavailable_body": "Ce graphique n'est pas disponible en {{currency}} pour le moment"
         },
         "webview": {
@@ -3790,6 +3791,8 @@
             "title_clawback": "Récupération",
             "title_contract_interaction": "Interaction avec un contrat",
             "token_contract": "Contrat du jeton {{symbol}}",
+            "unknown": "Inconnu",
+            "unknown_receive_body": "Pera ne peut pas savoir ce que vous recevez de cette app",
             "unverified": "Non vérifié",
             "you_receive": "Vous recevez",
             "you_send": "Vous envoyez",
@@ -4209,7 +4212,10 @@
             "to": "Vers",
             "balance_label": "Solde : <0/>",
             "max": "MAX",
-            "select_asset": "Choisir"
+            "select_asset": "Choisir",
+            "flip": "Inverser payer et recevoir",
+            "flip_unavailable_title": "Impossible d’inverser ce swap",
+            "flip_unavailable_body": "Ce compte ne peut pas payer depuis le réseau {{network}}."
         },
         "asset_selection": {
             "swap_from_title": "Échanger depuis",
@@ -4274,9 +4280,18 @@
         },
         "execution": {
             "error_title": "Échec du swap",
-            "error_body": "Une erreur est survenue pendant le swap. Veuillez réessayer.",
+            "failed_title": {
+                "prepare": "Impossible de démarrer le swap",
+                "approval": "Échec de l’approbation",
+                "swap": "Échec du swap"
+            },
             "provider_failed_body": "Ce fournisseur n’a pas pu effectuer le swap. Veuillez essayer un autre fournisseur.",
-            "insufficient_native_title": "{{symbol}} insuffisant",
+            "provider_unavailable_body": "Le fournisseur est indisponible pour le moment. Veuillez réessayer dans un instant.",
+            "route_unverified_body": "Pera ne peut pas encore vérifier le contrat de swap de ce fournisseur sur {{network}}, rien n’a donc été signé. Essayez un autre fournisseur ou réessayez plus tard.",
+            "quote_mismatch_body": "Les transactions du fournisseur ne correspondaient pas à cette cotation, rien n’a donc été signé. Veuillez réessayer ou choisir un autre fournisseur.",
+            "unsupported_order_body": "Pera ne peut pas finaliser l’ordre de ce fournisseur, rien n’a donc été signé. Choisissez un autre fournisseur.",
+            "signing_failed_body": "La transaction n’a pas pu être signée, elle n’a donc pas été envoyée. Veuillez réessayer.",
+            "order_insufficient_balance_body": "Votre solde ne couvre pas ce montant et les frais de réseau. Essayez un montant plus faible ou ajoutez des fonds pour les frais.",
             "insufficient_native_body": "Ce compte a besoin d’au moins {{amount}} {{symbol}} supplémentaires pour couvrir ce swap, ses frais et le solde minimum. Ajoutez des fonds en {{symbol}}, puis réessayez.",
             "success_title": "Swap effectué",
             "success_body": "Swap de {{fromAsset}} vers {{toAsset}} effectué avec succès",

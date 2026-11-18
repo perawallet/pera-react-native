@@ -10,14 +10,31 @@
  limitations under the License
  */
 
+import type { ChainContext } from '@perawallet/wallet-core-chain-contract'
 import type { RequestConfiguration } from '@perawallet/wallet-core-shared'
 
 // A discovery GET runs once per quiet address on every chain, all through one
 // shared gate: a retried 5xx or a 10s default timeout on a failing network
 // would hold the gate long enough to stall the healthy chains' lookups too.
 // The walk's idle window (`CHAIN_PROBE_IDLE_TIMEOUT_MS` in accounts) must stay
-// above `timeout`, or a lookup is cut just before it would have answered.
+// above `timeout`, or a lookup is cut just before it would have answered. The
+// node reads are bound by it too (`withDiscoveryReadCeiling`).
 export const DISCOVERY_LOOKUP_BOUNDS = {
     timeout: 5000,
     retry: { limit: 0 },
 } satisfies Pick<RequestConfiguration, 'timeout' | 'retry'>
+
+type ReadContext = Pick<ChainContext, 'getEndpoints' | 'timeouts'>
+
+/**
+ * `ctx` with its read ceiling capped at the lookup timeout, so a node that
+ * hangs fails over or fails as a retryable timeout before the walk's idle
+ * window cuts the batch. The ceiling is split across the endpoint list.
+ */
+export const withDiscoveryReadCeiling = (ctx: ReadContext): ReadContext => ({
+    getEndpoints: () => ctx.getEndpoints(),
+    timeouts: {
+        ...ctx.timeouts,
+        readMs: Math.min(ctx.timeouts.readMs, DISCOVERY_LOOKUP_BOUNDS.timeout),
+    },
+})

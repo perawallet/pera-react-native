@@ -93,6 +93,7 @@ const setup = (
         customGenesisHash?: string
         adapter?: DappRequestChainAdapter | null
         siteWarningOf?: (origin: string) => Promise<SiteWarningLevel>
+        isWalletLocked?: () => boolean
     } = {},
 ) => {
     if (overrides.adapter !== null) {
@@ -113,6 +114,7 @@ const setup = (
             { address: ADDR_B, name: 'Savings' },
         ],
         siteWarningOf: overrides.siteWarningOf,
+        isWalletLocked: overrides.isWalletLocked ?? (() => false),
         now: () => now,
         proposalTtlMs: 1_000,
         requestTtlMs: 1_000,
@@ -600,6 +602,23 @@ describe('DappConnectionHandler', () => {
             expect(message.verifiedOrigin).toBe(ORIGIN)
         })
 
+        it('still raises a sign request while the wallet is locked, for the approval to unlock', async () => {
+            const { transport, registry, messages } = setup([connected()], {
+                isWalletLocked: () => true,
+            })
+            await registry.initialize()
+
+            void transport.send(
+                ORIGIN,
+                'requestTransactionSigning',
+                { txns: [{ txn: 'AA==' }] },
+                { isWalletLocked: true },
+            )
+            await flush()
+
+            expect(messages.map(message => message.kind)).toEqual(['request'])
+        })
+
         it('emits a sign-transactions request keyed by a handler-minted id and maps the result back', async () => {
             const { transport, registry, messages } = setup([connected()])
             await registry.initialize()
@@ -913,6 +932,26 @@ describe('DappConnectionHandler', () => {
             ).toBe(JsonRpcErrorCode.Unauthorized)
         })
 
+        it('shows a connected site no accounts while the wallet is locked, without a site check', async () => {
+            const siteWarningOf = vi.fn(
+                async (): Promise<SiteWarningLevel> => 'blocked',
+            )
+            const { transport, registry } = setup([connected()], {
+                siteWarningOf,
+            })
+            await registry.initialize()
+
+            const response = await transport.send(
+                ORIGIN,
+                'getAddresses',
+                undefined,
+                { isWalletLocked: true },
+            )
+
+            expect(resultOf(response)).toEqual([])
+            expect(siteWarningOf).not.toHaveBeenCalled()
+        })
+
         it('drops an approved address the wallet no longer lists as signing-capable', async () => {
             const stale: Connection = {
                 ...connected(),
@@ -955,8 +994,12 @@ describe('DappConnectionHandler', () => {
         describe('wallet notices', () => {
             const notified = async (
                 notice: Parameters<NonNullable<ConnectionHandler['notify']>>[1],
+                overrides: Parameters<typeof setup>[1] = {},
             ) => {
-                const { transport, registry, handler } = setup([connected()])
+                const { transport, registry, handler } = setup(
+                    [connected()],
+                    overrides,
+                )
                 await registry.initialize()
                 await handler.notify?.(ORIGIN, notice)
                 return transport.notifications.map(n => n.notification)
@@ -1031,6 +1074,82 @@ describe('DappConnectionHandler', () => {
                         accounts: [ADDR_B],
                         changed: [ADDR_A],
                     }),
+                ).toEqual([
+                    {
+                        jsonrpc: '2.0',
+                        method: DAPP_NOTIFICATIONS.accountsChanged,
+                        params: { accounts: [] },
+                    },
+                ])
+            })
+
+            it('pushes no accounts while the wallet is locked', async () => {
+                expect(
+                    await notified(
+                        {
+                            type: 'accounts-changed',
+                            chainId: 'algorand',
+                            accounts: [ADDR_A, ADDR_B],
+                            changed: [ADDR_A],
+                        },
+                        { isWalletLocked: () => true },
+                    ),
+                ).toEqual([])
+            })
+
+            it('withdraws the accounts when the wallet locks', async () => {
+                expect(
+                    await notified({ type: 'lock-changed', isLocked: true }),
+                ).toEqual([
+                    {
+                        jsonrpc: '2.0',
+                        method: DAPP_NOTIFICATIONS.accountsChanged,
+                        params: { accounts: [] },
+                    },
+                ])
+            })
+
+            it('hands back the granted accounts the wallet still holds when it unlocks', async () => {
+                expect(
+                    await notified({ type: 'lock-changed', isLocked: false }),
+                ).toEqual([
+                    {
+                        jsonrpc: '2.0',
+                        method: DAPP_NOTIFICATIONS.accountsChanged,
+                        params: { accounts: [ADDR_A] },
+                    },
+                ])
+            })
+
+            it('sends no accounts on unlock when the wallet locks again during the site check', async () => {
+                let isLocked = false
+
+                expect(
+                    await notified(
+                        { type: 'lock-changed', isLocked: false },
+                        {
+                            siteWarningOf: async () => {
+                                isLocked = true
+                                return 'clear'
+                            },
+                            isWalletLocked: () => isLocked,
+                        },
+                    ),
+                ).toEqual([
+                    {
+                        jsonrpc: '2.0',
+                        method: DAPP_NOTIFICATIONS.accountsChanged,
+                        params: { accounts: [] },
+                    },
+                ])
+            })
+
+            it('keeps the accounts from a site flagged since its approval when the wallet unlocks', async () => {
+                expect(
+                    await notified(
+                        { type: 'lock-changed', isLocked: false },
+                        { siteWarningOf: async () => 'blocked' },
+                    ),
                 ).toEqual([
                     {
                         jsonrpc: '2.0',

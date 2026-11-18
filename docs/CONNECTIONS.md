@@ -14,7 +14,9 @@ be stale or half-migrated.
 `packages/connections` owns the runtime. A `ConnectionHandler` (`src/handler.ts`) is one protocol
 managing N connections; the `ConnectionRegistry` (`src/registry.ts`) owns the handlers, validates
 every inbound payload before a subscriber can see it, and reconciles the store from each handler's
-`restore()` on boot. Handlers emit protocol-neutral `WalletOperation`s and declare the chain each
+`restore()` on boot. The WalletConnect handlers also end a long-idle session there
+(`IDLE_SESSION_TIMEOUT_MS` in `packages/walletconnect/src/shared/idleSession.ts`), since v1 sessions never
+expire and each holds a bridge socket. Handlers emit protocol-neutral `WalletOperation`s and declare the chain each
 message belongs to. That chain's dApp request adapter (`src/dappRequest.ts`) validates the
 transaction payload and supplies the signing hook, and can build a send-transaction itself. A namespace
 maps the chain-neutral `DappRequestFailure` to its own wire codes, and the handler sends its defaults
@@ -135,7 +137,8 @@ too, and nothing is signed once it is off. Only EVM chains honour `messageSignin
 declares it but no Algorand signing path reads it, so overriding it for `algorand` changes nothing.
 
 The app's `watchWalletNotices` feeds `ConnectionRegistry.notify` with each chain's network and
-account changes, and v2 emits `chainChanged` and `accountsChanged` only for a chain whose support
+account changes, and `watchLockNotices` with the wallet's lock and unlock, which only the injected
+providers act on. v2 emits `chainChanged` and `accountsChanged` only for a chain whose support
 declares `sessionEvents`. `chainChanged` goes only to a session that already holds the new network.
 
 A dApp's switch request (`wallet_switchEthereumChain`) never moves the wallet's selection. The target

@@ -11,10 +11,28 @@
  */
 
 import { onlineManager } from '@tanstack/react-query'
-import { isPeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
+import {
+    isPeraNetworkError,
+    isPeraServiceUnavailableError,
+    type PeraNetworkError,
+} from '@perawallet/wallet-core-shared'
 
 /** Quiet re-reads a failed history page gets before the screen shows its error. */
 export const HISTORY_READ_RETRY_LIMIT = 1
+
+/** Re-reads a rate-limited page gets; the backend's upstream limit clears within seconds. */
+export const HISTORY_RATE_LIMITED_RETRY_LIMIT = 3
+
+const RATE_LIMITED_BASE_DELAY_MS = 2000
+
+const MAX_RETRY_DELAY_MS = 30_000
+
+// The backend also answers an upstream explorer's rate limit as 503
+// `upstream_unavailable`, a code no other history service sends.
+const isRateLimited = (error: Error): error is PeraNetworkError =>
+    isPeraNetworkError(error) &&
+    (error.status === 429 ||
+        (error.status === 503 && error.backendCode === 'upstream_unavailable'))
 
 // The app's query default is no retry, so a read that raced something not yet
 // ready at launch would show the error state. A service the network doesn't
@@ -23,6 +41,28 @@ export const shouldRetryHistoryRead = (
     failureCount: number,
     error: Error,
 ): boolean =>
-    failureCount < HISTORY_READ_RETRY_LIMIT &&
+    failureCount <
+        (isRateLimited(error)
+            ? HISTORY_RATE_LIMITED_RETRY_LIMIT
+            : HISTORY_READ_RETRY_LIMIT) &&
     onlineManager.isOnline() &&
     !isPeraServiceUnavailableError(error)
+
+/**
+ * TanStack's default delay, except a rate-limited read waits the response's
+ * `Retry-After`, or else 2s, 4s, then 8s, each plus up to half again at
+ * random, so reads that failed together don't come back in the same second
+ * and hit the limit again.
+ */
+export const historyReadRetryDelay = (
+    failureCount: number,
+    error: Error,
+): number => {
+    if (!isRateLimited(error))
+        return Math.min(1000 * 2 ** failureCount, MAX_RETRY_DELAY_MS)
+    const base = Math.min(
+        error.retryAfterMs ?? RATE_LIMITED_BASE_DELAY_MS * 2 ** failureCount,
+        MAX_RETRY_DELAY_MS,
+    )
+    return base + Math.random() * (base / 2)
+}

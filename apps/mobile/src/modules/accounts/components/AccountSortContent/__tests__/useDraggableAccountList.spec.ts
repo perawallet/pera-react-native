@@ -11,11 +11,29 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
+import { isValidElement, type ReactElement, type ReactNode } from 'react'
 import { act, renderHook } from '@testing-library/react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useDraggableAccountList } from '../useDraggableAccountList'
 
 const account = (id: string): WalletAccount => ({ id }) as WalletAccount
+
+type AnyProps = { children?: ReactNode; [key: string]: unknown }
+
+// Walks a rendered element tree for the first element whose props match.
+const findElement = (
+    node: ReactNode,
+    matches: (props: AnyProps) => boolean,
+): ReactElement<AnyProps> | undefined => {
+    if (!isValidElement<AnyProps>(node)) return undefined
+    if (matches(node.props)) return node
+    const children = ([] as ReactNode[]).concat(node.props.children ?? [])
+    for (const child of children) {
+        const found = findElement(child, matches)
+        if (found) return found
+    }
+    return undefined
+}
 
 describe('useDraggableAccountList', () => {
     it('reports the dragged order by account id', () => {
@@ -45,5 +63,28 @@ describe('useDraggableAccountList', () => {
         )
 
         expect(result.current.keyExtractor(account('first'))).toBe('first')
+    })
+
+    it('keeps the drag handle enabled while its row is dragged', () => {
+        // Flipping `disabled` remounts the touchable that holds the touch, and
+        // the stale responder then eats the next tap (Apply) on Android.
+        const { result } = renderHook(() =>
+            useDraggableAccountList({
+                onReorder: vi.fn(),
+                getAccountAddress: () => 'ADDRESS',
+            }),
+        )
+        const drag = vi.fn()
+
+        const row = result.current.renderItem({
+            item: account('first'),
+            drag,
+            isActive: true,
+            getIndex: () => 0,
+        })
+        const handle = findElement(row, props => props.onPressIn === drag)
+
+        expect(handle).toBeDefined()
+        expect(handle?.props.disabled).toBeFalsy()
     })
 })
