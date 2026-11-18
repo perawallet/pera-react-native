@@ -149,22 +149,72 @@ describe('useOnrampQuotes', () => {
         expect(result.current.selectedQuote?.expiresAt).toBeNull()
     })
 
-    it("shows the app's own copy, not the backend's diagnostic, for a 5xx", async () => {
-        mockCreateQuote.mockRejectedValue(
-            new PeraNetworkError('server', {
-                status: 503,
-                originalError: Object.assign(new Error('http'), {
-                    data: {
-                        error: 'Meld is unavailable, try again shortly',
-                        code: 'upstream_unavailable',
-                    },
+    it.each([
+        ['a 5xx', 'server', 503, 'upstream_unavailable'],
+        ['a rate-limited upstream', 'client', 429, 'upstream_rate_limited'],
+    ] as const)(
+        "shows the app's own copy, not the backend's diagnostic, for %s",
+        async (_label, kind, status, code) => {
+            mockCreateQuote.mockRejectedValue(
+                new PeraNetworkError(kind, {
+                    status,
+                    backendCode: code,
+                    originalError: Object.assign(new Error('http'), {
+                        data: {
+                            error: 'Meld is unavailable, try again shortly',
+                            code,
+                        },
+                    }),
                 }),
-            }),
-        )
-        const { result } = render()
+            )
+            const { result } = render()
+            await settle()
+
+            expect(result.current.quotesError).toBe('errors.general.body')
+        },
+    )
+
+    it('keeps the chosen provider and payment method across a re-quote', async () => {
+        const offers = (suffix: string): RampQuote[] => [
+            {
+                ...quote(`best-${suffix}`, 'meld'),
+                provider: 'A',
+                destinationAmount: new Decimal(9),
+            },
+            {
+                ...quote(`picked-${suffix}`, 'meld'),
+                provider: 'B',
+                destinationAmount: new Decimal(5),
+            },
+        ]
+        mockCreateQuote.mockResolvedValue(offers('1'))
+        const { result } = render({ pair: FIAT_PAIR })
+        await settle()
+        act(() => result.current.selectQuote('picked-1'))
+
+        mockCreateQuote.mockResolvedValue(offers('2'))
+        act(() => result.current.refreshQuotes())
         await settle()
 
-        expect(result.current.quotesError).toBe('errors.general.body')
+        expect(result.current.selectedQuote?.quoteId).toBe('picked-2')
+    })
+
+    it('falls back to the best offer once the chosen pair is no longer offered', async () => {
+        mockCreateQuote.mockResolvedValue([
+            { ...quote('best-1', 'meld'), provider: 'A' },
+            { ...quote('picked-1', 'meld'), provider: 'B' },
+        ])
+        const { result } = render({ pair: FIAT_PAIR })
+        await settle()
+        act(() => result.current.selectQuote('picked-1'))
+
+        mockCreateQuote.mockResolvedValue([
+            { ...quote('best-2', 'meld'), provider: 'A' },
+        ])
+        act(() => result.current.refreshQuotes())
+        await settle()
+
+        expect(result.current.selectedQuote?.quoteId).toBe('best-2')
     })
 
     it('quotes a deposit pair again for every new amount', async () => {

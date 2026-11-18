@@ -99,6 +99,19 @@ describe('toOnrampUserMessage', () => {
         },
     )
 
+    it("has no message for an upstream's rate limit relayed as a 429", () => {
+        expect(
+            toOnrampUserMessage({
+                name: 'HTTPError',
+                status: 429,
+                data: {
+                    error: 'Meld rate limit exceeded',
+                    code: 'upstream_rate_limited',
+                },
+            }),
+        ).toBeNull()
+    })
+
     it('maps server-side integrity-token rejections to the attestation wording', () => {
         const httpError = {
             name: 'HTTPError',

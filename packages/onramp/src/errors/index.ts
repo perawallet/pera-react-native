@@ -137,9 +137,13 @@ export function resolveRampQuoteLimits(
 export const isRampQuoteGoneError = (error: unknown): boolean =>
     isSwapQuoteGoneError(error)
 
-// The backend translates 4xx messages only; a 5xx message is an English
-// diagnostic that can name the upstream.
-function isServerError(error: unknown, raw: unknown): boolean {
+// The backend translates its own 4xx messages; a 5xx message, or an upstream's
+// rate limit relayed as a 429, is an English diagnostic that can name the upstream.
+function isUntranslatedError(error: unknown, raw: unknown): boolean {
+    const code =
+        resolveRouterErrorBody(raw)?.code ??
+        (isPeraNetworkError(error) ? error.backendCode : undefined)
+    if (code === 'upstream_rate_limited') return true
     if (isPeraNetworkError(error)) return error.kind === 'server'
     const status = (raw as Maybe<{ status?: unknown }>)?.status
     return typeof status === 'number' && status >= 500
@@ -164,7 +168,7 @@ export function toOnrampUserMessage(error: unknown): Nullable<string> {
         return raw.message
     }
 
-    if (isServerError(error, raw)) return null
+    if (isUntranslatedError(error, raw)) return null
 
     const exception = resolvePeraApiException(raw)
     if (exception) {

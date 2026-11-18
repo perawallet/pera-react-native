@@ -95,8 +95,9 @@ export const useOnrampQuotes = ({
     const { scope, address: selectedAccountAddress } = useOnrampAccount()
 
     const [quotes, setQuotes] = useState<RampQuote[]>([])
-    const [selectedQuoteId, setSelectedQuoteId] =
-        useState<Nullable<string>>(null)
+    // Keyed by provider + method, not quoteId: every re-quote mints new ids.
+    const [selection, setSelection] =
+        useState<Nullable<{ provider: string; paymentMethodId: string }>>(null)
     const [isQuoting, setIsQuoting] = useState(false)
     const [quotesError, setQuotesError] = useState<Nullable<string>>(null)
     const [quoteLimits, setQuoteLimits] =
@@ -283,7 +284,7 @@ export const useOnrampQuotes = ({
     useEffect(() => {
         pairIdRef.current = pairId
         setQuotes([])
-        setSelectedQuoteId(null)
+        setSelection(null)
         setQuotesError(null)
         setQuoteLimits(null)
     }, [pairId])
@@ -325,15 +326,28 @@ export const useOnrampQuotes = ({
     const bestQuote = useMemo(() => pickBestQuote(quotes), [quotes])
 
     const selectedQuote = useMemo<Nullable<RampQuote>>(() => {
-        if (selectedQuoteId === null) return bestQuote
+        if (selection === null) return bestQuote
         return (
-            quotes.find(quote => quote.quoteId === selectedQuoteId) ?? bestQuote
+            quotes.find(
+                quote =>
+                    quote.provider === selection.provider &&
+                    quote.paymentMethod.id === selection.paymentMethodId,
+            ) ?? bestQuote
         )
-    }, [quotes, selectedQuoteId, bestQuote])
+    }, [quotes, selection, bestQuote])
 
-    const selectQuote = useCallback((quoteId: string) => {
-        setSelectedQuoteId(quoteId)
-    }, [])
+    const selectQuote = useCallback(
+        (quoteId: string) => {
+            const quote = quotes.find(q => q.quoteId === quoteId)
+            if (quote) {
+                setSelection({
+                    provider: quote.provider,
+                    paymentMethodId: quote.paymentMethod.id,
+                })
+            }
+        },
+        [quotes],
+    )
 
     // "Best offer" ranks providers within one payment method, matching the
     // provider sheet — a card quote is not comparable with a bank-transfer one.
@@ -353,7 +367,12 @@ export const useOnrampQuotes = ({
                 quote => quote.paymentMethod.id === paymentMethodId,
             )
             const best = pickBestQuote(candidates)
-            if (best) setSelectedQuoteId(best.quoteId)
+            if (best) {
+                setSelection({
+                    provider: best.provider,
+                    paymentMethodId: best.paymentMethod.id,
+                })
+            }
         },
         [quotes],
     )
