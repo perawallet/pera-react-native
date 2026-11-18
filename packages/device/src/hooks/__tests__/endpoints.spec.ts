@@ -114,6 +114,72 @@ describe('device endpoints', () => {
         ])
     })
 
+    describe('muted chains', () => {
+        const withEthereum: DeviceRegistration = {
+            ...registration,
+            accounts: [
+                ...registration.accounts,
+                {
+                    chainId: 'ethereum',
+                    address: '0xabc',
+                    accountType: 'hdWallet',
+                    rank: 0,
+                    receiveNotifications: true,
+                },
+            ],
+            mutedChainIds: ['ethereum'],
+        }
+        const sentData = () =>
+            (
+                mockedQueryClient.mock.calls[0] as [
+                    {
+                        data: {
+                            accounts: { chain: string }[]
+                            muted_chains: string[]
+                        }
+                    },
+                ]
+            )[0].data
+
+        const registerEthereum = (canMuteChain?: boolean) => {
+            deviceChainAdapters.reset()
+            deviceChainAdapters.register({
+                chainId: 'ethereum',
+                accountTypeOf: () => 'hdWallet',
+                rankOf: () => 0,
+                ...(canMuteChain === undefined ? {} : { canMuteChain }),
+            })
+        }
+
+        it('sends a mute for a chain that can mute', async () => {
+            registerEthereum(true)
+
+            await registerDevice('live', withEthereum)
+
+            expect(sentData().muted_chains).toEqual(['eip155:1'])
+        })
+
+        it('drops a mute for a chain whose adapter does not say it can mute, keeping every account', async () => {
+            registerEthereum()
+
+            await registerDevice('live', withEthereum)
+
+            expect(sentData().muted_chains).toEqual([])
+            expect(sentData().accounts.map(account => account.chain)).toEqual([
+                'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k',
+                'eip155:1',
+            ])
+        })
+
+        it('drops a mute for a chain without a device adapter', async () => {
+            deviceChainAdapters.reset()
+
+            await registerDevice('live', withEthereum)
+
+            expect(sentData().muted_chains).toEqual([])
+        })
+    })
+
     it('returns the response payload', async () => {
         const result = await registerDevice('live', registration)
 

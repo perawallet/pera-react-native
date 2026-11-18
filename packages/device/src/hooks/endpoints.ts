@@ -99,12 +99,25 @@ export const registerDevice = async (
         method: 'POST',
         url: isV4 ? REGISTER_DEVICE_PATH : V3_DEVICES_PATH,
         data: isV4
-            ? toDeviceRegistrationRequest(registration, chainId =>
-                  registrationChainOf(
-                      getProvider().chains,
-                      chainId,
-                      deployment,
-                  ),
+            ? toDeviceRegistrationRequest(
+                  {
+                      ...registration,
+                      // A chain that doesn't take `muted_chains` 422s the whole
+                      // registration, so a stale or unsupported mute is dropped here.
+                      mutedChainIds: registration.mutedChainIds.filter(
+                          chainId =>
+                              canMuteChainInDeviceRegistration(
+                                  chainId,
+                                  deployment,
+                              ),
+                      ),
+                  },
+                  chainId =>
+                      registrationChainOf(
+                          getProvider().chains,
+                          chainId,
+                          deployment,
+                      ),
               )
             : toV3DeviceRegistrationRequest(registration, isOnV3DevicesApi),
     })
