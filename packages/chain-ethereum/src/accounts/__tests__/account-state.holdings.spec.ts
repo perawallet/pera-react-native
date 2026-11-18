@@ -43,7 +43,7 @@ import {
     TEST_RPC_URL,
     testChainContext,
 } from '../../__tests__/context'
-import { ETHEREUM } from '../../__tests__/evm-chains'
+import { ETHEREUM, POLYGON } from '../../__tests__/evm-chains'
 
 vi.mock('@perawallet/wallet-core-config', async importOriginal =>
     (await import('../../__tests__/pera-backend')).withEthereumPeraBackend(
@@ -338,6 +338,38 @@ describe('fetchAccountState token holdings', () => {
         await expect(
             ops.fetchAccountState(ADDRESS, SCOPE, HINT),
         ).rejects.toThrow()
+    })
+})
+
+describe('fetchAccountState on Polygon', () => {
+    it('never reads or holds the native-coin mirror 0x…1010 as a token, even when stored or added', async () => {
+        const mirror = '0x0000000000000000000000000000000000001010'
+        storedHoldings.ids = [mirror, USDC]
+        server.use(
+            ...rpcAtBlock(
+                '0x64',
+                erc20CallResponder({ [USDC]: token(5n), [mirror]: token(1n) }),
+            ),
+            ...peraEvmHandlers({
+                baseUrl: TEST_PERA_URL,
+                whitelist: { 137: [nativeWhitelistItem(137), listed(USDC)] },
+            }),
+        )
+        const calls = recordRpcCalls()
+        const ops = createEthereumAccountStateOps(
+            testChainContext({ services: ['assets', 'nfts'] }),
+            POLYGON,
+        )
+
+        const state = await ops.fetchAccountState(
+            ADDRESS,
+            { chainId: 'polygon', networkId: 'mainnet' },
+            { ...HINT, addedTokenIds: [mirror] },
+        )
+
+        expect(state.holdings.map(h => h.assetId)).toEqual(['native', USDC])
+        expect(state.unrefreshedHoldings).toBeUndefined()
+        expect(JSON.stringify(calls)).not.toContain(mirror.slice(2))
     })
 })
 

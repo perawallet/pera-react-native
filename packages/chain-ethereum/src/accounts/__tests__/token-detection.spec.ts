@@ -43,7 +43,7 @@ import {
 } from '../../history/api/msw-handlers'
 import type { EvmHistoryItemResponse } from '../../history/api/schema'
 import { TEST_PERA_URL } from '../../__tests__/context'
-import { ETHEREUM } from '../../__tests__/evm-chains'
+import { ETHEREUM, POLYGON } from '../../__tests__/evm-chains'
 
 vi.mock('@perawallet/wallet-core-config', async importOriginal =>
     (await import('../../__tests__/pera-backend')).withEthereumPeraBackend(
@@ -235,6 +235,25 @@ describe('scanReceivedTokens', () => {
             scannedBlock: 30,
             resume: undefined,
         })
+    })
+
+    it("never finds Polygon's native-coin mirror 0x…1010 as a received token", async () => {
+        history([
+            [
+                received(30, '0x0000000000000000000000000000000000001010'),
+                received(29, TSLAX),
+            ],
+        ])
+
+        const scan = await scanReceivedTokens(
+            { chainId: 'polygon', networkId: 'amoy' },
+            POLYGON,
+            ME,
+            undefined,
+            openBudget(),
+        )
+
+        expect(scan.tokenIds).toEqual([getAddress(TSLAX)])
     })
 
     it("stops at the previous scan's block without reading older pages", async () => {

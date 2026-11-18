@@ -485,8 +485,14 @@ const readBatch = async (
     ])
     // Checksummed, so a token named twice is read once; an id that isn't an
     // address is skipped, not thrown.
+    // The native coin's mirror contract is the native balance again, never a token.
     const checksummed = (ids: readonly string[]): string[] => [
-        ...new Set(ids.filter(id => isAddress(id)).map(id => getAddress(id))),
+        ...new Set(
+            ids
+                .filter(id => isAddress(id))
+                .map(id => getAddress(id))
+                .filter(id => id !== chain.row.nativeTokenContract),
+        ),
     ]
     const listed = checksummed(listedIds)
     const listedSet = new Set(listed)
