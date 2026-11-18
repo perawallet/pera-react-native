@@ -170,11 +170,17 @@ export const useAddressDisplay = ({
         return findContactByAddress(contacts, address, contactFamily) ?? null
     }, [isAddressOnly, address, contacts, contactFamily])
 
+    const isNameLookupEnabled = !isAddressOnly && !account && !contact
     const { data: addressNames } = useNameForAddressQuery(scope, address, {
-        enabled: !isAddressOnly && !account && !contact,
+        enabled: isNameLookupEnabled,
     })
 
-    const addressName = useMemo(() => addressNames?.at(0)?.name, [addressNames])
+    // `enabled: false` still returns data another screen cached under the same
+    // key, which would name an address the caller asked to show bare.
+    const addressName = useMemo(
+        () => (isNameLookupEnabled ? addressNames?.at(0)?.name : undefined),
+        [isNameLookupEnabled, addressNames],
+    )
 
     const truncatedAddress = useMemo(
         () => formatAddress(address, addressFormat, scope.chainId),

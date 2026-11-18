@@ -12,6 +12,7 @@
 
 import {
     addressCodecs,
+    toScopeKey,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -29,6 +30,7 @@ import {
     NAME_BULK_CHUNK_SIZE,
     NAME_BULK_CONCURRENCY,
     NAME_CACHE_TTL_MS,
+    NAME_UNAVAILABLE_BACKOFF_MS,
     NAME_VERIFY_CONCURRENCY,
 } from '../constants'
 import {
@@ -44,15 +46,37 @@ import { verifyNameAddress } from '../services/verifyNameAddress'
 // first use so importing this module needs nothing from shared.
 let verificationGate: Optional<ConcurrencyLimit>
 
+// In memory only: the backoff is about this session's reads, and a restart
+// is a fair moment to try again.
+const unavailableUntil = new Map<string, number>()
+
+const backoffKey = (address: string, scope: ChainScope) =>
+    `${toScopeKey(scope)}:${address}`
+
+const isBackedOff = (address: string, scope: ChainScope): boolean => {
+    const key = backoffKey(address, scope)
+    const until = unavailableUntil.get(key)
+    if (until === undefined) return false
+    if (until > Date.now()) return true
+    unavailableUntil.delete(key)
+    return false
+}
+
+type VerifiedNames = {
+    entries: NameCacheEntry[]
+    unavailable: string[]
+}
+
 /**
  * Backend names are the backend's word alone, so each is checked against the
  * chain's own forward record. `mismatch` becomes "no name"; `unavailable` (or a
- * rejected check) drops the entry so an outage is never cached as "no name".
+ * rejected check) writes nothing, so an outage is never cached as "no name",
+ * and is reported so the caller can keep any older row from showing.
  */
 const keepVerifiedNames = async (
     entries: NameCacheEntry[],
     scope: ChainScope,
-): Promise<NameCacheEntry[]> => {
+): Promise<VerifiedNames> => {
     verificationGate ??= createConcurrencyLimit(NAME_VERIFY_CONCURRENCY)
     const limitVerifications = verificationGate
     const verdicts = await Promise.allSettled(
@@ -65,48 +89,62 @@ const keepVerifiedNames = async (
         ),
     )
 
-    return entries.flatMap((entry, index) => {
+    const kept: NameCacheEntry[] = []
+    const unavailable: string[] = []
+    entries.forEach((entry, index) => {
         const verdict = verdicts[index]
         if (verdict.status === 'rejected' || verdict.value === 'unavailable') {
-            return []
+            unavailable.push(entry.address)
+            return
         }
         if (verdict.value === 'mismatch') {
             logger.warn(
                 'Address name dropped: its forward record names another address',
                 { name: entry.name?.name, chainId: scope.chainId },
             )
-            return [{ address: entry.address, name: null }]
+            kept.push({ address: entry.address, name: null })
+            return
         }
-        return [entry]
+        kept.push(entry)
     })
+    return { entries: kept, unavailable }
 }
 
 /**
  * Bulk-fetches names for the given addresses and persists the ones the chain
  * confirms to the `name_cache` table. Skips addresses that are already cached
  * and still fresh, so calling this on every sync tick is cheap in steady state.
+ *
+ * Returns the addresses whose check could not complete, including ones still
+ * backing off from an earlier failure; none of them were written to the cache.
  */
 export async function fetchAndPersistNames(
     addresses: string[],
     scope: ChainScope,
-): Promise<void> {
-    if (addresses.length === 0) return
+): Promise<Set<string>> {
+    const unavailable = new Set<string>()
+    if (addresses.length === 0) return unavailable
     // No Pera backend for the scope (betanet, custom): skip before any DB work, otherwise
     // every requested address commits as a fresh negative-cache row for no reason.
-    if (!hasPeraBackend(scope)) return
+    if (!hasPeraBackend(scope)) return unavailable
 
     const adapter = nameServiceAdapterFor(scope)
     const dedup = Array.from(
         new Set(addresses.filter(addr => adapter.isValidAddress(addr))),
     )
-    if (dedup.length === 0) return
+    if (dedup.length === 0) return unavailable
 
-    const toFetch = await getStaleOrMissingAddresses({
+    const stale = await getStaleOrMissingAddresses({
         addresses: dedup,
         scope,
         ttlMs: NAME_CACHE_TTL_MS,
     })
-    if (toFetch.length === 0) return
+    const toFetch = stale.filter(address => {
+        if (!isBackedOff(address, scope)) return true
+        unavailable.add(address)
+        return false
+    })
+    if (toFetch.length === 0) return unavailable
 
     const batches = partition(toFetch, NAME_BULK_CHUNK_SIZE)
 
@@ -133,9 +171,13 @@ export async function fetchAndPersistNames(
             name: hitMap.get(codec.normalize(address)) ?? null,
         }))
 
-        await upsertNameEntries({
-            scope,
-            entries: await keepVerifiedNames(entries, scope),
-        })
+        const verified = await keepVerifiedNames(entries, scope)
+        const retryAt = Date.now() + NAME_UNAVAILABLE_BACKOFF_MS
+        for (const address of verified.unavailable) {
+            unavailable.add(address)
+            unavailableUntil.set(backoffKey(address, scope), retryAt)
+        }
+        await upsertNameEntries({ scope, entries: verified.entries })
     })
+    return unavailable
 }

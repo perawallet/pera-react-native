@@ -22,6 +22,13 @@ export const NAME_BULK_CONCURRENCY = 2
  */
 export const NAME_VERIFY_CONCURRENCY = 4
 
+/**
+ * How long an address whose forward check could not complete is left alone. An
+ * outage on a user's RPC or a rate-limited registry otherwise repeats every
+ * read on each new lookup.
+ */
+export const NAME_UNAVAILABLE_BACKOFF_MS = 5 * 60 * 1000
+
 /** How long a cached row (positive or negative) is considered fresh. */
 export const NAME_CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24h
 

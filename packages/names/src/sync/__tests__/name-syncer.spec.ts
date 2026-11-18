@@ -10,9 +10,13 @@
  limitations under the License
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { fetchAndPersistNames } from '../name-syncer'
-import { NAME_BULK_CHUNK_SIZE, NAME_VERIFY_CONCURRENCY } from '../../constants'
+import {
+    NAME_BULK_CHUNK_SIZE,
+    NAME_UNAVAILABLE_BACKOFF_MS,
+    NAME_VERIFY_CONCURRENCY,
+} from '../../constants'
 import { registerFakeNameServiceAdapter } from '../../__tests__/fakeNameServiceAdapter'
 
 const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
@@ -40,8 +44,17 @@ const ADDR_C = 'C'.repeat(58)
 
 const ALICE = { name: 'alice.algo', image: '', source: 'nfd' }
 
+let run = 0
+
 describe('fetchAndPersistNames', () => {
+    afterEach(() => {
+        vi.useRealTimers()
+    })
+
     beforeEach(() => {
+        // The backoff outlives a call, so each test starts past the last one's.
+        vi.useFakeTimers({ toFake: ['Date'] })
+        vi.setSystemTime(Date.now() + 10 * NAME_UNAVAILABLE_BACKOFF_MS * ++run)
         mockVerify.mockReset().mockResolvedValue('verified')
         registerFakeNameServiceAdapter({
             verifyForwardResolution: mockVerify,
@@ -241,6 +254,44 @@ describe('fetchAndPersistNames', () => {
             await fetchAndPersistNames([ADDR_A], ALGORAND_MAINNET)
 
             expect(mockUpsertNameEntries.mock.calls[0][0].entries).toEqual([])
+        })
+
+        it('reports the addresses whose check could not complete', async () => {
+            mockFetchAddressNames.mockResolvedValue([
+                { address: ADDR_A, name: ALICE },
+                { address: ADDR_B, name: { ...ALICE, name: 'bob.algo' } },
+            ])
+            mockVerify.mockImplementation(async ({ name }) =>
+                name === 'alice.algo' ? 'unavailable' : 'verified',
+            )
+
+            const unavailable = await fetchAndPersistNames(
+                [ADDR_A, ADDR_B],
+                ALGORAND_MAINNET,
+            )
+
+            expect([...unavailable]).toEqual([ADDR_A])
+        })
+
+        it('does not ask the backend or the chain again for an unavailable address until the backoff ends', async () => {
+            mockFetchAddressNames.mockResolvedValue([
+                { address: ADDR_A, name: ALICE },
+            ])
+            mockVerify.mockResolvedValue('unavailable')
+            await fetchAndPersistNames([ADDR_A], ALGORAND_MAINNET)
+            mockFetchAddressNames.mockClear()
+            mockVerify.mockClear()
+
+            const during = await fetchAndPersistNames(
+                [ADDR_A],
+                ALGORAND_MAINNET,
+            )
+            vi.setSystemTime(Date.now() + NAME_UNAVAILABLE_BACKOFF_MS + 1)
+            await fetchAndPersistNames([ADDR_A], ALGORAND_MAINNET)
+
+            expect([...during]).toEqual([ADDR_A])
+            expect(mockFetchAddressNames).toHaveBeenCalledTimes(1)
+            expect(mockVerify).toHaveBeenCalledTimes(1)
         })
 
         it('never checks an address without a name', async () => {

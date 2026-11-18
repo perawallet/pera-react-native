@@ -100,6 +100,7 @@ const {
 } = await import('@perawallet/wallet-core-chain-ethereum/test-handlers')
 const { mockAddressNames } =
     await import('@perawallet/wallet-core-names/test-handlers')
+const { getNameByAddress } = await import('@perawallet/wallet-core-names')
 const { peraEvmHistoryHandlers } =
     await import('@packages/chain-ethereum/src/history/api/msw-handlers')
 const { renderWithNavigation } =
@@ -129,6 +130,7 @@ const { ViewContactScreen } =
     await import('@modules/contacts/screens/ViewContactScreen/ViewContactScreen')
 
 const ETHEREUM_CAIP2 = 'eip155:1'
+const ETHEREUM_MAINNET = { chainId: 'ethereum', networkId: 'mainnet' } as const
 const BASE_CAIP2 = 'eip155:8453'
 
 const OWN_ADDRESS = '0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed'
@@ -249,12 +251,6 @@ const answeredEnsReads = async () =>
             answeredRequestIds.has(requestId) &&
             body.includes(ENS_UNIVERSAL_RESOLVER),
     )
-
-// Lets the verdict reach the cache and the screen once the answer is in.
-const settle = () =>
-    act(async () => {
-        await new Promise(resolve => setTimeout(resolve, 500))
-    })
 
 // Forward records on Ethereum L1, the one place ENS is read for every EVM chain.
 const serveEns = (records: EnsRecordFixture[]) =>
@@ -483,7 +479,7 @@ describe('Flow: ENS primary names for EVM addresses', () => {
         renderHistory()
 
         await waitFor(
-            async () => expect(await ensReads()).not.toHaveLength(0),
+            async () => expect(await answeredEnsReads()).not.toHaveLength(0),
             {
                 timeout: SLOW_WAIT_TIMEOUT_MS,
             },
@@ -653,7 +649,17 @@ describe('Flow: ENS primary names for EVM addresses', () => {
                 async () => expect(await answeredEnsReads()).toHaveLength(1),
                 { timeout: SLOW_WAIT_TIMEOUT_MS },
             )
-            await settle()
+            // The mismatch is cached as "no name" once its verdict is in.
+            await waitFor(
+                async () =>
+                    expect(
+                        await getNameByAddress({
+                            address: UNKNOWN_RECIPIENT,
+                            scope: ETHEREUM_MAINNET,
+                        }),
+                    ).toMatchObject({ name: null }),
+                { timeout: SLOW_WAIT_TIMEOUT_MS },
+            )
             expect(recipient.textContent).toContain(
                 full('ethereum', UNKNOWN_RECIPIENT),
             )

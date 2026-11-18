@@ -18,13 +18,20 @@ import {
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { config } from '@perawallet/wallet-core-config'
 import { nameServiceAdapterFor } from '../chain-adapter'
-import { nameBatchQueue } from '../services/nameBatchQueue'
+import { NAME_UNAVAILABLE, nameBatchQueue } from '../services/nameBatchQueue'
 import { nameQueryKeys } from './querykeys'
 import type { AddressName } from '../models'
 
 export type UseNameForAddressQueryResult = {
     data: AddressName[]
     isPending: boolean
+}
+
+class NameUnavailableError extends Error {
+    constructor() {
+        super('The name could not be verified against its chain')
+        this.name = 'NameUnavailableError'
+    }
 }
 
 // One stable empty array, so memos that depend on `data` don't re-run every render.
@@ -63,13 +70,17 @@ export const useNameForAddressQuery = (
 
     const query = useQuery({
         queryKey: nameQueryKeys.forAddress(address, scope),
-        queryFn: (): Promise<AddressName[]> => {
-            const valuePromise = nameBatchQueue.enqueue(
+        queryFn: async (): Promise<AddressName[]> => {
+            const value = await nameBatchQueue.enqueue(
                 address,
                 toScopeKey(scope),
             )
-            return valuePromise.then(value => (value ? [value] : []))
+            // A failure, not an empty answer: a success would be cached, and
+            // persisted, as "no name" for as long as a real one.
+            if (value === NAME_UNAVAILABLE) throw new NameUnavailableError()
+            return value ? [value] : []
         },
+        meta: { isExpectedFailure: true },
         enabled,
         staleTime: config.reactQueryLongLivedStaleTime,
         gcTime: config.reactQueryLongLivedGCTime,

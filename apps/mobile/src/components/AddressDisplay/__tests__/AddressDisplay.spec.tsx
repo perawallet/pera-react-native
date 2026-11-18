@@ -194,6 +194,23 @@ describe('AddressDisplay', () => {
             ).toBeNull()
         })
 
+        it('shows no name for an address-only display even when another screen cached one', () => {
+            mockUseNameForAddress.mockReturnValue({
+                data: [{ name: 'alice.eth', image: '', source: 'ens' }],
+                isPending: false,
+            })
+
+            render(
+                <AddressDisplay
+                    address={ETH_ADDRESS}
+                    scope={ETH_SCOPE}
+                    displayType='address-only'
+                />,
+            )
+
+            expect(screen.queryByText('alice.eth')).toBeNull()
+        })
+
         it('shows an address with no name in full when only addressFormat is full', () => {
             mockUseNameForAddress.mockReturnValue({
                 data: undefined,
