@@ -68,13 +68,13 @@ export const nftHoldingsPath = (
 ): string => `/api/v3/evm/${eip155ChainId}/accounts/${address}/nfts/`
 
 /**
- * The cursor a page's `next` URL carries. Throws on anything else, so a
+ * The cursor a holdings page's `next` URL carries. Throws on anything else, so a
  * malformed page fails the read instead of looping.
  */
-export const cursorOf = (next: string): string => {
+export const nftCursorOf = (next: string): string => {
     const cursor = new URL(next).searchParams.get('cursor')
     if (cursor === null || cursor === '') {
-        throw new Error('Pera page named no cursor in `next`')
+        throw new Error('Pera NFT holdings page named no cursor in `next`')
     }
     return cursor
 }
@@ -163,7 +163,7 @@ export const fetchTokenSearchPage = async (
             const parsed = assetItemSchema.safeParse(row)
             return parsed.success ? [parsed.data] : []
         }),
-        nextCursor: next === null ? undefined : cursorOf(next),
+        nextCursor: next ?? undefined,
     }
 }
 
@@ -230,7 +230,7 @@ export const fetchNftHoldings = async (
             }
         }
         if (next === null) return [...items.values()]
-        cursor = cursorOf(next)
+        cursor = nftCursorOf(next)
     }
     throw new Error(
         `Pera NFT holdings for ${scope.chainId}/${scope.networkId} ran past ${NFT_HOLDINGS_MAX_PAGES} pages`,

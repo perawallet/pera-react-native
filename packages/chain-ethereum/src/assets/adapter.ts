@@ -520,9 +520,9 @@ const unlistedToken = async (
     }
 }
 
-// The search refuses shorter text (422), and the empty query lists the chain's
-// tokens.
+// The backend bounds text search by Unicode code points.
 const TOKEN_SEARCH_MIN_LENGTH = 2
+const TOKEN_SEARCH_MAX_LENGTH = 100
 
 // The search matches an address only whole and knows only tokens Pera
 // stored, so an address or its start is matched against the list here, and a
@@ -584,9 +584,12 @@ const search =
             })
         }
         const trimmed = query.trim()
+        const length = [...trimmed].length
         if (
             !hasServices(ctx, scope, TOKEN_SEARCH_SERVICE) ||
-            [...trimmed].length < TOKEN_SEARCH_MIN_LENGTH ||
+            length < TOKEN_SEARCH_MIN_LENGTH ||
+            length > TOKEN_SEARCH_MAX_LENGTH ||
+            trimmed.includes('\u0000') ||
             ADDRESS_LIKE.test(trimmed)
         ) {
             return searchListedTokens(ctx, chain, listedTokens, trimmed, scope)

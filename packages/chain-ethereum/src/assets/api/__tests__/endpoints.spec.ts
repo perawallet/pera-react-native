@@ -33,7 +33,7 @@ import {
     fetchNftItems,
     fetchWhitelist,
     NFT_HOLDINGS_MAX_PAGES,
-    cursorOf,
+    nftCursorOf,
 } from '../endpoints'
 import { isDescribedNftItem } from '../transformers'
 import {
@@ -418,10 +418,10 @@ describe('fetchNftHoldings', () => {
     })
 })
 
-describe('cursorOf', () => {
+describe('nftCursorOf', () => {
     it('reads the cursor from a full next URL', () => {
         expect(
-            cursorOf(
+            nftCursorOf(
                 'https://pera.test/api/v3/evm/1/accounts/x/nfts/?cursor=abc%3D',
             ),
         ).toBe('abc=')
@@ -432,7 +432,7 @@ describe('cursorOf', () => {
         'https://pera.test/nfts/',
         'https://pera.test/?cursor=',
     ])('throws on %s', next => {
-        expect(() => cursorOf(next)).toThrow()
+        expect(() => nftCursorOf(next)).toThrow()
     })
 })
 

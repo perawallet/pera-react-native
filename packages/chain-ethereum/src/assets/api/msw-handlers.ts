@@ -101,7 +101,7 @@ export const evmNftItem = (
 })
 
 const NFT_CURSOR = /^page:(\d+)$/
-const SEARCH_CURSOR = /^search:(\d+)$/
+const SEARCH_CURSOR = /^search-(\d+)$/
 
 /**
  * How the backend answers a token it has no metadata for: a blank item, never
@@ -296,11 +296,11 @@ export const peraEvmAssetHandlers = ({
                     { status: 422 },
                 )
             }
-            const nextUrl = new URL(request.url)
-            nextUrl.searchParams.set('cursor', `search:${index + 1}`)
             return HttpResponse.json({
                 next:
-                    index + 1 < tokenSearch.length ? nextUrl.toString() : null,
+                    index + 1 < tokenSearch.length
+                        ? `search-${index + 1}`
+                        : null,
                 previous: null,
                 results,
             })

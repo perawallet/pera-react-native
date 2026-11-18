@@ -1812,7 +1812,7 @@ describe('token search', () => {
                 }),
             }),
         ])
-        expect(first.nextCursor).toBe('search:1')
+        expect(first.nextCursor).toBe('search-1')
         expect(second).toEqual({
             results: [
                 expect.objectContaining({
@@ -1826,7 +1826,7 @@ describe('token search', () => {
         })
         expect(searchRequests(urls)).toEqual([
             { q: 'usd', chains: 'eip155:1' },
-            { q: 'usd', chains: 'eip155:1', cursor: 'search:1' },
+            { q: 'usd', chains: 'eip155:1', cursor: 'search-1' },
         ])
     })
 
@@ -1855,6 +1855,8 @@ describe('token search', () => {
     it.each([
         ['an empty query', ''],
         ['a single character', 'u'],
+        ['a query over 100 code points', '🪙'.repeat(101)],
+        ['a query containing NUL', 'us\u0000dc'],
         ['an address', USDC.toLowerCase()],
         ['the start of an address', '0x6b17'],
     ])('answers %s from the token list, without a search', async (_, query) => {
