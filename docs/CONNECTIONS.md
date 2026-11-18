@@ -14,7 +14,9 @@ be stale or half-migrated.
 `packages/connections` owns the runtime. A `ConnectionHandler` (`src/handler.ts`) is one protocol
 managing N connections; the `ConnectionRegistry` (`src/registry.ts`) owns the handlers, validates
 every inbound payload before a subscriber can see it, and reconciles the store from each handler's
-`restore()` on boot. Handlers emit protocol-neutral `WalletOperation`s and declare the chain each
+`restore()` on boot. The WalletConnect handlers also end a long-idle session there
+(`IDLE_SESSION_TIMEOUT_MS` in `packages/walletconnect/src/shared/idleSession.ts`), since v1 sessions never
+expire and each holds a bridge socket. Handlers emit protocol-neutral `WalletOperation`s and declare the chain each
 message belongs to. That chain's dApp request adapter (`src/dappRequest.ts`) validates the
 transaction payload and supplies the signing hook, and can build a send-transaction itself. A namespace
 maps the chain-neutral `DappRequestFailure` to its own wire codes, and the handler sends its defaults

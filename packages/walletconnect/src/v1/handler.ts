@@ -24,6 +24,7 @@ import {
     createWalletConnectConnector,
 } from '../connection'
 import { isV1ChainIdAcceptable } from '../shared/chainSupport'
+import { isIdleSession } from '../shared/idleSession'
 import { redactWalletConnectUri, walletConnectLogContext } from '../shared/uri'
 import { WalletConnectError } from '../shared/errors'
 import { createV1ConnectorBinding } from './binding'
@@ -118,7 +119,7 @@ export const createWalletConnectV1Handler = (
         handleSignData: requests.handleSignData,
         handleGetEmptySignatures: requests.handleGetEmptySignatures,
     })
-    const { restore } = createV1SessionRestorer({
+    const { restore: restoreSessions } = createV1SessionRestorer({
         kit,
         connectors,
         sessionKeys,
@@ -141,6 +142,24 @@ export const createWalletConnectV1Handler = (
         }
         await forgetSession(id)
         await store().remove(id)
+    }
+
+    // v1 sessions never expire and each holds a bridge socket, so an abandoned
+    // one is ended here, revived first because only a live connector can tell
+    // the dApp.
+    const restore = async () => {
+        const sessions = await restoreSessions()
+        const now = Date.now()
+        const idle = sessions.filter(session => isIdleSession(session, now))
+        await Promise.allSettled(
+            idle.map(({ id }) => {
+                logger.warn('[WC v1] ending an idle session', {
+                    connectionId: id,
+                })
+                return disconnect(id)
+            }),
+        )
+        return sessions.filter(session => !idle.includes(session))
     }
 
     return {

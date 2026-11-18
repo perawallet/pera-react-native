@@ -57,6 +57,7 @@ import {
     WalletConnectUnsupportedMethodError,
     WalletConnectUnsupportedNetworkError,
 } from '../shared/errors'
+import { isIdleSession } from '../shared/idleSession'
 import { toPeer } from '../shared/peer'
 import {
     walletConnectSupportFor,
@@ -1526,13 +1527,24 @@ export const createWalletConnectV2Handler = (
         }
 
         const existing = await storedById()
+        const now = Date.now()
         const restored: WalletConnectV2Connection[] = []
         for (const session of Object.values(walletKit.getActiveSessions())) {
             const record = toConnection(
                 session,
                 existing.get(session.topic) ?? null,
             )
-            if (record) restored.push(record)
+            if (!record) continue
+            if (isIdleSession(record, now)) {
+                // Not awaited: an unreachable relay must not hold the boot, and
+                // leaving the record out is what makes reconciliation delete it.
+                logger.warn('[WC v2] ending an idle session', {
+                    connectionId: record.id,
+                })
+                void endSession(record.id)
+                continue
+            }
+            restored.push(record)
         }
         return restored
     }
