@@ -286,7 +286,7 @@ const tokenToEtherOffer = {
     funding_method: 'wallet_transaction',
     expires_at: null,
     deposit_address: null,
-    extras: null,
+    extras: null as Nullable<{ price_impact: string }>,
 }
 
 const routerOrder = (status: SwapStatus) => ({
@@ -578,6 +578,19 @@ describe('Flow: Swap from an Ethereum account', () => {
             ),
         ).toBeTruthy()
         expect(screen.queryByTestId('swap-confirm-insufficient-fee')).toBeNull()
+    })
+
+    it('Given a high price impact, when the confirmation opens, then the warning shows beside the enabled slider', async () => {
+        fakeNode()
+        await openConfirmation({
+            ...tokenToEtherOffer,
+            extras: { price_impact: '12' },
+        })
+
+        expect(
+            await findEnabledByTestId('swap-confirm-slide', FORM_TIMEOUT),
+        ).toBeTruthy()
+        expect(screen.getByTestId('swap-confirm-warning')).toBeTruthy()
     })
 
     it('Given the router says the amount is too small, when the quote is refused, then the form names the minimum, offers neither Swap nor Retry, and Use minimum fills it', async () => {

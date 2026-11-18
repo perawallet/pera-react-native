@@ -107,9 +107,10 @@ export const useStyles = makeStyles(theme => {
         priceImpactHigh: {
             color: theme.colors.negative,
         },
+        footer: {
+            gap: theme.spacing.md,
+        },
         warningBanner: {
-            marginHorizontal: theme.spacing.lg,
-            marginTop: theme.spacing.md,
             padding: theme.spacing.md,
             backgroundColor: theme.colors.negativeLighter,
             borderRadius: theme.spacing.sm,
@@ -118,11 +119,13 @@ export const useStyles = makeStyles(theme => {
             color: theme.colors.negative,
         },
         noteBanner: {
-            marginHorizontal: theme.spacing.lg,
-            marginTop: theme.spacing.md,
             padding: theme.spacing.md,
             backgroundColor: theme.colors.layerGrayLighter,
             borderRadius: theme.spacing.sm,
+        },
+        bodyBanner: {
+            marginHorizontal: theme.spacing.lg,
+            marginTop: theme.spacing.md,
         },
     }
 })
