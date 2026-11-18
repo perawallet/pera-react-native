@@ -438,7 +438,8 @@
             "search_paused_body": "Yakın geçmişte işlem bulunamadı.",
             "search_older": "Daha eskileri ara",
             "filter": "Filtrele",
-            "csv": "CSV"
+            "csv": "CSV",
+            "csv_on_network": "{{network}} CSV"
         },
         "collectible": {
             "description": "Açıklama",

@@ -438,7 +438,8 @@
             "search_paused_body": "No se encontraron transacciones en el historial reciente.",
             "search_older": "Buscar más antiguas",
             "filter": "Filtrar",
-            "csv": "CSV"
+            "csv": "CSV",
+            "csv_on_network": "CSV de {{network}}"
         },
         "collectible": {
             "description": "Descripción",

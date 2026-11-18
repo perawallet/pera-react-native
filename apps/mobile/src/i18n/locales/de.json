@@ -438,7 +438,8 @@
             "search_paused_body": "Keine Transaktionen im jüngsten Verlauf gefunden.",
             "search_older": "Ältere durchsuchen",
             "filter": "Filter",
-            "csv": "CSV"
+            "csv": "CSV",
+            "csv_on_network": "{{network}}-CSV"
         },
         "collectible": {
             "description": "Beschreibung",
