@@ -18,6 +18,11 @@ export const useStyles = makeStyles(theme => ({
         width: '100%',
         minWidth: 0,
     },
+    networkSection: {
+        gap: theme.spacing.lg,
+        width: '100%',
+        minWidth: 0,
+    },
     headerRow: {
         flexDirection: 'row',
         alignItems: 'center',
