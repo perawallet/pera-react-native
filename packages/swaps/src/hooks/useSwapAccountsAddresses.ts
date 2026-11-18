@@ -42,7 +42,7 @@ export const useSwapAccountsAddresses = (
         [accounts],
     )
     const scopes = useSelectedScopes(chainIds)
-    // Remote Config can flip this after mount, and it decides which chains registration sends.
+    // A dependency so a developer override of the API version recomputes which chains registration sends.
     const isRegistrationV4 = useIsDeviceRegistrationV4Enabled()
 
     return useMemo(

@@ -29,6 +29,10 @@ export const isDeviceRegistrationV4Enabled = (): boolean =>
         useRemoteConfigStore.getState().configOverrides,
     ).getBooleanValue(RemoteConfigKeys.enable_device_registration_v4, !isProd)
 
-/** {@link isDeviceRegistrationV4Enabled}, re-rendering when a fetched value or a developer override flips it. */
+/**
+ * {@link isDeviceRegistrationV4Enabled}, re-rendering when a developer override
+ * flips it. The store holds only overrides, so a Remote Config value activated
+ * mid-session is read on the next render, not pushed.
+ */
 export const useIsDeviceRegistrationV4Enabled = (): boolean =>
     useRemoteConfigStore(() => isDeviceRegistrationV4Enabled())

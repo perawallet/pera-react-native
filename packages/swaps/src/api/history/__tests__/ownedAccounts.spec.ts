@@ -76,4 +76,41 @@ describe('swaps/readForOwnedAccounts', () => {
         )
         expect(read).toHaveBeenCalledTimes(1)
     })
+
+    test('finds one refused account in a large batch by halving, not one probe each', async () => {
+        const accounts = Array.from({ length: 20 }, (_, index) => `A${index}`)
+        const read = routerHolding(
+            accounts.filter(account => account !== 'A13'),
+        )
+
+        const result = await readForOwnedAccounts(accounts, read)
+
+        expect(result.accounts).toEqual(
+            accounts.filter(account => account !== 'A13'),
+        )
+        expect(read.mock.calls.length).toBeLessThanOrEqual(12)
+    })
+
+    test('leaves out an account whose probe failed otherwise while another is read', async () => {
+        const read = vi.fn(async (accounts: string[], _limit?: number) => {
+            if (accounts.length > 1) throw notOnDevice()
+            if (accounts[0] === 'B') throw new Error('rate limited')
+            return accounts.join(',')
+        })
+
+        const result = await readForOwnedAccounts(['A', 'B'], read)
+
+        expect(result).toEqual({ value: 'A', accounts: ['A'] })
+    })
+
+    test('rethrows a probe failure rather than the refusal when nothing is accepted', async () => {
+        const read = vi.fn(async (accounts: string[], _limit?: number) => {
+            if (accounts.length > 1) throw notOnDevice()
+            throw new Error('offline')
+        })
+
+        await expect(readForOwnedAccounts(['A', 'B'], read)).rejects.toThrow(
+            'offline',
+        )
+    })
 })

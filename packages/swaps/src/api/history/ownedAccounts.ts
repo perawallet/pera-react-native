@@ -27,23 +27,55 @@ export type OwnedAccountsReader<T> = (
     limit?: number,
 ) => Promise<T>
 
-const isAcceptedAlone = async <T>(
-    account: string,
+type Probed = {
+    accepted: string[]
+    /** Probe failures other than the refusal, such as a 429 or going offline. */
+    failures: unknown[]
+}
+
+const NOTHING_PROBED: Probed = { accepted: [], failures: [] }
+
+const merge = (left: Probed, right: Probed): Probed => ({
+    accepted: [...left.accepted, ...right.accepted],
+    failures: [...left.failures, ...right.failures],
+})
+
+// Halving a refused list finds one refused account in about 2·log2(n)
+// requests rather than one per account, so a large batch doesn't trip the
+// router's rate limit.
+const halvesOf = async <T>(
+    accounts: string[],
     read: OwnedAccountsReader<T>,
-): Promise<boolean> => {
+): Promise<Probed> => {
+    const middle = Math.ceil(accounts.length / 2)
+    const [left, right] = await Promise.all([
+        probe(accounts.slice(0, middle), read),
+        probe(accounts.slice(middle), read),
+    ])
+    return merge(left, right)
+}
+
+const probe = async <T>(
+    accounts: string[],
+    read: OwnedAccountsReader<T>,
+): Promise<Probed> => {
     try {
-        await read([account], PROBE_LIMIT)
-        return true
+        await read(accounts, PROBE_LIMIT)
+        return { accepted: accounts, failures: [] }
     } catch (error) {
-        if (isAccountNotOnDeviceError(error)) return false
-        throw error
+        if (!isAccountNotOnDeviceError(error)) {
+            return { accepted: [], failures: [error] }
+        }
+        return accounts.length === 1 ? NOTHING_PROBED : halvesOf(accounts, read)
     }
 }
 
 /**
  * Reads history for `accounts`, or for the ones the device holds when the
  * router refuses the list. It refuses the whole list over one account without
- * naming it, so each is tried alone; when it holds none, the refusal stands.
+ * naming it, so the list is halved until each refused part is one account.
+ * An account whose probe failed otherwise is left out while another is read;
+ * when none is accepted, that failure, or else the refusal, stands.
  */
 export const readForOwnedAccounts = async <T>(
     accounts: string[],
@@ -55,11 +87,8 @@ export const readForOwnedAccounts = async <T>(
         if (!isAccountNotOnDeviceError(error) || accounts.length < 2) {
             throw error
         }
-        const accepted = await Promise.all(
-            accounts.map(account => isAcceptedAlone(account, read)),
-        )
-        const owned = accounts.filter((_, index) => accepted[index])
-        if (owned.length === 0) throw error
-        return { value: await read(owned), accounts: owned }
+        const { accepted, failures } = await halvesOf(accounts, read)
+        if (accepted.length === 0) throw failures.at(0) ?? error
+        return { value: await read(accepted), accounts: accepted }
     }
 }

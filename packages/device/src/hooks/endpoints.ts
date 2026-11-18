@@ -47,7 +47,7 @@ const isOnV3DevicesApi = (chainId: ChainId): boolean =>
  * Whether registering on `deployment` sends the account's address on `chainId`,
  * so a push can reach it there. The chain's `notifications` capability plays no
  * part: a device adapter registers whatever it says. A hook passes `isV4` from
- * `useIsDeviceRegistrationV4Enabled` so its memo recomputes when the flag flips.
+ * `useIsDeviceRegistrationV4Enabled` so its memo recomputes when it changes.
  */
 export const isSentInDeviceRegistration = (
     account: DeviceRegistrableAccount,

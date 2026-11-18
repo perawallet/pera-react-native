@@ -66,7 +66,8 @@ export const useSwapHistoryList = ({
     const { pushWebView } = useWebView()
     const accountAddresses = useSwapAccountAddresses(useSelectedAccount())
 
-    // The request runs on the first entry's scope, so the swap scope leads.
+    // The request runs on the first registered entry's scope, so the swap scope
+    // leads; when registration doesn't send its address, the next one does.
     const accounts = useMemo(() => {
         const swapScopeKey = toScopeKey(scope)
         const swapScopeEntry = accountAddresses.find(
