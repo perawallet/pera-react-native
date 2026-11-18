@@ -105,6 +105,19 @@ Collectible Detail Opens From The NFTs Tab
     Tap    ${FIRST_COLLECTIBLE}
     Wait Until Page Contains Element    ${COLLECTIBLE_DETAIL_SCREEN}    timeout=20s
 
+Add Asset Search Offers A Chip Per Network The Account Is On
+    [Documentation]    Skips on a build without Ethereum. The chips follow the account's own networks,
+    ...                so the account is put on Ethereum first.
+    [Tags]    id:assets.add.network-chips    p2
+    Ensure Account On Ethereum
+    Go Home
+    Wait Until Settled    ${ADD_ASSET_BUTTON}
+    Tap    ${ADD_ASSET_BUTTON}
+    Wait Until Page Contains Element    ${ADD_ASSET_NETWORK_FILTER}    timeout=15s
+    FOR    ${chip}    IN    all    algorand    ethereum
+        Page Should Contain Element    ${ADD_ASSET_NETWORK_FILTER}_${chip}
+    END
+
 
 *** Keywords ***
 Restore Default Sort

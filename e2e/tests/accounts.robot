@@ -14,6 +14,8 @@ Test Tags           accounts
 
 *** Variables ***
 ${FUNDED_ADDRESS}       %{E2E_FUNDED_ADDRESS=}
+# A public address with no key on the device; watching it needs no funds or secrets.
+${WATCH_ONLY_ADDRESS}   UUZB34HTTJ6GM2XB44YSL333AWASFH7K3HSAK7R2AOJ4POGUXQSZIUM5XM
 
 
 *** Test Cases ***
@@ -59,6 +61,63 @@ Account Options Open From More
     Open Account Options
     Page Should Contain Element    ${ACCOUNT_TYPE_INFO_BUTTON}
     Page Should Contain Element    ${OPTION_RENAME}
+
+Home Assets Show The Network Filter On A Multichain Build
+    [Tags]    id:accounts.home.network-filter    p1
+    Ensure Account On Ethereum
+    Go Home
+    Wait Until Page Contains Element    ${ASSET_NETWORK_FILTER}    timeout=30s
+    Page Should Contain Element    ${ASSET_NETWORK_FILTER_ALL}
+    Page Should Contain Element    ${ASSET_NETWORK_FILTER_ALGORAND}
+    Page Should Contain Element    ${ASSET_NETWORK_FILTER_ETHEREUM}
+
+Account On Ethereum Offers Copy And QR For Both Networks
+    [Documentation]    Skips on a build without Ethereum. Once Ethereum is added its row trades the
+    ...                add button for the same actions the Algorand row has.
+    [Tags]    id:accounts.networks.ethereum-added    p1
+    Ensure Account On Ethereum
+    # Adding the network can leave the sheet scrolled, and Android lists only what is on screen.
+    Go Home
+    Open Account Options
+    Page Should Contain Element    ${NETWORKS_TITLE}
+    Page Should Contain Element    ${OPTION_ALGORAND_QR}
+    Scroll Until Present    ${OPTION_ETHEREUM_QR}
+    Page Should Contain Element    ${OPTION_ETHEREUM_COPY}
+    Page Should Not Contain Element    ${OPTION_ETHEREUM_ADD}
+    # The actions being there says nothing about what they act on; the row has to print an address.
+    ${row}=    Text Under    ${OPTION_ETHEREUM_ROW}
+    Should Match Regexp    ${row}    0x[0-9a-fA-F]{4}    msg=The Ethereum row shows no address: "${row}".
+
+Algorand Row Expands To Its Minimum Balance And Rekey
+    [Documentation]    An account on Algorand alone opens that row expanded, where a tap would fold it.
+    [Tags]    id:accounts.networks.algorand-expanded    p2
+    Open Account Options
+    ${expanded}=    Run Keyword And Return Status
+    ...    Page Should Contain Element    ${OPTION_ALGORAND_MIN_BALANCE}
+    IF    not ${expanded}
+        Scroll Until Tappable    ${OPTION_ALGORAND_EXPAND}
+        Tap    ${OPTION_ALGORAND_EXPAND}
+    END
+    Wait Until Page Contains Element    ${OPTION_ALGORAND_MIN_BALANCE}    timeout=15s
+    Scroll Until Present    ${OPTION_REKEY}
+
+Account Type Info Opens Its Explanation
+    [Tags]    id:accounts.type-info.sheet    p2
+    Open Account Options
+    Tap    ${ACCOUNT_TYPE_INFO_BUTTON}
+    Wait Until Page Contains Element    ${ACCOUNT_TYPE_INFO_LEARN_MORE}    timeout=15s
+
+Wallet Structure Shows The Ethereum Icon For An Account On Ethereum
+    [Documentation]    Skips on a build without Ethereum.
+    [Tags]    id:accounts.structure.chain-icons    p2
+    Ensure Account On Ethereum
+    # Adding the network can leave the sheet scrolled past the toggle, which sits above the networks.
+    Go Home
+    Open Account Options
+    Scroll Until Tappable    ${SEE_WALLET_STRUCTURE}
+    Tap    ${SEE_WALLET_STRUCTURE}
+    Wait Until Page Contains Element    ${STRUCTURE_ROW_ANY}    timeout=15s
+    Page Should Contain Element    ${STRUCTURE_ETHEREUM_ICON}
 
 Cancelling Removal Keeps The Account
     [Tags]    id:accounts.remove.cancel    p1
@@ -111,6 +170,39 @@ Confirmed Removal Drops The Account
     Confirm Removal Until The Sheet Goes
     ${after}=    Count Accounts
     Should Be Equal As Integers    ${after}    ${before - 1}
+
+Token Approvals Open From The Ethereum Row
+    [Documentation]    Skips on a build without Ethereum or with token approvals switched off. Only
+    ...                reads the list: revoking signs a transaction.
+    [Tags]    id:accounts.ethereum.token-approvals    p1
+    Ensure Account On Ethereum
+    # Options appear under a network's chevron, which is offered only when the chain has some.
+    ${expandable}=    Run Keyword And Return Status    Scroll Until Present    ${OPTION_ETHEREUM_EXPAND}
+    Skip If    not ${expandable}    Token approvals are switched off for Ethereum on this build.
+    ${expanded}=    Run Keyword And Return Status    Page Should Contain Element    ${OPTION_TOKEN_APPROVALS}
+    IF    not ${expanded}
+        Scroll Until Tappable    ${OPTION_ETHEREUM_EXPAND}
+        Tap    ${OPTION_ETHEREUM_EXPAND}
+    END
+    Scroll Until Tappable    ${OPTION_TOKEN_APPROVALS}
+    Tap    ${OPTION_TOKEN_APPROVALS}
+    Wait Until Page Contains Element    ${TOKEN_APPROVALS_SCREEN}    timeout=30s
+    Wait Until Page Contains Element    ${TOKEN_APPROVALS_LOADED}    timeout=30s
+    Page Should Not Contain Element    ${TOKEN_APPROVALS_RETRY}
+    ...    message=The approvals list failed to load.
+
+Watch Account Lists Algorand Alone And Offers No Key Actions
+    [Documentation]    A watch account holds no key: nothing to reveal, rekey or derive Ethereum from.
+    [Tags]    id:accounts.networks.watch-account    p1
+    # The cases that follow act on the selected account and need one with a key.
+    [Teardown]    Run Keywords    Capture Failure Screenshot    AND    Go Home
+    ...    AND    Select Another Account Than    ${WATCH_ONLY_ADDRESS}
+    Select Watch Account    ${WATCH_ONLY_ADDRESS}
+    Open Account Options
+    Options Should Offer No Key Actions
+    # An absence only counts once every row has been on screen, and the sheet outgrows it.
+    Repeat Keyword    3 times    Swipe By Percent    50    75    50    30    duration=400ms
+    Options Should Offer No Key Actions
 
 Funded Account Shows Portfolio And ALGO Holding
     [Tags]    id:accounts.portfolio.funded    p0    needs-funded    excludefromci    testnet-exec

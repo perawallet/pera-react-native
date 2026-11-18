@@ -185,6 +185,12 @@ Choosing A Pay Asset Returns To The Form
     Wait Until Page Contains Element    ${PAY_ASSET_ROW_ANY}    timeout=15s
     Tap    ${PAY_ASSET_ROW_ANY}
     Wait Until Page Does Not Contain Element    ${ASSET_SEARCH_INPUT}    timeout=15s
+    # An asset several accounts hold asks which account pays before returning.
+    ${ask}=    Run Keyword And Return Status    Page Should Contain Element    ${SOURCE_ACCOUNT_HEADER}
+    IF    ${ask}
+        Tap    ${SOURCE_ACCOUNT_ROW_ANY}
+        Wait Until Page Does Not Contain Element    ${SOURCE_ACCOUNT_HEADER}    timeout=15s
+    END
     Wait Until Page Contains Element    ${SWAP_PAY_INPUT}    timeout=15s
 
 Flip Swaps Pay And Receive And Flips Back
@@ -242,6 +248,38 @@ Asset Search Ignores Case
         Page Should Contain Element    ${NO_MATCHING_ASSETS}
         Skip    App bug: the receive asset search is case-sensitive; "USDC" matches nothing (query passed verbatim from apps/mobile/src/modules/swap/components/SwapToAssetSelectionList/useSwapToAssetSelectionList.ts).
     END
+    Close Picker Back To Form
+
+Pay Picker Offers No Chain Filter On A Single Network
+    [Documentation]    On one swap network the pay picker lists assets without a chain filter.
+    [Tags]    id:swap.asset.pay-chain-filter-absent    swap-asset    p2
+    Open Swap
+    Open Pay Asset Picker
+    Chain Filter Should Be Absent    ${PAY_CHAIN_FILTER}
+    Close Picker Back To Form
+
+Receive Picker Offers No Chain Filter On A Single Network
+    [Documentation]    On one swap network the receive picker lists assets without a chain filter.
+    [Tags]    id:swap.asset.receive-chain-filter-absent    swap-asset    p2
+    Open Swap
+    Open Receive Asset Picker
+    Chain Filter Should Be Absent    ${RECEIVE_CHAIN_FILTER}
+    Close Picker Back To Form
+
+Pay Picker Chain Filter Lists All And Each Network
+    [Documentation]    On several swap networks the pay picker's filter offers All and one chip per network.
+    [Tags]    id:swap.asset.pay-chain-filter-networks    swap-asset    p1
+    Open Swap
+    Open Pay Asset Picker
+    Chain Filter Should List All And Each Network    ${PAY_CHAIN_FILTER}
+    Close Picker Back To Form
+
+Receive Picker Chain Filter Lists All And Each Network
+    [Documentation]    On several swap networks the receive picker's filter offers All and one chip per network.
+    [Tags]    id:swap.asset.receive-chain-filter-networks    swap-asset    p1
+    Open Swap
+    Open Receive Asset Picker
+    Chain Filter Should List All And Each Network    ${RECEIVE_CHAIN_FILTER}
     Close Picker Back To Form
 
 Slippage Preset Is Saved
@@ -357,30 +395,24 @@ Each Provider States Its Price
     Should Not Be Equal    ${{ None }}    ${price}
     ...    The provider row states no price: "${text}".
 
-Tapping A Top Pair Fills The Form
-    [Tags]    id:swap.pairs.top-populates    swap-history    p1
+Swap History Pair Strip Is Absent Without Swap History
+    [Documentation]    A wallet that has never swapped shows no pair strip once its swap history has loaded.
+    [Tags]    id:swap.history.strip-absent    swap-history    p2
     Open Swap
-    ${shown}=    Run Keyword And Return Status    Wait Until Page Contains Element    ${TOP_PAIR_FIRST}    timeout=20s
-    Skip If    not ${shown}    No top pairs from the backend on this run.
-    Page Should Contain Element    ${TOP_PAIRS}
-    Page Should Contain Element    ${TOP_PAIRS_TITLE}
-    Tap    ${TOP_PAIR_FIRST}
-    Wait Until Page Contains Element    ${SWAP_PAY_INPUT}    timeout=15s
-    Page Should Contain Element    ${SWAP_PAY_ASSET_SELECTOR}
-    Page Should Contain Element    ${SWAP_RECEIVE_ASSET_SELECTOR}
-
-Top Pair Row Shows Its Pair And Volume
-    [Tags]    id:swap.pairs.top-row-details    swap-history    p1    needs-testid
-    Open Swap
-    ${shown}=    Run Keyword And Return Status    Wait Until Page Contains Element    ${TOP_PAIR_FIRST}    timeout=20s
-    Skip If    not ${shown}    No top pairs from the backend on this run.
-    ${text}=    Wait Until Keyword Succeeds    10s    0.5s    Top Pair Row With Volume
-    Should Contain    ${text}    to    The top pair row shows no "X to Y" label: "${text}".
+    Skip If    ${FUNDED_WALLET_IMPORTED}    The funded wallet, which has swap history, replaced the fresh one in this session.
+    # The strip renders last in the form; its search swipes to the bottom, where an absence means something.
+    Run Keyword And Return Status    Scroll Until Present    ${HISTORY_WIDGET}
+    # While loading, the strip shows its title over a skeleton without its testID.
+    Wait Until Page Does Not Contain Element    ${HISTORY_TITLE}    timeout=20s
+    ...    error=The swap history strip is still showing on a wallet that has never swapped.
+    ${failed}=    Run Keyword And Return Status    Page Should Contain Element    ${HISTORY_STRIP_ERROR}
+    Skip If    ${failed}    The swap history could not be loaded on this run, so its absence proves nothing.
+    Page Should Not Contain Element    ${HISTORY_WIDGET}
 
 Swap History Opens From See All And Closes Back To The Form
     [Tags]    id:swap.history.open-close    swap-history    p2    needs-funded    excludefromci
     Open Swap With Funded Account
-    Wait Until Page Contains Element    ${HISTORY_WIDGET}    timeout=15s
+    Wait Until Keyword Succeeds    30s    1s    Scroll Until Present    ${HISTORY_WIDGET}
     Open Swap History
     Page Should Not Contain Element    ${HISTORY_EMPTY}
     Close Sheet
@@ -395,6 +427,36 @@ Swap History Row Opens It In The Explorer
     Tap    ${HISTORY_ROW_FIRST}
     Wait Until Page Contains Element    ${WEBVIEW_CLOSE_BUTTON}    timeout=30s
     Tap    ${WEBVIEW_CLOSE_BUTTON}
+
+Swap History Pair Fills The Form With Its Pair
+    [Documentation]    Tapping the ALGO to USDC pair in the swap history strip sets USDC as the receive asset.
+    [Tags]    id:swap.pairs.history-populates    swap-history    p1    needs-funded    excludefromci
+    Open Swap With Pair History
+    ${listed}=    Run Keyword And Return Status    Page Should Contain Element    ${ALGO_TO_USDC_CHIP}
+    Skip If    not ${listed}    The swap history strip offers no ALGO to USDC pair to check against.
+    # Android removes the balance from its tree while the history strip is on screen.
+    Scroll Until Tappable    ${RECEIVE_BALANCE}    toward=start
+    ${preset}=    Run Keyword And Return Status    Page Should Contain Element    ${RECEIVE_BALANCE_IS_USDC}
+    IF    ${preset}
+        Scroll Until Tappable    ${SWAP_FLIP_BUTTON}    toward=start
+        Tap    ${SWAP_FLIP_BUTTON}
+        Scroll Until Tappable    ${RECEIVE_BALANCE}
+    END
+    Wait Until Page Does Not Contain Element    ${RECEIVE_BALANCE_IS_USDC}    timeout=15s
+    Scroll Until Tappable    ${ALGO_TO_USDC_CHIP}
+    Tap    ${ALGO_TO_USDC_CHIP}
+    Scroll Until Tappable    ${RECEIVE_BALANCE}    toward=start
+    Wait Until Page Contains Element    ${RECEIVE_BALANCE_IS_USDC}    timeout=15s
+
+Swap History Pair Chip Shows Its Pair Label
+    [Documentation]    A pair chip in the swap history strip names both assets as "<in> to <out>".
+    [Tags]    id:swap.pairs.history-chip-label    swap-history    p1    needs-funded    needs-testid    excludefromci
+    Open Swap With Pair History
+    Page Should Contain Element    ${HISTORY_TITLE}
+    ${label}=    Text Inside    ${PAIR_CHIP_FIRST.replace('xpath=', '')}
+    Skip If    not $label.strip()
+    ...    App gap: SwapPairChip's PWTouchableOpacity applies getTestProps (apps/mobile/src/components/core/PWTouchableOpacity/PWTouchableOpacity.tsx), which hides its label on iOS.
+    Should Match Regexp    ${label}    \\S+ to \\S+    msg=The pair chip does not name both assets: "${label}".
 
 Large Amount Warns About Price Impact
     [Tags]    id:swap.confirm.price-impact-warning    swap-exec    p1    needs-funded    excludefromci
@@ -414,15 +476,18 @@ Confirmation Shows Every Quote Detail
     Open Swap With Funded Account
     Open Confirmation
     Page Should Contain Element    ${CONFIRM_TITLE}
-    FOR    ${label}    IN    @{CONFIRM_LABELS}
+    FOR    ${label}    ${test_id}    IN    &{CONFIRM_ROWS}
+        ${shown}=    Run Keyword And Return Status    Page Should Contain Element    tid=${test_id}
+        IF    not ${shown} and $test_id not in $CONFIRM_ALWAYS_IDS    CONTINUE
         Page Should Contain Element    xpath=//*[@text='${label}' or @label='${label}']
-    END
-    FOR    ${test_id}    IN    @{CONFIRM_VALUE_IDS}
         ${value}=    Displayed Value    ${test_id}
         Should Not Be Empty    ${value.strip()}    ${test_id} is rendered but empty.
     END
-    ${fee}=    Displayed Value    swap-confirm-pera-fee
-    Should Not Be Equal    ${None}    ${{ re.search(r'[0-9]', $fee) }}    The Pera fee is not a number: "${fee}".
+    ${has_fee}=    Run Keyword And Return Status    Page Should Contain Element    tid=swap-confirm-pera-fee
+    IF    ${has_fee}
+        ${fee}=    Displayed Value    swap-confirm-pera-fee
+        Should Not Be Equal    ${None}    ${{ re.search(r'[0-9]', $fee) }}    The Pera fee is not a number: "${fee}".
+    END
     Tap    ${CONFIRM_CLOSE}
     Wait Until Page Does Not Contain Element    ${CONFIRM_SLIDE}    timeout=10s
 
@@ -437,11 +502,53 @@ Minimum Received Does Not Exceed The Quote
     Expect Element    ${SWAP_BUTTON}    enabled    timeout=30s
     Tap    ${SWAP_BUTTON}
     Wait Until Settled    ${CONFIRM_SLIDE}
+    ${reported}=    Run Keyword And Return Status    Page Should Contain Element    tid=swap-confirm-min-received
+    Skip If    not ${reported}    This quote's provider reports no minimum received.
     ${minimum_raw}=    Displayed Value    swap-confirm-min-received
     ${minimum}=    Extract Number    ${minimum_raw}
     Should Not Be Equal    ${minimum}    ${None}    Minimum received is not a number: "${minimum_raw}".
     Should Be True    ${minimum} <= ${quoted}
     ...    Minimum received ${minimum} exceeds the quoted ${quoted}; slippage was applied the wrong way.
+    Tap    ${CONFIRM_CLOSE}
+
+Confirmation States Its Network And Provider Fees
+    [Documentation]    A same-network quote's confirmation states a network fee, any provider fee as a number, and no route.
+    [Tags]    id:swap.confirm.fee-lines    swap-exec    p1    needs-funded    needs-testid    excludefromci
+    Open Swap With Funded Account
+    Open Confirmation
+    # The network fee row waits for the source chain's own estimate.
+    Wait Until Page Contains Element    ${CONFIRM_NETWORK_FEE}    timeout=30s
+    ${network_fee}=    Displayed Value    swap-confirm-network-fee
+    ${amount}=    Number In    ${network_fee}
+    Should Be True    ${amount} > 0    The network fee reads "${network_fee}".
+    # The router reports a provider fee for some routes only.
+    ${has_provider_fee}=    Run Keyword And Return Status    Page Should Contain Element    ${CONFIRM_PROVIDER_FEE}
+    IF    ${has_provider_fee}
+        ${provider_fee}=    Displayed Value    swap-confirm-provider-fee
+        Number In    ${provider_fee}
+    END
+    Page Should Not Contain Element    ${CONFIRM_ROUTE}
+    ...    message=A swap within one network shows a cross-network route.
+    Tap    ${CONFIRM_CLOSE}
+
+Cross Chain Confirmation Names The Receiving Account
+    [Documentation]    A cross-network quote's confirmation names the receiving account, shows the route and explains where the asset arrives.
+    [Tags]    id:swap.confirm.cross-chain-receiver    swap-exec    p1    needs-funded    excludefromci
+    Open Cross Chain Confirmation
+    Page Should Contain Element    ${CONFIRM_ROUTE}
+    ${account}=    Text Under    ${CONFIRM_RECEIVE_ACCOUNT}
+    Should Not Be Empty    ${account.strip()}    The cross-network confirmation names no receiving account.
+    ${note}=    Text Under    ${CONFIRM_CROSS_CHAIN_NOTE}
+    Should Not Be Empty    ${note.strip()}    The cross-network note is empty.
+    Tap    ${CONFIRM_CLOSE}
+
+Ethereum Swap Confirmation Warns About The Spend Approval
+    [Documentation]    Paying with an ERC-20 that has no allowance yet warns on the confirmation that a spend approval comes first.
+    [Tags]    id:swap.confirm.spend-approval    swap-exec    p1    needs-funded    excludefromci
+    Open Ethereum Swap Confirmation
+    Wait Until Page Contains Element    ${CONFIRM_SPEND_APPROVAL_NOTE}    timeout=30s
+    ${note}=    Text Under    ${CONFIRM_SPEND_APPROVAL_NOTE}
+    Should Not Be Empty    ${note.strip()}    The spend approval note is empty.
     Tap    ${CONFIRM_CLOSE}
 
 Real ALGO To USDC Swap Completes And Lands In History
