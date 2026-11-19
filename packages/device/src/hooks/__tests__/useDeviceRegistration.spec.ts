@@ -100,6 +100,32 @@ describe('useDeviceRegistration', () => {
         expect(mockClearDevicePushToken).not.toHaveBeenCalled()
     })
 
+    test('re-registers once when the muted chains change, and not when the same set is reordered', async () => {
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+        const { useDeviceStore } = await import('../../store')
+        const accounts = [registration('acct-1')]
+        renderHook(() => useDeviceRegistration(accounts))
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
+        })
+
+        act(() => useDeviceStore.getState().setChainMuted('ethereum', true))
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(2)
+        })
+
+        act(() => useDeviceStore.getState().setChainMuted('base', true))
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(3)
+        })
+
+        act(() =>
+            useDeviceStore.setState({ mutedChainIds: ['base', 'ethereum'] }),
+        )
+        expect(mockRegisterDevice).toHaveBeenCalledTimes(3)
+    })
+
     test('clears the previous deployment push token before re-registering on a deployment switch', async () => {
         const { useDeviceRegistration } =
             await import('../useDeviceRegistration')

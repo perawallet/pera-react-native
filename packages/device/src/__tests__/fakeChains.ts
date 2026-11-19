@@ -37,7 +37,7 @@ const networkOf = (tier: NetworkTier, caip2: string): ChainNetwork => ({
     status: 'active',
 })
 
-/** Only what registration reads: `has` and each descriptor's networks. */
+/** Only what registration reads: `has`, `list` (ids) and each descriptor's networks. */
 export const createFakeChainRegistry = (
     caip2ByChain: Partial<
         Record<ChainId, Record<NetworkTier, string>>
@@ -46,6 +46,8 @@ export const createFakeChainRegistry = (
     const has = (chainId: ChainId) => caip2ByChain[chainId] !== undefined
     return {
         has,
+        list: () =>
+            Object.keys(caip2ByChain).map(id => ({ id }) as { id: ChainId }),
         get: (chainId: ChainId) => {
             const caip2 = caip2ByChain[chainId]
             if (caip2 === undefined) throw new Error(`unregistered ${chainId}`)

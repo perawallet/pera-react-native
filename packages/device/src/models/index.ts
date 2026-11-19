@@ -56,6 +56,11 @@ export type DeviceRegistration = {
      */
     currency?: string
     accounts: DeviceAccountRegistration[]
+    /**
+     * Chains on which this device gets no transfer push. Full replacement per
+     * registration, so `[]` unmutes every chain.
+     */
+    mutedChainIds: readonly ChainId[]
 }
 
 export type DeviceAccountRequest = {
@@ -75,6 +80,8 @@ export type DeviceRegistrationRequest = {
     /** Max 8 characters; over-length 422s the whole registration. */
     currency?: string
     accounts: DeviceAccountRequest[]
+    /** CAIP-2 ids on the target deployment; the backend replaces the device's set with it. */
+    muted_chains: string[]
 }
 
 /** The v3 devices API names no chain, so it only takes the chains it always carried. */
@@ -82,7 +89,7 @@ export type V3DeviceAccountRequest = Omit<DeviceAccountRequest, 'chain'>
 
 export type V3DeviceRegistrationRequest = Omit<
     DeviceRegistrationRequest,
-    'accounts'
+    'accounts' | 'muted_chains'
 > & { accounts: V3DeviceAccountRequest[] }
 
 /** `id` wins when both identifiers are present; a blank token is rejected. */
@@ -115,8 +122,11 @@ export type DeviceState = BaseStoreState & {
     /** Deployments whose last registration attempt failed and awaits a retry. */
     pendingRegistrationDeployments: WalletMode[]
     deviceIdOrigins: Partial<Record<ChainScopeKey, DeviceIdOrigin>>
+    /** Chains the user turned push notifications off for on this device. */
+    mutedChainIds: ChainId[]
     setPushToken: (token: Nullable<string>) => void
     setDeviceID: (deployment: WalletMode, id: Nullable<string>) => void
     setRegistrationPending: (deployment: WalletMode, isPending: boolean) => void
     setDeviceIdOrigin: (deployment: WalletMode, origin: DeviceIdOrigin) => void
+    setChainMuted: (chainId: ChainId, isMuted: boolean) => void
 }

@@ -41,6 +41,10 @@ describe('createEvmDeviceAdapter', () => {
         expect(createEvmDeviceAdapter(BASE).chainId).toBe('base')
     })
 
+    it('says the devices API can mute it', () => {
+        expect(createEvmDeviceAdapter(ETHEREUM).canMuteChain).toBe(true)
+    })
+
     it.each([
         [
             'an HD account',

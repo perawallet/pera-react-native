@@ -67,6 +67,23 @@ export const isSentInDeviceRegistration = (
 }
 
 /**
+ * Whether the device can tell the backend to mute `chainId` on `deployment`:
+ * only the v4 API takes `muted_chains`, and only for chains whose adapter
+ * says so and that name a network on the deployment.
+ */
+export const canMuteChainInDeviceRegistration = (
+    chainId: ChainId,
+    deployment: WalletMode,
+): boolean => {
+    if (!isDeviceRegistrationV4Enabled()) return false
+    if (!deviceChainAdapters.has(chainId)) return false
+    if (deviceChainAdapters.get(chainId).canMuteChain !== true) return false
+    return (
+        registrationChainOf(getProvider().chains, chainId, deployment) !== null
+    )
+}
+
+/**
  * Create or update a device. There is no separate update verb: a payload
  * carrying `id` updates that device, one without creates a new one.
  */
@@ -84,12 +101,25 @@ export const registerDevice = async (
         method: 'POST',
         url: isV4 ? REGISTER_DEVICE_PATH : V3_DEVICES_PATH,
         data: isV4
-            ? toDeviceRegistrationRequest(registration, chainId =>
-                  registrationChainOf(
-                      getProvider().chains,
-                      chainId,
-                      deployment,
-                  ),
+            ? toDeviceRegistrationRequest(
+                  {
+                      ...registration,
+                      // A chain that doesn't take `muted_chains` 422s the whole
+                      // registration, so a stale or unsupported mute is dropped here.
+                      mutedChainIds: registration.mutedChainIds.filter(
+                          chainId =>
+                              canMuteChainInDeviceRegistration(
+                                  chainId,
+                                  deployment,
+                              ),
+                      ),
+                  },
+                  chainId =>
+                      registrationChainOf(
+                          getProvider().chains,
+                          chainId,
+                          deployment,
+                      ),
               )
             : toV3DeviceRegistrationRequest(registration, isOnV3DevicesApi),
     })

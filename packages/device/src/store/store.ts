@@ -17,6 +17,7 @@ import {
     scopeFromNetworkColumn,
     scopeKeyLegacyNetworkRecord,
     toScopeKey,
+    type ChainId,
     type ChainScopeKey,
     type WalletMode,
 } from '@perawallet/wallet-core-chain-contract'
@@ -40,6 +41,7 @@ type PersistedDeviceState = {
     deviceIDs?: Partial<Record<string, Nullable<string>>>
     pushToken?: Nullable<string>
     deviceIdOrigins?: Partial<Record<string, DeviceIdOrigin>>
+    mutedChainIds?: ChainId[]
 }
 
 /**
@@ -85,6 +87,7 @@ const initialState = {
     pushToken: null as Nullable<string>,
     pendingRegistrationDeployments: [] as WalletMode[],
     deviceIdOrigins: {} as Partial<Record<ChainScopeKey, DeviceIdOrigin>>,
+    mutedChainIds: [] as ChainId[],
 }
 
 export const useDeviceStore: UseBoundStore<
@@ -124,11 +127,21 @@ export const useDeviceStore: UseBoundStore<
                     },
                 })
             },
+            setChainMuted: (chainId: ChainId, isMuted: boolean) => {
+                const current = get().mutedChainIds
+                if (isMuted === current.includes(chainId)) return
+                set({
+                    mutedChainIds: isMuted
+                        ? [...current, chainId]
+                        : current.filter(muted => muted !== chainId),
+                })
+            },
             resetState: () =>
                 set({
                     ...initialState,
                     deviceIDs: new Map(),
                     deviceIdOrigins: {},
+                    mutedChainIds: [],
                 }),
         }),
         {
@@ -144,6 +157,7 @@ export const useDeviceStore: UseBoundStore<
                 deviceIDs: Object.fromEntries(state.deviceIDs),
                 pushToken: state.pushToken,
                 deviceIdOrigins: state.deviceIdOrigins,
+                mutedChainIds: state.mutedChainIds,
             }),
             // The Map is rebuilt here, not in onRehydrateStorage: after a
             // migration zustand writes the merged state back through
@@ -156,6 +170,7 @@ export const useDeviceStore: UseBoundStore<
                     ...persisted,
                     deviceIDs: objectToDeviceIDs(persisted.deviceIDs),
                     deviceIdOrigins: persisted.deviceIdOrigins ?? {},
+                    mutedChainIds: persisted.mutedChainIds ?? [],
                 }
             },
         },
