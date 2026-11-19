@@ -157,6 +157,7 @@ describe('decodeUniversalRouterSwap, V4 swaps', () => {
     it.each([
         ['the exact value', settle(zeroAddress, ETH_IN, false)],
         ['the router balance', settle(zeroAddress, CONTRACT_BALANCE, false)],
+        ['a cap of exactly the value', settleAll(zeroAddress, ETH_IN)],
     ])(
         'reads ether in as exactly the value when the settle spends %s',
         (_name, payment) => {
@@ -175,10 +176,10 @@ describe('decodeUniversalRouterSwap, V4 swaps', () => {
         },
     )
 
-    it('reads ether in as at most the value when the unspent ether is swept back', () => {
+    it('reads ether in as at most the value when a cap above it leaves ether to sweep back', () => {
         const action = decode(
             [
-                ethToUsdc(settleAll(zeroAddress, ETH_IN)),
+                ethToUsdc(settleAll(zeroAddress, ETH_IN + 1n)),
                 routerSweep(zeroAddress, MSG_SENDER, 0n),
             ],
             { value: ETH_IN },
@@ -496,7 +497,16 @@ describe('decodeUniversalRouterSwap, V4 swaps', () => {
     })
 
     it.each([
-        ['ether without a refund', settleAll(zeroAddress, ETH_IN), ETH_IN],
+        [
+            'more ether than the swap spends, with no refund',
+            settleAll(zeroAddress, ETH_IN + 1n),
+            ETH_IN + 1n,
+        ],
+        [
+            'a cap above the value, with no refund',
+            settleAll(zeroAddress, ETH_IN + 1n),
+            ETH_IN,
+        ],
         [
             'a token settled with ether sent',
             settle(zeroAddress, ETH_IN, false),

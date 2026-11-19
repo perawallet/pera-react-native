@@ -603,12 +603,16 @@ const readV4Input = (
 
     if (isV4Native(currencyIn)) {
         if (call.value <= 0n || permits.length > 0) return undefined
-        // Settling the router's whole balance, or exactly the value, spends all the user sent;
+        // Settling the router's whole balance or exactly the value, or swapping
+        // exactly the value in under a cap of it, spends all the user sent;
         // anything else leaves ether in the router that only a sweep returns.
         const spendsAll =
-            settle.kind === 'settle' &&
-            (settle.amount === V4_CONTRACT_BALANCE ||
-                settle.amount === call.value)
+            settle.kind === 'settle'
+                ? settle.amount === V4_CONTRACT_BALANCE ||
+                  settle.amount === call.value
+                : isExactIn &&
+                  swapIn === call.value &&
+                  settle.maxAmount === call.value
         const refunds = sweeps.filter(sweep => isV4Native(sweep.token))
         if (!spendsAll && refunds.length !== 1) return undefined
         return toLeg(
