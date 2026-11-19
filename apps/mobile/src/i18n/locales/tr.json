@@ -82,6 +82,10 @@
             "see_all": "Tümünü gör",
             "empty_title": "Henüz favorin yok",
             "empty_body": "dApp'leri keşfetmeye başla",
+            "suggestions": {
+                "body": "En çok kullandığın dApp'leri ekle. Başlamak için birkaç öneri:",
+                "add": "Ekle"
+            },
             "added_toast": {
                 "title": "Favorilere eklendi"
             },

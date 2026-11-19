@@ -82,6 +82,10 @@
             "see_all": "Ver tudo",
             "empty_title": "Nenhum favorito ainda",
             "empty_body": "Comece a explorar os dApps",
+            "suggestions": {
+                "body": "Adicione os dApps que você mais usa. Aqui estão alguns para começar.",
+                "add": "Adicionar"
+            },
             "added_toast": {
                 "title": "Adicionado aos favoritos"
             },
