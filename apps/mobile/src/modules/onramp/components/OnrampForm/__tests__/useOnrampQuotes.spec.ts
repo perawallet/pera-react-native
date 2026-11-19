@@ -181,6 +181,21 @@ describe('useOnrampQuotes', () => {
         expect(result.current.quotes.map(item => item.quoteId)).toEqual(['x2'])
     })
 
+    it('shows the error when a re-quote the caller asked for fails', async () => {
+        mockCreateQuote.mockResolvedValue([
+            { ...quote('x1', 'xo'), expiresAt: Date.now() + 600_000 },
+        ])
+        const { result } = render()
+        await settle()
+
+        mockCreateQuote.mockRejectedValueOnce(new NoConnectionError())
+        act(() => result.current.refreshQuotes())
+        await settle()
+
+        expect(result.current.quotes).toEqual([])
+        expect(result.current.quotesError).not.toBeNull()
+    })
+
     it('shows a refusal of a background re-quote and stops refreshing', async () => {
         mockCreateQuote.mockResolvedValue([
             { ...quote('x1', 'xo'), expiresAt: Date.now() + 60_000 },

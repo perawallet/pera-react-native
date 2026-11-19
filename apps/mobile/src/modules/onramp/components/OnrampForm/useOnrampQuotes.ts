@@ -119,6 +119,13 @@ export const useOnrampQuotes = ({
         () => setRefreshCount(count => count + 1),
         [],
     )
+    // Set only by the expiry and foreground timers: a re-quote a caller asks
+    // for (Proceed's) must surface its failure, never keep a gone quote quietly.
+    const backgroundRefreshRef = useRef(false)
+    const refreshQuotesInBackground = useCallback(() => {
+        backgroundRefreshRef.current = true
+        refreshQuotes()
+    }, [refreshQuotes])
     // Failed background re-quotes in a row; backs off the next one.
     const [refreshFailures, setRefreshFailures] = useState(0)
 
@@ -177,9 +184,9 @@ export const useOnrampQuotes = ({
         ],
     )
 
-    // The inputs behind the quotes on screen. A fetch for the same ones is a
-    // background re-quote: a transient failure keeps them (Proceed re-checks
-    // expiry, and the order call refuses a gone quote) and retries later.
+    // The inputs behind the quotes on screen. A timer re-quote for the same
+    // ones keeps them on a transient failure (Proceed re-checks expiry, and the
+    // order call refuses a gone quote) and retries later.
     const shownInputsRef = useRef<
         Nullable<{
             request: typeof quoteRequestFor
@@ -203,7 +210,10 @@ export const useOnrampQuotes = ({
             return
         }
 
+        const isBackground = backgroundRefreshRef.current
+        backgroundRefreshRef.current = false
         const isRefresh =
+            isBackground &&
             shownInputsRef.current?.request === quoteRequestFor &&
             shownInputsRef.current.amountKey === amountKey
         setIsQuoting(true)
@@ -313,7 +323,7 @@ export const useOnrampQuotes = ({
         wasLiveRef.current = isLive
         if (!isLive) return
         if (isRegained && quotes.some(quote => isRampQuoteExpired(quote))) {
-            refreshQuotes()
+            refreshQuotesInBackground()
             return
         }
         const expiries = quotes.flatMap(quote =>
@@ -325,11 +335,11 @@ export const useOnrampQuotes = ({
             ONRAMP_QUOTE_MAX_REFRESH_INTERVAL,
         )
         const timeoutId = setTimeout(
-            refreshQuotes,
+            refreshQuotesInBackground,
             Math.max(minDelay, Math.min(...expiries) - Date.now()),
         )
         return () => clearTimeout(timeoutId)
-    }, [isLive, quotes, refreshFailures, refreshQuotes])
+    }, [isLive, quotes, refreshFailures, refreshQuotesInBackground])
 
     // A probe answer for a pair the user has since left must not set limits.
     const pairIdRef = useRef(pairId)
