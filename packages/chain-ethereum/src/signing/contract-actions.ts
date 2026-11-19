@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { Decimal } from 'decimal.js'
 import { getAddress, maxUint256, parseAbi } from 'viem'
 import type { Address, Hex } from 'viem'
 import {
@@ -26,6 +25,7 @@ import type { KnownEvmContract } from './known-contracts'
 import { readFunction } from './read-function'
 import { decodeUniswapV4PositionAction } from './uniswap-v4-positions'
 import { decodeUniversalRouterSwap } from './universal-router'
+import { toDecimal } from './to-decimal'
 
 type Call = { from: Address; to: Address; data: Hex; value: bigint }
 
@@ -88,8 +88,6 @@ const UNISWAP_V3_POSITION_FUNCTIONS = parseAbi([
     'function sweepToken(address token, uint256 amountMinimum, address recipient)',
     'function createAndInitializePoolIfNecessary(address token0, address token1, uint24 fee, uint160 sqrtPriceX96)',
 ])
-
-const toDecimal = (value: bigint): Decimal => new Decimal(value.toString())
 
 const decodeWrappedNativeAction = (call: Call): Optional<EvmContractAction> => {
     const read = readFunction(WRAPPED_NATIVE_FUNCTIONS, call.data)

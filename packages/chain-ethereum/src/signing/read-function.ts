@@ -11,13 +11,15 @@
  */
 
 import {
+    decodeAbiParameters,
     decodeFunctionData,
+    encodeAbiParameters,
     encodeFunctionData,
     size,
     slice,
     toFunctionSelector,
 } from 'viem'
-import type { AbiFunction, Hex } from 'viem'
+import type { AbiFunction, AbiParameter, Hex } from 'viem'
 import type { Optional } from '@perawallet/wallet-core-shared'
 
 const SELECTOR_SIZE = 4
@@ -39,4 +41,20 @@ export const readFunction = (
     return encoded.toLowerCase() === data.toLowerCase()
         ? { name: item.name, args }
         : undefined
+}
+
+/** ABI parameters that re-encode to exactly `input`, or undefined; never throws. */
+export const decodeParametersExactly = (
+    parameters: readonly AbiParameter[],
+    input: Hex,
+): Optional<readonly unknown[]> => {
+    try {
+        const values = decodeAbiParameters(parameters, input)
+        const encoded = encodeAbiParameters(parameters, values)
+        return encoded.toLowerCase() === input.toLowerCase()
+            ? values
+            : undefined
+    } catch {
+        return undefined
+    }
 }

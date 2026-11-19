@@ -12,9 +12,7 @@
 
 import { Decimal } from 'decimal.js'
 import {
-    decodeAbiParameters,
     decodeFunctionData,
-    encodeAbiParameters,
     encodeFunctionData,
     getAddress,
     hexToBytes,
@@ -33,6 +31,7 @@ import type {
     EvmSwapLeg,
 } from './contract-action-types'
 import type { UniversalRouterVersion } from './known-contracts'
+import { decodeParametersExactly } from './read-function'
 import {
     isV4Native,
     readV4Actions,
@@ -168,30 +167,14 @@ const STAGE_OF: Record<Step['kind'], number> = {
     unwrap: 4,
 }
 
-const decodeInput = (
-    parameters: readonly AbiParameter[],
-    input: Hex,
-): Optional<readonly unknown[]> => {
-    const values = decodeAbiParameters(parameters, input)
-    const encoded = encodeAbiParameters(parameters, values)
-    return encoded.toLowerCase() === input.toLowerCase() ? values : undefined
-}
-
-// The first layout the input re-encodes to exactly; a layout it doesn't fit can throw.
+// The first layout the input re-encodes to exactly.
 const decodeInputAs = (
     layouts: readonly (readonly AbiParameter[])[],
     input: Hex,
-): Optional<readonly unknown[]> => {
-    for (const layout of layouts) {
-        try {
-            const values = decodeInput(layout, input)
-            if (values) return values
-        } catch {
-            continue
-        }
-    }
-    return undefined
-}
+): Optional<readonly unknown[]> =>
+    layouts
+        .map(layout => decodeParametersExactly(layout, input))
+        .find(values => values !== undefined)
 
 const addressOf = (value: unknown): Address => getAddress(value as Address)
 
@@ -265,7 +248,7 @@ const stepOf = (
             return swapStep(type, input)
         }
         case WRAP_ETH: {
-            const values = decodeInput(WRAP_INPUT, input)
+            const values = decodeParametersExactly(WRAP_INPUT, input)
             return (
                 values && {
                     kind: 'wrap',
@@ -275,7 +258,7 @@ const stepOf = (
             )
         }
         case UNWRAP_WETH: {
-            const values = decodeInput(WRAP_INPUT, input)
+            const values = decodeParametersExactly(WRAP_INPUT, input)
             return (
                 values && {
                     kind: 'unwrap',
@@ -285,7 +268,7 @@ const stepOf = (
             )
         }
         case SWEEP: {
-            const values = decodeInput(TOKEN_PAYOUT_INPUT, input)
+            const values = decodeParametersExactly(TOKEN_PAYOUT_INPUT, input)
             return (
                 values && {
                     kind: 'sweep',
@@ -297,7 +280,7 @@ const stepOf = (
         }
         case TRANSFER:
         case PAY_PORTION: {
-            const values = decodeInput(TOKEN_PAYOUT_INPUT, input)
+            const values = decodeParametersExactly(TOKEN_PAYOUT_INPUT, input)
             if (!values) return undefined
             const value = values[2] as bigint
             const isPortion = type === PAY_PORTION
@@ -319,7 +302,7 @@ const stepOf = (
             }
         }
         case PERMIT2_PERMIT: {
-            const values = decodeInput(PERMIT_INPUT, input)
+            const values = decodeParametersExactly(PERMIT_INPUT, input)
             if (!values) return undefined
             const permit = values[0] as {
                 details: { token: Address }
@@ -554,7 +537,8 @@ type V4Route = {
 }
 
 const readV4Route = (actions: readonly V4Action[]): Optional<V4Route> => {
-    const swaps = actions.filter(action => action.kind === 'swap')
+    const settleAt = actions.findIndex(action => action.kind !== 'swap')
+    const swaps = actions.slice(0, settleAt === -1 ? 0 : settleAt) as V4Swap[]
     if (swaps.length === 0) return undefined
     const [settle, ...payouts] = actions.slice(swaps.length)
     const take = payouts.at(-1)
@@ -570,7 +554,6 @@ const readV4Route = (actions: readonly V4Action[]): Optional<V4Route> => {
     const [{ isExactIn, currencyIn, currencyOut }] = swaps
     const isOneRoute = swaps.every(
         swap =>
-            swap.kind === 'swap' &&
             swap.isExactIn === isExactIn &&
             areEvmAddressesEqual(swap.currencyIn, currencyIn) &&
             areEvmAddressesEqual(swap.currencyOut, currencyOut) &&
@@ -593,7 +576,7 @@ const readV4Route = (actions: readonly V4Action[]): Optional<V4Route> => {
         return undefined
     }
     return {
-        swaps: swaps as V4Swap[],
+        swaps,
         settle,
         portions: portions as V4Portion[],
         take,
@@ -691,10 +674,12 @@ const readV4Output = (
     if (isPaidToSigner) {
         if (fees.length > 0 || outSweeps.length > 0) return undefined
         const takeMin = take.kind === 'take-all' ? take.minAmount : 0n
-        if (!isExactIn && portions.length === 0) {
+        // Routers before 2.1.2 don't revert an exact-out swap the pool only part
+        // fills, so only the take's own minimum can promise the whole amount.
+        if (!isExactIn && portions.length === 0 && takeMin >= swapMin) {
             return toLeg(asset, swapMin, 'exact')
         }
-        const floor = portions.length === 0 ? swapMin : 0n
+        const floor = portions.length === 0 && isExactIn ? swapMin : 0n
         return toLeg(asset, takeMin > floor ? takeMin : floor, 'at-least')
     }
 
@@ -703,7 +688,7 @@ const readV4Output = (
         return undefined
     }
     const [{ amountMin }] = outSweeps
-    const floor = hasFees ? 0n : swapMin
+    const floor = hasFees || !isExactIn ? 0n : swapMin
     return toLeg(asset, amountMin > floor ? amountMin : floor, 'at-least')
 }
 

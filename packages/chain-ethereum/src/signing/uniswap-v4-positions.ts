@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { Decimal } from 'decimal.js'
 import { getAddress, parseAbi } from 'viem'
 import type { Address, Hex } from 'viem'
 import type { Optional } from '@perawallet/wallet-core-shared'
@@ -20,15 +19,17 @@ import { readFunction } from './read-function'
 import {
     isV4Caller,
     isV4Native,
+    poolKeyOf,
     readV4Actions,
     type V4Action,
     type V4PoolKey,
 } from './uniswap-v4'
+import { toDecimal } from './to-decimal'
 
 type Call = { from: Address; to: Address; data: Hex; value: bigint }
 
 const POOL_KEY_TUPLE =
-    '(address currency0, address currency1, uint24 fee, int24 tickSpacing, address hooks)'
+    '(address currency0, address currency1, uint24 feeTier, int24 tickSpacing, address hooks)'
 const PERMIT_DETAILS =
     '(address token, uint160 amount, uint48 expiration, uint48 nonce)'
 
@@ -85,7 +86,7 @@ const planOf = (call: Call): Optional<PositionPlan> => {
     return (
         actions && {
             actions,
-            initialized: pools[0] && (pools[0].args[0] as V4PoolKey),
+            initialized: pools[0] && poolKeyOf(pools[0].args[0]),
         }
     )
 }
@@ -127,7 +128,7 @@ const isSettlementForSigner = (action: V4Action, call: Call): boolean => {
 const isSameKey = (a: V4PoolKey, b: V4PoolKey): boolean =>
     areEvmAddressesEqual(a.currency0, b.currency0) &&
     areEvmAddressesEqual(a.currency1, b.currency1) &&
-    a.fee === b.fee &&
+    a.feeTier === b.feeTier &&
     a.tickSpacing === b.tickSpacing &&
     areEvmAddressesEqual(a.hooks, b.hooks)
 
@@ -135,8 +136,6 @@ const assetOf = (currency: Address): EvmActionAsset =>
     isV4Native(currency)
         ? { kind: 'native' }
         : { kind: 'token', contract: getAddress(currency) }
-
-const toDecimal = (value: bigint): Decimal => new Decimal(value.toString())
 
 const readAdd = (
     step: Extract<PositionStep, { kind: 'mint' | 'increase' }>,

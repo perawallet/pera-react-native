@@ -218,6 +218,52 @@ describe('decodeUniversalRouterSwap, V4 swaps', () => {
         })
     })
 
+    // Routers before 2.1.2 let an exact-out swap succeed with only part of its amount.
+    it.each([
+        [
+            'paid straight to the signer',
+            () => [
+                v4Swap(
+                    swapExactOutSingle(
+                        USDC_WETH,
+                        true,
+                        ETH_OUT_MIN,
+                        USDC_IN,
+                        'with-hop-price',
+                    ),
+                    settleAll(USDC, USDC_IN),
+                    takeAll(WETH, ETH_OUT_MIN / 2n),
+                ),
+            ],
+        ],
+        [
+            'swept from the router',
+            () => [
+                v4Swap(
+                    swapExactOutSingle(
+                        USDC_WETH,
+                        true,
+                        ETH_OUT_MIN,
+                        USDC_IN,
+                        'with-hop-price',
+                    ),
+                    settleAll(USDC, USDC_IN),
+                    take(WETH, ROUTER_SELF, 0n),
+                ),
+                routerSweep(WETH, MSG_SENDER, ETH_OUT_MIN / 2n),
+            ],
+        ],
+    ] as const)(
+        'reads an exact-out swap %s as at least its own minimum when that is below the amount out',
+        (_name, build) => {
+            expect(decode(build())?.output).toEqual({
+                asset: { kind: 'token', contract: WETH },
+                amount: dec(ETH_OUT_MIN / 2n),
+                bound: 'at-least',
+            })
+        },
+    )
+
     it('reads the ends of a multi-hop path in both directions', () => {
         const exactIn = decode([
             v4Swap(

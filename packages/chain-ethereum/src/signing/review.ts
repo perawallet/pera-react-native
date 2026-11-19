@@ -85,6 +85,7 @@ import {
     type EthereumPricedView,
     type EthereumTransactionView,
 } from './transaction-view'
+import { toDecimal } from './to-decimal'
 
 const CONTRACT_CALL_TITLE_KEY = i18nKey('transactions.list_item.contract_call')
 
@@ -225,8 +226,6 @@ type Call = {
     /** A transaction already on chain: it carries what it cost, not what a signature commits to. */
     mined?: { feePaid?: Decimal }
 }
-
-const toDecimal = (value: bigint): Decimal => new Decimal(value.toString())
 
 // The fee shown is the most the signature authorises, so review needs a gas
 // limit and a max fee, as signing does.

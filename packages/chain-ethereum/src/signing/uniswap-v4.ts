@@ -10,17 +10,11 @@
  limitations under the License
  */
 
-import {
-    decodeAbiParameters,
-    encodeAbiParameters,
-    getAddress,
-    hexToBytes,
-    parseAbiParameters,
-    zeroAddress,
-} from 'viem'
+import { getAddress, hexToBytes, parseAbiParameters, zeroAddress } from 'viem'
 import type { AbiParameter, Address, Hex } from 'viem'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { areEvmAddressesEqual } from '../accounts/address-codec'
+import { decodeParametersExactly } from './read-function'
 
 // Recipient aliases V4 resolves itself: the caller that unlocked, and the contract.
 export const V4_MSG_SENDER: Address =
@@ -55,7 +49,7 @@ const CLOSE_CURRENCY = 0x12
 const SWEEP = 0x14
 
 const POOL_KEY =
-    '(address currency0, address currency1, uint24 fee, int24 tickSpacing, address hooks) poolKey'
+    '(address currency0, address currency1, uint24 feeTier, int24 tickSpacing, address hooks) poolKey'
 const PATH_KEY =
     '(address intermediateCurrency, uint24 fee, int24 tickSpacing, address hooks, bytes hookData)[] path'
 
@@ -114,7 +108,8 @@ const BURN_INPUT = parseAbiParameters(
 export type V4PoolKey = {
     currency0: Address
     currency1: Address
-    fee: number
+    /** In hundredths of a bip, as the pool key carries it. */
+    feeTier: number
     tickSpacing: number
     hooks: Address
 }
@@ -166,29 +161,14 @@ export type V4Action =
     | { kind: 'decrease'; tokenId: bigint; liquidity: bigint }
     | { kind: 'burn'; tokenId: bigint }
 
-const decodeExactly = (
-    parameters: readonly AbiParameter[],
-    input: Hex,
-): Optional<readonly unknown[]> => {
-    try {
-        const values = decodeAbiParameters(parameters, input)
-        const encoded = encodeAbiParameters(parameters, values)
-        return encoded.toLowerCase() === input.toLowerCase()
-            ? values
-            : undefined
-    } catch {
-        return undefined
-    }
-}
-
 const addressOf = (value: unknown): Address => getAddress(value as Address)
 
-const poolKeyOf = (value: unknown): V4PoolKey => {
+export const poolKeyOf = (value: unknown): V4PoolKey => {
     const key = value as V4PoolKey
     return {
         currency0: getAddress(key.currency0),
         currency1: getAddress(key.currency1),
-        fee: key.fee,
+        feeTier: key.feeTier,
         tickSpacing: key.tickSpacing,
         hooks: getAddress(key.hooks),
     }
@@ -211,7 +191,7 @@ const swapAction = (
     const isSingle =
         type === SWAP_EXACT_IN_SINGLE || type === SWAP_EXACT_OUT_SINGLE
     const isExactIn = type === SWAP_EXACT_IN_SINGLE || type === SWAP_EXACT_IN
-    const values = decodeExactly(
+    const values = decodeParametersExactly(
         (isSingle ? SINGLE_SWAP_INPUTS : PATH_SWAP_INPUTS)[layout],
         input,
     )
@@ -260,7 +240,10 @@ const actionOf = (
             return layout && swapAction(type, input, layout)
         }
         case SETTLE: {
-            const values = decodeExactly(CURRENCY_AMOUNT_PAYER_INPUT, input)
+            const values = decodeParametersExactly(
+                CURRENCY_AMOUNT_PAYER_INPUT,
+                input,
+            )
             return (
                 values && {
                     kind: 'settle',
@@ -272,7 +255,7 @@ const actionOf = (
         }
         case SETTLE_ALL:
         case TAKE_ALL: {
-            const values = decodeExactly(CURRENCY_AMOUNT_INPUT, input)
+            const values = decodeParametersExactly(CURRENCY_AMOUNT_INPUT, input)
             if (!values) return undefined
             const currency = addressOf(values[0])
             const amount = values[1] as bigint
@@ -281,7 +264,7 @@ const actionOf = (
                 : { kind: 'take-all', currency, minAmount: amount }
         }
         case SETTLE_PAIR: {
-            const values = decodeExactly(CURRENCY_PAIR_INPUT, input)
+            const values = decodeParametersExactly(CURRENCY_PAIR_INPUT, input)
             return (
                 values && {
                     kind: 'settle-pair',
@@ -292,7 +275,10 @@ const actionOf = (
         }
         case TAKE:
         case TAKE_PORTION: {
-            const values = decodeExactly(CURRENCY_RECIPIENT_AMOUNT_INPUT, input)
+            const values = decodeParametersExactly(
+                CURRENCY_RECIPIENT_AMOUNT_INPUT,
+                input,
+            )
             if (!values) return undefined
             const currency = addressOf(values[0])
             const recipient = addressOf(values[1])
@@ -309,7 +295,10 @@ const actionOf = (
                 : undefined
         }
         case TAKE_PAIR: {
-            const values = decodeExactly(CURRENCY_PAIR_RECIPIENT_INPUT, input)
+            const values = decodeParametersExactly(
+                CURRENCY_PAIR_RECIPIENT_INPUT,
+                input,
+            )
             return (
                 values && {
                     kind: 'take-pair',
@@ -320,7 +309,7 @@ const actionOf = (
             )
         }
         case CLOSE_CURRENCY: {
-            const values = decodeExactly(CURRENCY_INPUT, input)
+            const values = decodeParametersExactly(CURRENCY_INPUT, input)
             return (
                 values && {
                     kind: 'close-currency',
@@ -329,7 +318,10 @@ const actionOf = (
             )
         }
         case SWEEP: {
-            const values = decodeExactly(CURRENCY_RECIPIENT_INPUT, input)
+            const values = decodeParametersExactly(
+                CURRENCY_RECIPIENT_INPUT,
+                input,
+            )
             return (
                 values && {
                     kind: 'sweep',
@@ -340,7 +332,10 @@ const actionOf = (
         }
         case INCREASE_LIQUIDITY:
         case DECREASE_LIQUIDITY: {
-            const values = decodeExactly(MODIFY_LIQUIDITY_INPUT, input)
+            const values = decodeParametersExactly(
+                MODIFY_LIQUIDITY_INPUT,
+                input,
+            )
             if (!values) return undefined
             const tokenId = values[0] as bigint
             const liquidity = values[1] as bigint
@@ -349,7 +344,7 @@ const actionOf = (
                 : { kind: 'decrease', tokenId, liquidity }
         }
         case MINT_POSITION: {
-            const values = decodeExactly(MINT_INPUT, input)
+            const values = decodeParametersExactly(MINT_INPUT, input)
             return (
                 values && {
                     kind: 'mint',
@@ -361,7 +356,7 @@ const actionOf = (
             )
         }
         case BURN_POSITION: {
-            const values = decodeExactly(BURN_INPUT, input)
+            const values = decodeParametersExactly(BURN_INPUT, input)
             return values && { kind: 'burn', tokenId: values[0] as bigint }
         }
         default: {
@@ -379,7 +374,7 @@ export const readV4Actions = (
     plan: Hex,
     layout: Optional<V4SwapLayout>,
 ): Optional<V4Action[]> => {
-    const values = decodeExactly(ACTIONS_INPUT, plan)
+    const values = decodeParametersExactly(ACTIONS_INPUT, plan)
     if (!values) return undefined
     const types = hexToBytes(values[0] as Hex)
     const params = values[1] as readonly Hex[]
