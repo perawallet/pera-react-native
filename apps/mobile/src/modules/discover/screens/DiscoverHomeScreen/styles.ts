@@ -11,7 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { MAX_FONT_SIZE_MULTIPLIER } from '@components/core/constants'
+import { MAX_FONT_SIZE_MULTIPLIER } from '@components/core'
 import { scaleLineHeight } from '@theme/scaling'
 import { getTypography, type TypographyVariant } from '@theme/typography'
 import { isAndroid, isIOS } from '@utils/platform'
