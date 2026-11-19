@@ -21,7 +21,21 @@ import {
 import { deviceChainAdapters } from '../../registrations/chain-adapter'
 import type { DeviceRegistration } from '../../models'
 
-const mocks = vi.hoisted(() => ({ isV4: true }))
+const mocks = vi.hoisted(() => ({
+    isV4: true,
+    refusedScopes: new Set<string>(),
+}))
+
+vi.mock('@perawallet/wallet-core-config', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    isPeraScopeRefused: ({
+        chainId,
+        networkId,
+    }: {
+        chainId: string
+        networkId: string
+    }) => mocks.refusedScopes.has(`${chainId}/${networkId}`),
+}))
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
     ...(await importOriginal<object>()),
@@ -55,6 +69,7 @@ describe('device endpoints', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.isV4 = true
+        mocks.refusedScopes.clear()
         mockedQueryClient.mockResolvedValue({
             data: { id: 'new-id' },
             status: 200,
@@ -169,6 +184,18 @@ describe('device endpoints', () => {
                 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k',
                 'eip155:1',
             ])
+        })
+
+        it('leaves out the accounts and mute of a chain whose network the deployment refuses', async () => {
+            registerEthereum(true)
+            mocks.refusedScopes.add('ethereum/testnet')
+
+            await registerDevice('developer', withEthereum)
+
+            expect(sentData().accounts.map(account => account.chain)).toEqual([
+                'algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDe',
+            ])
+            expect(sentData().muted_chains).toEqual([])
         })
 
         it('drops a mute for a chain without a device adapter', async () => {

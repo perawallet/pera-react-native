@@ -24,6 +24,7 @@ import type { DeviceAccountRegistration } from '../../models'
 // isn't the current one (see the JSDoc on that function in useDevice.ts).
 const mockedRegisterDeviceMutation = vi.fn()
 const mockedRegisterDeviceEndpoint = vi.fn()
+const mockedIsChainServed = vi.fn((_chainId: string) => true)
 
 vi.mock('../useRegisterDeviceMutation', () => ({
     useRegisterDeviceMutation: () => ({
@@ -34,6 +35,11 @@ vi.mock('../useRegisterDeviceMutation', () => ({
 vi.mock('../endpoints', () => ({
     registerDevice: (...args: unknown[]) =>
         mockedRegisterDeviceEndpoint(...args),
+}))
+
+vi.mock('../../registrations/registrationChain', () => ({
+    registrationChainOf: (_chains: unknown, chainId: string) =>
+        mockedIsChainServed(chainId) ? `test:${chainId}` : null,
 }))
 
 //'s orphaning telemetry: replacing a migrated device id loses its
@@ -140,6 +146,7 @@ describe('services/device/hooks', () => {
         vi.clearAllMocks()
         mockedRegisterDeviceMutation.mockResolvedValue({ id: 'new-device-id' })
         mockedRegisterDeviceEndpoint.mockResolvedValue({ id: 'cleared' })
+        mockedIsChainServed.mockImplementation(() => true)
     })
 
     test('useFcmToken exposes fcmToken and setter', async () => {
@@ -860,6 +867,30 @@ describe('services/device/hooks', () => {
             expect(useDeviceStore.getState().deviceIDs.size).toBe(1)
         },
     )
+
+    test('leaves a chain the deployment does not serve out of the first request', async () => {
+        vi.resetModules()
+
+        const { useDeviceStore } = await import('../../store')
+        const useDevice = await importUseDevice()
+
+        useDeviceStore.getState().resetState()
+        await seedDeviceId('live', 'DEV-1')
+        mockedIsChainServed.mockImplementation(
+            chainId => chainId !== 'ethereum',
+        )
+
+        const { result } = renderHook(() => useDevice(), {
+            wrapper: createWrapper(),
+        })
+
+        await act(async () => {
+            await result.current.registerDevice(multiChainAccounts)
+        })
+
+        expect(mockedRegisterDeviceMutation).toHaveBeenCalledTimes(1)
+        expect(chainsSent(0)).toEqual(['algorand'])
+    })
 
     test('leaves a refused chain out of later registrations on that deployment', async () => {
         vi.resetModules()

@@ -37,6 +37,7 @@ import {
 } from '../store'
 import { logEvent } from '../analytics'
 import { registerDevice as registerDeviceEndpoint } from './endpoints'
+import { registrationChainOf } from '../registrations/registrationChain'
 import { withoutNewestChain } from '../registrations/withoutNewestChain'
 import type {
     DeviceAccountRegistration,
@@ -239,8 +240,16 @@ export const useDevice = () => {
             const refused =
                 refusedChainsByDeployment.get(targetDeployment) ??
                 new Set<ChainId>()
+            // Filtered here as well as at serialization so the fallback below
+            // never spends a request dropping a chain that wasn't being sent.
             let accounts = payload.accounts.filter(
-                account => !refused.has(account.chainId),
+                account =>
+                    !refused.has(account.chainId) &&
+                    registrationChainOf(
+                        getProvider().chains,
+                        account.chainId,
+                        targetDeployment,
+                    ) !== null,
             )
             let lastDropped: ReadonlySet<ChainId> = new Set()
             let emptyCreateRefusal: unknown
