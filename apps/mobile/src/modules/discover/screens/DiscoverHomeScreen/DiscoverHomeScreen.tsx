@@ -11,6 +11,7 @@
  */
 
 import { Fragment } from 'react'
+import { useWindowDimensions } from 'react-native'
 import NewsIcon from '@assets/icons/discover/news.svg'
 import TopDappsIcon from '@assets/icons/discover/top-dapps.svg'
 import {
@@ -51,7 +52,8 @@ const DISCOVER_HEADER_EVENTS = {
 } as const
 
 export const DiscoverHomeScreen = () => {
-    const styles = useStyles()
+    const { fontScale } = useWindowDimensions()
+    const styles = useStyles(fontScale)
     const { t } = useLanguage()
     const home = useDiscoverHomeScreen()
     // The header's account picker opens the portfolio drawer, as on Home.

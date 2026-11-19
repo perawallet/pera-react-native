@@ -11,20 +11,38 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { getTypography } from '@theme/typography'
+import { MAX_FONT_SIZE_MULTIPLIER } from '@components/core/constants'
+import { scaleLineHeight } from '@theme/scaling'
+import { getTypography, type TypographyVariant } from '@theme/typography'
+import { isAndroid, isIOS } from '@utils/platform'
 import {
     DISCOVER_ROW_LEAD_SIZE,
     TOP_DAPPS_COUNT,
 } from '../../utils/discoverLayout'
 
-export const useStyles = makeStyles(theme => {
+export const useStyles = makeStyles((theme, fontScale: number) => {
+    const android = isAndroid()
+    const requestedScale = (android || isIOS()) && fontScale > 0 ? fontScale : 1
+    const nativeMultiplier = android
+        ? requestedScale
+        : Math.min(requestedScale, MAX_FONT_SIZE_MULTIPLIER)
+    const renderedLineHeight = (variant: TypographyVariant) => {
+        const { lineHeight, fontSize } = getTypography(theme, variant)
+        const styleHeight = scaleLineHeight(
+            lineHeight,
+            fontSize,
+            requestedScale,
+            MAX_FONT_SIZE_MULTIPLIER,
+        )
+        return (styleHeight ?? 0) * nativeMultiplier
+    }
     // lanekeep-ignore-next-line pera/no-numeric-sizes reason: DappRow has this vertical padding on both sides
     const rowPadding = 2 * theme.spacing.sm
     const rowHeight =
         Math.max(
             DISCOVER_ROW_LEAD_SIZE,
-            (getTypography(theme, 'bodyLarge').lineHeight ?? 0) +
-                (getTypography(theme, 'footnoteMedium').lineHeight ?? 0),
+            renderedLineHeight('bodyLarge') +
+                renderedLineHeight('footnoteMedium'),
         ) + rowPadding
     // lanekeep-ignore-next-line pera/no-numeric-sizes reason: RowDivider's line and both vertical margins occupy the preview
     const dividerHeight = theme.borders.sm + 2 * theme.spacing.xxs
