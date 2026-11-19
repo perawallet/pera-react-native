@@ -16,6 +16,7 @@ import { useDiscoverProjectsQuery } from '@perawallet/wallet-core-projects'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { DiscoverDapp } from '../types'
 import { discoverPlatform } from '../utils/discoverPlatform'
+import { TOP_DAPPS_COUNT } from '../utils/discoverLayout'
 import {
     toDiscoverDapp,
     uniqueDappsByUrl,
@@ -23,10 +24,9 @@ import {
 } from '../utils/toDiscoverDapp'
 import { useDiscoverCaip2s } from './useDiscoverCaip2s'
 
-const TOP_DAPPS_COUNT = 4
-
 export type UseTopDappsResult = {
     dapps: DiscoverDapp[]
+    count: number
     verifiedUrls: ReadonlySet<string>
     isLoading: boolean
     isError: boolean
@@ -40,15 +40,19 @@ export const useTopDapps = (chainId: Nullable<ChainId>): UseTopDappsResult => {
         chains: caip2s,
         isEnabled: caip2s.length > 0,
     })
-    const dapps = useMemo(
+    const listedDapps = useMemo(
         () =>
             uniqueDappsByUrl(
                 (query.data ?? []).flatMap(project => {
                     const dapp = toDiscoverDapp(project)
                     return dapp === null ? [] : [dapp]
                 }),
-            ).slice(0, TOP_DAPPS_COUNT),
+            ),
         [query.data],
+    )
+    const dapps = useMemo(
+        () => listedDapps.slice(0, TOP_DAPPS_COUNT),
+        [listedDapps],
     )
     const verifiedUrls = useMemo(
         () => verifiedDappUrls(query.data ?? []),
@@ -56,6 +60,7 @@ export const useTopDapps = (chainId: Nullable<ChainId>): UseTopDappsResult => {
     )
     return {
         dapps,
+        count: listedDapps.length,
         verifiedUrls,
         isLoading: query.isLoading,
         isError: query.isError,

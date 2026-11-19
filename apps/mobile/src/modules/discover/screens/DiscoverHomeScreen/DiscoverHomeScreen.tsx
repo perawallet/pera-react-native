@@ -19,6 +19,7 @@ import {
     PWRefreshControl,
     PWScreen,
     PWScrollView,
+    PWSkeleton,
     PWText,
     PWView,
 } from '@components/core'
@@ -27,13 +28,13 @@ import { EmptyView } from '@components/EmptyView'
 import { FilterSelection } from '@components/FilterSelection'
 import { SearchInputTrigger } from '@components/SearchInputTrigger'
 import { useLanguage } from '@hooks/useLanguage'
-import { AssetRowSkeleton } from '@modules/assets'
 import { DappRow } from '../../components/DappRow'
 import { DiscoverSectionHeader } from '../../components/DiscoverSectionHeader'
 import { FavoritesSection } from '../../components/FavoritesSection'
 import { LegacyFavoritesImporter } from '../../components/LegacyFavoritesImporter'
 import { RowDivider } from '../../components/RowDivider'
 import { NewsCard } from '../../components/NewsCard'
+import { TOP_DAPPS_COUNT } from '../../utils/discoverLayout'
 import { dappSubtitle } from '../../utils/dappSubtitle'
 import { useAccountDrawerPickerKind } from '@modules/accounts'
 import { AccountHeaderToolbar } from '@modules/accounts/shell'
@@ -42,8 +43,6 @@ import {
     useDiscoverHomeScreen,
     type DiscoverNewsCardItem,
 } from './useDiscoverHomeScreen'
-
-const LOADING_ROW_COUNT = 4
 
 // Discover's header taps stay out of the Home tab's metrics.
 const DISCOVER_HEADER_EVENTS = {
@@ -63,7 +62,15 @@ export const DiscoverHomeScreen = () => {
         if (topDapps.isLoading) {
             return (
                 <PWView testID='discover_home_dapps_loading'>
-                    <AssetRowSkeleton count={LOADING_ROW_COUNT} />
+                    {Array.from({ length: TOP_DAPPS_COUNT }, (_, index) => (
+                        <Fragment key={index}>
+                            {index > 0 ? <RowDivider /> : null}
+                            <PWView style={styles.dappLoadingRow}>
+                                <PWSkeleton style={styles.dappLoadingLogo} />
+                                <PWSkeleton style={styles.dappLoadingName} />
+                            </PWView>
+                        </Fragment>
+                    ))}
                 </PWView>
             )
         }
@@ -165,7 +172,6 @@ export const DiscoverHomeScreen = () => {
                     <DiscoverSectionHeader
                         title={t('discover.home.explore_dapps')}
                         icon={<TopDappsIcon />}
-                        onPress={home.openDappDirectory}
                         testID='discover_home_top_dapps_header'
                     />
                     {home.chainOptions.length > 0 ? (
@@ -175,12 +181,33 @@ export const DiscoverHomeScreen = () => {
                                 options={home.chainOptions}
                                 selectedValue={home.selectedChainId}
                                 onSelect={home.selectChain}
+                                emphasizeSelection
+                                showsHorizontalScrollIndicator
                                 contentContainerStyle={styles.bleedContent}
                                 testID='discover_home_chain_filter'
                             />
                         </PWView>
                     ) : null}
-                    {renderTopDapps()}
+                    <PWView style={styles.dappPreview}>
+                        {renderTopDapps()}
+                    </PWView>
+                    {home.selectedChainId && (
+                        <PWButton
+                            variant='secondary'
+                            title={
+                                !topDapps.isLoading && !topDapps.isError
+                                    ? t('discover.home.see_chain_dapps_count', {
+                                          count: topDapps.count,
+                                          chain: home.selectedChainName,
+                                      })
+                                    : t('discover.home.see_chain_dapps', {
+                                          chain: home.selectedChainName,
+                                      })
+                            }
+                            onPress={home.openDappDirectory}
+                            testID='discover_home_top_dapps_directory'
+                        />
+                    )}
                 </PWView>
 
                 {news.items.length > 0 ? (

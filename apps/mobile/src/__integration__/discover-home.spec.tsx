@@ -325,12 +325,12 @@ describe('Flow: Discover home', () => {
         await flush()
     })
 
-    it('Given the Explore dApps header is tapped, then the native directory opens', async () => {
+    it('Given the chain directory button is tapped, then the native directory opens', async () => {
         useHandlers()
         renderHome()
         await screen.findByTestId(rowOf('Tinyman'))
 
-        fireEvent.click(screen.getByText('discover.home.explore_dapps'))
+        fireEvent.click(screen.getByTestId('discover_home_top_dapps_directory'))
 
         expect(await screen.findByTestId('dapps_screen')).toBeTruthy()
         expect(screen.queryByTestId('detail_screen')).toBeNull()
