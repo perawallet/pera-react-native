@@ -218,7 +218,7 @@ describe('useSwapExecution', () => {
             const outcome = await run(async () => true, result.current)
 
             expect(mockExecuteSwap).toHaveBeenCalledOnce()
-            expect(outcome).toEqual({ kind: 'success' })
+            expect(outcome).toEqual({ kind: 'success', isPaidOutLater: false })
         })
 
         it('creates no order when the user declines', async () => {
@@ -312,7 +312,7 @@ describe('useSwapExecution', () => {
 
         const outcome = await executeOnce(result.current.execute)
 
-        expect(outcome).toEqual({ kind: 'success' })
+        expect(outcome).toEqual({ kind: 'success', isPaidOutLater: false })
         expect(result.current.status).toBe('success')
         expect(result.current.txIds).toEqual(['group-1-id', 'group-2-id'])
     })
@@ -911,7 +911,7 @@ describe('useSwapExecution', () => {
             expect(mockExecuteSwap).toHaveBeenCalledWith(
                 expect.objectContaining({ quote: fresh }),
             )
-            expect(outcome).toEqual({ kind: 'success' })
+            expect(outcome).toEqual({ kind: 'success', isPaidOutLater: false })
         })
 
         it('does not re-quote a quote with life left', async () => {

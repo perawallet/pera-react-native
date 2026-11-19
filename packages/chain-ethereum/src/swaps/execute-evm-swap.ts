@@ -527,7 +527,7 @@ export const executeEvmSwap = async ({
         chain,
         sender,
         plan.swap,
-        swapSummary(sender, plan.swap.to, {
+        swapSummary(sender, plan.counterparty, {
             assetRef: {
                 chainId: sourceAsset.chainId,
                 assetId: sourceAsset.assetId,
@@ -549,7 +549,7 @@ export const executeEvmSwap = async ({
     }
 
     let swapTxId: string
-    onOrderSubmitting(orderId)
+    onOrderSubmitting(orderId, { isPaidOutLater: plan.isPaidOutLater })
     try {
         onProgress('submitting')
         ;[swapTxId] = await submit(
@@ -604,5 +604,6 @@ export const executeEvmSwap = async ({
         kind: 'success',
         orderId,
         txIds: reported.map(({ txHash }) => txHash),
+        isPaidOutLater: plan.isPaidOutLater,
     }
 }

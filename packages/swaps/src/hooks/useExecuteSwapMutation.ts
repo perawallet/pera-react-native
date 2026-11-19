@@ -121,10 +121,15 @@ export const useExecuteSwapMutation = (): UseExecuteSwapMutationResult => {
                     reportOrder: ({ orderId, report }) =>
                         reportOrderOnScope({ orderId, report, scope }),
                     registerHandoff,
-                    // Only a cross-chain order outlives the broadcast: its
-                    // payout lands later, on another chain.
-                    onOrderSubmitting: orderId => {
-                        if (variables.quote.routeKind !== 'cross-chain') return
+                    // Only an order paid out after the broadcast outlives it: a
+                    // cross-chain one, or a deposit the provider swaps itself.
+                    onOrderSubmitting: (orderId, options) => {
+                        if (
+                            variables.quote.routeKind !== 'cross-chain' &&
+                            !options?.isPaidOutLater
+                        ) {
+                            return
+                        }
                         trackOrder(
                             toTrackedOrder(
                                 variables.quote,

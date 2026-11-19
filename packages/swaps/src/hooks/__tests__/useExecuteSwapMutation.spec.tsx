@@ -420,4 +420,30 @@ describe('useExecuteSwapMutation', () => {
 
         expect(mockTrackOrder).not.toHaveBeenCalled()
     })
+
+    test('tracks a single-chain deposit the provider pays out later', async () => {
+        vi.mocked(executeSwap).mockImplementation(async (_params, context) => {
+            context.onOrderSubmitting('O', { isPaidOutLater: true })
+            return {
+                kind: 'success',
+                orderId: 'O',
+                txIds: ['T'],
+                isPaidOutLater: true,
+            }
+        })
+        const { result } = renderHook(() => useExecuteSwapMutation(), {
+            wrapper,
+        })
+
+        await act(async () => {
+            await result.current.mutateAsync({
+                ...variables,
+                quote: makeSwapQuote(),
+            })
+        })
+
+        expect(mockTrackOrder).toHaveBeenCalledWith(
+            expect.objectContaining({ orderId: 'O', status: 'pending' }),
+        )
+    })
 })

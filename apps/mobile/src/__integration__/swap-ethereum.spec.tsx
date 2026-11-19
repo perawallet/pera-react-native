@@ -38,7 +38,7 @@ const panelAccount = vi.hoisted(() => ({
 }))
 const ROUTER = '0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45'
 const NODE_BALANCE = '0x8ac7230489e80000'
-const SWAP_DATA = '0x5ae401dc'
+const SWAP_DATA = '0x3593564c'
 const FORM_TIMEOUT = { timeout: 8000 }
 const TOKEN_UNITS = 12_500_000n
 const WEI = 10n ** 17n
@@ -95,6 +95,7 @@ const { getAccountBalancesQueryKey } =
 const { DeeplinkType } = await import('@perawallet/wallet-core-deeplinks')
 const {
     encodeErc20Approve,
+    encodeErc20Transfer,
     encodeUnsignedEvmCall,
     evmRpcHandlers,
     evmTransactionReceipt,
@@ -320,6 +321,11 @@ const APPROVE_TX = encodeUnsignedEvmCall(
     encodeErc20Approve(ROUTER, TOKEN_UNITS),
 )
 const TOKEN_SWAP_TX = encodeUnsignedEvmCall(ROUTER, SWAP_DATA)
+const XO_DEPOSIT_ADDRESS = '0x7f3a1c2b9d8e4f5a6b7c8d9e0f1a2b3c4d5e6f70'
+const TOKEN_DEPOSIT_TX = encodeUnsignedEvmCall(
+    TOKEN,
+    encodeErc20Transfer(XO_DEPOSIT_ADDRESS, TOKEN_UNITS),
+)
 const ETHER_SWAP_TX = encodeUnsignedEvmCall(ROUTER, SWAP_DATA, WEI)
 
 const lowerCased = (address?: Nullable<string>) => address?.toLowerCase()
@@ -494,7 +500,7 @@ describe('Flow: Swap from an Ethereum account', () => {
 
         const outcome = await api.execute(tokenToEtherQuote())
 
-        expect(outcome).toEqual({ kind: 'success' })
+        expect(outcome).toEqual({ kind: 'success', isPaidOutLater: false })
         expect(sent.map(({ to }) => lowerCased(to))).toEqual(
             [TOKEN, ROUTER].map(lowerCased),
         )
@@ -957,10 +963,40 @@ describe('Flow: Swap from an Ethereum account', () => {
 
         const outcome = await api.execute(tokenToEtherQuote())
 
-        expect(outcome).toEqual({ kind: 'success' })
+        expect(outcome).toEqual({ kind: 'success', isPaidOutLater: false })
         expect(sent.map(({ to }) => lowerCased(to))).toEqual([
             lowerCased(ROUTER),
         ])
+    })
+
+    it('Given XO answers a token swap with one transfer to its deposit address, when the swap runs, then only that transfer is sent and the order is tracked until payout', async () => {
+        selectSender(ETHEREUM_SENDER)
+        await seedSenderEther('10000000000000000000')
+        const api = await startHost()
+        const sent = fakeNode()
+        mockEthereumSwapOrder([TOKEN_DEPOSIT_TX])
+        const { reports } = spyOnSwapSubmissionAndReports()
+
+        const outcome = await api.execute(tokenToEtherQuote())
+
+        expect(outcome).toEqual({ kind: 'success', isPaidOutLater: true })
+        expect(sent.map(({ to }) => lowerCased(to))).toEqual([
+            lowerCased(TOKEN),
+        ])
+        await waitFor(() => expect(reports).toHaveLength(1))
+        expect(reports[0]).toEqual({
+            status: 'sent',
+            transactions: [
+                { chain: 'eip155:1', tx_hash: sent[0].hash, purpose: 'swap' },
+            ],
+        })
+        expect(useSwapTrackingStore.getState().orders[SWAP_ORDER_ID]).toEqual(
+            expect.objectContaining({
+                sourceScope: ETH_SCOPE,
+                destinationScope: ETH_SCOPE,
+                status: 'pending',
+            }),
+        )
     })
 
     it('Given an order whose swap calls the token being swapped, when the swap runs, then nothing is signed and the order is cancelled', async () => {
@@ -997,7 +1033,7 @@ describe('Flow: Swap from an Ethereum account', () => {
         const algoAddress = account.chains.algorand?.address ?? ''
         const outcome = await api.execute(etherToAlgoQuote(algoAddress))
 
-        expect(outcome).toEqual({ kind: 'success' })
+        expect(outcome).toEqual({ kind: 'success', isPaidOutLater: false })
         expect(sent[0].value).toBe(WEI)
         expect(useSwapTrackingStore.getState().orders[SWAP_ORDER_ID]).toEqual(
             expect.objectContaining({

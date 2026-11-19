@@ -25,6 +25,7 @@ import {
     encodeFunctionData,
     encodeFunctionResult,
     erc20Abi,
+    getAddress,
     numberToHex,
     serializeTransaction,
 } from 'viem'
@@ -114,16 +115,16 @@ const APPROVE_TX = encodeCall(
         args: [ROUTER, AMOUNT],
     }),
 )
-const SWAP_TX = encodeCall(ROUTER, '0x5ae401dc')
+const SWAP_TX = encodeCall(ROUTER, '0x3593564c')
 const STRANGER = '0x00000000000000000000000000000000000000aa' as Address
-const LONE_TRANSFER_TX = encodeCall(
-    TOKEN,
-    encodeFunctionData({
-        abi: erc20Abi,
-        functionName: 'transfer',
-        args: [STRANGER, AMOUNT],
-    }),
-)
+const TRANSFER_DATA = encodeFunctionData({
+    abi: erc20Abi,
+    functionName: 'transfer',
+    args: [STRANGER, AMOUNT],
+})
+const DEPOSIT_TX = encodeCall(TOKEN, TRANSFER_DATA)
+// A transfer called on another contract: the denylist refuses it.
+const REFUSED_TX = encodeCall(ROUTER, TRANSFER_DATA)
 
 const orderOf = (transactions: string[]): SwapOrder => ({
     orderId: 'order-1',
@@ -337,7 +338,7 @@ describe('executeEvmSwap', () => {
 
     it('signs nothing the validator refuses, and cancels the order', async () => {
         fakeNode({ balance: RICH })
-        const context = contextOf(orderOf([LONE_TRANSFER_TX]))
+        const context = contextOf(orderOf([REFUSED_TX]))
 
         const result = await run(context, inputOf())
 
@@ -690,7 +691,30 @@ describe('executeEvmSwap', () => {
 
         await run(context)
 
-        expect(context.onOrderSubmitting).toHaveBeenCalledWith('order-1')
+        expect(context.onOrderSubmitting).toHaveBeenCalledWith('order-1', {
+            isPaidOutLater: false,
+        })
         expect(context.onOrderRejected).not.toHaveBeenCalled()
+    })
+
+    it('sends a token deposit alone, to the deposit address, paid out later', async () => {
+        const node = fakeNode({ balance: RICH })
+        const context = contextOf(orderOf([DEPOSIT_TX]))
+
+        const result = await run(context)
+
+        const [depositHash] = [...node.sent.keys()]
+        expect(result).toEqual({
+            kind: 'success',
+            orderId: 'order-1',
+            txIds: [depositHash],
+            isPaidOutLater: true,
+        })
+        expect(context.signed.map(tx => tx.summary?.counterparty)).toEqual([
+            getAddress(STRANGER),
+        ])
+        expect(context.onOrderSubmitting).toHaveBeenCalledWith('order-1', {
+            isPaidOutLater: true,
+        })
     })
 })

@@ -13,10 +13,13 @@
 import { describe, expect, it } from 'vitest'
 import { Decimal } from 'decimal.js'
 import {
+    concat,
     encodeFunctionData,
     erc20Abi,
     maxUint256,
+    parseAbi,
     toFunctionSelector,
+    zeroAddress,
 } from 'viem'
 import type { Address, Hex } from 'viem'
 import {
@@ -32,7 +35,8 @@ const TOKEN = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
 const OTHER_TOKEN = '0xdAC17F958D2ee523a2206206994597C13D831ec7'
 const ROUTER = '0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45'
 const STRANGER = '0x000000000000000000000000000000000000dEaD'
-const SWAP_DATA = '0x5ae401dc'
+// Universal Router's execute(bytes,bytes[],uint256); the wallet never reads its arguments.
+const SWAP_DATA = '0x3593564c'
 const AMOUNT = 1_000_000n
 
 const scope = evmScopeOf(ETHEREUM)
@@ -54,6 +58,29 @@ const approve = (spender: Address, amount: bigint): Hex =>
         functionName: 'approve',
         args: [spender, amount],
     })
+const transfer = (recipient: Address, amount: bigint): Hex =>
+    encodeFunctionData({
+        abi: erc20Abi,
+        functionName: 'transfer',
+        args: [recipient, amount],
+    })
+
+const MULTICALL_ABI = parseAbi([
+    'function multicall(bytes[] data)',
+    'function multicall(uint256 deadline, bytes[] data)',
+])
+const multicall = (inner: readonly Hex[]): Hex =>
+    encodeFunctionData({
+        abi: MULTICALL_ABI,
+        functionName: 'multicall',
+        args: [[...inner]],
+    })
+const multicallWithDeadline = (inner: readonly Hex[]): Hex =>
+    encodeFunctionData({
+        abi: MULTICALL_ABI,
+        functionName: 'multicall',
+        args: [1n, [...inner]],
+    })
 
 const call = (overrides: Partial<EvmSwapCall> = {}): EvmSwapCall => ({
     chainId: 1,
@@ -64,6 +91,8 @@ const call = (overrides: Partial<EvmSwapCall> = {}): EvmSwapCall => ({
 })
 const approval = (overrides: Partial<EvmSwapCall> = {}): EvmSwapCall =>
     call({ to: TOKEN, data: approve(ROUTER, AMOUNT), ...overrides })
+const deposit = (overrides: Partial<EvmSwapCall> = {}): EvmSwapCall =>
+    call({ to: TOKEN, data: transfer(STRANGER, AMOUNT), ...overrides })
 
 const validate = (
     calls: readonly EvmSwapCall[],
@@ -76,8 +105,8 @@ const validate = (
         chain: ETHEREUM,
     })
 
-const selectorCall = (signature: string): EvmSwapCall =>
-    call({ data: `${toFunctionSelector(signature)}00` })
+const selectorOf = (signature: string): Hex =>
+    `${toFunctionSelector(signature)}00`
 
 describe('validateEvmSwapTransactions', () => {
     it('accepts an approval of this amount followed by the swap', () => {
@@ -86,6 +115,8 @@ describe('validateEvmSwapTransactions', () => {
         expect(validate(calls)).toEqual({
             approval: calls[0],
             swap: calls[1],
+            counterparty: ROUTER,
+            isPaidOutLater: false,
         })
     })
 
@@ -95,13 +126,15 @@ describe('validateEvmSwapTransactions', () => {
         expect(validate([swap], NATIVE_REQUEST)).toEqual({
             approval: null,
             swap,
+            counterparty: ROUTER,
+            isPaidOutLater: false,
         })
     })
 
-    it('accepts a swap to whichever contract the order names', () => {
+    it('accepts a swap to whichever contract and function the order names', () => {
         const calls = [
             approval({ data: approve(STRANGER, AMOUNT) }),
-            call({ to: STRANGER }),
+            call({ to: STRANGER, data: '0x12345678' }),
         ]
 
         expect(validate(calls).swap.to).toBe(STRANGER)
@@ -113,24 +146,73 @@ describe('validateEvmSwapTransactions', () => {
         expect(validate(calls).approval).toBe(calls[0])
     })
 
+    it('accepts a token deposit of exactly the amount, paid out later', () => {
+        const swap = deposit()
+
+        expect(validate([swap])).toEqual({
+            approval: null,
+            swap,
+            counterparty: STRANGER,
+            isPaidOutLater: true,
+        })
+    })
+
+    it('accepts a plain native send as a deposit, paid out later', () => {
+        const swap = call({ to: STRANGER, value: AMOUNT, data: '0x' })
+
+        expect(validate([swap], NATIVE_REQUEST)).toEqual({
+            approval: null,
+            swap,
+            counterparty: STRANGER,
+            isPaidOutLater: true,
+        })
+    })
+
+    it('accepts a multicall whose inner calls are all swaps', () => {
+        const swap = call({
+            data: multicallWithDeadline([SWAP_DATA, multicall([SWAP_DATA])]),
+        })
+
+        expect(validate([approval(), swap]).swap).toBe(swap)
+    })
+
     it.each<[string, readonly EvmSwapCall[], SwapQuoteRequest?]>([
         ['no call at all', []],
         [
-            'a lone transfer on the source token',
+            'a deposit of less than the amount',
+            [deposit({ data: transfer(STRANGER, AMOUNT - 1n) })],
+        ],
+        [
+            'a deposit to the zero address',
+            [deposit({ data: transfer(zeroAddress, AMOUNT) })],
+        ],
+        [
+            'a deposit back to the sender',
+            [deposit({ data: transfer(SENDER, AMOUNT) })],
+        ],
+        ['a deposit with native value', [deposit({ value: 1n })]],
+        [
+            'a deposit with trailing bytes',
+            [deposit({ data: concat([transfer(STRANGER, AMOUNT), '0x00']) })],
+        ],
+        [
+            'a deposit with dirty upper address bytes',
             [
-                call({
-                    to: TOKEN,
-                    data: encodeFunctionData({
-                        abi: erc20Abi,
-                        functionName: 'transfer',
-                        args: [STRANGER, AMOUNT],
-                    }),
+                deposit({
+                    data: `0xa9059cbb${'ff'.repeat(12)}${transfer(STRANGER, AMOUNT).slice(34)}`,
                 }),
             ],
         ],
+        ['a deposit after an approval', [approval(), deposit()]],
+        ['a transfer of another token', [deposit({ to: OTHER_TOKEN })]],
         [
             'more native value than requested',
             [call({ value: AMOUNT + 1n })],
+            NATIVE_REQUEST,
+        ],
+        [
+            'a native deposit of more than the amount',
+            [call({ to: STRANGER, value: AMOUNT + 1n, data: '0x' })],
             NATIVE_REQUEST,
         ],
         ['native value on a token source', [call({ value: 1n })]],
@@ -168,7 +250,47 @@ describe('validateEvmSwapTransactions', () => {
         ],
         ['three calls', [approval(), approval(), call()]],
         ['a call for another chain', [call({ chainId: 8453 })]],
-        ['a swap with no calldata', [call({ data: '0x' })]],
+        ['a token swap with no calldata', [call({ data: '0x' })]],
+        [
+            'a multicall running a transfer',
+            [
+                call({
+                    data: multicall([SWAP_DATA, transfer(STRANGER, AMOUNT)]),
+                }),
+            ],
+            NATIVE_REQUEST,
+        ],
+        [
+            'a nested multicall collecting an LP position',
+            [
+                call({
+                    data: multicallWithDeadline([
+                        multicall([
+                            selectorOf(
+                                'collect((uint256,address,uint128,uint128))',
+                            ),
+                        ]),
+                    ]),
+                }),
+            ],
+            NATIVE_REQUEST,
+        ],
+        [
+            'multicalls nested past the limit',
+            [
+                call({
+                    data: multicall([
+                        multicall([multicall([multicall([SWAP_DATA])])]),
+                    ]),
+                }),
+            ],
+            NATIVE_REQUEST,
+        ],
+        [
+            'an unreadable multicall',
+            [call({ data: selectorOf('multicall(bytes[])') })],
+            NATIVE_REQUEST,
+        ],
     ])('refuses %s', (_name, calls, request) => {
         expect(() => validate(calls, request)).toThrow(SwapQuoteMismatchError)
     })
@@ -189,50 +311,60 @@ describe('validateEvmSwapTransactions', () => {
     })
 
     it.each([
-        'execute(bytes,bytes[],uint256)',
-        'swapExactTokensForTokens(uint256,uint256,address[],address,uint256)',
-        'exactInputSingle((address,address,uint24,address,uint256,uint256,uint160))',
-        'swap(address,(address,address,address,address,uint256,uint256,uint256),bytes)',
-        'unoswap(uint256,uint256,uint256,uint256)',
-        'exec(address,address,uint256,address,bytes)',
-    ])('accepts a swap calling %s', signature => {
-        const swap = selectorCall(signature)
-
-        expect(validate([swap], NATIVE_REQUEST).swap).toBe(swap)
-    })
-
-    it.each([
+        'approve(address,uint256)',
         'transfer(address,uint256)',
         'transferFrom(address,address,uint256)',
         'setApprovalForAll(address,bool)',
         'permit(address,address,uint256,uint256,uint8,bytes32,bytes32)',
+        'permit(address,address,uint256,uint256,bool,uint8,bytes32,bytes32)',
+        'safeTransferFrom(address,address,uint256)',
+        'safeTransferFrom(address,address,uint256,bytes)',
+        'safeTransferFrom(address,address,uint256,uint256,bytes)',
+        'safeBatchTransferFrom(address,address,uint256[],uint256[],bytes)',
         'increaseAllowance(address,uint256)',
         'approve(address,address,uint160,uint48)',
+        'transferAndCall(address,uint256)',
         'transferAndCall(address,uint256,bytes)',
+        'transferFromAndCall(address,address,uint256)',
+        'transferFromAndCall(address,address,uint256,bytes)',
+        'approveAndCall(address,uint256)',
+        'approveAndCall(address,uint256,bytes)',
         'send(address,uint256,bytes)',
+        'operatorSend(address,address,uint256,bytes,bytes)',
         'authorizeOperator(address)',
-        // Burn or pay out the caller's assets with no allowance.
+        'withdraw(address,uint256,uint32,bytes)',
         'withdrawTo(address,address,uint256,uint32,bytes)',
+        'bridgeERC20(address,address,uint256,uint32,bytes)',
         'bridgeERC20To(address,address,address,uint256,uint32,bytes)',
         'outboundTransfer(address,address,uint256,bytes)',
         'withdrawTo(address,uint256)',
         'redeem(uint256,address,address)',
         'withdraw(uint256,address,address)',
         'withdraw(address,uint256,address)',
+        'withdrawTo(address,address,uint256)',
+        'withdrawFrom(address,address,address,uint256)',
+        'transferAsset(address,address,uint256)',
+        'allow(address,bool)',
+        'decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))',
         'collect((uint256,address,uint128,uint128))',
-        // Also the Uniswap position manager's, which can run `collect`.
-        'multicall(bytes[])',
-    ])('refuses a swap calling %s, no swap function', signature => {
+        'modifyLiquidities(bytes,uint256)',
+        'modifyLiquiditiesWithoutUnlock(bytes,bytes[])',
+        'setOwner(bytes32,address)',
+        'transferOwnership(address)',
+    ])('refuses a swap calling %s on any contract', signature => {
         expect(() =>
-            validate([selectorCall(signature)], NATIVE_REQUEST),
+            validate([call({ data: selectorOf(signature) })], NATIVE_REQUEST),
         ).toThrow(SwapQuoteMismatchError)
     })
 
-    it('accepts a swap function written in upper case', () => {
-        const upper = `0x${SWAP_DATA.slice(2).toUpperCase()}` as Hex
+    it('refuses a refused call written in upper case', () => {
+        const selector = toFunctionSelector(
+            'transferAndCall(address,uint256,bytes)',
+        )
+        const upper = `0x${selector.slice(2).toUpperCase()}` as Hex
 
-        expect(
-            validate([call({ data: upper })], NATIVE_REQUEST).swap.data,
-        ).toBe(upper)
+        expect(() => validate([call({ data: upper })], NATIVE_REQUEST)).toThrow(
+            SwapQuoteMismatchError,
+        )
     })
 })

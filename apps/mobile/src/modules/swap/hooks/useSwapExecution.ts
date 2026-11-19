@@ -72,7 +72,7 @@ export type SwapExecutionError = {
 // synchronously after `await`. React state (`status`, `error`) has not
 // re-rendered yet at that point, so reading those fields would be stale.
 export type SwapExecutionOutcome =
-    | { kind: 'success' }
+    | { kind: 'success'; isPaidOutLater: boolean }
     | { kind: 'cancelled' }
     // Shared-account swap proposed; co-signer must approve before it submits.
     | { kind: 'pending-cosign' }
@@ -355,7 +355,10 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             setStatus(STATUS_BY_RESULT[result.kind])
             if (result.kind === 'success') {
                 setTxIds(result.txIds)
-                return { kind: 'success' }
+                return {
+                    kind: 'success',
+                    isPaidOutLater: result.isPaidOutLater ?? false,
+                }
             }
             if (result.kind === 'user-rejected') {
                 setError({
