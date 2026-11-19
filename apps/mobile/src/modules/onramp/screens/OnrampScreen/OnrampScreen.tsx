@@ -58,7 +58,8 @@ export const OnrampScreen = () => {
 
     const hasPendingHistory = useHasPendingRampOrders()
     // The screen stays mounted in the navigator after navigating away, so tab
-    // state alone would keep the history poll alive off-screen.
+    // state alone would keep the history poll and the quote refresh alive
+    // off-screen.
     const isFocused = useIsFocused()
 
     // One definition behind the drawer and the sheet fallback alike.
@@ -131,6 +132,7 @@ export const OnrampScreen = () => {
                                 destinationToken={destinationToken}
                                 selectedPair={selectedPair}
                                 onNavigateToHistory={handleNavigateToHistory}
+                                isActive={activeTab === 'fund' && isFocused}
                             />
                         ) : (
                             <OfflineTolerantView

@@ -4411,7 +4411,9 @@
             "no_payment_methods": "Aucun moyen de paiement disponible pour votre appareil.",
             "amount_below_min": "Le montant doit être supérieur à {{min}}",
             "amount_below_min_unknown": "Le montant est inférieur au minimum du fournisseur",
-            "amount_above_max": "Le montant doit être inférieur à {{max}}"
+            "amount_above_max": "Le montant doit être inférieur à {{max}}",
+            "quote_refreshed_title": "Cotation actualisée",
+            "quote_refreshed_body": "Cette cotation avait expiré, nous avons donc récupéré un nouveau prix. Vérifiez-le et appuyez à nouveau sur Continuer."
         },
         "pair_selection": {
             "title_to": "Vers",

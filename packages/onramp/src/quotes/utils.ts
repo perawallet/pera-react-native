@@ -40,6 +40,12 @@ export const filterQuotesByPaymentMethod = (
         ? quotes
         : quotes.filter(quote => quote.paymentMethod.id === paymentMethodId)
 
+/** Whether the router would refuse an order for the quote as expired. */
+export const isRampQuoteExpired = (
+    quote: RampQuote,
+    nowMs: number = Date.now(),
+): boolean => quote.expiresAt !== null && nowMs >= quote.expiresAt
+
 /** Quotes sorted by destination amount, highest (best offer) first. */
 export const sortQuotesByDestinationDesc = (quotes: RampQuote[]): RampQuote[] =>
     [...quotes].sort((a, b) =>

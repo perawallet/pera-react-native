@@ -75,6 +75,8 @@ export type RampQuote = {
     destinationAmount: Decimal
     sourceValueInUsd: Nullable<Decimal>
     destinationValueInUsd: Nullable<Decimal>
+    /** Epoch ms after which the router refuses an order for this quote; null when it named none. */
+    expiresAt: Nullable<number>
 }
 
 export type RampDepositInstructions = {

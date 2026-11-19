@@ -218,6 +218,7 @@ const makeMeldQuote = (
     destinationAmount: new Decimal(500),
     sourceValueInUsd: new Decimal(100),
     destinationValueInUsd: new Decimal(80),
+    expiresAt: null,
     ...overrides,
 })
 
@@ -476,6 +477,7 @@ describe('useOnrampForm', () => {
     it('allows manual quote override via selectQuote', async () => {
         const low = makeMeldQuote({
             quoteId: 'low',
+            provider: 'TRANSAK',
             destinationAmount: new Decimal(100),
         })
         const high = makeMeldQuote({
@@ -503,6 +505,7 @@ describe('useOnrampForm', () => {
     it('selectPaymentMethod selects the best quote for that payment method', async () => {
         const cardLow = makeMeldQuote({
             quoteId: 'card-low',
+            provider: 'TRANSAK',
             destinationAmount: new Decimal(400),
             paymentMethod: { id: 'CARD', logo: null, name: 'Card' },
         })

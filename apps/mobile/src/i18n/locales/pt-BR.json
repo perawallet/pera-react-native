@@ -4433,7 +4433,9 @@
             "no_payment_methods": "Nenhum método de pagamento disponível para seu dispositivo.",
             "amount_below_min": "O valor deve ser maior que {{min}}",
             "amount_below_min_unknown": "O valor está abaixo do mínimo do provedor",
-            "amount_above_max": "O valor deve ser menor que {{max}}"
+            "amount_above_max": "O valor deve ser menor que {{max}}",
+            "quote_refreshed_title": "Cotação atualizada",
+            "quote_refreshed_body": "Aquela cotação expirou, então buscamos um novo preço. Confira e toque em Prosseguir novamente."
         },
         "pair_selection": {
             "title_to": "Para",

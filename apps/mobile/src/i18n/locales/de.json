@@ -4403,7 +4403,9 @@
             "no_payment_methods": "Keine Zahlungsmethoden für dein Gerät verfügbar.",
             "amount_below_min": "Der Betrag muss größer als {{min}} sein",
             "amount_below_min_unknown": "Der Betrag liegt unter dem Minimum des Anbieters",
-            "amount_above_max": "Der Betrag muss kleiner als {{max}} sein"
+            "amount_above_max": "Der Betrag muss kleiner als {{max}} sein",
+            "quote_refreshed_title": "Angebot aktualisiert",
+            "quote_refreshed_body": "Dieses Angebot war abgelaufen, daher haben wir einen aktuellen Preis abgerufen. Überprüfe ihn und tippe erneut auf Fortfahren."
         },
         "pair_selection": {
             "title_to": "An",

@@ -15,14 +15,18 @@ import type { Decimal } from 'decimal.js'
 import {
     AppError,
     ErrorCategory,
+    isConnectivityError,
+    isPeraNetworkError,
+    isTransientNetworkError,
     type Nullable,
     type Maybe,
 } from '@perawallet/wallet-core-shared'
-import { resolveRouterErrorBody } from '@perawallet/wallet-core-swaps'
+import {
+    isSwapQuoteGoneError,
+    resolveRouterErrorBody,
+} from '@perawallet/wallet-core-swaps'
 
 import { unwrapNetworkError } from './unwrap'
-
-const GENERIC_FALLBACK = 'Something went wrong. Please try again.'
 
 /**
  * Preparing the destination account needs a sponsored transaction, and the
@@ -131,14 +135,43 @@ export function resolveRampQuoteLimits(
     return min === null && max === null ? null : raw.limits
 }
 
+/** The order call refused the quote as expired or already used: re-quote rather than retry it. */
+export const isRampQuoteGoneError = (error: unknown): boolean =>
+    isSwapQuoteGoneError(error)
+
+// The backend translates its own 4xx messages; a 5xx message, or an upstream's
+// rate limit relayed as a 429, is an English diagnostic that can name the upstream.
+function isUntranslatedError(error: unknown, raw: unknown): boolean {
+    const code =
+        resolveRouterErrorBody(raw)?.code ??
+        (isPeraNetworkError(error) ? error.backendCode : undefined)
+    if (code === 'upstream_rate_limited') return true
+    if (isPeraNetworkError(error)) return error.kind === 'server'
+    const status = (raw as Maybe<{ status?: unknown }>)?.status
+    return typeof status === 'number' && status >= 500
+}
+
+/**
+ * A failure a later retry may fix (offline, a timeout, a 5xx, an upstream's
+ * rate limit), as opposed to the router refusing the request itself.
+ */
+export function isTransientRampError(error: unknown): boolean {
+    return (
+        isConnectivityError(error) ||
+        isTransientNetworkError(error) ||
+        isUntranslatedError(error, unwrapNetworkError(error))
+    )
+}
+
 const ATTESTATION_REQUIRED_MESSAGE =
     'Device verification is required to fund this account.'
 
 /**
- * Maps any error value (Pera API exception, router error, JS Error, unknown)
- * to a human-readable message suitable for display in a toast or inline error.
+ * The backend's own user-facing message for an error, or null when it sent
+ * none fit to show (a 5xx, an unknown error): the caller shows its own
+ * translated copy then.
  */
-export function toOnrampUserMessage(error: unknown): string {
+export function toOnrampUserMessage(error: unknown): Nullable<string> {
     const raw = unwrapNetworkError(error)
 
     if (raw instanceof RampAttestationRequiredError) {
@@ -149,11 +182,13 @@ export function toOnrampUserMessage(error: unknown): string {
         return raw.message
     }
 
+    if (isUntranslatedError(error, raw)) return null
+
     const exception = resolvePeraApiException(raw)
     if (exception) {
         return isDisplayableMessage(exception.fallback_message)
             ? exception.fallback_message
-            : GENERIC_FALLBACK
+            : null
     }
 
     const routerError = resolveRouterErrorBody(raw)
@@ -165,5 +200,5 @@ export function toOnrampUserMessage(error: unknown): string {
         return routerError.error
     }
 
-    return GENERIC_FALLBACK
+    return null
 }

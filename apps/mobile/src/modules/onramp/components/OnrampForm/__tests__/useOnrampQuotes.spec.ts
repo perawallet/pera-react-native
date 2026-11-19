@@ -10,11 +10,13 @@
  limitations under the License
  */
 
+import { AppState } from 'react-native'
 import { renderHook, act } from '@test-utils/render'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import {
     NoConnectionError,
+    PeraNetworkError,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import {
@@ -28,6 +30,10 @@ import {
     makeFiatToken,
     makeRampPair,
 } from '@test-utils/rampFixtures'
+import {
+    ONRAMP_QUOTE_MAX_REFRESH_INTERVAL,
+    ONRAMP_QUOTE_MIN_REFRESH_INTERVAL,
+} from '@constants/ui'
 import { useOnrampQuotes } from '../useOnrampQuotes'
 
 const mockCreateQuote = vi.hoisted(() => vi.fn())
@@ -59,6 +65,7 @@ const quote = (quoteId: string, kind: RampQuote['kind']): RampQuote => ({
     destinationAmount: new Decimal(10),
     sourceValueInUsd: null,
     destinationValueInUsd: null,
+    expiresAt: null,
 })
 
 const DEBOUNCE_MS = 500
@@ -69,6 +76,17 @@ const settle = () =>
     })
 
 type Params = Parameters<typeof useOnrampQuotes>[0]
+
+const captureAppStateChange = () => {
+    let onChange: (state: string) => void = () => {}
+    vi.spyOn(AppState, 'addEventListener').mockImplementation(
+        (_type, handler) => {
+            onChange = handler as (state: string) => void
+            return { remove: vi.fn() }
+        },
+    )
+    return (state: string) => act(() => onChange(state))
+}
 
 const render = (overrides: Partial<Params> = {}) =>
     renderHook((params: Params) => useOnrampQuotes(params), {
@@ -90,6 +108,277 @@ describe('useOnrampQuotes', () => {
 
     afterEach(() => {
         vi.useRealTimers()
+    })
+
+    it('re-quotes the unchanged inputs once the earliest quote expires', async () => {
+        const now = Date.now()
+        mockCreateQuote.mockResolvedValue([
+            { ...quote('x1', 'xo'), expiresAt: now + 60_000 + DEBOUNCE_MS },
+            { ...quote('x2', 'xo'), expiresAt: now + 120_000 },
+        ])
+        render()
+        await settle()
+        expect(mockCreateQuote).toHaveBeenCalledTimes(1)
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(60_000)
+        })
+        await settle()
+
+        expect(mockCreateQuote).toHaveBeenCalledTimes(2)
+    })
+
+    it('waits at least the minimum refresh interval for a short-lived quote', async () => {
+        mockCreateQuote.mockResolvedValue([
+            { ...quote('x1', 'xo'), expiresAt: Date.now() + 2000 },
+        ])
+        render()
+        await settle()
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(
+                ONRAMP_QUOTE_MIN_REFRESH_INTERVAL - 1,
+            )
+        })
+        expect(mockCreateQuote).toHaveBeenCalledTimes(1)
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(1)
+        })
+        await settle()
+        expect(mockCreateQuote).toHaveBeenCalledTimes(2)
+    })
+
+    it('keeps the quotes when a background re-quote fails, and retries later', async () => {
+        const now = Date.now()
+        mockCreateQuote.mockResolvedValue([
+            { ...quote('x1', 'xo'), expiresAt: now + 60_000 + DEBOUNCE_MS },
+        ])
+        const { result } = render()
+        await settle()
+
+        mockCreateQuote.mockRejectedValueOnce(new NoConnectionError())
+        mockCreateQuote.mockResolvedValue([
+            { ...quote('x2', 'xo'), expiresAt: now + 600_000 },
+        ])
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(60_000)
+        })
+        await settle()
+
+        expect(mockCreateQuote).toHaveBeenCalledTimes(2)
+        expect(result.current.quotes.map(item => item.quoteId)).toEqual(['x1'])
+        expect(result.current.quotesError).toBeNull()
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(
+                2 * ONRAMP_QUOTE_MIN_REFRESH_INTERVAL,
+            )
+        })
+        await settle()
+
+        expect(mockCreateQuote).toHaveBeenCalledTimes(3)
+        expect(result.current.quotes.map(item => item.quoteId)).toEqual(['x2'])
+    })
+
+    it('shows the error when a re-quote the caller asked for fails', async () => {
+        mockCreateQuote.mockResolvedValue([
+            { ...quote('x1', 'xo'), expiresAt: Date.now() + 600_000 },
+        ])
+        const { result } = render()
+        await settle()
+
+        mockCreateQuote.mockRejectedValueOnce(new NoConnectionError())
+        act(() => result.current.refreshQuotes())
+        await settle()
+
+        expect(result.current.quotes).toEqual([])
+        expect(result.current.quotesError).not.toBeNull()
+    })
+
+    it('shows a refusal of a background re-quote and stops refreshing', async () => {
+        mockCreateQuote.mockResolvedValue([
+            { ...quote('x1', 'xo'), expiresAt: Date.now() + 60_000 },
+        ])
+        const { result } = render()
+        await settle()
+
+        mockCreateQuote.mockRejectedValue(
+            new RampAmountOutOfRangeError(
+                'max',
+                { min: null, max: new Decimal('0.1') },
+                'Too high.',
+            ),
+        )
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(60_000)
+        })
+        await settle()
+
+        expect(result.current.quotes).toEqual([])
+        expect(result.current.quotesError).toBe('onramp.form.amount_above_max')
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(ONRAMP_QUOTE_MAX_REFRESH_INTERVAL)
+        })
+        expect(mockCreateQuote).toHaveBeenCalledTimes(2)
+    })
+
+    it('re-quotes on returning to the foreground with an expired quote', async () => {
+        const changeAppState = captureAppStateChange()
+        mockCreateQuote.mockResolvedValue([
+            { ...quote('x1', 'xo'), expiresAt: Date.now() + 60_000 },
+        ])
+        render()
+        await settle()
+
+        changeAppState('background')
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(120_000)
+        })
+        expect(mockCreateQuote).toHaveBeenCalledTimes(1)
+
+        changeAppState('active')
+        await settle()
+
+        expect(mockCreateQuote).toHaveBeenCalledTimes(2)
+    })
+
+    it('does not re-quote off screen, and re-quotes on coming back once expired', async () => {
+        mockCreateQuote.mockResolvedValue([
+            { ...quote('x1', 'xo'), expiresAt: Date.now() + 60_000 },
+        ])
+        const { rerender } = render()
+        await settle()
+        const props = {
+            pair: DEPOSIT_PAIR,
+            sourceAmount: new Decimal('0.5'),
+            refundAddress: null,
+            countryCode: null,
+        }
+
+        rerender({ ...props, isActive: false })
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(120_000)
+        })
+        expect(mockCreateQuote).toHaveBeenCalledTimes(1)
+
+        rerender({ ...props, isActive: true })
+        await settle()
+
+        expect(mockCreateQuote).toHaveBeenCalledTimes(2)
+    })
+
+    it('does not loop on a quote that arrives already expired', async () => {
+        mockCreateQuote.mockResolvedValue([
+            { ...quote('x1', 'xo'), expiresAt: Date.now() - 1 },
+        ])
+        const { result } = render()
+        await settle()
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(10 * DEBOUNCE_MS)
+        })
+
+        expect(mockCreateQuote).toHaveBeenCalledTimes(1)
+        expect(result.current.selectedQuote?.expiresAt).toBeNull()
+    })
+
+    it.each([
+        ['a 5xx', 'server', 503, 'upstream_unavailable'],
+        ['a rate-limited upstream', 'client', 429, 'upstream_rate_limited'],
+    ] as const)(
+        "shows the app's own copy, not the backend's diagnostic, for %s",
+        async (_label, kind, status, code) => {
+            mockCreateQuote.mockRejectedValue(
+                new PeraNetworkError(kind, {
+                    status,
+                    backendCode: code,
+                    originalError: Object.assign(new Error('http'), {
+                        data: {
+                            error: 'Meld is unavailable, try again shortly',
+                            code,
+                        },
+                    }),
+                }),
+            )
+            const { result } = render()
+            await settle()
+
+            expect(result.current.quotesError).toBe('errors.general.body')
+        },
+    )
+
+    it('keeps the chosen provider and payment method across a re-quote', async () => {
+        const offers = (suffix: string): RampQuote[] => [
+            {
+                ...quote(`best-${suffix}`, 'meld'),
+                provider: 'A',
+                destinationAmount: new Decimal(9),
+            },
+            {
+                ...quote(`picked-${suffix}`, 'meld'),
+                provider: 'B',
+                destinationAmount: new Decimal(5),
+            },
+        ]
+        mockCreateQuote.mockResolvedValue(offers('1'))
+        const { result } = render({ pair: FIAT_PAIR })
+        await settle()
+        act(() => result.current.selectQuote('picked-1'))
+
+        mockCreateQuote.mockResolvedValue(offers('2'))
+        act(() => result.current.refreshQuotes())
+        await settle()
+
+        expect(result.current.selectedQuote?.quoteId).toBe('picked-2')
+    })
+
+    it('follows the best offer within a picked payment method across refreshes', async () => {
+        const offers = (suffix: string, bestProvider: string): RampQuote[] =>
+            ['A', 'B'].map(provider => ({
+                ...quote(`${provider}-${suffix}`, 'meld'),
+                provider,
+                paymentMethod: { id: 'BANK', logo: null, name: 'Bank' },
+                destinationAmount: new Decimal(
+                    provider === bestProvider ? 9 : 5,
+                ),
+            }))
+        mockCreateQuote.mockResolvedValue([
+            { ...quote('card-1', 'meld'), destinationAmount: new Decimal(20) },
+            ...offers('1', 'A'),
+        ])
+        const { result } = render({ pair: FIAT_PAIR })
+        await settle()
+        act(() => result.current.selectPaymentMethod('BANK'))
+        expect(result.current.selectedQuote?.quoteId).toBe('A-1')
+
+        mockCreateQuote.mockResolvedValue([
+            { ...quote('card-2', 'meld'), destinationAmount: new Decimal(20) },
+            ...offers('2', 'B'),
+        ])
+        act(() => result.current.refreshQuotes())
+        await settle()
+
+        expect(result.current.selectedQuote?.quoteId).toBe('B-2')
+        expect(result.current.isBestOffer).toBe(true)
+    })
+
+    it('falls back to the best offer once the chosen pair is no longer offered', async () => {
+        mockCreateQuote.mockResolvedValue([
+            { ...quote('best-1', 'meld'), provider: 'A' },
+            { ...quote('picked-1', 'meld'), provider: 'B' },
+        ])
+        const { result } = render({ pair: FIAT_PAIR })
+        await settle()
+        act(() => result.current.selectQuote('picked-1'))
+
+        mockCreateQuote.mockResolvedValue([
+            { ...quote('best-2', 'meld'), provider: 'A' },
+        ])
+        act(() => result.current.refreshQuotes())
+        await settle()
+
+        expect(result.current.selectedQuote?.quoteId).toBe('best-2')
     })
 
     it('quotes a deposit pair again for every new amount', async () => {

@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Platform } from 'react-native'
+import { AppState, Platform } from 'react-native'
 import { Decimal } from 'decimal.js'
 import {
     useCreateRampQuoteMutation,
@@ -19,7 +19,9 @@ import {
     filterQuotesByPaymentMethod,
     isSourceAmountTooHighError,
     isQuotableRampAmount,
+    isRampQuoteExpired,
     isSourceAmountTooLowError,
+    isTransientRampError,
     pickBestQuote,
     RAMP_MAX_LIMIT_PROBE_AMOUNT,
     resolveRampQuoteLimits,
@@ -34,7 +36,11 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
-import { ONRAMP_QUOTE_DEBOUNCE_TIME } from '@constants/ui'
+import {
+    ONRAMP_QUOTE_DEBOUNCE_TIME,
+    ONRAMP_QUOTE_MAX_REFRESH_INTERVAL,
+    ONRAMP_QUOTE_MIN_REFRESH_INTERVAL,
+} from '@constants/ui'
 import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
 import { getExcludedPaymentMethodIds } from './onrampFormHelpers'
 
@@ -46,6 +52,8 @@ type UseOnrampQuotesParams = {
     refundAddress: Nullable<string>
     /** The user's region; narrows the router's offers. */
     countryCode: Nullable<string>
+    /** True while the form is on screen; the expiry refresh runs only then. */
+    isActive?: boolean
 }
 
 type UseOnrampQuotesResult = {
@@ -71,6 +79,8 @@ type UseOnrampQuotesResult = {
      * probe fails.
      */
     resolveQuoteLimit: (bound: 'min' | 'max') => Promise<Nullable<Decimal>>
+    /** Re-fetches quotes for the unchanged inputs (expired-quote recovery). */
+    refreshQuotes: () => void
 }
 
 /**
@@ -87,17 +97,37 @@ export const useOnrampQuotes = ({
     sourceAmount,
     refundAddress,
     countryCode,
+    isActive = true,
 }: UseOnrampQuotesParams): UseOnrampQuotesResult => {
     const { t } = useLanguage()
     const { scope, address: selectedAccountAddress } = useOnrampAccount()
 
     const [quotes, setQuotes] = useState<RampQuote[]>([])
-    const [selectedQuoteId, setSelectedQuoteId] =
-        useState<Nullable<string>>(null)
+    // Keyed by provider + method, not quoteId: every re-quote mints new ids.
+    // A null provider means the best offer within the method.
+    const [selection, setSelection] =
+        useState<
+            Nullable<{ provider: Nullable<string>; paymentMethodId: string }>
+        >(null)
     const [isQuoting, setIsQuoting] = useState(false)
     const [quotesError, setQuotesError] = useState<Nullable<string>>(null)
     const [quoteLimits, setQuoteLimits] =
         useState<Nullable<RampQuoteLimits>>(null)
+    // Bumping it re-runs the fetch effect for the same inputs.
+    const [refreshCount, setRefreshCount] = useState(0)
+    const refreshQuotes = useCallback(
+        () => setRefreshCount(count => count + 1),
+        [],
+    )
+    // Set only by the expiry and foreground timers: a re-quote a caller asks
+    // for (Proceed's) must surface its failure, never keep a gone quote quietly.
+    const backgroundRefreshRef = useRef(false)
+    const refreshQuotesInBackground = useCallback(() => {
+        backgroundRefreshRef.current = true
+        refreshQuotes()
+    }, [refreshQuotes])
+    // Failed background re-quotes in a row; backs off the next one.
+    const [refreshFailures, setRefreshFailures] = useState(0)
 
     // React Query v5 mutateAsync is referentially stable, so it can sit in the
     // effect dependency list without retriggering it.
@@ -154,6 +184,16 @@ export const useOnrampQuotes = ({
         ],
     )
 
+    // The inputs behind the quotes on screen. A timer re-quote for the same
+    // ones keeps them on a transient failure (Proceed re-checks expiry, and the
+    // order call refuses a gone quote) and retries later.
+    const shownInputsRef = useRef<
+        Nullable<{
+            request: typeof quoteRequestFor
+            amountKey: Nullable<string>
+        }>
+    >(null)
+
     // --- debounced fetch -------------------------------------------------
     // Every provider quotes per amount: the router prices a request, so a
     // missing amount, or one under a single base unit, has nothing to ask.
@@ -163,12 +203,19 @@ export const useOnrampQuotes = ({
         if (request === null) return
         const requestId = ++requestIdRef.current
         if (amount === null || !isQuotableRampAmount(amount, sourceDecimals)) {
+            shownInputsRef.current = null
             setQuotes([])
             setQuotesError(null)
             setIsQuoting(false)
             return
         }
 
+        const isBackground = backgroundRefreshRef.current
+        backgroundRefreshRef.current = false
+        const isRefresh =
+            isBackground &&
+            shownInputsRef.current?.request === quoteRequestFor &&
+            shownInputsRef.current.amountKey === amountKey
         setIsQuoting(true)
         const excludedIds = getExcludedPaymentMethodIds(Platform.OS)
 
@@ -178,9 +225,25 @@ export const useOnrampQuotes = ({
                     const result = await createQuote(request)
                     if (requestId !== requestIdRef.current) return
 
-                    const filtered = result.filter(
-                        quote => !excludedIds.includes(quote.paymentMethod.id),
-                    )
+                    const now = Date.now()
+                    // A quote that is already past its expiry on arrival means
+                    // the device clock is off, so the router's answer to the
+                    // order is the only reliable expiry for it.
+                    const filtered = result
+                        .filter(
+                            quote =>
+                                !excludedIds.includes(quote.paymentMethod.id),
+                        )
+                        .map(quote =>
+                            isRampQuoteExpired(quote, now)
+                                ? { ...quote, expiresAt: null }
+                                : quote,
+                        )
+                    shownInputsRef.current = {
+                        request: quoteRequestFor,
+                        amountKey,
+                    }
+                    setRefreshFailures(0)
                     setQuotes(filtered)
                     setQuotesError(
                         filtered.length === 0
@@ -190,6 +253,12 @@ export const useOnrampQuotes = ({
                     setIsQuoting(false)
                 } catch (error) {
                     if (requestId !== requestIdRef.current) return
+                    if (isRefresh && isTransientRampError(error)) {
+                        setRefreshFailures(count => count + 1)
+                        setIsQuoting(false)
+                        return
+                    }
+                    shownInputsRef.current = null
                     setQuotes([])
                     const limits = resolveRampQuoteLimits(error)
                     setQuoteLimits(limits)
@@ -202,7 +271,8 @@ export const useOnrampQuotes = ({
                                 ? t('onramp.form.amount_above_max', {
                                       max: limits.max.toString(),
                                   })
-                                : toOnrampUserMessage(error)
+                                : (toOnrampUserMessage(error) ??
+                                      t('errors.general.body'))
                         }
                         if (limits?.min) {
                             return t('onramp.form.amount_below_min', {
@@ -212,7 +282,10 @@ export const useOnrampQuotes = ({
                         if (isSourceAmountTooLowError(error)) {
                             return t('onramp.form.amount_below_min_unknown')
                         }
-                        return toOnrampUserMessage(error)
+                        return (
+                            toOnrampUserMessage(error) ??
+                            t('errors.general.body')
+                        )
                     }
                     setQuotesError(quoteErrorMessageOf())
                     setIsQuoting(false)
@@ -221,7 +294,52 @@ export const useOnrampQuotes = ({
         }, ONRAMP_QUOTE_DEBOUNCE_TIME)
 
         return () => clearTimeout(timeoutId)
-    }, [quoteRequestFor, sourceDecimals, amountKey, createQuote, t])
+    }, [
+        quoteRequestFor,
+        sourceDecimals,
+        amountKey,
+        createQuote,
+        t,
+        refreshCount,
+    ])
+
+    const [isAppActive, setIsAppActive] = useState(
+        AppState.currentState === 'active',
+    )
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', state =>
+            setIsAppActive(state === 'active'),
+        )
+        return () => subscription.remove()
+    }, [])
+
+    // An on-screen form re-quotes when the first quote expires. Off screen or
+    // in the background it doesn't (each call is a real upstream quote), so
+    // coming back re-checks what expired meanwhile.
+    const isLive = isActive && isAppActive
+    const wasLiveRef = useRef(isLive)
+    useEffect(() => {
+        const isRegained = isLive && !wasLiveRef.current
+        wasLiveRef.current = isLive
+        if (!isLive) return
+        if (isRegained && quotes.some(quote => isRampQuoteExpired(quote))) {
+            refreshQuotesInBackground()
+            return
+        }
+        const expiries = quotes.flatMap(quote =>
+            quote.expiresAt === null ? [] : [quote.expiresAt],
+        )
+        if (expiries.length === 0) return
+        const minDelay = Math.min(
+            ONRAMP_QUOTE_MIN_REFRESH_INTERVAL * 2 ** refreshFailures,
+            ONRAMP_QUOTE_MAX_REFRESH_INTERVAL,
+        )
+        const timeoutId = setTimeout(
+            refreshQuotesInBackground,
+            Math.max(minDelay, Math.min(...expiries) - Date.now()),
+        )
+        return () => clearTimeout(timeoutId)
+    }, [isLive, quotes, refreshFailures, refreshQuotesInBackground])
 
     // A probe answer for a pair the user has since left must not set limits.
     const pairIdRef = useRef(pairId)
@@ -230,7 +348,7 @@ export const useOnrampQuotes = ({
     useEffect(() => {
         pairIdRef.current = pairId
         setQuotes([])
-        setSelectedQuoteId(null)
+        setSelection(null)
         setQuotesError(null)
         setQuoteLimits(null)
     }, [pairId])
@@ -272,15 +390,38 @@ export const useOnrampQuotes = ({
     const bestQuote = useMemo(() => pickBestQuote(quotes), [quotes])
 
     const selectedQuote = useMemo<Nullable<RampQuote>>(() => {
-        if (selectedQuoteId === null) return bestQuote
+        if (selection === null) return bestQuote
+        if (selection.provider === null) {
+            return (
+                pickBestQuote(
+                    filterQuotesByPaymentMethod(
+                        quotes,
+                        selection.paymentMethodId,
+                    ),
+                ) ?? bestQuote
+            )
+        }
         return (
-            quotes.find(quote => quote.quoteId === selectedQuoteId) ?? bestQuote
+            quotes.find(
+                quote =>
+                    quote.provider === selection.provider &&
+                    quote.paymentMethod.id === selection.paymentMethodId,
+            ) ?? bestQuote
         )
-    }, [quotes, selectedQuoteId, bestQuote])
+    }, [quotes, selection, bestQuote])
 
-    const selectQuote = useCallback((quoteId: string) => {
-        setSelectedQuoteId(quoteId)
-    }, [])
+    const selectQuote = useCallback(
+        (quoteId: string) => {
+            const quote = quotes.find(q => q.quoteId === quoteId)
+            if (quote) {
+                setSelection({
+                    provider: quote.provider,
+                    paymentMethodId: quote.paymentMethod.id,
+                })
+            }
+        },
+        [quotes],
+    )
 
     // "Best offer" ranks providers within one payment method, matching the
     // provider sheet — a card quote is not comparable with a bank-transfer one.
@@ -293,16 +434,12 @@ export const useOnrampQuotes = ({
         return pickBestQuote(sameMethod)?.quoteId === selectedQuote.quoteId
     }, [quotes, selectedQuote])
 
-    // Choosing a payment method selects the best quote offering that method.
+    // Choosing a payment method follows its best offer across refreshes; only
+    // a provider pick pins the provider.
     const selectPaymentMethod = useCallback(
-        (paymentMethodId: string) => {
-            const candidates = quotes.filter(
-                quote => quote.paymentMethod.id === paymentMethodId,
-            )
-            const best = pickBestQuote(candidates)
-            if (best) setSelectedQuoteId(best.quoteId)
-        },
-        [quotes],
+        (paymentMethodId: string) =>
+            setSelection({ provider: null, paymentMethodId }),
+        [],
     )
 
     return {
@@ -316,5 +453,6 @@ export const useOnrampQuotes = ({
         selectPaymentMethod,
         isBestOffer,
         resolveQuoteLimit,
+        refreshQuotes,
     }
 }

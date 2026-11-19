@@ -202,11 +202,21 @@ describe('createRampQuote', () => {
     })
 
     it.each([
-        ['pair_restricted_in_country', 403, 'Not available in your country.'],
-        ['route_unavailable', 503, 'No route is available right now.'],
+        [
+            'pair_restricted_in_country',
+            403,
+            'Not available in your country.',
+            'Not available in your country.',
+        ],
+        [
+            'route_unavailable',
+            503,
+            'The XO route is temporarily unavailable',
+            null,
+        ],
     ])(
-        'rethrows a %s error, whose router message is the user message',
-        async (code, status, message) => {
+        'rethrows a %s error, shown only when it is a translated 4xx',
+        async (code, status, message, shown) => {
             capture(status, { error: message, code })
 
             const error = await createRampQuote(fiatParams, SCOPE).catch(
@@ -214,7 +224,7 @@ describe('createRampQuote', () => {
             )
 
             expect(error).not.toBeInstanceOf(RampAmountOutOfRangeError)
-            expect(toOnrampUserMessage(error)).toBe(message)
+            expect(toOnrampUserMessage(error)).toBe(shown)
         },
     )
 })

@@ -17,6 +17,8 @@ import {
     useCreateRampOrderMutation,
     useEnsureRampDestination,
     useOnramp,
+    isRampQuoteExpired,
+    isRampQuoteGoneError,
     toOnrampUserMessage,
     rampTokenAsset,
     type RampPair,
@@ -47,6 +49,8 @@ type UseOnrampConfirmParams = {
     sourceAmount: Nullable<Decimal>
     destinationAmount: Nullable<Decimal>
     isMeld: boolean
+    /** Re-fetches quotes when the selected one has expired. */
+    refreshQuotes: () => void
     /** Switch the screen to the History tab (after an XO order is placed). */
     onNavigateToHistory?: () => void
 }
@@ -68,6 +72,7 @@ export const useOnrampConfirm = ({
     sourceAmount,
     destinationAmount,
     isMeld,
+    refreshQuotes,
     onNavigateToHistory,
 }: UseOnrampConfirmParams): UseOnrampConfirmResult => {
     const { t } = useLanguage()
@@ -75,7 +80,7 @@ export const useOnrampConfirm = ({
     const trackOnrampEvent = useTrackOnrampEvent()
     const { rememberDepositInstructions } = useOnramp()
     const { request: requestBottomSheet } = useBottomSheet()
-    const { errorToast } = useToast()
+    const { errorToast, infoToast } = useToast()
     const { isTermsAccepted, markTermsAccepted } = useOnrampTerms()
     const { mutateAsync: createOrder } = useCreateRampOrderMutation()
     const { ensureCanReceive } = useEnsureRampDestination(
@@ -83,6 +88,14 @@ export const useOnrampConfirm = ({
     )
 
     const [isConfirming, setIsConfirming] = useState(false)
+
+    const requote = useCallback(() => {
+        refreshQuotes()
+        infoToast(
+            t('onramp.form.quote_refreshed_title'),
+            t('onramp.form.quote_refreshed_body'),
+        )
+    }, [refreshQuotes, infoToast, t])
 
     const handleConfirm = useCallback(async () => {
         if (
@@ -123,6 +136,13 @@ export const useOnrampConfirm = ({
             // so an account switched since the quote was made must not order.
             if (currentAddress !== selectedAccountAddress) return
 
+            // Preparing an account can submit an opt-in. Refresh first if
+            // the quote already expired, including while accepting Terms.
+            if (isRampQuoteExpired(selectedQuote)) {
+                requote()
+                return
+            }
+
             // The destination has no asset on this network, so there is
             // nothing to prepare or fund: bail out quietly.
             const destinationAsset = rampTokenAsset(
@@ -155,6 +175,12 @@ export const useOnrampConfirm = ({
                 },
             })
             if (!canReceive) {
+                return
+            }
+
+            // The opt-in confirmation can outlast the quote.
+            if (isRampQuoteExpired(selectedQuote)) {
+                requote()
                 return
             }
 
@@ -203,13 +229,18 @@ export const useOnrampConfirm = ({
                 onNavigateToHistory?.()
             }
         } catch (error) {
-            if (isConnectivityError(error)) {
+            if (isRampQuoteGoneError(error)) {
+                requote()
+            } else if (isConnectivityError(error)) {
                 errorToast(
                     t('errors.network.no_connection.title'),
                     t('errors.network.no_connection.body'),
                 )
             } else {
-                errorToast('', toOnrampUserMessage(error))
+                errorToast(
+                    '',
+                    toOnrampUserMessage(error) ?? t('errors.general.body'),
+                )
             }
         } finally {
             setIsConfirming(false)
@@ -230,6 +261,7 @@ export const useOnrampConfirm = ({
         trackOnrampEvent,
         requestBottomSheet,
         errorToast,
+        requote,
         onNavigateToHistory,
         t,
     ])
