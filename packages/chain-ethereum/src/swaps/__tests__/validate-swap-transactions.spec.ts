@@ -200,7 +200,16 @@ describe('validateEvmSwapTransactions', () => {
         'safeBatchTransferFrom(address,address,uint256[],uint256[],bytes)',
         'increaseAllowance(address,uint256)',
         'approve(address,address,uint160,uint48)',
-    ])('refuses %s even on a declared contract', signature => {
+        'transferAndCall(address,uint256)',
+        'transferAndCall(address,uint256,bytes)',
+        'transferFromAndCall(address,address,uint256)',
+        'transferFromAndCall(address,address,uint256,bytes)',
+        'approveAndCall(address,uint256)',
+        'approveAndCall(address,uint256,bytes)',
+        'send(address,uint256,bytes)',
+        'operatorSend(address,address,uint256,bytes,bytes)',
+        'authorizeOperator(address)',
+    ])('refuses %s on any contract', signature => {
         expect(() => validate([selectorCall(signature)])).toThrow(
             SwapQuoteMismatchError,
         )

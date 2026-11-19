@@ -41,7 +41,9 @@ const APPROVE_SELECTORS: ReadonlySet<Hex> = new Set([
     toFunctionSelector('approve(address,uint256)'),
 ])
 
-// Each moves value by itself, past what the swap's own amount bounds.
+// Each moves or grants a token the sender holds, past what the swap's own
+// amount bounds. The swap's `to` is unpinned, so this list is what stops a call
+// into any token the account holds, not just the source.
 const REFUSED_SWAP_SELECTORS: ReadonlySet<Hex> = new Set(
     [
         'transfer(address,uint256)',
@@ -55,6 +57,17 @@ const REFUSED_SWAP_SELECTORS: ReadonlySet<Hex> = new Set(
         'safeBatchTransferFrom(address,address,uint256[],uint256[],bytes)',
         'increaseAllowance(address,uint256)',
         'approve(address,address,uint160,uint48)',
+        // ERC-677 and ERC-1363
+        'transferAndCall(address,uint256)',
+        'transferAndCall(address,uint256,bytes)',
+        'transferFromAndCall(address,address,uint256)',
+        'transferFromAndCall(address,address,uint256,bytes)',
+        'approveAndCall(address,uint256)',
+        'approveAndCall(address,uint256,bytes)',
+        // ERC-777
+        'send(address,uint256,bytes)',
+        'operatorSend(address,address,uint256,bytes,bytes)',
+        'authorizeOperator(address)',
     ].map(signature => toFunctionSelector(signature)),
 )
 
