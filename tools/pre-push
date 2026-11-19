@@ -128,6 +128,19 @@ else
 fi
 rm "$ALGOSDK_LOG"
 
+# Run prebuilt Expo AAR runtime guard. An AAR compiled against a newer Expo
+# Modules v2 runtime than expo-modules-core bundles builds fine and aborts the
+# Android app on launch (see tools/check-expo-aar-runtime.mjs's header).
+echo "\n${YELLOW}Checking prebuilt Expo AARs against the bundled v2 runtime...${NC}"
+EXPO_AAR_LOG=$(mktemp)
+if pnpm run check:expo-aar-runtime > "$EXPO_AAR_LOG" 2>&1; then
+    echo "${GREEN}✓ Prebuilt Expo AARs match the bundled v2 runtime${NC}"
+else
+    echo "${RED}Expo AAR runtime check failed.${NC}"
+    record_failure "Expo AAR runtime" "$EXPO_AAR_LOG" "${YELLOW}A prebuilt Expo module would abort the Android app on launch — see the log below.${NC}"
+fi
+rm "$EXPO_AAR_LOG"
+
 # Run kms PQ-provider packaging guard. Quantum accounts pick their Falcon
 # backend at build time; if the react-native export condition or the native
 # build pass goes away, mobile silently signs with WASM Falcon and every test
