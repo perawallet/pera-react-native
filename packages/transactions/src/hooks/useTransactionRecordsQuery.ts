@@ -70,7 +70,11 @@ export type UseTransactionRecordsQueryParams = {
     afterTime?: string
     /** `YYYY-MM-DD`, inclusive, UTC. */
     beforeTime?: string
-    /** Kept client-side: the backend reads the same pages whatever the type. */
+    /**
+     * Applied to the loaded pages, which every type shares, so switching types
+     * reads nothing the list already holds. The backend reads the same pages
+     * whatever the type.
+     */
     historyType?: TransactionHistoryType
     /** Histories splitting one type filter's page budget, such as each network's on All. Defaults to 1. */
     typedScanShare?: number
@@ -190,16 +194,12 @@ export const typedScanBudget = (
     return { pages, pageReads: Math.min(MAX_TYPED_RECORD_PAGE_READS, pages) }
 }
 
-type ScanResume = { key: string; pageCount: number }
+// A scan begins where the list stood when its type was picked or Search Older
+// was tapped, so only the pages read after that count toward its budget.
+type TypedScan = { key: string; startPage: number }
 
-const readsSince = (
-    pages: readonly RecordsPage[],
-    resume: Optional<ScanResume>,
-    key: string,
-): number =>
-    pages
-        .slice(resume?.key === key ? resume.pageCount : 0)
-        .reduce((sum, page) => sum + (page.reads ?? 1), 0)
+const readsFrom = (pages: readonly RecordsPage[], startPage: number): number =>
+    pages.slice(startPage).reduce((sum, page) => sum + (page.reads ?? 1), 0)
 
 const involvesAsset = (record: TransactionRecord, assetId: string): boolean =>
     record.summary.amount?.assetRef.assetId === assetId ||
@@ -249,7 +249,7 @@ export const useTransactionRecordsQuery = ({
         assetId !== undefined && isNativeAssetId(scope.chainId, assetId)
 
     // A record with no timestamp has no time to rule it out by, so the date range keeps it.
-    const isKept = useCallback(
+    const isInScope = useCallback(
         (record: TransactionRecord): boolean =>
             (assetId === undefined ||
                 involvesAsset(record, assetId) ||
@@ -258,18 +258,21 @@ export const useTransactionRecordsQuery = ({
                     isFeePaidByAccount(record, accountAddress))) &&
             (record.timestamp === undefined ||
                 ((fromMs === undefined || record.timestamp >= fromMs) &&
-                    (untilMs === undefined || record.timestamp < untilMs))) &&
-            (historyType === undefined ||
-                historyTypeOf(record.summary) === historyType),
-        [assetId, isNativeFilter, accountAddress, fromMs, untilMs, historyType],
+                    (untilMs === undefined || record.timestamp < untilMs))),
+        [assetId, isNativeFilter, accountAddress, fromMs, untilMs],
+    )
+    const isOfType = useCallback(
+        (record: TransactionRecord): boolean =>
+            historyType === undefined ||
+            historyTypeOf(record.summary) === historyType,
+        [historyType],
     )
     const isTyped = historyType !== undefined
     const [scanPages] = useState(readTypedScanPages)
     const typedBudget = typedScanBudget(typedScanShare, scanPages)
-    // Where the running scan began, as a page count. A ref as well as state:
-    // the page function reads it outside render, right after a resume sets it.
-    const [resume, setResume] = useState<ScanResume>()
-    const resumeRef = useRef<ScanResume>(undefined)
+    const [scan, setScan] = useState<TypedScan>()
+    // The page function runs outside render and reads where the scan began.
+    const scanStartRef = useRef(0)
 
     const queryClient = useQueryClient()
     const isActive = isEnabled && !!accountAddress
@@ -281,7 +284,6 @@ export const useTransactionRecordsQuery = ({
         assetId,
         afterTime,
         beforeTime,
-        historyType,
         contractDecoding,
     })
 
@@ -292,7 +294,7 @@ export const useTransactionRecordsQuery = ({
             queryClient.getQueryData<
                 InfiniteData<RecordsPage, Nullable<PageRef>>
             >(queryKey)?.pages ?? []
-        const read = readsSince(loaded, resumeRef.current, hashKey(queryKey))
+        const read = readsFrom(loaded, scanStartRef.current)
         return Math.min(
             typedBudget.pageReads,
             Math.max(1, typedBudget.pages - read),
@@ -371,12 +373,14 @@ export const useTransactionRecordsQuery = ({
                         record.timestamp < fromMs,
                 )
             records.push(
-                ...minedItems.filter(r => !loadedIds.has(r.id)).filter(isKept),
+                ...minedItems
+                    .filter(r => !loadedIds.has(r.id))
+                    .filter(isInScope),
             )
             const nextPage = isPastRange ? undefined : next
             const isDone =
                 loadedNewestMinedId === undefined
-                    ? records.length > 0
+                    ? records.some(isOfType)
                     : hasReachedLoadedPages
             if (isDone || !nextPage || read >= readCap) {
                 return {
@@ -501,12 +505,18 @@ export const useTransactionRecordsQuery = ({
             isEnabled: isActive,
         })
     const minedRecords = useMemo(
-        () => query.data?.pages.flatMap(page => page.records) ?? [],
-        [query.data],
+        () =>
+            query.data?.pages.flatMap(page => page.records.filter(isOfType)) ??
+            [],
+        [query.data, isOfType],
     )
     const records = useMemo(
-        () => mergePendingRecords(pendingRecords.filter(isKept), minedRecords),
-        [pendingRecords, minedRecords, isKept],
+        () =>
+            mergePendingRecords(
+                pendingRecords.filter(isInScope).filter(isOfType),
+                minedRecords,
+            ),
+        [pendingRecords, minedRecords, isInScope, isOfType],
     )
 
     // A page that found nothing changes no visible row, so `onEndReached`
@@ -532,13 +542,18 @@ export const useTransactionRecordsQuery = ({
     const pages = query.data?.pages ?? []
     const pageCount = pages.length
     const trailingEmptyPages =
-        pageCount - 1 - pages.findLastIndex(page => page.records.length > 0)
+        pageCount - 1 - pages.findLastIndex(page => page.records.some(isOfType))
     const isWalking =
         isFetched && !isQueryError && hasNextPage && trailingEmptyPages > 0
+    // Picking a type starts its scan where the list stands: the loaded pages
+    // are filtered for free, and only reading further back costs calls.
+    const scanKey = `${hashKey(queryKey)}|${historyType ?? ''}`
+    const scanStart =
+        scan?.key === scanKey ? Math.min(scan.startPage, pageCount) : pageCount
+    if (scan?.key !== scanKey) setScan({ key: scanKey, startPage: scanStart })
+    const scannedReads = readsFrom(pages, scanStart)
     // Gated on the next page only, so a background refetch of the loaded pages
     // keeps the paused state up instead of flipping back to the skeleton.
-    const resumeKey = hashKey(queryKey)
-    const scannedReads = readsSince(pages, resume, resumeKey)
     const isSearchPaused = isTyped
         ? isFetched &&
           !isQueryError &&
@@ -549,6 +564,11 @@ export const useTransactionRecordsQuery = ({
           !query.isFetchingNextPage &&
           trailingEmptyPages % MAX_AUTO_RECORD_FETCHES === 0
 
+    // Declared before the walk below, so a walk the new start allows reads it.
+    useEffect(() => {
+        scanStartRef.current = scanStart
+    }, [scanStart])
+
     // Keyed on pageCount too: a fast page can land in the same notify batch as
     // its own fetching state, so `isFetching` never reads true in between.
     useEffect(() => {
@@ -558,12 +578,11 @@ export const useTransactionRecordsQuery = ({
     // Only a fetch made while paused, such as Search Older, starts a new scan.
     const handleFetchNextPage = useCallback(() => {
         if (isTyped && isSearchPaused) {
-            const next = { key: resumeKey, pageCount }
-            resumeRef.current = next
-            setResume(next)
+            scanStartRef.current = pageCount
+            setScan({ key: scanKey, startPage: pageCount })
         }
         void fetchNextPage()
-    }, [isTyped, isSearchPaused, resumeKey, pageCount, fetchNextPage])
+    }, [isTyped, isSearchPaused, scanKey, pageCount, fetchNextPage])
     const handleRefetch = useCallback(() => {
         refetchPending()
         void refetch()

@@ -130,7 +130,8 @@ const { useWebViewStore } = await import('@modules/webview')
 const { recordSubmissionAttempt } =
     await import('@perawallet/wallet-core-signing')
 const { i18nKey } = await import('@perawallet/wallet-core-chain-contract')
-const { closestPressable } = await import('@test-utils/rnw')
+const { closestPressable, waitPastDoublePressGuard } =
+    await import('@test-utils/rnw')
 const { useRoute } = await import('@react-navigation/native')
 const { peraEvmHistoryHandlers } =
     await import('@packages/chain-ethereum/src/history/api/msw-handlers')
@@ -833,8 +834,17 @@ describe('Flow: History on an Ethereum account', () => {
                 expect(supply).not.toContain('transactions.common.fee')
             })
 
-            it("Given the QA account's rows, when a type is picked in the filter, then only that type's rows list", async () => {
+            it("Given the QA account's rows, when a type is picked in the filter, then only that type's rows list, read from the page already loaded", async () => {
                 serveActionRows()
+                let historyReads = 0
+                const countHistoryRead = ({
+                    request,
+                }: {
+                    request: Request
+                }) => {
+                    if (request.url.includes('/transactions/')) historyReads++
+                }
+                server.events.on('request:start', countHistoryRead)
                 renderHistory()
                 await waitFor(() => expect(rowIds()).toHaveLength(3), {
                     timeout: SLOW_WAIT_TIMEOUT_MS,
@@ -849,6 +859,9 @@ describe('Flow: History on an Ethereum account', () => {
                     fireEvent.click(
                         await screen.findByTestId(`history-type-${type}`),
                     )
+                    // Filtering the loaded pages is instant, so the next pick
+                    // would land inside the Filter button's double-press guard.
+                    await waitPastDoublePressGuard()
                 }
 
                 await pickType('approvals')
@@ -868,6 +881,9 @@ describe('Flow: History on an Ethereum account', () => {
                         ]),
                     { timeout: SLOW_WAIT_TIMEOUT_MS },
                 )
+                // Switching types filters the loaded page; nothing is read again.
+                expect(historyReads).toBe(1)
+                server.events.removeListener('request:start', countHistoryRead)
             })
 
             it('Given a named swap row, when it is opened, then the page carries the same title', async () => {

@@ -440,6 +440,63 @@ describe('useTransactionRecordsQuery', () => {
         )
     })
 
+    test('switching to a type filters the pages already loaded without reading them again', async () => {
+        mocks.getMinedTransactionHistory.mockResolvedValueOnce({
+            items: [record('SEND', JAN_10), gasOnly('APPROVE')],
+        })
+        const { result, rerender } = renderHook(
+            ({ historyType }: { historyType?: 'approvals' | 'swaps' }) =>
+                useTransactionRecordsQuery({
+                    accountAddress: ADDRESS,
+                    scope: SCOPE,
+                    historyType,
+                }),
+            { wrapper, initialProps: {} },
+        )
+        await waitFor(() => expect(result.current.records).toHaveLength(2))
+
+        rerender({ historyType: 'approvals' })
+
+        expect(result.current.records.map(r => r.id)).toEqual(['APPROVE'])
+        rerender({})
+        expect(result.current.records).toHaveLength(2)
+        expect(mocks.getMinedTransactionHistory).toHaveBeenCalledTimes(1)
+    })
+
+    test('a type picked over loaded pages scans its budget from there, not from page one', async () => {
+        mocks.getMinedTransactionHistory.mockImplementation(
+            async (_address, _scope, page?: { cursor: string }) => {
+                const cursor = `${page?.cursor ?? 'c'}+`
+                return {
+                    items: [record(`SEND-${cursor}`, JAN_10)],
+                    next: { cursor },
+                }
+            },
+        )
+        const { result, rerender } = renderHook(
+            ({ historyType }: { historyType?: 'approvals' }) =>
+                useTransactionRecordsQuery({
+                    accountAddress: ADDRESS,
+                    scope: SCOPE,
+                    historyType,
+                }),
+            { wrapper, initialProps: {} },
+        )
+        await waitFor(() => expect(result.current.records).toHaveLength(1))
+        for (let i = 2; i <= 3; i++) {
+            act(() => result.current.fetchNextPage())
+            await waitFor(() => expect(result.current.records).toHaveLength(i))
+        }
+        mocks.getMinedTransactionHistory.mockClear()
+
+        rerender({ historyType: 'approvals' })
+
+        await waitFor(() => expect(result.current.isSearchPaused).toBe(true))
+        expect(mocks.getMinedTransactionHistory).toHaveBeenCalledTimes(
+            DEFAULT_TYPED_SCAN_PAGES,
+        )
+    })
+
     test('with a type, pauses after its smaller fetch budget', async () => {
         mocks.getMinedTransactionHistory.mockImplementation(
             async (_address, _scope, page?: { cursor: string }) => ({
