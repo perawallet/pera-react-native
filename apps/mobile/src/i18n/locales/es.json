@@ -4274,7 +4274,7 @@
             "route": "Ruta",
             "cross_chain_note": "Tu {{asset}} llegará a {{network}} cuando el proveedor complete el swap. Puedes seguirlo en la pantalla Swap.",
             "spend_approval_note": "Primero firmarás una aprobación por el importe de este swap y después el swap.",
-            "insufficient_network_fee": "No tienes suficiente {{symbol}} para pagar la comisión de red.",
+            "insufficient_network_fee": "Puede que no tengas suficiente {{symbol}} para la comisión de red. Pera comprueba la comisión exacta antes de firmar nada.",
             "provider": "Proveedor",
             "minimum_received": "Mínimo recibido",
             "confirm_swap": "Confirmar swap",

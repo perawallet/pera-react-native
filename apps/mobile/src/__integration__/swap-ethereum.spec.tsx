@@ -549,7 +549,7 @@ describe('Flow: Swap from an Ethereum account', () => {
         )
     })
 
-    it('Given too little ether for the network fee, when the confirmation opens, then it says so and cannot be confirmed', async () => {
+    it('Given too little ether for the estimated network fee, when the confirmation opens, then it warns and can still be confirmed', async () => {
         fakeNode(0n, '0x1')
         await openConfirmation()
 
@@ -562,7 +562,7 @@ describe('Flow: Swap from an Ethereum account', () => {
         ).toBeTruthy()
         expect(
             isElementDisabled(screen.getByTestId('swap-confirm-slide')),
-        ).toBe(true)
+        ).toBe(false)
     })
 
     it('Given a network fee above 10% of the swap, when the confirmation opens, then it warns about the fee and can still be confirmed', async () => {

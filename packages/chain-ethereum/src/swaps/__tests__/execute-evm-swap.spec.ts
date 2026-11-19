@@ -631,7 +631,7 @@ describe('executeEvmSwap', () => {
         expect(result).toEqual({ kind: 'verifying-previous' })
     })
 
-    it('stops before the order when the balance cannot pay', async () => {
+    it('refuses at the exact cost, before signing, when the balance cannot pay', async () => {
         fakeNode({ balance: '0x0', callResult: allowance(0n) })
         const context = contextOf(orderOf([SWAP_TX]))
 
@@ -645,10 +645,25 @@ describe('executeEvmSwap', () => {
                 phase: 'prepare',
                 reason: 'insufficient-native-balance',
                 chainId: 'ethereum',
+                step: 'swap',
             },
         })
-        expect(result).not.toHaveProperty('failure.step')
-        expect(context.createOrder).not.toHaveBeenCalled()
+        expect(context.addSignRequest).not.toHaveBeenCalled()
+        await flushCancelReport()
+        expect(context.reportOrder).toHaveBeenCalledWith(CANCELLED)
+    })
+
+    it('orders a swap the ceiling estimate says the account cannot pay', async () => {
+        // Enough for a deposit's exact cost, short of the 400k-gas ceiling.
+        fakeNode({ balance: numberToHex(10n ** 15n) })
+        const context = contextOf(orderOf([DEPOSIT_TX]))
+
+        const result = await run(
+            context,
+            inputOf({ account: {} as ExecuteSwapParams['account'] }),
+        )
+
+        expect(result.kind).toBe('success')
     })
 
     it('cancels an order when the user leaves before signing', async () => {
