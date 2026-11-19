@@ -26,7 +26,6 @@ const {
     mockSetToAsset,
     mockSetSourceChainId,
     mockSetReceivingAccountId,
-    mockSetSelectedAccountId,
     mockSetParams,
     mockRequestBottomSheet,
     mockPushWebView,
@@ -39,28 +38,24 @@ const {
     mockSetToAsset: vi.fn(),
     mockSetSourceChainId: vi.fn(),
     mockSetReceivingAccountId: vi.fn(),
-    mockSetSelectedAccountId: vi.fn(),
     mockSetParams: vi.fn(),
     mockRequestBottomSheet: vi.fn(),
     mockPushWebView: vi.fn(),
     mockMarkIntroductionSeen: vi.fn(),
     mockSeedSwapRouteAssets: vi.fn(),
     state: {
-        selected: null as Account | null,
-        signers: [] as Account[],
+        swapAccount: null as Account | null,
         swapChainAccounts: new Set<string>(),
         sourceChainId: null as string | null,
         pairAccountId: null as string | null,
         swapScope: null as { chainId: string; networkId: string } | null,
         isIntroductionSeen: false,
-        isFocused: true,
     },
 }))
 
 vi.mock('@react-navigation/native', () => ({
     useRoute: () => ({ params: routeParams.current }),
     useNavigation: () => ({ setParams: mockSetParams }),
-    useIsFocused: () => state.isFocused,
 }))
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
@@ -86,21 +81,7 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
         account && state.swapChainAccounts.has(account.id)
             ? (state.swapScope ?? SCOPE)
             : null,
-    useSwapSigningAccounts: () => state.signers,
-}))
-
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useSelectedAccount: () => state.selected,
-    useSelectedAccountId: () => ({
-        setSelectedAccountId: mockSetSelectedAccountId,
-    }),
-}))
-
-vi.mock('@modules/accounts', () => ({
-    useAccountListPicker: (accounts: Account[]) => ({
-        accountFilter: (account: Account) =>
-            accounts.some(candidate => candidate.id === account.id),
-    }),
+    useSwapAccount: () => state.swapAccount,
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
@@ -135,11 +116,9 @@ describe('useSwapScreen', () => {
     beforeEach(() => {
         routeParams.current = undefined
         vi.clearAllMocks()
-        state.selected = { id: 'acc-1' }
-        state.signers = [{ id: 'acc-1' }]
+        state.swapAccount = { id: 'acc-1' }
         state.swapChainAccounts = new Set(['acc-1', 'acc-2'])
         state.isIntroductionSeen = false
-        state.isFocused = true
         state.sourceChainId = null
         state.pairAccountId = null
         state.swapScope = null
@@ -149,7 +128,7 @@ describe('useSwapScreen', () => {
         mockRequestBottomSheet.mockResolvedValue(undefined)
     })
 
-    it("swaps on the selected account's chain scope", () => {
+    it("swaps on the swap account's chain scope", () => {
         const { result } = renderHook(() => useSwapScreen())
 
         expect(result.current.scope).toEqual(SCOPE)
@@ -240,7 +219,7 @@ describe('useSwapScreen', () => {
         const { rerender } = renderHook(() => useSwapScreen())
 
         state.pairAccountId = 'acc-2'
-        state.selected = { id: 'acc-2' }
+        state.swapAccount = { id: 'acc-2' }
         state.swapScope = OTHER_SCOPE
         rerender()
 
@@ -258,10 +237,10 @@ describe('useSwapScreen', () => {
     })
 
     it('leaves the pair alone when the first scope resolves', () => {
-        state.selected = null
+        state.swapAccount = null
         const { rerender } = renderHook(() => useSwapScreen())
 
-        state.selected = { id: 'acc-1' }
+        state.swapAccount = { id: 'acc-1' }
         rerender()
 
         expect(mockSetSourceChainId).not.toHaveBeenCalled()
@@ -273,61 +252,13 @@ describe('useSwapScreen', () => {
         expect(mockSetSourceChainId).not.toHaveBeenCalled()
     })
 
-    it('has no scope when the selected account is on no swap chain', () => {
-        state.selected = { id: 'eth-only' }
-        state.signers = []
+    it('has no scope when the swap account is on no swap chain', () => {
+        state.swapAccount = { id: 'eth-only' }
 
         const { result } = renderHook(() => useSwapScreen())
 
         expect(result.current.scope).toBeNull()
         expect(mockSetFromAsset).not.toHaveBeenCalled()
-    })
-
-    it('offers only accounts that can sign on their swap chain', () => {
-        state.signers = [{ id: 'acc-1' }, { id: 'acc-2' }]
-
-        const { result } = renderHook(() => useSwapScreen())
-
-        const { accountFilter } = result.current.accountPicker
-        expect(accountFilter?.({ id: 'acc-1' } as never)).toBe(true)
-        expect(accountFilter?.({ id: 'watch' } as never)).toBe(false)
-    })
-
-    it('opens on the first swap signer when the selected account cannot swap', () => {
-        state.selected = { id: 'watch' }
-        state.signers = [{ id: 'acc-2' }, { id: 'acc-1' }]
-
-        renderHook(() => useSwapScreen())
-
-        expect(mockSetSelectedAccountId).toHaveBeenCalledWith('acc-2')
-    })
-
-    it('leaves a watch account picked elsewhere selected while Swap is out of focus', () => {
-        state.isFocused = false
-        state.selected = { id: 'watch' }
-        state.signers = [{ id: 'acc-2' }]
-
-        renderHook(() => useSwapScreen())
-
-        expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
-    })
-
-    it('opens on the first swap signer once Swap comes back into focus', () => {
-        state.isFocused = false
-        state.selected = { id: 'watch' }
-        state.signers = [{ id: 'acc-2' }]
-        const { rerender } = renderHook(() => useSwapScreen())
-
-        state.isFocused = true
-        rerender()
-
-        expect(mockSetSelectedAccountId).toHaveBeenCalledWith('acc-2')
-    })
-
-    it('keeps a selected account that can swap', () => {
-        renderHook(() => useSwapScreen())
-
-        expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
     })
 
     it('hands a resumed amount to the form, tied to the route pay asset', () => {

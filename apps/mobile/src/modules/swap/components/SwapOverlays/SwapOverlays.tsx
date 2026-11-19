@@ -13,13 +13,15 @@
 import { useEffect, useState } from 'react'
 import { AppState } from 'react-native'
 import {
+    useSwapAccountFollowsSelection,
     useSwapCosignResolver,
     useSwapOrderTracker,
 } from '@perawallet/wallet-core-swaps'
 import { useErrorToast } from '@hooks/useErrorToast'
 
 /**
- * Headless app-root mount for the shared-account swap cosign resolver.
+ * Headless app-root mount for Swap's background work: the shared-account cosign
+ * resolver, the order tracker, and keeping Swap on the selected account.
  *
  * Mirrors {@link MultisigOverlays}'s resolver wiring: tracks foreground state
  * so polling pauses while the app is backgrounded (iOS suspends JS timers
@@ -42,6 +44,7 @@ export const SwapOverlays = (): null => {
 
     useSwapCosignResolver({ isAppActive, reportError: showError })
     useSwapOrderTracker()
+    useSwapAccountFollowsSelection()
 
     return null
 }

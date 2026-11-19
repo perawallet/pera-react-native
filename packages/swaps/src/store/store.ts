@@ -33,6 +33,7 @@ const initialState = {
     toAssetScope: null as Nullable<ChainScope>,
     receivingAccountId: null as Nullable<string>,
     sourceChainId: null as Nullable<ChainId>,
+    accountId: null as Nullable<string>,
     pairAccountId: null as Nullable<string>,
     slippage: null as Nullable<string>,
     isLocalCurrencyInput: false,
@@ -52,6 +53,7 @@ export const useSwapsStore: UseBoundStore<
             ) => set({ toAsset, toAssetScope }),
             setReceivingAccountId: (receivingAccountId: Nullable<string>) =>
                 set({ receivingAccountId }),
+            setAccountId: (accountId: Nullable<string>) => set({ accountId }),
             setSourceChainId: (sourceChainId: Nullable<ChainId>) =>
                 set({
                     sourceChainId,
@@ -85,6 +87,7 @@ export const useSwapsStore: UseBoundStore<
                     toAsset: toAsset ?? null,
                     toAssetScope: toAssetScope ?? null,
                     receivingAccountId: null,
+                    accountId,
                     pairAccountId: accountId,
                     flippedPayAmount: null,
                 }),
@@ -117,6 +120,13 @@ export const useSwapsStore: UseBoundStore<
             setSlippage: (slippage: Nullable<string>) => set({ slippage }),
             setIsLocalCurrencyInput: (value: boolean) =>
                 set({ isLocalCurrencyInput: value }),
+            resetAssetPair: () =>
+                set(state => ({
+                    ...initialState,
+                    accountId: state.accountId,
+                    slippage: state.slippage,
+                    isLocalCurrencyInput: state.isLocalCurrencyInput,
+                })),
             resetState: () =>
                 set(state => ({
                     ...initialState,

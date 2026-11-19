@@ -11,7 +11,6 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import {
     toScopeKey,
     type ChainScope,
@@ -22,6 +21,7 @@ import {
     useSwapHistoryInfiniteQuery,
     type SwapAsset,
     type SwapHistoryItem,
+    useSwapAccount,
 } from '@perawallet/wallet-core-swaps'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 import { useWebView } from '@modules/webview'
@@ -64,7 +64,7 @@ export const useSwapHistoryList = ({
     onClose,
 }: UseSwapHistoryListParams): UseSwapHistoryListResult => {
     const { pushWebView } = useWebView()
-    const accountAddresses = useSwapAccountAddresses(useSelectedAccount())
+    const accountAddresses = useSwapAccountAddresses(useSwapAccount())
 
     // The request runs on the first registered entry's scope, so the swap scope
     // leads; when registration doesn't send its address, the next one does.

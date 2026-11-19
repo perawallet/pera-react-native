@@ -12,7 +12,7 @@
 
 import type { ReactNode } from 'react'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedSwapScope } from '@perawallet/wallet-core-swaps'
+import { useSwapAccountScope } from '@perawallet/wallet-core-swaps'
 
 type SwapScopePreviewProps = {
     children: (scope: ChainScope) => ReactNode
@@ -20,6 +20,6 @@ type SwapScopePreviewProps = {
 
 /** Renders a swap preview on the selected account's swap scope, as the swap screen does; nothing without one. */
 export const SwapScopePreview = ({ children }: SwapScopePreviewProps) => {
-    const scope = useSelectedSwapScope()
+    const scope = useSwapAccountScope()
     return scope ? children(scope) : null
 }

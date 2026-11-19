@@ -51,9 +51,14 @@ export type SwapsState = BaseStoreState & {
     /** The chain the user chose to pay from; null picks the default. */
     sourceChainId: Nullable<ChainId>
     /**
+     * The account Swap pays from, kept apart from the app-wide selection so a
+     * pick inside Swap never moves Home; null follows the selected account.
+     */
+    accountId: Nullable<string>
+    /**
      * The account a pick made the pair for, so switching to that account keeps
      * the pair instead of resetting it; null when the pair follows whichever
-     * account is selected.
+     * account Swap is on.
      */
     pairAccountId: Nullable<string>
     slippage: Nullable<string>
@@ -63,6 +68,7 @@ export type SwapsState = BaseStoreState & {
     setFromAsset: (fromAsset: string) => void
     setToAsset: (toAsset: string, toAssetScope?: Nullable<ChainScope>) => void
     setReceivingAccountId: (id: Nullable<string>) => void
+    setAccountId: (accountId: Nullable<string>) => void
     /** Clears the pair and the receiving account: they belong to the old chain. */
     setSourceChainId: (chainId: Nullable<ChainId>) => void
     /** Pays with `fromAsset` on `chainId`; clears the receive side, receiving account and any carried flip amount: they belong to the old chain. */
@@ -78,6 +84,8 @@ export type SwapsState = BaseStoreState & {
     ) => Nullable<Decimal>
     setSlippage: (slippage: Nullable<string>) => void
     setIsLocalCurrencyInput: (value: boolean) => void
+    /** Restores the default pair, keeping the account and the user's settings. */
+    resetAssetPair: () => void
 }
 
 export type SwapAccountPair = {

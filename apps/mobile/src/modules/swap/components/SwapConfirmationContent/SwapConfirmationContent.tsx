@@ -54,7 +54,7 @@ export const SwapConfirmationContent = ({
         useSwapConfirmationActions({ scope, quote })
 
     const {
-        selectedAccount,
+        swapAccount,
         receiveTarget,
         inAsset,
         outAsset,
@@ -97,9 +97,9 @@ export const SwapConfirmationContent = ({
                             <PWText variant='h4'>
                                 {t('swap.quote.confirm_swap')}
                             </PWText>
-                            {selectedAccount && (
+                            {swapAccount && (
                                 <AccountDisplay
-                                    account={selectedAccount}
+                                    account={swapAccount}
                                     iconProps={{ size: 'sm' }}
                                     textProps={{ variant: 'caption' }}
                                     showChevron={false}

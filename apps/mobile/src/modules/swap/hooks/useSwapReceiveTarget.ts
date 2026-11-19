@@ -14,7 +14,6 @@ import { useCallback, useMemo } from 'react'
 import {
     addressOn,
     useAllAccounts,
-    useSelectedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -22,7 +21,7 @@ import {
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
-import { useSwapsStore } from '@perawallet/wallet-core-swaps'
+import { useSwapsStore, useSwapAccount } from '@perawallet/wallet-core-swaps'
 import { canReceiveCrossChain } from '../utils/crossChainEligibility'
 
 export type UseSwapReceiveTargetResult = {
@@ -48,7 +47,7 @@ export const useSwapReceiveTarget = (
     const setReceivingAccountId = useSwapsStore(
         state => state.setReceivingAccountId,
     )
-    const selectedAccount = useSelectedAccount()
+    const swapAccount = useSwapAccount()
     const accounts = useAllAccounts()
 
     const receiveScope = toAssetScope ?? scope
@@ -69,16 +68,16 @@ export const useSwapReceiveTarget = (
     )
 
     const receivingAccount = useMemo<Nullable<WalletAccount>>(() => {
-        if (!isCrossChain) return selectedAccount
+        if (!isCrossChain) return swapAccount
         const findEligible = (id: Maybe<string>) =>
             receivingAccounts.find(candidate => candidate.id === id)
         return (
             findEligible(receivingAccountId) ??
-            findEligible(selectedAccount?.id) ??
+            findEligible(swapAccount?.id) ??
             receivingAccounts.at(0) ??
             null
         )
-    }, [isCrossChain, selectedAccount, receivingAccounts, receivingAccountId])
+    }, [isCrossChain, swapAccount, receivingAccounts, receivingAccountId])
 
     const selectReceivingAccount = useCallback(
         (account: WalletAccount) => setReceivingAccountId(account.id),

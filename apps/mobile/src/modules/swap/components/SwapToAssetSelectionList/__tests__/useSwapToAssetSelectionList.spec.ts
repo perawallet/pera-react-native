@@ -16,7 +16,7 @@ import { Decimal } from 'decimal.js'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { useSwapToAssetSelectionList } from '../useSwapToAssetSelectionList'
 
-const mockUseSelectedAccount = vi.hoisted(() => vi.fn())
+const mockUseSwapAccount = vi.hoisted(() => vi.fn())
 const mockTrackEvent = vi.hoisted(() => vi.fn())
 const mockUseAccountHoldingsAcrossChainsQuery = vi.hoisted(() => vi.fn())
 const mockUseSwapPairsInfiniteQuery = vi.hoisted(() => vi.fn())
@@ -41,7 +41,6 @@ const mockT = vi.hoisted(() =>
 )
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useSelectedAccount: mockUseSelectedAccount,
     useAccountHoldingsAcrossChainsQuery:
         mockUseAccountHoldingsAcrossChainsQuery,
 }))
@@ -90,6 +89,7 @@ vi.mock('@tanstack/react-query', () => ({
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
     useSwapPairsInfiniteQuery: mockUseSwapPairsInfiniteQuery,
+    useSwapAccount: mockUseSwapAccount,
     scopeOfSwapAsset: ({
         chainId,
         networkId,
@@ -199,7 +199,7 @@ describe('useSwapToAssetSelectionList', () => {
             assetId: chainId === 'algorand' ? '0' : 'native',
         }))
         mockGetQueryData.mockReturnValue(undefined)
-        mockUseSelectedAccount.mockReturnValue({
+        mockUseSwapAccount.mockReturnValue({
             chains: { algorand: { address: 'TEST_ADDRESS' } },
         })
         mockUseAccountHoldingsAcrossChainsQuery.mockReturnValue(
@@ -513,7 +513,7 @@ describe('useSwapToAssetSelectionList', () => {
     })
 
     it('returns empty items when no account is selected', () => {
-        mockUseSelectedAccount.mockReturnValue(null)
+        mockUseSwapAccount.mockReturnValue(null)
         mockUseAccountHoldingsAcrossChainsQuery.mockReturnValue(holdingsOf([]))
 
         const { result } = renderHook(() =>

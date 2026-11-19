@@ -17,7 +17,6 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     addressOn,
     useAllAccounts,
-    useSelectedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -33,6 +32,7 @@ import {
     scopeOfSwapAsset,
     useSwapSourceCostQuery,
     type SwapQuote,
+    useSwapAccount,
 } from '@perawallet/wallet-core-swaps'
 import { useHaptics } from '@hooks/useHaptics'
 import { useHapticOnCrossing } from '@hooks/useHapticOnCrossing'
@@ -58,7 +58,7 @@ export type SwapReceiveTarget = {
 }
 
 type UseSwapConfirmationResult = {
-    selectedAccount: ReturnType<typeof useSelectedAccount>
+    swapAccount: Nullable<WalletAccount>
     /** Where a cross-chain payout lands; null on a same-chain swap, which pays the swapper. */
     receiveTarget: Nullable<SwapReceiveTarget>
     inAsset: Optional<PeraAsset>
@@ -105,7 +105,7 @@ export const useSwapConfirmation = ({
     const styles = useStyles()
     const { t } = useLanguage()
     const haptics = useHaptics()
-    const selectedAccount = useSelectedAccount()
+    const swapAccount = useSwapAccount()
     const accounts = useAllAccounts()
     const { usdToPreferred } = useCurrency(scope)
     const { sourceCost, isLoading: isSourceCostLoading } =
@@ -262,7 +262,7 @@ export const useSwapConfirmation = ({
     }, [receiveTarget, quote.assetOut, t])
 
     return {
-        selectedAccount,
+        swapAccount,
         receiveTarget,
         inAsset,
         outAsset,
