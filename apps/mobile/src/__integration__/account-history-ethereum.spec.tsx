@@ -1078,6 +1078,52 @@ describe('Flow: History on an Ethereum account', () => {
                 expect(nodeReads).toEqual([])
             })
 
+            it('Given a revocation whose calldata the history carries, when it lists and its row is opened, then the row and the page both say revoke', async () => {
+                nodeReads.length = 0
+                server.use(
+                    ...peraEvmHistoryHandlers({
+                        history: {
+                            [ETH_ADDRESS]: [
+                                [
+                                    {
+                                        ...approval(REVOKE_HASH),
+                                        input: approveData('0'),
+                                    },
+                                ],
+                            ],
+                        },
+                    }),
+                    ...evmRpcHandlers({
+                        responses: {
+                            eth_getTransactionByHash: params => {
+                                nodeReads.push(String(params[0]))
+                                return REVOKE_TX
+                            },
+                        },
+                    }),
+                )
+                renderHistory()
+
+                expect(
+                    await rowText(REVOKE_HASH, /revoke_approval/),
+                ).not.toMatch(/approve_asset/)
+                expect(nodeReads).toEqual([])
+
+                await openRow(REVOKE_HASH)
+
+                await screen.findByTestId('transaction_detail_fee', undefined, {
+                    timeout: SLOW_WAIT_TIMEOUT_MS,
+                })
+                expect(
+                    screen.getAllByText(
+                        'transactions.list_item.revoke_approval',
+                    ).length,
+                ).toBeGreaterThan(0)
+                expect(
+                    screen.queryByText('transactions.list_item.approve_asset'),
+                ).toBeNull()
+            })
+
             it('Given a later revocation, when its row is opened, then it reads as a revocation', async () => {
                 serveApprovals()
                 renderHistory()

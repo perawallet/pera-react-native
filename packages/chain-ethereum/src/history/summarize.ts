@@ -11,7 +11,7 @@
  */
 
 import { Decimal } from 'decimal.js'
-import { getAddress } from 'viem'
+import { getAddress, size } from 'viem'
 import {
     type AssetDisplayHint,
     type BalanceChange,
@@ -518,6 +518,15 @@ const summarizeContractCall = (
     const action = classifyEvmHistoryCall({
         to,
         method: item.method,
+        ...(item.input !== null &&
+            size(item.input) > 0 && {
+                calldata: {
+                    from: getAddress(address),
+                    data: item.input,
+                    value: BigInt(item.value ?? '0'),
+                },
+            }),
+        eip155ChainId,
         changes,
         nftLegCount: item.nft_transfers.filter(
             leg => areEqual(leg.from, address) || areEqual(leg.to, address),
