@@ -120,6 +120,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
 })
 
 const mockFetchNextPage = vi.fn()
+const mockRefetch = vi.fn()
 
 const mockAvailableAssets = [
     {
@@ -207,8 +208,92 @@ describe('useSwapToAssetSelectionList', () => {
         mockUseSwapPairsInfiniteQuery.mockReturnValue({
             assets: mockAvailableAssets,
             isLoading: false,
+            isError: false,
             hasNextPage: false,
             fetchNextPage: mockFetchNextPage,
+            refetch: mockRefetch,
+        })
+    })
+
+    describe('load error', () => {
+        it('reports a failed pairs read and retries it', () => {
+            mockUseSwapPairsInfiniteQuery.mockReturnValue({
+                assets: [],
+                isLoading: false,
+                isError: true,
+                hasNextPage: false,
+                fetchNextPage: mockFetchNextPage,
+                refetch: mockRefetch,
+            })
+
+            const { result } = renderHook(() =>
+                useSwapToAssetSelectionList(defaultParams),
+            )
+            act(() => result.current.handleRetry())
+
+            expect(result.current.isLoadError).toBe(true)
+            expect(mockRefetch).toHaveBeenCalledTimes(1)
+        })
+
+        it('retries a failed read under a picked network, then lists its tokens', () => {
+            mockDestinationScopes.current = [ALGO_SCOPE, ETH_SCOPE]
+            const failed = {
+                assets: [],
+                isLoading: false,
+                isError: true,
+                isSuccess: false,
+                hasNextPage: false,
+                fetchNextPage: mockFetchNextPage,
+                refetch: mockRefetch,
+            }
+            mockUseSwapPairsInfiniteQuery.mockReturnValue(failed)
+            const { result, rerender } = renderHook(() =>
+                useSwapToAssetSelectionList(defaultParams),
+            )
+            act(() => result.current.handleSelectChain('ethereum'))
+
+            expect(result.current.isLoadError).toBe(true)
+            expect(result.current.crossNetworkEmptyState).toBeNull()
+            act(() => result.current.handleRetry())
+            expect(mockRefetch).toHaveBeenCalledTimes(1)
+
+            mockUseSwapPairsInfiniteQuery.mockReturnValue({
+                ...failed,
+                assets: [ETH_NATIVE],
+                isError: false,
+                isSuccess: true,
+            })
+            rerender()
+
+            expect(result.current.isLoadError).toBe(false)
+            expect(result.current.items).toHaveLength(1)
+        })
+
+        it('shows loading, not the error, while a retry is in flight', () => {
+            mockUseSwapPairsInfiniteQuery.mockReturnValue({
+                assets: [],
+                isLoading: false,
+                isError: true,
+                isFetching: true,
+                hasNextPage: false,
+                fetchNextPage: mockFetchNextPage,
+                refetch: mockRefetch,
+            })
+
+            const { result } = renderHook(() =>
+                useSwapToAssetSelectionList(defaultParams),
+            )
+
+            expect(result.current.isLoadError).toBe(false)
+            expect(result.current.isLoading).toBe(true)
+        })
+
+        it('reports no error when the pairs read succeeded', () => {
+            const { result } = renderHook(() =>
+                useSwapToAssetSelectionList(defaultParams),
+            )
+
+            expect(result.current.isLoadError).toBe(false)
         })
     })
 

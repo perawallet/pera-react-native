@@ -16,6 +16,7 @@ import type { SwapHistoryItem } from '../../models'
 import { transformSwapOrderItem } from '../orders/transformers'
 import { cursorOf, routerRequest } from '../router-request'
 import { swapAssetRefOf, type ResolveSwapAssetRef } from '../router-ids'
+import { isDeviceNotFoundError } from '../../utils/routerErrors'
 import { swapHistoryResponseSchema } from './schema'
 
 export type FetchSwapHistoryParams = {
@@ -31,23 +32,34 @@ export type SwapHistoryPage = {
     next: Nullable<string>
 }
 
-/** Every route and status, newest first; the router has no status filter. */
+/**
+ * Every route and status, newest first; the router has no status filter. A
+ * device the router doesn't know has no history yet, so it reads as empty.
+ */
 export const fetchSwapHistory = async (
     { deviceId, accounts, cursor, limit }: FetchSwapHistoryParams,
     scope: ChainScope,
     resolve: ResolveSwapAssetRef = swapAssetRefOf,
 ): Promise<SwapHistoryPage> => {
-    const data = await routerRequest({
-        scope,
-        method: 'GET',
-        path: 'history/',
-        params: {
-            device_id: deviceId,
-            ...(accounts.length > 0 ? { accounts: accounts.join(',') } : {}),
-            ...(cursor ? { cursor } : {}),
-            ...(limit !== undefined ? { limit } : {}),
-        },
-    })
+    let data: unknown
+    try {
+        data = await routerRequest({
+            scope,
+            method: 'GET',
+            path: 'history/',
+            params: {
+                device_id: deviceId,
+                ...(accounts.length > 0
+                    ? { accounts: accounts.join(',') }
+                    : {}),
+                ...(cursor ? { cursor } : {}),
+                ...(limit !== undefined ? { limit } : {}),
+            },
+        })
+    } catch (error) {
+        if (isDeviceNotFoundError(error)) return { results: [], next: null }
+        throw error
+    }
     const parsed = swapHistoryResponseSchema.parse(data)
     return {
         results: parsed.results.map(item =>

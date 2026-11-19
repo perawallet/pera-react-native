@@ -37,6 +37,12 @@ export const isAccountNotOnDeviceError = (error: unknown): boolean =>
     (resolveRouterErrorBody(error)?.code ?? error.backendCode) ===
         'account_not_on_device'
 
+/** History was asked for a device id the router has no registration for. */
+export const isDeviceNotFoundError = (error: unknown): boolean =>
+    isPeraNetworkError(error) &&
+    (resolveRouterErrorBody(error)?.code ?? error.backendCode) ===
+        'device_not_found'
+
 /** What the order call's refusal means for the user, whatever the provider's own wording. */
 export type SwapOrderRefusal =
     | 'insufficient-balance'

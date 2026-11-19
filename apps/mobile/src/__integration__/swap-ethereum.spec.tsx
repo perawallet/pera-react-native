@@ -953,6 +953,46 @@ describe('Flow: Swap from an Ethereum account', () => {
         expect(screen.queryByTestId('swap_to_cross_network_empty')).toBeNull()
     })
 
+    it('Given the pairs request fails, when Swap To opens, then it shows the error with Retry, and Retry lists the tokens once the router answers', async () => {
+        await selectTwoChainAccount()
+        await seedSenderEther('10000000000000000000')
+        fakeNode()
+        useSwapsStore.getState().setSourceChainId('ethereum')
+        useSwapsStore.getState().setFromAsset(ETH_ASSET)
+        server.use(
+            mockSwapPairs({
+                response: { error: 'unavailable', code: 'unavailable' },
+                status: 500,
+            }),
+        )
+        renderWithNavigation(SwapScreen, 'Swap')
+
+        fireEvent.click(
+            await screen.findByTestId('swap-receive-asset-selector'),
+        )
+        await screen.findByTestId('swap_to_load_error')
+        server.use(
+            mockSwapPairs({
+                response: {
+                    results: [
+                        {
+                            kind: 'token',
+                            asset: routerAsset(
+                                `eip155:1/erc20:${TOKEN.toLowerCase()}`,
+                                'USDC',
+                                6,
+                            ),
+                        },
+                    ],
+                },
+            }),
+        )
+        fireEvent.click(await screen.findByTestId('swap_to_retry_button'))
+
+        await screen.findByTestId(`swap-asset-item-${TOKEN}`)
+        expect(screen.queryByTestId('swap_to_load_error')).toBeNull()
+    })
+
     it('Given an allowance that covers the amount, when the swap runs, then only the swap is sent', async () => {
         selectSender(ETHEREUM_SENDER)
         await seedSenderEther('10000000000000000000')

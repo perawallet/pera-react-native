@@ -72,6 +72,22 @@ describe('useSwapAmountSection', () => {
         expect(result.current.isPay).toBe(false)
     })
 
+    it.each([
+        ['resolved', '0', true],
+        ['unresolved', '999', false],
+    ])('shows the balance only for a %s asset', (_name, assetId, expected) => {
+        const { result } = renderHook(() =>
+            useSwapAmountSection({
+                scope: SCOPE,
+                variant: 'receive',
+                assetId,
+                amount: null,
+            }),
+        )
+
+        expect(result.current.isBalanceShown).toBe(expected)
+    })
+
     it('returns hasPositiveAmount false when amount is null', () => {
         const { result } = renderHook(() =>
             useSwapAmountSection({

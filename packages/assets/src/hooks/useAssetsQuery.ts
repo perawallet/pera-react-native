@@ -11,10 +11,10 @@
  */
 
 import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { hashKey, useQuery } from '@tanstack/react-query'
 import type { PeraAsset } from '../models'
 import { getAssetsQueryKey } from './querykeys'
-import { useStableIdList } from '@perawallet/wallet-core-shared'
+import { logger, useStableIdList } from '@perawallet/wallet-core-shared'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { getAssetsByIds } from '../db'
 import { fetchAndPersistAssets, nativeAssetFor } from '../chain-adapter'
@@ -26,6 +26,12 @@ type UseAssetsQueryResult = {
     isRefetching: boolean
     isError: boolean
 }
+
+// Rows served after a failed refresh go stale at once, so the next mount or
+// reconnect retries the refresh instead of pinning them (and their verification
+// tier) for the session under `staleTime: Infinity`. Keyed by query hash, not
+// data: structural sharing keeps the old array when a later refresh matches it.
+const servedAfterFailedRefresh = new Set<string>()
 
 type UseAssetsQueryOptions = {
     /**
@@ -52,16 +58,43 @@ export const useAssetsQuery = (
     const stableIds = useStableIdList(ids)
     const isEnabled = stableIds.length > 0
 
-    const query = useQuery({
+    const query = useQuery<PeraAsset[]>({
         queryKey: getAssetsQueryKey(stableIds, scope, { fetchMissing }),
-        staleTime: Infinity,
+        staleTime: ({ queryHash }) =>
+            servedAfterFailedRefresh.has(queryHash) ? 0 : Infinity,
         // No ids → nothing to fetch. Skip the query entirely so callers that
         // already supply the asset (e.g. the asset-list rows pass skipFetch and
         // get an empty id list) don't mount a live observer per row.
         enabled: isEnabled,
-        queryFn: async () => {
-            if (fetchMissing) {
+        queryFn: async ({ queryKey }) => {
+            if (!fetchMissing) {
+                return getAssetsByIds({ assetIds: stableIds, scope })
+            }
+
+            const queryHash = hashKey(queryKey)
+            try {
                 await fetchAndPersistAssets(stableIds, scope)
+                servedAfterFailedRefresh.delete(queryHash)
+            } catch (error) {
+                // A failed refresh must not hide a stored row: callers read an
+                // absent asset as nonexistent.
+                const stored = await getAssetsByIds({
+                    assetIds: stableIds,
+                    scope,
+                })
+                const storedIds = new Set(stored.map(asset => asset.assetId))
+                const hasEveryId = stableIds.every(
+                    id => id === nativeAsset.assetId || storedIds.has(id),
+                )
+                if (!hasEveryId) throw error
+
+                logger.warn('Asset refresh failed; serving stored rows', {
+                    scope,
+                    count: stored.length,
+                    error,
+                })
+                servedAfterFailedRefresh.add(queryHash)
+                return stored
             }
             return getAssetsByIds({ assetIds: stableIds, scope })
         },
