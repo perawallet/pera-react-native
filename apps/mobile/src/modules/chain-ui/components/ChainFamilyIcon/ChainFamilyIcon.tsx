@@ -11,11 +11,9 @@
  */
 
 import type { ChainFamily } from '@perawallet/wallet-core-chain-contract'
-import { getInitials } from '@perawallet/wallet-core-shared'
-import { PWText, PWView } from '@components/core'
 import { ChainIcon } from '../ChainIcon'
+import { InitialsIcon } from '../InitialsIcon'
 import { useChainFamily } from '../../hooks/useChainFamily'
-import { useStyles } from './styles'
 
 const DEFAULT_SIZE = 24
 
@@ -29,7 +27,6 @@ export const ChainFamilyIcon = ({
     size = DEFAULT_SIZE,
 }: ChainFamilyIconProps) => {
     const { label, leadChainId } = useChainFamily(family)
-    const styles = useStyles(size)
 
     if (leadChainId) {
         return (
@@ -40,17 +37,10 @@ export const ChainFamilyIcon = ({
         )
     }
     return (
-        <PWView
-            style={styles.placeholder}
-            accessibilityLabel={label}
+        <InitialsIcon
+            label={label}
+            size={size}
             testID={`chain_family_icon_${family}`}
-        >
-            <PWText
-                variant='captionSmall'
-                style={styles.initials}
-            >
-                {getInitials(label)}
-            </PWText>
-        </PWView>
+        />
     )
 }

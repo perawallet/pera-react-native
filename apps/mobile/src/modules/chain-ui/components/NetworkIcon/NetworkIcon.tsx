@@ -11,9 +11,9 @@
  */
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { getInitials } from '@perawallet/wallet-core-shared'
-import { PWImage, PWText, PWView } from '@components/core'
+import { PWImage } from '@components/core'
 import { ChainIcon } from '../ChainIcon'
+import { InitialsIcon } from '../InitialsIcon'
 import { useStyles } from './styles'
 
 export type NetworkIconProps = {
@@ -54,14 +54,10 @@ export const NetworkIcon = ({
     }
     if (name) {
         return (
-            <PWView style={styles.placeholder}>
-                <PWText
-                    variant='captionSmall'
-                    style={styles.initials}
-                >
-                    {getInitials(name)}
-                </PWText>
-            </PWView>
+            <InitialsIcon
+                label={name}
+                size={size}
+            />
         )
     }
     return null

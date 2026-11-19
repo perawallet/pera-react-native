@@ -11,7 +11,8 @@
  */
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { PWText, PWView } from '@components/core'
+import { PWView } from '@components/core'
+import { InitialsIcon } from '../InitialsIcon'
 import { useStyles } from './styles'
 import { useChainIcon } from './useChainIcon'
 
@@ -23,7 +24,7 @@ export type ChainIconProps = {
 }
 
 export const ChainIcon = ({ chainId, size = DEFAULT_SIZE }: ChainIconProps) => {
-    const { Icon, initials, displayName } = useChainIcon(chainId)
+    const { Icon, displayName } = useChainIcon(chainId)
     const styles = useStyles(size)
 
     if (Icon) {
@@ -40,17 +41,10 @@ export const ChainIcon = ({ chainId, size = DEFAULT_SIZE }: ChainIconProps) => {
         )
     }
     return (
-        <PWView
-            style={styles.placeholder}
-            accessibilityLabel={displayName}
+        <InitialsIcon
+            label={displayName}
+            size={size}
             testID={`chain_icon_${chainId}`}
-        >
-            <PWText
-                variant='captionSmall'
-                style={styles.initials}
-            >
-                {initials}
-            </PWText>
-        </PWView>
+        />
     )
 }

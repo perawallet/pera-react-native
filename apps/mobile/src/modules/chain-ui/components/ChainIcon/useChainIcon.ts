@@ -17,7 +17,7 @@ import type {
     ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
-import { getInitials, type Optional } from '@perawallet/wallet-core-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { algorandChainIcon } from '@modules/algorand/chain-icons'
 import { ethereumChainIcon } from '@modules/ethereum/chain-icons'
@@ -35,8 +35,6 @@ const CHAIN_ICONS: Record<
 
 export type UseChainIconResult = {
     Icon: Optional<ComponentType<SvgProps>>
-    /** Drawn when the chain has no icon yet. */
-    initials: string
     displayName: string
 }
 
@@ -46,5 +44,5 @@ export const useChainIcon = (chainId: ChainId): UseChainIconResult => {
     const Icon = chains.has(chainId)
         ? CHAIN_ICONS[chains.get(chainId).descriptor.family]?.(chainId)
         : undefined
-    return { Icon, initials: getInitials(displayName), displayName }
+    return { Icon, displayName }
 }

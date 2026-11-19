@@ -19,15 +19,4 @@ export const useStyles = makeStyles((theme, size: number) => ({
         borderRadius: theme.borderRadius.full,
         overflow: 'hidden',
     },
-    placeholder: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: size,
-        height: size,
-        borderRadius: theme.borderRadius.full,
-        backgroundColor: theme.colors.layerGrayLighter,
-    },
-    initials: {
-        color: theme.colors.textGray,
-    },
 }))
