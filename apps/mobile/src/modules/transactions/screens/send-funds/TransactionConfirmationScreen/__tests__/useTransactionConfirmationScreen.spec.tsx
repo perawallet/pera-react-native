@@ -1065,12 +1065,12 @@ describe('useTransactionConfirmationScreen', () => {
             expect(useSpendableBalanceQuery).toHaveBeenCalledWith(undefined)
         })
 
-        it('shows no total or shortfall on a chain with a send-flow adapter', () => {
+        it('shows the total without a shortfall on a chain with a send-flow adapter', () => {
             const { result } = renderHook(() =>
                 useTransactionConfirmationScreen(),
             )
 
-            expect(result.current.total).toBeUndefined()
+            expect(result.current.total).toBe(SEND_TOTAL)
             expect(result.current.feeShortfall).toBeUndefined()
             expect(result.current.isFeeCoveragePending).toBe(false)
         })

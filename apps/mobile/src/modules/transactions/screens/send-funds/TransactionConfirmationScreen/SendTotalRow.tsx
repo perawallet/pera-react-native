@@ -43,6 +43,7 @@ export const SendTotalRow = ({ total, chainId }: SendTotalRowProps) => {
                         key={line.asset.assetId}
                         asset={line.asset}
                         value={line.amount}
+                        density={index > 0 ? 'significant' : 'exact'}
                         prefix={index > 0 ? '+ ' : undefined}
                         showSymbol
                         ignorePrivacyMode

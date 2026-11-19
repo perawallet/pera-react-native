@@ -21,7 +21,6 @@ import {
 } from '@perawallet/wallet-core-assets'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Maybe, Optional } from '@perawallet/wallet-core-shared'
-import { resolveSignificantPrecision } from '@components/CurrencyAmount'
 import { usePreferredAmount } from '@components/PreferredAmount'
 
 export type SendTotalLine = {
@@ -58,14 +57,10 @@ export const useSendTotal = ({
     const nativeAsset = useNativeAsset(scope)
     const isNativeAssetId = useIsNativeAssetId(scope)
 
-    // Rounded as the fee row shows it, so the total adds up on screen.
-    const fee = useMemo(() => {
-        if (!feeAmount) return undefined
-        const wholeFee = toWholeUnits(feeAmount, nativeAsset)
-        return wholeFee.toDecimalPlaces(
-            resolveSignificantPrecision(wholeFee, nativeAsset.decimals),
-        )
-    }, [feeAmount, nativeAsset])
+    const fee = useMemo(
+        () => (feeAmount ? toWholeUnits(feeAmount, nativeAsset) : undefined),
+        [feeAmount, nativeAsset],
+    )
 
     const isCollectibleAsset = asset ? isCollectible(asset) : false
     const { convertedValue: amountValue, isPending: isAmountPricePending } =

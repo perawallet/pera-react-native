@@ -138,6 +138,7 @@ export const useInputScreenActions = ({
                     style={styles.accountDisplay}
                     iconProps={{ size: 'sm' }}
                     showChevron={false}
+                    hideBackupBadge
                     compact
                 />
             </PWView>

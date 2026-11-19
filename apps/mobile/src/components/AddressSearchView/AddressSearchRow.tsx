@@ -29,6 +29,7 @@ type AddressSearchRowProps = {
     /** Shown after selected addresses; the balance row badges itself. */
     chainBadge: ReactNode
     showAccountBalance: boolean
+    hideBackupBadge?: boolean
     showAddIcon: boolean
 }
 
@@ -39,6 +40,7 @@ export const AddressSearchRow = ({
     setValue,
     chainBadge,
     showAccountBalance,
+    hideBackupBadge,
     showAddIcon,
 }: AddressSearchRowProps) => {
     const styles = useStyles()
@@ -66,6 +68,7 @@ export const AddressSearchRow = ({
                         address={item.address}
                         showCopy={false}
                         trailing={chainBadge}
+                        hideBackupBadge={hideBackupBadge}
                         style={styles.accountDisplay}
                     />
                 </PWTouchableOpacity>
@@ -83,6 +86,7 @@ export const AddressSearchRow = ({
                         showBalance={showAccountBalance}
                         chainId={scope.chainId}
                         badges={chainBadge}
+                        hideBackupBadge={hideBackupBadge}
                     />
                 </PWTouchableOpacity>
             )
@@ -98,6 +102,7 @@ export const AddressSearchRow = ({
                         address={item.address}
                         showCopy={false}
                         forceShowIcon
+                        hideBackupBadge={hideBackupBadge}
                         style={
                             showAddIcon
                                 ? styles.accountDisplayInRow
@@ -131,6 +136,7 @@ export const AddressSearchRow = ({
                         scope={scope}
                         address={item.result.address}
                         showCopy={false}
+                        hideBackupBadge={hideBackupBadge}
                         style={
                             showAddIcon
                                 ? styles.accountDisplayInRow

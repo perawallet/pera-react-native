@@ -78,6 +78,7 @@ export const SelectDestinationScreen = () => {
                 scope={scope}
                 excludeAddress={senderAddress}
                 showClipboardPaste
+                hideBackupBadge
                 sendingAssetLabel={selectedAsset.unitName || selectedAsset.name}
                 isSendingMultiChainAsset={
                     !!selectedAsset.peraMetadata?.crossChainAssetGroup
