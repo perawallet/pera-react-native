@@ -24,6 +24,18 @@ export const useStyles = makeStyles(theme => ({
         // Sections sit 40 apart (content gap 24 + 16).
         marginTop: theme.spacing.lg,
     },
+    // A horizontal row that scrolls under the screen's side padding, edge to edge.
+    bleed: {
+        marginHorizontal: -theme.spacing.xl,
+    },
+    bleedContent: {
+        paddingHorizontal: theme.spacing.xl,
+    },
+    // The last card's own right margin already gives part of the end inset.
+    newsContent: {
+        paddingLeft: theme.spacing.xl,
+        paddingRight: theme.spacing.sm,
+    },
     emptyDapps: {
         paddingVertical: theme.spacing.lg,
     },

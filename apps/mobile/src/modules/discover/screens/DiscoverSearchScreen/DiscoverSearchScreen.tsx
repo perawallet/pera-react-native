@@ -302,8 +302,9 @@ export const DiscoverSearchScreen = () => {
             </PWView>
             {search.isTyping ? (
                 // Wrapped so the horizontal ScrollView keeps its content
-                // height instead of growing against the list below.
-                <PWView>
+                // height instead of growing against the list below; it runs
+                // to the screen's edges, so a chip is only cut where the screen ends.
+                <PWView style={styles.filtersBleed}>
                     <FilterSelection
                         options={search.filterOptions}
                         selectedValue={search.filter}

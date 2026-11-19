@@ -321,6 +321,8 @@ describe('useDiscoverDappsScreen', () => {
         expect(call.options).toEqual({
             size: 'auto',
             enablePanDownToClose: true,
+            // The banner reaches the sheet's top edge, under the handle.
+            handleOverlaysContent: true,
         })
         expect(call.contents.props).toEqual({
             item,

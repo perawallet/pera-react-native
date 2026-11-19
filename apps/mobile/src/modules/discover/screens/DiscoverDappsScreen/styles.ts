@@ -13,6 +13,9 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
+    list: {
+        paddingHorizontal: theme.spacing.xl,
+    },
     header: {
         gap: theme.spacing.md,
         paddingTop: theme.spacing.md,
@@ -30,8 +33,13 @@ export const useStyles = makeStyles(theme => ({
     sortLabel: {
         color: theme.colors.linkPrimary,
     },
+    // The chip rows scroll under the screen's side padding, edge to edge.
+    bleed: {
+        marginHorizontal: -theme.spacing.xl,
+    },
     chips: {
         paddingVertical: theme.spacing.xs,
+        paddingHorizontal: theme.spacing.xl,
     },
     empty: {
         paddingVertical: theme.spacing.lg,

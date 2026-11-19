@@ -34,4 +34,10 @@ export type PWBottomSheetProps = {
      * a WebView does, and avoiding on top of that shifts the page twice.
      */
     avoidKeyboard?: boolean
+    /**
+     * Draws the drag handle over the content instead of above it, so content
+     * such as a banner can reach the sheet's top edge. The content must leave
+     * the handle's strip free of anything to tap.
+     */
+    handleOverlaysContent?: boolean
 } & PropsWithChildren
