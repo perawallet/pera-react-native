@@ -133,6 +133,13 @@ describe('titleKeyOf', () => {
                 { kind: 'remove-liquidity', tokenId: '7', isClosing: false },
             ),
         ).toBe('transactions.list_item.remove_liquidity')
+        expect(
+            titleKeyOf(
+                view({ action: { kind: 'collect-fees', tokenId: '7' } }),
+                null,
+                { kind: 'collect-fees', tokenId: '7' },
+            ),
+        ).toBe('transactions.list_item.collect_fees')
     })
 
     it('lets an approval win over an action', () => {

@@ -3882,6 +3882,7 @@
             "swap_pair": "Swap {{from}} → {{to}}",
             "add_liquidity": "Likidite ekle",
             "remove_liquidity": "Likidite çek",
+            "collect_fees": "Ücretleri topla",
             "contract_interaction": "Sözleşme etkileşimi",
             "approval": "Onay",
             "revoke_approval": "Onayı iptal et",

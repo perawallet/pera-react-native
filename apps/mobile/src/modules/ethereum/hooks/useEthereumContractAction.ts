@@ -74,6 +74,7 @@ export type EthereumContractActionPresentation =
           position: EvmLiquidityPosition
       }
     | { kind: 'remove-liquidity'; tokenId: string; isClosing: boolean }
+    | { kind: 'collect-fees'; tokenId: string }
 
 export type UseEthereumContractActionResult = {
     contractAction: Nullable<EthereumContractActionPresentation>
@@ -242,6 +243,9 @@ const present = (
                 tokenId: action.tokenId,
                 isClosing: action.isClosing,
             }
+        }
+        case 'collect-fees': {
+            return { kind: 'collect-fees', tokenId: action.tokenId }
         }
     }
 }

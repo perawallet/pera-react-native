@@ -3882,6 +3882,7 @@
             "swap_pair": "Swap {{from}} → {{to}}",
             "add_liquidity": "Añadir liquidez",
             "remove_liquidity": "Retirar liquidez",
+            "collect_fees": "Cobrar comisiones",
             "contract_interaction": "Interacción con contrato",
             "approval": "Aprobación",
             "revoke_approval": "Revocar aprobación",

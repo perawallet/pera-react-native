@@ -90,6 +90,11 @@ export type EvmContractAction =
           /** Set when the call also burns the position's NFT. */
           isClosing: boolean
       }
+    | {
+          kind: 'collect-fees'
+          /** A decimal uint256. */
+          tokenId: string
+      }
 
 /** The part of a known contract the review carries. */
 export type EvmContractLabel = Pick<

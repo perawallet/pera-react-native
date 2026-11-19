@@ -87,6 +87,44 @@ describe('KNOWN_EVM_CONTRACTS', () => {
     })
 })
 
+describe('universalRouterVersion', () => {
+    const routers = Object.values(KNOWN_EVM_CONTRACTS)
+        .flat()
+        .filter(entry => entry.kind === 'uniswap-universal-router')
+
+    // Command 0x10 is Seaport before 2.0, so a guessed release would misread it.
+    it('is set on every router taken from a deployment list, and only on routers', () => {
+        for (const entry of Object.values(KNOWN_EVM_CONTRACTS).flat()) {
+            const isListed =
+                entry.kind === 'uniswap-universal-router' &&
+                entry.source.includes('/deploy-addresses/')
+            expect(entry.universalRouterVersion !== undefined).toBe(isListed)
+        }
+    })
+
+    it.each([
+        ['0xEf1c6E67703c7BD7107eed8303Fbe6EC2554BF6B', '1'],
+        ['0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD', '1.2'],
+        ['0x66a9893cC07D91D95644AEDD05D03f95e1dBA8Af', '2.0'],
+        ['0x4C82D1fBFe28C977cBB58D8C7FF8FCF9F70a2cCA', '2.1'],
+        [ROUTER_2_1_2, '2.1'],
+    ] as const)('names %s on Ethereum as %s', (address, version) => {
+        expect(findKnownEvmContract(1, address)?.universalRouterVersion).toBe(
+            version,
+        )
+    })
+
+    it('leaves the router listed only in the Avalanche docs without a release', () => {
+        expect(
+            findKnownEvmContract(
+                43_114,
+                '0x94b75331AE8d42C1b61065089B7d48FE14aA73b7',
+            )?.universalRouterVersion,
+        ).toBeUndefined()
+        expect(routers.length).toBeGreaterThan(0)
+    })
+})
+
 describe('findKnownEvmContract', () => {
     it.each(MAINNET_IDS)(
         'finds Permit2 and the wrapped native token on chain %i',

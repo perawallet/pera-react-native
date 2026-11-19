@@ -27,6 +27,9 @@ export type KnownEvmContractKind =
     | 'uniswap-v3-position-manager'
     | 'uniswap-v4-position-manager'
 
+/** A Universal Router release. Command 0x10 is Seaport before 2.0 and a V4 swap from 2.0; 2.1 adds a per-hop price to each V4 swap's parameters. */
+export type UniversalRouterVersion = '1' | '1.2' | '2.0' | '2.1'
+
 export type KnownEvmContract = {
     /** Checksummed. */
     address: Address
@@ -39,6 +42,8 @@ export type KnownEvmContract = {
     projectDomain?: string
     /** The published deployment list this address was taken from. */
     source: string
+    /** Set on a Universal Router whose deployment list names its release; without it the router's V4 commands stay unread. */
+    universalRouterVersion?: UniversalRouterVersion
 }
 
 const UNISWAP_DOMAIN = 'uniswap.org'
@@ -56,17 +61,31 @@ const AAVE_ADDRESS_BOOK =
 // The same CREATE2 address on every chain.
 const PERMIT2_ADDRESS: Address = '0x000000000022D473030F116dDEE9F6B43aC78BA3'
 
-const router = (address: Address, source: string): KnownEvmContract => ({
+const router = (
+    address: Address,
+    source: string,
+    universalRouterVersion?: UniversalRouterVersion,
+): KnownEvmContract => ({
     address,
     kind: 'uniswap-universal-router',
     name: 'Uniswap Universal Router',
     projectName: 'Uniswap',
     projectDomain: UNISWAP_DOMAIN,
     source,
+    ...(universalRouterVersion && { universalRouterVersion }),
 })
 
-const routerListed = (address: Address, file: string): KnownEvmContract =>
-    router(address, `${ROUTER_DEPLOYMENTS}/${file}.json`)
+// The version is the release the deployment list names the address after.
+const routerListed = (
+    address: Address,
+    file: string,
+    universalRouterVersion: UniversalRouterVersion,
+): KnownEvmContract =>
+    router(
+        address,
+        `${ROUTER_DEPLOYMENTS}/${file}.json`,
+        universalRouterVersion,
+    )
 
 const permit2 = (page: string): KnownEvmContract => ({
     address: PERMIT2_ADDRESS,
@@ -163,11 +182,31 @@ export const KNOWN_EVM_CONTRACTS: Readonly<
     Record<number, readonly KnownEvmContract[]>
 > = {
     1: [
-        routerListed('0xEf1c6E67703c7BD7107eed8303Fbe6EC2554BF6B', 'mainnet'),
-        routerListed('0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD', 'mainnet'),
-        routerListed('0x66a9893cC07D91D95644AEDD05D03f95e1dBA8Af', 'mainnet'),
-        routerListed('0x4C82D1fBFe28C977cBB58D8C7FF8FCF9F70a2cCA', 'mainnet'),
-        routerListed('0x23617e59A5925b2A4Bf75d73ff6711cD0b29De85', 'mainnet'),
+        routerListed(
+            '0xEf1c6E67703c7BD7107eed8303Fbe6EC2554BF6B',
+            'mainnet',
+            '1',
+        ),
+        routerListed(
+            '0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD',
+            'mainnet',
+            '1.2',
+        ),
+        routerListed(
+            '0x66a9893cC07D91D95644AEDD05D03f95e1dBA8Af',
+            'mainnet',
+            '2.0',
+        ),
+        routerListed(
+            '0x4C82D1fBFe28C977cBB58D8C7FF8FCF9F70a2cCA',
+            'mainnet',
+            '2.1',
+        ),
+        routerListed(
+            '0x23617e59A5925b2A4Bf75d73ff6711cD0b29De85',
+            'mainnet',
+            '2.1',
+        ),
         permit2('v3-ethereum-deployments'),
         wrappedNative(
             '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
@@ -225,11 +264,31 @@ export const KNOWN_EVM_CONTRACTS: Readonly<
         v4Positions('0xbD216513d74C8cf14cf4747E6AaA6420FF64ee9e'),
     ],
     8453: [
-        routerListed('0xeC8B0F7Ffe3ae75d7FfAb09429e3675bb63503e4', 'base'),
-        routerListed('0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD', 'base'),
-        routerListed('0x6fF5693b99212Da76ad316178A184AB56D299b43', 'base'),
-        routerListed('0xFdf682F51FE81Aa4898F0AE2163d8A55c127fbC7', 'base'),
-        routerListed('0xd6145b2D3F379919E8CdEda7B97e37c4b2Ca9c40', 'base'),
+        routerListed(
+            '0xeC8B0F7Ffe3ae75d7FfAb09429e3675bb63503e4',
+            'base',
+            '1.2',
+        ),
+        routerListed(
+            '0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD',
+            'base',
+            '1.2',
+        ),
+        routerListed(
+            '0x6fF5693b99212Da76ad316178A184AB56D299b43',
+            'base',
+            '2.0',
+        ),
+        routerListed(
+            '0xFdf682F51FE81Aa4898F0AE2163d8A55c127fbC7',
+            'base',
+            '2.1',
+        ),
+        routerListed(
+            '0xd6145b2D3F379919E8CdEda7B97e37c4b2Ca9c40',
+            'base',
+            '2.1',
+        ),
         permit2('v3-base-deployments'),
         wrappedNative(
             '0x4200000000000000000000000000000000000006',
@@ -252,12 +311,32 @@ export const KNOWN_EVM_CONTRACTS: Readonly<
         v4Positions('0x7C5f5A4bBd8fD63184577525326123B519429bDc'),
     ],
     56: [
-        routerListed('0x5Dc88340E1c5c6366864Ee415d6034cadd1A9897', 'bsc'),
-        routerListed('0xeC8B0F7Ffe3ae75d7FfAb09429e3675bb63503e4', 'bsc'),
-        routerListed('0x4Dae2f939ACf50408e13d58534Ff8c2776d45265', 'bsc'),
-        routerListed('0x1906c1d672b88cD1B9aC7593301cA990F94Eae07', 'bsc'),
-        routerListed('0x8B844f885672f333Bc0042cB669255f93a4C1E6b', 'bsc'),
-        routerListed('0xDc264714F68d84CF29BC605589405E78bDBE7C9f', 'bsc'),
+        routerListed('0x5Dc88340E1c5c6366864Ee415d6034cadd1A9897', 'bsc', '1'),
+        routerListed(
+            '0xeC8B0F7Ffe3ae75d7FfAb09429e3675bb63503e4',
+            'bsc',
+            '1.2',
+        ),
+        routerListed(
+            '0x4Dae2f939ACf50408e13d58534Ff8c2776d45265',
+            'bsc',
+            '1.2',
+        ),
+        routerListed(
+            '0x1906c1d672b88cD1B9aC7593301cA990F94Eae07',
+            'bsc',
+            '2.0',
+        ),
+        routerListed(
+            '0x8B844f885672f333Bc0042cB669255f93a4C1E6b',
+            'bsc',
+            '2.1',
+        ),
+        routerListed(
+            '0xDc264714F68d84CF29BC605589405E78bDBE7C9f',
+            'bsc',
+            '2.1',
+        ),
         permit2('v3-bnb-deployments'),
         wrappedNative(
             '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
@@ -280,12 +359,36 @@ export const KNOWN_EVM_CONTRACTS: Readonly<
         v4Positions('0x7A4a5c919aE2541AeD11041A1AEeE68f1287f95b'),
     ],
     42_161: [
-        routerListed('0x4C60051384bd2d3C01bfc845Cf5F4b44bcbE9de5', 'arbitrum'),
-        routerListed('0xeC8B0F7Ffe3ae75d7FfAb09429e3675bb63503e4', 'arbitrum'),
-        routerListed('0x5E325eDA8064b456f4781070C0738d849c824258', 'arbitrum'),
-        routerListed('0xA51afAFe0263b40EdaEf0Df8781eA9aa03E381a3', 'arbitrum'),
-        routerListed('0x8B844f885672f333Bc0042cB669255f93a4C1E6b', 'arbitrum'),
-        routerListed('0x2d01411773c8C24805306E89A41F7855C3c4Fe65', 'arbitrum'),
+        routerListed(
+            '0x4C60051384bd2d3C01bfc845Cf5F4b44bcbE9de5',
+            'arbitrum',
+            '1',
+        ),
+        routerListed(
+            '0xeC8B0F7Ffe3ae75d7FfAb09429e3675bb63503e4',
+            'arbitrum',
+            '1.2',
+        ),
+        routerListed(
+            '0x5E325eDA8064b456f4781070C0738d849c824258',
+            'arbitrum',
+            '1.2',
+        ),
+        routerListed(
+            '0xA51afAFe0263b40EdaEf0Df8781eA9aa03E381a3',
+            'arbitrum',
+            '2.0',
+        ),
+        routerListed(
+            '0x8B844f885672f333Bc0042cB669255f93a4C1E6b',
+            'arbitrum',
+            '2.1',
+        ),
+        routerListed(
+            '0x2d01411773c8C24805306E89A41F7855C3c4Fe65',
+            'arbitrum',
+            '2.1',
+        ),
         permit2('v3-arbitrum-deployments'),
         wrappedNative(
             '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1',
@@ -311,15 +414,31 @@ export const KNOWN_EVM_CONTRACTS: Readonly<
         v4Positions('0xd88F38F930b7952f2DB2432Cb002E7abbF3dD869'),
     ],
     43_114: [
-        routerListed('0x82635AF6146972cD6601161c4472ffe97237D292', 'avalanche'),
-        routerListed('0x4Dae2f939ACf50408e13d58534Ff8c2776d45265', 'avalanche'),
+        routerListed(
+            '0x82635AF6146972cD6601161c4472ffe97237D292',
+            'avalanche',
+            '1.2',
+        ),
+        routerListed(
+            '0x4Dae2f939ACf50408e13d58534Ff8c2776d45265',
+            'avalanche',
+            '1.2',
+        ),
         // The V2 router: in Uniswap's Avalanche deployments page, not in `deploy-addresses`.
         router(
             '0x94b75331AE8d42C1b61065089B7d48FE14aA73b7',
             `${UNISWAP_DEPLOYMENTS}/v3-avalanche-deployments`,
         ),
-        routerListed('0x8B844f885672f333Bc0042cB669255f93a4C1E6b', 'avalanche'),
-        routerListed('0x661E93cca42AfacB172121EF892830cA3b70F08d', 'avalanche'),
+        routerListed(
+            '0x8B844f885672f333Bc0042cB669255f93a4C1E6b',
+            'avalanche',
+            '2.1',
+        ),
+        routerListed(
+            '0x661E93cca42AfacB172121EF892830cA3b70F08d',
+            'avalanche',
+            '2.1',
+        ),
         permit2('v3-avalanche-deployments'),
         wrappedNative(
             '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7',
@@ -345,12 +464,36 @@ export const KNOWN_EVM_CONTRACTS: Readonly<
         v4Positions('0xB74b1F14d2754AcfcbBe1a221023a5cf50Ab8ACD'),
     ],
     137: [
-        routerListed('0x4C60051384bd2d3C01bfc845Cf5F4b44bcbE9de5', 'polygon'),
-        routerListed('0x643770E279d5D0733F21d6DC03A8efbABf3255B4', 'polygon'),
-        routerListed('0xec7BE89e9d109e7e3Fec59c222CF297125FEFda2', 'polygon'),
-        routerListed('0x1095692A6237d83C6a72F3F5eFEdb9A670C49223', 'polygon'),
-        routerListed('0x8B844f885672f333Bc0042cB669255f93a4C1E6b', 'polygon'),
-        routerListed('0xDc264714F68d84CF29BC605589405E78bDBE7C9f', 'polygon'),
+        routerListed(
+            '0x4C60051384bd2d3C01bfc845Cf5F4b44bcbE9de5',
+            'polygon',
+            '1',
+        ),
+        routerListed(
+            '0x643770E279d5D0733F21d6DC03A8efbABf3255B4',
+            'polygon',
+            '1.2',
+        ),
+        routerListed(
+            '0xec7BE89e9d109e7e3Fec59c222CF297125FEFda2',
+            'polygon',
+            '1.2',
+        ),
+        routerListed(
+            '0x1095692A6237d83C6a72F3F5eFEdb9A670C49223',
+            'polygon',
+            '2.0',
+        ),
+        routerListed(
+            '0x8B844f885672f333Bc0042cB669255f93a4C1E6b',
+            'polygon',
+            '2.1',
+        ),
+        routerListed(
+            '0xDc264714F68d84CF29BC605589405E78bDBE7C9f',
+            'polygon',
+            '2.1',
+        ),
         permit2('v3-polygon-deployments'),
         wrappedNative(
             '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270',
@@ -373,12 +516,36 @@ export const KNOWN_EVM_CONTRACTS: Readonly<
         v4Positions('0x1Ec2eBf4F37E7363FDfe3551602425af0B3ceef9'),
     ],
     10: [
-        routerListed('0xb555edF5dcF85f42cEeF1f3630a52A108E55A654', 'optimism'),
-        routerListed('0xeC8B0F7Ffe3ae75d7FfAb09429e3675bb63503e4', 'optimism'),
-        routerListed('0xCb1355ff08Ab38bBCE60111F1bb2B784bE25D7e8', 'optimism'),
-        routerListed('0x851116D9223fabED8E56C0E6b8Ad0c31d98B3507', 'optimism'),
-        routerListed('0x8B844f885672f333Bc0042cB669255f93a4C1E6b', 'optimism'),
-        routerListed('0xC09255D86DB563cBc11C2fCf4a0C512e160111B4', 'optimism'),
+        routerListed(
+            '0xb555edF5dcF85f42cEeF1f3630a52A108E55A654',
+            'optimism',
+            '1',
+        ),
+        routerListed(
+            '0xeC8B0F7Ffe3ae75d7FfAb09429e3675bb63503e4',
+            'optimism',
+            '1.2',
+        ),
+        routerListed(
+            '0xCb1355ff08Ab38bBCE60111F1bb2B784bE25D7e8',
+            'optimism',
+            '1.2',
+        ),
+        routerListed(
+            '0x851116D9223fabED8E56C0E6b8Ad0c31d98B3507',
+            'optimism',
+            '2.0',
+        ),
+        routerListed(
+            '0x8B844f885672f333Bc0042cB669255f93a4C1E6b',
+            'optimism',
+            '2.1',
+        ),
+        routerListed(
+            '0xC09255D86DB563cBc11C2fCf4a0C512e160111B4',
+            'optimism',
+            '2.1',
+        ),
         permit2('v3-optimism-deployments'),
         wrappedNative(
             '0x4200000000000000000000000000000000000006',

@@ -33,6 +33,7 @@ import type { EvmChain } from '../chains/types'
 import { sendSummary } from '../transfer/summary'
 import { toAllowanceAmount } from './allowance'
 import type { EvmNftItem, EvmStandardCall } from './standard-call-types'
+import { toDecimal } from './to-decimal'
 
 const SELECTOR_SIZE = 4
 
@@ -56,8 +57,6 @@ const STANDARD_FUNCTIONS = parseAbi([
 const BY_SELECTOR = new Map<Hex, AbiFunction>(
     STANDARD_FUNCTIONS.map(item => [toFunctionSelector(item), item]),
 )
-
-const toDecimal = (value: bigint): Decimal => new Decimal(value.toString())
 
 const toCall = (
     item: AbiFunction,
