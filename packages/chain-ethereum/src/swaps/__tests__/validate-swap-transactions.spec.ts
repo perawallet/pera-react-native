@@ -189,38 +189,50 @@ describe('validateEvmSwapTransactions', () => {
     })
 
     it.each([
+        'execute(bytes,bytes[],uint256)',
+        'swapExactTokensForTokens(uint256,uint256,address[],address,uint256)',
+        'exactInputSingle((address,address,uint24,address,uint256,uint256,uint160))',
+        'swap(address,(address,address,address,address,uint256,uint256,uint256),bytes)',
+        'unoswap(uint256,uint256,uint256,uint256)',
+        'exec(address,address,uint256,address,bytes)',
+    ])('accepts a swap calling %s', signature => {
+        const swap = selectorCall(signature)
+
+        expect(validate([swap], NATIVE_REQUEST).swap).toBe(swap)
+    })
+
+    it.each([
         'transfer(address,uint256)',
         'transferFrom(address,address,uint256)',
         'setApprovalForAll(address,bool)',
         'permit(address,address,uint256,uint256,uint8,bytes32,bytes32)',
-        'permit(address,address,uint256,uint256,bool,uint8,bytes32,bytes32)',
-        'safeTransferFrom(address,address,uint256)',
-        'safeTransferFrom(address,address,uint256,bytes)',
-        'safeTransferFrom(address,address,uint256,uint256,bytes)',
-        'safeBatchTransferFrom(address,address,uint256[],uint256[],bytes)',
         'increaseAllowance(address,uint256)',
         'approve(address,address,uint160,uint48)',
-        'transferAndCall(address,uint256)',
         'transferAndCall(address,uint256,bytes)',
-        'transferFromAndCall(address,address,uint256)',
-        'transferFromAndCall(address,address,uint256,bytes)',
-        'approveAndCall(address,uint256)',
-        'approveAndCall(address,uint256,bytes)',
         'send(address,uint256,bytes)',
-        'operatorSend(address,address,uint256,bytes,bytes)',
         'authorizeOperator(address)',
-    ])('refuses %s on any contract', signature => {
-        expect(() => validate([selectorCall(signature)])).toThrow(
-            SwapQuoteMismatchError,
-        )
+        // Burn or pay out the caller's assets with no allowance.
+        'withdrawTo(address,address,uint256,uint32,bytes)',
+        'bridgeERC20To(address,address,address,uint256,uint32,bytes)',
+        'outboundTransfer(address,address,uint256,bytes)',
+        'withdrawTo(address,uint256)',
+        'redeem(uint256,address,address)',
+        'withdraw(uint256,address,address)',
+        'withdraw(address,uint256,address)',
+        'collect((uint256,address,uint128,uint128))',
+        // Also the Uniswap position manager's, which can run `collect`.
+        'multicall(bytes[])',
+    ])('refuses a swap calling %s, no swap function', signature => {
+        expect(() =>
+            validate([selectorCall(signature)], NATIVE_REQUEST),
+        ).toThrow(SwapQuoteMismatchError)
     })
 
-    it('refuses a refused selector written in upper case', () => {
-        const selector = toFunctionSelector('transfer(address,uint256)')
-        const upper = `0x${selector.slice(2).toUpperCase()}` as Hex
+    it('accepts a swap function written in upper case', () => {
+        const upper = `0x${SWAP_DATA.slice(2).toUpperCase()}` as Hex
 
-        expect(() => validate([call({ data: upper })])).toThrow(
-            SwapQuoteMismatchError,
-        )
+        expect(
+            validate([call({ data: upper })], NATIVE_REQUEST).swap.data,
+        ).toBe(upper)
     })
 })

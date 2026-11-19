@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { getAddress, isAddress, size, slice, toFunctionSelector } from 'viem'
+import { getAddress, isAddress, size, slice } from 'viem'
 import type { Address, Hex } from 'viem'
 import {
     isNativeAsset,
@@ -27,6 +27,7 @@ import type { EvmChain } from '../chains/types'
 import { toAllowanceAmount } from '../signing/allowance'
 import { decodeEvmStandardCall } from '../signing/standard-calls'
 import type { EvmSwapCall } from './decode-swap-transaction'
+import { SWAP_ENTRY_SELECTORS } from './swap-entry-functions'
 
 /** A plan that passed {@link validateEvmSwapTransactions}. */
 export type EvmSwapPlan = {
@@ -37,55 +38,14 @@ export type EvmSwapPlan = {
 const MAX_SWAP_CALLS = 2
 const SELECTOR_SIZE = 4
 
-const APPROVE_SELECTORS: ReadonlySet<Hex> = new Set([
-    toFunctionSelector('approve(address,uint256)'),
-])
-
-// Each moves or grants a token the sender holds, past what the swap's own
-// amount bounds. The swap's `to` is unpinned, so this list is what stops a call
-// into any token the account holds, not just the source.
-const REFUSED_SWAP_SELECTORS: ReadonlySet<Hex> = new Set(
-    [
-        'transfer(address,uint256)',
-        'transferFrom(address,address,uint256)',
-        'setApprovalForAll(address,bool)',
-        'permit(address,address,uint256,uint256,uint8,bytes32,bytes32)',
-        'permit(address,address,uint256,uint256,bool,uint8,bytes32,bytes32)',
-        'safeTransferFrom(address,address,uint256)',
-        'safeTransferFrom(address,address,uint256,bytes)',
-        'safeTransferFrom(address,address,uint256,uint256,bytes)',
-        'safeBatchTransferFrom(address,address,uint256[],uint256[],bytes)',
-        'increaseAllowance(address,uint256)',
-        'approve(address,address,uint160,uint48)',
-        // ERC-677 and ERC-1363
-        'transferAndCall(address,uint256)',
-        'transferAndCall(address,uint256,bytes)',
-        'transferFromAndCall(address,address,uint256)',
-        'transferFromAndCall(address,address,uint256,bytes)',
-        'approveAndCall(address,uint256)',
-        'approveAndCall(address,uint256,bytes)',
-        // ERC-777
-        'send(address,uint256,bytes)',
-        'operatorSend(address,address,uint256,bytes,bytes)',
-        'authorizeOperator(address)',
-    ].map(signature => toFunctionSelector(signature)),
-)
-
 const refuse: (reason: string) => never = reason => {
     throw new SwapQuoteMismatchError(reason)
 }
 
-const selectorOf = (call: EvmSwapCall): Nullable<Hex> =>
-    size(call.data) >= SELECTOR_SIZE ? slice(call.data, 0, SELECTOR_SIZE) : null
-
-// A mixed-case selector would slip past a set of viem's lowercase ones.
-const hasSelector = (
-    call: EvmSwapCall,
-    selectors: ReadonlySet<Hex>,
-): boolean => {
-    const selector = selectorOf(call)
-    return selector !== null && selectors.has(selector.toLowerCase() as Hex)
-}
+// A mixed-case selector would miss a set of viem's lowercase ones.
+const isSwapEntry = ({ data }: EvmSwapCall): boolean =>
+    size(data) >= SELECTOR_SIZE &&
+    SWAP_ENTRY_SELECTORS.has(slice(data, 0, SELECTOR_SIZE).toLowerCase() as Hex)
 
 const assertApproval = (
     approval: EvmSwapCall,
@@ -123,9 +83,10 @@ const assertApproval = (
 /**
  * Throws {@link SwapQuoteMismatchError} unless `calls` keep to `request`'s
  * shape: the same chain, at most an approval of the source token for this
- * amount to the swap's contract, then the swap, last. XO names a different
- * contract per order, so the swap's `to` and calldata are trusted to XO: its
- * recipient, input amount, minimum output, and what it pulls through an
+ * amount to the swap's contract, then the swap, last, calling a known
+ * aggregator function ({@link SWAP_ENTRY_SELECTORS}). XO names a different
+ * contract per order, so the contract and the swap's arguments are trusted to
+ * XO: its recipient, input amount, minimum output, and what it pulls through an
  * allowance the account already gave that contract.
  */
 export const validateEvmSwapTransactions = ({
@@ -154,18 +115,13 @@ export const validateEvmSwapTransactions = ({
     if (calls.some(call => call.chainId !== chainId)) {
         refuse('A swap transaction is for another chain')
     }
-    if (calls.some(call => hasSelector(call, REFUSED_SWAP_SELECTORS))) {
-        refuse('A swap transaction moves assets by itself')
-    }
 
     const swap = calls[calls.length - 1]
     const approval = calls.length === MAX_SWAP_CALLS ? calls[0] : null
-    if (selectorOf(swap) === null || hasSelector(swap, APPROVE_SELECTORS)) {
-        refuse('The last transaction is not the swap')
+    if (!isSwapEntry(swap)) {
+        refuse('The last transaction calls no known swap function')
     }
     const token = isNative ? null : getAddress(sourceAsset.assetId)
-    // With `to` unpinned, a call into the token itself could move it in a way
-    // the selector denylist doesn't name.
     if (token && areEvmAddressesEqual(swap.to, token)) {
         refuse('The swap calls the asset being swapped')
     }
