@@ -83,7 +83,7 @@ export const useSwapConfirmationActions = ({
     const swapExecution = useSwapExecution()
     const successCloseTimer = useRunAfterDelay()
     const inFlightRef = useRef(false)
-    const hasClosedRef = useRef(false)
+    const hasFinishedRef = useRef(false)
     const { t } = useLanguage()
     const { infoToast } = useToast()
     const { playSuccess } = useTransactionOutcomeHaptics()
@@ -92,7 +92,7 @@ export const useSwapConfirmationActions = ({
 
     const { execute, cancel, reset, status: swapStatus } = swapExecution
     const handleSlideConfirm = useCallback(async () => {
-        if (inFlightRef.current || hasClosedRef.current) return
+        if (inFlightRef.current || hasFinishedRef.current) return
         trackEvent(SwapEvent.Confirm, {
             [AnalyticsMetadataKey.ChainId]: scope.chainId,
         })
@@ -110,7 +110,10 @@ export const useSwapConfirmationActions = ({
                           }),
                       )
                     : await execute(quote)
-            if (hasClosedRef.current) return
+            if (hasFinishedRef.current) return
+            // Resolution starts an animation; confirm events can still arrive
+            // before the sheet unmounts.
+            hasFinishedRef.current = true
             if (outcome.kind === 'success') {
                 // With the sheet's confirmed state, which the same status flip renders.
                 playSuccess()
@@ -192,14 +195,17 @@ export const useSwapConfirmationActions = ({
     ])
 
     const handleClose = useCallback(() => {
-        if (hasClosedRef.current) return
+        if (hasFinishedRef.current) {
+            successCloseTimer.flush()
+            return
+        }
         if (inFlightRef.current) {
             if (cancel()) {
-                hasClosedRef.current = true
+                hasFinishedRef.current = true
                 resolve({ kind: 'cancelled' })
             }
         } else {
-            hasClosedRef.current = true
+            hasFinishedRef.current = true
             successCloseTimer.flush()
             dismiss()
         }

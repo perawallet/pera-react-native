@@ -292,7 +292,7 @@ describe('useSwapConfirmationActions', () => {
     // F1: the submission-phase outcome's resolved title must reach the
     // confirmation result so the form/card toasts can prefer it over their
     // hardcoded default.
-    it('forwards the resolved title from the outcome', async () => {
+    it('forwards an unknown outcome and ignores a late second confirmation', async () => {
         mockExecute.mockResolvedValueOnce({
             kind: 'error',
             phase: 'submission',
@@ -309,8 +309,11 @@ describe('useSwapConfirmationActions', () => {
 
         await act(async () => {
             await result.current.handleSlideConfirm()
+            await result.current.handleSlideConfirm()
         })
 
+        expect(mockExecute).toHaveBeenCalledTimes(1)
+        expect(mockResolve).toHaveBeenCalledTimes(1)
         expect(mockResolve).toHaveBeenCalledWith({
             kind: 'error',
             message: 'may have landed',
