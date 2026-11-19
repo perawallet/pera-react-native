@@ -19,6 +19,9 @@ import {
     type HttpTransport,
     type HttpTransportConfig,
 } from 'viem'
+import { buildIntegrityHeadersWhenReady } from '@perawallet/wallet-core-app-integrity'
+import { config } from '@perawallet/wallet-core-config'
+import { EVM_RPC_PIN_DOMAINS } from '../pinned-hosts'
 
 // expo/fetch rejects an aborted request with FetchError, but viem only maps
 // AbortError to TimeoutError, so a timeout would surface as HttpRequestError.
@@ -56,6 +59,35 @@ export const fetchWithAbortError = (
             },
         )
     })
+}
+
+// Pera's RPC proxy is guarded like the other Pera EVM routes; the key and
+// token must never reach a public fallback or a custom node.
+const isPeraRpcUrl = (url: string): boolean => {
+    let host: string
+    try {
+        host = new URL(url).hostname
+    } catch {
+        return false
+    }
+    return EVM_RPC_PIN_DOMAINS.some(
+        domain => host === domain || host.endsWith(`.${domain}`),
+    )
+}
+
+// Built per request: the integrity token expires and renews while a client lives.
+const fetchWithPeraHeaders = async (
+    input: string | URL | Request,
+    init?: RequestInit,
+): Promise<Response> => {
+    const headers = new Headers(init?.headers)
+    if (config.backendAPIKey) headers.set('X-API-Key', config.backendAPIKey)
+    for (const [name, value] of Object.entries(
+        await buildIntegrityHeadersWhenReady(),
+    )) {
+        headers.set(name, value)
+    }
+    return fetchWithAbortError(input, { ...init, headers })
 }
 
 // viem prints the whole request body into these errors, and every request of
@@ -107,9 +139,12 @@ const withoutRpcRequestBody = (
 
 export const evmHttpTransport = (
     url: string,
-    config?: Omit<HttpTransportConfig, 'fetchFn'>,
+    transportConfig?: Omit<HttpTransportConfig, 'fetchFn'>,
 ): HttpTransport => {
-    const transport = http(url, { ...config, fetchFn: fetchWithAbortError })
+    const transport = http(url, {
+        ...transportConfig,
+        fetchFn: isPeraRpcUrl(url) ? fetchWithPeraHeaders : fetchWithAbortError,
+    })
     return params => {
         const built = transport(params)
         return {

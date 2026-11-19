@@ -38,6 +38,15 @@ import {
 } from '../../msw-handlers'
 import { ETHEREUM } from '../../../__tests__/evm-chains'
 
+vi.mock('@perawallet/wallet-core-config', async importOriginal => {
+    const original =
+        await importOriginal<typeof import('@perawallet/wallet-core-config')>()
+    return {
+        ...original,
+        config: { ...original.config, backendAPIKey: 'test-api-key' },
+    }
+})
+
 const MAINNET_RPC = 'https://mainnet.rpc.test/'
 const SEPOLIA_RPC = 'https://sepolia.rpc.test/'
 const MAINNET: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
@@ -361,6 +370,60 @@ describe('createEvmClient', () => {
                 client.call({ to: ADDRESS, data: '0x70a08231' }),
             ).rejects.toThrow(/revert/i)
             expect(secondCalls).not.toHaveBeenCalled()
+        })
+
+        it('sends the API key and integrity token to the Pera proxy alone', async () => {
+            const PROXY_RPC =
+                'https://mainnet.api.perawallet.app/api/v3/evm/1/rpc'
+            const sent: Record<string, Headers> = {}
+            server.use(
+                http.post(PROXY_RPC, ({ request }) => {
+                    sent.proxy = request.headers
+                    return new HttpResponse(null, { status: 401 })
+                }),
+                http.post(SECOND_RPC, ({ request }) => {
+                    sent.fallback = request.headers
+                }),
+                ...evmRpcHandlers({
+                    rpcUrl: SECOND_RPC,
+                    responses: { eth_blockNumber: '0x20' },
+                }),
+            )
+            const client = createEvmClient(
+                MAINNET,
+                contextWith({
+                    endpoints: { mainnet: [PROXY_RPC, SECOND_RPC] },
+                }),
+                ETHEREUM,
+            )
+
+            await expect(client.getBlockNumber()).resolves.toBe(32n)
+            expect(sent.proxy?.get('x-api-key')).toBe('test-api-key')
+            expect(sent.proxy?.get('x-app-integrity-token')).toBe(
+                'test-integrity-token',
+            )
+            expect(sent.fallback?.get('x-api-key')).toBeNull()
+            expect(sent.fallback?.get('x-app-integrity-token')).toBeNull()
+        })
+
+        it('keeps the API key and integrity token off a lookalike host', async () => {
+            const LOOKALIKE_RPC = 'https://evil-perawallet.app/rpc'
+            let headers: Headers | undefined
+            server.use(
+                http.post(LOOKALIKE_RPC, ({ request }) => {
+                    headers = request.headers
+                }),
+                ...evmRpcHandlers({ rpcUrl: LOOKALIKE_RPC }),
+            )
+            const client = createEvmClient(
+                MAINNET,
+                contextWith({ endpoints: { mainnet: [LOOKALIKE_RPC] } }),
+                ETHEREUM,
+            )
+
+            await client.getBlockNumber()
+            expect(headers?.get('x-api-key')).toBeNull()
+            expect(headers?.get('x-app-integrity-token')).toBeNull()
         })
 
         it('tries each URL once, in order, before giving up', async () => {
