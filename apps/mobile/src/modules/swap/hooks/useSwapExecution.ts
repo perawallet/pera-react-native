@@ -17,14 +17,13 @@ import {
     isQuoteFresh,
     pickRefreshedQuote,
     SWAP_QUOTE_EXECUTION_MARGIN_MS,
-    SwapAccountUnsupportedError,
-    SwapCosignUnsupportedError,
     swapFailureStepOf,
     swapOrderRefusalOf,
     useCreateQuotesMutation,
     useExecuteSwapMutation,
     type ExecuteSwapResult,
     type SwapExecutionFailure,
+    type SwapExecutionProgress,
     type SwapFailureStep,
     type SwapOrderRefusal,
     type SwapQuote,
@@ -102,12 +101,11 @@ type UseSwapExecutionResult = {
         prepareDestination?: () => Promise<boolean>,
     ) => Promise<SwapExecutionOutcome>
     /**
-     * Abandons an execution that has not committed yet: effective while
-     * `preparing` (checked after the balance preflight and after the prepare
-     * call settle, before anything is handed to the signing pipeline). Once
-     * signing has started the execution is no longer cancellable from here.
+     * Requests cancellation while preparing and returns whether the sheet
+     * can close immediately. Preparing the destination can involve a separate
+     * opt-in transaction, so it must settle first.
      */
-    cancel: () => void
+    cancel: () => boolean
     status: SwapExecutionStatus
     error: Nullable<SwapExecutionError>
     txIds: string[]
@@ -120,6 +118,16 @@ const FAILED_TITLE_KEY_BY_STEP: Record<SwapFailureStep, I18nKey> = {
     prepare: i18nKey('swap.execution.failed_title.prepare'),
     approval: i18nKey('swap.execution.failed_title.approval'),
     swap: i18nKey('swap.execution.failed_title.swap'),
+}
+
+const ERROR_PHASE_BY_PROGRESS: Record<
+    SwapExecutionProgress,
+    SwapExecutionErrorPhase
+> = {
+    preparing: 'prepare',
+    signing: 'signing',
+    submitting: 'submission',
+    'updating-status': 'status-update',
 }
 
 const BODY_KEY_BY_REFUSAL: Record<SwapOrderRefusal, I18nKey> = {
@@ -145,7 +153,8 @@ const STATUS_BY_RESULT: Record<ExecuteSwapResult['kind'], SwapExecutionStatus> =
     }
 
 export const useSwapExecution = (): UseSwapExecutionResult => {
-    const [status, setStatus] = useState<SwapExecutionStatus>('idle')
+    const [status, setRenderedStatus] = useState<SwapExecutionStatus>('idle')
+    const statusRef = useRef<SwapExecutionStatus>('idle')
     const [error, setError] = useState<Nullable<SwapExecutionError>>(null)
     const [txIds, setTxIds] = useState<string[]>([])
 
@@ -156,6 +165,11 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
         useExecuteSwapMutation()
     const { mutateAsync: createQuotes } = useCreateQuotesMutation()
     const cancelRequestedRef = useRef(false)
+    const isPreparingDestinationRef = useRef(false)
+    const setStatus = useCallback((next: SwapExecutionStatus) => {
+        statusRef.current = next
+        setRenderedStatus(next)
+    }, [])
 
     const describeFailure = useCallback(
         (failure: SwapExecutionFailure): DisplayedFailure => {
@@ -253,13 +267,18 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             setError(null)
             setTxIds([])
             cancelRequestedRef.current = false
+            setStatus('preparing')
 
             if (prepareDestination) {
-                setStatus('preparing')
+                isPreparingDestinationRef.current = true
                 let isPrepared: boolean
                 try {
                     isPrepared = await prepareDestination()
                 } catch (error) {
+                    if (cancelRequestedRef.current) {
+                        setStatus('idle')
+                        return { kind: 'cancelled' }
+                    }
                     // Readying the destination (opt-in, sponsor call) isn't the
                     // swap router, so its errors never read as a provider refusal.
                     const stepTitle = t(FAILED_TITLE_KEY_BY_STEP.prepare)
@@ -278,6 +297,8 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                         message,
                         title: stepTitle,
                     }
+                } finally {
+                    isPreparingDestinationRef.current = false
                 }
                 if (!isPrepared || cancelRequestedRef.current) {
                     setStatus('idle')
@@ -294,7 +315,6 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                     Date.now() + SWAP_QUOTE_EXECUTION_MARGIN_MS,
                 )
             ) {
-                setStatus('preparing')
                 const offers = await createQuotes(quote.request).catch(
                     (error: unknown): SwapQuote[] => {
                         logger.warn('Swap re-quote at confirm failed', {
@@ -315,6 +335,9 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                 quoteToRun = refreshed
             }
 
+            const progress: { current: SwapExecutionProgress } = {
+                current: 'preparing',
+            }
             let result: ExecuteSwapResult
             try {
                 result = await executeSwap({
@@ -323,35 +346,57 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                         name: t('swap.signing.source_name'),
                         description: t('swap.signing.source_description'),
                     },
-                    onProgress: setStatus,
+                    onProgress: next => {
+                        progress.current = next
+                        setStatus(next)
+                    },
                     isCancelled: () => cancelRequestedRef.current,
                 })
             } catch (error) {
-                // Refused before anything ran: the account can't swap here.
-                // Anything else is unexpected and still escapes.
-                if (
-                    !(error instanceof SwapAccountUnsupportedError) &&
-                    !(error instanceof SwapCosignUnsupportedError)
-                ) {
-                    throw error
+                const phase = ERROR_PHASE_BY_PROGRESS[progress.current]
+                const couldHaveSubmitted =
+                    phase === 'submission' || phase === 'status-update'
+                if (phase === 'prepare' && cancelRequestedRef.current) {
+                    setStatus('idle')
+                    return { kind: 'cancelled' }
                 }
-                const copy = resolveErrorCopy(
-                    error,
-                    t,
-                    t(FAILED_TITLE_KEY_BY_STEP.prepare),
-                    getMessage,
-                )
+                logger.warn('Swap execution stopped with an error', {
+                    quoteId: quoteToRun.quoteId,
+                    phase,
+                })
+                const copy = couldHaveSubmitted
+                    ? {
+                          body: t('errors.submission.unknown_outcome.body'),
+                          title: t('errors.submission.unknown_outcome.title'),
+                      }
+                    : resolveErrorCopy(
+                          error,
+                          t,
+                          t(
+                              FAILED_TITLE_KEY_BY_STEP[
+                                  phase === 'prepare' ? 'prepare' : 'swap'
+                              ],
+                          ),
+                          getMessage,
+                      )
                 playFailure()
                 setStatus('error')
-                setError({ phase: 'prepare', message: copy.body })
+                setError({ phase, message: copy.body })
                 return {
                     kind: 'error',
-                    phase: 'prepare',
+                    phase,
                     message: copy.body,
                     title: copy.title,
                 }
             }
 
+            if (
+                progress.current === 'preparing' &&
+                cancelRequestedRef.current
+            ) {
+                setStatus('idle')
+                return { kind: 'cancelled' }
+            }
             setStatus(STATUS_BY_RESULT[result.kind])
             if (result.kind === 'success') {
                 setTxIds(result.txIds)
@@ -388,6 +433,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             describeFailure,
             handleSubmitError,
             playFailure,
+            setStatus,
         ],
     )
 
@@ -397,10 +443,13 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
         setTxIds([])
         cancelRequestedRef.current = false
         resetMutation()
-    }, [resetMutation])
+    }, [resetMutation, setStatus])
 
     const cancel = useCallback(() => {
+        // A React render can lag behind the transition to signing.
+        if (statusRef.current !== 'preparing') return false
         cancelRequestedRef.current = true
+        return !isPreparingDestinationRef.current
     }, [])
 
     return {

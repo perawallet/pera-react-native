@@ -406,14 +406,22 @@ describe('useSwapConfirmationActions', () => {
         )
 
         act(() => {
-            result.current.handleClose(false, false)
+            result.current.handleClose()
         })
 
         expect(mockFlush).toHaveBeenCalledTimes(1)
         expect(mockDismiss).toHaveBeenCalledTimes(1)
     })
 
-    it('handleClose cancels the in-flight execution while preparing instead of trapping', () => {
+    it('closes immediately during preparation and ignores the late result', async () => {
+        let release: () => void = () => {}
+        mockExecutionCancel.mockReturnValueOnce(true)
+        mockExecute.mockImplementationOnce(
+            () =>
+                new Promise(resolve => {
+                    release = () => resolve({ kind: 'cancelled' })
+                }),
+        )
         const { result } = renderHook(() =>
             useSwapConfirmationActions({
                 scope: SCOPE,
@@ -421,17 +429,31 @@ describe('useSwapConfirmationActions', () => {
             }),
         )
 
+        let pending: Promise<void> | undefined
         act(() => {
-            result.current.handleClose(false, true)
+            pending = result.current.handleSlideConfirm()
+            result.current.handleClose()
         })
 
-        // The execute() in flight observes the cancel and resolves the
-        // sheet as cancelled — no direct dismiss from here.
         expect(mockExecutionCancel).toHaveBeenCalledTimes(1)
-        expect(mockDismiss).not.toHaveBeenCalled()
+        expect(mockResolve).toHaveBeenCalledWith({ kind: 'cancelled' })
+
+        await act(async () => {
+            release()
+            await pending
+        })
+        expect(mockResolve).toHaveBeenCalledTimes(1)
     })
 
-    it('handleClose stays blocked once the swap has committed (signing onward)', () => {
+    it('keeps the sheet open once an in-flight swap has committed', async () => {
+        let release: () => void = () => {}
+        mockExecutionCancel.mockReturnValueOnce(false)
+        mockExecute.mockImplementationOnce(
+            () =>
+                new Promise(resolve => {
+                    release = () => resolve({ kind: 'cancelled' })
+                }),
+        )
         const { result } = renderHook(() =>
             useSwapConfirmationActions({
                 scope: SCOPE,
@@ -439,13 +461,21 @@ describe('useSwapConfirmationActions', () => {
             }),
         )
 
+        let pending: Promise<void> | undefined
         act(() => {
-            result.current.handleClose(true, false)
+            pending = result.current.handleSlideConfirm()
+            result.current.handleClose()
         })
 
-        expect(mockExecutionCancel).not.toHaveBeenCalled()
+        expect(mockExecutionCancel).toHaveBeenCalledTimes(1)
+        expect(mockResolve).not.toHaveBeenCalled()
         expect(mockFlush).not.toHaveBeenCalled()
         expect(mockDismiss).not.toHaveBeenCalled()
+
+        await act(async () => {
+            release()
+            await pending
+        })
     })
 
     it('resets execution state on mount', () => {

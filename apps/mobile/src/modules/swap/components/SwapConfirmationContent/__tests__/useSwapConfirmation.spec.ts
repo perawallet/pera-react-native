@@ -304,28 +304,21 @@ describe('useSwapConfirmation', () => {
         expect(result.current.outAsset).toBeUndefined()
     })
 
-    it.each<[SwapExecutionStatus, boolean, boolean, boolean]>([
-        ['idle', false, false, false],
-        ['preparing', true, true, false],
-        ['signing', true, false, true],
-        ['submitting', true, false, true],
-        ['updating-status', true, false, true],
-        ['success', false, false, false],
-        ['pending-cosign', false, false, false],
-        ['verifying', false, false, false],
-        ['error', false, false, false],
-    ])(
-        'derives processing state for %s',
-        (status, isProcessing, isCancellable, isCommitted) => {
-            const { result } = renderConfirmation(makeQuote(), status)
+    it.each<[SwapExecutionStatus, boolean]>([
+        ['idle', false],
+        ['preparing', true],
+        ['signing', true],
+        ['submitting', true],
+        ['updating-status', true],
+        ['success', false],
+        ['pending-cosign', false],
+        ['verifying', false],
+        ['error', false],
+    ])('derives processing state for %s', (status, isProcessing) => {
+        const { result } = renderConfirmation(makeQuote(), status)
 
-            expect(result.current).toMatchObject({
-                isProcessing,
-                isCancellable,
-                isCommitted,
-            })
-        },
-    )
+        expect(result.current.isProcessing).toBe(isProcessing)
+    })
 
     it('formats the pay and receive amounts with each asset decimals', () => {
         const quote = makeQuote({

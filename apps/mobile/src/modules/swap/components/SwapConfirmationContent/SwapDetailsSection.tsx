@@ -63,7 +63,7 @@ export const SwapDetailsSection = ({
                             chainId={receiveTarget.scope.chainId}
                             showChainBadge
                             showChevron={false}
-                            iconProps={{ size: 'sm' }}
+                            iconProps={{ size: 'lg' }}
                             textProps={{ variant: 'caption' }}
                             testID='swap-confirm-receive-account'
                         />

@@ -71,7 +71,7 @@ type UseSwapConfirmationActionsParams = {
 type UseSwapConfirmationActionsResult = {
     swapStatus: SwapExecutionStatus
     handleSlideConfirm: () => Promise<void>
-    handleClose: (isCommitted: boolean, isCancellable: boolean) => void
+    handleClose: () => void
 }
 
 export const useSwapConfirmationActions = ({
@@ -83,6 +83,7 @@ export const useSwapConfirmationActions = ({
     const swapExecution = useSwapExecution()
     const successCloseTimer = useRunAfterDelay()
     const inFlightRef = useRef(false)
+    const hasClosedRef = useRef(false)
     const { t } = useLanguage()
     const { infoToast } = useToast()
     const { playSuccess } = useTransactionOutcomeHaptics()
@@ -91,7 +92,7 @@ export const useSwapConfirmationActions = ({
 
     const { execute, cancel, reset, status: swapStatus } = swapExecution
     const handleSlideConfirm = useCallback(async () => {
-        if (inFlightRef.current) return
+        if (inFlightRef.current || hasClosedRef.current) return
         trackEvent(SwapEvent.Confirm, {
             [AnalyticsMetadataKey.ChainId]: scope.chainId,
         })
@@ -109,6 +110,7 @@ export const useSwapConfirmationActions = ({
                           }),
                       )
                     : await execute(quote)
+            if (hasClosedRef.current) return
             if (outcome.kind === 'success') {
                 // With the sheet's confirmed state, which the same status flip renders.
                 playSuccess()
@@ -189,24 +191,19 @@ export const useSwapConfirmationActions = ({
         playSuccess,
     ])
 
-    const handleClose = useCallback(
-        (isCommitted: boolean, isCancellable: boolean) => {
-            // While preparing, closing must genuinely abandon the attempt:
-            // the in-flight execute() observes the cancel after prepare
-            // settles and resolves the sheet as cancelled — a slow prepare
-            // can never resume into the signing sheet with nobody watching.
-            if (isCancellable) {
-                cancel()
-                return
+    const handleClose = useCallback(() => {
+        if (hasClosedRef.current) return
+        if (inFlightRef.current) {
+            if (cancel()) {
+                hasClosedRef.current = true
+                resolve({ kind: 'cancelled' })
             }
-            // Signing onward the swap may already be committing — the sheet
-            // stays until the outcome lands.
-            if (isCommitted) return
+        } else {
+            hasClosedRef.current = true
             successCloseTimer.flush()
             dismiss()
-        },
-        [cancel, successCloseTimer, dismiss],
-    )
+        }
+    }, [cancel, successCloseTimer, resolve, dismiss])
 
     // Reset execution state once on mount so a re-opened sheet starts clean.
     useEffect(() => {
