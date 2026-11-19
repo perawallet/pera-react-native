@@ -24,7 +24,7 @@ import { EvmErrorCode, toEvmError } from '../blockchain/errors'
 import { eip155ChainIdOf } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
 import { createEvmClient } from '../blockchain/utils/createEvmClient'
-import { decodedCallSummary } from '../history/decoded-call-summary'
+import { readDecodedCallSummary } from '../history/decoded-call-summary'
 import type {
     EthereumRevertedEstimate,
     EthereumTransactionPayload,
@@ -366,7 +366,7 @@ export const buildEthereumSendTransaction = async (
         scope,
         payload,
         summary: ethereumCallSummary(call, chain),
-        historySummary: decodedCallSummary(
+        historySummary: await readDecodedCallSummary(
             call,
             chain,
             scope,

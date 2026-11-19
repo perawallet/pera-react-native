@@ -121,6 +121,12 @@ type EthereumTransactionViewBase = {
     knownContract?: EvmContractLabel
     /** Only with an `approve` or `increase-allowance` `call` whose spender is in the registry. */
     knownSpender?: KnownSpender
+    /**
+     * Only with an `approve` `call` whose token the local asset store holds as
+     * an NFT and not as a fungible token: the NFT asset id it grants, so its
+     * value is a token id, not an allowance.
+     */
+    nftApproval?: string
     /** Only with `knownContract`: what the calldata proves the call does. */
     action?: EvmContractAction
 }
@@ -361,6 +367,11 @@ const isView = (value: unknown): value is EthereumTransactionView =>
     (value.knownSpender === undefined ||
         (value.kind === 'contract-call' &&
             isKnownSpender(value.knownSpender))) &&
+    (value.nftApproval === undefined ||
+        (value.kind === 'contract-call' &&
+            typeof value.nftApproval === 'string' &&
+            isRecord(value.call) &&
+            value.call.kind === 'approve')) &&
     (value.action === undefined ||
         (value.kind === 'contract-call' &&
             value.knownContract !== undefined &&

@@ -1078,6 +1078,54 @@ describe('Flow: History on an Ethereum account', () => {
                 expect(nodeReads).toEqual([])
             })
 
+            it('Given a revocation whose calldata the history carries, when it lists, then the row says revoke without asking the node, and its page says the same', async () => {
+                nodeReads.length = 0
+                server.use(
+                    ...peraEvmHistoryHandlers({
+                        history: {
+                            [ETH_ADDRESS]: [
+                                [
+                                    {
+                                        ...approval(REVOKE_HASH),
+                                        input: approveData('0'),
+                                    },
+                                ],
+                            ],
+                        },
+                    }),
+                    ...evmRpcHandlers({
+                        responses: {
+                            eth_getTransactionByHash: params => {
+                                nodeReads.push(String(params[0]))
+                                return REVOKE_TX
+                            },
+                        },
+                    }),
+                )
+                renderHistory()
+
+                expect(
+                    await rowText(REVOKE_HASH, /revoke_approval/),
+                ).not.toMatch(/approve_asset/)
+                expect(nodeReads).toEqual([])
+
+                await openRow(REVOKE_HASH)
+
+                await screen.findByTestId('transaction_detail_fee', undefined, {
+                    timeout: SLOW_WAIT_TIMEOUT_MS,
+                })
+                expect(
+                    screen.getAllByText(
+                        'transactions.list_item.revoke_approval',
+                    ).length,
+                ).toBeGreaterThan(0)
+                expect(
+                    screen.queryByText('transactions.list_item.approve_asset'),
+                ).toBeNull()
+                // The page reads the node for the signed call, a refetch possibly more than once; only the list goes without.
+                expect(new Set(nodeReads)).toEqual(new Set([REVOKE_HASH]))
+            })
+
             it('Given a later revocation, when its row is opened, then it reads as a revocation', async () => {
                 serveApprovals()
                 renderHistory()

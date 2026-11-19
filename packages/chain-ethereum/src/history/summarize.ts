@@ -11,7 +11,7 @@
  */
 
 import { Decimal } from 'decimal.js'
-import { getAddress } from 'viem'
+import { getAddress, size } from 'viem'
 import {
     type AssetDisplayHint,
     type BalanceChange,
@@ -495,6 +495,7 @@ const summarizeContractCall = (
     scope: ChainScope,
     chain: EvmChain,
     isDecoding: boolean,
+    nftApprovals: ReadonlySet<string>,
 ): TransactionSummary => {
     const sent = item.from !== null && areEqual(item.from, address)
     const other = sent ? item.to : item.from
@@ -518,6 +519,16 @@ const summarizeContractCall = (
     const action = classifyEvmHistoryCall({
         to,
         method: item.method,
+        ...(item.input !== null &&
+            size(item.input) > 0 && {
+                calldata: {
+                    from: getAddress(address),
+                    data: item.input,
+                    value: BigInt(item.value ?? '0'),
+                },
+            }),
+        eip155ChainId,
+        nftApprovals,
         changes,
         nftLegCount: item.nft_transfers.filter(
             leg => areEqual(leg.from, address) || areEqual(leg.to, address),
@@ -531,8 +542,12 @@ const summarizeContractCall = (
     return named ? { ...base, ...knownContractSubtitle(named) } : base
 }
 
+const NO_NFT_APPROVALS: ReadonlySet<string> = new Set()
+
 /**
- * Read from `address`'s side. An approval the account sent is named whatever
+ * Read from `address`'s side. `nftApprovals` holds the NFT asset ids the store
+ * knows an `approve` on the page grants, which its value alone can't tell from
+ * an allowance. An approval the account sent is named whatever
  * `isDecoding`; naming any other call needs it, and never alters the balances.
  */
 export const summarizeEthereumHistoryItem = (
@@ -541,6 +556,7 @@ export const summarizeEthereumHistoryItem = (
     scope: ChainScope,
     chain: EvmChain,
     isDecoding = false,
+    nftApprovals: ReadonlySet<string> = NO_NFT_APPROVALS,
 ): TransactionSummary => {
     const summary =
         item.kind === 'withdrawal'
@@ -548,7 +564,14 @@ export const summarizeEthereumHistoryItem = (
             : (summarizeNativeTransfer(item, address, chain) ??
               summarizeTokenTransfer(item, address, chain) ??
               summarizeNftTransfer(item, address, chain, isDecoding) ??
-              summarizeContractCall(item, address, scope, chain, isDecoding))
+              summarizeContractCall(
+                  item,
+                  address,
+                  scope,
+                  chain,
+                  isDecoding,
+                  nftApprovals,
+              ))
     const named =
         isDecoding &&
         summary.isActionUnknown &&

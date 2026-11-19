@@ -24,6 +24,7 @@ import {
 import type { Address, Hex } from 'viem'
 import {
     toScopeKey,
+    type ChainScope,
     type DecodedTransactions,
     type ReviewContext,
     type ReviewedTransaction,
@@ -71,6 +72,7 @@ import type {
     EthereumPayloadFeeEstimate,
     EthereumRevertedEstimate,
 } from './adapter'
+import { nftApprovalIdOf, readNftApprovalIds } from './nft-approvals'
 import type { EvmStandardCall } from './standard-call-types'
 import {
     approvalWarningOf,
@@ -602,6 +604,20 @@ export const ethereumCallSummary = (
           )
         : contractCallSummary(call, chain)
 
+// `approve` shares its selector between ERC-20 and ERC-721; the local asset
+// store tells which, as the app's presentation reads it.
+const withNftApproval = async (
+    view: EthereumTransactionView,
+    scope: ChainScope,
+): Promise<EthereumTransactionView> => {
+    if (view.call?.kind !== 'approve') return view
+    const nftApproval = nftApprovalIdOf(
+        view.call,
+        await readNftApprovalIds([view.call], scope),
+    )
+    return nftApproval ? { ...view, nftApproval } : view
+}
+
 const reviewCall = async (
     chain: EvmChain,
     call: Call,
@@ -667,14 +683,20 @@ const reviewCall = async (
             native: toEthereumNative(viewOf(call, 'swap-call')),
         }
     }
-    const view = contractCallView(
-        call,
-        eip155ChainIdOfNetwork(chain, unsigned.scope.networkId),
+    const view = await withNftApproval(
+        contractCallView(
+            call,
+            eip155ChainIdOfNetwork(chain, unsigned.scope.networkId),
+        ),
+        unsigned.scope,
     )
     const native = toEthereumNative(view)
     const standard = recognisedCallOf(view.call, context)
     if (standard) {
-        return { summary: standardCallSummary(standard, chain), native }
+        return {
+            summary: standardCallSummary(standard, chain, !!view.nftApproval),
+            native,
+        }
     }
     if (context.capabilities.contractDecoding && view.action) {
         return {
@@ -755,7 +777,10 @@ export const createEthereumReviewer = ({
                                   ? []
                                   : [{ ...UNKNOWN_CONTRACT_WARNING }]
                           }
-                          const warning = approvalWarningOf(standard)
+                          const warning = approvalWarningOf(
+                              standard,
+                              !!view?.nftApproval,
+                          )
                           return warning ? [warning] : []
                       }),
     },

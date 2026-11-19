@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import type { Address } from 'viem'
+import type { Decimal } from 'decimal.js'
+import { zeroAddress, type Address, type Hex } from 'viem'
 import {
     type AssetRef,
     type BalanceChange,
@@ -27,13 +28,48 @@ import {
 import { parseEvmNftAssetId } from '../blockchain/utils/caip19'
 import { NATIVE_ASSET_ID } from '../chains/create-evm-chain'
 import type { EvmChain } from '../chains/types'
-import type { KnownEvmContract } from '../signing/known-contracts'
+import { toAllowanceAmount } from '../signing/allowance'
+import {
+    decodeEvmContractAction,
+    decodePermit2Approval,
+} from '../signing/contract-actions'
+import {
+    findKnownEvmContract,
+    wrappedNativeOf,
+    type KnownEvmContract,
+} from '../signing/known-contracts'
+import { nftApprovalIdOf } from '../signing/nft-approvals'
+import type { EvmStandardCall } from '../signing/standard-call-types'
+import {
+    decodeEvmStandardCall,
+    isEvmApprovalCall,
+    isEvmRevocationCall,
+} from '../signing/standard-calls'
 
 type SwapSide = { symbol: string; assetRef: AssetRef }
 
+/** What an approval's calldata grants; absent when only its method name is known. */
+export type EvmApprovalGrant = {
+    /** The spender, or the operator of a collection approval. */
+    spender: Address
+    /** The registry's name for `spender`, read whatever the capabilities, as signing reads it. */
+    spenderName?: string
+    /**
+     * At least 2^160, as signing reads an allowance. `approve` shares its selector with ERC-721,
+     * whose token id can pass that bound; never set once `nftAssetId` places the token.
+     */
+    isUnlimited: boolean
+    /** A zero `approve` of a token the store can't place may be ERC-721 token #0; the detail page's read corrects it. */
+    isRevocation: boolean
+    /** `setApprovalForAll`: `token` is the collection. */
+    isCollection: boolean
+    /** Set when the store holds the approved token as this NFT: an ERC-721 `approve` of one token. */
+    nftAssetId?: string
+}
+
 type HistoryActionVariant =
-    /** `token` is absent for a mined Permit2 approval, whose calldata History doesn't read. */
-    | { kind: 'approval'; token?: Address }
+    /** `token` is absent for a Permit2 approval known only by its method name. */
+    | { kind: 'approval'; token?: Address; grant?: EvmApprovalGrant }
     /** `pair` is absent when either side has no symbol. */
     | { kind: 'swap'; pair?: { from: SwapSide; to: SwapSide } }
     | { kind: 'supply' | 'withdraw' | 'borrow' | 'repay' | 'wrap' | 'unwrap' }
@@ -56,6 +92,17 @@ export type EvmHistoryCallFacts = {
     nativeSymbol: string
     contract: Optional<KnownEvmContract>
     isDecoding: boolean
+    /** Absent from a backend that predates it, and on a plain transfer. */
+    calldata?: { from: Address; data: Hex; value: bigint }
+    eip155ChainId?: number
+    nftApprovals?: ReadonlySet<string>
+}
+
+export type EvmDecodableCall = {
+    from: Address
+    to: Address
+    data: Hex
+    value: bigint
 }
 
 const APPROVAL_METHODS: ReadonlySet<string> = new Set([
@@ -114,7 +161,13 @@ const TITLE_KEYS: Record<PlainActionKind, I18nKey> = {
 }
 
 const APPROVE_ASSET = i18nKey('transactions.list_item.approve_asset')
+const APPROVE_ALL = i18nKey('transactions.list_item.approve_all')
 const APPROVAL = i18nKey('transactions.list_item.approval')
+const REVOKE_APPROVAL = i18nKey('transactions.list_item.revoke_approval')
+const APPROVAL_FOR = i18nKey('transactions.list_item.approval_for')
+const UNLIMITED_APPROVAL_FOR = i18nKey(
+    'transactions.list_item.unlimited_approval_for',
+)
 const SWAP = i18nKey('transactions.list_item.swap')
 const SWAP_PAIR = i18nKey('transactions.list_item.swap_pair')
 const INTERPRETED_TITLE = i18nKey('transactions.list_item.interpreted_title')
@@ -237,20 +290,157 @@ const knownContractAction = (
     }
 }
 
+const spenderNameOf = (
+    eip155ChainId: Optional<number>,
+    spender: Address,
+): Optional<string> => {
+    const known =
+        eip155ChainId === undefined
+            ? undefined
+            : findKnownEvmContract(eip155ChainId, spender)
+    return known && (known.projectName ?? known.name)
+}
+
+const isUnlimitedAllowance = (value: Decimal): boolean =>
+    toAllowanceAmount(BigInt(value.toFixed())) === undefined
+
+const grantOf = (
+    spender: Address,
+    call: EvmStandardCall,
+    eip155ChainId: Optional<number>,
+): EvmApprovalGrant => {
+    const spenderName = spenderNameOf(eip155ChainId, spender)
+    return {
+        spender,
+        ...(spenderName && { spenderName }),
+        isUnlimited:
+            (call.kind === 'approve' || call.kind === 'increase-allowance') &&
+            isUnlimitedAllowance(call.value),
+        // `approve` to the zero address is how ERC-721 clears a token's approval.
+        isRevocation:
+            isEvmRevocationCall(call) ||
+            (call.kind === 'approve' &&
+                areEvmAddressesEqual(spender, zeroAddress)),
+        isCollection: call.kind === 'set-approval-for-all',
+    }
+}
+
+const grantOfStandardCall = (
+    call: EvmStandardCall,
+    eip155ChainId: Optional<number>,
+): Optional<EvmApprovalGrant> => {
+    if (call.kind === 'set-approval-for-all') {
+        return grantOf(call.operator, call, eip155ChainId)
+    }
+    return 'spender' in call
+        ? grantOf(call.spender, call, eip155ChainId)
+        : undefined
+}
+
 /**
- * What a mined call the account sent did. An approval is named whatever the
- * capabilities, as signing names it; anything else only while `isDecoding`.
+ * The approval a call grants or revokes, named whatever the capabilities, as
+ * signing names it. A Permit2 `approve` is read only on the registry's Permit2.
+ */
+export const approvalActionOfCall = (
+    call: EvmDecodableCall,
+    contract: Optional<KnownEvmContract>,
+    eip155ChainId: Optional<number>,
+    nftApprovals?: ReadonlySet<string>,
+): Optional<EvmHistoryAction> => {
+    const standard = decodeEvmStandardCall(call)
+    const nftAssetId =
+        standard?.kind === 'approve' && nftApprovals
+            ? nftApprovalIdOf(standard, nftApprovals)
+            : undefined
+    if (standard?.kind === 'approve' && nftAssetId) {
+        const spenderName = spenderNameOf(eip155ChainId, standard.spender)
+        return {
+            kind: 'approval',
+            token: call.to,
+            grant: {
+                spender: standard.spender,
+                ...(spenderName && { spenderName }),
+                isUnlimited: false,
+                isRevocation: isEvmRevocationCall(standard, true),
+                isCollection: false,
+                nftAssetId,
+            },
+        }
+    }
+    if (standard && isEvmApprovalCall(standard)) {
+        const grant = grantOfStandardCall(standard, eip155ChainId)
+        return { kind: 'approval', token: call.to, ...(grant && { grant }) }
+    }
+    if (contract?.kind !== 'uniswap-permit2') return undefined
+    const permit2 = decodePermit2Approval(call)
+    if (!permit2) return undefined
+    const spenderName = spenderNameOf(eip155ChainId, permit2.spender)
+    return {
+        kind: 'approval',
+        token: permit2.token,
+        grant: {
+            spender: permit2.spender,
+            ...(spenderName && { spenderName }),
+            isUnlimited: toAllowanceAmount(permit2.amount) === undefined,
+            isRevocation: permit2.amount === 0n,
+            isCollection: false,
+        },
+    }
+}
+
+// The calldata names the action; the amounts, and so a swap's pair, still come
+// from the balance changes, which are what actually moved.
+const calldataAction = (
+    facts: EvmHistoryCallFacts,
+    call: EvmDecodableCall,
+    contract: KnownEvmContract,
+): Optional<EvmHistoryAction> => {
+    const action = decodeEvmContractAction(
+        call,
+        contract,
+        facts.eip155ChainId === undefined
+            ? undefined
+            : wrappedNativeOf(facts.eip155ChainId),
+    )
+    if (!action) return undefined
+    if (action.kind !== 'swap') return { kind: action.kind }
+    const shaped = shapeAction(facts)
+    return shaped?.kind === 'swap' && shaped.pair
+        ? { kind: 'swap', pair: shaped.pair }
+        : { kind: 'swap' }
+}
+
+/**
+ * What a mined call the account sent did, read from its calldata when the row
+ * carries it and from its method name and balance changes otherwise. An
+ * approval is named whatever the capabilities, as signing names it; anything
+ * else only while `isDecoding`.
  */
 export const classifyEvmHistoryCall = (
     facts: EvmHistoryCallFacts,
 ): Optional<EvmHistoryAction> => {
-    const { to, method, contract, isDecoding } = facts
+    const {
+        to,
+        method,
+        contract,
+        isDecoding,
+        calldata,
+        eip155ChainId,
+        nftApprovals,
+    } = facts
+    const call = calldata && { ...calldata, to }
+    const approval =
+        call &&
+        approvalActionOfCall(call, contract, eip155ChainId, nftApprovals)
+    if (approval) return approval
     if (method !== null && isApprovalMethod(method)) {
         return contract?.kind === 'uniswap-permit2'
             ? { kind: 'approval' }
             : { kind: 'approval', token: to }
     }
     if (!isDecoding) return undefined
+    const decoded = call && contract && calldataAction(facts, call, contract)
+    if (decoded) return decoded
     return contract ? knownContractAction(facts, contract) : shapeAction(facts)
 }
 
@@ -265,9 +455,85 @@ export const knownContractSubtitle = (
     subtitleEllipsis: 'tail',
 })
 
+type ApprovalAction = Extract<EvmHistoryAction, { kind: 'approval' }>
+
+const approvalTitleOf = (
+    { token, grant }: ApprovalAction,
+    chain: EvmChain,
+): Pick<TransactionSummary, 'title' | 'titleAssets'> => {
+    if (grant?.isRevocation) return { title: { key: REVOKE_APPROVAL } }
+    if (!token) return { title: { key: APPROVAL } }
+    if (grant?.nftAssetId) {
+        return {
+            title: {
+                key: APPROVE_ASSET,
+                params: { asset: truncateEvmAddress(token) },
+            },
+            titleAssets: {
+                asset: { chainId: chain.row.id, assetId: grant.nftAssetId },
+            },
+        }
+    }
+    // A collection isn't a fungible asset the store could name.
+    if (grant?.isCollection) {
+        return {
+            title: {
+                key: APPROVE_ALL,
+                params: { collection: truncateEvmAddress(token) },
+            },
+        }
+    }
+    return {
+        title: {
+            key: APPROVE_ASSET,
+            params: { asset: truncateEvmAddress(token) },
+        },
+        titleAssets: {
+            asset: {
+                chainId: chain.row.id,
+                assetId: normalizeEvmAddress(token),
+            },
+        },
+    }
+}
+
+// A limited allowance has no amount line: `approve` shares its selector with
+// ERC-721, so the value may be a token id, which only the token can tell apart.
+const grantPartyOf = (
+    grant: EvmApprovalGrant,
+): Pick<
+    TransactionSummary,
+    'counterparty' | 'subtitle' | 'subtitleEllipsis'
+> => {
+    const counterparty = normalizeEvmAddress(grant.spender)
+    if (grant.isUnlimited && !grant.isRevocation) {
+        return {
+            counterparty,
+            subtitle: {
+                key: UNLIMITED_APPROVAL_FOR,
+                params: {
+                    spender:
+                        grant.spenderName ?? truncateEvmAddress(grant.spender),
+                },
+            },
+            ...(grant.spenderName && { subtitleEllipsis: 'tail' as const }),
+        }
+    }
+    if (!grant.spenderName) return { counterparty }
+    return {
+        counterparty,
+        subtitle: {
+            key: APPROVAL_FOR,
+            params: { spender: grant.spenderName },
+        },
+        subtitleEllipsis: 'tail',
+    }
+}
+
 /**
  * An approval drops `base`'s counterparty: the call's target is the token, which would read as
- * the spender. Pass `contract` only where naming it is allowed.
+ * the spender. Its calldata, when read, names the spender instead. Pass `contract` only where
+ * naming it is allowed.
  */
 export const historyActionSummary = (
     action: EvmHistoryAction,
@@ -283,26 +549,28 @@ export const historyActionSummary = (
     }
     switch (action.kind) {
         case 'approval': {
-            const { token } = action
             const { counterparty: _target, ...approval } = named
+            if (!action.grant) {
+                return {
+                    ...approval,
+                    kind: 'approval',
+                    icon: 'approval',
+                    ...approvalTitleOf(action, chain),
+                }
+            }
+            // The token's protocol name would stand in for the spender, the one
+            // party an approval row has to show.
+            const {
+                subtitle: _protocol,
+                subtitleEllipsis: _cut,
+                ...granted
+            } = approval
             return {
-                ...approval,
+                ...granted,
                 kind: 'approval',
                 icon: 'approval',
-                title: token
-                    ? {
-                          key: APPROVE_ASSET,
-                          params: { asset: truncateEvmAddress(token) },
-                      }
-                    : { key: APPROVAL },
-                ...(token && {
-                    titleAssets: {
-                        asset: {
-                            chainId: chain.row.id,
-                            assetId: normalizeEvmAddress(token),
-                        },
-                    },
-                }),
+                ...approvalTitleOf(action, chain),
+                ...grantPartyOf(action.grant),
             }
         }
         case 'swap': {

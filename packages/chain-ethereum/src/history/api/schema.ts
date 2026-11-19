@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { isHex, type Hex } from 'viem'
 import { z } from 'zod'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
@@ -82,6 +83,12 @@ export const evmHistoryItemSchema = z.object({
     fee: amount.nullable(),
     status: z.enum(['success', 'failed']),
     method: z.string().nullable(),
+    // Null, or missing from a backend that predates it, on anything but a call
+    // the account sent; malformed hex drops the calldata, never the row.
+    input: z
+        .custom<Hex>(value => typeof value === 'string' && isHex(value))
+        .nullable()
+        .catch(null),
     token_transfers: z
         .array(tokenTransferSchema)
         .transform(legs => legs.filter(leg => !isEip7708Mirror(leg.contract))),
@@ -149,6 +156,8 @@ export type EvmHistoryItemResponse = {
     fee: Nullable<string>
     status: 'success' | 'failed'
     method: Nullable<string>
+    /** 0x-prefixed calldata, set only on a call `from` the account. */
+    input: Nullable<string>
     token_transfers: {
         asset_id: string
         contract: string

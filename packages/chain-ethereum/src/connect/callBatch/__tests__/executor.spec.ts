@@ -62,7 +62,6 @@ import {
     type CallBatchExecutorDeps,
 } from '../executor'
 import { ETH_IN_V3_EXACT_IN } from '../../../signing/__tests__/contract-action-fixtures'
-import { findKnownEvmContract } from '../../../signing/known-contracts'
 import { createEthereumReviewer } from '../../../signing/review'
 import { prepareEthereumCallBatch } from '../prepare'
 import { callsStatusCodeOf } from '../status'
@@ -395,7 +394,7 @@ describe('call batch execution', () => {
             })
         })
 
-        it('Given contract decoding is on, when an approval on a known contract is recorded, then its row carries the protocol subtitle', async () => {
+        it("Given contract decoding is on, when an approval on a known token is recorded, then its row shows the spender rather than the token's protocol name", async () => {
             fakeNode()
             setContractDecoding(true)
 
@@ -404,9 +403,8 @@ describe('call batch execution', () => {
 
             const summary = await summaryOf(first.id)
             expect(summary?.kind).toBe('approval')
-            expect(summary?.subtitle?.params).toMatchObject({
-                title: findKnownEvmContract(1, WETH)?.name,
-            })
+            expect(summary?.subtitle).toBeUndefined()
+            expect(summary?.counterparty).toBe(ROUTER)
         })
 
         it('Given contract decoding is off, when an approval on a known contract is recorded, then its row has no subtitle', async () => {
