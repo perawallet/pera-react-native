@@ -115,6 +115,11 @@ catalog:
   expo-local-authentication: 58.0.3
   expo-localization: 58.0.5
   expo-notifications: 58.1.9
+  # Android builds this from source (apps/mobile autolinking `buildFromSource`):
+  # its prebuilt AAR calls the 4-arg SharedObjectRegistry.register from Expo
+  # Modules v2 0.2.7, but expo-modules-core bundles 0.2.5, so NativeDatabase never
+  # registers and the app aborts on launch. Drop the override once
+  # expo-modules-core bundles v2 0.2.7 or later.
   expo-sqlite: 58.0.18
   fake-indexeddb: 6.2.8
   falcon-1024: 0.2.0
