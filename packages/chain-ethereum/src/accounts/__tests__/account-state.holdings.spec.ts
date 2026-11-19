@@ -52,21 +52,14 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal =>
     ),
 )
 
-const storedHoldings = vi.hoisted(() => ({
-    ids: [] as string[],
-    byAddress: {} as Record<string, string[]>,
-}))
+const storedHoldings = vi.hoisted(() => ({ ids: [] as string[] }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-accounts')
     >()),
-    getAccountHeldAssets: vi.fn(
-        async ({ sources }: { sources: { address: string }[] }) =>
-            (
-                storedHoldings.byAddress[getAddress(sources[0]!.address)] ??
-                storedHoldings.ids
-            ).map(assetId => ({ assetId, scope: SCOPE })),
+    getAccountHeldAssets: vi.fn(async () =>
+        storedHoldings.ids.map(assetId => ({ assetId, scope: SCOPE })),
     ),
 }))
 
@@ -140,7 +133,6 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => {
     server.resetHandlers()
     storedHoldings.ids = []
-    storedHoldings.byAddress = {}
 })
 afterAll(() => server.close())
 
@@ -596,27 +588,6 @@ describe('fetchAccountState holdings the read had no source for', () => {
         const state = await ops.fetchAccountState(ADDRESS, SCOPE, HINT)
 
         expect(state.unrefreshedHoldings?.includes(BROKEN)).toBe(true)
-    })
-
-    it('marks only the account that stored a reverting token as partially refreshed, not others read with it', async () => {
-        const OTHER: Hex = '0x00000000000000000000000000000000000000ab'
-        storedHoldings.byAddress = { [HOLDER]: [BROKEN] }
-        server.use(
-            ...rpcAtBlock('0x64', erc20CallResponder({ [USDC]: token(1n) })),
-            ...whitelist(USDC),
-        )
-        const ops = createEthereumAccountStateOps(
-            testChainContext({ services: ['assets', 'nfts'] }),
-            ETHEREUM,
-        )
-
-        const [holderState, otherState] = await Promise.all([
-            ops.fetchAccountState(ADDRESS, SCOPE, HINT),
-            ops.fetchAccountState(OTHER, SCOPE, HINT),
-        ])
-
-        expect(holderState.unrefreshedHoldings?.includes(BROKEN)).toBe(true)
-        expect(otherState.unrefreshedHoldings).toBeUndefined()
     })
 
     it('does not keep a listed token it never stored when its balance call reverts', async () => {

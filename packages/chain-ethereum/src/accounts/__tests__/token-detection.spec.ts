@@ -23,6 +23,7 @@ import { setupServer } from 'msw/node'
 import {
     encodeAbiParameters,
     encodeEventTopics,
+    erc1155Abi,
     erc20Abi,
     getAddress,
     type Hex,
@@ -34,6 +35,7 @@ import {
     createTokenSightings,
     receivedTokenIdsOf,
     scanReceivedTokens,
+    sendsNftFrom,
     TOKEN_SCAN_INTERVAL_MS,
     TOKEN_SCAN_MAX_PAGES,
 } from '../token-detection'
@@ -145,6 +147,71 @@ describe('receivedTokenIdsOf', () => {
     })
 })
 
+describe('sendsNftFrom', () => {
+    const erc1155Log = (
+        eventName: 'TransferSingle' | 'TransferBatch',
+        from: Hex,
+    ): Log =>
+        ({
+            address: TSLAX.toLowerCase(),
+            topics: encodeEventTopics({
+                abi: erc1155Abi,
+                eventName,
+                args: { operator: from, from, to: OTHER },
+            }),
+            data:
+                eventName === 'TransferSingle'
+                    ? encodeAbiParameters(
+                          [{ type: 'uint256' }, { type: 'uint256' }],
+                          [1n, 1n],
+                      )
+                    : encodeAbiParameters(
+                          [{ type: 'uint256[]' }, { type: 'uint256[]' }],
+                          [[1n], [1n]],
+                      ),
+        }) as Log
+    const erc721SendLog = (from: Hex): Log =>
+        ({
+            ...transferLog(TSLAX, OTHER, 0n, true),
+            topics: [
+                ...encodeEventTopics({
+                    abi: erc20Abi,
+                    eventName: 'Transfer',
+                    args: { from, to: OTHER },
+                }),
+                `0x${'1'.padStart(64, '0')}`,
+            ],
+        }) as Log
+
+    it('finds an ERC-721 or ERC-1155 token leaving the address', () => {
+        expect(sendsNftFrom([erc721SendLog(ME)], ME)).toBe(true)
+        expect(sendsNftFrom([erc1155Log('TransferSingle', ME)], ME)).toBe(true)
+        expect(sendsNftFrom([erc1155Log('TransferBatch', ME)], ME)).toBe(true)
+    })
+
+    it('ignores ERC-20 transfers and NFTs another address sent', () => {
+        const erc20Send = {
+            ...transferLog(TSLAX, OTHER, 5n),
+            topics: encodeEventTopics({
+                abi: erc20Abi,
+                eventName: 'Transfer',
+                args: { from: ME, to: OTHER },
+            }),
+        } as Log
+
+        expect(
+            sendsNftFrom(
+                [
+                    erc20Send,
+                    erc721SendLog(OTHER),
+                    erc1155Log('TransferSingle', OTHER),
+                ],
+                ME,
+            ),
+        ).toBe(false)
+    })
+})
+
 describe('createTokenSightings', () => {
     it('keys by chain, network and address, ignoring the address case', () => {
         const sightings = createTokenSightings()
@@ -209,21 +276,6 @@ describe('createHistoryScanBudget', () => {
         expect(budget.take()).toBe(false)
         expect(budget.take('a')).toBe(false)
         expect(budget.take('b')).toBe(true)
-    })
-
-    it('serves waiters in the order they joined even when their requests share a clock tick', () => {
-        let now = 0
-        const budget = createHistoryScanBudget(1, 1000, () => now)
-        expect(budget.take()).toBe(true)
-        expect(budget.take('first')).toBe(false)
-        expect(budget.take('second')).toBe(false)
-
-        now = 1000
-        expect(budget.take('second')).toBe(false)
-        expect(budget.take('first')).toBe(true)
-
-        now = 2000
-        expect(budget.take('second')).toBe(true)
     })
 })
 

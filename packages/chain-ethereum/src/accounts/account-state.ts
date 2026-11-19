@@ -41,7 +41,11 @@ import {
 } from '@perawallet/wallet-core-shared'
 import type { EvmChainId } from '@perawallet/wallet-core-chain-contract'
 import type { EvmChain } from '../chains/types'
-import { ASSETS_SERVICE, NFTS_SERVICE } from '../assets/api/endpoints'
+import {
+    ASSETS_SERVICE,
+    NFTS_SERVICE,
+    type NftHoldingsListing,
+} from '../assets/api/endpoints'
 import {
     cachedWhitelist,
     listedTokenIds,
@@ -94,6 +98,8 @@ type PendingRead = {
     isPersisted: boolean
     /** The account has no stored chain state yet. */
     isFirstSync: boolean
+    /** The user asked for this read, so the backend's caches are skipped. */
+    isUserRefresh: boolean
     resolve: (snapshot: AccountStateSnapshot) => void
     reject: (error: unknown) => void
 }
@@ -174,8 +180,7 @@ const unrefreshedOf = (
         : undefined
 }
 
-/** `ids` is per read, in the reads' order. */
-type StoredTokenIds = { ids: string[][]; error: Optional<unknown> }
+type StoredTokenIds = { ids: string[]; error: Optional<unknown> }
 
 // The stored rows are the record of tokens held off the list (detected ones)
 // and, without the token list, of every token; they name the contracts the RPC
@@ -187,17 +192,13 @@ const storedTokenIdsOf = async (
     nativeAssetId: string,
 ): Promise<StoredTokenIds> => {
     try {
-        const held = await Promise.all(
-            reads.map(({ address }) =>
-                getAccountHeldAssets({ sources: [{ address, scope }] }),
-            ),
-        )
+        const held = await getAccountHeldAssets({
+            sources: reads.map(({ address }) => ({ address, scope })),
+        })
         return {
-            ids: held.map(rows =>
-                rows
-                    .map(row => row.assetId)
-                    .filter(id => id !== nativeAssetId && !isEvmNftAssetId(id)),
-            ),
+            ids: held
+                .map(row => row.assetId)
+                .filter(id => id !== nativeAssetId && !isEvmNftAssetId(id)),
             error: undefined,
         }
     } catch (error) {
@@ -205,7 +206,7 @@ const storedTokenIdsOf = async (
             scope,
             error,
         })
-        return { ids: reads.map(() => []), error }
+        return { ids: [], error }
     }
 }
 
@@ -282,6 +283,10 @@ type Detection = {
     listedPassAt: Map<string, number>
     /** Accounts read with only their held tokens since their last whole-list pass. */
     owedListedPasses: Set<string>
+    /** Each account's last NFT list, by `backfillKey`, answered again while its page one is unchanged. */
+    nftListings: Map<string, NftHoldingsListing>
+    /** When each account whose NFT read failed is read again, by `backfillKey`. */
+    nftRetryAt: Map<string, number>
 }
 
 const isScanDue = (detection: Detection, key: string): boolean => {
@@ -312,6 +317,33 @@ const isListedPassDue = (detection: Detection, key: string): boolean => {
 // since; once its pass is due, the next change signal asks for one.
 const isListedPassOwed = (detection: Detection, key: string): boolean =>
     detection.owedListedPasses.has(key) && isListedPassDue(detection, key)
+
+// A failed NFT read keeps the stored list, and nothing on chain may come to
+// ask for another: a 429 waits out part of the backend's 10-minute window.
+const NFT_READ_RETRY_MS = 2 * 60_000
+
+const isNftRetryDue = (detection: Detection, key: string): boolean => {
+    const at = detection.nftRetryAt.get(key)
+    return at !== undefined && detection.now() >= at
+}
+
+const recordNftReads = (
+    detection: Detection,
+    keys: readonly string[],
+    reads: readonly NftRead[],
+): void =>
+    reads.forEach((read, index) => {
+        const key = keys[index]!
+        if (read?.status === 'fulfilled') {
+            detection.nftListings.set(key, read.value.listing)
+            detection.nftRetryAt.delete(key)
+        } else if (
+            read?.status === 'rejected' &&
+            !isPeraServiceUnavailableError(read.reason)
+        ) {
+            detection.nftRetryAt.set(key, detection.now() + NFT_READ_RETRY_MS)
+        }
+    })
 
 const latestOf = (a: Optional<number>, b: Optional<number>): Optional<number> =>
     a === undefined || b === undefined ? (a ?? b) : Math.max(a, b)
@@ -451,12 +483,27 @@ const readBatch = async (
     }
     // Settled per address, so one account's NFT outage never fails another's
     // read, nor its own balances.
+    const nftKeys = reads.map(read => backfillKey(scope, read.address))
+    reads.forEach((read, index) => {
+        if (detection.sightings.takeSend(scope, read.address)) {
+            detection.nftListings.delete(nftKeys[index]!)
+        }
+    })
     const nftReads: Promise<NftRead[]> = services.has(NFTS_SERVICE)
         ? Promise.allSettled(
-              reads.map(({ address }) =>
-                  readNftHoldings(scope, chain, address),
+              reads.map((read, index) =>
+                  readNftHoldings(scope, chain, read.address, {
+                      forceRefresh: read.isUserRefresh,
+                      prior: detection.nftListings.get(nftKeys[index]!),
+                      now: detection.now,
+                  }),
               ),
-          ).then(settled => persistNftReads(scope, settled))
+          )
+              .then(settled => persistNftReads(scope, settled))
+              .then(settled => {
+                  recordNftReads(detection, nftKeys, settled)
+                  return settled
+              })
         : Promise.resolve(reads.map(() => undefined))
     // Cleared before the sightings are read, so a scan finishing mid-read
     // still asks for another one.
@@ -504,7 +551,7 @@ const readBatch = async (
     // Added, stored and detected tokens: the syncer shows an added one at
     // zero, and stored ids keep a detected token read until its balance is gone.
     const held = checksummed([
-        ...stored.ids.flat(),
+        ...stored.ids,
         ...reads.flatMap(read => [
             ...read.addedTokenIds,
             ...detection.sightings.of(scope, read.address),
@@ -550,11 +597,11 @@ const readBatch = async (
     // keeping through a failed read; a sighted one that keeps failing (a
     // broken contract, a spam airdrop) must not hold the account's refresh in
     // a failed state every tick.
-    const keptIds = reads.map(
-        (read, index) =>
-            new Set(
-                checksummed([...stored.ids[index]!, ...read.addedTokenIds]),
-            ),
+    const keptIds = new Set(
+        checksummed([
+            ...stored.ids,
+            ...reads.flatMap(read => read.addedTokenIds),
+        ]),
     )
     // A whole-list pass that fails still leaves the held tokens to read: what
     // it would have added is discovery, and losing that must not fail the
@@ -625,10 +672,10 @@ const readBatch = async (
             ),
             nftReads,
         ])
-    offListRead.unread.forEach((_, id) => {
-        if (!keptIds.some(kept => kept.has(id))) {
-            logger.debug('Sighted token unreadable; leaving it out', { id })
-        }
+    const unreadKept = new Map<string, unknown>()
+    offListRead.unread.forEach((error, id) => {
+        if (keptIds.has(id)) unreadKept.set(id, error)
+        else logger.debug('Sighted token unreadable; leaving it out', { id })
     })
     const isWholeList = (index: number): boolean =>
         isPassDue[index]! && wholeListRead.isWholeList
@@ -658,13 +705,9 @@ const readBatch = async (
         ).get(getAddress(read.address))!
         const offList = offListRead.balances.get(getAddress(read.address))
         offList?.tokens.forEach((balance, id) => holder.tokens.set(id, balance))
-        const kept = keptIds[index]!
-        const unreadTokens = new Map<string, unknown>()
-        offListRead.unread.forEach((error, id) => {
-            if (kept.has(id)) unreadTokens.set(id, error)
-        })
+        const unreadTokens = new Map(unreadKept)
         for (const id of [...holder.unread, ...(offList?.unread ?? [])]) {
-            if (kept.has(id)) {
+            if (keptIds.has(id)) {
                 unreadTokens.set(id, new Error(`balanceOf unreadable: ${id}`))
             }
         }
@@ -741,6 +784,7 @@ const coalescedAccountReads = (
                 addedTokenIds: hint.addedTokenIds ?? [],
                 isPersisted: hint.isPersisted === true,
                 isFirstSync: hint.priorChainState === undefined,
+                isUserRefresh: hint.isUserRefresh === true,
                 tokenScanBlock:
                     hint.priorChainState?.family === 'evm'
                         ? hint.priorChainState.tokenScanBlock
@@ -802,6 +846,17 @@ const fetchChangeSignal = (
                     isScanDue(detection, accountKey)
                 )
             })
+        ) {
+            return { changed: true, cursor }
+        }
+        if (
+            cursor !== null &&
+            ctx.getPeraBackend(scope).services.has(NFTS_SERVICE) &&
+            addresses.some(
+                address =>
+                    isNftRetryDue(detection, backfillKey(scope, address)) ||
+                    detection.sightings.hasSend(scope, address),
+            )
         ) {
             return { changed: true, cursor }
         }
@@ -896,6 +951,8 @@ export const createEthereumAccountStateOps = (
         budget: scanBudget,
         listedPassAt: new Map(),
         owedListedPasses: new Set(),
+        nftListings: new Map(),
+        nftRetryAt: new Map(),
     }
     return {
         chainId: chain.row.id,

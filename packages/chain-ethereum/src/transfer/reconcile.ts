@@ -48,6 +48,7 @@ import {
 import type { EvmChain, EvmChainRow } from '../chains/types'
 import {
     receivedTokenIdsOf,
+    sendsNftFrom,
     type TokenSightings,
 } from '../accounts/token-detection'
 import { readReceipt } from './receipt'
@@ -300,7 +301,7 @@ export type ReconcileEthereumSubmissionsParams = {
     settleHandlers: SubmissionSettledHandlers
     probeFailures: ProbeFailureStreaks
     getClient: (scope: ChainScope) => PublicClient
-    /** Told which tokens a mined send's receipt delivered back to the sender, so the next account read includes them. */
+    /** Told which tokens a mined send's receipt delivered back to the sender, so the next account read includes them, and that the sender's NFT list is stale. */
     tokenSightings?: TokenSightings
     db?: Database
     limit?: number
@@ -408,6 +409,14 @@ export const reconcileEthereumSubmissions = async ({
                             attempt.sender,
                             receivedTokenIdsOf(receipt.logs, attempt.sender),
                         )
+                        // Once when mined and once when final, so an NFT list
+                        // read before the backend saw the transfer is read again.
+                        if (
+                            verdict !== attempt.status &&
+                            sendsNftFrom(receipt.logs, attempt.sender)
+                        ) {
+                            tokenSightings.recordSend(scope, attempt.sender)
+                        }
                     }
                 }
                 if (verdict === null) {

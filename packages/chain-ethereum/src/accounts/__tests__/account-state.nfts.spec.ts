@@ -27,6 +27,7 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { upsertAssets } from '@perawallet/wallet-core-assets'
 import { isPeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
 import { createEthereumAccountStateOps } from '../account-state'
+import { createTokenSightings } from '../token-detection'
 import { evmNftItem } from '../../assets/api/msw-handlers'
 import { peraEvmHandlers } from '../msw-handlers'
 import { evmRpcHandlers } from '../../blockchain/msw-handlers'
@@ -59,6 +60,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
 }))
 
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
+const NFT_READ_RETRY_MS = 2 * 60_000
 const HINT = { priorChainState: undefined }
 const FIRST: Hex = '0x00000000000000000000000000000000000000aa'
 const SECOND: Hex = '0x00000000000000000000000000000000000000bb'
@@ -284,5 +286,132 @@ describe('fetchAccountState NFT holdings', () => {
 
         expect(state.holdings.map(h => h.assetId)).toEqual(['native'])
         expect(state.unrefreshedHoldings?.error).toEqual(new Error('disk full'))
+    })
+})
+
+describe('fetchAccountState NFT pages', () => {
+    const nftQueries = (): string[] => {
+        const queries: string[] = []
+        server.events.on('request:start', ({ request }) => {
+            const url = new URL(request.url)
+            if (url.pathname.endsWith('/nfts/')) queries.push(url.search)
+        })
+        return queries
+    }
+
+    const setup = (
+        nftHoldings: Parameters<typeof peraEvmHandlers>[0]['nftHoldings'],
+    ) => {
+        const clock = { now: 1_000_000 }
+        server.use(
+            ...rpc(),
+            ...peraEvmHandlers({
+                baseUrl: TEST_PERA_URL,
+                nftHoldings,
+                blockFollowing: { refresh: false },
+            }),
+        )
+        const tokenSightings = createTokenSightings()
+        const ops = createEthereumAccountStateOps(
+            testChainContext({
+                services: ['assets', 'nfts', 'blockFollowing'],
+            }),
+            ETHEREUM,
+            { now: () => clock.now, tokenSightings },
+        )
+        return { clock, ops, tokenSightings }
+    }
+
+    afterEach(() => server.events.removeAllListeners())
+
+    it('reads page one alone on a later sync while it is unchanged, keeping every NFT', async () => {
+        const { ops } = setup({ [FIRST]: [[ape], [swords]] })
+        await ops.fetchAccountState(FIRST, SCOPE, HINT)
+        const queries = nftQueries()
+
+        const state = await ops.fetchAccountState(FIRST, SCOPE, HINT)
+
+        expect(queries).toEqual([''])
+        expect(state.holdings.map(h => h.assetId)).toEqual([
+            'native',
+            APE,
+            SWORD,
+        ])
+        expect(state.unrefreshedHoldings).toBeUndefined()
+    })
+
+    it('reads every page again after a mined send, and only once', async () => {
+        const { ops, tokenSightings } = setup({ [FIRST]: [[ape], [swords]] })
+        await ops.fetchAccountState(FIRST, SCOPE, HINT)
+        const queries = nftQueries()
+
+        tokenSightings.recordSend(SCOPE, FIRST)
+        await expect(
+            ops.fetchChangeSignal([FIRST], SCOPE, 100),
+        ).resolves.toEqual({ changed: true, cursor: 100 })
+        await ops.fetchAccountState(FIRST, SCOPE, HINT)
+        expect(queries).toEqual(['', '?cursor=page%3A1'])
+
+        await ops.fetchAccountState(FIRST, SCOPE, HINT)
+        expect(queries).toEqual(['', '?cursor=page%3A1', ''])
+    })
+
+    it('asks the backend to skip its cache, and reads every page, on a refresh the user asked for', async () => {
+        const { ops } = setup({ [FIRST]: [[ape], [swords]] })
+        await ops.fetchAccountState(FIRST, SCOPE, HINT)
+        const queries = nftQueries()
+
+        await ops.fetchAccountState(FIRST, SCOPE, {
+            ...HINT,
+            isUserRefresh: true,
+        })
+
+        expect(queries).toEqual(['?force_refresh=true', '?cursor=page%3A1'])
+    })
+
+    it('never asks to skip the cache on a routine sync', async () => {
+        const { ops } = setup({ [FIRST]: [[ape], [swords]] })
+        const queries = nftQueries()
+
+        await ops.fetchAccountState(FIRST, SCOPE, HINT)
+
+        expect(queries).toEqual(['', '?cursor=page%3A1'])
+    })
+
+    it('reads the NFTs again two minutes after a 429, with nothing new on chain', async () => {
+        const { clock, ops } = setup(429)
+        const failed = await ops.fetchAccountState(FIRST, SCOPE, HINT)
+        expect(failed.unrefreshedHoldings?.includes(APE)).toBe(true)
+
+        clock.now += NFT_READ_RETRY_MS - 1
+        await expect(
+            ops.fetchChangeSignal([FIRST], SCOPE, 100),
+        ).resolves.toEqual({ changed: false, cursor: 100 })
+
+        clock.now += 1
+        await expect(
+            ops.fetchChangeSignal([FIRST], SCOPE, 100),
+        ).resolves.toEqual({ changed: true, cursor: 100 })
+
+        server.use(
+            ...peraEvmHandlers({
+                baseUrl: TEST_PERA_URL,
+                nftHoldings: { [FIRST]: [[ape]] },
+            }),
+        )
+        await ops.fetchAccountState(FIRST, SCOPE, HINT)
+        await expect(
+            ops.fetchChangeSignal([FIRST], SCOPE, 100),
+        ).resolves.toEqual({ changed: false, cursor: 100 })
+    })
+
+    it('asks for no retry on a chain without NFT reads', async () => {
+        const { clock, ops } = setup(422)
+        await ops.fetchAccountState(FIRST, SCOPE, HINT)
+
+        clock.now += NFT_READ_RETRY_MS
+        await expect(
+            ops.fetchChangeSignal([FIRST], SCOPE, 100),
+        ).resolves.toEqual({ changed: false, cursor: 100 })
     })
 })

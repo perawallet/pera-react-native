@@ -60,6 +60,7 @@ import {
     syncAccountsPhase,
     syncAssetsPhase,
     syncTransactionsPhase,
+    type RefreshOptions,
     type SyncPhaseResult,
 } from './sync-phases'
 
@@ -820,8 +821,9 @@ export class SyncService {
     async refreshAccounts(
         addresses: string[],
         scope: ChainScope,
+        options?: RefreshOptions,
     ): Promise<void> {
-        return this.refreshSources([{ addresses, scope }])
+        return this.refreshSources([{ addresses, scope }], options)
     }
 
     /**
@@ -830,13 +832,16 @@ export class SyncService {
      * failing one never holds back the rest; the app-wide invalidations fire
      * once for the lot. Rejects with the first failure after the others land.
      */
-    async refreshSources(sources: readonly RefreshSource[]): Promise<void> {
+    async refreshSources(
+        sources: readonly RefreshSource[],
+        options?: RefreshOptions,
+    ): Promise<void> {
         const targets = sources.filter(({ addresses }) => addresses.length > 0)
         if (targets.length === 0) return
 
         const reads = await Promise.allSettled(
             targets.map(({ addresses, scope }) =>
-                this.readRefreshSource(addresses, scope),
+                this.readRefreshSource(addresses, scope, options),
             ),
         )
         const landed = targets.flatMap((target, index) => {
@@ -879,11 +884,13 @@ export class SyncService {
     private async readRefreshSource(
         addresses: string[],
         scope: ChainScope,
+        options?: RefreshOptions,
     ): Promise<{ hasHoldingsChanged: boolean; hasAssetsRefreshed: boolean }> {
         const accountPass = await syncAccountsPhase(
             addresses,
             scope,
             'refresh-accounts',
+            options,
         )
         await syncTransactionsPhase(addresses, scope, 'refresh-transactions')
 
