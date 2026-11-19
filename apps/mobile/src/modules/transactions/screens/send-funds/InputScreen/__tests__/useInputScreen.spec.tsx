@@ -126,8 +126,14 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     useMinFeeForSender: vi.fn(),
 }))
 
+const mockFeeQuery = vi.hoisted(() => ({
+    error: null as Error | null,
+    refresh: vi.fn(),
+    calls: [] as { assetId?: string }[],
+}))
+
 // useSendFeeQuery's own branching is pinned in its spec; here it stands on the
-// planner fee, as it does on Algorand.
+// planner fee, as it does on Algorand, unless a test fails the estimate.
 vi.mock('@perawallet/wallet-core-transactions', async () => {
     const { useMinFeeForSender } =
         await import('@perawallet/wallet-core-signing')
@@ -135,27 +141,28 @@ vi.mock('@perawallet/wallet-core-transactions', async () => {
         useSpendableBalanceQuery: vi.fn(),
         // Algorand routes opt-in sends through its send-flow adapter.
         sendFlowChainAdapters: { has: () => true },
-        useSendFeeQuery: ({
-            senderAddress,
-            scope,
-        }: {
+        useSendFeeQuery: (input: {
             senderAddress?: string
+            assetId?: string
             scope: { chainId: 'algorand' }
         }) => {
+            mockFeeQuery.calls.push(input)
             const { minFee, isPending } = useMinFeeForSender(
-                senderAddress,
-                scope.chainId,
+                input.senderAddress,
+                input.scope.chainId,
             )
             const fee =
-                minFee !== undefined
+                minFee !== undefined && !mockFeeQuery.error
                     ? new Decimal(minFee.toString())
                     : undefined
             return {
                 feeAmount: fee,
                 maxFeeAmount: fee,
                 presets: undefined,
-                isPending,
-                isError: false,
+                isPending: isPending && !mockFeeQuery.error,
+                isError: !!mockFeeQuery.error,
+                error: mockFeeQuery.error,
+                refresh: mockFeeQuery.refresh,
             }
         },
     }
@@ -302,6 +309,8 @@ describe('useInputScreen', () => {
         mockSendFundsState.destination = undefined
         mockSendFundsState.amount = undefined
         mockSendFundsState.shouldContinueToConfirm = false
+        mockFeeQuery.error = null
+        mockFeeQuery.calls = []
         ;(useToast as Mock).mockReturnValue({ errorToast: mockErrorToast })
         ;(useSelectedAccount as Mock).mockReturnValue({
             id: 'test-account',
@@ -447,7 +456,46 @@ describe('useInputScreen', () => {
         })
 
         expect(result.current.isMaxReady).toBe(false)
+        expect(result.current.isMaxDisabled).toBe(true)
         expect(result.current.cryptoValue).toBeFalsy()
+    })
+
+    it('fills a token MAX without pricing the fee, which a zero-amount transfer can revert', () => {
+        mockSendFundsState.selectedAssetId = '1'
+        mockFeeQuery.error = new Error('execution reverted')
+        spendableOf({ balance: 50, max: 50 })
+
+        const { result } = renderHook(() => useInputScreen())
+        act(() => {
+            result.current.setMax()
+        })
+
+        expect(mockFeeQuery.calls.at(-1)?.assetId).toBeUndefined()
+        expect(useSpendableBalanceQuery).toHaveBeenLastCalledWith(
+            expect.objectContaining({ fee: new Decimal(0) }),
+        )
+        expect(result.current.isMaxDisabled).toBe(false)
+        expect(result.current.cryptoValue).toBe('50')
+        expect(mockErrorToast).not.toHaveBeenCalled()
+    })
+
+    it('says why MAX cannot fill when the native fee estimate fails, and re-prices', () => {
+        mockFeeQuery.error = new Error('network down')
+
+        const { result } = renderHook(() => useInputScreen())
+        act(() => {
+            result.current.setMax()
+        })
+
+        expect(result.current.isMaxReady).toBe(false)
+        expect(result.current.isMaxDisabled).toBe(false)
+        expect(result.current.cryptoValue).toBeFalsy()
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'send_funds.confirmation.fee_unavailable.title',
+            'send_funds.confirmation.fee_unavailable.body',
+            expect.anything(),
+        )
+        expect(mockFeeQuery.refresh).toHaveBeenCalled()
     })
 
     it('is not ready until the spendable balance loads', () => {

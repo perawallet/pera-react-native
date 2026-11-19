@@ -96,6 +96,22 @@ describe('readEthereumSpendableBalance', () => {
         })
     })
 
+    it('offers every digit of a 60-digit token holding on MAX', async () => {
+        const balance = new Decimal('9'.repeat(60))
+        mocks.getAccountHoldings.mockResolvedValue([
+            { assetId: USDC, amount: balance, native: null },
+        ])
+
+        const result = await readEthereumSpendableBalance({
+            account: ACCOUNT,
+            asset: { chainId: 'ethereum', assetId: USDC },
+            scope: SCOPE,
+            fee: new Decimal(21_000),
+        })
+
+        expect(result.max.toFixed()).toBe(balance.toFixed())
+    })
+
     it('never offers a negative amount of ether when the fee exceeds the balance', async () => {
         mocks.getAccountChainStateRow.mockResolvedValue({
             accountAddress: SENDER,
