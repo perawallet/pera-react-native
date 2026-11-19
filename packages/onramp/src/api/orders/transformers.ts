@@ -13,6 +13,7 @@
 import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
 
 import type { RampOrder } from '../../models'
+import { parsableDatetimeOrNull } from '../datetime'
 import {
     depositInstructionsStepSchema,
     openCheckoutStepSchema,
@@ -39,7 +40,7 @@ export const transformRampOrder = (api: RampOrderApiResponse): RampOrder => {
             kind: 'xo',
             orderId: api.order_id,
             deposit: { address: parsed.address, memo: parsed.memo ?? null },
-            expiresAt: api.expires_at ?? null,
+            expiresAt: parsableDatetimeOrNull(api.expires_at),
         }
     }
 

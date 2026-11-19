@@ -78,13 +78,19 @@ describe('transformRampOrder', () => {
         })
     })
 
-    it('has a null expiry when the router sends none', () => {
-        const result = transformRampOrder(
-            order([{ kind: 'deposit_instructions', address: 'PAYIN' }]),
-        )
+    it.each([null, 'soon'])(
+        'has a null expiry when the router sends %s',
+        expiresAt => {
+            const result = transformRampOrder(
+                order(
+                    [{ kind: 'deposit_instructions', address: 'PAYIN' }],
+                    expiresAt,
+                ),
+            )
 
-        expect(result).toMatchObject({ expiresAt: null })
-    })
+            expect(result).toMatchObject({ expiresAt: null })
+        },
+    )
 
     it('maps deposit instructions without a memo to a null memo', () => {
         const result = transformRampOrder(

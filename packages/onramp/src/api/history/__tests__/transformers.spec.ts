@@ -154,6 +154,29 @@ describe('transformRampHistoryItem', () => {
         expect(malformed.payInAddressTag).toBeUndefined()
     })
 
+    it.each([
+        ['an object', { kind: 'deposit_instructions', address: 'PAYIN' }],
+        ['a step without a kind', [{ address: 'PAYIN' }]],
+        ['a null step', [null]],
+    ])(
+        'parses the order with no pay-in address when steps is %s',
+        (_, steps) => {
+            const parsed = rampHistoryItemSchema.safeParse(
+                historyItem({ steps: steps as never }),
+            )
+
+            expect(parsed.success).toBe(true)
+            expect(
+                parsed.success &&
+                    transformRampHistoryItem(parsed.data).payInAddress,
+            ).toBeUndefined()
+        },
+    )
+
+    it('has no expiry for an expires_at that does not parse as a date', () => {
+        expect(transform({ expires_at: 'soon' }).expiresAt).toBeUndefined()
+    })
+
     it.each(['expired', 'refunded'] as const)('keeps a %s order', status => {
         expect(transform({ status }).status).toBe(status)
     })

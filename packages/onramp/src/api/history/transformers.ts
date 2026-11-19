@@ -26,6 +26,7 @@ import {
     toRampToken,
     type RampAssetItem,
 } from '../router-asset'
+import { parsableDatetimeOrNull } from '../datetime'
 import { depositInstructionsStepSchema } from '../orders/schema'
 import type { RampHistoryItemApiResponse } from './schema'
 
@@ -72,6 +73,13 @@ const payInOf = (
     }
 }
 
+const expiryOf = (
+    item: RampHistoryItemApiResponse,
+): Pick<RampHistoryItem, 'expiresAt'> => {
+    const expiresAt = parsableDatetimeOrNull(item.expires_at)
+    return expiresAt === null ? {} : { expiresAt }
+}
+
 export const transformRampHistoryItem = (
     item: RampHistoryItemApiResponse,
 ): RampHistoryItem => ({
@@ -97,6 +105,6 @@ export const transformRampHistoryItem = (
     ...(item.destination_account
         ? { toAddress: addressOfRouterAccount(item.destination_account) }
         : {}),
-    ...(item.expires_at ? { expiresAt: item.expires_at } : {}),
+    ...expiryOf(item),
     ...payInOf(item),
 })
