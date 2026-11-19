@@ -26,6 +26,7 @@ import {
     encodeAbiParameters,
     encodeEventTopics,
     erc20Abi,
+    erc721Abi,
     getAddress,
     hexToBytes,
     keccak256,
@@ -1228,6 +1229,31 @@ describe('reconcileEthereumSubmissions', () => {
             removed: false,
         } as const
 
+        const nftSendLog = {
+            ...deliveryLog,
+            topics: encodeEventTopics({
+                abi: erc721Abi,
+                eventName: 'Transfer',
+                args: {
+                    from: SENDER,
+                    to: '0x00000000000000000000000000000000000000bb',
+                    tokenId: 7n,
+                },
+            }),
+            data: '0x',
+        } as const
+        const tokenSendLog = {
+            ...deliveryLog,
+            topics: encodeEventTopics({
+                abi: erc20Abi,
+                eventName: 'Transfer',
+                args: {
+                    from: SENDER,
+                    to: '0x00000000000000000000000000000000000000bb',
+                },
+            }),
+        } as const
+
         const reconcileWithSightings = (tokenSightings: TokenSightings) =>
             reconcileEthereumSubmissions({
                 chain: ETHEREUM,
@@ -1274,12 +1300,13 @@ describe('reconcileEthereumSubmissions', () => {
             ])
         })
 
-        it("marks the sender's NFT list stale once when mined and once when final", async () => {
+        it("marks the sender's NFT list stale once when an NFT send is mined and once when final", async () => {
             await record()
             node({
                 head: 5,
                 eth_getTransactionReceipt: evmTransactionReceipt({
                     transactionHash: HASH,
+                    logs: [nftSendLog],
                 }),
             })
             const tokenSightings = createTokenSightings()
@@ -1293,11 +1320,28 @@ describe('reconcileEthereumSubmissions', () => {
             node({
                 eth_getTransactionReceipt: evmTransactionReceipt({
                     transactionHash: HASH,
+                    logs: [nftSendLog],
                 }),
             })
             await reconcileWithSightings(tokenSightings)
             expect(await statuses()).toEqual(['confirmed'])
             expect(tokenSightings.takeSend(SCOPE, SENDER)).toBe(true)
+        })
+
+        it("leaves the sender's NFT list alone for a send that moves no NFT", async () => {
+            await record()
+            node({
+                eth_getTransactionReceipt: evmTransactionReceipt({
+                    transactionHash: HASH,
+                    logs: [tokenSendLog],
+                }),
+            })
+            const tokenSightings = createTokenSightings()
+
+            await reconcileWithSightings(tokenSightings)
+
+            expect(await statuses()).toEqual(['confirmed'])
+            expect(tokenSightings.hasSend(SCOPE, SENDER)).toBe(false)
         })
 
         it('records nothing for a reverted transaction', async () => {

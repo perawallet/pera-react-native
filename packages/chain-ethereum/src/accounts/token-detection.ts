@@ -11,7 +11,9 @@
  */
 
 import {
+    erc1155Abi,
     erc20Abi,
+    erc721Abi,
     getAddress,
     isAddress,
     isAddressEqual,
@@ -37,7 +39,7 @@ const sightingKey = (scope: ChainScope, address: string): string =>
 
 /**
  * Tokens seen arriving at an address, for the session; the next account read
- * includes them. A mined send also marks its sender's NFT list stale: a
+ * includes them. A mined NFT send also marks its sender's NFT list stale: a
  * transfer past page one leaves page one as it was, so the next read lists
  * every page.
  */
@@ -102,6 +104,29 @@ export const receivedTokenIdsOf = (
                 .map(log => getAddress(log.address)),
         ),
     ]
+}
+
+/**
+ * Whether the logs move an ERC-721 or ERC-1155 token out of `address`. An
+ * ERC-20 `Transfer` has no fourth topic, so strict ERC-721 decoding skips it.
+ */
+export const sendsNftFrom = (
+    logs: readonly Log[],
+    address: string,
+): boolean => {
+    if (!isAddress(address)) return false
+    return [
+        ...parseEventLogs({
+            abi: erc721Abi,
+            eventName: 'Transfer',
+            logs: [...logs],
+        }),
+        ...parseEventLogs({
+            abi: erc1155Abi,
+            eventName: ['TransferSingle', 'TransferBatch'],
+            logs: [...logs],
+        }),
+    ].some(log => isAddressEqual(log.args.from, address))
 }
 
 /**

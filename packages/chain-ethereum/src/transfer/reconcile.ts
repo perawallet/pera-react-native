@@ -48,6 +48,7 @@ import {
 import type { EvmChain, EvmChainRow } from '../chains/types'
 import {
     receivedTokenIdsOf,
+    sendsNftFrom,
     type TokenSightings,
 } from '../accounts/token-detection'
 import { readReceipt } from './receipt'
@@ -408,11 +409,14 @@ export const reconcileEthereumSubmissions = async ({
                             attempt.sender,
                             receivedTokenIdsOf(receipt.logs, attempt.sender),
                         )
-                    }
-                    // Once when mined and once when final, so an NFT list read
-                    // before the backend saw the transfer is read again.
-                    if (verdict !== attempt.status) {
-                        tokenSightings.recordSend(scope, attempt.sender)
+                        // Once when mined and once when final, so an NFT list
+                        // read before the backend saw the transfer is read again.
+                        if (
+                            verdict !== attempt.status &&
+                            sendsNftFrom(receipt.logs, attempt.sender)
+                        ) {
+                            tokenSightings.recordSend(scope, attempt.sender)
+                        }
                     }
                 }
                 if (verdict === null) {
