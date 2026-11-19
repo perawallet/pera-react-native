@@ -10,18 +10,5 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles((theme, size: number) => ({
-    placeholder: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: size,
-        height: size,
-        borderRadius: size / 2,
-        backgroundColor: theme.colors.layerGrayLighter,
-    },
-    initials: {
-        color: theme.colors.textGray,
-    },
-}))
+export { NetworkIcon } from './NetworkIcon'
+export type { NetworkIconProps } from './NetworkIcon'

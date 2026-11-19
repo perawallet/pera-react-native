@@ -12,6 +12,7 @@
 
 // A separate entry so the assets barrel can draw chain and native-coin art without loading the registry.
 export { ChainIcon, type ChainIconProps } from './components/ChainIcon'
+export { NetworkIcon, type NetworkIconProps } from './components/NetworkIcon'
 export {
     ChainLabel,
     useChainNetworkLabel,

@@ -11,6 +11,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest'
+import { PWText } from '@components/core'
 import { fireEvent, render, screen } from '@test-utils/render'
 import { FilterSelection, type FilterOption } from '../FilterSelection'
 
@@ -91,5 +92,19 @@ describe('FilterSelection', () => {
 
         fireEvent.click(screen.getByTestId('filter-pending'))
         expect(onSelect).toHaveBeenCalledWith('pending')
+    })
+
+    it('draws an option icon before its label', () => {
+        const renderIcon = vi.fn(() => <PWText>icon</PWText>)
+        render(
+            <FilterSelection
+                options={[{ value: 'eth', label: 'Ethereum', renderIcon }]}
+                selectedValue='eth'
+                onSelect={vi.fn()}
+            />,
+        )
+
+        expect(renderIcon).toHaveBeenCalledWith(expect.any(Number))
+        expect(screen.getByText('icon')).toBeTruthy()
     })
 })

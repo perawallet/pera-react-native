@@ -10,8 +10,16 @@
  limitations under the License
  */
 
+import type { ReactNode } from 'react'
 import type { StyleProp, ViewStyle } from 'react-native'
-import { PWScrollView, PWText, PWTouchableOpacity } from '@components/core'
+import { useTheme } from '@rneui/themed'
+import {
+    getIconPixelSize,
+    PWScrollView,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { useHaptics } from '@hooks/useHaptics'
 import { SCROLL_EVENT_THROTTLE } from '@constants/ui'
 import { useStyles } from './styles'
@@ -21,6 +29,8 @@ export type FilterOption<T> = {
     value: T
     label: string
     testID?: string
+    /** Drawn before the label at the row's icon size (px). */
+    renderIcon?: (size: number) => ReactNode
 }
 
 export type FilterSelectionProps<T> = {
@@ -33,9 +43,8 @@ export type FilterSelectionProps<T> = {
 
 /**
  * A single-select row of filter chips. The selected chip is filled
- * (secondary); the rest are outlined. The row lays out horizontally and
- * scrolls when the chips overflow the available width. Shared across the
- * onramp From sheet and history view.
+ * (secondary); the rest are outlined. The row scrolls when the chips overflow
+ * the available width.
  */
 export const FilterSelection = <T,>({
     options,
@@ -45,6 +54,8 @@ export const FilterSelection = <T,>({
     testID,
 }: FilterSelectionProps<T>) => {
     const styles = useStyles()
+    const { theme } = useTheme()
+    const iconSize = getIconPixelSize(theme, 'sm')
     const haptics = useHaptics()
     const {
         scrollRef,
@@ -56,6 +67,9 @@ export const FilterSelection = <T,>({
     return (
         <PWScrollView
             ref={scrollRef}
+            // Never a sheet scroller: gorhom would make this row the sheet's
+            // active scrollable, lock it back to x=0 and strand the list's scroll.
+            inBottomSheet={false}
             onLayout={handleViewportLayout}
             onScroll={handleScroll}
             scrollEventThrottle={SCROLL_EVENT_THROTTLE}
@@ -77,6 +91,16 @@ export const FilterSelection = <T,>({
                         testID={option.testID}
                         style={[styles.chip, isActive && styles.activeChip]}
                     >
+                        {option.renderIcon ? (
+                            // Decorative: the label already names the option,
+                            // so a labelled icon would be read out twice.
+                            <PWView
+                                accessibilityElementsHidden
+                                importantForAccessibility='no-hide-descendants'
+                            >
+                                {option.renderIcon(iconSize)}
+                            </PWView>
+                        ) : null}
                         <PWText
                             style={isActive ? styles.activeLabel : styles.label}
                         >

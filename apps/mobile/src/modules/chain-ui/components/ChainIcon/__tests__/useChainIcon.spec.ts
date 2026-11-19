@@ -62,24 +62,23 @@ describe('useChainIcon', () => {
         expect(new Set(icons).size).toBe(icons.length)
     })
 
-    it('falls back to initials for a chain registered without an icon', () => {
+    it('has no icon for a chain registered without one', () => {
         registered.set('zksync', { displayName: 'ZKsync Era', family: 'evm' })
 
         const { result } = renderHook(() => useChainIcon('zksync' as ChainId))
 
         expect(result.current).toEqual({
             Icon: undefined,
-            initials: 'ZE',
             displayName: 'ZKsync Era',
         })
     })
 
-    it('falls back to initials for a family with no icons', () => {
+    it('has no icon for a family with no icons', () => {
         registered.set('solana', { displayName: 'Solana', family: 'solana' })
 
         const { result } = renderHook(() => useChainIcon('solana' as ChainId))
 
         expect(result.current.Icon).toBeUndefined()
-        expect(result.current.initials).toBe('S')
+        expect(result.current.displayName).toBe('Solana')
     })
 })

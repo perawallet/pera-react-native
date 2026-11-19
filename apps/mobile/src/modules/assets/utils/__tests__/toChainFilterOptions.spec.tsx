@@ -12,6 +12,7 @@
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { render, screen } from '@test-utils/render'
 import {
     registerEthereumChain,
     restoreAlgorandOnlyChains,
@@ -31,9 +32,38 @@ describe('toChainFilterOptions', () => {
 
     it('offers one chip per chain, in order', () => {
         expect(toChainFilterOptions(CHAINS, { testIDPrefix: 'p' })).toEqual([
-            { value: 'algorand', label: 'Algorand', testID: 'p_algorand' },
-            { value: 'ethereum', label: 'Ethereum', testID: 'p_ethereum' },
+            expect.objectContaining({
+                value: 'algorand',
+                label: 'Algorand',
+                testID: 'p_algorand',
+            }),
+            expect.objectContaining({
+                value: 'ethereum',
+                label: 'Ethereum',
+                testID: 'p_ethereum',
+            }),
         ])
+    })
+
+    it('draws each chain chip with its chain icon when asked, and All with none', () => {
+        const [all, , ethereum] = toChainFilterOptions(CHAINS, {
+            allLabel: 'All',
+            testIDPrefix: 'p',
+            withIcons: true,
+        })
+
+        render(<>{ethereum?.renderIcon?.(16)}</>)
+
+        expect(screen.getByTestId('chain_icon_ethereum')).toBeTruthy()
+        expect(all?.renderIcon).toBeUndefined()
+    })
+
+    it('leaves chips text-only by default', () => {
+        const options = toChainFilterOptions(CHAINS, { testIDPrefix: 'p' })
+
+        expect(options.every(option => option.renderIcon === undefined)).toBe(
+            true,
+        )
     })
 
     it('leads with an All chip when given its label', () => {

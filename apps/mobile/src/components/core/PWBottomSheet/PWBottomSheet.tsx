@@ -219,6 +219,9 @@ export const PWBottomSheet = ({
             // travel, so taps reach the touchables underneath — gorhom's
             // documented remedy for Android tap-swallowing.
             activeOffsetY={[-10, 10]}
+            // A mostly sideways drag belongs to a horizontal scroller inside
+            // (filter chips), which gorhom doesn't coordinate with.
+            failOffsetX={[-10, 10]}
             enableOverDrag={false}
         >
             <NotifierWrapper

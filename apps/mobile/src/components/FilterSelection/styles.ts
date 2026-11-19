@@ -24,6 +24,9 @@ export const useStyles = makeStyles(theme => ({
         paddingVertical: theme.spacing.xxs,
     },
     chip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
         paddingVertical: theme.spacing.xs,
         paddingHorizontal: theme.spacing.lg,
         borderRadius: theme.borderRadius.full,

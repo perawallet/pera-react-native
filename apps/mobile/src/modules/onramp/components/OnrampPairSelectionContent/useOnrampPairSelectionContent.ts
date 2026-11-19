@@ -92,6 +92,7 @@ export const useOnrampPairSelectionContent = ({
         () =>
             toChainFilterOptions(chainIds, {
                 testIDPrefix: 'onramp_destination_chain',
+                withIcons: true,
             }),
         [chainIds],
     )

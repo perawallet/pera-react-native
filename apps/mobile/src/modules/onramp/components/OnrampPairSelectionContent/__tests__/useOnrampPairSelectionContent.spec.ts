@@ -234,7 +234,7 @@ describe('useOnrampPairSelectionContent', () => {
             expect(result.current.chainOptions).toEqual([])
         })
 
-        it('offers one chip per fundable chain to an account on two', () => {
+        it('offers one chip per fundable chain, each with its icon, to an account on two', () => {
             mockDestinationChains.current = ['algorand', 'ethereum']
 
             const { result } = renderDestinations()
@@ -244,6 +244,9 @@ describe('useOnrampPairSelectionContent', () => {
                 'ethereum',
             ])
             expect(result.current.selectedChainId).toBe('algorand')
+            expect(result.current.chainOptions.every(o => o.renderIcon)).toBe(
+                true,
+            )
         })
 
         it("puts Fund's own chain first when the account cannot sign on it", () => {
