@@ -23,6 +23,7 @@ import {
     type SingleTransactionItem,
 } from '@perawallet/wallet-core-signing'
 import type { SigningStackParamList } from '@modules/signing/routes'
+import { useSignRequestScope } from '@modules/signing/hooks/useSignRequestScope'
 
 type NavigationProp = StackNavigationProp<SigningStackParamList, 'GroupDetail'>
 type GroupDetailRouteProp = RouteProp<SigningStackParamList, 'GroupDetail'>
@@ -31,6 +32,7 @@ export const useGroupDetailScreen = () => {
     const navigation = useNavigation<NavigationProp>()
     const route = useRoute<GroupDetailRouteProp>()
     const { listItems, currentRequest } = useSigningPipeline()
+    const reviewScope = useSignRequestScope(currentRequest)
     const scope =
         currentRequest && 'txs' in currentRequest
             ? currentRequest.txs[0]?.scope
@@ -63,6 +65,7 @@ export const useGroupDetailScreen = () => {
 
     return {
         transactions,
+        reviewScope,
         handleTransactionPress,
         keyExtractor,
     }

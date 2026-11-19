@@ -14,7 +14,10 @@ import React from 'react'
 import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { fireEvent, render, screen, within } from '@test-utils/render'
 import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainScope,
+    TransactionNative,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     buildAlgorandAssetTransferFixture,
     buildAlgorandDisplayFixture,
@@ -24,6 +27,8 @@ import {
     type AlgorandDisplayFixtureKind,
 } from '@test-utils/algorand-display-fixtures'
 import { TransactionDetailBody } from '../TransactionDetailBody'
+
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 // The global mock stubs the blockchain barrel; the bodies classify with the real utils.
 // The suffix has its own spec; here the hero's title is the row label it wraps.
@@ -77,6 +82,7 @@ const renderDetail = (
 ) =>
     render(
         <TransactionDetailBody
+            scope={SCOPE}
             transaction={transaction}
             onRelatedTransactionPress={onRelatedTransactionPress}
         />,

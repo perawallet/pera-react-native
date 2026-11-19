@@ -24,6 +24,7 @@ import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
 import * as assets from '@perawallet/wallet-core-assets'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import {
+    type ChainScope,
     addressCodecs,
     type TransactionNative,
 } from '@perawallet/wallet-core-chain-contract'
@@ -44,6 +45,11 @@ import { TransactionPreviewRow } from '@modules/signing/transactions/Transaction
 import { TransactionReviewBody } from '@modules/signing/transactions/TransactionReviewBody'
 import { EthereumTransactionDetailSection } from '../components/EthereumTransactionDetailSection'
 import { useEthereumTransactionPresentation } from '../hooks/useEthereumTransactionPresentation'
+
+const ETHEREUM_SCOPE: ChainScope = {
+    chainId: 'ethereum',
+    networkId: 'mainnet',
+}
 
 const REVIEW_ACTIONS = <PWText testID='review_actions_probe' />
 
@@ -224,6 +230,7 @@ describe('Ethereum transaction bodies', () => {
         it('shows a transfer as a send of 1 ETH to its recipient, with its fee and no warning', () => {
             render(
                 <TransactionReviewBody
+                    scope={ETHEREUM_SCOPE}
                     actions={REVIEW_ACTIONS}
                     transaction={natives.transfer}
                 />,
@@ -262,6 +269,7 @@ describe('Ethereum transaction bodies', () => {
 
             render(
                 <TransactionReviewBody
+                    scope={ETHEREUM_SCOPE}
                     actions={REVIEW_ACTIONS}
                     transaction={estimated}
                 />,
@@ -274,6 +282,7 @@ describe('Ethereum transaction bodies', () => {
         it('shows a token transfer as a send in the token', () => {
             render(
                 <TransactionReviewBody
+                    scope={ETHEREUM_SCOPE}
                     actions={REVIEW_ACTIONS}
                     transaction={natives['token-transfer']}
                 />,
@@ -297,6 +306,7 @@ describe('Ethereum transaction bodies', () => {
 
             render(
                 <TransactionReviewBody
+                    scope={ETHEREUM_SCOPE}
                     actions={REVIEW_ACTIONS}
                     transaction={natives['nft-transfer']}
                 />,
@@ -317,6 +327,7 @@ describe('Ethereum transaction bodies', () => {
         it('asks the user to interact with an unrecognised contract, marked unverified, with a caution and no preview', () => {
             render(
                 <TransactionReviewBody
+                    scope={ETHEREUM_SCOPE}
                     actions={REVIEW_ACTIONS}
                     transaction={natives['contract-call']}
                     source={{ url: 'https://claimed.example' }}
@@ -349,6 +360,7 @@ describe('Ethereum transaction bodies', () => {
         it('asks the user to trust the sending app when only the dApp has claimed a site', () => {
             render(
                 <TransactionReviewBody
+                    scope={ETHEREUM_SCOPE}
                     actions={REVIEW_ACTIONS}
                     transaction={natives['contract-call']}
                     source={{ url: 'https://app.uniswap.org' }}
@@ -363,6 +375,7 @@ describe('Ethereum transaction bodies', () => {
         it("leaves an unread call's selector and call data to the details screen", () => {
             render(
                 <TransactionReviewBody
+                    scope={ETHEREUM_SCOPE}
                     actions={REVIEW_ACTIONS}
                     transaction={natives['contract-call']}
                 />,
@@ -381,6 +394,7 @@ describe('Ethereum transaction bodies', () => {
             holdSigner()
             render(
                 <TransactionReviewBody
+                    scope={ETHEREUM_SCOPE}
                     actions={REVIEW_ACTIONS}
                     transaction={natives['contract-call']}
                 />,
@@ -405,6 +419,7 @@ describe('Ethereum transaction bodies', () => {
         it('names the requesting site by its domain, never the name it gives itself, ahead of the action', () => {
             render(
                 <TransactionReviewBody
+                    scope={ETHEREUM_SCOPE}
                     actions={REVIEW_ACTIONS}
                     transaction={natives.transfer}
                     source={{ name: 'Fixture dApp', url: 'https://dapp.test' }}
@@ -423,6 +438,7 @@ describe('Ethereum transaction bodies', () => {
             holdSigner()
             const held = render(
                 <TransactionReviewBody
+                    scope={ETHEREUM_SCOPE}
                     actions={REVIEW_ACTIONS}
                     transaction={natives.transfer}
                 />,
@@ -434,6 +450,7 @@ describe('Ethereum transaction bodies', () => {
             vi.mocked(useFindAccountByAddress).mockReturnValue(null)
             render(
                 <TransactionReviewBody
+                    scope={ETHEREUM_SCOPE}
                     actions={REVIEW_ACTIONS}
                     transaction={natives.transfer}
                 />,
@@ -445,6 +462,7 @@ describe('Ethereum transaction bodies', () => {
         it('opens the transaction details from the review', () => {
             render(
                 <TransactionReviewBody
+                    scope={ETHEREUM_SCOPE}
                     actions={REVIEW_ACTIONS}
                     transaction={natives.transfer}
                 />,
@@ -461,6 +479,7 @@ describe('Ethereum transaction bodies', () => {
         it('shows only the actions for an Ethereum native it cannot read', () => {
             render(
                 <TransactionReviewBody
+                    scope={ETHEREUM_SCOPE}
                     actions={REVIEW_ACTIONS}
                     transaction={{ family: 'evm', transaction: {} }}
                 />,
@@ -474,7 +493,12 @@ describe('Ethereum transaction bodies', () => {
 
     describe('detail', () => {
         it('lists a transfer by sender, recipient, amount and max fee', () => {
-            render(<TransactionDetailBody transaction={natives.transfer} />)
+            render(
+                <TransactionDetailBody
+                    scope={ETHEREUM_SCOPE}
+                    transaction={natives.transfer}
+                />,
+            )
 
             expect(textOf('transaction_detail_from')).toContain(
                 shortOnEthereum(ETHEREUM_FIXTURE_SENDER),
@@ -491,6 +515,7 @@ describe('Ethereum transaction bodies', () => {
         it('adds the Asset row for a token transfer', () => {
             render(
                 <TransactionDetailBody
+                    scope={ETHEREUM_SCOPE}
                     transaction={natives['token-transfer']}
                 />,
             )
@@ -502,6 +527,7 @@ describe('Ethereum transaction bodies', () => {
         it('shows an unrecognised call as an unverified contract, with its selector, collapsed calldata and zero value', () => {
             render(
                 <TransactionDetailBody
+                    scope={ETHEREUM_SCOPE}
                     transaction={natives['contract-call']}
                 />,
             )
@@ -532,6 +558,7 @@ describe('Ethereum transaction bodies', () => {
         it("lists a call's nonce, gas limit and per-gas fees", () => {
             render(
                 <TransactionDetailBody
+                    scope={ETHEREUM_SCOPE}
                     transaction={natives['contract-call']}
                 />,
             )
@@ -549,6 +576,7 @@ describe('Ethereum transaction bodies', () => {
         it('copies the full call data from its copy button', () => {
             render(
                 <TransactionDetailBody
+                    scope={ETHEREUM_SCOPE}
                     transaction={natives['contract-call']}
                 />,
             )
@@ -565,6 +593,7 @@ describe('Ethereum transaction bodies', () => {
         it('shows a contract creation without a target and with its calldata in full', () => {
             render(
                 <TransactionDetailBody
+                    scope={ETHEREUM_SCOPE}
                     transaction={natives['contract-creation']}
                 />,
             )
@@ -595,6 +624,7 @@ describe('Ethereum transaction bodies', () => {
         it('shows the fee it cost in place of a max fee', () => {
             render(
                 <TransactionDetailBody
+                    scope={ETHEREUM_SCOPE}
                     transaction={mined(new Decimal('21000000000000'))}
                 />,
             )
@@ -617,7 +647,12 @@ describe('Ethereum transaction bodies', () => {
                 },
             }
 
-            render(<TransactionDetailBody transaction={preview} />)
+            render(
+                <TransactionDetailBody
+                    scope={ETHEREUM_SCOPE}
+                    transaction={preview}
+                />,
+            )
 
             expect(screen.queryByTestId('ethereum_nonce')).toBeNull()
             expect(textOf('ethereum_max_fee')).toContain(
@@ -626,7 +661,12 @@ describe('Ethereum transaction bodies', () => {
         })
 
         it('shows no fee row, and no promise of one, when the history gave none', () => {
-            render(<TransactionDetailBody transaction={mined()} />)
+            render(
+                <TransactionDetailBody
+                    scope={ETHEREUM_SCOPE}
+                    transaction={mined()}
+                />,
+            )
 
             expect(screen.queryByTestId('transaction_detail_fee')).toBeNull()
             expect(screen.queryByTestId('ethereum_max_fee')).toBeNull()
@@ -639,6 +679,7 @@ describe('Ethereum transaction bodies', () => {
 
             render(
                 <TransactionPreviewRow
+                    scope={ETHEREUM_SCOPE}
                     transaction={natives.transfer}
                     onPress={onPress}
                 />,
@@ -669,6 +710,7 @@ describe('Ethereum transaction bodies', () => {
         it('reviews an unlimited approve as Approve, with the permission it gives and its unlimited note, not as an unknown call', () => {
             render(
                 <TransactionReviewBody
+                    scope={ETHEREUM_SCOPE}
                     actions={REVIEW_ACTIONS}
                     transaction={natives.approval}
                 />,
@@ -689,7 +731,12 @@ describe('Ethereum transaction bodies', () => {
         })
 
         it('details an approval opened from a list with the spend warning and the raw call it was read from', () => {
-            render(<TransactionDetailBody transaction={natives.approval} />)
+            render(
+                <TransactionDetailBody
+                    scope={ETHEREUM_SCOPE}
+                    transaction={natives.approval}
+                />,
+            )
 
             // The review already titled it; the details open on what it does.
             expect(
@@ -709,6 +756,7 @@ describe('Ethereum transaction bodies', () => {
         it("keeps a dApp's token transfer an unknown call with its warning while contractDecoding is off", () => {
             render(
                 <TransactionReviewBody
+                    scope={ETHEREUM_SCOPE}
                     actions={REVIEW_ACTIONS}
                     transaction={withCall({
                         kind: 'transfer',
@@ -729,6 +777,7 @@ describe('Ethereum transaction bodies', () => {
             vi.mocked(useChainCapability).mockReturnValue(true)
             render(
                 <TransactionDetailBody
+                    scope={ETHEREUM_SCOPE}
                     transaction={withCall({
                         kind: 'transfer-from',
                         contract: ETHEREUM_FIXTURE_TOKEN,
@@ -765,6 +814,7 @@ describe('Ethereum transaction bodies', () => {
                                 to: ETHEREUM_FIXTURE_RECIPIENT,
                                 tokenId: '7',
                             }),
+                            ETHEREUM_SCOPE,
                         ),
                     { wrapper: createQueryClientWrapper() },
                 )
@@ -807,6 +857,7 @@ describe('Ethereum transaction bodies', () => {
             vi.mocked(useChainCapability).mockReturnValue(true)
             render(
                 <TransactionReviewBody
+                    scope={ETHEREUM_SCOPE}
                     actions={REVIEW_ACTIONS}
                     transaction={withCall({
                         kind: 'erc1155-transfer',
@@ -830,6 +881,7 @@ describe('Ethereum transaction bodies', () => {
         it('titles the preview row of an approval as one', () => {
             render(
                 <TransactionPreviewRow
+                    scope={ETHEREUM_SCOPE}
                     transaction={natives.approval}
                     onPress={vi.fn()}
                 />,

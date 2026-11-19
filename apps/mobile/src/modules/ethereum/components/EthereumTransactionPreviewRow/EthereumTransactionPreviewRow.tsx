@@ -20,11 +20,12 @@ import { useStyles } from './styles'
 
 export const EthereumTransactionPreviewRow = ({
     transaction,
+    scope,
     onPress,
 }: PreviewRowProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const presentation = useEthereumTransactionPresentation(transaction)
+    const presentation = useEthereumTransactionPresentation(transaction, scope)
 
     if (!presentation) {
         return null

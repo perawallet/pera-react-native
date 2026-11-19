@@ -22,6 +22,13 @@ import { useLanguage } from '@hooks/useLanguage'
 import type { EthereumPermission } from '../ethereumPermissions'
 import { useStyles } from './styles'
 
+const spenderKeyOf = (grant: EthereumPermission['grant']) => {
+    if (grant.kind === 'revoke') return 'signing.review.permission_revoke'
+    return grant.kind === 'amount' && grant.isIncrease
+        ? 'signing.review.permission_increase'
+        : 'signing.review.permission_spender'
+}
+
 // What a permission covers, when it is not a plain amount.
 const grantLabelOf = (
     permission: EthereumPermission,
@@ -80,6 +87,7 @@ export const EthereumPermissionCard = ({
                     shortAddress(permission.contract)
                 const { grant } = permission
                 const isUnlimited = grant.kind === 'unlimited'
+                const isIncrease = grant.kind === 'amount' && !!grant.isIncrease
                 return (
                     <PWView
                         key={permission.key}
@@ -107,12 +115,7 @@ export const EthereumPermissionCard = ({
                                         style={styles.spender}
                                         numberOfLines={1}
                                     >
-                                        {t(
-                                            grant.kind === 'revoke'
-                                                ? 'signing.review.permission_revoke'
-                                                : 'signing.review.permission_spender',
-                                            { spender },
-                                        )}
+                                        {t(spenderKeyOf(grant), { spender })}
                                     </PWText>
                                     {!!permission.spenderName && (
                                         <PWIcon
@@ -167,6 +170,25 @@ export const EthereumPermissionCard = ({
                                             ? 'signing.review.permission_collection_note'
                                             : 'signing.review.permission_unlimited_note',
                                         { symbol },
+                                    )}
+                                </PWText>
+                            </PWView>
+                        )}
+                        {isIncrease && (
+                            <PWView
+                                style={styles.unlimitedNote}
+                                testID='ethereum_review_permission_increase'
+                            >
+                                <PWIcon
+                                    name='warning'
+                                    size='sm'
+                                    variant='warning'
+                                    style={styles.unlimitedIcon}
+                                />
+                                <PWText style={styles.unlimitedText}>
+                                    {t(
+                                        'signing.review.permission_increase_note',
+                                        { spender },
                                     )}
                                 </PWText>
                             </PWView>

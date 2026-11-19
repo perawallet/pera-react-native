@@ -278,6 +278,22 @@ describe('useEthereumStandardCall', () => {
         expect(render(approve(0n)).standardCall).toHaveProperty('spendApproval')
     })
 
+    it('marks an increaseAllowance as an increase, so its amount never reads as the resulting limit', () => {
+        mockRecords({ [TOKEN]: USDC })
+
+        expect(
+            render({
+                kind: 'increase-allowance',
+                contract: TOKEN,
+                spender: SPENDER,
+                value: new Decimal(1_000_000_000),
+            }).standardCall,
+        ).toMatchObject({ kind: 'token-approval', isIncrease: true })
+        expect(render(approve(5n)).standardCall).not.toHaveProperty(
+            'isIncrease',
+        )
+    })
+
     it('presents a zero increaseAllowance as a grant even on a known token', () => {
         mockRecords({ [TOKEN]: USDC })
 

@@ -22,6 +22,7 @@ import { TransactionPreviewRow } from '../../transactions/TransactionPreviewRow'
 export const TransactionListScreen = () => {
     const {
         listItems,
+        reviewScope,
         transactionCount,
         sourceMetadata,
         verifiedOrigin,
@@ -45,12 +46,13 @@ export const TransactionListScreen = () => {
             return (
                 <TransactionPreviewRow
                     transaction={item.transaction}
+                    scope={reviewScope}
                     isExternal={item.isExternal}
                     onPress={() => handleTransactionPress(item)}
                 />
             )
         },
-        [handleTransactionPress, handleGroupPress],
+        [handleTransactionPress, handleGroupPress, reviewScope],
     )
 
     return (

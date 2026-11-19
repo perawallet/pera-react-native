@@ -3753,6 +3753,8 @@
             "nothing_back_title": "You get nothing back",
             "permission_collection": "All your {{collection}} NFTs",
             "permission_collection_note": "It can move every NFT you hold in this collection, now and later, until you remove this permission.",
+            "permission_increase": "{{spender}} can spend this much more",
+            "permission_increase_note": "This adds to what {{spender}} can already spend, so its total limit may be higher.",
             "permission_no_change": "No tokens leave your wallet with this transaction.",
             "permission_revoke": "{{spender}} can no longer spend",
             "permission_spender": "{{spender}} can spend",
