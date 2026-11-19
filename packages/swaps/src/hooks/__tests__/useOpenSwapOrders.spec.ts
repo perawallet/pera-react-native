@@ -13,6 +13,10 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, test } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import {
+    useAccountsStore,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import type { SwapAccountAddress, SwapTrackedOrder } from '../../models'
 import { useSwapTrackingStore } from '../../store'
 import { useOpenSwapOrders } from '../useOpenSwapOrders'
@@ -23,6 +27,18 @@ const ACCOUNT: SwapAccountAddress[] = [
     { scope: ALGO, address: 'MINE' },
     { scope: ETH, address: '0xmine' },
 ]
+
+const SIGNER = {
+    id: 'signer',
+    chains: {
+        algorand: { address: 'MINE' },
+        ethereum: { address: '0xmine' },
+    },
+} as unknown as WalletAccount
+const SIBLING = {
+    id: 'sibling',
+    chains: { algorand: { address: 'SIBLING' } },
+} as unknown as WalletAccount
 
 const order = (
     overrides: Partial<SwapTrackedOrder> & { orderId: string },
@@ -45,6 +61,7 @@ const track = (...orders: SwapTrackedOrder[]) =>
 describe('swaps/useOpenSwapOrders', () => {
     beforeEach(() => {
         useSwapTrackingStore.getState().resetState()
+        useAccountsStore.setState({ accounts: [SIGNER, SIBLING] })
     })
 
     test('lists the account’s orders still in flight, newest first', () => {
@@ -65,11 +82,11 @@ describe('swaps/useOpenSwapOrders', () => {
         expect(result.current.map(o => o.orderId)).toEqual(['new', 'old'])
     })
 
-    test('lists an order the account receives from another account', () => {
+    test('lists an order the account receives from another account in the wallet', () => {
         track(
             order({
                 orderId: 'incoming',
-                sourceAddress: 'SOMEONE_ELSE',
+                sourceAddress: 'SIBLING',
                 destinationAddress: '0xmine',
             }),
         )
@@ -91,6 +108,21 @@ describe('swaps/useOpenSwapOrders', () => {
                 sourceScope: { chainId: 'algorand', networkId: 'testnet' },
             }),
         )
+
+        const { result } = renderHook(() => useOpenSwapOrders(ACCOUNT, null))
+
+        expect(result.current).toEqual([])
+    })
+
+    test('leaves out an order whose paying account left the wallet', () => {
+        track(
+            order({
+                orderId: 'orphaned',
+                sourceAddress: 'SIBLING',
+                destinationAddress: '0xmine',
+            }),
+        )
+        useAccountsStore.setState({ accounts: [SIGNER] })
 
         const { result } = renderHook(() => useOpenSwapOrders(ACCOUNT, null))
 

@@ -11,7 +11,7 @@
  */
 
 import { useMemo } from 'react'
-import { isSameAddress } from '@perawallet/wallet-core-accounts'
+import { isSameAddress, useAllAccounts } from '@perawallet/wallet-core-accounts'
 import {
     toScopeKey,
     type ChainScope,
@@ -23,6 +23,7 @@ import type {
     SwapTrackedOrder,
 } from '../models'
 import { useSwapTrackingStore } from '../store'
+import { isSwapPayerInWallet } from '../utils/isSwapPayerInWallet'
 import { isSwapOrderSettled } from '../utils/swapOrderSettlement'
 
 // Expired and cancelled orders stay unsettled while the provider can still
@@ -34,7 +35,7 @@ const IN_FLIGHT_STATUSES: ReadonlySet<SwapStatus> = new Set([
 
 /**
  * Tracked orders still in flight where one of `accountAddresses`
- * pays or receives, newest first. With `shownScope`, only orders with a side
+ * pays or receives, newest first, leaving out any whose payer left the wallet. With `shownScope`, only orders with a side
  * on that network.
  */
 export const useOpenSwapOrders = (
@@ -42,6 +43,7 @@ export const useOpenSwapOrders = (
     shownScope: Nullable<ChainScope>,
 ): SwapTrackedOrder[] => {
     const orders = useSwapTrackingStore(s => s.orders)
+    const walletAccounts = useAllAccounts()
 
     return useMemo(() => {
         const isOwn = (scope: ChainScope, address: string) =>
@@ -61,6 +63,7 @@ export const useOpenSwapOrders = (
                 order =>
                     IN_FLIGHT_STATUSES.has(order.status) &&
                     !isSwapOrderSettled(order, now) &&
+                    isSwapPayerInWallet(order, walletAccounts) &&
                     isShown(order) &&
                     (isOwn(order.sourceScope, order.sourceAddress) ||
                         isOwn(
@@ -69,5 +72,5 @@ export const useOpenSwapOrders = (
                         )),
             )
             .sort((a, b) => b.createdAt - a.createdAt)
-    }, [orders, accountAddresses, shownScope])
+    }, [orders, walletAccounts, accountAddresses, shownScope])
 }
