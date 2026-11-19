@@ -4210,7 +4210,7 @@
     "swap": {
         "introduction": {
             "title": "Le swap dans Pera",
-            "description": "Pera Wallet offre un moyen simple et rapide d’échanger des actifs. Grâce à P.E.R.A., les demandes de swap sont routées intelligemment entre plusieurs plateformes d’échange décentralisées basées sur Algorand afin d’obtenir le meilleur prix disponible.",
+            "description": "Pera Wallet offre un moyen simple et rapide d’échanger des actifs. Grâce à P.E.R.A., les demandes de swap sont routées intelligemment entre plusieurs prestataires d’échange afin d’obtenir le meilleur prix disponible.",
             "powered_by": "Propulsé par <0>P.E.R.A.</0>",
             "start_swapping": "Commencer à échanger",
             "terms_agreement": "En continuant, vous acceptez les <0>conditions d’utilisation</0> de notre partenaire de swap"

@@ -4210,7 +4210,7 @@
     "swap": {
         "introduction": {
             "title": "Pera’da swap",
-            "description": "Pera Wallet, varlıkları takas etmenin kolay ve hızlı bir yolunu sunar. P.E.R.A. sayesinde swap talepleri, mevcut en iyi fiyatı yakalamak için Algorand tabanlı birden fazla merkeziyetsiz borsa arasında akıllıca yönlendirilir.",
+            "description": "Pera Wallet, varlıkları takas etmenin kolay ve hızlı bir yolunu sunar. P.E.R.A. sayesinde swap talepleri, mevcut en iyi fiyatı yakalamak için birden fazla takas sağlayıcısı arasında akıllıca yönlendirilir.",
             "powered_by": "Destekleyen: <0>P.E.R.A.</0>",
             "start_swapping": "Swap’a başla",
             "terms_agreement": "Devam ederek swap partnerimizin <0>Hizmet Şartları</0> belgesini kabul etmiş olursun"
