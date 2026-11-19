@@ -77,6 +77,7 @@ export const SelectDestinationScreen = () => {
                 onSelected={handleSelected}
                 scope={scope}
                 excludeAddress={senderAddress}
+                showAllContactsWhenEmpty
                 showClipboardPaste
                 sendingAssetLabel={selectedAsset.unitName || selectedAsset.name}
                 isSendingMultiChainAsset={

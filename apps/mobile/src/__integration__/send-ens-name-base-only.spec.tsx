@@ -125,7 +125,7 @@ const selectSender = (account: WalletAccount) => {
 
 const typeName = async (value: string) => {
     const fields = await screen.findAllByPlaceholderText(
-        'address_entry.search_placeholder_evm',
+        'address_entry.search_placeholder_recipient',
     )
     fireEvent.change(fields[fields.length - 1], { target: { value } })
 }

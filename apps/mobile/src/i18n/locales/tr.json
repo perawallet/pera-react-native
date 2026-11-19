@@ -343,6 +343,7 @@
         "search_placeholder": "Hesap adresi, NFD adı veya kısa ad",
         "search_placeholder_evm": "0x adresi, ENS adı veya hesap adı",
         "search_placeholder_neutral": "Adres veya hesap adı",
+        "search_placeholder_recipient": "Adres, ad veya kişi",
         "nfd_results": "NFDomains",
         "ens_results": "ENS",
         "name_resolving": "İsim çözümleniyor...",

@@ -388,7 +388,7 @@ describe('useAddressSearchView', () => {
         expect(mockFindContacts).not.toHaveBeenCalled()
     })
 
-    it('shows all contacts when value is empty and showAllContactsWhenEmpty is true', () => {
+    it('lists contacts in name order and mentions them in the send search field', () => {
         const contacts = [
             { addresses: { algorand: 'CONT123' }, name: 'Friend' },
             { addresses: { algorand: 'CONT456' }, name: 'Buddy' },
@@ -399,6 +399,7 @@ describe('useAddressSearchView', () => {
             useAddressSearchView({
                 scope: ALGORAND_SCOPE,
                 showAllContactsWhenEmpty: true,
+                sendingAssetLabel: 'ALGO',
             }),
         )
 
@@ -416,7 +417,13 @@ describe('useAddressSearchView', () => {
             'section_header',
         )
 
-        expect(contactItems).toHaveLength(2)
+        expect(contactItems.map(item => item.contact.name)).toEqual([
+            'Buddy',
+            'Friend',
+        ])
+        expect(result.current.searchPlaceholder).toBe(
+            'address_entry.search_placeholder_recipient',
+        )
         expect(headers).toEqual(
             expect.arrayContaining([
                 expect.objectContaining({ title: 'address_entry.contacts' }),

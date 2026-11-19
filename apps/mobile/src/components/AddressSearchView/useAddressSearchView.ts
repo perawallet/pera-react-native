@@ -107,7 +107,7 @@ type UseAddressSearchViewResult = {
     mismatchedFamily: Optional<ChainFamily>
     /** Unset when either family registers no wrong-network copy. */
     wrongNetworkMessage: Optional<{ title: string; body: string }>
-    /** The scope family's own copy, so the field never names an address format it doesn't take. */
+    /** Search copy for the current recipient picker or chain family. */
     searchPlaceholder: string
     /** Set when rows should name the scope's chain; see {@link useChainNameWhenMultiChain}. */
     chainBadgeName: Optional<string>
@@ -132,8 +132,10 @@ export const useAddressSearchView = ({
     const chainFamily = getChainDescriptor(scope.chainId).family
     const chainBadgeName = useChainNameWhenMultiChain(scope.chainId)
     const searchPlaceholder = t(
-        chainUiFor(chainFamily).addressSearchPlaceholder ??
-            i18nKey('address_entry.search_placeholder_neutral'),
+        sendingAssetLabel !== undefined
+            ? i18nKey('address_entry.search_placeholder_recipient')
+            : (chainUiFor(chainFamily).addressSearchPlaceholder ??
+                  i18nKey('address_entry.search_placeholder_neutral')),
     )
     const { accountValueTotals } = useAccountValueTotalsQuery(
         allAccounts,
@@ -252,14 +254,20 @@ export const useAddressSearchView = ({
             accounts.flatMap(a => addressOn(a, scope) ?? []),
         )
         if (excludeAddress) excludedAddresses.add(excludeAddress)
-        return findContacts({ keyword: value, family: chainFamily }).flatMap(
-            contact => {
-                const address = contact.addresses[chainFamily]
-                return address && !excludedAddresses.has(address)
-                    ? [{ contact, address }]
-                    : []
-            },
-        )
+        const matches = findContacts({
+            keyword: value,
+            family: chainFamily,
+        }).flatMap(contact => {
+            const address = contact.addresses[chainFamily]
+            return address && !excludedAddresses.has(address)
+                ? [{ contact, address }]
+                : []
+        })
+        return value.length
+            ? matches
+            : matches.sort((a, b) =>
+                  a.contact.name.localeCompare(b.contact.name),
+              )
     }, [
         value,
         findContacts,

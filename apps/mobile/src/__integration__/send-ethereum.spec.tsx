@@ -832,7 +832,7 @@ describe('Flow: send from an Ethereum account', () => {
             expect(screen.queryByText('Watch only')).toBeNull()
             // The Ethereum placeholder is what finds the field at all.
             const fields = screen.getAllByPlaceholderText(
-                i18n.t('address_entry.search_placeholder_evm'),
+                i18n.t('address_entry.search_placeholder_recipient'),
             )
             expect(fields.length).toBeGreaterThan(0)
             fireEvent.change(fields[fields.length - 1], {
