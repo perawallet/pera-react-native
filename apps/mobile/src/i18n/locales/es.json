@@ -270,6 +270,11 @@
         "revoke_error_title": "Revocación sin confirmar",
         "revoke_error_body": "Comprueba en la lista el estado de la aprobación antes de volver a intentarlo."
     },
+    "nft_visibility": {
+        "hide": "Ocultar NFT",
+        "unhide": "Mostrar NFT",
+        "hidden_toast_body": "Ya no aparecerá en tus NFT. Para volver a verlo, activa Mostrar NFT ocultos en Gestionar > Filtrar."
+    },
     "token_visibility": {
         "hide": "Ocultar token",
         "unhide": "Mostrar token",
@@ -525,6 +530,8 @@
             "refresh_error_body": "Desliza hacia abajo para intentarlo de nuevo.",
             "suspicious_hidden_title": "NFT sospechosos ocultos",
             "suspicious_hidden_body": "Pera ha marcado estos NFT como posible spam o estafa. Para verlos, activa Mostrar NFT sospechosos en Gestionar > Filtrar.",
+            "user_hidden_title": "NFT ocultos",
+            "user_hidden_body": "Ocultaste estos NFT. Para verlos, activa Mostrar NFT ocultos en Gestionar > Filtrar.",
             "count": "{{count}} NFT",
             "count_one": "{{count}} NFT",
             "manage": "Gestionar",
@@ -538,6 +545,8 @@
             "filter_watch_accounts_description": "Se mostrarán los NFT de tus cuentas de observación además de los de tus propias cuentas",
             "filter_suspicious": "Mostrar NFT sospechosos",
             "filter_suspicious_description": "Se mostrarán los NFT que Pera ha marcado como posible spam o estafa",
+            "filter_hidden": "Mostrar NFT ocultos",
+            "filter_hidden_description": "Se mostrarán los NFT que ocultaste, para que puedas volver a mostrarlos",
             "sort_title_asc": "Nombre (A-Z)",
             "sort_title_desc": "Nombre (Z-A)",
             "sort_newest_first": "Del más nuevo al más antiguo",

@@ -62,25 +62,30 @@ vi.resetModules()
 const { setTestTheme } = await import('@test-utils/test-theme')
 const { getTheme } = await import('@theme/theme')
 setTestTheme(getTheme('light'))
-const { fireEvent, renderHook, screen, waitFor } =
+const { act, fireEvent, renderHook, screen, waitFor } =
     await import('@testing-library/react')
 const {
     assetFromHoldingLiteRow,
     fetchAndPersistAccount,
     getAccountHoldings,
     useAccountChainStateStore,
+    useHiddenTokensStore,
     useHoldingsRefreshStore,
 } = await import('@perawallet/wallet-core-accounts')
+const { useCollectiblePreferencesStore } =
+    await import('@perawallet/wallet-core-assets')
 const { evmNftItem, evmRpcHandlers, peraEvmHandlers } =
     await import('@perawallet/wallet-core-chain-ethereum/test-handlers')
 const { renderWithNavigation } =
     await import('@test-utils/renderWithNavigation')
-const { createQueryClientWrapper } = await import('@test-utils/render')
+const { createQueryClientWrapper, render } = await import('@test-utils/render')
 const { resetTestDatabase, setupTestDatabase, teardownTestDatabase } =
     await import('@test-utils/database-setup')
 const { useAccountNfts } =
     await import('@modules/accounts/components/AccountNfts/useAccountNfts')
 const { CollectibleDetailScreen } = await import('@modules/assets/routes')
+const { useCollectibleDetail } =
+    await import('@modules/assets/screens/CollectibleDetailScreen/useCollectibleDetail')
 const { useCollectibleThumbnail } =
     await import('@modules/assets/components/CollectibleThumbnail/useCollectibleThumbnail')
 const { useWebViewStore } = await import('@modules/webview')
@@ -166,6 +171,8 @@ describe('Flow: an Ethereum account with NFTs', () => {
         await resetTestDatabase()
         useAccountChainStateStore.getState().resetState()
         useHoldingsRefreshStore.getState().resetState()
+        useHiddenTokensStore.getState().resetState()
+        useCollectiblePreferencesStore.getState().resetState()
         useWebViewStore.getState().clearWebViews()
         selectSender(ETHEREUM_SENDER)
         serveChain()
@@ -248,6 +255,40 @@ describe('Flow: an Ethereum account with NFTs', () => {
 
         expect(useWebViewStore.getState().openWebViews[0]?.url).toBe(
             `https://etherscan.io/nft/${ITEM_CONTRACT}/10`,
+        )
+    })
+
+    it('Given both NFTs synced, when the user hides the ERC-721 from its detail, then the gallery and count leave it out until Display Hidden NFTs is on', async () => {
+        serveHoldings({
+            nftHoldings: { [SENDER.toLowerCase()]: [[ape()], [swords()]] },
+        })
+        await sync()
+
+        // The test navigator hides headers, where the screen puts this menu
+        // item, so the detail's own hook takes the press.
+        const detail: {
+            current?: ReturnType<typeof useCollectibleDetail>
+        } = {}
+        const DetailProbe = () => {
+            detail.current = useCollectibleDetail(APE_ID, 'ethereum')
+            return null
+        }
+        const probe = render(<DetailProbe />)
+        await waitFor(() => expect(detail.current?.canHide).toBe(true), {
+            timeout: SLOW_WAIT_TIMEOUT_MS,
+        })
+        act(() => detail.current!.handleToggleHidden())
+        probe.unmount()
+
+        const { result, unmount } = await readGallery()
+        await waitFor(() => expect(result.current.collectibleCount).toBe(1))
+        expect(result.current.collectibles[0].assetId).toBe(ITEM_ID)
+        unmount()
+
+        useCollectiblePreferencesStore.getState().setShowHidden(true)
+        const shown = await readGallery()
+        await waitFor(() =>
+            expect(shown.result.current.collectibleCount).toBe(2),
         )
     })
 

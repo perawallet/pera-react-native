@@ -426,6 +426,8 @@ export type AccountCollectibleLiteRow = PeraAssetJoinRow & {
     collectionName: Nullable<string>
     /** Raw `verification_tier` text; compare against `PeraAssetVerificationTier`. */
     verificationTier: string
+    /** The user hid it; the gallery leaves it out unless hidden NFTs are shown. */
+    isHidden: boolean
 }
 
 export type GetAccountCollectiblesLiteParams = {
@@ -535,6 +537,7 @@ export async function getAccountCollectiblesLite({
             title: collectibleTitleExpr,
             collectionName: collectionNameExpr,
             verificationTier: AssetsPeraSchema.verificationTier,
+            isHidden: sql<number>`CASE WHEN ${hiddenHoldingSql(sources)} THEN 1 ELSE 0 END`,
         })
         .from(AccountAssetHoldingsSchema)
         // Inner: a collectible is defined by its Pera metadata row.
@@ -565,8 +568,9 @@ export async function getAccountCollectiblesLite({
         .orderBy(...orderBy)
         .all()
 
-    return rows.map(({ scope, ...row }) => ({
+    return rows.map(({ scope, isHidden, ...row }) => ({
         ...row,
         scope: parseScopeKey(scope),
+        isHidden: !!isHidden,
     }))
 }

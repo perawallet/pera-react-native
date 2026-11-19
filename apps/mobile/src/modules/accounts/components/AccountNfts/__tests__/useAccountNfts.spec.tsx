@@ -117,6 +117,7 @@ let mockSortMode = 'titleAsc'
 let mockGalleryLayout = 'grid'
 let mockShowOptedIn = false
 let mockShowSuspicious = false
+let mockShowHidden = false
 
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
     const actual =
@@ -131,6 +132,7 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
                 galleryLayout: mockGalleryLayout,
                 showOptedIn: mockShowOptedIn,
                 showSuspicious: mockShowSuspicious,
+                showHidden: mockShowHidden,
                 setCollectibleSortMode: mockSetCollectibleSortMode,
                 setGalleryLayout: mockSetGalleryLayout,
                 setShowOptedIn: mockSetShowOptedIn,
@@ -140,8 +142,8 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
 
 // Search, the opted-in filter and ordering happen in SQL — see the
 // `getAccountCollectiblesLite` suite in the accounts package for those. These
-// tests cover what the hook still owns: query wiring, the network chip and the
-// suspicious filter, and the acquisition-order sort.
+// tests cover what the hook still owns: query wiring, the network chip, the
+// hidden and suspicious filters, and the acquisition-order sort.
 const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' }
 const ETHEREUM_MAINNET = { chainId: 'ethereum', networkId: 'mainnet' }
 
@@ -159,6 +161,7 @@ const makeRow = (assetId: string, title: string, scope = ALGORAND_MAINNET) => ({
     title,
     collectionName: null,
     verificationTier: 'unverified',
+    isHidden: false,
     scope,
 })
 
@@ -205,6 +208,7 @@ describe('useAccountNfts', () => {
         mockGalleryLayout = 'grid'
         mockShowOptedIn = false
         mockShowSuspicious = false
+        mockShowHidden = false
         mockUseSelectedAccount.mockReturnValue(mockAccount)
         useAssetListViewStore.setState({ selectedChainId: null })
         mockUseCanSignWith.mockReturnValue(true)
@@ -951,6 +955,64 @@ describe('useAccountNfts', () => {
             act(() => result.current.setSelectedChainId('ethereum'))
 
             expect(result.current.collectibles).toEqual([])
+            expect(result.current.listEmptyTitle).toBe(
+                'account_details.nfts.suspicious_hidden_title',
+            )
+        })
+    })
+
+    describe('hidden NFTs', () => {
+        const shownRow = makeRow('100', 'Kept NFT')
+        const hiddenRow = { ...makeRow('200', 'Airdrop'), isHidden: true }
+
+        it('leaves hidden NFTs out of the gallery and count unless the preference shows them', () => {
+            mockUseAccountCollectiblesQuery.mockReturnValue({
+                collectibles: [shownRow, hiddenRow],
+                isPending: false,
+            })
+
+            const { result, rerender } = renderHook(() => useAccountNfts())
+            expect(result.current.collectibles).toEqual([shownRow])
+            expect(result.current.collectibleCount).toBe(1)
+
+            mockShowHidden = true
+            rerender()
+            expect(result.current.collectibles).toEqual([shownRow, hiddenRow])
+            expect(result.current.collectibleCount).toBe(2)
+        })
+
+        it('points to the filter when every NFT is hidden', () => {
+            mockUseAccountCollectiblesQuery.mockReturnValue({
+                collectibles: [hiddenRow],
+                isPending: false,
+            })
+
+            const { result } = renderHook(() => useAccountNfts())
+
+            expect(result.current.collectibles).toEqual([])
+            expect(result.current.showEmptyState).toBe(false)
+            expect(result.current.listEmptyTitle).toBe(
+                'account_details.nfts.user_hidden_title',
+            )
+            expect(result.current.listEmptyBody).toBe(
+                'account_details.nfts.user_hidden_body',
+            )
+        })
+
+        it('names the suspicious filter when the NFTs left after hiding are suspicious', () => {
+            mockUseAccountCollectiblesQuery.mockReturnValue({
+                collectibles: [
+                    hiddenRow,
+                    {
+                        ...makeRow('300', 'Spam NFT'),
+                        verificationTier: 'suspicious',
+                    },
+                ],
+                isPending: false,
+            })
+
+            const { result } = renderHook(() => useAccountNfts())
+
             expect(result.current.listEmptyTitle).toBe(
                 'account_details.nfts.suspicious_hidden_title',
             )

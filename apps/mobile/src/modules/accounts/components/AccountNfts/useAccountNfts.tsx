@@ -94,17 +94,20 @@ type UseAccountNftsResult = {
     >
 }
 
-// A failed refresh comes first, then suspicious: a search or chip that only
-// matched hidden NFTs should say how to show them, not that nothing matched.
+// A failed refresh comes first, then the user's hidden NFTs, then suspicious: a
+// search or chip that only matched filtered-out NFTs should say how to show
+// them, not that nothing matched.
 const listEmptyCopy = ({
     t,
     isRefreshFailed,
+    isUserHidden,
     isSuspiciousHidden,
     isNetworkEmpty,
     chainName,
 }: {
     t: ReturnType<typeof useLanguage>['t']
     isRefreshFailed: boolean
+    isUserHidden: boolean
     isSuspiciousHidden: boolean
     isNetworkEmpty: boolean
     chainName: string
@@ -113,6 +116,12 @@ const listEmptyCopy = ({
         return {
             title: t('account_details.nfts.refresh_error_title'),
             body: t('account_details.nfts.refresh_error_body'),
+        }
+    }
+    if (isUserHidden) {
+        return {
+            title: t('account_details.nfts.user_hidden_title'),
+            body: t('account_details.nfts.user_hidden_body'),
         }
     }
     if (isSuspiciousHidden) {
@@ -177,6 +186,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
     const showSuspicious = useCollectiblePreferencesStore(
         state => state.showSuspicious,
     )
+    const showHidden = useCollectiblePreferencesStore(state => state.showHidden)
     const setSortMode = useCollectiblePreferencesStore(
         state => state.setCollectibleSortMode,
     )
@@ -293,9 +303,9 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         includeZeroBalance: showOptedIn,
     })
 
-    // Every network and tier is read, and the chip and the suspicious filter
-    // narrow in memory, so the gallery can tell "no NFTs at all" apart from
-    // "nothing on this network" or "only suspicious ones".
+    // Every network, tier and hidden NFT is read, and the chip and the hidden
+    // and suspicious filters narrow in memory, so the gallery can tell "no NFTs
+    // at all" apart from "nothing on this network" or "only hidden ones".
     const networkRows = useMemo(
         () =>
             selectedChainId === null
@@ -303,16 +313,21 @@ export const useAccountNfts = (): UseAccountNftsResult => {
                 : rows.filter(row => row.scope.chainId === selectedChainId),
         [rows, selectedChainId],
     )
+    const unhiddenRows = useMemo(
+        () =>
+            showHidden ? networkRows : networkRows.filter(row => !row.isHidden),
+        [networkRows, showHidden],
+    )
     const visibleRows = useMemo(
         () =>
             showSuspicious
-                ? networkRows
-                : networkRows.filter(
+                ? unhiddenRows
+                : unhiddenRows.filter(
                       row =>
                           row.verificationTier !==
                           PeraAssetVerificationTier.suspicious,
                   ),
-        [networkRows, showSuspicious],
+        [unhiddenRows, showSuspicious],
     )
 
     const collectibles = useMemo(() => {
@@ -365,6 +380,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         debouncedSearchFilter,
         showOptedIn,
         showSuspicious,
+        showHidden,
         // recentlyAdded is ordered by a separate query, whose order arrives
         // after the rows: the map landing is its own reorder.
         sortMode === 'recentlyAdded' ? acquisitionOrder.size : '',
@@ -400,8 +416,9 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         }
     }, [galleryLayout])
 
+    const isUserHidden = unhiddenRows.length === 0 && networkRows.length > 0
     const isSuspiciousHidden =
-        visibleRows.length === 0 && networkRows.length > 0
+        visibleRows.length === 0 && unhiddenRows.length > 0
     const isNetworkEmpty =
         selectedChainId !== null && !debouncedSearchFilter.length
     const selectedChainName =
@@ -418,6 +435,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
     const { title: listEmptyTitle, body: listEmptyBody } = listEmptyCopy({
         t,
         isRefreshFailed,
+        isUserHidden,
         isSuspiciousHidden,
         isNetworkEmpty,
         chainName: selectedChainName,

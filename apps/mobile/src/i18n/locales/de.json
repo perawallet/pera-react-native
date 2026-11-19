@@ -270,6 +270,11 @@
         "revoke_error_title": "Widerruf nicht bestätigt",
         "revoke_error_body": "Prüfe in der Liste, wie der Status der Freigabe ist, bevor du es erneut versuchst."
     },
+    "nft_visibility": {
+        "hide": "NFT ausblenden",
+        "unhide": "NFT einblenden",
+        "hidden_toast_body": "Das NFT erscheint nicht mehr bei deinen NFTs. Um es wieder zu sehen, aktiviere „Ausgeblendete NFTs anzeigen“ unter Verwalten > Filter."
+    },
     "token_visibility": {
         "hide": "Token ausblenden",
         "unhide": "Token einblenden",
@@ -525,6 +530,8 @@
             "refresh_error_body": "Zum Wiederholen nach unten ziehen.",
             "suspicious_hidden_title": "Verdächtige NFTs ausgeblendet",
             "suspicious_hidden_body": "Pera hat diese NFTs als wahrscheinlichen Spam oder Betrug markiert. Um sie zu sehen, aktiviere „Verdächtige NFTs anzeigen“ unter Verwalten > Filter.",
+            "user_hidden_title": "Ausgeblendete NFTs",
+            "user_hidden_body": "Du hast diese NFTs ausgeblendet. Um sie zu sehen, aktiviere „Ausgeblendete NFTs anzeigen“ unter Verwalten > Filter.",
             "count": "{{count}} NFTs",
             "count_one": "{{count}} NFT",
             "manage": "Verwalten",
@@ -538,6 +545,8 @@
             "filter_watch_accounts_description": "Dadurch werden NFTs aus deinen Beobachtungskonten sowie aus deinen eigenen Konten angezeigt",
             "filter_suspicious": "Verdächtige NFTs anzeigen",
             "filter_suspicious_description": "Dadurch werden auch NFTs angezeigt, die Pera als wahrscheinlichen Spam oder Betrug markiert hat",
+            "filter_hidden": "Ausgeblendete NFTs anzeigen",
+            "filter_hidden_description": "Dadurch werden auch NFTs angezeigt, die du ausgeblendet hast, damit du sie wieder einblenden kannst",
             "sort_title_asc": "Name (A-Z)",
             "sort_title_desc": "Name (Z-A)",
             "sort_newest_first": "Neueste zuerst",

@@ -270,6 +270,11 @@
         "revoke_error_title": "Révocation non confirmée",
         "revoke_error_body": "Vérifiez dans la liste l'état de l'autorisation avant de réessayer."
     },
+    "nft_visibility": {
+        "hide": "Masquer le NFT",
+        "unhide": "Afficher le NFT",
+        "hidden_toast_body": "Il n’apparaîtra plus dans vos NFT. Pour le revoir, activez Afficher les NFT masqués dans Gérer > Filtrer."
+    },
     "token_visibility": {
         "hide": "Masquer le jeton",
         "unhide": "Afficher le jeton",
@@ -525,6 +530,8 @@
             "refresh_error_body": "Tirez vers le bas pour réessayer.",
             "suspicious_hidden_title": "NFT suspects masqués",
             "suspicious_hidden_body": "Pera a signalé ces NFT comme du spam ou une arnaque probable. Pour les voir, activez Afficher les NFT suspects dans Gérer > Filtrer.",
+            "user_hidden_title": "NFT masqués",
+            "user_hidden_body": "Vous avez masqué ces NFT. Pour les voir, activez Afficher les NFT masqués dans Gérer > Filtrer.",
             "count": "{{count}} NFT",
             "count_one": "{{count}} NFT",
             "manage": "Gérer",
@@ -538,6 +545,8 @@
             "filter_watch_accounts_description": "Cela affichera les NFT de vos comptes de suivi en plus de ceux de vos propres comptes",
             "filter_suspicious": "Afficher les NFT suspects",
             "filter_suspicious_description": "Cela affichera les NFT que Pera a signalés comme du spam ou une arnaque probable",
+            "filter_hidden": "Afficher les NFT masqués",
+            "filter_hidden_description": "Cela affichera les NFT que vous avez masqués, pour que vous puissiez les afficher de nouveau",
             "sort_title_asc": "Nom (A-Z)",
             "sort_title_desc": "Nom (Z-A)",
             "sort_newest_first": "Du plus récent au plus ancien",

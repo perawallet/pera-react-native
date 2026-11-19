@@ -28,9 +28,13 @@ import {
     type CollectibleMedia,
 } from '@perawallet/wallet-core-assets'
 import {
+    addressOn,
+    canHideHolding,
+    hiddenAssetIdsOf,
     useSelectedAccount,
     useCanSignWith,
     useAccountAssetBalanceQuery,
+    useHiddenTokensStore,
     type AssetWithAccountBalance,
     chainAccountOf,
 } from '@perawallet/wallet-core-accounts'
@@ -93,6 +97,10 @@ type UseCollectibleDetailResult = {
     hasExplorerUrl: boolean
     hasProjectUrl: boolean
     scope: ChainScope
+    /** A held NFT on a chain that receives unasked assets; opt-in chains opt out instead. */
+    canHide: boolean
+    isHidden: boolean
+    handleToggleHidden: () => void
 }
 
 export const useCollectibleDetail = (
@@ -190,6 +198,57 @@ export const useCollectibleDetail = (
         collectible?.primaryImage ??
         undefined
     const hasSaveableMedia = saveableMediaUrl != null
+
+    const hideAddress = account ? addressOn(account, scope) : undefined
+    const isHidden = useHiddenTokensStore(
+        state =>
+            hideAddress !== undefined &&
+            hiddenAssetIdsOf(state.hiddenTokens, hideAddress, scope).includes(
+                assetId,
+            ),
+    )
+    const setTokenHidden = useHiddenTokensStore(state => state.setTokenHidden)
+    const canHide =
+        canHideHolding(scope.chainId, assetId) &&
+        hideAddress !== undefined &&
+        isOptedIn
+    const assetName = collectible?.title ?? asset?.name ?? `#${assetId}`
+
+    const handleToggleHidden = useCallback(() => {
+        if (hideAddress === undefined) return
+        setTokenHidden({
+            address: hideAddress,
+            scope,
+            assetId,
+            isHidden: !isHidden,
+        })
+        showToast(
+            isHidden
+                ? {
+                      title: t('token_visibility.shown_toast_title', {
+                          assetName,
+                      }),
+                      body: '',
+                      type: 'success',
+                  }
+                : {
+                      title: t('token_visibility.hidden_toast_title', {
+                          assetName,
+                      }),
+                      body: t('nft_visibility.hidden_toast_body'),
+                      type: 'success',
+                  },
+        )
+    }, [
+        hideAddress,
+        scope,
+        assetId,
+        isHidden,
+        assetName,
+        setTokenHidden,
+        showToast,
+        t,
+    ])
 
     const handleSendPressed = useCallback(() => {
         void requestBottomSheet({
@@ -458,5 +517,8 @@ export const useCollectibleDetail = (
         hasExplorerUrl: !!explorerUrl,
         hasProjectUrl: !!projectUrl,
         scope,
+        canHide,
+        isHidden,
+        handleToggleHidden,
     }
 }
