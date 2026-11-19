@@ -20,6 +20,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScopes } from '@perawallet/wallet-core-chain-shared'
 import {
+    getPeraServicesConfig,
     isPeraBackendSwitchedOff,
     isPeraScopeRefused,
 } from '@perawallet/wallet-core-config'
@@ -74,6 +75,7 @@ export const useSwapFromAssetSelectionList = (
     const supportedChainIds = sourceScopes
         .filter(
             source =>
+                getPeraServicesConfig(source).backendUrl !== '' &&
                 !isPeraBackendSwitchedOff(source.chainId) &&
                 !isPeraScopeRefused(source),
         )

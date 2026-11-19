@@ -13,7 +13,7 @@
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { ChainId, NetworkId } from '@perawallet/wallet-core-chain-contract'
 import type { SwapPayHolding } from '@perawallet/wallet-core-swaps'
 import { useSwapFromAssetSelectionList } from '../useSwapFromAssetSelectionList'
 
@@ -22,6 +22,7 @@ const mocks = vi.hoisted(() => ({
     sourceChainIds: [] as string[],
     isPending: false,
     refusedChainIds: [] as string[],
+    algorandNetworkId: 'mainnet' as NetworkId,
 }))
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
@@ -40,14 +41,21 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     getChainDescriptor: (chainId: string) => ({
         family: chainId === 'algorand' ? 'algorand' : 'evm',
     }),
-    useSelectedScopes: (chainIds: string[]) =>
-        chainIds.map(chainId => ({ chainId, networkId: 'mainnet' })),
+    useSelectedScopes: (chainIds: ChainId[]) =>
+        chainIds.map(chainId => ({
+            chainId,
+            networkId:
+                chainId === 'algorand' ? mocks.algorandNetworkId : 'mainnet',
+        })),
 }))
 
 vi.mock('@perawallet/wallet-core-config', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-config')
     >()),
+    getPeraServicesConfig: ({ networkId }: { networkId: NetworkId }) => ({
+        backendUrl: networkId === 'betanet' ? '' : 'https://pera.test',
+    }),
     isPeraScopeRefused: ({ chainId }: { chainId: string }) =>
         mocks.refusedChainIds.includes(chainId),
 }))
@@ -69,7 +77,11 @@ const holding = (
     ({
         assetId,
         asset: { name, unitName: `A${assetId}` },
-        scope: { chainId, networkId: 'mainnet' },
+        scope: {
+            chainId,
+            networkId:
+                chainId === 'algorand' ? mocks.algorandNetworkId : 'mainnet',
+        },
         amount: new Decimal(1),
         holders: [],
     }) as unknown as SwapPayHolding
@@ -80,6 +92,7 @@ describe('useSwapFromAssetSelectionList', () => {
         mocks.sourceChainIds = ['algorand', 'ethereum']
         mocks.isPending = false
         mocks.refusedChainIds = []
+        mocks.algorandNetworkId = 'mainnet'
     })
 
     it('lists every source chain and names each row on All', () => {
@@ -149,6 +162,21 @@ describe('useSwapFromAssetSelectionList', () => {
 
         expect(result.current.visibleChainIds).toEqual(['algorand', 'ethereum'])
         expect(result.current.holdings.map(h => h.assetId)).toEqual(['1'])
+    })
+
+    it('omits holdings on a network with no Pera backend', () => {
+        mocks.algorandNetworkId = 'betanet'
+        mocks.holdings = [holding('1'), holding('native', 'ethereum')]
+
+        const { result } = renderHook(() =>
+            useSwapFromAssetSelectionList({
+                ...SCOPE,
+                networkId: mocks.algorandNetworkId,
+            }),
+        )
+
+        expect(result.current.visibleChainIds).toEqual(['ethereum'])
+        expect(result.current.holdings.map(h => h.assetId)).toEqual(['native'])
     })
 
     it('follows the picked chip with the placeholder of its network', () => {
