@@ -103,6 +103,7 @@ declare module '@modules/bottom-sheet' {
         }
         'deeplink-chain-selection': {
             chainIds: ChainId[]
+            title?: string
         }
         // BidaliContent takes no props — it owns its own internal navigator
         // and account selection. Empty record keeps the registry typed.

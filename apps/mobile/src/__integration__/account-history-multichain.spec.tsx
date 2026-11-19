@@ -70,6 +70,10 @@ const { AccountHistory } =
     await import('@modules/accounts/components/AccountHistory/AccountHistory')
 const { useAssetListViewStore } =
     await import('@modules/accounts/hooks/useAssetListViewStore')
+const { chainOverridesKey, useRemoteConfigStore } =
+    await import('@perawallet/wallet-core-remote-config')
+const { registerAppBottomSheets } =
+    await import('../bootstrap/bottom-sheet-registrations')
 
 const ALGO_ADDRESS = 'VALID_ADDRESS_58_CHARS_LONG_AAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 const ETH_ADDRESS = '0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed'
@@ -157,6 +161,7 @@ const rowIds = () =>
 describe('Flow: History on an account with Algorand and Ethereum', () => {
     beforeAll(async () => {
         await setupTestDatabase()
+        registerAppBottomSheets()
     })
 
     afterAll(async () => {
@@ -207,6 +212,81 @@ describe('Flow: History on an account with Algorand and Ethereum', () => {
         expect(
             screen.getByText('asset_details.transaction_list.csv_on_network'),
         ).toBeTruthy()
+    })
+
+    describe("when Ethereum's CSV export is switched on", () => {
+        const ethereumOverrides = chainOverridesKey('ethereum')
+
+        beforeEach(() => {
+            useRemoteConfigStore
+                .getState()
+                .setConfigOverride(
+                    ethereumOverrides,
+                    JSON.stringify({ capabilities: { csvExport: true } }),
+                )
+        })
+
+        afterEach(() => {
+            useRemoteConfigStore
+                .getState()
+                .setConfigOverride(ethereumOverrides, null)
+        })
+
+        it('Given rows on both networks, when CSV is tapped on All and Ethereum picked, then it asks the EVM export for the Ethereum address', async () => {
+            const exportRequest = Promise.withResolvers<URL>()
+            server.use(
+                http.get(
+                    '*/api/v3/evm/:chainId/accounts/:address/export-history/',
+                    ({ request }) => {
+                        exportRequest.resolve(new URL(request.url))
+                        return new HttpResponse('"Date"\r\n', {
+                            headers: {
+                                'Content-Type': 'text/csv',
+                                'Content-Disposition':
+                                    'attachment; filename=Transactions-1-0x5aae--beed-Pera.csv',
+                            },
+                        })
+                    },
+                ),
+            )
+            renderWithNavigation(AccountHistory, 'AccountHistory')
+            await waitFor(() => expect(rowIds()).toHaveLength(4), {
+                timeout: SLOW_WAIT_TIMEOUT_MS,
+            })
+
+            fireEvent.click(
+                screen.getByText('asset_details.transaction_list.csv'),
+            )
+            fireEvent.click(
+                await screen.findByTestId(
+                    'chain_selection_ethereum',
+                    undefined,
+                    {
+                        timeout: SLOW_WAIT_TIMEOUT_MS,
+                    },
+                ),
+            )
+
+            expect((await exportRequest.promise).pathname).toBe(
+                `/api/v3/evm/1/accounts/${ETH_ADDRESS}/export-history/`,
+            )
+        })
+
+        it('Given rows on Ethereum alone, when History opens on All, then the export names Ethereum', async () => {
+            await resetTestDatabase()
+            serveUnfundedAlgorandAddress()
+
+            renderWithNavigation(AccountHistory, 'AccountHistory')
+            await waitFor(() => expect(rowIds()).toHaveLength(2), {
+                timeout: SLOW_WAIT_TIMEOUT_MS,
+            })
+
+            expect(
+                screen.getByText(
+                    'asset_details.transaction_list.csv_on_network',
+                ),
+            ).toBeTruthy()
+        })
     })
 
     it("Given Ethereum's history fails, when History opens on All, then Algorand's rows show under a notice naming Ethereum whose Retry brings its rows in", async () => {

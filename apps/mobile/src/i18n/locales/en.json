@@ -1444,6 +1444,10 @@
             "server_error": {
                 "title": "Server error",
                 "body": "The server ran into a problem processing your request. Please try again."
+            },
+            "rate_limited": {
+                "title": "Network busy",
+                "body": "The network is receiving too many requests right now. Please wait a moment and try again."
             }
         },
         "transaction": {

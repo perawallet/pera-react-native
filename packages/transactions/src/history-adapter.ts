@@ -30,6 +30,7 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { TransactionDetailNotFoundError } from './errors'
+import type { CsvExportResult, FetchCsvParams } from './api/csv-export'
 import type {
     TransactionHistoryItem,
     TransactionHistoryResult,
@@ -200,6 +201,8 @@ export interface HistoryChainAdapter {
     resolveAssetFacts?: AssetFactsResolver
     /** Absent on a chain whose history isn't cached as `TransactionHistoryItem` rows. */
     chainData?: HistoryChainDataCodec
+    /** The account's history as a CSV file; required where `csvExport` can be on. Rejects with `CsvExportError`. */
+    exportCsv?(params: FetchCsvParams): Promise<CsvExportResult>
     /**
      * Repairs the account's cached rows after each sync, for facts the
      * backend left out that no later fetch revisits.

@@ -48,7 +48,8 @@ const ENABLED: ReadonlySet<ChainCapability> = new Set<ChainCapability>([
 // Off by default but safe for remote config to switch on: no Algorand-only code,
 // and no Pera endpoint a scope without a deployment could reach. A chain row turns
 // these on where its routes and providers exist. Anything else stays off.
-const SWITCHABLE: readonly ChainCapability[] = ['onramp', 'swap']
+// csvExport waits on the backend's export route, which remote config switches on chain by chain.
+const SWITCHABLE: readonly ChainCapability[] = ['onramp', 'swap', 'csvExport']
 
 const SUPPORTED: readonly ChainCapability[] = [...ENABLED, ...SWITCHABLE]
 

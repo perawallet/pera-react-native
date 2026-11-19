@@ -1436,6 +1436,10 @@
             "server_error": {
                 "title": "Serverfehler",
                 "body": "Der Server hatte ein Problem bei der Verarbeitung deiner Anfrage. Bitte versuche es erneut."
+            },
+            "rate_limited": {
+                "title": "Netzwerk ausgelastet",
+                "body": "Das Netzwerk erhält gerade zu viele Anfragen. Bitte warte einen Moment und versuche es erneut."
             }
         },
         "transaction": {
