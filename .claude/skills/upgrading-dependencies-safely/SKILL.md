@@ -81,6 +81,9 @@ When batching multiple bumps:
 3. **Run `<pkg-manager> install` once** at the end of each logical group. Stacked installs make the lockfile diff unreviewable.
 4. **Don't bypass existing safety gates.** If `minimumReleaseAge` (pnpm) / `--prefer-online` rules / `cargo audit deny` / similar block something, that's the gate working. Investigate; don't disable.
 
+- **Resolve a pnpm lockfile conflict after merging the dependency specs.** Run `pnpm install` against the merged manifests and catalog. Stage `pnpm-lock.yaml` only after regeneration and diff review, then verify with `pnpm install --lockfile-only --frozen-lockfile`. Staging either side before regeneration can leave the index different from the lockfile you tested.
+- **Recheck patches against the new upstream version.** Keep each hunk only if upstream still needs it. Drop hunks that upstream already covers, remove the patch entry if none remain, and list the dropped hunks and their upstream replacements in the PR description.
+
 ### Phase 4 — Verify
 
 In this order:
