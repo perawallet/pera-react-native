@@ -512,16 +512,38 @@ export const createEip1193ConnectionHandler = (
                     },
                     origin: { requesterOrigin: origin },
                 }
+                let replaced: Optional<Eip1193Connection>
                 try {
+                    // The account may have changed while the sheet was open.
+                    replaced = await getConnection(origin)
                     await store().upsert(connection)
+                } catch (error) {
+                    void deliver(
+                        respond,
+                        jsonRpcError(
+                            request.id,
+                            EIP1193_ERROR_CODE.internal,
+                            'Could not save the connection',
+                        ),
+                    )
+                    throw error
                 } finally {
-                    // Freed only once the record exists: a second tab
-                    // claiming the slot mid-upsert would open a second approval.
+                    // Keep the slot through the write attempt so another tab
+                    // cannot open an approval while the grant is changing.
                     releaseSlot()
+                }
+                // Store first, then withdraw, as on an account change: the
+                // site's reviews were raised under the grant just replaced.
+                if (
+                    replaced &&
+                    (!isSameList(replaced.accounts, granted) ||
+                        !isOnChain(replaced, chain.scope.chainId))
+                ) {
+                    withdrawSiteQueue(connection.id)
                 }
                 // Other tabs of the site learn the grant here; the requesting
                 // one also reads it off the answer.
-                if (existing && !isOnChain(existing, chain.scope.chainId)) {
+                if (replaced && !isOnChain(replaced, chain.scope.chainId)) {
                     await notifyOrigin(
                         origin,
                         EIP1193_EVENT.chainChanged,
