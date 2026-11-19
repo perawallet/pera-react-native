@@ -89,8 +89,13 @@ export const receivedTokenIdsOf = (
     ]
 }
 
-/** Spends one unit per history page; refuses once the window's units are gone. */
-export type HistoryScanBudget = { take(): boolean }
+/**
+ * Spends one unit per history page; refuses once the window's units are gone.
+ * A scan's first page names its account: one refused then waits in line, and
+ * the units left are held for those ahead of it, so accounts asking in the
+ * same order every tick can't take every renewed window from the ones behind.
+ */
+export type HistoryScanBudget = { take(key?: string): boolean }
 
 export const createHistoryScanBudget = (
     limit: number,
@@ -99,16 +104,36 @@ export const createHistoryScanBudget = (
 ): HistoryScanBudget => {
     let windowStart = now()
     let used = 0
+    // Insertion order keeps the queue stable even when requests share a clock tick.
+    const waiting = new Map<string, number>()
     return {
-        take: () => {
+        take: key => {
             const at = now()
             if (at - windowStart >= windowMs) {
                 windowStart = at
                 used = 0
             }
-            if (used >= limit) return false
-            used++
-            return true
+            // An account still due asks again each interval; one that stopped
+            // asking (removed, its chain turned off) gives up its place.
+            waiting.forEach((seen, waiter) => {
+                if (at - seen >= 2 * TOKEN_SCAN_INTERVAL_MS) {
+                    waiting.delete(waiter)
+                }
+            })
+            let ahead = 0
+            for (const waiter of waiting.keys()) {
+                if (waiter === key) break
+                ahead++
+            }
+            if (limit - used > ahead) {
+                used++
+                if (key !== undefined) waiting.delete(key)
+                return true
+            }
+            if (key !== undefined) {
+                waiting.set(key, at)
+            }
+            return false
         },
     }
 }
@@ -167,7 +192,10 @@ export const scanReceivedTokens = async (
                 : undefined,
     })
     for (let page = 0; page < TOKEN_SCAN_MAX_PAGES; page++) {
-        if (!budget.take()) return cutShort(false)
+        const isTaken = budget.take(
+            page === 0 ? sightingKey(scope, address) : undefined,
+        )
+        if (!isTaken) return cutShort(false)
         const { items, next } = await fetchHistoryPage(
             scope,
             chain,

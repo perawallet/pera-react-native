@@ -54,6 +54,7 @@ export const OnrampHistoryContent = ({
         isLoading,
         isFetchingNextPage,
         isError,
+        isAccountNotOnDevice,
         handleEndReached,
         renderItem,
         ItemSeparator,
@@ -83,6 +84,15 @@ export const OnrampHistoryContent = ({
     )
 
     const renderEmpty = () => {
+        if (isAccountNotOnDevice) {
+            return (
+                <EmptyView
+                    icon='info'
+                    title={t('onramp.history.not_on_device_title')}
+                    body={t('onramp.history.not_on_device_body')}
+                />
+            )
+        }
         if (isError) {
             return (
                 <EmptyView

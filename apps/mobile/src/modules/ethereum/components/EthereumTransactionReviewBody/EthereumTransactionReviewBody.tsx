@@ -16,11 +16,12 @@ import { EthereumTransactionReview } from './EthereumTransactionReview'
 
 export const EthereumTransactionReviewBody = ({
     transaction,
+    scope,
     source,
     verifiedOrigin,
     actions,
 }: ReviewBodyProps) => {
-    const presentation = useEthereumTransactionPresentation(transaction)
+    const presentation = useEthereumTransactionPresentation(transaction, scope)
 
     if (!presentation) {
         return <TransactionReviewLayout actions={actions} />

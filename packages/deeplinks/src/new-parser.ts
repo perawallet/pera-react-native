@@ -25,6 +25,7 @@ import {
     type WalletConnectDeeplink,
     type AssetOptInDeeplink,
     type AssetDetailDeeplink,
+    type TransactionDetailDeeplink,
     type AssetInboxDeeplink,
     type DiscoverBrowserDeeplink,
     type DiscoverPathDeeplink,
@@ -248,6 +249,16 @@ export function parsePerawalletAppUri(
             ? toLinkAssetRef(target, params.assetId)
             : undefined
         if (params.assetId && !assetRef) return null
+        if (params.transactionId) {
+            return {
+                type: DeeplinkType.TRANSACTION_DETAIL,
+                sourceUrl: url,
+                target,
+                address: params.address,
+                transactionId: params.transactionId,
+                assetRef,
+            } as TransactionDetailDeeplink
+        }
         return {
             type: DeeplinkType.ASSET_DETAIL,
             sourceUrl: url,

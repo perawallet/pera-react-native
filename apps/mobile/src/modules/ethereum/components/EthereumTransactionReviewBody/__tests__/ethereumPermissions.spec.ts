@@ -31,18 +31,22 @@ const approvalOf = (amount?: Decimal): SpendApproval => ({
     isLongLived: true,
 })
 
-const tokenApproval = (spendApproval?: SpendApproval): StandardCall =>
+const tokenApproval = (
+    spendApproval?: SpendApproval,
+    isIncrease?: boolean,
+): StandardCall =>
     ({
         kind: 'token-approval',
         contract: '0xusdc',
         spender: '0xspender',
         ...(spendApproval && { spendApproval }),
+        ...(isIncrease && { isIncrease }),
     }) as StandardCall
 
 const grantOf = (
     standardCall: StandardCall,
     asset: PeraAsset | null = null,
-    simulation = HIDDEN,
+    simulation: EthereumSimulationSectionState = HIDDEN,
 ) => ethereumPermissionsOf({ standardCall }, simulation, asset)[0]?.grant
 
 describe('ethereumPermissionsOf', () => {
@@ -71,6 +75,75 @@ describe('ethereumPermissionsOf', () => {
     it('reads an approval with no amount as unlimited', () => {
         expect(grantOf(tokenApproval(approvalOf()), USDC)).toEqual({
             kind: 'unlimited',
+        })
+    })
+
+    describe('an increaseAllowance read from its calldata alone', () => {
+        it('is an increase by its amount, not a limit of it', () => {
+            const grant = grantOf(
+                tokenApproval(approvalOf(new Decimal(1_000_000_000)), true),
+                USDC,
+            )
+
+            expect(grant).toMatchObject({
+                kind: 'amount',
+                isBaseUnits: false,
+                isIncrease: true,
+            })
+            expect(grant?.kind === 'amount' && grant.amount.toFixed()).toBe(
+                '1000',
+            )
+        })
+
+        it('stays an increase in base units while the token is unread', () => {
+            expect(
+                grantOf(tokenApproval(approvalOf(new Decimal(5)), true)),
+            ).toEqual({
+                kind: 'amount',
+                amount: new Decimal(5),
+                isBaseUnits: true,
+                isIncrease: true,
+            })
+        })
+
+        it('is unlimited when the increase is', () => {
+            expect(grantOf(tokenApproval(approvalOf(), true), USDC)).toEqual({
+                kind: 'unlimited',
+            })
+        })
+
+        it("gives way to the simulation's resulting allowance", () => {
+            const simulation: EthereumSimulationSectionState = {
+                status: 'success',
+                spend: [],
+                receive: [],
+                approvals: [
+                    {
+                        key: 'sim',
+                        contract: '0xusdc',
+                        spender: '0xspender',
+                        asset: USDC,
+                        isCollectionWide: false,
+                        grant: {
+                            kind: 'amount',
+                            amount: new Decimal(10_000),
+                            isBaseUnits: false,
+                        },
+                    },
+                ],
+            }
+
+            expect(
+                grantOf(
+                    tokenApproval(approvalOf(new Decimal(1_000_000_000)), true),
+                    USDC,
+                    simulation,
+                ),
+            ).toEqual({
+                kind: 'amount',
+                amount: new Decimal(10_000),
+                isBaseUnits: false,
+            })
         })
     })
 

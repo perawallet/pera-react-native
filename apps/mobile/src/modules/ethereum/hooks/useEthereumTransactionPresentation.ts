@@ -24,12 +24,10 @@ import {
     type TransactionNative,
 } from '@perawallet/wallet-core-chain-contract'
 import {
-    ETHEREUM_CHAIN_ID,
     readEthereumNative,
     type EthereumTransactionView,
     type EvmNftItem,
 } from '@perawallet/wallet-core-chain-ethereum'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     baseUnitsToDisplayUnits,
     type Nullable,
@@ -173,17 +171,12 @@ const toNative = (wei: Decimal, asset: PeraAsset): EthereumAmount => ({
     value: baseUnitsToDisplayUnits(wei, asset.decimals),
 })
 
-/**
- * `scope` is the chain the transaction is on; unset, it is the selected
- * Ethereum scope, which is where a review always happens.
- */
+/** `scope` is the network the transaction is on: its native coin, tokens and labels are read there. */
 export const useEthereumTransactionPresentation = (
     transaction: TransactionNative,
-    scopeOverride?: ChainScope,
+    scope: ChainScope,
 ): UseEthereumTransactionPresentationResult => {
     const view = useMemo(() => readView(transaction), [transaction])
-    const selectedScope = useSelectedScope(ETHEREUM_CHAIN_ID)
-    const scope = scopeOverride ?? selectedScope
     const nativeAsset = useNativeAsset(scope)
     const {
         asset: tokenAsset,

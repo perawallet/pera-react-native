@@ -196,6 +196,7 @@ describe('services/device/hooks', () => {
                 locale: 'en',
                 appVersion: '7.0.1',
                 currency: 'USD',
+                mutedChainIds: [],
             },
         })
         // This is the no-id create path's own `createdNew: true` return —
@@ -203,6 +204,53 @@ describe('services/device/hooks', () => {
         // below. Tasks 8/12 branch on this flag.
         expect(outcome).toEqual({ createdNew: true })
     }, 20_000)
+
+    test('sends the muted chains the store holds when the queued task runs', async () => {
+        vi.resetModules()
+
+        const { useDeviceStore } = await import('../../store')
+        const useDevice = await importUseDevice()
+        useDeviceStore.getState().resetState()
+        await seedDeviceId('live', 'DEV-1')
+
+        let settleFirst: (value: unknown) => void = () => undefined
+        mockedRegisterDeviceMutation.mockImplementationOnce(
+            () =>
+                new Promise(resolve => {
+                    settleFirst = resolve
+                }),
+        )
+
+        const { result } = renderHook(() => useDevice(), {
+            wrapper: createWrapper(),
+        })
+
+        let first: Promise<unknown> = Promise.resolve()
+        let second: Promise<unknown> = Promise.resolve()
+        act(() => {
+            first = result.current.registerDevice(accounts)
+            second = result.current.registerDevice(accounts)
+        })
+        useDeviceStore.getState().setChainMuted('ethereum', true)
+        await act(async () => {
+            settleFirst({ id: 'DEV-1' })
+            await Promise.all([first, second])
+        })
+
+        expect(mockedRegisterDeviceMutation).toHaveBeenCalledTimes(2)
+        expect(mockedRegisterDeviceMutation).toHaveBeenNthCalledWith(
+            1,
+            expect.objectContaining({
+                data: expect.objectContaining({ mutedChainIds: [] }),
+            }),
+        )
+        expect(mockedRegisterDeviceMutation).toHaveBeenNthCalledWith(
+            2,
+            expect.objectContaining({
+                data: expect.objectContaining({ mutedChainIds: ['ethereum'] }),
+            }),
+        )
+    })
 
     test('registers the fallback fiat when the user prefers ALGO', async () => {
         vi.resetModules()
@@ -650,6 +698,7 @@ describe('services/device/hooks', () => {
                 locale: 'en',
                 appVersion: '7.0.1',
                 currency: 'USD',
+                mutedChainIds: [],
                 id: 'DEV-1',
             },
         }
@@ -721,6 +770,7 @@ describe('services/device/hooks', () => {
                 locale: 'en',
                 appVersion: '7.0.1',
                 currency: 'USD',
+                mutedChainIds: [],
             },
         }
         expect(mockedRegisterDeviceMutation).toHaveBeenNthCalledWith(
@@ -1500,6 +1550,7 @@ describe('services/device/hooks', () => {
             locale: 'en',
             appVersion: '7.0.1',
             currency: 'USD',
+            mutedChainIds: [],
             accounts: [],
         })
     })

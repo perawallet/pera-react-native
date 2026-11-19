@@ -52,6 +52,8 @@ export type UseSwapHistoryListResult = {
     keyExtractor: (item: ListedSwapHistoryItem) => string
     handleItemPress: (item: ListedSwapHistoryItem) => void
     handleEndReached: () => void
+    /** No address here is one this device's registration sends, so the router has no history for it. */
+    shouldShowNotOnDeviceState: boolean
     shouldShowErrorState: boolean
     shouldShowEmptyState: boolean
 }
@@ -64,21 +66,26 @@ export const useSwapHistoryList = ({
     const { pushWebView } = useWebView()
     const accountAddresses = useSwapAccountAddresses(useSelectedAccount())
 
-    // The request runs on the first entry's scope, so the swap scope leads.
-    const accounts = useMemo(
-        () => [
-            { scope, address },
+    // The request runs on the first registered entry's scope, so the swap scope
+    // leads; when registration doesn't send its address, the next one does.
+    const accounts = useMemo(() => {
+        const swapScopeKey = toScopeKey(scope)
+        const swapScopeEntry = accountAddresses.find(
+            entry => toScopeKey(entry.scope) === swapScopeKey,
+        )
+        return [
+            { scope, address, isOnDevice: swapScopeEntry?.isOnDevice ?? true },
             ...accountAddresses.filter(
-                entry => toScopeKey(entry.scope) !== toScopeKey(scope),
+                entry => toScopeKey(entry.scope) !== swapScopeKey,
             ),
-        ],
-        [scope, address, accountAddresses],
-    )
+        ]
+    }, [scope, address, accountAddresses])
 
     const {
         swaps: loaded,
         isLoading,
         isError,
+        isAccountNotOnDevice,
         isFetchingNextPage,
         hasNextPage,
         fetchNextPage,
@@ -111,8 +118,12 @@ export const useSwapHistoryList = ({
         }
     }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
-    const shouldShowErrorState = isError && swaps.length === 0
-    const shouldShowEmptyState = !isLoading && swaps.length === 0
+    const shouldShowNotOnDeviceState =
+        isAccountNotOnDevice && swaps.length === 0
+    const shouldShowErrorState =
+        !shouldShowNotOnDeviceState && isError && swaps.length === 0
+    const shouldShowEmptyState =
+        !shouldShowNotOnDeviceState && !isLoading && swaps.length === 0
 
     return {
         swaps,
@@ -122,6 +133,7 @@ export const useSwapHistoryList = ({
         keyExtractor,
         handleItemPress,
         handleEndReached,
+        shouldShowNotOnDeviceState,
         shouldShowErrorState,
         shouldShowEmptyState,
     }

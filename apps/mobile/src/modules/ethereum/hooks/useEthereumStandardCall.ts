@@ -66,6 +66,8 @@ export type EthereumStandardCallPresentation =
           spender: string
           /** Absent on a revocation. */
           spendApproval?: SpendApproval
+          /** An `increaseAllowance`: its amount adds to whatever the spender may already spend, so it is not the resulting limit. */
+          isIncrease?: boolean
       }
     | {
           kind: 'nft-approval'
@@ -223,6 +225,7 @@ const present = (
                 kind: 'token-approval',
                 contract: call.contract,
                 spender: call.spender,
+                isIncrease: true,
                 spendApproval:
                     spendApprovalOfCall(call, chainId, knownSpender) ??
                     zeroGrantOf(call, chainId, knownSpender),

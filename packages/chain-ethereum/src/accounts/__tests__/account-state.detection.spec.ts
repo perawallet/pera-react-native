@@ -468,6 +468,48 @@ describe('fetchAccountState received-token detection', () => {
         await new Promise(resolve => setTimeout(resolve, 20))
         expect(historyRequests).toBe(1)
     })
+
+    it('gives every account a scan in turn while the shared budget runs out each window', async () => {
+        const addresses = [
+            ADDRESS,
+            '0x00000000000000000000000000000000000000a1',
+            '0x00000000000000000000000000000000000000a2',
+        ]
+        const scanned = new Set<string>()
+        serve([])
+        server.use(
+            http.get(/\/transactions\//, ({ request }) => {
+                const address = addresses.find(a =>
+                    request.url.toLowerCase().includes(a.toLowerCase()),
+                )
+                if (address) scanned.add(address)
+                return HttpResponse.json({ next: null, results: [] })
+            }),
+        )
+        let now = 0
+        const windowMs = 2 * TOKEN_SCAN_INTERVAL_MS
+        const ops = createEthereumAccountStateOps(
+            testChainContext({ services: SERVICES }),
+            ETHEREUM,
+            {
+                now: () => now,
+                scanBudget: createHistoryScanBudget(2, windowMs, () => now),
+            },
+        )
+        const read = { priorChainState: evmState(50), isPersisted: true }
+
+        for (let tick = 0; tick < 3; tick++) {
+            await Promise.all(
+                addresses.map(address =>
+                    ops.fetchAccountState(address, SCOPE, read),
+                ),
+            )
+            now += TOKEN_SCAN_INTERVAL_MS
+        }
+        await vi.waitFor(() => expect(historyRequests).toBe(4))
+
+        expect([...scanned].sort()).toEqual([...addresses].sort())
+    })
 })
 
 describe('fetchChangeSignal for received tokens', () => {

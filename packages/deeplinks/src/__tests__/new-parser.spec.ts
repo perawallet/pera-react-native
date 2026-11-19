@@ -155,6 +155,21 @@ describe('Deeplink Parser - New Format', () => {
             }
         })
 
+        it('parses asset-detail with a transactionId as a transaction detail', () => {
+            expect(
+                parsePerawalletAppUri(
+                    `perawallet://app/asset-detail/?address=${TEST_ADDRESS}&transactionId=TXID123`,
+                ),
+            ).toEqual({
+                type: DeeplinkType.TRANSACTION_DETAIL,
+                sourceUrl: expect.any(String),
+                target: { chainId: 'algorand' },
+                address: TEST_ADDRESS,
+                transactionId: 'TXID123',
+                assetRef: undefined,
+            })
+        })
+
         it('parses asset-detail without assetId as the native asset', () => {
             expect(
                 parsePerawalletAppUri(

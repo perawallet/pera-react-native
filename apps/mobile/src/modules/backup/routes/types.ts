@@ -10,10 +10,14 @@
  limitations under the License
  */
 
+// accountId picks the right account when several share an address (e.g. a
+// watch account on the same 0x address).
+type BackupAccountParams = { address: string; accountId?: string }
+
 export type BackupStackParamList = {
-    BackupInfo: { address: string }
-    BackupWriteDown: { address: string }
-    BackupMnemonic: { address: string }
-    BackupVerification: { address: string }
+    BackupInfo: BackupAccountParams
+    BackupWriteDown: BackupAccountParams
+    BackupMnemonic: BackupAccountParams
+    BackupVerification: BackupAccountParams
     BackupSuccess: undefined
 }

@@ -26,6 +26,8 @@ import type { TransactionHistoryItem } from '@perawallet/wallet-core-transaction
 
 export type ReviewBodyProps = {
     transaction: TransactionNative
+    /** The network the request was built for, which may not be the chain's selected one. */
+    scope: ChainScope
     source?: SignRequestSource
     /** Origin the platform observed (never dApp-asserted); gates the verified badge. */
     verifiedOrigin?: string
@@ -35,6 +37,7 @@ export type ReviewBodyProps = {
 
 export type DetailBodyProps = {
     transaction: TransactionNative
+    scope: ChainScope
     /** A transaction reachable from this one's body, such as an inner transaction. */
     onRelatedTransactionPress?: (transaction: TransactionNative) => void
 }
@@ -83,6 +86,7 @@ export type TransactionDetailSummary = {
 
 export type PreviewRowProps = {
     transaction: TransactionNative
+    scope: ChainScope
     /** Shown in the request for the group's sake; another party signs it. */
     isExternal?: boolean
     onPress?: () => void

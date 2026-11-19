@@ -54,6 +54,8 @@ export type SigningStackParamList = {
          * Non-serializable like `historyTransaction`.
          */
         historyRecord?: TransactionRecord
+        /** The account whose history lists the transaction; set by a link that names only the id. */
+        accountAddress?: string
         /** Set when the history marked the entry; the screen explains it and guards copying its counterparty. */
         suspectedPoisoning?: SuspectedPoisoning
         groupId?: string

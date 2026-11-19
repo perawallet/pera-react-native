@@ -40,6 +40,7 @@ const registration: DeviceRegistration = {
             receiveNotifications: true,
         },
     ],
+    mutedChainIds: [],
 }
 
 const wrapper = createWrapper()

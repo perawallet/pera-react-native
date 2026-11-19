@@ -28,7 +28,10 @@ export const useBackupFlowLauncher = (): UseBackupFlowLauncherResult => {
         (account: WalletAccount) => {
             navigation.navigate('BackupWallet', {
                 screen: 'BackupInfo',
-                params: { address: ownAddressOf(account) ?? '' },
+                params: {
+                    address: ownAddressOf(account) ?? '',
+                    accountId: account.id,
+                },
             })
         },
         [navigation],

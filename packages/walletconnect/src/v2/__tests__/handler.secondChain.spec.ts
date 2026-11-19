@@ -1156,6 +1156,97 @@ describe('wallet_switchEthereumChain', () => {
         })
     })
 
+    describe('with signability', () => {
+        const OTHER_ETH = '0x4444444444444444444444444444444444444444'
+        const signable = new Set<string>()
+
+        const lackingMainnetFor = async () => {
+            const walletKit = createFakeWalletKit({
+                [TOPIC]: liveSession(TOPIC, {
+                    chains: [ETH_SEPOLIA],
+                    accounts: [
+                        `${ETH_SEPOLIA}:${ETH}`,
+                        `${ETH_SEPOLIA}:${OTHER_ETH}`,
+                    ],
+                }),
+            })
+            const opened = await open(
+                [
+                    recordFor(TOPIC, {
+                        accounts: [ADDRESS, ETH, OTHER_ETH],
+                        chains: [MAINNET_CHAIN_ID, ETH_SEPOLIA],
+                    }),
+                ],
+                walletKit,
+                {
+                    canSignWith: (chainId, address) =>
+                        chainId === 'ethereum' && signable.has(address),
+                },
+            )
+            await switchRequest(opened, SWITCH_TO_MAINNET_FROM_SEPOLIA)
+            return opened
+        }
+
+        beforeEach(() => {
+            signable.clear()
+        })
+
+        it('refuses adding a network no session account can sign on with 4100, without asking the user', async () => {
+            const { walletKit, store, context } = await lackingMainnetFor()
+
+            expect(context.onMessage).not.toHaveBeenCalled()
+            expect(walletKit.updateSession).not.toHaveBeenCalled()
+            expect(walletKit.respondSessionRequest).toHaveBeenCalledWith({
+                topic: TOPIC,
+                response: {
+                    id: REQUEST_ID,
+                    jsonrpc: '2.0',
+                    error: expect.objectContaining({
+                        code: EIP_1193['unauthorized-account'],
+                    }),
+                },
+            })
+            const [stored] = await store.list()
+            expect(stored.metadata?.chains).toEqual([
+                MAINNET_CHAIN_ID,
+                ETH_SEPOLIA,
+            ])
+        })
+
+        it('adds the network with only the session accounts that can sign on it', async () => {
+            signable.add(ETH)
+            const { walletKit, context } = await lackingMainnetFor()
+            const [message] = context.onMessage.mock.calls[0] as [
+                Extract<InboundMessage, { kind: 'request' }>,
+            ]
+
+            await message.respond({ type: 'switch-network' })
+
+            const { namespaces } = walletKit.updateSession.mock.calls[0][0]
+            expect(namespaces.eip155.accounts).toEqual([
+                `${ETH_SEPOLIA}:${ETH}`,
+                `${ETH_SEPOLIA}:${OTHER_ETH}`,
+                `${ETH_MAINNET}:${ETH}`,
+            ])
+        })
+
+        it('throws rather than adding the network when no account can sign on it by approval', async () => {
+            signable.add(ETH)
+            const { walletKit, context } = await lackingMainnetFor()
+            const [message] = context.onMessage.mock.calls[0] as [
+                Extract<InboundMessage, { kind: 'request' }>,
+            ]
+            signable.clear()
+
+            await expect(
+                message.respond({ type: 'switch-network' }),
+            ).rejects.toMatchObject({ code: 'unauthorized-account' })
+
+            expect(walletKit.updateSession).not.toHaveBeenCalled()
+            expect(walletKit.respondSessionRequest).not.toHaveBeenCalled()
+        })
+    })
+
     it('refuses wallet_addEthereumChain as an unsupported method', async () => {
         const opened = await live()
 

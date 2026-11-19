@@ -23,17 +23,18 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
             scope: SCOPE,
             address: `${account.id}-address`,
             accountId: account.id,
+            isOnDevice: true,
         })),
 }))
 
 describe('useSwapAccountAddresses', () => {
-    it("lists the account's swap addresses without the account tag", () => {
+    it("lists the account's swap addresses and whether the device registers them, without the account tag", () => {
         const account = { id: 'main' } as WalletAccount
 
         const { result } = renderHook(() => useSwapAccountAddresses(account))
 
         expect(result.current).toEqual([
-            { scope: SCOPE, address: 'main-address' },
+            { scope: SCOPE, address: 'main-address', isOnDevice: true },
         ])
     })
 

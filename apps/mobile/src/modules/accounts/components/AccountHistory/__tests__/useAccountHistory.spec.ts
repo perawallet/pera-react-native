@@ -50,6 +50,7 @@ import {
     PeraServiceUnavailableError,
 } from '@perawallet/wallet-core-shared'
 import { AccountDetailsEvent, AnalyticsMetadataKey } from '@analytics'
+import { buildRecordListRows } from '@modules/transactions/utils/transactionListRows'
 import { useAssetListViewStore } from '../../../hooks/useAssetListViewStore'
 
 const mockTrackEvent = vi.hoisted(() => vi.fn())
@@ -742,6 +743,99 @@ describe('useAccountHistory', () => {
             expect(result.current.emptyBody).toBe(
                 'asset_details.transaction_list.empty_body',
             )
+        })
+
+        const reportRecords = (
+            result: { current: ReturnType<typeof useAccountHistory> },
+            recordsByChain: Record<string, string[]>,
+        ) => {
+            act(() => {
+                for (const feed of result.current.historyFeeds) {
+                    const { scope } = feed.source
+                    const records = (recordsByChain[scope.chainId] ?? []).map(
+                        (id, index): TransactionRecord => ({
+                            id,
+                            scope,
+                            status: 'confirmed',
+                            timestamp: 1_704_067_200_000 - index,
+                            summary: {
+                                kind: 'transfer',
+                                title: {
+                                    key: i18nKey(
+                                        'transactions.list_item.receive',
+                                    ),
+                                },
+                                direction: 'in',
+                                icon: 'receive',
+                            },
+                            chainData: { family: 'evm' },
+                        }),
+                    )
+                    feed.onChange(
+                        feed.feedKey,
+                        {
+                            scope,
+                            rows: buildRecordListRows(records),
+                            isLoading: false,
+                            isFetched: true,
+                            isFetchingNextPage: false,
+                            isError: false,
+                            error: null,
+                            isLoadFailed: false,
+                            isLoadUnavailable: false,
+                            isLoadIntegrityBlocked: false,
+                            isRefreshFailed: false,
+                            isRefreshUnavailable: false,
+                            hasNextPage: false,
+                            isSearchPaused: false,
+                            isRetrying: false,
+                            isRefreshing: false,
+                            suspectedPoisoningById: new Map(),
+                        },
+                        {
+                            fetchNextPage: vi.fn(),
+                            retry: vi.fn(),
+                            refresh: vi.fn(),
+                        },
+                    )
+                }
+            })
+        }
+
+        it('offers the Algorand CSV export on All, named for Algorand and run at its address', () => {
+            const { result } = renderHook(() => useAccountHistory())
+
+            reportRecords(result, {
+                algorand: ['ALGO_TX'],
+                ethereum: ['0xeth'],
+            })
+            result.current.handleExportCsv()
+
+            expect(result.current.isCsvExportVisible).toBe(true)
+            expect(result.current.csvExportTitle).toBe(
+                'asset_details.transaction_list.csv_on_network',
+            )
+            expect(mockT).toHaveBeenCalledWith(
+                'asset_details.transaction_list.csv_on_network',
+                { network: 'Algorand' },
+            )
+            expect(useCsvExportMutation).toHaveBeenLastCalledWith(
+                expect.objectContaining({
+                    scope: { chainId: 'algorand', networkId: 'mainnet' },
+                }),
+            )
+            expect(mockExportCsv).toHaveBeenCalledWith({
+                accountAddress: ACCOUNT_ADDRESS,
+            })
+        })
+
+        it('hides the CSV export on All while only Ethereum has rows, since the export would be empty', () => {
+            const { result } = renderHook(() => useAccountHistory())
+
+            reportRecords(result, { ethereum: ['0xeth'] })
+
+            expect(result.current.isEmpty).toBe(false)
+            expect(result.current.isCsvExportVisible).toBe(false)
         })
 
         it("shows All when the stored chip names a network the account doesn't have", () => {

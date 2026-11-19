@@ -12,7 +12,10 @@
 
 import { describe, expect, it } from 'vitest'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { toDeviceRegistrationRequest } from '../serializers'
+import {
+    toDeviceRegistrationRequest,
+    toV3DeviceRegistrationRequest,
+} from '../serializers'
 import type { DeviceRegistration } from '../../models'
 
 const FIRST_CHAIN = 'algorand' as ChainId
@@ -48,6 +51,7 @@ const baseRegistration: DeviceRegistration = {
     locale: 'en-US',
     appVersion: '7.0.1',
     accounts: [],
+    mutedChainIds: [],
 }
 
 describe('toDeviceRegistrationRequest', () => {
@@ -76,6 +80,7 @@ describe('toDeviceRegistrationRequest', () => {
                     receive_notifications: true,
                 },
             ],
+            muted_chains: [],
         })
     })
 
@@ -134,6 +139,7 @@ describe('toDeviceRegistrationRequest', () => {
             'accounts',
             'app_version',
             'locale',
+            'muted_chains',
             'platform',
             'push_token',
         ])
@@ -327,5 +333,95 @@ describe('toDeviceRegistrationRequest', () => {
         expect(request.accounts.map(account => account.address)).toEqual([
             'ADDR_A',
         ])
+    })
+})
+
+describe('muted chains', () => {
+    const onBoth = [
+        { address: 'ADDR_A', ...SIGNING, receiveNotifications: true },
+        {
+            address: '0xabc',
+            ...SIGNING,
+            chainId: SECOND_CHAIN,
+            receiveNotifications: true,
+        },
+    ]
+
+    it('sends a muted chain with an account on it as its CAIP-2 id', () => {
+        const request = serialize({
+            ...baseRegistration,
+            accounts: onBoth,
+            mutedChainIds: [SECOND_CHAIN],
+        })
+
+        expect(request.muted_chains).toEqual([SECOND_CAIP2])
+    })
+
+    it('names the chain on the deployment the request goes to', () => {
+        const request = toDeviceRegistrationRequest(
+            {
+                ...baseRegistration,
+                accounts: onBoth,
+                mutedChainIds: [SECOND_CHAIN],
+            },
+            chainId => (chainId === SECOND_CHAIN ? 'eip155:11155111' : null),
+        )
+
+        expect(request.muted_chains).toEqual(['eip155:11155111'])
+    })
+
+    it('leaves out a muted chain no account is on', () => {
+        const request = serialize({
+            ...baseRegistration,
+            accounts: [onBoth[0]],
+            mutedChainIds: [SECOND_CHAIN],
+        })
+
+        expect(request.muted_chains).toEqual([])
+    })
+
+    it('leaves out a muted chain the deployment cannot name', () => {
+        const request = serialize({
+            ...baseRegistration,
+            accounts: onBoth,
+            mutedChainIds: [UNNAMED_CHAIN],
+        })
+
+        expect(request.muted_chains).toEqual([])
+    })
+
+    it('collapses a chain muted twice', () => {
+        const request = serialize({
+            ...baseRegistration,
+            accounts: onBoth,
+            mutedChainIds: [SECOND_CHAIN, SECOND_CHAIN],
+        })
+
+        expect(request.muted_chains).toEqual([SECOND_CAIP2])
+    })
+
+    it('does not change what each account receives', () => {
+        const request = serialize({
+            ...baseRegistration,
+            accounts: onBoth,
+            mutedChainIds: [SECOND_CHAIN],
+        })
+
+        expect(
+            request.accounts.map(account => account.receive_notifications),
+        ).toEqual([true, true])
+    })
+
+    it('is absent from the v3 request', () => {
+        const request = toV3DeviceRegistrationRequest(
+            {
+                ...baseRegistration,
+                accounts: onBoth,
+                mutedChainIds: [FIRST_CHAIN],
+            },
+            () => true,
+        )
+
+        expect('muted_chains' in request).toBe(false)
     })
 })

@@ -379,7 +379,7 @@ describe('Flow: Account backup', () => {
         // marked backed up yet.
         const requires = renderHook(
             ({ account }: { account: WalletAccount }) =>
-                useRequiresMnemonicBackup(account, ALGORAND_CHAIN_ID),
+                useRequiresMnemonicBackup(account),
             { initialProps: { account: rootAccount } },
         )
         expect(requires.result.current).toBe(true)
@@ -437,9 +437,7 @@ describe('Flow: Account backup', () => {
             .getState()
             .setAccounts([...useAccountsStore.getState().accounts, added])
 
-        const { result } = renderHook(() =>
-            useRequiresMnemonicBackup(added, ALGORAND_CHAIN_ID),
-        )
+        const { result } = renderHook(() => useRequiresMnemonicBackup(added))
         expect(result.current).toBe(false)
     })
 
@@ -451,7 +449,7 @@ describe('Flow: Account backup', () => {
 
         const requires = renderHook(
             ({ account }: { account: WalletAccount }) =>
-                useRequiresMnemonicBackup(account, ALGORAND_CHAIN_ID),
+                useRequiresMnemonicBackup(account),
             { initialProps: { account: rootAccount } },
         )
         expect(requires.result.current).toBe(false)
@@ -473,7 +471,7 @@ describe('Flow: Account backup', () => {
 
         const requires = renderHook(
             ({ account }: { account: WalletAccount }) =>
-                useRequiresMnemonicBackup(account, ALGORAND_CHAIN_ID),
+                useRequiresMnemonicBackup(account),
             { initialProps: { account: first.sibling1 } },
         )
         expect(requires.result.current).toBe(false)

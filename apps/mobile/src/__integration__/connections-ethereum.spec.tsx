@@ -812,6 +812,41 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                 ])
             })
 
+            it('Given an account holding Ethereum but not Base, when it connects to a proposal requiring Ethereum and naming Base as optional, then the session carries only Ethereum', async () => {
+                const ethereumOnly: WalletAccount = {
+                    ...ETHEREUM_ACCOUNT,
+                    chains: { ethereum: ETHEREUM_ACCOUNT.chains.ethereum },
+                }
+                useAccountsStore
+                    .getState()
+                    .setAccounts([ALGORAND_ACCOUNT, ethereumOnly])
+                await mountProvider()
+                const walletKit = await propose({
+                    requiredNamespaces: {
+                        eip155: {
+                            chains: [ETH_MAINNET],
+                            methods: ['eth_sendTransaction'],
+                            events: [],
+                        },
+                    },
+                    optionalNamespaces: {
+                        eip155: {
+                            chains: [BASE_MAINNET],
+                            methods: ['eth_sendTransaction'],
+                            events: [],
+                        },
+                    },
+                })
+                await selectRows(ethereumOnly)
+                await connect(walletKit)
+
+                const { eip155 } = approvedNamespaces(walletKit)
+                expect(eip155.chains).toEqual([ETH_MAINNET])
+                expect(eip155.accounts).toEqual([
+                    `${ETH_MAINNET}:${CHECKSUMMED_ETH_ADDRESS}`,
+                ])
+            })
+
             it('Given a session that holds only Base, when the dApp asks from Base to switch to Ethereum, then the user is asked and allowing it adds the network', async () => {
                 await mountProvider()
                 const walletKit = await propose({
@@ -1332,6 +1367,68 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                             id: 7,
                             result: HASH,
                         })
+                    })
+                })
+
+                it("Given a USDC transfer on Base, when it is reviewed, then the network row, the fee's coin and the token amount are read on Base, not Ethereum", async () => {
+                    const BASE_USDC =
+                        '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
+                    // transfer(RECIPIENT, 5_000_000)
+                    const data = `0xa9059cbb${RECIPIENT.slice(2).toLowerCase().padStart(64, '0')}${(5_000_000).toString(16).padStart(64, '0')}`
+                    await upsertAssets({
+                        items: [
+                            {
+                                ...nativeAssetFor('ethereum'),
+                                assetId: BASE_USDC,
+                                name: 'USD Coin',
+                                unitName: 'USDC',
+                                decimals: 6,
+                            },
+                        ],
+                        scope: { chainId: 'base', networkId: 'mainnet' },
+                    })
+                    setCapabilityOverrides(
+                        { dappConnect: true, contractDecoding: true },
+                        'base',
+                    )
+                    const walletKit = await settleOnBase()
+                    renderSignReview()
+
+                    sendTransaction(
+                        walletKit,
+                        {
+                            from: CHECKSUMMED_ETH_ADDRESS,
+                            to: BASE_USDC,
+                            value: '0x0',
+                            data,
+                        },
+                        BASE_MAINNET,
+                    )
+                    await queued()
+
+                    await waitFor(
+                        () => {
+                            expect(reviewTitle()).toBe(
+                                'transactions.list_item.send',
+                            )
+                        },
+                        { timeout: 5000 },
+                    )
+                    expect(
+                        screen.getAllByTestId('review_network')[0].textContent,
+                    ).toContain('Base')
+                    expect(
+                        screen.getAllByTestId('ethereum_review_fee')[0]
+                            .textContent,
+                    ).toContain('"symbol":"ETH"')
+
+                    await openTechnicalDetails()
+                    await waitFor(() => {
+                        expect(
+                            screen.getAllByTestId(
+                                'transaction_detail_amount',
+                            )[0].textContent,
+                        ).toContain('5.00 USDC')
                     })
                 })
 
