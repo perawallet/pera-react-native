@@ -174,8 +174,8 @@ describe('fetchEvmHistoryCsv', () => {
 
         expect(error.statusCode).toBe(429)
         expect(error.metadata).toMatchObject({
-            titleKey: 'errors.evm.rate_limited.title',
-            messageKey: 'errors.evm.rate_limited.body',
+            titleKey: 'errors.api.rate_limited.title',
+            messageKey: 'errors.api.rate_limited.body',
         })
     })
 
@@ -209,6 +209,24 @@ describe('fetchEvmHistoryCsv', () => {
         await vi.advanceTimersByTimeAsync(EVM_HISTORY_EXPORT_BOUNDS.timeout)
 
         await expect(outcome).resolves.toMatchObject({ csvContent: CSV })
+    })
+
+    it('carries the timeout copy when the backend outlasts the bound', async () => {
+        vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+        server.use(
+            http.get(ROUTE, async () => {
+                await delay(EVM_HISTORY_EXPORT_BOUNDS.timeout + 1000)
+                return new HttpResponse(CSV)
+            }),
+        )
+
+        const outcome = exportCsvError()
+        await vi.advanceTimersByTimeAsync(EVM_HISTORY_EXPORT_BOUNDS.timeout)
+
+        expect((await outcome).metadata).toMatchObject({
+            titleKey: 'errors.network.timeout.title',
+            messageKey: 'errors.network.timeout.body',
+        })
     })
 
     it.each([

@@ -1444,6 +1444,10 @@
             "server_error": {
                 "title": "Error del servidor",
                 "body": "El servidor tuvo un problema al procesar tu solicitud. Inténtalo de nuevo."
+            },
+            "rate_limited": {
+                "title": "Red saturada",
+                "body": "La red está recibiendo demasiadas solicitudes en este momento. Espera un momento y vuelve a intentarlo."
             }
         },
         "transaction": {

@@ -12,6 +12,7 @@
 
 import {
     addressCodecs,
+    i18nKey,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -27,9 +28,17 @@ import {
 import type { ExportCsvParams, CsvExportResult } from './types'
 import { generateFilename, buildCsvQueryParams, countCsvRows } from './utils'
 
-// A 5xx names itself; the rest keep the generic copy, never the backend's text.
+// A 429 is the device's export allowance or the explorer's rate limit; both clear with time.
+const RATE_LIMITED_COPY: Partial<ErrorMetadata> = {
+    titleKey: i18nKey('errors.api.rate_limited.title'),
+    messageKey: i18nKey('errors.api.rate_limited.body'),
+}
+
+// A 429, timeout or 5xx names itself; the rest keep the generic copy, never the backend's text.
 const copyOf = (error: Optional<Error>): Partial<ErrorMetadata> => {
-    if (!isPeraNetworkError(error) || error.kind !== 'server') return {}
+    if (!isPeraNetworkError(error)) return {}
+    if (error.status === 429) return RATE_LIMITED_COPY
+    if (error.kind !== 'server' && error.kind !== 'timeout') return {}
     const { titleKey, bodyKey } = getNetworkErrorMessageKeys(error)
     return { titleKey, messageKey: bodyKey }
 }

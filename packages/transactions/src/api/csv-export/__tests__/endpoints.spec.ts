@@ -21,6 +21,7 @@ import {
     AppError,
     ErrorCategory,
     isExpectedError,
+    PeraNetworkError,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 
@@ -194,6 +195,50 @@ describe('fetchTransactionsCsv', () => {
                 scope: { chainId: 'algorand', networkId: 'mainnet' },
             }),
         ).rejects.toThrow(CsvExportError)
+    })
+
+    it.each([
+        [
+            'a 429',
+            new PeraNetworkError('client', { status: 429 }),
+            'errors.api.rate_limited',
+        ],
+        [
+            'a timeout',
+            new PeraNetworkError('timeout'),
+            'errors.network.timeout',
+        ],
+        [
+            'a 5xx',
+            new PeraNetworkError('server', { status: 503 }),
+            'errors.api.server_error',
+        ],
+    ])('carries the copy for %s', async (_, failure, copy) => {
+        mockGetError = failure
+
+        const rejection = fetchTransactionsCsv({
+            accountAddress: VALID_ADDRESS,
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
+        })
+
+        await expect(rejection).rejects.toMatchObject({
+            metadata: {
+                titleKey: `${copy}.title`,
+                messageKey: `${copy}.body`,
+            },
+        })
+    })
+
+    it('leaves any other 4xx to the generic copy', async () => {
+        mockGetError = new PeraNetworkError('client', { status: 404 })
+
+        const error = await fetchTransactionsCsv({
+            accountAddress: VALID_ADDRESS,
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
+        }).catch((caught: CsvExportError) => caught)
+
+        expect(error).toBeInstanceOf(CsvExportError)
+        expect((error as CsvExportError).metadata.messageKey).toBeUndefined()
     })
 
     it('throws CsvExportError for empty response', async () => {

@@ -1444,6 +1444,10 @@
             "server_error": {
                 "title": "Erreur du serveur",
                 "body": "Le serveur a rencontré un problème lors du traitement de votre demande. Veuillez réessayer."
+            },
+            "rate_limited": {
+                "title": "Réseau saturé",
+                "body": "Le réseau reçoit trop de requêtes en ce moment. Veuillez patienter un instant, puis réessayer."
             }
         },
         "transaction": {

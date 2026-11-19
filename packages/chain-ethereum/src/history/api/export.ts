@@ -11,7 +11,6 @@
  */
 
 import { buildIntegrityHeadersWhenReady } from '@perawallet/wallet-core-app-integrity'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import {
     isPeraNetworkError,
     queryClient,
@@ -41,14 +40,15 @@ const SERVED_FILENAME =
     /(?:^|;)\s*filename\s*=\s*(?:"([\w.-]+\.csv)"|([\w.-]+\.csv))\s*(?:;|$)/i
 
 // The backend builds the whole file before it answers, so a long history
-// outlasts ky's 10 s default; a retry would rerun the export and spend the
-// device's export allowance again.
+// outlasts ky's 10 s default. Its server and proxy drop a request at 60 s; the
+// margin lets a file finished just inside that still arrive. A retry would
+// rerun the export and spend the device's export allowance again.
 export const EVM_HISTORY_EXPORT_BOUNDS = {
-    timeout: 60_000,
+    timeout: 65_000,
     retry: { limit: 0 },
 } satisfies Pick<RequestConfiguration, 'timeout' | 'retry'>
 
-/** Rejects with `CsvExportError`, carrying the 429 and 5xx copy for the toast. */
+/** Rejects with `CsvExportError`, carrying the 429, timeout and 5xx copy for the toast. */
 export const fetchEvmHistoryCsv = async (
     chain: EvmChain,
     {
@@ -110,21 +110,11 @@ export const fetchEvmHistoryCsv = async (
         if (error instanceof CsvExportError) throw error
         const cause = error instanceof Error ? error : undefined
         const status = isPeraNetworkError(error) ? error.status : undefined
-        const exportError = new CsvExportError(
+        throw new CsvExportError(
             `Failed to export transactions: ${cause?.message ?? String(error)}`,
             status,
             url,
             cause,
         )
-        // The device's export allowance or the explorer's rate limit; both clear with time.
-        if (status === 429) {
-            exportError.metadata.titleKey = i18nKey(
-                'errors.evm.rate_limited.title',
-            )
-            exportError.metadata.messageKey = i18nKey(
-                'errors.evm.rate_limited.body',
-            )
-        }
-        throw exportError
     }
 }

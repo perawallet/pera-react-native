@@ -1444,6 +1444,10 @@
             "server_error": {
                 "title": "Sunucu hatası",
                 "body": "Sunucu isteğini işlerken bir sorunla karşılaştı. Tekrar dene."
+            },
+            "rate_limited": {
+                "title": "Ağ yoğun",
+                "body": "Ağ şu anda çok fazla istek alıyor. Biraz bekle ve tekrar dene."
             }
         },
         "transaction": {

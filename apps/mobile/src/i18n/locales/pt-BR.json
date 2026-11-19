@@ -1444,6 +1444,10 @@
             "server_error": {
                 "title": "Erro no servidor",
                 "body": "O servidor encontrou um problema ao processar sua solicitação. Tente novamente."
+            },
+            "rate_limited": {
+                "title": "Rede congestionada",
+                "body": "A rede está recebendo muitas solicitações no momento. Aguarde um instante e tente novamente."
             }
         },
         "transaction": {
