@@ -34,6 +34,7 @@ const CollectibleListItemBase = ({
     style,
     showFrozenBadge = false,
     networkChainId,
+    isHidden = false,
 }: CollectibleItemProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -67,7 +68,7 @@ const CollectibleListItemBase = ({
                         imageStyle={styles.image}
                         placeholderStyle={styles.placeholderContainer}
                         iconSize='md'
-                        notOptedIn={!hasBalance}
+                        isDimmed={!hasBalance || isHidden}
                         imageWidth={LIST_IMAGE_WIDTH}
                     />
                 </PWView>
@@ -86,6 +87,12 @@ const CollectibleListItemBase = ({
                         <PWIcon
                             name={verificationIconName}
                             size='xs'
+                        />
+                    ) : null}
+                    {isHidden ? (
+                        <PWBadge
+                            variant='secondary'
+                            value={t('nft_visibility.hidden_badge')}
                         />
                     ) : null}
                     {showFrozenBadge ? (

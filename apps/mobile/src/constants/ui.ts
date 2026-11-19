@@ -110,7 +110,7 @@ export const ONRAMP_QUOTE_MIN_REFRESH_INTERVAL = 30_000
 // Cap on the backoff after failed background re-quotes.
 export const ONRAMP_QUOTE_MAX_REFRESH_INTERVAL = 300_000
 
-export const NFT_NOT_OPTED_IN_OPACITY = 0.5
+export const NFT_DIMMED_OPACITY = 0.5
 // Dims a control that stays tappable (e.g. a toggle whose network has no Pera
 // backend) — distinct from TouchableOpacity's `disabled`, which would also
 // swallow the press meant to explain why.

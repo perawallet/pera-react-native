@@ -13,6 +13,7 @@
 import {
     PWButton,
     PWChip,
+    PWDropdown,
     PWIcon,
     PWScreen,
     PWText,
@@ -68,17 +69,27 @@ export const CollectibleDetailContent = ({
         modelViewerModal,
         modelViewerUrl,
         scope,
+        headerMenuItems,
     } = useCollectibleDetail(assetId, chainId)
 
     const styles = useStyles()
 
     useNavigationHeader({
         right: (
-            <PWTouchableIcon
-                name='share'
-                variant='primary'
-                onPress={handleSharePressed}
-            />
+            <PWView style={styles.headerActions}>
+                <PWTouchableIcon
+                    name='share'
+                    variant='primary'
+                    onPress={handleSharePressed}
+                />
+                {headerMenuItems.length > 0 && (
+                    <PWView testID='collectible_detail_menu'>
+                        <PWDropdown items={headerMenuItems}>
+                            <PWIcon name='ellipsis' />
+                        </PWDropdown>
+                    </PWView>
+                )}
+            </PWView>
         ),
     })
 

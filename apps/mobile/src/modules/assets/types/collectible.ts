@@ -32,4 +32,6 @@ export type CollectibleItemProps = {
     showFrozenBadge?: boolean
     /** Names the NFT's network, for a gallery listing several together. */
     networkChainId?: ChainId
+    /** The user hid it and the gallery lists hidden NFTs: dimmed and badged. */
+    isHidden?: boolean
 }

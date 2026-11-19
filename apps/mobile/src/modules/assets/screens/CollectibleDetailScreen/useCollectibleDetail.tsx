@@ -28,6 +28,7 @@ import {
     type CollectibleMedia,
 } from '@perawallet/wallet-core-assets'
 import {
+    canHideHolding,
     useSelectedAccount,
     useCanSignWith,
     useAccountAssetBalanceQuery,
@@ -41,10 +42,12 @@ import { useToast } from '@hooks/useToast'
 import { useHaptics } from '@hooks/useHaptics'
 import { useLanguage } from '@hooks/useLanguage'
 import { Decimal } from 'decimal.js'
-import type {
-    ChainId,
-    ChainScope,
+import {
+    i18nKey,
+    type ChainId,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
+import type { PWDropdownItem } from '@components/core'
 import { useCapability } from '@hooks/useCapability'
 import * as Clipboard from 'expo-clipboard'
 import { useModalState, type ModalState } from '@hooks/useModalState'
@@ -52,6 +55,7 @@ import { routeCapabilities } from '@routes/capabilities'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { openValidatedBrowserUrl } from '@modules/webview'
 import { OptOutConfirmationContent } from '@modules/accounts'
+import { useHoldingVisibility } from '@modules/assets/hooks/useHoldingVisibility'
 import {
     SendFundsContent,
     SEND_FUNDS_SHEET_ID,
@@ -93,6 +97,8 @@ type UseCollectibleDetailResult = {
     hasExplorerUrl: boolean
     hasProjectUrl: boolean
     scope: ChainScope
+    /** Hide or unhide, for a held NFT on a chain that receives unasked assets; empty otherwise, as opt-in chains opt out instead. */
+    headerMenuItems: PWDropdownItem[]
 }
 
 export const useCollectibleDetail = (
@@ -190,6 +196,39 @@ export const useCollectibleDetail = (
         collectible?.primaryImage ??
         undefined
     const hasSaveableMedia = saveableMediaUrl != null
+
+    const {
+        address: hideAddress,
+        isHidden,
+        toggleHidden: handleToggleHidden,
+    } = useHoldingVisibility({
+        account,
+        scope,
+        assetId,
+        assetName: collectible?.title ?? asset?.name ?? `#${assetId}`,
+        hiddenToastBody: i18nKey('nft_visibility.hidden_toast_body'),
+    })
+    const canHide =
+        canHideHolding(scope.chainId, assetId) &&
+        hideAddress !== undefined &&
+        isOptedIn
+    const headerMenuItems = useMemo<PWDropdownItem[]>(
+        () =>
+            canHide
+                ? [
+                      {
+                          label: t(
+                              isHidden
+                                  ? 'nft_visibility.unhide'
+                                  : 'nft_visibility.hide',
+                          ),
+                          icon: 'eye',
+                          onPress: handleToggleHidden,
+                      },
+                  ]
+                : [],
+        [canHide, isHidden, handleToggleHidden, t],
+    )
 
     const handleSendPressed = useCallback(() => {
         void requestBottomSheet({
@@ -458,5 +497,6 @@ export const useCollectibleDetail = (
         hasExplorerUrl: !!explorerUrl,
         hasProjectUrl: !!projectUrl,
         scope,
+        headerMenuItems,
     }
 }

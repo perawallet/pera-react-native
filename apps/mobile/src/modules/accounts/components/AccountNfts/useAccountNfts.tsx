@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useRef, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { type ParamListBase, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { PWFlatList } from '@components/core'
@@ -24,13 +24,8 @@ import {
     useCanSignWith,
     type AccountCollectibleLiteRow,
 } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
-    toScopeKey,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
-import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
-import {
-    PeraAssetVerificationTier,
     useCollectiblePreferencesStore,
     type CollectibleSortMode,
     type GalleryLayout,
@@ -44,15 +39,14 @@ import type { FilterOption } from '@components/FilterSelection'
 import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSyncRefreshAll } from '@hooks/useSyncRefresh'
-import { useBottomSheet } from '@modules/bottom-sheet'
-import { AddAssetContent } from '@modules/assets'
 import { useAccountChainFilterOptions } from '../../hooks/useAccountChainFilterOptions'
 import { useAssetListViewStore } from '../../hooks/useAssetListViewStore'
 import { useNftHoldingSources } from '../../hooks/useNftHoldingSources'
 import { useSelectedNetworkSource } from '../../hooks/useSelectedNetworkSource'
-import { NftFilterContent } from '../NftFilterContent'
-import { NftSortContent } from '../NftSortContent'
-import { ManageNftsContent, type ManageNftsAction } from '../ManageNftsContent'
+import { nftListEmptyCopy } from './nftListEmptyCopy'
+import { useGalleryScrollReset } from './useGalleryScrollReset'
+import { useNftGallerySheets } from './useNftGallerySheets'
+import { useNftGalleryRows } from './useNftGalleryRows'
 
 type UseAccountNftsResult = {
     collectibles: AccountCollectibleLiteRow[]
@@ -92,47 +86,6 @@ type UseAccountNftsResult = {
     flatListRef: React.MutableRefObject<
         Nullable<React.ComponentRef<typeof PWFlatList>>
     >
-}
-
-// A failed refresh comes first, then suspicious: a search or chip that only
-// matched hidden NFTs should say how to show them, not that nothing matched.
-const listEmptyCopy = ({
-    t,
-    isRefreshFailed,
-    isSuspiciousHidden,
-    isNetworkEmpty,
-    chainName,
-}: {
-    t: ReturnType<typeof useLanguage>['t']
-    isRefreshFailed: boolean
-    isSuspiciousHidden: boolean
-    isNetworkEmpty: boolean
-    chainName: string
-}): { title: string; body: string } => {
-    if (isRefreshFailed) {
-        return {
-            title: t('account_details.nfts.refresh_error_title'),
-            body: t('account_details.nfts.refresh_error_body'),
-        }
-    }
-    if (isSuspiciousHidden) {
-        return {
-            title: t('account_details.nfts.suspicious_hidden_title'),
-            body: t('account_details.nfts.suspicious_hidden_body'),
-        }
-    }
-    if (isNetworkEmpty) {
-        return {
-            title: t('account_details.nfts.network_empty_title'),
-            body: t('account_details.nfts.network_empty_body', {
-                chain: chainName,
-            }),
-        }
-    }
-    return {
-        title: t('account_details.nfts.nomatch_title'),
-        body: t('account_details.nfts.nomatch_body'),
-    }
 }
 
 export const useAccountNfts = (): UseAccountNftsResult => {
@@ -177,6 +130,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
     const showSuspicious = useCollectiblePreferencesStore(
         state => state.showSuspicious,
     )
+    const showHidden = useCollectiblePreferencesStore(state => state.showHidden)
     const setSortMode = useCollectiblePreferencesStore(
         state => state.setCollectibleSortMode,
     )
@@ -191,62 +145,10 @@ export const useAccountNfts = (): UseAccountNftsResult => {
     )
 
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
-    const { request: requestBottomSheet } = useBottomSheet()
-
-    const openAddNftSheet = useCallback(() => {
-        void requestBottomSheet<void>({
-            contents: (
-                <AddAssetContent
-                    variant='collectible'
-                    chainId={scope.chainId}
-                    isMultiChain={isMultiChain}
-                />
-            ),
-            options: {
-                size: 'modal',
-                enablePanDownToClose: true,
-                autoCreateContainer: false,
-            },
-        })
-    }, [requestBottomSheet, scope.chainId, isMultiChain])
-
-    const openFilterSheet = useCallback(() => {
-        void requestBottomSheet<void>({
-            contents: <NftFilterContent />,
-            options: {
-                size: 'auto',
-                enablePanDownToClose: true,
-                autoCreateContainer: false,
-            },
-        })
-    }, [requestBottomSheet])
-
-    const openSortSheet = useCallback(() => {
-        void requestBottomSheet<void>({
-            contents: <NftSortContent />,
-            options: {
-                size: 'auto',
-                enablePanDownToClose: true,
-                autoCreateContainer: false,
-            },
-        })
-    }, [requestBottomSheet])
-
-    const openManageSheet = useCallback(async () => {
-        const action = await requestBottomSheet<ManageNftsAction>({
-            contents: <ManageNftsContent />,
-            options: {
-                size: 'auto',
-                enablePanDownToClose: true,
-                autoCreateContainer: false,
-            },
-        })
-        if (action === 'sort') {
-            openSortSheet()
-        } else if (action === 'filter') {
-            openFilterSheet()
-        }
-    }, [requestBottomSheet, openSortSheet, openFilterSheet])
+    const { openAddNftSheet, openManageSheet } = useNftGallerySheets({
+        chainId: scope.chainId,
+        isMultiChain,
+    })
 
     const { acquisitionOrder } = useHoldingAcquisitionOrderQuery(
         address,
@@ -293,51 +195,16 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         includeZeroBalance: showOptedIn,
     })
 
-    // Every network and tier is read, and the chip and the suspicious filter
-    // narrow in memory, so the gallery can tell "no NFTs at all" apart from
-    // "nothing on this network" or "only suspicious ones".
-    const networkRows = useMemo(
-        () =>
-            selectedChainId === null
-                ? rows
-                : rows.filter(row => row.scope.chainId === selectedChainId),
-        [rows, selectedChainId],
-    )
-    const visibleRows = useMemo(
-        () =>
-            showSuspicious
-                ? networkRows
-                : networkRows.filter(
-                      row =>
-                          row.verificationTier !==
-                          PeraAssetVerificationTier.suspicious,
-                  ),
-        [networkRows, showSuspicious],
-    )
-
-    const collectibles = useMemo(() => {
-        if (sortMode !== 'recentlyAdded') return visibleRows
-
-        // A row with no known order is newer than the chain's view: holdings
-        // mirror the node, so only a just-acquired asset can be missing from
-        // the (lagging) map. Float those to the top so a fresh acquisition
-        // lands first instantly. `sort` is stable, so ties keep
-        // SQL's asset-id-descending order, which also covers the map's empty
-        // pre-load state. The map covers the account's own chain only.
-        const ownScopeKey = toScopeKey(scope)
-        const orderOf = (row: AccountCollectibleLiteRow) =>
-            toScopeKey(row.scope) === ownScopeKey
-                ? acquisitionOrder.get(row.assetId)
-                : undefined
-        return [...visibleRows].sort((a, b) => {
-            const aOrder = orderOf(a)
-            const bOrder = orderOf(b)
-            if (aOrder === bOrder) return 0
-            if (aOrder === undefined) return -1
-            if (bOrder === undefined) return 1
-            return bOrder - aOrder
+    const { collectibles, isUserHidden, isSuspiciousHidden } =
+        useNftGalleryRows({
+            rows,
+            selectedChainId,
+            showHidden,
+            showSuspicious,
+            sortMode,
+            acquisitionOrder,
+            scope,
         })
-    }, [visibleRows, sortMode, acquisitionOrder, scope])
 
     const handlePress = useCallback(
         (item: AccountCollectibleLiteRow) => {
@@ -348,8 +215,6 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         },
         [navigation],
     )
-
-    const flatListRef = useRef<React.ComponentRef<typeof PWFlatList>>(null)
 
     // Reordering or narrowing the gallery has to land the user on the first row.
     // Keyed on the *request* rather than on the rows it produces: a new sort is
@@ -365,49 +230,19 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         debouncedSearchFilter,
         showOptedIn,
         showSuspicious,
+        showHidden,
         // recentlyAdded is ordered by a separate query, whose order arrives
         // after the rows: the map landing is its own reorder.
         sortMode === 'recentlyAdded' ? acquisitionOrder.size : '',
     ].join('|')
-    const appliedViewRequestKeyRef = useRef(viewRequestKey)
-    const hasRowsForRequest = collectibles.length > 0 && !isPlaceholderData
+    const flatListRef = useGalleryScrollReset({
+        viewRequestKey,
+        hasRowsForRequest: collectibles.length > 0 && !isPlaceholderData,
+        galleryLayout,
+    })
 
-    useEffect(() => {
-        if (appliedViewRequestKeyRef.current === viewRequestKey) return
-        // Wait for this request's own rows: scrolling an empty list does
-        // nothing, and FlashList re-applies its remembered offset once rows
-        // arrive, undoing the reset.
-        if (!hasRowsForRequest) return
-
-        // Next frame, not this commit: FlashList settles its own offset on the
-        // layout pass that follows a data change, and a scroll issued before
-        // that pass loses to it.
-        const frame = requestAnimationFrame(() => {
-            // Recorded here, not before scheduling: every placeholder gap
-            // re-runs this effect, and the cleanup cancels the pending frame.
-            // Marking the request applied up front turned that cancellation
-            // into a reset that silently never happened, leaving the gallery
-            // wherever the previous request had scrolled it.
-            appliedViewRequestKeyRef.current = viewRequestKey
-            flatListRef.current?.scrollToOffset({ offset: 0, animated: false })
-        })
-        return () => cancelAnimationFrame(frame)
-    }, [viewRequestKey, hasRowsForRequest])
-
-    useEffect(() => {
-        if (flatListRef.current) {
-            flatListRef.current.scrollToOffset({ offset: 0, animated: false })
-        }
-    }, [galleryLayout])
-
-    const isSuspiciousHidden =
-        visibleRows.length === 0 && networkRows.length > 0
     const isNetworkEmpty =
         selectedChainId !== null && !debouncedSearchFilter.length
-    const selectedChainName =
-        selectedChainId === null
-            ? ''
-            : (chainDisplayNameOf(selectedChainId) ?? selectedChainId)
     // A failed refresh keeps the stored NFTs, so the rows are stale, not gone;
     // with none stored it must not read as "no NFTs yet". Rows are already
     // search-filtered, so a search that matches nothing is not a failed refresh.
@@ -415,12 +250,13 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         hasUnrefreshedHoldings &&
         rows.length === 0 &&
         !debouncedSearchFilter.length
-    const { title: listEmptyTitle, body: listEmptyBody } = listEmptyCopy({
+    const { title: listEmptyTitle, body: listEmptyBody } = nftListEmptyCopy({
         t,
         isRefreshFailed,
+        isUserHidden,
         isSuspiciousHidden,
         isNetworkEmpty,
-        chainName: selectedChainName,
+        selectedChainId,
     })
 
     return {

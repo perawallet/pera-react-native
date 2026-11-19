@@ -270,6 +270,12 @@
         "revoke_error_title": "İptal onaylanmadı",
         "revoke_error_body": "Tekrar denemeden önce listede onayın güncel durumuna bak."
     },
+    "nft_visibility": {
+        "hidden_badge": "Gizli",
+        "hide": "NFT’yi gizle",
+        "unhide": "NFT’yi göster",
+        "hidden_toast_body": "NFT’lerinde görünmez. Yeniden görmek için Yönet > Filtrele’de Gizlenen NFT’leri göster seçeneğini aç."
+    },
     "token_visibility": {
         "hide": "Tokenı gizle",
         "unhide": "Tokenı göster",
@@ -525,6 +531,8 @@
             "refresh_error_body": "Tekrar denemek için aşağı çek.",
             "suspicious_hidden_title": "Şüpheli NFT’ler gizlendi",
             "suspicious_hidden_body": "Pera bu NFT’leri olası spam veya dolandırıcılık olarak işaretledi. Görmek için Yönet > Filtrele’de Şüpheli NFT’leri göster seçeneğini aç.",
+            "user_hidden_title": "Gizlenen NFT’ler",
+            "user_hidden_body": "Bu NFT’leri sen gizledin. Görmek için Yönet > Filtrele’de Gizlenen NFT’leri göster seçeneğini aç.",
             "count": "{{count}} NFT",
             "count_one": "{{count}} NFT",
             "manage": "Yönet",
@@ -538,6 +546,8 @@
             "filter_watch_accounts_description": "Bu, kendi hesaplarının yanı sıra izleme hesaplarındaki NFT’leri de gösterir",
             "filter_suspicious": "Şüpheli NFT’leri göster",
             "filter_suspicious_description": "Bu, Pera’nın olası spam veya dolandırıcılık olarak işaretlediği NFT’leri de gösterir",
+            "filter_hidden": "Gizlenen NFT’leri göster",
+            "filter_hidden_description": "Bu, gizlediğin NFT’leri de gösterir, böylece onları yeniden gösterebilirsin",
             "sort_title_asc": "Ad (A-Z)",
             "sort_title_desc": "Ad (Z-A)",
             "sort_newest_first": "Yeniden eskiye",

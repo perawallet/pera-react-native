@@ -565,7 +565,8 @@ export const useAccountAssetList = ({
     const swipeActionOf = useCallback(
         (item: AccountHoldingsLiteRow): Nullable<AssetRowSwipeAction> => {
             if (canHideHolding(item.scope.chainId, item.assetId)) {
-                // The collectibles gallery never reads the hidden set.
+                // An NFT is hidden and unhidden from the gallery, whose filter
+                // lists it again; the swipe toast points at Hide Tokens.
                 const asset = assetFromHoldingLiteRow(item, item.scope.chainId)
                 return asset && isCollectible(asset) ? null : 'hide'
             }

@@ -31,6 +31,7 @@ const initialState = {
     showOptedIn: true,
     showWatchAccounts: false,
     showSuspicious: false,
+    showHidden: false,
 }
 
 export const useCollectiblePreferencesStore: UseBoundStore<
@@ -54,6 +55,9 @@ export const useCollectiblePreferencesStore: UseBoundStore<
             setShowSuspicious: (show: boolean) => {
                 set({ showSuspicious: show })
             },
+            setShowHidden: (show: boolean) => {
+                set({ showHidden: show })
+            },
             resetState: () => set(initialState),
         }),
         {
@@ -65,6 +69,7 @@ export const useCollectiblePreferencesStore: UseBoundStore<
                 galleryLayout: state.galleryLayout,
                 showOptedIn: state.showOptedIn,
                 showSuspicious: state.showSuspicious,
+                showHidden: state.showHidden,
             }),
         },
     ),

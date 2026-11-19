@@ -12,6 +12,9 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import { registerEthereumChain } from '@test-utils/chain-fixtures'
+import { registerEthereumAccountsAdapter } from '@test-utils/ethereumAccountsAdapter'
+import { useHiddenTokensStore } from '@perawallet/wallet-core-accounts'
 import { act, renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import { useCollectibleDetail } from '../useCollectibleDetail'
@@ -155,6 +158,9 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         useAllAccounts: (...args: unknown[]) => mockUseAllAccounts(...args),
         useAccountAssetBalanceQuery: (...args: unknown[]) =>
             mockUseAccountAssetBalanceQuery(...args),
+        // The real check asks the chain's assets adapter for the native id,
+        // which this spec doesn't register.
+        canHideHolding: (chainId: string) => chainId === 'ethereum',
     }
 })
 
@@ -388,6 +394,78 @@ describe('useCollectibleDetail', () => {
 
         expect(mockShowError).not.toHaveBeenCalled()
         expect(mockGoBack).not.toHaveBeenCalled()
+    })
+
+    describe('hiding', () => {
+        const ETH_ADDRESS = `0x${'a'.repeat(40)}`
+        const ETH_NFT_ID = '0xabc:7'
+        const ethAccount = {
+            id: 'eth',
+            custody: { kind: 'local', seed: null },
+            chains: {
+                ethereum: { address: ETH_ADDRESS, keyPairId: 'eth-key' },
+            },
+        }
+
+        beforeEach(() => {
+            registerEthereumChain()
+            registerEthereumAccountsAdapter()
+            useHiddenTokensStore.getState().resetState()
+            mockUseSelectedAccount.mockReturnValue(ethAccount)
+        })
+
+        const menuLabelsOf = (items: { label: string }[]) =>
+            items.map(item => item.label)
+
+        it('offers Hide NFT for a held NFT on a chain that receives unasked assets', () => {
+            const { result } = renderHook(() =>
+                useCollectibleDetail(ETH_NFT_ID, 'ethereum'),
+            )
+
+            expect(menuLabelsOf(result.current.headerMenuItems)).toEqual([
+                'nft_visibility.hide',
+            ])
+        })
+
+        it('offers no menu on a chain where the user opts in to each asset', () => {
+            const { result } = renderHook(() =>
+                useCollectibleDetail('12345', 'algorand'),
+            )
+
+            expect(result.current.headerMenuItems).toEqual([])
+        })
+
+        it('offers no menu for an NFT the account does not hold', () => {
+            mockUseAccountAssetBalanceQuery.mockReturnValue({ data: null })
+
+            const { result } = renderHook(() =>
+                useCollectibleDetail(ETH_NFT_ID, 'ethereum'),
+            )
+
+            expect(result.current.headerMenuItems).toEqual([])
+        })
+
+        it('hides the NFT, says how to see it again, then offers Unhide NFT', () => {
+            const { result } = renderHook(() =>
+                useCollectibleDetail(ETH_NFT_ID, 'ethereum'),
+            )
+
+            act(() => result.current.headerMenuItems[0].onPress())
+
+            expect(
+                Object.values(useHiddenTokensStore.getState().hiddenTokens).map(
+                    byAddress => byAddress[ETH_ADDRESS],
+                ),
+            ).toEqual([[ETH_NFT_ID]])
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    body: 'nft_visibility.hidden_toast_body',
+                }),
+            )
+            expect(menuLabelsOf(result.current.headerMenuItems)).toEqual([
+                'nft_visibility.unhide',
+            ])
+        })
     })
 
     it('returns empty traits and media when collectible is undefined', () => {

@@ -63,8 +63,8 @@ export const useHideTokensScreen = (): UseHideTokensScreenResult => {
     const showSuspicious = useAssetPreferencesStore(
         state => state.showSuspicious,
     )
-    // Suspicious and zero-balance tokens are as hideable as any; NFTs are not,
-    // as the collectibles gallery never reads the hidden set.
+    // Suspicious and zero-balance tokens are as hideable as any. NFTs are hidden
+    // from their detail screen and listed again from the gallery's filter.
     const { holdings, isPending: isHoldingsPending } = useAccountAssetsQuery(
         sources,
         { sortMode: 'alphabeticalAsc', filters: HIDEABLE_FILTERS },

@@ -595,6 +595,58 @@ describe('account holdings queries', () => {
                 await getAccountCollectiblesLite({ db, sources: [] }),
             ).toEqual([])
         })
+
+        describe('isHidden', () => {
+            const hide = (address: string, assetId: string) =>
+                useHiddenTokensStore.getState().setTokenHidden({
+                    address,
+                    scope: MAINNET_SCOPE,
+                    assetId,
+                    isHidden: true,
+                })
+            const hiddenIdsOf = async (address: string) =>
+                (
+                    await getAccountCollectiblesLite({
+                        db,
+                        sources: [{ address, scope: MAINNET_SCOPE }],
+                    })
+                )
+                    .filter(row => row.isHidden)
+                    .map(row => row.assetId)
+
+            beforeEach(() => {
+                useHiddenTokensStore.getState().resetState()
+            })
+
+            afterEach(() => {
+                useHiddenTokensStore.getState().resetState()
+            })
+
+            it('marks the collectibles the account hid and keeps them listed', async () => {
+                hide('ADDR1', '10')
+
+                const rows = await getAccountCollectiblesLite({
+                    db,
+                    sources: [{ address: 'ADDR1', scope: MAINNET_SCOPE }],
+                })
+
+                expect(rows).toHaveLength(3)
+                expect(await hiddenIdsOf('ADDR1')).toEqual(['10'])
+            })
+
+            it('marks nothing for another account', async () => {
+                hide('ADDR2', '10')
+
+                expect(await hiddenIdsOf('ADDR1')).toEqual([])
+            })
+
+            it('marks nothing on a chain where the user opts in to each asset', async () => {
+                hide('ADDR1', '10')
+                registerFakeNativeAsset(6, { requiresAssetOptIn: true })
+
+                expect(await hiddenIdsOf('ADDR1')).toEqual([])
+            })
+        })
     })
 
     describe('holdings page', () => {

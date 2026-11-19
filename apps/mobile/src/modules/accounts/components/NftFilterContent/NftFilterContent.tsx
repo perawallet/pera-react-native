@@ -32,9 +32,12 @@ export const NftFilterContent = () => {
         showOptedIn,
         showWatchAccounts,
         showSuspicious,
+        canShowHidden,
+        showHidden,
         handleToggleOptedIn,
         handleToggleWatchAccounts,
         handleToggleSuspicious,
+        handleToggleHidden,
         commitChanges,
     } = useNftFilterContent()
 
@@ -121,6 +124,29 @@ export const NftFilterContent = () => {
                     testID='nft_filter_suspicious'
                 />
             </PWView>
+
+            {canShowHidden && (
+                <PWView style={styles.filterRow}>
+                    <PWView style={styles.filterTextContainer}>
+                        <PWText style={styles.filterLabel}>
+                            {t('account_details.nfts.filter_hidden')}
+                        </PWText>
+                        <PWText
+                            variant='caption'
+                            style={styles.filterDescription}
+                        >
+                            {t(
+                                'account_details.nfts.filter_hidden_description',
+                            )}
+                        </PWText>
+                    </PWView>
+                    <PWSwitch
+                        value={showHidden}
+                        onValueChange={handleToggleHidden}
+                        testID='nft_filter_hidden'
+                    />
+                </PWView>
+            )}
         </PWSheetLayout>
     )
 }

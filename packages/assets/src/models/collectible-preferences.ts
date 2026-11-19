@@ -36,9 +36,12 @@ export type CollectiblePreferencesState = BaseStoreState & {
     showOptedIn: boolean
     showWatchAccounts: boolean
     showSuspicious: boolean
+    /** List NFTs the user hid, so they can be unhidden from their detail screen. */
+    showHidden: boolean
     setCollectibleSortMode: (mode: CollectibleSortMode) => void
     setGalleryLayout: (layout: GalleryLayout) => void
     setShowOptedIn: (show: boolean) => void
     setShowWatchAccounts: (show: boolean) => void
     setShowSuspicious: (show: boolean) => void
+    setShowHidden: (show: boolean) => void
 }

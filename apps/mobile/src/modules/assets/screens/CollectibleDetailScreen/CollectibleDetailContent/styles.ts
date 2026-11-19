@@ -29,6 +29,11 @@ export const useStyles = makeStyles(theme => ({
     collectionName: {
         color: theme.colors.textGray,
     },
+    headerActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.lg,
+    },
     accountRow: {
         flexDirection: 'row',
         alignItems: 'center',

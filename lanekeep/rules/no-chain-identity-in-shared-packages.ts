@@ -165,7 +165,7 @@ const ALLOWED: readonly Allowed[] = [
         reason: 'Narrows the asset list to whichever chain the selected chip names, never a named chain.',
     },
     {
-        file: 'apps/mobile/src/modules/accounts/components/AccountNfts/useAccountNfts.tsx',
+        file: 'apps/mobile/src/modules/accounts/components/AccountNfts/useNftGalleryRows.ts',
         text: 'row.scope.chainId === selectedChainId',
         reason: 'Narrows the NFT gallery to whichever chain the selected chip names, never a named chain.',
     },

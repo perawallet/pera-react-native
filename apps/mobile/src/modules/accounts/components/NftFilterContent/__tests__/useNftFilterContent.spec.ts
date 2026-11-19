@@ -15,6 +15,8 @@ import { renderHook, act } from '@test-utils/render'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
+import { registerEthereumChain } from '@test-utils/chain-fixtures'
+import { registerEthereumAccountsAdapter } from '@test-utils/ethereumAccountsAdapter'
 import { useNftFilterContent } from '../useNftFilterContent'
 
 const ALGORAND_ACCOUNT = {
@@ -23,14 +25,22 @@ const ALGORAND_ACCOUNT = {
     chains: { algorand: { address: 'ALGO' } },
 }
 
+const ETHEREUM_ACCOUNT = {
+    id: 'eth',
+    custody: { kind: 'watch' },
+    chains: { ethereum: { address: `0x${'a'.repeat(40)}` } },
+}
+
 const h = vi.hoisted(() => ({
     state: {
         showOptedIn: false,
         showWatchAccounts: true,
         showSuspicious: false,
+        showHidden: false,
         setShowOptedIn: vi.fn(),
         setShowWatchAccounts: vi.fn(),
         setShowSuspicious: vi.fn(),
+        setShowHidden: vi.fn(),
     },
 }))
 
@@ -45,6 +55,7 @@ describe('useNftFilterContent', () => {
         h.state.showOptedIn = false
         h.state.showWatchAccounts = true
         h.state.showSuspicious = false
+        h.state.showHidden = false
         useRemoteConfigStore.getState().resetState()
         vi.mocked(useSelectedAccount).mockReturnValue(ALGORAND_ACCOUNT as never)
     })
@@ -102,5 +113,32 @@ describe('useNftFilterContent', () => {
 
         act(() => result.current.commitChanges())
         expect(h.state.setShowSuspicious).toHaveBeenCalledWith(true)
+    })
+
+    it('offers no hidden toggle when no gallery chain lets the user hide NFTs', () => {
+        const { result } = renderHook(() => useNftFilterContent())
+
+        expect(result.current.canShowHidden).toBe(false)
+    })
+
+    it('offers the hidden toggle on a chain that receives unasked assets', () => {
+        registerEthereumChain()
+        registerEthereumAccountsAdapter()
+        vi.mocked(useSelectedAccount).mockReturnValue(ETHEREUM_ACCOUNT as never)
+
+        const { result } = renderHook(() => useNftFilterContent())
+
+        expect(result.current.canShowHidden).toBe(true)
+    })
+
+    it('shows hidden NFTs only once the user commits the toggle', () => {
+        const { result } = renderHook(() => useNftFilterContent())
+
+        act(() => result.current.handleToggleHidden())
+        expect(result.current.showHidden).toBe(true)
+        expect(h.state.setShowHidden).not.toHaveBeenCalled()
+
+        act(() => result.current.commitChanges())
+        expect(h.state.setShowHidden).toHaveBeenCalledWith(true)
     })
 })

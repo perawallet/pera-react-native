@@ -11,7 +11,10 @@
  */
 
 import { useCallback, useState } from 'react'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import {
+    receivesUnaskedAssets,
+    useSelectedAccount,
+} from '@perawallet/wallet-core-accounts'
 import { useCollectiblePreferencesStore } from '@perawallet/wallet-core-assets'
 import { useCapabilityCheck } from '@hooks/useCapability'
 import { useNftHoldingSources } from '../../hooks/useNftHoldingSources'
@@ -22,9 +25,13 @@ type UseNftFilterContentResult = {
     showOptedIn: boolean
     showWatchAccounts: boolean
     showSuspicious: boolean
+    /** Only a chain that receives unasked assets has NFTs the user can hide. */
+    canShowHidden: boolean
+    showHidden: boolean
     handleToggleOptedIn: () => void
     handleToggleWatchAccounts: () => void
     handleToggleSuspicious: () => void
+    handleToggleHidden: () => void
     commitChanges: () => void
 }
 
@@ -33,6 +40,9 @@ export const useNftFilterContent = (): UseNftFilterContentResult => {
     const checkCapability = useCapabilityCheck()
     const canShowOptedIn = sources.some(({ scope: { chainId } }) =>
         checkCapability({ chain: { chainId, capability: 'manageAssets' } }),
+    )
+    const canShowHidden = sources.some(({ scope: { chainId } }) =>
+        receivesUnaskedAssets(chainId),
     )
     const showOptedIn = useCollectiblePreferencesStore(
         state => state.showOptedIn,
@@ -43,6 +53,7 @@ export const useNftFilterContent = (): UseNftFilterContentResult => {
     const showSuspicious = useCollectiblePreferencesStore(
         state => state.showSuspicious,
     )
+    const showHidden = useCollectiblePreferencesStore(state => state.showHidden)
     const setShowOptedIn = useCollectiblePreferencesStore(
         state => state.setShowOptedIn,
     )
@@ -52,12 +63,16 @@ export const useNftFilterContent = (): UseNftFilterContentResult => {
     const setShowSuspicious = useCollectiblePreferencesStore(
         state => state.setShowSuspicious,
     )
+    const setShowHidden = useCollectiblePreferencesStore(
+        state => state.setShowHidden,
+    )
 
     const [draftShowOptedIn, setDraftShowOptedIn] = useState(showOptedIn)
     const [draftShowWatchAccounts, setDraftShowWatchAccounts] =
         useState(showWatchAccounts)
     const [draftShowSuspicious, setDraftShowSuspicious] =
         useState(showSuspicious)
+    const [draftShowHidden, setDraftShowHidden] = useState(showHidden)
 
     const handleToggleOptedIn = useCallback(() => {
         setDraftShowOptedIn(prev => !prev)
@@ -71,17 +86,24 @@ export const useNftFilterContent = (): UseNftFilterContentResult => {
         setDraftShowSuspicious(prev => !prev)
     }, [])
 
+    const handleToggleHidden = useCallback(() => {
+        setDraftShowHidden(prev => !prev)
+    }, [])
+
     const commitChanges = useCallback(() => {
         setShowOptedIn(draftShowOptedIn)
         setShowWatchAccounts(draftShowWatchAccounts)
         setShowSuspicious(draftShowSuspicious)
+        setShowHidden(draftShowHidden)
     }, [
         draftShowOptedIn,
         draftShowWatchAccounts,
         draftShowSuspicious,
+        draftShowHidden,
         setShowOptedIn,
         setShowWatchAccounts,
         setShowSuspicious,
+        setShowHidden,
     ])
 
     return {
@@ -89,9 +111,12 @@ export const useNftFilterContent = (): UseNftFilterContentResult => {
         showOptedIn: draftShowOptedIn,
         showWatchAccounts: draftShowWatchAccounts,
         showSuspicious: draftShowSuspicious,
+        canShowHidden,
+        showHidden: draftShowHidden,
         handleToggleOptedIn,
         handleToggleWatchAccounts,
         handleToggleSuspicious,
+        handleToggleHidden,
         commitChanges,
     }
 }
