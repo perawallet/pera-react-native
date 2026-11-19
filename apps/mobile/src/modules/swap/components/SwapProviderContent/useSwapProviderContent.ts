@@ -21,6 +21,7 @@ import {
     sortQuotesByAmountOutDesc,
     type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
+import { swapProviderDisplayName } from '../../utils/swapProviderDisplayName'
 
 type UseSwapProviderContentParams = {
     scope: ChainScope
@@ -63,16 +64,16 @@ export const useSwapProviderContent = ({
         [scope.chainId],
     )
 
-    const sortedQuotes = useMemo(
-        () => sortQuotesByAmountOutDesc(quotes),
-        [quotes],
-    )
-
-    // Auto row already represents the top quote; drop it from the explicit list.
-    const alternativeQuotes = useMemo(
-        () => sortedQuotes.slice(1),
-        [sortedQuotes],
-    )
+    const alternativeQuotes = useMemo(() => {
+        const uniqueProviders = new Map<string, SwapQuote>()
+        for (const quote of sortQuotesByAmountOutDesc(quotes)) {
+            if (!uniqueProviders.has(quote.provider)) {
+                uniqueProviders.set(quote.provider, quote)
+            }
+        }
+        // Auto already represents the provider with the top offer.
+        return [...uniqueProviders.values()].slice(1)
+    }, [quotes])
 
     const rows = useMemo<SwapProviderRow[]>(
         () =>
@@ -88,7 +89,7 @@ export const useSwapProviderContent = ({
                     : null
                 return {
                     quote,
-                    displayName: quote.provider,
+                    displayName: swapProviderDisplayName(quote.provider),
                     amountDisplay,
                     fiatValue,
                 }
