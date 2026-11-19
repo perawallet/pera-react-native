@@ -233,6 +233,36 @@ describe('useOnrampQuotes', () => {
         expect(result.current.selectedQuote?.quoteId).toBe('picked-2')
     })
 
+    it('follows the best offer within a picked payment method across refreshes', async () => {
+        const offers = (suffix: string, bestProvider: string): RampQuote[] =>
+            ['A', 'B'].map(provider => ({
+                ...quote(`${provider}-${suffix}`, 'meld'),
+                provider,
+                paymentMethod: { id: 'BANK', logo: null, name: 'Bank' },
+                destinationAmount: new Decimal(
+                    provider === bestProvider ? 9 : 5,
+                ),
+            }))
+        mockCreateQuote.mockResolvedValue([
+            { ...quote('card-1', 'meld'), destinationAmount: new Decimal(20) },
+            ...offers('1', 'A'),
+        ])
+        const { result } = render({ pair: FIAT_PAIR })
+        await settle()
+        act(() => result.current.selectPaymentMethod('BANK'))
+        expect(result.current.selectedQuote?.quoteId).toBe('A-1')
+
+        mockCreateQuote.mockResolvedValue([
+            { ...quote('card-2', 'meld'), destinationAmount: new Decimal(20) },
+            ...offers('2', 'B'),
+        ])
+        act(() => result.current.refreshQuotes())
+        await settle()
+
+        expect(result.current.selectedQuote?.quoteId).toBe('B-2')
+        expect(result.current.isBestOffer).toBe(true)
+    })
+
     it('falls back to the best offer once the chosen pair is no longer offered', async () => {
         mockCreateQuote.mockResolvedValue([
             { ...quote('best-1', 'meld'), provider: 'A' },

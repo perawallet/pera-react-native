@@ -99,8 +99,11 @@ export const useOnrampQuotes = ({
 
     const [quotes, setQuotes] = useState<RampQuote[]>([])
     // Keyed by provider + method, not quoteId: every re-quote mints new ids.
+    // A null provider means the best offer within the method.
     const [selection, setSelection] =
-        useState<Nullable<{ provider: string; paymentMethodId: string }>>(null)
+        useState<
+            Nullable<{ provider: Nullable<string>; paymentMethodId: string }>
+        >(null)
     const [isQuoting, setIsQuoting] = useState(false)
     const [quotesError, setQuotesError] = useState<Nullable<string>>(null)
     const [quoteLimits, setQuoteLimits] =
@@ -342,6 +345,16 @@ export const useOnrampQuotes = ({
 
     const selectedQuote = useMemo<Nullable<RampQuote>>(() => {
         if (selection === null) return bestQuote
+        if (selection.provider === null) {
+            return (
+                pickBestQuote(
+                    filterQuotesByPaymentMethod(
+                        quotes,
+                        selection.paymentMethodId,
+                    ),
+                ) ?? bestQuote
+            )
+        }
         return (
             quotes.find(
                 quote =>
@@ -375,21 +388,12 @@ export const useOnrampQuotes = ({
         return pickBestQuote(sameMethod)?.quoteId === selectedQuote.quoteId
     }, [quotes, selectedQuote])
 
-    // Choosing a payment method selects the best quote offering that method.
+    // Choosing a payment method follows its best offer across refreshes; only
+    // a provider pick pins the provider.
     const selectPaymentMethod = useCallback(
-        (paymentMethodId: string) => {
-            const candidates = quotes.filter(
-                quote => quote.paymentMethod.id === paymentMethodId,
-            )
-            const best = pickBestQuote(candidates)
-            if (best) {
-                setSelection({
-                    provider: best.provider,
-                    paymentMethodId: best.paymentMethod.id,
-                })
-            }
-        },
-        [quotes],
+        (paymentMethodId: string) =>
+            setSelection({ provider: null, paymentMethodId }),
+        [],
     )
 
     return {
