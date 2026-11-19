@@ -235,6 +235,9 @@ const tokenDepositRecipientOf = (
  * names a different contract and deposit address per order, so those and the
  * swap's arguments are trusted to XO and checked by its and Pera's backends; the
  * wallet refuses the calls it can see move the account's assets by themselves.
+ * Anything it doesn't list passes: a call on a protocol where the account holds
+ * a position (a vault, a lending pool, an LP) can move that position, as can a
+ * contract the account already gave a larger allowance.
  */
 export const validateEvmSwapTransactions = ({
     calls,
@@ -269,7 +272,7 @@ export const validateEvmSwapTransactions = ({
     const swap = calls[calls.length - 1]
     const approval = calls.length === MAX_SWAP_CALLS ? calls[0] : null
 
-    if (token && !approval) {
+    if (token !== null && !approval) {
         const recipient = tokenDepositRecipientOf(swap, {
             token,
             sender,
@@ -301,7 +304,7 @@ export const validateEvmSwapTransactions = ({
             isPaidOutLater: true,
         }
     }
-    if (token && areEvmAddressesEqual(swap.to, token)) {
+    if (token !== null && areEvmAddressesEqual(swap.to, token)) {
         refuse('The swap calls the asset being swapped')
     }
     if (approval) {

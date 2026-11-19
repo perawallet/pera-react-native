@@ -515,7 +515,9 @@ export const executeEvmSwap = async ({
     // Past the order's deadline the swap reverts at the user's gas. An approval's
     // wait or the final signature, a Ledger's above all, can outlast it, so it is
     // checked before the swap is signed and again before it is sent. A grant
-    // stays: it covers the re-quoted swap too.
+    // stays, at most this swap's amount, to this order's contract: the re-quote
+    // may name another, which leaves it unused. Revoking would cost the user
+    // another signature and gas for an allowance XO's own contract holds.
     if (!isQuoteFresh(quote) || isOrderExpired(order)) {
         cancelOrder()
         return { kind: 'stale-quote' }

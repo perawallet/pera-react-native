@@ -27,6 +27,7 @@ import {
     type SwapQuoteRequest,
 } from '@perawallet/wallet-core-swaps'
 import { ETHEREUM, evmScopeOf } from '../../__tests__/evm-chains'
+import { KNOWN_EVM_CONTRACTS } from '../../signing/known-contracts'
 import type { EvmSwapCall } from '../decode-swap-transaction'
 import { validateEvmSwapTransactions } from '../validate-swap-transactions'
 
@@ -366,5 +367,38 @@ describe('validateEvmSwapTransactions', () => {
         expect(() => validate([call({ data: upper })], NATIVE_REQUEST)).toThrow(
             SwapQuoteMismatchError,
         )
+    })
+
+    // The wallet can't tell these from a swap; simulating the order is the
+    // follow-up that would catch one that takes more than the swap.
+    describe('lets through what it cannot tell from a swap', () => {
+        const known = (kind: string) =>
+            KNOWN_EVM_CONTRACTS[1].find(contract => contract.kind === kind)!
+                .address
+
+        it.each([
+            ['another token the account may hold', OTHER_TOKEN],
+            [
+                'a lending pool where it may hold a position',
+                known('aave-v3-pool'),
+            ],
+            ['an LP position manager', known('uniswap-v3-position-manager')],
+        ])('an unlisted call on %s', (_name, to) => {
+            const swap = call({ to, data: '0x12345678' })
+
+            expect(validate([swap], NATIVE_REQUEST).swap).toBe(swap)
+        })
+
+        it('but not a call on the source token itself, even an unwrap', () => {
+            const weth = known('wrapped-native')
+            const swap = call({
+                to: weth,
+                data: selectorOf('withdraw(uint256)'),
+            })
+
+            expect(() => validate([swap], requestFor(weth))).toThrow(
+                SwapQuoteMismatchError,
+            )
+        })
     })
 })

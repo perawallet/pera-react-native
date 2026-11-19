@@ -183,7 +183,7 @@ const evmContext: ChainContext = {
 }
 
 // Runs the registered adapter's swap against the fixture node at RPC_URL.
-const useFixtureNode = () => {
+const runOnFixtureNode = () => {
     const registered = swapChainAdapters.get('ethereum')
     const adapter = createEvmSwapAdapter(evmContext, evmChainOf('ethereum'))
     vi.spyOn(registered, 'executeSwap').mockImplementation(adapter.executeSwap)
@@ -482,7 +482,7 @@ describe('Flow: Swap from an Ethereum account', () => {
         useSwapsStore.getState().resetState()
         await useRemoteConfigStore.persist.rehydrate()
         vi.spyOn(kmsCore, 'sign').mockImplementation(signWithSenderKey)
-        useFixtureNode()
+        runOnFixtureNode()
     })
     afterEach(() => {
         host = null
