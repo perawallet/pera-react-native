@@ -405,7 +405,7 @@ importers:
         version: 4.23.15
       turbo:
         specifier: ^2.11.9
-        version: 2.11.10
+        version: 2.11.11
       util:
         specifier: 'catalog:'
         version: 0.12.5
@@ -1630,7 +1630,7 @@ importers:
         version: link:../../packages/shared
       drizzle-orm:
         specifier: 'catalog:'
-        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.0.3)(expo-sqlite@58.0.18(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))
+        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.1.1)(expo-sqlite@58.0.18(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
@@ -1676,7 +1676,7 @@ importers:
         version: 11.12.0
       drizzle-orm:
         specifier: 'catalog:'
-        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.0.3)(expo-sqlite@58.0.18(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))
+        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.1.1)(expo-sqlite@58.0.18(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))
       firebase:
         specifier: ^13.1.0
         version: 13.1.0
@@ -1695,7 +1695,7 @@ importers:
         version: 20.19.43
       better-sqlite3:
         specifier: ^13.0.3
-        version: 13.0.3
+        version: 13.1.1
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1759,7 +1759,7 @@ importers:
         version: 27.0.0(@react-native-firebase/analytics@27.0.0(@react-native-firebase/app@27.0.0(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(expo@58.0.17))(@react-native-firebase/app@27.0.0(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))
       drizzle-orm:
         specifier: 'catalog:'
-        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.0.3)(expo-sqlite@58.0.18(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))
+        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.1.1)(expo-sqlite@58.0.18(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))
       expo:
         specifier: 'catalog:'
         version: 58.0.17(@babel/core@7.29.13)(@expo/dom-webview@58.0.2)(react-dom@19.3.0(react@19.3.0))(react-native-web@0.21.4(patch_hash=d74d289d61c4f13cd081ceb71b5a2ab4fd828cd1a063e337a43f5ab3fc0292e1)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-native-webview@14.0.1(patch_hash=6bdefba5a7e63c5f23afc5e15ef2769384591a98aae366b39449b14833b525fb)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(react-native-worklets@0.13.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(typescript@7.0.2)
@@ -1814,7 +1814,7 @@ importers:
         version: 19.3.0
       better-sqlite3:
         specifier: ^13.0.3
-        version: 13.0.3
+        version: 13.1.1
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -2014,7 +2014,7 @@ importers:
         version: 10.6.0
       drizzle-orm:
         specifier: 'catalog:'
-        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.0.3)(expo-sqlite@58.0.18(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))
+        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.1.1)(expo-sqlite@58.0.18(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))
       react:
         specifier: 19.3.0
         version: 19.3.0
@@ -2133,7 +2133,7 @@ importers:
         version: 10.6.0
       drizzle-orm:
         specifier: 'catalog:'
-        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.0.3)(expo-sqlite@58.0.18(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))
+        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.1.1)(expo-sqlite@58.0.18(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))
       react:
         specifier: 19.3.0
         version: 19.3.0
@@ -2680,7 +2680,7 @@ importers:
         version: 19.3.0
       drizzle-orm:
         specifier: 'catalog:'
-        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.0.3)(expo-sqlite@58.0.18(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))
+        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.1.1)(expo-sqlite@58.0.18(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))
       falcon-1024:
         specifier: 'catalog:'
         version: 0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a)
@@ -2859,7 +2859,7 @@ importers:
         version: 5.101.2(react@19.3.0)
       drizzle-orm:
         specifier: 'catalog:'
-        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.0.3)(expo-sqlite@58.0.18(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))
+        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.1.1)(expo-sqlite@58.0.18(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))
       react:
         specifier: 19.3.0
         version: 19.3.0
@@ -3085,7 +3085,7 @@ importers:
         version: 10.6.0
       drizzle-orm:
         specifier: 'catalog:'
-        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.0.3)(expo-sqlite@58.0.18(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))
+        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.1.1)(expo-sqlite@58.0.18(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))
       react:
         specifier: 19.3.0
         version: 19.3.0
@@ -3162,7 +3162,7 @@ importers:
         version: 10.6.0
       drizzle-orm:
         specifier: 'catalog:'
-        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.0.3)(expo-sqlite@58.0.18(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))
+        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.1.1)(expo-sqlite@58.0.18(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
@@ -3172,7 +3172,7 @@ importers:
         version: 7.6.13
       better-sqlite3:
         specifier: ^13.0.3
-        version: 13.0.3
+        version: 13.1.1
       drizzle-kit:
         specifier: ^0.31.10
         version: 0.31.11
@@ -3783,7 +3783,7 @@ importers:
         version: 5.101.2(react@19.3.0)
       drizzle-orm:
         specifier: 'catalog:'
-        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.0.3)(expo-sqlite@58.0.18(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))
+        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.1.1)(expo-sqlite@58.0.18(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))
       react:
         specifier: 19.3.0
         version: 19.3.0
@@ -4323,7 +4323,7 @@ importers:
         version: 10.6.0
       drizzle-orm:
         specifier: 'catalog:'
-        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.0.3)(expo-sqlite@58.0.18(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))
+        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.1.1)(expo-sqlite@58.0.18(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))
       react:
         specifier: 19.3.0
         version: 19.3.0
@@ -4381,7 +4381,7 @@ importers:
         version: 5.101.2(react@19.3.0)
       drizzle-orm:
         specifier: 'catalog:'
-        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.0.3)(expo-sqlite@58.0.18(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))
+        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.1.1)(expo-sqlite@58.0.18(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))
       punycode:
         specifier: 'catalog:'
         version: 2.3.1
@@ -4594,7 +4594,7 @@ importers:
         version: 10.6.0
       drizzle-orm:
         specifier: 'catalog:'
-        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.0.3)(expo-sqlite@58.0.18(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))
+        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.1.1)(expo-sqlite@58.0.18(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))
       react:
         specifier: 19.3.0
         version: 19.3.0
@@ -6647,6 +6647,7 @@ packages:
 
   '@ledgerhq/react-native-hid@6.39.5':
     resolution: {integrity: sha512-q12Q9Qr0wgOen82JX/asSXhLPQITwa5L2n+efP+lJoqrqqvwfu1C2MZ8Nu5qWIFQDB7G121MnzwZGp/TNGQtrw==}
+    deprecated: This package is no longer maintained. Use @ledgerhq/device-transport-kit-react-native-hid instead.
     peerDependencies:
       react-native: 0.88.0
 
@@ -7662,33 +7663,33 @@ packages:
       '@types/react-dom':
         optional: true
 
-  '@turbo/darwin-64@2.11.10':
-    resolution: {integrity: sha512-By4idRap5+nLnMuRzLB4qkOPRlvNdyY1ne4VJYDyUoUB11H94k7uif9mbe3JT8JSNXs1D68uMcBj6hJ/jMQRvA==}
+  '@turbo/darwin-64@2.11.11':
+    resolution: {integrity: sha512-HMMeUIEAsmyIbSYn1ySvF/4gGMa0joiTMq4dQDuloIAnOpbtFT3JEiVsYnASdTWDXvplbRbZlqjU1EBeSR9G1A==}
     cpu: [x64]
     os: [darwin]
 
-  '@turbo/darwin-arm64@2.11.10':
-    resolution: {integrity: sha512-pyEYlVcuexOPa92p0Wlwl9YT1Is5D60lxN3ItWm3g30YLvFaUq86TF4BBWg5ZAc0uMTnrOzCvuCsOBTdzUWnRQ==}
+  '@turbo/darwin-arm64@2.11.11':
+    resolution: {integrity: sha512-+8iySNgqYWY6PZYUQzYu6zn0C04z2OEq1vQ6oMGsJ9sxN6wOpg1gzi1AJ5VKDHviWvMUjhqng51hTEQZOuiqYQ==}
     cpu: [arm64]
     os: [darwin]
 
-  '@turbo/linux-64@2.11.10':
-    resolution: {integrity: sha512-1tYeR/IDZ5HEdsb0jNq2L2xam5nMQ+g80tlV2BZmv4OFw+pMcUM0mMmUcfc5wXPPNHVNPuDMjh9Y8G8HgXPLZA==}
+  '@turbo/linux-64@2.11.11':
+    resolution: {integrity: sha512-uImTKFYCFKsoFxjaXeJXlMPv4uU3OIIDjyzoIwYVqOtu9LnCZ/5/fzu/WP6+G9YfwGAPRplTHkKFfcI5t97RGw==}
     cpu: [x64]
     os: [android, linux]
 
-  '@turbo/linux-arm64@2.11.10':
-    resolution: {integrity: sha512-HuekQxvVGhUd46g1Im/DKdOtglHr4/gguZAvzEpPUgtxNkztSa8lWhQEGQ+EmPQ0n7w19qjThFU+OfEEd0uvlw==}
+  '@turbo/linux-arm64@2.11.11':
+    resolution: {integrity: sha512-Y7xffSVfyyYRGzNy6PLdrFL4xXN6iTuR3W0SyJvH/yd3d4defA6dansZwJpPDVnIpD8a2Qn256DwY/Qin4Ip4g==}
     cpu: [arm64]
     os: [android, linux]
 
-  '@turbo/windows-64@2.11.10':
-    resolution: {integrity: sha512-UJOP3BkbreY3/JlMgJR6ZiimxYIBn+c+B4tnBIxD0E9c3Estmk+XoVNVBNBottZLNRXe3/ScgOU4+/k8tIWysg==}
+  '@turbo/windows-64@2.11.11':
+    resolution: {integrity: sha512-e2WqNtkPGo3QDwNNwwBo89Dx3PtSJ9Wp9QuRNzn80rrRnSHB+1mfBMZTpdHjA8/G/sG9rl76TdWdpgVsimjRdg==}
     cpu: [x64]
     os: [win32]
 
-  '@turbo/windows-arm64@2.11.10':
-    resolution: {integrity: sha512-xOkEjF3ws/b/YNlc+bvJHMYBn+vL+QbEISZFVi0qS+ImmhA1X3/gmNmBrjjIG3dg6aeN+n6gQitzSkXQ286qJQ==}
+  '@turbo/windows-arm64@2.11.11':
+    resolution: {integrity: sha512-LURivfmgv34Osm8NR1gZGx4vdlux9KAgRM+FoooXNG0838ff0+akWZ76iPSke0NS2rsf7Z4Gw+YSaygzNTZuRA==}
     cpu: [arm64]
     os: [win32]
 
@@ -8259,8 +8260,8 @@ packages:
   before-after-hook@4.0.0:
     resolution: {integrity: sha512-q6tR3RPqIB1pMiTRMFcZwuG5T8vwp+vUvEG0vuI6B+Rikh5BfPp2fQ82c925FOs+b0lcFQ8CFrL+KbilfZFhOQ==}
 
-  better-sqlite3@13.0.3:
-    resolution: {integrity: sha512-RbOBxmLBG8uvFUc15X9+9SFemKcQ0WBuISBVkpuiaUB2qblC8UWlHEjdWVoZ8AdhSwmoEgsiXKfopX0CQxaACQ==}
+  better-sqlite3@13.1.1:
+    resolution: {integrity: sha512-JjyLCATp+VLxZVFyWkicyzKYwpEFLCrV4MmshW97xv3JXdhw5jBDcsbEWRGm2L/96E+k7rtjON8q9nml05h3Pw==}
     engines: {node: '>=22'}
 
   bidi-js@1.0.3:
@@ -10232,8 +10233,8 @@ packages:
   node-addon-api@2.0.2:
     resolution: {integrity: sha512-Ntyt4AIXyaLIuMHF6IOoTakB3K+RWxwtsHNRxllEoA6vPwP9o4866g6YWDLUdnucilZhmkxiHwHr11gAENw+QA==}
 
-  node-addon-api@8.9.1:
-    resolution: {integrity: sha512-4eUQWVPCUUUiBjLnHS3cXWeC6ryoPUc0U3rP7IuzapoGbzMqd/r6KKO0clr0b+snQhsrueFEhCZDdK+LK7hxKg==}
+  node-addon-api@8.9.2:
+    resolution: {integrity: sha512-VijLXbi3UACN69I0JVXJsX4tjACjNoQDgv2gTF6sx2wWEi8tkSg2eX8p5gSIFi8z2+DL3oHmY6OyKce38SDolg==}
     engines: {node: ^18 || ^20 || >= 21}
 
   node-fetch-native@1.6.7:
@@ -11408,8 +11409,8 @@ packages:
     engines: {node: '>=18.0.0'}
     hasBin: true
 
-  turbo@2.11.10:
-    resolution: {integrity: sha512-3GJYwig8ygEI89oaOZdduJX8/aw6O9eRPYHoIt6T3FZl9hkKjiyIspufJoVgqXihPoJu8M5CSV0DlZvzfohBCw==}
+  turbo@2.11.11:
+    resolution: {integrity: sha512-AI4UJbUE/2cVZdoXJ4PODc8qvrjhQQX9Fa93eKGOI6Ims/w7+kUIb9T1jhlgSnZcf+gtUruci/ohSwqtNNC5Yw==}
     hasBin: true
 
   tweetnacl@1.0.3:
@@ -15236,22 +15237,22 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.3.0
 
-  '@turbo/darwin-64@2.11.10':
+  '@turbo/darwin-64@2.11.11':
     optional: true
 
-  '@turbo/darwin-arm64@2.11.10':
+  '@turbo/darwin-arm64@2.11.11':
     optional: true
 
-  '@turbo/linux-64@2.11.10':
+  '@turbo/linux-64@2.11.11':
     optional: true
 
-  '@turbo/linux-arm64@2.11.10':
+  '@turbo/linux-arm64@2.11.11':
     optional: true
 
-  '@turbo/windows-64@2.11.10':
+  '@turbo/windows-64@2.11.11':
     optional: true
 
-  '@turbo/windows-arm64@2.11.10':
+  '@turbo/windows-arm64@2.11.11':
     optional: true
 
   '@types/aria-query@5.0.4': {}
@@ -16013,9 +16014,9 @@ snapshots:
 
   before-after-hook@4.0.0: {}
 
-  better-sqlite3@13.0.3:
+  better-sqlite3@13.1.1:
     dependencies:
-      node-addon-api: 8.9.1
+      node-addon-api: 8.9.2
 
   bidi-js@1.0.3:
     dependencies:
@@ -16495,10 +16496,10 @@ snapshots:
       esbuild: 0.25.12
       tsx: 4.23.15
 
-  drizzle-orm@0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.0.3)(expo-sqlite@58.0.18(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)):
+  drizzle-orm@0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.1.1)(expo-sqlite@58.0.18(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)):
     optionalDependencies:
       '@types/better-sqlite3': 7.6.13
-      better-sqlite3: 13.0.3
+      better-sqlite3: 13.1.1
       expo-sqlite: 58.0.18(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)
 
   dunder-proto@1.0.1:
@@ -18125,7 +18126,7 @@ snapshots:
 
   node-addon-api@2.0.2: {}
 
-  node-addon-api@8.9.1: {}
+  node-addon-api@8.9.2: {}
 
   node-fetch-native@1.6.7: {}
 
@@ -19339,14 +19340,14 @@ snapshots:
     optionalDependencies:
       fsevents: 2.3.3
 
-  turbo@2.11.10:
+  turbo@2.11.11:
     optionalDependencies:
-      '@turbo/darwin-64': 2.11.10
-      '@turbo/darwin-arm64': 2.11.10
-      '@turbo/linux-64': 2.11.10
-      '@turbo/linux-arm64': 2.11.10
-      '@turbo/windows-64': 2.11.10
-      '@turbo/windows-arm64': 2.11.10
+      '@turbo/darwin-64': 2.11.11
+      '@turbo/darwin-arm64': 2.11.11
+      '@turbo/linux-64': 2.11.11
+      '@turbo/linux-arm64': 2.11.11
+      '@turbo/windows-64': 2.11.11
+      '@turbo/windows-arm64': 2.11.11
 
   tweetnacl@1.0.3: {}
 
