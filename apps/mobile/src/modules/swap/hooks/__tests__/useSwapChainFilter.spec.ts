@@ -62,6 +62,25 @@ describe('useSwapChainFilter', () => {
         expect(result.current.visibleChainIds).toEqual(TWO_CHAINS)
     })
 
+    it.each(['from', 'to'] as const)(
+        'draws an icon on each %s chain chip but not on All',
+        variant => {
+            const { result } = renderHook(() =>
+                useSwapChainFilter({
+                    chainIds: TWO_CHAINS,
+                    scope: SCOPE,
+                    variant,
+                }),
+            )
+
+            expect(
+                result.current.chainOptions.map(
+                    o => o.renderIcon !== undefined,
+                ),
+            ).toEqual([false, true, true])
+        },
+    )
+
     it('narrows to the picked chain and reports it', () => {
         const { result } = renderHook(() =>
             useSwapChainFilter({

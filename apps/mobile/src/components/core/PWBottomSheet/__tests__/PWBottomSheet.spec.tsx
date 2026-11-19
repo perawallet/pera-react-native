@@ -334,6 +334,16 @@ describe('PWBottomSheet', () => {
         expect(capturedProps.activeOffsetY).toEqual([-10, 10])
     })
 
+    it('gives up the content pan on a sideways drag so horizontal scrollers keep it', () => {
+        render(
+            <PWBottomSheet isVisible={true}>
+                <Text>Content</Text>
+            </PWBottomSheet>,
+        )
+
+        expect(capturedProps.failOffsetX).toEqual([-10, 10])
+    })
+
     it('lets an explicit enableContentPanningGesture opt-out pass through', () => {
         render(
             <PWBottomSheet

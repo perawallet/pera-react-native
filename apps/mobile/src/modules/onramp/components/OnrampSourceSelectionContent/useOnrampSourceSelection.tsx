@@ -15,6 +15,7 @@ import {
     useOnramp,
     useRampRegionQuery,
     useRampSourcesQuery,
+    type RampNetwork,
     type RampToken,
 } from '@perawallet/wallet-core-onramp'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
@@ -23,6 +24,10 @@ import type { FilterOption } from '@components/FilterSelection'
 import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
 import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import { useLanguage } from '@hooks/useLanguage'
+import { NetworkIcon } from '@modules/chain-ui/icon'
+
+const hasNetworkArt = ({ chainId, logo }: RampNetwork) =>
+    Boolean(chainId) || logo !== null
 
 export type OnrampSourceFilter = 'all' | 'fiat' | 'crypto'
 
@@ -81,13 +86,21 @@ export const useOnrampSourceSelection = (): UseOnrampSourceSelectionResult => {
 
     // First-seen order, so the chips follow the router's listing.
     const sourceNetworks = useMemo(() => {
-        const networks = new Set<string>()
+        const networks = new Map<string, RampNetwork>()
         for (const token of sourceTokens) {
-            if (!isFiatToken(token) && token.network.name !== '') {
-                networks.add(token.network.name)
+            const { name } = token.network
+            if (isFiatToken(token) || name === '') continue
+            // A later coin may carry the network's art when the first doesn't;
+            // re-setting a key keeps its first-seen place.
+            const seen = networks.get(name)
+            if (
+                !seen ||
+                (!hasNetworkArt(seen) && hasNetworkArt(token.network))
+            ) {
+                networks.set(name, token.network)
             }
         }
-        return [...networks]
+        return [...networks.values()]
     }, [sourceTokens])
 
     const chainOptions = useMemo((): FilterOption<Nullable<string>>[] => {
@@ -98,10 +111,18 @@ export const useOnrampSourceSelection = (): UseOnrampSourceSelectionResult => {
                 label: t('onramp.source_selection.chain_all'),
                 testID: 'onramp_source_chain_all',
             },
-            ...sourceNetworks.map(network => ({
-                value: network,
-                label: network,
-                testID: chainTestIdOf(network),
+            ...sourceNetworks.map(({ name, chainId, logo }) => ({
+                value: name,
+                label: name,
+                testID: chainTestIdOf(name),
+                renderIcon: (size: number) => (
+                    <NetworkIcon
+                        chainId={chainId}
+                        logoUrl={logo ?? undefined}
+                        name={name}
+                        size={size}
+                    />
+                ),
             })),
         ]
     }, [sourceNetworks, t])

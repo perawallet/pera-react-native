@@ -14,24 +14,35 @@ import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { FilterOption } from '@components/FilterSelection'
+import { ChainIcon } from '@modules/chain-ui/icon'
 
 type ChainFilterOptionsParams = {
     /** Leads with an All chip (value null) when given. */
     allLabel?: string
     /** Each chip's testID is `${prefix}_all` or `${prefix}_${chainId}`. */
     testIDPrefix: string
+    /** Draws each chain chip with its chain icon. */
+    withIcons?: boolean
 }
 
 /** Network chips; empty for fewer than two chains, as there's nothing to pick. */
 export const toChainFilterOptions = (
     chainIds: readonly ChainId[],
-    { allLabel, testIDPrefix }: ChainFilterOptionsParams,
+    { allLabel, testIDPrefix, withIcons = false }: ChainFilterOptionsParams,
 ): FilterOption<Nullable<ChainId>>[] => {
     if (chainIds.length < 2) return []
     const chainOptions = chainIds.map(chainId => ({
         value: chainId,
         label: chainDisplayNameOf(chainId) ?? chainId,
         testID: `${testIDPrefix}_${chainId}`,
+        renderIcon: withIcons
+            ? (size: number) => (
+                  <ChainIcon
+                      chainId={chainId}
+                      size={size}
+                  />
+              )
+            : undefined,
     }))
     return allLabel === undefined
         ? chainOptions

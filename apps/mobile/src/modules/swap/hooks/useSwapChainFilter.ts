@@ -54,6 +54,7 @@ export const useSwapChainFilter = ({
             toChainFilterOptions(chainIds, {
                 allLabel: t('account_details.assets.network_filter_all'),
                 testIDPrefix: `swap_${variant}_chain_filter`,
+                withIcons: true,
             }),
         [chainIds, t, variant],
     )

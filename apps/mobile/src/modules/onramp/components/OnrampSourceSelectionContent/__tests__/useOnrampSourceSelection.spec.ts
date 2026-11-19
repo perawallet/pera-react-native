@@ -12,6 +12,7 @@
 
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     useRampRegionQuery,
     useRampSourcesQuery,
@@ -205,6 +206,62 @@ describe('useOnrampSourceSelection', () => {
             expect(result.current.chainOptions[0].label).toBe(
                 'onramp.source_selection.chain_all',
             )
+        })
+
+        it("draws each chain chip with the wallet's icon, else the router's logo, else its initials", () => {
+            const ETH_BASE = makeDepositToken('ETH', {
+                id: 'eth-base',
+                name: 'Ether',
+                network: {
+                    name: 'Base',
+                    logo: null,
+                    chainId: 'base' as ChainId,
+                },
+            })
+            const USDC_TRON = makeDepositToken('USDC', {
+                id: 'usdc-tron',
+                name: 'USD Coin',
+                network: { name: 'Tron', logo: 'https://logo.test/trx.png' },
+            })
+            serve([...SOURCES, ETH_BASE, USDC_TRON])
+            const { result } = renderHook(() => useOnrampSourceSelection())
+            const iconOf = (value: string | null) =>
+                result.current.chainOptions.find(o => o.value === value)
+                    ?.renderIcon
+
+            expect(iconOf(null)).toBeUndefined()
+            // Bitcoin carries neither a chain id nor a logo here.
+            expect(iconOf('Bitcoin')?.(16)).toMatchObject({
+                props: { name: 'Bitcoin', size: 16 },
+            })
+            expect(iconOf('Base')?.(16)).toMatchObject({
+                props: { chainId: 'base', size: 16 },
+            })
+            expect(iconOf('Tron')?.(16)).toMatchObject({
+                props: { logoUrl: 'https://logo.test/trx.png', size: 16 },
+            })
+        })
+
+        it("takes a network's art from a later coin when its first has none, keeping its place", () => {
+            const USDC_SOL_LOGO = makeDepositToken('USDT', {
+                id: 'usdt-sol',
+                name: 'Tether',
+                network: { name: 'Solana', logo: 'https://logo.test/sol.png' },
+            })
+            serve([...SOURCES, USDC_SOL_LOGO])
+            const { result } = renderHook(() => useOnrampSourceSelection())
+            const solana = result.current.chainOptions.find(
+                o => o.value === 'Solana',
+            )
+
+            expect(result.current.chainOptions.map(o => o.value)).toEqual([
+                null,
+                'Bitcoin',
+                'Solana',
+            ])
+            expect(solana?.renderIcon?.(16)).toMatchObject({
+                props: { logoUrl: 'https://logo.test/sol.png' },
+            })
         })
 
         it('shows the chips under the Crypto filter only', () => {

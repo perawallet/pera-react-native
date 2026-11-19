@@ -12,8 +12,8 @@
 
 import { useTheme } from '@rneui/themed'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { getIconPixelSize, PWImage, PWView } from '@components/core'
-import { ChainIcon } from '../ChainIcon'
+import { getIconPixelSize, PWView } from '@components/core'
+import { NetworkIcon } from '../NetworkIcon'
 import { useStyles } from './styles'
 
 export type ChainAvatarBadgeProps = {
@@ -35,7 +35,7 @@ export const ChainAvatarBadge = ({
 }: ChainAvatarBadgeProps) => {
     const { theme } = useTheme()
     const size = getIconPixelSize(theme, 'sm')
-    const styles = useStyles(size)
+    const styles = useStyles()
 
     return (
         <PWView
@@ -45,18 +45,11 @@ export const ChainAvatarBadge = ({
             ]}
             testID={testID ?? `chain_avatar_badge_${chainId ?? 'logo'}`}
         >
-            {chainId === undefined ? (
-                <PWImage
-                    source={{ uri: logoUrl }}
-                    style={styles.logo}
-                    showLoadingIndicator={false}
-                />
-            ) : (
-                <ChainIcon
-                    chainId={chainId}
-                    size={size}
-                />
-            )}
+            <NetworkIcon
+                chainId={chainId}
+                logoUrl={logoUrl}
+                size={size}
+            />
         </PWView>
     )
 }
