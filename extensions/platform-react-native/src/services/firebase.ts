@@ -554,10 +554,10 @@ export class RNFirebaseService
             logger.warn('[analytics] Firebase event delivery failed', { error })
         }
         try {
-            // Firebase validates synchronously before returning its promise.
-            void logEventGA<string>(this.analytics, key, payload).catch(
-                reportFailure,
-            )
+            // The SDK types this as void, but its native call can return a promise.
+            void Promise.resolve(
+                logEventGA<string>(this.analytics, key, payload),
+            ).catch(reportFailure)
         } catch (error) {
             reportFailure(error)
         }
