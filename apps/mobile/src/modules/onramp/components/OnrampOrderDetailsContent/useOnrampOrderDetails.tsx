@@ -47,13 +47,15 @@ type UseOnrampOrderDetailsResult = {
     networkName: Nullable<string>
     /** Long datetime, e.g. "Dec 23, 2025 at 11:16 PM". */
     createdAtLabel: string
+    /** When a pending deposit order stops accepting funds; null otherwise. */
+    payByLabel: Nullable<string>
     /** "1 {SRC} ≈ {rate} {DST}" or null when amounts are missing/zero. */
     exchangeRateLabel: Nullable<string>
     /** Receiving address (the order's `toAddress`, else the selected account). */
     toAddress: Nullable<string>
     /** Source token logo for the QR center; null when unavailable. */
     sourceLogo: Nullable<string>
-    /** Pay-in (deposit) address of a deposit order placed on this device; null otherwise. */
+    /** Pay-in (deposit) address of a pending deposit order; null otherwise. */
     payInAddress: Nullable<string>
     payInAddressTag: Nullable<string>
     /** Order id used to prefill the support email subject. */
@@ -93,14 +95,21 @@ export const useOnrampOrderDetails = (
     const isXo =
         item.kind === 'xo' ||
         (item.kind === null && item.provider.toLowerCase() === 'xo')
-    // The router's order items carry no deposit address; this device kept the
-    // instructions of the deposit orders it placed.
+    // A router that predates order-item steps sends no pay-in address; this
+    // device kept the instructions of the deposit orders it placed.
     const rememberedDeposit = useRampDepositInstructions(item.id)
     const payInAddress = item.payInAddress ?? rememberedDeposit?.address ?? null
     const payInAddressTag =
         item.payInAddressTag ?? rememberedDeposit?.memo ?? null
+    // The router flips a pending order to expired on a periodic job, so a row can
+    // still read pending for minutes after its address stopped being watched.
+    const isPastDeadline =
+        item.expiresAt !== undefined && Date.parse(item.expiresAt) <= Date.now()
     const isPendingXo =
-        isXo && item.status === 'pending' && payInAddress !== null
+        isXo &&
+        item.status === 'pending' &&
+        payInAddress !== null &&
+        !isPastDeadline
 
     const sourceSymbol = item.pair.sourceToken.symbol
     const destinationSymbol = item.pair.destinationToken.symbol
@@ -185,6 +194,10 @@ export const useOnrampOrderDetails = (
             'medium',
         ),
         exchangeRateLabel,
+        payByLabel:
+            isPendingXo && item.expiresAt
+                ? formatDatetime(item.expiresAt, undefined, 'medium')
+                : null,
         toAddress: item.toAddress ?? selectedAccountAddress ?? null,
         sourceLogo: item.pair.sourceToken.logo ?? null,
         payInAddress,

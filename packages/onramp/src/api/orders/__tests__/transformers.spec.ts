@@ -15,10 +15,13 @@ import { describe, expect, it } from 'vitest'
 import type { RampOrderApiResponse } from '../schema'
 import { transformRampOrder } from '../transformers'
 
-const order = (steps: RampOrderApiResponse['steps']): RampOrderApiResponse => ({
+const order = (
+    steps: RampOrderApiResponse['steps'],
+    expiresAt: RampOrderApiResponse['expires_at'] = null,
+): RampOrderApiResponse => ({
     order_id: 'order-1',
     status: 'pending',
-    expires_at: null,
+    expires_at: expiresAt,
     steps,
 })
 
@@ -53,23 +56,41 @@ describe('transformRampOrder', () => {
         ).toThrow()
     })
 
-    it('maps deposit instructions with a memo to an XO order', () => {
+    it('maps deposit instructions with a memo to an XO order with its expiry', () => {
         expect(
             transformRampOrder(
-                order([
-                    {
-                        kind: 'deposit_instructions',
-                        address: 'PAYIN',
-                        memo: '12345',
-                    },
-                ]),
+                order(
+                    [
+                        {
+                            kind: 'deposit_instructions',
+                            address: 'PAYIN',
+                            memo: '12345',
+                        },
+                    ],
+                    '2026-11-19T12:00:00Z',
+                ),
             ),
         ).toEqual({
             kind: 'xo',
             orderId: 'order-1',
             deposit: { address: 'PAYIN', memo: '12345' },
+            expiresAt: '2026-11-19T12:00:00Z',
         })
     })
+
+    it.each([null, 'soon'])(
+        'has a null expiry when the router sends %s',
+        expiresAt => {
+            const result = transformRampOrder(
+                order(
+                    [{ kind: 'deposit_instructions', address: 'PAYIN' }],
+                    expiresAt,
+                ),
+            )
+
+            expect(result).toMatchObject({ expiresAt: null })
+        },
+    )
 
     it('maps deposit instructions without a memo to a null memo', () => {
         const result = transformRampOrder(

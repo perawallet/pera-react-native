@@ -104,6 +104,79 @@ describe('transformRampHistoryItem', () => {
         expect(item.destinationAmount).toBeNull()
     })
 
+    it("reads a pending deposit order's pay-in address, memo and expiry from its steps", () => {
+        const item = transform({
+            status: 'pending',
+            funding_method: 'external_deposit',
+            expires_at: '2025-06-01T11:00:00Z',
+            steps: [
+                {
+                    kind: 'deposit_instructions',
+                    address: 'PAYIN',
+                    memo: '42',
+                    amount: '50000000',
+                    expires_at: '2025-06-01T11:00:00Z',
+                },
+            ],
+        })
+
+        expect(item).toMatchObject({
+            payInAddress: 'PAYIN',
+            payInAddressTag: '42',
+            expiresAt: '2025-06-01T11:00:00Z',
+        })
+    })
+
+    it('leaves the tag out for a deposit step with no memo', () => {
+        const item = transform({
+            steps: [
+                { kind: 'deposit_instructions', address: 'PAYIN', memo: null },
+            ],
+        })
+
+        expect(item.payInAddress).toBe('PAYIN')
+        expect(item.payInAddressTag).toBeUndefined()
+    })
+
+    it('has no pay-in address without a deposit step, or with a malformed one', () => {
+        const withoutSteps = transform()
+        const checkoutOnly = transform({
+            steps: [{ kind: 'open_checkout', url: 'https://checkout.example' }],
+        })
+        const malformed = transform({
+            steps: [{ kind: 'deposit_instructions', memo: '42' }],
+        })
+
+        expect(withoutSteps.payInAddress).toBeUndefined()
+        expect(withoutSteps.expiresAt).toBeUndefined()
+        expect(checkoutOnly.payInAddress).toBeUndefined()
+        expect(malformed.payInAddress).toBeUndefined()
+        expect(malformed.payInAddressTag).toBeUndefined()
+    })
+
+    it.each([
+        ['an object', { kind: 'deposit_instructions', address: 'PAYIN' }],
+        ['a step without a kind', [{ address: 'PAYIN' }]],
+        ['a null step', [null]],
+    ])(
+        'parses the order with no pay-in address when steps is %s',
+        (_, steps) => {
+            const parsed = rampHistoryItemSchema.safeParse(
+                historyItem({ steps: steps as never }),
+            )
+
+            expect(parsed.success).toBe(true)
+            expect(
+                parsed.success &&
+                    transformRampHistoryItem(parsed.data).payInAddress,
+            ).toBeUndefined()
+        },
+    )
+
+    it('has no expiry for an expires_at that does not parse as a date', () => {
+        expect(transform({ expires_at: 'soon' }).expiresAt).toBeUndefined()
+    })
+
     it.each(['expired', 'refunded'] as const)('keeps a %s order', status => {
         expect(transform({ status }).status).toBe(status)
     })

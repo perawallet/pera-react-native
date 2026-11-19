@@ -4469,6 +4469,7 @@
             "destination_amount": "Montant de destination",
             "network": "Réseau",
             "created_at": "Créée le",
+            "pay_by": "Payer avant le",
             "exchange_rate": "Taux de change effectif",
             "to_address": "Adresse de destination"
         },

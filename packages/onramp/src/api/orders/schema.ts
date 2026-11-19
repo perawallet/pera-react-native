@@ -31,7 +31,7 @@ export const cancelRampOrderRequestSchema = z.object({
 
 // Steps of kinds this client can't run (a signing step, say) still parse, so
 // the order is read as a whole and only refused when no step is usable.
-const rampOrderStepSchema = z.object({ kind: z.string() }).passthrough()
+export const rampOrderStepSchema = z.object({ kind: z.string() }).passthrough()
 
 export const createRampOrderResponseSchema = z.object({
     order_id: z.string(),

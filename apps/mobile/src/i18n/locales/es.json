@@ -4469,6 +4469,7 @@
             "destination_amount": "Cantidad de destino",
             "network": "Red",
             "created_at": "Creada el",
+            "pay_by": "Pagar antes de",
             "exchange_rate": "Tipo de cambio efectivo",
             "to_address": "Dirección de destino"
         },

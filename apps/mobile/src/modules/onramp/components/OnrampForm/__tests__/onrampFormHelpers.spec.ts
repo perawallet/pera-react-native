@@ -64,6 +64,7 @@ describe('buildPendingXoHistoryItem', () => {
                 kind: 'xo',
                 orderId: 'order-1',
                 deposit: { address: 'PAYIN', memo: '42' },
+                expiresAt: '2026-01-01T01:00:00.000Z',
             },
             pair,
             new Decimal('0.5'),
@@ -80,15 +81,17 @@ describe('buildPendingXoHistoryItem', () => {
             toAddress: 'RECEIVER',
             payInAddress: 'PAYIN',
             payInAddressTag: '42',
+            expiresAt: '2026-01-01T01:00:00.000Z',
         })
     })
 
-    it('leaves the tag out when the deposit has no memo', () => {
+    it('leaves the tag and expiry out when the deposit has neither', () => {
         const item = buildPendingXoHistoryItem(
             {
                 kind: 'xo',
                 orderId: 'order-1',
                 deposit: { address: 'PAYIN', memo: null },
+                expiresAt: null,
             },
             pairOf('deposit'),
             new Decimal(1),
@@ -98,6 +101,7 @@ describe('buildPendingXoHistoryItem', () => {
         )
 
         expect(item.payInAddressTag).toBeUndefined()
+        expect(item.expiresAt).toBeUndefined()
         expect(item.destinationAmount).toBeNull()
     })
 })

@@ -12,7 +12,7 @@
 
 import { z } from 'zod'
 
-import { onrampStatusSchema } from '../orders/schema'
+import { onrampStatusSchema, rampOrderStepSchema } from '../orders/schema'
 import {
     baseUnitsSchema as baseUnits,
     rampAssetItemSchema,
@@ -46,6 +46,10 @@ export const rampHistoryItemSchema = z.object({
     created_at: z.string(),
     updated_at: z.string().nullish(),
     expires_at: z.string().nullish(),
+    // What the user still has to do, in the created order's step shape; read
+    // only for a pending deposit order's pay-in details. A shape this client
+    // doesn't expect drops that order's pay-in card, not the whole page.
+    steps: z.array(rampOrderStepSchema).nullish().catch(null),
 })
 
 export const rampHistoryPageSchema = z.object({
