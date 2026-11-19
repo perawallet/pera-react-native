@@ -92,7 +92,8 @@ Accept Should Be Disabled Before Scrolling
 Scroll Disclaimer To The End
     Wait Until Settled    ${STAKING_DISCLAIMER_TITLE}
     FOR    ${i}    IN RANGE    6
-        ${enabled}=    Run Keyword And Return Status    Expect Element    ${STAKING_DISCLAIMER_ACCEPT}    enabled    timeout=0s
+        ${enabled}=    Run Keyword And Return Status
+        ...    Expect Element    ${STAKING_DISCLAIMER_ACCEPT}    enabled    timeout=0s    loglevel=NONE
         IF    ${enabled}    RETURN
         Swipe By Percent    50    80    50    25    duration=400ms
     END

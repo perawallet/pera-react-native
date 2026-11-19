@@ -41,10 +41,9 @@ Pay Balance Shows A Number
     [Tags]    id:swap.form.balance-shown    swap-form    p1
     Open Swap
     Wait Until Page Contains Element    ${SWAP_BALANCE_VALUE}    timeout=15s
-    ${raw}=    Get Text    ${SWAP_BALANCE_VALUE}
-    ${balance}=    Extract Number    ${raw}
-    Should Not Be Equal    ${balance}    ${None}    The pay balance shows no number: "${raw}".
-    Should Be True    ${balance} >= 0
+    ${value}=    Get Text    ${SWAP_BALANCE_VALUE}
+    ${balance}=    Number In    ${value}
+    Should Be True    ${balance} >= 0    The pay balance is negative: ${balance}.
 
 Receive Selector Says Select When No Asset Is Chosen
     [Tags]    id:swap.asset.receive-unset    swap-asset    p1
@@ -176,7 +175,7 @@ Choosing A Receive Asset Returns To The Form
     Wait For USDC Receive Row
     Tap    ${USDC_RECEIVE_ROW}
     Wait Until Page Does Not Contain Element    ${ASSET_SEARCH_INPUT}    timeout=15s
-    Wait Until Page Contains Element    ${RECEIVE_IS_USDC}    timeout=15s
+    Wait Until Page Contains Element    ${RECEIVE_BALANCE_IS_USDC}    timeout=15s
 
 Choosing A Pay Asset Returns To The Form
     [Tags]    id:swap.asset.pay-select    swap-asset    p1

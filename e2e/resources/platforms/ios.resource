@@ -4,22 +4,26 @@ Library             ../libraries/PeraAppiumLibrary.py    run_on_failure=Nothing 
 Library             Collections
 Library             Process
 Library             String
+Resource            session.resource
 
 
 *** Variables ***
-${APPIUM_URL}           http://127.0.0.1:4723
-${IOS_BUNDLE_ID}        com.algorandllc.perarn.staging
-${IOS_UDID}             ${EMPTY}
+${APPIUM_URL}               http://127.0.0.1:4723
+${IOS_BUNDLE_ID}            com.algorandllc.perarn.staging
+${IOS_UDID}                 ${EMPTY}
 # One WebDriverAgent port per simulator when several run in parallel.
-${IOS_WDA_PORT}         8100
+${IOS_WDA_PORT}             8100
+${IOS_WDA_REMOTE_PORT}      ${EMPTY}
+${IOS_WDA_URL}              ${EMPTY}
+${IOS_PLATFORM_VERSION}    ${EMPTY}
 # A dev client's own link to its Metro server, e.g. exp+pera-dev://expo-development-client/?url=...
 # Set it for dev-client runs: a plain relaunch can land on the launcher instead of the app.
-${IOS_DEV_CLIENT_URL}   ${EMPTY}
-${WEBVIEW}             xpath=//XCUIElementTypeWebView
-${MENU_TAB}             tid=tab_menu_button
+${IOS_DEV_CLIENT_URL}       ${EMPTY}
+${WEBVIEW}                  xpath=//XCUIElementTypeWebView
+${MENU_TAB}                 tid=tab_menu_button
 # One probe for every startup prompt in @{STARTUP_PROMPT_IDS} (app.resource). A predicate, not an
 # xpath: this is polled every half second after each launch, and an xpath walks the whole tree.
-${STARTUP_PROMPT_ANY}   predicate=name IN {'pin_security_prompt_dont_ask_button', 'banners_carousel_modal_close', 'banner_prompt_close', 'analytics_consent_prompt_decline_button', 'biometrics_disabled_prompt_dismiss_button', 'legacy_quantum_prompt_dismiss_button'}
+${STARTUP_PROMPT_ANY}       predicate=name IN {'pin_security_prompt_dont_ask_button', 'banners_carousel_modal_close', 'banner_prompt_close', 'analytics_consent_prompt_decline_button', 'biometrics_disabled_prompt_dismiss_button', 'legacy_quantum_prompt_dismiss_button'}
 
 
 *** Keywords ***
@@ -31,7 +35,6 @@ Open Pera
     ...    noReset=${True}
     # isHeadless: without it the driver reboots a DeviceHub simulator and opens a new window per
     # session. autoLaunch=false attaches to the running app, so a dev client keeps its Metro URL.
-    ...    isHeadless=${True}
     ...    autoLaunch=${False}
     ...    autoAcceptAlerts=${True}
     # Skip XCUITest's settle-before-every-action waits; tests wait on their own anchors.
@@ -40,8 +43,21 @@ Open Pera
     ...    reduceMotion=${True}
     ...    wdaLocalPort=${{int($IOS_WDA_PORT)}}
     IF    $IOS_UDID    Set To Dictionary    ${caps}    udid=${IOS_UDID}
-    IF    $IOS_UDID    Hide Dev Menu Button
-    Open Application    ${APPIUM_URL}    &{caps}
+    IF    $IOS_PLATFORM_VERSION    Set To Dictionary    ${caps}    platformVersion=${IOS_PLATFORM_VERSION}
+    IF    $IOS_WDA_URL    Set To Dictionary    ${caps}    webDriverAgentUrl=${IOS_WDA_URL}
+    IF    $IOS_WDA_REMOTE_PORT
+        Set To Dictionary    ${caps}    wdaRemotePort=${{int($IOS_WDA_REMOTE_PORT)}}
+    END
+    ${simulator}=    Is iOS Simulator
+    IF    ${simulator}    Set To Dictionary    ${caps}    isHeadless=${True}
+    IF    ${simulator} and $IOS_UDID and $IOS_DEV_CLIENT_URL    Hide Dev Menu Button
+    Open Appium Session    ${APPIUM_URL}    &{caps}
+
+Is iOS Simulator
+    # CoreSimulator IDs are UUIDs. With an implicit local target, Appium uses
+    # a simulator unless configured to attach to an existing WDA.
+    IF    $IOS_UDID    RETURN    ${{$IOS_UDID.count('-') == 4}}
+    RETURN    ${{not $IOS_WDA_URL}}
 
 Hide Dev Menu Button
     # A dev client's floating menu button is a window above the app that steals header taps.
@@ -134,6 +150,10 @@ Deny Camera Permission
     [Documentation]    Simulator only. Changing a privacy grant terminates the app; relaunch it after.
     Simctl    privacy    revoke    camera    ${IOS_BUNDLE_ID}
 
+Require Camera Permission Control
+    ${simulator}=    Is iOS Simulator
+    Skip If    not ${simulator}    Changing iOS camera grants through simctl requires a simulator.
+
 Grant Camera Permission
     Simctl    privacy    grant    camera    ${IOS_BUNDLE_ID}
 
@@ -144,22 +164,16 @@ Screen Should Not Be Capture Protected
     Skip    iOS does not blank screenshots
 
 Set Network Offline
-    Skip    The iOS simulator uses the host's network and has no per-device connectivity switch.
+    Skip    The XCUITest adapter has no automated network switch for the iOS device under test.
 
 Set Network Online
     No Operation
 
 Enroll Biometrics
-    [Documentation]    The app binds biometric unlock to a Secure Enclave key, which a simulator cannot
-    ...                create (SecKeyCreateRandomKey fails with -25293), so turning it on always fails there.
-    Skip If    not $IOS_UDID or $IOS_UDID.count('-') == 4
-    ...    A simulator has no Secure Enclave for the app's biometric key; biometric unlock needs a real device.
-    Execute Script    mobile: enrollBiometric    isEnabled=${True}
+    Skip    Pera biometric unlock needs a physical Secure Enclave. Appium XCUITest simulates biometrics only on simulators.
 
 Match Biometric
-    [Documentation]    The simulator's model decides Face ID or Touch ID; the other notification is ignored.
-    Execute Script    mobile: sendBiometricMatch    type=faceId    match=${True}
-    Execute Script    mobile: sendBiometricMatch    type=touchId    match=${True}
+    Skip    Appium XCUITest simulates biometric matching only on simulators.
 
 Rows With Prefix
     [Documentation]    Every element whose testID begins with ${prefix}.

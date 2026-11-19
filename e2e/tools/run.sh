@@ -69,8 +69,15 @@ case "$PLATFORM" in
     # seconds after the keyboard opens. It is a full-screen InputMethod window, so Appium's dump
     # returns a hierarchy with nothing in it and every locator on that screen disappears
     # mid-test - which reads as the app blanking rather than as a system dialog.
-    adb ${ANDROID_UDID:+-s "$ANDROID_UDID"} shell settings put secure stylus_handwriting_enabled 0 \
-      >/dev/null 2>&1 || true
+    "$PYTHON" - adb ${ANDROID_UDID:+-s "$ANDROID_UDID"} shell settings put secure stylus_handwriting_enabled 0 <<'PY' || true
+import subprocess
+import sys
+
+try:
+    subprocess.run(sys.argv[1:], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5)
+except (OSError, subprocess.TimeoutExpired):
+    pass
+PY
     ;;
   ios)
     [ "${E2E_ONE_DEVICE:-0}" = 1 ] && { adb emu kill >/dev/null 2>&1 || true; }
@@ -84,7 +91,7 @@ case "$PLATFORM" in
     ;;
 esac
 
-DEVICE=()
+DEVICE=(--variable E2E_LOCAL_RUN:True)
 [ -z "${APPIUM_URL:-}" ] || DEVICE+=(--variable "APPIUM_URL:$APPIUM_URL")
 case "$PLATFORM" in
   android)
@@ -97,20 +104,22 @@ case "$PLATFORM" in
   ios)
     [ -n "${IOS_UDID:-}" ] && DEVICE+=(--variable "IOS_UDID:$IOS_UDID")
     DEVICE+=(--variable "IOS_WDA_PORT:${IOS_WDA_PORT:-$(free_port)}")
-    for name in IOS_BUNDLE_ID IOS_DEV_CLIENT_URL; do
+    for name in IOS_BUNDLE_ID IOS_DEV_CLIENT_URL IOS_WDA_URL IOS_WDA_REMOTE_PORT IOS_PLATFORM_VERSION; do
       [ -z "${!name:-}" ] || DEVICE+=(--variable "$name:${!name}")
     done
     ;;
 esac
 
-echo "running $PLATFORM from snapshot $SNAPSHOT -> $OUT"
-set +e
-"$PYTHON" -m robot \
-  --exclude slow --exclude needs-funded \
-  --variable "E2E_TEST_TIMEOUT:${E2E_TEST_TIMEOUT:-5 minutes}" \
-  --variable "PLATFORM:$PLATFORM" "${DEVICE[@]}" "$@" \
-  --outputdir "$OUT" "$SNAPSHOT/tests${SUITE:+/$SUITE.robot}"
-STATUS=$?
-set -e
-echo "$PLATFORM finished with status $STATUS; results in $OUT"
-exit $STATUS
+# Parse the invocation and its exit handling together before Robot starts.
+run_robot() {
+  echo "running $PLATFORM from snapshot $SNAPSHOT -> $OUT"
+  local status=0
+  "$PYTHON" -m robot \
+    --exclude slow --exclude needs-funded \
+    --variable "E2E_TEST_TIMEOUT:${E2E_TEST_TIMEOUT:-5 minutes}" \
+    --variable "PLATFORM:$PLATFORM" "${DEVICE[@]}" "$@" \
+    --outputdir "$OUT" "$SNAPSHOT/tests${SUITE:+/$SUITE.robot}" || status=$?
+  echo "$PLATFORM finished with status $status; results in $OUT"
+  exit "$status"
+}
+run_robot "$@"
