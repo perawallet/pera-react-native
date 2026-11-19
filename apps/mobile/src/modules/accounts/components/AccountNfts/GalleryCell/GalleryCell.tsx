@@ -64,6 +64,7 @@ const GalleryCellView = ({
             <CollectibleListItem
                 item={displayItem}
                 networkChainId={networkChainId}
+                isHidden={item.isHidden}
                 onPress={handlePress}
             />
         )
@@ -81,6 +82,7 @@ const GalleryCellView = ({
             <CollectibleGridItem
                 item={displayItem}
                 networkChainId={networkChainId}
+                isHidden={item.isHidden}
                 onPress={handlePress}
             />
         </PWView>

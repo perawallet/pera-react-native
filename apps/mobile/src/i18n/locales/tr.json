@@ -271,6 +271,7 @@
         "revoke_error_body": "Tekrar denemeden önce listede onayın güncel durumuna bak."
     },
     "nft_visibility": {
+        "hidden_badge": "Gizli",
         "hide": "NFT’yi gizle",
         "unhide": "NFT’yi göster",
         "hidden_toast_body": "NFT’lerinde görünmez. Yeniden görmek için Yönet > Filtrele’de Gizlenen NFT’leri göster seçeneğini aç."

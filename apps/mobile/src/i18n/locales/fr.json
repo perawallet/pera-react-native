@@ -271,6 +271,7 @@
         "revoke_error_body": "Vérifiez dans la liste l'état de l'autorisation avant de réessayer."
     },
     "nft_visibility": {
+        "hidden_badge": "Masqué",
         "hide": "Masquer le NFT",
         "unhide": "Afficher le NFT",
         "hidden_toast_body": "Il n’apparaîtra plus dans vos NFT. Pour le revoir, activez Afficher les NFT masqués dans Gérer > Filtrer."

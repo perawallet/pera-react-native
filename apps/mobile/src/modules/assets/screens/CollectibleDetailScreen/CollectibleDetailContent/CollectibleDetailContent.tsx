@@ -69,9 +69,7 @@ export const CollectibleDetailContent = ({
         modelViewerModal,
         modelViewerUrl,
         scope,
-        canHide,
-        isHidden,
-        handleToggleHidden,
+        headerMenuItems,
     } = useCollectibleDetail(assetId, chainId)
 
     const styles = useStyles()
@@ -84,21 +82,9 @@ export const CollectibleDetailContent = ({
                     variant='primary'
                     onPress={handleSharePressed}
                 />
-                {canHide && (
+                {headerMenuItems.length > 0 && (
                     <PWView testID='collectible_detail_menu'>
-                        <PWDropdown
-                            items={[
-                                {
-                                    label: t(
-                                        isHidden
-                                            ? 'nft_visibility.unhide'
-                                            : 'nft_visibility.hide',
-                                    ),
-                                    icon: 'eye',
-                                    onPress: handleToggleHidden,
-                                },
-                            ]}
-                        >
+                        <PWDropdown items={headerMenuItems}>
                             <PWIcon name='ellipsis' />
                         </PWDropdown>
                     </PWView>

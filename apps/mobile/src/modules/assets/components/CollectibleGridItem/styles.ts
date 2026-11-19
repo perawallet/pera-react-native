@@ -50,6 +50,11 @@ export const useStyles = makeStyles(theme => ({
     collectionName: {
         color: theme.colors.textGray,
     },
+    hiddenBadge: {
+        position: 'absolute',
+        top: theme.spacing.sm,
+        left: theme.spacing.sm,
+    },
     amountBadge: {
         position: 'absolute',
         top: theme.spacing.sm,

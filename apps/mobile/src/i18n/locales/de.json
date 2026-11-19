@@ -271,6 +271,7 @@
         "revoke_error_body": "Prüfe in der Liste, wie der Status der Freigabe ist, bevor du es erneut versuchst."
     },
     "nft_visibility": {
+        "hidden_badge": "Ausgeblendet",
         "hide": "NFT ausblenden",
         "unhide": "NFT einblenden",
         "hidden_toast_body": "Das NFT erscheint nicht mehr bei deinen NFTs. Um es wieder zu sehen, aktiviere „Ausgeblendete NFTs anzeigen“ unter Verwalten > Filter."

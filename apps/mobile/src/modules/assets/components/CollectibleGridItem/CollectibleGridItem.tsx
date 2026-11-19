@@ -14,11 +14,13 @@ import React from 'react'
 import { useTheme } from '@rneui/themed'
 import {
     getIconPixelSize,
+    PWBadge,
     PWText,
     PWTouchableOpacity,
     PWView,
     PWIcon,
 } from '@components/core'
+import { useLanguage } from '@hooks/useLanguage'
 import { ChainIcon } from '@modules/chain-ui/icon'
 import { CollectibleThumbnail } from '../CollectibleThumbnail'
 import { useStyles } from './styles'
@@ -33,9 +35,11 @@ const CollectibleGridItemBase = ({
     item,
     onPress,
     networkChainId,
+    isHidden = false,
 }: CollectibleItemProps) => {
     const styles = useStyles()
     const { theme } = useTheme()
+    const { t } = useLanguage()
     const {
         thumbnailUrl,
         showAmount,
@@ -59,9 +63,16 @@ const CollectibleGridItemBase = ({
                     imageStyle={styles.image}
                     placeholderStyle={styles.placeholderContainer}
                     iconSize='lg'
-                    notOptedIn={!hasBalance}
+                    isDimmed={!hasBalance || isHidden}
                     imageWidth={GRID_IMAGE_WIDTH}
                 />
+                {isHidden && (
+                    <PWBadge
+                        variant='secondary'
+                        value={t('nft_visibility.hidden_badge')}
+                        containerStyle={styles.hiddenBadge}
+                    />
+                )}
                 {networkChainId && (
                     <PWView style={styles.networkBadge}>
                         <ChainIcon

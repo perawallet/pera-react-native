@@ -271,6 +271,7 @@
         "revoke_error_body": "Check the list for the approval's current status before trying again."
     },
     "nft_visibility": {
+        "hidden_badge": "Hidden",
         "hide": "Hide NFT",
         "unhide": "Unhide NFT",
         "hidden_toast_body": "It won't show in your NFTs. To see it again, turn on Display Hidden NFTs in Manage > Filter."

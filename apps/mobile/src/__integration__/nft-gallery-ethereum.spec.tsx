@@ -264,8 +264,8 @@ describe('Flow: an Ethereum account with NFTs', () => {
         })
         await sync()
 
-        // The test navigator hides headers, where the screen puts this menu
-        // item, so the detail's own hook takes the press.
+        // The test navigator hides headers, where the screen puts this menu,
+        // so the press goes to the item the detail's hook hands it.
         const detail: {
             current?: ReturnType<typeof useCollectibleDetail>
         } = {}
@@ -274,10 +274,11 @@ describe('Flow: an Ethereum account with NFTs', () => {
             return null
         }
         const probe = render(<DetailProbe />)
-        await waitFor(() => expect(detail.current?.canHide).toBe(true), {
-            timeout: SLOW_WAIT_TIMEOUT_MS,
-        })
-        act(() => detail.current!.handleToggleHidden())
+        await waitFor(
+            () => expect(detail.current?.headerMenuItems).toHaveLength(1),
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+        act(() => detail.current!.headerMenuItems[0]!.onPress())
         probe.unmount()
 
         const { result, unmount } = await readGallery()

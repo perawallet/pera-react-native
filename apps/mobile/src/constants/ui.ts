@@ -105,7 +105,7 @@ export const ASSET_LIST_ITEM_MIN_HEIGHT = 64
 // Wait after the last amount keystroke before (re-)fetching an onramp quote.
 export const ONRAMP_QUOTE_DEBOUNCE_TIME = 500
 
-export const NFT_NOT_OPTED_IN_OPACITY = 0.5
+export const NFT_DIMMED_OPACITY = 0.5
 // Dims a control that stays tappable (e.g. a toggle whose network has no Pera
 // backend) — distinct from TouchableOpacity's `disabled`, which would also
 // swallow the press meant to explain why.
