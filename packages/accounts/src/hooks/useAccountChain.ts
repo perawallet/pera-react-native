@@ -27,18 +27,53 @@ import { useRegisteredChainIds } from './accountChainEntries'
 import { useSigningAccountsOn } from './useSigningAccounts'
 
 /**
- * The account's primary chain: the first registered chain, in registry order,
- * it has an address on. Enabling a chain later adds an entry to the same
- * record, so this is not the only one. The fallback covers a record with no
- * chain registered in this build; a stored record always holds at least one.
+ * The account's own chain: the first held chain in registry order, unless
+ * that entry was only a default (`'created'`) and discovery found a later
+ * chain active, which then leads. Any other stamp on the first held chain
+ * keeps it, so a later discovery or a restore cannot move an account that has
+ * activity there. The fallback covers a record with no chain registered in
+ * this build; a stored record always holds at least one.
  */
 export const accountChainIdOf = (
     account: WalletAccount,
     registeredChainIds: readonly ChainId[],
-): ChainId =>
-    registeredChainIds.find(
+): ChainId => {
+    const firstHeld = registeredChainIds.find(
         chainId => chainAccountOf(account, chainId) !== undefined,
-    ) ?? (Object.keys(account.chains)[0] as ChainId)
+    )
+    if (firstHeld === undefined) {
+        return Object.keys(account.chains)[0] as ChainId
+    }
+    if (chainAccountOf(account, firstHeld)?.enabledBy !== 'created') {
+        return firstHeld
+    }
+    return (
+        registeredChainIds.find(
+            chainId =>
+                chainAccountOf(account, chainId)?.enabledBy === 'discovery',
+        ) ?? firstHeld
+    )
+}
+
+/**
+ * The held chains, in registry order, whose address differs from the own
+ * chain's, when discovery put the own chain ahead of the first held one. Empty
+ * for any account whose own chain is its first held chain.
+ */
+export const secondaryChainIdsOf = (
+    account: WalletAccount,
+    registeredChainIds: readonly ChainId[],
+): ChainId[] => {
+    const held = registeredChainIds.filter(
+        chainId => chainAccountOf(account, chainId) !== undefined,
+    )
+    const ownChainId = accountChainIdOf(account, registeredChainIds)
+    if (held.length === 0 || held[0] === ownChainId) return []
+    const ownAddress = chainAccountOf(account, ownChainId)?.address
+    return held.filter(
+        chainId => chainAccountOf(account, chainId)?.address !== ownAddress,
+    )
+}
 
 export { useRegisteredChainIds }
 
@@ -53,7 +88,7 @@ export const useAccountChainId = (
         : fallbackChainId
 }
 
-/** The account's first registered chain at its selected network; a display default, never an operation's chain. */
+/** The account's own chain at its selected network; a display default, never an operation's chain. */
 export const useAccountScope = (
     account: Maybe<WalletAccount>,
     fallbackChainId: ChainId,
@@ -73,7 +108,7 @@ export const accountValueOf = <V>(
 export const useSigningAccountsOnAnyChain = (): WalletAccount[] =>
     useSigningAccountsOn(useRegisteredChainIds())
 
-/** The account's address on its first registered chain, for keys, copy and testIDs outside a hook. */
+/** The account's address on its own chain, for keys, copy and testIDs outside a hook. */
 export const ownAddressOf = (account: WalletAccount): Optional<string> => {
     const registeredChainIds = getProvider()
         .chains.list()

@@ -2556,6 +2556,7 @@
             "import_button": "Import accounts",
             "go_to_wallet": "Go to wallet",
             "total_value": "<0/> total",
+            "also_gives_address": "This passphrase also gives you an {{network}} address",
             "all_imported_title": "Already in your wallet",
             "all_imported_body": "All accounts from this wallet are already in Pera. If one is added as a watch account, remove it first, then import again to add it with full access.",
             "unchecked_networks_title": "Couldn't check {{networks}}",

@@ -68,6 +68,48 @@ describe('accountChainOptions', () => {
         ])
     })
 
+    test("leads with the chains sharing the own chain's address when discovery found the account active only there", () => {
+        const hd = buildTestAccount(TEST_CUSTODY.hd, {
+            [ALGORAND]: {
+                address: ALGORAND_ADDRESS,
+                keyPairId: 'k-a',
+                enabledBy: 'created',
+            },
+            [ETHEREUM]: {
+                address: EVM_KEY_ADDRESS,
+                keyPairId: 'k-e',
+                enabledBy: 'discovery',
+            },
+        })
+
+        expect(
+            accountChainOptions(hd, everyChain).map(option => option.chainId),
+        ).toEqual([
+            ETHEREUM,
+            ALGORAND,
+            ...EVM_CHAINS.filter(chainId => chainId !== ETHEREUM),
+        ])
+    })
+
+    test('keeps the registry order for an account found active on its first chain', () => {
+        const hd = buildTestAccount(TEST_CUSTODY.hd, {
+            [ALGORAND]: {
+                address: ALGORAND_ADDRESS,
+                keyPairId: 'k-a',
+                enabledBy: 'discovery',
+            },
+            [ETHEREUM]: {
+                address: EVM_KEY_ADDRESS,
+                keyPairId: 'k-e',
+                enabledBy: 'discovery',
+            },
+        })
+
+        expect(
+            accountChainOptions(hd, everyChain).map(option => option.chainId),
+        ).toEqual([ALGORAND, ...EVM_CHAINS])
+    })
+
     test('leaves out the chains the flow has switched off', () => {
         const watched = buildTestAccount(TEST_CUSTODY.watch, {
             [ETHEREUM]: { address: EVM_KEY_ADDRESS },

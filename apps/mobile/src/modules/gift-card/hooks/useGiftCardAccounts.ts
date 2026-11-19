@@ -12,26 +12,19 @@
 
 import { useMemo } from 'react'
 import {
-    accountChainIdOf,
     useAllAccounts,
-    useRegisteredChainIds,
+    useCapabilityChainResolver,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useCapableChainIds } from '@hooks/useCapableChainIds'
 
-/** Accounts whose own chain has gift cards on; only these can pay Bidali. */
+/** Accounts holding any chain with gift cards on, not just their own chain; only these can pay Bidali. */
 export const useGiftCardAccounts = (): WalletAccount[] => {
     const accounts = useAllAccounts()
-    const registeredChainIds = useRegisteredChainIds()
-    const giftCardChainIds = useCapableChainIds('giftCards')
+    const giftCardChainOf = useCapabilityChainResolver('giftCards')
 
     return useMemo(
         () =>
-            accounts.filter(account =>
-                giftCardChainIds.includes(
-                    accountChainIdOf(account, registeredChainIds),
-                ),
-            ),
-        [accounts, registeredChainIds, giftCardChainIds],
+            accounts.filter(account => giftCardChainOf(account) !== undefined),
+        [accounts, giftCardChainOf],
     )
 }

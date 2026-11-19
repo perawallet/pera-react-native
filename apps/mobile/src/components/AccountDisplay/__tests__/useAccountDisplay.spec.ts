@@ -381,4 +381,43 @@ describe('useAccountDisplay', () => {
             expect.objectContaining({ chainId: 'ethereum' }),
         )
     })
+
+    it('shows an EVM-first account on its 0x chain while the backup prompt reads the chain that backs the phrase up', () => {
+        const evmFirst: WalletAccount = {
+            id: 'account-evm-first',
+            name: '',
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
+            chains: {
+                algorand: {
+                    address: ADDRESS,
+                    keyPairId: 'k-a',
+                    enabledBy: 'created',
+                },
+                ethereum: {
+                    address: ETH_ADDRESS,
+                    keyPairId: 'k-e',
+                    enabledBy: 'discovery',
+                },
+            },
+        }
+
+        const { result } = renderHook(() =>
+            useAccountDisplay({
+                account: evmFirst,
+                compact: false,
+                showAccountType: false,
+                iconSize: 'xl',
+            }),
+        )
+
+        expect(result.current.chainId).toBe('ethereum')
+        expect(mockPromptArgs).toHaveBeenLastCalledWith(
+            evmFirst,
+            expect.objectContaining({ chainId: 'algorand' }),
+        )
+    })
 })

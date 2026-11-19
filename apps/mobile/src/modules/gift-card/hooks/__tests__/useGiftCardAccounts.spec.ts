@@ -28,6 +28,15 @@ const accountOn = (chainId: string): WalletAccount => ({
     custody: { kind: 'local', seed: null },
 })
 
+const DUAL_ACCOUNT: WalletAccount = {
+    id: 'account-dual',
+    name: '',
+    chains: {
+        algorand: { address: 'ADDR-algorand', keyPairId: 'kp' },
+        [ETHEREUM_CHAIN_ID]: { address: 'ADDR-eth', keyPairId: 'kp' },
+    },
+    custody: { kind: 'local', seed: null },
+}
 const ALGORAND_ACCOUNT = accountOn('algorand')
 const ETHEREUM_ACCOUNT = accountOn(ETHEREUM_CHAIN_ID)
 
@@ -35,7 +44,11 @@ vi.mock(import('@perawallet/wallet-core-accounts'), async importOriginal => {
     const actual = await importOriginal()
     return {
         ...actual,
-        useAllAccounts: () => [ALGORAND_ACCOUNT, ETHEREUM_ACCOUNT],
+        useAllAccounts: () => [
+            ALGORAND_ACCOUNT,
+            ETHEREUM_ACCOUNT,
+            DUAL_ACCOUNT,
+        ],
     }
 })
 
@@ -47,14 +60,14 @@ describe('useGiftCardAccounts', () => {
         restoreAlgorandOnlyChains()
     })
 
-    it('keeps only accounts on a chain with gift cards on', () => {
+    it('keeps accounts holding any chain with gift cards on, whichever is their own', () => {
         registerEthereumChain()
         setCapabilityOverrides({ giftCards: true }, 'algorand')
         setCapabilityOverrides({ giftCards: false }, ETHEREUM_CHAIN_ID)
 
         const { result } = renderHook(() => useGiftCardAccounts())
 
-        expect(result.current).toEqual([ALGORAND_ACCOUNT])
+        expect(result.current).toEqual([ALGORAND_ACCOUNT, DUAL_ACCOUNT])
     })
 
     it('includes every account when each chain has gift cards on', () => {
@@ -64,6 +77,10 @@ describe('useGiftCardAccounts', () => {
 
         const { result } = renderHook(() => useGiftCardAccounts())
 
-        expect(result.current).toEqual([ALGORAND_ACCOUNT, ETHEREUM_ACCOUNT])
+        expect(result.current).toEqual([
+            ALGORAND_ACCOUNT,
+            ETHEREUM_ACCOUNT,
+            DUAL_ACCOUNT,
+        ])
     })
 })

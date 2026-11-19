@@ -24,6 +24,7 @@ import {
     eligibleChainsInFamily,
 } from '../credentials/eligibility'
 import type { WalletAccount } from '../models'
+import { accountChainIdOf, secondaryChainIdsOf } from './useAccountChain'
 import { useCanSignWithCheck } from './useCanSignWith'
 
 export type AccountChainOption = {
@@ -55,11 +56,32 @@ const addressByFamily = (account: WalletAccount): Map<ChainFamily, string> => {
     return byFamily
 }
 
+const leadWithOwnAddress = (
+    account: WalletAccount,
+    enabled: AccountChainOption[],
+): AccountChainOption[] => {
+    const registeredChainIds = getProvider()
+        .chains.list()
+        .map(({ id }) => id)
+    if (secondaryChainIdsOf(account, registeredChainIds).length === 0) {
+        return enabled
+    }
+    const ownAddress = chainAccountOf(
+        account,
+        accountChainIdOf(account, registeredChainIds),
+    )?.address
+    return [
+        ...enabled.filter(option => option.address === ownAddress),
+        ...enabled.filter(option => option.address !== ownAddress),
+    ]
+}
+
 /**
  * The chains a flow can use the account on: its enabled chains, then the ones
  * it could enable within `reach`, each in registry order and limited to
- * `isOn`. A hardware account offers only its enabled chains, since a new one
- * needs its device.
+ * `isOn`. When the account's own chain isn't its first held one, the enabled
+ * chains sharing the own chain's address lead. A hardware account offers only
+ * its enabled chains, since a new one needs its device.
  */
 export const accountChainOptions = (
     account: WalletAccount,
@@ -81,7 +103,10 @@ export const accountChainOptions = (
                 own ?? familyAddress.get(chains.get(chainId).descriptor.family),
         }
     })
-    const enabled = options.filter(option => option.isEnabled)
+    const enabled = leadWithOwnAddress(
+        account,
+        options.filter(option => option.isEnabled),
+    )
     if (account.custody.kind === 'hardware') return enabled
     return [...enabled, ...options.filter(option => !option.isEnabled)]
 }

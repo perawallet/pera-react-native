@@ -730,6 +730,24 @@ describe('hdDiscoveryChains', () => {
         expect(hdDiscoveryChains()).toEqual([ALGORAND, ...EVM_CHAINS])
     })
 
+    test('walks the chains whose wallets usually give out the phrase length first', () => {
+        registerChainFamilies()
+
+        expect(hdDiscoveryChains(12)).toEqual([...EVM_CHAINS, ALGORAND])
+    })
+
+    test.each([24, undefined])(
+        'keeps registry order for a phrase length no chain lists (%s)',
+        wordCount => {
+            registerChainFamilies()
+
+            expect(hdDiscoveryChains(wordCount)).toEqual([
+                ALGORAND,
+                ...EVM_CHAINS,
+            ])
+        },
+    )
+
     test('keeps a chain whose Pera backend is switched off', () => {
         registerChainFamilies([ALGORAND, ETHEREUM, BASE])
         getProvider().chains.setCapabilityOverrides(() => ({

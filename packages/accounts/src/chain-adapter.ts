@@ -130,6 +130,11 @@ export type LocalKeyKind = {
     isHd: boolean
     /** The first is the count an import entry opens when it names none. */
     mnemonicWordCounts: readonly number[]
+    /**
+     * Phrase lengths this chain's own wallets usually give out. An HD import of
+     * one of these lengths walks this chain first.
+     */
+    typicalWordCounts?: readonly number[]
     /** False: reachable only from its own import entry, never from a word count. */
     isAutoDetected: boolean
 }

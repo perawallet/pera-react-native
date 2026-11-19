@@ -27,6 +27,7 @@ import { useAccountsStore } from '../../store'
 import { HDImportSessionNotFoundError } from '../../errors'
 import type { AccountsState, LocalAccount } from '../../models'
 import { buildAccount, addressOn, hdIndexOf } from '../../credentials'
+import { accountChainIdOf } from '../useAccountChain'
 import {
     ALGORAND,
     BASE,
@@ -128,6 +129,7 @@ describe('useHDImportSession', () => {
         })
         expect(prep.walletKeyId).toBe('w-1')
         expect(prepareMock).toHaveBeenCalledWith({ mnemonicIndices: INDICES })
+        expect(useHDImportSessionStore.getState().pending?.wordCount).toBe(24)
         expect(useHDImportSessionStore.getState().pending?.walletKeyId).toBe(
             'w-1',
         )
@@ -459,18 +461,6 @@ describe('useHDImportSession', () => {
 
         const setUpChains = (active: Record<string, string[]> = {}) => {
             const families = registerChainFamilies(CHAIN_IDS)
-            for (const chainId of CHAIN_IDS) {
-                Object.assign(accountsChainAdapters.get(chainId), {
-                    localKeyKinds: [
-                        {
-                            seed: 'bip39',
-                            signingScheme:
-                                chainId === ALGORAND ? 'ed25519' : 'secp256k1',
-                            isHd: true,
-                        },
-                    ],
-                })
-            }
             deriveInMemoryOn(ALGORAND)
             for (const chainId of CHAIN_IDS) {
                 families.checkActivity
@@ -488,11 +478,12 @@ describe('useHDImportSession', () => {
             return families
         }
 
-        const prepare = async (result: HookResult) => {
+        const prepare = async (
+            result: HookResult,
+            mnemonicIndices = INDICES,
+        ) => {
             await act(async () => {
-                await result.current.prepareImport({
-                    mnemonicIndices: INDICES,
-                })
+                await result.current.prepareImport({ mnemonicIndices })
             })
         }
 
@@ -553,6 +544,40 @@ describe('useHDImportSession', () => {
             expect(
                 families.checkActivity.get(ALGORAND)!.mock.calls[0]![2],
             ).toBeDefined()
+        })
+
+        test('walks the chains whose wallets give out 12 words first, and the registry order for 24', async () => {
+            setUpChains()
+            const progressFor = async (mnemonicIndices: Uint16Array) => {
+                const { result } = renderHook(() => useHDImportSession(MAINNET))
+                await prepare(result, mnemonicIndices)
+                const onProgress = vi.fn()
+                await act(async () => {
+                    await result.current.discoverImportAccounts({
+                        walletKeyId: 'w-1',
+                        onProgress,
+                    })
+                })
+                return onProgress.mock.calls[0]![0].chainIds
+            }
+
+            expect(await progressFor(new Uint16Array(12))).toEqual([
+                ETHEREUM,
+                BASE,
+                ALGORAND,
+            ])
+            expect(await progressFor(INDICES)).toEqual(CHAIN_IDS)
+        })
+
+        test('a candidate found active only on the first-walked chain resolves to it as its own chain', async () => {
+            setUpChains({ [ETHEREUM]: [familyHdAddress('evm', 1, 0)] })
+            const { result } = renderHook(() => useHDImportSession(MAINNET))
+            await prepare(result, new Uint16Array(12))
+
+            const found = await discover(result)
+
+            expect(found).toHaveLength(1)
+            expect(accountChainIdOf(found[0]!, CHAIN_IDS)).toBe(ETHEREUM)
         })
 
         test('does not count an index the wallet already holds as found', async () => {

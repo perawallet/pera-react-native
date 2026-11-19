@@ -26,6 +26,7 @@ export const ethereumLocalKeyKinds: readonly LocalKeyKind[] = [
         signingScheme: 'secp256k1',
         isHd: true,
         mnemonicWordCounts: [24, 12],
+        typicalWordCounts: [12],
         isAutoDetected: true,
     },
 ]

@@ -12,7 +12,10 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountCapabilityScope,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 
 const mockLaunch = vi.fn()
 vi.mock('@modules/backup', () => ({
@@ -85,6 +88,42 @@ describe('useBackupReminderBanner', () => {
         expect(mockShouldPrompt).toHaveBeenCalledWith(
             evmOnly,
             expect.objectContaining({ chainId: 'ethereum' }),
+        )
+    })
+
+    test("asks about the phrase chain's scope for an account found active only on Ethereum", () => {
+        mockShouldPrompt.mockReturnValue(false)
+        vi.mocked(useAccountCapabilityScope).mockReturnValueOnce({
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
+        const evmFirst: WalletAccount = {
+            id: 'evm-first',
+            name: '',
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
+            chains: {
+                algorand: {
+                    address: 'HD1',
+                    keyPairId: 'kp-a',
+                    enabledBy: 'created',
+                },
+                ethereum: {
+                    address: '0xE1',
+                    keyPairId: 'kp-e',
+                    enabledBy: 'discovery',
+                },
+            },
+        }
+
+        renderHook(() => useBackupReminderBanner(evmFirst))
+
+        expect(mockShouldPrompt).toHaveBeenCalledWith(
+            evmFirst,
+            expect.objectContaining({ chainId: 'algorand' }),
         )
     })
 })

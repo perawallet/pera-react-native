@@ -573,10 +573,31 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
     // Registry order, like the real resolver, so a record holding several chains
     // resolves the same way in specs as in the app.
     const REGISTRY_ORDER = ['algorand', 'ethereum']
-    const accountChainIdOf = (account: any): string =>
-        REGISTRY_ORDER.find(chainId => account?.chains?.[chainId]) ??
-        Object.keys(account?.chains ?? {})[0] ??
-        'algorand'
+    const accountChainIdOf = (account: any): string => {
+        const firstHeld = REGISTRY_ORDER.find(
+            chainId => account?.chains?.[chainId],
+        )
+        if (firstHeld === undefined) {
+            return Object.keys(account?.chains ?? {})[0] ?? 'algorand'
+        }
+        if (account.chains[firstHeld].enabledBy !== 'created') return firstHeld
+        return (
+            REGISTRY_ORDER.find(
+                chainId => account.chains[chainId]?.enabledBy === 'discovery',
+            ) ?? firstHeld
+        )
+    }
+    const secondaryChainIdsOf = (account: any): string[] => {
+        const held = REGISTRY_ORDER.filter(
+            chainId => account?.chains?.[chainId],
+        )
+        const own = accountChainIdOf(account)
+        if (held.length === 0 || held[0] === own) return []
+        const ownAddress = account.chains[own]?.address
+        return held.filter(
+            chainId => account.chains[chainId]?.address !== ownAddress,
+        )
+    }
     // One object per chain, so hooks that depend on the scope keep its identity.
     const scopes = new Map<string, { chainId: string; networkId: string }>()
     const scopeOf = (chainId: string) => {
@@ -606,6 +627,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         useHiddenTokensStore,
         useHiddenTokensInvalidation: vi.fn(),
         accountChainIdOf: vi.fn(accountChainIdOf),
+        secondaryChainIdsOf: vi.fn(secondaryChainIdsOf),
         useAccountHoldingSources: vi.fn(holdingSourcesOf),
         useUnreadHoldingChainIds: vi.fn(() => NO_UNREAD_CHAIN_IDS),
         useFailedFirstReadChainIds: vi.fn(() => NO_UNREAD_CHAIN_IDS),

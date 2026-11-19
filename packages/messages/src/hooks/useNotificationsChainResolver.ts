@@ -13,6 +13,7 @@
 import { useCallback } from 'react'
 import {
     accountChainIdOf,
+    chainAccountOf,
     useRegisteredChainIds,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -25,10 +26,12 @@ import {
 import type { Optional } from '@perawallet/wallet-core-shared'
 
 /**
- * The account's own chain when device registration sends its address there,
- * else `undefined`. Not the `notifications` capability: registration ignores
- * it, so an address registered while it is off (by default or at runtime) can
- * still be pushed to and keeps its mute control.
+ * The chain whose address an account's notification mute acts on: the own
+ * chain when device registration sends it, else the first held chain, in
+ * registry order, that it sends. Under the v3 API only Algorand is sent, so an
+ * account found active only on Ethereum falls back to its Algorand address.
+ * Not the `notifications` capability: registration ignores it, so an address
+ * registered while it is off can still be pushed to and keeps its mute control.
  */
 export const useNotificationsChainResolver = (): ((
     account: WalletAccount,
@@ -37,13 +40,30 @@ export const useNotificationsChainResolver = (): ((
     const deployment = useWalletDeployment()
     const refusalsVersion = usePeraScopeRefusalsVersion()
     return useCallback(
-        (account: WalletAccount) => {
-            const chainId = accountChainIdOf(account, registeredChainIds)
-            return isSentInDeviceRegistration(account, chainId, deployment)
-                ? chainId
-                : undefined
-        },
+        (account: WalletAccount) =>
+            [
+                accountChainIdOf(account, registeredChainIds),
+                ...registeredChainIds,
+            ].find(chainId =>
+                isSentInDeviceRegistration(account, chainId, deployment),
+            ),
         // eslint-disable-next-line react-hooks/exhaustive-deps -- refusalsVersion is an identity key: a refusal changes what isSentInDeviceRegistration answers
         [registeredChainIds, deployment, refusalsVersion],
+    )
+}
+
+/** The address an account's notification mute reads and writes; `undefined` when registration sends none. */
+export const useNotificationsAddressResolver = (): ((
+    account: WalletAccount,
+) => Optional<string>) => {
+    const notificationsChainOf = useNotificationsChainResolver()
+    return useCallback(
+        (account: WalletAccount) => {
+            const chainId = notificationsChainOf(account)
+            return chainId === undefined
+                ? undefined
+                : chainAccountOf(account, chainId)?.address
+        },
+        [notificationsChainOf],
     )
 }

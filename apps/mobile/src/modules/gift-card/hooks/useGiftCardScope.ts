@@ -11,6 +11,7 @@
  */
 
 import {
+    useAccountCapabilityScope,
     useAccountScope,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -18,7 +19,14 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { useCapableChainId } from '@hooks/useCapableChainIds'
 
-/** The paying account's own chain; the first gift-card chain stands in until one is picked. */
+/**
+ * The account's first held chain with gift cards on, not its own chain: an
+ * account found active only on Ethereum still pays from its Algorand address.
+ * The first gift-card chain stands in until one is picked.
+ */
 export const useGiftCardScope = (
     account: Optional<WalletAccount>,
-): ChainScope => useAccountScope(account, useCapableChainId('giftCards'))
+): ChainScope => {
+    const fallback = useAccountScope(undefined, useCapableChainId('giftCards'))
+    return useAccountCapabilityScope(account ?? null, 'giftCards') ?? fallback
+}

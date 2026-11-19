@@ -2556,6 +2556,7 @@
             "import_button": "Importar cuentas",
             "go_to_wallet": "Ir a la wallet",
             "total_value": "<0/> en total",
+            "also_gives_address": "Esta passphrase también te da una dirección de {{network}}",
             "all_imported_title": "Ya están en tu wallet",
             "all_imported_body": "Todas las cuentas de esta wallet ya están en Pera. Si alguna está añadida como cuenta de observación, elimínala primero y vuelve a importarla para añadirla con acceso completo.",
             "unchecked_networks_title": "No se pudo comprobar: {{networks}}",

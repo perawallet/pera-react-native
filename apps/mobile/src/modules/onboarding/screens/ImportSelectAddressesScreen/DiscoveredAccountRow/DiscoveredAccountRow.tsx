@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { Fragment, useCallback } from 'react'
 import { Trans } from 'react-i18next'
 import type { LocalAccount } from '@perawallet/wallet-core-accounts'
 import { PWText, PWView } from '@components/core'
@@ -59,20 +59,34 @@ export const DiscoveredAccountRow = ({
             details={
                 <PWView style={styles.details}>
                     {addressLines.map(line => (
-                        <PWView
-                            key={line.address}
-                            style={styles.addressLine}
-                            testID={`import_select_addresses_address_${line.address}`}
-                        >
-                            <PWText
-                                variant='footnoteMedium'
-                                weight={400}
-                                style={styles.text}
+                        <Fragment key={line.address}>
+                            {line.secondaryNetworkName !== undefined && (
+                                <PWText
+                                    variant='footnoteMedium'
+                                    weight={400}
+                                    style={styles.secondaryNote}
+                                    testID={`import_select_addresses_secondary_note_${line.address}`}
+                                >
+                                    {t(
+                                        'onboarding.import_select_addresses.also_gives_address',
+                                        { network: line.secondaryNetworkName },
+                                    )}
+                                </PWText>
+                            )}
+                            <PWView
+                                style={styles.addressLine}
+                                testID={`import_select_addresses_address_${line.address}`}
                             >
-                                {line.displayAddress}
-                            </PWText>
-                            <ChainIconStack chainIds={line.chainIds} />
-                        </PWView>
+                                <PWText
+                                    variant='footnoteMedium'
+                                    weight={400}
+                                    style={styles.text}
+                                >
+                                    {line.displayAddress}
+                                </PWText>
+                                <ChainIconStack chainIds={line.chainIds} />
+                            </PWView>
+                        </Fragment>
                     ))}
                     {total.kind === 'fiat' && (
                         <PWText
