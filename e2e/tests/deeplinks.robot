@@ -81,8 +81,8 @@ Second Transfer Link Keeps The Open Send Draft
     Send Amount Should Be Prefilled
     Open Deeplink    algorand://${LINK_ADDRESS}?amount=2345678
     # An open Send drops the link without a trace, so only its absence after a link's delivery time proves it.
-    Run Keyword And Expect Error    *
-    ...    Wait Until Page Contains    2.345678    timeout=3s
+    Run Keyword And Expect Error    Text '2.345678' did not appear in *
+    ...    Wait Until Page Contains    2.345678    timeout=10s
     Page Should Contain Text    ${TRANSFER_ALGOS}
     Wait Until Settled    ${SEND_CLOSE}
     Tap    ${SEND_CLOSE}

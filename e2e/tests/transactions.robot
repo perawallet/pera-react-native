@@ -40,14 +40,9 @@ Inbox Shows The Empty State On A New Account
     [Tags]    id:transactions.inbox.empty    p1    needs-backend
     Open Notifications Center
     Open Inbox
-    IF    $BACKEND_KEYED
-        Wait Until Page Contains Element    ${INBOX_EMPTY_STATE}    timeout=30s
-    ELSE
-        ${empty}=    Run Keyword And Return Status
-        ...    Wait Until Page Contains Element    ${INBOX_EMPTY_STATE}    timeout=3s
-        Skip If    not $empty
-        ...    The empty Inbox requires device registration. Set PERA_E2E_BACKEND_KEYED=1 for a build carrying the backend API key.
-    END
+    Skip If    not $BACKEND_KEYED
+    ...    The empty Inbox requires device registration. Set PERA_E2E_BACKEND_KEYED=1 for a build carrying the backend API key.
+    Wait Until Page Contains Element    ${INBOX_EMPTY_STATE}    timeout=30s
     Page Should Not Contain Element    ${ASA_INBOX_ITEM}
 
 Funded History Lists Real Transactions

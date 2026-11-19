@@ -13,6 +13,7 @@
 import { expect, test, chromium, type BrowserContext } from '@playwright/test'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { dismissPinPromptIfPresent } from './pin-prompt'
 import { skipPasskeyUnlockStep } from './passkey-unlock-step'
 
 const dist = path.resolve(
@@ -107,6 +108,10 @@ test('add-account deep-link lands on the real add-account screen', async () => {
 test('paste-link validates input and opens a corrected contact link', async () => {
     const page = await context.newPage()
     await page.goto(`chrome-extension://${extensionId}/expanded.html`)
+    await expect(page.getByTestId('account_screen')).toBeVisible({
+        timeout: 30_000,
+    })
+    await dismissPinPromptIfPresent(page)
     await page.getByTestId('tab_menu_button').click()
     await page.getByTestId('menu_paste_link_button').click()
 
