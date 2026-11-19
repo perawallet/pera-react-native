@@ -12,6 +12,8 @@
 
 import { useState } from 'react'
 import type { DateTimePickerChangeEvent } from '@react-native-community/datetimepicker'
+import type { TransactionHistoryType } from '@perawallet/wallet-core-transactions'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { isAndroid } from '@utils/platform'
 import { TransactionFilter, type CustomDateRange } from './types'
@@ -19,10 +21,15 @@ import { TransactionFilter, type CustomDateRange } from './types'
 export type TransactionsFilterResult = {
     filter: TransactionFilter
     customRange?: CustomDateRange
+    /** Null is All. Absent when the sheet offered no types. */
+    historyType?: Nullable<TransactionHistoryType>
 }
 
 export type UseTransactionsFilterContentProps = {
+    activeFilter: TransactionFilter
     initialCustomRange?: CustomDateRange
+    /** Undefined hides the Type section; null is All. */
+    activeHistoryType?: Nullable<TransactionHistoryType>
 }
 
 export type UseTransactionsFilterContentResult = {
@@ -32,6 +39,8 @@ export type UseTransactionsFilterContentResult = {
     activeDateInput: 'from' | 'to'
     isPickerVisible: boolean
     handleFilterPress: (filter: TransactionFilter) => void
+    /** Applies the type with the date range already in force. */
+    handleHistoryTypePress: (type: Nullable<TransactionHistoryType>) => void
     handleDatePress: (input: 'from' | 'to') => void
     handleDateValueChange: (
         event: DateTimePickerChangeEvent,
@@ -42,7 +51,9 @@ export type UseTransactionsFilterContentResult = {
 }
 
 export const useTransactionsFilterContent = ({
+    activeFilter,
     initialCustomRange,
+    activeHistoryType,
 }: UseTransactionsFilterContentProps): UseTransactionsFilterContentResult => {
     const { resolve } = useBottomSheetResult<TransactionsFilterResult>()
 
@@ -59,12 +70,28 @@ export const useTransactionsFilterContent = ({
     )
     const [isPickerVisible, setIsPickerVisible] = useState(false)
 
+    const typeResult =
+        activeHistoryType === undefined
+            ? {}
+            : { historyType: activeHistoryType }
+
     const handleFilterPress = (filter: TransactionFilter) => {
         if (filter === TransactionFilter.CustomRange) {
             setView('custom_range')
         } else {
-            resolve({ filter })
+            resolve({ filter, ...typeResult })
         }
+    }
+
+    const handleHistoryTypePress = (
+        historyType: Nullable<TransactionHistoryType>,
+    ) => {
+        resolve({
+            filter: activeFilter,
+            ...(activeFilter === TransactionFilter.CustomRange &&
+                initialCustomRange && { customRange: initialCustomRange }),
+            historyType,
+        })
     }
 
     const handleDatePress = (input: 'from' | 'to') => {
@@ -98,7 +125,11 @@ export const useTransactionsFilterContent = ({
     }
 
     const handleApplyCustomRange = () => {
-        resolve({ filter: TransactionFilter.CustomRange, customRange })
+        resolve({
+            filter: TransactionFilter.CustomRange,
+            customRange,
+            ...typeResult,
+        })
     }
 
     return {
@@ -108,6 +139,7 @@ export const useTransactionsFilterContent = ({
         activeDateInput,
         isPickerVisible,
         handleFilterPress,
+        handleHistoryTypePress,
         handleDatePress,
         handleDateValueChange,
         handlePickerDismiss,

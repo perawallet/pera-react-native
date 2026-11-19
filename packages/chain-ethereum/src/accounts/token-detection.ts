@@ -11,7 +11,9 @@
  */
 
 import {
+    erc1155Abi,
     erc20Abi,
+    erc721Abi,
     getAddress,
     isAddress,
     isAddressEqual,
@@ -35,7 +37,12 @@ const HISTORY_SCAN_WINDOW_MS = 10 * 60_000
 const sightingKey = (scope: ChainScope, address: string): string =>
     `${scope.chainId}/${scope.networkId}/${address.toLowerCase()}`
 
-/** Tokens seen arriving at an address, for the session; the next account read includes them. */
+/**
+ * Tokens seen arriving at an address, for the session; the next account read
+ * includes them. A mined NFT send also marks its sender's NFT list stale: a
+ * transfer past page one leaves page one as it was, so the next read lists
+ * every page.
+ */
 export type TokenSightings = {
     record(
         scope: ChainScope,
@@ -43,10 +50,15 @@ export type TokenSightings = {
         tokenIds: readonly string[],
     ): void
     of(scope: ChainScope, address: string): readonly string[]
+    recordSend(scope: ChainScope, address: string): void
+    hasSend(scope: ChainScope, address: string): boolean
+    /** True once per recorded send. */
+    takeSend(scope: ChainScope, address: string): boolean
 }
 
 export const createTokenSightings = (): TokenSightings => {
     const seen = new Map<string, Set<string>>()
+    const sends = new Set<string>()
     return {
         record: (scope, address, tokenIds) => {
             if (tokenIds.length === 0) return
@@ -58,6 +70,11 @@ export const createTokenSightings = (): TokenSightings => {
         of: (scope, address) => [
             ...(seen.get(sightingKey(scope, address)) ?? []),
         ],
+        recordSend: (scope, address) => {
+            sends.add(sightingKey(scope, address))
+        },
+        hasSend: (scope, address) => sends.has(sightingKey(scope, address)),
+        takeSend: (scope, address) => sends.delete(sightingKey(scope, address)),
     }
 }
 
@@ -89,8 +106,36 @@ export const receivedTokenIdsOf = (
     ]
 }
 
-/** Spends one unit per history page; refuses once the window's units are gone. */
-export type HistoryScanBudget = { take(): boolean }
+/**
+ * Whether the logs move an ERC-721 or ERC-1155 token out of `address`. An
+ * ERC-20 `Transfer` has no fourth topic, so strict ERC-721 decoding skips it.
+ */
+export const sendsNftFrom = (
+    logs: readonly Log[],
+    address: string,
+): boolean => {
+    if (!isAddress(address)) return false
+    return [
+        ...parseEventLogs({
+            abi: erc721Abi,
+            eventName: 'Transfer',
+            logs: [...logs],
+        }),
+        ...parseEventLogs({
+            abi: erc1155Abi,
+            eventName: ['TransferSingle', 'TransferBatch'],
+            logs: [...logs],
+        }),
+    ].some(log => isAddressEqual(log.args.from, address))
+}
+
+/**
+ * Spends one unit per history page; refuses once the window's units are gone.
+ * A scan's first page names its account: one refused then waits in line, and
+ * the units left are held for those ahead of it, so accounts asking in the
+ * same order every tick can't take every renewed window from the ones behind.
+ */
+export type HistoryScanBudget = { take(key?: string): boolean }
 
 export const createHistoryScanBudget = (
     limit: number,
@@ -99,16 +144,41 @@ export const createHistoryScanBudget = (
 ): HistoryScanBudget => {
     let windowStart = now()
     let used = 0
+    // When each waiting account was first refused, and last asked.
+    const waiting = new Map<string, { since: number; seen: number }>()
     return {
-        take: () => {
+        take: key => {
             const at = now()
             if (at - windowStart >= windowMs) {
                 windowStart = at
                 used = 0
             }
-            if (used >= limit) return false
-            used++
-            return true
+            // An account still due asks again each interval; one that stopped
+            // asking (removed, its chain turned off) gives up its place.
+            waiting.forEach(({ seen }, waiter) => {
+                if (at - seen >= 2 * TOKEN_SCAN_INTERVAL_MS) {
+                    waiting.delete(waiter)
+                }
+            })
+            const own = key === undefined ? undefined : waiting.get(key)
+            let ahead = 0
+            waiting.forEach(({ since }, waiter) => {
+                if (
+                    waiter !== key &&
+                    (own === undefined || since < own.since)
+                ) {
+                    ahead++
+                }
+            })
+            if (limit - used > ahead) {
+                used++
+                if (key !== undefined) waiting.delete(key)
+                return true
+            }
+            if (key !== undefined) {
+                waiting.set(key, { since: own?.since ?? at, seen: at })
+            }
+            return false
         },
     }
 }
@@ -167,7 +237,10 @@ export const scanReceivedTokens = async (
                 : undefined,
     })
     for (let page = 0; page < TOKEN_SCAN_MAX_PAGES; page++) {
-        if (!budget.take()) return cutShort(false)
+        const isTaken = budget.take(
+            page === 0 ? sightingKey(scope, address) : undefined,
+        )
+        if (!isTaken) return cutShort(false)
         const { items, next } = await fetchHistoryPage(
             scope,
             chain,

@@ -17,15 +17,18 @@ import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
 import { canMuteChainInDeviceRegistration } from './endpoints'
+import { usePeraScopeRefusalsVersion } from './usePeraScopeRefusalsVersion'
 
 /**
  * Registered chains, in registry order, whose pushes this device can mute on
  * the current deployment. Subscribes through the remote-config store, which
  * holds overrides only (a fetched value is re-read on the next render), and
- * keeps its identity until the set changes.
+ * through chain refusals, and keeps its identity until the set changes.
  */
 export const useChainsDeviceCanMute = (): ChainId[] => {
     const deployment = useWalletDeployment()
+    // Only re-renders: the selector below re-reads refusals on every render.
+    usePeraScopeRefusalsVersion()
     const key = useRemoteConfigStore(() =>
         getProvider()
             .chains.list()

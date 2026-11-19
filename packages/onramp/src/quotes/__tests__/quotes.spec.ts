@@ -17,6 +17,7 @@ import type { RampQuote } from '../../models'
 import {
     filterQuotesByPaymentMethod,
     parseRampAmount,
+    isRampQuoteExpired,
     pickBestQuote,
     quoteUsdPrices,
     sortQuotesByDestinationDesc,
@@ -36,7 +37,18 @@ const buildQuote = (
     destinationAmount: new Decimal(destinationAmount),
     sourceValueInUsd: null,
     destinationValueInUsd: null,
+    expiresAt: null,
     ...overrides,
+})
+
+describe('isRampQuoteExpired', () => {
+    it('is expired from its expiry on, and never without one', () => {
+        const quote = buildQuote('q', 1, 'CARD', { expiresAt: 1_000 })
+
+        expect(isRampQuoteExpired(quote, 999)).toBe(false)
+        expect(isRampQuoteExpired(quote, 1_000)).toBe(true)
+        expect(isRampQuoteExpired(buildQuote('q', 1), 1e15)).toBe(false)
+    })
 })
 
 describe('parseRampAmount', () => {

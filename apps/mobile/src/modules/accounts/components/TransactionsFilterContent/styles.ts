@@ -48,6 +48,19 @@ export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => {
             textAlign: 'center',
             width: '100%',
         },
+        typeSection: {
+            paddingBottom: theme.spacing.md,
+            width: '100%',
+            minWidth: 0,
+        },
+        sectionLabel: {
+            color: theme.colors.textGray,
+            paddingHorizontal: theme.spacing.xl,
+            marginBottom: theme.spacing.sm,
+        },
+        typeChips: {
+            paddingHorizontal: theme.spacing.xl,
+        },
         listItem: {
             flexDirection: 'row',
             alignItems: 'center',

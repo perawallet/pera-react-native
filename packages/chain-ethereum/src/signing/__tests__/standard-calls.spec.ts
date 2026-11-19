@@ -406,6 +406,27 @@ describe('approvalWarningOf', () => {
         ).toBe('danger')
     })
 
+    it('reads an approve the store knows as an NFT as that one item, whatever its token id', () => {
+        expect(approvalWarningOf(approve(0n), true)).toMatchObject({
+            severity: 'warning',
+            message: expect.stringContaining('this item'),
+        })
+        expect(approvalWarningOf(approve(maxUint256), true)?.severity).toBe(
+            'warning',
+        )
+        expect(
+            approvalWarningOf(
+                {
+                    kind: 'approve',
+                    contract: TOKEN,
+                    spender: '0x0000000000000000000000000000000000000000',
+                    value: new Decimal(7),
+                },
+                true,
+            ),
+        ).toBeUndefined()
+    })
+
     it('is a warning for a limited grant', () => {
         expect(approvalWarningOf(approve(maxUint160 - 1n))).toMatchObject({
             type: 'token-approval',

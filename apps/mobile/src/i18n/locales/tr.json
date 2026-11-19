@@ -82,6 +82,10 @@
             "see_all": "Tümünü gör",
             "empty_title": "Henüz favorin yok",
             "empty_body": "dApp'leri keşfetmeye başla",
+            "suggestions": {
+                "body": "En çok kullandığın dApp'leri ekle. Başlamak için birkaç öneri:",
+                "add": "Ekle"
+            },
             "added_toast": {
                 "title": "Favorilere eklendi"
             },
@@ -430,6 +434,7 @@
         "transaction_list": {
             "title": "İşlemler",
             "empty_body": "İşlem bulunamadı",
+            "empty_filtered_body": "Bu filtreyle eşleşen işlem yok",
             "empty_on_network_body": "{{network}} ağında henüz işlem yok",
             "network_failed": "{{networks}} ağındaki işlemler yüklenemedi",
             "network_unavailable": "{{networks}} ağında işlemler kullanılamıyor",
@@ -438,7 +443,8 @@
             "search_paused_body": "Yakın geçmişte işlem bulunamadı.",
             "search_older": "Daha eskileri ara",
             "filter": "Filtrele",
-            "csv": "CSV"
+            "csv": "CSV",
+            "csv_on_network": "{{network}} CSV"
         },
         "collectible": {
             "description": "Açıklama",
@@ -1130,6 +1136,7 @@
         }
     },
     "common": {
+        "app_name": "Pera Wallet",
         "networks_list": "{{first}} ve {{last}}",
         "offline_mode": "Çevrimdışı mod",
         "offline_mode_description": "Bakiyeler güncel olmayabilir ve yeniden bağlanana kadar bazı özellikler kullanılamaz.",
@@ -1443,6 +1450,10 @@
             "server_error": {
                 "title": "Sunucu hatası",
                 "body": "Sunucu isteğini işlerken bir sorunla karşılaştı. Tekrar dene."
+            },
+            "rate_limited": {
+                "title": "Ağ yoğun",
+                "body": "Ağ şu anda çok fazla istek alıyor. Biraz bekle ve tekrar dene."
             }
         },
         "transaction": {
@@ -3753,6 +3764,8 @@
             "nothing_back_title": "Karşılığında hiçbir şey almıyorsun",
             "permission_collection": "Tüm {{collection}} NFT’lerin",
             "permission_collection_note": "Bu koleksiyondaki tüm NFT’lerini, bu izni kaldırana kadar şimdi ve daha sonra taşıyabilir.",
+            "permission_increase": "Ek harcama izni verilen: {{spender}}",
+            "permission_increase_note": "Bu tutar {{spender}} için mevcut harcama iznine eklenir, bu yüzden toplam limit daha yüksek olabilir.",
             "permission_no_change": "Bu işlemle cüzdanından hiçbir token çıkmaz.",
             "permission_revoke": "Harcama izni kaldırılıyor: {{spender}}",
             "permission_spender": "Harcama izni verilen: {{spender}}",
@@ -3866,9 +3879,13 @@
             "app_call": "Uygulama çağrısı",
             "contract_call": "Sözleşme çağrısı",
             "approve_asset": "{{asset}} onayla",
+            "approve_all": "{{collection}} koleksiyonunun tümünü onayla",
+            "approval_for": "Harcayan: {{spender}}",
+            "unlimited_approval_for": "Sınırsız · Harcayan: {{spender}}",
             "swap_pair": "Swap {{from}} → {{to}}",
             "add_liquidity": "Likidite ekle",
             "remove_liquidity": "Likidite çek",
+            "collect_fees": "Ücretleri topla",
             "contract_interaction": "Sözleşme etkileşimi",
             "approval": "Onay",
             "revoke_approval": "Onayı iptal et",
@@ -4034,7 +4051,14 @@
             "yesterday": "Dün",
             "last_week": "Geçen hafta",
             "last_month": "Geçen ay",
-            "custom_range": "Özel aralık"
+            "custom_range": "Özel aralık",
+            "type": "Tür",
+            "type_all": "Tümü",
+            "type_swaps": "Takaslar",
+            "type_approvals": "Onaylar",
+            "type_defi": "DeFi",
+            "type_transfers": "Gönderme ve alma",
+            "type_other": "Diğer"
         },
         "replacement": {
             "title": "Bekleyen işlem",
@@ -4270,7 +4294,6 @@
             },
             "provider_failed_body": "Bu sağlayıcı swap işlemini tamamlayamadı. Başka bir sağlayıcı dene.",
             "provider_unavailable_body": "Sağlayıcı şu anda kullanılamıyor. Biraz sonra tekrar dene.",
-            "route_unverified_body": "Pera bu sağlayıcının {{network}} ağındaki swap sözleşmesini henüz doğrulayamıyor, bu yüzden hiçbir şey imzalanmadı. Başka bir sağlayıcı dene veya daha sonra tekrar dene.",
             "quote_mismatch_body": "Sağlayıcının işlemleri bu teklifle eşleşmedi, bu yüzden hiçbir şey imzalanmadı. Tekrar dene veya başka bir sağlayıcı seç.",
             "unsupported_order_body": "Pera bu sağlayıcının siparişini tamamlayamıyor, bu yüzden hiçbir şey imzalanmadı. Başka bir sağlayıcı seç.",
             "signing_failed_body": "İşlem imzalanamadı, bu yüzden gönderilmedi. Tekrar dene.",
@@ -4389,7 +4412,9 @@
             "no_payment_methods": "Cihazın için kullanılabilir ödeme yöntemi yok.",
             "amount_below_min": "Miktar {{min}} değerinden büyük olmalı",
             "amount_below_min_unknown": "Miktar, sağlayıcının minimum değerinin altında",
-            "amount_above_max": "Miktar {{max}} değerinden küçük olmalı"
+            "amount_above_max": "Miktar {{max}} değerinden küçük olmalı",
+            "quote_refreshed_title": "Teklif yenilendi",
+            "quote_refreshed_body": "O teklifin süresi dolmuştu, bu yüzden yeni bir fiyat aldık. Kontrol edip yeniden devam et."
         },
         "pair_selection": {
             "title_to": "Hedef",

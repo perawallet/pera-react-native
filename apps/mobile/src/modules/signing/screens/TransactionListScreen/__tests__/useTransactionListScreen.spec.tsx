@@ -32,6 +32,10 @@ vi.mock('@react-navigation/native', () => ({
     }),
 }))
 
+vi.mock('@modules/signing/hooks/useSignRequestScope', () => ({
+    useSignRequestScope: () => ({ chainId: 'base', networkId: 'mainnet' }),
+}))
+
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningPipeline: vi.fn(() => ({
         currentRequest: {
@@ -72,6 +76,15 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 describe('useTransactionListScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+    })
+
+    it("hands its rows the request's own scope", () => {
+        const { result } = renderHook(() => useTransactionListScreen())
+
+        expect(result.current.reviewScope).toEqual({
+            chainId: 'base',
+            networkId: 'mainnet',
+        })
     })
 
     it('returns listItems from signing request analysis', () => {

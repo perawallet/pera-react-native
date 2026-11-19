@@ -23,8 +23,10 @@ import type { Optional } from '@perawallet/wallet-core-shared'
 import { isEvmNftAssetId, toCaip19 } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
 import { fetchHistoryPage } from './api/endpoints'
+import { fetchEvmHistoryCsv } from './api/export'
 import type { EvmHistoryItem } from './api/schema'
 import { readEvmTransactionDetail } from './detail'
+import { readNftApprovals } from './nft-approvals'
 import { singleNftOf, summarizeEthereumHistoryItem } from './summarize'
 
 // A withdrawal row has no hash; its first EIP-4895 index is unique
@@ -40,6 +42,7 @@ const toRecords = (
     scope: ChainScope,
     chain: EvmChain,
     isDecoding: boolean,
+    nftApprovals: ReadonlySet<string>,
 ): TransactionRecord[] => {
     const id = recordId(item)
     if (id === undefined) return []
@@ -49,6 +52,7 @@ const toRecords = (
         scope,
         chain,
         isDecoding,
+        nftApprovals,
     )
     const nft = singleNftOf(item, address, summary)
     return [
@@ -120,9 +124,10 @@ export const getEvmTransactionHistory = async (
         page,
         { caip19AssetId, signal },
     )
+    const nftApprovals = await readNftApprovals(items, address, scope)
     return {
         items: items.flatMap(item =>
-            toRecords(item, address, scope, chain, isDecoding),
+            toRecords(item, address, scope, chain, isDecoding, nftApprovals),
         ),
         ...(next !== null && { next: { cursor: next } }),
     }
@@ -150,4 +155,5 @@ export const createEvmHistoryAdapter = (
         ),
     getTransactionDetail: (txId, scope, record) =>
         readEvmTransactionDetail(ctx, chain, scope, txId, record.fee),
+    exportCsv: params => fetchEvmHistoryCsv(chain, params),
 })

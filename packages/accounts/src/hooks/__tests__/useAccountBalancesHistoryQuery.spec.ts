@@ -43,10 +43,13 @@ const selectedScope = (): ChainScope => ({
 })
 
 // Mock currencies
-const mockUsdToPreferred = vi.fn((amount: Decimal) => amount.mul(1.5))
+const mockUsdToPreferred = vi.fn((amount: Decimal, _datetime: Date) =>
+    amount.mul(1.5),
+)
 vi.mock('@perawallet/wallet-core-currencies', () => ({
-    useCurrency: () => ({
-        usdToPreferred: mockUsdToPreferred,
+    useHistoricUsdToPreferred: () => ({
+        usdToPreferredAt: mockUsdToPreferred,
+        isPending: false,
     }),
 }))
 

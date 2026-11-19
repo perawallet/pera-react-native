@@ -104,8 +104,9 @@ export const DiscoverDappsScreen = () => {
                 testID='discover_dapps_search'
             />
             {screen.chainOptions.length > 0 ? (
-                // Wrapped so the horizontal ScrollView keeps its content height.
-                <PWView>
+                // Wrapped so the horizontal ScrollView keeps its content height;
+                // it runs to the screen's edges, so a chip is only cut where the screen ends.
+                <PWView style={styles.bleed}>
                     <FilterSelection
                         options={screen.chainOptions}
                         selectedValue={screen.selectedChainId}
@@ -142,7 +143,7 @@ export const DiscoverDappsScreen = () => {
             </PWView>
             {/* "All" alone means the list has no categories to pick from. */}
             {screen.items.length > 0 && screen.categoryOptions.length > 1 ? (
-                <PWView>
+                <PWView style={styles.bleed}>
                     <FilterSelection
                         options={screen.categoryOptions}
                         selectedValue={screen.selectedCategory}
@@ -175,9 +176,13 @@ export const DiscoverDappsScreen = () => {
     return (
         <PWScreen
             scroll='never'
+            // The list spans the screen and pads its own content, so the chip rows
+            // can scroll to the screen's edges instead of being cut at the padding.
+            horizontalPadding='none'
             testID='discover_dapps_screen'
         >
             <PWFlatList
+                contentContainerStyle={styles.list}
                 data={screen.items}
                 renderItem={renderRow}
                 keyExtractor={item => item.dapp.url}

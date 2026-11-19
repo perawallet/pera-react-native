@@ -11,8 +11,8 @@
             "asset_id": "eip155:1/erc20:0x6b175474e89094c44da98b954eedeac495271d0f"
         }
     },
-    "recordedFrom": "algorand-backend@c7cdc8fb9",
-    "recordedAt": "2026-11-17T15:22:14Z",
+    "recordedFrom": "algorand-backend@be46f1b3c",
+    "recordedAt": "2026-11-19T09:09:10Z",
     "response": {
         "next": null,
         "previous": null,
@@ -28,6 +28,7 @@
                 "fee": "245762460950979",
                 "status": "success",
                 "method": null,
+                "input": null,
                 "token_transfers": [
                     {
                         "asset_id": "eip155:1/erc20:0x6b175474e89094c44da98b954eedeac495271d0f",
@@ -61,6 +62,7 @@
                 "fee": "14791726829000",
                 "status": "success",
                 "method": null,
+                "input": null,
                 "token_transfers": [
                     {
                         "asset_id": "eip155:1/erc20:0x6b175474e89094c44da98b954eedeac495271d0f",
@@ -94,6 +96,7 @@
                 "fee": "52397766665622",
                 "status": "success",
                 "method": null,
+                "input": null,
                 "token_transfers": [
                     {
                         "asset_id": "eip155:1/erc20:0x6b175474e89094c44da98b954eedeac495271d0f",
@@ -127,6 +130,7 @@
                 "fee": "319890657418317",
                 "status": "success",
                 "method": null,
+                "input": null,
                 "token_transfers": [
                     {
                         "asset_id": "eip155:1/erc20:0x6b175474e89094c44da98b954eedeac495271d0f",
@@ -160,6 +164,7 @@
                 "fee": "690502645425824",
                 "status": "success",
                 "method": null,
+                "input": null,
                 "token_transfers": [
                     {
                         "asset_id": "eip155:1/erc20:0x6b175474e89094c44da98b954eedeac495271d0f",
@@ -193,6 +198,7 @@
                 "fee": "44201767718934",
                 "status": "success",
                 "method": null,
+                "input": null,
                 "token_transfers": [
                     {
                         "asset_id": "eip155:1/erc20:0x6b175474e89094c44da98b954eedeac495271d0f",
@@ -226,6 +232,7 @@
                 "fee": "126062827713812",
                 "status": "success",
                 "method": null,
+                "input": null,
                 "token_transfers": [
                     {
                         "asset_id": "eip155:1/erc20:0x6b175474e89094c44da98b954eedeac495271d0f",
@@ -259,6 +266,7 @@
                 "fee": "29330438812708",
                 "status": "success",
                 "method": null,
+                "input": null,
                 "token_transfers": [
                     {
                         "asset_id": "eip155:1/erc20:0x6b175474e89094c44da98b954eedeac495271d0f",
@@ -292,6 +300,7 @@
                 "fee": "181362600000000",
                 "status": "success",
                 "method": null,
+                "input": null,
                 "token_transfers": [
                     {
                         "asset_id": "eip155:1/erc20:0x6b175474e89094c44da98b954eedeac495271d0f",
@@ -325,6 +334,7 @@
                 "fee": "211827771174866",
                 "status": "success",
                 "method": null,
+                "input": null,
                 "token_transfers": [
                     {
                         "asset_id": "eip155:1/erc20:0x6b175474e89094c44da98b954eedeac495271d0f",
@@ -358,6 +368,7 @@
                 "fee": "101645114268512",
                 "status": "success",
                 "method": null,
+                "input": null,
                 "token_transfers": [
                     {
                         "asset_id": "eip155:1/erc20:0x6b175474e89094c44da98b954eedeac495271d0f",
@@ -391,6 +402,7 @@
                 "fee": "124913515071856",
                 "status": "success",
                 "method": null,
+                "input": null,
                 "token_transfers": [
                     {
                         "asset_id": "eip155:1/erc20:0x6b175474e89094c44da98b954eedeac495271d0f",
@@ -424,6 +436,7 @@
                 "fee": "301841797554948",
                 "status": "success",
                 "method": null,
+                "input": null,
                 "token_transfers": [
                     {
                         "asset_id": "eip155:1/erc20:0x6b175474e89094c44da98b954eedeac495271d0f",
@@ -457,6 +470,7 @@
                 "fee": "2590737568314490",
                 "status": "success",
                 "method": null,
+                "input": null,
                 "token_transfers": [
                     {
                         "asset_id": "eip155:1/erc20:0x6b175474e89094c44da98b954eedeac495271d0f",
@@ -490,6 +504,7 @@
                 "fee": "7709215571854592",
                 "status": "success",
                 "method": null,
+                "input": null,
                 "token_transfers": [
                     {
                         "asset_id": "eip155:1/erc20:0x6b175474e89094c44da98b954eedeac495271d0f",
@@ -523,6 +538,7 @@
                 "fee": "2590830179422515",
                 "status": "success",
                 "method": null,
+                "input": null,
                 "token_transfers": [
                     {
                         "asset_id": "eip155:1/erc20:0x6b175474e89094c44da98b954eedeac495271d0f",
@@ -556,6 +572,7 @@
                 "fee": "2701528680937138",
                 "status": "success",
                 "method": null,
+                "input": null,
                 "token_transfers": [
                     {
                         "asset_id": "eip155:1/erc20:0x6b175474e89094c44da98b954eedeac495271d0f",
@@ -589,6 +606,7 @@
                 "fee": "4585541903999784",
                 "status": "success",
                 "method": null,
+                "input": null,
                 "token_transfers": [
                     {
                         "asset_id": "eip155:1/erc20:0x6b175474e89094c44da98b954eedeac495271d0f",
@@ -622,6 +640,7 @@
                 "fee": "2652477336748708",
                 "status": "success",
                 "method": null,
+                "input": null,
                 "token_transfers": [
                     {
                         "asset_id": "eip155:1/erc20:0x6b175474e89094c44da98b954eedeac495271d0f",
@@ -655,6 +674,7 @@
                 "fee": "32407251849342981",
                 "status": "success",
                 "method": null,
+                "input": null,
                 "token_transfers": [
                     {
                         "asset_id": "eip155:1/erc20:0x6b175474e89094c44da98b954eedeac495271d0f",
@@ -688,6 +708,7 @@
                 "fee": "1103278249588298",
                 "status": "success",
                 "method": null,
+                "input": null,
                 "token_transfers": [
                     {
                         "asset_id": "eip155:1/erc20:0x6b175474e89094c44da98b954eedeac495271d0f",
@@ -721,6 +742,7 @@
                 "fee": "422415221889976",
                 "status": "success",
                 "method": null,
+                "input": null,
                 "token_transfers": [
                     {
                         "asset_id": "eip155:1/erc20:0x6b175474e89094c44da98b954eedeac495271d0f",
@@ -754,6 +776,7 @@
                 "fee": "722837372944344",
                 "status": "success",
                 "method": null,
+                "input": null,
                 "token_transfers": [
                     {
                         "asset_id": "eip155:1/erc20:0x6b175474e89094c44da98b954eedeac495271d0f",
@@ -787,6 +810,7 @@
                 "fee": "52461988974038056",
                 "status": "success",
                 "method": null,
+                "input": null,
                 "token_transfers": [
                     {
                         "asset_id": "eip155:1/erc20:0x6b175474e89094c44da98b954eedeac495271d0f",
@@ -820,6 +844,7 @@
                 "fee": "5596158188162556",
                 "status": "success",
                 "method": null,
+                "input": null,
                 "token_transfers": [
                     {
                         "asset_id": "eip155:1/erc20:0x6b175474e89094c44da98b954eedeac495271d0f",

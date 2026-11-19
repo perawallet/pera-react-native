@@ -25,6 +25,7 @@ import {
     encodeFunctionData,
     encodeFunctionResult,
     erc20Abi,
+    getAddress,
     numberToHex,
     serializeTransaction,
 } from 'viem'
@@ -114,16 +115,16 @@ const APPROVE_TX = encodeCall(
         args: [ROUTER, AMOUNT],
     }),
 )
-const SWAP_TX = encodeCall(ROUTER, '0x5ae401dc')
+const SWAP_TX = encodeCall(ROUTER, '0x3593564c')
 const STRANGER = '0x00000000000000000000000000000000000000aa' as Address
-const LONE_TRANSFER_TX = encodeCall(
-    TOKEN,
-    encodeFunctionData({
-        abi: erc20Abi,
-        functionName: 'transfer',
-        args: [STRANGER, AMOUNT],
-    }),
-)
+const TRANSFER_DATA = encodeFunctionData({
+    abi: erc20Abi,
+    functionName: 'transfer',
+    args: [STRANGER, AMOUNT],
+})
+const DEPOSIT_TX = encodeCall(TOKEN, TRANSFER_DATA)
+// A transfer called on another contract: the denylist refuses it.
+const REFUSED_TX = encodeCall(ROUTER, TRANSFER_DATA)
 
 const orderOf = (transactions: string[]): SwapOrder => ({
     orderId: 'order-1',
@@ -199,8 +200,7 @@ const contextOf = (
 const run = (
     context: SwapExecutionContext,
     input: ExecuteSwapParams = inputOf(),
-    routeContracts: readonly Address[] = [ROUTER],
-) => executeEvmSwap({ ctx, chain: ETHEREUM, routeContracts, input, context })
+) => executeEvmSwap({ ctx, chain: ETHEREUM, input, context })
 
 const allowance = (amount: bigint): Hex =>
     encodeFunctionResult({
@@ -336,30 +336,11 @@ describe('executeEvmSwap', () => {
         expect(transaction.maxFeePerGas).toBeGreaterThan(1n)
     })
 
-    it('signs nothing for a contract the route does not declare, and cancels the order', async () => {
-        fakeNode({ balance: RICH })
-        const context = contextOf(orderOf([SWAP_TX]))
-
-        const result = await run(context, inputOf(), [TOKEN])
-
-        expect(result).toEqual({
-            kind: 'failed',
-            failure: {
-                phase: 'prepare',
-                reason: 'route-unverified',
-                chainId: scope.chainId,
-            },
-        })
-        expect(context.addSignRequest).not.toHaveBeenCalled()
-        await flushCancelReport()
-        expect(context.reportOrder).toHaveBeenCalledWith(CANCELLED)
-    })
-
     it('signs nothing the validator refuses, and cancels the order', async () => {
         fakeNode({ balance: RICH })
-        const context = contextOf(orderOf([LONE_TRANSFER_TX]))
+        const context = contextOf(orderOf([REFUSED_TX]))
 
-        const result = await run(context, inputOf(), [ROUTER])
+        const result = await run(context, inputOf())
 
         expect(result).toEqual({
             kind: 'failed',
@@ -368,37 +349,6 @@ describe('executeEvmSwap', () => {
         expect(context.addSignRequest).not.toHaveBeenCalled()
         await flushCancelReport()
         expect(context.reportOrder).toHaveBeenCalledWith(CANCELLED)
-    })
-
-    it('creates no order while the route declares no contracts', async () => {
-        const context = contextOf(orderOf([SWAP_TX]))
-
-        const result = await run(context, inputOf(), [])
-
-        expect(result).toEqual({
-            kind: 'failed',
-            failure: {
-                phase: 'prepare',
-                reason: 'route-unverified',
-                chainId: scope.chainId,
-            },
-        })
-        expect(context.createOrder).not.toHaveBeenCalled()
-        expect(context.reportOrder).not.toHaveBeenCalled()
-    })
-
-    it('reports an unverifiable route even for a stale quote', async () => {
-        const context = contextOf(orderOf([SWAP_TX]))
-
-        const result = await run(
-            context,
-            inputOf({ quote: { ...quoteOf(), fetchedAt: undefined } }),
-            [],
-        )
-
-        expect(result).toMatchObject({
-            failure: { reason: 'route-unverified' },
-        })
     })
 
     it('refuses unreadable bytes the same way', async () => {
@@ -504,6 +454,56 @@ describe('executeEvmSwap', () => {
         expect(node.sentCount()).toBe(1)
         await flushCancelReport()
         expect(context.reportOrder).toHaveBeenCalledWith(CANCELLED)
+    })
+
+    it('sends no swap whose order has expired when it needs no approval', async () => {
+        const node = fakeNode({ balance: RICH, callResult: allowance(AMOUNT) })
+        const context = contextOf({
+            ...orderOf([APPROVE_TX, SWAP_TX]),
+            expiresAt: Date.now() - 1,
+        })
+
+        const result = await run(context)
+
+        expect(result).toEqual({ kind: 'stale-quote' })
+        expect(context.signed).toEqual([])
+        expect(node.sentCount()).toBe(0)
+        await flushCancelReport()
+        expect(context.reportOrder).toHaveBeenCalledWith(CANCELLED)
+    })
+
+    it('sends no swap whose order expires while it is being signed', async () => {
+        const node = fakeNode({ balance: RICH, callResult: allowance(AMOUNT) })
+        const order = {
+            ...orderOf([APPROVE_TX, SWAP_TX]),
+            expiresAt: Date.now() + 60_000,
+        }
+        const context = contextOf(order, async request => {
+            order.expiresAt = Date.now() - 1
+            await signs(request)
+        })
+
+        const result = await run(context)
+
+        expect(result).toEqual({ kind: 'stale-quote' })
+        expect(context.signed.map(tx => tx.summary?.kind)).toEqual(['swap'])
+        expect(node.sentCount()).toBe(0)
+        expect(context.onOrderSubmitting).not.toHaveBeenCalled()
+        await flushCancelReport()
+        expect(context.reportOrder).toHaveBeenCalledWith(CANCELLED)
+    })
+
+    it('sends a swap whose order is still live once signed', async () => {
+        const node = fakeNode({ balance: RICH, callResult: allowance(AMOUNT) })
+        const context = contextOf({
+            ...orderOf([APPROVE_TX, SWAP_TX]),
+            expiresAt: Date.now() + 60_000,
+        })
+
+        const result = await run(context)
+
+        expect(result.kind).toBe('success')
+        expect(node.sentCount()).toBe(1)
     })
 
     it('cancels when the swap is rejected after the approval landed', async () => {
@@ -691,7 +691,30 @@ describe('executeEvmSwap', () => {
 
         await run(context)
 
-        expect(context.onOrderSubmitting).toHaveBeenCalledWith('order-1')
+        expect(context.onOrderSubmitting).toHaveBeenCalledWith('order-1', {
+            isPaidOutLater: false,
+        })
         expect(context.onOrderRejected).not.toHaveBeenCalled()
+    })
+
+    it('sends a token deposit alone, to the deposit address, paid out later', async () => {
+        const node = fakeNode({ balance: RICH })
+        const context = contextOf(orderOf([DEPOSIT_TX]))
+
+        const result = await run(context)
+
+        const [depositHash] = [...node.sent.keys()]
+        expect(result).toEqual({
+            kind: 'success',
+            orderId: 'order-1',
+            txIds: [depositHash],
+            isPaidOutLater: true,
+        })
+        expect(context.signed.map(tx => tx.summary?.counterparty)).toEqual([
+            getAddress(STRANGER),
+        ])
+        expect(context.onOrderSubmitting).toHaveBeenCalledWith('order-1', {
+            isPaidOutLater: true,
+        })
     })
 })

@@ -26,8 +26,12 @@ export const useStyles = makeStyles(theme => ({
         borderRadius: theme.spacing.sm,
         paddingHorizontal: theme.spacing.sm,
     },
+    filtersBleed: {
+        marginHorizontal: -theme.spacing.xl,
+    },
     filters: {
         paddingVertical: theme.spacing.md,
+        paddingHorizontal: theme.spacing.xl,
     },
     list: {
         flex: 1,

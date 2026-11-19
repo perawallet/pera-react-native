@@ -131,7 +131,10 @@ export const useSwapConfirmationActions = ({
                     )?.amount.toNumber(),
                 })
                 successCloseTimer.schedule(() => {
-                    resolve({ kind: 'confirm' })
+                    resolve({
+                        kind: 'confirm',
+                        isPaidOutLater: outcome.isPaidOutLater,
+                    })
                 }, SUCCESS_DISPLAY_MS)
                 return
             }

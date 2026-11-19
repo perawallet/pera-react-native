@@ -19,6 +19,12 @@ export const useStyles = makeStyles(theme => ({
     empty: {
         paddingVertical: theme.spacing.md,
     },
+    suggestions: {
+        gap: theme.spacing.lg,
+    },
+    suggestionsBody: {
+        color: theme.colors.textGray,
+    },
     // Figma: 16 pt from the chips to the grid.
     body: {
         gap: theme.spacing.lg,

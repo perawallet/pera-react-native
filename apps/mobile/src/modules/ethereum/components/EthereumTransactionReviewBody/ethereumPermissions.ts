@@ -41,16 +41,20 @@ export type EthereumPermission = {
 const amountGrantOf = (
     amount: Optional<Decimal>,
     asset: Nullable<PeraAsset>,
+    isIncrease: boolean,
 ): EthereumApprovalGrant => {
     if (amount === undefined) return { kind: 'unlimited' }
     // A revoke never gets here (it carries no spend approval), so a zero is a real grant of nothing.
-    return asset
-        ? {
-              kind: 'amount',
-              amount: baseUnitsToDisplayUnits(amount, asset.decimals),
-              isBaseUnits: false,
-          }
-        : { kind: 'amount', amount, isBaseUnits: true }
+    return {
+        kind: 'amount',
+        ...(asset
+            ? {
+                  amount: baseUnitsToDisplayUnits(amount, asset.decimals),
+                  isBaseUnits: false,
+              }
+            : { amount, isBaseUnits: true }),
+        ...(isIncrease && { isIncrease }),
+    }
 }
 
 /**
@@ -88,7 +92,11 @@ export const ethereumPermissionsOf = (
                     asset: tokenAsset,
                     isCollectionWide: false,
                     grant: approval
-                        ? amountGrantOf(allowance?.amount, tokenAsset)
+                        ? amountGrantOf(
+                              allowance?.amount,
+                              tokenAsset,
+                              !!standardCall.isIncrease,
+                          )
                         : { kind: 'revoke' },
                 },
             ]

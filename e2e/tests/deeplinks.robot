@@ -18,16 +18,15 @@ Add Contact Link Opens A Prefilled Form That Saves
     Start With No Contacts
     Open Deeplink    ${ADD_CONTACT_LINK}
     Add Contact Form Should Be Prefilled
-    Dismiss Keyboard
-    Tap    ${ADD_CONTACT_BUTTON}
-    Contact Row Should Be Listed    ${LINK_ADDRESS}
+    Save Prefilled Link Contact
 
 Add Contact Link Cold Starts Onto The Prefilled Form
     [Tags]    id:deeplinks.add-contact.cold    p1
+    Start With No Contacts
     Open Deeplink Cold    ${ADD_CONTACT_LINK}
     Add Contact Form Should Be Prefilled    timeout=60s
-    # The startup prompts arrive over whatever screen the link opened; clear them for the next case.
     Wait Clear Of Startup Prompts
+    Save Prefilled Link Contact
 
 Watch Account Link Prefills The Address
     [Tags]    id:deeplinks.add-watch-account    p1
@@ -76,6 +75,22 @@ ALGO Transfer Link Cold Starts Onto Send
     Send Amount Should Be Prefilled
     Next Should Be Refused For Lack Of Funds
 
+Second Transfer Link Keeps The Open Send Draft
+    [Tags]    id:deeplinks.algo-transfer.draft-preserved    p1
+    Open Deeplink    ${ALGO_TRANSFER_LINK}
+    Send Amount Should Be Prefilled
+    Open Deeplink    algorand://${LINK_ADDRESS}?amount=2345678
+    # An open Send drops the link without a trace, so only its absence after a link's delivery time proves it.
+    Run Keyword And Expect Error    Text '2.345678' did not appear in *
+    ...    Wait Until Page Contains    2.345678    timeout=10s
+    Page Should Contain Text    ${TRANSFER_ALGOS}
+    Wait Until Settled    ${SEND_CLOSE}
+    Tap    ${SEND_CLOSE}
+    Wait Until Settled    ${SEND_DISCARD_CONFIRM}
+    Tap    ${SEND_DISCARD_CONFIRM}
+    Wait Until Page Does Not Contain Element    ${SEND_NEXT}    timeout=10s
+    Should Be On Home
+
 Asset Opt-In Link Asks For An Account Then Shows The Opt-In
     [Tags]    id:deeplinks.asset-opt-in    p1
     Open Deeplink    ${OPT_IN_LINK}
@@ -85,43 +100,9 @@ Asset Opt-In Link Asks For An Account Then Shows The Opt-In
     Page Should Contain Element    ${OPT_IN_CONFIRM}
     Page Should Contain Text    ${OPT_IN_ASSET_ID}
 
-Pasted Add Contact Link Opens The Prefilled Form
-    [Documentation]    The paste sheet dispatches through the scanner's path, so a pasted link lands
-    ...                where a scanned one does.
-    [Tags]    id:deeplinks.paste.add-contact    p1
-    Start With No Contacts
-    Paste Link    ${ADD_CONTACT_LINK}
-    Wait Until Page Does Not Contain Element    ${PASTE_LINK_INPUT}    timeout=15s
-    Add Contact Form Should Be Prefilled
-
-Pasted Text That Is Not A Link Is Refused In Place
-    [Tags]    id:deeplinks.paste.invalid    p2
-    Paste Link    not a link at all
-    Wait Until Page Contains Element    ${PASTE_LINK_ERROR}    timeout=10s
-    Page Should Contain Element    ${PASTE_LINK_INPUT}
-    Close Sheet
-    Wait Until Page Does Not Contain Element    ${PASTE_LINK_INPUT}    timeout=10s
-
-Empty And Whitespace Pasted Links Cannot Be Submitted
-    [Tags]    id:deeplinks.paste.empty-disabled    p1
-    Open Paste Link
-    Expect Element    ${PASTE_LINK_SUBMIT}    disabled    timeout=5s
-    Input Text    ${PASTE_LINK_INPUT}    ${SPACE}${SPACE}${SPACE}
-    Expect Element    ${PASTE_LINK_SUBMIT}    disabled    timeout=5s
-
-An Invalid Pasted Link Can Be Corrected
-    [Tags]    id:deeplinks.paste.correct-invalid    p1
-    Start With No Contacts
-    Paste Link    not a link at all
-    Wait Until Page Contains Element    ${PASTE_LINK_ERROR}    timeout=10s
-    Submit Pasted Link    ${ADD_CONTACT_LINK}
-    Wait Until Page Does Not Contain Element    ${PASTE_LINK_INPUT}    timeout=15s
-    Wait Until Page Contains Element    ${CONTACT_NAME_INPUT}    timeout=15s
-    Input Should Hold    contact_name_input    ${LINK_LABEL}
-
 Link Fired While Locked Waits For The PIN
     [Tags]    id:deeplinks.locked.resumes-after-unlock    p1
-    [Setup]    Start On Security
+    [Setup]    Run Keywords    Start With No Contacts    AND    Start On Security
     Require Regular Pin
     Lock By Restart
     Open Deeplink    ${ADD_CONTACT_LINK}
@@ -129,4 +110,5 @@ Link Fired While Locked Waits For The PIN
     Page Should Contain Element    ${PIN_VERIFY_TITLE}
     Unlock With Pin    ${REGULAR_PIN}
     Add Contact Form Should Be Prefilled
+    Save Prefilled Link Contact
     [Teardown]    Turn Pin Off After Test

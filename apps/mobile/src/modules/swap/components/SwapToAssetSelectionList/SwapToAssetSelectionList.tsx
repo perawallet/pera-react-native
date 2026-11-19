@@ -20,6 +20,7 @@ import {
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { scopeOfSwapAsset } from '@perawallet/wallet-core-swaps'
 import { PWButton } from '@components/core'
+import { useLanguage } from '@hooks/useLanguage'
 import { EmptyView } from '@components/EmptyView'
 import { FilterSelection } from '@components/FilterSelection'
 import { AssetSelectionList } from '@modules/assets'
@@ -57,6 +58,7 @@ export const SwapToAssetSelectionList = ({
     inBottomSheet,
 }: SwapToAssetSelectionListProps) => {
     const styles = useStyles()
+    const { t } = useLanguage()
     const {
         items,
         searchFilter,
@@ -67,6 +69,8 @@ export const SwapToAssetSelectionList = ({
         handleSelectChain,
         isChainShown,
         isLoading,
+        isLoadError,
+        handleRetry,
         handleEndReached,
         handleAssetSelected,
         searchPlaceholder,
@@ -121,6 +125,23 @@ export const SwapToAssetSelectionList = ({
                                 testID='swap_to_switch_network_button'
                             />
                         ) : undefined
+                    }
+                />
+            )
+        }
+        if (isLoadError) {
+            return (
+                <EmptyView
+                    title={t('errors.general.title')}
+                    body={t('errors.general.body')}
+                    testID='swap_to_load_error'
+                    button={
+                        <PWButton
+                            variant='primary'
+                            title={t('common.retry.label')}
+                            onPress={handleRetry}
+                            testID='swap_to_retry_button'
+                        />
                     }
                 />
             )

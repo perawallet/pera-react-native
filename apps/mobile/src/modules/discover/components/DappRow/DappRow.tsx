@@ -24,6 +24,9 @@ import type { DiscoverDapp } from '../../types'
 import { DappLogo } from '../DappLogo'
 import { useStyles } from './styles'
 
+// The star is small next to a full-width row, so its tap area reaches past the icon.
+const STAR_HIT_SLOP = 8
+
 export type DappRowProps = {
     dapp: DiscoverDapp
     subtitle: string
@@ -109,6 +112,7 @@ export const DappRow = ({
             {onToggleFavorite ? (
                 <PWTouchableOpacity
                     style={styles.star}
+                    hitSlop={STAR_HIT_SLOP}
                     onPress={onToggleFavorite}
                     accessibilityLabel={t(
                         isFavorite
@@ -119,7 +123,6 @@ export const DappRow = ({
                 >
                     <PWIcon
                         name={isFavorite ? 'star-filled' : 'star'}
-                        size='sm'
                         variant={isFavorite ? 'favorite' : 'tertiary'}
                     />
                 </PWTouchableOpacity>

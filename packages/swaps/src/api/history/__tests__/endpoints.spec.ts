@@ -11,7 +11,7 @@
  */
 
 import { beforeEach, describe, expect, test, vi, type Mock } from 'vitest'
-import { queryClient } from '@perawallet/wallet-core-shared'
+import { PeraNetworkError, queryClient } from '@perawallet/wallet-core-shared'
 import { fetchSwapHistory } from '../endpoints'
 import { routerOrderItem, SCOPE_A } from '../../__tests__/routerFixtures'
 
@@ -52,5 +52,38 @@ describe('fetchSwapHistory', () => {
         )
         expect(page.results).toHaveLength(1)
         expect(page.next).toBe('n2')
+    })
+    test('is empty when the router does not know the device', async () => {
+        ;(queryClient as Mock).mockRejectedValue(
+            new PeraNetworkError('client', {
+                status: 404,
+                backendCode: 'device_not_found',
+            }),
+        )
+
+        const first = await fetchSwapHistory(
+            { deviceId: 'dev-1', accounts: [] },
+            SCOPE_A,
+        )
+        const second = await fetchSwapHistory(
+            { deviceId: 'dev-1', accounts: [] },
+            SCOPE_A,
+        )
+
+        expect(first).toEqual({ results: [], next: null })
+        expect(first.results).not.toBe(second.results)
+    })
+
+    test('rejects on any other failure', async () => {
+        ;(queryClient as Mock).mockRejectedValue(
+            new PeraNetworkError('server', { status: 500 }),
+        )
+
+        await expect(
+            fetchSwapHistory(
+                { deviceId: 'dev-1', accounts: ['fake-a:main:A'] },
+                SCOPE_A,
+            ),
+        ).rejects.toThrow()
     })
 })

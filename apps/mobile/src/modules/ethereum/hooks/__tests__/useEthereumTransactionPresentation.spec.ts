@@ -15,7 +15,10 @@ import { Decimal } from 'decimal.js'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
-import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainScope,
+    TransactionNative,
+} from '@perawallet/wallet-core-chain-contract'
 import type {
     EvmContractAction,
     EvmContractLabel,
@@ -32,6 +35,11 @@ import {
     type EthereumDisplayFixtureKind,
 } from '@test-utils/ethereum-display-fixtures'
 import { useEthereumTransactionPresentation } from '../useEthereumTransactionPresentation'
+
+const ETHEREUM_SCOPE: ChainScope = {
+    chainId: 'ethereum',
+    networkId: 'mainnet',
+}
 
 // The curated lookup is its own hook's to test; here only the bundled entry names a contract.
 vi.mock('../useEthereumContractLabel', () => ({
@@ -84,7 +92,10 @@ describe('useEthereumTransactionPresentation', () => {
 
     it('presents a transfer as a send of the recipient and the ether moved', () => {
         const { result } = renderHook(() =>
-            useEthereumTransactionPresentation(natives.transfer),
+            useEthereumTransactionPresentation(
+                natives.transfer,
+                ETHEREUM_SCOPE,
+            ),
         )
 
         expect(result.current?.titleKey).toBe('transactions.list_item.send')
@@ -107,7 +118,7 @@ describe('useEthereumTransactionPresentation', () => {
         } as TransactionNative
 
         const { result } = renderHook(() =>
-            useEthereumTransactionPresentation(estimated),
+            useEthereumTransactionPresentation(estimated, ETHEREUM_SCOPE),
         )
 
         expect(result.current?.reviewFee).toEqual({
@@ -118,7 +129,10 @@ describe('useEthereumTransactionPresentation', () => {
 
     it('has no estimate in the review fee when the view carries none', () => {
         const { result } = renderHook(() =>
-            useEthereumTransactionPresentation(natives.transfer),
+            useEthereumTransactionPresentation(
+                natives.transfer,
+                ETHEREUM_SCOPE,
+            ),
         )
 
         expect(result.current?.reviewFee).toEqual({
@@ -137,10 +151,13 @@ describe('useEthereumTransactionPresentation', () => {
         } as TransactionNative
 
         const { result: unflagged } = renderHook(() =>
-            useEthereumTransactionPresentation(natives.transfer),
+            useEthereumTransactionPresentation(
+                natives.transfer,
+                ETHEREUM_SCOPE,
+            ),
         )
         const { result } = renderHook(() =>
-            useEthereumTransactionPresentation(flagged),
+            useEthereumTransactionPresentation(flagged, ETHEREUM_SCOPE),
         )
 
         expect(unflagged.current?.hasHighFee).toBe(false)
@@ -151,7 +168,10 @@ describe('useEthereumTransactionPresentation', () => {
         mockAssetQuery({ data: USDC, isPending: false })
 
         const { result } = renderHook(() =>
-            useEthereumTransactionPresentation(natives['token-transfer']),
+            useEthereumTransactionPresentation(
+                natives['token-transfer'],
+                ETHEREUM_SCOPE,
+            ),
         )
 
         expect(result.current?.counterparty).toBe(ETHEREUM_FIXTURE_RECIPIENT)
@@ -173,7 +193,10 @@ describe('useEthereumTransactionPresentation', () => {
         mockAssetQuery({ data: nft, isPending: false })
 
         const { result } = renderHook(() =>
-            useEthereumTransactionPresentation(natives['nft-transfer']),
+            useEthereumTransactionPresentation(
+                natives['nft-transfer'],
+                ETHEREUM_SCOPE,
+            ),
         )
 
         expect(result.current?.titleKey).toBe('transactions.list_item.send')
@@ -197,7 +220,10 @@ describe('useEthereumTransactionPresentation', () => {
         mockAssetQuery({ data: undefined, isPending: true })
 
         const { result } = renderHook(() =>
-            useEthereumTransactionPresentation(natives['nft-transfer']),
+            useEthereumTransactionPresentation(
+                natives['nft-transfer'],
+                ETHEREUM_SCOPE,
+            ),
         )
 
         expect(result.current?.isAmountLoading).toBe(true)
@@ -207,7 +233,10 @@ describe('useEthereumTransactionPresentation', () => {
         mockAssetQuery({ data: USDC, isPending: false })
 
         const { result } = renderHook(() =>
-            useEthereumTransactionPresentation(natives['token-transfer']),
+            useEthereumTransactionPresentation(
+                natives['token-transfer'],
+                ETHEREUM_SCOPE,
+            ),
         )
 
         expect(result.current?.collectible).toBeUndefined()
@@ -217,7 +246,10 @@ describe('useEthereumTransactionPresentation', () => {
         mockAssetQuery({ data: undefined, isPending: true })
 
         const { result } = renderHook(() =>
-            useEthereumTransactionPresentation(natives['token-transfer']),
+            useEthereumTransactionPresentation(
+                natives['token-transfer'],
+                ETHEREUM_SCOPE,
+            ),
         )
 
         expect(result.current?.amount).toBeUndefined()
@@ -228,7 +260,10 @@ describe('useEthereumTransactionPresentation', () => {
         mockAssetQuery({ data: undefined, isPending: false })
 
         const { result } = renderHook(() =>
-            useEthereumTransactionPresentation(natives['token-transfer']),
+            useEthereumTransactionPresentation(
+                natives['token-transfer'],
+                ETHEREUM_SCOPE,
+            ),
         )
 
         expect(result.current?.amount).toEqual({
@@ -243,7 +278,10 @@ describe('useEthereumTransactionPresentation', () => {
         mockAssetQuery({ data: undefined, isPending: true })
 
         const { result } = renderHook(() =>
-            useEthereumTransactionPresentation(natives['contract-call']),
+            useEthereumTransactionPresentation(
+                natives['contract-call'],
+                ETHEREUM_SCOPE,
+            ),
         )
 
         expect(result.current?.titleKey).toBe(
@@ -268,7 +306,7 @@ describe('useEthereumTransactionPresentation', () => {
         }
 
         const { result } = renderHook(() =>
-            useEthereumTransactionPresentation(preview),
+            useEthereumTransactionPresentation(preview, ETHEREUM_SCOPE),
         )
 
         expect(result.current?.maxFee).toBeNull()
@@ -278,7 +316,10 @@ describe('useEthereumTransactionPresentation', () => {
 
     it('has no counterparty for a contract creation', () => {
         const { result } = renderHook(() =>
-            useEthereumTransactionPresentation(natives['contract-creation']),
+            useEthereumTransactionPresentation(
+                natives['contract-creation'],
+                ETHEREUM_SCOPE,
+            ),
         )
 
         expect(result.current?.counterparty).toBeUndefined()
@@ -293,7 +334,10 @@ describe('useEthereumTransactionPresentation', () => {
         )
 
         const { result } = renderHook(() =>
-            useEthereumTransactionPresentation(natives.transfer),
+            useEthereumTransactionPresentation(
+                natives.transfer,
+                ETHEREUM_SCOPE,
+            ),
         )
 
         expect(result.current?.signingAccount).toBe(account)
@@ -301,16 +345,22 @@ describe('useEthereumTransactionPresentation', () => {
 
     it('returns null for a native it cannot read', () => {
         const algorand = renderHook(() =>
-            useEthereumTransactionPresentation({
-                family: 'algorand',
-                transaction: {},
-            }),
+            useEthereumTransactionPresentation(
+                {
+                    family: 'algorand',
+                    transaction: {},
+                },
+                ETHEREUM_SCOPE,
+            ),
         )
         const malformed = renderHook(() =>
-            useEthereumTransactionPresentation({
-                family: 'evm',
-                transaction: {},
-            }),
+            useEthereumTransactionPresentation(
+                {
+                    family: 'evm',
+                    transaction: {},
+                },
+                ETHEREUM_SCOPE,
+            ),
         )
 
         expect(algorand.result.current).toBeNull()
@@ -338,7 +388,10 @@ describe('useEthereumTransactionPresentation', () => {
             mockAssetQuery({ data: USDC, isPending: false })
 
             const { result } = renderHook(() =>
-                useEthereumTransactionPresentation(callNative()),
+                useEthereumTransactionPresentation(
+                    callNative(),
+                    ETHEREUM_SCOPE,
+                ),
             )
 
             expect(result.current?.titleKey).toBe(
@@ -366,6 +419,7 @@ describe('useEthereumTransactionPresentation', () => {
                         operator: ETHEREUM_FIXTURE_RECIPIENT,
                         isApproved: false,
                     }),
+                    ETHEREUM_SCOPE,
                 ),
             )
 
@@ -389,6 +443,7 @@ describe('useEthereumTransactionPresentation', () => {
                         to: ETHEREUM_FIXTURE_RECIPIENT,
                         value: new Decimal(5_000_000),
                     }),
+                    ETHEREUM_SCOPE,
                 ),
             )
 
@@ -417,6 +472,7 @@ describe('useEthereumTransactionPresentation', () => {
                         to: ETHEREUM_FIXTURE_RECIPIENT,
                         value: new Decimal(5_000_000),
                     }),
+                    ETHEREUM_SCOPE,
                 ),
             )
 
@@ -438,6 +494,7 @@ describe('useEthereumTransactionPresentation', () => {
                         to: ETHEREUM_FIXTURE_RECIPIENT,
                         items,
                     }),
+                    ETHEREUM_SCOPE,
                 ),
             )
 
@@ -460,6 +517,7 @@ describe('useEthereumTransactionPresentation', () => {
                         to: ETHEREUM_FIXTURE_RECIPIENT,
                         value: new Decimal(5_000_000),
                     }),
+                    ETHEREUM_SCOPE,
                 ),
             )
 
@@ -475,7 +533,10 @@ describe('useEthereumTransactionPresentation', () => {
             mockAssetQuery({ data: USDC, isPending: false })
 
             const { result } = renderHook(() =>
-                useEthereumTransactionPresentation(callNative()),
+                useEthereumTransactionPresentation(
+                    callNative(),
+                    ETHEREUM_SCOPE,
+                ),
             )
 
             expect(result.current?.titleKey).toBe(
@@ -504,6 +565,7 @@ describe('useEthereumTransactionPresentation', () => {
             const { result } = renderHook(() =>
                 useEthereumTransactionPresentation(
                     mined(new Decimal('21000000000000')),
+                    ETHEREUM_SCOPE,
                 ),
             )
 
@@ -516,7 +578,7 @@ describe('useEthereumTransactionPresentation', () => {
 
         it('shows no fee when the history gave none', () => {
             const { result } = renderHook(() =>
-                useEthereumTransactionPresentation(mined()),
+                useEthereumTransactionPresentation(mined(), ETHEREUM_SCOPE),
             )
 
             expect(result.current?.maxFee).toBeNull()
@@ -544,6 +606,44 @@ describe('useEthereumTransactionPresentation', () => {
             )
         })
     })
+
+    it.each([
+        { chainId: 'base', networkId: 'mainnet' },
+        { chainId: 'bsc', networkId: 'mainnet' },
+        { chainId: 'polygon', networkId: 'mainnet' },
+    ] as const)(
+        'reads the token, the signer and the capability on $chainId, never on Ethereum',
+        scope => {
+            const { result } = renderHook(() =>
+                useEthereumTransactionPresentation(
+                    natives['token-transfer'],
+                    scope,
+                ),
+            )
+
+            expect(result.current?.scope).toEqual(scope)
+            expect(useSingleAssetDetailsQuery).toHaveBeenCalledWith(
+                ETHEREUM_FIXTURE_TOKEN,
+                scope,
+            )
+            expect(useFindAccountByAddress).toHaveBeenCalledWith(
+                ETHEREUM_FIXTURE_SENDER,
+                scope,
+            )
+            expect(useChainCapability).toHaveBeenCalledWith(
+                scope.chainId,
+                'contractDecoding',
+            )
+            expect(useChainCapability).not.toHaveBeenCalledWith(
+                'ethereum',
+                expect.anything(),
+            )
+            expect(useSingleAssetDetailsQuery).not.toHaveBeenCalledWith(
+                expect.anything(),
+                ETHEREUM_SCOPE,
+            )
+        },
+    )
 
     describe('a call to a known contract', () => {
         const ROUTER = '0x23617e59A5925b2A4Bf75d73ff6711cD0b29De85'
@@ -592,6 +692,7 @@ describe('useEthereumTransactionPresentation', () => {
                         knownContract: ROUTER_LABEL,
                         action: SWAP,
                     }),
+                    ETHEREUM_SCOPE,
                 ),
             )
 
@@ -638,6 +739,7 @@ describe('useEthereumTransactionPresentation', () => {
             const { result } = renderHook(() =>
                 useEthereumTransactionPresentation(
                     knownNative({ knownContract: ROUTER_LABEL, action }),
+                    ETHEREUM_SCOPE,
                 ),
             )
 
@@ -651,6 +753,7 @@ describe('useEthereumTransactionPresentation', () => {
             const { result } = renderHook(() =>
                 useEthereumTransactionPresentation(
                     knownNative({ knownContract: ROUTER_LABEL }),
+                    ETHEREUM_SCOPE,
                 ),
             )
 
@@ -674,6 +777,7 @@ describe('useEthereumTransactionPresentation', () => {
                             value: new Decimal(5),
                         },
                     }),
+                    ETHEREUM_SCOPE,
                 ),
             )
 
@@ -686,7 +790,10 @@ describe('useEthereumTransactionPresentation', () => {
 
         it('presents an unlisted contract call as before', () => {
             const { result } = renderHook(() =>
-                useEthereumTransactionPresentation(natives['contract-call']),
+                useEthereumTransactionPresentation(
+                    natives['contract-call'],
+                    ETHEREUM_SCOPE,
+                ),
             )
 
             expect(result.current?.titleKey).toBe(
@@ -705,6 +812,7 @@ describe('useEthereumTransactionPresentation', () => {
                         knownContract: ROUTER_LABEL,
                         action: SWAP,
                     }),
+                    ETHEREUM_SCOPE,
                 ),
             )
 

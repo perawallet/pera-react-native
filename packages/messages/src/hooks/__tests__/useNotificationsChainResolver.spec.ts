@@ -23,6 +23,7 @@ import {
 const state = vi.hoisted(() => ({
     chainIds: ['algorand', 'ethereum'] as string[],
     deployment: 'live' as WalletMode,
+    refusalsVersion: 0,
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
@@ -44,6 +45,7 @@ vi.mock('@perawallet/wallet-core-device', async importOriginal => ({
         typeof import('@perawallet/wallet-core-device')
     >()),
     isSentInDeviceRegistration: vi.fn(),
+    usePeraScopeRefusalsVersion: () => state.refusalsVersion,
 }))
 
 const evmFirstAccount: WalletAccount = {
@@ -70,6 +72,7 @@ describe('useNotificationsChainResolver', () => {
     beforeEach(() => {
         vi.mocked(isSentInDeviceRegistration).mockReset()
         state.deployment = 'live'
+        state.refusalsVersion = 0
     })
 
     it('resolves to the held chain when registration sends its address there', () => {
@@ -132,6 +135,18 @@ describe('useNotificationsChainResolver', () => {
         const first = result.current
 
         state.deployment = 'developer'
+        rerender()
+
+        expect(result.current).not.toBe(first)
+    })
+
+    it('changes identity when a chain refusal changes what is sent', () => {
+        const { result, rerender } = renderHook(() =>
+            useNotificationsChainResolver(),
+        )
+        const first = result.current
+
+        state.refusalsVersion = 1
         rerender()
 
         expect(result.current).not.toBe(first)

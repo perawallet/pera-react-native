@@ -14,6 +14,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import {
     encodeFunctionData,
+    zeroAddress,
     erc1155Abi,
     erc20Abi,
     erc721Abi,
@@ -31,7 +32,11 @@ import {
     type TransactionSummary,
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import { getAssetById, type PeraAsset } from '@perawallet/wallet-core-assets'
+import {
+    getAssetById,
+    getAssetsByIds,
+    type PeraAsset,
+} from '@perawallet/wallet-core-assets'
 import { evmCapabilityDefaults } from '../../capability-defaults'
 import { ETHEREUM } from '../../__tests__/evm-chains'
 import {
@@ -56,6 +61,7 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
         typeof import('@perawallet/wallet-core-assets')
     >()),
     getAssetById: vi.fn(async () => null),
+    getAssetsByIds: vi.fn(async () => []),
 }))
 
 const ethereumReviewerAdapter = createEthereumReviewer({ chain: ETHEREUM })
@@ -1103,6 +1109,92 @@ describe("a dApp's standard token calls", () => {
                     message: expect.stringContaining('all of this token'),
                 }),
             ])
+        })
+
+        describe('an approve whose token the asset store holds as an NFT', () => {
+            const APE: Address = '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D'
+            const approveNft = (spender: Address, tokenId: bigint) =>
+                unsigned({
+                    ...APPROVE,
+                    to: APE,
+                    data: encodeFunctionData({
+                        abi: erc20Abi,
+                        functionName: 'approve',
+                        args: [spender, tokenId],
+                    }),
+                })
+            const storeHolds = (...assetIds: string[]) =>
+                vi
+                    .mocked(getAssetsByIds)
+                    .mockResolvedValueOnce(
+                        assetIds.map(assetId => ({ assetId }) as PeraAsset),
+                    )
+
+            it('reviews a grant of token #0 as an approval of that item with its warning, never as a revocation', async () => {
+                storeHolds(`${APE}/0`)
+
+                const { reviewed, summary, view } = await reviewOne(
+                    approveNft(SPENDER, 0n),
+                    SHIPPED,
+                )
+
+                expect(summary.title.key).toBe(
+                    'transactions.list_item.approval',
+                )
+                expect(view.nftApproval).toBe(`${APE}/0`)
+                expect(reviewed.warnings).toEqual([
+                    expect.objectContaining({
+                        type: 'token-approval',
+                        severity: 'warning',
+                        message: expect.stringContaining('this item'),
+                    }),
+                ])
+            })
+
+            it('never calls a token id above 2^160, such as an ENS name, unlimited', async () => {
+                const ensId = 2n ** 255n + 7n
+                storeHolds(`${APE}/${ensId}`)
+
+                const { reviewed } = await reviewOne(
+                    approveNft(SPENDER, ensId),
+                    SHIPPED,
+                )
+
+                expect(reviewed.warnings).toEqual([
+                    expect.objectContaining({ severity: 'warning' }),
+                ])
+                expect(reviewed.warnings[0]?.message).not.toContain(
+                    'all of this token',
+                )
+            })
+
+            it('reviews an approve to the zero address as a revocation without a warning', async () => {
+                storeHolds(`${APE}/7`)
+
+                const { reviewed, summary } = await reviewOne(
+                    approveNft(zeroAddress, 7n),
+                    SHIPPED,
+                )
+
+                expect(summary.title.key).toBe(
+                    'transactions.list_item.revoke_approval',
+                )
+                expect(reviewed.warnings).toEqual([])
+            })
+
+            it('keeps the ERC-20 reading when the store also holds the token as fungible', async () => {
+                storeHolds(APE, `${APE}/0`)
+
+                const { summary, view } = await reviewOne(
+                    approveNft(SPENDER, 0n),
+                    SHIPPED,
+                )
+
+                expect(view.nftApproval).toBeUndefined()
+                expect(summary.title.key).toBe(
+                    'transactions.list_item.revoke_approval',
+                )
+            })
         })
 
         it('reviews setApprovalForAll(operator, true) as collection-wide access with its warning', async () => {

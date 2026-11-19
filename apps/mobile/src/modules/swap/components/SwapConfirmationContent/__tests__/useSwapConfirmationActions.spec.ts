@@ -116,7 +116,10 @@ describe('useSwapConfirmationActions', () => {
     })
 
     it('readies nothing for a same-chain swap', async () => {
-        mockExecute.mockResolvedValueOnce({ kind: 'success' })
+        mockExecute.mockResolvedValueOnce({
+            kind: 'success',
+            isPaidOutLater: false,
+        })
         const quote = makeQuote()
 
         const { result } = renderHook(() =>
@@ -134,7 +137,10 @@ describe('useSwapConfirmationActions', () => {
         vi.mocked(useEnsureSwapDestination).mockReturnValue({
             ensureReceivable,
         })
-        mockExecute.mockResolvedValueOnce({ kind: 'success' })
+        mockExecute.mockResolvedValueOnce({
+            kind: 'success',
+            isPaidOutLater: false,
+        })
         const quote = {
             ...makeQuote(),
             routeKind: 'cross-chain',
@@ -157,7 +163,10 @@ describe('useSwapConfirmationActions', () => {
     })
 
     it('reports a completed swap with its chain, keeping the existing properties', async () => {
-        mockExecute.mockResolvedValueOnce({ kind: 'success' })
+        mockExecute.mockResolvedValueOnce({
+            kind: 'success',
+            isPaidOutLater: false,
+        })
 
         const { result } = renderHook(() =>
             useSwapConfirmationActions({
@@ -209,7 +218,10 @@ describe('useSwapConfirmationActions', () => {
     })
 
     it('resolves with confirm when execute succeeds', async () => {
-        mockExecute.mockResolvedValueOnce({ kind: 'success' })
+        mockExecute.mockResolvedValueOnce({
+            kind: 'success',
+            isPaidOutLater: false,
+        })
 
         const { result } = renderHook(() =>
             useSwapConfirmationActions({
@@ -226,7 +238,10 @@ describe('useSwapConfirmationActions', () => {
             expect.objectContaining({ quoteId: 'quote-1' }),
         )
         expect(mockSchedule).toHaveBeenCalled()
-        expect(mockResolve).toHaveBeenCalledWith({ kind: 'confirm' })
+        expect(mockResolve).toHaveBeenCalledWith({
+            kind: 'confirm',
+            isPaidOutLater: false,
+        })
         expect(mockPlaySuccess).toHaveBeenCalledTimes(1)
     })
 
@@ -330,11 +345,14 @@ describe('useSwapConfirmationActions', () => {
         expect(mockExecute).toHaveBeenCalledTimes(1)
 
         await act(async () => {
-            releaseFirst({ kind: 'success' })
+            releaseFirst({ kind: 'success', isPaidOutLater: false })
         })
 
         expect(mockResolve).toHaveBeenCalledTimes(1)
-        expect(mockResolve).toHaveBeenCalledWith({ kind: 'confirm' })
+        expect(mockResolve).toHaveBeenCalledWith({
+            kind: 'confirm',
+            isPaidOutLater: false,
+        })
     })
 
     it('resolves with stale-quote when the quote outlived its TTL', async () => {

@@ -69,6 +69,17 @@ describe('transformRampOffer', () => {
         expect(unpriced?.destinationValueInUsd).toBeNull()
     })
 
+    it('reads the expiry as epoch ms, null when absent or unreadable', () => {
+        const at = (expires_at: string | null) =>
+            transformRampOffer(meldOffer({ expires_at }), DECIMALS)?.expiresAt
+
+        expect(at('2026-11-02T18:57:08Z')).toBe(
+            Date.UTC(2026, 10, 2, 18, 57, 8),
+        )
+        expect(at(null)).toBeNull()
+        expect(at('soon')).toBeNull()
+    })
+
     it('maps an external deposit offer to XO with the CRYPTO payment method', () => {
         const quote = transformRampOffer(depositOffer(), {
             source: 8,

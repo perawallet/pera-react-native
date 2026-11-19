@@ -412,6 +412,87 @@ describe('chains sharing the eip155 namespace', () => {
         ])
     })
 
+    it('marks only the chain owning a required id as required', async () => {
+        const { walletKit, proposals } = await open()
+        walletKit.emit(
+            'session_proposal',
+            makeProposal({
+                requiredNamespaces: {
+                    eip155: {
+                        chains: [ETHEREUM_MAINNET],
+                        methods: ['eth_sendTransaction'],
+                        events: [],
+                    },
+                },
+                optionalNamespaces: {
+                    eip155: {
+                        chains: [BASE_MAINNET],
+                        methods: ['eth_sendTransaction'],
+                        events: [],
+                    },
+                },
+            }),
+        )
+        await flush()
+
+        expect(proposals[0].requested.requiredChains).toEqual(['ethereum'])
+    })
+
+    it('leaves out an optional chain the approved account cannot sign on', async () => {
+        const { walletKit, proposals } = await open(
+            [],
+            createFakeWalletKit(),
+            chainId => chainId === 'ethereum',
+        )
+        walletKit.emit(
+            'session_proposal',
+            makeProposal({
+                requiredNamespaces: {
+                    eip155: {
+                        chains: [ETHEREUM_MAINNET],
+                        methods: ['eth_sendTransaction'],
+                        events: [],
+                    },
+                },
+                optionalNamespaces: {
+                    eip155: {
+                        chains: [BASE_MAINNET],
+                        methods: ['eth_sendTransaction'],
+                        events: [],
+                    },
+                },
+            }),
+        )
+        await flush()
+
+        await proposals[0].approve([ETH])
+
+        const namespace = approvedEip155(walletKit)
+        expect(namespace.chains).toEqual([ETHEREUM_MAINNET])
+        expect(namespace.accounts).toEqual([`${ETHEREUM_MAINNET}:${ETH}`])
+    })
+
+    it('refuses to approve when the account cannot sign on a required chain sharing the namespace', async () => {
+        const { walletKit, proposals } = await open(
+            [],
+            createFakeWalletKit(),
+            chainId => chainId === 'ethereum',
+        )
+        walletKit.emit(
+            'session_proposal',
+            eip155Proposal('requiredNamespaces', [
+                ETHEREUM_MAINNET,
+                BASE_MAINNET,
+            ]),
+        )
+        await flush()
+
+        await expect(proposals[0].approve([ETH])).rejects.toThrow(
+            'No approved account on the required eip155 chain',
+        )
+        expect(walletKit.approveSession).not.toHaveBeenCalled()
+    })
+
     it('routes a request to the chain that serves its CAIP-2 id', async () => {
         const opened = await liveOnBase()
 
@@ -851,6 +932,88 @@ describe('changeAccount on a session with optional networks', () => {
         await handler.changeAccount?.(TOPIC, 'ethereum', NEW_ETH)
 
         expect(walletKit.updateSession).toHaveBeenCalledTimes(1)
+    })
+
+    it('removes the optional networks the new account cannot sign on', async () => {
+        const { handler, walletKit, store } = await liveOnBoth({
+            eip155: { chains: [ETHEREUM_MAINNET], methods: [], events: [] },
+        })
+
+        await handler.changeAccount?.(TOPIC, 'ethereum', NEW_ETH)
+
+        const { namespaces } = walletKit.updateSession.mock.calls[0][0] as {
+            namespaces: Record<string, { chains: string[]; accounts: string[] }>
+        }
+        expect(namespaces.eip155.chains).toEqual([ETHEREUM_MAINNET])
+        expect(namespaces.eip155.accounts).toEqual([
+            `${ETHEREUM_MAINNET}:${NEW_ETH}`,
+        ])
+        const stored = await store.get(TOPIC)
+        expect(stored?.metadata).toMatchObject({ chains: [ETHEREUM_MAINNET] })
+    })
+
+    it('puts the removed networks back on the record when the relay refuses the update', async () => {
+        const { handler, walletKit, store } = await liveOnBoth()
+        walletKit.updateSession.mockRejectedValueOnce(new Error('relay down'))
+
+        await expect(
+            handler.changeAccount?.(TOPIC, 'ethereum', NEW_ETH),
+        ).rejects.toThrow('relay down')
+
+        const stored = await store.get(TOPIC)
+        expect(stored?.accounts).toEqual([ETH])
+        expect(stored?.metadata).toMatchObject({ chains: both })
+    })
+
+    it('drops a network a chain switch added while the record was being read, on the record as on the session', async () => {
+        const { handler, walletKit, store } = await open(
+            [
+                {
+                    ...record,
+                    metadata: {
+                        ...record.metadata,
+                        chains: [ETHEREUM_MAINNET],
+                    },
+                },
+            ],
+            createFakeWalletKit({
+                [TOPIC]: makeSession({
+                    namespaces: {
+                        eip155: {
+                            chains: [ETHEREUM_MAINNET],
+                            accounts: [`${ETHEREUM_MAINNET}:${ETH}`],
+                            methods: ['eth_sendTransaction'],
+                            events: ['accountsChanged'],
+                        },
+                    },
+                }),
+            }),
+            chainId => chainId === 'ethereum',
+        )
+        const read = store.get.bind(store)
+        vi.spyOn(store, 'get').mockImplementationOnce(async id => {
+            const before = await read(id)
+            const session = walletKit.getActiveSessions()[TOPIC]
+            session.namespaces.eip155 = {
+                ...session.namespaces.eip155,
+                chains: both,
+                accounts: both.map(caip2 => `${caip2}:${ETH}`),
+            }
+            await store.upsert({
+                ...record,
+                metadata: { ...record.metadata, chains: both },
+            })
+            return before
+        })
+
+        await handler.changeAccount?.(TOPIC, 'ethereum', NEW_ETH)
+
+        const { namespaces } = walletKit.updateSession.mock.calls[0][0] as {
+            namespaces: Record<string, { chains: string[] }>
+        }
+        expect(namespaces.eip155.chains).toEqual([ETHEREUM_MAINNET])
+        const stored = await store.get(TOPIC)
+        expect(stored?.metadata).toMatchObject({ chains: [ETHEREUM_MAINNET] })
     })
 
     it('refuses an account missing a required network', async () => {

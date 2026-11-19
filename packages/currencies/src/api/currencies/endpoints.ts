@@ -11,14 +11,24 @@
  */
 
 import type { WalletMode } from '@perawallet/wallet-core-chain-contract'
-import { queryClient } from '@perawallet/wallet-core-shared'
+import { buildIntegrityHeadersWhenReady } from '@perawallet/wallet-core-app-integrity'
+import { queryClient, type HistoryPeriod } from '@perawallet/wallet-core-shared'
 import {
     currenciesListResponseSchema,
+    currencyHistoryResponseSchema,
     currencyResponseSchema,
     type CurrencyApiResponse,
 } from './schema'
-import { transformCurrencyList, transformCurrencyToPrice } from './transformers'
-import type { Currency, CurrencyPrice } from '../../models'
+import {
+    transformCurrencyHistory,
+    transformCurrencyList,
+    transformCurrencyToPrice,
+} from './transformers'
+import type {
+    Currency,
+    CurrencyHistoryPoint,
+    CurrencyPrice,
+} from '../../models'
 
 export type FetchCurrenciesListParams = {
     deployment: WalletMode
@@ -63,4 +73,32 @@ export const fetchCurrency = async (
 
     const validated = currencyResponseSchema.parse(response.data)
     return transformCurrencyToPrice(validated)
+}
+
+export type FetchCurrencyHistoryParams = {
+    currencyId: string
+    period: HistoryPeriod
+    deployment: WalletMode
+    signal?: AbortSignal
+}
+
+/** The currency's daily USD rates over `period`, oldest first. */
+export const fetchCurrencyHistory = async (
+    params: FetchCurrencyHistoryParams,
+): Promise<CurrencyHistoryPoint[]> => {
+    const { currencyId, period, deployment, signal } = params
+
+    const response = await queryClient<unknown>({
+        backend: 'pera',
+        deployment,
+        method: 'GET',
+        url: '/api/v3/currencies/history/',
+        params: { currency: currencyId, period },
+        headers: await buildIntegrityHeadersWhenReady(),
+        signal,
+    })
+
+    return transformCurrencyHistory(
+        currencyHistoryResponseSchema.parse(response.data),
+    )
 }

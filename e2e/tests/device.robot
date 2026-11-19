@@ -14,7 +14,7 @@ Test Tags           device
 *** Test Cases ***
 Denied Camera Shows The Scanner's Permission State
     [Tags]    id:device.camera.denied    p1    device-shell
-    Deny Camera Permission
+    Prepare Camera Permission Denial
     Relaunch Pera
     Go Home
     Tap    ${QR_SCANNER_BUTTON}
@@ -44,7 +44,7 @@ Losing The Network Shows Offline Mode Until It Returns
 
 Biometric Unlock Opens The Locked App
     [Tags]    id:device.biometrics.unlock    p1
-    [Setup]    Start On Security
+    [Setup]    Start On Biometric Security
     Require Regular Pin
     Require Biometric Switch
     Tap    ${BIOMETRIC_TOGGLE}

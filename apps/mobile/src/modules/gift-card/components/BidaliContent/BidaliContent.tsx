@@ -16,16 +16,18 @@ import {
 } from '@react-navigation/native'
 
 import { PWView } from '@components/core'
+import { useNavigationDocumentTitle } from '@hooks/useNavigationDocumentTitle'
 import { BidaliRoutes } from '../../routes/BidaliRoutes'
 import { useStyles } from './styles'
 
 export const BidaliContent = () => {
     const styles = useStyles()
+    const documentTitle = useNavigationDocumentTitle()
 
     return (
         <PWView style={styles.container}>
             <NavigationIndependentTree>
-                <NavigationContainer>
+                <NavigationContainer documentTitle={documentTitle}>
                     <BidaliRoutes />
                 </NavigationContainer>
             </NavigationIndependentTree>

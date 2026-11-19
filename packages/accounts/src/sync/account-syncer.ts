@@ -62,20 +62,30 @@ export type AccountSyncResult = {
 // this with no chain-state row yet, firing N parallel account and holdings fetches
 // that all contend on the single SQLite connection. One shared in-flight promise
 // collapses them to a single pass.
-const inFlight = new Map<string, Promise<AccountSyncResult>>()
+const inFlight = new Map<
+    string,
+    { promise: Promise<AccountSyncResult>; isUserRefresh: boolean }
+>()
 
 export function fetchAndPersistAccount(
     address: string,
     scope: ChainScope,
+    { isUserRefresh = false }: { isUserRefresh?: boolean } = {},
 ): Promise<AccountSyncResult> {
     const key = `${toScopeKey(scope)}:${address}`
     const existing = inFlight.get(key)
-    if (existing) return existing
+    if (existing && (!isUserRefresh || existing.isUserRefresh)) {
+        return existing.promise
+    }
 
-    const promise = doFetchAndPersistAccount(address, scope).finally(() => {
-        inFlight.delete(key)
+    const run = () => doFetchAndPersistAccount(address, scope, isUserRefresh)
+    // A pull can arrive during a routine read. Wait for its store writes before
+    // making the forced request, and let other pulls join the same request.
+    const work = existing ? existing.promise.then(run, run) : run()
+    const promise = work.finally(() => {
+        if (inFlight.get(key)?.promise === promise) inFlight.delete(key)
     })
-    inFlight.set(key, promise)
+    inFlight.set(key, { promise, isUserRefresh })
     return promise
 }
 
@@ -86,7 +96,9 @@ export function fetchAndPersistAccount(
  * database comes next.
  */
 export async function settleAccountFetches(): Promise<void> {
-    await Promise.allSettled([...inFlight.values()])
+    await Promise.allSettled(
+        [...inFlight.values()].map(({ promise }) => promise),
+    )
 }
 
 /**
@@ -217,6 +229,7 @@ async function readAddedTokenIds(
 async function doFetchAndPersistAccount(
     address: string,
     scope: ChainScope,
+    isUserRefresh: boolean,
 ): Promise<AccountSyncResult> {
     // The prior row tells the chain how large the account was at its last sync
     // (which can decide its read strategy) and feeds the changed-account diff.
@@ -237,6 +250,7 @@ async function doFetchAndPersistAccount(
             priorChainState: prior?.chainData,
             addedTokenIds,
             isPersisted: true,
+            ...(isUserRefresh && { isUserRefresh }),
         })
         .catch(async (error: unknown) => {
             if (!prior) {

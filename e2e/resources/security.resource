@@ -16,8 +16,6 @@ ${CURRENT_PIN}                  ${REGULAR_PIN}
 # AUTO_LOCK_TIMEOUT_MS is 2 minutes and the lock only arms once the background time exceeds it.
 ${AUTO_LOCK_BACKGROUND}         125
 
-${MENU_SETTINGS_BUTTON}         tid=menu_settings_button
-${SETTINGS_ITEM_SECURITY}       tid=settings_item_security
 ${PIN_TOGGLE_ID}                settings_security_pin_toggle
 ${DURESS_TOGGLE_ID}             settings_security_duress_pin_toggle
 ${SHAKE_TOGGLE_ID}              settings_security_shake_to_lock_toggle
@@ -53,7 +51,6 @@ Start On Security
     END
     Tap If Present    ${TERMS_AGREE_BUTTON}
     Tap If Present    ${BANNERS_MODAL_CLOSE}
-    Go Home
     Open Security Settings
 
 Require Regular Pin
@@ -68,13 +65,15 @@ Require Regular Pin
     Ensure Duress Pin Off
 
 Open Security Settings
-    # Right after an unlock the lock screen is gone before Home has rendered.
-    Wait Until Page Contains Element    ${MENU_TAB}    timeout=30s
-    Tap    ${MENU_TAB}
-    Wait Until Page Contains Element    ${MENU_SETTINGS_BUTTON}    timeout=15s
-    Tap    ${MENU_SETTINGS_BUTTON}
-    Wait Until Page Contains Element    ${SETTINGS_ITEM_SECURITY}    timeout=15s
-    Tap    ${SETTINGS_ITEM_SECURITY}
+    Open Settings
+    Tap    ${SETTINGS_SECURITY_ITEM}
+    ${opened}=    Run Keyword And Return Status
+    ...    Wait Until Page Contains Element    ${PIN_TOGGLE}    timeout=5s
+    IF    ${opened}    RETURN
+    # XCUITest can report a successful click while Settings remains visible.
+    ${still_on_settings}=    Run Keyword And Return Status
+    ...    Expect Element    ${SETTINGS_SECURITY_ITEM}    visible    timeout=1ms    retry_interval=0s    loglevel=NONE
+    IF    ${still_on_settings}    Tap    ${SETTINGS_SECURITY_ITEM}
     Wait Until Page Contains Element    ${PIN_TOGGLE}    timeout=15s
 
 Require Duress Pin Feature
@@ -172,7 +171,6 @@ Restore Regular Pin
     ...                ${REGULAR_PIN}. A no-op when the case failed before changing it.
     IF    $CURRENT_PIN == $REGULAR_PIN    RETURN
     Unlock If Locked    ${CURRENT_PIN}
-    Go Home
     Open Security Settings
     Change Regular Pin    ${CURRENT_PIN}    ${REGULAR_PIN}
 
@@ -233,7 +231,6 @@ Settle After Wipe
     [Documentation]    The wipe clears preferences, so the accepted terms and banner state go with it.
     Tap If Shown    ${TERMS_AGREE_BUTTON}    10s
     Wait Clear Of Startup Prompts
-    Go Home
     Open Security Settings
 
 Regular Pin Should Still Be Set
@@ -255,7 +252,6 @@ Turn Pin Off
     ...                this tries every PIN a suite sets. Removing the PIN record removes the duress
     ...                PIN with it.
     Unlock With Known Pins
-    Go Home
     Open Security Settings
     ${pin_set}=    Run Keyword And Return Status
     ...    Wait Until Page Contains Element    ${CHANGE_PIN_BUTTON}    timeout=3s

@@ -110,6 +110,8 @@ export type GridPoint = {
     /** Unix ms. */
     timestamp: number
     balances: Balances
+    /** Counted tokens (lowercase CAIP-19) whose balance the backend couldn't read at this point. */
+    unreadable?: Set<string>
 }
 
 // One gate for every chart on every EVM chain: the account screens load
@@ -206,22 +208,34 @@ export const fetchGridBalances = async (
     const answers = await Promise.all(calls)
     if (answers.some(answer => answer === null)) return null
 
-    const merged = new Map<string, Nullable<Balances>>()
+    const merged = new Map<
+        string,
+        Nullable<{ balances: Balances; unreadable: Set<string> }>
+    >()
     for (const results of answers) {
         for (const { timestamp, error, balances } of results!) {
-            if (!merged.has(timestamp)) merged.set(timestamp, new Map())
-            const into = merged.get(timestamp)
-            if (!into) continue
+            if (!merged.has(timestamp)) {
+                merged.set(timestamp, {
+                    balances: new Map(),
+                    unreadable: new Set(),
+                })
+            }
+            const point = merged.get(timestamp)
+            if (!point) continue
             if (error === 'before_chain_start') continue
             if (error !== null || !balances) {
                 merged.set(timestamp, null)
                 continue
             }
+            const into = point.balances
             for (const [address, byAsset] of Object.entries(balances)) {
                 for (const [id, amount] of Object.entries(byAsset)) {
-                    if (amount === null) continue
                     const key = id.toLowerCase()
                     if (isExcluded?.(address.toLowerCase(), key)) continue
+                    if (amount === null) {
+                        point.unreadable.add(key)
+                        continue
+                    }
                     into.set(
                         key,
                         (into.get(key) ?? new Decimal(0)).plus(amount),
@@ -231,8 +245,8 @@ export const fetchGridBalances = async (
         }
     }
     return [...merged]
-        .flatMap(([timestamp, balances]) =>
-            balances ? [{ timestamp: Date.parse(timestamp), balances }] : [],
+        .flatMap(([timestamp, point]) =>
+            point ? [{ timestamp: Date.parse(timestamp), ...point }] : [],
         )
         .sort((a, b) => a.timestamp - b.timestamp)
 }
@@ -256,13 +270,21 @@ export const priceAt = (
     return price
 }
 
-/** An asset with no price yet at a point adds nothing to it, as on the account screen. */
+/**
+ * An asset with no price yet at a point adds nothing to it, as on the account
+ * screen. A point missing the balance of an asset priced there is left out
+ * rather than valued as if it held none.
+ */
 export const valuePortfolio = (
     points: GridPoint[],
     assets: Map<string, PricedAsset>,
     nativeCaip19: string,
 ): PortfolioHistoryPoint[] =>
-    points.map(({ timestamp, balances }) => {
+    points.flatMap(({ timestamp, balances, unreadable }) => {
+        for (const id of unreadable ?? []) {
+            const asset = assets.get(id)
+            if (asset && priceAt(asset.prices, timestamp)) return []
+        }
         let usdValue = new Decimal(0)
         for (const [id, baseUnits] of balances) {
             const asset = assets.get(id)
@@ -274,25 +296,27 @@ export const valuePortfolio = (
         }
         const native = assets.get(nativeCaip19)
         const nativePrice = native && priceAt(native.prices, timestamp)
-        return {
-            timestamp,
-            usdValue,
-            nativeValue:
-                nativePrice && !nativePrice.isZero()
-                    ? usdValue.div(nativePrice)
-                    : new Decimal(0),
-        }
+        return [
+            {
+                timestamp,
+                usdValue,
+                nativeValue:
+                    nativePrice && !nativePrice.isZero()
+                        ? usdValue.div(nativePrice)
+                        : new Decimal(0),
+            },
+        ]
     })
 
-/** A point with no price behind it is left out rather than valued at 0. */
+/** A point with no price or no readable balance behind it is left out rather than valued at 0. */
 export const valueHolding = (
     points: GridPoint[],
     caip19: string,
     asset: PricedAsset,
 ): HoldingBalanceHistoryPoint[] =>
-    points.flatMap(({ timestamp, balances }) => {
+    points.flatMap(({ timestamp, balances, unreadable }) => {
         const price = priceAt(asset.prices, timestamp)
-        if (!price) return []
+        if (!price || unreadable?.has(caip19)) return []
         const amount = baseUnitsToDisplayUnits(
             balances.get(caip19) ?? new Decimal(0),
             asset.decimals,
@@ -520,12 +544,14 @@ export const createEthereumBalanceHistoryOps = (
             ]
 
             // Only what was ever held needs a chart; the native coin always
-            // does, as the unit of nativeValue.
+            // does, as the unit of nativeValue. An unreadable balance may have
+            // been held: its price decides whether the point can be valued.
             const held = new Set([nativeCaip19])
-            for (const { balances } of points) {
+            for (const { balances, unreadable } of points) {
                 for (const [id, amount] of balances) {
                     if (!amount.isZero()) held.add(id)
                 }
+                for (const id of unreadable ?? []) held.add(id)
             }
             const assets = await priceAssets(
                 scope,

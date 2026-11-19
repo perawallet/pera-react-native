@@ -34,6 +34,12 @@ const DEPOSIT_PAYMENT_METHOD: RampPaymentMethod = {
 const toUsd = (value: Maybe<string>): Nullable<Decimal> =>
     value === null || value === undefined ? null : new Decimal(value)
 
+const toEpochMs = (value: Maybe<string>): Nullable<number> => {
+    if (!value) return null
+    const ms = Date.parse(value)
+    return Number.isNaN(ms) ? null : ms
+}
+
 const paymentMethodOf = (
     kind: RampQuoteKind,
     offer: RampOfferApiResponse,
@@ -65,5 +71,6 @@ export const transformRampOffer = (
         ),
         sourceValueInUsd: toUsd(offer.source_amount_usd_value),
         destinationValueInUsd: toUsd(offer.destination_amount_usd_value),
+        expiresAt: toEpochMs(offer.expires_at),
     }
 }

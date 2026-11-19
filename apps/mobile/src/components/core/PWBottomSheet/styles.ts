@@ -33,6 +33,13 @@ export const useStyles = makeStyles(
             backgroundColor: theme.colors.layerGray,
             width: theme.spacing.xxl,
         },
+        // Out of the flow, so the content starts at the sheet's top edge.
+        handleOverlay: {
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+        },
         // maxHeight caps auto sheets so content scrolls once it hits the cap.
         contentWrapper: {
             flex: 1,

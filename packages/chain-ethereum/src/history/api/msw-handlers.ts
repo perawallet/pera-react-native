@@ -41,6 +41,7 @@ export const evmHistoryItem = (
     fee: null,
     status: 'success',
     method: null,
+    input: null,
     token_transfers: [],
     internal_transfers: [],
     nft_transfers: [],

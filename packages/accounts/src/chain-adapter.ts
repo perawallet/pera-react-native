@@ -245,6 +245,8 @@ export type AccountStateReadHint = {
     addedTokenIds?: readonly string[]
     /** The syncer persists this read, so a chain may do work that only pays off for an account the wallet holds, such as discovering what it received. */
     isPersisted?: boolean
+    /** The user asked for this read (pull-to-refresh), so a chain may skip the backend's caches. */
+    isUserRefresh?: boolean
 }
 
 export type GetPublicKey = (params: HdIndex) => Promise<Uint8Array>

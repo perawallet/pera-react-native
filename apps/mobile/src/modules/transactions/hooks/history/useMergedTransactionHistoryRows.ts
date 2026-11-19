@@ -16,6 +16,7 @@ import {
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { TransactionHistoryType } from '@perawallet/wallet-core-transactions'
 import {
     mergeHistoryFeeds,
     type HistoryFeedSnapshot,
@@ -46,6 +47,9 @@ export type HistoryFeedProps = {
     source: HistoryFeedSource
     afterTime?: string
     beforeTime?: string
+    historyType?: TransactionHistoryType
+    /** Feeds splitting the type filter's page budget. */
+    typedScanShare?: number
     onChange: HistoryFeedChangeHandler
 }
 
@@ -56,6 +60,7 @@ export type UseMergedTransactionHistoryRowsParams = {
     afterTime?: string
     /** `YYYY-MM-DD`, inclusive. */
     beforeTime?: string
+    historyType?: TransactionHistoryType
 }
 
 export type UseMergedTransactionHistoryRowsResult = Omit<
@@ -77,6 +82,9 @@ const feedKeyOf = ({ scope, address }: HistoryFeedSource): string =>
 /** Page reads one Load More makes without a new row before pausing for Search Older, as the records query does. */
 export const MAX_MERGED_LOAD_ROUNDS = 4
 
+/** {@link MAX_MERGED_LOAD_ROUNDS} under a type filter: a round reads every network, against one rate limit. */
+export const MAX_TYPED_MERGED_LOAD_ROUNDS = 1
+
 type LoadRequest = {
     shownAtRequest: number
     rounds: number
@@ -93,6 +101,7 @@ export const useMergedTransactionHistoryRows = ({
     sources,
     afterTime,
     beforeTime,
+    historyType,
 }: UseMergedTransactionHistoryRowsParams): UseMergedTransactionHistoryRowsResult => {
     const [snapshots, setSnapshots] = useState<
         Readonly<Record<string, HistoryFeedSnapshot>>
@@ -132,9 +141,20 @@ export const useMergedTransactionHistoryRows = ({
                 source,
                 afterTime,
                 beforeTime,
+                historyType,
+                ...(historyType !== undefined && {
+                    typedScanShare: sources.length,
+                }),
                 onChange: handleFeedChange,
             })),
-        [sources, feedKeys, afterTime, beforeTime, handleFeedChange],
+        [
+            sources,
+            feedKeys,
+            afterTime,
+            beforeTime,
+            historyType,
+            handleFeedChange,
+        ],
     )
 
     const { blockingFeeds, pausedFeeds, failedFeeds, ...history } = merged
@@ -158,7 +178,7 @@ export const useMergedTransactionHistoryRows = ({
     useEffect(() => {
         setLoadRequest(null)
         setIsLoadPaused(false)
-    }, [feedKeys, afterTime, beforeTime])
+    }, [feedKeys, afterTime, beforeTime, historyType])
 
     useEffect(() => {
         if (!loadRequest) return
@@ -183,7 +203,11 @@ export const useMergedTransactionHistoryRows = ({
         if (isWaiting) return
         // A failed page or a long empty stretch waits for Search Older.
         const hasFailedPage = blockers.some(key => snapshots[key]!.isError)
-        if (hasFailedPage || loadRequest.rounds >= MAX_MERGED_LOAD_ROUNDS) {
+        const maxRounds =
+            historyType === undefined
+                ? MAX_MERGED_LOAD_ROUNDS
+                : MAX_TYPED_MERGED_LOAD_ROUNDS
+        if (hasFailedPage || loadRequest.rounds >= maxRounds) {
             setLoadRequest(null)
             setIsLoadPaused(true)
             return
@@ -201,6 +225,7 @@ export const useMergedTransactionHistoryRows = ({
         snapshots,
         feedKeys,
         runOn,
+        historyType,
     ])
 
     const fetchNextPage = useCallback(() => {

@@ -17,12 +17,14 @@ import {
     type ChainRegistry,
     type WalletMode,
 } from '@perawallet/wallet-core-chain-contract'
+import { isPeraScopeRefused } from '@perawallet/wallet-core-config'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * The CAIP-2 id the devices API names the chain's network by on this
- * deployment. A deployment serves one tier, so it is that tier's default
- * network whatever network the user has selected.
+ * deployment, or `null` where the deployment doesn't serve that network. A
+ * deployment serves one tier, so it is that tier's default network whatever
+ * network the user has selected.
  */
 export const registrationChainOf = (
     chains: ChainRegistry,
@@ -30,10 +32,14 @@ export const registrationChainOf = (
     deployment: WalletMode,
 ): Nullable<string> => {
     if (!chains.has(chainId)) return null
-    return (
-        defaultNetworkForTier(
-            chains.get(chainId).descriptor,
-            networkTierForMode(deployment),
-        )?.caip2 ?? null
+    const network = defaultNetworkForTier(
+        chains.get(chainId).descriptor,
+        networkTierForMode(deployment),
     )
+    if (network?.caip2 === undefined) return null
+    // The devices API refuses the whole registration over one chain it doesn't
+    // know and never says which, so a network the backend's chain list leaves
+    // out is never sent rather than found by dropping chains one 422 at a time.
+    if (isPeraScopeRefused({ chainId, networkId: network.id })) return null
+    return network.caip2
 }

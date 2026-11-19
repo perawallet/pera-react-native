@@ -10,9 +10,14 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { isPeraScopeRefused } from '@perawallet/wallet-core-config'
 import { createFakeChainRegistry } from '../../__tests__/fakeChains'
 import { registrationChainOf } from '../registrationChain'
+
+vi.mock('@perawallet/wallet-core-config', () => ({
+    isPeraScopeRefused: vi.fn(() => false),
+}))
 
 const chains = createFakeChainRegistry({
     algorand: { mainnet: 'first:main', testnet: 'first:test' },
@@ -20,6 +25,10 @@ const chains = createFakeChainRegistry({
 })
 
 describe('registrationChainOf', () => {
+    beforeEach(() => {
+        vi.mocked(isPeraScopeRefused).mockReturnValue(false)
+    })
+
     it.each([
         ['live', 'algorand', 'first:main'],
         ['developer', 'algorand', 'first:test'],
@@ -36,5 +45,20 @@ describe('registrationChainOf', () => {
 
     it('names no chain that is not registered', () => {
         expect(registrationChainOf(chains, 'base', 'live')).toBeNull()
+    })
+
+    it('names no chain whose network the deployment refuses', () => {
+        vi.mocked(isPeraScopeRefused).mockImplementation(
+            scope =>
+                scope.chainId === 'ethereum' && scope.networkId === 'testnet',
+        )
+
+        expect(registrationChainOf(chains, 'ethereum', 'developer')).toBeNull()
+        expect(registrationChainOf(chains, 'ethereum', 'live')).toBe(
+            'second:main',
+        )
+        expect(registrationChainOf(chains, 'algorand', 'developer')).toBe(
+            'first:test',
+        )
     })
 })

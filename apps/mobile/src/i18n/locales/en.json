@@ -82,6 +82,10 @@
             "see_all": "See all",
             "empty_title": "No favorites yet",
             "empty_body": "Start exploring the dApps",
+            "suggestions": {
+                "body": "Add the dApps you use most. Here are a few to start with.",
+                "add": "Add"
+            },
             "added_toast": {
                 "title": "Added to favorites"
             },
@@ -430,6 +434,7 @@
         "transaction_list": {
             "title": "Transactions",
             "empty_body": "No transactions found",
+            "empty_filtered_body": "No transactions match this filter",
             "empty_on_network_body": "No transactions yet on {{network}}",
             "network_failed": "Couldn't load transactions on {{networks}}",
             "network_unavailable": "Transactions aren't available on {{networks}}",
@@ -438,7 +443,8 @@
             "search_paused_body": "No transactions found in recent history.",
             "search_older": "Search Older",
             "filter": "Filter",
-            "csv": "CSV"
+            "csv": "CSV",
+            "csv_on_network": "{{network}} CSV"
         },
         "collectible": {
             "description": "Description",
@@ -1130,6 +1136,7 @@
         }
     },
     "common": {
+        "app_name": "Pera Wallet",
         "networks_list": "{{first}} and {{last}}",
         "offline_mode": "Offline Mode",
         "offline_mode_description": "Balances may be out of date and some actions are unavailable until you reconnect.",
@@ -1443,6 +1450,10 @@
             "server_error": {
                 "title": "Server error",
                 "body": "The server ran into a problem processing your request. Please try again."
+            },
+            "rate_limited": {
+                "title": "Network busy",
+                "body": "The network is receiving too many requests right now. Please wait a moment and try again."
             }
         },
         "transaction": {
@@ -3753,6 +3764,8 @@
             "nothing_back_title": "You get nothing back",
             "permission_collection": "All your {{collection}} NFTs",
             "permission_collection_note": "It can move every NFT you hold in this collection, now and later, until you remove this permission.",
+            "permission_increase": "{{spender}} can spend this much more",
+            "permission_increase_note": "This adds to what {{spender}} can already spend, so its total limit may be higher.",
             "permission_no_change": "No tokens leave your wallet with this transaction.",
             "permission_revoke": "{{spender}} can no longer spend",
             "permission_spender": "{{spender}} can spend",
@@ -3866,12 +3879,16 @@
             "app_call": "App Call",
             "contract_call": "Contract Call",
             "approve_asset": "Approve {{asset}}",
+            "approve_all": "Approve all {{collection}}",
+            "approval_for": "For {{spender}}",
+            "unlimited_approval_for": "Unlimited · for {{spender}}",
             "swap_pair": "Swap {{from}} → {{to}}",
             "add_liquidity": "Add liquidity",
             "remove_liquidity": "Remove liquidity",
+            "collect_fees": "Collect fees",
             "contract_interaction": "Contract interaction",
             "approval": "Approval",
-            "revoke_approval": "Revoke Approval",
+            "revoke_approval": "Revoke approval",
             "key_registration": "Key Registration",
             "heartbeat": "Heartbeat",
             "state_proof": "State Proof",
@@ -4034,7 +4051,14 @@
             "yesterday": "Yesterday",
             "last_week": "Last Week",
             "last_month": "Last Month",
-            "custom_range": "Custom Range"
+            "custom_range": "Custom Range",
+            "type": "Type",
+            "type_all": "All",
+            "type_swaps": "Swaps",
+            "type_approvals": "Approvals",
+            "type_defi": "DeFi",
+            "type_transfers": "Sends & Receives",
+            "type_other": "Other"
         },
         "replacement": {
             "title": "Pending transaction",
@@ -4270,7 +4294,6 @@
             },
             "provider_failed_body": "This provider couldn't complete the swap. Try another provider.",
             "provider_unavailable_body": "The provider is unavailable right now. Try again in a moment.",
-            "route_unverified_body": "Pera can't verify this provider's swap contract on {{network}} yet, so nothing was signed. Try another provider or try again later.",
             "quote_mismatch_body": "The provider's transactions didn't match this quote, so nothing was signed. Try again or choose another provider.",
             "unsupported_order_body": "Pera can't complete this provider's order, so nothing was signed. Choose another provider.",
             "signing_failed_body": "The transaction couldn't be signed, so it wasn't sent. Try again.",
@@ -4389,7 +4412,9 @@
             "no_payment_methods": "No payment methods available for your device.",
             "amount_below_min": "Amount must be greater than {{min}}",
             "amount_below_min_unknown": "Amount is below the provider's minimum",
-            "amount_above_max": "Amount must be less than {{max}}"
+            "amount_above_max": "Amount must be less than {{max}}",
+            "quote_refreshed_title": "Quote refreshed",
+            "quote_refreshed_body": "That quote had expired, so we fetched a new price. Review it and tap Proceed again."
         },
         "pair_selection": {
             "title_to": "To",

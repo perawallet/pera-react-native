@@ -188,7 +188,7 @@ describe('Flow: Swap with a Ledger / rekeyed sender through the signing pipeline
         pendingSignature!.resolve(new Uint8Array(64))
         await run
 
-        expect(outcome).toEqual({ kind: 'success' })
+        expect(outcome).toEqual({ kind: 'success', isPaidOutLater: false })
         expect(algodBodies).toHaveLength(1)
         expect(reports).toHaveLength(1)
         expect(reports[0].status).toBe('sent')
@@ -257,7 +257,7 @@ describe('Flow: Swap with a Ledger / rekeyed sender through the signing pipeline
             buildRouterSwapQuote(addressOf(rekeyedSender)),
         )
 
-        expect(outcome).toEqual({ kind: 'success' })
+        expect(outcome).toEqual({ kind: 'success', isPaidOutLater: false })
         expect(algodBodies).toHaveLength(1)
         const signed = decodeSignedTransaction(algodBodies[0])
         expect(signed.txn.sender.toString()).toBe(addressOf(rekeyedSender))

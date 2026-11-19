@@ -19,7 +19,6 @@ import { useAssetsQuery, useNativeAsset } from '@perawallet/wallet-core-assets'
 import {
     i18nKey,
     type BalanceChange,
-    type I18nKey,
     type TransactionRecord,
     type TransactionSummary,
 } from '@perawallet/wallet-core-chain-contract'
@@ -76,14 +75,19 @@ const RECIPIENT_KINDS: readonly TransactionRecord['summary']['kind'][] = [
     'nft-transfer',
 ]
 
-// The row's title stands unless the node read knows more: a revocation, or
-// an action for a call the history named none for.
+// The row's title stands unless the node read knows more: a revocation, an
+// NFT grant of token #0 the row took for a revocation, or an action for a call
+// the history named none for. Only a found NFT overrides a revoke: a read that
+// can't place the token, or hasn't yet, says approval of a real ERC-20 revoke.
 const isReadTitleBetter = (
     row: TransactionSummary,
-    readKey: I18nKey,
+    { titleKey, standardCall }: EthereumTransactionPresentation,
 ): boolean =>
-    readKey === REVOKE_APPROVAL_TITLE_KEY ||
-    (!!row.isActionUnknown && readKey !== CONTRACT_CALL_TITLE_KEY)
+    titleKey === REVOKE_APPROVAL_TITLE_KEY ||
+    (row.title.key === REVOKE_APPROVAL_TITLE_KEY &&
+        standardCall?.kind === 'nft-approval' &&
+        !standardCall.isRevocation) ||
+    (!!row.isActionUnknown && titleKey !== CONTRACT_CALL_TITLE_KEY)
 
 export const useEthereumRecordLayout = (
     record: TransactionRecord,
@@ -148,7 +152,7 @@ export const useEthereumRecordLayout = (
                     transactionIconName(recordSummary.icon),
                 title: heroTitle(
                     presentation &&
-                        isReadTitleBetter(recordSummary, presentation.titleKey)
+                        isReadTitleBetter(recordSummary, presentation)
                         ? { key: presentation.titleKey }
                         : summaryTitle,
                 ),

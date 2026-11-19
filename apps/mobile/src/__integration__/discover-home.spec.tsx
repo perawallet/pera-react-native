@@ -142,14 +142,18 @@ const useHandlers = ({
     news = ['First story', 'Second story'],
     algorand = { response: ALGORAND_PROJECTS, status: 200 },
     ethereum = { response: ETHEREUM_PROJECTS, status: 200 },
+    directory = [...ALGORAND_PROJECTS, ...ETHEREUM_PROJECTS],
 }: {
     news?: string[]
+    directory?: ProjectApiResponse[]
     algorand?: { response: ProjectApiResponse[]; status: number }
     ethereum?: { response: ProjectApiResponse[]; status: number }
 } = {}) => {
     server.use(
         mockDiscoverProjects({ ...algorand, chains: algorandCaip2() }),
         mockDiscoverProjects({ ...ethereum, chains: ETHEREUM_CAIP2 }),
+        // The every-chain directory behind the favorites suggestions, most popular first.
+        mockDiscoverProjects({ response: directory }),
         mockDiscoverNews({ response: newsResponse(news) }),
     )
 }
@@ -392,8 +396,39 @@ describe('Flow: Discover home', () => {
         ).toBeNull()
     })
 
-    it('Given nothing favorited, then Favorites shows its empty state without See all', async () => {
+    it('Given nothing favorited, then Favorites offers the three most popular dApps, and Add makes one a favorite', async () => {
         useHandlers()
+        renderHome()
+
+        const add = await screen.findByTestId(
+            'discover_home_suggestion_https://tinyman.example_add',
+        )
+        expect(
+            screen.getByText('discover.favorites.suggestions.body'),
+        ).toBeTruthy()
+        expect(
+            screen.getByTestId('discover_home_suggestion_https://pact.example'),
+        ).toBeTruthy()
+        // Only the first three: Vestige is the fourth.
+        expect(
+            screen.queryByTestId(
+                'discover_home_suggestion_https://vestige.example',
+            ),
+        ).toBeNull()
+
+        fireEvent.click(add)
+
+        expect(
+            await screen.findByTestId(
+                'discover_home_favorite_https://tinyman.example',
+            ),
+        ).toBeTruthy()
+        expect(screen.queryByTestId('discover_home_favorites_empty')).toBeNull()
+        await flush()
+    })
+
+    it('Given nothing favorited and no dApp to suggest, then Favorites shows its empty state without See all', async () => {
+        useHandlers({ directory: [] })
         renderHome()
 
         expect(

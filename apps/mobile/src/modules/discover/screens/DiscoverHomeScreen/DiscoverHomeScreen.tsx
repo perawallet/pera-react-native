@@ -169,12 +169,16 @@ export const DiscoverHomeScreen = () => {
                         testID='discover_home_top_dapps_header'
                     />
                     {home.chainOptions.length > 0 ? (
-                        <FilterSelection
-                            options={home.chainOptions}
-                            selectedValue={home.selectedChainId}
-                            onSelect={home.selectChain}
-                            testID='discover_home_chain_filter'
-                        />
+                        // Runs to the screen's edges, so a chip is only cut where the screen ends.
+                        <PWView style={styles.bleed}>
+                            <FilterSelection
+                                options={home.chainOptions}
+                                selectedValue={home.selectedChainId}
+                                onSelect={home.selectChain}
+                                contentContainerStyle={styles.bleedContent}
+                                testID='discover_home_chain_filter'
+                            />
+                        </PWView>
                     ) : null}
                     {renderTopDapps()}
                 </PWView>
@@ -192,6 +196,8 @@ export const DiscoverHomeScreen = () => {
                             data={news.items}
                             keyExtractor={item => item.id}
                             renderItem={renderNewsCard}
+                            style={styles.bleed}
+                            contentContainerStyle={styles.newsContent}
                         />
                     </PWView>
                 ) : null}

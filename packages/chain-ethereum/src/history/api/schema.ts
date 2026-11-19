@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { isHex, type Hex } from 'viem'
 import { z } from 'zod'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
@@ -82,6 +83,12 @@ export const evmHistoryItemSchema = z.object({
     fee: amount.nullable(),
     status: z.enum(['success', 'failed']),
     method: z.string().nullable(),
+    // Null, or missing from a backend that predates it, on anything but a call
+    // the account sent; malformed hex drops the calldata, never the row.
+    input: z
+        .custom<Hex>(value => typeof value === 'string' && isHex(value))
+        .nullable()
+        .catch(null),
     token_transfers: z
         .array(tokenTransferSchema)
         .transform(legs => legs.filter(leg => !isEip7708Mirror(leg.contract))),
@@ -107,6 +114,24 @@ export const evmHistoryItemSchema = z.object({
 
 export type EvmHistoryItem = z.output<typeof evmHistoryItemSchema>
 
+/** `item` without the legs and impacts of a contract that mirrors the native coin, which the row already counts. */
+export const withoutNativeTokenLegs = (
+    item: EvmHistoryItem,
+    contract: string,
+): EvmHistoryItem => {
+    const isMirror = (candidate: string): boolean =>
+        candidate.toLowerCase() === contract.toLowerCase()
+    return {
+        ...item,
+        token_transfers: item.token_transfers.filter(
+            leg => !isMirror(leg.contract),
+        ),
+        balance_impacts: item.balance_impacts.filter(
+            ({ asset_id }) => !isMirror(asset_id.split('/erc20:')[1] ?? ''),
+        ),
+    }
+}
+
 // Rows are checked one by one, so a row this client predates (a new `kind`)
 // drops that row rather than the whole page.
 export const evmHistoryPageSchema = z.object({
@@ -131,6 +156,8 @@ export type EvmHistoryItemResponse = {
     fee: Nullable<string>
     status: 'success' | 'failed'
     method: Nullable<string>
+    /** 0x-prefixed calldata, set only on a call `from` the account. */
+    input: Nullable<string>
     token_transfers: {
         asset_id: string
         contract: string

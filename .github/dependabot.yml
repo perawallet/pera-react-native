@@ -215,20 +215,27 @@ updates:
       - dependency-name: react-native-nitro-image
       - dependency-name: react-native-vision-camera
       - dependency-name: react-native-vision-camera-barcode-scanner
-      # expo-image is the same lockstep case, but it bites at *launch* rather
-      # than at build: with EXPO_USE_PRECOMPILED_MODULES its XCFramework is
-      # downloaded prebuilt, so it is linked against whatever
-      # expo-modules-core existed when Expo published it — never against ours.
-      # Nothing catches this: expo-image declares no dependency on
-      # expo-modules-core, and each artifact is fetched per-package. Pinned
-      # exactly to the SDK's bundled version; moves only when the SDK does.
+      # These Expo modules are the same lockstep case, but they bite at *launch*
+      # rather than at build: with EXPO_USE_PRECOMPILED_MODULES each XCFramework
+      # is downloaded prebuilt, so it is linked against whatever
+      # expo-modules-core existed when Expo published it — never against ours
+      # (expo-font 58.0.12, expo-media-library and expo-video 58.0.14 import
+      # `AnyModule._classTypes`, which our core lacks, so dyld aborts the app).
+      # Nothing catches this: they declare no dependency on expo-modules-core,
+      # and each artifact is fetched per-package. Pinned exactly to the SDK's
+      # bundled version; they move only when the SDK does.
+      - dependency-name: expo-font
       - dependency-name: expo-image
+      - dependency-name: expo-media-library
+      - dependency-name: expo-video
       # Same lockstep class at build time: a patch can call an
-      # expo-modules-core helper newer than the core this tree resolves (an
-      # expo-screen-capture patch once called `SceneGeometry.keyWindow()`
-      # before our core had it, failing the Swift compile). Nothing declares
-      # the coupling (it peers `expo: "*"`), so taking it means moving the SDK.
+      # expo-modules-core API newer than the core this tree resolves
+      # (expo-screen-capture once called `SceneGeometry.keyWindow()`, and
+      # expo-screen-orientation 58.0.4 subclasses `ExpoRootViewController`),
+      # failing the Swift compile. Nothing declares the coupling (they peer
+      # `expo: "*"`), so taking them means moving the SDK.
       - dependency-name: expo-screen-capture
+      - dependency-name: expo-screen-orientation
       # Inert while the `expo-build-properties` override stands — pnpm
       # resolves the direct spec through the override, so Dependabot has been
       # reopening a bump that cannot change what installs. Move it with the

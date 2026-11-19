@@ -11,7 +11,7 @@
  */
 
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { useCsvExportMutation } from '../useCsvExportMutation'
 import {
@@ -21,11 +21,13 @@ import {
 } from '../../api/csv-export'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
-import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+import { useChainCapabilityCheck } from '@perawallet/wallet-core-chain-shared'
+import { historyChainAdapters } from '../../history-adapter'
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useChainCapability: vi.fn(() => true),
+    useChainCapabilityCheck: vi.fn(),
 }))
+const checkCapability = vi.fn(() => true)
 
 // Mock the API function
 vi.mock('../../api/csv-export', async importOriginal => {
@@ -59,6 +61,98 @@ describe('useCsvExportMutation', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        checkCapability.mockReturnValue(true)
+        vi.mocked(useChainCapabilityCheck).mockReturnValue(checkCapability)
+        for (const chainId of ['algorand', 'ethereum'] as const) {
+            historyChainAdapters.register({
+                chainId,
+                getTransactionHistory: vi.fn(),
+                exportCsv: params => fetchTransactionsCsv(params),
+            })
+        }
+    })
+
+    afterEach(() => {
+        historyChainAdapters.reset()
+    })
+
+    it("exports another network's history when the call names it, even where the hook's own has no export", async () => {
+        checkCapability.mockReturnValueOnce(false)
+        vi.mocked(fetchTransactionsCsv).mockResolvedValueOnce(
+            {} as CsvExportResult,
+        )
+        const ethereum = { chainId: 'ethereum', networkId: 'mainnet' } as const
+
+        const { result } = renderHook(
+            () =>
+                useCsvExportMutation({
+                    scope: { chainId: 'algorand', networkId: 'betanet' },
+                }),
+            { wrapper: createWrapper() },
+        )
+        act(() => {
+            result.current.exportCsv({
+                accountAddress: '0xabc',
+                scope: ethereum,
+            })
+        })
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        expect(fetchTransactionsCsv).toHaveBeenCalledWith({
+            accountAddress: '0xabc',
+            scope: ethereum,
+        })
+    })
+
+    it('refuses an explicit scope if export was disabled after rendering', async () => {
+        const ethereum = { chainId: 'ethereum', networkId: 'mainnet' } as const
+        const { result } = renderHook(
+            () =>
+                useCsvExportMutation({
+                    scope: { chainId: 'algorand', networkId: 'mainnet' },
+                    onError: mockOnError,
+                }),
+            { wrapper: createWrapper() },
+        )
+
+        checkCapability.mockReturnValue(false)
+        act(() => {
+            result.current.exportCsv({
+                accountAddress: '0xabc',
+                scope: ethereum,
+            })
+        })
+
+        await waitFor(() =>
+            expect(mockOnError).toHaveBeenCalledWith(
+                expect.any(CsvExportError),
+            ),
+        )
+        expect(fetchTransactionsCsv).not.toHaveBeenCalled()
+    })
+
+    it('fails with a CsvExportError on a chain whose history has no export', async () => {
+        historyChainAdapters.reset()
+        historyChainAdapters.register({
+            chainId: 'algorand',
+            getTransactionHistory: vi.fn(),
+        })
+
+        const { result } = renderHook(
+            () =>
+                useCsvExportMutation({
+                    scope: { chainId: 'algorand', networkId: 'mainnet' },
+                    onError: mockOnError,
+                }),
+            { wrapper: createWrapper() },
+        )
+        act(() => {
+            result.current.exportCsv({ accountAddress: VALID_ADDRESS })
+        })
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(mockOnError).toHaveBeenCalledWith(expect.any(CsvExportError))
+        expect(fetchTransactionsCsv).not.toHaveBeenCalled()
     })
 
     it.each([
@@ -247,7 +341,7 @@ describe('useCsvExportMutation', () => {
         it.each(['betanet', 'custom'])(
             'reports isUnavailableOnNetwork and no-ops exportCsv on %s',
             async network => {
-                vi.mocked(useChainCapability).mockReturnValue(false)
+                checkCapability.mockReturnValue(false)
                 const { result, rerender } = renderHook(
                     () =>
                         useCsvExportMutation({
@@ -262,10 +356,9 @@ describe('useCsvExportMutation', () => {
                 )
 
                 expect(result.current.isUnavailableOnNetwork).toBe(true)
-                expect(useChainCapability).toHaveBeenCalledWith(
-                    'algorand',
-                    'csvExport',
-                )
+                expect(checkCapability).toHaveBeenCalledWith({
+                    chain: { chainId: 'algorand', capability: 'csvExport' },
+                })
 
                 const firstExportCsv = result.current.exportCsv
                 act(() => {
@@ -284,7 +377,6 @@ describe('useCsvExportMutation', () => {
         it.each(['mainnet', 'testnet'])(
             'reports isUnavailableOnNetwork as false on %s',
             network => {
-                vi.mocked(useChainCapability).mockReturnValue(true)
                 const { result } = renderHook(
                     () =>
                         useCsvExportMutation({

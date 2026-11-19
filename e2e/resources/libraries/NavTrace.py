@@ -109,9 +109,13 @@ class NavTrace:
         platform = str(driver.capabilities.get("platformName", "")).lower()
         if platform == "android":
             try:
-                return [entry.get("message", "") for entry in driver.get_log("logcat")]
+                lines = [entry.get("message", "") for entry in driver.get_log("logcat")]
             except Exception:
+                self.tracer_seen = False
                 return []
+            if self.tracer_seen is False and parse(lines):
+                self.tracer_seen = True
+            return lines
         return self._read_ios_file(driver)
 
     def _read_ios_file(self, driver):
@@ -121,6 +125,9 @@ class NavTrace:
         try:
             raw = base64.b64decode(driver.pull_file(f"@{bundle}:data/Documents/e2e-nav.log")).decode()
         except Exception:
+            # A physical session can continue over LAN after USB file access
+            # drops. The next regular read can restore snapshot waits.
+            self.tracer_seen = False
             return []
         records = [(line, event) for line in raw.splitlines() for event in parse([line])
                    if isinstance(event.get("seq"), int) and event["seq"] > 0]
@@ -132,6 +139,7 @@ class NavTrace:
             self.last_seq = 0
         fresh = [line for line, event in records if event["seq"] > self.last_seq]
         if records:
+            self.tracer_seen = True
             self.last_event = records[-1][1]
             self.last_seq = self.last_event["seq"]
         return fresh
@@ -147,7 +155,7 @@ class NavTrace:
         cannot be read), so the caller can fall back to a fixed wait.
         """
         if self.tracer_seen is False:
-            return False  # a build without the tracer: don't pay the timeout on every fixture
+            return False  # Ordinary trace reads can restore availability.
         deadline = time.monotonic() + float(timeout)
         while time.monotonic() < deadline:
             lines = self._read()
@@ -156,6 +164,8 @@ class NavTrace:
                 if event.get("event") == "snapshot" and event.get("label") == label:
                     self.tracer_seen = True
                     return True
+            if self.tracer_seen is False:
+                return False
             time.sleep(0.1)
         if self.tracer_seen is None:
             self.tracer_seen = False

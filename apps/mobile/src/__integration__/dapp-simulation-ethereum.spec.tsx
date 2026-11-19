@@ -119,6 +119,8 @@ const ONE_MILLI_ETH = '0x38d7ea4c68000'
 const SWAP_DATA = `0x7ff36ab5${'00'.repeat(32)}`
 // approve(Permit2, max uint256)
 const APPROVE_MAX_DATA = `0x095ea7b3${'00'.repeat(12)}000000000022d473030f116ddee9f6b43ac78ba3${'ff'.repeat(32)}`
+// increaseAllowance(Permit2, 1,000 USDC)
+const INCREASE_1000_USDC_DATA = `0x39509351${'00'.repeat(12)}000000000022d473030f116ddee9f6b43ac78ba3${(1_000_000_000).toString(16).padStart(64, '0')}`
 // deposit()
 const WRAP_DATA = '0xd0e30db0'
 const V3_POSITION_MANAGER = '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
@@ -510,6 +512,71 @@ describe('Flow: a dApp asks to sign a call whose outcome the backend predicts', 
         expect(screen.queryByTestId(CHANGES)).toBeNull()
         expect(screen.queryByTestId(UNAVAILABLE)).toBeNull()
         await expectSlideEnabled()
+    })
+
+    describe('an increaseAllowance of 1,000 USDC on top of an existing 9,000', () => {
+        it('Given a simulation of the resulting 10,000 allowance, when it is reviewed, then the permission shows that total as the spend limit', async () => {
+            const simulation = simulationSuccessResponse(
+                [],
+                [
+                    {
+                        contract: USDC.toLowerCase(),
+                        spender: PERMIT2.toLowerCase(),
+                        token_id: null,
+                        collection_wide: false,
+                        allowance: '10000000000',
+                    },
+                ],
+            )
+
+            await review(USDC, INCREASE_1000_USDC_DATA, simulation)
+
+            await waitFor(
+                () =>
+                    expect(
+                        screen.getByTestId('ethereum_review_permission_amount')
+                            .textContent,
+                    ).toMatch(/10,000/),
+                { timeout: 15_000 },
+            )
+            expect(
+                screen.getByTestId('ethereum_review_permission').textContent,
+            ).toContain('signing.review.permission_spender')
+            expect(
+                screen.queryByTestId('ethereum_review_permission_increase'),
+            ).toBeNull()
+            expect(
+                screen.getAllByTestId('ethereum_review_permission'),
+            ).toHaveLength(1)
+        })
+
+        it("Given the backend can't simulate it, when it is reviewed, then the permission reads as an increase by 1,000 with a note that the total may be higher", async () => {
+            await review(USDC, INCREASE_1000_USDC_DATA, 503)
+
+            await waitFor(() => screen.getByTestId(UNAVAILABLE), {
+                timeout: 15_000,
+            })
+            const permission = await waitFor(() =>
+                screen.getByTestId('ethereum_review_permission'),
+            )
+            expect(permission.textContent).toContain(
+                'signing.review.permission_increase',
+            )
+            await waitFor(() =>
+                expect(
+                    screen.getByTestId('ethereum_review_permission_amount')
+                        .textContent,
+                ).toMatch(/1,000/),
+            )
+            expect(
+                screen.getByTestId('ethereum_review_permission_amount')
+                    .textContent,
+            ).not.toMatch(/10,000/)
+            expect(
+                screen.getByTestId('ethereum_review_permission_increase')
+                    .textContent,
+            ).toContain('signing.review.permission_increase_note')
+        })
     })
 
     it('Given a call whose gas estimate reverts, when the dApp sends it, then it reaches review with the predicted failure and Confirm waits on an acknowledgement', async () => {

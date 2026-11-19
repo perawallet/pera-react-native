@@ -61,6 +61,10 @@ const mockItemExternal: SingleTransactionItem = {
     isExternal: true,
 }
 
+vi.mock('@modules/signing/hooks/useSignRequestScope', () => ({
+    useSignRequestScope: () => ({ chainId: 'base', networkId: 'mainnet' }),
+}))
+
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningPipeline: vi.fn(() => ({
         currentRequest: {
@@ -99,6 +103,15 @@ describe('useGroupDetailScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockRouteParams.groupIndex = 0
+    })
+
+    it("hands its rows the request's own scope", () => {
+        const { result } = renderHook(() => useGroupDetailScreen())
+
+        expect(result.current.reviewScope).toEqual({
+            chainId: 'base',
+            networkId: 'mainnet',
+        })
     })
 
     it('returns transactions for the specified group index', () => {

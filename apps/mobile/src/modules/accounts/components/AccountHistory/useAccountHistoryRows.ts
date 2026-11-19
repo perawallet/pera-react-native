@@ -20,10 +20,15 @@ import {
     type AccountHoldingSource,
 } from '@perawallet/wallet-core-accounts'
 import {
+    toScopeKey,
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import {
+    hasCachedHistoryRows,
+    type TransactionHistoryType,
+} from '@perawallet/wallet-core-transactions'
 import type { FilterOption } from '@components/FilterSelection'
 import { useSyncRefresh } from '@hooks/useSyncRefresh'
 import {
@@ -66,7 +71,11 @@ export type UseAccountHistoryRowsParams = {
     afterTime?: string
     /** `YYYY-MM-DD`, inclusive. */
     beforeTime?: string
+    /** Null or absent is All; ignored where no network in view sorts its rows into types. */
+    historyType?: Nullable<TransactionHistoryType>
 }
+
+export type HistorySource = AccountHoldingSource & { transactionCount: number }
 
 export type UseAccountHistoryRowsResult = Omit<
     UseTransactionHistoryRowsResult,
@@ -78,6 +87,8 @@ export type UseAccountHistoryRowsResult = Omit<
     unavailableNetworkNames: string[]
     /** The chip's network, or the account's own chain on All; on a merged history only analytics and CSV read it. */
     scope: ChainScope
+    /** Each network the rows can come from, with its share of `transactionCount`. */
+    historySources: HistorySource[]
     accountAddress: Optional<string>
     /** The network the history is narrowed to by the network chip; null is All. */
     networkChainId: Nullable<ChainId>
@@ -85,6 +96,8 @@ export type UseAccountHistoryRowsResult = Omit<
     isMerged: boolean
     /** Empty when the account is on one network, so no chips show. */
     chainFilterOptions: FilterOption<Nullable<ChainId>>[]
+    /** A network in view sorts its rows into types, so the filter offers them. */
+    canFilterByType: boolean
     /** Shared with the Assets chips, so both tabs show the same network. */
     handleSelectChain: (chainId: Nullable<ChainId>) => void
     /** One per network on a merged history; mount a `TransactionHistoryFeed` for each. */
@@ -100,6 +113,7 @@ export type UseAccountHistoryRowsResult = Omit<
 export const useAccountHistoryRows = ({
     afterTime,
     beforeTime,
+    historyType,
 }: UseAccountHistoryRowsParams): UseAccountHistoryRowsResult => {
     const account = useSelectedAccount()
     const home = useHomeChainScope()
@@ -122,6 +136,21 @@ export const useAccountHistoryRows = ({
         'history_network_filter',
     )
 
+    // Cached rows (Algorand) aren't sorted into types, so a type filter drops
+    // those networks from a merged history rather than listing them unfiltered.
+    const typedSources = useMemo(
+        () =>
+            sources.filter(
+                source => !hasCachedHistoryRows(source.scope.chainId),
+            ),
+        [sources],
+    )
+    const canFilterByType = isMerged
+        ? typedSources.length > 0
+        : !hasCachedHistoryRows(scope.chainId)
+    const activeType = (canFilterByType && historyType) || undefined
+    const mergedSources = activeType === undefined ? sources : typedSources
+
     // Both stay mounted so hook order never depends on the chip; the one not
     // in use reads nothing.
     const single = useTransactionHistoryRows({
@@ -129,11 +158,13 @@ export const useAccountHistoryRows = ({
         scope,
         afterTime,
         beforeTime,
+        historyType: activeType,
     })
     const merged = useMergedTransactionHistoryRows({
-        sources: isMerged ? sources : NO_SOURCES,
+        sources: isMerged ? mergedSources : NO_SOURCES,
         afterTime,
         beforeTime,
+        historyType: activeType,
     })
     const refreshAddresses = useMemo(
         () => (accountAddress && !isMerged ? [accountAddress] : []),
@@ -167,6 +198,35 @@ export const useAccountHistoryRows = ({
         : singleFailureNamesOf(single)
 
     const { scopeByTransactionId } = merged
+    const historySources = useMemo((): HistorySource[] => {
+        if (!isMerged) {
+            return accountAddress
+                ? [
+                      {
+                          address: accountAddress,
+                          scope,
+                          transactionCount: history.transactionCount,
+                      },
+                  ]
+                : []
+        }
+        const counts = new Map<string, number>()
+        for (const rowScope of scopeByTransactionId.values()) {
+            const key = toScopeKey(rowScope)
+            counts.set(key, (counts.get(key) ?? 0) + 1)
+        }
+        return sources.map(source => ({
+            ...source,
+            transactionCount: counts.get(toScopeKey(source.scope)) ?? 0,
+        }))
+    }, [
+        isMerged,
+        accountAddress,
+        scope,
+        history.transactionCount,
+        scopeByTransactionId,
+        sources,
+    ])
     const scopeOf = useCallback(
         (transactionId: string) =>
             (isMerged && scopeByTransactionId.get(transactionId)) || scope,
@@ -193,10 +253,12 @@ export const useAccountHistoryRows = ({
         isRetrying: history.isRetrying,
         suspectedPoisoningById: history.suspectedPoisoningById,
         scope,
+        historySources,
         accountAddress,
         networkChainId: selectedSource?.scope.chainId ?? null,
         isMerged,
         chainFilterOptions,
+        canFilterByType,
         handleSelectChain,
         historyFeeds: merged.feeds,
         failedNetworkNames,

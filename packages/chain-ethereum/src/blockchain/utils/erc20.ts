@@ -184,6 +184,8 @@ export type HolderBalances = {
     wei: bigint
     /** Base units, keyed by checksummed contract; a token whose read failed is absent. */
     tokens: Map<string, bigint>
+    /** Checksummed contracts whose `balanceOf` reverted or answered no or malformed data. */
+    unread: Set<string>
 }
 
 // Bounds the gas one eth_call spends, well under the caps nodes put on it.
@@ -294,8 +296,8 @@ const balanceCalls = (holder: Address, tokens: Address[]): BalanceCall[] => {
 /**
  * Every holder's ETH balance and `balanceOf` for every token, through Multicall3
  * `aggregate3` at `blockNumber`, keyed by checksummed holder. A token
- * whose call reverts or answers with no or truncated data is left out; a
- * failed aggregate rejects the whole read.
+ * whose call reverts or answers with no or truncated data is left out of
+ * `tokens` and named in `unread`; a failed aggregate rejects the whole read.
  */
 export const readBalances = async (
     client: PublicClient,
@@ -312,7 +314,10 @@ export const readBalances = async (
         blockNumber,
     )
     const balances = new Map<string, HolderBalances>(
-        owners.map(owner => [owner, { wei: 0n, tokens: new Map() }]),
+        owners.map(owner => [
+            owner,
+            { wei: 0n, tokens: new Map(), unread: new Set() },
+        ]),
     )
     results.forEach(({ success, returnData }, index) => {
         const { holder, token } = calls[index]!
@@ -325,7 +330,10 @@ export const readBalances = async (
             })
             return
         }
-        if (!success) return
+        if (!success) {
+            entry.unread.add(token)
+            return
+        }
         try {
             entry.tokens.set(
                 token,
@@ -337,6 +345,7 @@ export const readBalances = async (
             )
         } catch {
             // A target with no code "succeeds" with empty return data.
+            entry.unread.add(token)
         }
     })
     return balances

@@ -12,9 +12,7 @@
 
 import { Decimal } from 'decimal.js'
 import {
-    decodeAbiParameters,
     decodeFunctionData,
-    encodeAbiParameters,
     encodeFunctionData,
     getAddress,
     hexToBytes,
@@ -32,6 +30,16 @@ import type {
     EvmSwapFee,
     EvmSwapLeg,
 } from './contract-action-types'
+import type { UniversalRouterVersion } from './known-contracts'
+import { decodeParametersExactly } from './read-function'
+import {
+    isV4Native,
+    readV4Actions,
+    V4_CONTRACT_BALANCE,
+    V4_OPEN_DELTA,
+    type V4Action,
+    type V4SwapLayout,
+} from './uniswap-v4'
 
 type SwapAction = Extract<EvmContractAction, { kind: 'swap' }>
 
@@ -73,6 +81,7 @@ const V2_SWAP_EXACT_OUT = 0x09
 const PERMIT2_PERMIT = 0x0a
 const WRAP_ETH = 0x0b
 const UNWRAP_WETH = 0x0c
+const V4_SWAP = 0x10
 
 // The router reverts a portion outside 1..10 000.
 const MAX_PORTION_BIPS = 10_000n
@@ -135,8 +144,16 @@ type SweepStep = {
     amountMin: bigint
 }
 type UnwrapStep = { kind: 'unwrap'; recipient: Address; amountMin: bigint }
+type V4Step = { kind: 'v4'; actions: V4Action[] }
 
-type Step = PermitStep | WrapStep | SwapStep | FeeStep | SweepStep | UnwrapStep
+type Step =
+    | PermitStep
+    | WrapStep
+    | SwapStep
+    | V4Step
+    | FeeStep
+    | SweepStep
+    | UnwrapStep
 
 // The order a router run must keep for each step to mean what it says: a sweep
 // before the swap would sweep nothing and leave the output in the router.
@@ -144,35 +161,20 @@ const STAGE_OF: Record<Step['kind'], number> = {
     permit: 0,
     wrap: 1,
     swap: 2,
+    v4: 2,
     fee: 3,
     sweep: 4,
     unwrap: 4,
 }
 
-const decodeInput = (
-    parameters: readonly AbiParameter[],
-    input: Hex,
-): Optional<readonly unknown[]> => {
-    const values = decodeAbiParameters(parameters, input)
-    const encoded = encodeAbiParameters(parameters, values)
-    return encoded.toLowerCase() === input.toLowerCase() ? values : undefined
-}
-
-// The first layout the input re-encodes to exactly; a layout it doesn't fit can throw.
+// The first layout the input re-encodes to exactly.
 const decodeInputAs = (
     layouts: readonly (readonly AbiParameter[])[],
     input: Hex,
-): Optional<readonly unknown[]> => {
-    for (const layout of layouts) {
-        try {
-            const values = decodeInput(layout, input)
-            if (values) return values
-        } catch {
-            continue
-        }
-    }
-    return undefined
-}
+): Optional<readonly unknown[]> =>
+    layouts
+        .map(layout => decodeParametersExactly(layout, input))
+        .find(values => values !== undefined)
 
 const addressOf = (value: unknown): Address => getAddress(value as Address)
 
@@ -227,10 +229,18 @@ const swapStep = (type: number, input: Hex): Optional<SwapStep> => {
     }
 }
 
-const stepOf = (commandByte: number, input: Hex): Optional<Step> => {
+const stepOf = (
+    commandByte: number,
+    input: Hex,
+    layout: Optional<V4SwapLayout>,
+): Optional<Step> => {
     if ((commandByte & COMMAND_FLAG_BITS) !== 0) return undefined
     const type = commandByte & COMMAND_TYPE_MASK
     switch (type) {
+        case V4_SWAP: {
+            const actions = layout && readV4Actions(input, layout)
+            return actions && { kind: 'v4', actions }
+        }
         case V3_SWAP_EXACT_IN:
         case V3_SWAP_EXACT_OUT:
         case V2_SWAP_EXACT_IN:
@@ -238,7 +248,7 @@ const stepOf = (commandByte: number, input: Hex): Optional<Step> => {
             return swapStep(type, input)
         }
         case WRAP_ETH: {
-            const values = decodeInput(WRAP_INPUT, input)
+            const values = decodeParametersExactly(WRAP_INPUT, input)
             return (
                 values && {
                     kind: 'wrap',
@@ -248,7 +258,7 @@ const stepOf = (commandByte: number, input: Hex): Optional<Step> => {
             )
         }
         case UNWRAP_WETH: {
-            const values = decodeInput(WRAP_INPUT, input)
+            const values = decodeParametersExactly(WRAP_INPUT, input)
             return (
                 values && {
                     kind: 'unwrap',
@@ -258,7 +268,7 @@ const stepOf = (commandByte: number, input: Hex): Optional<Step> => {
             )
         }
         case SWEEP: {
-            const values = decodeInput(TOKEN_PAYOUT_INPUT, input)
+            const values = decodeParametersExactly(TOKEN_PAYOUT_INPUT, input)
             return (
                 values && {
                     kind: 'sweep',
@@ -270,7 +280,7 @@ const stepOf = (commandByte: number, input: Hex): Optional<Step> => {
         }
         case TRANSFER:
         case PAY_PORTION: {
-            const values = decodeInput(TOKEN_PAYOUT_INPUT, input)
+            const values = decodeParametersExactly(TOKEN_PAYOUT_INPUT, input)
             if (!values) return undefined
             const value = values[2] as bigint
             const isPortion = type === PAY_PORTION
@@ -292,7 +302,7 @@ const stepOf = (commandByte: number, input: Hex): Optional<Step> => {
             }
         }
         case PERMIT2_PERMIT: {
-            const values = decodeInput(PERMIT_INPUT, input)
+            const values = decodeParametersExactly(PERMIT_INPUT, input)
             if (!values) return undefined
             const permit = values[0] as {
                 details: { token: Address }
@@ -326,7 +336,10 @@ const readExecute = (
     return { commands: args[0] as Hex, inputs: args[1] as readonly Hex[] }
 }
 
-const readSteps = (data: Hex): Optional<Step[]> => {
+const readSteps = (
+    data: Hex,
+    layout: Optional<V4SwapLayout>,
+): Optional<Step[]> => {
     const execute = readExecute(data)
     if (!execute) return undefined
     const commands = hexToBytes(execute.commands)
@@ -335,7 +348,7 @@ const readSteps = (data: Hex): Optional<Step[]> => {
     }
     const steps: Step[] = []
     for (const [index, commandByte] of commands.entries()) {
-        const step = stepOf(commandByte, execute.inputs[index])
+        const step = stepOf(commandByte, execute.inputs[index], layout)
         const previous = steps.at(-1)
         if (
             !step ||
@@ -365,6 +378,7 @@ type Steps = {
     permits: PermitStep[]
     wraps: WrapStep[]
     swaps: SwapStep[]
+    v4s: V4Step[]
     fees: FeeStep[]
     sweeps: SweepStep[]
     unwraps: UnwrapStep[]
@@ -374,6 +388,7 @@ const group = (steps: readonly Step[]): Steps => ({
     permits: steps.filter(step => step.kind === 'permit'),
     wraps: steps.filter(step => step.kind === 'wrap'),
     swaps: steps.filter(step => step.kind === 'swap'),
+    v4s: steps.filter(step => step.kind === 'v4'),
     fees: steps.filter(step => step.kind === 'fee'),
     sweeps: steps.filter(step => step.kind === 'sweep'),
     unwraps: steps.filter(step => step.kind === 'unwrap'),
@@ -507,13 +522,240 @@ const resolveAlias = (address: Address, call: Call): Address => {
     return address === ADDRESS_THIS ? getAddress(call.to) : address
 }
 
+type V4Swap = Extract<V4Action, { kind: 'swap' }>
+type V4Settle = Extract<V4Action, { kind: 'settle' | 'settle-all' }>
+type V4Take = Extract<V4Action, { kind: 'take' | 'take-all' }>
+type V4Portion = Extract<V4Action, { kind: 'take-portion' }>
+
+// A V4 plan the router can run for one swap: the swaps, one settle of the
+// currency in, any portions of the currency out, then one take of all of it.
+type V4Route = {
+    swaps: V4Swap[]
+    settle: V4Settle
+    portions: V4Portion[]
+    take: V4Take
+}
+
+const readV4Route = (actions: readonly V4Action[]): Optional<V4Route> => {
+    const settleAt = actions.findIndex(action => action.kind !== 'swap')
+    const swaps = actions.slice(0, settleAt === -1 ? 0 : settleAt) as V4Swap[]
+    if (swaps.length === 0) return undefined
+    const [settle, ...payouts] = actions.slice(swaps.length)
+    const take = payouts.at(-1)
+    const portions = payouts.slice(0, -1)
+    if (settle?.kind !== 'settle' && settle?.kind !== 'settle-all') {
+        return undefined
+    }
+    if (take?.kind !== 'take' && take?.kind !== 'take-all') return undefined
+    if (!portions.every(action => action.kind === 'take-portion')) {
+        return undefined
+    }
+
+    const [{ isExactIn, currencyIn, currencyOut }] = swaps
+    const isOneRoute = swaps.every(
+        swap =>
+            swap.isExactIn === isExactIn &&
+            areEvmAddressesEqual(swap.currencyIn, currencyIn) &&
+            areEvmAddressesEqual(swap.currencyOut, currencyOut) &&
+            // An open-delta amount is sized by an earlier action, which the calldata doesn't fix.
+            swap.amount !== V4_OPEN_DELTA,
+    )
+    const isOutTaken = [take, ...portions].every(action =>
+        areEvmAddressesEqual(action.currency, currencyOut),
+    )
+    // A take of less than the whole credit would leave the rest for another action.
+    const isWholeCredit =
+        take.kind === 'take-all' || take.amount === V4_OPEN_DELTA
+    if (
+        !isOneRoute ||
+        areEvmAddressesEqual(currencyIn, currencyOut) ||
+        !areEvmAddressesEqual(settle.currency, currencyIn) ||
+        !isOutTaken ||
+        !isWholeCredit
+    ) {
+        return undefined
+    }
+    return {
+        swaps,
+        settle,
+        portions: portions as V4Portion[],
+        take,
+    }
+}
+
+const v4AssetOf = (currency: Address): EvmSwapLeg['asset'] =>
+    isV4Native(currency)
+        ? { kind: 'native' }
+        : { kind: 'token', contract: currency }
+
+const minOf = (a: bigint, b: bigint): bigint => (a < b ? a : b)
+
+// What the user pays: ether the call carries, or a token the router pulls with Permit2.
+const readV4Input = (
+    { call, isRouter }: Context,
+    { permits, sweeps }: Steps,
+    { swaps, settle }: V4Route,
+): Optional<EvmSwapLeg> => {
+    const [{ isExactIn, currencyIn }] = swaps
+    const swapIn = sum(
+        swaps.map(swap => (isExactIn ? swap.amount : swap.limit)),
+    )
+
+    if (isV4Native(currencyIn)) {
+        if (call.value <= 0n || permits.length > 0) return undefined
+        // Settling the router's whole balance or exactly the value, or swapping
+        // exactly the value in under a cap of it, spends all the user sent;
+        // anything else leaves ether in the router that only a sweep returns.
+        const spendsAll =
+            settle.kind === 'settle'
+                ? settle.amount === V4_CONTRACT_BALANCE ||
+                  settle.amount === call.value
+                : isExactIn &&
+                  swapIn === call.value &&
+                  settle.maxAmount === call.value
+        const refunds = sweeps.filter(sweep => isV4Native(sweep.token))
+        if (!spendsAll && refunds.length !== 1) return undefined
+        return toLeg(
+            { kind: 'native' },
+            call.value,
+            spendsAll ? 'exact' : 'at-most',
+        )
+    }
+
+    const isPermitted = permits.every(
+        permit =>
+            isRouter(permit.spender) &&
+            areEvmAddressesEqual(permit.token, currencyIn),
+    )
+    if (call.value !== 0n || !isPermitted) return undefined
+    if (settle.kind === 'settle') {
+        // An open delta or the router's balance would pull whatever the pools ask.
+        if (
+            !settle.payerIsUser ||
+            settle.amount === V4_OPEN_DELTA ||
+            settle.amount === V4_CONTRACT_BALANCE
+        ) {
+            return undefined
+        }
+        return toLeg(
+            { kind: 'token', contract: currencyIn },
+            settle.amount,
+            'exact',
+        )
+    }
+    // A hook can change what a swap owes, so only the settle's own cap is a bound.
+    const { maxAmount } = settle
+    if (isExactIn && maxAmount === swapIn) {
+        return toLeg({ kind: 'token', contract: currencyIn }, swapIn, 'exact')
+    }
+    return toLeg(
+        { kind: 'token', contract: currencyIn },
+        isExactIn ? maxAmount : minOf(maxAmount, swapIn),
+        'at-most',
+    )
+}
+
+// What the user is paid, straight from the pool manager or through the router.
+const readV4Output = (
+    { isSigner, isRouter }: Context,
+    { fees, sweeps }: Steps,
+    { swaps, portions, take }: V4Route,
+): Optional<EvmSwapLeg> => {
+    const [{ isExactIn, currencyOut }] = swaps
+    const asset = v4AssetOf(currencyOut)
+    const swapMin = sum(
+        swaps.map(swap => (isExactIn ? swap.limit : swap.amount)),
+    )
+    const outSweeps = sweeps.filter(sweep =>
+        areEvmAddressesEqual(sweep.token, currencyOut),
+    )
+    const hasFees = portions.length > 0 || fees.length > 0
+    // A fee row names its token by contract, which native ether doesn't have.
+    if (hasFees && isV4Native(currencyOut)) return undefined
+    if (sweeps.some(sweep => !isSigner(sweep.recipient))) return undefined
+
+    const isPaidToSigner = take.kind === 'take-all' || isSigner(take.recipient)
+    if (isPaidToSigner) {
+        if (fees.length > 0 || outSweeps.length > 0) return undefined
+        const takeMin = take.kind === 'take-all' ? take.minAmount : 0n
+        // Routers before 2.1.2 don't revert an exact-out swap the pool only part
+        // fills, so only the take's own minimum can promise the whole amount.
+        if (!isExactIn && portions.length === 0 && takeMin >= swapMin) {
+            return toLeg(asset, swapMin, 'exact')
+        }
+        const floor = portions.length === 0 && isExactIn ? swapMin : 0n
+        return toLeg(asset, takeMin > floor ? takeMin : floor, 'at-least')
+    }
+
+    if (!isRouter(take.recipient) || outSweeps.length !== 1) return undefined
+    if (fees.some(fee => !areEvmAddressesEqual(fee.token, currencyOut))) {
+        return undefined
+    }
+    const [{ amountMin }] = outSweeps
+    const floor = hasFees || !isExactIn ? 0n : swapMin
+    return toLeg(asset, amountMin > floor ? amountMin : floor, 'at-least')
+}
+
+const readV4Swap = (context: Context, grouped: Steps): Optional<SwapAction> => {
+    const { swaps, wraps, unwraps, v4s } = grouped
+    if (swaps.length > 0 || wraps.length > 0 || unwraps.length > 0) {
+        return undefined
+    }
+    if (v4s.length !== 1) return undefined
+    const route = readV4Route(v4s[0].actions)
+    if (!route) return undefined
+    const [{ currencyIn, currencyOut }] = route.swaps
+    // A sweep only returns unspent ether or hands over the output, never anything else.
+    const isKnownSweep = grouped.sweeps.every(
+        sweep =>
+            areEvmAddressesEqual(sweep.token, currencyOut) ||
+            (isV4Native(currencyIn) && isV4Native(sweep.token)),
+    )
+    if (!isKnownSweep) return undefined
+    const input = readV4Input(context, grouped, route)
+    const output = input && readV4Output(context, grouped, route)
+    if (!input || !output) return undefined
+    const { call } = context
+    const fees: EvmSwapFee[] = [
+        ...route.portions.map(({ currency, recipient, bips }): EvmSwapFee => ({
+            token: currency,
+            recipient: resolveAlias(recipient, call),
+            size: { kind: 'bips', bips },
+        })),
+        ...grouped.fees.map(({ token, recipient, size }): EvmSwapFee => ({
+            token,
+            recipient: resolveAlias(recipient, call),
+            size,
+        })),
+    ]
+    return { kind: 'swap', input, output, fees }
+}
+
+const contextOf = (call: Call, wrappedNative: Optional<Address>): Context => ({
+    call,
+    wrappedNative,
+    isSigner: address =>
+        address === MSG_SENDER || areEvmAddressesEqual(address, call.from),
+    isRouter: address =>
+        address === ADDRESS_THIS || areEvmAddressesEqual(address, call.to),
+})
+
+const V4_LAYOUTS: Partial<Record<UniversalRouterVersion, V4SwapLayout>> = {
+    '2.0': 'without-hop-price',
+    '2.1': 'with-hop-price',
+}
+
 const readSwap = (
     call: Call,
     wrappedNative: Optional<Address>,
+    version: Optional<UniversalRouterVersion>,
 ): Optional<SwapAction> => {
-    const steps = readSteps(call.data)
+    const steps = readSteps(call.data, version && V4_LAYOUTS[version])
     if (!steps) return undefined
     const grouped = group(steps)
+    if (grouped.v4s.length > 0) {
+        return readV4Swap(contextOf(call, wrappedNative), grouped)
+    }
     const { swaps, wraps } = grouped
     if (swaps.length === 0 || wraps.length > 1) return undefined
 
@@ -528,14 +770,7 @@ const readSwap = (
         return undefined
     }
 
-    const context: Context = {
-        call,
-        wrappedNative,
-        isSigner: address =>
-            address === MSG_SENDER || areEvmAddressesEqual(address, call.from),
-        isRouter: address =>
-            address === ADDRESS_THIS || areEvmAddressesEqual(address, call.to),
-    }
+    const context = contextOf(call, wrappedNative)
     const input = readInput(context, grouped)
     const output = input && readOutput(context, grouped)
     if (!input || !output) return undefined
@@ -551,15 +786,18 @@ const readSwap = (
  * The swap a Universal Router `execute` makes, or undefined unless the calldata
  * fully accounts for the call: every command is a known one that re-encodes
  * byte for byte, the output reaches only the signer (less any fee in the
- * output token, which the action carries), and the swaps agree on one route. Anything doubtful is no swap, so a
- * review never calls "Swap" a call that does more. Never throws.
+ * output token, which the action carries), and the swaps agree on one route.
+ * Anything doubtful is no swap, so a review never calls "Swap" a call that does
+ * more. A V4 swap is read only on a router whose `version` is known: before 2.0
+ * its command means something else. Never throws.
  */
 export const decodeUniversalRouterSwap = (
     call: Call,
     wrappedNative: Optional<Address>,
+    version?: UniversalRouterVersion,
 ): Optional<SwapAction> => {
     try {
-        return readSwap(call, wrappedNative)
+        return readSwap(call, wrappedNative, version)
     } catch {
         return undefined
     }

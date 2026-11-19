@@ -154,6 +154,7 @@ export const EVM_CHAIN_ROWS: readonly EvmChainRow[] = [
             kind: 'eip1559-min-tip',
             minPriorityFeePerGas: { mainnet: 25n * GWEI, amoy: 25n * GWEI },
         },
+        nativeTokenContract: '0x0000000000000000000000000000000000001010',
         blockTimeMs: 2000,
         finality: { kind: 'confirmations', recommended: 32 },
         enabledByDefault: false,

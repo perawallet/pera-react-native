@@ -22,17 +22,20 @@ import { PWView } from '@components/core'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 import { LedgerSigningOverlays } from '@modules/signing/shell'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
+import { useNavigationDocumentTitle } from '@hooks/useNavigationDocumentTitle'
 import { getNavigationTheme } from '@theme/theme'
 import { useStyles } from './styles'
 import { DappRequestSurface } from './DappRequestSurface'
 
 export const DappRequestRoutes = (): React.JSX.Element => {
     const isDarkMode = useIsDarkMode()
+    const documentTitle = useNavigationDocumentTitle()
     const styles = useStyles()
 
     return (
         <NavigationIndependentTree>
             <NavigationContainer
+                documentTitle={documentTitle}
                 theme={getNavigationTheme(isDarkMode ? 'dark' : 'light')}
             >
                 {/* flex:1 bounds the surface to the popup viewport so a tall sign

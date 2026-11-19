@@ -21,6 +21,7 @@ import { EmptyView } from '@components/EmptyView'
 import { LoadingView } from '@components/LoadingView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
+import { useNavigationDocumentTitle } from '@hooks/useNavigationDocumentTitle'
 import { getNavigationTheme } from '@theme/theme'
 import { SigningRoutes } from '../../routes/SigningRoutes'
 import {
@@ -44,6 +45,7 @@ export const SignRequestView = ({ request }: SignRequestViewProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
     const isDarkMode = useIsDarkMode()
+    const documentTitle = useNavigationDocumentTitle()
     const { removeSignRequest, rejectRequest } = useSigningRequest()
     const siteSafety = useSignRequestSiteSafety(request)
     const { resolved } = useSigningPipeline()
@@ -141,6 +143,7 @@ export const SignRequestView = ({ request }: SignRequestViewProps) => {
                         grey background (rgb(242,242,242)) doesn't paint the
                         signing scene — same fix as the send/receive sheets. */}
                         <NavigationContainer
+                            documentTitle={documentTitle}
                             theme={getNavigationTheme(
                                 isDarkMode ? 'dark' : 'light',
                             )}

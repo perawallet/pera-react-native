@@ -19,7 +19,6 @@ import { ETHEREUM, evmScopeOf } from '../../__tests__/evm-chains'
 import { createEvmSwapAdapter } from '../adapter'
 
 const SENDER = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
-const ROUTER = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
 const scope = evmScopeOf(ETHEREUM)
 
 vi.mock('@perawallet/wallet-core-signing', async importOriginal => ({
@@ -47,10 +46,7 @@ vi.mock('../../transfer/fees', async importOriginal => ({
     }),
 }))
 
-const createAdapter = () =>
-    createEvmSwapAdapter(testChainContext(), ETHEREUM, {
-        routeContractsOf: () => [ROUTER],
-    })
+const createAdapter = () => createEvmSwapAdapter(testChainContext(), ETHEREUM)
 
 swapContractTests(createAdapter, {
     params: {

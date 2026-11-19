@@ -263,8 +263,10 @@ export const useAccountNfts = (): UseAccountNftsResult => {
             })),
         [sources],
     )
-    const { isRefreshing, refresh: handleRefresh } =
-        useSyncRefreshAll(refreshSources)
+    const { isRefreshing, refresh: handleRefresh } = useSyncRefreshAll(
+        refreshSources,
+        { isUserRefresh: true },
+    )
 
     useEffect(() => {
         setSearchFilter('')

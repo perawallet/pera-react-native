@@ -55,6 +55,7 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
         handleExportCsv,
         isExportingCsv,
         isCsvExportVisible,
+        csvExportTitle,
         renderItem,
         renderFooter,
         handleFilterPress,
@@ -69,6 +70,7 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
             unavailableNetworkNames={unavailableNetworkNames}
             onRetryFailed={handleRetry}
             isCsvExportVisible={isCsvExportVisible}
+            csvExportTitle={csvExportTitle}
             isExportingCsv={isExportingCsv}
             onOpenFilter={handleFilterPress}
             onExportCsv={handleExportCsv}

@@ -16,6 +16,7 @@ import {
     DROPPED_GRACE_MS,
     reconcileEthereumSubmissions,
     type ProbeFailureStreaks,
+    type ProbeRotation,
     type SubmissionSettledHandlers,
 } from '@perawallet/wallet-core-chain-ethereum/transfer/reconcile'
 import type { SubmissionSettledHandler } from '@perawallet/wallet-core-signing'
@@ -55,11 +56,13 @@ const setUp = async (finality: Finality = { kind: 'instant' }) => {
     const settled = vi.fn<SubmissionSettledHandler>()
     const handlers: SubmissionSettledHandlers = new Map([['pipeline', settled]])
     const probeFailures: ProbeFailureStreaks = new Map()
+    const probeRotation: ProbeRotation = new Set()
     const reconcile = (limit?: number) =>
         reconcileEthereumSubmissions({
             chain,
             settleHandlers: handlers,
             probeFailures,
+            probeRotation,
             getClient: scope => createEvmClient(scope, env.ctx, env.evmChain),
             db: env.db,
             limit,

@@ -19,6 +19,7 @@ import {
     size,
     slice,
     toFunctionSelector,
+    zeroAddress,
 } from 'viem'
 import type { AbiFunction, Address, Hex } from 'viem'
 import {
@@ -32,6 +33,7 @@ import type { EvmChain } from '../chains/types'
 import { sendSummary } from '../transfer/summary'
 import { toAllowanceAmount } from './allowance'
 import type { EvmNftItem, EvmStandardCall } from './standard-call-types'
+import { toDecimal } from './to-decimal'
 
 const SELECTOR_SIZE = 4
 
@@ -55,8 +57,6 @@ const STANDARD_FUNCTIONS = parseAbi([
 const BY_SELECTOR = new Map<Hex, AbiFunction>(
     STANDARD_FUNCTIONS.map(item => [toFunctionSelector(item), item]),
 )
-
-const toDecimal = (value: bigint): Decimal => new Decimal(value.toString())
 
 const toCall = (
     item: AbiFunction,
@@ -198,18 +198,31 @@ export const isEvmApprovalCall = (call: EvmStandardCall): boolean =>
     call.kind === 'increase-allowance' ||
     call.kind === 'set-approval-for-all'
 
-/** An approve for nothing or a collection approval withdrawn. */
-export const isEvmRevocationCall = (call: EvmStandardCall): boolean =>
-    (call.kind === 'approve' && call.value.isZero()) ||
-    (call.kind === 'set-approval-for-all' && !call.isApproved)
+/**
+ * An approve for nothing or a collection approval withdrawn. `isNftApproval`,
+ * when the asset store knows the `approve`'s token as an NFT, reads its value
+ * as a token id: an ERC-721 approval is cleared by approving the zero address.
+ */
+export const isEvmRevocationCall = (
+    call: EvmStandardCall,
+    isNftApproval = false,
+): boolean => {
+    if (call.kind === 'approve') {
+        return isNftApproval
+            ? call.spender.toLowerCase() === zeroAddress
+            : call.value.isZero()
+    }
+    return call.kind === 'set-approval-for-all' && !call.isApproved
+}
 
 const approvalSummary = (
     call: EvmStandardCall,
     counterparty: Address,
+    isNftApproval: boolean,
 ): TransactionSummary => ({
     kind: 'approval',
     title: {
-        key: isEvmRevocationCall(call)
+        key: isEvmRevocationCall(call, isNftApproval)
             ? REVOKE_APPROVAL_TITLE_KEY
             : APPROVAL_TITLE_KEY,
     },
@@ -222,15 +235,16 @@ const approvalSummary = (
 export const standardCallSummary = (
     call: EvmStandardCall,
     chain: EvmChain,
+    isNftApproval = false,
 ): TransactionSummary => {
     const chainId = chain.row.id
     switch (call.kind) {
         case 'approve':
         case 'increase-allowance': {
-            return approvalSummary(call, call.spender)
+            return approvalSummary(call, call.spender, isNftApproval)
         }
         case 'set-approval-for-all': {
-            return approvalSummary(call, call.operator)
+            return approvalSummary(call, call.operator, false)
         }
         case 'transfer':
         case 'transfer-from': {
@@ -289,6 +303,13 @@ const COLLECTION_APPROVAL_WARNING: ReviewWarning = {
         'This lets another address transfer every item you hold in this collection, until you revoke it.',
 }
 
+const NFT_APPROVAL_WARNING: ReviewWarning = {
+    type: 'token-approval',
+    severity: 'warning',
+    message:
+        'This lets another address transfer this item out of your account without asking you again.',
+}
+
 const LIMITED_APPROVAL_WARNING: ReviewWarning = {
     type: 'token-approval',
     severity: 'warning',
@@ -296,11 +317,19 @@ const LIMITED_APPROVAL_WARNING: ReviewWarning = {
         'This lets another address move some of this token out of your account without asking you again.',
 }
 
-/** Undefined for a revocation or a transfer: neither grants anything. */
+/**
+ * Undefined for a revocation or a transfer: neither grants anything. An
+ * `approve` the asset store knows as an NFT grants that one item, whatever its
+ * token id, so it is never read as unlimited.
+ */
 export const approvalWarningOf = (
     call: EvmStandardCall,
+    isNftApproval = false,
 ): Optional<ReviewWarning> => {
-    if (isEvmRevocationCall(call)) return undefined
+    if (isEvmRevocationCall(call, isNftApproval)) return undefined
+    if (call.kind === 'approve' && isNftApproval) {
+        return { ...NFT_APPROVAL_WARNING }
+    }
     switch (call.kind) {
         case 'approve':
         case 'increase-allowance': {

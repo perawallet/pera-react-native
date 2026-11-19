@@ -428,10 +428,16 @@ describe('useEthereumRecordLayout', () => {
         expect(summary.timestamp).toBeUndefined()
     })
 
-    const presentationOf = (titleKey: string) =>
+    const presentationOf = (
+        titleKey: string,
+        standardCall?: Partial<
+            NonNullable<EthereumTransactionPresentation['standardCall']>
+        >,
+    ) =>
         ({
             titleKey,
             iconName: 'read-icon',
+            standardCall: standardCall ?? null,
         }) as unknown as EthereumTransactionPresentation
 
     const titledRecord = (key: string, isActionUnknown?: boolean) =>
@@ -458,6 +464,29 @@ describe('useEthereumRecordLayout', () => {
         const { summary } = layoutOf(
             titledRecord('transactions.list_item.approve_asset'),
             presentationOf('transactions.list_item.revoke_approval'),
+        )
+
+        expect(summary.title).toBe('transactions.list_item.revoke_approval')
+    })
+
+    it('Given a row that took an NFT approval of token #0 for a revocation and a read that finds the NFT, then the hero says approval', () => {
+        const { summary } = layoutOf(
+            titledRecord('transactions.list_item.revoke_approval'),
+            presentationOf('transactions.list_item.approval', {
+                kind: 'nft-approval',
+                isRevocation: false,
+            }),
+        )
+
+        expect(summary.title).toBe('transactions.list_item.approval')
+    })
+
+    it("Given a revocation row and a read that can't place the token, then the hero keeps revoke", () => {
+        const { summary } = layoutOf(
+            titledRecord('transactions.list_item.revoke_approval'),
+            presentationOf('transactions.list_item.approval', {
+                kind: 'token-approval',
+            }),
         )
 
         expect(summary.title).toBe('transactions.list_item.revoke_approval')

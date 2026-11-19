@@ -75,8 +75,17 @@ Fill Contact Form
 Open Contact
     [Arguments]    ${address}
     ${row}=    Contact Row    ${address}
+    # A newly saved row appears while the add screen is still sliding away.
+    Wait Until Settled    ${row}
+    Wait Until Keyword Succeeds    20s    0.5s    Tap Contact Row Until Open    ${row}
+
+Tap Contact Row Until Open
+    [Arguments]    ${row}
+    # The save transition can swallow the first tap. A late opening must not be tapped again.
+    ${open}=    Run Keyword And Return Status    Page Should Contain Element    ${VIEW_CONTACT_SHARE_BUTTON}
+    IF    ${open}    RETURN
     Tap    ${row}
-    Wait Until Page Contains Element    ${VIEW_CONTACT_SHARE_BUTTON}    timeout=15s
+    Wait Until Page Contains Element    ${VIEW_CONTACT_SHARE_BUTTON}    timeout=3s
 
 Contact Should Show Name
     [Documentation]    On the View Contact screen.

@@ -46,11 +46,14 @@ import { bottomSheetNotifier, PWText, PWView } from '@components/core'
 import { useNavigation } from '@react-navigation/native'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
+import { feeErrorCopy } from '@modules/transactions/utils/feeErrorCopy'
 import { useStyles } from './styles'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '@modules/transactions/routes/send-funds/types'
 
 type CloseAccountChoice = 'close' | 'keepOpen'
+
+const ZERO = new Decimal(0)
 
 export const useInputScreen = () => {
     const scope = useSendScope()
@@ -199,14 +202,25 @@ export const useInputScreen = () => {
         setExactAmount,
     ])
 
+    // Only the native coin pays the fee out of the amount; a token's MAX is its
+    // balance. Pricing a token here would also be a zero-amount transfer, which
+    // some tokens revert on.
+    const isFeeReserved = isNativeAssetId(selectedAssetId)
     // The same fee the confirmation screen prices from, so any amount derived
     // here reserves what the transaction can actually be charged.
-    const { maxFeeAmount } = useSendFeeQuery({
+    const {
+        maxFeeAmount,
+        isError: isFeeError,
+        error: feeError,
+        refresh: refreshFee,
+    } = useSendFeeQuery({
         scope,
         senderAddress: selectedAddress,
-        assetId: selectedAssetId,
+        assetId: isFeeReserved ? selectedAssetId : undefined,
         feePreset,
     })
+    const reservedFee = isFeeReserved ? maxFeeAmount : ZERO
+    const isFeeFailed = isFeeError && reservedFee === undefined
     const { data: accountAssetBalance } = useAccountAssetBalanceQuery(
         selectedAccount ?? undefined,
         selectedAssetId,
@@ -225,10 +239,10 @@ export const useInputScreen = () => {
                           assetId: selectedAssetId,
                       },
                       scope,
-                      fee: maxFeeAmount ?? new Decimal(0),
+                      fee: reservedFee ?? ZERO,
                   }
                 : undefined,
-        [selectedAccount, selectedAssetId, scope, maxFeeAmount],
+        [selectedAccount, selectedAssetId, scope, reservedFee],
     )
     const { data: spendable, isPending: isSpendablePending } =
         useSpendableBalanceQuery(spendableInput)
@@ -266,13 +280,26 @@ export const useInputScreen = () => {
 
     // Until the fee is known the spendable balance holds nothing back for it,
     // so MAX would offer an amount the send can't pay for.
-    const isMaxReady = maxFeeAmount !== undefined && !isSpendablePending
+    const isMaxReady = reservedFee !== undefined && !isSpendablePending
 
     const setMax = useCallback(() => {
+        if (isFeeFailed) {
+            const { title, body } = feeErrorCopy(feeError, t)
+            errorToast(title, body, {
+                notifier: bottomSheetNotifier.current ?? undefined,
+            })
+            refreshFee()
+            return
+        }
         if (!isMaxReady) return
         setExactAmount(isReserveReleasable ? totalBalance : maxAmount)
         setIsMaxApplied(true)
     }, [
+        isFeeFailed,
+        feeError,
+        t,
+        errorToast,
+        refreshFee,
         isMaxReady,
         isReserveReleasable,
         maxAmount,
@@ -468,7 +495,7 @@ export const useInputScreen = () => {
         !!asset &&
         isBalanceReady &&
         !isSpendablePending &&
-        maxFeeAmount !== undefined
+        reservedFee !== undefined
 
     // A resumed send (see `shouldContinueToConfirm`) runs the user's own Next,
     // so every check a real tap makes still applies on the way to confirm.
@@ -573,6 +600,8 @@ export const useInputScreen = () => {
         isBalanceReady,
         cryptoValue: value,
         isMaxReady,
+        // A failed fee leaves MAX tappable so it can say why.
+        isMaxDisabled: !isMaxReady && !isFeeFailed,
         isFeeReserveHintVisible,
         setMax,
         handleNext,

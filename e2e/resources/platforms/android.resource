@@ -4,6 +4,7 @@ Documentation       Android adapter. Everything platform-specific lives in this 
 Library             ../libraries/PeraAppiumLibrary.py    run_on_failure=Nothing    AS    AppiumLibrary
 Library             Collections
 Library             Process
+Resource            session.resource
 
 
 *** Variables ***
@@ -36,7 +37,7 @@ Open Pera
     # UiAutomator2 otherwise waits up to 10s for an idle app before each action; RN apps rarely idle.
     ...    waitForIdleTimeout=${0}
     IF    $ANDROID_UDID    Set To Dictionary    ${caps}    udid=${ANDROID_UDID}
-    Open Application    ${APPIUM_URL}    &{caps}
+    Open Appium Session    ${APPIUM_URL}    &{caps}
     # autoGrantPermissions only covers installs Appium makes; an adb-installed build would raise
     # the notification dialog over the app on its next launch. BrowserStack installs through
     # Appium and refuses this adb grant, which would otherwise fail every suite's setup.
@@ -125,6 +126,9 @@ Deny Camera Permission
     ...    Adb    shell    pm    set-permission-flags    ${ANDROID_PACKAGE}    android.permission.CAMERA    user-fixed
     Skip If    not ${fixed}
     ...    This Android version cannot pre-deny the camera (pm set-permission-flags), so the app would get a permission dialog instead of a denial.
+
+Require Camera Permission Control
+    No Operation
 
 Grant Camera Permission
     Run Keyword And Ignore Error

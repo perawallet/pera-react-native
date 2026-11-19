@@ -148,7 +148,10 @@ export const useOnrampOrderDetails = (
                     t('errors.network.no_connection.body'),
                 )
             } else {
-                errorToast('', toOnrampUserMessage(error))
+                errorToast(
+                    '',
+                    toOnrampUserMessage(error) ?? t('errors.general.body'),
+                )
             }
         }
     }, [

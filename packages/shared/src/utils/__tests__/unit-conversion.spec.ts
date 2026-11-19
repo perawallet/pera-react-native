@@ -24,6 +24,7 @@ import {
 import { initDecimalConfig } from '../decimal-config'
 
 const UINT64_MAX = 18_446_744_073_709_551_615n
+const UINT256_MAX = 2n ** 256n - 1n
 
 initDecimalConfig()
 
@@ -120,6 +121,24 @@ describe('displayUnitsToBaseUnitsBigInt', () => {
     })
 })
 
+describe('uint256 amounts', () => {
+    it('round-trip every digit through display units at 18 decimals', () => {
+        const display = baseUnitsToDisplayUnits(UINT256_MAX, 18)
+
+        expect(display.toFixed()).toBe(
+            '115792089237316195423570985008687907853269984665640564039457.584007913129639935',
+        )
+        expect(displayUnitsToBaseUnitsBigInt(display, 18)).toBe(UINT256_MAX)
+    })
+
+    it('subtract exactly at full width', () => {
+        const max = new Decimal(UINT256_MAX.toString())
+
+        expect(toBigInt(max.sub(1))).toBe(UINT256_MAX - 1n)
+        expect(toBigInt(max.sub(max.sub(1)))).toBe(1n)
+    })
+})
+
 describe('ALGO conversions', () => {
     it('microAlgosToAlgos uses 6 decimals', () => {
         expect(microAlgosToAlgos(100_000n).toString()).toBe('0.1')
@@ -133,6 +152,13 @@ describe('ALGO conversions', () => {
         expect(algosToMicroAlgosBigInt(microAlgosToAlgos(UINT64_MAX))).toBe(
             UINT64_MAX,
         )
+    })
+
+    it('keeps an ALGO amount less its fee exact at uint64 max', () => {
+        const max = microAlgosToAlgos(UINT64_MAX).sub(microAlgosToAlgos(1000n))
+
+        expect(max.toFixed()).toBe('18446744073709.550615')
+        expect(algosToMicroAlgosBigInt(max)).toBe(UINT64_MAX - 1000n)
     })
 
     it('algosToMicroAlgosBigInt truncates sub-microAlgo fractions', () => {

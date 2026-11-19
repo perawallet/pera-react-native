@@ -20,7 +20,7 @@ import {
     type PortfolioHistoryPoint,
 } from '../chain-adapter'
 import { useCallback } from 'react'
-import { useCurrency } from '@perawallet/wallet-core-currencies'
+import { useHistoricUsdToPreferred } from '@perawallet/wallet-core-currencies'
 import { getAccountBalancesHistoryQueryKey } from './querykeys'
 
 export type UseAccountBalancesHistoryQueryResult = {
@@ -42,10 +42,11 @@ export const useAccountBalancesHistoryQuery = (
     scope: ChainScope,
     enabled = true,
 ): UseAccountBalancesHistoryQueryResult => {
-    const { usdToPreferred } = useCurrency(scope)
     const isCapabilityOff = !useChainCapability(scope.chainId, 'balanceHistory')
     const queryKey = getAccountBalancesHistoryQueryKey(addresses, period, scope)
     const isEnabled = enabled && addresses.length > 0 && !isCapabilityOff
+    const { usdToPreferredAt, isPending: isRatesPending } =
+        useHistoricUsdToPreferred(scope, period, isEnabled)
     const query = useQuery({
         queryKey,
         // Gated by callers on chart visibility — this hits a slow network
@@ -57,12 +58,18 @@ export const useAccountBalancesHistoryQuery = (
             (
                 points: Nullable<PortfolioHistoryPoint[]>,
             ): Nullable<AccountBalanceHistoryItem[]> =>
-                points?.map(point => ({
-                    datetime: new Date(point.timestamp),
-                    preferredValue: usdToPreferred(point.usdValue),
-                    nativeValue: point.nativeValue,
-                })) ?? null,
-            [usdToPreferred],
+                points?.map(point => {
+                    const datetime = new Date(point.timestamp)
+                    return {
+                        datetime,
+                        preferredValue: usdToPreferredAt(
+                            point.usdValue,
+                            datetime,
+                        ),
+                        nativeValue: point.nativeValue,
+                    }
+                }) ?? null,
+            [usdToPreferredAt],
         ),
     })
     const isUnavailableOnNetwork = isCapabilityOff || query.data === null
@@ -71,7 +78,7 @@ export const useAccountBalancesHistoryQuery = (
         // A disabled query keeps its cached (and persisted) points; drop them
         // so a kill switch takes the chart down.
         data: isUnavailableOnNetwork ? [] : (query.data ?? []),
-        isPending: isEnabled && query.isPending,
+        isPending: isEnabled && (query.isPending || isRatesPending),
         isSuccess: query.isSuccess,
         isError: query.isError,
         isPaused: query.isPaused,

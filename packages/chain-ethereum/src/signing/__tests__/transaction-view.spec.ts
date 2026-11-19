@@ -172,6 +172,7 @@ const ACTIONS: EvmContractAction[] = [
         position: { kind: 'existing', tokenId: '987654' },
     },
     { kind: 'remove-liquidity', tokenId: '987654', isClosing: true },
+    { kind: 'collect-fees', tokenId: '987654' },
 ]
 
 const ACTION_VIEW: EthereumTransactionView = {
@@ -456,6 +457,13 @@ describe('the Ethereum transaction view', () => {
                     tokenId: '1',
                     isClosing: 'yes',
                 },
+            },
+        ],
+        [
+            'a fee collect whose token id is not a decimal',
+            {
+                ...ACTION_VIEW,
+                action: { kind: 'collect-fees', tokenId: '0x1' },
             },
         ],
         [

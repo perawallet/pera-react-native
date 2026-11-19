@@ -87,6 +87,7 @@ type UseOnrampFormResult = {
 export const useOnrampForm = (
     selectedPair: Nullable<RampPair>,
     onNavigateToHistory?: () => void,
+    isActive = true,
 ): UseOnrampFormResult => {
     const { scope } = useOnrampAccount()
     const { data: region } = useRampRegionQuery({ scope })
@@ -133,12 +134,14 @@ export const useOnrampForm = (
         selectPaymentMethod,
         isBestOffer,
         resolveQuoteLimit,
+        refreshQuotes,
     } = useOnrampQuotes({
         pair: selectedPair,
         sourceAmount,
         // Optional: a blank entry means no refund address, not an empty one.
         refundAddress: senderAddress.trim() || null,
         countryCode: region?.countryCode ?? null,
+        isActive,
     })
 
     const destinationAmount = selectedQuote?.destinationAmount ?? null
@@ -169,6 +172,7 @@ export const useOnrampForm = (
         sourceAmount,
         destinationAmount,
         isMeld,
+        refreshQuotes,
         onNavigateToHistory,
     })
 

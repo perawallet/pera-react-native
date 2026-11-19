@@ -82,6 +82,10 @@
             "see_all": "Ver todo",
             "empty_title": "Aún no tienes favoritos",
             "empty_body": "Empieza a explorar las dApps",
+            "suggestions": {
+                "body": "Añade las dApps que más usas. Aquí tienes algunas para empezar.",
+                "add": "Añadir"
+            },
             "added_toast": {
                 "title": "Añadido a favoritos"
             },
@@ -430,6 +434,7 @@
         "transaction_list": {
             "title": "Transacciones",
             "empty_body": "No se encontraron transacciones",
+            "empty_filtered_body": "Ninguna transacción coincide con este filtro",
             "empty_on_network_body": "Aún no hay transacciones en {{network}}",
             "network_failed": "No se pudieron cargar las transacciones en {{networks}}",
             "network_unavailable": "Las transacciones no están disponibles en {{networks}}",
@@ -438,7 +443,8 @@
             "search_paused_body": "No se encontraron transacciones en el historial reciente.",
             "search_older": "Buscar más antiguas",
             "filter": "Filtrar",
-            "csv": "CSV"
+            "csv": "CSV",
+            "csv_on_network": "CSV de {{network}}"
         },
         "collectible": {
             "description": "Descripción",
@@ -1130,6 +1136,7 @@
         }
     },
     "common": {
+        "app_name": "Pera Wallet",
         "networks_list": "{{first}} y {{last}}",
         "offline_mode": "Modo sin conexión",
         "offline_mode_description": "Es posible que los saldos no estén actualizados y algunas acciones no estén disponibles hasta que vuelvas a conectarte.",
@@ -1443,6 +1450,10 @@
             "server_error": {
                 "title": "Error del servidor",
                 "body": "El servidor tuvo un problema al procesar tu solicitud. Inténtalo de nuevo."
+            },
+            "rate_limited": {
+                "title": "Red saturada",
+                "body": "La red está recibiendo demasiadas solicitudes en este momento. Espera un momento y vuelve a intentarlo."
             }
         },
         "transaction": {
@@ -3753,6 +3764,8 @@
             "nothing_back_title": "No recibes nada a cambio",
             "permission_collection": "Todos tus NFT de {{collection}}",
             "permission_collection_note": "Podrá mover todos los NFT que tengas de esta colección, ahora y más adelante, hasta que retires este permiso.",
+            "permission_increase": "{{spender}} podrá gastar esta cantidad más",
+            "permission_increase_note": "Se suma a lo que {{spender}} ya puede gastar, así que su límite total puede ser mayor.",
             "permission_no_change": "Con esta transacción no sale ningún token de tu billetera.",
             "permission_revoke": "{{spender}} ya no podrá gastar",
             "permission_spender": "{{spender}} podrá gastar",
@@ -3866,9 +3879,13 @@
             "app_call": "Llamada a app",
             "contract_call": "Llamada a contrato",
             "approve_asset": "Aprobar {{asset}}",
+            "approve_all": "Aprobar toda la colección {{collection}}",
+            "approval_for": "Para {{spender}}",
+            "unlimited_approval_for": "Ilimitado · para {{spender}}",
             "swap_pair": "Swap {{from}} → {{to}}",
             "add_liquidity": "Añadir liquidez",
             "remove_liquidity": "Retirar liquidez",
+            "collect_fees": "Cobrar comisiones",
             "contract_interaction": "Interacción con contrato",
             "approval": "Aprobación",
             "revoke_approval": "Revocar aprobación",
@@ -4034,7 +4051,14 @@
             "yesterday": "Ayer",
             "last_week": "Última semana",
             "last_month": "Último mes",
-            "custom_range": "Rango personalizado"
+            "custom_range": "Rango personalizado",
+            "type": "Tipo",
+            "type_all": "Todas",
+            "type_swaps": "Intercambios",
+            "type_approvals": "Aprobaciones",
+            "type_defi": "DeFi",
+            "type_transfers": "Envíos y recepciones",
+            "type_other": "Otras"
         },
         "replacement": {
             "title": "Transacción pendiente",
@@ -4270,7 +4294,6 @@
             },
             "provider_failed_body": "Este proveedor no pudo completar el swap. Prueba con otro proveedor.",
             "provider_unavailable_body": "El proveedor no está disponible en este momento. Inténtalo de nuevo en unos instantes.",
-            "route_unverified_body": "Pera aún no puede verificar el contrato de swap de este proveedor en {{network}}, así que no se firmó nada. Prueba con otro proveedor o inténtalo de nuevo más tarde.",
             "quote_mismatch_body": "Las transacciones del proveedor no coincidían con esta cotización, así que no se firmó nada. Inténtalo de nuevo o elige otro proveedor.",
             "unsupported_order_body": "Pera no puede completar la orden de este proveedor, así que no se firmó nada. Elige otro proveedor.",
             "signing_failed_body": "No se pudo firmar la transacción, así que no se envió. Inténtalo de nuevo.",
@@ -4389,7 +4412,9 @@
             "no_payment_methods": "No hay métodos de pago disponibles para tu dispositivo.",
             "amount_below_min": "La cantidad debe ser mayor que {{min}}",
             "amount_below_min_unknown": "La cantidad es inferior al mínimo del proveedor",
-            "amount_above_max": "La cantidad debe ser menor que {{max}}"
+            "amount_above_max": "La cantidad debe ser menor que {{max}}",
+            "quote_refreshed_title": "Cotización actualizada",
+            "quote_refreshed_body": "Esa cotización había caducado, así que obtuvimos un precio nuevo. Revísalo y toca Continuar de nuevo."
         },
         "pair_selection": {
             "title_to": "A",

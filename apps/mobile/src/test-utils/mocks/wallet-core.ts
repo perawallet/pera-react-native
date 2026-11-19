@@ -131,7 +131,7 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
     const { isSwapOrderSettled } = await vi.importActual<
         typeof import('@packages/swaps/src/utils/swapOrderSettlement')
     >('@packages/swaps/src/utils/swapOrderSettlement')
-    const { swapQuoteFailureOf } = await vi.importActual<
+    const { swapQuoteFailureOf, isSwapQuoteGoneError } = await vi.importActual<
         typeof import('@packages/swaps/src/utils/routerErrors')
     >('@packages/swaps/src/utils/routerErrors')
     const { resolveRouterErrorBody } = await vi.importActual<
@@ -145,6 +145,7 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
         useSwaps: vi.fn(),
         isSwappableAsset: vi.fn(() => true),
         swapQuoteFailureOf,
+        isSwapQuoteGoneError,
         resolveRouterErrorBody,
         SwapQuoteMismatchError,
         formatSwapRate,
@@ -1037,6 +1038,10 @@ vi.mock('@perawallet/wallet-core-currencies', async () => {
             usdToPreferred: (usd: InstanceType<typeof Decimal>) => usd,
             isRateUnavailable: false,
             refetchRate: vi.fn(),
+        })),
+        useHistoricUsdToPreferred: vi.fn(() => ({
+            usdToPreferredAt: (usd: InstanceType<typeof Decimal>) => usd,
+            isPending: false,
         })),
         usePreferredCurrencyPriceQuery: vi.fn(() => ({
             data: { usdPrice: new Decimal(1) },

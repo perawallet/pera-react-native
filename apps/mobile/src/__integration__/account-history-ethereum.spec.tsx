@@ -130,7 +130,8 @@ const { useWebViewStore } = await import('@modules/webview')
 const { recordSubmissionAttempt } =
     await import('@perawallet/wallet-core-signing')
 const { i18nKey } = await import('@perawallet/wallet-core-chain-contract')
-const { closestPressable } = await import('@test-utils/rnw')
+const { closestPressable, waitPastDoublePressGuard } =
+    await import('@test-utils/rnw')
 const { useRoute } = await import('@react-navigation/native')
 const { peraEvmHistoryHandlers } =
     await import('@packages/chain-ethereum/src/history/api/msw-handlers')
@@ -833,6 +834,58 @@ describe('Flow: History on an Ethereum account', () => {
                 expect(supply).not.toContain('transactions.common.fee')
             })
 
+            it("Given the QA account's rows, when a type is picked in the filter, then only that type's rows list, read from the page already loaded", async () => {
+                serveActionRows()
+                let historyReads = 0
+                const countHistoryRead = ({
+                    request,
+                }: {
+                    request: Request
+                }) => {
+                    if (request.url.includes('/transactions/')) historyReads++
+                }
+                server.events.on('request:start', countHistoryRead)
+                renderHistory()
+                await waitFor(() => expect(rowIds()).toHaveLength(3), {
+                    timeout: SLOW_WAIT_TIMEOUT_MS,
+                })
+
+                const pickType = async (type: string) => {
+                    fireEvent.click(
+                        screen.getByText(
+                            'asset_details.transaction_list.filter',
+                        ),
+                    )
+                    fireEvent.click(
+                        await screen.findByTestId(`history-type-${type}`),
+                    )
+                    // Filtering the loaded pages is instant, so the next pick
+                    // would land inside the Filter button's double-press guard.
+                    await waitPastDoublePressGuard()
+                }
+
+                await pickType('approvals')
+                await waitFor(
+                    () =>
+                        expect(rowIds()).toEqual([
+                            `transaction_row_${USDT_APPROVE_HASH}`,
+                        ]),
+                    { timeout: SLOW_WAIT_TIMEOUT_MS },
+                )
+
+                await pickType('defi')
+                await waitFor(
+                    () =>
+                        expect(rowIds()).toEqual([
+                            `transaction_row_${SUPPLY_HASH}`,
+                        ]),
+                    { timeout: SLOW_WAIT_TIMEOUT_MS },
+                )
+                // Switching types filters the loaded page; nothing is read again.
+                expect(historyReads).toBe(1)
+                server.events.removeListener('request:start', countHistoryRead)
+            })
+
             it('Given a named swap row, when it is opened, then the page carries the same title', async () => {
                 serveActionRows()
                 renderHistory()
@@ -1076,6 +1129,54 @@ describe('Flow: History on an Ethereum account', () => {
                 }
                 expect(nftReads).toEqual([])
                 expect(nodeReads).toEqual([])
+            })
+
+            it('Given a revocation whose calldata the history carries, when it lists, then the row says revoke without asking the node, and its page says the same', async () => {
+                nodeReads.length = 0
+                server.use(
+                    ...peraEvmHistoryHandlers({
+                        history: {
+                            [ETH_ADDRESS]: [
+                                [
+                                    {
+                                        ...approval(REVOKE_HASH),
+                                        input: approveData('0'),
+                                    },
+                                ],
+                            ],
+                        },
+                    }),
+                    ...evmRpcHandlers({
+                        responses: {
+                            eth_getTransactionByHash: params => {
+                                nodeReads.push(String(params[0]))
+                                return REVOKE_TX
+                            },
+                        },
+                    }),
+                )
+                renderHistory()
+
+                expect(
+                    await rowText(REVOKE_HASH, /revoke_approval/),
+                ).not.toMatch(/approve_asset/)
+                expect(nodeReads).toEqual([])
+
+                await openRow(REVOKE_HASH)
+
+                await screen.findByTestId('transaction_detail_fee', undefined, {
+                    timeout: SLOW_WAIT_TIMEOUT_MS,
+                })
+                expect(
+                    screen.getAllByText(
+                        'transactions.list_item.revoke_approval',
+                    ).length,
+                ).toBeGreaterThan(0)
+                expect(
+                    screen.queryByText('transactions.list_item.approve_asset'),
+                ).toBeNull()
+                // The page reads the node for the signed call, a refetch possibly more than once; only the list goes without.
+                expect(new Set(nodeReads)).toEqual(new Set([REVOKE_HASH]))
             })
 
             it('Given a later revocation, when its row is opened, then it reads as a revocation', async () => {

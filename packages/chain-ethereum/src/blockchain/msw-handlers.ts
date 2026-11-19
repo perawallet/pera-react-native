@@ -96,6 +96,42 @@ export type EvmRpcFixtures = {
 
 const GWEI = '0x3b9aca00'
 
+const OP_STACK_GAS_PRICE_ORACLE: Address =
+    '0x420000000000000000000000000000000000000F'
+
+const opStackOracleAbi = parseAbi([
+    'function getL1Fee(bytes _data) view returns (uint256)',
+    'function getOperatorFee(uint256 _gasUsed) view returns (uint256)',
+])
+
+/** Wei the default node's GasPriceOracle quotes for any transaction's L1 data, about what Base charges a transfer. */
+const DEFAULT_OP_STACK_L1_FEE = 2_000_000_000_000n
+/** Wei the default node's GasPriceOracle quotes as the operator fee for any gas. */
+const DEFAULT_OP_STACK_OPERATOR_FEE = 0n
+
+// Answers only the OP-stack oracle, so an OP-stack chain's fees price as a node
+// would; any other call gets empty return data, as a target with no code does.
+const defaultEthCall = (params: readonly unknown[]): Hex => {
+    const { to, data } = params[0] as { to?: Hex; data?: Hex }
+    if (
+        !to ||
+        !data ||
+        !isAddress(to) ||
+        !isAddressEqual(to, OP_STACK_GAS_PRICE_ORACLE)
+    ) {
+        return '0x'
+    }
+    const { functionName } = decodeFunctionData({ abi: opStackOracleAbi, data })
+    return encodeFunctionResult({
+        abi: opStackOracleAbi,
+        functionName,
+        result:
+            functionName === 'getL1Fee'
+                ? DEFAULT_OP_STACK_L1_FEE
+                : DEFAULT_OP_STACK_OPERATOR_FEE,
+    })
+}
+
 /** Mainnet, an empty account at block 1, and a 1 gwei base fee and tip. */
 export const DEFAULT_EVM_RPC_RESPONSES: {
     [M in EvmRpcMethod]: EvmRpcResponder<M>
@@ -114,7 +150,7 @@ export const DEFAULT_EVM_RPC_RESPONSES: {
     // 30M gas, a typical block gas limit.
     eth_getBlockByNumber: { gasLimit: '0x1c9c380' },
     eth_maxPriorityFeePerGas: GWEI,
-    eth_call: '0x',
+    eth_call: defaultEthCall,
     // The hash a node returns is the keccak of the signed payload.
     eth_sendRawTransaction: params => keccak256(params[0] as Hex),
     eth_getTransactionReceipt: null,
@@ -550,8 +586,15 @@ export const encodeErc20Approve = (spender: Address, amount: bigint): Hex =>
         args: [spender, amount],
     })
 
+export const encodeErc20Transfer = (recipient: Address, amount: bigint): Hex =>
+    encodeFunctionData({
+        abi: erc20Abi,
+        functionName: 'transfer',
+        args: [recipient, amount],
+    })
+
 /** What a node sees in a raw transaction, `hash` as it answers with it. */
 export const readRawEvmTransaction = (raw: Hex) => {
-    const { to, nonce, value } = parseTransaction(raw)
-    return { hash: keccak256(raw), to, nonce, value }
+    const { to, nonce, value, chainId } = parseTransaction(raw)
+    return { hash: keccak256(raw), to, nonce, value, chainId }
 }

@@ -10,10 +10,13 @@
  limitations under the License
  */
 
-import React from 'react'
+import React, { useMemo } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import DateTimePicker from '@react-native-community/datetimepicker'
+import type { TransactionHistoryType } from '@perawallet/wallet-core-transactions'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import { FilterSelection } from '@components/FilterSelection'
 
 import { isIOS } from '@utils/platform'
 import { useStyles } from './styles'
@@ -30,11 +33,14 @@ export type { TransactionsFilterResult }
 export type TransactionsFilterContentProps = {
     activeFilter: TransactionFilter
     initialCustomRange?: CustomDateRange
+    /** Undefined hides the Type section; null is All. */
+    activeHistoryType?: Nullable<TransactionHistoryType>
 }
 
 export const TransactionsFilterContent = ({
     activeFilter,
     initialCustomRange,
+    activeHistoryType,
 }: TransactionsFilterContentProps) => {
     const insets = useSafeAreaInsets()
     const styles = useStyles({ bottomInset: insets.bottom })
@@ -48,11 +54,35 @@ export const TransactionsFilterContent = ({
         activeDateInput,
         isPickerVisible,
         handleFilterPress,
+        handleHistoryTypePress,
         handleDatePress,
         handleDateValueChange,
         handlePickerDismiss,
         handleApplyCustomRange,
-    } = useTransactionsFilterContent({ initialCustomRange })
+    } = useTransactionsFilterContent({
+        activeFilter,
+        initialCustomRange,
+        activeHistoryType,
+    })
+
+    const historyTypeOptions = useMemo(
+        () =>
+            (
+                [
+                    [null, t('transactions.filter.type_all')],
+                    ['swaps', t('transactions.filter.type_swaps')],
+                    ['approvals', t('transactions.filter.type_approvals')],
+                    ['defi', t('transactions.filter.type_defi')],
+                    ['transfers', t('transactions.filter.type_transfers')],
+                    ['other', t('transactions.filter.type_other')],
+                ] satisfies [Nullable<TransactionHistoryType>, string][]
+            ).map(([value, label]) => ({
+                value,
+                label,
+                testID: `history-type-${value ?? 'all'}`,
+            })),
+        [t],
+    )
 
     const formatDate = (date: Date) => {
         return date.toLocaleDateString('en-GB').replace(/\//g, '.')
@@ -113,6 +143,25 @@ export const TransactionsFilterContent = ({
                 </PWView>
                 <PWView style={styles.headerSpacer} />
             </PWView>
+
+            {activeHistoryType !== undefined && (
+                <PWView style={styles.typeSection}>
+                    <PWText
+                        variant='body'
+                        style={styles.sectionLabel}
+                        truncate
+                    >
+                        {t('transactions.filter.type')}
+                    </PWText>
+                    <FilterSelection
+                        options={historyTypeOptions}
+                        selectedValue={activeHistoryType}
+                        onSelect={handleHistoryTypePress}
+                        contentContainerStyle={styles.typeChips}
+                        testID='history-type-filter'
+                    />
+                </PWView>
+            )}
 
             {[
                 {

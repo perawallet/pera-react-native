@@ -73,7 +73,7 @@ Canonical conversion helpers live in `@perawallet/wallet-core-shared` (`baseUnit
 - Domain model fields for amounts/balances/prices **MUST** be typed as `Decimal`, not `string` or `number`
 - `bigint` is only used at the blockchain boundary (AlgoKit types, transaction building, balance validation)
 - Always document units in JSDoc: specify whether a field is in base units or display units
-- Global Decimal config (precision 40, ROUND_HALF_UP) is initialized via `initDecimalConfig()` from `@perawallet/wallet-core-shared`
+- Global Decimal config (precision 80, ROUND_HALF_UP) is initialized via `initDecimalConfig()` from `@perawallet/wallet-core-shared`
 
 ## TypeScript
 

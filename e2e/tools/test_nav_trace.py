@@ -108,3 +108,32 @@ def test_ios_restart_with_equal_sequence_is_detected():
     assert not trace._read_ios_file(driver)
     driver.timestamp = 20
     assert len(trace._read_ios_file(driver)) == 1
+
+
+def test_ios_snapshot_wait_falls_back_once_on_file_loss_and_recovers():
+    import base64
+
+    from NavTrace import NavTrace
+
+    class Driver:
+        capabilities = {'platformName': 'iOS', 'bundleId': 'b'}
+        data = None
+        reads = 0
+
+        def pull_file(self, _):
+            self.reads += 1
+            if self.data is None:
+                raise OSError('device unavailable')
+            return base64.b64encode(self.data.encode())
+
+    trace, driver = NavTrace(), Driver()
+    trace._driver = lambda: driver
+    assert not trace.wait_for_nav_snapshot('fixture:home')
+    assert not trace.wait_for_nav_snapshot('fixture:home')
+    assert driver.reads == 1
+
+    driver.data = '[E2E-NAV] {"event":"focus","screen":"TabBar/Home","seq":1,"t":1}'
+    trace.drain_nav_log()
+    driver.data += '\n[E2E-NAV] {"event":"snapshot","label":"fixture:home","screens":[],"seq":2,"t":2}'
+    assert trace.wait_for_nav_snapshot('fixture:home')
+    assert driver.reads == 3

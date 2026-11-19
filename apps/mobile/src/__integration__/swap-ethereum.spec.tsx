@@ -38,7 +38,7 @@ const panelAccount = vi.hoisted(() => ({
 }))
 const ROUTER = '0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45'
 const NODE_BALANCE = '0x8ac7230489e80000'
-const SWAP_DATA = '0x5ae401dc'
+const SWAP_DATA = '0x3593564c'
 const FORM_TIMEOUT = { timeout: 8000 }
 const TOKEN_UNITS = 12_500_000n
 const WEI = 10n ** 17n
@@ -95,6 +95,7 @@ const { getAccountBalancesQueryKey } =
 const { DeeplinkType } = await import('@perawallet/wallet-core-deeplinks')
 const {
     encodeErc20Approve,
+    encodeErc20Transfer,
     encodeUnsignedEvmCall,
     evmRpcHandlers,
     evmTransactionReceipt,
@@ -181,15 +182,13 @@ const evmContext: ChainContext = {
     kms: kmsCore,
 }
 
-// The shipped table names no router yet, which is the fail-closed path.
-const pinFixtureRouter = () => {
+// Runs the registered adapter's swap against the fixture node at RPC_URL.
+const runOnFixtureNode = () => {
     const registered = swapChainAdapters.get('ethereum')
-    const pinned = createEvmSwapAdapter(evmContext, evmChainOf('ethereum'), {
-        routeContractsOf: () => [ROUTER],
-    })
-    vi.spyOn(registered, 'executeSwap').mockImplementation(pinned.executeSwap)
+    const adapter = createEvmSwapAdapter(evmContext, evmChainOf('ethereum'))
+    vi.spyOn(registered, 'executeSwap').mockImplementation(adapter.executeSwap)
     vi.spyOn(registered, 'estimateSourceCost').mockImplementation(
-        pinned.estimateSourceCost,
+        adapter.estimateSourceCost,
     )
 }
 
@@ -322,6 +321,11 @@ const APPROVE_TX = encodeUnsignedEvmCall(
     encodeErc20Approve(ROUTER, TOKEN_UNITS),
 )
 const TOKEN_SWAP_TX = encodeUnsignedEvmCall(ROUTER, SWAP_DATA)
+const XO_DEPOSIT_ADDRESS = '0x7f3a1c2b9d8e4f5a6b7c8d9e0f1a2b3c4d5e6f70'
+const TOKEN_DEPOSIT_TX = encodeUnsignedEvmCall(
+    TOKEN,
+    encodeErc20Transfer(XO_DEPOSIT_ADDRESS, TOKEN_UNITS),
+)
 const ETHER_SWAP_TX = encodeUnsignedEvmCall(ROUTER, SWAP_DATA, WEI)
 
 const lowerCased = (address?: Nullable<string>) => address?.toLowerCase()
@@ -478,7 +482,7 @@ describe('Flow: Swap from an Ethereum account', () => {
         useSwapsStore.getState().resetState()
         await useRemoteConfigStore.persist.rehydrate()
         vi.spyOn(kmsCore, 'sign').mockImplementation(signWithSenderKey)
-        pinFixtureRouter()
+        runOnFixtureNode()
     })
     afterEach(() => {
         host = null
@@ -496,7 +500,7 @@ describe('Flow: Swap from an Ethereum account', () => {
 
         const outcome = await api.execute(tokenToEtherQuote())
 
-        expect(outcome).toEqual({ kind: 'success' })
+        expect(outcome).toEqual({ kind: 'success', isPaidOutLater: false })
         expect(sent.map(({ to }) => lowerCased(to))).toEqual(
             [TOKEN, ROUTER].map(lowerCased),
         )
@@ -949,6 +953,46 @@ describe('Flow: Swap from an Ethereum account', () => {
         expect(screen.queryByTestId('swap_to_cross_network_empty')).toBeNull()
     })
 
+    it('Given the pairs request fails, when Swap To opens, then it shows the error with Retry, and Retry lists the tokens once the router answers', async () => {
+        await selectTwoChainAccount()
+        await seedSenderEther('10000000000000000000')
+        fakeNode()
+        useSwapsStore.getState().setSourceChainId('ethereum')
+        useSwapsStore.getState().setFromAsset(ETH_ASSET)
+        server.use(
+            mockSwapPairs({
+                response: { error: 'unavailable', code: 'unavailable' },
+                status: 500,
+            }),
+        )
+        renderWithNavigation(SwapScreen, 'Swap')
+
+        fireEvent.click(
+            await screen.findByTestId('swap-receive-asset-selector'),
+        )
+        await screen.findByTestId('swap_to_load_error')
+        server.use(
+            mockSwapPairs({
+                response: {
+                    results: [
+                        {
+                            kind: 'token',
+                            asset: routerAsset(
+                                `eip155:1/erc20:${TOKEN.toLowerCase()}`,
+                                'USDC',
+                                6,
+                            ),
+                        },
+                    ],
+                },
+            }),
+        )
+        fireEvent.click(await screen.findByTestId('swap_to_retry_button'))
+
+        await screen.findByTestId(`swap-asset-item-${TOKEN}`)
+        expect(screen.queryByTestId('swap_to_load_error')).toBeNull()
+    })
+
     it('Given an allowance that covers the amount, when the swap runs, then only the swap is sent', async () => {
         selectSender(ETHEREUM_SENDER)
         await seedSenderEther('10000000000000000000')
@@ -959,13 +1003,43 @@ describe('Flow: Swap from an Ethereum account', () => {
 
         const outcome = await api.execute(tokenToEtherQuote())
 
-        expect(outcome).toEqual({ kind: 'success' })
+        expect(outcome).toEqual({ kind: 'success', isPaidOutLater: false })
         expect(sent.map(({ to }) => lowerCased(to))).toEqual([
             lowerCased(ROUTER),
         ])
     })
 
-    it('Given an order calling a contract the route never declared, when the swap runs, then nothing is signed and the order is cancelled', async () => {
+    it('Given XO answers a token swap with one transfer to its deposit address, when the swap runs, then only that transfer is sent and the order is tracked until payout', async () => {
+        selectSender(ETHEREUM_SENDER)
+        await seedSenderEther('10000000000000000000')
+        const api = await startHost()
+        const sent = fakeNode()
+        mockEthereumSwapOrder([TOKEN_DEPOSIT_TX])
+        const { reports } = spyOnSwapSubmissionAndReports()
+
+        const outcome = await api.execute(tokenToEtherQuote())
+
+        expect(outcome).toEqual({ kind: 'success', isPaidOutLater: true })
+        expect(sent.map(({ to }) => lowerCased(to))).toEqual([
+            lowerCased(TOKEN),
+        ])
+        await waitFor(() => expect(reports).toHaveLength(1))
+        expect(reports[0]).toEqual({
+            status: 'sent',
+            transactions: [
+                { chain: 'eip155:1', tx_hash: sent[0].hash, purpose: 'swap' },
+            ],
+        })
+        expect(useSwapTrackingStore.getState().orders[SWAP_ORDER_ID]).toEqual(
+            expect.objectContaining({
+                sourceScope: ETH_SCOPE,
+                destinationScope: ETH_SCOPE,
+                status: 'pending',
+            }),
+        )
+    })
+
+    it('Given an order whose swap calls the token being swapped, when the swap runs, then nothing is signed and the order is cancelled', async () => {
         selectSender(ETHEREUM_SENDER)
         await seedSenderEther('10000000000000000000')
         const api = await startHost()
@@ -979,33 +1053,11 @@ describe('Flow: Swap from an Ethereum account', () => {
             kind: 'error',
             phase: 'prepare',
             title: 'swap.execution.failed_title.prepare',
-            message: 'swap.execution.route_unverified_body',
+            message: 'swap.execution.quote_mismatch_body',
         })
         expect(sent).toEqual([])
         expect(kmsCore.sign).not.toHaveBeenCalled()
         await waitFor(() => expect(reports).toEqual([{ status: 'cancelled' }]))
-    })
-
-    it('Given the shipped route table, when an ERC-20 swap runs, then nothing is ordered or signed and the error names the unverified route', async () => {
-        vi.mocked(swapChainAdapters.get('ethereum').executeSwap).mockRestore()
-        selectSender(ETHEREUM_SENDER)
-        await seedSenderEther('10000000000000000000')
-        const api = await startHost()
-        const sent = fakeNode()
-        mockEthereumSwapOrder([APPROVE_TX, TOKEN_SWAP_TX])
-        const { reports } = spyOnSwapSubmissionAndReports()
-
-        const outcome = await api.execute(tokenToEtherQuote())
-
-        expect(outcome).toMatchObject({
-            kind: 'error',
-            phase: 'prepare',
-            title: 'swap.execution.failed_title.prepare',
-            message: 'swap.execution.route_unverified_body',
-        })
-        expect(kmsCore.sign).not.toHaveBeenCalled()
-        expect(sent).toEqual([])
-        expect(reports).toEqual([])
     })
 
     it("Given ether swapped into the account's own Algorand address, when the swap runs, then the order is tracked until completed", async () => {
@@ -1021,7 +1073,7 @@ describe('Flow: Swap from an Ethereum account', () => {
         const algoAddress = account.chains.algorand?.address ?? ''
         const outcome = await api.execute(etherToAlgoQuote(algoAddress))
 
-        expect(outcome).toEqual({ kind: 'success' })
+        expect(outcome).toEqual({ kind: 'success', isPaidOutLater: false })
         expect(sent[0].value).toBe(WEI)
         expect(useSwapTrackingStore.getState().orders[SWAP_ORDER_ID]).toEqual(
             expect.objectContaining({
