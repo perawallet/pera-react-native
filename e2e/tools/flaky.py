@@ -64,15 +64,16 @@ def collect(pass_dir):
     not flaky, and the comparison comes out clean on evidence that is not there.
     """
     root = Path(pass_dir)
-    if (root / ".incomplete").exists():
-        return {}, ["the runner marked this pass incomplete"]
-    status, unreadable = {}, []
-    setup_failures = session_lost = 0
     # A full pass writes one directory per suite; a single-suite run writes straight into
     # the pass directory. Reading only the first called a perfectly good single-suite run
     # incomplete and refused to compare it.
     outputs = sorted(root.glob("output.xml"))
     outputs += sorted(root.glob("*/output.xml"))
+    # run.sh marks each run's own output directory; browserstack.sh marks the pass root.
+    if any((d / ".incomplete").exists() for d in [root, *(o.parent for o in outputs)]):
+        return {}, ["the runner marked this pass incomplete"]
+    status, unreadable = {}, []
+    setup_failures = session_lost = 0
     if not outputs:
         unreadable.append(f"{pass_dir}: no suite output at all")
     for output in outputs:

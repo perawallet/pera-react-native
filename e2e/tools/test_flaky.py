@@ -46,6 +46,14 @@ def test_a_marked_pass_is_rejected_before_loading_partial_output(tmp_path):
     assert collect(tmp_path) == ({}, ["the runner marked this pass incomplete"])
 
 
+def test_a_suite_run_marked_incomplete_rejects_its_pass(tmp_path):
+    (tmp_path / "contacts").mkdir()
+    (tmp_path / "contacts" / ".incomplete").touch()
+    (tmp_path / "contacts" / "output.xml").write_text("<partial")
+
+    assert collect(tmp_path) == ({}, ["the runner marked this pass incomplete"])
+
+
 def test_one_suite_collapsing_does_not_condemn_the_whole_pass():
     assert unreadable_reasons(case_count=200, setup_failures=8, session_lost=0) == []
 

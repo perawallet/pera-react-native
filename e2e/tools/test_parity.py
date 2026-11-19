@@ -88,6 +88,17 @@ def test_incomplete_results_are_rejected_even_when_pointed_at_one_xml(tmp_path):
             outputs_under(path)
 
 
+def test_a_suite_run_marked_incomplete_rejects_its_pass(tmp_path):
+    for name in ("accounts", "contacts"):
+        (tmp_path / name).mkdir()
+        (tmp_path / name / "output.xml").touch()
+    (tmp_path / "contacts" / ".incomplete").touch()
+
+    for path in (tmp_path, tmp_path / "contacts" / "output.xml"):
+        with pytest.raises(SystemExit, match="marked this pass incomplete"):
+            outputs_under(path)
+
+
 def test_a_pass_directory_is_read_whichever_way_the_runner_laid_it_out():
     # A full pass writes a directory per suite; a single-suite run writes straight into
     # the pass directory. Reading only the nested form let the gate be pointed at one

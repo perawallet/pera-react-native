@@ -36,14 +36,15 @@ def outputs_under(path):
     suite at a time and never against the pass it is meant to gate.
     """
     path = Path(path)
-    root = path.parent if path.is_file() else path
-    if (root / ".incomplete").exists() or (
-        path.is_file() and (root.parent / ".incomplete").exists()
-    ):
-        sys.exit(f"{root}: the runner marked this pass incomplete")
     if path.is_file():
-        return [path]
-    files = sorted(path.glob("output.xml")) + sorted(path.glob("*/output.xml"))
+        files, root = [path], path.parent.parent
+    else:
+        files = sorted(path.glob("output.xml")) + sorted(path.glob("*/output.xml"))
+        root = path
+    # run.sh marks each run's own output directory; browserstack.sh marks the pass root.
+    for marked in [root, *(f.parent for f in files)]:
+        if (marked / ".incomplete").exists():
+            sys.exit(f"{marked}: the runner marked this pass incomplete")
     if not files:
         sys.exit(f"{path}: no Robot output files here")
     return files
