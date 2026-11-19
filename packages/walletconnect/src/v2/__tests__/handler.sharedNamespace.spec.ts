@@ -965,6 +965,57 @@ describe('changeAccount on a session with optional networks', () => {
         expect(stored?.metadata).toMatchObject({ chains: both })
     })
 
+    it('drops a network a chain switch added while the record was being read, on the record as on the session', async () => {
+        const { handler, walletKit, store } = await open(
+            [
+                {
+                    ...record,
+                    metadata: {
+                        ...record.metadata,
+                        chains: [ETHEREUM_MAINNET],
+                    },
+                },
+            ],
+            createFakeWalletKit({
+                [TOPIC]: makeSession({
+                    namespaces: {
+                        eip155: {
+                            chains: [ETHEREUM_MAINNET],
+                            accounts: [`${ETHEREUM_MAINNET}:${ETH}`],
+                            methods: ['eth_sendTransaction'],
+                            events: ['accountsChanged'],
+                        },
+                    },
+                }),
+            }),
+            chainId => chainId === 'ethereum',
+        )
+        const read = store.get.bind(store)
+        vi.spyOn(store, 'get').mockImplementationOnce(async id => {
+            const before = await read(id)
+            const session = walletKit.getActiveSessions()[TOPIC]
+            session.namespaces.eip155 = {
+                ...session.namespaces.eip155,
+                chains: both,
+                accounts: both.map(caip2 => `${caip2}:${ETH}`),
+            }
+            await store.upsert({
+                ...record,
+                metadata: { ...record.metadata, chains: both },
+            })
+            return before
+        })
+
+        await handler.changeAccount?.(TOPIC, 'ethereum', NEW_ETH)
+
+        const { namespaces } = walletKit.updateSession.mock.calls[0][0] as {
+            namespaces: Record<string, { chains: string[] }>
+        }
+        expect(namespaces.eip155.chains).toEqual([ETHEREUM_MAINNET])
+        const stored = await store.get(TOPIC)
+        expect(stored?.metadata).toMatchObject({ chains: [ETHEREUM_MAINNET] })
+    })
+
     it('refuses an account missing a required network', async () => {
         const { handler, walletKit } = await liveOnBoth({
             eip155: { chains: both, methods: [], events: [] },

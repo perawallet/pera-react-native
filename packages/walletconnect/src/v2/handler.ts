@@ -1929,15 +1929,17 @@ export const createWalletConnectV2Handler = (
             const served = v2ChainForCaip2(caip2)
             return served !== null && canSignWith(served.chainId, normalized)
         }
-        const dropped = (namespace.chains ?? []).filter(
-            caip2 => !isSignable(caip2),
-        )
 
         // Store first, then reject: a request read before the store write
         // would be raised for the account being replaced.
         const latest = await store().get(id)
         const current =
             latest && isWalletConnectV2Connection(latest) ? latest : stored
+        const dropped = current.metadata.chains.filter(
+            caip2 =>
+                caip2.startsWith(`${chain.support.namespace}:`) &&
+                !isSignable(caip2),
+        )
         await store().upsert({
             ...current,
             accounts: [
