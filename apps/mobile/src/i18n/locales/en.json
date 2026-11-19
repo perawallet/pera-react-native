@@ -4246,7 +4246,7 @@
             "route": "Route",
             "cross_chain_note": "Your {{asset}} arrives on {{network}} once the provider completes the swap. You can follow it on the Swap screen.",
             "spend_approval_note": "You'll sign an approval for this swap's amount first, then the swap.",
-            "insufficient_network_fee": "Not enough {{symbol}} to pay the network fee.",
+            "insufficient_network_fee": "You may not have enough {{symbol}} for the network fee. Pera checks the exact fee before anything is signed.",
             "provider": "Provider",
             "minimum_received": "Minimum Received",
             "confirm_swap": "Confirm Swap",

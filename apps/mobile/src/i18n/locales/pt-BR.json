@@ -4268,7 +4268,7 @@
             "route": "Rota",
             "cross_chain_note": "Seu {{asset}} chega em {{network}} assim que o provedor concluir a conversão. Acompanhe na tela Converter.",
             "spend_approval_note": "Primeiro você vai assinar uma aprovação para o valor desta conversão e, depois, a conversão.",
-            "insufficient_network_fee": "{{symbol}} insuficiente para pagar a taxa de rede.",
+            "insufficient_network_fee": "Talvez você não tenha {{symbol}} suficiente para a taxa de rede. A Pera confere a taxa exata antes de assinar qualquer coisa.",
             "provider": "Provedor",
             "minimum_received": "Mínimo recebido",
             "confirm_swap": "Confirmar conversão",

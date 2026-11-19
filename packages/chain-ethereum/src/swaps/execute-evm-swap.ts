@@ -72,11 +72,7 @@ import {
     decodeSwapTransaction,
     type EvmSwapCall,
 } from './decode-swap-transaction'
-import {
-    estimateEvmSwapSourceCost,
-    evmShortfallOf,
-    readEvmAllowance,
-} from './source-cost'
+import { evmShortfallOf, readEvmAllowance } from './source-cost'
 import {
     validateEvmSwapTransactions,
     type EvmSwapPlan,
@@ -351,29 +347,6 @@ const sendApproval = async (
     }
 }
 
-const preflightShortfall = async (
-    client: PublicClient,
-    chain: EvmChain,
-    { quote }: ExecuteSwapParams,
-    { scope }: SwapExecutionContext,
-): Promise<ReturnType<typeof evmShortfallOf>> => {
-    try {
-        const { shortfall } = await estimateEvmSwapSourceCost({
-            client,
-            chain,
-            quote,
-            scope,
-        })
-        return shortfall
-    } catch (error) {
-        // Advisory: the node still refuses what the account can't pay.
-        logger.warn('[swap] balance preflight lookup failed', {
-            error: `${error}`,
-        })
-        return null
-    }
-}
-
 const isOrderExpired = ({ expiresAt }: SwapOrder): boolean =>
     expiresAt !== null && Date.now() >= expiresAt
 
@@ -400,7 +373,7 @@ export const executeEvmSwap = async ({
     input: ExecuteSwapParams
     context: SwapExecutionContext
 }): Promise<ExecuteSwapResult> => {
-    const { quote, account, onProgress, isCancelled } = input
+    const { quote, onProgress, isCancelled } = input
     const { scope, createOrder, reportOrder } = context
     const { onOrderSubmitting, onOrderRejected } = context
 
@@ -409,25 +382,10 @@ export const executeEvmSwap = async ({
     const client = createEvmClient(scope, ctx, chain)
     const sender = getAddress(quote.request.sourceAddress)
 
-    if (account) {
-        onProgress('preparing')
-        const shortfall = await preflightShortfall(
-            client,
-            chain,
-            input,
-            context,
-        )
-        if (isCancelled()) return { kind: 'cancelled' }
-        if (shortfall) {
-            return failed({
-                phase: 'prepare',
-                reason: 'insufficient-native-balance',
-                chainId: scope.chainId,
-                shortfall,
-            })
-        }
-    }
-
+    // No preflight against the estimate: it's a ceiling for an order not yet
+    // made, several times what XO's deposits cost, so it would refuse swaps the
+    // account can pay. Each transaction's exact check refuses a real shortfall
+    // before anything is signed.
     let order: SwapOrder
     try {
         onProgress('preparing')
