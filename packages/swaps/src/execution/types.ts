@@ -62,9 +62,6 @@ export type SwapExecutionFailure =
     // A step this client can't run, or one on another chain: refused whole.
     | { phase: 'prepare'; reason: 'unsupported-steps' }
     | { phase: 'prepare'; reason: 'quote-mismatch' }
-    // An order that would call a contract the app hasn't declared for this
-    // route: refused before anything is signed.
-    | { phase: 'prepare'; reason: 'route-unverified'; chainId: ChainId }
     | { phase: 'signing'; reason: 'quantum-blocked'; translationKey: I18nKey }
     | { phase: 'signing'; reason: 'signing-failed'; step?: SwapTransactionStep }
     | {
@@ -82,7 +79,13 @@ export type SwapExecutionFailure =
       }
 
 export type ExecuteSwapResult =
-    | { kind: 'success'; orderId: string; txIds: string[] }
+    | {
+          kind: 'success'
+          orderId: string
+          txIds: string[]
+          /** The provider pays out after the broadcast, as on a deposit. */
+          isPaidOutLater?: boolean
+      }
     // Abandoned through `isCancelled` before anything was signed.
     | { kind: 'cancelled' }
     // The user declined the signing request (on screen or on a Ledger).
@@ -126,7 +129,10 @@ export type SwapExecutionContext = {
     reportOrder: ReportSwapOrderFn
     registerHandoff: (record: SwapHandoffRecord) => void
     /** Called before the first broadcast: past it, a killed app or a submit with no node verdict can't say whether funds left. */
-    onOrderSubmitting: (orderId: string) => void
+    onOrderSubmitting: (
+        orderId: string,
+        options?: { isPaidOutLater?: boolean },
+    ) => void
     /** Called when a node refused the first group: nothing was broadcast, so no funds left. */
     onOrderRejected: (orderId: string) => void
 }

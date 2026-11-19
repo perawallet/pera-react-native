@@ -586,6 +586,13 @@ export const encodeErc20Approve = (spender: Address, amount: bigint): Hex =>
         args: [spender, amount],
     })
 
+export const encodeErc20Transfer = (recipient: Address, amount: bigint): Hex =>
+    encodeFunctionData({
+        abi: erc20Abi,
+        functionName: 'transfer',
+        args: [recipient, amount],
+    })
+
 /** What a node sees in a raw transaction, `hash` as it answers with it. */
 export const readRawEvmTransaction = (raw: Hex) => {
     const { to, nonce, value } = parseTransaction(raw)

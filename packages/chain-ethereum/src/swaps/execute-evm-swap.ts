@@ -78,7 +78,6 @@ import {
     readEvmAllowance,
 } from './source-cost'
 import {
-    EvmSwapRouteUndeclaredError,
     validateEvmSwapTransactions,
     type EvmSwapPlan,
 } from './validate-swap-transactions'
@@ -135,7 +134,6 @@ const toPlan = (
     { quote }: ExecuteSwapParams,
     { scope }: SwapExecutionContext,
     chain: EvmChain,
-    routeContracts: readonly Address[],
 ): EvmSwapPlan =>
     validateEvmSwapTransactions({
         calls: steps
@@ -144,7 +142,6 @@ const toPlan = (
         request: quote.request,
         scope,
         chain,
-        routeContracts,
     })
 
 const requestSignature = (
@@ -357,7 +354,6 @@ const sendApproval = async (
 const preflightShortfall = async (
     client: PublicClient,
     chain: EvmChain,
-    routeContracts: readonly Address[],
     { quote }: ExecuteSwapParams,
     { scope }: SwapExecutionContext,
 ): Promise<ReturnType<typeof evmShortfallOf>> => {
@@ -367,7 +363,6 @@ const preflightShortfall = async (
             chain,
             quote,
             scope,
-            routeContracts,
         })
         return shortfall
     } catch (error) {
@@ -397,30 +392,17 @@ const isRefusedUnsent = (error: unknown): boolean =>
 export const executeEvmSwap = async ({
     ctx,
     chain,
-    routeContracts,
     input,
     context,
 }: {
     ctx: ChainContext
     chain: EvmChain
-    routeContracts: readonly Address[]
     input: ExecuteSwapParams
     context: SwapExecutionContext
 }): Promise<ExecuteSwapResult> => {
     const { quote, account, onProgress, isCancelled } = input
     const { scope, createOrder, reportOrder } = context
     const { onOrderSubmitting, onOrderRejected } = context
-
-    // With nothing declared the check would refuse any order, so don't create
-    // one. It sits above the freshness check so a lapsed quote still reports
-    // the unverifiable route rather than stale-quote.
-    if (routeContracts.length === 0) {
-        return failed({
-            phase: 'prepare',
-            reason: 'route-unverified',
-            chainId: scope.chainId,
-        })
-    }
 
     if (!isQuoteFresh(quote)) return { kind: 'stale-quote' }
 
@@ -432,7 +414,6 @@ export const executeEvmSwap = async ({
         const shortfall = await preflightShortfall(
             client,
             chain,
-            routeContracts,
             input,
             context,
         )
@@ -483,20 +464,12 @@ export const executeEvmSwap = async ({
 
     let plan: EvmSwapPlan
     try {
-        plan = toPlan(steps, input, context, chain, routeContracts)
+        plan = toPlan(steps, input, context, chain)
     } catch (error) {
         // Raw text goes to the log only; it must never reach the toast body.
         logger.warn('[swap] validation failed', { error: `${error}` })
         cancelOrder()
-        return failed(
-            error instanceof EvmSwapRouteUndeclaredError
-                ? {
-                      phase: 'prepare',
-                      reason: 'route-unverified',
-                      chainId: scope.chainId,
-                  }
-                : { phase: 'prepare', reason: 'quote-mismatch' },
-        )
+        return failed({ phase: 'prepare', reason: 'quote-mismatch' })
     }
 
     let approval: Nullable<EvmSwapCall> = plan.approval
@@ -542,7 +515,9 @@ export const executeEvmSwap = async ({
     // Past the order's deadline the swap reverts at the user's gas. An approval's
     // wait or the final signature, a Ledger's above all, can outlast it, so it is
     // checked before the swap is signed and again before it is sent. A grant
-    // stays: it covers the re-quoted swap too.
+    // stays, at most this swap's amount, to this order's contract: the re-quote
+    // may name another, which leaves it unused. Revoking would cost the user
+    // another signature and gas for an allowance XO's own contract holds.
     if (!isQuoteFresh(quote) || isOrderExpired(order)) {
         cancelOrder()
         return { kind: 'stale-quote' }
@@ -554,7 +529,7 @@ export const executeEvmSwap = async ({
         chain,
         sender,
         plan.swap,
-        swapSummary(sender, plan.swap.to, {
+        swapSummary(sender, plan.counterparty, {
             assetRef: {
                 chainId: sourceAsset.chainId,
                 assetId: sourceAsset.assetId,
@@ -576,7 +551,7 @@ export const executeEvmSwap = async ({
     }
 
     let swapTxId: string
-    onOrderSubmitting(orderId)
+    onOrderSubmitting(orderId, { isPaidOutLater: plan.isPaidOutLater })
     try {
         onProgress('submitting')
         ;[swapTxId] = await submit(
@@ -631,5 +606,6 @@ export const executeEvmSwap = async ({
         kind: 'success',
         orderId,
         txIds: reported.map(({ txHash }) => txHash),
+        isPaidOutLater: plan.isPaidOutLater,
     }
 }

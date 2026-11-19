@@ -1431,6 +1431,23 @@ describe('useSwapForm', () => {
             )
         })
 
+        it('says a same-chain deposit is on its way rather than complete', async () => {
+            const result = await selectAQuote()
+            mockRequestBottomSheet.mockResolvedValueOnce({
+                kind: 'confirm',
+                isPaidOutLater: true,
+            })
+
+            await act(async () => {
+                await result.current.handleOpenConfirm()
+            })
+
+            expect(mockSuccessToast).toHaveBeenCalledWith(
+                'swap.tracking.started',
+                'swap.tracking.in_progress',
+            )
+        })
+
         it('registers the swap to resume in a tab only while the confirm sheet is open', async () => {
             const result = await selectAQuote()
             mockRequestBottomSheet.mockImplementationOnce(async () => {

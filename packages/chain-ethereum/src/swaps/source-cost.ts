@@ -76,40 +76,23 @@ export const estimateEvmSwapSourceCost = async ({
     chain,
     quote,
     scope,
-    routeContracts,
 }: {
     client: PublicClient
     chain: EvmChain
     quote: SwapQuote
     scope: ChainScope
-    routeContracts: readonly Address[]
 }): Promise<SwapSourceCost> => {
     const { sourceAsset, sourceAddress, sourceAmount } = quote.request
     const owner = getAddress(sourceAddress)
     const amount = toBigInt(sourceAmount)
     const isNative = isNativeAsset(sourceAsset, chain.descriptor)
-    const [balance, { baseFeePerGas, presets }, allowances] = await Promise.all(
-        [
-            client.getBalance({ address: owner }),
-            readEvmFeePresets(client, chain, scope.networkId),
-            isNative
-                ? []
-                : Promise.all(
-                      routeContracts.map(spender =>
-                          readEvmAllowance(client, {
-                              token: getAddress(sourceAsset.assetId),
-                              owner,
-                              spender,
-                          }),
-                      ),
-                  ),
-        ],
-    )
-    // Which contract an order will name isn't known yet, so any one short counts.
-    const needsSpendApproval =
-        !isNative &&
-        (allowances.length === 0 ||
-            allowances.some(allowance => allowance < amount))
+    const [balance, { baseFeePerGas, presets }] = await Promise.all([
+        client.getBalance({ address: owner }),
+        readEvmFeePresets(client, chain, scope.networkId),
+    ])
+    // The contract an order will call isn't known until the order exists, so
+    // no allowance can be read yet: any token source is priced with an approval.
+    const needsSpendApproval = !isNative
     const gas =
         SWAP_CALL_GAS_CEILING +
         (needsSpendApproval ? SWAP_APPROVAL_GAS_CEILING : 0n)
@@ -120,7 +103,8 @@ export const estimateEvmSwapSourceCost = async ({
         nonce: 0,
         ...presets.normal,
     } as const
-    const spender = routeContracts[0] ?? owner
+    // The order's contract isn't known yet; any address prices the same calldata.
+    const spender = owner
     const [swapSurcharge, approvalSurcharge] = await Promise.all([
         readEvmSurcharge(client, chain, {
             ...priced,

@@ -27,7 +27,6 @@ import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 import { createEvmClient } from '../../blockchain/utils/createEvmClient'
 import {
     fakeNode,
-    ROUTER,
     SENDER,
     server,
     TOKEN,
@@ -72,13 +71,12 @@ const allowanceOf = (amount: bigint): Hex =>
         result: amount,
     })
 
-const estimate = (assetId: string, routeContracts = [ROUTER]) =>
+const estimate = (assetId: string) =>
     estimateEvmSwapSourceCost({
         client: createEvmClient(scope, ctx, ETHEREUM),
         chain: ETHEREUM,
         quote: quoteOf(assetId),
         scope,
-        routeContracts,
     })
 
 const RICH = numberToHex(10n ** 21n)
@@ -130,26 +128,10 @@ describe('estimateEvmSwapSourceCost', () => {
         expect(cost.expectedNetworkFee.lessThan(cost.networkFee)).toBe(true)
     })
 
-    it('adds the spend approval while the allowance is short', async () => {
-        fakeNode({ balance: RICH, callResult: allowanceOf(AMOUNT - 1n) })
-
-        const cost = await estimate(TOKEN)
-
-        expect(cost.needsSpendApproval).toBe(true)
-    })
-
-    it('leaves the spend approval out when the allowance covers the amount', async () => {
-        fakeNode({ balance: RICH, callResult: allowanceOf(AMOUNT) })
-
-        const cost = await estimate(TOKEN)
-
-        expect(cost.needsSpendApproval).toBe(false)
-    })
-
-    it('assumes a spend approval while the route names no contract', async () => {
+    it('prices a token source with a spend approval, since no spender is known before the order', async () => {
         fakeNode({ balance: RICH })
 
-        const cost = await estimate(TOKEN, [])
+        const cost = await estimate(TOKEN)
 
         expect(cost.needsSpendApproval).toBe(true)
     })
@@ -241,7 +223,6 @@ describe('estimateEvmSwapSourceCost surcharge', () => {
                     },
                 } as unknown as SwapQuote,
                 scope: chainScope,
-                routeContracts: [ROUTER],
             }),
         }
     }
