@@ -1078,7 +1078,7 @@ describe('Flow: History on an Ethereum account', () => {
                 expect(nodeReads).toEqual([])
             })
 
-            it('Given a revocation whose calldata the history carries, when it lists and its row is opened, then the row and the page both say revoke', async () => {
+            it('Given a revocation whose calldata the history carries, when it lists, then the row says revoke without asking the node, and its page says the same', async () => {
                 nodeReads.length = 0
                 server.use(
                     ...peraEvmHistoryHandlers({
@@ -1122,6 +1122,8 @@ describe('Flow: History on an Ethereum account', () => {
                 expect(
                     screen.queryByText('transactions.list_item.approve_asset'),
                 ).toBeNull()
+                // The page reads the node for the signed call, a refetch possibly more than once; only the list goes without.
+                expect(new Set(nodeReads)).toEqual(new Set([REVOKE_HASH]))
             })
 
             it('Given a later revocation, when its row is opened, then it reads as a revocation', async () => {

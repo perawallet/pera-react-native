@@ -40,8 +40,8 @@ export type EthereumPricedView = {
     hasHighFee?: true
     /**
      * Wei. What the transaction is expected to cost at request time, at the
-     * tier its tip reaches; display-only, and absent when the request carried
-     * no estimate.
+     * tier its tip reaches, with any OP-stack surcharge; display-only, and
+     * absent when the request carried no estimate.
      */
     feeEstimate?: { preset: FeePreset; amount: Decimal }
     /**
@@ -50,7 +50,10 @@ export type EthereumPricedView = {
      * contract's own text.
      */
     revertedEstimate?: { reason?: string }
-    /** Wei. `maxFee` is `gas * maxFeePerGas`, the most the signature authorises. */
+    /**
+     * Wei. `maxFee` is `gas * maxFeePerGas`, the most the signature authorises,
+     * plus an OP-stack surcharge with the headroom the Send quote gives it.
+     */
     fee: {
         maxFeePerGas: Decimal
         maxPriorityFeePerGas: Decimal
@@ -118,6 +121,12 @@ type EthereumTransactionViewBase = {
     knownContract?: EvmContractLabel
     /** Only with an `approve` or `increase-allowance` `call` whose spender is in the registry. */
     knownSpender?: KnownSpender
+    /**
+     * Only with an `approve` `call` whose token the local asset store holds as
+     * an NFT and not as a fungible token: the NFT asset id it grants, so its
+     * value is a token id, not an allowance.
+     */
+    nftApproval?: string
     /** Only with `knownContract`: what the calldata proves the call does. */
     action?: EvmContractAction
 }
@@ -361,6 +370,11 @@ const isView = (value: unknown): value is EthereumTransactionView =>
     (value.knownSpender === undefined ||
         (value.kind === 'contract-call' &&
             isKnownSpender(value.knownSpender))) &&
+    (value.nftApproval === undefined ||
+        (value.kind === 'contract-call' &&
+            typeof value.nftApproval === 'string' &&
+            isRecord(value.call) &&
+            value.call.kind === 'approve')) &&
     (value.action === undefined ||
         (value.kind === 'contract-call' &&
             value.knownContract !== undefined &&

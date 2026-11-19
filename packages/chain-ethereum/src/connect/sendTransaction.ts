@@ -24,7 +24,7 @@ import { EvmErrorCode, toEvmError } from '../blockchain/errors'
 import { eip155ChainIdOf } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
 import { createEvmClient } from '../blockchain/utils/createEvmClient'
-import { decodedCallSummary } from '../history/decoded-call-summary'
+import { readDecodedCallSummary } from '../history/decoded-call-summary'
 import type {
     EthereumRevertedEstimate,
     EthereumTransactionPayload,
@@ -34,7 +34,9 @@ import {
     evmFeePresetOf,
     readEvmFeePresets,
     readEvmGas,
+    readEvmSurcharge,
     withRequestedEvmFees,
+    type EvmPricedTransaction,
 } from '../transfer/fees'
 import { allocateEthereumNonce } from '../transfer/nonce-pool'
 
@@ -327,20 +329,27 @@ export const buildEthereumSendTransaction = async (
             DAPP_HIGH_FEE_MULTIPLIER *
                 estimate.gasLimit *
                 paidPerGas(fast.maxFeePerGas, fast.maxPriorityFeePerGas)
+    const transaction: EvmPricedTransaction = {
+        type: 'eip1559',
+        chainId: eip155ChainIdOf(scope, chain),
+        nonce,
+        to,
+        value,
+        data,
+        gas,
+        maxFeePerGas,
+        maxPriorityFeePerGas,
+        ...(accessList && { accessList }),
+    }
+    const surcharge = await readEvmSurcharge(client, chain, transaction).catch(
+        (error: unknown) => {
+            throw toEvmError(error, chain.row.nativeAsset.symbol)
+        },
+    )
     const payload: EthereumTransactionPayload = {
         from,
-        transaction: {
-            type: 'eip1559',
-            chainId: eip155ChainIdOf(scope, chain),
-            nonce,
-            to,
-            value,
-            data,
-            gas,
-            maxFeePerGas,
-            maxPriorityFeePerGas,
-            ...(accessList && { accessList }),
-        },
+        transaction,
+        ...(surcharge > 0n && { surcharge }),
         ...(hasHighFee && { hasHighFee: true as const }),
         ...('revertedEstimate' in estimate &&
             estimate.revertedEstimate && {
@@ -357,7 +366,7 @@ export const buildEthereumSendTransaction = async (
         scope,
         payload,
         summary: ethereumCallSummary(call, chain),
-        historySummary: decodedCallSummary(
+        historySummary: await readDecodedCallSummary(
             call,
             chain,
             scope,

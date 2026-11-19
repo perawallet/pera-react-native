@@ -11,31 +11,21 @@
  */
 
 import { Decimal } from 'decimal.js'
-import type { Address } from 'viem'
-import type {
-    ChainContext,
-    ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainContext } from '@perawallet/wallet-core-chain-contract'
 import { displayUnitsToBaseUnits } from '@perawallet/wallet-core-shared'
 import type { SwapChainAdapter } from '@perawallet/wallet-core-swaps'
 import { evmAssetIdOfRouterId, toCaip19 } from '../blockchain/utils/caip19'
 import { createEvmClient } from '../blockchain/utils/createEvmClient'
 import type { EvmChain } from '../chains/types'
 import { executeEvmSwap } from './execute-evm-swap'
-import { evmSwapRouteContractsOf } from './route-contracts'
 import { estimateEvmSwapSourceCost } from './source-cost'
 
 // Of the native unit: held back from a percentage amount for a swap's gas.
 const MAX_AMOUNT_FEE_RESERVE = '0.005'
 
-export type EvmSwapAdapterOptions = {
-    routeContractsOf?: (scope: ChainScope) => readonly Address[]
-}
-
 export const createEvmSwapAdapter = (
     ctx: ChainContext,
     chain: EvmChain,
-    { routeContractsOf = evmSwapRouteContractsOf }: EvmSwapAdapterOptions = {},
 ): SwapChainAdapter => ({
     chainId: chain.row.id,
     nativeAssetId: chain.nativeAsset.assetId,
@@ -68,15 +58,8 @@ export const createEvmSwapAdapter = (
             chain,
             quote,
             scope,
-            routeContracts: routeContractsOf(scope),
         }),
     executeSwap: (input, context) =>
-        executeEvmSwap({
-            ctx,
-            chain,
-            routeContracts: routeContractsOf(context.scope),
-            input,
-            context,
-        }),
+        executeEvmSwap({ ctx, chain, input, context }),
     supportsCosignedSwaps: false,
 })

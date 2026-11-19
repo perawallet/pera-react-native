@@ -21,6 +21,7 @@ import { getSyncService } from '@perawallet/wallet-core-background'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import {
     useChainCapability,
+    useChainCapabilityCheck,
     useIsCapabilityRestricted,
 } from '@perawallet/wallet-core-chain-shared'
 import {
@@ -50,6 +51,7 @@ import {
     PeraServiceUnavailableError,
 } from '@perawallet/wallet-core-shared'
 import { AccountDetailsEvent, AnalyticsMetadataKey } from '@analytics'
+import { buildRecordListRows } from '@modules/transactions/utils/transactionListRows'
 import { useAssetListViewStore } from '../../../hooks/useAssetListViewStore'
 
 const mockTrackEvent = vi.hoisted(() => vi.fn())
@@ -59,8 +61,12 @@ vi.mock('@analytics', async () => ({
 }))
 
 const mockRequestBottomSheet = vi.fn()
+const mockRequestByType = vi.fn()
 vi.mock('@modules/bottom-sheet', () => ({
-    useBottomSheet: () => ({ request: mockRequestBottomSheet }),
+    useBottomSheet: () => ({
+        request: mockRequestBottomSheet,
+        requestByType: mockRequestByType,
+    }),
 }))
 
 const mockUseNetworkStatus = vi.hoisted(() => vi.fn())
@@ -105,6 +111,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => {
         ...actual,
         useChainCapability: vi.fn(actual.useChainCapability),
         useIsCapabilityRestricted: vi.fn(actual.useIsCapabilityRestricted),
+        useChainCapabilityCheck: vi.fn(actual.useChainCapabilityCheck),
     }
 })
 
@@ -208,6 +215,7 @@ describe('useAccountHistory', () => {
         historyChainAdapters.register(algorandHistoryAdapter)
         vi.mocked(useChainCapability).mockReset()
         vi.mocked(useIsCapabilityRestricted).mockReset()
+        vi.mocked(useChainCapabilityCheck).mockReset()
         mockNavigate.mockReset()
         mockUseNetworkStatus.mockReturnValue({ hasInternet: true })
         mockRefreshAccounts.mockResolvedValue(undefined)
@@ -744,6 +752,161 @@ describe('useAccountHistory', () => {
             )
         })
 
+        const reportRecords = (
+            result: { current: ReturnType<typeof useAccountHistory> },
+            recordsByChain: Record<string, string[]>,
+        ) => {
+            act(() => {
+                for (const feed of result.current.historyFeeds) {
+                    const { scope } = feed.source
+                    const records = (recordsByChain[scope.chainId] ?? []).map(
+                        (id, index): TransactionRecord => ({
+                            id,
+                            scope,
+                            status: 'confirmed',
+                            timestamp: 1_704_067_200_000 - index,
+                            summary: {
+                                kind: 'transfer',
+                                title: {
+                                    key: i18nKey(
+                                        'transactions.list_item.receive',
+                                    ),
+                                },
+                                direction: 'in',
+                                icon: 'receive',
+                            },
+                            chainData: { family: 'evm' },
+                        }),
+                    )
+                    feed.onChange(
+                        feed.feedKey,
+                        {
+                            scope,
+                            rows: buildRecordListRows(records),
+                            isLoading: false,
+                            isFetched: true,
+                            isFetchingNextPage: false,
+                            isError: false,
+                            error: null,
+                            isLoadFailed: false,
+                            isLoadUnavailable: false,
+                            isLoadIntegrityBlocked: false,
+                            isRefreshFailed: false,
+                            isRefreshUnavailable: false,
+                            hasNextPage: false,
+                            isSearchPaused: false,
+                            isRetrying: false,
+                            isRefreshing: false,
+                            suspectedPoisoningById: new Map(),
+                        },
+                        {
+                            fetchNextPage: vi.fn(),
+                            retry: vi.fn(),
+                            refresh: vi.fn(),
+                        },
+                    )
+                }
+            })
+        }
+
+        it('offers the Algorand CSV export on All, named for Algorand and run at its address', () => {
+            const { result } = renderHook(() => useAccountHistory())
+
+            reportRecords(result, {
+                algorand: ['ALGO_TX'],
+                ethereum: ['0xeth'],
+            })
+            result.current.handleExportCsv()
+
+            expect(result.current.isCsvExportVisible).toBe(true)
+            expect(result.current.csvExportTitle).toBe(
+                'asset_details.transaction_list.csv_on_network',
+            )
+            expect(mockT).toHaveBeenCalledWith(
+                'asset_details.transaction_list.csv_on_network',
+                { network: 'Algorand' },
+            )
+            expect(useCsvExportMutation).toHaveBeenLastCalledWith(
+                expect.objectContaining({
+                    scope: { chainId: 'algorand', networkId: 'mainnet' },
+                }),
+            )
+            expect(mockExportCsv).toHaveBeenCalledWith({
+                accountAddress: ACCOUNT_ADDRESS,
+            })
+        })
+
+        it("exports Ethereum's history on All once its CSV export is on and only it has rows", () => {
+            vi.mocked(useChainCapabilityCheck).mockReturnValue(() => true)
+            const { result } = renderHook(() => useAccountHistory())
+
+            reportRecords(result, { ethereum: ['0xeth'] })
+            act(() => result.current.handleExportCsv())
+
+            expect(result.current.isCsvExportVisible).toBe(true)
+            expect(mockT).toHaveBeenCalledWith(
+                'asset_details.transaction_list.csv_on_network',
+                { network: 'Ethereum' },
+            )
+            expect(mockRequestByType).not.toHaveBeenCalled()
+            expect(mockExportCsv).toHaveBeenCalledWith({
+                accountAddress: ETH_ADDRESS,
+                scope: ETHEREUM_SOURCE.scope,
+            })
+        })
+
+        it('asks which network to export on All when several with an export have rows', async () => {
+            vi.mocked(useChainCapabilityCheck).mockReturnValue(() => true)
+            mockRequestByType.mockResolvedValueOnce('ethereum')
+            const { result } = renderHook(() => useAccountHistory())
+
+            reportRecords(result, {
+                algorand: ['ALGO_TX'],
+                ethereum: ['0xeth'],
+            })
+            await act(async () => result.current.handleExportCsv())
+
+            expect(result.current.csvExportTitle).toBe(
+                'asset_details.transaction_list.csv',
+            )
+            expect(mockRequestByType).toHaveBeenCalledWith(
+                'deeplink-chain-selection',
+                {
+                    chainIds: ['algorand', 'ethereum'],
+                    title: 'chain_selection.title',
+                },
+                expect.any(Object),
+            )
+            expect(mockExportCsv).toHaveBeenCalledTimes(1)
+            expect(mockExportCsv).toHaveBeenCalledWith({
+                accountAddress: ETH_ADDRESS,
+                scope: ETHEREUM_SOURCE.scope,
+            })
+        })
+
+        it('exports nothing when the network question is dismissed', async () => {
+            vi.mocked(useChainCapabilityCheck).mockReturnValue(() => true)
+            mockRequestByType.mockResolvedValueOnce(undefined)
+            const { result } = renderHook(() => useAccountHistory())
+
+            reportRecords(result, {
+                algorand: ['ALGO_TX'],
+                ethereum: ['0xeth'],
+            })
+            await act(async () => result.current.handleExportCsv())
+
+            expect(mockExportCsv).not.toHaveBeenCalled()
+        })
+
+        it('hides the CSV export on All while only Ethereum has rows, since the export would be empty', () => {
+            const { result } = renderHook(() => useAccountHistory())
+
+            reportRecords(result, { ethereum: ['0xeth'] })
+
+            expect(result.current.isEmpty).toBe(false)
+            expect(result.current.isCsvExportVisible).toBe(false)
+        })
+
         it("shows All when the stored chip names a network the account doesn't have", () => {
             useAssetListViewStore.setState({ selectedChainId: 'base' })
 
@@ -818,12 +981,44 @@ describe('useAccountHistory', () => {
 
     it("tracks filtering and downloading on an Ethereum account's chain", async () => {
         registerEthereumChain()
+        const address = `0x${'c'.repeat(40)}`
         vi.mocked(useSelectedAccount).mockReturnValue({
             id: 'eth',
             custody: { kind: 'watch' },
-            chains: { ethereum: { address: `0x${'c'.repeat(40)}` } },
+            chains: { ethereum: { address } },
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any)
+        vi.mocked(useChainCapability).mockReturnValue(true)
+        vi.mocked(useTransactionRecordsQuery).mockReturnValue({
+            records: [
+                {
+                    id: '0xhash',
+                    scope: { chainId: 'ethereum', networkId: 'mainnet' },
+                    status: 'confirmed',
+                    timestamp: 1_704_067_200_000,
+                    summary: {
+                        kind: 'transfer',
+                        title: {
+                            key: i18nKey('transactions.list_item.receive'),
+                        },
+                        direction: 'in',
+                        icon: 'receive',
+                    },
+                    chainData: { family: 'evm' },
+                },
+            ],
+            isLoading: false,
+            isFetched: true,
+            isFetching: false,
+            isFetchingNextPage: false,
+            isError: false,
+            isNextPageError: false,
+            error: null,
+            hasNextPage: false,
+            isSearchPaused: false,
+            fetchNextPage: mockFetchNextPage,
+            refetch: vi.fn(),
+        })
         mockRequestBottomSheet.mockResolvedValueOnce({
             filter: TransactionFilter.Today,
         })
@@ -844,6 +1039,7 @@ describe('useAccountHistory', () => {
             AccountDetailsEvent.TransactionDownload,
             { [AnalyticsMetadataKey.ChainId]: 'ethereum' },
         )
+        expect(mockExportCsv).toHaveBeenCalledWith({ accountAddress: address })
     })
 
     describe('pagination', () => {
@@ -959,6 +1155,11 @@ describe('useAccountHistory', () => {
 
     describe('CSV Export', () => {
         it('calls exportCsv when handleExportCsv is called', () => {
+            vi.mocked(useTransactionHistoryQuery).mockReturnValue({
+                transactions: [{ id: '1', roundTime: 1_704_067_200 }],
+                isLoading: false,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
             const { result } = renderHook(() => useAccountHistory())
 
             result.current.handleExportCsv()
@@ -1113,7 +1314,7 @@ describe('useAccountHistory', () => {
             expect(result.current.isCsvExportVisible).toBe(true)
         })
 
-        it('hides the export action on an Ethereum account, whose chain has no CSV export', () => {
+        it('hides the export action on an Ethereum account while its CSV export is off', () => {
             registerEthereumChain()
             vi.mocked(useSelectedAccount).mockReturnValue({
                 id: 'eth',

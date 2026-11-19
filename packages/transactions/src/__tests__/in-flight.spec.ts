@@ -109,12 +109,16 @@ describe('getInFlightSpends', () => {
                 },
             }),
             attempt({
+                id: 'b',
+                nonce: 4,
                 historyEntry: {
                     summary: summary({ direction: 'in' }),
                     chainData: { family: 'evm' },
                 },
             }),
             attempt({
+                id: 'c',
+                nonce: 5,
                 historyEntry: {
                     summary: summary({ direction: 'none' }),
                     chainData: { family: 'evm' },
@@ -164,5 +168,94 @@ describe('getInFlightSpends', () => {
             { nonce: 3, maxFee: new Decimal(30), outflows: [] },
             { outflows: [] },
         ])
+    })
+
+    describe('with a replacement open at the same nonce', () => {
+        const original = attempt({ id: 'original', maxFee: new Decimal(30) })
+        const replacing = (overrides: Partial<UnsyncedSubmissionSpend>) =>
+            attempt({
+                id: 'replacement',
+                replacesAttemptId: 'original',
+                maxFee: new Decimal(40),
+                ...overrides,
+            })
+
+        it('counts the speed-up once, at the higher fee', async () => {
+            mocks.getUnsyncedSubmissionSpends.mockResolvedValue([
+                original,
+                replacing({}),
+            ])
+
+            expect(await read()).toEqual([
+                {
+                    nonce: 3,
+                    maxFee: new Decimal(40),
+                    outflows: [{ assetRef: ETH, value: new Decimal(100) }],
+                },
+            ])
+        })
+
+        it("releases the original's amount on a cancel", async () => {
+            mocks.getUnsyncedSubmissionSpends.mockResolvedValue([
+                original,
+                replacing({
+                    historyEntry: {
+                        summary: summary({
+                            direction: 'self',
+                            amount: { assetRef: ETH, value: new Decimal(0) },
+                        }),
+                        chainData: { family: 'evm' },
+                    },
+                }),
+            ])
+
+            expect(await read()).toEqual([
+                {
+                    nonce: 3,
+                    maxFee: new Decimal(40),
+                    outflows: [{ assetRef: ETH, value: new Decimal(0) }],
+                },
+            ])
+        })
+
+        it('follows the replacement link, not the row order', async () => {
+            mocks.getUnsyncedSubmissionSpends.mockResolvedValue([
+                replacing({
+                    historyEntry: {
+                        summary: summary({
+                            amount: { assetRef: ETH, value: new Decimal(0) },
+                        }),
+                        chainData: { family: 'evm' },
+                    },
+                }),
+                original,
+            ])
+
+            const [spend] = await read()
+
+            expect(spend!.outflows).toEqual([
+                { assetRef: ETH, value: new Decimal(0) },
+            ])
+        })
+
+        it('counts what the original spends once it confirmed', async () => {
+            mocks.getUnsyncedSubmissionSpends.mockResolvedValue([
+                { ...original, status: 'confirmed' },
+                replacing({
+                    historyEntry: {
+                        summary: summary({
+                            amount: { assetRef: ETH, value: new Decimal(0) },
+                        }),
+                        chainData: { family: 'evm' },
+                    },
+                }),
+            ])
+
+            const [spend] = await read()
+
+            expect(spend!.outflows).toEqual([
+                { assetRef: ETH, value: new Decimal(100) },
+            ])
+        })
     })
 })

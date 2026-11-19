@@ -98,6 +98,8 @@ export type UseAccountHistoryResult = {
     handleExportCsv: () => void
     isExportingCsv: boolean
     isCsvExportVisible: boolean
+    /** Names the network on a merged history, where the export still covers only one. */
+    csvExportTitle: string
     activeFilter: TransactionFilter
     customRange?: CustomDateRange
     handleOpenFilter: () => Promise<void>
@@ -117,6 +119,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     const {
         rows,
         transactionCount,
+        historySources,
         isLoading,
         isFetched,
         isFetchingNextPage,
@@ -131,7 +134,6 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         isLoadIntegrityBlocked,
         suspectedPoisoningById,
         scope,
-        accountAddress,
         networkChainId,
         isMerged,
         chainFilterOptions,
@@ -155,13 +157,16 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
 
     const { t } = useLanguage()
     const styles = useStyles()
-    const { handleExportCsv, isExportingCsv, isCsvExportVisible } =
-        useAccountHistoryCsvExport({
-            scope,
-            accountAddress,
-            transactionCount,
-            isMerged,
-        })
+    const {
+        handleExportCsv,
+        isExportingCsv,
+        isCsvExportVisible,
+        csvExportTitle,
+    } = useAccountHistoryCsvExport({
+        scope,
+        sources: historySources,
+        isMerged,
+    })
 
     const handleTransactionPress = useCallback(
         (transaction: TransactionHistoryItem) => {
@@ -290,6 +295,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         handleExportCsv,
         isExportingCsv,
         isCsvExportVisible,
+        csvExportTitle,
         activeFilter,
         customRange,
         handleOpenFilter,

@@ -10,14 +10,25 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { encodeFunctionData, maxUint160, maxUint256, parseAbi } from 'viem'
 import type { Address } from 'viem'
 import type { TransactionSummary } from '@perawallet/wallet-core-chain-contract'
 import { ETHEREUM, evmScopeOf } from '../../__tests__/evm-chains'
 import { V3_EXACT_IN_PERMIT_SWEEP } from '../../signing/__tests__/contract-action-fixtures'
 import { SENDER } from '../../signing/__tests__/fixtures'
-import { decodedCallSummary } from '../decoded-call-summary'
+import { getAssetsByIds, type PeraAsset } from '@perawallet/wallet-core-assets'
+import {
+    decodedCallSummary,
+    readDecodedCallSummary,
+} from '../decoded-call-summary'
+
+vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-assets')
+    >()),
+    getAssetsByIds: vi.fn(async () => []),
+}))
 
 const USDT: Address = '0xdAC17F958D2ee523a2206206994597C13D831ec7'
 const SPENDER: Address = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
@@ -366,6 +377,68 @@ describe('decodedCallSummary', () => {
             ],
         ])('Given %s, then the summary names an action', (_, summaryOf) => {
             expect(summaryOf().isActionUnknown).toBeUndefined()
+        })
+    })
+
+    describe('an approve the store knows as an NFT', () => {
+        const APE: Address = '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D'
+        const storeHolds = (...assetIds: string[]) =>
+            vi
+                .mocked(getAssetsByIds)
+                .mockResolvedValueOnce(
+                    assetIds.map(assetId => ({ assetId }) as PeraAsset),
+                )
+        const pending = (value: bigint) =>
+            readDecodedCallSummary(
+                { from: SENDER, to: APE, data: approve(value), value: 0n },
+                ETHEREUM,
+                scope,
+                false,
+            )
+
+        it('names a pending grant of token #0 as an approval of that NFT, as its mined row will', async () => {
+            storeHolds(`${APE}/0`)
+
+            const summary = await pending(0n)
+
+            expect(summary.title.key).toBe(
+                'transactions.list_item.approve_asset',
+            )
+            expect(summary.titleAssets).toEqual({
+                asset: { chainId: 'ethereum', assetId: `${APE}/0` },
+            })
+        })
+
+        it('never calls a pending ENS-sized token id unlimited', async () => {
+            const ensId = 2n ** 255n + 7n
+            storeHolds(`${APE}/${ensId}`)
+
+            const summary = await pending(ensId)
+
+            expect(summary.subtitle).toBeUndefined()
+        })
+
+        it('keeps the ERC-20 reading when the store also holds the token as fungible', async () => {
+            storeHolds(APE, `${APE}/0`)
+
+            const summary = await pending(0n)
+
+            expect(summary.title.key).toBe(
+                'transactions.list_item.revoke_approval',
+            )
+        })
+
+        it('reads the store only for an approve', async () => {
+            vi.mocked(getAssetsByIds).mockClear()
+
+            await readDecodedCallSummary(
+                { from: SENDER, to: SPENDER, data: '0x', value: 5n },
+                ETHEREUM,
+                scope,
+                false,
+            )
+
+            expect(getAssetsByIds).not.toHaveBeenCalled()
         })
     })
 })

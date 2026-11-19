@@ -13,7 +13,11 @@
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { AccountHoldingSnapshot } from '@perawallet/wallet-core-accounts'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
-import { fetchNftHoldings } from '../assets/api/endpoints'
+import {
+    fetchNftHoldings,
+    type NftHoldingsListing,
+    type NftHoldingsOptions,
+} from '../assets/api/endpoints'
 import { toNftHolding } from '../assets/api/transformers'
 import type { EvmChain } from '../chains/types'
 
@@ -21,6 +25,7 @@ export type NftHoldingsRead = {
     holdings: AccountHoldingSnapshot[]
     /** Metadata for every holding, to persist before the holdings point at it. */
     assets: PeraAsset[]
+    listing: NftHoldingsListing
 }
 
 /** Rejects with the fetch error: a partial list must never replace the stored one. */
@@ -28,14 +33,18 @@ export const readNftHoldings = async (
     scope: ChainScope,
     chain: EvmChain,
     address: string,
+    options: NftHoldingsOptions,
 ): Promise<NftHoldingsRead> => {
-    const items = await fetchNftHoldings(scope, chain, address)
-    const held = items.flatMap(item => toNftHolding(item, scope, chain) ?? [])
+    const listing = await fetchNftHoldings(scope, chain, address, options)
+    const held = listing.items.flatMap(
+        item => toNftHolding(item, scope, chain) ?? [],
+    )
     return {
         holdings: held.map(({ asset, amount }) => ({
             assetId: asset.assetId,
             amount,
         })),
         assets: held.map(({ asset }) => asset),
+        listing,
     }
 }

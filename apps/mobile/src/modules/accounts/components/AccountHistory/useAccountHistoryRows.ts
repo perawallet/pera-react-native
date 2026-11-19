@@ -20,6 +20,7 @@ import {
     type AccountHoldingSource,
 } from '@perawallet/wallet-core-accounts'
 import {
+    toScopeKey,
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
@@ -68,6 +69,8 @@ export type UseAccountHistoryRowsParams = {
     beforeTime?: string
 }
 
+export type HistorySource = AccountHoldingSource & { transactionCount: number }
+
 export type UseAccountHistoryRowsResult = Omit<
     UseTransactionHistoryRowsResult,
     'fetchNextPage' | 'isRefreshUnavailable' | 'failedNetworkNames'
@@ -78,6 +81,8 @@ export type UseAccountHistoryRowsResult = Omit<
     unavailableNetworkNames: string[]
     /** The chip's network, or the account's own chain on All; on a merged history only analytics and CSV read it. */
     scope: ChainScope
+    /** Each network the rows can come from, with its share of `transactionCount`. */
+    historySources: HistorySource[]
     accountAddress: Optional<string>
     /** The network the history is narrowed to by the network chip; null is All. */
     networkChainId: Nullable<ChainId>
@@ -167,6 +172,35 @@ export const useAccountHistoryRows = ({
         : singleFailureNamesOf(single)
 
     const { scopeByTransactionId } = merged
+    const historySources = useMemo((): HistorySource[] => {
+        if (!isMerged) {
+            return accountAddress
+                ? [
+                      {
+                          address: accountAddress,
+                          scope,
+                          transactionCount: history.transactionCount,
+                      },
+                  ]
+                : []
+        }
+        const counts = new Map<string, number>()
+        for (const rowScope of scopeByTransactionId.values()) {
+            const key = toScopeKey(rowScope)
+            counts.set(key, (counts.get(key) ?? 0) + 1)
+        }
+        return sources.map(source => ({
+            ...source,
+            transactionCount: counts.get(toScopeKey(source.scope)) ?? 0,
+        }))
+    }, [
+        isMerged,
+        accountAddress,
+        scope,
+        history.transactionCount,
+        scopeByTransactionId,
+        sources,
+    ])
     const scopeOf = useCallback(
         (transactionId: string) =>
             (isMerged && scopeByTransactionId.get(transactionId)) || scope,
@@ -193,6 +227,7 @@ export const useAccountHistoryRows = ({
         isRetrying: history.isRetrying,
         suspectedPoisoningById: history.suspectedPoisoningById,
         scope,
+        historySources,
         accountAddress,
         networkChainId: selectedSource?.scope.chainId ?? null,
         isMerged,

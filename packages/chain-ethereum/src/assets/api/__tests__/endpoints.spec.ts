@@ -30,6 +30,7 @@ import {
     fetchAssetItems,
     fetchHasNftHoldings,
     fetchNftHoldings,
+    NFT_LISTING_REUSE_MS,
     fetchNftItems,
     fetchWhitelist,
     NFT_HOLDINGS_MAX_PAGES,
@@ -307,7 +308,7 @@ describe('fetchNftHoldings', () => {
             }),
         )
 
-        const items = await fetchNftHoldings(SCOPE, ETHEREUM, HOLDER)
+        const { items } = await fetchNftHoldings(SCOPE, ETHEREUM, HOLDER)
         server.events.removeAllListeners()
 
         expect(items.map(item => item.asset_id)).toEqual([
@@ -335,7 +336,7 @@ describe('fetchNftHoldings', () => {
             ),
         )
 
-        const items = await fetchNftHoldings(SCOPE, ETHEREUM, HOLDER)
+        const { items } = await fetchNftHoldings(SCOPE, ETHEREUM, HOLDER)
 
         expect(path).toBe(
             `/api/v3/evm/1/accounts/${HOLDER.toLowerCase()}/nfts/`,
@@ -351,7 +352,7 @@ describe('fetchNftHoldings', () => {
             }),
         )
 
-        const items = await fetchNftHoldings(SCOPE, ETHEREUM, HOLDER)
+        const { items } = await fetchNftHoldings(SCOPE, ETHEREUM, HOLDER)
 
         expect(items.map(item => item.asset_id)).toEqual([
             `eip155:1/erc721:${BAYC}/7`,
@@ -416,6 +417,123 @@ describe('fetchNftHoldings', () => {
             fetchNftHoldings(SCOPE, ETHEREUM, HOLDER),
         ).rejects.toThrow()
     })
+    it('asks page one, and only it, to skip the cache on a forced refresh', async () => {
+        const queries: string[] = []
+        server.events.on('request:start', ({ request }) => {
+            queries.push(new URL(request.url).search)
+        })
+        server.use(
+            ...peraEvmAssetHandlers({
+                baseUrl: PERA_URL,
+                nftHoldings: {
+                    [HOLDER.toLowerCase()]: [[ape('1')], [ape('2')]],
+                },
+            }),
+        )
+
+        await fetchNftHoldings(SCOPE, ETHEREUM, HOLDER, { forceRefresh: true })
+        server.events.removeAllListeners()
+
+        expect(queries).toEqual(['?force_refresh=true', '?cursor=page%3A1'])
+    })
+
+    it('answers the prior list from page one alone while page one is unchanged', async () => {
+        const cursors: (string | null)[] = []
+        server.events.on('request:start', ({ request }) => {
+            cursors.push(new URL(request.url).searchParams.get('cursor'))
+        })
+        server.use(
+            ...peraEvmAssetHandlers({
+                baseUrl: PERA_URL,
+                nftHoldings: {
+                    [HOLDER.toLowerCase()]: [[ape('1')], [ape('2')]],
+                },
+            }),
+        )
+        const prior = await fetchNftHoldings(SCOPE, ETHEREUM, HOLDER, {
+            now: () => 0,
+        })
+        cursors.length = 0
+
+        const again = await fetchNftHoldings(SCOPE, ETHEREUM, HOLDER, {
+            prior,
+            now: () => NFT_LISTING_REUSE_MS - 1,
+        })
+        server.events.removeAllListeners()
+
+        expect(again).toBe(prior)
+        expect(cursors).toEqual([null])
+    })
+
+    it('reads every page again once the prior list is a rate-limit window old', async () => {
+        server.use(
+            ...peraEvmAssetHandlers({
+                baseUrl: PERA_URL,
+                nftHoldings: {
+                    [HOLDER.toLowerCase()]: [[ape('1')], [ape('2')]],
+                },
+            }),
+        )
+        const prior = await fetchNftHoldings(SCOPE, ETHEREUM, HOLDER, {
+            now: () => 0,
+        })
+        const cursors: (string | null)[] = []
+        server.events.on('request:start', ({ request }) => {
+            cursors.push(new URL(request.url).searchParams.get('cursor'))
+        })
+
+        const again = await fetchNftHoldings(SCOPE, ETHEREUM, HOLDER, {
+            prior,
+            now: () => NFT_LISTING_REUSE_MS,
+        })
+        server.events.removeAllListeners()
+
+        expect(cursors).toEqual([null, 'page:1'])
+        expect(again).not.toBe(prior)
+        expect(again.readAt).toBe(NFT_LISTING_REUSE_MS)
+    })
+
+    it.each([
+        [
+            'page one changed',
+            { [HOLDER.toLowerCase()]: [[ape('9')], [ape('2')]] },
+            false,
+        ],
+        [
+            'the refresh is forced',
+            { [HOLDER.toLowerCase()]: [[ape('1')], [ape('2')]] },
+            true,
+        ],
+    ])(
+        'reads every page again when %s',
+        async (_, nftHoldings, forceRefresh) => {
+            server.use(
+                ...peraEvmAssetHandlers({
+                    baseUrl: PERA_URL,
+                    nftHoldings: {
+                        [HOLDER.toLowerCase()]: [[ape('1')], [ape('2')]],
+                    },
+                }),
+            )
+            const prior = await fetchNftHoldings(SCOPE, ETHEREUM, HOLDER)
+            const cursors: (string | null)[] = []
+            server.events.on('request:start', ({ request }) => {
+                cursors.push(new URL(request.url).searchParams.get('cursor'))
+            })
+            server.use(
+                ...peraEvmAssetHandlers({ baseUrl: PERA_URL, nftHoldings }),
+            )
+
+            const again = await fetchNftHoldings(SCOPE, ETHEREUM, HOLDER, {
+                prior,
+                forceRefresh,
+            })
+            server.events.removeAllListeners()
+
+            expect(cursors).toEqual([null, 'page:1'])
+            expect(again).not.toBe(prior)
+        },
+    )
 })
 
 describe('nftCursorOf', () => {

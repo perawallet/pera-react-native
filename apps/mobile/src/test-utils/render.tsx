@@ -66,7 +66,7 @@ const createQueryClientWrapper = (
 
 export interface TestProvidersProps {
     children: React.ReactNode
-    queryClient?: QueryClient
+    queryClient: QueryClient
     theme?: CreateThemeOptions
     navigationProps?: any
 }
@@ -77,13 +77,11 @@ const TestProviders = ({
     theme,
     navigationProps = {},
 }: TestProvidersProps) => {
-    const client = queryClient || createTestQueryClient()
-
     return (
         <SafeAreaProvider initialMetrics={SAFE_AREA_METRICS}>
             <PeraWalletProvider>
                 <ThemeProvider theme={theme ?? getTestTheme()}>
-                    <QueryClientProvider client={client}>
+                    <QueryClientProvider client={queryClient}>
                         <NavigationContainer {...navigationProps}>
                             {children}
                         </NavigationContainer>
@@ -116,9 +114,10 @@ const customRender = (
 ): RenderResult => {
     if (bare) return render(ui, renderOptions)
 
+    const client = queryClient ?? createTestQueryClient()
     const Wrapper = ({ children }: { children: React.ReactNode }) => (
         <TestProviders
-            queryClient={queryClient}
+            queryClient={client}
             theme={theme}
             navigationProps={navigationProps}
         >

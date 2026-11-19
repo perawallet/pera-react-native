@@ -323,6 +323,7 @@ const createFetchClient = () => {
                 data,
                 status: response.status,
                 statusText: response.statusText,
+                headers: response.headers,
             }
         } catch (error) {
             logger.debug('Query error', { error })

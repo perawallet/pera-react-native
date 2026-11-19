@@ -89,6 +89,7 @@ export type ResponseConfiguration<TData = unknown> = {
     data: TData
     status: number
     statusText: string
+    headers?: Headers
 }
 
 export type ResponseErrorConfiguration<TError = unknown> = TError

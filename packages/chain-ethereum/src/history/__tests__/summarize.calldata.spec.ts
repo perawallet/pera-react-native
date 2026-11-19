@@ -228,6 +228,72 @@ describe('summarizeEthereumHistoryItem with the row calldata', () => {
             expect(summary.counterparty).toBe(ROUTER)
         })
 
+        // Without a store record the row can't tell token #0 from a zero allowance; the detail page's read corrects it.
+        it('reads an approve of token #0 the store has no record of as a revocation, and one to the zero address as well', () => {
+            const tokenZero = summarize(
+                sent({ to: APE, input: approve(PEER, 0n) }),
+                false,
+            )
+            const cleared = summarize(
+                sent({
+                    to: APE,
+                    input: approve(
+                        '0x0000000000000000000000000000000000000000',
+                        7n,
+                    ),
+                }),
+                false,
+            )
+
+            expect(tokenZero.title.key).toBe(
+                'transactions.list_item.revoke_approval',
+            )
+            expect(cleared.title.key).toBe(
+                'transactions.list_item.revoke_approval',
+            )
+        })
+
+        describe('an approve the store knows as an NFT', () => {
+            const nftOf = (tokenId: bigint) => `${getAddress(APE)}/${tokenId}`
+            const read = (spender: Address, tokenId: bigint) =>
+                summarizeEthereumHistoryItem(
+                    sent({ to: APE, input: approve(spender, tokenId) }),
+                    ME,
+                    SCOPE,
+                    ETHEREUM,
+                    false,
+                    new Set([nftOf(tokenId)]),
+                )
+
+            it('reads a grant of token #0 as an approval of that NFT, not a revocation', () => {
+                const summary = read(PEER, 0n)
+
+                expect(summary.title.key).toBe(
+                    'transactions.list_item.approve_asset',
+                )
+                expect(summary.titleAssets).toEqual({
+                    asset: { chainId: 'ethereum', assetId: nftOf(0n) },
+                })
+                expect(summary.counterparty).toBe(getAddress(PEER))
+            })
+
+            it('never calls a token id above 2^160, such as an ENS name, unlimited', () => {
+                const summary = read(PEER, 2n ** 255n)
+
+                expect(summary.title.key).toBe(
+                    'transactions.list_item.approve_asset',
+                )
+                expect(summary.subtitle).toBeUndefined()
+            })
+
+            it('reads an approve to the zero address as a revocation', () => {
+                expect(
+                    read('0x0000000000000000000000000000000000000000', 7n).title
+                        .key,
+                ).toBe('transactions.list_item.revoke_approval')
+            })
+        })
+
         it('names a collection approval and its withdrawal', () => {
             const forAll = (approved: boolean) =>
                 sent({

@@ -438,7 +438,8 @@
             "search_paused_body": "No transactions found in recent history.",
             "search_older": "Search Older",
             "filter": "Filter",
-            "csv": "CSV"
+            "csv": "CSV",
+            "csv_on_network": "{{network}} CSV"
         },
         "collectible": {
             "description": "Description",
@@ -1443,6 +1444,10 @@
             "server_error": {
                 "title": "Server error",
                 "body": "The server ran into a problem processing your request. Please try again."
+            },
+            "rate_limited": {
+                "title": "Network busy",
+                "body": "The network is receiving too many requests right now. Please wait a moment and try again."
             }
         },
         "transaction": {
@@ -3752,6 +3757,8 @@
             "nothing_back_title": "You get nothing back",
             "permission_collection": "All your {{collection}} NFTs",
             "permission_collection_note": "It can move every NFT you hold in this collection, now and later, until you remove this permission.",
+            "permission_increase": "{{spender}} can spend this much more",
+            "permission_increase_note": "This adds to what {{spender}} can already spend, so its total limit may be higher.",
             "permission_no_change": "No tokens leave your wallet with this transaction.",
             "permission_revoke": "{{spender}} can no longer spend",
             "permission_spender": "{{spender}} can spend",
@@ -4273,7 +4280,6 @@
             },
             "provider_failed_body": "This provider couldn't complete the swap. Try another provider.",
             "provider_unavailable_body": "The provider is unavailable right now. Try again in a moment.",
-            "route_unverified_body": "Pera can't verify this provider's swap contract on {{network}} yet, so nothing was signed. Try another provider or try again later.",
             "quote_mismatch_body": "The provider's transactions didn't match this quote, so nothing was signed. Try again or choose another provider.",
             "unsupported_order_body": "Pera can't complete this provider's order, so nothing was signed. Choose another provider.",
             "signing_failed_body": "The transaction couldn't be signed, so it wasn't sent. Try again.",

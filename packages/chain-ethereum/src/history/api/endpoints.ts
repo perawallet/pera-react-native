@@ -28,6 +28,7 @@ import type { EvmChain } from '../../chains/types'
 import {
     evmHistoryItemSchema,
     evmHistoryPageSchema,
+    withoutNativeTokenLegs,
     type EvmHistoryItem,
 } from './schema'
 
@@ -117,10 +118,14 @@ export const fetchHistoryPage = async (
         { isPriority: !isBackground },
     )
     const { next, results } = evmHistoryPageSchema.parse(data)
+    const { nativeTokenContract } = chain.row
     return {
         items: results.flatMap(row => {
             const parsed = evmHistoryItemSchema.safeParse(row)
-            return parsed.success ? parsed.data : []
+            if (!parsed.success) return []
+            return nativeTokenContract === undefined
+                ? parsed.data
+                : withoutNativeTokenLegs(parsed.data, nativeTokenContract)
         }),
         next,
     }

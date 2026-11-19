@@ -438,7 +438,8 @@
             "search_paused_body": "Nenhuma transação encontrada no histórico recente.",
             "search_older": "Buscar mais antigas",
             "filter": "Filtrar",
-            "csv": "CSV"
+            "csv": "CSV",
+            "csv_on_network": "CSV de {{network}}"
         },
         "collectible": {
             "description": "Descrição",
@@ -1443,6 +1444,10 @@
             "server_error": {
                 "title": "Erro no servidor",
                 "body": "O servidor encontrou um problema ao processar sua solicitação. Tente novamente."
+            },
+            "rate_limited": {
+                "title": "Rede congestionada",
+                "body": "A rede está recebendo muitas solicitações no momento. Aguarde um instante e tente novamente."
             }
         },
         "transaction": {
@@ -3769,6 +3774,8 @@
             "nothing_back_title": "Você não recebe nada em troca",
             "permission_collection": "Todos os seus NFTs de {{collection}}",
             "permission_collection_note": "Ele poderá mover todos os NFTs desta coleção que você tem, agora e depois, até você remover esta permissão.",
+            "permission_increase": "{{spender}} poderá gastar mais este valor",
+            "permission_increase_note": "Isso se soma ao que {{spender}} já pode gastar, então o limite total pode ser maior.",
             "permission_no_change": "Nenhum token sai da sua carteira com esta transação.",
             "permission_revoke": "{{spender}} não poderá mais gastar",
             "permission_spender": "{{spender}} poderá gastar",
@@ -4295,7 +4302,6 @@
             },
             "provider_failed_body": "Este provedor não conseguiu concluir a conversão. Tente outro provedor.",
             "provider_unavailable_body": "O provedor está indisponível no momento. Tente novamente em instantes.",
-            "route_unverified_body": "A Pera ainda não consegue verificar o contrato de conversão deste provedor na rede {{network}}, então nada foi assinado. Tente outro provedor ou tente novamente mais tarde.",
             "quote_mismatch_body": "As transações do provedor não correspondiam a esta cotação, então nada foi assinado. Tente novamente ou escolha outro provedor.",
             "unsupported_order_body": "A Pera não consegue concluir o pedido deste provedor, então nada foi assinado. Escolha outro provedor.",
             "signing_failed_body": "Não foi possível assinar a transação, então ela não foi enviada. Tente novamente.",

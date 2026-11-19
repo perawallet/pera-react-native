@@ -11,16 +11,13 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import {
-    useAccountsStore,
-    findAccountByAnyChainAddress,
-} from '@perawallet/wallet-core-accounts'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { logger, toError, type Nullable } from '@perawallet/wallet-core-shared'
-import { useMnemonicForAddress } from '@modules/backup'
+import { useMnemonicForAddress, usePassphraseAccount } from '@modules/backup'
 
 export type UseViewPassphraseContentParams = {
     address: string
+    accountId?: string
 }
 
 export type UseViewPassphraseContentResult = {
@@ -31,10 +28,9 @@ export type UseViewPassphraseContentResult = {
 
 export const useViewPassphraseContent = ({
     address,
+    accountId,
 }: UseViewPassphraseContentParams): UseViewPassphraseContentResult => {
-    const account = useAccountsStore(
-        state => findAccountByAnyChainAddress(state.accounts, address) ?? null,
-    )
+    const account = usePassphraseAccount(address, accountId)
     const { executeWithMnemonic } = useMnemonicForAddress(address, account)
     const [indices, setIndices] = useState<Nullable<Uint16Array>>(null)
     const [isLoading, setIsLoading] = useState(false)

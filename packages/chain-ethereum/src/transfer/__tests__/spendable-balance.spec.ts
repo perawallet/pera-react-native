@@ -36,6 +36,7 @@ import {
     type Database,
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
+import { recordSubmissionAttempt } from '@perawallet/wallet-core-signing'
 
 const mocks = vi.hoisted(() => ({
     getAccountChainStateRow: vi.fn(),
@@ -93,6 +94,22 @@ describe('readEthereumSpendableBalance', () => {
             max: new Decimal(250),
             reserved: new Decimal(0),
         })
+    })
+
+    it('offers every digit of a 60-digit token holding on MAX', async () => {
+        const balance = new Decimal('9'.repeat(60))
+        mocks.getAccountHoldings.mockResolvedValue([
+            { assetId: USDC, amount: balance, native: null },
+        ])
+
+        const result = await readEthereumSpendableBalance({
+            account: ACCOUNT,
+            asset: { chainId: 'ethereum', assetId: USDC },
+            scope: SCOPE,
+            fee: new Decimal(21_000),
+        })
+
+        expect(result.max.toFixed()).toBe(balance.toFixed())
     })
 
     it('never offers a negative amount of ether when the fee exceeds the balance', async () => {
@@ -401,5 +418,43 @@ describe('with an open Base send', () => {
 
         expect(result.reserved).toEqual(new Decimal(0))
         expect(result.max).toEqual(BALANCE.sub(NEXT_FEE))
+    })
+
+    it('reserves a sped-up send once, at its higher fee', async () => {
+        givenBalanceAt(0)
+        const ETHER = { chainId: 'base', assetId: 'native' } as const
+        const send = (maxFee: bigint, replacesAttemptId?: string) =>
+            recordSubmissionAttempt({
+                db,
+                scope: BASE_SCOPE,
+                txIds: [`0x${maxFee.toString(16)}`],
+                flow: 'pipeline',
+                sender: SIGNER,
+                nonce: 0,
+                maxFee: new Decimal(maxFee.toString()),
+                historyEntry: {
+                    summary: {
+                        kind: 'transfer',
+                        title: { key: 'transactions.list_item.send' },
+                        direction: 'out',
+                        icon: 'send',
+                        amount: {
+                            assetRef: ETHER,
+                            value: new Decimal(SEND_VALUE.toString()),
+                        },
+                    },
+                    chainData: { family: 'evm' },
+                },
+                replacesAttemptId,
+            })
+        await send((GAS_FEE * 11n) / 10n, await send(GAS_FEE))
+
+        const result = await readNextSend()
+
+        const reserved = new Decimal(
+            (SEND_VALUE + (GAS_FEE * 11n) / 10n).toString(),
+        )
+        expect(result.reserved).toEqual(reserved)
+        expect(result.max).toEqual(BALANCE.sub(reserved).sub(NEXT_FEE))
     })
 })

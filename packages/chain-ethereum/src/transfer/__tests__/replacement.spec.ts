@@ -24,8 +24,11 @@ import { Decimal } from 'decimal.js'
 import { setupServer } from 'msw/node'
 import {
     parseGwei,
+    parseTransaction,
+    recoverTransactionAddress,
     serializeTransaction,
     toHex,
+    type Hex,
     type RpcFeeHistory,
 } from 'viem'
 import type {
@@ -48,7 +51,20 @@ import {
     evmTransactionReceipt,
 } from '../../blockchain/msw-handlers'
 import { TEST_RPC_URL, testChainContext } from '../../__tests__/context'
-import { BASE, ETHEREUM, evmScopeOf } from '../../__tests__/evm-chains'
+import {
+    BASE,
+    ETHEREUM,
+    OPTIMISM,
+    eip155IdOf,
+    evmChainOf,
+    evmScopeOf,
+} from '../../__tests__/evm-chains'
+import type { EvmChain } from '../../chains/types'
+import {
+    opStackOracleResponder,
+    unsignedEncodingOf,
+    type OpStackOracleCall,
+} from './op-stack-oracle'
 import {
     SENDER,
     TRANSFER,
@@ -462,6 +478,175 @@ describe('Ethereum transaction replacement', () => {
                     context,
                 ),
             ).rejects.toBeInstanceOf(InvalidSendParamsError)
+        })
+    })
+})
+
+describe('Ethereum transaction replacement surcharge', () => {
+    // Another chain's signature recovers to some other sender, which is all a replacement reads.
+    const { r, s, yParity } = parseTransaction(VIEM_TRANSFER_NONCE_0)
+    const L1_DATA_FEE = 3_000_000_000_000n
+    const OPERATOR_FEE = 7n
+
+    const replacedOn = async (chain: EvmChain, kind: 'speed-up' | 'cancel') => {
+        const chainId = eip155IdOf(chain)
+        const rawTransaction = serializeTransaction(
+            { ...TRANSFER, chainId },
+            { r: r as Hex, s: s as Hex, yParity: yParity ?? 0 },
+        )
+        const from = await recoverTransactionAddress({
+            serializedTransaction: rawTransaction,
+        })
+        const bumped = {
+            type: 'eip1559',
+            chainId,
+            nonce: 0,
+            maxFeePerGas: parseGwei('22'),
+            maxPriorityFeePerGas: parseGwei('1.1'),
+        } as const
+        const replacement =
+            kind === 'cancel'
+                ? { ...bumped, to: from, value: 0n, gas: CANCEL_GAS }
+                : {
+                      ...bumped,
+                      to: TRANSFER.to,
+                      value: TRANSFER.value,
+                      gas: TRANSFER.gas,
+                  }
+        const calls: OpStackOracleCall[] = []
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: TEST_RPC_URL,
+                responses: {
+                    eth_feeHistory: CHEAP_MARKET,
+                    eth_call: opStackOracleResponder(
+                        {
+                            l1Fees: new Map([
+                                [unsignedEncodingOf(replacement), L1_DATA_FEE],
+                            ]),
+                            operatorFee: OPERATOR_FEE,
+                        },
+                        calls,
+                    ),
+                },
+            }),
+        )
+        const [built] = await buildEvmReplacement(
+            testChainContext({ chain }),
+            chain,
+            { kind, rawTransaction },
+            { scope: evmScopeOf(chain) },
+        )
+        return { payload: built.payload, calls }
+    }
+
+    describe.each([BASE, OPTIMISM])('on $row.id', chain => {
+        it.each(['speed-up', 'cancel'] as const)(
+            'carries the surcharge the oracle prices for the %s',
+            async kind => {
+                const { payload } = await replacedOn(chain, kind)
+
+                expect(payload).toMatchObject({
+                    surcharge: L1_DATA_FEE + OPERATOR_FEE,
+                })
+            },
+        )
+    })
+
+    it.each([ETHEREUM, evmChainOf('arbitrum')])(
+        'reads no oracle on $row.id',
+        async chain => {
+            const { payload, calls } = await replacedOn(chain, 'speed-up')
+
+            expect(payload).not.toHaveProperty('surcharge')
+            expect(calls).toEqual([])
+        },
+    )
+})
+
+describe('Ethereum cancel gas', () => {
+    const ARBITRUM = evmChainOf('arbitrum')
+    const { r, s, yParity } = parseTransaction(VIEM_TRANSFER_NONCE_2)
+    const rawTransaction = serializeTransaction(
+        { ...TRANSFER, nonce: 2, chainId: eip155IdOf(ARBITRUM) },
+        { r: r as Hex, s: s as Hex, yParity: yParity ?? 0 },
+    )
+    const arbitrum = { scope: evmScopeOf(ARBITRUM) }
+
+    const useEstimate = (gas: Hex) => {
+        const estimates: unknown[] = []
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: TEST_RPC_URL,
+                responses: {
+                    eth_chainId: toHex(eip155IdOf(ARBITRUM)),
+                    eth_feeHistory: CHEAP_MARKET,
+                    eth_estimateGas: params => {
+                        estimates.push(params[0])
+                        return gas
+                    },
+                },
+            }),
+        )
+        return estimates
+    }
+
+    it.each([
+        [
+            'cancel',
+            () =>
+                buildEvmReplacement(
+                    testChainContext({ chain: ARBITRUM }),
+                    ARBITRUM,
+                    { kind: 'cancel', rawTransaction },
+                    arbitrum,
+                ),
+        ],
+        [
+            'unblock',
+            () =>
+                buildEvmGapFill(
+                    testChainContext({ chain: ARBITRUM }),
+                    ARBITRUM,
+                    { rawTransaction, sequence: 1 },
+                    arbitrum,
+                ),
+        ],
+    ] as const)(
+        'signs the %s with the estimate, padded as a send, where it is above 21,000',
+        async (_kind, build) => {
+            const from = await recoverTransactionAddress({
+                serializedTransaction: rawTransaction,
+            })
+            const estimates = useEstimate(toHex(30_000n))
+
+            const [built] = await build()
+
+            expect(built.payload).toMatchObject({
+                transaction: { to: from, value: 0n, gas: 36_000n },
+            })
+            expect(estimates).toEqual([
+                expect.objectContaining({
+                    from,
+                    to: from,
+                    value: '0x0',
+                }),
+            ])
+        },
+    )
+
+    it('never signs a cancel below 21,000', async () => {
+        useEstimate(toHex(20_000n))
+
+        const [built] = await buildEvmReplacement(
+            testChainContext({ chain: ARBITRUM }),
+            ARBITRUM,
+            { kind: 'cancel', rawTransaction },
+            arbitrum,
+        )
+
+        expect(built.payload).toMatchObject({
+            transaction: { gas: CANCEL_GAS },
         })
     })
 })

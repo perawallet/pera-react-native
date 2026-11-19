@@ -5,6 +5,8 @@ and `resources/`; everything that differs by platform (session capabilities, dee
 sheet dismissal, tab selectors) lives in `resources/platforms/`. A test never branches on the
 platform: add the difference to both adapters instead.
 
+The extension's Paste a Link flow is covered in [the Playwright deeplink spec](../apps/browser/e2e/deeplinks.spec.ts).
+
 Locate a view by its testID with `tid=<id>` (`resources/libraries/PeraAppiumLibrary.py`). Android
 resolves it natively; iOS keeps an XPath lookup, the only one WDA makes wait for animations to
 finish. Write XPath yourself only for what a testID cannot say: prefixes, siblings, text and
@@ -51,8 +53,8 @@ pip install -r e2e/requirements.txt
 (cd apps/mobile/android && E2E_FIXTURES=1 APP_ENV=development ./gradlew assembleRelease)
 (cd apps/mobile && E2E_FIXTURES=1 APP_ENV=development npx expo run:ios --configuration Release --device <simulator-udid> --no-bundler)
 appium &                                     # the suite talks to a device through this
-ANDROID_UDID=emulator-5554 OUT_DIR=e2e/results/android e2e/tools/run.sh android
-IOS_UDID=<simulator-udid>  OUT_DIR=e2e/results/ios     e2e/tools/run.sh ios
+ANDROID_UDID=emulator-5554 E2E_RESULTS_DIR=e2e/results/android e2e/tools/run.sh android
+IOS_UDID=<simulator-udid>  E2E_RESULTS_DIR=e2e/results/ios     e2e/tools/run.sh ios
 python e2e/tools/parity.py e2e/results/android/output.xml e2e/results/ios/output.xml
 python e2e/tools/flow_diff.py e2e/results/android/nav-flows.json e2e/results/ios/nav-flows.json
 ```
@@ -64,11 +66,9 @@ python e2e/tools/flow_diff.py e2e/results/android/nav-flows.json e2e/results/ios
 
 `SUITE=contacts` runs one suite instead of all of them.
 
-- Start Appium first. Without it every case fails in `Suite Setup`, and a whole pass finishes in
-  under a minute looking like the suite collapsed rather than like nothing was listening. The same
-  wall of `Parent suite setup failed` is what a device dying mid-pass leaves behind, which is why
-  `e2e/tools/flaky.py` refuses to compare a pass where most cases failed there: those are not verdicts
-  about the cases.
+- Start Appium first. If a local Appium session cannot open, `run.sh` stops the pass and writes the
+  error to `.incomplete` beside the Robot output. A device that disappears mid-pass can also produce
+  driver or suite setup failures. Treat these runs as incomplete and keep their reports when retrying.
 
 - Set `APP_ENV` explicitly: a local `.env.local` may say `production`, and Metro refuses to bundle
   the hook for production.
@@ -84,6 +84,27 @@ Adapters read `APPIUM_URL`, `ANDROID_UDID`, `ANDROID_PACKAGE`, `ANDROID_SYSTEM_P
 each run unless the environment names one: a run killed mid-way leaves its UiAutomator2 server or
 WebDriverAgent on the adapter's default port, which otherwise fails every suite of the next run. Credentials for a device cloud go
 in the CI secret store and reach the run as environment variables; never commit them here.
+
+### Physical iPhone
+
+With the signed fixture build installed on a test iPhone, enable Developer Mode and UI Automation,
+then keep the phone unlocked while XCTest starts. For USB, configure Appium's default capabilities
+with `appium:xcodeOrgId`, `appium:xcodeSigningId` and `appium:updatedWDABundleId` as needed for your
+provisioned WebDriverAgent. Pass `IOS_WDA_REMOTE_PORT` when WDA listens on a custom device port.
+
+When WebDriverAgent is already running on the phone and reachable over the local network, use its
+URL and the phone's OS version to start the same suite without Appium's USB forwarding:
+
+```sh
+IOS_UDID=<iphone-udid> IOS_BUNDLE_ID=<test-bundle-id> IOS_PLATFORM_VERSION=<ios-version> \
+  IOS_WDA_URL=http://<iphone-address>:8100 e2e/tools/run.sh ios
+```
+
+The iOS camera-permission case requires a simulator. The biometric-unlock case needs a Secure
+Enclave, and XCUITest can inject biometric matches only on simulators, so that case skips on iOS.
+On LAN, WebDriverAgent can keep driving the UI when USB trace reads are unavailable. The suite
+falls back to a fixed fixture wait, and resumes waiting for navigation snapshots once trace access
+returns.
 
 ## BrowserStack
 
@@ -190,7 +211,8 @@ both sides of a file rename and reads the PR base revision, so deleted source st
 Sepolia self-send must reach History as pending and then confirmed.
 
 - The build must be a staging E2E build that ships Ethereum (`CHAINS` and the `ETHEREUM_*` variables, as in
-  the staging jobs of `ci/pipelines.yml`).
+  the staging jobs of `ci/pipelines.yml`). For local runs against an Algorand-only build, pass
+  `--exclude ethereum` to the runner.
 - The send case needs one dedicated Universal wallet per platform, its first account holding Sepolia ETH, in
   the `E2E_ETHEREUM_FUNDED_MNEMONIC_ANDROID` and `E2E_ETHEREUM_FUNDED_MNEMONIC_IOS` secrets. Without the
   secret the case skips and shows as skipped in the report.
@@ -217,8 +239,8 @@ platforms, so keep it when renaming a case and never reuse one for a different b
 each a pass directory or a single `output.xml`. It fails on a scenario that passed on one platform
 and failed on the other, or that ran on only one. It does not require a pass on both: around fifty
 scenarios per platform skip for reasons the app cannot change, and a gate nobody can get green is
-one everybody learns to route around. Missing, multiple or duplicate scenario IDs fail validation
-rather than replacing another result.
+one everybody learns to route around. Missing, multiple or duplicate scenario IDs fail validation.
+Parity and flakiness comparisons reject a run marked `.incomplete`.
 
 `e2e/tools/flaky.py` takes two or more passes of the same platform and names the cases whose verdict
 changed between them. A case that is green twice is not yet proof of anything, but one that

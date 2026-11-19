@@ -12,24 +12,42 @@
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { encodeFunctionResult, erc20Abi, numberToHex } from 'viem'
-import type { Hex } from 'viem'
+import {
+    decodeFunctionData,
+    encodeFunctionResult,
+    erc20Abi,
+    isAddressEqual,
+    numberToHex,
+    parseAbi,
+    size,
+    toHex,
+} from 'viem'
+import type { Address, Hex } from 'viem'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 import { createEvmClient } from '../../blockchain/utils/createEvmClient'
 import {
     fakeNode,
-    ROUTER,
     SENDER,
     server,
     TOKEN,
 } from '../../connect/callBatch/__tests__/harness'
-import { testChainContext } from '../../__tests__/context'
-import { ETHEREUM, evmScopeOf } from '../../__tests__/evm-chains'
-import { readEvmFeePresets } from '../../transfer/fees'
+import { TEST_RPC_URL, testChainContext } from '../../__tests__/context'
+import {
+    BASE,
+    ETHEREUM,
+    OPTIMISM,
+    evmChainOf,
+    evmScopeOf,
+} from '../../__tests__/evm-chains'
+import { evmRpcHandlers } from '../../blockchain/msw-handlers'
+import type { EvmChain } from '../../chains/types'
+import { readEvmFeePresets, SURCHARGE_HEADROOM } from '../../transfer/fees'
+import { OP_STACK_ORACLE_ADDRESS } from '../../transfer/__tests__/op-stack-oracle'
 import {
     estimateEvmSwapSourceCost,
     evmShortfallOf,
     SWAP_APPROVAL_GAS_CEILING,
+    SWAP_CALLDATA_BYTES_CEILING,
     SWAP_CALL_GAS_CEILING,
 } from '../source-cost'
 
@@ -53,13 +71,12 @@ const allowanceOf = (amount: bigint): Hex =>
         result: amount,
     })
 
-const estimate = (assetId: string, routeContracts = [ROUTER]) =>
+const estimate = (assetId: string) =>
     estimateEvmSwapSourceCost({
         client: createEvmClient(scope, ctx, ETHEREUM),
         chain: ETHEREUM,
         quote: quoteOf(assetId),
         scope,
-        routeContracts,
     })
 
 const RICH = numberToHex(10n ** 21n)
@@ -111,26 +128,10 @@ describe('estimateEvmSwapSourceCost', () => {
         expect(cost.expectedNetworkFee.lessThan(cost.networkFee)).toBe(true)
     })
 
-    it('adds the spend approval while the allowance is short', async () => {
-        fakeNode({ balance: RICH, callResult: allowanceOf(AMOUNT - 1n) })
-
-        const cost = await estimate(TOKEN)
-
-        expect(cost.needsSpendApproval).toBe(true)
-    })
-
-    it('leaves the spend approval out when the allowance covers the amount', async () => {
-        fakeNode({ balance: RICH, callResult: allowanceOf(AMOUNT) })
-
-        const cost = await estimate(TOKEN)
-
-        expect(cost.needsSpendApproval).toBe(false)
-    })
-
-    it('assumes a spend approval while the route names no contract', async () => {
+    it('prices a token source with a spend approval, since no spender is known before the order', async () => {
         fakeNode({ balance: RICH })
 
-        const cost = await estimate(TOKEN, [])
+        const cost = await estimate(TOKEN)
 
         expect(cost.needsSpendApproval).toBe(true)
     })
@@ -154,6 +155,146 @@ describe('estimateEvmSwapSourceCost', () => {
             cost.networkFee.plus(AMOUNT.toString()).minus(1).toString(),
         )
     })
+})
+
+describe('estimateEvmSwapSourceCost surcharge', () => {
+    const L1_FEE = 4_000_000_000_000n
+    const OPERATOR_FEE = 6n
+    const oracleAbi = parseAbi([
+        'function getL1Fee(bytes _data) view returns (uint256)',
+        'function getOperatorFee(uint256 _gasUsed) view returns (uint256)',
+    ])
+
+    // Any encoding is priced alike: the stand-in calldata is the ceiling's, not a real call's.
+    const useNode = (balance: bigint, allowance = 0n) => {
+        const encodings: Hex[] = []
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: TEST_RPC_URL,
+                responses: {
+                    eth_getBalance: toHex(balance),
+                    eth_call: params => {
+                        const { to, data } = params[0] as {
+                            to: Address
+                            data: Hex
+                        }
+                        if (!isAddressEqual(to, OP_STACK_ORACLE_ADDRESS)) {
+                            return allowanceOf(allowance)
+                        }
+                        const call = decodeFunctionData({
+                            abi: oracleAbi,
+                            data,
+                        })
+                        if (call.functionName === 'getL1Fee') {
+                            encodings.push(call.args[0])
+                        }
+                        return encodeFunctionResult({
+                            abi: oracleAbi,
+                            functionName: call.functionName,
+                            result:
+                                call.functionName === 'getL1Fee'
+                                    ? L1_FEE
+                                    : OPERATOR_FEE,
+                        })
+                    },
+                },
+            }),
+        )
+        return encodings
+    }
+
+    const estimateOn = (chain: EvmChain, assetId: string) => {
+        const chainScope = evmScopeOf(chain)
+        const client = createEvmClient(
+            chainScope,
+            testChainContext({ chain }),
+            chain,
+        )
+        return {
+            client,
+            cost: estimateEvmSwapSourceCost({
+                client,
+                chain,
+                quote: {
+                    request: {
+                        sourceAsset: { ...chainScope, assetId },
+                        sourceAmount: new Decimal(AMOUNT.toString()),
+                        sourceAddress: SENDER,
+                    },
+                } as unknown as SwapQuote,
+                scope: chainScope,
+            }),
+        }
+    }
+
+    describe.each([BASE, OPTIMISM])('on $row.id', chain => {
+        it('adds the swap surcharge to the expected fee, and with its headroom to the maximum and the shortfall', async () => {
+            const encodings = useNode(1n)
+            const { client, cost } = estimateOn(
+                chain,
+                chain.nativeAsset.assetId,
+            )
+            const { baseFeePerGas, presets } = await readEvmFeePresets(
+                client,
+                chain,
+                'mainnet',
+            )
+            const surcharge = L1_FEE + OPERATOR_FEE
+            const maximum =
+                SWAP_CALL_GAS_CEILING * presets.normal.maxFeePerGas +
+                SURCHARGE_HEADROOM * surcharge
+
+            const { networkFee, expectedNetworkFee, shortfall } = await cost
+
+            expect(networkFee.toString()).toBe(maximum.toString())
+            expect(expectedNetworkFee.toString()).toBe(
+                (
+                    SWAP_CALL_GAS_CEILING *
+                        (baseFeePerGas + presets.normal.maxPriorityFeePerGas) +
+                    surcharge
+                ).toString(),
+            )
+            expect(shortfall?.toString()).toBe(
+                (maximum + AMOUNT - 1n).toString(),
+            )
+            expect(encodings).toHaveLength(1)
+            expect(size(encodings[0])).toBeGreaterThan(
+                SWAP_CALLDATA_BYTES_CEILING,
+            )
+        })
+
+        it('prices the spend approval apart from the swap', async () => {
+            const encodings = useNode(10n ** 21n)
+            const { client, cost } = estimateOn(chain, TOKEN)
+            const { presets } = await readEvmFeePresets(
+                client,
+                chain,
+                'mainnet',
+            )
+
+            const { networkFee } = await cost
+
+            expect(encodings).toHaveLength(2)
+            expect(networkFee.toString()).toBe(
+                (
+                    (SWAP_CALL_GAS_CEILING + SWAP_APPROVAL_GAS_CEILING) *
+                        presets.normal.maxFeePerGas +
+                    SURCHARGE_HEADROOM * 2n * (L1_FEE + OPERATOR_FEE)
+                ).toString(),
+            )
+        })
+    })
+
+    it.each([ETHEREUM, evmChainOf('arbitrum')])(
+        'reads no oracle on $row.id',
+        async chain => {
+            const encodings = useNode(10n ** 21n)
+
+            await estimateOn(chain, TOKEN).cost
+
+            expect(encodings).toEqual([])
+        },
+    )
 })
 
 describe('evmShortfallOf', () => {

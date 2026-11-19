@@ -11,8 +11,12 @@
  */
 
 import { Decimal } from 'decimal.js'
-import type { Currency, CurrencyPrice } from '../../models'
-import type { CurrencyApiResponse } from './schema'
+import type {
+    Currency,
+    CurrencyHistoryPoint,
+    CurrencyPrice,
+} from '../../models'
+import type { CurrencyApiResponse, CurrencyHistoryApiResponse } from './schema'
 
 export const transformCurrency = (response: CurrencyApiResponse): Currency => ({
     id: response.currency_id,
@@ -30,3 +34,11 @@ export const transformCurrencyToPrice = (
     id: response.currency_id,
     usdPrice: new Decimal(response.usd_value ?? '0'),
 })
+
+export const transformCurrencyHistory = (
+    response: CurrencyHistoryApiResponse,
+): CurrencyHistoryPoint[] =>
+    response.map(point => ({
+        day: point.datetime.slice(0, 10),
+        usdPrice: new Decimal(point.price),
+    }))

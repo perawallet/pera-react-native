@@ -51,6 +51,8 @@ export type EvmChainRow = {
     enabledByDefault: boolean
     /** Layered over the EVM defaults for this chain alone. */
     capabilities?: Partial<ChainCapabilities>
+    /** Checksummed system contract that mirrors the native coin as an ERC-20 (Polygon's `0x…1010`): its transfers and balance are the native asset's, never a token's. */
+    nativeTokenContract?: Address
     /** Checksummed contract of the token a fresh swap receives here; the native asset when absent. */
     defaultSwapReceiveAssetId?: string
     /** The developer modes a capability is off in, on this chain alone. */

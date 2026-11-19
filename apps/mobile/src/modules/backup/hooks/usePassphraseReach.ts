@@ -14,15 +14,14 @@ import { useMemo } from 'react'
 import {
     accountChainOptions,
     eligibleChains,
-    findAccountByAnyChainAddress,
     hdIndexOf,
-    useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainId, I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { chainUiFor } from '@modules/chain-ui'
 import { displayChainOption } from '@utils/chainOptionDisplay'
+import { usePassphraseAccount } from './usePassphraseAccount'
 
 export type PassphraseLinkedAddress = {
     chainId: ChainId
@@ -34,6 +33,8 @@ export type PassphraseLinkedAddress = {
 export type UsePassphraseReachParams = {
     /** Any address the account holds, such as the one the view-passphrase flow carries. */
     address: string
+    /** The selected account when the same EVM address is held on different chains. */
+    accountId?: string
     /** Length of the revealed phrase; picks a family's paragraph for that length where it has one. */
     wordCount?: number
 }
@@ -55,11 +56,10 @@ const SINGLE_NETWORK: UsePassphraseReachResult = {
 
 export const usePassphraseReach = ({
     address,
+    accountId,
     wordCount,
 }: UsePassphraseReachParams): UsePassphraseReachResult => {
-    const account = useAccountsStore(
-        state => findAccountByAnyChainAddress(state.accounts, address) ?? null,
-    )
+    const account = usePassphraseAccount(address, accountId)
     return useMemo(() => {
         if (!account || hdIndexOf(account) === undefined) return SINGLE_NETWORK
         // Switched-off chains stay in: a kill switch pauses Pera's use of a

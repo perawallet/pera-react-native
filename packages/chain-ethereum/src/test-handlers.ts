@@ -13,6 +13,7 @@
 export {
     DEFAULT_EVM_RPC_RESPONSES,
     encodeErc20Approve,
+    encodeErc20Transfer,
     encodeUnsignedEvmCall,
     erc20CallResponder,
     evmApprovalCallResponder,

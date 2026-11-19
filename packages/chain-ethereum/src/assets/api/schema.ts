@@ -196,6 +196,13 @@ export const nftHoldingsPageSchema = z.object({
     next: z.string().nullable(),
 })
 
+// Rows are checked one by one, as on the assets route.
+export const tokenSearchPageSchema = z.object({
+    results: z.array(z.unknown()),
+    // Token search returns the opaque cursor itself.
+    next: z.string().min(1).nullable(),
+})
+
 export const nftsResponseSchema = z.object({
     results: z.array(z.unknown()),
 })

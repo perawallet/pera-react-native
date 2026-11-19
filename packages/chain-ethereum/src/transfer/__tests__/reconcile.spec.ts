@@ -26,6 +26,7 @@ import {
     encodeAbiParameters,
     encodeEventTopics,
     erc20Abi,
+    erc721Abi,
     getAddress,
     hexToBytes,
     keccak256,
@@ -72,6 +73,7 @@ import {
     PROBE_FAILURE_ESCALATION_STREAK,
     reconcileEthereumSubmissions,
     type ProbeFailureStreaks,
+    type ProbeRotation,
     type SubmissionSettledHandlers,
 } from '../reconcile'
 import { ETHEREUM, evmChainOf } from '../../__tests__/evm-chains'
@@ -93,6 +95,7 @@ const getClient = (scope: ChainScope) =>
 
 const settleHandlers: SubmissionSettledHandlers = new Map()
 const probeFailures: ProbeFailureStreaks = new Map()
+const probeRotation: ProbeRotation = new Set()
 
 // Keyed by block tag: `latest` is the mined count, `pending` the pool's.
 // `head` is the chain's block number; the default is deep enough for a receipt
@@ -133,6 +136,7 @@ describe('reconcileEthereumSubmissions', () => {
         vi.useRealTimers()
         settleHandlers.clear()
         probeFailures.clear()
+        probeRotation.clear()
         teardown()
     })
 
@@ -154,6 +158,7 @@ describe('reconcileEthereumSubmissions', () => {
             chain,
             settleHandlers,
             probeFailures,
+            probeRotation,
             getClient: scope =>
                 createEvmClient(scope, testChainContext({ chain }), chain),
             db: ledgerDb,
@@ -292,6 +297,7 @@ describe('reconcileEthereumSubmissions', () => {
                 chain: ETHEREUM,
                 settleHandlers,
                 probeFailures,
+                probeRotation,
                 getClient: unused,
                 db,
             }),
@@ -1091,6 +1097,7 @@ describe('reconcileEthereumSubmissions', () => {
                 chain: ETHEREUM,
                 settleHandlers,
                 probeFailures,
+                probeRotation,
                 getClient,
                 db,
                 limit: 1,
@@ -1207,6 +1214,64 @@ describe('reconcileEthereumSubmissions', () => {
         })
     })
 
+    describe('a backlog of open rows', () => {
+        const OTHER_SENDER = '0x00000000000000000000000000000000000000bb'
+        const hashOf = (index: number) =>
+            `0x${index.toString(16).padStart(64, '0')}` as Hex
+        const LATER = `0x${'0b'.repeat(32)}` as Hex
+        const REFUSING = new Set([hashOf(0), hashOf(1), hashOf(2)])
+
+        it('probes a later send from another sender behind a full pass of pending and failing rows, and every row in turn', async () => {
+            vi.spyOn(console, 'warn').mockImplementation(() => {})
+            // Three failing rows, then twenty pending ones, all older than the later send.
+            for (let index = 0; index < 23; index++) {
+                await record({ txIds: [hashOf(index)], nonce: index })
+                vi.setSystemTime(Date.now() + 1)
+            }
+            const later = await record({
+                txIds: [LATER],
+                sender: OTHER_SENDER,
+                nonce: 0,
+            })
+            const receiptReads = new Map<string, number>()
+            node({
+                eth_getTransactionByHash: HELD_BY_NODE,
+                eth_getTransactionReceipt: params => {
+                    const hash = params[0] as Hex
+                    receiptReads.set(hash, (receiptReads.get(hash) ?? 0) + 1)
+                    if (REFUSING.has(hash)) {
+                        return new EvmRpcErrorFixture(-32602, 'refused')
+                    }
+                    return hash === LATER
+                        ? evmTransactionReceipt({ transactionHash: LATER })
+                        : null
+                },
+            })
+
+            await expect(reconcile()).resolves.toMatchObject({ probed: 20 })
+            await expect(reconcile()).resolves.toMatchObject({
+                probed: 20,
+                confirmed: 1,
+            })
+
+            const rows = await db.select().from(SubmissionAttemptsSchema).all()
+            expect(rows.find(row => row.id === later)?.status).toBe('confirmed')
+            expect(receiptReads.get(LATER)).toBe(1)
+            for (let index = 3; index < 23; index++) {
+                expect(receiptReads.get(hashOf(index))).toBeGreaterThan(0)
+            }
+
+            // Past their backoff, the failing rows are the least recently probed.
+            vi.setSystemTime(Date.now() + PROBE_BACKOFF_BASE_MS)
+            await reconcile()
+
+            for (const hash of REFUSING) {
+                expect(receiptReads.get(hash)).toBe(2)
+            }
+            vi.restoreAllMocks()
+        })
+    })
+
     describe('tokens a mined send delivered', () => {
         const TSLAX = '0x8aD3c73F833d3F9A523aB01476625F269aEb7Cf0'
         const deliveryLog = {
@@ -1228,11 +1293,37 @@ describe('reconcileEthereumSubmissions', () => {
             removed: false,
         } as const
 
+        const nftSendLog = {
+            ...deliveryLog,
+            topics: encodeEventTopics({
+                abi: erc721Abi,
+                eventName: 'Transfer',
+                args: {
+                    from: SENDER,
+                    to: '0x00000000000000000000000000000000000000bb',
+                    tokenId: 7n,
+                },
+            }),
+            data: '0x',
+        } as const
+        const tokenSendLog = {
+            ...deliveryLog,
+            topics: encodeEventTopics({
+                abi: erc20Abi,
+                eventName: 'Transfer',
+                args: {
+                    from: SENDER,
+                    to: '0x00000000000000000000000000000000000000bb',
+                },
+            }),
+        } as const
+
         const reconcileWithSightings = (tokenSightings: TokenSightings) =>
             reconcileEthereumSubmissions({
                 chain: ETHEREUM,
                 settleHandlers,
                 probeFailures,
+                probeRotation,
                 getClient,
                 tokenSightings,
                 db,
@@ -1272,6 +1363,50 @@ describe('reconcileEthereumSubmissions', () => {
             expect(tokenSightings.of(SCOPE, SENDER)).toEqual([
                 getAddress(TSLAX),
             ])
+        })
+
+        it("marks the sender's NFT list stale once when an NFT send is mined and once when final", async () => {
+            await record()
+            node({
+                head: 5,
+                eth_getTransactionReceipt: evmTransactionReceipt({
+                    transactionHash: HASH,
+                    logs: [nftSendLog],
+                }),
+            })
+            const tokenSightings = createTokenSightings()
+
+            await reconcileWithSightings(tokenSightings)
+            expect(tokenSightings.takeSend(SCOPE, SENDER)).toBe(true)
+
+            await reconcileWithSightings(tokenSightings)
+            expect(tokenSightings.takeSend(SCOPE, SENDER)).toBe(false)
+
+            node({
+                eth_getTransactionReceipt: evmTransactionReceipt({
+                    transactionHash: HASH,
+                    logs: [nftSendLog],
+                }),
+            })
+            await reconcileWithSightings(tokenSightings)
+            expect(await statuses()).toEqual(['confirmed'])
+            expect(tokenSightings.takeSend(SCOPE, SENDER)).toBe(true)
+        })
+
+        it("leaves the sender's NFT list alone for a send that moves no NFT", async () => {
+            await record()
+            node({
+                eth_getTransactionReceipt: evmTransactionReceipt({
+                    transactionHash: HASH,
+                    logs: [tokenSendLog],
+                }),
+            })
+            const tokenSightings = createTokenSightings()
+
+            await reconcileWithSightings(tokenSightings)
+
+            expect(await statuses()).toEqual(['confirmed'])
+            expect(tokenSightings.hasSend(SCOPE, SENDER)).toBe(false)
         })
 
         it('records nothing for a reverted transaction', async () => {

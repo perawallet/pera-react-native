@@ -438,7 +438,8 @@
             "search_paused_body": "Aucune transaction trouvée dans l’historique récent.",
             "search_older": "Rechercher les plus anciennes",
             "filter": "Filtrer",
-            "csv": "CSV"
+            "csv": "CSV",
+            "csv_on_network": "CSV {{network}}"
         },
         "collectible": {
             "description": "Description",
@@ -1443,6 +1444,10 @@
             "server_error": {
                 "title": "Erreur du serveur",
                 "body": "Le serveur a rencontré un problème lors du traitement de votre demande. Veuillez réessayer."
+            },
+            "rate_limited": {
+                "title": "Réseau saturé",
+                "body": "Le réseau reçoit trop de requêtes en ce moment. Veuillez patienter un instant, puis réessayer."
             }
         },
         "transaction": {
@@ -3752,6 +3757,8 @@
             "nothing_back_title": "Vous ne recevez rien en retour",
             "permission_collection": "Tous vos NFT {{collection}}",
             "permission_collection_note": "Il pourra déplacer chaque NFT de cette collection que vous détenez, maintenant et plus tard, jusqu’à ce que vous retiriez cette autorisation.",
+            "permission_increase": "{{spender}} pourra dépenser ce montant en plus",
+            "permission_increase_note": "Ce montant s’ajoute à ce que {{spender}} peut déjà dépenser, sa limite totale peut donc être plus élevée.",
             "permission_no_change": "Aucun jeton ne quitte votre portefeuille avec cette transaction.",
             "permission_revoke": "{{spender}} ne pourra plus dépenser",
             "permission_spender": "{{spender}} pourra dépenser",
@@ -4273,7 +4280,6 @@
             },
             "provider_failed_body": "Ce fournisseur n’a pas pu effectuer le swap. Veuillez essayer un autre fournisseur.",
             "provider_unavailable_body": "Le fournisseur est indisponible pour le moment. Veuillez réessayer dans un instant.",
-            "route_unverified_body": "Pera ne peut pas encore vérifier le contrat de swap de ce fournisseur sur {{network}}, rien n’a donc été signé. Essayez un autre fournisseur ou réessayez plus tard.",
             "quote_mismatch_body": "Les transactions du fournisseur ne correspondaient pas à cette cotation, rien n’a donc été signé. Veuillez réessayer ou choisir un autre fournisseur.",
             "unsupported_order_body": "Pera ne peut pas finaliser l’ordre de ce fournisseur, rien n’a donc été signé. Choisissez un autre fournisseur.",
             "signing_failed_body": "La transaction n’a pas pu être signée, elle n’a donc pas été envoyée. Veuillez réessayer.",

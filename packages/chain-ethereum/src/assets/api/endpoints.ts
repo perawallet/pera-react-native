@@ -21,6 +21,7 @@ import {
     queryClient,
     type HistoryPeriod,
     type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import { DISCOVERY_LOOKUP_BOUNDS } from '../../accounts/discovery-bounds'
 import { eip155ChainIdOf, toCaip19 } from '../../blockchain/utils/caip19'
@@ -32,6 +33,7 @@ import {
     nftHoldingsPageSchema,
     nftItemSchema,
     nftsResponseSchema,
+    tokenSearchPageSchema,
     whitelistResponseSchema,
     type AssetItemSchemaOutput,
     type NftItemSchemaOutput,
@@ -41,6 +43,7 @@ import { toWhitelistRow, type WhitelistRow } from './transformers'
 export const ASSETS_SERVICE = 'assets'
 export const PRICES_SERVICE = 'prices'
 export const NFTS_SERVICE = 'nfts'
+export const TOKEN_SEARCH_SERVICE = 'tokenSearch'
 
 export const ASSETS_PATH = '/api/v4/assets/'
 // The backend rejects a request naming more ids than this (422).
@@ -50,6 +53,8 @@ export const whitelistPath = (eip155ChainId: number | string): string =>
     `/api/v3/evm/${eip155ChainId}/tokens/`
 
 export const CHART_PATH = '/api/v4/assets/chart/'
+
+export const TOKEN_SEARCH_PATH = '/api/v4/assets/search/'
 
 export const NFTS_PATH = '/api/v4/nfts/'
 // The backend rejects a request naming more ids than this (422).
@@ -63,8 +68,8 @@ export const nftHoldingsPath = (
 ): string => `/api/v3/evm/${eip155ChainId}/accounts/${address}/nfts/`
 
 /**
- * The cursor a holdings page's `next` URL carries. Throws on anything else, so
- * a malformed page fails the read instead of looping.
+ * The cursor a holdings page's `next` URL carries. Throws on anything else, so a
+ * malformed page fails the read instead of looping.
  */
 export const nftCursorOf = (next: string): string => {
     const cursor = new URL(next).searchParams.get('cursor')
@@ -122,6 +127,46 @@ export const fetchAssetItems = async (
     })
 }
 
+export type TokenSearchPage = {
+    items: AssetItemSchemaOutput[]
+    nextCursor: Optional<string>
+}
+
+/**
+ * One page of the backend's token search on the scope's chain; an item this
+ * client can't read is skipped. Every page repeats `query`, which the cursor
+ * is bound to. Rejects with a `PeraNetworkError` on a failed request,
+ * including 422 `search_cursor_expired` once the search is 5 minutes old.
+ */
+export const fetchTokenSearchPage = async (
+    scope: ChainScope,
+    chain: EvmChain,
+    query: string,
+    cursor?: string,
+): Promise<TokenSearchPage> => {
+    const { data } = await queryClient<unknown>({
+        backend: 'pera',
+        service: TOKEN_SEARCH_SERVICE,
+        scope,
+        method: 'GET',
+        url: TOKEN_SEARCH_PATH,
+        params: {
+            q: query,
+            chains: `eip155:${eip155ChainIdOf(scope, chain)}`,
+            ...(cursor === undefined ? {} : { cursor }),
+        },
+        headers: await buildIntegrityHeadersWhenReady(),
+    })
+    const { results, next } = tokenSearchPageSchema.parse(data)
+    return {
+        items: results.flatMap(row => {
+            const parsed = assetItemSchema.safeParse(row)
+            return parsed.success ? [parsed.data] : []
+        }),
+        nextCursor: next ?? undefined,
+    }
+}
+
 /**
  * The backend's listed tokens for the scope's chain, native first; rows this
  * client can't use are skipped. Rejects with a `PeraNetworkError` on a failed
@@ -143,23 +188,57 @@ export const fetchWhitelist = async (
     return results.flatMap(row => toWhitelistRow(row, scope, chain) ?? [])
 }
 
+export type NftHoldingsListing = {
+    /** Page one as the backend answered it. */
+    pageOne: string
+    items: NftItemSchemaOutput[]
+    /** Epoch ms of the full read the items came from. */
+    readAt: number
+}
+
+export type NftHoldingsOptions = {
+    forceRefresh?: boolean
+    prior?: NftHoldingsListing
+    now?: () => number
+}
+
+/**
+ * How long `prior` may stand in for a full read: one backend rate-limit
+ * window. An NFT received past page one leaves page one as it was, so this
+ * bounds how long it stays unlisted.
+ */
+export const NFT_LISTING_REUSE_MS = 10 * 60_000
+
 /**
  * Every NFT `address` holds on the scope's chain, across all pages; a row
- * this client can't read is skipped. Rejects on a failed page, so a partial
- * list never stands in for the whole: with a `PeraServiceUnavailableError` when
- * the chain has no NFT reads, and a plain `Error` on a malformed `next`.
+ * this client can't read is skipped. `prior` is answered again, with no cursor
+ * page read, when page one is unchanged and `prior` is younger than
+ * `NFT_LISTING_REUSE_MS`; `forceRefresh` skips the backend's
+ * page-one cache and `prior`, for a refresh the user asked for. Rejects on a
+ * failed page, so a partial list never stands in for the whole: with a
+ * `PeraServiceUnavailableError` when the chain has no NFT reads, and a plain
+ * `Error` on a malformed `next`.
  */
 export const fetchNftHoldings = async (
     scope: ChainScope,
     chain: EvmChain,
     address: string,
-): Promise<NftItemSchemaOutput[]> => {
+    { forceRefresh = false, prior, now = Date.now }: NftHoldingsOptions = {},
+): Promise<NftHoldingsListing> => {
+    const readAt = now()
+    const reusable =
+        !forceRefresh &&
+        prior !== undefined &&
+        readAt - prior.readAt < NFT_LISTING_REUSE_MS
     const url = nftHoldingsPath(
         eip155ChainIdOf(scope, chain),
         address.toLowerCase(),
     )
     const items = new Map<string, NftItemSchemaOutput>()
-    let cursor: Nullable<string> = null
+    let params: Optional<Record<string, string>> = forceRefresh
+        ? { force_refresh: 'true' }
+        : undefined
+    let pageOne = ''
     for (let page = 0; page < NFT_HOLDINGS_MAX_PAGES; page++) {
         const { data } = await queryClient<unknown>({
             backend: 'pera',
@@ -167,7 +246,7 @@ export const fetchNftHoldings = async (
             scope,
             method: 'GET',
             url,
-            params: cursor === null ? undefined : { cursor },
+            params,
             headers: await buildIntegrityHeadersWhenReady(),
         }).catch((error: unknown) => {
             // The chain has no NFT reads: the same as a scope without the
@@ -178,14 +257,22 @@ export const fetchNftHoldings = async (
             throw error
         })
         const { results, next } = nftHoldingsPageSchema.parse(data)
+        if (page === 0) {
+            pageOne = JSON.stringify(data)
+            // The backend drops its cached page one on a transfer, while every
+            // cursor page is uncached and counts against the device's limit.
+            if (reusable && prior.pageOne === pageOne) return prior
+        }
         for (const row of results) {
             const parsed = nftItemSchema.safeParse(row)
             if (parsed.success) {
                 items.set(parsed.data.asset_id.toLowerCase(), parsed.data)
             }
         }
-        if (next === null) return [...items.values()]
-        cursor = nftCursorOf(next)
+        if (next === null) {
+            return { pageOne, items: [...items.values()], readAt }
+        }
+        params = { cursor: nftCursorOf(next) }
     }
     throw new Error(
         `Pera NFT holdings for ${scope.chainId}/${scope.networkId} ran past ${NFT_HOLDINGS_MAX_PAGES} pages`,
