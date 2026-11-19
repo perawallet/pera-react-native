@@ -22,6 +22,7 @@ import { deploymentOf } from '@perawallet/wallet-core-config'
 import {
     isSentInDeviceRegistration,
     useIsDeviceRegistrationV4Enabled,
+    usePeraScopeRefusalsVersion,
 } from '@perawallet/wallet-core-device'
 import { isSwapChain } from '../chain-adapter'
 import type { SwapAccountAddressWithId } from '../models'
@@ -44,6 +45,7 @@ export const useSwapAccountsAddresses = (
     const scopes = useSelectedScopes(chainIds)
     // A dependency so a developer override of the API version recomputes which chains registration sends.
     const isRegistrationV4 = useIsDeviceRegistrationV4Enabled()
+    const refusalsVersion = usePeraScopeRefusalsVersion()
 
     return useMemo(
         () =>
@@ -65,6 +67,7 @@ export const useSwapAccountsAddresses = (
                     ]
                 }),
             ),
-        [accounts, scopes, isRegistrationV4],
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- refusalsVersion is an identity key: a refusal changes what isSentInDeviceRegistration answers
+        [accounts, scopes, isRegistrationV4, refusalsVersion],
     )
 }

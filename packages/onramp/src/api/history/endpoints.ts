@@ -57,6 +57,61 @@ export const getRampHistory = async (
             },
         })
         const parsed = rampHistoryPageSchema.parse(data)
+        // QA-MOCK(PER-3173): two pending deposit rows the router doesn't serve yet.
+        if (request === 0 && params.cursor === undefined) {
+            const qaRow = (id: string, offsetMs: number) => {
+                const expiresAt = new Date(Date.now() + offsetMs)
+                    .toISOString()
+                    .replace(/\.\d{3}Z$/, 'Z')
+                return {
+                    order_id: id,
+                    aggregator: 'xo',
+                    provider: 'XO',
+                    status: 'pending' as const,
+                    funding_method: 'external_deposit',
+                    destination_account: routerAccountId(
+                        scope,
+                        params.accountAddress,
+                    ),
+                    source_asset: {
+                        asset_id:
+                            'bip122:000000000019d6689c085ae165831e93/slip44:0',
+                        symbol: 'BTC',
+                        name: 'Bitcoin',
+                        fraction_decimals: 8,
+                    },
+                    destination_asset: {
+                        asset_id:
+                            'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k/asa:0',
+                        symbol: 'ALGO',
+                        name: 'Algorand',
+                        fraction_decimals: 6,
+                    },
+                    source_amount: '150000',
+                    destination_amount_expected: '1000000000',
+                    created_at: new Date().toISOString(),
+                    expires_at: expiresAt,
+                    steps: [
+                        {
+                            kind: 'deposit_instructions',
+                            address:
+                                'bc1qqamockpayinaddress0000000000000000000',
+                            memo: '4242',
+                            amount: '150000',
+                            expires_at: expiresAt,
+                        },
+                    ],
+                }
+            }
+            parsed.results.unshift(
+                ...rampHistoryPageSchema.parse({
+                    results: [
+                        qaRow('qa-mock-open', 48 * 60 * 60 * 1000),
+                        qaRow('qa-mock-past-deadline', -60 * 1000),
+                    ],
+                }).results,
+            )
+        }
         results = parsed.results
             .filter(isFundHistoryItem)
             .map(transformRampHistoryItem)

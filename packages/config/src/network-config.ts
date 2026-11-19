@@ -383,17 +383,45 @@ const servedScopesByDeployment = new Map<WalletMode, ReadonlySet<string>>()
 // asking again on every sync only repeats the refusal.
 const refusedScopes = new Set<string>()
 
+// Plain module state, not a store, so UI that reads isPeraScopeRefused
+// re-renders through this when the answer may have changed.
+let refusalsVersion = 0
+const refusalListeners = new Set<() => void>()
+
+const notifyRefusalsChanged = (): void => {
+    refusalsVersion += 1
+    refusalListeners.forEach(listener => listener())
+}
+
+/** Changes whenever `isPeraScopeRefused` may answer differently. */
+export const getPeraScopeRefusalsVersion = (): number => refusalsVersion
+
+/** Calls `listener` after each change; returns the unsubscribe. */
+export const subscribePeraScopeRefusals = (
+    listener: () => void,
+): (() => void) => {
+    refusalListeners.add(listener)
+    return () => {
+        refusalListeners.delete(listener)
+    }
+}
+
 /** Records the deployment's chain list, replacing any earlier one for it. */
 export const setPeraServedScopes = (
     deployment: WalletMode,
     served: readonly ChainScope[],
 ): void => {
     servedScopesByDeployment.set(deployment, new Set(served.map(refusalKeyOf)))
+    notifyRefusalsChanged()
 }
 
 /** Records a request for the scope that the backend refused as a chain it doesn't serve. */
 export const markPeraScopeRefused = (scope: ChainScope): void => {
-    refusedScopes.add(refusalKeyOf(scope))
+    const key = refusalKeyOf(scope)
+    // Every request for a refused scope lands here, so only a new refusal notifies.
+    if (refusedScopes.has(key)) return
+    refusedScopes.add(key)
+    notifyRefusalsChanged()
 }
 
 /**
@@ -414,6 +442,7 @@ export const isPeraScopeRefused = (scope: ChainScope): boolean => {
 export const resetPeraScopeRefusals = (): void => {
     servedScopesByDeployment.clear()
     refusedScopes.clear()
+    notifyRefusalsChanged()
 }
 
 export const configuredScopes = (): readonly ChainScope[] =>

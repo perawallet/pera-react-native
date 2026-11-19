@@ -892,6 +892,31 @@ describe('services/device/hooks', () => {
         expect(chainsSent(0)).toEqual(['algorand'])
     })
 
+    test('sends an update with no accounts, once, when the deployment serves none of their chains', async () => {
+        vi.resetModules()
+
+        const { useDeviceStore } = await import('../../store')
+        const useDevice = await importUseDevice()
+
+        useDeviceStore.getState().resetState()
+        await seedDeviceId('live', 'DEV-1')
+        mockedIsChainServed.mockImplementation(() => false)
+
+        const { result } = renderHook(() => useDevice(), {
+            wrapper: createWrapper(),
+        })
+
+        await act(async () => {
+            await result.current.registerDevice(multiChainAccounts)
+        })
+
+        expect(mockedRegisterDeviceMutation).toHaveBeenCalledTimes(1)
+        expect(mockedRegisterDeviceMutation.mock.calls[0][0]).toMatchObject({
+            deployment: 'live',
+            data: { id: 'DEV-1', accounts: [] },
+        })
+    })
+
     test('leaves a refused chain out of later registrations on that deployment', async () => {
         vi.resetModules()
 
