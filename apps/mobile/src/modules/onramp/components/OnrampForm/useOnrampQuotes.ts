@@ -21,6 +21,7 @@ import {
     isQuotableRampAmount,
     isRampQuoteExpired,
     isSourceAmountTooLowError,
+    isTransientRampError,
     pickBestQuote,
     RAMP_MAX_LIMIT_PROBE_AMOUNT,
     resolveRampQuoteLimits,
@@ -177,8 +178,8 @@ export const useOnrampQuotes = ({
     )
 
     // The inputs behind the quotes on screen. A fetch for the same ones is a
-    // background re-quote: its failure keeps them (Proceed re-checks expiry,
-    // and the order call refuses a gone quote) and retries later.
+    // background re-quote: a transient failure keeps them (Proceed re-checks
+    // expiry, and the order call refuses a gone quote) and retries later.
     const shownInputsRef = useRef<
         Nullable<{
             request: typeof quoteRequestFor
@@ -242,7 +243,7 @@ export const useOnrampQuotes = ({
                     setIsQuoting(false)
                 } catch (error) {
                     if (requestId !== requestIdRef.current) return
-                    if (isRefresh) {
+                    if (isRefresh && isTransientRampError(error)) {
                         setRefreshFailures(count => count + 1)
                         setIsQuoting(false)
                         return

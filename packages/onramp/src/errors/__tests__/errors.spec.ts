@@ -12,8 +12,12 @@
 
 import { describe, it, expect } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 import {
+    NoConnectionError,
+    PeraNetworkError,
+} from '@perawallet/wallet-core-shared'
+import {
+    isTransientRampError,
     isSourceAmountTooHighError,
     isSourceAmountTooLowError,
     RampAmountOutOfRangeError,
@@ -30,6 +34,33 @@ const tooLow = (
 describe('RampAmountOutOfRangeError', () => {
     it('is an expected outcome, kept out of crash reporting', () => {
         expect(tooLow().metadata.expected).toBe(true)
+    })
+})
+
+describe('isTransientRampError', () => {
+    it.each([
+        ['offline', new NoConnectionError(), true],
+        ['a timeout', new PeraNetworkError('timeout'), true],
+        ['a 5xx', new PeraNetworkError('server', { status: 503 }), true],
+        [
+            "an upstream's rate limit",
+            new PeraNetworkError('client', {
+                status: 429,
+                backendCode: 'upstream_rate_limited',
+            }),
+            true,
+        ],
+        ['a refused amount', tooLow(), false],
+        [
+            'a 4xx validation error',
+            new PeraNetworkError('client', {
+                status: 400,
+                backendCode: 'unsupported_pair',
+            }),
+            false,
+        ],
+    ])('treats %s as transient: %s', (_label, error, expected) => {
+        expect(isTransientRampError(error)).toBe(expected)
     })
 })
 

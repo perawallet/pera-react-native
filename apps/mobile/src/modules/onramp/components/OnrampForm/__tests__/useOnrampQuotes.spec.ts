@@ -30,7 +30,10 @@ import {
     makeFiatToken,
     makeRampPair,
 } from '@test-utils/rampFixtures'
-import { ONRAMP_QUOTE_MIN_REFRESH_INTERVAL } from '@constants/ui'
+import {
+    ONRAMP_QUOTE_MAX_REFRESH_INTERVAL,
+    ONRAMP_QUOTE_MIN_REFRESH_INTERVAL,
+} from '@constants/ui'
 import { useOnrampQuotes } from '../useOnrampQuotes'
 
 const mockCreateQuote = vi.hoisted(() => vi.fn())
@@ -176,6 +179,34 @@ describe('useOnrampQuotes', () => {
 
         expect(mockCreateQuote).toHaveBeenCalledTimes(3)
         expect(result.current.quotes.map(item => item.quoteId)).toEqual(['x2'])
+    })
+
+    it('shows a refusal of a background re-quote and stops refreshing', async () => {
+        mockCreateQuote.mockResolvedValue([
+            { ...quote('x1', 'xo'), expiresAt: Date.now() + 60_000 },
+        ])
+        const { result } = render()
+        await settle()
+
+        mockCreateQuote.mockRejectedValue(
+            new RampAmountOutOfRangeError(
+                'max',
+                { min: null, max: new Decimal('0.1') },
+                'Too high.',
+            ),
+        )
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(60_000)
+        })
+        await settle()
+
+        expect(result.current.quotes).toEqual([])
+        expect(result.current.quotesError).toBe('onramp.form.amount_above_max')
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(ONRAMP_QUOTE_MAX_REFRESH_INTERVAL)
+        })
+        expect(mockCreateQuote).toHaveBeenCalledTimes(2)
     })
 
     it('re-quotes on returning to the foreground with an expired quote', async () => {

@@ -15,7 +15,9 @@ import type { Decimal } from 'decimal.js'
 import {
     AppError,
     ErrorCategory,
+    isConnectivityError,
     isPeraNetworkError,
+    isTransientNetworkError,
     type Nullable,
     type Maybe,
 } from '@perawallet/wallet-core-shared'
@@ -147,6 +149,18 @@ function isUntranslatedError(error: unknown, raw: unknown): boolean {
     if (isPeraNetworkError(error)) return error.kind === 'server'
     const status = (raw as Maybe<{ status?: unknown }>)?.status
     return typeof status === 'number' && status >= 500
+}
+
+/**
+ * A failure a later retry may fix (offline, a timeout, a 5xx, an upstream's
+ * rate limit), as opposed to the router refusing the request itself.
+ */
+export function isTransientRampError(error: unknown): boolean {
+    return (
+        isConnectivityError(error) ||
+        isTransientNetworkError(error) ||
+        isUntranslatedError(error, unwrapNetworkError(error))
+    )
 }
 
 const ATTESTATION_REQUIRED_MESSAGE =
