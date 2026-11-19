@@ -30,3 +30,21 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
     WithPlatformExtension: () => ({ keyValueStorage }),
     getPlatformServices: () => ({ keyValueStorage }),
 }))
+
+// The real provider loads native modules. Remote config answers every key with
+// the caller's fallback, as an unfetched service does.
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        keyValueStorage,
+        remoteConfig: {
+            getStringValue: (_key: string, fallback?: string) => fallback ?? '',
+            getBooleanValue: (_key: string, fallback?: boolean) =>
+                fallback ?? false,
+            getNumberValue: (_key: string, fallback?: number) => fallback ?? 0,
+        },
+        deviceInfo: {
+            getDevicePlatform: () => 'ios',
+            isStoreBuild: () => false,
+        },
+    }),
+}))

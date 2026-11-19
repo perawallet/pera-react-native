@@ -4580,12 +4580,18 @@ importers:
       '@perawallet/wallet-core-database':
         specifier: workspace:*
         version: link:../database
+      '@perawallet/wallet-core-remote-config':
+        specifier: workspace:*
+        version: link:../remote-config
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
       '@perawallet/wallet-core-signing':
         specifier: workspace:*
         version: link:../signing
+      '@perawallet/wallet-extension-provider':
+        specifier: workspace:*
+        version: link:../../extensions/provider
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.101.2(react@19.3.0)

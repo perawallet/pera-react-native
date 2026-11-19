@@ -32,9 +32,9 @@ import {
     type TransactionListRow,
 } from '@modules/transactions'
 import type { AppStackParamList } from '@routes/types'
-import type {
-    CustomDateRange,
+import {
     TransactionFilter,
+    type CustomDateRange,
 } from '../TransactionsFilterContent'
 import { useStyles } from './styles'
 import { useAccountHistoryCsvExport } from './useAccountHistoryCsvExport'
@@ -113,8 +113,14 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     const navigation =
         useNavigation<NativeStackNavigationProp<AppStackParamList>>()
 
-    const { activeFilter, customRange, afterTime, beforeTime, openFilter } =
-        useAccountHistoryFilter()
+    const {
+        activeFilter,
+        customRange,
+        afterTime,
+        beforeTime,
+        historyType,
+        openFilter,
+    } = useAccountHistoryFilter()
 
     const {
         rows,
@@ -137,6 +143,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         networkChainId,
         isMerged,
         chainFilterOptions,
+        canFilterByType,
         handleSelectChain,
         historyFeeds,
         failedNetworkNames,
@@ -146,13 +153,13 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         handleRefresh,
         isRefreshing,
         scopeOf,
-    } = useAccountHistoryRows({ afterTime, beforeTime })
+    } = useAccountHistoryRows({ afterTime, beforeTime, historyType })
 
     // The event needs one chain, so on All it names the account's own; a
     // filter there covers every network.
     const handleOpenFilter = useCallback(
-        () => openFilter(scope.chainId),
-        [openFilter, scope.chainId],
+        () => openFilter(scope.chainId, canFilterByType),
+        [openFilter, scope.chainId, canFilterByType],
     )
 
     const { t } = useLanguage()
@@ -213,12 +220,18 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         rows.length === 0 &&
         (!isFetched || hasNextPage)
 
-    const emptyBody =
+    const isFiltered =
+        activeFilter !== TransactionFilter.AllTime ||
+        (canFilterByType && historyType !== null)
+    const unfilteredEmptyBody =
         networkChainId === null
             ? t('asset_details.transaction_list.empty_body')
             : t('asset_details.transaction_list.empty_on_network_body', {
                   network: chainDisplayNameOf(networkChainId) ?? networkChainId,
               })
+    const emptyBody = isFiltered
+        ? t('asset_details.transaction_list.empty_filtered_body')
+        : unfilteredEmptyBody
 
     const renderItem = useCallback(
         ({ item }: { item: TransactionListRow }) => (

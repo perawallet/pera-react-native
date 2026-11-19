@@ -434,6 +434,7 @@
         "transaction_list": {
             "title": "Transactions",
             "empty_body": "No transactions found",
+            "empty_filtered_body": "No transactions match this filter",
             "empty_on_network_body": "No transactions yet on {{network}}",
             "network_failed": "Couldn't load transactions on {{networks}}",
             "network_unavailable": "Transactions aren't available on {{networks}}",
@@ -4048,7 +4049,14 @@
             "yesterday": "Yesterday",
             "last_week": "Last Week",
             "last_month": "Last Month",
-            "custom_range": "Custom Range"
+            "custom_range": "Custom Range",
+            "type": "Type",
+            "type_all": "All",
+            "type_swaps": "Swaps",
+            "type_approvals": "Approvals",
+            "type_defi": "DeFi",
+            "type_transfers": "Sends & Receives",
+            "type_other": "Other"
         },
         "replacement": {
             "title": "Pending transaction",

@@ -36,6 +36,7 @@ export const RemoteConfigKeys = {
     enable_device_registration_v4: 'enable_device_registration_v4',
     enable_listed_address_hard_block: 'enable_listed_address_hard_block',
     account_list_first_read_wait_ms: 'account_list_first_read_wait_ms',
+    history_type_filter_scan_pages: 'history_type_filter_scan_pages',
 } as const
 
 export type RemoteConfigKey =
@@ -120,6 +121,10 @@ export const RemoteConfigDefaults: Readonly<
     // Milliseconds an account's asset or NFT list waits on a chain's first
     // read before showing what is stored; a later read fills the list in.
     account_list_first_read_wait_ms: 3000,
+    // Backend history pages a History type filter reads, across every network,
+    // before it asks to search older. Each page costs 5–6 Etherscan calls
+    // against a per-device limit of 60 per 10 minutes.
+    history_type_filter_scan_pages: 4,
 }
 
 export interface RemoteConfigService {

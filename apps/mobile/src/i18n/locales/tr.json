@@ -434,6 +434,7 @@
         "transaction_list": {
             "title": "İşlemler",
             "empty_body": "İşlem bulunamadı",
+            "empty_filtered_body": "Bu filtreyle eşleşen işlem yok",
             "empty_on_network_body": "{{network}} ağında henüz işlem yok",
             "network_failed": "{{networks}} ağındaki işlemler yüklenemedi",
             "network_unavailable": "{{networks}} ağında işlemler kullanılamıyor",
@@ -4048,7 +4049,14 @@
             "yesterday": "Dün",
             "last_week": "Geçen hafta",
             "last_month": "Geçen ay",
-            "custom_range": "Özel aralık"
+            "custom_range": "Özel aralık",
+            "type": "Tür",
+            "type_all": "Tümü",
+            "type_swaps": "Takaslar",
+            "type_approvals": "Onaylar",
+            "type_defi": "DeFi",
+            "type_transfers": "Gönderme ve alma",
+            "type_other": "Diğer"
         },
         "replacement": {
             "title": "Bekleyen işlem",

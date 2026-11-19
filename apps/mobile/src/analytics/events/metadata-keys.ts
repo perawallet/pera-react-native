@@ -79,6 +79,7 @@ export enum AnalyticsMetadataKey {
     AttemptCount = 'attempt_count',
     FailureReason = 'failure_reason',
     TransactionId = 'tx_id',
+    TransactionType = 'transaction_type',
     AccountCreationType = 'type',
     UnsignedTransaction = 'unsigned_transaction',
     Url = 'url',

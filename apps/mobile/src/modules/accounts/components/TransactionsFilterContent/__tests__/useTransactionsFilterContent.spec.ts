@@ -27,7 +27,11 @@ describe('useTransactionsFilterContent', () => {
     })
 
     it('resolves the filter the user picked', () => {
-        const { result } = renderHook(() => useTransactionsFilterContent({}))
+        const { result } = renderHook(() =>
+            useTransactionsFilterContent({
+                activeFilter: TransactionFilter.AllTime,
+            }),
+        )
 
         act(() => result.current.handleFilterPress(TransactionFilter.Today))
 
@@ -36,8 +40,66 @@ describe('useTransactionsFilterContent', () => {
         })
     })
 
+    it('keeps the type in force when a date range is picked', () => {
+        const { result } = renderHook(() =>
+            useTransactionsFilterContent({
+                activeFilter: TransactionFilter.AllTime,
+                activeHistoryType: 'swaps',
+            }),
+        )
+
+        act(() => result.current.handleFilterPress(TransactionFilter.Today))
+
+        expect(mocks.resolve).toHaveBeenCalledWith({
+            filter: TransactionFilter.Today,
+            historyType: 'swaps',
+        })
+    })
+
+    it('applies a picked type with the custom range in force', () => {
+        const customRange = {
+            from: new Date('2024-01-01'),
+            to: new Date('2024-01-10'),
+        }
+        const { result } = renderHook(() =>
+            useTransactionsFilterContent({
+                activeFilter: TransactionFilter.CustomRange,
+                initialCustomRange: customRange,
+                activeHistoryType: null,
+            }),
+        )
+
+        act(() => result.current.handleHistoryTypePress('approvals'))
+
+        expect(mocks.resolve).toHaveBeenCalledWith({
+            filter: TransactionFilter.CustomRange,
+            customRange,
+            historyType: 'approvals',
+        })
+    })
+
+    it('resolves All as a null type', () => {
+        const { result } = renderHook(() =>
+            useTransactionsFilterContent({
+                activeFilter: TransactionFilter.LastWeek,
+                activeHistoryType: 'defi',
+            }),
+        )
+
+        act(() => result.current.handleHistoryTypePress(null))
+
+        expect(mocks.resolve).toHaveBeenCalledWith({
+            filter: TransactionFilter.LastWeek,
+            historyType: null,
+        })
+    })
+
     it('opens the custom range view instead of resolving', () => {
-        const { result } = renderHook(() => useTransactionsFilterContent({}))
+        const { result } = renderHook(() =>
+            useTransactionsFilterContent({
+                activeFilter: TransactionFilter.AllTime,
+            }),
+        )
 
         act(() =>
             result.current.handleFilterPress(TransactionFilter.CustomRange),
@@ -52,6 +114,7 @@ describe('useTransactionsFilterContent', () => {
         const to = new Date('2024-01-10')
         const { result } = renderHook(() =>
             useTransactionsFilterContent({
+                activeFilter: TransactionFilter.AllTime,
                 initialCustomRange: { from, to },
             }),
         )

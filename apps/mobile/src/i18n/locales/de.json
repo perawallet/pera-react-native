@@ -434,6 +434,7 @@
         "transaction_list": {
             "title": "Transaktionen",
             "empty_body": "Keine Transaktionen gefunden",
+            "empty_filtered_body": "Keine Transaktionen entsprechen diesem Filter",
             "empty_on_network_body": "Noch keine Transaktionen auf {{network}}",
             "network_failed": "Transaktionen auf {{networks}} konnten nicht geladen werden",
             "network_unavailable": "Transaktionen sind auf {{networks}} nicht verfügbar",
@@ -4040,7 +4041,14 @@
             "yesterday": "Gestern",
             "last_week": "Letzte Woche",
             "last_month": "Letzter Monat",
-            "custom_range": "Benutzerdefinierter Zeitraum"
+            "custom_range": "Benutzerdefinierter Zeitraum",
+            "type": "Typ",
+            "type_all": "Alle",
+            "type_swaps": "Swaps",
+            "type_approvals": "Genehmigungen",
+            "type_defi": "DeFi",
+            "type_transfers": "Senden & Empfangen",
+            "type_other": "Sonstige"
         },
         "replacement": {
             "title": "Ausstehende Transaktion",

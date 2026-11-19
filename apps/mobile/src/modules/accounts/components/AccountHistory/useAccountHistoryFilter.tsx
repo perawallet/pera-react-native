@@ -12,6 +12,8 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { TransactionHistoryType } from '@perawallet/wallet-core-transactions'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     trackEvent,
     AccountDetailsEvent,
@@ -33,8 +35,10 @@ export type UseAccountHistoryFilterResult = {
     afterTime?: string
     /** `YYYY-MM-DD`, inclusive. */
     beforeTime?: string
-    /** `chainId` is the network the analytics event names. */
-    openFilter: (chainId: ChainId) => Promise<void>
+    /** Null is All. */
+    historyType: Nullable<TransactionHistoryType>
+    /** `chainId` is the network the analytics event names; `canFilterByType` shows the Type section. */
+    openFilter: (chainId: ChainId, canFilterByType: boolean) => Promise<void>
 }
 
 export const useAccountHistoryFilter = (): UseAccountHistoryFilterResult => {
@@ -42,6 +46,8 @@ export const useAccountHistoryFilter = (): UseAccountHistoryFilterResult => {
         TransactionFilter.AllTime,
     )
     const [customRange, setCustomRange] = useState<CustomDateRange>()
+    const [historyType, setHistoryType] =
+        useState<Nullable<TransactionHistoryType>>(null)
     const { request: requestBottomSheet } = useBottomSheet()
 
     const { afterTime, beforeTime } = useMemo(
@@ -50,27 +56,45 @@ export const useAccountHistoryFilter = (): UseAccountHistoryFilterResult => {
     )
 
     const openFilter = useCallback(
-        async (chainId: ChainId) => {
-            trackEvent(AccountDetailsEvent.TransactionFilter, {
-                [AnalyticsMetadataKey.ChainId]: chainId,
-            })
+        async (chainId: ChainId, canFilterByType: boolean) => {
             const result = await requestBottomSheet<TransactionsFilterResult>({
                 contents: (
                     <TransactionsFilterContent
                         activeFilter={activeFilter}
                         initialCustomRange={customRange}
+                        activeHistoryType={
+                            canFilterByType ? historyType : undefined
+                        }
                     />
                 ),
                 options: { size: 'auto', enablePanDownToClose: true },
             })
             if (!result) return
+            // Sent on apply rather than open, so it carries what was picked.
+            trackEvent(AccountDetailsEvent.TransactionFilter, {
+                [AnalyticsMetadataKey.ChainId]: chainId,
+                ...(result.historyType !== undefined && {
+                    [AnalyticsMetadataKey.TransactionType]:
+                        result.historyType ?? 'all',
+                }),
+            })
             setActiveFilter(result.filter)
             if (result.customRange) {
                 setCustomRange(result.customRange)
             }
+            if (result.historyType !== undefined) {
+                setHistoryType(result.historyType)
+            }
         },
-        [requestBottomSheet, activeFilter, customRange],
+        [requestBottomSheet, activeFilter, customRange, historyType],
     )
 
-    return { activeFilter, customRange, afterTime, beforeTime, openFilter }
+    return {
+        activeFilter,
+        customRange,
+        afterTime,
+        beforeTime,
+        historyType,
+        openFilter,
+    }
 }

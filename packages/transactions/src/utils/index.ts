@@ -12,6 +12,7 @@
 
 export { getDebitedAddress, isOutgoingFor } from './direction'
 export { isFeePaidByAccount } from './fee'
+export { historyTypeOf, type TransactionHistoryType } from './historyType'
 export {
     replacementNotNeededNotice,
     transactionStatusNotice,

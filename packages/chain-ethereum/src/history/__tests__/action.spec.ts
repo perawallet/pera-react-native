@@ -437,13 +437,31 @@ describe('historyActionSummary', () => {
         ['unwrap', 'transactions.list_item.unwrap'],
         ['add-liquidity', 'transactions.list_item.add_liquidity'],
         ['remove-liquidity', 'transactions.list_item.remove_liquidity'],
+    ] as const)(
+        'Given %s, then a protocol-action contract call titled %s',
+        (kind, key) => {
+            expect(
+                historyActionSummary({ kind }, base, undefined, ETHEREUM),
+            ).toEqual({
+                ...base,
+                kind: 'contract-call',
+                title: { key },
+                isProtocolAction: true,
+            })
+        },
+    )
+
+    it.each([
         ['send', 'transactions.list_item.send'],
         ['receive', 'transactions.list_item.receive'],
-    ] as const)('Given %s, then a contract call titled %s', (kind, key) => {
-        expect(
-            historyActionSummary({ kind }, base, undefined, ETHEREUM),
-        ).toEqual({ ...base, kind: 'contract-call', title: { key } })
-    })
+    ] as const)(
+        'Given %s, then a contract call titled %s that is no protocol action',
+        (kind, key) => {
+            expect(
+                historyActionSummary({ kind }, base, undefined, ETHEREUM),
+            ).toEqual({ ...base, kind: 'contract-call', title: { key } })
+        },
+    )
 
     it('Given balance changes, then they stay as computed', () => {
         const changes = [usdtOut, change(AUSDT, '2230000', 'aEthUSDT')]
