@@ -142,6 +142,10 @@ updates:
           - version-update:semver-major
           - version-update:semver-minor
           - version-update:semver-patch
+      # 58.0.4 subclasses ExpoRootViewController, which Expo 58.0.17 lacks, so
+      # the iOS archive fails to compile.
+      - dependency-name: expo-screen-orientation
+        versions: ["58.0.4"]
       # Bundled by `expo` itself, through tilde floats rather than a pin. A
       # direct spec ahead of what the installed SDK bundles doesn't upgrade the
       # module, it installs a *second* copy of it — the same
