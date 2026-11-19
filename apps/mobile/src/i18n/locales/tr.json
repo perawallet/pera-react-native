@@ -430,6 +430,7 @@
         "transaction_list": {
             "title": "İşlemler",
             "empty_body": "İşlem bulunamadı",
+            "empty_filtered_body": "Bu filtreyle eşleşen işlem yok",
             "empty_on_network_body": "{{network}} ağında henüz işlem yok",
             "network_failed": "{{networks}} ağındaki işlemler yüklenemedi",
             "network_unavailable": "{{networks}} ağında işlemler kullanılamıyor",

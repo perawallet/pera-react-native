@@ -570,6 +570,24 @@ describe('useAccountHistory', () => {
             )
         })
 
+        it('says nothing matches, rather than that there are no transactions, while a filter is on', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce({
+                filter: TransactionFilter.Today,
+            })
+            const { result } = renderHook(() => useAccountHistory())
+            expect(result.current.emptyBody).toBe(
+                'asset_details.transaction_list.empty_body',
+            )
+
+            await act(async () => {
+                await result.current.handleOpenFilter()
+            })
+
+            expect(result.current.emptyBody).toBe(
+                'asset_details.transaction_list.empty_filtered_body',
+            )
+        })
+
         it('handles custom range filter', async () => {
             const customRange = {
                 from: new Date('2024-01-01'),

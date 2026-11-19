@@ -32,7 +32,7 @@ import {
 import {
     MAX_AUTO_RECORD_FETCHES,
     MAX_RECORD_PAGE_READS,
-    MAX_TYPED_SCAN_PAGES,
+    DEFAULT_TYPED_SCAN_PAGES,
     typedScanBudget,
     useTransactionRecordsQuery,
 } from '../useTransactionRecordsQuery'
@@ -131,12 +131,12 @@ const gasOnly = (id: string, initiator?: string): TransactionRecord => ({
 
 describe('typedScanBudget', () => {
     test.each([
-        [1, { pageReads: 2, autoFetches: 2 }],
-        [2, { pageReads: 2, autoFetches: 1 }],
-        [3, { pageReads: 1, autoFetches: 1 }],
-        [6, { pageReads: 1, autoFetches: 1 }],
-    ])('splits the scan across %i histories', (share, budget) => {
-        expect(typedScanBudget(share)).toEqual(budget)
+        [1, { pages: 4, pageReads: 2 }],
+        [2, { pages: 2, pageReads: 2 }],
+        [3, { pages: 1, pageReads: 1 }],
+        [6, { pages: 1, pageReads: 1 }],
+    ])('splits a 4-page scan across %i histories', (share, budget) => {
+        expect(typedScanBudget(share, 4)).toEqual(budget)
     })
 })
 
@@ -305,8 +305,9 @@ describe('useTransactionRecordsQuery', () => {
                     {
                         records: [],
                         next: { cursor: `c${MAX_RECORD_PAGE_READS}` },
+                        reads: MAX_RECORD_PAGE_READS,
                     },
-                    { records: [record('A', JAN_10)], next: null },
+                    { records: [record('A', JAN_10)], next: null, reads: 1 },
                 ],
             }),
         )
@@ -459,9 +460,50 @@ describe('useTransactionRecordsQuery', () => {
 
         await waitFor(() => expect(result.current.isSearchPaused).toBe(true))
         expect(mocks.getMinedTransactionHistory).toHaveBeenCalledTimes(
-            MAX_TYPED_SCAN_PAGES,
+            DEFAULT_TYPED_SCAN_PAGES,
         )
         expect(result.current.records).toEqual([])
+    })
+
+    test('with a type matching once a page, pauses after its scan budget rather than paging on from the list end', async () => {
+        mocks.getMinedTransactionHistory.mockImplementation(
+            async (_address, _scope, page?: { cursor: string }) => {
+                const cursor = `${page?.cursor ?? 'c'}+`
+                return {
+                    items: [record(`SEND-${cursor}`, JAN_10), gasOnly(cursor)],
+                    next: { cursor },
+                }
+            },
+        )
+
+        const { result } = renderHook(
+            () =>
+                useTransactionRecordsQuery({
+                    accountAddress: ADDRESS,
+                    scope: SCOPE,
+                    historyType: 'approvals',
+                }),
+            { wrapper },
+        )
+        await waitFor(() => expect(result.current.records).toHaveLength(1))
+
+        // The list's end asking for more while the list is short.
+        for (let i = 1; i < DEFAULT_TYPED_SCAN_PAGES; i++) {
+            act(() => result.current.fetchNextPage())
+            await waitFor(() =>
+                expect(result.current.records).toHaveLength(i + 1),
+            )
+        }
+
+        await waitFor(() => expect(result.current.isSearchPaused).toBe(true))
+        expect(mocks.getMinedTransactionHistory).toHaveBeenCalledTimes(
+            DEFAULT_TYPED_SCAN_PAGES,
+        )
+
+        act(() => result.current.fetchNextPage())
+
+        await waitFor(() => expect(result.current.records).toHaveLength(5))
+        expect(result.current.isSearchPaused).toBe(false)
     })
 
     test('with a type shared by three histories, pauses after a single page', async () => {

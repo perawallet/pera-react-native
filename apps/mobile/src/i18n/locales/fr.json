@@ -430,6 +430,7 @@
         "transaction_list": {
             "title": "Transactions",
             "empty_body": "Aucune transaction trouvée",
+            "empty_filtered_body": "Aucune transaction ne correspond à ce filtre",
             "empty_on_network_body": "Aucune transaction pour le moment sur {{network}}",
             "network_failed": "Impossible de charger les transactions sur {{networks}}",
             "network_unavailable": "Les transactions ne sont pas disponibles sur {{networks}}",

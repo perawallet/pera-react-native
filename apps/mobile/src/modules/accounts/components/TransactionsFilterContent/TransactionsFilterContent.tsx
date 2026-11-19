@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import React from 'react'
+import React, { useMemo } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import type { TransactionHistoryType } from '@perawallet/wallet-core-transactions'
@@ -65,19 +65,24 @@ export const TransactionsFilterContent = ({
         activeHistoryType,
     })
 
-    const historyTypeChoices: [Nullable<TransactionHistoryType>, string][] = [
-        [null, t('transactions.filter.type_all')],
-        ['swaps', t('transactions.filter.type_swaps')],
-        ['approvals', t('transactions.filter.type_approvals')],
-        ['defi', t('transactions.filter.type_defi')],
-        ['transfers', t('transactions.filter.type_transfers')],
-        ['other', t('transactions.filter.type_other')],
-    ]
-    const historyTypeOptions = historyTypeChoices.map(([value, label]) => ({
-        value,
-        label,
-        testID: `history-type-${value ?? 'all'}`,
-    }))
+    const historyTypeOptions = useMemo(
+        () =>
+            (
+                [
+                    [null, t('transactions.filter.type_all')],
+                    ['swaps', t('transactions.filter.type_swaps')],
+                    ['approvals', t('transactions.filter.type_approvals')],
+                    ['defi', t('transactions.filter.type_defi')],
+                    ['transfers', t('transactions.filter.type_transfers')],
+                    ['other', t('transactions.filter.type_other')],
+                ] satisfies [Nullable<TransactionHistoryType>, string][]
+            ).map(([value, label]) => ({
+                value,
+                label,
+                testID: `history-type-${value ?? 'all'}`,
+            })),
+        [t],
+    )
 
     const formatDate = (date: Date) => {
         return date.toLocaleDateString('en-GB').replace(/\//g, '.')

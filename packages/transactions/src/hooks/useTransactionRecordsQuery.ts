@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
     useInfiniteQuery,
     useQueryClient,
@@ -29,12 +29,18 @@ import { isNativeAssetId } from '@perawallet/wallet-core-assets'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { SECONDS_PER_DAY } from '@perawallet/wallet-core-config'
 import {
+    readRemoteConfigWithOverrides,
+    RemoteConfigKeys,
+    useRemoteConfigStore,
+} from '@perawallet/wallet-core-remote-config'
+import {
     isoDateToUnixSeconds,
     PeraNetworkError,
     toError,
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     getMinedTransactionHistory,
     mergePendingRecords,
@@ -86,8 +92,9 @@ export type UseTransactionRecordsQueryResult = {
     error: Nullable<Error>
     hasNextPage: boolean
     /**
-     * The last {@link MAX_AUTO_RECORD_FETCHES} page fetches (fewer with a type, see {@link typedScanBudget}) found nothing, with
-     * history left: the hook stopped reading until `fetchNextPage` resumes it.
+     * The last {@link MAX_AUTO_RECORD_FETCHES} page fetches found nothing, or
+     * with a type the scan read its {@link typedScanBudget}, with history
+     * left: the hook stopped reading until `fetchNextPage` resumes it.
      * Holds with rows loaded too, so a list's load-more should respect it.
      */
     isSearchPaused: boolean
@@ -102,6 +109,8 @@ type RecordsPage = {
     next: Nullable<PageRef>
     /** Page one only: the newest mined record the backend listed, where a later page-one refresh stops reading. */
     newestMinedId?: string
+    /** Backend pages this fetch read, which a type filter's scan budget counts. */
+    reads?: number
 }
 
 type RecordsRead = { page: RecordsPage; hasReachedLoadedPages: boolean }
@@ -149,25 +158,48 @@ export const MAX_RECORD_PAGE_READS = 5
 /** Empty page fetches in a row the hook makes on its own, per resume. */
 export const MAX_AUTO_RECORD_FETCHES = 4
 
-// Each backend page costs 5–6 Etherscan calls against a per-device limit of
-// 60 per 10 minutes, shared by every network, and a rare type can be absent
-// from the whole history, so a type filter scans this many pages in all before
-// it asks the user to go on.
-export const MAX_TYPED_SCAN_PAGES = 4
+/** Bundled fallback for the `history_type_filter_scan_pages` remote value. */
+export const DEFAULT_TYPED_SCAN_PAGES = 4
 
 const MAX_TYPED_RECORD_PAGE_READS = 2
 
+/** Backend pages a type filter reads in all, across every network, before it asks to go on. */
+export const readTypedScanPages = (): number => {
+    const value = readRemoteConfigWithOverrides(
+        getProvider().remoteConfig,
+        useRemoteConfigStore.getState().configOverrides,
+    ).getNumberValue(
+        RemoteConfigKeys.history_type_filter_scan_pages,
+        DEFAULT_TYPED_SCAN_PAGES,
+    )
+    return Number.isInteger(value) && value > 0
+        ? value
+        : DEFAULT_TYPED_SCAN_PAGES
+}
+
 /**
- * One history's share of {@link MAX_TYPED_SCAN_PAGES} when `share` histories
- * scan at once. Never below one page, so each network still shows its newest.
+ * One history's share of `scanPages` when `share` histories scan at once: the
+ * pages it reads before pausing, matched or not, so a type that matches once a
+ * page still stops. Never below one page, so each network shows its newest.
  */
 export const typedScanBudget = (
     share: number,
-): { pageReads: number; autoFetches: number } => {
-    const pages = Math.max(1, Math.floor(MAX_TYPED_SCAN_PAGES / share))
-    const pageReads = Math.min(MAX_TYPED_RECORD_PAGE_READS, pages)
-    return { pageReads, autoFetches: Math.floor(pages / pageReads) }
+    scanPages: number,
+): { pages: number; pageReads: number } => {
+    const pages = Math.max(1, Math.floor(scanPages / share))
+    return { pages, pageReads: Math.min(MAX_TYPED_RECORD_PAGE_READS, pages) }
 }
+
+type ScanResume = { key: string; pageCount: number }
+
+const readsSince = (
+    pages: readonly RecordsPage[],
+    resume: Optional<ScanResume>,
+    key: string,
+): number =>
+    pages
+        .slice(resume?.key === key ? resume.pageCount : 0)
+        .reduce((sum, page) => sum + (page.reads ?? 1), 0)
 
 const involvesAsset = (record: TransactionRecord, assetId: string): boolean =>
     record.summary.amount?.assetRef.assetId === assetId ||
@@ -231,15 +263,13 @@ export const useTransactionRecordsQuery = ({
                 historyTypeOf(record.summary) === historyType),
         [assetId, isNativeFilter, accountAddress, fromMs, untilMs, historyType],
     )
-    const typedBudget = typedScanBudget(typedScanShare)
-    const maxPageReads =
-        historyType === undefined
-            ? MAX_RECORD_PAGE_READS
-            : typedBudget.pageReads
-    const maxAutoFetches =
-        historyType === undefined
-            ? MAX_AUTO_RECORD_FETCHES
-            : typedBudget.autoFetches
+    const isTyped = historyType !== undefined
+    const [scanPages] = useState(readTypedScanPages)
+    const typedBudget = typedScanBudget(typedScanShare, scanPages)
+    // Where the running scan began, as a page count. A ref as well as state:
+    // the page function reads it outside render, right after a resume sets it.
+    const [resume, setResume] = useState<ScanResume>()
+    const resumeRef = useRef<ScanResume>(undefined)
 
     const queryClient = useQueryClient()
     const isActive = isEnabled && !!accountAddress
@@ -255,6 +285,20 @@ export const useTransactionRecordsQuery = ({
         contractDecoding,
     })
 
+    // Under a type, a later page reads no further than what is left of the scan.
+    const nextPageReadCap = (): number => {
+        if (!isTyped) return MAX_RECORD_PAGE_READS
+        const loaded =
+            queryClient.getQueryData<
+                InfiniteData<RecordsPage, Nullable<PageRef>>
+            >(queryKey)?.pages ?? []
+        const read = readsSince(loaded, resumeRef.current, hashKey(queryKey))
+        return Math.min(
+            typedBudget.pageReads,
+            Math.max(1, typedBudget.pages - read),
+        )
+    }
+
     // A backend page can be empty and still have a next one, and a filtered
     // page often is, so a first-page read goes on up to the cap. With
     // `loadedNewestMinedId` it is a refresh instead: it goes on until the read
@@ -265,6 +309,11 @@ export const useTransactionRecordsQuery = ({
         signal: AbortSignal,
         loadedNewestMinedId?: string,
     ): Promise<RecordsRead> => {
+        const firstPageReadCap = isTyped
+            ? typedBudget.pageReads
+            : MAX_RECORD_PAGE_READS
+        const readCap =
+            pageParam === null ? firstPageReadCap : nextPageReadCap()
         let page = pageParam ?? undefined
         let newestMinedId: Optional<string>
         const records: TransactionRecord[] = []
@@ -294,6 +343,7 @@ export const useTransactionRecordsQuery = ({
                         records,
                         next: page ?? null,
                         ...(newestMinedId !== undefined && { newestMinedId }),
+                        reads: read - 1,
                     },
                     hasReachedLoadedPages: false,
                 }
@@ -328,12 +378,13 @@ export const useTransactionRecordsQuery = ({
                 loadedNewestMinedId === undefined
                     ? records.length > 0
                     : hasReachedLoadedPages
-            if (isDone || !nextPage || read === maxPageReads) {
+            if (isDone || !nextPage || read >= readCap) {
                 return {
                     page: {
                         records,
                         next: nextPage ?? null,
                         ...(newestMinedId !== undefined && { newestMinedId }),
+                        reads: read,
                     },
                     hasReachedLoadedPages,
                 }
@@ -461,8 +512,10 @@ export const useTransactionRecordsQuery = ({
     // A page that found nothing changes no visible row, so `onEndReached`
     // can't be trusted to ask for the next one: the hook walks on itself while
     // the last page is empty. A failed page stops this until a retry, and every
-    // `maxAutoFetches` empty pages in a row it pauses, so a barely used
-    // asset doesn't walk the whole history unasked.
+    // MAX_AUTO_RECORD_FETCHES empty pages in a row it pauses, so a barely used
+    // asset doesn't walk the whole history unasked. A type filter pauses once
+    // its scan budget is read, matches or not: a type matching once a page
+    // keeps a list short, and the list's end would page on past the rate limit.
     const {
         isFetched,
         isFetching,
@@ -484,20 +537,33 @@ export const useTransactionRecordsQuery = ({
         isFetched && !isQueryError && hasNextPage && trailingEmptyPages > 0
     // Gated on the next page only, so a background refetch of the loaded pages
     // keeps the paused state up instead of flipping back to the skeleton.
-    const isSearchPaused =
-        isWalking &&
-        !query.isFetchingNextPage &&
-        trailingEmptyPages % maxAutoFetches === 0
+    const resumeKey = hashKey(queryKey)
+    const scannedReads = readsSince(pages, resume, resumeKey)
+    const isSearchPaused = isTyped
+        ? isFetched &&
+          !isQueryError &&
+          hasNextPage &&
+          !query.isFetchingNextPage &&
+          scannedReads >= typedBudget.pages
+        : isWalking &&
+          !query.isFetchingNextPage &&
+          trailingEmptyPages % MAX_AUTO_RECORD_FETCHES === 0
+
     // Keyed on pageCount too: a fast page can land in the same notify batch as
     // its own fetching state, so `isFetching` never reads true in between.
     useEffect(() => {
         if (isWalking && !isFetching && !isSearchPaused) void fetchNextPage()
     }, [isWalking, isFetching, isSearchPaused, pageCount, fetchNextPage])
 
-    const handleFetchNextPage = useCallback(
-        () => void fetchNextPage(),
-        [fetchNextPage],
-    )
+    // Only a fetch made while paused, such as Search Older, starts a new scan.
+    const handleFetchNextPage = useCallback(() => {
+        if (isTyped && isSearchPaused) {
+            const next = { key: resumeKey, pageCount }
+            resumeRef.current = next
+            setResume(next)
+        }
+        void fetchNextPage()
+    }, [isTyped, isSearchPaused, resumeKey, pageCount, fetchNextPage])
     const handleRefetch = useCallback(() => {
         refetchPending()
         void refetch()

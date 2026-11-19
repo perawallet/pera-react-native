@@ -32,9 +32,9 @@ import {
     type TransactionListRow,
 } from '@modules/transactions'
 import type { AppStackParamList } from '@routes/types'
-import type {
-    CustomDateRange,
+import {
     TransactionFilter,
+    type CustomDateRange,
 } from '../TransactionsFilterContent'
 import { useStyles } from './styles'
 import { useAccountHistoryCsvExport } from './useAccountHistoryCsvExport'
@@ -215,12 +215,18 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         rows.length === 0 &&
         (!isFetched || hasNextPage)
 
-    const emptyBody =
+    const isFiltered =
+        activeFilter !== TransactionFilter.AllTime ||
+        (canFilterByType && historyType !== null)
+    const unfilteredEmptyBody =
         networkChainId === null
             ? t('asset_details.transaction_list.empty_body')
             : t('asset_details.transaction_list.empty_on_network_body', {
                   network: chainDisplayNameOf(networkChainId) ?? networkChainId,
               })
+    const emptyBody = isFiltered
+        ? t('asset_details.transaction_list.empty_filtered_body')
+        : unfilteredEmptyBody
 
     const renderItem = useCallback(
         ({ item }: { item: TransactionListRow }) => (
