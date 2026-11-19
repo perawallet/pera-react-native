@@ -36,14 +36,14 @@ const registerTransports = async (): Promise<void> => {
 
 export const App = (): React.JSX.Element => {
     const [Shell, setShell] = useState<Nullable<ShellComponent>>(null)
-    const [error, setError] = useState<Nullable<string>>(null)
+    const [bootstrapFailed, setBootstrapFailed] = useState(false)
     const [showLoading, setShowLoading] = useState(false)
 
     useEffect(() => {
-        if (Shell || error || getSurface() === 'offscreen') return
+        if (Shell || bootstrapFailed || getSurface() === 'offscreen') return
         const timer = setTimeout(() => setShowLoading(true), LOADING_DELAY_MS)
         return () => clearTimeout(timer)
-    }, [Shell, error])
+    }, [Shell, bootstrapFailed])
 
     useEffect(() => {
         const bootstrap = async (): Promise<void> => {
@@ -92,15 +92,16 @@ export const App = (): React.JSX.Element => {
             setShell(() => mod.AppShell)
         }
         bootstrap().catch((err: unknown) => {
+            const surface = getSurface()
+            console.error(`[pera] ${surface} bootstrap failed:`, err)
             // A dead offscreen document is worse than none: `hasDocument()` keeps
             // returning true so nothing ever recreates it and the database stays
             // unreachable until a manual reload. Closing lets `ensure-offscreen` rebuild it.
-            if (getSurface() === 'offscreen') {
-                console.error('[pera] offscreen bootstrap failed:', err)
+            if (surface === 'offscreen') {
                 window.close()
                 return
             }
-            setError(`bootstrap failed: ${String(err)}`)
+            setBootstrapFailed(true)
         })
     }, [])
 
@@ -110,13 +111,14 @@ export const App = (): React.JSX.Element => {
                 <Shell />
             </RootBoundary>
         )
-    if (error)
+    if (bootstrapFailed)
         return (
             <div
                 className='pera-bootstrap'
                 role='alert'
             >
-                {error}
+                {/* oxlint-disable-next-line pera/no-hardcoded-ui-strings -- bootstrap errors render before i18n can load */}
+                Pera Wallet failed to start. Reopen the extension to try again.
             </div>
         )
     if (!showLoading) return <></>

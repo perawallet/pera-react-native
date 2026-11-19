@@ -114,4 +114,26 @@ describe('App (web) startup', () => {
         expect(screen.getByText('Wallet ready')).toBeTruthy()
         expect(screen.queryByRole('status')).toBeNull()
     })
+
+    it('describes a startup failure without showing internal error details', async () => {
+        mocks.getSurface.mockReturnValue('popup')
+        const failure = new Error('storage initialization failed')
+        mocks.hydratePlatform.mockRejectedValueOnce(failure)
+        const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+        try {
+            render(<App />)
+            const alert = await screen.findByRole('alert')
+            expect(alert.textContent).toBe(
+                'Pera Wallet failed to start. Reopen the extension to try again.',
+            )
+            expect(log).toHaveBeenCalledWith(
+                '[pera] popup bootstrap failed:',
+                failure,
+            )
+            expect(screen.queryByRole('status')).toBeNull()
+        } finally {
+            log.mockRestore()
+        }
+    })
 })
