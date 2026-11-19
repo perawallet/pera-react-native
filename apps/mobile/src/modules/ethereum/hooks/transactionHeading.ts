@@ -19,6 +19,7 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { IconName } from '@components/core'
 import { transactionIconName } from '@components/TransactionIcon'
 import {
+    APPROVAL_TITLE_KEY,
     CONTRACT_CALL_TITLE_KEY,
     REVOKE_APPROVAL_TITLE_KEY,
 } from '../utils/recordTitleKeys'
@@ -47,7 +48,7 @@ export const titleKeyOf = (
     if (standardCall && isApproval(standardCall)) {
         return isRevocation(standardCall)
             ? REVOKE_APPROVAL_TITLE_KEY
-            : i18nKey('transactions.list_item.approval')
+            : APPROVAL_TITLE_KEY
     }
     if (!standardCall && contractAction && view.action) {
         return contractActionTitleKeyOf(view.action)

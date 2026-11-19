@@ -221,6 +221,16 @@ describe('useEthereumStandardCall', () => {
         })
     })
 
+    it('presents an NFT approval of token #0 as a grant, not a revocation', () => {
+        mockRecords({ [`${TOKEN}/0`]: APE })
+
+        expect(render(approve(0n)).standardCall).toMatchObject({
+            kind: 'nft-approval',
+            tokenId: '0',
+            isRevocation: false,
+        })
+    })
+
     it('treats an NFT approval to the zero address as a revocation', () => {
         mockRecords({ [`${TOKEN}/7`]: APE })
 

@@ -11,7 +11,7 @@
  */
 
 import type { Decimal } from 'decimal.js'
-import type { Address, Hex } from 'viem'
+import { zeroAddress, type Address, type Hex } from 'viem'
 import {
     type AssetRef,
     type BalanceChange,
@@ -38,6 +38,7 @@ import {
     wrappedNativeOf,
     type KnownEvmContract,
 } from '../signing/known-contracts'
+import { nftApprovalIdOf } from '../signing/nft-approvals'
 import type { EvmStandardCall } from '../signing/standard-call-types'
 import {
     decodeEvmStandardCall,
@@ -53,11 +54,17 @@ export type EvmApprovalGrant = {
     spender: Address
     /** The registry's name for `spender`, read whatever the capabilities, as signing reads it. */
     spenderName?: string
-    /** At least 2^160, as signing reads an allowance. */
+    /**
+     * At least 2^160, as signing reads an allowance. `approve` shares its selector with ERC-721,
+     * whose token id can pass that bound; never set once `nftAssetId` places the token.
+     */
     isUnlimited: boolean
+    /** A zero `approve` of a token the store can't place may be ERC-721 token #0; the detail page's read corrects it. */
     isRevocation: boolean
     /** `setApprovalForAll`: `token` is the collection. */
     isCollection: boolean
+    /** Set when the store holds the approved token as this NFT: an ERC-721 `approve` of one token. */
+    nftAssetId?: string
 }
 
 type HistoryActionVariant =
@@ -88,6 +95,7 @@ export type EvmHistoryCallFacts = {
     /** Absent from a backend that predates it, and on a plain transfer. */
     calldata?: { from: Address; data: Hex; value: bigint }
     eip155ChainId?: number
+    nftApprovals?: ReadonlySet<string>
 }
 
 export type EvmDecodableCall = {
@@ -308,7 +316,11 @@ const grantOf = (
         isUnlimited:
             (call.kind === 'approve' || call.kind === 'increase-allowance') &&
             isUnlimitedAllowance(call.value),
-        isRevocation: isEvmRevocationCall(call),
+        // `approve` to the zero address is how ERC-721 clears a token's approval.
+        isRevocation:
+            isEvmRevocationCall(call) ||
+            (call.kind === 'approve' &&
+                areEvmAddressesEqual(spender, zeroAddress)),
         isCollection: call.kind === 'set-approval-for-all',
     }
 }
@@ -333,8 +345,28 @@ export const approvalActionOfCall = (
     call: EvmDecodableCall,
     contract: Optional<KnownEvmContract>,
     eip155ChainId: Optional<number>,
+    nftApprovals?: ReadonlySet<string>,
 ): Optional<EvmHistoryAction> => {
     const standard = decodeEvmStandardCall(call)
+    const nftAssetId =
+        standard?.kind === 'approve' && nftApprovals
+            ? nftApprovalIdOf(standard, nftApprovals)
+            : undefined
+    if (standard?.kind === 'approve' && nftAssetId) {
+        const spenderName = spenderNameOf(eip155ChainId, standard.spender)
+        return {
+            kind: 'approval',
+            token: call.to,
+            grant: {
+                spender: standard.spender,
+                ...(spenderName && { spenderName }),
+                isUnlimited: false,
+                isRevocation: isEvmRevocationCall(standard, true),
+                isCollection: false,
+                nftAssetId,
+            },
+        }
+    }
     if (standard && isEvmApprovalCall(standard)) {
         const grant = grantOfStandardCall(standard, eip155ChainId)
         return { kind: 'approval', token: call.to, ...(grant && { grant }) }
@@ -387,9 +419,19 @@ const calldataAction = (
 export const classifyEvmHistoryCall = (
     facts: EvmHistoryCallFacts,
 ): Optional<EvmHistoryAction> => {
-    const { to, method, contract, isDecoding, calldata, eip155ChainId } = facts
+    const {
+        to,
+        method,
+        contract,
+        isDecoding,
+        calldata,
+        eip155ChainId,
+        nftApprovals,
+    } = facts
     const call = calldata && { ...calldata, to }
-    const approval = call && approvalActionOfCall(call, contract, eip155ChainId)
+    const approval =
+        call &&
+        approvalActionOfCall(call, contract, eip155ChainId, nftApprovals)
     if (approval) return approval
     if (method !== null && isApprovalMethod(method)) {
         return contract?.kind === 'uniswap-permit2'
@@ -421,6 +463,17 @@ const approvalTitleOf = (
 ): Pick<TransactionSummary, 'title' | 'titleAssets'> => {
     if (grant?.isRevocation) return { title: { key: REVOKE_APPROVAL } }
     if (!token) return { title: { key: APPROVAL } }
+    if (grant?.nftAssetId) {
+        return {
+            title: {
+                key: APPROVE_ASSET,
+                params: { asset: truncateEvmAddress(token) },
+            },
+            titleAssets: {
+                asset: { chainId: chain.row.id, assetId: grant.nftAssetId },
+            },
+        }
+    }
     // A collection isn't a fungible asset the store could name.
     if (grant?.isCollection) {
         return {

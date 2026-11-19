@@ -12,10 +12,13 @@
 
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
-/** A mined approve row without calldata can't tell a revocation from a grant; the node read can. */
+/** A mined approve row can't always tell a revocation from a grant (no calldata, or an NFT's token #0); the node read can. */
 export const REVOKE_APPROVAL_TITLE_KEY = i18nKey(
     'transactions.list_item.revoke_approval',
 )
+
+/** The node read's title for an approval it doesn't read as a revocation. */
+export const APPROVAL_TITLE_KEY = i18nKey('transactions.list_item.approval')
 
 /** The node read's title for a call it names no action for. */
 export const CONTRACT_CALL_TITLE_KEY = i18nKey(
