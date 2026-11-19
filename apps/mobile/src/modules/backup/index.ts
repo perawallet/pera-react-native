@@ -17,6 +17,7 @@ export {
     useBackupFlowLauncher,
     useBackupQuiz,
     useMnemonicForAddress,
+    usePassphraseAccount,
     usePassphraseReach,
     useRandomMnemonicForAddress,
 } from './hooks'

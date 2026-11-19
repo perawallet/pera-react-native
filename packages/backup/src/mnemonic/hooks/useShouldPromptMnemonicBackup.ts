@@ -11,7 +11,7 @@
  */
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+import { useAnyEnabledChainHasCapability } from '@perawallet/wallet-core-chain-shared'
 import {
     chainAccountOf,
     useAccountFundedNetworksQuery,
@@ -27,17 +27,12 @@ export const useShouldPromptMnemonicBackup = (
     account: Maybe<WalletAccount>,
     scope: ChainScope,
 ): boolean => {
-    const canBackUpMnemonic = useChainCapability(
-        scope.chainId,
-        'mnemonicBackup',
-    )
-    // Hooks can't be skipped, so the capability decides what the lookups see:
-    // a chain without mnemonic backup may register no backup adapter.
+    // The phrase belongs to the seed, so an account on a chain without mnemonic
+    // backup (an EVM-only one) is still prompted while any chain offers it.
+    const canBackUpMnemonic = useAnyEnabledChainHasCapability('mnemonicBackup')
+    // Hooks can't be skipped, so the capability decides what the lookups see.
     const promptableAccount = canBackUpMnemonic ? account : undefined
-    const requiresBackup = useRequiresMnemonicBackup(
-        promptableAccount,
-        scope.chainId,
-    )
+    const requiresBackup = useRequiresMnemonicBackup(promptableAccount)
     // A balance on ANY chain or network counts, not just the one currently
     // selected: the passphrase is the same secret whichever chain the balance
     // sits on, and a warning that disappears on a network switch teaches the

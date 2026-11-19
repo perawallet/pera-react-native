@@ -30,7 +30,6 @@ import {
     useMnemonicBackupStore,
     useRequiresMnemonicBackup,
 } from '@perawallet/wallet-core-backup'
-import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 import { mockAccountFastLookup } from '@perawallet/wallet-core-shared/test-handlers'
 import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-chain-algorand/test-handlers'
@@ -405,7 +404,7 @@ describe('Flow: Onboarding → Import HD wallet', () => {
                 useMnemonicBackupStore.getState().isBackedUp(seedOf(account)),
             ).toBe(true)
             const { result } = renderHook(() =>
-                useRequiresMnemonicBackup(account, ALGORAND_CHAIN_ID),
+                useRequiresMnemonicBackup(account),
             )
             expect(result.current).toBe(false)
         }
