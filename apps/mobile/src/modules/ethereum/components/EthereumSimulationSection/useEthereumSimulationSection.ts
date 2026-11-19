@@ -91,11 +91,6 @@ const HIDDEN: EthereumSimulationSectionState = { status: 'hidden' }
 const LOADING: EthereumSimulationSectionState = { status: 'loading' }
 const NO_IDS: string[] = []
 
-const allowanceOf = (amount: Optional<Decimal>): Optional<Decimal> =>
-    amount === undefined
-        ? undefined
-        : toAllowanceAmount(BigInt(amount.toFixed()))
-
 const grantOf = (
     change: EvmApprovalChange,
     asset: Nullable<PeraAsset>,
@@ -105,13 +100,12 @@ const grantOf = (
     if (change.tokenId !== undefined) {
         return { kind: 'token', tokenId: change.tokenId }
     }
-    const amount = allowanceOf(change.amount)
-    if (amount === undefined) return { kind: 'unlimited' }
+    if (!change.amount) return { kind: 'unlimited' }
     return {
         kind: 'amount',
         amount: asset
-            ? baseUnitsToDisplayUnits(amount, asset.decimals)
-            : amount,
+            ? baseUnitsToDisplayUnits(change.amount, asset.decimals)
+            : change.amount,
         isBaseUnits: !asset,
     }
 }
@@ -126,7 +120,8 @@ const isSameAllowance = (
     approval: Optional<SpendApproval>,
 ): boolean => {
     const decoded = approval ? approval.allowances[0]?.amount : new Decimal(0)
-    const resulting = allowanceOf(simulated)
+    const resulting =
+        simulated && toAllowanceAmount(BigInt(simulated.toFixed()))
     return decoded && resulting ? decoded.eq(resulting) : decoded === resulting
 }
 

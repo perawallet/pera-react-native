@@ -24,8 +24,11 @@ import { Decimal } from 'decimal.js'
 import { setupServer } from 'msw/node'
 import {
     parseGwei,
+    parseTransaction,
+    recoverTransactionAddress,
     serializeTransaction,
     toHex,
+    type Hex,
     type RpcFeeHistory,
 } from 'viem'
 import type {
@@ -48,7 +51,20 @@ import {
     evmTransactionReceipt,
 } from '../../blockchain/msw-handlers'
 import { TEST_RPC_URL, testChainContext } from '../../__tests__/context'
-import { BASE, ETHEREUM, evmScopeOf } from '../../__tests__/evm-chains'
+import {
+    BASE,
+    ETHEREUM,
+    OPTIMISM,
+    eip155IdOf,
+    evmChainOf,
+    evmScopeOf,
+} from '../../__tests__/evm-chains'
+import type { EvmChain } from '../../chains/types'
+import {
+    opStackOracleResponder,
+    unsignedEncodingOf,
+    type OpStackOracleCall,
+} from './op-stack-oracle'
 import {
     SENDER,
     TRANSFER,
@@ -464,4 +480,86 @@ describe('Ethereum transaction replacement', () => {
             ).rejects.toBeInstanceOf(InvalidSendParamsError)
         })
     })
+})
+
+describe('Ethereum transaction replacement surcharge', () => {
+    // Another chain's signature recovers to some other sender, which is all a replacement reads.
+    const { r, s, yParity } = parseTransaction(VIEM_TRANSFER_NONCE_0)
+    const L1_DATA_FEE = 3_000_000_000_000n
+    const OPERATOR_FEE = 7n
+
+    const replacedOn = async (chain: EvmChain, kind: 'speed-up' | 'cancel') => {
+        const chainId = eip155IdOf(chain)
+        const rawTransaction = serializeTransaction(
+            { ...TRANSFER, chainId },
+            { r: r as Hex, s: s as Hex, yParity: yParity ?? 0 },
+        )
+        const from = await recoverTransactionAddress({
+            serializedTransaction: rawTransaction,
+        })
+        const bumped = {
+            type: 'eip1559',
+            chainId,
+            nonce: 0,
+            maxFeePerGas: parseGwei('22'),
+            maxPriorityFeePerGas: parseGwei('1.1'),
+        } as const
+        const replacement =
+            kind === 'cancel'
+                ? { ...bumped, to: from, value: 0n, gas: CANCEL_GAS }
+                : {
+                      ...bumped,
+                      to: TRANSFER.to,
+                      value: TRANSFER.value,
+                      gas: TRANSFER.gas,
+                  }
+        const calls: OpStackOracleCall[] = []
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: TEST_RPC_URL,
+                responses: {
+                    eth_feeHistory: CHEAP_MARKET,
+                    eth_call: opStackOracleResponder(
+                        {
+                            l1Fees: new Map([
+                                [unsignedEncodingOf(replacement), L1_DATA_FEE],
+                            ]),
+                            operatorFee: OPERATOR_FEE,
+                        },
+                        calls,
+                    ),
+                },
+            }),
+        )
+        const [built] = await buildEvmReplacement(
+            testChainContext({ chain }),
+            chain,
+            { kind, rawTransaction },
+            { scope: evmScopeOf(chain) },
+        )
+        return { payload: built.payload, calls }
+    }
+
+    describe.each([BASE, OPTIMISM])('on $row.id', chain => {
+        it.each(['speed-up', 'cancel'] as const)(
+            'carries the surcharge the oracle prices for the %s',
+            async kind => {
+                const { payload } = await replacedOn(chain, kind)
+
+                expect(payload).toMatchObject({
+                    surcharge: L1_DATA_FEE + OPERATOR_FEE,
+                })
+            },
+        )
+    })
+
+    it.each([ETHEREUM, evmChainOf('arbitrum')])(
+        'reads no oracle on $row.id',
+        async chain => {
+            const { payload, calls } = await replacedOn(chain, 'speed-up')
+
+            expect(payload).not.toHaveProperty('surcharge')
+            expect(calls).toEqual([])
+        },
+    )
 })

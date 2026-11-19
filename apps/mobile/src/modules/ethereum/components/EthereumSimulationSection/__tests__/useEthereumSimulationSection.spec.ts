@@ -498,26 +498,6 @@ describe('useEthereumSimulationSection', () => {
         expect(state.approvals[4].isCollectionWide).toBe(true)
     })
 
-    it('displays a simulated raw uint160 maximum as an unlimited allowance', () => {
-        answering({
-            data: success({
-                approvalChanges: [
-                    {
-                        contract: USDC,
-                        spender: PERMIT2,
-                        isCollectionWide: false,
-                        amount: new Decimal(((1n << 160n) - 1n).toString()),
-                    },
-                ],
-            }),
-        })
-
-        expect(render()).toMatchObject({
-            status: 'success',
-            approvals: [{ grant: { kind: 'unlimited' } }],
-        })
-    })
-
     describe('an approval the call decodes to', () => {
         const tokenApprovalOf = (amount?: Decimal, isIncrease?: boolean) =>
             presentationOf({

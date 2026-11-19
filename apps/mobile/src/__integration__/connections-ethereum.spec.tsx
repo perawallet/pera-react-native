@@ -60,6 +60,7 @@ import {
     V2_URI,
 } from '@packages/walletconnect/src/v2/__tests__/fakeWalletKit'
 import { SENDER } from '@packages/chain-ethereum/src/__tests__/testing'
+import { OP_STACK_ORACLE_ADDRESS } from '@packages/chain-ethereum/src/transfer/__tests__/op-stack-oracle'
 import {
     chainAccountOf,
     useAccountsStore,
@@ -1318,6 +1319,20 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
             describe('on a second EVM chain', () => {
                 const settleOnBase = async () => {
                     server.use(...evmRpcHandlers())
+                    server.use(
+                        ...evmRpcHandlers({
+                            rpcUrl: 'https://base.rpc.test/',
+                            responses: {
+                                eth_call: params => {
+                                    const { to } = params[0] as { to?: string }
+                                    return to?.toLowerCase() ===
+                                        OP_STACK_ORACLE_ADDRESS.toLowerCase()
+                                        ? `0x${'0'.repeat(61)}3e8`
+                                        : '0x'
+                                },
+                            },
+                        }),
+                    )
                     await mountProvider()
                     const walletKit = await propose({
                         requiredNamespaces: {
@@ -1348,6 +1363,9 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                         BASE_MAINNET,
                     )
                     const request = await queued()
+                    expect(request).toMatchObject({
+                        txs: [{ payload: { surcharge: 2000n } }],
+                    })
                     await waitFor(
                         () => {
                             expect(
