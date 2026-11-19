@@ -219,7 +219,7 @@ describe('matching a built call to the preview the user approved', () => {
         previewEthereumCall(ctx.getScope(), ETHEREUM, call, ceiling)
 
     it('Given the swap built once reached, when matched to its preview, then it matches though it gained nonce, gas and fees', async () => {
-        expect(match(await built(), previewOf())).toBe(true)
+        expect(match(await built(), await previewOf())).toBe(true)
     })
 
     it.each([
@@ -229,7 +229,7 @@ describe('matching a built call to the preview the user approved', () => {
     ])(
         'Given a preview with %s, when matched, then it does not match',
         async (_, shown) => {
-            expect(match(await built(), previewOf(shown))).toBe(false)
+            expect(match(await built(), await previewOf(shown))).toBe(false)
         },
     )
 
@@ -237,12 +237,12 @@ describe('matching a built call to the preview the user approved', () => {
         expect(match(await built(), await built())).toBe(true)
     })
 
-    it('Given a preview standing in for the built call, when matched, then it does not match', () => {
-        expect(match(previewOf(), previewOf())).toBe(false)
+    it('Given a preview standing in for the built call, when matched, then it does not match', async () => {
+        expect(match(await previewOf(), await previewOf())).toBe(false)
     })
 
     it('Given a preview from another account, when matched, then it does not match', async () => {
-        const other = previewOf({ ...SWAP, from: ROUTER })
+        const other = await previewOf({ ...SWAP, from: ROUTER })
 
         expect(match(await built(), other)).toBe(false)
     })
@@ -251,8 +251,10 @@ describe('matching a built call to the preview the user approved', () => {
         const call = await built()
         const { maxFeePerGas } = readEvmTransaction(call, ETHEREUM).transaction
 
-        expect(match(call, previewOf(SWAP, maxFeePerGas! - 1n))).toBe(false)
-        expect(match(call, previewOf(SWAP, maxFeePerGas!))).toBe(true)
+        expect(match(call, await previewOf(SWAP, maxFeePerGas! - 1n))).toBe(
+            false,
+        )
+        expect(match(call, await previewOf(SWAP, maxFeePerGas!))).toBe(true)
     })
 
     it('Given the first call rebuilt at more than twice the fee the review priced, when matched, then it does not match', async () => {

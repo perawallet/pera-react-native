@@ -55,7 +55,7 @@ import {
     isAfterUnconfirmedAttempt,
 } from '../blockchain/utils/nodeVerdict'
 import type { EvmChain } from '../chains/types'
-import { decodedCallSummary } from '../history/decoded-call-summary'
+import { readDecodedCallSummary } from '../history/decoded-call-summary'
 import { SURCHARGE_HEADROOM, readEvmSurcharge } from './fees'
 import { meetsReplacementBump, readReplaceableTransaction } from './replacement'
 
@@ -314,7 +314,7 @@ export const historyEntryOfSigned = async (
     const { to, value, data } = parseTransaction(serializedTransaction)
     const from = await recoverTransactionAddress({ serializedTransaction })
     return {
-        summary: decodedCallSummary(
+        summary: await readDecodedCallSummary(
             {
                 from,
                 to: to == null ? undefined : getAddress(to),
