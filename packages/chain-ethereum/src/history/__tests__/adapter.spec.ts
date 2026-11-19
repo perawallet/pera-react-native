@@ -21,11 +21,12 @@ import {
 } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { getAddress } from 'viem'
-import { http, HttpResponse } from 'msw'
+import { http, HttpResponse, type JsonBodyType } from 'msw'
 import { setupServer } from 'msw/node'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { peraEvmHandlers } from '../../accounts/msw-handlers'
 import { UnknownEvmNetworkError } from '../../blockchain/utils/caip19'
+import { readBackendRecording } from '../../__tests__/backend-recordings'
 import {
     PERA_URL,
     TEST_API_KEY,
@@ -523,6 +524,89 @@ describe('getEvmTransactionHistory', () => {
             release?.()
             await read
         }
+    })
+})
+
+describe('filtered to one asset', () => {
+    const USDC = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'
+    const BAYC = '0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d'
+
+    const readParams = async (assetId: string, cursor?: string) => {
+        let url: URL | undefined
+        server.use(
+            http.get(
+                `${PERA_URL}/api/v3/evm/:chainId/accounts/:address/transactions/`,
+                ({ request }) => {
+                    url = new URL(request.url)
+                    return HttpResponse.json({
+                        next: null,
+                        previous: null,
+                        results: [],
+                    })
+                },
+            ),
+        )
+        await createEvmHistoryAdapter(
+            ETHEREUM,
+            testChainContext(),
+        ).getTransactionHistory(ME, MAINNET, cursor ? { cursor } : undefined, {
+            capabilities: evmCapabilityDefaults,
+            assetId,
+        })
+        return url?.searchParams
+    }
+
+    it('asks the backend for an ERC-20 by its lowercased contract, on a cursor page too', async () => {
+        const params = await readParams(getAddress(USDC), 'abc')
+
+        expect(params?.get('asset_id')).toBe(`eip155:1/erc20:${USDC}`)
+        expect(params?.get('cursor')).toBe('abc')
+    })
+
+    it('reads the native coin’s history unfiltered, since its view drops other assets’ legs', async () => {
+        const params = await readParams(ETHEREUM.nativeAsset.assetId)
+
+        expect(params?.has('asset_id')).toBe(false)
+    })
+
+    it('reads an ERC-20 view’s rows with no fee or initiator, as the view names no sender', async () => {
+        const { request, response } = readBackendRecording(
+            'evm-account-transactions-erc20',
+        )
+        server.use(
+            http.get(
+                `${PERA_URL}/api/v3/evm/:chainId/accounts/:address/transactions/`,
+                () => HttpResponse.json(response as JsonBodyType),
+            ),
+        )
+
+        const { items } = await getEvmTransactionHistory(
+            ETHEREUM,
+            request.pathParams?.address ?? '',
+            MAINNET,
+            undefined,
+            false,
+            getAddress('0x6b175474e89094c44da98b954eedeac495271d0f'),
+        )
+
+        expect(items.length).toBeGreaterThan(0)
+        expect(
+            items.filter(
+                item => item.fee !== undefined || item.initiator !== undefined,
+            ),
+        ).toEqual([])
+    })
+
+    it('reads an NFT’s history unfiltered, since the backend filters no NFT view', async () => {
+        const params = await readParams(`${getAddress(BAYC)}/1234`)
+
+        expect(params?.has('asset_id')).toBe(false)
+    })
+
+    it('reads unfiltered, rather than failing, for an id it cannot place', async () => {
+        const params = await readParams('not-a-contract')
+
+        expect(params?.has('asset_id')).toBe(false)
     })
 })
 

@@ -17,8 +17,13 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { config } from '@perawallet/wallet-core-config'
+import {
+    AppError,
+    ErrorCategory,
+    ErrorSeverity,
+} from '@perawallet/wallet-core-shared'
 import { nameServiceAdapterFor } from '../chain-adapter'
-import { nameBatchQueue } from '../services/nameBatchQueue'
+import { NAME_UNAVAILABLE, nameBatchQueue } from '../services/nameBatchQueue'
 import { nameQueryKeys } from './querykeys'
 import type { AddressName } from '../models'
 
@@ -27,12 +32,23 @@ export type UseNameForAddressQueryResult = {
     isPending: boolean
 }
 
+class NameUnavailableError extends AppError {
+    constructor() {
+        super('The name could not be verified against its chain', {
+            severity: ErrorSeverity.LOW,
+            category: ErrorCategory.BLOCKCHAIN,
+            retryable: true,
+        })
+    }
+}
+
 // One stable empty array, so memos that depend on `data` don't re-run every render.
 const NO_RESULTS: AddressName[] = []
 
 /**
  * The address's name on the scope's chain, from whichever service names that
- * chain. Never reaches a node: names come from Pera's backend.
+ * chain. Names come from Pera's backend and are cached only once the chain's
+ * own forward record maps them back to the address.
  *
  * The batch queue coalesces enqueues that land in the same microtask.
  * Putting an `await` (e.g. an SQLite cache check) BEFORE `enqueue` would
@@ -62,13 +78,17 @@ export const useNameForAddressQuery = (
 
     const query = useQuery({
         queryKey: nameQueryKeys.forAddress(address, scope),
-        queryFn: (): Promise<AddressName[]> => {
-            const valuePromise = nameBatchQueue.enqueue(
+        queryFn: async (): Promise<AddressName[]> => {
+            const value = await nameBatchQueue.enqueue(
                 address,
                 toScopeKey(scope),
             )
-            return valuePromise.then(value => (value ? [value] : []))
+            // A failure, not an empty answer: a success would be cached, and
+            // persisted, as "no name" for as long as a real one.
+            if (value === NAME_UNAVAILABLE) throw new NameUnavailableError()
+            return value ? [value] : []
         },
+        meta: { isExpectedFailure: true },
         enabled,
         staleTime: config.reactQueryLongLivedStaleTime,
         gcTime: config.reactQueryLongLivedGCTime,

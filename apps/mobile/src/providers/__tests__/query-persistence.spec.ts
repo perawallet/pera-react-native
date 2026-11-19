@@ -286,6 +286,20 @@ describe('PERSISTED_CACHE_BUSTER', () => {
         expect(persister.removeClient).toHaveBeenCalled()
     })
 
+    it('discards address names persisted before they were checked against the chain', async () => {
+        const nameKey: QueryKey = [
+            'names',
+            'address',
+            { address: 'ADDR1', scope: MAINNET },
+        ]
+        const persister = persisterHolding('price-history-points', nameKey)
+
+        const restored = await restore(persister)
+
+        expect(restored.getQueryData(nameKey)).toBeUndefined()
+        expect(persister.removeClient).toHaveBeenCalled()
+    })
+
     it('rehydrates a cache persisted under the current buster', async () => {
         const scopedKey: QueryKey = ['swaps', 'providers', { scope: MAINNET }]
         const persister = persisterHolding(PERSISTED_CACHE_BUSTER, scopedKey)

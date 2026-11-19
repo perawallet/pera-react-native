@@ -37,8 +37,12 @@ export const CollectibleThumbnail = ({
     notOptedIn = false,
     imageWidth,
 }: CollectibleThumbnailProps) => {
-    const { imageUrl, showPlaceholder, handleImageError } =
+    const { imageUrl, showPlaceholder, isImageHidden, handleImageError } =
         useCollectibleThumbnail({ thumbnailUrl, imageWidth })
+
+    if (isImageHidden) {
+        return <PWView style={placeholderStyle} />
+    }
 
     if (!showPlaceholder) {
         return (

@@ -24,7 +24,7 @@ vi.mock('../../db', () => ({
 }))
 
 import { toScopeKey } from '@perawallet/wallet-core-chain-contract'
-import { nameBatchQueue } from '../nameBatchQueue'
+import { NAME_UNAVAILABLE, nameBatchQueue } from '../nameBatchQueue'
 
 const ALGORAND_MAINNET_KEY = toScopeKey({
     chainId: 'algorand',
@@ -44,7 +44,9 @@ const BOB = { name: 'bob.algo', image: '', source: 'nfd' }
 
 describe('nameBatchQueue (adapter)', () => {
     beforeEach(() => {
-        mockFetchAndPersistNames.mockReset().mockResolvedValue(undefined)
+        mockFetchAndPersistNames
+            .mockReset()
+            .mockResolvedValue(new Set<string>())
         mockGetNamesByAddresses.mockReset().mockResolvedValue([])
     })
 
@@ -124,5 +126,23 @@ describe('nameBatchQueue (adapter)', () => {
             ALGORAND_MAINNET_KEY,
         )
         expect(result).toBeUndefined()
+    })
+
+    it('answers unavailable, not an older row, for an address whose check could not complete', async () => {
+        // An expired row from before the outage must not stand in for the
+        // check that failed.
+        mockFetchAndPersistNames.mockResolvedValue(new Set([ADDR_A]))
+        mockGetNamesByAddresses.mockResolvedValue([
+            { address: ADDR_A, name: ALICE, updatedAt: 0 },
+            { address: ADDR_B, name: BOB, updatedAt: Date.now() },
+        ])
+
+        const [a, b] = await Promise.all([
+            nameBatchQueue.enqueue(ADDR_A, ALGORAND_MAINNET_KEY),
+            nameBatchQueue.enqueue(ADDR_B, ALGORAND_MAINNET_KEY),
+        ])
+
+        expect(a).toBe(NAME_UNAVAILABLE)
+        expect(b).toEqual(BOB)
     })
 })

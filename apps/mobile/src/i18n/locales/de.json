@@ -36,10 +36,10 @@
     "discover": {
         "home": {
             "title": "Entdecken",
-            "top_dapps": "Top-dApps",
+            "explore_dapps": "dApps entdecken",
             "news": "Neuigkeiten",
             "dapps_error": "Die empfohlenen dApps konnten nicht geladen werden",
-            "dapps_empty": "Noch keine dApps auf {{chain}}"
+            "dapps_empty_open_url": "Noch keine dApps auf {{chain}} gelistet. Öffne eine beliebige dApp, indem du oben ihre URL eingibst."
         },
         "dapp_row": {
             "favorite": "Zu Favoriten hinzufügen",
@@ -77,51 +77,28 @@
             "website": "Website",
             "open": "Öffnen"
         },
-        "folders": {
-            "name_sheet": {
-                "title_new": "Neuer Ordner",
-                "title_rename": "Ordner umbenennen",
-                "placeholder": "Ordnername",
-                "create": "Erstellen",
-                "save": "Speichern"
-            },
-            "empty": "Noch keine dApps in diesem Ordner",
-            "menu": {
-                "title": "Ordneroptionen",
-                "open_label": "Ordneroptionen",
-                "rename": "Ordner umbenennen",
-                "rearrange": "dApps neu anordnen",
-                "delete": "Ordner löschen"
-            },
-            "rearrange": {
-                "title": "dApps neu anordnen",
-                "remove_label": "{{name}} aus diesem Ordner entfernen"
-            },
-            "delete_confirm": {
-                "title": "Diesen Ordner löschen?",
-                "body": "Seine dApps bleiben in deinen Favoriten.",
-                "confirm": "Ordner löschen"
-            }
-        },
         "favorites": {
             "title": "Favoriten",
-            "new_folder": "Neuer Ordner",
-            "all_favorites": "Alle Favoriten",
-            "dapp_count": "{{count}} dApps",
-            "dapp_count_one": "{{count}} dApp",
             "see_all": "Alle anzeigen",
             "empty_title": "Noch keine Favoriten",
             "empty_body": "Entdecke die dApps",
-            "all_folders_title": "Alle Ordner",
             "added_toast": {
-                "title": "Zu Favoriten hinzugefügt",
-                "body": "Tippe, um es einem Ordner hinzuzufügen"
+                "title": "Zu Favoriten hinzugefügt"
+            },
+            "search_placeholder": "Favoriten durchsuchen",
+            "filter": {
+                "all_categories": "Alle Kategorien",
+                "categories_title": "Kategorien",
+                "all": "Alle",
+                "sort_title": "Sortieren nach",
+                "sort_recent": "Zuletzt hinzugefügt",
+                "sort_visits": "Meistbesucht"
+            },
+            "rearrange": {
+                "title": "Neu anordnen",
+                "open_label": "Favoriten neu anordnen",
+                "remove_label": "{{name}} aus den Favoriten entfernen"
             }
-        },
-        "add_to_folder": {
-            "title": "Zu Ordner hinzufügen",
-            "new_folder": "Neuer Ordner",
-            "added": "Zu {{folder}} hinzugefügt"
         }
     },
     "account_menu": {
@@ -3536,6 +3513,7 @@
         "notifications": {
             "push_notifications": "Push-Benachrichtigungen",
             "account_notifications": "Benachrichtigungen anzeigen für",
+            "network_notifications": "Benachrichtigungen anzeigen auf",
             "push_service_unavailable": "Dieser Browser stellt keine Push-Benachrichtigungen zu. Aktiviere in Brave in den Datenschutzeinstellungen „Google-Dienste für Push-Benachrichtigungen verwenden“ und öffne Pera dann erneut.",
             "no_accounts": "Keine Konten gefunden.",
             "no_accounts_body": "Keine Konten gefunden. Füge ein Konto hinzu, um Benachrichtigungseinstellungen zu verwalten."
@@ -3899,6 +3877,10 @@
         },
         "record_detail": {
             "read_failed": "Die Aufrufdetails dieser Transaktion konnten nicht aus dem Netzwerk gelesen werden.",
+            "not_found": {
+                "title": "Transaktion nicht gefunden",
+                "body": "Pera konnte diese Transaktion im Verlauf des Kontos nicht finden. Eine neue Transaktion kann eine Minute brauchen, bis sie erscheint. Versuche es in Kürze erneut."
+            },
             "inferred_notice": "Aus den Guthabenänderungen abgeleitet. Pera konnte den Aufruf selbst nicht lesen.",
             "transaction_id": "Transaktions-ID",
             "quantity": "Menge",
@@ -4327,6 +4309,10 @@
                     "title": "Noch keine Tauschvorgänge",
                     "body": "Dein Tauschverlauf wird hier angezeigt."
                 },
+                "not_on_device": {
+                    "title": "Verlauf noch nicht verfügbar",
+                    "body": "Dieses Konto ist auf diesem Gerät noch nicht eingerichtet, daher kann sein Tauschverlauf nicht geladen werden. Bitte versuche es später erneut."
+                },
                 "error": {
                     "title": "Etwas ist schiefgelaufen",
                     "body": "Wir konnten deinen Tauschverlauf nicht laden. Bitte versuche es erneut."
@@ -4475,6 +4461,8 @@
             "for": "für",
             "empty_title": "Noch keine Transaktionen",
             "empty_body": "Deine Kauftransaktionen werden hier angezeigt.",
+            "not_on_device_title": "Verlauf noch nicht verfügbar",
+            "not_on_device_body": "Dieses Konto ist auf diesem Gerät noch nicht eingerichtet, daher kann sein Kaufverlauf nicht geladen werden. Bitte versuche es später erneut.",
             "error_title": "Etwas ist schiefgelaufen",
             "error_body": "Wir konnten deinen Kaufverlauf nicht laden. Bitte versuche es erneut."
         }

@@ -60,6 +60,7 @@ export {
     type SignRequestDeeplink,
     type StakingDeeplink,
     type SwapDeeplink,
+    type TransactionDetailDeeplink,
     type TransferDeeplink,
     type WalletConnectDeeplink,
 } from './links'

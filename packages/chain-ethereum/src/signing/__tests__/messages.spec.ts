@@ -526,6 +526,21 @@ describe('ethereumMessageSignerAdapter.plan device payload', () => {
         expect(hashTypedData(device.typedData)).toBe(bytesToHex(item.payload))
     })
 
+    it('refuses a permit with a wrapped amount before building a device payload', () => {
+        const typed = structuredClone(EIP2612_PERMIT_TYPED_DATA)
+        const wrapped = {
+            ...typed,
+            message: { ...typed.message, value: ['1000000'] },
+        }
+
+        expect(() =>
+            adapter.plan(
+                typedDataMessageRequest(MAINNET, SENDER, wrapped),
+                ledgerContext,
+            ),
+        ).toThrow('The typed-data message payload is malformed')
+    })
+
     it.each([
         ['a permit', declaringDomain(EIP2612_PERMIT_TYPED_DATA, 1)],
         ['typed data', declaringDomain(MAIL_TYPED_DATA, 1)],

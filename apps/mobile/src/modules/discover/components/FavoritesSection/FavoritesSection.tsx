@@ -10,50 +10,32 @@
  limitations under the License
  */
 
-import { Fragment } from 'react'
 import FavoritesIcon from '@assets/icons/discover/favorites.svg'
-import FolderAddIcon from '@assets/icons/discover/folder-add.svg'
-import { useTheme } from '@rneui/themed'
-import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import { PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
+import type { DiscoverFavorite } from '../../types'
 import { DiscoverSectionHeader } from '../DiscoverSectionHeader'
-import { FolderRow, type FolderRowProps } from '../FolderRow'
-import { RowDivider } from '../RowDivider'
+import { FavoriteTile } from '../FavoriteTile'
+import { FavoritesFilterBar } from '../FavoritesFilterBar'
 import { useFavoritesSection } from './useFavoritesSection'
 import { useStyles } from './styles'
 
-/** The Discover home's Favorites: All favorites, the newest folders, See all. */
+const GRID_COLUMNS = 3
+
+const rowsOf = (dapps: DiscoverFavorite[]): DiscoverFavorite[][] => {
+    const rows: DiscoverFavorite[][] = []
+    for (let i = 0; i < dapps.length; i += GRID_COLUMNS) {
+        rows.push(dapps.slice(i, i + GRID_COLUMNS))
+    }
+    return rows
+}
+
+/** The Discover home's Favorites: the filters and a grid of up to six, See all. */
 export const FavoritesSection = () => {
     const styles = useStyles()
-    const { theme } = useTheme()
     const { t } = useLanguage()
     const section = useFavoritesSection()
-
-    const rows: (FolderRowProps & { key: string })[] = [
-        ...(section.favoriteCount > 0
-            ? [
-                  {
-                      key: 'all',
-                      name: t('discover.favorites.all_favorites'),
-                      count: section.favoriteCount,
-                      previewDapps: section.favoritePreviewDapps,
-                      icon: 'star' as const,
-                      onPress: section.openAllFavorites,
-                      testID: 'discover_home_all_favorites',
-                  },
-              ]
-            : []),
-        ...section.folders.map(folder => ({
-            key: folder.id,
-            name: folder.name,
-            count: folder.count,
-            previewDapps: folder.previewDapps,
-            icon: 'folder' as const,
-            onPress: () => section.openFolder(folder.id),
-            testID: `discover_home_folder_${folder.id}`,
-        })),
-    ]
 
     return (
         <PWView
@@ -63,14 +45,15 @@ export const FavoritesSection = () => {
             <DiscoverSectionHeader
                 title={t('discover.favorites.title')}
                 icon={<FavoritesIcon />}
-                action={{
-                    label: t('discover.favorites.new_folder'),
-                    icon: <FolderAddIcon color={theme.colors.linkPrimary} />,
-                    onPress: () => {
-                        void section.openNewFolder()
-                    },
-                    testID: 'discover_home_new_folder',
-                }}
+                action={
+                    section.isEmpty
+                        ? undefined
+                        : {
+                              label: t('discover.favorites.see_all'),
+                              onPress: section.openAll,
+                              testID: 'discover_home_favorites_see_all',
+                          }
+                }
                 testID='discover_home_favorites_header'
             />
             {section.isEmpty ? (
@@ -80,35 +63,38 @@ export const FavoritesSection = () => {
                     style={styles.empty}
                     testID='discover_home_favorites_empty'
                 />
-            ) : null}
-            {rows.length > 0 ? (
-                <PWView>
-                    {rows.map(({ key, ...row }, index) => (
-                        <Fragment key={key}>
-                            {index > 0 ? <RowDivider /> : null}
-                            <FolderRow {...row} />
-                        </Fragment>
-                    ))}
+            ) : (
+                <PWView style={styles.body}>
+                    <FavoritesFilterBar testID='discover_home_favorites_filters' />
+                    <PWView style={styles.grid}>
+                        {rowsOf(section.dapps).map(row => (
+                            <PWView
+                                key={row[0]?.url}
+                                style={styles.gridRow}
+                            >
+                                {row.map(dapp => (
+                                    <FavoriteTile
+                                        key={dapp.url}
+                                        dapp={dapp}
+                                        onPress={() => section.openDapp(dapp)}
+                                        testID={`discover_home_favorite_${dapp.url}`}
+                                    />
+                                ))}
+                                {Array.from(
+                                    { length: GRID_COLUMNS - row.length },
+                                    (_, i) => (
+                                        <PWView
+                                            // Fillers keep a short last row aligned to the grid.
+                                            key={`filler-${i}`}
+                                            style={styles.filler}
+                                        />
+                                    ),
+                                )}
+                            </PWView>
+                        ))}
+                    </PWView>
                 </PWView>
-            ) : null}
-            {section.hasMore ? (
-                <PWTouchableOpacity
-                    style={styles.seeAll}
-                    onPress={section.openAllFolders}
-                    testID='discover_home_folders_see_all'
-                >
-                    <PWText
-                        variant='bodyLarge'
-                        weight={500}
-                    >
-                        {t('discover.favorites.see_all')}
-                    </PWText>
-                    <PWIcon
-                        name='chevron-down'
-                        size='sm'
-                    />
-                </PWTouchableOpacity>
-            ) : null}
+            )}
         </PWView>
     )
 }

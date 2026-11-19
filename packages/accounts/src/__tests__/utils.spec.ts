@@ -28,6 +28,7 @@ import {
     isDelegatedAccount,
     isSameAddress,
     isWatchAccount,
+    ownKeyChainIdOf,
 } from '../utils'
 import type { WalletAccount } from '../models'
 import {
@@ -260,6 +261,33 @@ describe('utils - authority wrappers', () => {
 
     test('isDelegatedAccount is false for a missing account', () => {
         expect(isDelegatedAccount(null, FAKE_CHAIN_ID)).toBe(false)
+    })
+})
+
+describe('utils - ownKeyChainIdOf', () => {
+    test.each([
+        ['local', FAKE_CHAIN_ID],
+        ['hd', FAKE_CHAIN_ID],
+        ['hardware', undefined],
+        ['multisig', undefined],
+        ['watch', undefined],
+    ] as const)('a %s account signs for itself on %s', (custody, chainId) => {
+        expect(ownKeyChainIdOf(testAccount(custody), [FAKE_CHAIN_ID])).toBe(
+            chainId,
+        )
+    })
+
+    test('skips a chain where the account is delegated', () => {
+        const account = buildTestAccount(TEST_CUSTODY.hd, {
+            [FAKE_CHAIN_ID]: { address: 'A', keyPairId: 'key' },
+        })
+        seedAuthority('A', 'AUTH')
+
+        expect(ownKeyChainIdOf(account, [FAKE_CHAIN_ID])).toBeUndefined()
+    })
+
+    test('ignores a chain not in the list', () => {
+        expect(ownKeyChainIdOf(testAccount('local'), [])).toBeUndefined()
     })
 })
 

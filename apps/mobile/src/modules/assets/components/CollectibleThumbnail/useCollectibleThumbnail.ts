@@ -10,12 +10,13 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useContext, useEffect, useState } from 'react'
 import {
     buildPrismUrl,
     type Maybe,
     type Optional,
 } from '@perawallet/wallet-core-shared'
+import { CollectibleImageVisibilityContext } from './CollectibleImageVisibilityContext'
 
 type UseCollectibleThumbnailParams = {
     thumbnailUrl: Maybe<string>
@@ -26,6 +27,7 @@ type UseCollectibleThumbnailParams = {
 type UseCollectibleThumbnailResult = {
     imageUrl: Optional<string>
     showPlaceholder: boolean
+    isImageHidden: boolean
     handleImageError: () => void
 }
 
@@ -34,6 +36,7 @@ export const useCollectibleThumbnail = ({
     imageWidth,
 }: UseCollectibleThumbnailParams): UseCollectibleThumbnailResult => {
     const [hasLoadFailed, setHasLoadFailed] = useState(false)
+    const isImageHidden = !useContext(CollectibleImageVisibilityContext)
 
     // FlashList recycles cells into new items, so a failure must not stick
     // to the component instance — only to the url that actually failed.
@@ -52,6 +55,7 @@ export const useCollectibleThumbnail = ({
     return {
         imageUrl,
         showPlaceholder: !imageUrl || hasLoadFailed,
+        isImageHidden,
         handleImageError,
     }
 }

@@ -60,8 +60,6 @@ export type MergedHistory = {
     isLoadIntegrityBlocked: boolean
     /** Some network failed while rows show; `failedChainIds` names it. */
     isRefreshFailed: boolean
-    /** Every network in `failedChainIds` lacks the service, so retrying can't help. */
-    isRefreshUnavailable: boolean
     hasNextPage: boolean
     isSearchPaused: boolean
     isRetrying: boolean
@@ -69,17 +67,28 @@ export type MergedHistory = {
     suspectedPoisoningById: ReadonlyMap<string, SuspectedPoisoning>
     /** Keyed by transaction id. */
     scopeByTransactionId: ReadonlyMap<string, ChainScope>
-    /** Networks that failed with nothing loaded, or with only their own sends listed. */
+    /**
+     * Networks that failed with nothing loaded, or with only their own sends
+     * listed, and that a retry can clear. Empty when `isLoadFailed`: the full
+     * screen says it.
+     */
     failedChainIds: ChainId[]
     /** `failedChainIds` by display name, for the failed-network notice. */
     failedNetworkNames: string[]
+    /** Networks that failed for want of a history service. Empty when `isLoadUnavailable`. */
+    unavailableChainIds: ChainId[]
+    /** `unavailableChainIds` by display name. */
+    unavailableNetworkNames: string[]
     /** Indexes of the feeds whose next page decides what shows next. */
     blockingFeeds: number[]
     /** Indexes of the feeds whose search paused; Search Older resumes them. */
     pausedFeeds: number[]
-    /** Indexes of the feeds whose last read failed, a later page's included; Retry re-reads them. */
+    /** Indexes of the feeds whose last read failed, a later page's included, and that a retry can clear; Retry re-reads them. */
     failedFeeds: number[]
 }
+
+const isUnsupportedFeed = (feed: HistoryFeedSnapshot): boolean =>
+    feed.isLoadUnavailable || feed.isRefreshUnavailable
 
 const isEntryRow = (row: TransactionListRow): row is TransactionEntryRow =>
     row.kind !== TRANSACTION_ROW_TYPES.header
@@ -131,19 +140,37 @@ export const mergeHistoryFeeds = (
     const reported = feeds.filter(
         (feed): feed is HistoryFeedSnapshot => feed !== undefined,
     )
-    const failedFeeds = feeds.flatMap((feed, index) =>
+    const erroredFeeds = feeds.flatMap((feed, index) =>
         feed?.isError ? [index] : [],
+    )
+    const failedFeeds = erroredFeeds.filter(
+        index => !isUnsupportedFeed(feeds[index]!),
     )
     const pausedFeeds = feeds.flatMap((feed, index) =>
         feed?.isSearchPaused ? [index] : [],
     )
-    const failed = failedFeeds.map(index => feeds[index]!)
+    const failed = erroredFeeds.map(index => feeds[index]!)
     const loadFailed = failed.filter(feed => feed.isLoadFailed)
     const isLoadFailed = feeds.length > 0 && loadFailed.length === feeds.length
-    const named = isLoadFailed
+    const isLoadUnavailable =
+        isLoadFailed && loadFailed.every(feed => feed.isLoadUnavailable)
+    const chainIdsOf = (list: HistoryFeedSnapshot[]): ChainId[] => [
+        ...new Set(list.map(feed => feed.scope.chainId)),
+    ]
+    const failedChainIds = isLoadFailed
         ? []
-        : failed.filter(feed => feed.isLoadFailed || feed.isRefreshFailed)
-    const failedChainIds = [...new Set(named.map(feed => feed.scope.chainId))]
+        : chainIdsOf(
+              failed.filter(
+                  feed =>
+                      !isUnsupportedFeed(feed) &&
+                      (feed.isLoadFailed || feed.isRefreshFailed),
+              ),
+          )
+    const unavailableChainIds = isLoadUnavailable
+        ? []
+        : chainIdsOf(failed.filter(isUnsupportedFeed))
+    const nameOf = (chainId: ChainId): string =>
+        chainDisplayNameOf(chainId) ?? chainId
 
     const scopeByTransactionId = new Map<string, ChainScope>()
     const suspectedPoisoningById = new Map<string, SuspectedPoisoning>()
@@ -167,8 +194,7 @@ export const mergeHistoryFeeds = (
         isError: failed.length > 0,
         error: failed[0]?.error ?? null,
         isLoadFailed,
-        isLoadUnavailable:
-            isLoadFailed && loadFailed.every(feed => feed.isLoadUnavailable),
+        isLoadUnavailable,
         isLoadIntegrityBlocked:
             isLoadFailed &&
             loadFailed.some(feed => feed.isLoadIntegrityBlocked),
@@ -178,16 +204,11 @@ export const mergeHistoryFeeds = (
         isRefreshing: reported.some(feed => feed.isRefreshing),
         suspectedPoisoningById,
         scopeByTransactionId,
-        isRefreshFailed: named.length > 0,
-        isRefreshUnavailable:
-            named.length > 0 &&
-            named.every(
-                feed => feed.isLoadUnavailable || feed.isRefreshUnavailable,
-            ),
+        isRefreshFailed: failedChainIds.length > 0,
         failedChainIds,
-        failedNetworkNames: failedChainIds.map(
-            chainId => chainDisplayNameOf(chainId) ?? chainId,
-        ),
+        failedNetworkNames: failedChainIds.map(nameOf),
+        unavailableChainIds,
+        unavailableNetworkNames: unavailableChainIds.map(nameOf),
         blockingFeeds,
         pausedFeeds,
         failedFeeds,

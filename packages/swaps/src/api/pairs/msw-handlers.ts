@@ -17,9 +17,16 @@ import type { SwapRouterErrorBody } from '../quotes/msw-handlers'
 import { SWAP_ROUTER_PATH } from '../router-request'
 import { swapPairsQuerySchema, swapPairsResponseSchema } from './schema'
 
-export type MockSwapPairsParams =
+export type MockSwapPairsParams = (
     | { response: z.input<typeof swapPairsResponseSchema>; status?: 200 }
     | { response: SwapRouterErrorBody; status: number }
+) & {
+    /**
+     * Answers only a request with exactly this `q`; any other falls through to the next handler.
+     * Pair it with an unfiltered `mockSwapPairs`, or the unmatched request escapes to the network and times out.
+     */
+    q?: string
+}
 
 export const mockSwapPairs = (params: MockSwapPairsParams): HttpHandler => {
     const status = params.status ?? 200
@@ -39,6 +46,9 @@ export const mockSwapPairs = (params: MockSwapPairsParams): HttpHandler => {
                 { error: 'Invalid request', details: query.error.issues },
                 { status: 422 },
             )
+        }
+        if (params.q !== undefined && query.data.q !== params.q) {
+            return undefined
         }
         return HttpResponse.json(params.response, { status })
     })

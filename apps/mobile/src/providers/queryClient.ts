@@ -57,7 +57,12 @@ export const setOnPeraBackendUnavailable = (
 }
 
 const cache = new QueryCache({
-    onError: error => {
+    onError: (error, query) => {
+        // A query that marks its failure as an expected outcome has already
+        // handled it, so it must not fire a crash report and a dev RedBox.
+        if (query.meta?.isExpectedFailure) {
+            return
+        }
         // Transient connectivity errors are already logged at warn level by
         // the ky `beforeError` hook (see packages/shared/src/api/query-client).
         // Re-logging them at error level here would double-fire the dev RedBox

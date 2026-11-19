@@ -38,22 +38,10 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
         contentWithBanner: {
             paddingTop: theme.spacing.sm,
         },
-        iconBar: {
-            flexGrow: 0,
-            flexShrink: 0,
-            paddingHorizontal: theme.spacing.lg,
-        },
-        iconBarSection: {
-            flexDirection: 'row',
-            gap: theme.spacing.lg,
-        },
         tabNavigator: {
             flex: 1,
             marginTop: theme.spacing.xs,
             minHeight: 0,
-        },
-        accountSelectionToolbar: {
-            alignSelf: 'stretch',
         },
     }
 })

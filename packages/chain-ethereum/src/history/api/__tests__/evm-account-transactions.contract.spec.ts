@@ -93,3 +93,49 @@ describe('GET /api/v3/evm/{id}/accounts/{addr}/transactions/ contract', () => {
         expect(unexercised).toEqual([])
     })
 })
+
+describe('the native asset view (asset_id = slip44)', () => {
+    const native = readBackendRecording('evm-account-transactions-native')
+    const address = native.request.pathParams?.address ?? ''
+    const rows = () =>
+        evmHistoryPageSchema.parse(native.response)
+            .results as EvmHistoryItemResponse[]
+
+    it('is the route the app calls, for the chain native coin', () => {
+        expect(native.request.params?.asset_id).toMatch(/\/slip44:\d+$/)
+        expectEveryRowParses(rows(), evmHistoryItemSchema)
+    })
+
+    // The native History keeps the account's gas-only calls by their sender and fee.
+    it('keeps a call the account sent that moved only its gas', () => {
+        const gasOnly = rows().filter(
+            row =>
+                row.from === address &&
+                row.fee !== null &&
+                row.balance_impacts.length === 1 &&
+                row.balance_impacts[0].amount === `-${row.fee}`,
+        )
+
+        expect(gasOnly.length).toBeGreaterThan(0)
+    })
+})
+
+describe('an ERC-20 asset view (asset_id = erc20)', () => {
+    const erc20 = readBackendRecording('evm-account-transactions-erc20')
+    const rows = () =>
+        evmHistoryPageSchema.parse(erc20.response)
+            .results as EvmHistoryItemResponse[]
+
+    it('is the route the app calls, for one token', () => {
+        expect(erc20.request.params?.asset_id).toMatch(
+            /\/erc20:0x[0-9a-f]{40}$/,
+        )
+        expectEveryRowParses(rows(), evmHistoryItemSchema)
+    })
+
+    // Read from the token's transfer log alone, so a record here carries no
+    // initiator or fee and a router call reads as a plain transfer.
+    it('names no sender on any row', () => {
+        expect(rows().filter(row => row.from !== null)).toEqual([])
+    })
+})

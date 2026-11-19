@@ -14,10 +14,12 @@ import { PWIcon, PWImage, PWView } from '@components/core'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 
+const GLOBE_SIZE = { row: undefined, tile: 'lg' } as const
+
 export type DappLogoProps = {
     logo: Nullable<string>
-    /** `row`: a list row's leading logo; `stack`: a logo in a folder row's stack. */
-    size?: 'row' | 'stack'
+    /** `row`: a list row's leading logo; `tile`: the home grid. */
+    size?: 'row' | 'tile'
 }
 
 /** A dApp's round logo, or a globe when it has none. */
@@ -29,10 +31,10 @@ export const DappLogo = ({ logo, size = 'row' }: DappLogoProps) => {
             style={styles.logo}
         />
     ) : (
-        <PWView style={styles.logo}>
+        <PWView style={[styles.logo, styles.placeholder]}>
             <PWIcon
                 name='globe'
-                size={size === 'stack' ? 'xs' : undefined}
+                size={GLOBE_SIZE[size]}
                 variant='secondary'
             />
         </PWView>

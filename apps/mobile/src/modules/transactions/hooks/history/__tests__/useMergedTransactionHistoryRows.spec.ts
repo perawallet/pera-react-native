@@ -299,4 +299,34 @@ describe('useMergedTransactionHistoryRows', () => {
         expect(ethereumActions.refresh).toHaveBeenCalledTimes(1)
         expect(baseActions.refresh).toHaveBeenCalledTimes(1)
     })
+
+    it('retries the failed networks only, never one without the history service', () => {
+        const { result } = renderHook(() =>
+            useMergedTransactionHistoryRows({ sources: SOURCES }),
+        )
+        const [ethereumFeed, baseFeed] = result.current.feeds
+        const ethereumActions = makeActions()
+        const baseActions = makeActions()
+
+        act(() => {
+            ethereumFeed!.onChange(
+                ethereumFeed!.feedKey,
+                snapshot(ETHEREUM, [], { isError: true, isLoadFailed: true }),
+                ethereumActions,
+            )
+            baseFeed!.onChange(
+                baseFeed!.feedKey,
+                snapshot(BASE, [], {
+                    isError: true,
+                    isLoadFailed: true,
+                    isLoadUnavailable: true,
+                }),
+                baseActions,
+            )
+        })
+        act(() => result.current.retry())
+
+        expect(ethereumActions.retry).toHaveBeenCalledTimes(1)
+        expect(baseActions.retry).not.toHaveBeenCalled()
+    })
 })

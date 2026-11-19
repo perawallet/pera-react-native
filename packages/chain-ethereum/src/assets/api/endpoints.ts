@@ -21,6 +21,7 @@ import {
     queryClient,
     type HistoryPeriod,
     type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import { DISCOVERY_LOOKUP_BOUNDS } from '../../accounts/discovery-bounds'
 import { eip155ChainIdOf, toCaip19 } from '../../blockchain/utils/caip19'
@@ -32,6 +33,7 @@ import {
     nftHoldingsPageSchema,
     nftItemSchema,
     nftsResponseSchema,
+    tokenSearchPageSchema,
     whitelistResponseSchema,
     type AssetItemSchemaOutput,
     type NftItemSchemaOutput,
@@ -41,6 +43,7 @@ import { toWhitelistRow, type WhitelistRow } from './transformers'
 export const ASSETS_SERVICE = 'assets'
 export const PRICES_SERVICE = 'prices'
 export const NFTS_SERVICE = 'nfts'
+export const TOKEN_SEARCH_SERVICE = 'tokenSearch'
 
 export const ASSETS_PATH = '/api/v4/assets/'
 // The backend rejects a request naming more ids than this (422).
@@ -50,6 +53,8 @@ export const whitelistPath = (eip155ChainId: number | string): string =>
     `/api/v3/evm/${eip155ChainId}/tokens/`
 
 export const CHART_PATH = '/api/v4/assets/chart/'
+
+export const TOKEN_SEARCH_PATH = '/api/v4/assets/search/'
 
 export const NFTS_PATH = '/api/v4/nfts/'
 // The backend rejects a request naming more ids than this (422).
@@ -63,8 +68,8 @@ export const nftHoldingsPath = (
 ): string => `/api/v3/evm/${eip155ChainId}/accounts/${address}/nfts/`
 
 /**
- * The cursor a holdings page's `next` URL carries. Throws on anything else, so
- * a malformed page fails the read instead of looping.
+ * The cursor a holdings page's `next` URL carries. Throws on anything else, so a
+ * malformed page fails the read instead of looping.
  */
 export const nftCursorOf = (next: string): string => {
     const cursor = new URL(next).searchParams.get('cursor')
@@ -120,6 +125,46 @@ export const fetchAssetItems = async (
         const parsed = assetItemSchema.safeParse(row)
         return parsed.success ? parsed.data : null
     })
+}
+
+export type TokenSearchPage = {
+    items: AssetItemSchemaOutput[]
+    nextCursor: Optional<string>
+}
+
+/**
+ * One page of the backend's token search on the scope's chain; an item this
+ * client can't read is skipped. Every page repeats `query`, which the cursor
+ * is bound to. Rejects with a `PeraNetworkError` on a failed request,
+ * including 422 `search_cursor_expired` once the search is 5 minutes old.
+ */
+export const fetchTokenSearchPage = async (
+    scope: ChainScope,
+    chain: EvmChain,
+    query: string,
+    cursor?: string,
+): Promise<TokenSearchPage> => {
+    const { data } = await queryClient<unknown>({
+        backend: 'pera',
+        service: TOKEN_SEARCH_SERVICE,
+        scope,
+        method: 'GET',
+        url: TOKEN_SEARCH_PATH,
+        params: {
+            q: query,
+            chains: `eip155:${eip155ChainIdOf(scope, chain)}`,
+            ...(cursor === undefined ? {} : { cursor }),
+        },
+        headers: await buildIntegrityHeadersWhenReady(),
+    })
+    const { results, next } = tokenSearchPageSchema.parse(data)
+    return {
+        items: results.flatMap(row => {
+            const parsed = assetItemSchema.safeParse(row)
+            return parsed.success ? [parsed.data] : []
+        }),
+        nextCursor: next ?? undefined,
+    }
 }
 
 /**

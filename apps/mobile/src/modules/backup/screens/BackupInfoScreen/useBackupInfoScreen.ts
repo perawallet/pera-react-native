@@ -34,9 +34,11 @@ export const useBackupInfoScreen = (): UseBackupInfoScreenResult => {
         >()
     const route = useRoute<RouteProp<BackupStackParamList, 'BackupInfo'>>()
     const address = route.params?.address
+    const accountId = route.params?.accountId
     const { t } = useLanguage()
     const { isMultiNetwork, networkNames } = usePassphraseReach({
         address: address ?? '',
+        accountId,
     })
     const body = isMultiNetwork
         ? t('backup.info.body_all_networks', {
@@ -47,9 +49,9 @@ export const useBackupInfoScreen = (): UseBackupInfoScreenResult => {
     const onContinue = useCallback(() => {
         if (address) {
             trackEvent(OnboardingEvent.BeginPassphrase)
-            navigation.navigate('BackupWriteDown', { address })
+            navigation.navigate('BackupWriteDown', { address, accountId })
         }
-    }, [navigation, address])
+    }, [navigation, address, accountId])
 
     return { body, onContinue }
 }

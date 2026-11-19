@@ -160,8 +160,12 @@ const {
     signWithSenderKey,
     TOKEN,
 } = await import('./__fixtures__/ethereum-send')
-const { mockEthereumSwapOrder, spyOnSwapSubmissionAndReports, SWAP_ORDER_ID } =
-    await import('./__fixtures__/swapRouter')
+const {
+    ALGORAND_MAINNET_CAIP2,
+    mockEthereumSwapOrder,
+    spyOnSwapSubmissionAndReports,
+    SWAP_ORDER_ID,
+} = await import('./__fixtures__/swapRouter')
 
 const ETH_ASSET = evmChainOf('ethereum').nativeAsset.assetId
 
@@ -288,7 +292,7 @@ const tokenToEtherOffer = {
     funding_method: 'wallet_transaction',
     expires_at: null,
     deposit_address: null,
-    extras: null,
+    extras: null as Nullable<{ price_impact: string }>,
 }
 
 const routerOrder = (status: SwapStatus) => ({
@@ -582,6 +586,19 @@ describe('Flow: Swap from an Ethereum account', () => {
         expect(screen.queryByTestId('swap-confirm-insufficient-fee')).toBeNull()
     })
 
+    it('Given a high price impact, when the confirmation opens, then the warning shows beside the enabled slider', async () => {
+        fakeNode()
+        await openConfirmation({
+            ...tokenToEtherOffer,
+            extras: { price_impact: '12' },
+        })
+
+        expect(
+            await findEnabledByTestId('swap-confirm-slide', FORM_TIMEOUT),
+        ).toBeTruthy()
+        expect(screen.getByTestId('swap-confirm-warning')).toBeTruthy()
+    })
+
     it('Given the router says the amount is too small, when the quote is refused, then the form names the minimum, offers neither Swap nor Retry, and Use minimum fills it', async () => {
         await typeAmountOnTokenToEtherForm()
         server.use(
@@ -673,20 +690,40 @@ describe('Flow: Swap from an Ethereum account', () => {
         fakeNode()
         renderWithNavigation(SwapScreen, 'Swap')
 
-        fireEvent.click(await screen.findByTestId('swap-pay-asset-selector'))
+        fireEvent.click(
+            await screen.findByTestId(
+                'swap-pay-asset-selector',
+                {},
+                FORM_TIMEOUT,
+            ),
+        )
         const namedRow = await screen.findByTestId(
             `asset-list-item-ethereum-${TOKEN}`,
+            {},
+            FORM_TIMEOUT,
         )
         expect(
             within(namedRow).getByTestId('chain_avatar_badge_ethereum'),
         ).toBeTruthy()
         fireEvent.click(
-            await screen.findByTestId('swap_from_chain_filter_ethereum'),
+            await screen.findByTestId(
+                'swap_from_chain_filter_ethereum',
+                {},
+                FORM_TIMEOUT,
+            ),
         )
-        fireEvent.click(await screen.findByTestId(`asset-list-item-${TOKEN}`))
+        fireEvent.click(
+            await screen.findByTestId(
+                `asset-list-item-${TOKEN}`,
+                {},
+                FORM_TIMEOUT,
+            ),
+        )
 
-        await waitFor(() =>
-            expect(useSwapsStore.getState().sourceChainId).toBe('ethereum'),
+        await waitFor(
+            () =>
+                expect(useSwapsStore.getState().sourceChainId).toBe('ethereum'),
+            FORM_TIMEOUT,
         )
         await settleRender()
         expect(useSwapsStore.getState().sourceChainId).toBe('ethereum')
@@ -856,6 +893,60 @@ describe('Flow: Swap from an Ethereum account', () => {
         await settleRender()
         expect(useSwapsStore.getState().sourceChainId).toBe('algorand')
         expect(useSwapsStore.getState().fromAsset).toBe('0')
+    })
+
+    it('Given an Ethereum asset whose pairs list Ethereum tokens first, when Swap To shows the Algorand chip, then it lists the Algorand assets the asset reaches', async () => {
+        await selectTwoChainAccount()
+        await seedSenderEther('10000000000000000000')
+        await insertAssetHolding({
+            accountAddress: SENDER,
+            assetId: TOKEN,
+            scope: ETH_SCOPE,
+            amount: new Decimal('100000000'),
+        })
+        fakeNode()
+        useSwapsStore.getState().setSourceChainId('ethereum')
+        useSwapsStore.getState().setFromAsset(TOKEN)
+        useSwapsStore.getState().setToAsset(ETH_ASSET)
+        server.use(
+            mockSwapPairs({
+                q: `${ALGORAND_MAINNET_CAIP2}/`,
+                response: {
+                    results: [
+                        {
+                            kind: 'token',
+                            asset: routerAsset(
+                                `${ALGORAND_MAINNET_CAIP2}/asa:31566704`,
+                                'USDC',
+                                6,
+                            ),
+                        },
+                    ],
+                },
+            }),
+            mockSwapPairs({
+                response: {
+                    next: 'page-2',
+                    results: [
+                        {
+                            kind: 'token',
+                            asset: routerAsset('eip155:1/slip44:60', 'ETH', 18),
+                        },
+                    ],
+                },
+            }),
+        )
+        renderWithNavigation(SwapScreen, 'Swap')
+
+        fireEvent.click(
+            await screen.findByTestId('swap-receive-asset-selector'),
+        )
+        fireEvent.click(
+            await screen.findByTestId('swap_to_chain_filter_algorand'),
+        )
+
+        await screen.findByTestId('swap-asset-item-algorand-31566704')
+        expect(screen.queryByTestId('swap_to_cross_network_empty')).toBeNull()
     })
 
     it('Given an allowance that covers the amount, when the swap runs, then only the swap is sent', async () => {

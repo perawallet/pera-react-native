@@ -1132,6 +1132,45 @@ describe('Flow: Onramp buy (native XO)', () => {
         expect(screen.getAllByText(HISTORY_ORDER_ID).length).toBeGreaterThan(0)
     })
 
+    it('Given an account the device has not registered, when the user opens the History tab, then it explains the account is not set up instead of failing', async () => {
+        seedSelectedAccount()
+        seedDeviceId()
+        markIntroSeen()
+
+        server.use(
+            ...buildXoPairHandlers(),
+            mockRampRegion({ response: REGION_RESPONSE }),
+            http.get('*/history/', () =>
+                HttpResponse.json(
+                    {
+                        error: 'Not an account of this device',
+                        code: 'account_not_on_device',
+                    },
+                    { status: 422 },
+                ),
+            ),
+        )
+
+        renderWithNavigation(OnrampScreen, 'Fund')
+
+        fireEvent.click(
+            await screen.findByTestId(
+                'onramp-tab-history',
+                {},
+                { timeout: 5000 },
+            ),
+        )
+
+        expect(
+            await screen.findByText(
+                'onramp.history.not_on_device_title',
+                {},
+                { timeout: 5000 },
+            ),
+        ).toBeTruthy()
+        expect(screen.queryByText('onramp.history.error_title')).toBeNull()
+    })
+
     it('Given mixed-status history, when the user filters by status and switches back to All, then the full list is restored', async () => {
         seedSelectedAccount()
         seedDeviceId()

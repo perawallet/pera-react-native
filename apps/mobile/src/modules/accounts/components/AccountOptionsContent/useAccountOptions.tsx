@@ -17,11 +17,13 @@ import {
     accountChainIdOf,
     addressOn,
     authorityOf,
+    chainAccountOf,
     hasRecoverySeed,
     hasSigningKeys,
     isMultisigAccount,
     isDelegatedAccount,
     multisigParametersOf,
+    ownKeyChainIdOf,
     standaloneSecretOf,
     useAccountCapabilityScope,
     useAllAccounts,
@@ -151,12 +153,17 @@ export const useAccountOptions = ({
         anyChain: 'multisig',
     })
     const isRekeyed = isDelegatedAccount(account, scope.chainId)
-    // The phrase lives on the chain that backs it up, not on the account's own chain.
-    const passphraseScope = useAccountCapabilityScope(account, 'mnemonicBackup')
+    // The phrase is the seed's, not a chain's: any chain the account still
+    // signs for with its own key makes it worth showing.
+    const canBackUpMnemonic = useCapability({ anyChain: 'mnemonicBackup' })
+    const passphraseChainId = ownKeyChainIdOf(account, registeredChainIds)
+    const passphraseAddress = passphraseChainId
+        ? chainAccountOf(account, passphraseChainId)?.address
+        : undefined
     const showPassphrase =
-        passphraseScope !== null &&
-        !isDelegatedAccount(account, passphraseScope.chainId) &&
-        hasRecoverySeed(account)
+        canBackUpMnemonic &&
+        hasRecoverySeed(account) &&
+        passphraseAddress !== undefined
     const canUndoRekey = canRekey && isRekeyed && canSign
     const privateKeyScope = useAccountCapabilityScope(account, 'privateKeys')
     const showPrivateKey =
@@ -172,19 +179,19 @@ export const useAccountOptions = ({
     const authAccount = useFindAccountByAddress(authority ?? '', scope)
 
     const handleViewPassphrase = useCallback(() => {
-        if (!passphraseScope) return
         trackEvent(AccountOptionsEvent.ViewPassphrase, {
             [AnalyticsMetadataKey.ChainId]: accountChainId,
         })
+        if (!passphraseAddress) return
         // Dismiss the options menu first so we don't end up with the menu
         // sheet stacked under the PIN/acknowledge/display sheets.
         onClose()
-        void openViewPassphraseFlow(addressOn(account, passphraseScope) ?? '')
+        void openViewPassphraseFlow(passphraseAddress, account.id)
     }, [
         onClose,
         openViewPassphraseFlow,
-        account,
-        passphraseScope,
+        passphraseAddress,
+        account.id,
         accountChainId,
     ])
 

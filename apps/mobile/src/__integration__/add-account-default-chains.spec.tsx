@@ -30,11 +30,9 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     EVM_CHAIN_NETWORKS,
-    keyDerivations,
     type ChainId,
     type EvmChainId,
 } from '@perawallet/wallet-core-chain-contract'
-import { kmsCore, useKMS } from '@perawallet/wallet-core-kms'
 import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { evmRpcHandlers } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
 import { mockAccountFastLookup } from '@perawallet/wallet-core-shared/test-handlers'
@@ -64,9 +62,9 @@ import { SearchAccountsScreen } from '@modules/onboarding/screens/SearchAccounts
 import { WatchAccountScreen } from '@modules/onboarding/screens/WatchAccountScreen/WatchAccountScreen'
 
 import {
+    HD_24_ETHEREUM_ADDRESS_0,
     HD_TEST_ADDRESS,
-    HD_TEST_MNEMONIC_24_INDICES,
-    HD_TEST_MNEMONIC_24_WORDS,
+    HD_TEST_MNEMONIC_24,
 } from './__fixtures__/onboarding'
 import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
 
@@ -134,27 +132,6 @@ const handlersFor = (
         ]
     })
 
-// The seed's Ethereum address at its first index, read through a throwaway
-// copy of the seed: secp256k1 keys derive only inside the keystore.
-const firstHdEthereumAddress = async (): Promise<string> => {
-    const { result: kms } = renderHook(() => useKMS())
-    const rootKey = await waitFor(async () => {
-        const created = await kms.current.createHDWalletKey({
-            mnemonicIndices: HD_TEST_MNEMONIC_24_INDICES,
-        })
-        expect(created).not.toBeNull()
-        return created!
-    })
-    const { address } = await keyDerivations
-        .get('ethereum')
-        .deriveAccount(kmsCore, rootKey.seedKey.id, 0, 0, {
-            scheme: 'secp256k1',
-            networkId: 'mainnet',
-        })
-    resetTestKeystore()
-    return address
-}
-
 const nameAccountScreen = { name: 'NameAccount', component: NameAccountScreen }
 const importPrivateKeyScreen = {
     name: 'ImportPrivateKey',
@@ -193,9 +170,7 @@ const theOnlyAccount = (): WalletAccount => {
 // Imports the recovery phrase active on Ethereum and Base, up to naming it,
 // once discovery has added Base.
 const importRecoveryPhraseUntilNaming = async (): Promise<void> => {
-    server.use(
-        ...handlersFor(['ethereum', 'base'], await firstHdEthereumAddress()),
-    )
+    server.use(...handlersFor(['ethereum', 'base'], HD_24_ETHEREUM_ADDRESS_0))
     renderWithNavigation(OnboardingScreen, 'Onboarding', {
         additionalScreens: [
             importAccountOptionsScreen,
@@ -228,12 +203,8 @@ const importRecoveryPhraseUntilNaming = async (): Promise<void> => {
     fireEvent.click(
         await waitFor(() => screen.getByTestId('import_info_recover_button')),
     )
-    await waitFor(() => screen.getByTestId('import_account_word_input_0'))
-    HD_TEST_MNEMONIC_24_WORDS.forEach((word, index) => {
-        fireEvent.change(
-            screen.getByTestId(`import_account_word_input_${index}`),
-            { target: { value: word } },
-        )
+    fireEvent.change(await screen.findByTestId('import_account_word_input_0'), {
+        target: { value: HD_TEST_MNEMONIC_24 },
     })
     await waitFor(() =>
         expect(

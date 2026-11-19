@@ -15,7 +15,7 @@ catalog:
   # fails Lint until that package is dropped from the PR; a matching `ignore`
   # entry in .github/dependabot.yml stops the bot proposing it.
 
-  "@algorandfoundation/algokit-utils": 9.2.2
+  "@algorandfoundation/algokit-utils": 9.2.3
   "@algorandfoundation/dp256": 1.1.0
   "@algorandfoundation/keystore-core": 1.0.0-canary.5
   "@algorandfoundation/keystore-web": 1.0.0-canary.6
@@ -25,7 +25,7 @@ catalog:
   "@algorandfoundation/react-native-passkey-autofill": 1.0.0-canary.29
   "@algorandfoundation/wallet-provider": 1.0.0-canary.6
   "@algorandfoundation/xhd-wallet-api": ^2.0.0-canary.1
-  "@lottiefiles/dotlottie-react": 0.20.0
+  "@lottiefiles/dotlottie-react": 0.22.0
   "@babel/runtime": ^7.29.2
   "@expensify/react-native-wallet": 0.1.41
   "@expo/app-integrity": 58.0.2
@@ -33,7 +33,7 @@ catalog:
   "@ledgerhq/errors": ^6.35.0
   # Exact: each release pins its own axios and @ledgerhq/* dependencies exactly,
   # so a range would drift the Ledger transport copies out from under it.
-  "@ledgerhq/hw-app-eth": 7.11.1
+  "@ledgerhq/hw-app-eth": 7.12.1
   "@ledgerhq/hw-transport-web-ble": ^6.35.0
   "@ledgerhq/hw-transport-webhid": ^6.36.0
   "@ledgerhq/react-native-hid": 6.39.5
@@ -79,7 +79,7 @@ catalog:
   "@types/react": ~19.3.0
   "@types/w3c-web-hid": ^1.0.7
   "@types/web-bluetooth": ^0.0.22
-  "@vitejs/plugin-react": 6.2.1
+  "@vitejs/plugin-react": 6.3.0
   "@vitest/coverage-v8": ^5.0.3
   # Kept in step with "@reown/walletkit" above; see the note there.
   # pin: follows @reown/walletkit
@@ -112,11 +112,11 @@ catalog:
   expo: 58.0.17
   expo-application: 58.1.2
   expo-device: 58.0.5
-  expo-local-authentication: 58.0.2
+  expo-local-authentication: 58.0.3
   expo-localization: 58.0.5
-  expo-notifications: 58.1.6
-  expo-sqlite: 58.0.13
-  fake-indexeddb: 6.2.7
+  expo-notifications: 58.1.9
+  expo-sqlite: 58.0.18
+  fake-indexeddb: 6.2.8
   falcon-1024: 0.2.0
   # 3.33.1 and 3.34.0 fail the required Dead Code job on an unchanged
   # .fallowrc.jsonc (unused exports and files that 3.30.0 doesn't report); raise
@@ -127,16 +127,16 @@ catalog:
   htmlparser2: 12.0.0
   jsdom: ^30.0.1
   ky: ^2.0.2
-  lanekeep: 0.14.0
+  lanekeep: 0.15.0
   msw: ^2.14.6
-  oxfmt: ^0.75.0
+  oxfmt: ^0.78.0
   punycode: ^2.3.1
   react: 19.3.0
   react-dom: 19.3.0
   react-native: 0.88.0
   react-native-mmkv: 4.3.2
-  react-native-quick-base64: 3.0.0
-  react-native-quick-crypto: 1.1.6
+  react-native-quick-base64: 3.0.1
+  react-native-quick-crypto: 1.1.9
   react-native-ssl-public-key-pinning: 1.2.6
   tsx: ^4.22.3
   tweetnacl: ^1.0.3
@@ -358,7 +358,7 @@ patchedDependencies:
   # Gradle uses the prebuilt AAR unless apps/mobile's autolinking lists the
   # package in `buildFromSource`; drop both once 13 is below minSdk or upstream
   # skips the listener there.
-  "expo-splash-screen@58.0.11": patches/expo-splash-screen@58.0.11.patch
+  "expo-splash-screen@58.0.13": patches/expo-splash-screen@58.0.13.patch
   # Android: Fabric can mount a GestureHandlerRootView while MainActivity is
   # being destroyed (an rn-screens header detach makes Reanimated flush mount
   # operations), when its parent chain no longer reaches a RootView. Upstream
@@ -507,8 +507,8 @@ overrides:
   # copy whose JS would drive the 3.5.1 native code apps/mobile autolinks.
   react-native-ble-plx: 3.5.1
   react-native-nitro-modules: 0.37.1
-  react-native-quick-base64: 3.0.0
-  react-native-quick-crypto: 1.1.6
+  react-native-quick-base64: 3.0.1
+  react-native-quick-crypto: 1.1.9
   # Eight advisories patched in 8.12.2 (TLS validation, cache poisoning, DoS).
   undici@>=8.0.0 <8.12.2: 8.12.2
   uuid@<14: 14.0.0

@@ -21,7 +21,10 @@ import {
 import { ViewPassphraseContent } from '../ViewPassphraseContent'
 
 export type UseViewPassphraseFlowResult = {
-    openViewPassphraseFlow: (address: string) => Promise<void>
+    openViewPassphraseFlow: (
+        address: string,
+        accountId?: string,
+    ) => Promise<void>
 }
 
 /**
@@ -37,14 +40,17 @@ export const useViewPassphraseFlow = (): UseViewPassphraseFlowResult => {
     const haptics = useHaptics()
 
     const openViewPassphraseFlow = useCallback(
-        async (address: string) => {
+        async (address: string, accountId?: string) => {
             if (!(await requirePinVerification())) return
 
             haptics.warning()
             const ack =
                 await requestBottomSheet<PassphraseAcknowledgeContentResult>({
                     contents: (
-                        <PassphraseAcknowledgeContent address={address} />
+                        <PassphraseAcknowledgeContent
+                            address={address}
+                            accountId={accountId}
+                        />
                     ),
                     options: {
                         size: 'modal',
@@ -55,7 +61,12 @@ export const useViewPassphraseFlow = (): UseViewPassphraseFlowResult => {
             if (ack !== 'confirm') return
 
             await requestBottomSheet<void>({
-                contents: <ViewPassphraseContent address={address} />,
+                contents: (
+                    <ViewPassphraseContent
+                        address={address}
+                        accountId={accountId}
+                    />
+                ),
                 options: {
                     size: 'modal',
                     enablePanDownToClose: true,

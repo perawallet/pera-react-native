@@ -36,10 +36,10 @@
     "discover": {
         "home": {
             "title": "Explorar",
-            "top_dapps": "dApps em destaque",
+            "explore_dapps": "Explorar dApps",
             "news": "Notícias",
             "dapps_error": "Falha ao carregar os dApps em destaque",
-            "dapps_empty": "Ainda não há dApps em {{chain}}"
+            "dapps_empty_open_url": "Ainda não há dApps listados em {{chain}}. Abra qualquer dApp digitando a URL acima."
         },
         "dapp_row": {
             "favorite": "Adicionar aos favoritos",
@@ -77,51 +77,28 @@
             "website": "Site",
             "open": "Abrir"
         },
-        "folders": {
-            "name_sheet": {
-                "title_new": "Nova pasta",
-                "title_rename": "Renomear pasta",
-                "placeholder": "Nome da pasta",
-                "create": "Criar",
-                "save": "Salvar"
-            },
-            "empty": "Ainda não há dApps nesta pasta",
-            "menu": {
-                "title": "Opções da pasta",
-                "open_label": "Opções da pasta",
-                "rename": "Renomear pasta",
-                "rearrange": "Reorganizar dApps",
-                "delete": "Excluir pasta"
-            },
-            "rearrange": {
-                "title": "Reorganizar dApps",
-                "remove_label": "Remover {{name}} desta pasta"
-            },
-            "delete_confirm": {
-                "title": "Excluir esta pasta?",
-                "body": "Os dApps dela continuam nos seus favoritos.",
-                "confirm": "Excluir pasta"
-            }
-        },
         "favorites": {
             "title": "Favoritos",
-            "new_folder": "Nova pasta",
-            "all_favorites": "Todos os favoritos",
-            "dapp_count": "{{count}} dApps",
-            "dapp_count_one": "{{count}} dApp",
             "see_all": "Ver tudo",
             "empty_title": "Nenhum favorito ainda",
             "empty_body": "Comece a explorar os dApps",
-            "all_folders_title": "Todas as pastas",
             "added_toast": {
-                "title": "Adicionado aos favoritos",
-                "body": "Toque para adicioná-lo a uma pasta"
+                "title": "Adicionado aos favoritos"
+            },
+            "search_placeholder": "Buscar nos favoritos",
+            "filter": {
+                "all_categories": "Todas as categorias",
+                "categories_title": "Categorias",
+                "all": "Todas",
+                "sort_title": "Ordenar por",
+                "sort_recent": "Adicionados recentemente",
+                "sort_visits": "Mais visitados"
+            },
+            "rearrange": {
+                "title": "Reorganizar",
+                "open_label": "Reorganizar favoritos",
+                "remove_label": "Remover {{name}} dos favoritos"
             }
-        },
-        "add_to_folder": {
-            "title": "Adicionar a uma pasta",
-            "new_folder": "Nova pasta",
-            "added": "Adicionado a {{folder}}"
         }
     },
     "account_menu": {
@@ -3560,6 +3537,7 @@
         "notifications": {
             "push_notifications": "Notificações push",
             "account_notifications": "Mostrar notificações de",
+            "network_notifications": "Mostrar notificações em",
             "push_service_unavailable": "Este navegador não está recebendo notificações push. No Brave, ative \"Usar os serviços do Google para mensagens push\" nas configurações de privacidade e abra a Pera novamente.",
             "no_accounts": "Nenhuma conta encontrada.",
             "no_accounts_body": "Nenhuma conta encontrada. Adicione uma conta para gerenciar as preferências de notificação."
@@ -3924,6 +3902,10 @@
         },
         "record_detail": {
             "read_failed": "Não foi possível ler da rede os detalhes da chamada desta transação.",
+            "not_found": {
+                "title": "Transação não encontrada",
+                "body": "A Pera não encontrou esta transação no histórico da conta. Uma nova transação pode levar um minuto para aparecer, então tente novamente em breve."
+            },
             "inferred_notice": "Nome deduzido das variações de saldo. A Pera não conseguiu ler a chamada em si.",
             "transaction_id": "ID da transação",
             "quantity": "Quantidade",
@@ -4357,6 +4339,10 @@
                     "title": "Nenhuma conversão ainda",
                     "body": "Seu histórico de conversões aparecerá aqui."
                 },
+                "not_on_device": {
+                    "title": "Histórico ainda indisponível",
+                    "body": "Esta conta ainda não está configurada neste dispositivo, por isso não foi possível carregar o histórico de conversões. Tente novamente mais tarde."
+                },
                 "error": {
                     "title": "Algo deu errado",
                     "body": "Não foi possível carregar seu histórico de conversões. Tente novamente."
@@ -4505,6 +4491,8 @@
             "for": "por",
             "empty_title": "Nenhuma transação ainda",
             "empty_body": "Suas transações de compra aparecerão aqui.",
+            "not_on_device_title": "Histórico ainda indisponível",
+            "not_on_device_body": "Esta conta ainda não está configurada neste dispositivo, por isso não foi possível carregar o histórico de compras. Tente novamente mais tarde.",
             "error_title": "Algo deu errado",
             "error_body": "Não foi possível carregar seu histórico de compras. Tente novamente."
         }

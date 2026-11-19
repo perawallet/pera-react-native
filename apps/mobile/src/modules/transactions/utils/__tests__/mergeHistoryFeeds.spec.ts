@@ -49,6 +49,8 @@ const HOUR = 3600
 
 const ALGORAND: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 const ETHEREUM: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
+const BASE: ChainScope = { chainId: 'base', networkId: 'mainnet' }
+const BSC: ChainScope = { chainId: 'bsc', networkId: 'mainnet' }
 
 const algoAt = (id: string, seconds: number) =>
     ({ id, roundTime: seconds }) as TransactionHistoryItem
@@ -275,7 +277,7 @@ describe('mergeHistoryFeeds', () => {
         expect(merged.isFetched).toBe(true)
     })
 
-    it('names a network that failed with only its own sends listed, and whether a retry can help', () => {
+    it('names a network that failed with only its own sends listed, apart from one with no history service', () => {
         const unavailable = mergeHistoryFeeds([
             feed(
                 ALGORAND,
@@ -298,12 +300,80 @@ describe('mergeHistoryFeeds', () => {
 
         expect(entryKeys(unavailable.rows)).toEqual(['sent', 'algo'])
         expect(unavailable.isLoadFailed).toBe(false)
-        expect(unavailable.failedChainIds).toEqual(['ethereum'])
-        expect(unavailable.isRefreshFailed).toBe(true)
-        expect(unavailable.isRefreshUnavailable).toBe(true)
-        expect(retryable.failedChainIds).toEqual(['algorand', 'ethereum'])
-        expect(retryable.failedNetworkNames).toHaveLength(2)
-        expect(retryable.isRefreshUnavailable).toBe(false)
+        expect(unavailable.failedChainIds).toEqual([])
+        expect(unavailable.unavailableChainIds).toEqual(['ethereum'])
+        expect(unavailable.isRefreshFailed).toBe(false)
+        expect(unavailable.failedFeeds).toEqual([])
+        expect(retryable.failedChainIds).toEqual(['algorand'])
+        expect(retryable.unavailableChainIds).toEqual(['ethereum'])
+        expect(retryable.failedNetworkNames).toHaveLength(1)
+        expect(retryable.unavailableNetworkNames).toHaveLength(1)
+        expect(retryable.failedFeeds).toEqual([0])
+    })
+
+    it('names an unsupported network apart from a failed one and retries only the failed one', () => {
+        const merged = mergeHistoryFeeds([
+            feed(ETHEREUM, buildRecordListRows([ethAt('eth', JAN_1 + HOUR)])),
+            feed(BASE, [], {
+                isError: true,
+                isLoadFailed: true,
+                isLoadUnavailable: true,
+            }),
+            feed(BSC, [], { isError: true, isLoadFailed: true }),
+        ])
+
+        expect(merged.failedChainIds).toEqual(['bsc'])
+        expect(merged.unavailableChainIds).toEqual(['base'])
+        expect(merged.failedFeeds).toEqual([2])
+        expect(merged.isLoadFailed).toBe(false)
+    })
+
+    it('keeps a network named as failed while it is retried', () => {
+        const merged = mergeHistoryFeeds([
+            feed(ETHEREUM, buildRecordListRows([ethAt('eth', JAN_1)])),
+            feed(BSC, [], {
+                isError: true,
+                isLoadFailed: true,
+                isRetrying: true,
+            }),
+        ])
+
+        expect(merged.failedChainIds).toEqual(['bsc'])
+        expect(merged.isRetrying).toBe(true)
+    })
+
+    it('fails the load when every network failed, naming only the unsupported one apart', () => {
+        const merged = mergeHistoryFeeds([
+            feed(BASE, [], {
+                isError: true,
+                isLoadFailed: true,
+                isLoadUnavailable: true,
+            }),
+            feed(BSC, [], { isError: true, isLoadFailed: true }),
+        ])
+
+        expect(merged.isLoadFailed).toBe(true)
+        expect(merged.isLoadUnavailable).toBe(false)
+        expect(merged.failedChainIds).toEqual([])
+        expect(merged.unavailableChainIds).toEqual(['base'])
+        expect(merged.failedFeeds).toEqual([1])
+    })
+
+    it('names nothing when every network is unsupported', () => {
+        const unsupported = {
+            isError: true,
+            isLoadFailed: true,
+            isLoadUnavailable: true,
+        }
+        const merged = mergeHistoryFeeds([
+            feed(BASE, [], unsupported),
+            feed(BSC, [], unsupported),
+        ])
+
+        expect(merged.isLoadUnavailable).toBe(true)
+        expect(merged.failedChainIds).toEqual([])
+        expect(merged.unavailableChainIds).toEqual([])
+        expect(merged.failedFeeds).toEqual([])
     })
 
     it('names no network when every one failed with nothing loaded', () => {

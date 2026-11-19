@@ -39,6 +39,8 @@ export type UseOnrampHistoryResult = {
     isLoading: boolean
     isFetchingNextPage: boolean
     isError: boolean
+    /** This device's registration doesn't hold the account, so the router has no history for it. */
+    isAccountNotOnDevice: boolean
     hasNextPage: boolean
     fetchNextPage: () => void
     refetch: () => void
@@ -63,6 +65,7 @@ export const useOnrampHistory = (isActive = true): UseOnrampHistoryResult => {
         isLoading,
         isFetchingNextPage,
         isError,
+        isAccountNotOnDevice,
         hasNextPage,
         fetchNextPage,
         refetch,
@@ -126,6 +129,7 @@ export const useOnrampHistory = (isActive = true): UseOnrampHistoryResult => {
         isLoading,
         isFetchingNextPage,
         isError,
+        isAccountNotOnDevice,
         hasNextPage,
         fetchNextPage,
         refetch,

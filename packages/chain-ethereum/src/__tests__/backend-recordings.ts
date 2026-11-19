@@ -18,6 +18,8 @@ export type BackendRecordingName =
     | 'assets-chart'
     | 'evm-tokens'
     | 'evm-account-transactions'
+    | 'evm-account-transactions-native'
+    | 'evm-account-transactions-erc20'
     | 'evm-balance-history'
     | 'accounts-should-refresh'
 

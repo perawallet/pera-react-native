@@ -71,7 +71,7 @@ export const SwapDetailsSection = ({
                         <AddressDisplay
                             address={receiveTarget.address}
                             scope={receiveTarget.scope}
-                            unnamedAddressFormat='full'
+                            addressFormat='full'
                         />
                     )}
                 </DetailRow>
