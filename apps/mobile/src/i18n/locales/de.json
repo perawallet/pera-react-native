@@ -1128,6 +1128,7 @@
         }
     },
     "common": {
+        "app_name": "Pera Wallet",
         "networks_list": "{{first}} und {{last}}",
         "offline_mode": "Offline-Modus",
         "offline_mode_description": "Guthaben sind möglicherweise nicht aktuell und einige Aktionen sind nicht verfügbar, bis du wieder online bist.",

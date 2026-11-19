@@ -17,6 +17,7 @@ import {
     useNavigationContainerRef,
     type ParamListBase,
 } from '@react-navigation/native'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { CreatePasswordScreen, PasskeyUnlockSetupScreen } from '@modules/vault'
 import { OnboardingStackNavigator } from '@modules/onboarding/routes'
 import { useLedgerHandoffTabExit } from '@modules/ledger'
@@ -34,6 +35,7 @@ import { WebMainRoutes } from '@routes/WebMainRoutes.web'
 import { useOnboardingExpandedFlowNavigation } from '@routes/useExpandedFlowNavigation.web'
 import { DappRequestRoutes } from '@modules/dapp'
 import { subscribeToIntegrityReady } from '@hooks/useIntegrityAccessStore.web'
+import { useNavigationDocumentTitle } from '@hooks/useNavigationDocumentTitle'
 import { useWebAppShell } from '../../useWebAppShell.web'
 import { ApprovalPlaceholder } from '../ApprovalPlaceholder'
 import { MainSurfaceLifecycle } from '../MainSurfaceLifecycle'
@@ -42,6 +44,9 @@ export const ShellRouter = (): React.JSX.Element => {
     const { shellState, fcmToken } = useWebAppShell()
     const { t } = useLanguage()
     const isDarkMode = useIsDarkMode()
+    const documentTitle = useNavigationDocumentTitle({
+        fallback: i18nKey('common.app_name'),
+    })
     // Not the shared `routes/navigationRef`: global handlers (deep links,
     // notification taps) only know main-shell routes, and binding it here would
     // turn their isReady()===false no-op during onboarding into a bad navigate.
@@ -113,6 +118,7 @@ export const ShellRouter = (): React.JSX.Element => {
                     {/* Themed so React Navigation's DefaultTheme grey background
                         doesn't paint the onboarding scene. */}
                     <NavigationContainer
+                        documentTitle={documentTitle}
                         ref={onboardingNavigationRef}
                         theme={getNavigationTheme(
                             isDarkMode ? 'dark' : 'light',

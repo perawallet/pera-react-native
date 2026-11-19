@@ -595,6 +595,6 @@ export const encodeErc20Transfer = (recipient: Address, amount: bigint): Hex =>
 
 /** What a node sees in a raw transaction, `hash` as it answers with it. */
 export const readRawEvmTransaction = (raw: Hex) => {
-    const { to, nonce, value } = parseTransaction(raw)
-    return { hash: keccak256(raw), to, nonce, value }
+    const { to, nonce, value, chainId } = parseTransaction(raw)
+    return { hash: keccak256(raw), to, nonce, value, chainId }
 }

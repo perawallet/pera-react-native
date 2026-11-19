@@ -17,6 +17,7 @@
 import React from 'react'
 import { NavigationContainer } from '@react-navigation/native'
 import ErrorBoundary from 'react-native-error-boundary'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useTokenListener } from '@modules/token'
@@ -43,6 +44,7 @@ import {
     MESSAGES_REQUIREMENTS,
     rekeyRequirementFor,
 } from '@hooks/capabilityRequirements'
+import { useNavigationDocumentTitle } from '@hooks/useNavigationDocumentTitle'
 import { TransactionDetailsScreen } from '@modules/signing/routes'
 import { GroupTransactionListScreen } from '@modules/algorand/routes'
 import { StakingScreen } from '@modules/staking'
@@ -89,6 +91,9 @@ export const WebMainRoutes = ({
     fcmToken,
 }: WebMainRoutesProps): React.JSX.Element => {
     const isDarkMode = useIsDarkMode()
+    const documentTitle = useNavigationDocumentTitle({
+        fallback: i18nKey('common.app_name'),
+    })
     const isPeraCardEnabled = useIsPeraCardEnabled()
     const isAllowed = useCapabilityCheck()
     const rekeyRequirement = rekeyRequirementFor(ALGORAND_CHAIN_ID)
@@ -110,6 +115,7 @@ export const WebMainRoutes = ({
 
     return (
         <NavigationContainer
+            documentTitle={documentTitle}
             ref={navigationRef}
             theme={navTheme}
             onReady={handleReady}

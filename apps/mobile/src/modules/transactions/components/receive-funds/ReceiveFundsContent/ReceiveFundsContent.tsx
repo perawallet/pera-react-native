@@ -19,6 +19,7 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
+import { useNavigationDocumentTitle } from '@hooks/useNavigationDocumentTitle'
 import { getNavigationTheme } from '@theme/theme'
 import { TransactionErrorBoundary } from '@modules/transactions/components/TransactionErrorBoundary/TransactionErrorBoundary'
 import { ReceiveFundsRoutes } from '@modules/transactions/routes/receive-funds'
@@ -35,6 +36,7 @@ export const ReceiveFundsContent = ({
 }: ReceiveFundsContentProps) => {
     const { t } = useLanguage()
     const isDarkMode = useIsDarkMode()
+    const documentTitle = useNavigationDocumentTitle()
     useReceiveFundsContent(account, chainId)
 
     return (
@@ -46,6 +48,7 @@ export const ReceiveFundsContent = ({
                     container and shows through the transparent header as a
                     grey band. */}
                 <NavigationContainer
+                    documentTitle={documentTitle}
                     theme={getNavigationTheme(isDarkMode ? 'dark' : 'light')}
                 >
                     <ReceiveFundsRoutes />

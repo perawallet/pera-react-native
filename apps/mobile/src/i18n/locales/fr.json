@@ -1136,6 +1136,7 @@
         }
     },
     "common": {
+        "app_name": "Pera Wallet",
         "networks_list": "{{first}} et {{last}}",
         "offline_mode": "Mode hors ligne",
         "offline_mode_description": "Les soldes peuvent ne pas être à jour et certaines actions sont indisponibles jusqu’à votre reconnexion.",

@@ -21,6 +21,7 @@ import { LoadingView } from '@components/LoadingView'
 import { TransactionErrorBoundary } from '@modules/transactions/components/TransactionErrorBoundary/TransactionErrorBoundary'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
+import { useNavigationDocumentTitle } from '@hooks/useNavigationDocumentTitle'
 import { getNavigationTheme } from '@theme/theme'
 import { SendFundsRoutes } from '@modules/transactions/routes/send-funds'
 import { useSendFundsContent } from './useSendFundsContent'
@@ -40,6 +41,7 @@ export type SendFundsContentProps = {
 export const SendFundsContent = ({ asset }: SendFundsContentProps) => {
     const { t } = useLanguage()
     const isDarkMode = useIsDarkMode()
+    const documentTitle = useNavigationDocumentTitle()
     const { selectedAccount, isReady, navigationRef } =
         useSendFundsContent(asset)
 
@@ -61,6 +63,7 @@ export const SendFundsContent = ({ asset }: SendFundsContentProps) => {
                         scene container and shows through the transparent
                         header as a grey band. */}
                     <NavigationContainer
+                        documentTitle={documentTitle}
                         ref={navigationRef}
                         theme={getNavigationTheme(
                             isDarkMode ? 'dark' : 'light',

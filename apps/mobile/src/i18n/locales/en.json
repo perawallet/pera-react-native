@@ -1136,6 +1136,7 @@
         }
     },
     "common": {
+        "app_name": "Pera Wallet",
         "networks_list": "{{first}} and {{last}}",
         "offline_mode": "Offline Mode",
         "offline_mode_description": "Balances may be out of date and some actions are unavailable until you reconnect.",
