@@ -1,0 +1,85 @@
+name: Linear / Release Sync
+
+# A stable store release (vX.Y.Z) built green moves every Pera (PER) ticket named
+# in a commit subject since the previous stable tag from In QA to Done. Tickets
+# in any other state are left alone: closing work QA has not had would be wrong.
+# Prereleases are ignored. "The release shipped" is read from the check run
+# Bitrise's GitHub integration posts, so no Linear credential lives in Bitrise.
+# Tickets with no commit are never touched and are moved by hand.
+
+on:
+  check_run:
+    types: [completed]
+  # Re-run a release's ticket sync by tag, e.g. after fixing credentials.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Stable release tag to sync (e.g. v7.1.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    name: Sync tickets for a shipped stable release
+    # check_run fires for every check on every commit, so filter early: only
+    # Bitrise, only success.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.check_run.app.slug == 'bitrise' &&
+        github.event.check_run.conclusion == 'success')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Full history + tags: the range starts at the previous stable tag.
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      # A check run is attached to a commit, not a ref, so the tag is recovered
+      # from the SHA. Only a bare vX.Y.Z counts here.
+      - name: Resolve the stable tag
+        id: tag
+        env:
+          DISPATCH_TAG: ${{ inputs.tag }}
+          HEAD_SHA: ${{ github.event.check_run.head_sha }}
+        run: |
+          set -euo pipefail
+          if [ -n "$DISPATCH_TAG" ]; then
+            candidates="$DISPATCH_TAG"
+          else
+            candidates=$(git tag --points-at "$HEAD_SHA" --sort=-v:refname)
+          fi
+          stable=$(printf '%s\n' "$candidates" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || true)
+          if [ -z "$stable" ]; then
+            echo "No stable tag on ${HEAD_SHA:-${DISPATCH_TAG}} — nothing to sync"
+            echo "tag=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "Stable tag: ${stable}"
+          echo "tag=${stable}" >> "$GITHUB_OUTPUT"
+
+      - name: Move delivered tickets to Done
+        if: steps.tag.outputs.tag != ''
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          LINEAR_TEAM_KEY: PER
+          LINEAR_ONLY_FROM_STATUSES: In QA
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          tickets=()
+          while IFS= read -r key; do
+            tickets+=("$key")
+          done < <(./tools/release/tickets.sh "$TAG")
+          if [ "${#tickets[@]}" -eq 0 ]; then
+            echo "No PER tickets in ${TAG} — nothing to sync"
+            exit 0
+          fi
+          echo "${#tickets[@]} ticket(s) delivered by ${TAG}"
+          ./tools/linear-sync.sh "Done" "${tickets[@]}"

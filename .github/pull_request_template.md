@@ -7,7 +7,7 @@
 ## Related Issues
 
 - List any related issues or tickets that this pull request addresses.
-- For example, closes https://algorandfoundation.atlassian.net/browse/PERA-#
+- For example, closes https://linear.app/algorandfoundation/issue/PER-#
 
 ## Checklist
 

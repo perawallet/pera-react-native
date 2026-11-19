@@ -1,0 +1,99 @@
+name: Linear / Ticket Sync
+
+# Keeps a Pera (PER) Linear issue's state in step with where the code is:
+#
+#   branch first pushed  -> In Progress
+#   PR ready for review  -> In Code Review
+#   merged to main       -> In QA, assigned to QA
+#
+# The stable-release half lives in .github/workflows/linear-release-sync.yml.
+# Keys come from the branch name and the PR title; text without a PER key is a
+# no-op, and tools/linear-sync.sh exits 0 on every failure so ticket bookkeeping
+# never fails a push or blocks a merge. Linear's own GitHub automations for the
+# team should stay off, or the two will race each other.
+
+on:
+  push:
+    # Only branches that name a ticket, so unrelated pushes don't start a runner.
+    # `per-*` does not match `pera-*`, which stays with jira-sync.yml.
+    branches:
+      - "PER-*"
+      - "**/PER-*"
+      - "per-*"
+      - "**/per-*"
+  # pull_request_target, not pull_request: this repo is public, and a fork's
+  # pull_request run gets no secrets. Safe because no PR code is checked out or
+  # run — the checkout is the base ref, and the PR title/branch reach the script
+  # through env, never interpolated into a shell command.
+  pull_request_target:
+    types: [opened, ready_for_review, closed]
+
+permissions:
+  contents: read
+
+env:
+  LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+  LINEAR_TEAM_KEY: PER
+
+jobs:
+  in-progress:
+    name: Branch pushed → In Progress
+    # Only on creation: firing on every push would drag a ticket back out of
+    # In Code Review each time a review fix lands (forward-only also guards this).
+    if: github.event_name == 'push' && github.event.created
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Move ticket to In Progress
+        env:
+          BRANCH: ${{ github.ref_name }}
+        run: ./tools/linear-sync.sh "In Progress" "$BRANCH"
+
+  in-code-review:
+    name: PR ready → In Code Review
+    # Drafts stay In Progress; marking one ready is what signals review. Fork
+    # PRs are ignored, or anyone could move a ticket by naming it in a title.
+    if: >-
+      github.event_name == 'pull_request_target' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      (github.event.action == 'ready_for_review' ||
+        (github.event.action == 'opened' && github.event.pull_request.draft == false))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Move ticket to In Code Review
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: ./tools/linear-sync.sh "In Code Review" "$TITLE" "$BRANCH"
+
+  merged-to-main:
+    name: Merged to main → In QA + assign QA
+    # base.ref pins this to main, so PRs into feature branches don't hand
+    # tickets to QA early.
+    if: >-
+      github.event_name == 'pull_request_target' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.action == 'closed' &&
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Move ticket to In QA and assign QA
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+          # Eric (QA). His Linear username, resolved to a user id at run time;
+          # anything other than exactly one active match skips the assignment.
+          LINEAR_ASSIGNEE: eric.wollaeger
+        run: ./tools/linear-sync.sh "In QA" "$TITLE" "$BRANCH"
