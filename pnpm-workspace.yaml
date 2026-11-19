@@ -115,6 +115,9 @@ catalog:
   expo-local-authentication: 58.0.3
   expo-localization: 58.0.5
   expo-notifications: 58.1.9
+  # Android builds this from source (apps/mobile autolinking `buildFromSource`):
+  # its prebuilt AAR targets a newer Expo Modules v2 runtime than expo-modules-core
+  # bundles, so NativeDatabase never registers and the app aborts on launch.
   expo-sqlite: 58.0.18
   fake-indexeddb: 6.2.8
   falcon-1024: 0.2.0
