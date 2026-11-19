@@ -17,6 +17,7 @@ import {
     useNavigationContainerRef,
     type ParamListBase,
 } from '@react-navigation/native'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { CreatePasswordScreen, PasskeyUnlockSetupScreen } from '@modules/vault'
 import { OnboardingStackNavigator } from '@modules/onboarding/routes'
 import { useLedgerHandoffTabExit } from '@modules/ledger'
@@ -43,7 +44,9 @@ export const ShellRouter = (): React.JSX.Element => {
     const { shellState, fcmToken } = useWebAppShell()
     const { t } = useLanguage()
     const isDarkMode = useIsDarkMode()
-    const documentTitle = useNavigationDocumentTitle()
+    const documentTitle = useNavigationDocumentTitle({
+        fallback: i18nKey('common.app_name'),
+    })
     // Not the shared `routes/navigationRef`: global handlers (deep links,
     // notification taps) only know main-shell routes, and binding it here would
     // turn their isReady()===false no-op during onboarding into a bad navigate.

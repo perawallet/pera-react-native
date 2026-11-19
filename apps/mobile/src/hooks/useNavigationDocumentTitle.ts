@@ -12,20 +12,35 @@
 
 import { useMemo } from 'react'
 import type { DocumentTitleOptions } from '@react-navigation/native'
+import type { I18nKey } from '@perawallet/wallet-core-chain-contract'
+import { translateIfKey } from '@i18n/translateIfKey'
 import { useLanguage } from './useLanguage'
+
+type UseNavigationDocumentTitleParams = {
+    /**
+     * For a root tree: the title an untitled screen gets. Without it the
+     * screen keeps the current title, so a nested tree doesn't overwrite its
+     * parent's.
+     */
+    fallback?: I18nKey
+}
 
 /**
  * For a NavigationContainer's `documentTitle`: screen titles are i18n keys,
  * which react-navigation would otherwise write to the web window's title as
- * they are. A screen without a title keeps the one another tree set.
+ * they are.
  */
-export const useNavigationDocumentTitle = (): DocumentTitleOptions => {
+export const useNavigationDocumentTitle = ({
+    fallback,
+}: UseNavigationDocumentTitleParams = {}): DocumentTitleOptions => {
     const { t } = useLanguage()
     return useMemo(
         () => ({
-            formatter: options =>
-                options?.title ? t(options.title) : document.title,
+            formatter: options => {
+                const title = options?.title ?? fallback
+                return title ? translateIfKey(t, title) : document.title
+            },
         }),
-        [t],
+        [t, fallback],
     )
 }

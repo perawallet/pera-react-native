@@ -13,6 +13,7 @@
 import { PWToolbar, PWText, PWIcon, PWTouchableOpacity } from '@components/core'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
+import { translateIfKey } from '@i18n/translateIfKey'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMemo } from 'react'
 import type { NativeStackHeaderProps } from '@react-navigation/native-stack'
@@ -46,10 +47,7 @@ export const NavigationHeader = (props: NavigationHeaderProps) => {
                 : undefined
         const title = headerTitle ?? props.options?.title ?? props.route?.name
 
-        if (title?.includes('.') && !title?.includes(' ')) {
-            return t(title)
-        }
-        return title
+        return title ? translateIfKey(t, title) : title
     }, [props.route?.name, t, props.options])
 
     const left = useMemo(() => {

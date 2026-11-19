@@ -12,6 +12,7 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useNavigationDocumentTitle } from '../useNavigationDocumentTitle'
 
 vi.mock('../useLanguage', () => ({
@@ -37,5 +38,26 @@ describe('useNavigationDocumentTitle', () => {
         const { result } = renderHook(() => useNavigationDocumentTitle())
 
         expect(result.current.formatter?.({}, route)).toBe('Pera Wallet')
+    })
+
+    it('writes a title that is not a key as it is', () => {
+        const { result } = renderHook(() => useNavigationDocumentTitle())
+
+        expect(
+            result.current.formatter?.({ title: 'Ledger Nano X' }, route),
+        ).toBe('Ledger Nano X')
+    })
+
+    it('writes the fallback for a screen without a title in a root tree', () => {
+        document.title = 'signing.transactions.title_one'
+        const { result } = renderHook(() =>
+            useNavigationDocumentTitle({
+                fallback: i18nKey('common.app_name'),
+            }),
+        )
+
+        expect(result.current.formatter?.({}, route)).toBe(
+            'translated:common.app_name',
+        )
     })
 })
