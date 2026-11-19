@@ -31,6 +31,12 @@ const NAVIGATION_STACK_NAMES = new Set([
     'home',
 ])
 
+// Firebase counts the prefix and suffix toward its 40-character limit.
+const AUTO_SCREEN_EVENTS = new Map<string, string>([
+    ['cloudbackuprestoreselectaccounts', 'scr_cloudbackup_restore_select_view'],
+    ['cardonboardingautofundingsigning', 'scr_card_autofunding_signing_view'],
+])
+
 /**
  * Centralized, typed screen-view tracking. Maps a stack route name to its
  * catalog {@link AnalyticsScreenName}, so screens don't each need a
@@ -111,7 +117,7 @@ export const screenListeners = ({
             trackScreen(tracked.name, tracked.metadata)
         }
 
-        // 2) Generic auto screen-view event (unchanged).
+        // 2) Generic auto screen-view event.
         const currentRouteName = route.name?.toLowerCase() || 'unknown'
 
         if (
@@ -119,10 +125,11 @@ export const screenListeners = ({
             previousRouteName !== currentRouteName
         ) {
             const analyticsService = getProvider().analytics
-            analyticsService.logEvent(`scr_${currentRouteName}_view`, {
-                previous: previousRouteName,
-                path: route.path,
-            })
+            analyticsService.logEvent(
+                AUTO_SCREEN_EVENTS.get(currentRouteName) ??
+                    `scr_${currentRouteName}_view`,
+                { previous: previousRouteName, path: route.path },
+            )
 
             // 3) GA4-standard page_view with the view title as a param. Kept
             //    alongside scr_*_view so existing dashboards keep working.

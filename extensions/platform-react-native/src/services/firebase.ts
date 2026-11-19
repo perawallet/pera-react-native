@@ -73,6 +73,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 
 const ANDROID_CHANNEL_ID = 'default'
+const EVENT_NAME_PATTERN = /^[A-Za-z][A-Za-z0-9_]{0,39}$/
 
 /**
  * `getRemoteConfig()` is typed as the Firebase-JS `RemoteConfig`, which exposes
@@ -543,10 +544,22 @@ export class RNFirebaseService
     }
 
     logEvent(key: string, payload?: Record<string, unknown>): void {
-        if (this.analytics && this.isAnalyticsCollectionEnabled) {
-            // Fire-and-forget: analytics delivery must never surface to or
-            // block the caller.
-            void logEventGA<string>(this.analytics, key, payload)
+        if (!this.analytics || !this.isAnalyticsCollectionEnabled) return
+        if (!EVENT_NAME_PATTERN.test(key)) {
+            logger.warn('[analytics] Invalid Firebase event name')
+            return
+        }
+
+        const reportFailure = (error: unknown) => {
+            logger.warn('[analytics] Firebase event delivery failed', { error })
+        }
+        try {
+            // Firebase validates synchronously before returning its promise.
+            void logEventGA<string>(this.analytics, key, payload).catch(
+                reportFailure,
+            )
+        } catch (error) {
+            reportFailure(error)
         }
     }
 

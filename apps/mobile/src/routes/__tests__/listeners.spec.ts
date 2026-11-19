@@ -96,6 +96,30 @@ describe('screenListeners', () => {
         expect(logEventMock).not.toHaveBeenCalled()
     })
 
+    it.each([
+        [
+            'CloudBackupRestoreSelectAccounts',
+            'scr_cloudbackup_restore_select_view',
+        ],
+        [
+            'CardOnboardingAutoFundingSigning',
+            'scr_card_autofunding_signing_view',
+        ],
+    ])('uses a Firebase-compatible screen event for %s', (routeName, name) => {
+        screenListeners({ route: createRoute(routeName) as any }).focus()
+
+        expect(name).toMatch(/^[A-Za-z][A-Za-z0-9_]{0,39}$/)
+        expect(logEventMock).toHaveBeenCalledWith(name, {
+            previous: null,
+            path: undefined,
+        })
+        expect(trackEvent).toHaveBeenCalledWith(NavigationEvent.PageView, {
+            page_title: routeName.toLowerCase(),
+            previous: null,
+            path: undefined,
+        })
+    })
+
     it('updates previous route name and logs correct previous screen', () => {
         // 1. Visit AssetDetail (logs, sets previous = assetdetail)
         const route1 = createRoute('AssetDetail')

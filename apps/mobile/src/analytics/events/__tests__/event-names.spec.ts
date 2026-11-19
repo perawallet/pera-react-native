@@ -14,6 +14,7 @@
 
 import { describe, expect, it } from 'vitest'
 import * as contexts from '../contexts'
+import { AnalyticsScreenName } from '../screen-names'
 
 const rawEventValues = Object.entries(contexts)
     // Keep only the event enums (drop the re-exported types, which are erased).
@@ -21,6 +22,13 @@ const rawEventValues = Object.entries(contexts)
     .flatMap(([, value]) => Object.values(value as Record<string, string>))
 
 describe('analytics event catalog', () => {
+    it('uses Firebase-compatible names', () => {
+        const names = [...rawEventValues, ...Object.values(AnalyticsScreenName)]
+        const firebaseName = /^[A-Za-z][A-Za-z0-9_]{0,39}$/
+
+        for (const name of names) expect(name).toMatch(firebaseName)
+    })
+
     it('maps every event across all contexts to a unique raw Firebase string', () => {
         const unique = new Set(rawEventValues)
 

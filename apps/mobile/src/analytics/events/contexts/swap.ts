@@ -19,7 +19,7 @@ export enum SwapEvent {
     SelectBottomAsset = 'swapscr_asset_bot_select', // Selected the bottom (to) asset (asset name)
     HistorySeeAll = 'swapscr_swap_history_see_all', // Tapped "see all" on swap history (opt. pairing)
     SelectHistory = 'swapscr_swap_history_select', // Picked a swap from history (opt. pairing)
-    SelectHistoryInSeeAll = 'swapscr_swap_history_see_all_asset_select', // Picked a swap from the full history list (opt. pairing)
+    SelectHistoryInSeeAll = 'swapscr_swap_history_see_all_select', // Picked a swap from the full history list (opt. pairing)
     SelectProviderOpen = 'swapscr_swap_select_provider', // Opened the provider selector (opt. router)
     SelectProviderRouter = 'swapscr_swap_select_provider_router', // Chose a specific router (opt. router)
     SettingsApply = 'swapscr_swap_settings_apply', // Applied swap settings
