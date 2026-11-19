@@ -1,7 +1,10 @@
 import tempfile
 from pathlib import Path
 
-from parity import BLOCKING, matrix, outputs_under, verdict
+import pytest
+from robot.api import TestSuite as RobotSuite
+
+from parity import BLOCKING, collect, matrix, outputs_under, verdict
 
 
 def test_a_scenario_working_on_one_platform_and_broken_on_the_other_blocks():
@@ -44,27 +47,56 @@ def test_matrix_labels_every_scenario_from_either_platform():
 
 
 def test_empty_results_do_not_pass(tmp_path):
-    from robot.api import TestSuite
     from parity import main
 
     result = tmp_path / 'output.xml'
-    TestSuite('Empty').run(output=str(result), log=None, report=None)
+    RobotSuite('Empty').run(output=str(result), log=None, report=None)
     assert main(str(result), str(result)) == 1
 
 
 def test_duplicate_or_missing_ids_are_rejected(tmp_path):
-    import pytest
-    from robot.api import TestSuite
-    from parity import collect
-
     for tags in ([], ['id:a', 'id:b'], ['id:a']):
-        suite = TestSuite('Identity')
+        suite = RobotSuite('Identity')
         for name in ('First', 'Second'):
             suite.tests.create(name, tags=tags).body.create_keyword('No Operation')
         result = tmp_path / 'output.xml'
         suite.run(output=str(result), log=None, report=None)
         with pytest.raises(ValueError, match='id: tag|Duplicate scenario'):
             collect(str(result))
+
+
+def test_duplicate_ids_across_result_files_are_rejected(tmp_path):
+    for name in ("first", "second"):
+        output = tmp_path / name / "output.xml"
+        suite = RobotSuite(name)
+        suite.tests.create("Scenario", tags=["id:a"]).body.create_keyword("No Operation")
+        suite.run(output=str(output), log=None, report=None)
+
+    with pytest.raises(ValueError, match="Duplicate scenario id: a"):
+        collect(tmp_path)
+
+
+def test_incomplete_results_are_rejected_even_when_pointed_at_one_xml(tmp_path):
+    (tmp_path / ".incomplete").touch()
+    nested = tmp_path / "contacts"
+    nested.mkdir()
+    output = nested / "output.xml"
+    output.touch()
+
+    for path in (tmp_path, output):
+        with pytest.raises(SystemExit, match="marked this pass incomplete"):
+            outputs_under(path)
+
+
+def test_a_suite_run_marked_incomplete_rejects_its_pass(tmp_path):
+    for name in ("accounts", "contacts"):
+        (tmp_path / name).mkdir()
+        (tmp_path / name / "output.xml").touch()
+    (tmp_path / "contacts" / ".incomplete").touch()
+
+    for path in (tmp_path, tmp_path / "contacts" / "output.xml"):
+        with pytest.raises(SystemExit, match="marked this pass incomplete"):
+            outputs_under(path)
 
 
 def test_a_pass_directory_is_read_whichever_way_the_runner_laid_it_out():

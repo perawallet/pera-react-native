@@ -24,7 +24,7 @@ import { findTransactionBatch } from '@perawallet/wallet-core-signing'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { eip155ChainIdOf } from '../../blockchain/utils/caip19'
 import type { EvmChain } from '../../chains/types'
-import { decodedCallSummary } from '../../history/decoded-call-summary'
+import { readDecodedCallSummary } from '../../history/decoded-call-summary'
 import type { EthereumTransactionPayload } from '../../signing/adapter'
 import {
     BATCH_FEE_CEILING_MULTIPLIER,
@@ -49,12 +49,12 @@ export type PreparedEthereumCallBatch = EthereumCallBatchRequest & {
  * and fees depend on state the calls before it create, so it carries the
  * ceiling it will be signed under instead.
  */
-export const previewEthereumCall = (
+export const previewEthereumCall = async (
     scope: ChainScope,
     chain: EvmChain,
     call: EthereumSendTransactionRequest,
     maxFeePerGasCeiling: bigint,
-): UnsignedTransaction => {
+): Promise<UnsignedTransaction> => {
     const payload: EthereumTransactionPayload = {
         from: call.from,
         transaction: {
@@ -71,7 +71,7 @@ export const previewEthereumCall = (
         scope,
         payload,
         summary: ethereumCallSummary(call, chain),
-        historySummary: decodedCallSummary(
+        historySummary: await readDecodedCallSummary(
             call,
             chain,
             scope,
@@ -116,8 +116,10 @@ export const prepareEthereumCallBatch = async (
     return {
         batchId,
         first,
-        following: following.map(call =>
-            previewEthereumCall(scope, chain, call, maxFeePerGasCeiling),
+        following: await Promise.all(
+            following.map(call =>
+                previewEthereumCall(scope, chain, call, maxFeePerGasCeiling),
+            ),
         ),
         request: {
             ...request,

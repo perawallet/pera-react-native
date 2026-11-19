@@ -439,7 +439,8 @@
             "search_paused_body": "No se encontraron transacciones en el historial reciente.",
             "search_older": "Buscar más antiguas",
             "filter": "Filtrar",
-            "csv": "CSV"
+            "csv": "CSV",
+            "csv_on_network": "CSV de {{network}}"
         },
         "collectible": {
             "description": "Descripción",
@@ -1444,6 +1445,10 @@
             "server_error": {
                 "title": "Error del servidor",
                 "body": "El servidor tuvo un problema al procesar tu solicitud. Inténtalo de nuevo."
+            },
+            "rate_limited": {
+                "title": "Red saturada",
+                "body": "La red está recibiendo demasiadas solicitudes en este momento. Espera un momento y vuelve a intentarlo."
             }
         },
         "transaction": {
@@ -3753,6 +3758,8 @@
             "nothing_back_title": "No recibes nada a cambio",
             "permission_collection": "Todos tus NFT de {{collection}}",
             "permission_collection_note": "Podrá mover todos los NFT que tengas de esta colección, ahora y más adelante, hasta que retires este permiso.",
+            "permission_increase": "{{spender}} podrá gastar esta cantidad más",
+            "permission_increase_note": "Se suma a lo que {{spender}} ya puede gastar, así que su límite total puede ser mayor.",
             "permission_no_change": "Con esta transacción no sale ningún token de tu billetera.",
             "permission_revoke": "{{spender}} ya no podrá gastar",
             "permission_spender": "{{spender}} podrá gastar",
@@ -4280,7 +4287,6 @@
             },
             "provider_failed_body": "Este proveedor no pudo completar el swap. Prueba con otro proveedor.",
             "provider_unavailable_body": "El proveedor no está disponible en este momento. Inténtalo de nuevo en unos instantes.",
-            "route_unverified_body": "Pera aún no puede verificar el contrato de swap de este proveedor en {{network}}, así que no se firmó nada. Prueba con otro proveedor o inténtalo de nuevo más tarde.",
             "quote_mismatch_body": "Las transacciones del proveedor no coincidían con esta cotización, así que no se firmó nada. Inténtalo de nuevo o elige otro proveedor.",
             "unsupported_order_body": "Pera no puede completar la orden de este proveedor, así que no se firmó nada. Elige otro proveedor.",
             "signing_failed_body": "No se pudo firmar la transacción, así que no se envió. Inténtalo de nuevo.",

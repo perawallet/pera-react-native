@@ -41,6 +41,7 @@ export const CAPABILITY_ADAPTERS = {
     giftCards: ['send flow'],
     receive: ['addressCodec'],
     history: ['transaction history'],
+    csvExport: ['transaction history'],
     assets: ['assets'],
     pricing: ['assets'],
     messageSigning: ['message signer'],

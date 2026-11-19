@@ -101,9 +101,14 @@ export const useSyncRefresh = ({
         ),
     )
 
-/** `useSyncRefresh` over every network a screen shows, in one pull. */
+/**
+ * `useSyncRefresh` over every network a screen shows, in one pull.
+ * `isUserRefresh` skips the backend's caches, whose forced reads have a small
+ * budget of their own: only a screen showing NFTs asks for it.
+ */
 export const useSyncRefreshAll = (
     sources: readonly RefreshSource[],
+    { isUserRefresh = false }: { isUserRefresh?: boolean } = {},
 ): UseSyncRefreshResult =>
     useRefreshRunner(
         useCallback(
@@ -114,9 +119,12 @@ export const useSyncRefreshAll = (
                             buildRefreshKey(addresses, scope),
                         )
                         .sort()
-                        .join('|'),
-                    () => getSyncService().refreshSources(sources),
+                        .join('|') + (isUserRefresh ? ':forced' : ''),
+                    () =>
+                        getSyncService().refreshSources(sources, {
+                            isUserRefresh,
+                        }),
                 ),
-            [sources],
+            [sources, isUserRefresh],
         ),
     )

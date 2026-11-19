@@ -133,7 +133,7 @@ describe('Flow: Swap execute (order → sign → submit → report)', () => {
 
         const outcome = await executeSwap!(buildRouterSwapQuote(sender))
 
-        expect(outcome).toEqual({ kind: 'success' })
+        expect(outcome).toEqual({ kind: 'success', isPaidOutLater: false })
         expect(algodBodies).toHaveLength(1)
         await waitFor(() => expect(reports).toHaveLength(1))
         expect(reports[0]).toEqual({
@@ -203,7 +203,7 @@ describe('Flow: Swap execute (order → sign → submit → report)', () => {
 
         const outcome = await executeSwap!(quote)
 
-        expect(outcome).toEqual({ kind: 'success' })
+        expect(outcome).toEqual({ kind: 'success', isPaidOutLater: false })
         expect(orderBodies).toEqual([{ quote_id: 'quote-2' }])
     })
 

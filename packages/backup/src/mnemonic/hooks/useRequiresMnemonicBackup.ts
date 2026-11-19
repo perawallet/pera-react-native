@@ -11,22 +11,23 @@
  */
 
 import { useEffect, useMemo } from 'react'
-import { seedOf, type WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import {
+    hasRecoverySeed,
+    seedOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import {
     resolveSeedKeyFrom,
     useKeystoreKeys,
 } from '@perawallet/wallet-core-kms'
 import type { Maybe } from '@perawallet/wallet-core-shared'
-import { backupChainAdapters } from '../../chain-adapter'
 import { useMnemonicBackupStore } from '../store'
 
 // Backup state lives on the seed, so every account one recovery phrase
-// restores shares it. An account with no seed (watch, hardware, multisig, a
-// raw private key) has no phrase to write down and is never prompted.
+// restores shares it, whichever chains it holds. An account with no phrase
+// (watch, hardware, multisig, a raw private key) is never prompted.
 export const useRequiresMnemonicBackup = (
     account: Maybe<WalletAccount>,
-    chainId: ChainId,
 ): boolean => {
     const backedUpKeyIds = useMnemonicBackupStore(state => state.backedUpKeyIds)
     const upgradeBackedUpKeyIds = useMnemonicBackupStore(
@@ -60,7 +61,7 @@ export const useRequiresMnemonicBackup = (
         if (Object.keys(upgrades).length > 0) upgradeBackedUpKeyIds(upgrades)
     }, [upgrades, upgradeBackedUpKeyIds])
 
-    if (!account || !backupChainAdapters.has(chainId)) return false
+    if (!account || !hasRecoverySeed(account)) return false
 
     const seedId = seedOf(account, keys)
     return seedId !== undefined && !backedUpSeedIds.has(seedId)

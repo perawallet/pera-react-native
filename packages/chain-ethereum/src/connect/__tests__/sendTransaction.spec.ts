@@ -20,6 +20,7 @@ import {
     it,
     vi,
 } from 'vitest'
+import { Decimal } from 'decimal.js'
 import { setupServer } from 'msw/node'
 import {
     encodeFunctionData,
@@ -46,13 +47,29 @@ import {
     readEvmTransaction,
     type EthereumTransactionPayload,
 } from '../../signing/adapter'
+import { readEthereumNative } from '../../signing/transaction-view'
 import { ETH_IN_V3_EXACT_IN } from '../../signing/__tests__/contract-action-fixtures'
 import {
     createEthereumReviewer,
     ethereumCallSummary,
     ethereumViewOf,
 } from '../../signing/review'
-import { ETHEREUM, POLYGON } from '../../__tests__/evm-chains'
+import {
+    BASE,
+    ETHEREUM,
+    OPTIMISM,
+    POLYGON,
+    eip155IdOf,
+    evmChainOf,
+    evmScopeOf,
+} from '../../__tests__/evm-chains'
+import type { EvmChain } from '../../chains/types'
+import { SURCHARGE_HEADROOM } from '../../transfer/fees'
+import {
+    opStackOracleResponder,
+    unsignedEncodingOf,
+    type OpStackOracleCall,
+} from '../../transfer/__tests__/op-stack-oracle'
 import { TEST_RPC_URL, testChainContext } from '../../__tests__/context'
 import {
     DAPP_HIGH_FEE_MULTIPLIER,
@@ -195,10 +212,15 @@ describe('validateEthereumSendTransaction', () => {
         })
         expect(
             validate({ ...ok, data: '0xABCD', input: '0xabcd' }),
-        ).toMatchObject({ ok: true })
+        ).toMatchObject({
+            ok: true,
+        })
         expect(
             validate({ ...ok, data: '0xabcd', input: '0xabce' }),
-        ).toMatchObject({ ok: false, failure: 'invalid-params' })
+        ).toMatchObject({
+            ok: false,
+            failure: 'invalid-params',
+        })
     })
 
     it('keeps a gas the dApp gave, and refuses zero or malformed gas', () => {
@@ -1074,4 +1096,117 @@ describe('buildEthereumSendTransaction on Polygon', () => {
         expect(payloadOf(built).chainId).toBe(137)
         expect(payloadOf(built).maxPriorityFeePerGas).toBe(25_000_000_000n)
     })
+})
+
+describe('buildEthereumSendTransaction surcharge', () => {
+    const L1_DATA_FEE = 2_000_000_000_000_000n
+    const OPERATOR_FEE = 5_000n
+    const SURCHARGE = L1_DATA_FEE + OPERATOR_FEE
+
+    beforeEach(() => {
+        vi.mocked(getOpenSubmissionAttempts).mockResolvedValue([])
+    })
+
+    const builtOn = (chain: EvmChain) => {
+        const calls: OpStackOracleCall[] = []
+        const expected = {
+            type: 'eip1559',
+            chainId: eip155IdOf(chain),
+            nonce: 4,
+            to: TO,
+            value: 10n ** 18n,
+            data: '0x',
+            gas: 21_000n,
+            maxFeePerGas: parseGwei('5'),
+            maxPriorityFeePerGas: parseGwei('1'),
+        } as const
+        useRpc({
+            eth_call: opStackOracleResponder(
+                {
+                    l1Fees: new Map([
+                        [unsignedEncodingOf(expected), L1_DATA_FEE],
+                    ]),
+                    operatorFee: OPERATOR_FEE,
+                },
+                calls,
+            ),
+        })
+        return {
+            calls,
+            built: buildEthereumSendTransaction(
+                testChainContext({ chain }),
+                chain,
+                request(),
+            ),
+        }
+    }
+
+    describe.each([BASE, OPTIMISM])('on $row.id', chain => {
+        it('carries the L1 data and operator fees the oracle prices for the signed transaction', async () => {
+            const { built } = builtOn(chain)
+
+            expect((await built).payload).toMatchObject({
+                surcharge: SURCHARGE,
+                feeEstimate: { amount: 21_000n * parseGwei('3') },
+            })
+        })
+
+        it('reviews the expected fee and the maximum with the surcharge, the maximum with its headroom', async () => {
+            const { built } = builtOn(chain)
+
+            const decoded = await createEthereumReviewer({
+                chain,
+            }).decoder.decode([await built], {
+                ...reviewContext,
+                scope: evmScopeOf(chain),
+            })
+            const view = ethereumViewOf(await built, chain)
+
+            const maxFee =
+                21_000n * parseGwei('5') + SURCHARGE_HEADROOM * SURCHARGE
+            expect(decoded.totalFees.toString()).toBe(maxFee.toString())
+            expect(view).toMatchObject({
+                fee: { maxFee: new Decimal(maxFee.toString()) },
+            })
+            const [reviewed] = decoded.transactions
+            expect(readEthereumNative(reviewed.native)).toMatchObject({
+                feeEstimate: {
+                    amount: new Decimal(
+                        (21_000n * parseGwei('3') + SURCHARGE).toString(),
+                    ),
+                },
+            })
+        })
+
+        it('rejects with an EvmError when the oracle read fails', async () => {
+            useRpc({
+                eth_call: new EvmRpcErrorFixture(-32000, 'header not found'),
+            })
+
+            const error = await buildEthereumSendTransaction(
+                testChainContext({ chain }),
+                chain,
+                request(),
+            ).catch((e: unknown) => e)
+
+            expect(isEvmError(error)).toBe(true)
+        })
+    })
+
+    it.each([ETHEREUM, evmChainOf('arbitrum')])(
+        'reads no oracle and carries no surcharge on $row.id',
+        async chain => {
+            const { built, calls } = builtOn(chain)
+
+            const { payload } = await built
+
+            expect(payload).not.toHaveProperty('surcharge')
+            expect(calls).toEqual([])
+            expect(ethereumViewOf(await built, chain)).toMatchObject({
+                fee: {
+                    maxFee: new Decimal((21_000n * parseGwei('5')).toString()),
+                },
+            })
+        },
+    )
 })

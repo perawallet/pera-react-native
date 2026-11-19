@@ -12,6 +12,7 @@
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { Decimal } from 'decimal.js'
 import { http, HttpResponse } from 'msw'
 
 import { server } from '@test-utils/msw-server'
@@ -27,6 +28,7 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
+    insertAssetHolding,
     useAccountChainStateStore,
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
@@ -129,6 +131,13 @@ describe('Flow: Send an ASA without enough ALGO to fund the receiver inbox', () 
             .setPreference(UserPreferences.transactionInfoAgreed, true)
 
         await seedAlgo25Signer()
+        // MAX reads the synced holding; no syncer runs here to write it.
+        await insertAssetHolding({
+            accountAddress: ALGO25_TEST_ADDRESS,
+            assetId: USDC_TEST_ASSET_ID,
+            scope: { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' },
+            amount: new Decimal(10_000_000),
+        })
         useSendFundsStore.getState().setSelectedAsset({
             chainId: ALGORAND_CHAIN_ID,
             assetId: USDC_TEST_ASSET_ID,

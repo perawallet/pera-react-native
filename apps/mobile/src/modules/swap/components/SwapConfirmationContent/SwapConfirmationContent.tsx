@@ -25,7 +25,7 @@ import { SwapDetailsSection } from './SwapDetailsSection'
 import { useStyles } from './styles'
 
 export type SwapConfirmationResult =
-    | { kind: 'confirm' }
+    | { kind: 'confirm'; isPaidOutLater: boolean }
     | { kind: 'cancelled' }
     // Shared-account swap proposed to the backend; the co-signer must approve
     // from their inbox before it submits. The form shows an informational

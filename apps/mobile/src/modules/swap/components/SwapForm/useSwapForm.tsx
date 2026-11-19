@@ -855,8 +855,10 @@ export const useSwapForm = (
         const fromUnit = selectedQuote.assetIn.unitName ?? ''
         const toUnit = selectedQuote.assetOut.unitName ?? ''
 
-        // A cross-chain payout lands minutes later; the tracked list follows it.
-        const isTracked = selectedQuote.routeKind === 'cross-chain'
+        // A cross-chain or deposit payout lands minutes later; the tracked list
+        // follows it.
+        const isTracked =
+            selectedQuote.routeKind === 'cross-chain' || result.isPaidOutLater
         const successTitle = isTracked
             ? t('swap.tracking.started')
             : t('swap.execution.success_title')

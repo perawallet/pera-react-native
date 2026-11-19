@@ -60,14 +60,4 @@ describe('swapFailureStepOf', () => {
             }),
         ).toBe('swap')
     })
-
-    it('reports an unverified route as prepare', () => {
-        expect(
-            swapFailureStepOf({
-                phase: 'prepare',
-                reason: 'route-unverified',
-                chainId,
-            }),
-        ).toBe('prepare')
-    })
 })

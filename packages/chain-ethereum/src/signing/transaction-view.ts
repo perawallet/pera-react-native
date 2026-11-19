@@ -40,8 +40,8 @@ export type EthereumPricedView = {
     hasHighFee?: true
     /**
      * Wei. What the transaction is expected to cost at request time, at the
-     * tier its tip reaches; display-only, and absent when the request carried
-     * no estimate.
+     * tier its tip reaches, with any OP-stack surcharge; display-only, and
+     * absent when the request carried no estimate.
      */
     feeEstimate?: { preset: FeePreset; amount: Decimal }
     /**
@@ -50,7 +50,10 @@ export type EthereumPricedView = {
      * contract's own text.
      */
     revertedEstimate?: { reason?: string }
-    /** Wei. `maxFee` is `gas * maxFeePerGas`, the most the signature authorises. */
+    /**
+     * Wei. `maxFee` is `gas * maxFeePerGas`, the most the signature authorises,
+     * plus an OP-stack surcharge with the headroom the Send quote gives it.
+     */
     fee: {
         maxFeePerGas: Decimal
         maxPriorityFeePerGas: Decimal

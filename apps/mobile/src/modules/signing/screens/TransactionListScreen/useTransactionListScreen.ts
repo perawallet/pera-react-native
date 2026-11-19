@@ -21,6 +21,7 @@ import {
 } from '@perawallet/wallet-core-signing'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import type { SigningStackParamList } from '@modules/signing/routes'
+import { useSignRequestScope } from '@modules/signing/hooks/useSignRequestScope'
 
 type NavigationProp = StackNavigationProp<
     SigningStackParamList,
@@ -32,6 +33,7 @@ export const useTransactionListScreen = () => {
     const pipeline = useSigningPipeline()
     const { listItems, allTransactions, currentRequest } = pipeline
     const request = currentRequest as Optional<TransactionSignRequest>
+    const reviewScope = useSignRequestScope(currentRequest)
     const scope =
         currentRequest && 'txs' in currentRequest
             ? currentRequest.txs[0]?.scope
@@ -68,6 +70,7 @@ export const useTransactionListScreen = () => {
 
     return {
         listItems,
+        reviewScope,
         transactionCount: allTransactions.length,
         sourceMetadata: request?.sourceMetadata,
         verifiedOrigin: request?.verifiedOrigin,

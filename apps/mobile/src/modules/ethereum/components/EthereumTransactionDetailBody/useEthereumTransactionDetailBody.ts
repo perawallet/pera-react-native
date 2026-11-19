@@ -40,7 +40,7 @@ export type UseEthereumTransactionDetailBodyResult = {
 
 export const useEthereumTransactionDetailBody = (
     transaction: TransactionNative,
-    scope?: ChainScope,
+    scope: ChainScope,
 ): UseEthereumTransactionDetailBodyResult => {
     const heroTitle = useTransactionHeroTitle()
     const presentation = useEthereumTransactionPresentation(transaction, scope)

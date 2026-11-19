@@ -46,6 +46,7 @@ import {
     type EvmNftStandard,
 } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
+import { SURCHARGE_HEADROOM } from '../transfer/fees'
 import {
     encodeEvmNftTransfer,
     readEvmNftTransferAsset,
@@ -214,6 +215,8 @@ type Pricing = {
     hasHighFee?: true
     feeEstimate?: EthereumPayloadFeeEstimate
     revertedEstimate?: EthereumRevertedEstimate
+    /** Wei. */
+    surcharge?: bigint
 }
 
 type Call = {
@@ -230,6 +233,11 @@ type Call = {
 
 const toDecimal = (value: bigint): Decimal => new Decimal(value.toString())
 
+// As the Send quote prices its maximum: the surcharge isn't capped by the
+// signed gas fields and is priced again at inclusion, so it carries headroom.
+const maxFeeOf = ({ gas, maxFeePerGas, surcharge = 0n }: Pricing): bigint =>
+    gas * maxFeePerGas + SURCHARGE_HEADROOM * surcharge
+
 // The fee shown is the most the signature authorises, so review needs a gas
 // limit and a max fee, as signing does.
 const readCall = (
@@ -244,6 +252,7 @@ const readCall = (
         hasHighFee,
         feeEstimate,
         revertedEstimate,
+        surcharge,
     } = readEvmReviewTransaction(unsigned, chain)
     if (context && toScopeKey(unsigned.scope) !== toScopeKey(context.scope)) {
         throw new Error(
@@ -293,6 +302,7 @@ const readCall = (
                 ...(hasHighFee && { hasHighFee }),
                 ...(feeEstimate && { feeEstimate }),
                 ...(revertedEstimate && { revertedEstimate }),
+                ...(surcharge && { surcharge }),
             },
         }),
     }
@@ -318,7 +328,10 @@ const pricingOf = (
             ...(call.pricing.feeEstimate && {
                 feeEstimate: {
                     preset: call.pricing.feeEstimate.preset,
-                    amount: toDecimal(call.pricing.feeEstimate.amount),
+                    amount: toDecimal(
+                        call.pricing.feeEstimate.amount +
+                            (call.pricing.surcharge ?? 0n),
+                    ),
                 },
             }),
             fee: {
@@ -326,7 +339,7 @@ const pricingOf = (
                 maxPriorityFeePerGas: toDecimal(
                     call.pricing.maxPriorityFeePerGas,
                 ),
-                maxFee: toDecimal(call.pricing.gas * call.pricing.maxFeePerGas),
+                maxFee: toDecimal(maxFeeOf(call.pricing)),
             },
         }
     }
@@ -731,8 +744,7 @@ export const createEthereumReviewer = ({
                     )
                     if (held !== undefined) {
                         signable.add(held)
-                        totalFees +=
-                            call.pricing.gas * call.pricing.maxFeePerGas
+                        totalFees += maxFeeOf(call.pricing)
                     }
                     return reviewCall(
                         chain,

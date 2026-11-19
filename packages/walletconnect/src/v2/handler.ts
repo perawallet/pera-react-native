@@ -313,15 +313,16 @@ const addressesOnChain = (
 
 /**
  * One namespace per CAIP-2 namespace that the proposal asks for and that has
- * an approved address on it, so a chain the dApp never named adds nothing to
- * the session. Chains sharing a namespace merge into one entry: a session
- * holds a single namespace per key, and the last chain's entry would
- * otherwise replace the others'.
+ * an approved address it can sign with, so a chain the dApp never named, or
+ * one the approved account lacks, adds nothing to the session. Chains sharing
+ * a namespace merge into one entry: a session holds a single namespace per
+ * key, and the last chain's entry would otherwise replace the others'.
  */
 const supportedNamespacesFor = (
     chains: readonly WalletConnectV2Chain[],
     proposal: WalletKitSessionProposal['params'],
     addresses: readonly string[],
+    canSignWith?: (chainId: ChainId, address: string) => boolean,
 ): Record<string, SupportedNamespace> => {
     const namespaces = new Map<string, SupportedNamespace>()
     for (const { chainId, support, v2 } of chains) {
@@ -331,7 +332,9 @@ const supportedNamespacesFor = (
                 return caip2 === null ? [] : [caip2]
             },
         )
-        const own = addressesOnChain(chainId, addresses)
+        const own = addressesOnChain(chainId, addresses).filter(
+            address => !canSignWith || canSignWith(chainId, address),
+        )
         if (caip2Ids.length === 0 || own.length === 0) continue
         const existing = namespaces.get(support.namespace)
         namespaces.set(support.namespace, {
@@ -673,6 +676,14 @@ export const createWalletConnectV2Handler = (
         })
     }
 
+    const signableOnChain = (
+        chainId: ChainId,
+        addresses: readonly string[],
+    ): string[] =>
+        addressesOnChain(chainId, addresses).filter(
+            address => !canSignWith || canSignWith(chainId, address),
+        )
+
     /**
      * Resolves a switch target across every chain of the request's namespace.
      * A chain the session lacks must also be connectable, the rule a new
@@ -720,6 +731,17 @@ export const createWalletConnectV2Handler = (
             refuseRequest(topic, id, 'UNSUPPORTED_CHAINS', null, {
                 support: target.support,
                 failure: 'unselected-chain',
+            })
+            return
+        }
+
+        if (
+            !isHeld &&
+            signableOnChain(target.chainId, record.accounts).length === 0
+        ) {
+            refuseRequest(topic, id, 'UNSUPPORTED_CHAINS', null, {
+                support: target.support,
+                failure: 'unauthorized-account',
             })
             return
         }
@@ -851,14 +873,22 @@ export const createWalletConnectV2Handler = (
 
     /**
      * Adds `caip2` to the session's namespace for `chain`, for the addresses
-     * the session already holds on it and never a new account. `updateSession`
-     * is awaited but not its `acknowledged()`: a backgrounded dApp may never ack.
+     * the session already holds on it that can sign there, and never a new
+     * account. `updateSession` is awaited but not its `acknowledged()`: a
+     * backgrounded dApp may never ack.
      */
     const includeChainInSession = async (
         record: WalletConnectV2Connection,
         chain: WalletConnectV2Chain,
         caip2: string,
     ): Promise<void> => {
+        const signable = signableOnChain(chain.chainId, record.accounts)
+        if (signable.length === 0) {
+            throw new ConnectionsError(
+                'unauthorized-account',
+                'The wallet cannot sign for this session on that chain',
+            )
+        }
         const walletKit = requireClient()
         const session = walletKit.getActiveSessions()[
             record.id
@@ -880,8 +910,8 @@ export const createWalletConnectV2Handler = (
                     chains: [...(namespace.chains ?? []), caip2],
                     accounts: dedupe([
                         ...namespace.accounts,
-                        ...addressesOnChain(chain.chainId, record.accounts).map(
-                            address => toCaip10Account(caip2, address),
+                        ...signable.map(address =>
+                            toCaip10Account(caip2, address),
                         ),
                     ]),
                 },
@@ -1139,17 +1169,29 @@ export const createWalletConnectV2Handler = (
             chains,
             input.proposal,
             input.accounts,
+            canSignWith,
         )
         // Typed and terminal: the library's own refusal is a plain Error the
         // sheet would report as a network failure, and with no account on the
-        // chain a retry can never succeed.
-        const uncovered = chains.find(
-            ({ support }) =>
-                !(support.namespace in supportedNamespaces) &&
-                Object.keys(input.proposal.requiredNamespaces).some(key =>
+        // chain a retry can never succeed. Per chain, since one sharing the
+        // namespace may be covered while another required one is not.
+        const uncovered = chains.find(({ support }) => {
+            const required = input.proposal.requiredNamespaces
+            if (
+                !Object.keys(required).some(key =>
                     isChainNamespaceKey(support, key),
-                ),
-        )
+                )
+            ) {
+                return false
+            }
+            if (!(support.namespace in supportedNamespaces)) return true
+            const held = supportedNamespaces[support.namespace].chains
+            return requestedChains(support, required).some(
+                caip2 =>
+                    support.networkForCaip2ChainId(caip2) !== null &&
+                    !held.includes(caip2),
+            )
+        })
         if (uncovered) {
             throw new WalletConnectError(
                 `No approved account on the required ${uncovered.support.namespace} chain`,
@@ -1390,13 +1432,18 @@ export const createWalletConnectV2Handler = (
             requested: {
                 networks,
                 chains: offered.map(({ chain }) => chain.chainId),
+                // Only the chain's own ids: chains sharing a namespace each
+                // see every required id of it.
                 requiredChains: offered
-                    .filter(
-                        ({ chain }) =>
-                            requestedChains(
-                                chain.support,
-                                params.requiredNamespaces,
-                            ).length > 0,
+                    .filter(({ chain }) =>
+                        requestedChains(
+                            chain.support,
+                            params.requiredNamespaces,
+                        ).some(
+                            caip2 =>
+                                chain.support.networkForCaip2ChainId(caip2) !==
+                                null,
+                        ),
                     )
                     .map(({ chain }) => chain.chainId),
                 methods,
@@ -1876,11 +1923,23 @@ export const createWalletConnectV2Handler = (
         const held = addressesOnChain(chainId, stored.accounts)
         if (held.length === 1 && held[0] === normalized) return
 
+        // Optional networks the new account lacks leave the session, so no
+        // account is announced on a network it cannot sign for.
+        const isSignable = (caip2: string): boolean => {
+            const served = v2ChainForCaip2(caip2)
+            return served !== null && canSignWith(served.chainId, normalized)
+        }
+
         // Store first, then reject: a request read before the store write
         // would be raised for the account being replaced.
         const latest = await store().get(id)
         const current =
             latest && isWalletConnectV2Connection(latest) ? latest : stored
+        const dropped = current.metadata.chains.filter(
+            caip2 =>
+                caip2.startsWith(`${chain.support.namespace}:`) &&
+                !isSignable(caip2),
+        )
         await store().upsert({
             ...current,
             accounts: [
@@ -1890,6 +1949,12 @@ export const createWalletConnectV2Handler = (
                 ),
                 normalized,
             ],
+            metadata: {
+                ...current.metadata,
+                chains: current.metadata.chains.filter(
+                    caip2 => !dropped.includes(caip2),
+                ),
+            },
         })
         withdrawPendingRequests(id, chain.support.namespace)
         let updated = namespace
@@ -1906,13 +1971,15 @@ export const createWalletConnectV2Handler = (
                 throw new WalletConnectInvalidSessionError('No session found')
             }
             updated = liveNamespace
+            const kept = (liveNamespace.chains ?? []).filter(isSignable)
             await walletKit.updateSession({
                 topic: id,
                 namespaces: {
                     ...live.namespaces,
                     [chain.support.namespace]: {
                         ...liveNamespace,
-                        accounts: (liveNamespace.chains ?? []).map(caip2 =>
+                        chains: kept,
+                        accounts: kept.map(caip2 =>
                             toCaip10Account(caip2, normalized),
                         ),
                     },
@@ -1934,6 +2001,10 @@ export const createWalletConnectV2Handler = (
                         ),
                         ...addressesOnChain(chainId, current.accounts),
                     ],
+                    metadata: {
+                        ...now.metadata,
+                        chains: dedupe([...now.metadata.chains, ...dropped]),
+                    },
                 })
             }
             throw error

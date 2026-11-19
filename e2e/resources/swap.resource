@@ -23,8 +23,10 @@ ${SWAP_RECEIVE_ASSET_SELECTOR}      tid=swap-receive-asset-selector
 # PWView containers expose their testID as resource-id on Android, not as an accessibility id.
 ${SWAP_QUOTE_ERROR}                 tid=swap_quote_error
 ${SWAP_INSUFFICIENT_BALANCE}        tid=swap_insufficient_balance
-# The amount follows the label after an asset glyph ("¦" on Android, "Algo" on iOS).
-${SWAP_BALANCE_VALUE}               xpath=(//*[@text='Balance: ' or @label='Balance: ']/following-sibling::*/descendant-or-self::*[contains(translate(@text,'0123456789','##########'),'#') or contains(translate(@label,'0123456789','##########'),'#')])[1]
+# Either native tree can flatten the balance label beside its View. The testID
+# anchors both that shape and the nested label shape.
+${PAY_BALANCE_VIEW}                 //*[@resource-id='swap-pay-balance' or @name='swap-pay-balance' or @content-desc='swap-pay-balance']
+${SWAP_BALANCE_VALUE}               xpath=(${PAY_BALANCE_VIEW}/descendant-or-self::* | (${PAY_BALANCE_VIEW})/following-sibling::*[1])[contains(translate(concat(@text,@label),'0123456789','##########'),'#')][1]
 ${SWAP_SELECT_ASSET_LABEL}          xpath=//*[@text='Select' or @label='Select']
 # iOS labels the toast with its title and body together, and keeps a hidden one in the tree.
 ${NOTHING_TO_SWAP_TOAST}            xpath=//*[(starts-with(@text,'Nothing to swap') or starts-with(@label,'Nothing to swap')) and not(@visible='false')]
@@ -40,11 +42,10 @@ ${NO_MATCH_SEARCH}                  ZZQXNOMATCH9999
 # Mainnet USDC: verified and pooled against ALGO, so a stable probe for the receive list.
 ${USDC_ASSET_ID}                    31566704
 ${USDC_RECEIVE_ROW}                 tid=swap-asset-item-31566704
-# Only the receive side's balance carries the receive asset's unit; "ALGO to USDC" in Top Swaps
-# would match a bare USDC text anywhere.
-${RECEIVE_IS_USDC}                  xpath=//*[@text='Balance: ' or @label='Balance: ']/following-sibling::*[contains(@text,'USDC') or contains(@label,'USDC')]
+# Anchor the unit on the receive balance so the Top Swaps strip cannot satisfy it.
 ${RECEIVE_BALANCE}                  tid=swap-receive-balance
-${RECEIVE_BALANCE_IS_USDC}          xpath=//*[@name='swap-receive-balance' or @resource-id='swap-receive-balance' or @content-desc='swap-receive-balance']//*[contains(@text,'USDC') or contains(@label,'USDC')]
+${RECEIVE_BALANCE_VIEW}             //*[@resource-id='swap-receive-balance' or @name='swap-receive-balance' or @content-desc='swap-receive-balance']
+${RECEIVE_BALANCE_IS_USDC}          xpath=(${RECEIVE_BALANCE_VIEW}/descendant-or-self::* | (${RECEIVE_BALANCE_VIEW})[@resource-id]/following-sibling::*[1])[contains(concat(@text,@label),'USDC')][1]
 ${PAY_CHAIN_FILTER}                 tid=swap_from_chain_filter
 ${RECEIVE_CHAIN_FILTER}             tid=swap_to_chain_filter
 ${OTHER_CHAIN_RECEIVE_CHIP}         xpath=(//*[(starts-with(@content-desc,'swap_to_chain_filter_') or starts-with(@resource-id,'swap_to_chain_filter_') or starts-with(@name,'swap_to_chain_filter_')) and not(contains(concat(@content-desc,@resource-id,@name),'_all')) and not(contains(concat(@content-desc,@resource-id,@name),'_algorand'))])[1]
@@ -247,14 +248,14 @@ Close Picker Back To Form
 Choose USDC To Receive
     [Documentation]    Picks the pair explicitly: the form seeds USDC as the receive asset but shows
     ...                "Select" for it on a wallet that does not hold USDC.
-    ${already}=    Run Keyword And Return Status    Page Should Contain Element    ${RECEIVE_IS_USDC}
+    ${already}=    Run Keyword And Return Status    Page Should Contain Element    ${RECEIVE_BALANCE_IS_USDC}
     IF    ${already}    RETURN
     Open Receive Asset Picker
     Search Assets    ${USDC_ASSET_ID}
     Wait For USDC Receive Row
     Tap    ${USDC_RECEIVE_ROW}
     Wait Until Page Does Not Contain Element    ${ASSET_SEARCH_INPUT}    timeout=15s
-    Wait Until Page Contains Element    ${RECEIVE_IS_USDC}    timeout=15s
+    Wait Until Page Contains Element    ${RECEIVE_BALANCE_IS_USDC}    timeout=15s
 
 Open Configuration
     Tap    ${SWAP_CONFIGURE_BUTTON}

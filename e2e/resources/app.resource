@@ -350,27 +350,7 @@ Wait Until Settled
     [Documentation]    Waits for an element to stop moving. A sheet's buttons exist while it still
     ...                slides in, and a tap at their moving position lands on the backdrop and closes it.
     [Arguments]    ${locator}
-    Wait Until Page Contains Element    ${locator}    timeout=15s
-    ${last}=    Element Bounds    ${locator}
-    ${stable}=    Set Variable    ${0}
-    FOR    ${i}    IN RANGE    30
-        Sleep    0.15s
-        ${now}=    Element Bounds    ${locator}
-        IF    $now == $last
-            ${stable}=    Evaluate    $stable + 1
-            IF    $stable >= 3    RETURN
-        ELSE
-            ${stable}=    Set Variable    ${0}
-        END
-        ${last}=    Set Variable    ${now}
-    END
-    Fail    ${locator} did not stop moving or resizing.
-
-Element Bounds
-    [Arguments]    ${locator}
-    ${element}=    Get Webelement    ${locator}
-    ${bounds}=    Evaluate    $element.rect
-    RETURN    ${bounds}
+    AppiumLibrary.Wait Until Element Settles    ${locator}
 
 Tap If Present
     [Arguments]    ${locator}

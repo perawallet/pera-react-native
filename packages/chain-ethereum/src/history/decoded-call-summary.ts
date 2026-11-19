@@ -27,6 +27,7 @@ import {
     findKnownEvmContract,
     wrappedNativeOf,
 } from '../signing/known-contracts'
+import { readNftApprovalIds } from '../signing/nft-approvals'
 import { ethereumCallSummary } from '../signing/review'
 import { decodeEvmStandardCall } from '../signing/standard-calls'
 import {
@@ -47,13 +48,15 @@ const CONTRACT_INTERACTION = i18nKey(
  * A call this wallet is about to send, before History has its row. Approvals,
  * a Permit2 `approve` among them, are named whatever `isDecoding`; naming a
  * contract call is not. Plain value transfers stay as `ethereumCallSummary`
- * builds them.
+ * builds them. `nftApprovals` are the NFT asset ids the store knows an
+ * `approve` grants, as a mined row reads them.
  */
 export const decodedCallSummary = (
     call: DecodableCall,
     chain: EvmChain,
     scope: ChainScope,
     isDecoding: boolean,
+    nftApprovals?: ReadonlySet<string>,
 ): TransactionSummary => {
     const plain = ethereumCallSummary(call, chain)
     if (call.to && size(call.data) === 0) return plain
@@ -76,6 +79,7 @@ export const decodedCallSummary = (
         { ...call, to },
         contract,
         eip155ChainId,
+        nftApprovals,
     )
     if (approval) return historyActionSummary(approval, base, named, chain)
 
@@ -91,4 +95,22 @@ export const decodedCallSummary = (
         ...(action ? contractActionSummary(action, call, chain) : base),
         ...knownContractSubtitle(named),
     }
+}
+
+/**
+ * `decodedCallSummary` with an `approve` checked against the local asset store
+ * first, so a pending entry names an NFT approval as its mined row will.
+ */
+export const readDecodedCallSummary = async (
+    call: DecodableCall,
+    chain: EvmChain,
+    scope: ChainScope,
+    isDecoding: boolean,
+): Promise<TransactionSummary> => {
+    const standard = decodeEvmStandardCall(call)
+    const nftApprovals =
+        standard?.kind === 'approve'
+            ? await readNftApprovalIds([standard], scope)
+            : undefined
+    return decodedCallSummary(call, chain, scope, isDecoding, nftApprovals)
 }

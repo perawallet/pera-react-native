@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { createEvmSwapAdapter, type EvmSwapAdapterOptions } from './adapter'
+export { createEvmSwapAdapter } from './adapter'

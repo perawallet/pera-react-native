@@ -300,8 +300,24 @@ describe('useSyncRefresh', () => {
                 result.current.refresh()
             })
 
-            expect(refreshSources).toHaveBeenCalledWith(SOURCES)
+            expect(refreshSources).toHaveBeenCalledWith(SOURCES, {
+                isUserRefresh: false,
+            })
             expect(result.current.isRefreshing).toBe(false)
+        })
+
+        it('skips the backend caches only for a screen that asks to', async () => {
+            const { result } = renderHook(() =>
+                useSyncRefreshAll(SOURCES, { isUserRefresh: true }),
+            )
+
+            await act(async () => {
+                result.current.refresh()
+            })
+
+            expect(refreshSources).toHaveBeenCalledWith(SOURCES, {
+                isUserRefresh: true,
+            })
         })
 
         it('joins a pull already in flight for the same networks', async () => {

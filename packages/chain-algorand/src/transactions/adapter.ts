@@ -18,10 +18,11 @@ import {
     toUnsignedAlgorandTransactions,
 } from '../signing/unsignedTransaction'
 import { algorandNetworkOf } from '../network-id'
-import type {
-    HistoryChainAdapter,
-    SendFlowChainAdapter,
-    TransferChainAdapter,
+import {
+    fetchTransactionsCsv,
+    type HistoryChainAdapter,
+    type SendFlowChainAdapter,
+    type TransferChainAdapter,
 } from '@perawallet/wallet-core-transactions'
 import { algorandAssetInbox } from '../asa-inbox/adapter'
 import { getAlgorandAddressPoisoningRules } from './address-poisoning'
@@ -116,4 +117,5 @@ export const algorandHistoryAdapter = {
     resolveAssetFacts: resolveAlgorandAssetFacts,
     chainData: algorandHistoryChainData,
     healCachedRows: healAlgorandCachedRows,
+    exportCsv: fetchTransactionsCsv,
 } satisfies HistoryChainAdapter

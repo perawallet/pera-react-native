@@ -488,7 +488,7 @@ const run = async (
             unsent = {
                 signed: saved,
                 entry: historyEntryOf(
-                    previewEthereumCall(
+                    await previewEthereumCall(
                         scope,
                         chain,
                         calls[position],

@@ -20,12 +20,14 @@ import {
 } from '@perawallet/wallet-core-signing'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { SigningActionButtons } from '@modules/signing/components/SigningActionButtons'
+import { useSignRequestScope } from '@modules/signing/hooks/useSignRequestScope'
 
 export const SingleTransactionScreen = () => {
     const { t } = useLanguage()
     const pipeline = useSigningPipeline()
     const request = pipeline.currentRequest as Optional<TransactionSignRequest>
     const { allTransactions } = pipeline
+    const scope = useSignRequestScope(request)
 
     const native = allTransactions.at(0)
 
@@ -51,6 +53,7 @@ export const SingleTransactionScreen = () => {
     return (
         <TransactionReviewBody
             transaction={native}
+            scope={scope}
             source={request.sourceMetadata}
             verifiedOrigin={request.verifiedOrigin}
             actions={<SigningActionButtons />}

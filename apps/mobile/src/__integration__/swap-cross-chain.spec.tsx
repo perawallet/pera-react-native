@@ -289,7 +289,7 @@ describe('Flow: Cross-chain swap (Algorand into an own Ethereum address)', () =>
         expect(quote.routeKind).toBe('cross-chain')
         const outcome = await api.execute(quote)
 
-        expect(outcome).toEqual({ kind: 'success' })
+        expect(outcome).toEqual({ kind: 'success', isPaidOutLater: false })
         expect(algodBodies).toHaveLength(1)
         await waitFor(() => expect(reports).toHaveLength(1))
         expect(useSwapTrackingStore.getState().orders[SWAP_ORDER_ID]).toEqual(

@@ -218,7 +218,7 @@ describe('useSwapExecution', () => {
             const outcome = await run(async () => true, result.current)
 
             expect(mockExecuteSwap).toHaveBeenCalledOnce()
-            expect(outcome).toEqual({ kind: 'success' })
+            expect(outcome).toEqual({ kind: 'success', isPaidOutLater: false })
         })
 
         it('creates no order when the user declines', async () => {
@@ -312,7 +312,7 @@ describe('useSwapExecution', () => {
 
         const outcome = await executeOnce(result.current.execute)
 
-        expect(outcome).toEqual({ kind: 'success' })
+        expect(outcome).toEqual({ kind: 'success', isPaidOutLater: false })
         expect(result.current.status).toBe('success')
         expect(result.current.txIds).toEqual(['group-1-id', 'group-2-id'])
     })
@@ -851,28 +851,6 @@ describe('useSwapExecution', () => {
         })
     })
 
-    it('says why an unverified route could not run, naming the network', async () => {
-        failWith({
-            phase: 'prepare',
-            reason: 'route-unverified',
-            chainId: 'ethereum',
-        })
-        const { result } = renderHook(() => useSwapExecution())
-
-        const outcome = await executeOnce(result.current.execute)
-
-        expect(outcome).toEqual({
-            kind: 'error',
-            phase: 'prepare',
-            message: 'swap.execution.route_unverified_body',
-            title: 'swap.execution.failed_title.prepare',
-        })
-        expect(mockT).toHaveBeenCalledWith(
-            'swap.execution.route_unverified_body',
-            { network: expect.any(String) },
-        )
-    })
-
     it.each([
         [
             { phase: 'prepare', reason: 'no-signable-steps' } as const,
@@ -933,7 +911,7 @@ describe('useSwapExecution', () => {
             expect(mockExecuteSwap).toHaveBeenCalledWith(
                 expect.objectContaining({ quote: fresh }),
             )
-            expect(outcome).toEqual({ kind: 'success' })
+            expect(outcome).toEqual({ kind: 'success', isPaidOutLater: false })
         })
 
         it('does not re-quote a quote with life left', async () => {

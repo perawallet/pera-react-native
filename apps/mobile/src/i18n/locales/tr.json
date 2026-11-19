@@ -439,7 +439,8 @@
             "search_paused_body": "Yakın geçmişte işlem bulunamadı.",
             "search_older": "Daha eskileri ara",
             "filter": "Filtrele",
-            "csv": "CSV"
+            "csv": "CSV",
+            "csv_on_network": "{{network}} CSV"
         },
         "collectible": {
             "description": "Açıklama",
@@ -1444,6 +1445,10 @@
             "server_error": {
                 "title": "Sunucu hatası",
                 "body": "Sunucu isteğini işlerken bir sorunla karşılaştı. Tekrar dene."
+            },
+            "rate_limited": {
+                "title": "Ağ yoğun",
+                "body": "Ağ şu anda çok fazla istek alıyor. Biraz bekle ve tekrar dene."
             }
         },
         "transaction": {
@@ -3753,6 +3758,8 @@
             "nothing_back_title": "Karşılığında hiçbir şey almıyorsun",
             "permission_collection": "Tüm {{collection}} NFT’lerin",
             "permission_collection_note": "Bu koleksiyondaki tüm NFT’lerini, bu izni kaldırana kadar şimdi ve daha sonra taşıyabilir.",
+            "permission_increase": "Ek harcama izni verilen: {{spender}}",
+            "permission_increase_note": "Bu tutar {{spender}} için mevcut harcama iznine eklenir, bu yüzden toplam limit daha yüksek olabilir.",
             "permission_no_change": "Bu işlemle cüzdanından hiçbir token çıkmaz.",
             "permission_revoke": "Harcama izni kaldırılıyor: {{spender}}",
             "permission_spender": "Harcama izni verilen: {{spender}}",
@@ -4280,7 +4287,6 @@
             },
             "provider_failed_body": "Bu sağlayıcı swap işlemini tamamlayamadı. Başka bir sağlayıcı dene.",
             "provider_unavailable_body": "Sağlayıcı şu anda kullanılamıyor. Biraz sonra tekrar dene.",
-            "route_unverified_body": "Pera bu sağlayıcının {{network}} ağındaki swap sözleşmesini henüz doğrulayamıyor, bu yüzden hiçbir şey imzalanmadı. Başka bir sağlayıcı dene veya daha sonra tekrar dene.",
             "quote_mismatch_body": "Sağlayıcının işlemleri bu teklifle eşleşmedi, bu yüzden hiçbir şey imzalanmadı. Tekrar dene veya başka bir sağlayıcı seç.",
             "unsupported_order_body": "Pera bu sağlayıcının siparişini tamamlayamıyor, bu yüzden hiçbir şey imzalanmadı. Başka bir sağlayıcı seç.",
             "signing_failed_body": "İşlem imzalanamadı, bu yüzden gönderilmedi. Tekrar dene.",

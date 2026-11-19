@@ -11,16 +11,18 @@
  */
 
 import { useMemo } from 'react'
-import type { Decimal } from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import {
     useAssetPricesQuery,
     useAssetsQuery,
     useNativeAsset,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
+import type { SpendApproval } from '@perawallet/wallet-core-chain-contract'
 import {
     parseEvmNftAssetId,
     simulationRequestOf,
+    toAllowanceAmount,
     useEvmTransactionSimulationQuery,
     type EvmApprovalChange,
     type EvmAssetChange,
@@ -46,8 +48,17 @@ import { isCallUnexplained } from '../../utils/contractCallNotice'
 
 export type EthereumApprovalGrant =
     | { kind: 'unlimited' }
-    /** `amount` is in display units of the token, or raw base units when `isBaseUnits`. */
-    | { kind: 'amount'; amount: Decimal; isBaseUnits: boolean }
+    /**
+     * `amount` is in display units of the token, or raw base units when
+     * `isBaseUnits`. `isIncrease` marks an amount added to an allowance the
+     * review can't see, so it is not the resulting limit.
+     */
+    | {
+          kind: 'amount'
+          amount: Decimal
+          isBaseUnits: boolean
+          isIncrease?: boolean
+      }
     /** One NFT. */
     | { kind: 'token'; tokenId: string }
     | { kind: 'revoke' }
@@ -102,7 +113,21 @@ const grantOf = (
 const sameAddress = (a: string, b: string): boolean =>
     a.toLowerCase() === b.toLowerCase()
 
-// The approval the call's own review already shows from its calldata.
+// Unlimited is compared as the calldata reads it, so a simulator's raw max
+// still matches an unlimited approve.
+const isSameAllowance = (
+    simulated: Optional<Decimal>,
+    approval: Optional<SpendApproval>,
+): boolean => {
+    const decoded = approval ? approval.allowances[0]?.amount : new Decimal(0)
+    const resulting =
+        simulated && toAllowanceAmount(BigInt(simulated.toFixed()))
+    return decoded && resulting ? decoded.eq(resulting) : decoded === resulting
+}
+
+// The approval the call's own review already shows from its calldata. A
+// simulated allowance that differs, such as the total an increase leads to,
+// is what the spender will hold, so it is kept.
 const isDecodedApproval = (
     change: EvmApprovalChange,
     call: Nullable<EthereumStandardCallPresentation>,
@@ -110,10 +135,12 @@ const isDecodedApproval = (
     switch (call?.kind) {
         case 'token-approval': {
             return (
+                !call.isIncrease &&
                 !change.isCollectionWide &&
                 change.tokenId === undefined &&
                 sameAddress(change.contract, call.contract) &&
-                sameAddress(change.spender, call.spender)
+                sameAddress(change.spender, call.spender) &&
+                isSameAllowance(change.amount, call.spendApproval)
             )
         }
         case 'nft-approval': {

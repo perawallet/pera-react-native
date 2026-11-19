@@ -18,15 +18,16 @@ import type { Nullable } from './types'
  *
  * Must be called once at app startup, before any Decimal operations.
  *
- * - precision: 40 — Algorand uint64 values can have up to 20 significant digits,
- *   and intermediate arithmetic (e.g., multiplying two large amounts) can require
- *   up to double that. 40 provides ample headroom for all financial calculations.
+ * - precision: 80 — `add`, `sub`, `mul` and `div` round to this many significant
+ *   digits, so it must hold a whole amount: EVM uint256 amounts have up to 78
+ *   digits (Algorand's uint64 has 20). A MAX rounded at a lower precision can
+ *   exceed the balance it came from.
  * - rounding: ROUND_HALF_UP — standard financial rounding.
  * - crypto: true — uses crypto.getRandomValues() for randomness.
  */
 export const initDecimalConfig = () => {
     Decimal.set({
-        precision: 40,
+        precision: 80,
         crypto: true,
         rounding: Decimal.ROUND_HALF_UP,
     })

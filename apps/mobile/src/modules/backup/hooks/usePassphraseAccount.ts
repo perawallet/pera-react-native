@@ -10,20 +10,15 @@
  limitations under the License
  */
 
-import type { Address } from 'viem'
 import {
-    toScopeKey,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+    findAccountByAnyChainAddress,
+    useAccountsStore,
+} from '@perawallet/wallet-core-accounts'
 
-/**
- * The only contracts a swap may call, by scope key. A quote names none, so this
- * is the app's own record of them, and a scope with no entry fails closed.
- */
-export const EVM_SWAP_ROUTE_CONTRACTS: Readonly<
-    Record<string, readonly Address[]>
-> = {}
-
-export const evmSwapRouteContractsOf = (
-    scope: ChainScope,
-): readonly Address[] => EVM_SWAP_ROUTE_CONTRACTS[toScopeKey(scope)] ?? []
+export const usePassphraseAccount = (address: string, accountId?: string) =>
+    useAccountsStore(
+        ({ accounts }) =>
+            (accountId === undefined
+                ? findAccountByAnyChainAddress(accounts, address)
+                : accounts.find(account => account.id === accountId)) ?? null,
+    )

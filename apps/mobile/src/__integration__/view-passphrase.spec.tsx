@@ -365,7 +365,7 @@ describe('Flow: View account passphrase', () => {
         ).toBeNull()
     })
 
-    it('Given a PIN is configured, when the user enters a PIN one digit short, then the flow stays on the gate (no auto-advance from a partial PIN)', async () => {
+    it('Given a PIN is configured, when the user enters five digits and then the sixth, then the gate holds until the sixth', async () => {
         const account = await seedAlgo25Account()
 
         const TEST_PIN = '123456'
@@ -382,31 +382,36 @@ describe('Flow: View account passphrase', () => {
             expect(screen.getByTestId('numpad_key_0')).toBeTruthy()
         })
 
-        // Enter five of the six digits — one short of `PIN_LENGTH`.
-        // `usePinEntry` only schedules `onPinComplete` once the
-        // pin actually reaches length 6, so this is a meaningful
-        // negative case: the gate must stay up.
-        for (const digit of '12345') {
-            await act(async () => {
+        vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+        try {
+            for (const digit of TEST_PIN.slice(0, -1)) {
                 fireEvent.click(screen.getByTestId(`numpad_key_${digit}`))
+            }
+            await act(async () => {
+                await vi.runOnlyPendingTimersAsync()
             })
+
+            expect(screen.getByTestId('numpad_key_0')).toBeTruthy()
+            expect(pinHook.current.failedAttempts).toBe(0)
+            expect(
+                screen.queryByTestId(
+                    'passphrase_acknowledge_bottom_sheet_reveal',
+                ),
+            ).toBeNull()
+            expect(
+                screen.queryByTestId('view_passphrase_bottom_sheet_grid'),
+            ).toBeNull()
+
+            fireEvent.click(screen.getByTestId(`numpad_key_${TEST_PIN.at(-1)}`))
+            await act(async () => {
+                await vi.runOnlyPendingTimersAsync()
+            })
+        } finally {
+            vi.useRealTimers()
         }
 
-        // Settle: give any pending React commits and the 100ms
-        // `onPinComplete` setTimeout (which would NOT have been
-        // scheduled, but we wait long enough that any false
-        // positive would have surfaced).
-        await act(async () => {
-            await new Promise(resolve => setTimeout(resolve, 250))
-        })
-
-        expect(screen.getByTestId('numpad_key_0')).toBeTruthy()
-        expect(
-            screen.queryByTestId('passphrase_acknowledge_bottom_sheet_reveal'),
-        ).toBeNull()
-        expect(
-            screen.queryByTestId('view_passphrase_bottom_sheet_grid'),
-        ).toBeNull()
+        await screen.findByTestId('passphrase_acknowledge_bottom_sheet_reveal')
+        expect(screen.queryByTestId('numpad_key_0')).toBeNull()
     })
 
     it('Given no PIN is configured, when the user opens the flow, then the PIN gate is bypassed and the acknowledge step renders directly', async () => {

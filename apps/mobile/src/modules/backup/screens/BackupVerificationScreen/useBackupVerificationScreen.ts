@@ -18,11 +18,6 @@ import {
     type RouteProp,
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import {
-    findAccountByAnyChainAddress,
-    useAccountsStore,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { MNEMONIC_WORDLIST } from '@perawallet/wallet-core-kms'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -31,6 +26,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import {
     useBackupQuiz,
+    usePassphraseAccount,
     useRandomMnemonicForAddress,
     type BackupQuizQuestion,
 } from '../../hooks'
@@ -59,15 +55,11 @@ export const useBackupVerificationScreen =
             >()
         const route =
             useRoute<RouteProp<BackupStackParamList, 'BackupVerification'>>()
-        const accounts = useAccountsStore(
-            (state: { accounts: WalletAccount[] }) => state.accounts,
-        )
-
         const address = route.params?.address
-        const account = useMemo<Nullable<WalletAccount>>(() => {
-            if (!address) return null
-            return findAccountByAnyChainAddress(accounts, address) ?? null
-        }, [address, accounts])
+        const account = usePassphraseAccount(
+            address ?? '',
+            route.params?.accountId,
+        )
         const { picks, isLoading, error } = useRandomMnemonicForAddress(
             address,
             account,

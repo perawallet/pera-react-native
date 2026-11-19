@@ -23,6 +23,7 @@ import type { Optional } from '@perawallet/wallet-core-shared'
 import { isEvmNftAssetId, toCaip19 } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
 import { fetchHistoryPage } from './api/endpoints'
+import { fetchEvmHistoryCsv } from './api/export'
 import type { EvmHistoryItem } from './api/schema'
 import { readEvmTransactionDetail } from './detail'
 import { readNftApprovals } from './nft-approvals'
@@ -154,4 +155,5 @@ export const createEvmHistoryAdapter = (
         ),
     getTransactionDetail: (txId, scope, record) =>
         readEvmTransactionDetail(ctx, chain, scope, txId, record.fee),
+    exportCsv: params => fetchEvmHistoryCsv(chain, params),
 })

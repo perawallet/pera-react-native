@@ -4,7 +4,7 @@ Usage: python e2e/tools/parity.py results/final-android results/final-ios
 
 Each argument is a pass directory, or a single output.xml.
 
-Exits non-zero when a scenario did not pass on both platforms, or ran on only one.
+Exits non-zero for an incomplete run, a pass/fail divergence, or a missing scenario.
 """
 
 import sys
@@ -37,20 +37,24 @@ def outputs_under(path):
     """
     path = Path(path)
     if path.is_file():
-        return [path]
-    files = sorted(path.glob("output.xml")) + sorted(path.glob("*/output.xml"))
+        files, root = [path], path.parent.parent
+    else:
+        files = sorted(path.glob("output.xml")) + sorted(path.glob("*/output.xml"))
+        root = path
+    # run.sh marks each run's own output directory; browserstack.sh marks the pass root.
+    for marked in [root, *(f.parent for f in files)]:
+        if (marked / ".incomplete").exists():
+            sys.exit(f"{marked}: the runner marked this pass incomplete")
     if not files:
         sys.exit(f"{path}: no Robot output files here")
     return files
 
 
 def collect(path):
-    status = {}
+    visitor = _Collect()
     for output in outputs_under(path):
-        visitor = _Collect()
         ExecutionResult(str(output)).visit(visitor)
-        status.update(visitor.status)
-    return status
+    return visitor.status
 
 
 def verdict(a, i):

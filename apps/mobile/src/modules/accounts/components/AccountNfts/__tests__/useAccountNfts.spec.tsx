@@ -49,16 +49,22 @@ const mockRefreshAccounts = vi.fn((_addresses: string[], _scope: unknown) =>
     Promise.resolve(),
 )
 const mockInvalidateQueries = vi.fn()
+const mockRefreshOptions = vi.fn()
 
 vi.mock('@perawallet/wallet-core-background', () => ({
     getSyncService: () => ({
         refreshAccounts: mockRefreshAccounts,
-        refreshSources: (sources: { addresses: string[]; scope: unknown }[]) =>
-            Promise.all(
+        refreshSources: (
+            sources: { addresses: string[]; scope: unknown }[],
+            options: unknown,
+        ) => {
+            mockRefreshOptions(options)
+            return Promise.all(
                 sources.map(({ addresses, scope }) =>
                     mockRefreshAccounts(addresses, scope),
                 ),
-            ),
+            )
+        },
         invalidateQueries: mockInvalidateQueries,
     }),
 }))
@@ -699,6 +705,18 @@ describe('useAccountNfts', () => {
                 { chainId: 'algorand', networkId: 'mainnet' },
             )
             expect(mockInvalidateQueries).not.toHaveBeenCalled()
+        })
+
+        it('asks the backend to skip its NFT cache', async () => {
+            const { result } = renderHook(() => useAccountNfts())
+
+            await act(async () => {
+                result.current.handleRefresh()
+            })
+
+            expect(mockRefreshOptions).toHaveBeenCalledWith({
+                isUserRefresh: true,
+            })
         })
 
         it('reports isRefreshing while the sync refresh is in flight', async () => {
