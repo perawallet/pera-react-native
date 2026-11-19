@@ -596,6 +596,9 @@ describe('Flow: Onramp buy (native XO)', () => {
                 expect(
                     screen.getByTestId('onramp-receive-amount').textContent,
                 ).toContain('999.5')
+                expect(
+                    screen.getByTestId('onramp-pay-fiat-value').textContent,
+                ).toBe('---')
             },
             { timeout: 5000 },
         )

@@ -66,9 +66,9 @@ const pricePerUnit = (
     value: Nullable<Decimal>,
     amount: Decimal,
 ): Nullable<Decimal> =>
-    value === null || amount.isZero() ? null : value.div(amount)
+    value?.isFinite() && value.gt(0) && amount.gt(0) ? value.div(amount) : null
 
-/** USD per display unit of each side, from the quote's own USD values; null when a value is missing or its amount is zero. */
+/** USD per display unit of each side, from its own positive quote valuation. */
 export const quoteUsdPrices = (
     quote: Nullable<RampQuote>,
 ): { source: Nullable<Decimal>; destination: Nullable<Decimal> } => ({

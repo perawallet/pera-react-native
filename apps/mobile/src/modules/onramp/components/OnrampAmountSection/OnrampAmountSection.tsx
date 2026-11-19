@@ -15,9 +15,12 @@ import { PWInput, PWSkeleton, PWText } from '@components/core'
 import { AmountField } from '@components/AmountField'
 import { AssetSelector } from '@components/AssetSelector'
 import { PreferredAmount } from '@components/PreferredAmount'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import { useLanguage } from '@hooks/useLanguage'
-import { ZERO_DECIMAL, type Nullable } from '@perawallet/wallet-core-shared'
-import type { RampToken } from '@perawallet/wallet-core-onramp'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import { useAssetPricesQuery } from '@perawallet/wallet-core-assets'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { rampTokenAsset, type RampToken } from '@perawallet/wallet-core-onramp'
 import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
 import { buildDisplayableAssetFromRampToken } from '../buildDisplayableAssetFromRampToken'
 import { useStyles } from './styles'
@@ -30,7 +33,7 @@ type OnrampAmountSectionPayProps = {
     /** Raw text of the pay field, owned by the form. */
     amountText: string
     onAmountTextChange: (text: string) => void
-    /** USD per unit of the token, from the selected quote; null renders the fiat line as zero. */
+    /** USD per unit of the token, from the selected quote when available. */
     usdPrice: Nullable<Decimal>
     onAssetPress: () => void
 }
@@ -40,7 +43,7 @@ type OnrampAmountSectionReceiveProps = {
     token: Nullable<RampToken>
     /** Quoted destination amount (`destinationAmount`). */
     amount: Nullable<Decimal>
-    /** USD per unit of the token, from the selected quote; null renders the fiat line as zero. */
+    /** USD per unit of the token, from the selected quote when available. */
     usdPrice: Nullable<Decimal>
     onAssetPress: () => void
     isLoading?: boolean
@@ -56,6 +59,7 @@ export const OnrampAmountSection = (props: OnrampAmountSectionProps) => {
     const { theme } = useTheme()
     const styles = useStyles()
     const { scope } = useOnrampAccount()
+    const homeScope = useHomeChainScope()
 
     const {
         isPay,
@@ -77,6 +81,42 @@ export const OnrampAmountSection = (props: OnrampAmountSectionProps) => {
         onAmountTextChange:
             variant === 'pay' ? props.onAmountTextChange : undefined,
     })
+
+    const pricingScope = useSelectedScope(
+        token?.network.chainId ?? scope?.chainId ?? homeScope.chainId,
+    )
+    const assetId = token
+        ? rampTokenAsset(token, pricingScope)?.assetId
+        : undefined
+    const needsWalletPrice =
+        props.usdPrice === null && assetId !== undefined && fiatBaseAmount.gt(0)
+    const { data: walletPrices, isPending: isWalletPricePending } =
+        useAssetPricesQuery(
+            pricingScope,
+            assetId === undefined ? [] : [assetId],
+            needsWalletPrice,
+            {
+                fetchMissing: true,
+            },
+        )
+    const walletPrice =
+        assetId === undefined ? undefined : walletPrices?.get(assetId)?.usdPrice
+    const usdPrice =
+        props.usdPrice ??
+        (walletPrice?.isFinite() && walletPrice.gt(0) ? walletPrice : null)
+    const fiatProps =
+        usdPrice === null
+            ? {
+                  value: null,
+                  isLoading: isWalletPricePending || isReceiveLoading,
+              }
+            : {
+                  sourceAmount: fiatBaseAmount,
+                  sourceAssetId: assetId ?? token?.id ?? '',
+                  usdPrice,
+                  forceFallback: shouldUseUsdFallback,
+                  scope: pricingScope,
+              }
 
     const renderAmount = () => {
         if (isPay) {
@@ -159,10 +199,7 @@ export const OnrampAmountSection = (props: OnrampAmountSectionProps) => {
             }
             fiat={
                 <PreferredAmount
-                    sourceAmount={fiatBaseAmount}
-                    sourceAssetId={token?.id ?? ''}
-                    usdPrice={props.usdPrice ?? ZERO_DECIMAL}
-                    forceFallback={shouldUseUsdFallback}
+                    {...fiatProps}
                     variant='body'
                     style={styles.fiatValue}
                     testID={`onramp-${variant}-fiat-value`}

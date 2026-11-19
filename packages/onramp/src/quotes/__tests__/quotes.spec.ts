@@ -153,6 +153,21 @@ describe('quoteUsdPrices', () => {
         })
     })
 
+    it.each(['0', '-1', 'NaN', 'Infinity'])(
+        'ignores an unusable source USD value of %s independently of the destination',
+        value => {
+            const prices = quoteUsdPrices(
+                buildQuote('q', 1000, 'CARD', {
+                    sourceValueInUsd: new Decimal(value),
+                    destinationValueInUsd: new Decimal(80),
+                }),
+            )
+
+            expect(prices.source).toBeNull()
+            expect(prices.destination?.toString()).toBe('0.08')
+        },
+    )
+
     it('is null for an amount of zero instead of dividing by it', () => {
         const prices = quoteUsdPrices(
             buildQuote('q', 0, 'CARD', {
