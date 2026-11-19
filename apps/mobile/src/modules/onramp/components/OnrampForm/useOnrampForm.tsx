@@ -87,6 +87,7 @@ type UseOnrampFormResult = {
 export const useOnrampForm = (
     selectedPair: Nullable<RampPair>,
     onNavigateToHistory?: () => void,
+    isActive = true,
 ): UseOnrampFormResult => {
     const { scope } = useOnrampAccount()
     const { data: region } = useRampRegionQuery({ scope })
@@ -140,6 +141,7 @@ export const useOnrampForm = (
         // Optional: a blank entry means no refund address, not an empty one.
         refundAddress: senderAddress.trim() || null,
         countryCode: region?.countryCode ?? null,
+        isActive,
     })
 
     const destinationAmount = selectedQuote?.destinationAmount ?? null

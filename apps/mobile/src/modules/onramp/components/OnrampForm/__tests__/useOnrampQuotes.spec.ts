@@ -73,6 +73,17 @@ const settle = () =>
 
 type Params = Parameters<typeof useOnrampQuotes>[0]
 
+const captureAppStateChange = () => {
+    let onChange: (state: string) => void = () => {}
+    vi.spyOn(AppState, 'addEventListener').mockImplementation(
+        (_type, handler) => {
+            onChange = handler as (state: string) => void
+            return { remove: vi.fn() }
+        },
+    )
+    return (state: string) => act(() => onChange(state))
+}
+
 const render = (overrides: Partial<Params> = {}) =>
     renderHook((params: Params) => useOnrampQuotes(params), {
         initialProps: {
@@ -114,22 +125,45 @@ describe('useOnrampQuotes', () => {
     })
 
     it('re-quotes on returning to the foreground with an expired quote', async () => {
-        let onChange: (state: string) => void = () => {}
-        vi.spyOn(AppState, 'addEventListener').mockImplementation(
-            (_type, handler) => {
-                onChange = handler as (state: string) => void
-                return { remove: vi.fn() }
-            },
-        )
+        const changeAppState = captureAppStateChange()
         mockCreateQuote.mockResolvedValue([
             { ...quote('x1', 'xo'), expiresAt: Date.now() + 60_000 },
         ])
         render()
         await settle()
 
-        // Timers don't run while the app is suspended; only the clock moves.
-        vi.setSystemTime(Date.now() + 120_000)
-        act(() => onChange('active'))
+        changeAppState('background')
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(120_000)
+        })
+        expect(mockCreateQuote).toHaveBeenCalledTimes(1)
+
+        changeAppState('active')
+        await settle()
+
+        expect(mockCreateQuote).toHaveBeenCalledTimes(2)
+    })
+
+    it('does not re-quote off screen, and re-quotes on coming back once expired', async () => {
+        mockCreateQuote.mockResolvedValue([
+            { ...quote('x1', 'xo'), expiresAt: Date.now() + 60_000 },
+        ])
+        const { rerender } = render()
+        await settle()
+        const props = {
+            pair: DEPOSIT_PAIR,
+            sourceAmount: new Decimal('0.5'),
+            refundAddress: null,
+            countryCode: null,
+        }
+
+        rerender({ ...props, isActive: false })
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(120_000)
+        })
+        expect(mockCreateQuote).toHaveBeenCalledTimes(1)
+
+        rerender({ ...props, isActive: true })
         await settle()
 
         expect(mockCreateQuote).toHaveBeenCalledTimes(2)

@@ -47,6 +47,8 @@ type UseOnrampQuotesParams = {
     refundAddress: Nullable<string>
     /** The user's region; narrows the router's offers. */
     countryCode: Nullable<string>
+    /** True while the form is on screen; the expiry refresh runs only then. */
+    isActive?: boolean
 }
 
 type UseOnrampQuotesResult = {
@@ -90,6 +92,7 @@ export const useOnrampQuotes = ({
     sourceAmount,
     refundAddress,
     countryCode,
+    isActive = true,
 }: UseOnrampQuotesParams): UseOnrampQuotesResult => {
     const { t } = useLanguage()
     const { scope, address: selectedAccountAddress } = useOnrampAccount()
@@ -255,9 +258,29 @@ export const useOnrampQuotes = ({
         refreshCount,
     ])
 
-    // An idle form re-quotes when the first quote expires; a backgrounded app
-    // may have missed that timer, so foregrounding re-checks.
+    const [isAppActive, setIsAppActive] = useState(
+        AppState.currentState === 'active',
+    )
     useEffect(() => {
+        const subscription = AppState.addEventListener('change', state =>
+            setIsAppActive(state === 'active'),
+        )
+        return () => subscription.remove()
+    }, [])
+
+    // An on-screen form re-quotes when the first quote expires. Off screen or
+    // in the background it doesn't (each call is a real upstream quote), so
+    // coming back re-checks what expired meanwhile.
+    const isLive = isActive && isAppActive
+    const wasLiveRef = useRef(isLive)
+    useEffect(() => {
+        const isRegained = isLive && !wasLiveRef.current
+        wasLiveRef.current = isLive
+        if (!isLive) return
+        if (isRegained && quotes.some(quote => isRampQuoteExpired(quote))) {
+            refreshQuotes()
+            return
+        }
         const expiries = quotes.flatMap(quote =>
             quote.expiresAt === null ? [] : [quote.expiresAt],
         )
@@ -266,16 +289,8 @@ export const useOnrampQuotes = ({
             refreshQuotes,
             Math.max(0, Math.min(...expiries) - Date.now()),
         )
-        const subscription = AppState.addEventListener('change', state => {
-            if (state === 'active' && quotes.some(q => isRampQuoteExpired(q))) {
-                refreshQuotes()
-            }
-        })
-        return () => {
-            clearTimeout(timeoutId)
-            subscription.remove()
-        }
-    }, [quotes, refreshQuotes])
+        return () => clearTimeout(timeoutId)
+    }, [isLive, quotes, refreshQuotes])
 
     // A probe answer for a pair the user has since left must not set limits.
     const pairIdRef = useRef(pairId)

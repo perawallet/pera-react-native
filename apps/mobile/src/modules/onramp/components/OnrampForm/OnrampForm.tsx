@@ -27,6 +27,8 @@ export type OnrampFormProps = {
     selectedPair: Nullable<RampPair>
     /** Switch the screen to the History tab (after an XO order is placed). */
     onNavigateToHistory?: () => void
+    /** True when the Fund tab is visible; gates the quote refresh. */
+    isActive?: boolean
 }
 
 export const OnrampForm = ({
@@ -34,6 +36,7 @@ export const OnrampForm = ({
     destinationToken,
     selectedPair,
     onNavigateToHistory,
+    isActive = true,
 }: OnrampFormProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
@@ -60,7 +63,7 @@ export const OnrampForm = ({
         handleConfirm,
         handleMinPress,
         handleMaxPress,
-    } = useOnrampForm(selectedPair, onNavigateToHistory)
+    } = useOnrampForm(selectedPair, onNavigateToHistory, isActive)
 
     const trackOnrampEvent = useTrackOnrampEvent()
 
