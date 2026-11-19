@@ -43,7 +43,7 @@ import {
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     useNotificationPreferences,
-    useNotificationsChainResolver,
+    useNotificationsAddressResolver,
 } from '@perawallet/wallet-core-messages'
 import { getBackupSyncManager } from '@perawallet/wallet-core-backup'
 import { logger, toError, type Optional } from '@perawallet/wallet-core-shared'
@@ -138,8 +138,8 @@ export const useAccountOptions = ({
     const registeredChainIds = useRegisteredChainIds()
     const accountChainId = accountChainIdOf(account, registeredChainIds)
     const scope = useSelectedScope(accountChainId)
-    const notificationsChainOf = useNotificationsChainResolver()
-    const canToggleNotifications = notificationsChainOf(account) !== undefined
+    const notificationsAddress = useNotificationsAddressResolver()(account)
+    const canToggleNotifications = notificationsAddress !== undefined
     const sheetTitle = getAccountDisplayName(account, accountChainId)
     const address = addressOn(account, scope) ?? ''
     const isBackedUp = useIsAccountBackedUp(address)
@@ -296,27 +296,29 @@ export const useAccountOptions = ({
     ])
 
     const handleToggleNotifications = useCallback(() => {
-        const currentlyEnabled = isAccountEnabled(address)
+        if (notificationsAddress === undefined) return
+        const currentlyEnabled = isAccountEnabled(notificationsAddress)
         // The sheet closes at once so the interaction feels immediate; the
         // confirmation waits for the backend, because before this
         // toast fired for a request that was never sent.
         onClose()
-        void toggleAccountNotification(address, !currentlyEnabled).then(
-            succeeded => {
-                if (!succeeded) return
-                showToast({
-                    title: currentlyEnabled
-                        ? t('account_options.notifications_muted')
-                        : t('account_options.notifications_unmuted'),
-                    body: '',
-                    type: 'success',
-                })
-            },
-        )
+        void toggleAccountNotification(
+            notificationsAddress,
+            !currentlyEnabled,
+        ).then(succeeded => {
+            if (!succeeded) return
+            showToast({
+                title: currentlyEnabled
+                    ? t('account_options.notifications_muted')
+                    : t('account_options.notifications_unmuted'),
+                body: '',
+                type: 'success',
+            })
+        })
     }, [
         isAccountEnabled,
         toggleAccountNotification,
-        address,
+        notificationsAddress,
         showToast,
         t,
         onClose,
@@ -466,13 +468,15 @@ export const useAccountOptions = ({
         setRemoveConfirmView('none')
     }, [])
 
-    const notificationsEnabled = isAccountEnabled(address)
+    const notificationsEnabled = isAccountEnabled(notificationsAddress ?? '')
     // Mirrors NotificationSettingsList: disable the row instead of letting a
     // tap silently resolve `false` while a toggle for this address is
     // already in flight (docs/OFFLINE_PAUSED_STATE.md). Note this only
     // reflects toggles started by *this* hook instance — see the caveat on
     // `isTogglePending` in useAccountNotificationToggle.ts.
-    const isNotificationTogglePending = isTogglePending(address)
+    const isNotificationTogglePending = isTogglePending(
+        notificationsAddress ?? '',
+    )
 
     const networks = useAccountNetworks({ account, onClose, onShowAddress })
 

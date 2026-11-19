@@ -15,6 +15,7 @@ import { useNavigation } from '@react-navigation/native'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { PWView } from '@components/core'
 import { ScreenHeader } from '@components/ScreenHeader'
+import { useCapableChainId } from '@hooks/useCapableChainIds'
 import { useLanguage } from '@hooks/useLanguage'
 import { AccountPicker } from '@components/AccountPicker'
 import { useBidali } from '../../hooks/useBidali'
@@ -28,6 +29,7 @@ export const BidaliAccountSelectionScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const accounts = useGiftCardAccounts()
+    const giftCardChainId = useCapableChainId('giftCards')
     const { setSelectedAccount } = useBidali()
     const navigation =
         useNavigation<StackNavigationProp<BidaliStackParamList>>()
@@ -50,6 +52,7 @@ export const BidaliAccountSelectionScreen = () => {
             <AccountPicker
                 accounts={accounts}
                 onSelect={handleSelected}
+                chainId={giftCardChainId}
             />
         </PWView>
     )

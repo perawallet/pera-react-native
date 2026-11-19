@@ -12,6 +12,8 @@
 
 import { useCallback } from 'react'
 import {
+    accountChainIdOf,
+    chainAccountOf,
     useRegisteredChainIds,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -21,11 +23,12 @@ import { isSentInDeviceRegistration } from '@perawallet/wallet-core-device'
 import type { Optional } from '@perawallet/wallet-core-shared'
 
 /**
- * The first held chain, in registry order, whose address device registration
- * sends, else `undefined`. Not the own chain: an account found active only on
- * Ethereum still has its Algorand address registered under the v3 API. Not the `notifications` capability: registration ignores
- * it, so an address registered while it is off (by default or at runtime) can
- * still be pushed to and keeps its mute control.
+ * The chain whose address an account's notification mute acts on: the own
+ * chain when device registration sends it, else the first held chain, in
+ * registry order, that it sends. Under the v3 API only Algorand is sent, so an
+ * account found active only on Ethereum falls back to its Algorand address.
+ * Not the `notifications` capability: registration ignores it, so an address
+ * registered while it is off can still be pushed to and keeps its mute control.
  */
 export const useNotificationsChainResolver = (): ((
     account: WalletAccount,
@@ -33,11 +36,29 @@ export const useNotificationsChainResolver = (): ((
     const registeredChainIds = useRegisteredChainIds()
     const deployment = useWalletDeployment()
     return useCallback(
-        (account: WalletAccount) => {
-            return registeredChainIds.find(chainId =>
+        (account: WalletAccount) =>
+            [
+                accountChainIdOf(account, registeredChainIds),
+                ...registeredChainIds,
+            ].find(chainId =>
                 isSentInDeviceRegistration(account, chainId, deployment),
-            )
-        },
+            ),
         [registeredChainIds, deployment],
+    )
+}
+
+/** The address an account's notification mute reads and writes; `undefined` when registration sends none. */
+export const useNotificationsAddressResolver = (): ((
+    account: WalletAccount,
+) => Optional<string>) => {
+    const notificationsChainOf = useNotificationsChainResolver()
+    return useCallback(
+        (account: WalletAccount) => {
+            const chainId = notificationsChainOf(account)
+            return chainId === undefined
+                ? undefined
+                : chainAccountOf(account, chainId)?.address
+        },
+        [notificationsChainOf],
     )
 }

@@ -13,7 +13,6 @@
 import { PWFlatList, PWSwitch, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSettingsNotificationsScreen } from '@modules/settings/screens/SettingsNotificationsScreen/useSettingsNotificationsScreen'
-import { ownAddressOf } from '@perawallet/wallet-core-accounts'
 import { EmptyView } from '@components/EmptyView'
 import { ListItemDivider } from '@components/ListItemDivider'
 import { useMemo } from 'react'
@@ -74,19 +73,16 @@ export const NotificationSettingsList = ({
                     body={t('settings.notifications.no_accounts_body')}
                 />
             }
-            renderItem={({ item }) => {
-                const address = ownAddressOf(item) ?? ''
-                return (
-                    <AccountNotificationItem
-                        account={item}
-                        isEnabled={isAccountNotificationEnabled(address)}
-                        isPending={isAccountNotificationPending(address)}
-                        onToggle={enabled =>
-                            handleAccountNotificationToggle(item, enabled)
-                        }
-                    />
-                )
-            }}
+            renderItem={({ item }) => (
+                <AccountNotificationItem
+                    account={item}
+                    isEnabled={isAccountNotificationEnabled(item)}
+                    isPending={isAccountNotificationPending(item)}
+                    onToggle={enabled =>
+                        handleAccountNotificationToggle(item, enabled)
+                    }
+                />
+            )}
             ListHeaderComponent={
                 <PWView style={styles.header}>
                     {isPushSupported && (

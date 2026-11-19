@@ -49,14 +49,44 @@ describe('useGiftCardScope', () => {
         expect(result.current.chainId).toBe('algorand')
     })
 
-    it("scopes to an Ethereum account's own chain", () => {
+    it('scopes an Ethereum account to Ethereum when Ethereum has gift cards on', () => {
         registerEthereumChain()
+        setCapabilityOverrides({ giftCards: true }, ETHEREUM_CHAIN_ID)
 
         const { result } = renderHook(() =>
             useGiftCardScope(accountOn(ETHEREUM_CHAIN_ID)),
         )
 
         expect(result.current.chainId).toBe(ETHEREUM_CHAIN_ID)
+    })
+
+    it('pays an account found active only on Ethereum from its Algorand address', () => {
+        registerEthereumChain()
+        const evmFirst: WalletAccount = {
+            id: 'evm-first',
+            name: '',
+            chains: {
+                algorand: {
+                    address: 'ALGO',
+                    keyPairId: 'kp-algo',
+                    enabledBy: 'created',
+                },
+                [ETHEREUM_CHAIN_ID]: {
+                    address: '0xETH',
+                    keyPairId: 'kp-eth',
+                    enabledBy: 'discovery',
+                },
+            },
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
+        }
+
+        const { result } = renderHook(() => useGiftCardScope(evmFirst))
+
+        expect(result.current.chainId).toBe('algorand')
     })
 
     it('falls back to the first gift-card chain without an account', () => {

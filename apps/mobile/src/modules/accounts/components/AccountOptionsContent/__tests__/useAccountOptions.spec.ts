@@ -52,7 +52,7 @@ const { mockShowToast, mockErrorToast } = vi.hoisted(() => ({
 }))
 const { mockNavigate } = vi.hoisted(() => ({ mockNavigate: vi.fn() }))
 const { mockIsAccountEnabled, mockSetAccountEnabled } = vi.hoisted(() => ({
-    mockIsAccountEnabled: vi.fn(() => true),
+    mockIsAccountEnabled: vi.fn((_address: string) => true),
     mockSetAccountEnabled: vi.fn(),
 }))
 const { mockRemoveAccount } = vi.hoisted(() => ({
@@ -823,6 +823,42 @@ describe('useAccountOptions', () => {
                 expect(
                     sheetOptionsOf(result.current).map(o => o.id),
                 ).not.toContain('view-passphrase')
+            })
+
+            it('mutes the Algorand address it reads under v3, not the 0x address', async () => {
+                registerEthereumDeviceAdapter()
+                mockIsAccountEnabled.mockImplementation(
+                    (address: string) => address !== 'HDALGOADDRESS',
+                )
+                const { result } = render(evmFirstAccount)
+
+                await act(async () => {
+                    await sheetOptionsOf(result.current)
+                        .find(o => o.id === 'toggle-notifications')
+                        ?.onPress()
+                })
+
+                expect(mockToggleAccountNotification).toHaveBeenCalledWith(
+                    'HDALGOADDRESS',
+                    true,
+                )
+            })
+
+            it('mutes its own 0x address under v4, where registration sends it', async () => {
+                registerEthereumDeviceAdapter()
+                enableDeviceRegistrationV4()
+                const { result } = render(evmFirstAccount)
+
+                await act(async () => {
+                    await sheetOptionsOf(result.current)
+                        .find(o => o.id === 'toggle-notifications')
+                        ?.onPress()
+                })
+
+                expect(mockToggleAccountNotification).toHaveBeenCalledWith(
+                    ETH_ADDRESS,
+                    false,
+                )
             })
         })
     })

@@ -26,6 +26,7 @@ const mocks = vi.hoisted(() => ({
     showToast: vi.fn(),
     trackEvent: vi.fn(),
     notificationsChainOf: vi.fn(),
+    isAccountEnabled: vi.fn((_address: string) => true),
 }))
 
 type ChainsOf = { chains: Record<string, { address: string }> }
@@ -38,16 +39,20 @@ vi.mock('@analytics', async importOriginal => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    chainAccountOf: (account: ChainsOf, chainId: string) =>
-        account.chains[chainId],
     useAllAccounts: vi.fn(() => []),
 }))
 
 vi.mock('@perawallet/wallet-core-messages', () => ({
     useNotificationsChainResolver: () => mocks.notificationsChainOf,
+    useNotificationsAddressResolver: () => (account: ChainsOf) => {
+        const chainId = mocks.notificationsChainOf(account)
+        return chainId === undefined
+            ? undefined
+            : account.chains[chainId]?.address
+    },
     useNotificationPreferences: vi.fn(() => ({
         setAccountEnabled: vi.fn(),
-        isAccountEnabled: vi.fn(() => true),
+        isAccountEnabled: mocks.isAccountEnabled,
         disabledAccounts: [],
     })),
 }))
@@ -85,6 +90,8 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 describe('useSettingsNotificationsScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mocks.isAccountEnabled.mockImplementation(() => true)
+        mocks.isTogglePending.mockImplementation(() => false)
         isPushSupported.mockReturnValue(true)
         mocks.notificationsChainOf.mockImplementation(
             defaultNotificationsChainOf,
@@ -290,6 +297,59 @@ describe('useSettingsNotificationsScreen', () => {
 
             expect(mocks.toggleAccountNotification).not.toHaveBeenCalled()
             expect(mocks.trackEvent).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('an account found active only on Ethereum under the v3 API', () => {
+        const evmFirstAccount = {
+            id: 'evm-first',
+            chains: {
+                algorand: { address: 'ALGOADDR' },
+                ethereum: { address: '0xabc' },
+            },
+        }
+
+        it('reads its switch from the Algorand address the toggle writes', async () => {
+            mocks.isAccountEnabled.mockImplementation(
+                address => address !== 'ALGOADDR',
+            )
+            mocks.toggleAccountNotification.mockResolvedValue(true)
+
+            const { result } = renderHook(() =>
+                useSettingsNotificationsScreen(),
+            )
+            await act(async () => {
+                result.current.handleAccountNotificationToggle(
+                    evmFirstAccount as any,
+                    true,
+                )
+            })
+
+            expect(
+                result.current.isAccountNotificationEnabled(
+                    evmFirstAccount as any,
+                ),
+            ).toBe(false)
+            expect(mocks.toggleAccountNotification).toHaveBeenCalledWith(
+                'ALGOADDR',
+                true,
+            )
+        })
+
+        it('reads the pending state for the Algorand address', () => {
+            mocks.isTogglePending.mockImplementation(
+                ((address: string) => address === 'ALGOADDR') as any,
+            )
+
+            const { result } = renderHook(() =>
+                useSettingsNotificationsScreen(),
+            )
+
+            expect(
+                result.current.isAccountNotificationPending(
+                    evmFirstAccount as any,
+                ),
+            ).toBe(true)
         })
     })
 })

@@ -37,6 +37,11 @@ import { useBidali } from '@modules/gift-card/hooks/useBidali'
 import { useBidaliTransport } from '@modules/gift-card/hooks/useBidaliTransport'
 
 import { closestPressable } from '@test-utils/rnw'
+import {
+    ETHEREUM_CHAIN_ID,
+    registerEthereumChain,
+    restoreAlgorandOnlyChains,
+} from '@test-utils/chain-fixtures'
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { addressOf } from './__fixtures__/accounts'
 
@@ -58,6 +63,8 @@ const ACCOUNT_B: WalletAccount = {
     chains: { algorand: { address: HD_TEST_ADDRESS } },
     name: 'Vault',
 }
+
+const EVM_FIRST_ETH_ADDRESS = '0x9858EfFD232B4033E47d90003D41EC34EcaEda94'
 
 const EMPTY_BALANCES: AccountBalances = new Map()
 
@@ -117,6 +124,55 @@ describe('Flow: Gift card (Bidali)', () => {
     afterEach(() => {
         useAccountsStore.getState().setAccounts([])
         drainSigningRequests()
+        restoreAlgorandOnlyChains()
+    })
+
+    it('Given an account found active only on Ethereum, when the account-selection screen shows it, then its row shows the Algorand address that pays', async () => {
+        registerEthereumChain()
+        const evmFirst: WalletAccount = {
+            id: 'gift-card-evm-first',
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
+            chains: {
+                algorand: {
+                    address: HD_TEST_ADDRESS,
+                    keyPairId: 'gift-card-evm-first-algo',
+                    enabledBy: 'created',
+                },
+                [ETHEREUM_CHAIN_ID]: {
+                    address: EVM_FIRST_ETH_ADDRESS,
+                    keyPairId: 'gift-card-evm-first-eth',
+                    enabledBy: 'discovery',
+                },
+            },
+            name: '',
+        }
+        useAccountsStore.getState().setAccounts([evmFirst])
+
+        renderWithNavigation(
+            BidaliAccountSelectionScreen,
+            'BidaliAccountSelection',
+        )
+
+        await screen.findByText(
+            (_, node) =>
+                node?.children.length === 0 &&
+                (node.textContent ?? '').startsWith(
+                    HD_TEST_ADDRESS.slice(0, 4),
+                ),
+        )
+        expect(
+            screen.queryByText(
+                (_, node) =>
+                    node?.children.length === 0 &&
+                    (node.textContent ?? '').startsWith(
+                        EVM_FIRST_ETH_ADDRESS.slice(0, 6),
+                    ),
+            ),
+        ).toBeNull()
     })
 
     it('Given two accounts on the Bidali account-selection screen, when the user taps one, then it is recorded as the selected Bidali account and the flow advances to the web view', async () => {

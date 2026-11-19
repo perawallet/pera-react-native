@@ -15,7 +15,10 @@ import { renderHook } from '@testing-library/react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { WalletMode } from '@perawallet/wallet-core-chain-contract'
 import { isSentInDeviceRegistration } from '@perawallet/wallet-core-device'
-import { useNotificationsChainResolver } from '../useNotificationsChainResolver'
+import {
+    useNotificationsAddressResolver,
+    useNotificationsChainResolver,
+} from '../useNotificationsChainResolver'
 
 const state = vi.hoisted(() => ({
     chainIds: ['algorand', 'ethereum'] as string[],
@@ -42,6 +45,18 @@ vi.mock('@perawallet/wallet-core-device', async importOriginal => ({
     >()),
     isSentInDeviceRegistration: vi.fn(),
 }))
+
+const evmFirstAccount: WalletAccount = {
+    id: 'acc-evm-first',
+    chains: {
+        algorand: { address: 'ALGOADDR', enabledBy: 'created' },
+        ethereum: {
+            address: '0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed',
+            enabledBy: 'discovery',
+        },
+    },
+    custody: { kind: 'watch' },
+}
 
 const ethereumAccount: WalletAccount = {
     id: 'acc-eth',
@@ -73,24 +88,22 @@ describe('useNotificationsChainResolver', () => {
         )
     })
 
-    it('resolves to the first held chain registration sends when the own chain is left out', () => {
-        const dualAccount: WalletAccount = {
-            ...ethereumAccount,
-            chains: {
-                algorand: { address: 'ALGOADDR', enabledBy: 'created' },
-                ethereum: {
-                    address: '0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed',
-                    enabledBy: 'discovery',
-                },
-            },
-        }
+    it('falls back to the first held chain registration sends when the own chain is left out', () => {
         vi.mocked(isSentInDeviceRegistration).mockImplementation(
             (_account, chainId) => chainId === 'algorand',
         )
 
         const { result } = renderHook(() => useNotificationsChainResolver())
 
-        expect(result.current(dualAccount)).toBe('algorand')
+        expect(result.current(evmFirstAccount)).toBe('algorand')
+    })
+
+    it('prefers the own chain over registry order when registration sends both', () => {
+        vi.mocked(isSentInDeviceRegistration).mockReturnValue(true)
+
+        const { result } = renderHook(() => useNotificationsChainResolver())
+
+        expect(result.current(evmFirstAccount)).toBe('ethereum')
     })
 
     it('resolves to nothing when registration leaves the address out', () => {
@@ -122,5 +135,30 @@ describe('useNotificationsChainResolver', () => {
         rerender()
 
         expect(result.current).not.toBe(first)
+    })
+})
+
+describe('useNotificationsAddressResolver', () => {
+    beforeEach(() => {
+        vi.mocked(isSentInDeviceRegistration).mockReset()
+        state.deployment = 'live'
+    })
+
+    it("resolves to the resolved chain's address, not the own chain's", () => {
+        vi.mocked(isSentInDeviceRegistration).mockImplementation(
+            (_account, chainId) => chainId === 'algorand',
+        )
+
+        const { result } = renderHook(() => useNotificationsAddressResolver())
+
+        expect(result.current(evmFirstAccount)).toBe('ALGOADDR')
+    })
+
+    it('resolves to nothing when registration leaves every address out', () => {
+        vi.mocked(isSentInDeviceRegistration).mockReturnValue(false)
+
+        const { result } = renderHook(() => useNotificationsAddressResolver())
+
+        expect(result.current(evmFirstAccount)).toBeUndefined()
     })
 })
