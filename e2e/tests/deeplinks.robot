@@ -80,13 +80,14 @@ Second Transfer Link Keeps The Open Send Draft
     Open Deeplink    ${ALGO_TRANSFER_LINK}
     Send Amount Should Be Prefilled
     Open Deeplink    algorand://${LINK_ADDRESS}?amount=2345678
-    Wait Until Settled    ${SEND_NEXT}
+    # An open Send drops the link without a trace, so only its absence after a link's delivery time proves it.
+    Run Keyword And Expect Error    *
+    ...    Wait Until Page Contains    2.345678    timeout=3s
     Page Should Contain Text    ${TRANSFER_ALGOS}
-    Page Should Not Contain Text    2.345678
-    Wait Until Settled    tid=send_close_button
-    Tap    tid=send_close_button
-    Wait Until Settled    tid=send_discard_confirm
-    Tap    tid=send_discard_confirm
+    Wait Until Settled    ${SEND_CLOSE}
+    Tap    ${SEND_CLOSE}
+    Wait Until Settled    ${SEND_DISCARD_CONFIRM}
+    Tap    ${SEND_DISCARD_CONFIRM}
     Wait Until Page Does Not Contain Element    ${SEND_NEXT}    timeout=10s
     Should Be On Home
 

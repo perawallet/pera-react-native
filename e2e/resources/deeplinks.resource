@@ -30,6 +30,8 @@ ${INVALID_ALGORAND_LINK}        algorand://NOT-AN-ADDRESS?amount=1
 ${SETTINGS_ITEM_SECURITY}       tid=settings_item_security
 ${SEND_NEXT}                    tid=send_input_next_button
 ${SEND_CONFIRM}                 tid=send_confirm_button
+${SEND_CLOSE}                   tid=send_close_button
+${SEND_DISCARD_CONFIRM}         tid=send_discard_confirm
 # The send-info sheet over the numpad has no testID on its button.
 ${SEND_INFO_UNDERSTAND}         xpath=//*[@text='I Understand' or @label='I Understand']
 # iOS merges the toast's title and body into one label, and keeps earlier toasts in the tree
