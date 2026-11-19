@@ -38,8 +38,7 @@ type StorageChanges = Record<string, { oldValue?: unknown; newValue?: unknown }>
 
 export type StorageChangedBroadcast = {
     scope: typeof STORAGE_EVENT_SCOPE
-    changes: StorageChanges
-    areaName: string
+    keys: string[]
 }
 
 type ChangeListener = (changes: StorageChanges, areaName: string) => void
@@ -106,8 +105,9 @@ export const startStorageProxyHost = (
         if (areaName !== 'local') return
         const broadcast: StorageChangedBroadcast = {
             scope: STORAGE_EVENT_SCOPE,
-            changes: changes as StorageChanges,
-            areaName,
+            // Values are requested only by the offscreen document, through
+            // the targeted proxy response. Broadcasts reach every open page.
+            keys: Object.keys(changes),
         }
         // No receiver (offscreen not yet created / already closed) is normal.
         chromeLike.runtime.sendMessage(broadcast).catch(() => undefined)
@@ -141,11 +141,39 @@ export const installOffscreenStorageShim = (
     }
 
     const listeners = new Set<ChangeListener>()
+    let refresh = Promise.resolve()
     chromeLike.runtime.onMessage.addListener((message: unknown, sender) => {
         const msg = message as Optional<StorageChangedBroadcast>
         if (msg?.scope !== STORAGE_EVENT_SCOPE) return undefined
         if (!isTrustedExtensionPageSender(sender, chromeLike)) return undefined
-        listeners.forEach(listener => listener(msg.changes, msg.areaName))
+        if (
+            !Array.isArray(msg.keys) ||
+            !msg.keys.length ||
+            !msg.keys.every(key => typeof key === 'string')
+        ) {
+            return undefined
+        }
+        const { keys } = msg
+        // Fetch in arrival order so a slow reply cannot bring an older value
+        // back after a newer change. Missing keys represent deletions.
+        refresh = refresh
+            .then(async () => {
+                if (!listeners.size) return
+                const values = await call({ kind: 'get', keys })
+                const changes: StorageChanges = Object.fromEntries(
+                    keys.map(key => [
+                        key,
+                        Object.hasOwn(values, key)
+                            ? { newValue: values[key] }
+                            : {},
+                    ]),
+                )
+                listeners.forEach(listener => listener(changes, 'local'))
+            })
+            .catch(() => {
+                // oxlint-disable-next-line no-console -- the offscreen storage shim also runs before platform hydration
+                console.warn('[pera] offscreen storage refresh failed')
+            })
         return undefined
     })
 
