@@ -34,6 +34,13 @@ type UpsertAssetPricesParams = {
     scope: ChainScope
 }
 
+const PRICE_COLUMNS = {
+    assetId: sql.identifier(AssetPricesSchema.assetId.name),
+    scope: sql.identifier(AssetPricesSchema.scope.name),
+    usdPrice: sql.identifier(AssetPricesSchema.usdPrice.name),
+    updatedAt: sql.identifier(AssetPricesSchema.updatedAt.name),
+}
+
 export async function upsertAssetPrices({
     db = getDatabase(),
     prices,
@@ -43,25 +50,24 @@ export async function upsertAssetPrices({
     if (prices.length === 0) return
 
     const now = Date.now()
-    const rows = prices.map(price => ({
-        assetId: price.assetId,
-        scope: scopeKey,
-        usdPrice: price.usdPrice,
-        updatedAt: now,
-    }))
-
-    await forEachWriteChunk(rows, async chunk => {
-        await db
-            .insert(AssetPricesSchema)
-            .values(chunk)
-            .onConflictDoUpdate({
-                target: [AssetPricesSchema.assetId, AssetPricesSchema.scope],
-                set: {
-                    usdPrice: sql`excluded.usd_price`,
-                    updatedAt: sql`excluded.updated_at`,
-                },
-            })
-            .run()
+    const { assetId, scope: scopeColumn, usdPrice, updatedAt } = PRICE_COLUMNS
+    await forEachWriteChunk(prices, async chunk => {
+        // The fixed statement binds one payload and keeps prices as decimal text.
+        const rows = JSON.stringify(
+            chunk.map(price => [price.assetId, price.usdPrice.toString()]),
+        )
+        // WHERE disambiguates SQLite's UPSERT syntax. Array order preserves the
+        // last price for a duplicate ID.
+        await db.run(sql`
+            INSERT INTO ${AssetPricesSchema} (${assetId}, ${scopeColumn}, ${usdPrice}, ${updatedAt})
+            SELECT json_extract(value, '$[0]'), ${scopeKey}, json_extract(value, '$[1]'), ${now}
+            FROM json_each(${rows})
+            WHERE true
+            ORDER BY key
+            ON CONFLICT (${assetId}, ${scopeColumn}) DO UPDATE SET
+                ${usdPrice} = excluded.${usdPrice},
+                ${updatedAt} = excluded.${updatedAt}
+        `)
     })
 }
 
