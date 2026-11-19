@@ -74,6 +74,9 @@ export interface ProbeFailureStreak extends Backoff {
 /** One per broadcaster: per open row id, carried across passes. */
 export type ProbeFailureStreaks = Map<string, ProbeFailureStreak>
 
+/** One per broadcaster: the open row ids probed so far, least recently probed first. */
+export type ProbeRotation = Set<string>
+
 // Keeps each streak's count and interval, so escalation still lands on the
 // same failure; only the wait goes.
 export const makeProbeFailuresDue = (
@@ -300,6 +303,7 @@ export type ReconcileEthereumSubmissionsParams = {
     chain: EvmChain
     settleHandlers: SubmissionSettledHandlers
     probeFailures: ProbeFailureStreaks
+    probeRotation: ProbeRotation
     getClient: (scope: ChainScope) => PublicClient
     /** Told which tokens a mined send's receipt delivered back to the sender, so the next account read includes them, and that the sender's NFT list is stale. */
     tokenSightings?: TokenSightings
@@ -315,6 +319,7 @@ export const reconcileEthereumSubmissions = async ({
     chain,
     settleHandlers,
     probeFailures,
+    probeRotation,
     getClient,
     tokenSightings,
     db,
@@ -332,29 +337,32 @@ export const reconcileEthereumSubmissions = async ({
     for (const [id, streak] of probeFailures) {
         if (!isBackoffDue(streak, startedAt)) waiting.add(id)
     }
-    // Reads past the waiting rows, so they never hold a due row out of the pass.
-    const readLimit = limit + waiting.size
     let open: SubmissionAttempt[]
     try {
-        open = await getOpenSubmissionAttempts({
-            db,
-            chainId: chain.row.id,
-            limit: readLimit,
-        })
+        open = await getOpenSubmissionAttempts({ db, chainId: chain.row.id })
     } catch (error) {
         logger.warn('ethereum reconcile: open-row read failed', { error })
         return summary
     }
 
-    // A read cut off at its limit leaves newer open rows out, and dropping their
-    // streaks would restart their backoff.
-    if (open.length < readLimit) {
-        const openIds = new Set(open.map(attempt => attempt.id))
-        for (const id of probeFailures.keys()) {
-            if (!openIds.has(id)) probeFailures.delete(id)
-        }
+    const openIds = new Set(open.map(attempt => attempt.id))
+    for (const id of probeFailures.keys()) {
+        if (!openIds.has(id)) probeFailures.delete(id)
     }
-    const due = open.filter(attempt => !waiting.has(attempt.id)).slice(0, limit)
+    for (const id of probeRotation) {
+        if (!openIds.has(id)) probeRotation.delete(id)
+    }
+    // Rows never probed go first, oldest first, then the least recently
+    // probed, so rows that stay pending can't keep a later send out of the pass.
+    const rank = new Map([...probeRotation].map((id, index) => [id, index]))
+    const due = open
+        .filter(attempt => !waiting.has(attempt.id))
+        .sort((a, b) => (rank.get(a.id) ?? -1) - (rank.get(b.id) ?? -1))
+        .slice(0, limit)
+    for (const { id } of due) {
+        probeRotation.delete(id)
+        probeRotation.add(id)
+    }
 
     const clients = new Map<ChainScopeKey, PublicClient>()
     // Siblings at one nonce read each other's receipts, so a pass reads each once.

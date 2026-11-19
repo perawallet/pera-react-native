@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { Decimal } from 'decimal.js'
 import { isSameAddress } from '@perawallet/wallet-core-accounts'
 import type {
     ChainScope,
@@ -19,6 +20,7 @@ import {
     getUnsyncedSubmissionSpends,
     type UnsyncedSubmissionSpend,
 } from '@perawallet/wallet-core-signing'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { InFlightSpend } from './transfer-adapter'
 
 // A self-send still counts: a node prices a sender's queued transactions
@@ -49,6 +51,38 @@ const toInFlightSpend = ({
     outflows: historyEntry ? outflowsOf(historyEntry.summary) : [],
 })
 
+const higherOf = (
+    a: Nullable<Decimal>,
+    b: Nullable<Decimal>,
+): Nullable<Decimal> => (a && b ? Decimal.max(a, b) : (a ?? b))
+
+// A speed-up or cancel re-prices its original at the same nonce and only one
+// of them can be mined, so the nonce spends once: what the attempt nothing
+// re-prices spends, unless one already landed, at the highest fee of any.
+const oneAtEachNonce = (
+    attempts: readonly UnsyncedSubmissionSpend[],
+): UnsyncedSubmissionSpend[] => {
+    const groups = new Map<number | string, UnsyncedSubmissionSpend[]>()
+    for (const attempt of attempts) {
+        const key = attempt.nonce ?? attempt.id
+        groups.set(key, [...(groups.get(key) ?? []), attempt])
+    }
+    return [...groups.values()].map(group => {
+        const replaced = new Set(group.map(a => a.replacesAttemptId))
+        const spent =
+            group.find(({ status }) => status === 'confirmed') ??
+            group.filter(({ id }) => !replaced.has(id)).at(-1) ??
+            group.at(-1)!
+        return {
+            ...spent,
+            maxFee: group.reduce<Nullable<Decimal>>(
+                (highest, { maxFee }) => higherOf(highest, maxFee),
+                null,
+            ),
+        }
+    })
+}
+
 export type GetInFlightSpendsParams = {
     address: string
     scope: ChainScope
@@ -60,11 +94,11 @@ export const getInFlightSpends = async ({
     scope,
 }: GetInFlightSpendsParams): Promise<InFlightSpend[]> => {
     const attempts = await getUnsyncedSubmissionSpends({ scope })
-    return attempts
-        .filter(
+    return oneAtEachNonce(
+        attempts.filter(
             ({ sender }) =>
                 sender !== null &&
                 isSameAddress(scope.chainId, sender, address),
-        )
-        .map(toInFlightSpend)
+        ),
+    ).map(toInFlightSpend)
 }

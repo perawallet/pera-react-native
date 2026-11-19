@@ -45,13 +45,14 @@ import type { EthereumTransactionPayload } from '../signing/adapter'
 import { ethereumCallSummary } from '../signing/review'
 import {
     readEvmFeePresets,
+    readEvmGas,
     readEvmSurcharge,
     type EvmPricedTransaction,
 } from './fees'
 import { readReceipt } from './receipt'
 import { cancelSummary } from './summary'
 
-/** Gas units of a plain transfer, all a cancel needs. */
+/** Gas units of a plain transfer, the least a cancel is signed with. */
 export const CANCEL_GAS = 21_000n
 
 /**
@@ -113,14 +114,32 @@ export const readReplaceableTransaction = (
     return parsed as EvmPricedTransaction
 }
 
+// Where a plain transfer's gas carries more than the intrinsic 21,000, as
+// Arbitrum's does with its L1 calldata, the node refuses a cancel signed at 21,000.
+const readCancelGas = async (
+    ctx: ChainContext,
+    chain: EvmChain,
+    context: BuildContext,
+    from: Address,
+): Promise<bigint> => {
+    const { gasLimit } = await readEvmGas(
+        createEvmClient(context.scope, ctx, chain),
+        { from, to: from, value: 0n },
+    ).catch((error: unknown) => {
+        throw toEvmError(error, chain.row.nativeAsset.symbol)
+    })
+    return maxOf(gasLimit, CANCEL_GAS)
+}
+
 const cancelAt = (
     from: Address,
+    gas: bigint,
     priced: Omit<TransactionSerializableEIP1559, 'to' | 'value' | 'gas'>,
 ): TransactionSerializableEIP1559 => ({
     ...priced,
     to: from,
     value: 0n,
-    gas: CANCEL_GAS,
+    gas,
 })
 
 const readOwnedTransaction = async (
@@ -238,13 +257,16 @@ export const buildEvmGapFill = async (
         context,
     )
     if (request.sequence >= original.nonce) throw new InvalidSendParamsError()
-    const fast = await readFastFees(ctx, chain, context)
+    const [fast, gas] = await Promise.all([
+        readFastFees(ctx, chain, context),
+        readCancelGas(ctx, chain, context, from),
+    ])
     const payload = await pricedPayload(
         ctx,
         chain,
         context,
         from,
-        cancelAt(from, {
+        cancelAt(from, gas, {
             type: 'eip1559',
             chainId: original.chainId,
             nonce: request.sequence,
@@ -277,16 +299,19 @@ export const buildEvmReplacement = async (
         chain,
         context,
     )
-    const fast = await readFastFees(ctx, chain, context)
+    const isCancel = request.kind === 'cancel'
+    const [fast, cancelGas] = await Promise.all([
+        readFastFees(ctx, chain, context),
+        isCancel ? readCancelGas(ctx, chain, context, from) : CANCEL_GAS,
+    ])
     const priced = {
         type: 'eip1559',
         chainId: original.chainId,
         nonce: original.nonce,
         ...replacementFees(original, fast),
     } as const
-    const isCancel = request.kind === 'cancel'
     const transaction: TransactionSerializableEIP1559 = isCancel
-        ? cancelAt(from, priced)
+        ? cancelAt(from, cancelGas, priced)
         : {
               ...priced,
               to: original.to ? getAddress(original.to) : original.to,
