@@ -365,7 +365,7 @@ describe('Flow: View account passphrase', () => {
         ).toBeNull()
     })
 
-    it('Given a PIN is configured, then the gate stays open for five digits and advances once the sixth is entered', async () => {
+    it('Given a PIN is configured, when the user enters five digits and then the sixth, then the gate holds until the sixth', async () => {
         const account = await seedAlgo25Account()
 
         const TEST_PIN = '123456'
