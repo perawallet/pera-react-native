@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import { Decimal } from 'decimal.js'
 import {
     DEFAULT_ASSET_METADATA,
@@ -40,6 +40,7 @@ export type SwapToAssetItemViewProps = {
     /** The scope the asset lives on, which may differ from the swap scope. */
     scope: ChainScope
     isChainShown?: boolean
+    footer?: ReactNode
 } & PWTouchableOpacityProps
 
 export const SwapToAssetItemView = ({
@@ -47,6 +48,7 @@ export const SwapToAssetItemView = ({
     balance,
     scope,
     isChainShown,
+    footer,
     ...rest
 }: SwapToAssetItemViewProps) => {
     const accountBalance = useMemo<AssetWithAccountBalance>(() => {
@@ -83,6 +85,7 @@ export const SwapToAssetItemView = ({
             logoUrl={swapAsset.logo}
             showBalance={balance !== null}
             showChainBadge={isChainShown}
+            footer={footer}
             {...rest}
         />
     )

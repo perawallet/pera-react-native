@@ -19,11 +19,12 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { scopeOfSwapAsset } from '@perawallet/wallet-core-swaps'
-import { PWButton } from '@components/core'
+import { PWButton, PWText } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { EmptyView } from '@components/EmptyView'
 import { FilterSelection } from '@components/FilterSelection'
 import { AssetSelectionList } from '@modules/assets'
+import { useChainNetworkLabel } from '@modules/chain-ui/icon'
 import { scopedAssetKey } from '@utils/scopedAssetKey'
 import {
     useSwapToAssetSelectionList,
@@ -59,6 +60,7 @@ export const SwapToAssetSelectionList = ({
 }: SwapToAssetSelectionListProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const networkLabelOf = useChainNetworkLabel()
     const {
         items,
         searchFilter,
@@ -95,6 +97,15 @@ export const SwapToAssetSelectionList = ({
                     balance={item.balance}
                     scope={scopeOfSwapAsset(ref)}
                     isChainShown={isChainShown}
+                    footer={
+                        <PWText
+                            style={styles.networkLabel}
+                            numberOfLines={1}
+                            testID={`swap-asset-network-${ref.chainId}`}
+                        >
+                            {networkLabelOf(ref.chainId)}
+                        </PWText>
+                    }
                     onPress={() => handleAssetSelected(item)}
                     style={styles.item}
                     testID={
@@ -105,7 +116,7 @@ export const SwapToAssetSelectionList = ({
                 />
             )
         },
-        [handleAssetSelected, isChainShown, scope, styles],
+        [handleAssetSelected, isChainShown, networkLabelOf, scope, styles],
     )
 
     const renderEmptyView = () => {
