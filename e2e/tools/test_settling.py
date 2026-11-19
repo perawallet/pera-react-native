@@ -59,7 +59,7 @@ def test_reacquires_stale_element_and_restarts_the_stability_window(appium, monk
 
 def test_does_not_settle_a_match_replaced_by_a_different_element(appium, monkeypatch):
     old = Element('old', [bounds()] * 4)
-    new = Element('new', [bounds(x=20)] * 4)
+    new = Element('new', [bounds(x=20)] * 5)
     find = Mock(side_effect=[old, new, new])
     monkeypatch.setattr(appium, '_element_find', find)
 
@@ -67,6 +67,18 @@ def test_does_not_settle_a_match_replaced_by_a_different_element(appium, monkeyp
 
     assert library.sleep.call_count == 7
     assert find.call_count == 3
+
+
+def test_settles_when_the_driver_returns_a_fresh_id_for_the_same_view(appium, monkeypatch):
+    first = Element('first', [bounds()] * 4)
+    again = Element('again', [bounds()])
+    find = Mock(side_effect=[first, again])
+    monkeypatch.setattr(appium, '_element_find', find)
+
+    appium.wait_until_element_settles('tid=button')
+
+    assert library.sleep.call_count == 3
+    assert find.call_count == 2
 
 
 def test_never_settles_when_position_keeps_changing(appium, monkeypatch):

@@ -42,9 +42,14 @@ class PeraAppiumLibrary(AppiumLibrary):
             previous = bounds
             if stable == 3:
                 settled = element
-                # A replacement can shadow a still-live element in the accessibility tree.
-                if find_first_match() and element.id == settled.id:
-                    return
+                # A replacement can shadow a still-live element in the accessibility tree. A driver
+                # may also mint a fresh id per lookup, so the same rectangle counts as the same view.
+                if find_first_match():
+                    try:
+                        if element.id == settled.id or element.rect == bounds:
+                            return
+                    except StaleElementReferenceException:
+                        element = None
                 previous, stable = None, 0
         raise AssertionError(f"{locator} did not stop moving or resizing.")
 
