@@ -199,8 +199,7 @@ const contextOf = (
 const run = (
     context: SwapExecutionContext,
     input: ExecuteSwapParams = inputOf(),
-    routeContracts: readonly Address[] = [ROUTER],
-) => executeEvmSwap({ ctx, chain: ETHEREUM, routeContracts, input, context })
+) => executeEvmSwap({ ctx, chain: ETHEREUM, input, context })
 
 const allowance = (amount: bigint): Hex =>
     encodeFunctionResult({
@@ -336,30 +335,11 @@ describe('executeEvmSwap', () => {
         expect(transaction.maxFeePerGas).toBeGreaterThan(1n)
     })
 
-    it('signs nothing for a contract the route does not declare, and cancels the order', async () => {
-        fakeNode({ balance: RICH })
-        const context = contextOf(orderOf([SWAP_TX]))
-
-        const result = await run(context, inputOf(), [TOKEN])
-
-        expect(result).toEqual({
-            kind: 'failed',
-            failure: {
-                phase: 'prepare',
-                reason: 'route-unverified',
-                chainId: scope.chainId,
-            },
-        })
-        expect(context.addSignRequest).not.toHaveBeenCalled()
-        await flushCancelReport()
-        expect(context.reportOrder).toHaveBeenCalledWith(CANCELLED)
-    })
-
     it('signs nothing the validator refuses, and cancels the order', async () => {
         fakeNode({ balance: RICH })
         const context = contextOf(orderOf([LONE_TRANSFER_TX]))
 
-        const result = await run(context, inputOf(), [ROUTER])
+        const result = await run(context, inputOf())
 
         expect(result).toEqual({
             kind: 'failed',
@@ -368,37 +348,6 @@ describe('executeEvmSwap', () => {
         expect(context.addSignRequest).not.toHaveBeenCalled()
         await flushCancelReport()
         expect(context.reportOrder).toHaveBeenCalledWith(CANCELLED)
-    })
-
-    it('creates no order while the route declares no contracts', async () => {
-        const context = contextOf(orderOf([SWAP_TX]))
-
-        const result = await run(context, inputOf(), [])
-
-        expect(result).toEqual({
-            kind: 'failed',
-            failure: {
-                phase: 'prepare',
-                reason: 'route-unverified',
-                chainId: scope.chainId,
-            },
-        })
-        expect(context.createOrder).not.toHaveBeenCalled()
-        expect(context.reportOrder).not.toHaveBeenCalled()
-    })
-
-    it('reports an unverifiable route even for a stale quote', async () => {
-        const context = contextOf(orderOf([SWAP_TX]))
-
-        const result = await run(
-            context,
-            inputOf({ quote: { ...quoteOf(), fetchedAt: undefined } }),
-            [],
-        )
-
-        expect(result).toMatchObject({
-            failure: { reason: 'route-unverified' },
-        })
     })
 
     it('refuses unreadable bytes the same way', async () => {

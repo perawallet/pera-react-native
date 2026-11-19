@@ -62,9 +62,6 @@ export type SwapExecutionFailure =
     // A step this client can't run, or one on another chain: refused whole.
     | { phase: 'prepare'; reason: 'unsupported-steps' }
     | { phase: 'prepare'; reason: 'quote-mismatch' }
-    // An order that would call a contract the app hasn't declared for this
-    // route: refused before anything is signed.
-    | { phase: 'prepare'; reason: 'route-unverified'; chainId: ChainId }
     | { phase: 'signing'; reason: 'quantum-blocked'; translationKey: I18nKey }
     | { phase: 'signing'; reason: 'signing-failed'; step?: SwapTransactionStep }
     | {

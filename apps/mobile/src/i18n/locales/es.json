@@ -4276,7 +4276,6 @@
             },
             "provider_failed_body": "Este proveedor no pudo completar el swap. Prueba con otro proveedor.",
             "provider_unavailable_body": "El proveedor no está disponible en este momento. Inténtalo de nuevo en unos instantes.",
-            "route_unverified_body": "Pera aún no puede verificar el contrato de swap de este proveedor en {{network}}, así que no se firmó nada. Prueba con otro proveedor o inténtalo de nuevo más tarde.",
             "quote_mismatch_body": "Las transacciones del proveedor no coincidían con esta cotización, así que no se firmó nada. Inténtalo de nuevo o elige otro proveedor.",
             "unsupported_order_body": "Pera no puede completar la orden de este proveedor, así que no se firmó nada. Elige otro proveedor.",
             "signing_failed_body": "No se pudo firmar la transacción, así que no se envió. Inténtalo de nuevo.",

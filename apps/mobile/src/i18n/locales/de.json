@@ -4268,7 +4268,6 @@
             },
             "provider_failed_body": "Dieser Anbieter konnte den Tausch nicht durchführen. Versuche es mit einem anderen Anbieter.",
             "provider_unavailable_body": "Der Anbieter ist gerade nicht verfügbar. Versuche es gleich noch einmal.",
-            "route_unverified_body": "Pera kann den Vertrag dieses Anbieters für den Tausch auf {{network}} noch nicht überprüfen, deshalb wurde nichts signiert. Versuche einen anderen Anbieter oder versuche es später erneut.",
             "quote_mismatch_body": "Die Transaktionen des Anbieters passten nicht zu diesem Angebot, deshalb wurde nichts signiert. Versuche es erneut oder wähle einen anderen Anbieter.",
             "unsupported_order_body": "Pera kann die Bestellung dieses Anbieters nicht abschließen, deshalb wurde nichts signiert. Wähle einen anderen Anbieter.",
             "signing_failed_body": "Die Transaktion konnte nicht signiert werden, deshalb wurde sie nicht gesendet. Versuche es erneut.",

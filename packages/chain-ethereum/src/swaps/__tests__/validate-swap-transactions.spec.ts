@@ -25,10 +25,7 @@ import {
 } from '@perawallet/wallet-core-swaps'
 import { ETHEREUM, evmScopeOf } from '../../__tests__/evm-chains'
 import type { EvmSwapCall } from '../decode-swap-transaction'
-import {
-    EvmSwapRouteUndeclaredError,
-    validateEvmSwapTransactions,
-} from '../validate-swap-transactions'
+import { validateEvmSwapTransactions } from '../validate-swap-transactions'
 
 const SENDER = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
 const TOKEN = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
@@ -71,14 +68,12 @@ const approval = (overrides: Partial<EvmSwapCall> = {}): EvmSwapCall =>
 const validate = (
     calls: readonly EvmSwapCall[],
     request: SwapQuoteRequest = TOKEN_REQUEST,
-    routeContracts: readonly Address[] = [ROUTER],
 ) =>
     validateEvmSwapTransactions({
         calls,
         request,
         scope,
         chain: ETHEREUM,
-        routeContracts,
     })
 
 const selectorCall = (signature: string): EvmSwapCall =>
@@ -101,6 +96,15 @@ describe('validateEvmSwapTransactions', () => {
             approval: null,
             swap,
         })
+    })
+
+    it('accepts a swap to whichever contract the order names', () => {
+        const calls = [
+            approval({ data: approve(STRANGER, AMOUNT) }),
+            call({ to: STRANGER }),
+        ]
+
+        expect(validate(calls).swap.to).toBe(STRANGER)
     })
 
     it('accepts an approval below the amount', () => {
@@ -158,29 +162,15 @@ describe('validateEvmSwapTransactions', () => {
             'a first call that is no approval',
             [call({ to: TOKEN, data: SWAP_DATA }), call()],
         ],
+        [
+            'a swap that calls the source token',
+            [approval({ data: approve(TOKEN, AMOUNT) }), call({ to: TOKEN })],
+        ],
         ['three calls', [approval(), approval(), call()]],
         ['a call for another chain', [call({ chainId: 8453 })]],
         ['a swap with no calldata', [call({ data: '0x' })]],
     ])('refuses %s', (_name, calls, request) => {
         expect(() => validate(calls, request)).toThrow(SwapQuoteMismatchError)
-        expect(() => validate(calls, request)).not.toThrow(
-            EvmSwapRouteUndeclaredError,
-        )
-    })
-
-    it('names a call to an undeclared contract', () => {
-        expect(() => validate([call({ to: STRANGER })])).toThrow(
-            EvmSwapRouteUndeclaredError,
-        )
-        expect(() => validate([call({ to: STRANGER })])).toThrow(
-            SwapQuoteMismatchError,
-        )
-    })
-
-    it('refuses everything while the route declares no contracts', () => {
-        expect(() => validate([call()], TOKEN_REQUEST, [])).toThrow(
-            EvmSwapRouteUndeclaredError,
-        )
     })
 
     it('refuses a source on another chain', () => {

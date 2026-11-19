@@ -62,14 +62,6 @@ const refuse: (reason: string) => never = reason => {
     throw new SwapQuoteMismatchError(reason)
 }
 
-/** The order calls a contract the app hasn't declared for this route, as opposed to a malformed order. */
-export class EvmSwapRouteUndeclaredError extends SwapQuoteMismatchError {
-    constructor() {
-        super('The swap calls a contract the route does not declare')
-        this.name = 'EvmSwapRouteUndeclaredError'
-    }
-}
-
 const selectorOf = (call: EvmSwapCall): Nullable<Hex> =>
     size(call.data) >= SELECTOR_SIZE ? slice(call.data, 0, SELECTOR_SIZE) : null
 
@@ -117,22 +109,22 @@ const assertApproval = (
 
 /**
  * Throws {@link SwapQuoteMismatchError} unless `calls` keep to `request`'s
- * shape: the same chain, only the route's contracts, at most an approval of the
- * source token for this amount, then the swap, last. The swap's calldata stays
- * unread, so its recipient, input amount and minimum output are the backend's.
+ * shape: the same chain, at most an approval of the source token for this
+ * amount to the swap's contract, then the swap, last. XO names a different
+ * contract per order, so the swap's `to` and calldata are trusted to XO: its
+ * recipient, input amount, minimum output, and what it pulls through an
+ * allowance the account already gave that contract.
  */
 export const validateEvmSwapTransactions = ({
     calls,
     request,
     scope,
     chain,
-    routeContracts,
 }: {
     calls: readonly EvmSwapCall[]
     request: SwapQuoteRequest
     scope: ChainScope
     chain: EvmChain
-    routeContracts: readonly Address[]
 }): EvmSwapPlan => {
     const { sourceAsset, sourceAddress, sourceAmount } = request
     if (calls.length === 0 || calls.length > MAX_SWAP_CALLS) {
@@ -158,8 +150,11 @@ export const validateEvmSwapTransactions = ({
     if (selectorOf(swap) === null || hasSelector(swap, APPROVE_SELECTORS)) {
         refuse('The last transaction is not the swap')
     }
-    if (!routeContracts.some(to => areEvmAddressesEqual(to, swap.to))) {
-        throw new EvmSwapRouteUndeclaredError()
+    const token = isNative ? null : getAddress(sourceAsset.assetId)
+    // With `to` unpinned, a call into the token itself could move it in a way
+    // the selector denylist doesn't name.
+    if (token && areEvmAddressesEqual(swap.to, token)) {
+        refuse('The swap calls the asset being swapped')
     }
 
     const amount = toBigInt(sourceAmount)
@@ -168,7 +163,7 @@ export const validateEvmSwapTransactions = ({
     }
     if (approval) {
         assertApproval(approval, {
-            token: isNative ? null : getAddress(sourceAsset.assetId),
+            token,
             swap,
             sender: getAddress(sourceAddress),
             amount,

@@ -181,15 +181,13 @@ const evmContext: ChainContext = {
     kms: kmsCore,
 }
 
-// The shipped table names no router yet, which is the fail-closed path.
-const pinFixtureRouter = () => {
+// Runs the registered adapter's swap against the fixture node at RPC_URL.
+const useFixtureNode = () => {
     const registered = swapChainAdapters.get('ethereum')
-    const pinned = createEvmSwapAdapter(evmContext, evmChainOf('ethereum'), {
-        routeContractsOf: () => [ROUTER],
-    })
-    vi.spyOn(registered, 'executeSwap').mockImplementation(pinned.executeSwap)
+    const adapter = createEvmSwapAdapter(evmContext, evmChainOf('ethereum'))
+    vi.spyOn(registered, 'executeSwap').mockImplementation(adapter.executeSwap)
     vi.spyOn(registered, 'estimateSourceCost').mockImplementation(
-        pinned.estimateSourceCost,
+        adapter.estimateSourceCost,
     )
 }
 
@@ -478,7 +476,7 @@ describe('Flow: Swap from an Ethereum account', () => {
         useSwapsStore.getState().resetState()
         await useRemoteConfigStore.persist.rehydrate()
         vi.spyOn(kmsCore, 'sign').mockImplementation(signWithSenderKey)
-        pinFixtureRouter()
+        useFixtureNode()
     })
     afterEach(() => {
         host = null
@@ -965,7 +963,7 @@ describe('Flow: Swap from an Ethereum account', () => {
         ])
     })
 
-    it('Given an order calling a contract the route never declared, when the swap runs, then nothing is signed and the order is cancelled', async () => {
+    it('Given an order whose swap calls the token being swapped, when the swap runs, then nothing is signed and the order is cancelled', async () => {
         selectSender(ETHEREUM_SENDER)
         await seedSenderEther('10000000000000000000')
         const api = await startHost()
@@ -979,33 +977,11 @@ describe('Flow: Swap from an Ethereum account', () => {
             kind: 'error',
             phase: 'prepare',
             title: 'swap.execution.failed_title.prepare',
-            message: 'swap.execution.route_unverified_body',
+            message: 'swap.execution.quote_mismatch_body',
         })
         expect(sent).toEqual([])
         expect(kmsCore.sign).not.toHaveBeenCalled()
         await waitFor(() => expect(reports).toEqual([{ status: 'cancelled' }]))
-    })
-
-    it('Given the shipped route table, when an ERC-20 swap runs, then nothing is ordered or signed and the error names the unverified route', async () => {
-        vi.mocked(swapChainAdapters.get('ethereum').executeSwap).mockRestore()
-        selectSender(ETHEREUM_SENDER)
-        await seedSenderEther('10000000000000000000')
-        const api = await startHost()
-        const sent = fakeNode()
-        mockEthereumSwapOrder([APPROVE_TX, TOKEN_SWAP_TX])
-        const { reports } = spyOnSwapSubmissionAndReports()
-
-        const outcome = await api.execute(tokenToEtherQuote())
-
-        expect(outcome).toMatchObject({
-            kind: 'error',
-            phase: 'prepare',
-            title: 'swap.execution.failed_title.prepare',
-            message: 'swap.execution.route_unverified_body',
-        })
-        expect(kmsCore.sign).not.toHaveBeenCalled()
-        expect(sent).toEqual([])
-        expect(reports).toEqual([])
     })
 
     it("Given ether swapped into the account's own Algorand address, when the swap runs, then the order is tracked until completed", async () => {

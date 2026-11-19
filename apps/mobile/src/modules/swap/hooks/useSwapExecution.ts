@@ -12,7 +12,6 @@
 
 import { useState, useCallback, useRef } from 'react'
 import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
-import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import { SubmissionError } from '@perawallet/wallet-core-signing'
 import {
     isQuoteFresh,
@@ -198,16 +197,6 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                         message: refusal
                             ? t(BODY_KEY_BY_REFUSAL[refusal])
                             : copyOf(failure.error).body,
-                        title: stepTitle,
-                    }
-                }
-                case 'route-unverified': {
-                    return {
-                        message: t('swap.execution.route_unverified_body', {
-                            network:
-                                chainDisplayNameOf(failure.chainId) ??
-                                failure.chainId,
-                        }),
                         title: stepTitle,
                     }
                 }

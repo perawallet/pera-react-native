@@ -851,28 +851,6 @@ describe('useSwapExecution', () => {
         })
     })
 
-    it('says why an unverified route could not run, naming the network', async () => {
-        failWith({
-            phase: 'prepare',
-            reason: 'route-unverified',
-            chainId: 'ethereum',
-        })
-        const { result } = renderHook(() => useSwapExecution())
-
-        const outcome = await executeOnce(result.current.execute)
-
-        expect(outcome).toEqual({
-            kind: 'error',
-            phase: 'prepare',
-            message: 'swap.execution.route_unverified_body',
-            title: 'swap.execution.failed_title.prepare',
-        })
-        expect(mockT).toHaveBeenCalledWith(
-            'swap.execution.route_unverified_body',
-            { network: expect.any(String) },
-        )
-    })
-
     it.each([
         [
             { phase: 'prepare', reason: 'no-signable-steps' } as const,
