@@ -824,7 +824,7 @@ describe('Flow: Swap from an Ethereum account', () => {
             () =>
                 expect(
                     screen.getByTestId('swap-receive-amount').textContent,
-                ).not.toBe('0.00'),
+                ).toBe('0.0025'),
             FORM_TIMEOUT,
         )
         fireEvent.click(screen.getByTestId('swap-flip-button'))
