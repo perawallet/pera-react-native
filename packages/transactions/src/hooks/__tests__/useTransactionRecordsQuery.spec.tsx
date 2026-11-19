@@ -32,6 +32,8 @@ import {
 import {
     MAX_AUTO_RECORD_FETCHES,
     MAX_RECORD_PAGE_READS,
+    MAX_TYPED_SCAN_PAGES,
+    typedScanBudget,
     useTransactionRecordsQuery,
 } from '../useTransactionRecordsQuery'
 import { invalidateTransactionQueriesForAddresses } from '../querykeys'
@@ -125,6 +127,17 @@ const gasOnly = (id: string, initiator?: string): TransactionRecord => ({
         icon: 'approval',
     },
     chainData: { family: 'evm' },
+})
+
+describe('typedScanBudget', () => {
+    test.each([
+        [1, { pageReads: 2, autoFetches: 2 }],
+        [2, { pageReads: 2, autoFetches: 1 }],
+        [3, { pageReads: 1, autoFetches: 1 }],
+        [6, { pageReads: 1, autoFetches: 1 }],
+    ])('splits the scan across %i histories', (share, budget) => {
+        expect(typedScanBudget(share)).toEqual(budget)
+    })
 })
 
 describe('useTransactionRecordsQuery', () => {
@@ -404,6 +417,74 @@ describe('useTransactionRecordsQuery', () => {
             ),
         )
         await waitFor(() => expect(result.current.isSearchPaused).toBe(true))
+    })
+
+    test('keeps only rows of the picked type', async () => {
+        mocks.getMinedTransactionHistory.mockResolvedValueOnce({
+            items: [record('SEND', JAN_10), gasOnly('APPROVE')],
+        })
+
+        const { result } = renderHook(
+            () =>
+                useTransactionRecordsQuery({
+                    accountAddress: ADDRESS,
+                    scope: SCOPE,
+                    historyType: 'approvals',
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() =>
+            expect(result.current.records.map(r => r.id)).toEqual(['APPROVE']),
+        )
+    })
+
+    test('with a type, pauses after its smaller fetch budget', async () => {
+        mocks.getMinedTransactionHistory.mockImplementation(
+            async (_address, _scope, page?: { cursor: string }) => ({
+                items: [record('SEND', JAN_10)],
+                next: { cursor: `${page?.cursor ?? 'c'}+` },
+            }),
+        )
+
+        const { result } = renderHook(
+            () =>
+                useTransactionRecordsQuery({
+                    accountAddress: ADDRESS,
+                    scope: SCOPE,
+                    historyType: 'swaps',
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isSearchPaused).toBe(true))
+        expect(mocks.getMinedTransactionHistory).toHaveBeenCalledTimes(
+            MAX_TYPED_SCAN_PAGES,
+        )
+        expect(result.current.records).toEqual([])
+    })
+
+    test('with a type shared by three histories, pauses after a single page', async () => {
+        mocks.getMinedTransactionHistory.mockImplementation(
+            async (_address, _scope, page?: { cursor: string }) => ({
+                items: [record('SEND', JAN_10)],
+                next: { cursor: `${page?.cursor ?? 'c'}+` },
+            }),
+        )
+
+        const { result } = renderHook(
+            () =>
+                useTransactionRecordsQuery({
+                    accountAddress: ADDRESS,
+                    scope: SCOPE,
+                    historyType: 'swaps',
+                    typedScanShare: 3,
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isSearchPaused).toBe(true))
+        expect(mocks.getMinedTransactionHistory).toHaveBeenCalledTimes(1)
     })
 
     test('caps a run of empty pages after a match too, rather than walking the whole history', async () => {

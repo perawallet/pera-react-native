@@ -20,6 +20,7 @@ import type { HistoryFeedSnapshot } from '../../../utils/mergeHistoryFeeds'
 import { buildRecordListRows } from '../../../utils/transactionListRows'
 import {
     MAX_MERGED_LOAD_ROUNDS,
+    MAX_TYPED_MERGED_LOAD_ROUNDS,
     useMergedTransactionHistoryRows,
     type HistoryFeedActions,
     type HistoryFeedSource,
@@ -163,11 +164,33 @@ describe('useMergedTransactionHistoryRows', () => {
         expect(ethereumActions.fetchNextPage).not.toHaveBeenCalled()
     })
 
+    it("splits a type filter's page budget across every feed", () => {
+        const { result } = renderHook(() =>
+            useMergedTransactionHistoryRows({
+                sources: SOURCES,
+                historyType: 'swaps',
+            }),
+        )
+
+        expect(
+            result.current.feeds.map(({ historyType, typedScanShare }) => ({
+                historyType,
+                typedScanShare,
+            })),
+        ).toEqual([
+            { historyType: 'swaps', typedScanShare: 2 },
+            { historyType: 'swaps', typedScanShare: 2 },
+        ])
+    })
+
     describe('a Load More request', () => {
         // Base holds the list back: its oldest loaded row is newer than Ethereum's.
-        const setUp = () => {
+        const setUp = (historyType?: 'swaps') => {
             const hook = renderHook(() =>
-                useMergedTransactionHistoryRows({ sources: SOURCES }),
+                useMergedTransactionHistoryRows({
+                    sources: SOURCES,
+                    historyType,
+                }),
             )
             const [ethereumFeed, baseFeed] = hook.result.current.feeds
             const baseActions = makeActions()
@@ -249,6 +272,19 @@ describe('useMergedTransactionHistoryRows', () => {
                 MAX_MERGED_LOAD_ROUNDS + 1,
             )
             expect(result.current.isSearchPaused).toBe(false)
+        })
+
+        it(`under a type filter, pauses for Search Older after ${MAX_TYPED_MERGED_LOAD_ROUNDS} read with nothing new`, () => {
+            const { result, baseActions, reportBase } = setUp('swaps')
+            reportBase([BASE_ROW])
+
+            act(() => result.current.fetchNextPage())
+            reportBase([BASE_ROW])
+
+            expect(baseActions.fetchNextPage).toHaveBeenCalledTimes(
+                MAX_TYPED_MERGED_LOAD_ROUNDS,
+            )
+            expect(result.current.isSearchPaused).toBe(true)
         })
 
         it('pauses on a failed later page rather than reading it again unasked', () => {

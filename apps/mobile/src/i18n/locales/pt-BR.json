@@ -4058,7 +4058,14 @@
             "yesterday": "Ontem",
             "last_week": "Semana passada",
             "last_month": "Mês passado",
-            "custom_range": "Período personalizado"
+            "custom_range": "Período personalizado",
+            "type": "Tipo",
+            "type_all": "Todas",
+            "type_swaps": "Trocas",
+            "type_approvals": "Aprovações",
+            "type_defi": "DeFi",
+            "type_transfers": "Envios e recebimentos",
+            "type_other": "Outras"
         },
         "replacement": {
             "title": "Transação pendente",

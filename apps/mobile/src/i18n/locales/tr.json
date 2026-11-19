@@ -4036,7 +4036,14 @@
             "yesterday": "Dün",
             "last_week": "Geçen hafta",
             "last_month": "Geçen ay",
-            "custom_range": "Özel aralık"
+            "custom_range": "Özel aralık",
+            "type": "Tür",
+            "type_all": "Tümü",
+            "type_swaps": "Takaslar",
+            "type_approvals": "Onaylar",
+            "type_defi": "DeFi",
+            "type_transfers": "Gönderme ve alma",
+            "type_other": "Diğer"
         },
         "replacement": {
             "title": "Bekleyen işlem",

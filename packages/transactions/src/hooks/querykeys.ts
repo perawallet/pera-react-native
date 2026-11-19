@@ -19,6 +19,7 @@ import {
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
+import type { TransactionHistoryType } from '../utils/historyType'
 
 export const MODULE_PREFIX = 'transactions'
 
@@ -57,6 +58,7 @@ export const transactionQueryKeys = {
             assetId?: string
             afterTime?: string
             beforeTime?: string
+            historyType?: TransactionHistoryType
             /** A chain words its rows by capability, so a flip starts a fresh list rather than mixing labels. */
             contractDecoding?: boolean
         },

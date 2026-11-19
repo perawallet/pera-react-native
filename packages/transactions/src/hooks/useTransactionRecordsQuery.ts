@@ -41,6 +41,10 @@ import {
 } from '../pending-history'
 import { isFeePaidByAccount } from '../utils/fee'
 import {
+    historyTypeOf,
+    type TransactionHistoryType,
+} from '../utils/historyType'
+import {
     historyReadRetryDelay,
     shouldRetryHistoryRead,
 } from './historyReadRetry'
@@ -60,6 +64,10 @@ export type UseTransactionRecordsQueryParams = {
     afterTime?: string
     /** `YYYY-MM-DD`, inclusive, UTC. */
     beforeTime?: string
+    /** Kept client-side: the backend reads the same pages whatever the type. */
+    historyType?: TransactionHistoryType
+    /** Histories splitting one type filter's page budget, such as each network's on All. Defaults to 1. */
+    typedScanShare?: number
     isEnabled?: boolean
 }
 
@@ -78,7 +86,7 @@ export type UseTransactionRecordsQueryResult = {
     error: Nullable<Error>
     hasNextPage: boolean
     /**
-     * The last {@link MAX_AUTO_RECORD_FETCHES} page fetches found nothing, with
+     * The last {@link MAX_AUTO_RECORD_FETCHES} page fetches (fewer with a type, see {@link typedScanBudget}) found nothing, with
      * history left: the hook stopped reading until `fetchNextPage` resumes it.
      * Holds with rows loaded too, so a list's load-more should respect it.
      */
@@ -141,6 +149,26 @@ export const MAX_RECORD_PAGE_READS = 5
 /** Empty page fetches in a row the hook makes on its own, per resume. */
 export const MAX_AUTO_RECORD_FETCHES = 4
 
+// Each backend page costs 5–6 Etherscan calls against a per-device limit of
+// 60 per 10 minutes, shared by every network, and a rare type can be absent
+// from the whole history, so a type filter scans this many pages in all before
+// it asks the user to go on.
+export const MAX_TYPED_SCAN_PAGES = 4
+
+const MAX_TYPED_RECORD_PAGE_READS = 2
+
+/**
+ * One history's share of {@link MAX_TYPED_SCAN_PAGES} when `share` histories
+ * scan at once. Never below one page, so each network still shows its newest.
+ */
+export const typedScanBudget = (
+    share: number,
+): { pageReads: number; autoFetches: number } => {
+    const pages = Math.max(1, Math.floor(MAX_TYPED_SCAN_PAGES / share))
+    const pageReads = Math.min(MAX_TYPED_RECORD_PAGE_READS, pages)
+    return { pageReads, autoFetches: Math.floor(pages / pageReads) }
+}
+
 const involvesAsset = (record: TransactionRecord, assetId: string): boolean =>
     record.summary.amount?.assetRef.assetId === assetId ||
     (record.summary.balanceChanges ?? []).some(
@@ -172,6 +200,8 @@ export const useTransactionRecordsQuery = ({
     assetId,
     afterTime,
     beforeTime,
+    historyType,
+    typedScanShare = 1,
     isEnabled = true,
 }: UseTransactionRecordsQueryParams): UseTransactionRecordsQueryResult => {
     const fromMs = unixMsOf(afterTime)
@@ -196,9 +226,20 @@ export const useTransactionRecordsQuery = ({
                     isFeePaidByAccount(record, accountAddress))) &&
             (record.timestamp === undefined ||
                 ((fromMs === undefined || record.timestamp >= fromMs) &&
-                    (untilMs === undefined || record.timestamp < untilMs))),
-        [assetId, isNativeFilter, accountAddress, fromMs, untilMs],
+                    (untilMs === undefined || record.timestamp < untilMs))) &&
+            (historyType === undefined ||
+                historyTypeOf(record.summary) === historyType),
+        [assetId, isNativeFilter, accountAddress, fromMs, untilMs, historyType],
     )
+    const typedBudget = typedScanBudget(typedScanShare)
+    const maxPageReads =
+        historyType === undefined
+            ? MAX_RECORD_PAGE_READS
+            : typedBudget.pageReads
+    const maxAutoFetches =
+        historyType === undefined
+            ? MAX_AUTO_RECORD_FETCHES
+            : typedBudget.autoFetches
 
     const queryClient = useQueryClient()
     const isActive = isEnabled && !!accountAddress
@@ -210,6 +251,7 @@ export const useTransactionRecordsQuery = ({
         assetId,
         afterTime,
         beforeTime,
+        historyType,
         contractDecoding,
     })
 
@@ -286,7 +328,7 @@ export const useTransactionRecordsQuery = ({
                 loadedNewestMinedId === undefined
                     ? records.length > 0
                     : hasReachedLoadedPages
-            if (isDone || !nextPage || read === MAX_RECORD_PAGE_READS) {
+            if (isDone || !nextPage || read === maxPageReads) {
                 return {
                     page: {
                         records,
@@ -419,7 +461,7 @@ export const useTransactionRecordsQuery = ({
     // A page that found nothing changes no visible row, so `onEndReached`
     // can't be trusted to ask for the next one: the hook walks on itself while
     // the last page is empty. A failed page stops this until a retry, and every
-    // MAX_AUTO_RECORD_FETCHES empty pages in a row it pauses, so a barely used
+    // `maxAutoFetches` empty pages in a row it pauses, so a barely used
     // asset doesn't walk the whole history unasked.
     const {
         isFetched,
@@ -445,7 +487,7 @@ export const useTransactionRecordsQuery = ({
     const isSearchPaused =
         isWalking &&
         !query.isFetchingNextPage &&
-        trailingEmptyPages % MAX_AUTO_RECORD_FETCHES === 0
+        trailingEmptyPages % maxAutoFetches === 0
     // Keyed on pageCount too: a fast page can land in the same notify batch as
     // its own fetching state, so `isFetching` never reads true in between.
     useEffect(() => {

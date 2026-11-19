@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { TransactionHistoryType } from '@perawallet/wallet-core-transactions'
+import type { AnalyticsMetadataKey as Key } from '../metadata-keys'
 import type { ChainPayload } from '../chain-payload'
 
 /**
@@ -24,7 +26,7 @@ export enum AccountDetailsEvent {
     History = 'accountscr_history_tap', // Switched to the History tab
     More = 'accountscr_tapmenu_more_tap', // Opened the account options menu
     TransactionDownload = 'historyscr_transactions_download', // Downloaded transaction history
-    TransactionFilter = 'historyscr_transactions_filter', // Filtered transaction history
+    TransactionFilter = 'historyscr_transactions_filter', // Applied a transaction history filter
     JointAccountDetail = 'accountscr_jointAccount_detail_press', // Opened joint-account detail
     JointAccountRekey = 'accountscr_tapmenu_rekeyJntAcc_tap', // Rekeyed a joint account
     JointAccountExport = 'accountscr_tapmenu_jntAccExport_tap', // Exported a joint account
@@ -33,5 +35,12 @@ export enum AccountDetailsEvent {
 }
 
 export type AccountDetailsRequiredPayloads = {
-    [E in AccountDetailsEvent]: ChainPayload
+    [
+        E in Exclude<AccountDetailsEvent, AccountDetailsEvent.TransactionFilter>
+    ]: ChainPayload
+} & {
+    [AccountDetailsEvent.TransactionFilter]: ChainPayload & {
+        /** Absent where the sheet offers no types, such as Algorand. */
+        [Key.TransactionType]?: TransactionHistoryType | 'all'
+    }
 }

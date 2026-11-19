@@ -727,6 +727,26 @@ describe('useAccountHistory', () => {
             )
         })
 
+        it('drops Algorand from the merged history once a type is picked', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce({
+                filter: TransactionFilter.AllTime,
+                historyType: 'approvals',
+            })
+            const { result } = renderHook(() => useAccountHistory())
+
+            await act(async () => {
+                await result.current.handleOpenFilter()
+            })
+
+            expect(result.current.historyFeeds).toEqual([
+                expect.objectContaining({
+                    source: ETHEREUM_SOURCE,
+                    historyType: 'approvals',
+                    typedScanShare: 1,
+                }),
+            ])
+        })
+
         it('merges every network on All, reading none through the single-network query', () => {
             const { result } = renderHook(() => useAccountHistory())
 
@@ -844,6 +864,54 @@ describe('useAccountHistory', () => {
             AccountDetailsEvent.TransactionDownload,
             { [AnalyticsMetadataKey.ChainId]: 'ethereum' },
         )
+    })
+
+    it('offers types on Ethereum, filters its records by the picked one and tracks it', async () => {
+        registerEthereumChain()
+        vi.mocked(useSelectedAccount).mockReturnValue({
+            id: 'eth',
+            custody: { kind: 'watch' },
+            chains: { ethereum: { address: `0x${'c'.repeat(40)}` } },
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any)
+        mockRequestBottomSheet.mockResolvedValueOnce({
+            filter: TransactionFilter.AllTime,
+            historyType: 'swaps',
+        })
+        const { result } = renderHook(() => useAccountHistory())
+
+        await act(async () => {
+            await result.current.handleOpenFilter()
+        })
+
+        expect(
+            mockRequestBottomSheet.mock.calls[0][0].contents.props
+                .activeHistoryType,
+        ).toBeNull()
+        expect(useTransactionRecordsQuery).toHaveBeenLastCalledWith(
+            expect.objectContaining({ historyType: 'swaps' }),
+        )
+        expect(mockTrackEvent).toHaveBeenCalledWith(
+            AccountDetailsEvent.TransactionFilter,
+            {
+                [AnalyticsMetadataKey.ChainId]: 'ethereum',
+                [AnalyticsMetadataKey.TransactionType]: 'swaps',
+            },
+        )
+    })
+
+    it('offers no types on Algorand, whose cached rows are not sorted into them', async () => {
+        mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+        const { result } = renderHook(() => useAccountHistory())
+
+        await act(async () => {
+            await result.current.handleOpenFilter()
+        })
+
+        expect(
+            mockRequestBottomSheet.mock.calls[0][0].contents.props
+                .activeHistoryType,
+        ).toBeUndefined()
     })
 
     describe('pagination', () => {

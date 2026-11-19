@@ -26,6 +26,7 @@ import {
     useTransactionRecordsQuery,
     type SuspectableEntry,
     type SuspectedPoisoning,
+    type TransactionHistoryType,
 } from '@perawallet/wallet-core-transactions'
 import {
     buildRecordListRows,
@@ -42,6 +43,10 @@ export type UseTransactionHistoryRowsParams = {
     afterTime?: string
     /** `YYYY-MM-DD`, inclusive. */
     beforeTime?: string
+    /** Read on a records chain only: cached rows aren't sorted into types. */
+    historyType?: TransactionHistoryType
+    /** See `UseTransactionRecordsQueryParams.typedScanShare`. */
+    typedScanShare?: number
 }
 
 export type UseTransactionHistoryRowsResult = {
@@ -89,6 +94,8 @@ export const useTransactionHistoryRows = ({
     assetId,
     afterTime,
     beforeTime,
+    historyType,
+    typedScanShare,
 }: UseTransactionHistoryRowsParams): UseTransactionHistoryRowsResult => {
     const isRowCached = hasCachedHistoryRows(scope.chainId)
     const filters = { assetId, afterTime, beforeTime }
@@ -103,6 +110,8 @@ export const useTransactionHistoryRows = ({
         accountAddress: accountAddress ?? '',
         scope,
         isEnabled: !isRowCached && !!accountAddress,
+        historyType,
+        typedScanShare,
         ...filters,
     })
 

@@ -23,6 +23,8 @@ export const useTransactionHistoryFeed = ({
     source,
     afterTime,
     beforeTime,
+    historyType,
+    typedScanShare,
     onChange,
 }: HistoryFeedProps): void => {
     const { scope, address } = source
@@ -31,6 +33,8 @@ export const useTransactionHistoryFeed = ({
         scope,
         afterTime,
         beforeTime,
+        historyType,
+        typedScanShare,
     })
     const addresses = useMemo(() => [address], [address])
     const { isRefreshing, refresh } = useSyncRefresh({ addresses, scope })

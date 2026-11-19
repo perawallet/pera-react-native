@@ -4036,7 +4036,14 @@
             "yesterday": "Hier",
             "last_week": "Semaine dernière",
             "last_month": "Mois dernier",
-            "custom_range": "Période personnalisée"
+            "custom_range": "Période personnalisée",
+            "type": "Type",
+            "type_all": "Toutes",
+            "type_swaps": "Échanges",
+            "type_approvals": "Approbations",
+            "type_defi": "DeFi",
+            "type_transfers": "Envois et réceptions",
+            "type_other": "Autres"
         },
         "replacement": {
             "title": "Transaction en attente",

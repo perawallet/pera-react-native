@@ -221,6 +221,8 @@ export interface TransactionSummary {
     isInferred?: boolean
     /** The title names no action: a contract call nothing decoded or recognised. */
     isActionUnknown?: boolean
+    /** The title names a protocol action, such as lending, wrapping or liquidity, rather than a transfer. */
+    isProtocolAction?: boolean
     icon: TransactionIconKind
     /** Absent on a confirmed transaction with nothing chain-specific to flag. */
     notice?: TransactionNotice

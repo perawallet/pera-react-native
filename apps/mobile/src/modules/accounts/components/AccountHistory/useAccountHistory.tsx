@@ -111,8 +111,14 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     const navigation =
         useNavigation<NativeStackNavigationProp<AppStackParamList>>()
 
-    const { activeFilter, customRange, afterTime, beforeTime, openFilter } =
-        useAccountHistoryFilter()
+    const {
+        activeFilter,
+        customRange,
+        afterTime,
+        beforeTime,
+        historyType,
+        openFilter,
+    } = useAccountHistoryFilter()
 
     const {
         rows,
@@ -135,6 +141,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         networkChainId,
         isMerged,
         chainFilterOptions,
+        canFilterByType,
         handleSelectChain,
         historyFeeds,
         failedNetworkNames,
@@ -144,13 +151,13 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         handleRefresh,
         isRefreshing,
         scopeOf,
-    } = useAccountHistoryRows({ afterTime, beforeTime })
+    } = useAccountHistoryRows({ afterTime, beforeTime, historyType })
 
     // The event needs one chain, so on All it names the account's own; a
     // filter there covers every network.
     const handleOpenFilter = useCallback(
-        () => openFilter(scope.chainId),
-        [openFilter, scope.chainId],
+        () => openFilter(scope.chainId, canFilterByType),
+        [openFilter, scope.chainId, canFilterByType],
     )
 
     const { t } = useLanguage()

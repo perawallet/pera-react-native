@@ -597,10 +597,13 @@ export const historyActionSummary = (
             }
         }
         default: {
+            const isTransfer =
+                action.kind === 'send' || action.kind === 'receive'
             return {
                 ...named,
                 kind: 'contract-call',
                 title: { key: TITLE_KEYS[action.kind] },
+                ...(!isTransfer && { isProtocolAction: true }),
             }
         }
     }

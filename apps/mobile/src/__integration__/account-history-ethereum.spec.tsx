@@ -833,6 +833,43 @@ describe('Flow: History on an Ethereum account', () => {
                 expect(supply).not.toContain('transactions.common.fee')
             })
 
+            it("Given the QA account's rows, when a type is picked in the filter, then only that type's rows list", async () => {
+                serveActionRows()
+                renderHistory()
+                await waitFor(() => expect(rowIds()).toHaveLength(3), {
+                    timeout: SLOW_WAIT_TIMEOUT_MS,
+                })
+
+                const pickType = async (type: string) => {
+                    fireEvent.click(
+                        screen.getByText(
+                            'asset_details.transaction_list.filter',
+                        ),
+                    )
+                    fireEvent.click(
+                        await screen.findByTestId(`history-type-${type}`),
+                    )
+                }
+
+                await pickType('approvals')
+                await waitFor(
+                    () =>
+                        expect(rowIds()).toEqual([
+                            `transaction_row_${USDT_APPROVE_HASH}`,
+                        ]),
+                    { timeout: SLOW_WAIT_TIMEOUT_MS },
+                )
+
+                await pickType('defi')
+                await waitFor(
+                    () =>
+                        expect(rowIds()).toEqual([
+                            `transaction_row_${SUPPLY_HASH}`,
+                        ]),
+                    { timeout: SLOW_WAIT_TIMEOUT_MS },
+                )
+            })
+
             it('Given a named swap row, when it is opened, then the page carries the same title', async () => {
                 serveActionRows()
                 renderHistory()
