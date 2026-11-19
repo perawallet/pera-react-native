@@ -38,8 +38,8 @@ export const registrationChainOf = (
     )
     if (network?.caip2 === undefined) return null
     // The devices API refuses the whole registration over one chain it doesn't
-    // know and never says which, so a network its chain list leaves out is
-    // never sent rather than found by dropping chains one 422 at a time.
+    // know and never says which, so a network the backend's chain list leaves
+    // out is never sent rather than found by dropping chains one 422 at a time.
     if (isPeraScopeRefused({ chainId, networkId: network.id })) return null
     return network.caip2
 }
