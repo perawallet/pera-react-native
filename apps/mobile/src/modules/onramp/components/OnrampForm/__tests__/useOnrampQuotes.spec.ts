@@ -127,7 +127,7 @@ describe('useOnrampQuotes', () => {
 
     it('waits at least the minimum refresh interval for a short-lived quote', async () => {
         mockCreateQuote.mockResolvedValue([
-            { ...quote('x1', 'xo'), expiresAt: Date.now() + 2_000 },
+            { ...quote('x1', 'xo'), expiresAt: Date.now() + 2000 },
         ])
         render()
         await settle()

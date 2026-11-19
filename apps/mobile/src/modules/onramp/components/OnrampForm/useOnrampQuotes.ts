@@ -179,13 +179,12 @@ export const useOnrampQuotes = ({
     // The inputs behind the quotes on screen. A fetch for the same ones is a
     // background re-quote: its failure keeps them (Proceed re-checks expiry,
     // and the order call refuses a gone quote) and retries later.
-    const shownInputsRef =
-        useRef<
-            Nullable<{
-                request: typeof quoteRequestFor
-                amountKey: Nullable<string>
-            }>
-        >(null)
+    const shownInputsRef = useRef<
+        Nullable<{
+            request: typeof quoteRequestFor
+            amountKey: Nullable<string>
+        }>
+    >(null)
 
     // --- debounced fetch -------------------------------------------------
     // Every provider quotes per amount: the router prices a request, so a
