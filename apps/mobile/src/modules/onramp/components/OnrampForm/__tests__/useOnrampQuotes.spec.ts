@@ -30,6 +30,7 @@ import {
     makeFiatToken,
     makeRampPair,
 } from '@test-utils/rampFixtures'
+import { ONRAMP_QUOTE_MIN_REFRESH_INTERVAL } from '@constants/ui'
 import { useOnrampQuotes } from '../useOnrampQuotes'
 
 const mockCreateQuote = vi.hoisted(() => vi.fn())
@@ -121,6 +122,27 @@ describe('useOnrampQuotes', () => {
         })
         await settle()
 
+        expect(mockCreateQuote).toHaveBeenCalledTimes(2)
+    })
+
+    it('waits at least the minimum refresh interval for a short-lived quote', async () => {
+        mockCreateQuote.mockResolvedValue([
+            { ...quote('x1', 'xo'), expiresAt: Date.now() + 2_000 },
+        ])
+        render()
+        await settle()
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(
+                ONRAMP_QUOTE_MIN_REFRESH_INTERVAL - 1,
+            )
+        })
+        expect(mockCreateQuote).toHaveBeenCalledTimes(1)
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(1)
+        })
+        await settle()
         expect(mockCreateQuote).toHaveBeenCalledTimes(2)
     })
 

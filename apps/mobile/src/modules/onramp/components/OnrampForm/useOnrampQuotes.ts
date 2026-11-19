@@ -35,7 +35,10 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
-import { ONRAMP_QUOTE_DEBOUNCE_TIME } from '@constants/ui'
+import {
+    ONRAMP_QUOTE_DEBOUNCE_TIME,
+    ONRAMP_QUOTE_MIN_REFRESH_INTERVAL,
+} from '@constants/ui'
 import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
 import { getExcludedPaymentMethodIds } from './onrampFormHelpers'
 
@@ -290,7 +293,10 @@ export const useOnrampQuotes = ({
         if (expiries.length === 0) return
         const timeoutId = setTimeout(
             refreshQuotes,
-            Math.max(0, Math.min(...expiries) - Date.now()),
+            Math.max(
+                ONRAMP_QUOTE_MIN_REFRESH_INTERVAL,
+                Math.min(...expiries) - Date.now(),
+            ),
         )
         return () => clearTimeout(timeoutId)
     }, [isLive, quotes, refreshQuotes])
