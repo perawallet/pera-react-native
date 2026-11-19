@@ -417,9 +417,9 @@ describe('useAddressSearchView', () => {
             'section_header',
         )
 
-        expect(contactItems.map(item => item.contact.name)).toEqual([
-            'Buddy',
-            'Friend',
+        expect(contactItems).toMatchObject([
+            { contact: { name: 'Buddy' } },
+            { contact: { name: 'Friend' } },
         ])
         expect(result.current.searchPlaceholder).toBe(
             'address_entry.search_placeholder_recipient',
