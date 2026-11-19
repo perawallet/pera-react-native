@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => ({
     holdings: [] as unknown[],
     sourceChainIds: [] as string[],
     isPending: false,
+    refusedChainIds: [] as string[],
 }))
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
@@ -39,6 +40,16 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     getChainDescriptor: (chainId: string) => ({
         family: chainId === 'algorand' ? 'algorand' : 'evm',
     }),
+    useSelectedScopes: (chainIds: string[]) =>
+        chainIds.map(chainId => ({ chainId, networkId: 'mainnet' })),
+}))
+
+vi.mock('@perawallet/wallet-core-config', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-config')
+    >()),
+    isPeraScopeRefused: ({ chainId }: { chainId: string }) =>
+        mocks.refusedChainIds.includes(chainId),
 }))
 
 vi.mock('@modules/chain-ui', () => ({
@@ -68,6 +79,7 @@ describe('useSwapFromAssetSelectionList', () => {
         mocks.holdings = []
         mocks.sourceChainIds = ['algorand', 'ethereum']
         mocks.isPending = false
+        mocks.refusedChainIds = []
     })
 
     it('lists every source chain and names each row on All', () => {
@@ -104,7 +116,7 @@ describe('useSwapFromAssetSelectionList', () => {
     })
 
     it('keeps the swap chain first among the chains offered', () => {
-        mocks.sourceChainIds = ['ethereum', 'base']
+        mocks.sourceChainIds = ['ethereum', 'algorand', 'base']
 
         const { result } = renderHook(() =>
             useSwapFromAssetSelectionList(SCOPE),
@@ -115,6 +127,28 @@ describe('useSwapFromAssetSelectionList', () => {
             'ethereum',
             'base',
         ])
+    })
+
+    it('omits the swap chain when no account can pay from it', () => {
+        mocks.sourceChainIds = ['ethereum', 'base']
+
+        const { result } = renderHook(() =>
+            useSwapFromAssetSelectionList(SCOPE),
+        )
+
+        expect(result.current.visibleChainIds).toEqual(['ethereum', 'base'])
+    })
+
+    it('omits a chain the backend refused even when the account holds assets on it', () => {
+        mocks.sourceChainIds = ['algorand', 'ethereum', 'base']
+        mocks.holdings = [holding('1'), holding('native', 'base')]
+        mocks.refusedChainIds = ['base']
+        const { result } = renderHook(() =>
+            useSwapFromAssetSelectionList(SCOPE),
+        )
+
+        expect(result.current.visibleChainIds).toEqual(['algorand', 'ethereum'])
+        expect(result.current.holdings.map(h => h.assetId)).toEqual(['1'])
     })
 
     it('follows the picked chip with the placeholder of its network', () => {
