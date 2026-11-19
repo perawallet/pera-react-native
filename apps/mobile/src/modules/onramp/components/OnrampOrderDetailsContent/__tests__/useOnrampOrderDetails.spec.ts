@@ -11,12 +11,13 @@
  */
 
 import { act, renderHook } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import type {
     RampDepositInstructions,
     RampHistoryItem,
 } from '@perawallet/wallet-core-onramp'
+import { formatDatetime } from '@perawallet/wallet-core-shared'
 import {
     makeAlgoToken,
     makeDepositToken,
@@ -106,39 +107,68 @@ describe('useOnrampOrderDetails', () => {
         expect(result.current.payInAddressTag).toBe('42')
     })
 
-    it("shows a pending deposit order's pay-in details and deadline from the router, on a device that never placed it", () => {
-        const { result } = renderHook(() =>
-            useOnrampOrderDetails(
-                item({
-                    payInAddress: 'PAYIN',
-                    payInAddressTag: '42',
-                    expiresAt: '2025-06-01T11:00:00Z',
-                }),
-            ),
-        )
+    describe('with the clock before the deadline', () => {
+        const EXPIRES_AT = '2025-06-01T11:00:00Z'
 
-        expect(result.current.isPendingXo).toBe(true)
-        expect(result.current.payInAddress).toBe('PAYIN')
-        expect(result.current.payInAddressTag).toBe('42')
-        expect(result.current.payByLabel).toEqual(expect.any(String))
-    })
+        beforeEach(() => {
+            vi.useFakeTimers({ toFake: ['Date'] })
+            vi.setSystemTime(new Date('2025-06-01T10:30:00Z'))
+        })
 
-    it('has no deadline once the order is no longer pending, or without an expiry', () => {
-        const settled = renderHook(() =>
-            useOnrampOrderDetails(
-                item({
-                    status: 'completed',
-                    payInAddress: 'PAYIN',
-                    expiresAt: '2025-06-01T11:00:00Z',
-                }),
-            ),
-        )
-        const noExpiry = renderHook(() =>
-            useOnrampOrderDetails(item({ payInAddress: 'PAYIN' })),
-        )
+        afterEach(() => {
+            vi.useRealTimers()
+        })
 
-        expect(settled.result.current.payByLabel).toBeNull()
-        expect(noExpiry.result.current.payByLabel).toBeNull()
+        it("shows a pending deposit order's pay-in details and deadline from the router, on a device that never placed it", () => {
+            const { result } = renderHook(() =>
+                useOnrampOrderDetails(
+                    item({
+                        payInAddress: 'PAYIN',
+                        payInAddressTag: '42',
+                        expiresAt: EXPIRES_AT,
+                    }),
+                ),
+            )
+
+            expect(result.current.isPendingXo).toBe(true)
+            expect(result.current.payInAddress).toBe('PAYIN')
+            expect(result.current.payInAddressTag).toBe('42')
+            expect(result.current.payByLabel).toBe(
+                formatDatetime(EXPIRES_AT, undefined, 'medium'),
+            )
+        })
+
+        it('hides the pay-in card and deadline once the deadline passes while the order still reads pending', () => {
+            vi.setSystemTime(new Date(EXPIRES_AT))
+
+            const { result } = renderHook(() =>
+                useOnrampOrderDetails(
+                    item({ payInAddress: 'PAYIN', expiresAt: EXPIRES_AT }),
+                ),
+            )
+
+            expect(result.current.isPendingXo).toBe(false)
+            expect(result.current.payByLabel).toBeNull()
+        })
+
+        it('has no deadline once the order is no longer pending, or without an expiry', () => {
+            const settled = renderHook(() =>
+                useOnrampOrderDetails(
+                    item({
+                        status: 'completed',
+                        payInAddress: 'PAYIN',
+                        expiresAt: EXPIRES_AT,
+                    }),
+                ),
+            )
+            const noExpiry = renderHook(() =>
+                useOnrampOrderDetails(item({ payInAddress: 'PAYIN' })),
+            )
+
+            expect(settled.result.current.payByLabel).toBeNull()
+            expect(noExpiry.result.current.isPendingXo).toBe(true)
+            expect(noExpiry.result.current.payByLabel).toBeNull()
+        })
     })
 
     it('reads a legacy order with no funding method as XO by its provider', () => {

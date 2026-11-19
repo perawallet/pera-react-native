@@ -46,8 +46,8 @@ export const rampHistoryItemSchema = z.object({
     created_at: z.string(),
     updated_at: z.string().nullish(),
     expires_at: z.string().nullish(),
-    // What the user still has to do, as on the created order; the router sends
-    // it only while the order is pending.
+    // What the user still has to do, in the created order's step shape; read
+    // only for a pending deposit order's pay-in details.
     steps: z.array(rampOrderStepSchema).nullish(),
 })
 

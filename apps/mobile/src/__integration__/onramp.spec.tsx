@@ -1137,6 +1137,9 @@ describe('Flow: Onramp buy (native XO)', () => {
         seedDeviceId()
         markIntroSeen()
         const orderId = 'history-deposit-1'
+        const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000)
+            .toISOString()
+            .replace(/\.\d{3}Z$/, 'Z')
 
         server.use(
             ...buildXoPairHandlers(),
@@ -1153,14 +1156,14 @@ describe('Flow: Onramp buy (native XO)', () => {
                             funding_method: 'external_deposit',
                             source_asset: BTC_ASSET,
                             source_amount: '50000000',
-                            expires_at: '2025-12-24T00:16:00Z',
+                            expires_at: expiresAt,
                             steps: [
                                 {
                                     kind: 'deposit_instructions',
                                     address: PAY_IN_ADDRESS,
                                     memo: '4242',
                                     amount: '50000000',
-                                    expires_at: '2025-12-24T00:16:00Z',
+                                    expires_at: expiresAt,
                                 },
                             ],
                         },

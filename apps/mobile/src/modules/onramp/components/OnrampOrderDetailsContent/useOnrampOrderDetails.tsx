@@ -101,8 +101,15 @@ export const useOnrampOrderDetails = (
     const payInAddress = item.payInAddress ?? rememberedDeposit?.address ?? null
     const payInAddressTag =
         item.payInAddressTag ?? rememberedDeposit?.memo ?? null
+    // The router flips a pending order to expired on a periodic job, so a row can
+    // still read pending for minutes after its address stopped being watched.
+    const isPastDeadline =
+        item.expiresAt !== undefined && Date.parse(item.expiresAt) <= Date.now()
     const isPendingXo =
-        isXo && item.status === 'pending' && payInAddress !== null
+        isXo &&
+        item.status === 'pending' &&
+        payInAddress !== null &&
+        !isPastDeadline
 
     const sourceSymbol = item.pair.sourceToken.symbol
     const destinationSymbol = item.pair.destinationToken.symbol
