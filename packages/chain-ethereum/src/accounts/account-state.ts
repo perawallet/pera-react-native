@@ -495,6 +495,7 @@ const readBatch = async (
                   readNftHoldings(scope, chain, read.address, {
                       forceRefresh: read.isUserRefresh,
                       prior: detection.nftListings.get(nftKeys[index]!),
+                      now: detection.now,
                   }),
               ),
           )

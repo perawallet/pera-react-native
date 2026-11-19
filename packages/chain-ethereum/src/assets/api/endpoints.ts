@@ -148,17 +148,28 @@ export type NftHoldingsListing = {
     /** Page one as the backend answered it. */
     pageOne: string
     items: NftItemSchemaOutput[]
+    /** Epoch ms of the full read the items came from. */
+    readAt: number
 }
 
 export type NftHoldingsOptions = {
     forceRefresh?: boolean
     prior?: NftHoldingsListing
+    now?: () => number
 }
+
+/**
+ * How long `prior` may stand in for a full read: one backend rate-limit
+ * window. An NFT received past page one leaves page one as it was, so this
+ * bounds how long it stays unlisted.
+ */
+export const NFT_LISTING_REUSE_MS = 10 * 60_000
 
 /**
  * Every NFT `address` holds on the scope's chain, across all pages; a row
  * this client can't read is skipped. `prior` is answered again, with no cursor
- * page read, when page one is unchanged; `forceRefresh` skips the backend's
+ * page read, when page one is unchanged and `prior` is younger than
+ * `NFT_LISTING_REUSE_MS`; `forceRefresh` skips the backend's
  * page-one cache and `prior`, for a refresh the user asked for. Rejects on a
  * failed page, so a partial list never stands in for the whole: with a
  * `PeraServiceUnavailableError` when the chain has no NFT reads, and a plain
@@ -168,8 +179,13 @@ export const fetchNftHoldings = async (
     scope: ChainScope,
     chain: EvmChain,
     address: string,
-    { forceRefresh = false, prior }: NftHoldingsOptions = {},
+    { forceRefresh = false, prior, now = Date.now }: NftHoldingsOptions = {},
 ): Promise<NftHoldingsListing> => {
+    const readAt = now()
+    const reusable =
+        !forceRefresh &&
+        prior !== undefined &&
+        readAt - prior.readAt < NFT_LISTING_REUSE_MS
     const url = nftHoldingsPath(
         eip155ChainIdOf(scope, chain),
         address.toLowerCase(),
@@ -201,7 +217,7 @@ export const fetchNftHoldings = async (
             pageOne = JSON.stringify(data)
             // The backend drops its cached page one on a transfer, while every
             // cursor page is uncached and counts against the device's limit.
-            if (!forceRefresh && prior?.pageOne === pageOne) return prior
+            if (reusable && prior.pageOne === pageOne) return prior
         }
         for (const row of results) {
             const parsed = nftItemSchema.safeParse(row)
@@ -209,7 +225,9 @@ export const fetchNftHoldings = async (
                 items.set(parsed.data.asset_id.toLowerCase(), parsed.data)
             }
         }
-        if (next === null) return { pageOne, items: [...items.values()] }
+        if (next === null) {
+            return { pageOne, items: [...items.values()], readAt }
+        }
         params = { cursor: nftCursorOf(next) }
     }
     throw new Error(
