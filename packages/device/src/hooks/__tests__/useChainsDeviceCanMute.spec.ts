@@ -12,12 +12,22 @@
 
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { deviceChainAdapters } from '../../registrations/chain-adapter'
 import { useChainsDeviceCanMute } from '../useChainsDeviceCanMute'
 
-const mocks = vi.hoisted(() => ({ isV4: true }))
+const mocks = vi.hoisted(() => ({
+    isV4: true,
+    refusedChains: new Set<string>(),
+}))
+
+// Refusal is decided here; the real module still notifies subscribers.
+vi.mock('@perawallet/wallet-core-config', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    isPeraScopeRefused: ({ chainId }: { chainId: string }) =>
+        mocks.refusedChains.has(chainId),
+}))
 
 vi.mock('../registrationApi', () => ({
     isDeviceRegistrationV4Enabled: () => mocks.isV4,
@@ -34,6 +44,7 @@ const register = (chainId: ChainId, canMuteChain?: boolean) =>
 describe('useChainsDeviceCanMute', () => {
     beforeEach(() => {
         mocks.isV4 = true
+        mocks.refusedChains.clear()
         deviceChainAdapters.reset()
     })
 
@@ -75,5 +86,21 @@ describe('useChainsDeviceCanMute', () => {
         rerender()
 
         expect(result.current).toBe(first)
+    })
+
+    it('drops a chain once its network is refused, without another render cause', async () => {
+        const { markPeraScopeRefused } =
+            await import('@perawallet/wallet-core-config')
+        register('algorand', true)
+        register('ethereum', true)
+        const { result } = renderHook(() => useChainsDeviceCanMute())
+        expect(result.current).toEqual(['algorand', 'ethereum'])
+
+        mocks.refusedChains.add('ethereum')
+        act(() => {
+            markPeraScopeRefused({ chainId: 'ethereum', networkId: 'mainnet' })
+        })
+
+        expect(result.current).toEqual(['algorand'])
     })
 })

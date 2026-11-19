@@ -631,6 +631,22 @@ describe('chains the Pera backend refuses', () => {
         expect(fresh.isPeraScopeRefused(ETHEREUM_MAINNET)).toBe(false)
     })
 
+    test('a new chain list or refusal notifies subscribers, and a repeated refusal does not', async () => {
+        const fresh = await withBothEthereumNetworks()
+        const listener = vi.fn()
+        const unsubscribe = fresh.subscribePeraScopeRefusals(listener)
+        const before = fresh.getPeraScopeRefusalsVersion()
+
+        fresh.setPeraServedScopes('live', [algorandScope('mainnet')])
+        fresh.markPeraScopeRefused(ETHEREUM_SEPOLIA)
+        fresh.markPeraScopeRefused(ETHEREUM_SEPOLIA)
+        unsubscribe()
+        fresh.markPeraScopeRefused(ETHEREUM_MAINNET)
+
+        expect(listener).toHaveBeenCalledTimes(2)
+        expect(fresh.getPeraScopeRefusalsVersion()).toBe(before + 3)
+    })
+
     test('a refused request refuses its scope only', async () => {
         const fresh = await withBothEthereumNetworks()
 

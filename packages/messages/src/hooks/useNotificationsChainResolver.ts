@@ -18,7 +18,10 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
-import { isSentInDeviceRegistration } from '@perawallet/wallet-core-device'
+import {
+    isSentInDeviceRegistration,
+    usePeraScopeRefusalsVersion,
+} from '@perawallet/wallet-core-device'
 import type { Optional } from '@perawallet/wallet-core-shared'
 
 /**
@@ -32,6 +35,7 @@ export const useNotificationsChainResolver = (): ((
 ) => Optional<ChainId>) => {
     const registeredChainIds = useRegisteredChainIds()
     const deployment = useWalletDeployment()
+    const refusalsVersion = usePeraScopeRefusalsVersion()
     return useCallback(
         (account: WalletAccount) => {
             const chainId = accountChainIdOf(account, registeredChainIds)
@@ -39,6 +43,7 @@ export const useNotificationsChainResolver = (): ((
                 ? chainId
                 : undefined
         },
-        [registeredChainIds, deployment],
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- refusalsVersion is an identity key: a refusal changes what isSentInDeviceRegistration answers
+        [registeredChainIds, deployment, refusalsVersion],
     )
 }

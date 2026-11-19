@@ -37,6 +37,7 @@ import {
 } from '../store'
 import { logEvent } from '../analytics'
 import { registerDevice as registerDeviceEndpoint } from './endpoints'
+import { registrationChainOf } from '../registrations/registrationChain'
 import { withoutNewestChain } from '../registrations/withoutNewestChain'
 import type {
     DeviceAccountRegistration,
@@ -226,7 +227,9 @@ export const useDevice = () => {
      * On an update, a refusal of that last chain propagates rather than
      * registering no accounts: every request replaces the device's whole
      * account list, so an empty one would unregister accounts the backend
-     * already holds. A create has no list to lose, so it goes through with no
+     * already holds. An update whose accounts are all on chains the backend
+     * doesn't serve does go out empty, since it holds nothing for those
+     * chains to lose. A create has no list to lose, so it goes through with no
      * accounts: the device still needs an id, which every device-keyed
      * feature reads. The refusal comes back with that response so the caller
      * can save the id and still fail the attempt.
@@ -239,8 +242,16 @@ export const useDevice = () => {
             const refused =
                 refusedChainsByDeployment.get(targetDeployment) ??
                 new Set<ChainId>()
+            // Filtered here as well as at serialization so the fallback below
+            // never spends a request dropping a chain that wasn't being sent.
             let accounts = payload.accounts.filter(
-                account => !refused.has(account.chainId),
+                account =>
+                    !refused.has(account.chainId) &&
+                    registrationChainOf(
+                        getProvider().chains,
+                        account.chainId,
+                        targetDeployment,
+                    ) !== null,
             )
             let lastDropped: ReadonlySet<ChainId> = new Set()
             let emptyCreateRefusal: unknown

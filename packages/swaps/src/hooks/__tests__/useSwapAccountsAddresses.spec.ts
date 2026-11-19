@@ -25,7 +25,11 @@ vi.mock('@perawallet/wallet-core-config', () => ({
     deploymentOf: () => 'mainnet',
 }))
 
-const registration = vi.hoisted(() => ({ isV4: false }))
+const registration = vi.hoisted(() => ({
+    isV4: false,
+    refusalsVersion: 0,
+    refusedChains: new Set<string>(),
+}))
 
 // Like v3, which registers only Algorand; v4 also sends Ethereum.
 vi.mock('@perawallet/wallet-core-device', () => ({
@@ -34,8 +38,11 @@ vi.mock('@perawallet/wallet-core-device', () => ({
         chainId: string,
         _deployment: string,
         isV4: boolean,
-    ) => chainId === 'algorand' || isV4,
+    ) =>
+        !registration.refusedChains.has(chainId) &&
+        (chainId === 'algorand' || isV4),
     useIsDeviceRegistrationV4Enabled: () => registration.isV4,
+    usePeraScopeRefusalsVersion: () => registration.refusalsVersion,
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
@@ -121,6 +128,34 @@ describe('swaps/useSwapAccountsAddresses', () => {
             true,
         ])
         registration.isV4 = false
+    })
+
+    test('marks the addresses again when a chain refusal changes what is sent', () => {
+        registration.isV4 = true
+        const both = account('both', {
+            algorand: { address: 'ALGO_ADDR', keyPairId: 'k1' },
+            ethereum: { address: '0xETH', keyPairId: 'k2' },
+        })
+        const accounts = [both]
+        const { result, rerender } = renderHook(() =>
+            useSwapAccountsAddresses(accounts),
+        )
+        expect(result.current.map(entry => entry.isOnDevice)).toEqual([
+            true,
+            true,
+        ])
+
+        registration.refusedChains.add('ethereum')
+        registration.refusalsVersion = 1
+        rerender()
+
+        expect(result.current.map(entry => entry.isOnDevice)).toEqual([
+            true,
+            false,
+        ])
+        registration.isV4 = false
+        registration.refusedChains.clear()
+        registration.refusalsVersion = 0
     })
 
     test('lists nothing without accounts', () => {
