@@ -19,16 +19,19 @@ export const useStyles = makeStyles(theme => ({
     empty: {
         paddingVertical: theme.spacing.md,
     },
-    // Figma "See all": a full-width 40 pt pill, Layer Gray Lightest with a Layer Gray border.
-    seeAll: {
+    // Figma: 16 pt from the chips to the grid.
+    body: {
+        gap: theme.spacing.lg,
+    },
+    // Figma: 16 pt between rows, 12 pt between tiles.
+    grid: {
+        gap: theme.spacing.lg,
+    },
+    gridRow: {
         flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: theme.spacing.xs,
-        paddingVertical: theme.spacing.sm,
-        borderRadius: theme.borderRadius.lg,
-        borderWidth: theme.borders.sm,
-        borderColor: theme.colors.layerGray,
-        backgroundColor: theme.colors.layerGrayLightest,
+        gap: theme.spacing.md,
+    },
+    filler: {
+        flex: 1,
     },
 }))

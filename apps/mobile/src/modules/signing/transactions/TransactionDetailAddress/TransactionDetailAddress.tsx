@@ -21,29 +21,32 @@ import { useTransactionDetailAddress } from './useTransactionDetailAddress'
 export type TransactionDetailAddressProps = {
     address: string
     scope: ChainScope
-    /** Prefixes the account or contact line's test id. */
+    /** Prefixes the account, contact or verified name line's test id. */
     testID?: string
 }
 
-/** The address with its copy action, then the wallet account or contact it belongs to. */
+/** The address with its copy action, then the account, contact or verified name it belongs to. */
 export const TransactionDetailAddress = ({
     address,
     scope,
     testID,
 }: TransactionDetailAddressProps) => {
     const styles = useStyles()
-    const { ownAccount, ownAccountName, contact } = useTransactionDetailAddress(
-        address,
-        scope,
-    )
+    const {
+        ownAccount,
+        ownAccountName,
+        contact,
+        addressName,
+        isAddressInFull,
+    } = useTransactionDetailAddress(address, scope)
 
     return (
         <PWView style={styles.container}>
             <AddressDisplay
                 address={address}
                 scope={scope}
-                displayType='inline'
-                addressFormat='short'
+                displayType='address-only'
+                addressFormat={isAddressInFull ? 'full' : 'short'}
                 textProps={{ variant: 'bodyLarge', weight: 400 }}
                 hugContent
             />
@@ -80,6 +83,21 @@ export const TransactionDetailAddress = ({
                         truncate
                     >
                         {contact.name}
+                    </PWText>
+                </PWView>
+            )}
+            {!!addressName && (
+                <PWView
+                    style={styles.owner}
+                    testID={testID && `${testID}_name`}
+                >
+                    <ContactAvatar size='sm' />
+                    <PWText
+                        variant='footnoteMedium'
+                        style={styles.ownerName}
+                        truncate
+                    >
+                        {addressName}
                     </PWText>
                 </PWView>
             )}

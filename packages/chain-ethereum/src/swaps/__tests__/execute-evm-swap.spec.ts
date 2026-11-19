@@ -59,7 +59,10 @@ import {
 import { testChainContext } from '../../__tests__/context'
 import { ETHEREUM, evmScopeOf } from '../../__tests__/evm-chains'
 import { readEvmTransaction } from '../../signing/adapter'
-import { waitForEvmReceipt } from '../../transfer/submission'
+import {
+    submitAndRecordEthereumTransactions,
+    waitForEvmReceipt,
+} from '../../transfer/submission'
 import { executeEvmSwap } from '../execute-evm-swap'
 
 vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
@@ -77,6 +80,9 @@ vi.mock('../../transfer/submission', async importOriginal => {
     return {
         ...actual,
         waitForEvmReceipt: vi.fn(actual.waitForEvmReceipt),
+        submitAndRecordEthereumTransactions: vi.fn(
+            actual.submitAndRecordEthereumTransactions,
+        ),
     }
 })
 
@@ -109,6 +115,15 @@ const APPROVE_TX = encodeCall(
     }),
 )
 const SWAP_TX = encodeCall(ROUTER, '0x5ae401dc')
+const STRANGER = '0x00000000000000000000000000000000000000aa' as Address
+const LONE_TRANSFER_TX = encodeCall(
+    TOKEN,
+    encodeFunctionData({
+        abi: erc20Abi,
+        functionName: 'transfer',
+        args: [STRANGER, AMOUNT],
+    }),
+)
 
 const orderOf = (transactions: string[]): SwapOrder => ({
     orderId: 'order-1',
@@ -321,11 +336,30 @@ describe('executeEvmSwap', () => {
         expect(transaction.maxFeePerGas).toBeGreaterThan(1n)
     })
 
-    it('signs nothing the validator refuses, and cancels the order', async () => {
+    it('signs nothing for a contract the route does not declare, and cancels the order', async () => {
         fakeNode({ balance: RICH })
         const context = contextOf(orderOf([SWAP_TX]))
 
         const result = await run(context, inputOf(), [TOKEN])
+
+        expect(result).toEqual({
+            kind: 'failed',
+            failure: {
+                phase: 'prepare',
+                reason: 'route-unverified',
+                chainId: scope.chainId,
+            },
+        })
+        expect(context.addSignRequest).not.toHaveBeenCalled()
+        await flushCancelReport()
+        expect(context.reportOrder).toHaveBeenCalledWith(CANCELLED)
+    })
+
+    it('signs nothing the validator refuses, and cancels the order', async () => {
+        fakeNode({ balance: RICH })
+        const context = contextOf(orderOf([LONE_TRANSFER_TX]))
+
+        const result = await run(context, inputOf(), [ROUTER])
 
         expect(result).toEqual({
             kind: 'failed',
@@ -343,10 +377,28 @@ describe('executeEvmSwap', () => {
 
         expect(result).toEqual({
             kind: 'failed',
-            failure: { phase: 'prepare', reason: 'quote-mismatch' },
+            failure: {
+                phase: 'prepare',
+                reason: 'route-unverified',
+                chainId: scope.chainId,
+            },
         })
         expect(context.createOrder).not.toHaveBeenCalled()
         expect(context.reportOrder).not.toHaveBeenCalled()
+    })
+
+    it('reports an unverifiable route even for a stale quote', async () => {
+        const context = contextOf(orderOf([SWAP_TX]))
+
+        const result = await run(
+            context,
+            inputOf({ quote: { ...quoteOf(), fetchedAt: undefined } }),
+            [],
+        )
+
+        expect(result).toMatchObject({
+            failure: { reason: 'route-unverified' },
+        })
     })
 
     it('refuses unreadable bytes the same way', async () => {
@@ -372,7 +424,11 @@ describe('executeEvmSwap', () => {
         const result = await run(context)
 
         expect(result).toMatchObject({
-            failure: { phase: 'submission', reason: 'reverted' },
+            failure: {
+                phase: 'submission',
+                reason: 'reverted',
+                step: 'approval',
+            },
         })
         expect(node.sentCount()).toBe(1)
         await flushCancelReport()
@@ -389,6 +445,29 @@ describe('executeEvmSwap', () => {
         const result = await run(context)
 
         expect(result).toEqual({ kind: 'user-rejected' })
+        expect(node.sentCount()).toBe(0)
+        await flushCancelReport()
+        expect(context.reportOrder).toHaveBeenCalledWith(CANCELLED)
+    })
+
+    it('stamps a failed approval signature with the approval step', async () => {
+        const node = fakeNode({ balance: RICH })
+        const context = contextOf(
+            orderOf([APPROVE_TX, SWAP_TX]),
+            request =>
+                request.error?.(new Error('device failed')) ??
+                Promise.resolve(),
+        )
+
+        const result = await run(context)
+
+        expect(result).toMatchObject({
+            failure: {
+                phase: 'signing',
+                reason: 'signing-failed',
+                step: 'approval',
+            },
+        })
         expect(node.sentCount()).toBe(0)
         await flushCancelReport()
         expect(context.reportOrder).toHaveBeenCalledWith(CANCELLED)
@@ -456,7 +535,11 @@ describe('executeEvmSwap', () => {
         const result = await run(context)
 
         expect(result).toMatchObject({
-            failure: { phase: 'prepare', reason: 'prepare-failed' },
+            failure: {
+                phase: 'prepare',
+                reason: 'prepare-failed',
+                step: 'swap',
+            },
         })
         await flushCancelReport()
         expect(context.reportOrder).toHaveBeenCalledWith(CANCELLED)
@@ -469,13 +552,31 @@ describe('executeEvmSwap', () => {
         const result = await run(context)
 
         expect(result).toMatchObject({
-            failure: { phase: 'submission', reason: 'reverted' },
+            failure: { phase: 'submission', reason: 'reverted', step: 'swap' },
         })
         expect(context.reportOrder).toHaveBeenCalledWith(
             expect.objectContaining({
                 report: expect.objectContaining({ status: 'sent' }),
             }),
         )
+    })
+
+    it('stamps a swap submission failure with the swap step', async () => {
+        fakeNode({ balance: RICH })
+        vi.mocked(submitAndRecordEthereumTransactions).mockRejectedValueOnce(
+            new Error('node unreachable'),
+        )
+        const context = contextOf(orderOf([SWAP_TX]))
+
+        const result = await run(context)
+
+        expect(result).toMatchObject({
+            failure: {
+                phase: 'submission',
+                reason: 'submission-failed',
+                step: 'swap',
+            },
+        })
     })
 
     it('succeeds when the receipt does not arrive in time', async () => {
@@ -546,6 +647,7 @@ describe('executeEvmSwap', () => {
                 chainId: 'ethereum',
             },
         })
+        expect(result).not.toHaveProperty('failure.step')
         expect(context.createOrder).not.toHaveBeenCalled()
     })
 

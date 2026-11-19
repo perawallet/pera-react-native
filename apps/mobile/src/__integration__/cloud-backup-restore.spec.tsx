@@ -126,9 +126,7 @@ const expectRestoredBackedUp = (account: WalletAccount): void => {
     expect(useMnemonicBackupStore.getState().isBackedUp(seedOf(account))).toBe(
         true,
     )
-    const { result } = renderHook(() =>
-        useRequiresMnemonicBackup(account, ALGORAND_CHAIN_ID),
-    )
+    const { result } = renderHook(() => useRequiresMnemonicBackup(account))
     expect(result.current).toBe(false)
 }
 

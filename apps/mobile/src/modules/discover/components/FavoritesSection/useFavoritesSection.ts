@@ -12,60 +12,36 @@
 
 import { useCallback } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useCreateFolder } from '../../hooks/useCreateFolder'
-import { useFolderRows, type FolderRowItem } from '../../hooks/useFolderRows'
+import { useOpenDapp } from '../../hooks/useOpenDapp'
+import { useFavoritesView } from '../../hooks/useFavoritesView'
 import { useDiscoverFavoritesStore } from '../../store/useDiscoverFavoritesStore'
+import type { DiscoverFavorite } from '../../types'
 
-/** Folder rows the home shows before "See all". */
-export const HOME_FOLDER_LIMIT = 4
-
-export type FavoritesFolderRow = FolderRowItem
+/** Favorites the home grid shows before "See all" (Figma: two rows of three). */
+export const FAVORITES_GRID_LIMIT = 6
 
 export type UseFavoritesSectionResult = {
-    favoriteCount: number
-    /** Newest first, at most `HOME_FOLDER_LIMIT`. */
-    folders: FavoritesFolderRow[]
-    hasMore: boolean
-    /** No favorites and no folders. */
+    /** At most `FAVORITES_GRID_LIMIT`, in the shared category and sort. */
+    dapps: DiscoverFavorite[]
+    /** No favorites at all (not just none in the chosen category). */
     isEmpty: boolean
-    openNewFolder: () => Promise<void>
-    openAllFavorites: () => void
-    openFolder: (id: string) => void
-    openAllFolders: () => void
+    openDapp: (dapp: DiscoverFavorite) => void
+    openAll: () => void
 }
 
 export const useFavoritesSection = (): UseFavoritesSectionResult => {
     const navigation = useAppNavigation()
+    const { openDapp: open } = useOpenDapp()
     const favoriteCount = useDiscoverFavoritesStore(s => s.favoriteOrder.length)
+    const { dapps } = useFavoritesView({ limit: FAVORITES_GRID_LIMIT })
 
-    const rows = useFolderRows()
-
-    const createFolder = useCreateFolder()
-    const openNewFolder = useCallback(async () => {
-        await createFolder()
-    }, [createFolder])
-
-    const openAllFavorites = useCallback(() => {
+    const openDapp = useCallback(
+        (dapp: DiscoverFavorite) => open(dapp, null),
+        [open],
+    )
+    const openAll = useCallback(() => {
         navigation.navigate('DiscoverAllFavorites')
     }, [navigation])
-    const openFolder = useCallback(
-        (id: string) => {
-            navigation.navigate('DiscoverFolder', { folderId: id })
-        },
-        [navigation],
-    )
-    const openAllFolders = useCallback(() => {
-        navigation.navigate('DiscoverAllFolders')
-    }, [navigation])
 
-    return {
-        favoriteCount,
-        folders: rows.slice(0, HOME_FOLDER_LIMIT),
-        hasMore: rows.length > HOME_FOLDER_LIMIT,
-        isEmpty: favoriteCount === 0 && rows.length === 0,
-        openNewFolder,
-        openAllFavorites,
-        openFolder,
-        openAllFolders,
-    }
+    return { dapps, isEmpty: favoriteCount === 0, openDapp, openAll }
 }

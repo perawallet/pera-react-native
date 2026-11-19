@@ -382,7 +382,12 @@ const {
     mockSendFundsReset: vi.fn(),
 }))
 
+const { mockIsSheetOpen } = vi.hoisted(() => ({
+    mockIsSheetOpen: vi.fn(() => false),
+}))
+
 vi.mock('@modules/bottom-sheet', () => ({
+    isRegisteredBottomSheetOpen: mockIsSheetOpen,
     useBottomSheetStore: () => ({
         requestByType: mockRequestByType,
     }),
@@ -1450,6 +1455,132 @@ describe('useDeepLink', () => {
                 screen: 'AssetDetails',
                 params: { assetId: '123', chainId: 'algorand' },
             },
+        })
+    })
+
+    describe('TRANSACTION_DETAIL deeplink', () => {
+        const STORED_ADDRESS = '0xfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359'
+        const HASH = `0x${'ab'.repeat(32)}`
+        const link = (address = STORED_ADDRESS) => ({
+            type: DeeplinkType.TRANSACTION_DETAIL,
+            target: { chainId: 'ethereum', networkId: 'mainnet' },
+            address,
+            transactionId: HASH,
+            assetRef: { chainId: 'ethereum', assetId: '0xusdc' },
+        })
+        const open = async (
+            parsed: unknown,
+            source: 'deeplink' | 'notification' = 'notification',
+        ) => {
+            ;(parseDeeplink as Mock).mockReturnValue(parsed)
+            const onError = vi.fn()
+            const { result } = renderHook(() => useDeepLink())
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    'perawallet://app/asset-detail',
+                    false,
+                    source,
+                    onError,
+                )
+            })
+            return { onError }
+        }
+
+        beforeEach(() => {
+            accountsState.accounts = [
+                {
+                    id: 'eth-account',
+                    chains: { ethereum: { address: STORED_ADDRESS } },
+                },
+            ]
+        })
+
+        it("selects the wallet's account and opens the transaction from its stored address", async () => {
+            const { onError } = await open(link())
+
+            expect(onError).not.toHaveBeenCalled()
+            expect(accountsState.setSelectedAccountId).toHaveBeenCalledWith(
+                'eth-account',
+            )
+            expect(vi.mocked(StackActions.push)).toHaveBeenCalledTimes(1)
+            expect(vi.mocked(StackActions.push)).toHaveBeenCalledWith(
+                'TransactionDetails',
+                {
+                    scope: { chainId: 'ethereum', networkId: 'mainnet' },
+                    transactionId: HASH,
+                    accountAddress: STORED_ADDRESS,
+                },
+            )
+            expect(mockDispatch).toHaveBeenCalledTimes(1)
+            expect(mockNavigate).not.toHaveBeenCalled()
+        })
+
+        it('replaces the current screen when asked to', async () => {
+            ;(parseDeeplink as Mock).mockReturnValue(link())
+            const { result } = renderHook(() => useDeepLink())
+
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    'perawallet://app/asset-detail',
+                    true,
+                    'notification',
+                )
+            })
+
+            expect(vi.mocked(StackActions.replace)).toHaveBeenCalledWith(
+                'TransactionDetails',
+                expect.objectContaining({ transactionId: HASH }),
+            )
+            expect(vi.mocked(StackActions.push)).not.toHaveBeenCalled()
+            expect(mockNavigate).not.toHaveBeenCalled()
+        })
+
+        it('opens the asset detail when the address is not in the wallet', async () => {
+            await open(link('0x0000000000000000000000000000000000000001'))
+
+            expect(accountsState.setSelectedAccountId).not.toHaveBeenCalled()
+            expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+                screen: 'Home',
+                params: {
+                    screen: 'AssetDetails',
+                    params: { assetId: '0xusdc', chainId: 'ethereum' },
+                },
+            })
+        })
+
+        it("opens the chain's native asset detail when the link names no token", async () => {
+            await open({
+                ...link('0x0000000000000000000000000000000000000001'),
+                assetRef: undefined,
+            })
+
+            expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+                screen: 'Home',
+                params: {
+                    screen: 'AssetDetails',
+                    params: { assetId: '0', chainId: 'ethereum' },
+                },
+            })
+        })
+
+        it('opens the asset detail when the chain reads no history', async () => {
+            capabilityState.turnOff('history')
+
+            await open(link())
+
+            expect(mockNavigate).toHaveBeenCalledWith(
+                'TabBar',
+                expect.objectContaining({
+                    params: expect.objectContaining({
+                        screen: 'AssetDetails',
+                        params: { assetId: '0xusdc', chainId: 'ethereum' },
+                    }),
+                }),
+            )
+            expect(mockNavigate).not.toHaveBeenCalledWith(
+                'TransactionDetails',
+                expect.anything(),
+            )
         })
     })
 
@@ -2901,6 +3032,7 @@ describe('useDeepLink', () => {
 
         afterEach(() => {
             deeplinkAdapters.reset()
+            mockIsSheetOpen.mockReturnValue(false)
         })
 
         const ethereumTransfer = {
@@ -3043,6 +3175,52 @@ describe('useDeepLink', () => {
                 expect.anything(),
                 expect.anything(),
             )
+        })
+
+        it('leaves an open Send on its sender: no picker, no chain enabled, no account switched', async () => {
+            mockIsSheetOpen.mockReturnValue(true)
+            mockEnableChain.mockResolvedValue({ id: 'hd-account' })
+            sendAccount.resolution = {
+                kind: 'picker',
+                accounts: [ETHEREUM_ACCOUNT, OTHER_ETHEREUM_ACCOUNT],
+            }
+            ;(parseDeeplink as Mock).mockReturnValue(ethereumTransfer)
+
+            const { onSuccess, onError } = await dispatch(
+                ethereumTransfer.sourceUrl,
+            )
+            await act(async () => {})
+
+            expect(mockIsSheetOpen).toHaveBeenCalledWith('send-funds')
+            expect(sendAccount.pick).not.toHaveBeenCalled()
+            expect(mockEnableChain).not.toHaveBeenCalled()
+            expect(accountsState.setSelectedAccountId).not.toHaveBeenCalled()
+            expect(mockSendFundsReset).not.toHaveBeenCalled()
+            expect(mockRequestByType).not.toHaveBeenCalled()
+            expect(onSuccess).toHaveBeenCalledTimes(1)
+            expect(onError).not.toHaveBeenCalled()
+        })
+
+        it('keeps the sender of a Send opened while the account picker was up', async () => {
+            let pickSender: (account: unknown) => void = () => undefined
+            sendAccount.pick.mockReturnValue(
+                new Promise(resolve => {
+                    pickSender = resolve
+                }),
+            )
+            sendAccount.resolution = {
+                kind: 'picker',
+                accounts: [ETHEREUM_ACCOUNT, OTHER_ETHEREUM_ACCOUNT],
+            }
+            ;(parseDeeplink as Mock).mockReturnValue(ethereumTransfer)
+
+            await dispatch(ethereumTransfer.sourceUrl)
+            mockIsSheetOpen.mockReturnValue(true)
+            await act(async () => pickSender(OTHER_ETHEREUM_ACCOUNT))
+
+            expect(sendAccount.pick).toHaveBeenCalled()
+            expect(accountsState.setSelectedAccountId).not.toHaveBeenCalled()
+            expect(mockRequestByType).not.toHaveBeenCalled()
         })
 
         it('opens no send when the account picker is dismissed', async () => {

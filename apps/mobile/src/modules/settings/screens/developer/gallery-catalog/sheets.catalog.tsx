@@ -78,6 +78,9 @@ import { PinEditContent } from '@modules/security/components/PinEditContent'
 import { ImportOptionsContent } from '@modules/onboarding/components/ImportOptionsContent'
 import { ImportAccountSupportOptionsContent } from '@modules/onboarding/screens/ImportAccountScreen/ImportAccountSupportOptionsContent'
 import { PreviousRekeyWarningSheet } from '@modules/rekey/components/PreviousRekeyWarningSheet'
+import { WalletInstructionsSheet } from '@modules/card/components/WalletInstructionsSheet'
+import { SyncDevicesQrSheet } from '@modules/cloud-backup/components/SyncDevicesQrSheet'
+import { QuantumPassphraseDetectedContent } from '@modules/onboarding/screens/ImportAccountScreen/QuantumPassphraseDetectedContent'
 import { InfoButtonContent } from '@components/InfoButton/InfoButtonContent'
 import { PWText } from '@components/core'
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
@@ -90,6 +93,13 @@ import type { Connection } from '@perawallet/wallet-extension-connections'
 const A = MOCK_ADDRESS
 
 const A2 = MOCK_ADDRESS_2
+
+// As the app opens these sheets: content-sized, footer pinned by PWSheetLayout.
+const AUTO_FOOTER_SHEET_OPTIONS = {
+    size: 'auto',
+    enablePanDownToClose: true,
+    autoCreateContainer: false,
+} as const
 
 // Lazy: RatingsContent is the only entry in this catalog backed by a
 // native-only dependency (react-native-rate-app has no web build) — every
@@ -1160,6 +1170,73 @@ export const getSheetSections = (): GallerySection[] => [
                             // Required, or PWSheetLayout is nested and won't scroll.
                             autoCreateContainer: false,
                         },
+                    }),
+                },
+            },
+        ],
+    },
+    {
+        // Content-sized sheets whose PWSheetLayout pins a footer: the footer
+        // must never clip the body.
+        title: 'Auto sheets with a footer',
+        items: [
+            {
+                id: 'sheet-wallet-instructions-apple',
+                label: 'Wallet instructions (Apple)',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <WalletInstructionsSheet platform='apple' />
+                            </GallerySheetBoundary>
+                        ),
+                        options: AUTO_FOOTER_SHEET_OPTIONS,
+                    }),
+                },
+            },
+            {
+                id: 'sheet-wallet-instructions-google',
+                label: 'Wallet instructions (Google)',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <WalletInstructionsSheet platform='google' />
+                            </GallerySheetBoundary>
+                        ),
+                        options: AUTO_FOOTER_SHEET_OPTIONS,
+                    }),
+                },
+            },
+            {
+                id: 'sheet-sync-devices-qr',
+                label: 'Sync devices QR',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <SyncDevicesQrSheet payload='pera-gallery-sync-payload' />
+                            </GallerySheetBoundary>
+                        ),
+                        options: AUTO_FOOTER_SHEET_OPTIONS,
+                    }),
+                },
+            },
+            {
+                id: 'sheet-quantum-passphrase-detected',
+                label: 'Quantum passphrase detected',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <QuantumPassphraseDetectedContent address={A} />
+                            </GallerySheetBoundary>
+                        ),
+                        options: AUTO_FOOTER_SHEET_OPTIONS,
                     }),
                 },
             },

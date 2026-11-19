@@ -6,6 +6,8 @@ Resource            send_receive.resource
 
 *** Variables ***
 ${ADD_ASSET_BUTTON}             tid=add_asset_button
+# Each chip is this id with _all or _<chain id> appended.
+${ADD_ASSET_NETWORK_FILTER}     tid=add_asset_network_filter
 ${ASSET_SEARCH_INPUT}           tid=searchable-list-search-input
 # USDC by asset id: the result list can show other assets above the match. Scroll Into View takes
 # the bare id.

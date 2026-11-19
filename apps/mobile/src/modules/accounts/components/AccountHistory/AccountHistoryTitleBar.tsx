@@ -28,8 +28,8 @@ export type AccountHistoryTitleBarProps = {
     onSelectChain: (chainId: Nullable<ChainId>) => void
     /** Networks whose history failed while others' rows show; empty hides the notice. */
     failedNetworkNames: string[]
-    /** False on a network without the service: the notice says so, with no retry. */
-    isFailedRetryable: boolean
+    /** Networks without a history service; named with no retry, since it can only fail again. */
+    unavailableNetworkNames: string[]
     onRetryFailed: () => void
     isCsvExportVisible: boolean
     isExportingCsv: boolean
@@ -49,7 +49,7 @@ export const AccountHistoryTitleBar = memo(
         chainFilterOptions,
         onSelectChain,
         failedNetworkNames,
-        isFailedRetryable,
+        unavailableNetworkNames,
         onRetryFailed,
         isCsvExportVisible,
         isExportingCsv,
@@ -103,10 +103,17 @@ export const AccountHistoryTitleBar = memo(
                 )}
                 <HistoryFailedNotice
                     networkNames={failedNetworkNames}
-                    isRetryable={isFailedRetryable}
+                    isRetryable
                     onRetry={onRetryFailed}
                     style={styles.failedNotice}
                     testID='history_network_failed'
+                />
+                <HistoryFailedNotice
+                    networkNames={unavailableNetworkNames}
+                    isRetryable={false}
+                    onRetry={onRetryFailed}
+                    style={styles.failedNotice}
+                    testID='history_network_unavailable'
                 />
             </PWView>
         )

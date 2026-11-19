@@ -22,6 +22,7 @@ import {
     PWText,
     PWView,
 } from '@components/core'
+import { DiscoverEvent } from '@analytics'
 import { EmptyView } from '@components/EmptyView'
 import { FilterSelection } from '@components/FilterSelection'
 import { SearchInputTrigger } from '@components/SearchInputTrigger'
@@ -33,7 +34,9 @@ import { FavoritesSection } from '../../components/FavoritesSection'
 import { LegacyFavoritesImporter } from '../../components/LegacyFavoritesImporter'
 import { RowDivider } from '../../components/RowDivider'
 import { NewsCard } from '../../components/NewsCard'
-import { dappHostOf } from '../../utils/normalizeDappUrl'
+import { dappSubtitle } from '../../utils/dappSubtitle'
+import { useAccountDrawerPickerKind } from '@modules/accounts'
+import { AccountHeaderToolbar } from '@modules/accounts/shell'
 import { useStyles } from './styles'
 import {
     useDiscoverHomeScreen,
@@ -42,10 +45,18 @@ import {
 
 const LOADING_ROW_COUNT = 4
 
+// Discover's header taps stay out of the Home tab's metrics.
+const DISCOVER_HEADER_EVENTS = {
+    qrScan: DiscoverEvent.QrScan,
+    pasteLink: DiscoverEvent.PasteLink,
+} as const
+
 export const DiscoverHomeScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const home = useDiscoverHomeScreen()
+    // The header's account picker opens the portfolio drawer, as on Home.
+    useAccountDrawerPickerKind('portfolio')
     const { topDapps, news } = home
 
     const renderTopDapps = () => {
@@ -76,9 +87,10 @@ export const DiscoverHomeScreen = () => {
         if (topDapps.dapps.length === 0) {
             return (
                 <EmptyView
-                    body={t('discover.home.dapps_empty', {
+                    body={t('discover.home.dapps_empty_open_url', {
                         chain: home.selectedChainName,
                     })}
+                    shouldTruncateBody={false}
                     style={styles.emptyDapps}
                     testID='discover_home_dapps_empty'
                 />
@@ -91,9 +103,7 @@ export const DiscoverHomeScreen = () => {
                         {index > 0 ? <RowDivider /> : null}
                         <DappRow
                             dapp={dapp}
-                            subtitle={
-                                dapp.categories[0] ?? dappHostOf(dapp.url)
-                            }
+                            subtitle={dappSubtitle(dapp)}
                             isFavorite={home.isFavorite(dapp.url)}
                             isVerified={home.isVerified(dapp.url)}
                             showChains={false}
@@ -123,8 +133,14 @@ export const DiscoverHomeScreen = () => {
     return (
         <PWScreen
             scroll='never'
+            // The header runs edge to edge like Home's; the content pads itself.
+            horizontalPadding='none'
             testID='discover_home_screen'
         >
+            <AccountHeaderToolbar
+                testIDPrefix='discover_home'
+                events={DISCOVER_HEADER_EVENTS}
+            />
             <PWScrollView
                 contentContainerStyle={styles.content}
                 refreshControl={
@@ -147,7 +163,7 @@ export const DiscoverHomeScreen = () => {
 
                 <PWView style={styles.section}>
                     <DiscoverSectionHeader
-                        title={t('discover.home.top_dapps')}
+                        title={t('discover.home.explore_dapps')}
                         icon={<TopDappsIcon />}
                         onPress={home.openDappDirectory}
                         testID='discover_home_top_dapps_header'

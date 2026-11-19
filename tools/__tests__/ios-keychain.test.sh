@@ -70,7 +70,10 @@ security() {
             echo "security: problem decoding" >&2
             return 1
         fi
-        echo '<plist><dict><key>UUID</key><string>test-uuid-1234</string></dict></plist>'
+        local uuid=test-uuid-1234
+        if grep -q firebase-app "$4"; then uuid=firebase-app-uuid; fi
+        if grep -q firebase-extension "$4"; then uuid=firebase-extension-uuid; fi
+        echo "<plist><dict><key>UUID</key><string>${uuid}</string></dict></plist>"
         ;;
     esac
     return 0
@@ -91,12 +94,12 @@ fresh_host() { # $1: the default keychain the user starts with, or empty for non
 
 export IOS_CERTIFICATE_P12_BASE64 IOS_CERTIFICATE_PASSWORD=pw
 IOS_CERTIFICATE_P12_BASE64=$(printf 'p12' | base64)
-IOS_AUTOFILL_PROVISIONING_PROFILE_BASE64=""
+export IOS_AUTOFILL_PROVISIONING_PROFILE_BASE64=""
 PROFILE=$(printf 'a signed profile' | base64)
 
 # A job user that has never logged in has no default keychain at all.
 fresh_host ""
-IOS_PROVISIONING_PROFILE_BASE64=$PROFILE
+export IOS_PROVISIONING_PROFILE_BASE64=$PROFILE
 ios_keychain_setup >/dev/null 2>&1
 check "setup succeeds for a user with no default keychain" 0 "$?"
 check "the throwaway keychain is the default during the build" "$PERA_KEYCHAIN" "$(cat "$STATE/default" 2>/dev/null)"
@@ -109,7 +112,7 @@ check "teardown never sets an empty default" 0 "$(grep -cE '^default-keychain -d
 # A workstation or Bitrise runner has a login keychain, which must come back.
 fresh_host login
 printf '%s' "$LOGIN" >"$STATE/default"
-IOS_PROVISIONING_PROFILE_BASE64=$PROFILE
+export IOS_PROVISIONING_PROFILE_BASE64=$PROFILE
 ios_keychain_setup >/dev/null 2>&1
 check "setup succeeds for a user with a default keychain" 0 "$?"
 ios_keychain_teardown
@@ -123,7 +126,7 @@ fresh_host ""
 STALE="$HOME/Library/Keychains/pera-ci-1.keychain-db"
 printf '%s' "$STALE" >"$STATE/default"
 echo "$STALE" >"$STATE/search"
-IOS_PROVISIONING_PROFILE_BASE64=$PROFILE
+export IOS_PROVISIONING_PROFILE_BASE64=$PROFILE
 ios_keychain_setup >/dev/null 2>&1
 check "setup succeeds when the default names a missing keychain" 0 "$?"
 check "a missing keychain is not captured for restore" 0 \
@@ -137,7 +140,7 @@ check "teardown removes the installed profile" no "$([ -f "$installed" ] && echo
 # Even when a restore step fails, everything holding key material must go.
 fresh_host login
 printf '%s' "$LOGIN" >"$STATE/default"
-IOS_PROVISIONING_PROFILE_BASE64=$PROFILE
+export IOS_PROVISIONING_PROFILE_BASE64=$PROFILE
 ios_keychain_setup >/dev/null 2>&1
 keychain=$PERA_KEYCHAIN
 tmpdir=$PERA_TMPDIR
@@ -150,11 +153,33 @@ check "the temp dir is removed after a failed restore" no "$([ -d "$tmpdir" ] &&
 # The decoder's own error is the only clue to why a profile was rejected.
 fresh_host login
 printf '%s' "$LOGIN" >"$STATE/default"
+export IOS_PROVISIONING_PROFILE_BASE64
 IOS_PROVISIONING_PROFILE_BASE64=$(printf 'not-a-profile' | base64)
 err=$(ios_keychain_setup 2>&1 >/dev/null)
 check "setup fails on a profile that does not decode" 1 "$?"
 check "the decoder's error reaches the log" yes "$(grep -q 'problem decoding' <<<"$err" && echo yes || echo no)"
 ios_keychain_teardown
+
+# Optional Firebase profiles are installed alongside App Store profiles and
+# belong to the same cleanup lifecycle, never to the user's permanent setup.
+fresh_host login
+printf '%s' "$LOGIN" >"$STATE/default"
+export IOS_PROVISIONING_PROFILE_BASE64=$PROFILE
+export FIREBASE_IOS_DISTRIBUTION=true
+export CI_UPLOADS_ENABLED=true
+export IOS_FIREBASE_PROVISIONING_PROFILE_BASE64
+IOS_FIREBASE_PROVISIONING_PROFILE_BASE64=$(printf firebase-app | base64)
+export IOS_FIREBASE_AUTOFILL_PROVISIONING_PROFILE_BASE64
+IOS_FIREBASE_AUTOFILL_PROVISIONING_PROFILE_BASE64=$(printf firebase-extension | base64)
+ios_keychain_setup >/dev/null 2>&1
+check "Firebase setup keeps all three profiles" 3 "${#PERA_INSTALLED_PROFILES[@]}"
+fb_app="$HOME/Library/MobileDevice/Provisioning Profiles/firebase-app-uuid.mobileprovision"
+fb_extension="$HOME/Library/MobileDevice/Provisioning Profiles/firebase-extension-uuid.mobileprovision"
+check "Firebase app profile is installed" yes "$([ -f "$fb_app" ] && echo yes || echo no)"
+check "Firebase extension profile is installed" yes "$([ -f "$fb_extension" ] && echo yes || echo no)"
+ios_keychain_teardown
+check "Firebase app profile is removed" no "$([ -f "$fb_app" ] && echo yes || echo no)"
+check "Firebase extension profile is removed" no "$([ -f "$fb_extension" ] && echo yes || echo no)"
 
 if [ "$failures" -gt 0 ]; then
     echo "ios-keychain: ${failures} failure(s)"

@@ -15,13 +15,13 @@ import { ProjectVerificationIcon } from '@modules/projects'
 import {
     PWButton,
     PWIcon,
-    PWImage,
     PWText,
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import type { DiscoverDapp } from '../../types'
+import { DappLogo } from '../DappLogo'
 import { useStyles } from './styles'
 
 export type DappRowProps = {
@@ -32,7 +32,8 @@ export type DappRowProps = {
     isVerified: boolean
     showChains: boolean
     onPress: () => void
-    onToggleFavorite: () => void
+    /** The star; left out for rows that end in an open arrow instead (Favorites). */
+    onToggleFavorite?: () => void
     /** Shows a Details button that opens the dApp's details; left out where rows have none. */
     onDetailsPress?: () => void
     testID?: string
@@ -62,19 +63,7 @@ export const DappRow = ({
                 onPress={onPress}
                 testID={testID ? `${testID}_open` : undefined}
             >
-                {dapp.logo ? (
-                    <PWImage
-                        source={{ uri: dapp.logo }}
-                        style={styles.logo}
-                    />
-                ) : (
-                    <PWView style={styles.logo}>
-                        <PWIcon
-                            name='globe'
-                            variant='secondary'
-                        />
-                    </PWView>
-                )}
+                <DappLogo logo={dapp.logo} />
                 <PWView style={styles.info}>
                     <PWView style={styles.titleRow}>
                         <PWText
@@ -117,22 +106,32 @@ export const DappRow = ({
                     testID={testID ? `${testID}_details` : undefined}
                 />
             ) : null}
-            <PWTouchableOpacity
-                style={styles.star}
-                onPress={onToggleFavorite}
-                accessibilityLabel={t(
-                    isFavorite
-                        ? 'discover.dapp_row.unfavorite'
-                        : 'discover.dapp_row.favorite',
-                )}
-                testID={testID ? `${testID}_star` : undefined}
-            >
-                <PWIcon
-                    name={isFavorite ? 'star-filled' : 'star'}
-                    size='sm'
-                    variant={isFavorite ? 'favorite' : 'tertiary'}
-                />
-            </PWTouchableOpacity>
+            {onToggleFavorite ? (
+                <PWTouchableOpacity
+                    style={styles.star}
+                    onPress={onToggleFavorite}
+                    accessibilityLabel={t(
+                        isFavorite
+                            ? 'discover.dapp_row.unfavorite'
+                            : 'discover.dapp_row.favorite',
+                    )}
+                    testID={testID ? `${testID}_star` : undefined}
+                >
+                    <PWIcon
+                        name={isFavorite ? 'star-filled' : 'star'}
+                        size='sm'
+                        variant={isFavorite ? 'favorite' : 'tertiary'}
+                    />
+                </PWTouchableOpacity>
+            ) : (
+                <PWView style={styles.star}>
+                    <PWIcon
+                        name='arrow-up-right'
+                        size='sm'
+                        variant='tertiary'
+                    />
+                </PWView>
+            )}
         </PWView>
     )
 }

@@ -648,6 +648,37 @@ describe('useAccountHistory', () => {
         expect(result.current.isInitialLoad).toBe(false)
     })
 
+    it('never calls a records history empty while its failed read is re-read', () => {
+        registerEthereumChain()
+        vi.mocked(useSelectedAccount).mockReturnValue({
+            id: 'eth',
+            custody: { kind: 'watch' },
+            chains: { ethereum: { address: `0x${'c'.repeat(40)}` } },
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any)
+        vi.mocked(useTransactionRecordsQuery).mockReturnValue({
+            records: [],
+            isLoading: false,
+            isFetched: true,
+            isFetching: true,
+            isFetchingNextPage: false,
+            isError: true,
+            isNextPageError: false,
+            error: new Error('history unavailable'),
+            hasNextPage: false,
+            isSearchPaused: false,
+            fetchNextPage: mockFetchNextPage,
+            refetch: vi.fn(),
+        })
+
+        const { result } = renderHook(() => useAccountHistory())
+
+        expect(result.current.isLoadFailed).toBe(true)
+        expect(result.current.isRetrying).toBe(true)
+        expect(result.current.isEmpty).toBe(false)
+        expect(result.current.isInitialLoad).toBe(false)
+    })
+
     describe('network chip', () => {
         const ETH_ADDRESS = `0x${'d'.repeat(40)}`
         const ETHEREUM_SOURCE = {

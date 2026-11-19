@@ -11,7 +11,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { maxUint256, stringToHex } from 'viem'
+import { getTypesForEIP712Domain, maxUint256, stringToHex } from 'viem'
 import {
     DAI_PERMIT_TYPED_DATA,
     EIP2612_PERMIT_TYPED_DATA,
@@ -256,6 +256,103 @@ describe('validateEthereumMessagePayload: typed-data chain', () => {
         expect(validate('sign-typed-data', [SENDER, permit]).ok).toBe(true)
     })
 
+    describe('with a declared EIP712Domain', () => {
+        const declaring = <T extends { domain: object; types: object }>(
+            typedData: T,
+            chainId: unknown,
+            omitChainId = true,
+        ) => {
+            const { chainId: _chainId, ...rest } = typedData.domain as {
+                chainId?: unknown
+            }
+            const domain = chainId === undefined ? rest : { ...rest, chainId }
+            return {
+                ...typedData,
+                domain,
+                types: {
+                    EIP712Domain: getTypesForEIP712Domain({
+                        domain: omitChainId ? rest : { ...rest, chainId: 1 },
+                    }),
+                    ...typedData.types,
+                },
+            }
+        }
+
+        it.each([
+            ['an EIP-2612 permit', EIP2612_PERMIT_TYPED_DATA],
+            ['a Permit2 permit', PERMIT2_SINGLE_TYPED_DATA],
+            ['a DAI-style permit', DAI_PERMIT_TYPED_DATA],
+            ['an ERC-721 permit', ERC721_PERMIT_TYPED_DATA],
+        ])('refuses %s whose type omits chainId', (_name, permit) => {
+            const messages = new Map([
+                [
+                    1,
+                    'eth_signTypedData_v4 domain chainId is not in its EIP712Domain type, so it binds no chain',
+                ],
+                [
+                    5,
+                    'eth_signTypedData_v4 domain chainId is not in its EIP712Domain type, so it binds no chain',
+                ],
+                [
+                    undefined,
+                    'eth_signTypedData_v4 permit domain binds no chainId',
+                ],
+            ])
+            for (const [chainId, message] of messages) {
+                const result = validate('sign-typed-data', [
+                    SENDER,
+                    declaring(permit, chainId),
+                ])
+
+                expect(result).toMatchObject({
+                    ok: false,
+                    failure: 'invalid-params',
+                    message,
+                })
+            }
+        })
+
+        it('refuses typed data whose type omits the chainId its domain names', () => {
+            const result = validate('sign-typed-data', [
+                SENDER,
+                declaring(MAIL_TYPED_DATA, 1),
+            ])
+
+            expect(result).toMatchObject({
+                ok: false,
+                failure: 'invalid-params',
+                message:
+                    'eth_signTypedData_v4 domain chainId is not in its EIP712Domain type, so it binds no chain',
+            })
+        })
+
+        it('accepts typed data whose type and domain both omit chainId', () => {
+            const result = validate('sign-typed-data', [
+                SENDER,
+                declaring(MAIL_TYPED_DATA, undefined),
+            ])
+
+            expect(result.ok).toBe(true)
+        })
+
+        it('accepts a permit whose declared type holds chainId for the connected chain', () => {
+            const permit = declaring(EIP2612_PERMIT_TYPED_DATA, 1, false)
+
+            expect(validate('sign-typed-data', [SENDER, permit]).ok).toBe(true)
+        })
+
+        it('refuses a declared chainId for another chain', () => {
+            const permit = declaring(EIP2612_PERMIT_TYPED_DATA, 5, false)
+
+            const result = validate('sign-typed-data', [SENDER, permit])
+
+            expect(result).toMatchObject({
+                ok: false,
+                failure: 'invalid-params',
+            })
+        })
+    })
+
     it('refuses typed data with a chainId when the network has no EIP-155 id', () => {
         const result = validate(
             'sign-typed-data',
@@ -265,6 +362,55 @@ describe('validateEthereumMessagePayload: typed-data chain', () => {
         )
 
         expect(result.ok).toBe(false)
+    })
+})
+
+describe('validateEthereumMessagePayload: typed-data values', () => {
+    const wrapped = (typed: any, change: (copy: any) => void) => {
+        const copy = structuredClone(typed)
+        change(copy)
+        return copy
+    }
+
+    it.each([
+        [
+            'an EIP-2612 value',
+            wrapped(EIP2612_PERMIT_TYPED_DATA, copy => {
+                copy.message.value = [copy.message.value]
+            }),
+        ],
+        [
+            'a PermitSingle amount',
+            wrapped(PERMIT2_SINGLE_TYPED_DATA, copy => {
+                copy.message.details.amount = [copy.message.details.amount]
+            }),
+        ],
+        [
+            'a DAI allowed flag',
+            wrapped(DAI_PERMIT_TYPED_DATA, copy => {
+                copy.message.allowed = [true]
+            }),
+        ],
+        [
+            'an amount of a document that is not a permit',
+            {
+                domain: MAIL_TYPED_DATA.domain,
+                types: { Order: [{ name: 'amount', type: 'uint256' }] },
+                primaryType: 'Order',
+                message: { amount: ['5'] },
+            },
+        ],
+    ])('refuses %s that is array-wrapped', (_name, typedData) => {
+        const result = validate('sign-typed-data', [
+            SENDER,
+            JSON.stringify(typedData),
+        ])
+
+        expect(result).toMatchObject({
+            ok: false,
+            failure: 'invalid-params',
+            message: expect.stringContaining('does not match its type'),
+        })
     })
 })
 

@@ -54,6 +54,7 @@ const targetOf = (target: AlgorandReviewTarget): ReactNode => {
             return (
                 <AddressDisplay
                     address={target.address}
+                    addressFormat='full'
                     hugContent
                     testID='algorand_review_target'
                 />
@@ -92,12 +93,13 @@ export const AlgorandTransactionReview = ({
     let changes: ReactNode = null
     if (impact.simulationFailed) {
         changes = <PreviewUnavailableCard />
-    } else if (impact.hasImpact || impact.isSimulating) {
+    } else if (impact.hasSummary) {
         changes = (
             <WalletChangesCard
                 spend={impact.spend}
                 receive={impact.receive}
                 isLoading={!impact.hasImpact && impact.isSimulating}
+                isReceiveUnknown={impact.isReceiveUnknown}
             />
         )
     }

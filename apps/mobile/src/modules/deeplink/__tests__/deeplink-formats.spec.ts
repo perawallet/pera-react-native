@@ -348,6 +348,7 @@ vi.mock('@modules/webview/hooks/useWebViewStore', () => ({
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
+    isRegisteredBottomSheetOpen: () => false,
     useBottomSheetStore: () => ({ requestByType: mockRequestByType }),
     useBottomSheet: () => ({
         request: mockRequestBottomSheet,

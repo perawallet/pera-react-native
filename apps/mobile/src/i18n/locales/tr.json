@@ -36,10 +36,10 @@
     "discover": {
         "home": {
             "title": "Discover",
-            "top_dapps": "Popüler dApp’ler",
+            "explore_dapps": "dApp’leri keşfet",
             "news": "Haberler",
             "dapps_error": "Öne çıkan dApp’ler yüklenemedi",
-            "dapps_empty": "{{chain}} ağında henüz dApp yok"
+            "dapps_empty_open_url": "{{chain}} için henüz listelenmiş dApp yok. Herhangi bir dApp’i açmak için URL’sini yukarıya yaz."
         },
         "dapp_row": {
             "favorite": "Favorilere ekle",
@@ -77,35 +77,28 @@
             "website": "Web sitesi",
             "open": "Aç"
         },
-        "folders": {
-            "name_sheet": {
-                "title_new": "Yeni klasör",
-                "title_rename": "Klasörü yeniden adlandır",
-                "placeholder": "Klasör adı",
-                "create": "Oluştur",
-                "save": "Kaydet"
-            },
-            "empty": "Bu klasörde henüz dApp yok"
-        },
         "favorites": {
             "title": "Favoriler",
-            "new_folder": "Yeni klasör",
-            "all_favorites": "Tüm favoriler",
-            "dapp_count": "{{count}} dApp",
-            "dapp_count_one": "{{count}} dApp",
             "see_all": "Tümünü gör",
             "empty_title": "Henüz favorin yok",
             "empty_body": "dApp'leri keşfetmeye başla",
-            "all_folders_title": "Tüm klasörler",
             "added_toast": {
-                "title": "Favorilere eklendi",
-                "body": "Bir klasöre eklemek için dokun"
+                "title": "Favorilere eklendi"
+            },
+            "search_placeholder": "Favorilerde ara",
+            "filter": {
+                "all_categories": "Tüm kategoriler",
+                "categories_title": "Kategoriler",
+                "all": "Tümü",
+                "sort_title": "Sırala",
+                "sort_recent": "Son eklenenler",
+                "sort_visits": "En çok ziyaret edilenler"
+            },
+            "rearrange": {
+                "title": "Yeniden sırala",
+                "open_label": "Favorileri yeniden sırala",
+                "remove_label": "Favorilerden çıkar: {{name}}"
             }
-        },
-        "add_to_folder": {
-            "title": "Klasöre ekle",
-            "new_folder": "Yeni klasör",
-            "done": "Tamam"
         }
     },
     "account_menu": {
@@ -1217,6 +1210,7 @@
             "empty_body": "Bakiye geçmişin olduğunda burada bir grafik göreceksin",
             "asset_empty_body": "Bu hesapta bu varlık için bakiye geçmişin olduğunda burada bir grafik göreceksin",
             "excludes_networks": "Bu grafik henüz {{networks}} varlıklarını içermiyor",
+            "failed_networks": "{{networks}} geçmişi yüklenemedi, bu yüzden bu grafikte yer almıyor",
             "currency_unavailable_body": "Bu grafik şu anda {{currency}} para biriminde kullanılamıyor"
         },
         "webview": {
@@ -3526,6 +3520,7 @@
         "notifications": {
             "push_notifications": "Push bildirimleri",
             "account_notifications": "Bildirim gösterilecek hesaplar",
+            "network_notifications": "Bildirim gösterilecek ağlar",
             "push_service_unavailable": "Bu tarayıcı push bildirimlerini iletmiyor. Brave'de gizlilik ayarlarından \"Push mesajlaşma için Google hizmetlerini kullan\" seçeneğini aç, ardından Pera'yı yeniden aç.",
             "no_accounts": "Hesap bulunamadı.",
             "no_accounts_body": "Hesap bulunamadı. Bildirim tercihlerini yönetmek için bir hesap ekle."
@@ -3774,6 +3769,8 @@
             "title_clawback": "Geri alma",
             "title_contract_interaction": "Sözleşme etkileşimi",
             "token_contract": "Token sözleşmesi: {{symbol}}",
+            "unknown": "Bilinmiyor",
+            "unknown_receive_body": "Pera bu uygulamadan ne alacağını belirleyemiyor",
             "unverified": "Doğrulanmamış",
             "you_receive": "Alacağın",
             "you_send": "Göndereceğin",
@@ -3887,6 +3884,10 @@
         },
         "record_detail": {
             "read_failed": "Bu işlemin çağrı ayrıntıları ağdan okunamadı.",
+            "not_found": {
+                "title": "İşlem bulunamadı",
+                "body": "Pera bu işlemi hesabın geçmişinde bulamadı. Yeni bir işlemin görünmesi bir dakika sürebilir, bu yüzden kısa süre sonra tekrar dene."
+            },
             "inferred_notice": "Ad, bakiye değişikliklerinden çıkarıldı. Pera çağrının kendisini okuyamadı.",
             "transaction_id": "İşlem Kimliği",
             "quantity": "Adet",
@@ -4193,7 +4194,10 @@
             "to": "Hedef",
             "balance_label": "Bakiye: <0/>",
             "max": "MAKS",
-            "select_asset": "Seç"
+            "select_asset": "Seç",
+            "flip": "Ödenen ve alınanı değiştir",
+            "flip_unavailable_title": "Bu takas ters çevrilemiyor",
+            "flip_unavailable_body": "Bu hesap {{network}} ağından ödeme yapamıyor."
         },
         "asset_selection": {
             "swap_from_title": "Kaynak varlık",
@@ -4258,9 +4262,18 @@
         },
         "execution": {
             "error_title": "Swap başarısız",
-            "error_body": "Swap sırasında bir şeyler ters gitti. Lütfen tekrar dene.",
+            "failed_title": {
+                "prepare": "Swap başlatılamadı",
+                "approval": "Onay başarısız",
+                "swap": "Swap başarısız"
+            },
             "provider_failed_body": "Bu sağlayıcı swap işlemini tamamlayamadı. Başka bir sağlayıcı dene.",
-            "insufficient_native_title": "Yetersiz {{symbol}}",
+            "provider_unavailable_body": "Sağlayıcı şu anda kullanılamıyor. Biraz sonra tekrar dene.",
+            "route_unverified_body": "Pera bu sağlayıcının {{network}} ağındaki swap sözleşmesini henüz doğrulayamıyor, bu yüzden hiçbir şey imzalanmadı. Başka bir sağlayıcı dene veya daha sonra tekrar dene.",
+            "quote_mismatch_body": "Sağlayıcının işlemleri bu teklifle eşleşmedi, bu yüzden hiçbir şey imzalanmadı. Tekrar dene veya başka bir sağlayıcı seç.",
+            "unsupported_order_body": "Pera bu sağlayıcının siparişini tamamlayamıyor, bu yüzden hiçbir şey imzalanmadı. Başka bir sağlayıcı seç.",
+            "signing_failed_body": "İşlem imzalanamadı, bu yüzden gönderilmedi. Tekrar dene.",
+            "order_insufficient_balance_body": "Bakiyen bu tutarı ve ağ ücretini karşılamıyor. Daha küçük bir tutar dene veya ücret için bakiye ekle.",
             "insufficient_native_body": "Bu hesapta bu swap işlemini, ücretleri ve minimum bakiyeyi karşılamak için en az {{amount}} {{symbol}} daha gerekiyor. Daha fazla {{symbol}} ekle ve tekrar dene.",
             "success_title": "Swap tamamlandı",
             "success_body": "Swap başarıyla tamamlandı: {{fromAsset}} → {{toAsset}}",
@@ -4302,6 +4315,10 @@
                 "empty": {
                     "title": "Henüz swap yok",
                     "body": "Swap geçmişin burada görünecek."
+                },
+                "not_on_device": {
+                    "title": "Geçmiş henüz kullanılamıyor",
+                    "body": "Bu hesap bu cihazda henüz ayarlanmadı, bu yüzden swap geçmişi yüklenemiyor. Lütfen daha sonra tekrar dene."
                 },
                 "error": {
                     "title": "Bir şeyler ters gitti",
@@ -4451,6 +4468,8 @@
             "for": "karşılığında",
             "empty_title": "Henüz işlem yok",
             "empty_body": "Satın alma işlemlerin burada görünecek.",
+            "not_on_device_title": "Geçmiş henüz kullanılamıyor",
+            "not_on_device_body": "Bu hesap bu cihazda henüz ayarlanmadı, bu yüzden satın alma geçmişi yüklenemiyor. Lütfen daha sonra tekrar dene.",
             "error_title": "Bir şeyler ters gitti",
             "error_body": "Satın alma geçmişin yüklenemedi. Lütfen tekrar dene."
         }

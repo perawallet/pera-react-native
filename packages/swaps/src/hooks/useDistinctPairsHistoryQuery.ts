@@ -18,7 +18,11 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import { deploymentOf } from '@perawallet/wallet-core-config'
 import { useDeviceIdLookup } from '@perawallet/wallet-core-device'
-import { fetchDeviceSwapHistory, routerAccountIdOrNull } from '../api'
+import {
+    fetchSwapHistory,
+    readForOwnedAccounts,
+    routerAccountIdOrNull,
+} from '../api'
 import type {
     SwapAccountAddress,
     SwapDistinctPairItem,
@@ -81,7 +85,8 @@ const batchesOf = (accounts: readonly SwapAccountAddress[]): HistoryBatch[] => {
 /**
  * The newest distinct pairs any of `accounts` swapped, each with the account
  * that paid. Accounts are named rather than left to the device's
- * registration, which doesn't carry EVM addresses on every deployment.
+ * registration, which doesn't carry EVM addresses on every deployment; one the
+ * router refuses is dropped rather than failing its batch.
  */
 export const useDistinctPairsHistoryQuery = (
     accounts: SwapAccountAddress[],
@@ -116,15 +121,17 @@ export const useDistinctPairsHistoryQuery = (
                     })),
                 ),
                 queryFn: async () => {
-                    const page = await fetchDeviceSwapHistory(
-                        {
-                            deviceId: deviceId ?? '',
-                            accounts: batch.accounts.map(
-                                account => account.routerId,
+                    const { value: page } = await readForOwnedAccounts(
+                        batch.accounts.map(account => account.routerId),
+                        (routerIds, limit) =>
+                            fetchSwapHistory(
+                                {
+                                    deviceId: deviceId ?? '',
+                                    accounts: routerIds,
+                                    limit: limit ?? HISTORY_PAGE_SIZE,
+                                },
+                                batch.scope,
                             ),
-                            limit: HISTORY_PAGE_SIZE,
-                        },
-                        batch.scope,
                     )
                     return page.results.filter(isSwapHistoryRow)
                 },

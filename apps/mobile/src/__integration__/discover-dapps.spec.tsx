@@ -162,7 +162,7 @@ describe('Flow: Discover dApp directory', () => {
         await flush()
     })
 
-    it('Given Ethereum has no dApps, then the empty copy shows and no category row', async () => {
+    it('Given Ethereum has no dApps, then the empty copy points to typing a URL and no category row', async () => {
         useHandlers({ ethereumEmpty: true })
         renderDirectory()
         await screen.findByTestId(rowOf('Folks'))
@@ -170,6 +170,11 @@ describe('Flow: Discover dApp directory', () => {
         fireEvent.click(screen.getByTestId('discover_dapps_chain_ethereum'))
 
         expect(await screen.findByTestId('discover_dapps_empty')).toBeTruthy()
+        // Two sentences: the 3-line cap would ellipsize the instruction.
+        expect(
+            screen.getByText('discover.home.dapps_empty_open_url').style
+                .webkitLineClamp,
+        ).toBe('')
         expect(
             screen.queryByTestId('discover_dapps_category_filter'),
         ).toBeNull()
@@ -254,13 +259,21 @@ describe('Flow: Discover dApp directory', () => {
         await flush()
     })
 
-    it('Given Apply, then the verification page opens in the system browser', async () => {
+    it('Given Apply, then it shows on Algorand only and opens the verification page in the system browser', async () => {
         const openURL = vi.spyOn(Linking, 'openURL').mockResolvedValue(true)
         useHandlers()
         renderDirectory()
         await screen.findByTestId(rowOf('Folks'))
+        expect(screen.queryByTestId('discover_dapps_apply')).toBeNull()
 
-        fireEvent.click(screen.getByTestId('discover_dapps_apply_button'))
+        fireEvent.click(screen.getByTestId('discover_dapps_chain_ethereum'))
+        await waitFor(() => expect(rowNames()).toEqual([rowOf('Aave')]))
+        expect(screen.queryByTestId('discover_dapps_apply')).toBeNull()
+
+        fireEvent.click(screen.getByTestId('discover_dapps_chain_algorand'))
+        fireEvent.click(
+            await screen.findByTestId('discover_dapps_apply_button'),
+        )
 
         expect(openURL).toHaveBeenCalledWith(
             'https://explorer.perawallet.app/project-verification/',

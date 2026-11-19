@@ -37,10 +37,10 @@ import { ImportRekeyedAddressesScreen } from '@modules/onboarding/screens/Import
 import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen/NameAccountScreen'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 
-import { ethereumAddressAt } from './__fixtures__/hd-addresses'
 import {
+    HD_24_ETHEREUM_ACCOUNT_2_ADDRESS_0,
     HD_TEST_ADDRESS,
-    HD_TEST_MNEMONIC_24_WORDS,
+    HD_TEST_MNEMONIC_24,
 } from './__fixtures__/onboarding'
 import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
 
@@ -112,12 +112,8 @@ const reachSelection = async () => {
     fireEvent.click(screen.getByTestId('import_options_hd_wallet_button'))
     await waitFor(() => screen.getByTestId('import_info_recover_button'))
     fireEvent.click(screen.getByTestId('import_info_recover_button'))
-    await waitFor(() => screen.getByTestId('import_account_word_input_0'))
-    HD_TEST_MNEMONIC_24_WORDS.forEach((word, idx) => {
-        fireEvent.change(
-            screen.getByTestId(`import_account_word_input_${idx}`),
-            { target: { value: word } },
-        )
+    fireEvent.change(await screen.findByTestId('import_account_word_input_0'), {
+        target: { value: HD_TEST_MNEMONIC_24 },
     })
     await waitFor(() =>
         expect(
@@ -206,7 +202,7 @@ describe('Flow: Import HD wallet → discover the other chains it was used on', 
         )
 
     it('Given a seed used on Algorand at its first address and on Ethereum alone at a later account, when the user imports only the first account, then that later account is listed but not added, and nothing past the gap', async () => {
-        const ethereumOnlyAddress = await ethereumAddressAt(2, 0)
+        const ethereumOnlyAddress = HD_24_ETHEREUM_ACCOUNT_2_ADDRESS_0
         serveSeedActivity(ethereumOnlyAddress)
         const walk = vi.spyOn(
             useAccountsStore.getState(),
@@ -264,8 +260,35 @@ describe('Flow: Import HD wallet → discover the other chains it was used on', 
         })
     })
 
+    it("Given Ethereum's node fails once, when the user imports the seed, then the account used on Ethereum alone is listed and nothing is left unchecked", async () => {
+        const ethereumOnlyAddress = HD_24_ETHEREUM_ACCOUNT_2_ADDRESS_0
+        serveSeedActivity(ethereumOnlyAddress)
+        server.use(
+            http.post(
+                ETHEREUM_RPC_URL,
+                () => new HttpResponse(null, { status: 503 }),
+                { once: true },
+            ),
+        )
+
+        await reachSelection()
+
+        await waitFor(
+            () =>
+                expect(
+                    screen.getByTestId(
+                        `import_select_addresses_address_${ethereumOnlyAddress}`,
+                    ),
+                ).toBeTruthy(),
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+        expect(
+            screen.queryByTestId('import_select_addresses_unchecked_networks'),
+        ).toBeNull()
+    })
+
     it('Given Ethereum was unreachable during the search, when the user checks it again once it answers, then the account used on Ethereum alone is listed and nothing is left unchecked', async () => {
-        const ethereumOnlyAddress = await ethereumAddressAt(2, 0)
+        const ethereumOnlyAddress = HD_24_ETHEREUM_ACCOUNT_2_ADDRESS_0
         server.use(
             mockAccountFastLookup({
                 address: HD_TEST_ADDRESS,
@@ -353,7 +376,7 @@ describe('Flow: Import HD wallet → discover the other chains it was used on', 
     })
 
     it('Given a seed used on Ethereum alone at a later account, when the user keeps every preselected account, then that account is stored holding Algorand and Ethereum with its Ethereum key in the keystore', async () => {
-        const ethereumOnlyAddress = await ethereumAddressAt(2, 0)
+        const ethereumOnlyAddress = HD_24_ETHEREUM_ACCOUNT_2_ADDRESS_0
         serveSeedActivity(ethereumOnlyAddress)
 
         await importMnemonic()

@@ -171,7 +171,12 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
             amountSize='h2'
             headerTrailing={
                 isBalanceShown ? (
-                    <PWView style={styles.balanceWrapper}>
+                    <PWView
+                        style={styles.balanceWrapper}
+                        testID={
+                            isPay ? 'swap-pay-balance' : 'swap-receive-balance'
+                        }
+                    >
                         <PWText
                             variant='body'
                             style={styles.balance}

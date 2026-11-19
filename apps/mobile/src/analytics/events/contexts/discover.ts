@@ -28,12 +28,13 @@ export enum DiscoverEvent {
     DappCategoryTap = 'discover_dapp_category_tap',
     DappDetailsButtonTap = 'discover_dapp_details_button_tap',
     DetailsCloseTap = 'discover_details_close_tap', // sic, the web app's name
-    FolderCreate = 'discover_folder_create',
-    FolderDappAdd = 'discover_folder_dapp_add',
-    FolderDappRemove = 'discover_folder_dapp_remove',
-    FavoriteToastTap = 'discover_favorite_toast_tap',
+    FavoritesCategorySelect = 'discover_favorites_category_select',
+    FavoritesSortSelect = 'discover_favorites_sort_select',
+    FavoritesRearrange = 'discover_favorites_rearrange',
     LegacyFavoritesImported = 'discover_legacy_favorites_imported',
     LegacyFavoritesImportFailed = 'discover_favorites_migration_failed',
+    QrScan = 'discover_qr_scan', // Opened the QR scanner from the Discover header
+    PasteLink = 'discover_paste_link_tap', // Tapped paste-a-link in the Discover header
 }
 
 /** Why one legacy favorites import attempt failed. */
@@ -71,6 +72,12 @@ export interface DiscoverRequiredPayloads {
         [Key.DappName]: string
         [Key.ChainId]?: ChainId
     }
+    /** `all` when the filter is cleared. */
+    [DiscoverEvent.FavoritesCategorySelect]: { [Key.CategoryName]: string }
+    [DiscoverEvent.FavoritesSortSelect]: {
+        [Key.FilterName]: 'recent' | 'visits'
+    }
+    [DiscoverEvent.FavoritesRearrange]: { [Key.RemovedCount]: number }
     [DiscoverEvent.LegacyFavoritesImported]: {
         [Key.ImportedCount]: number
         [Key.SkippedCount]: number

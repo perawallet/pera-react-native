@@ -62,7 +62,10 @@ export const AccountTabNavigator = ({
                             />
                         )}
                         {tab.key === 'Nfts' && isPageVisited(pageIndex) && (
-                            <AccountNfts />
+                            <AccountNfts
+                                offset={offset}
+                                pageIndex={pageIndex}
+                            />
                         )}
                         {tab.key === 'History' && isPageVisited(pageIndex) && (
                             <AccountHistory />

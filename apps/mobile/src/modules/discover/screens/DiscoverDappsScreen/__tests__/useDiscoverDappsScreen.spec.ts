@@ -263,6 +263,7 @@ describe('useDiscoverDappsScreen', () => {
 
     it('applyForDiscover opens the verification page in the system browser', () => {
         const { result } = setup()
+        act(() => result.current.selectChain('algorand'))
         act(() => result.current.applyForDiscover())
         expect(mockOpenURL).toHaveBeenCalledWith(
             'https://explorer.perawallet.app/project-verification/',
@@ -271,6 +272,21 @@ describe('useDiscoverDappsScreen', () => {
             DiscoverEvent.ApplyForVerificationTap,
             { category: 'project' },
         )
+    })
+
+    it('offers Apply for Discover on the Algorand list only', () => {
+        const { result } = setup()
+        expect(result.current.canApplyForDiscover).toBe(false)
+        act(() => result.current.selectChain('algorand'))
+        expect(result.current.canApplyForDiscover).toBe(true)
+        act(() => result.current.selectChain('ethereum'))
+        expect(result.current.canApplyForDiscover).toBe(false)
+    })
+
+    it('offers Apply for Discover when Algorand is the only Discover chain', () => {
+        vi.mocked(useDiscoverChainIds).mockReturnValue(['algorand'])
+        const { result } = setup()
+        expect(result.current.canApplyForDiscover).toBe(true)
     })
 
     it('openSearch opens the native search', () => {

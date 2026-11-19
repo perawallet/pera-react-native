@@ -16,7 +16,18 @@ import { render, screen } from '@test-utils/render'
 import { PWSlideToConfirm } from '../PWSlideToConfirm'
 
 vi.mock('lottie-react-native', () => ({
-    default: ({ testID }: { testID?: string }) => <div data-testid={testID} />,
+    default: ({
+        testID,
+        autoPlay,
+    }: {
+        testID?: string
+        autoPlay?: boolean
+    }) => (
+        <div
+            data-testid={testID}
+            data-auto-play={String(autoPlay)}
+        />
+    ),
 }))
 
 vi.mock('@assets/animations/pera-transaction-loading.json', () => ({
@@ -37,7 +48,7 @@ describe('PWSlideToConfirm', () => {
         )
     })
 
-    it('mounts the Pera lottie animation when loading', () => {
+    it('plays the Pera lottie animation while loading', () => {
         render(
             <PWSlideToConfirm
                 title='Slide To Confirm'
@@ -46,7 +57,22 @@ describe('PWSlideToConfirm', () => {
             />,
         )
 
-        expect(screen.getByTestId('pw-slide-to-confirm-lottie')).toBeTruthy()
+        expect(
+            screen.getByTestId('pw-slide-to-confirm-lottie').dataset.autoPlay,
+        ).toBe('true')
+    })
+
+    it('keeps the faded-out lottie animation paused while idle', () => {
+        render(
+            <PWSlideToConfirm
+                title='Slide To Confirm'
+                onConfirm={vi.fn()}
+            />,
+        )
+
+        expect(
+            screen.getByTestId('pw-slide-to-confirm-lottie').dataset.autoPlay,
+        ).toBe('false')
     })
 
     it('mounts the check icon when confirmed', () => {

@@ -35,6 +35,8 @@ export type AssetWealthChartProps = {
     scope: ChainScope
     period: HistoryPeriod
     onSelectionChanged: (item: Nullable<AccountAssetBalanceHistoryItem>) => void
+    /** Gate the (slow) history fetch on chart visibility. */
+    enabled?: boolean
 }
 
 const getPreferredValue = (item: AccountAssetBalanceHistoryItem): number =>
@@ -53,6 +55,7 @@ export const AssetWealthChart = memo(function AssetWealthChart({
     asset,
     scope,
     period,
+    enabled = true,
 }: AssetWealthChartProps) {
     const themeStyle = useStyles()
     const { t } = useLanguage()
@@ -70,6 +73,7 @@ export const AssetWealthChart = memo(function AssetWealthChart({
         asset.assetId,
         period,
         scope,
+        enabled,
     )
     const fallback = useChartCurrencyFallback(scope, { isError, refetch })
 

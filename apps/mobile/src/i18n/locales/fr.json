@@ -36,10 +36,10 @@
     "discover": {
         "home": {
             "title": "Discover",
-            "top_dapps": "dApps populaires",
+            "explore_dapps": "Explorer les dApps",
             "news": "Actualités",
             "dapps_error": "Échec du chargement des dApps en vedette",
-            "dapps_empty": "Aucune dApp sur {{chain}} pour le moment"
+            "dapps_empty_open_url": "Aucune dApp répertoriée sur {{chain}} pour le moment. Ouvrez n’importe quelle dApp en saisissant son URL ci-dessus."
         },
         "dapp_row": {
             "favorite": "Ajouter aux favoris",
@@ -77,35 +77,28 @@
             "website": "Site web",
             "open": "Ouvrir"
         },
-        "folders": {
-            "name_sheet": {
-                "title_new": "Nouveau dossier",
-                "title_rename": "Renommer le dossier",
-                "placeholder": "Nom du dossier",
-                "create": "Créer",
-                "save": "Enregistrer"
-            },
-            "empty": "Aucune dApp dans ce dossier pour le moment"
-        },
         "favorites": {
             "title": "Favoris",
-            "new_folder": "Nouveau dossier",
-            "all_favorites": "Tous les favoris",
-            "dapp_count": "{{count}} dApps",
-            "dapp_count_one": "{{count}} dApp",
             "see_all": "Tout voir",
             "empty_title": "Aucun favori pour le moment",
             "empty_body": "Commencez à explorer les dApps",
-            "all_folders_title": "Tous les dossiers",
             "added_toast": {
-                "title": "Ajouté aux favoris",
-                "body": "Touchez pour l’ajouter à un dossier"
+                "title": "Ajouté aux favoris"
+            },
+            "search_placeholder": "Rechercher dans les favoris",
+            "filter": {
+                "all_categories": "Toutes les catégories",
+                "categories_title": "Catégories",
+                "all": "Toutes",
+                "sort_title": "Trier par",
+                "sort_recent": "Ajoutées récemment",
+                "sort_visits": "Les plus visitées"
+            },
+            "rearrange": {
+                "title": "Réorganiser",
+                "open_label": "Réorganiser les favoris",
+                "remove_label": "Retirer {{name}} des favoris"
             }
-        },
-        "add_to_folder": {
-            "title": "Ajouter à un dossier",
-            "new_folder": "Nouveau dossier",
-            "done": "Terminé"
         }
     },
     "account_menu": {
@@ -1217,6 +1210,7 @@
             "empty_body": "Un graphique apparaîtra ici dès que vous aurez un historique de solde",
             "asset_empty_body": "Un graphique apparaîtra ici dès que vous aurez un historique de solde pour cet actif sur ce compte",
             "excludes_networks": "Ce graphique n'inclut pas encore les actifs {{networks}}",
+            "failed_networks": "Impossible de charger l'historique {{networks}}, ce graphique ne l'inclut donc pas",
             "currency_unavailable_body": "Ce graphique n'est pas disponible en {{currency}} pour le moment"
         },
         "webview": {
@@ -3526,6 +3520,7 @@
         "notifications": {
             "push_notifications": "Notifications push",
             "account_notifications": "Afficher les notifications pour",
+            "network_notifications": "Afficher les notifications sur",
             "push_service_unavailable": "Ce navigateur ne reçoit pas les notifications push. Dans Brave, activez « Utiliser les services Google pour les messages push » dans les paramètres de confidentialité, puis rouvrez Pera.",
             "no_accounts": "Aucun compte trouvé.",
             "no_accounts_body": "Aucun compte trouvé. Ajoutez un compte pour gérer les préférences de notification."
@@ -3774,6 +3769,8 @@
             "title_clawback": "Récupération",
             "title_contract_interaction": "Interaction avec un contrat",
             "token_contract": "Contrat du jeton {{symbol}}",
+            "unknown": "Inconnu",
+            "unknown_receive_body": "Pera ne peut pas savoir ce que vous recevez de cette app",
             "unverified": "Non vérifié",
             "you_receive": "Vous recevez",
             "you_send": "Vous envoyez",
@@ -3887,6 +3884,10 @@
         },
         "record_detail": {
             "read_failed": "Impossible de lire depuis le réseau les détails de l’appel de cette transaction.",
+            "not_found": {
+                "title": "Transaction introuvable",
+                "body": "Pera n’a pas trouvé cette transaction dans l’historique du compte. Une nouvelle transaction peut mettre une minute à apparaître ; veuillez réessayer dans un instant."
+            },
             "inferred_notice": "Nom déduit des variations de solde. Pera n’a pas pu lire l’appel lui-même.",
             "transaction_id": "ID de transaction",
             "quantity": "Quantité",
@@ -4193,7 +4194,10 @@
             "to": "Vers",
             "balance_label": "Solde : <0/>",
             "max": "MAX",
-            "select_asset": "Choisir"
+            "select_asset": "Choisir",
+            "flip": "Inverser payer et recevoir",
+            "flip_unavailable_title": "Impossible d’inverser ce swap",
+            "flip_unavailable_body": "Ce compte ne peut pas payer depuis le réseau {{network}}."
         },
         "asset_selection": {
             "swap_from_title": "Échanger depuis",
@@ -4258,9 +4262,18 @@
         },
         "execution": {
             "error_title": "Échec du swap",
-            "error_body": "Une erreur est survenue pendant le swap. Veuillez réessayer.",
+            "failed_title": {
+                "prepare": "Impossible de démarrer le swap",
+                "approval": "Échec de l’approbation",
+                "swap": "Échec du swap"
+            },
             "provider_failed_body": "Ce fournisseur n’a pas pu effectuer le swap. Veuillez essayer un autre fournisseur.",
-            "insufficient_native_title": "{{symbol}} insuffisant",
+            "provider_unavailable_body": "Le fournisseur est indisponible pour le moment. Veuillez réessayer dans un instant.",
+            "route_unverified_body": "Pera ne peut pas encore vérifier le contrat de swap de ce fournisseur sur {{network}}, rien n’a donc été signé. Essayez un autre fournisseur ou réessayez plus tard.",
+            "quote_mismatch_body": "Les transactions du fournisseur ne correspondaient pas à cette cotation, rien n’a donc été signé. Veuillez réessayer ou choisir un autre fournisseur.",
+            "unsupported_order_body": "Pera ne peut pas finaliser l’ordre de ce fournisseur, rien n’a donc été signé. Choisissez un autre fournisseur.",
+            "signing_failed_body": "La transaction n’a pas pu être signée, elle n’a donc pas été envoyée. Veuillez réessayer.",
+            "order_insufficient_balance_body": "Votre solde ne couvre pas ce montant et les frais de réseau. Essayez un montant plus faible ou ajoutez des fonds pour les frais.",
             "insufficient_native_body": "Ce compte a besoin d’au moins {{amount}} {{symbol}} supplémentaires pour couvrir ce swap, ses frais et le solde minimum. Ajoutez des fonds en {{symbol}}, puis réessayez.",
             "success_title": "Swap effectué",
             "success_body": "Swap de {{fromAsset}} vers {{toAsset}} effectué avec succès",
@@ -4302,6 +4315,10 @@
                 "empty": {
                     "title": "Aucun swap pour le moment",
                     "body": "Votre historique de swaps apparaîtra ici."
+                },
+                "not_on_device": {
+                    "title": "Historique pas encore disponible",
+                    "body": "Ce compte n’est pas encore configuré sur cet appareil, son historique de swaps ne peut donc pas être chargé. Veuillez réessayer plus tard."
                 },
                 "error": {
                     "title": "Une erreur est survenue",
@@ -4451,6 +4468,8 @@
             "for": "pour",
             "empty_title": "Aucune transaction pour le moment",
             "empty_body": "Vos transactions d’achat apparaîtront ici.",
+            "not_on_device_title": "Historique pas encore disponible",
+            "not_on_device_body": "Ce compte n’est pas encore configuré sur cet appareil, son historique d’achats ne peut donc pas être chargé. Veuillez réessayer plus tard.",
             "error_title": "Une erreur est survenue",
             "error_body": "Nous n’avons pas pu charger votre historique d’achats. Veuillez réessayer."
         }

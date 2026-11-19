@@ -85,10 +85,11 @@ export const DiscoverDappsScreen = () => {
                 body={
                     screen.selectedChainId === null
                         ? t('discover.search.no_results')
-                        : t('discover.home.dapps_empty', {
+                        : t('discover.home.dapps_empty_open_url', {
                               chain: screen.selectedChainName,
                           })
                 }
+                shouldTruncateBody={false}
                 style={styles.empty}
                 testID='discover_dapps_empty'
             />
@@ -154,7 +155,7 @@ export const DiscoverDappsScreen = () => {
         </PWView>
     )
 
-    const footer = (
+    const footer = screen.canApplyForDiscover ? (
         <PWView
             style={styles.apply}
             testID='discover_dapps_apply'
@@ -169,7 +170,7 @@ export const DiscoverDappsScreen = () => {
                 testID='discover_dapps_apply_button'
             />
         </PWView>
-    )
+    ) : null
 
     return (
         <PWScreen

@@ -10,16 +10,11 @@
  limitations under the License
  */
 
-import { generateUniqueId } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
-    FOLDER_NAME_MAX_LENGTH,
     migrateDiscoverFavorites,
-    normalizeFolderName,
+    selectFavorites,
     selectFavoritesNewestFirst,
-    selectFolderFavorites,
-    selectFolderIdsForUrl,
-    selectFolders,
     selectUnsortedFavorites,
     useDiscoverFavoritesStore,
 } from '../useDiscoverFavoritesStore'
@@ -39,8 +34,7 @@ describe('useDiscoverFavoritesStore', () => {
         useDiscoverFavoritesStore.setState({
             favorites: {},
             favoriteOrder: [],
-            folders: {},
-            folderOrder: [],
+            visits: {},
         })
     })
 
@@ -125,7 +119,7 @@ describe('useDiscoverFavoritesStore', () => {
         expect(state.favoriteOrder).toEqual([])
     })
 
-    test('persists exactly the five state slices', async () => {
+    test('persists exactly the four state slices', async () => {
         useDiscoverFavoritesStore.getState().addFavorite(dapp('https://a.io'))
         const raw = await getProvider().keyValueStorage.getItem(
             'discover-favorites-store',
@@ -134,11 +128,10 @@ describe('useDiscoverFavoritesStore', () => {
         expect(Object.keys(parsed.state).sort()).toEqual([
             'favoriteOrder',
             'favorites',
-            'folderOrder',
-            'folders',
             'legacyImport',
+            'visits',
         ])
-        expect(parsed.version).toBe(3)
+        expect(parsed.version).toBe(4)
     })
 
     test('selectUnsortedFavorites follows favoriteOrder', () => {
@@ -153,194 +146,149 @@ describe('useDiscoverFavoritesStore', () => {
     })
 })
 
-describe('useDiscoverFavoritesStore folders', () => {
-    const state = () => useDiscoverFavoritesStore.getState()
+describe('useDiscoverFavoritesStore visits and rearrange', () => {
+    const store = () => useDiscoverFavoritesStore.getState()
+    const A = 'https://a.io'
+    const B = 'https://b.io'
+    const C = 'https://c.io'
 
     beforeEach(() => {
-        // The shared mock returns one fixed id; folders need distinct ones.
-        let next = 0
-        vi.mocked(generateUniqueId).mockImplementation(() => `folder-${++next}`)
         useDiscoverFavoritesStore.setState({
             favorites: {},
             favoriteOrder: [],
-            folders: {},
-            folderOrder: [],
+            visits: {},
         })
+        ;[A, B, C].forEach(url => store().addFavorite(dapp(url, url)))
     })
 
-    test('createFolder puts the folder first with the trimmed name and no items', () => {
-        state().createFolder('Older')
-        const id = state().createFolder('  Swap ')
-        expect(state().folderOrder[0]).toBe(id)
-        expect(selectFolders(state())[0]).toMatchObject({
-            id,
-            name: 'Swap',
-            items: [],
-        })
+    const urls = (sort: 'recent' | 'visits') =>
+        selectFavorites(store(), sort).map(f => f.url)
+
+    test('recordVisit counts opens of favorites only', () => {
+        store().recordVisit(B)
+        store().recordVisit('https://B.io/')
+        store().recordVisit('https://other.io')
+        expect(store().visits).toEqual({ [B]: 2 })
     })
 
-    test('createFolder with an initial favorite files it', () => {
-        state().addFavorite(dapp('https://a.io'))
-        const id = state().createFolder('A', 'https://A.io/')
-        expect(state().folders[id]?.items).toEqual(['https://a.io'])
+    test('recent lists newest first', () => {
+        expect(urls('recent')).toEqual([C, B, A])
     })
 
-    test('createFolder ignores an initial url that is not a favorite', () => {
-        const id = state().createFolder('A', 'https://a.io')
-        expect(state().folders[id]?.items).toEqual([])
+    test('visits lists most opened first, ties in recent order', () => {
+        store().recordVisit(A)
+        store().recordVisit(A)
+        store().recordVisit(B)
+        expect(urls('visits')).toEqual([A, B, C])
+        store().recordVisit(C)
+        expect(urls('visits')).toEqual([A, C, B])
     })
 
-    test('createFolder rejects blank and over-long names', () => {
-        expect(() => state().createFolder('   ')).toThrow()
-        expect(() =>
-            state().createFolder('x'.repeat(FOLDER_NAME_MAX_LENGTH + 1)),
-        ).toThrow()
-        expect(state().folderOrder).toEqual([])
-        expect(() =>
-            state().createFolder('x'.repeat(FOLDER_NAME_MAX_LENGTH)),
-        ).not.toThrow()
+    test('applyRearrange sets the newest-first order and removes the removed', () => {
+        store().recordVisit(B)
+        store().applyRearrange([A, C, 'https://unknown.io'], [B])
+        expect(urls('recent')).toEqual([A, C])
+        expect(store().isFavorite(B)).toBe(false)
+        expect(store().visits).toEqual({})
     })
 
-    test('removing a favorite drops it from every folder', () => {
-        state().addFavorite(dapp('https://a.io'))
-        const first = state().createFolder('One', 'https://a.io')
-        const second = state().createFolder('Two', 'https://a.io')
-        state().removeFavorite('https://a.io')
-        expect(state().folders[first]?.items).toEqual([])
-        expect(state().folders[second]?.items).toEqual([])
+    test('applyRearrange keeps a favorite missing from the list, newest first', () => {
+        store().addFavorite(dapp('https://d.io', 'D'))
+        store().recordVisit('https://d.io')
+        store().applyRearrange([A, C], [B])
+        expect(urls('recent')).toEqual(['https://d.io', A, C])
+        expect(store().visits).toEqual({ 'https://d.io': 1 })
     })
 
-    test('toggleFavorite off also drops it from folders', () => {
-        state().toggleFavorite(dapp('https://a.io'))
-        const id = state().createFolder('One', 'https://a.io')
-        state().toggleFavorite(dapp('https://a.io'))
-        expect(state().folders[id]?.items).toEqual([])
+    test('a new favorite lands first after a rearrange', () => {
+        store().applyRearrange([A, B, C], [])
+        store().addFavorite(dapp('https://d.io', 'D'))
+        expect(urls('recent')).toEqual(['https://d.io', A, B, C])
     })
 
-    test('setDappInFolder adds once and removes', () => {
-        state().addFavorite(dapp('https://a.io'))
-        const id = state().createFolder('One')
-        state().setDappInFolder(id, 'https://a.io', true)
-        state().setDappInFolder(id, 'https://A.io/', true)
-        expect(state().folders[id]?.items).toEqual(['https://a.io'])
-        state().setDappInFolder(id, 'https://a.io', false)
-        expect(state().folders[id]?.items).toEqual([])
+    test('removeFavorite drops its visit count', () => {
+        store().recordVisit(A)
+        store().removeFavorite(A)
+        expect(store().visits).toEqual({})
     })
+})
 
-    test('setDappInFolder ignores a non-favorite and a missing folder', () => {
-        const id = state().createFolder('One')
-        state().setDappInFolder(id, 'https://a.io', true)
-        expect(state().folders[id]?.items).toEqual([])
-        state().addFavorite(dapp('https://a.io'))
-        state().setDappInFolder('missing', 'https://a.io', true)
-        expect(Object.keys(state().folders)).toEqual([id])
-    })
+describe('useDiscoverFavoritesStore migration', () => {
+    const favorite = {
+        url: 'https://a.io',
+        name: 'A',
+        logo: null,
+        categories: ['DeFi'],
+        chains: [],
+        addedAt: 1,
+    }
+    const pending = { status: 'pending', attempts: 0 }
 
-    test('deleteFolder keeps the favorites', () => {
-        state().addFavorite(dapp('https://a.io'))
-        const id = state().createFolder('One', 'https://a.io')
-        state().deleteFolder(id)
-        expect(state().folders).toEqual({})
-        expect(state().folderOrder).toEqual([])
-        expect(state().favoriteOrder).toEqual(['https://a.io'])
-    })
-
-    test('renameFolder trims and validates', () => {
-        const id = state().createFolder('One')
-        state().renameFolder(id, '  Two  ')
-        expect(state().folders[id]?.name).toBe('Two')
-        expect(() => state().renameFolder(id, ' ')).toThrow()
-        expect(state().folders[id]?.name).toBe('Two')
-    })
-
-    test('selectFavoritesNewestFirst reverses add order', () => {
-        state().addFavorite(dapp('https://a.io', 'A'))
-        state().addFavorite(dapp('https://b.io', 'B'))
-        expect(selectFavoritesNewestFirst(state()).map(f => f.name)).toEqual([
-            'B',
-            'A',
-        ])
-    })
-
-    test('selectFolderFavorites follows folder order and skips missing keys', () => {
-        state().addFavorite(dapp('https://a.io', 'A'))
-        state().addFavorite(dapp('https://b.io', 'B'))
-        const id = state().createFolder('One')
-        useDiscoverFavoritesStore.setState(s => ({
+    test('v3 drops folders and keeps favorites, order and the import status', () => {
+        const v3 = {
+            favorites: { 'https://a.io': favorite },
+            favoriteOrder: ['https://a.io'],
             folders: {
-                ...s.folders,
-                [id]: {
-                    ...s.folders[id]!,
-                    items: ['https://b.io', 'https://gone.io', 'https://a.io'],
+                f: {
+                    id: 'f',
+                    name: 'F',
+                    items: ['https://a.io'],
+                    createdAt: 1,
                 },
             },
-        }))
-        expect(selectFolderFavorites(state(), id).map(f => f.name)).toEqual([
-            'B',
-            'A',
-        ])
-        expect(selectFolderFavorites(state(), 'missing')).toEqual([])
+            folderOrder: ['f'],
+            legacyImport: { status: 'done', attempts: 1 },
+        }
+        expect(migrateDiscoverFavorites(v3, 3)).toEqual({
+            favorites: { 'https://a.io': favorite },
+            favoriteOrder: ['https://a.io'],
+            visits: {},
+            legacyImport: { status: 'done', attempts: 1 },
+        })
     })
 
-    test('selectFolderIdsForUrl lists the folders holding a dApp', () => {
-        state().addFavorite(dapp('https://a.io'))
-        const holding = state().createFolder('One', 'https://a.io')
-        state().createFolder('Two')
-        expect([...selectFolderIdsForUrl(state(), 'https://A.io/')]).toEqual([
-            holding,
-        ])
-    })
-
-    test('normalizeFolderName trims and bounds the name', () => {
-        expect(normalizeFolderName('  a ')).toBe('a')
-        expect(normalizeFolderName('   ')).toBeNull()
-        expect(
-            normalizeFolderName('x'.repeat(FOLDER_NAME_MAX_LENGTH + 1)),
-        ).toBeNull()
-    })
-
-    test('migrate keeps v1 favorites, adds empty folders and a pending import', () => {
-        const favorite = { ...dapp('https://a.io'), addedAt: 1 }
-        expect(
-            migrateDiscoverFavorites(
-                {
-                    favorites: { 'https://a.io': favorite },
-                    favoriteOrder: ['https://a.io'],
-                },
-                1,
-            ),
-        ).toEqual({
+    test('v2 drops folders and starts the legacy import', () => {
+        const v2 = {
             favorites: { 'https://a.io': favorite },
             favoriteOrder: ['https://a.io'],
             folders: {},
             folderOrder: [],
-            legacyImport: { status: 'pending', attempts: 0 },
-        })
-    })
-
-    test('migrate adds a pending import to v2 state', () => {
-        const v2 = {
-            favorites: {},
-            favoriteOrder: [],
-            folders: { f: { id: 'f', name: 'F', items: [], createdAt: 1 } },
-            folderOrder: ['f'],
         }
         expect(migrateDiscoverFavorites(v2, 2)).toEqual({
-            ...v2,
-            legacyImport: { status: 'pending', attempts: 0 },
+            favorites: { 'https://a.io': favorite },
+            favoriteOrder: ['https://a.io'],
+            visits: {},
+            legacyImport: pending,
         })
     })
 
-    test('migrate keeps v3 state and resets unknown versions', () => {
-        const v3 = {
+    test('v1 keeps favorites and starts the legacy import', () => {
+        const v1 = {
+            favorites: { 'https://a.io': favorite },
+            favoriteOrder: ['https://a.io'],
+        }
+        expect(migrateDiscoverFavorites(v1, 1)).toEqual({
+            favorites: { 'https://a.io': favorite },
+            favoriteOrder: ['https://a.io'],
+            visits: {},
+            legacyImport: pending,
+        })
+    })
+
+    test('v4 is kept and unknown versions start empty', () => {
+        const v4 = {
             favorites: {},
             favoriteOrder: [],
-            folders: {},
-            folderOrder: [],
-            legacyImport: { status: 'pending', attempts: 0 },
+            visits: { x: 1 },
+            legacyImport: pending,
         }
-        expect(migrateDiscoverFavorites(v3, 3)).toBe(v3)
-        expect(migrateDiscoverFavorites({ junk: true }, 0)).toEqual(v3)
+        expect(migrateDiscoverFavorites(v4, 4)).toBe(v4)
+        expect(migrateDiscoverFavorites({ junk: true }, 0)).toEqual({
+            favorites: {},
+            favoriteOrder: [],
+            visits: {},
+            legacyImport: pending,
+        })
     })
 })
 
@@ -356,11 +304,9 @@ describe('useDiscoverFavoritesStore legacy import', () => {
         useDiscoverFavoritesStore.getState().resetState()
     })
 
-    test('imports new favorites in no folder, listed after the native ones in web order', () => {
+    test('imports new favorites, listed after the native ones in web order', () => {
         const store = useDiscoverFavoritesStore.getState()
         store.addFavorite(dapp('https://n.io'))
-        store.createFolder('F', 'https://n.io')
-        const foldersBefore = useDiscoverFavoritesStore.getState().folders
 
         const result = store.importLegacyFavorites(
             [legacy('https://a.io'), legacy('https://b.io')],
@@ -381,7 +327,6 @@ describe('useDiscoverFavoritesStore legacy import', () => {
             'https://a.io',
             'https://b.io',
         ])
-        expect(state.folders).toEqual(foldersBefore)
         expect(state.favorites['https://a.io']).toMatchObject({
             url: 'https://a.io',
             name: 'Legacy',
@@ -395,7 +340,6 @@ describe('useDiscoverFavoritesStore legacy import', () => {
     test('keeps an existing favorite untouched and counts it', () => {
         const store = useDiscoverFavoritesStore.getState()
         store.addFavorite(dapp('https://a.io', 'Native'))
-        const folderId = store.createFolder('F', 'https://a.io')
         const before =
             useDiscoverFavoritesStore.getState().favorites['https://a.io']
 
@@ -407,7 +351,6 @@ describe('useDiscoverFavoritesStore legacy import', () => {
         const state = useDiscoverFavoritesStore.getState()
         expect(result).toEqual({ imported: 0, alreadyFavorite: 2 })
         expect(state.favorites['https://a.io']).toBe(before)
-        expect(state.folders[folderId]?.items).toEqual(['https://a.io'])
         expect(state.favoriteOrder).toEqual(['https://a.io'])
     })
 

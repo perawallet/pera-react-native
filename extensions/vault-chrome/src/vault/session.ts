@@ -80,3 +80,24 @@ export const requireSessionMasterKey = async (): Promise<Uint8Array> => {
     }
     return key
 }
+
+/**
+ * Subscribes to lock-state transitions across ALL extension contexts (the
+ * popup learns when the background auto-lock fires, and vice versa).
+ * Returns an unsubscribe function.
+ */
+export const onLockStateChanged = (
+    listener: (isUnlocked: boolean) => void,
+): (() => void) => {
+    const handler = (
+        changes: Record<string, chrome.storage.StorageChange>,
+        areaName: string,
+    ): void => {
+        if (areaName !== 'session') return
+        const change = changes[SESSION_UNLOCKED_KEY]
+        if (!change) return
+        listener(change.newValue !== undefined)
+    }
+    chrome.storage.onChanged.addListener(handler)
+    return () => chrome.storage.onChanged.removeListener(handler)
+}

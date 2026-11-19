@@ -30,6 +30,7 @@ import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { useWebViewStore } from '@modules/webview'
 import { useDiscoverFavoritesStore } from '@modules/discover/store/useDiscoverFavoritesStore'
+import { useDiscoverFavoritesFilterStore } from '@modules/discover/store/useDiscoverFavoritesFilterStore'
 import { resetLegacyImportAttemptForTests } from '@modules/discover/hooks/useLegacyFavoritesImport'
 
 // The integration setup registers whichever chains config enables.
@@ -131,16 +132,8 @@ const renderHome = () =>
                 component: () => <div data-testid='dapps_screen' />,
             },
             {
-                name: 'DiscoverFolder',
-                component: () => <div data-testid='folder_screen' />,
-            },
-            {
                 name: 'DiscoverAllFavorites',
                 component: () => <div data-testid='all_favorites_screen' />,
-            },
-            {
-                name: 'DiscoverAllFolders',
-                component: () => <div data-testid='all_folders_screen' />,
             },
         ],
     })
@@ -175,6 +168,7 @@ describe('Flow: Discover home', () => {
         // outside act.
         useRemoteConfigStore.getState().resetState()
         useDiscoverFavoritesStore.getState().resetState()
+        useDiscoverFavoritesFilterStore.getState().reset()
         useWebViewStore.getState().clearWebViews()
         setCapabilityOverrides({ discover: true }, 'ethereum')
     })
@@ -327,28 +321,30 @@ describe('Flow: Discover home', () => {
         await flush()
     })
 
-    it('Given the Top dApps header is tapped, then the native directory opens', async () => {
+    it('Given the Explore dApps header is tapped, then the native directory opens', async () => {
         useHandlers()
         renderHome()
         await screen.findByTestId(rowOf('Tinyman'))
 
-        fireEvent.click(screen.getByText('discover.home.top_dapps'))
+        fireEvent.click(screen.getByText('discover.home.explore_dapps'))
 
         expect(await screen.findByTestId('dapps_screen')).toBeTruthy()
         expect(screen.queryByTestId('detail_screen')).toBeNull()
         await flush()
     })
 
-    it('Given an empty Ethereum list, when its chip is tapped, then the empty copy shows', async () => {
+    it('Given an empty Ethereum list, when its chip is tapped, then the empty copy points to typing a URL', async () => {
         useHandlers({ ethereum: { response: [], status: 200 } })
         renderHome()
         await screen.findByTestId(rowOf('Tinyman'))
 
         fireEvent.click(screen.getByTestId('discover_chain_filter_ethereum'))
 
-        expect(
-            await screen.findByText('discover.home.dapps_empty'),
-        ).toBeTruthy()
+        const body = await screen.findByText(
+            'discover.home.dapps_empty_open_url',
+        )
+        // Two sentences: the 3-line cap would ellipsize the instruction.
+        expect(body.style.webkitLineClamp).toBe('')
         await flush()
     })
 
@@ -396,69 +392,99 @@ describe('Flow: Discover home', () => {
         ).toBeNull()
     })
 
-    it('Given nothing favorited, then Favorites shows its empty state and New Folder', async () => {
+    it('Given nothing favorited, then Favorites shows its empty state without See all', async () => {
         useHandlers()
         renderHome()
 
         expect(
             await screen.findByTestId('discover_home_favorites_empty'),
         ).toBeTruthy()
-        expect(screen.getByTestId('discover_home_new_folder')).toBeTruthy()
-        expect(screen.queryByTestId('discover_home_all_favorites')).toBeNull()
+        expect(
+            screen.queryByTestId('discover_home_favorites_see_all'),
+        ).toBeNull()
         await flush()
     })
 
-    it('Given a favorite and five folders, then All favorites, the newest four folders and See all show', async () => {
-        const store = useDiscoverFavoritesStore.getState()
-        store.addFavorite({
-            url: 'https://tinyman.example',
-            name: 'Tinyman',
-            logo: null,
-            categories: [],
-            chains: [],
-        })
-        const ids = ['A', 'B', 'C', 'D', 'E'].map(name =>
-            store.createFolder(name),
-        )
+    const favorite = (n: number, category: string) => ({
+        url: `https://fav${n}.example`,
+        name: `Fav ${n}`,
+        logo: null,
+        categories: [category],
+        chains: [],
+    })
+    const gridNames = () =>
+        screen
+            .getAllByTestId(/^discover_home_favorite_https/)
+            .map(tile => tile.textContent)
+
+    it('Given eight favorites, then the grid shows the newest six and See all opens Favorites', async () => {
+        for (let n = 1; n <= 8; n += 1) {
+            useDiscoverFavoritesStore
+                .getState()
+                .addFavorite(favorite(n, n % 2 === 0 ? 'DeFi' : 'Wallet'))
+        }
         useHandlers()
         renderHome()
 
-        await screen.findByTestId('discover_home_all_favorites')
-        expect(screen.queryByTestId('discover_home_favorites_empty')).toBeNull()
-        ids.slice(1).forEach(id =>
-            expect(
-                screen.getByTestId(`discover_home_folder_${id}`),
-            ).toBeTruthy(),
-        )
+        await screen.findByTestId('discover_home_favorite_https://fav8.example')
+        expect(gridNames()).toHaveLength(6)
         expect(
-            screen.queryByTestId(`discover_home_folder_${ids[0]}`),
+            screen.queryByTestId('discover_home_favorite_https://fav2.example'),
         ).toBeNull()
 
-        fireEvent.click(screen.getByTestId('discover_home_folders_see_all'))
-        expect(await screen.findByTestId('all_folders_screen')).toBeTruthy()
+        fireEvent.click(screen.getByTestId('discover_home_favorites_see_all'))
+        expect(await screen.findByTestId('all_favorites_screen')).toBeTruthy()
         await flush()
     })
 
-    it('Given the New Folder action, when a name is entered and created, then the folder leads the list and opens', async () => {
+    it('Given favorites in two categories, when DeFi is picked, then only DeFi tiles show', async () => {
+        for (let n = 1; n <= 4; n += 1) {
+            useDiscoverFavoritesStore
+                .getState()
+                .addFavorite(favorite(n, n % 2 === 0 ? 'DeFi' : 'Wallet'))
+        }
         useHandlers()
         renderHome()
-        fireEvent.click(await screen.findByTestId('discover_home_new_folder'))
 
-        const input = await screen.findByTestId('discover_folder_name_input')
-        fireEvent.change(input, { target: { value: '  Swap ' } })
-        fireEvent.click(screen.getByTestId('discover_folder_name_submit'))
+        fireEvent.click(
+            await screen.findByTestId(
+                'discover_home_favorites_filters_category',
+            ),
+        )
+        fireEvent.click(
+            await screen.findByTestId('discover_favorites_category_DeFi'),
+        )
 
         await waitFor(() => {
-            expect(
-                useDiscoverFavoritesStore.getState().folderOrder,
-            ).toHaveLength(1)
+            expect(gridNames()).toEqual(['Fav 4DeFi', 'Fav 2DeFi'])
         })
-        const [id] = useDiscoverFavoritesStore.getState().folderOrder
-        expect(useDiscoverFavoritesStore.getState().folders[id!]?.name).toBe(
-            'Swap',
+        await flush()
+    })
+
+    it('Given a favorite opened twice, when Most visited is picked, then it leads the grid', async () => {
+        for (let n = 1; n <= 3; n += 1) {
+            useDiscoverFavoritesStore
+                .getState()
+                .addFavorite(favorite(n, 'DeFi'))
+        }
+        useDiscoverFavoritesStore.getState().recordVisit('https://fav1.example')
+        useDiscoverFavoritesStore.getState().recordVisit('https://fav1.example')
+        useHandlers()
+        renderHome()
+
+        await screen.findByTestId('discover_home_favorite_https://fav1.example')
+        expect(gridNames()[0]).toBe('Fav 3DeFi')
+
+        fireEvent.click(
+            screen.getByTestId('discover_home_favorites_filters_sort'),
         )
-        fireEvent.click(await screen.findByTestId(`discover_home_folder_${id}`))
-        expect(await screen.findByTestId('folder_screen')).toBeTruthy()
+        fireEvent.click(
+            await screen.findByTestId('discover_favorites_sort_visits'),
+        )
+
+        await waitFor(() => {
+            expect(gridNames()[0]).toBe('Fav 1DeFi')
+        })
         await flush()
     })
 

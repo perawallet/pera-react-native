@@ -47,6 +47,10 @@ vi.mock('../../pending-history', async importOriginal => ({
     getPendingTransactionRecords: mocks.getPendingTransactionRecords,
     getMinedTransactionHistory: mocks.getMinedTransactionHistory,
 }))
+vi.mock('../historyReadRetry', async importOriginal => ({
+    ...(await importOriginal<typeof import('../historyReadRetry')>()),
+    historyReadRetryDelay: () => 0,
+}))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     subscribeToSubmissionLedger: (listener: () => void) => {
@@ -147,6 +151,31 @@ describe('useTransactionRecordsQuery', () => {
         queryClient.clear()
     })
 
+    test('aborts the chain history read when its list unmounts', async () => {
+        let signal: AbortSignal | undefined
+        mocks.getMinedTransactionHistory.mockImplementation(
+            (_address, _scope, _page, options) => {
+                signal = options.signal
+                return new Promise(() => {})
+            },
+        )
+
+        const { unmount } = renderHook(
+            () =>
+                useTransactionRecordsQuery({
+                    accountAddress: ADDRESS,
+                    scope: SCOPE,
+                }),
+            { wrapper },
+        )
+        await waitFor(() => expect(signal).toBeDefined())
+        expect(signal?.aborted).toBe(false)
+
+        unmount()
+
+        expect(signal?.aborted).toBe(true)
+    })
+
     test('starts a fresh list when contractDecoding flips, so loaded rows never keep the old labels', async () => {
         mocks.getMinedTransactionHistory.mockResolvedValue({
             items: [record('A', JAN_10)],
@@ -205,6 +234,7 @@ describe('useTransactionRecordsQuery', () => {
             ADDRESS,
             SCOPE,
             { cursor: 'c1' },
+            { signal: expect.anything() },
         )
         expect(result.current.hasNextPage).toBe(false)
     })
@@ -271,6 +301,7 @@ describe('useTransactionRecordsQuery', () => {
             ADDRESS,
             SCOPE,
             { cursor: `c${MAX_RECORD_PAGE_READS}` },
+            { signal: expect.anything() },
         )
     })
 
@@ -313,6 +344,35 @@ describe('useTransactionRecordsQuery', () => {
         expect(mocks.getMinedTransactionHistory).toHaveBeenCalledTimes(
             callsAtFailure + 1,
         )
+    })
+
+    test('resumes a walk at the page that failed, without re-reading the empty pages before it', async () => {
+        mocks.getMinedTransactionHistory
+            .mockResolvedValueOnce({ items: [], next: { cursor: 'c1' } })
+            .mockResolvedValueOnce({ items: [], next: { cursor: 'c2' } })
+            .mockRejectedValueOnce(new Error('history service refused'))
+            .mockResolvedValueOnce({ items: [record('A', JAN_10)] })
+
+        const { result } = renderHook(
+            () =>
+                useTransactionRecordsQuery({
+                    accountAddress: ADDRESS,
+                    scope: SCOPE,
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() =>
+            expect(result.current.records.map(r => r.id)).toEqual(['A']),
+        )
+        expect(
+            mocks.getMinedTransactionHistory.mock.calls.map(call => call[2]),
+        ).toEqual([
+            undefined,
+            { cursor: 'c1' },
+            { cursor: 'c2' },
+            { cursor: 'c2' },
+        ])
     })
 
     test('pauses the search after its fetch budget and resumes on fetchNextPage', async () => {
@@ -508,6 +568,121 @@ describe('useTransactionRecordsQuery', () => {
                 ]),
             )
         })
+
+        test('keeps a failed first page failed while it is re-read', async () => {
+            const failure = new PeraNetworkError('server', { status: 503 })
+            mocks.getMinedTransactionHistory.mockRejectedValue(failure)
+            const { result } = mount()
+            await waitFor(() => expect(result.current.isError).toBe(true))
+
+            let release: (value: { items: TransactionRecord[] }) => void = () =>
+                undefined
+            mocks.getMinedTransactionHistory.mockReturnValue(
+                new Promise(resolve => {
+                    release = resolve
+                }),
+            )
+            act(() => result.current.refetch())
+
+            await waitFor(() => expect(result.current.isFetching).toBe(true))
+            expect(result.current.isError).toBe(true)
+            expect(result.current.error).toBe(failure)
+            expect(result.current.isLoading).toBe(false)
+
+            await act(async () => release({ items: [record('A', JAN_10)] }))
+
+            await waitFor(() => expect(result.current.isError).toBe(false))
+            expect(result.current.error).toBeNull()
+            expect(result.current.records.map(r => r.id)).toEqual(['A'])
+        })
+
+        test('a hook mounted on a failed read reports the failure from its first render', async () => {
+            const failure = new PeraServiceUnavailableError(SCOPE)
+            mocks.getMinedTransactionHistory.mockRejectedValue(failure)
+            const first = mount()
+            await waitFor(() => expect(first.result.current.isError).toBe(true))
+            first.unmount()
+
+            mocks.getMinedTransactionHistory.mockReturnValue(
+                new Promise(() => undefined),
+            )
+            const renders: Array<{
+                isError: boolean
+                error: unknown
+                isFetching: boolean
+            }> = []
+            const second = renderHook(
+                () => {
+                    const { isError, error, isFetching } =
+                        useTransactionRecordsQuery({
+                            accountAddress: ADDRESS,
+                            scope: SCOPE,
+                        })
+                    renders.push({ isError, error, isFetching })
+                    return null
+                },
+                { wrapper },
+            )
+
+            expect(renders[0]).toEqual({
+                isError: true,
+                error: failure,
+                isFetching: true,
+            })
+            second.unmount()
+        })
+
+        test('a cancelled re-read keeps the original error', async () => {
+            const failure = new PeraNetworkError('server', { status: 503 })
+            mocks.getMinedTransactionHistory.mockRejectedValue(failure)
+            const { result } = mount()
+            await waitFor(() => expect(result.current.isError).toBe(true))
+
+            mocks.getMinedTransactionHistory.mockImplementation(
+                () => new Promise(() => undefined),
+            )
+            act(() => result.current.refetch())
+            await waitFor(() => expect(result.current.isFetching).toBe(true))
+            await act(() => queryClient.cancelQueries())
+            act(() => result.current.refetch())
+            await waitFor(() => expect(result.current.isFetching).toBe(true))
+
+            expect(result.current.isError).toBe(true)
+            expect(result.current.error).toBe(failure)
+        })
+
+        test('a cancelled re-read that answers keeps the error until the replacing read settles', async () => {
+            const failure = new PeraNetworkError('server', { status: 503 })
+            mocks.getMinedTransactionHistory.mockRejectedValue(failure)
+            const { result, rerender } = mount()
+            await waitFor(() => expect(result.current.isError).toBe(true))
+
+            let releaseCancelled: (value: {
+                items: TransactionRecord[]
+            }) => void = () => undefined
+            mocks.getMinedTransactionHistory.mockReturnValueOnce(
+                new Promise(resolve => {
+                    releaseCancelled = resolve
+                }),
+            )
+            act(() => result.current.refetch())
+            await waitFor(() => expect(result.current.isFetching).toBe(true))
+            await act(() => queryClient.cancelQueries())
+            mocks.getMinedTransactionHistory.mockReturnValueOnce(
+                new Promise(() => undefined),
+            )
+            act(() => result.current.refetch())
+            await waitFor(() => expect(result.current.isFetching).toBe(true))
+
+            await act(async () =>
+                releaseCancelled({ items: [record('A', JAN_10)] }),
+            )
+            rerender()
+
+            expect(result.current.isError).toBe(true)
+            expect(result.current.error).toBe(failure)
+            expect(result.current.isLoading).toBe(false)
+        })
     })
 
     describe('background refetch', () => {
@@ -589,6 +764,7 @@ describe('useTransactionRecordsQuery', () => {
                 ADDRESS,
                 SCOPE,
                 undefined,
+                { signal: expect.anything() },
             )
             expect(result.current.records.map(r => r.id)).toEqual([
                 'B',
@@ -826,6 +1002,7 @@ describe('useTransactionRecordsQuery', () => {
                     ADDRESS,
                     SCOPE,
                     { cursor: 'c1' },
+                    { signal: expect.anything() },
                 ),
             )
             serve(backend)
@@ -942,6 +1119,59 @@ describe('useTransactionRecordsQuery', () => {
             expect(result.current.records.map(r => r.id)).toEqual(['USDC']),
         )
         expect(result.current.hasNextPage).toBe(false)
+    })
+
+    test('asks the chain for the filtered asset on every page it reads', async () => {
+        mocks.getMinedTransactionHistory
+            .mockResolvedValueOnce({ items: [], next: { cursor: 'c1' } })
+            .mockResolvedValueOnce({ items: [record('USDC', JAN_10, USDC)] })
+
+        const { result } = renderHook(
+            () =>
+                useTransactionRecordsQuery({
+                    accountAddress: ADDRESS,
+                    scope: SCOPE,
+                    assetId: USDC,
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() =>
+            expect(result.current.records.map(r => r.id)).toEqual(['USDC']),
+        )
+        expect(mocks.getMinedTransactionHistory.mock.calls).toEqual([
+            [
+                ADDRESS,
+                SCOPE,
+                undefined,
+                { assetId: USDC, signal: expect.anything() },
+            ],
+            [
+                ADDRESS,
+                SCOPE,
+                { cursor: 'c1' },
+                { assetId: USDC, signal: expect.anything() },
+            ],
+        ])
+    })
+
+    test('settles on an empty list when the asset has no history', async () => {
+        mocks.getMinedTransactionHistory.mockResolvedValueOnce({ items: [] })
+
+        const { result } = renderHook(
+            () =>
+                useTransactionRecordsQuery({
+                    accountAddress: ADDRESS,
+                    scope: SCOPE,
+                    assetId: USDC,
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isFetched).toBe(true))
+        expect(result.current.records).toEqual([])
+        expect(result.current.hasNextPage).toBe(false)
+        expect(result.current.isError).toBe(false)
     })
 
     test('keeps a call the account paid gas for in the native asset’s History, but not one another address sent', async () => {

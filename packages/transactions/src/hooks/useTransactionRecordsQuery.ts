@@ -15,10 +15,13 @@ import {
     useInfiniteQuery,
     useQueryClient,
     onlineManager,
+    hashKey,
     type InfiniteData,
+    type Query,
 } from '@tanstack/react-query'
 import type {
     ChainScope,
+    Page,
     PageRef,
     TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
@@ -28,6 +31,7 @@ import { SECONDS_PER_DAY } from '@perawallet/wallet-core-config'
 import {
     isoDateToUnixSeconds,
     PeraNetworkError,
+    toError,
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
@@ -36,7 +40,10 @@ import {
     mergePendingRecords,
 } from '../pending-history'
 import { isFeePaidByAccount } from '../utils/fee'
-import { shouldRetryHistoryRead } from './historyReadRetry'
+import {
+    historyReadRetryDelay,
+    shouldRetryHistoryRead,
+} from './historyReadRetry'
 import {
     consumeFullRefetchRequest,
     requestFullRefetch,
@@ -47,7 +54,7 @@ import { usePendingTransactionRecordsQuery } from './usePendingTransactionRecord
 export type UseTransactionRecordsQueryParams = {
     accountAddress: string
     scope: ChainScope
-    /** Kept client-side: the records backends take no asset filter. */
+    /** Sent to the chain, which may ignore it, and kept client-side either way. */
     assetId?: string
     /** `YYYY-MM-DD`, inclusive, UTC. */
     afterTime?: string
@@ -64,6 +71,7 @@ export type UseTransactionRecordsQueryResult = {
     isFetched: boolean
     isFetching: boolean
     isFetchingNextPage: boolean
+    /** Stays true while a failed first page is re-read, unlike TanStack's. */
     isError: boolean
     /** The failure is a later page's: page one, and the wallet's sends merged into it, stand. */
     isNextPageError: boolean
@@ -95,6 +103,12 @@ type RecordsRead = { page: RecordsPage; hasReachedLoadedPages: boolean }
 // which TanStack hands back as `pageParam`: a `getNextPageParam` that copies
 // the cursor would turn every hit into a backend read.
 const mergedPagesByCursor = new WeakMap<PageRef, RecordsPage>()
+
+// TanStack resets a query with no data to `pending` and clears its error the
+// moment it re-reads, so a failed page one would read as loading and then as
+// empty. The error is kept here, per cache entry, until the re-read settles; a
+// chip tap mounts a new hook on the same entry and must see it from render one.
+const failedFirstPageErrors = new WeakMap<Query, Error>()
 
 // A record that leaves page one without a replacement stays until a full
 // re-read. `next` is never touched, so every cursor holds.
@@ -214,8 +228,35 @@ export const useTransactionRecordsQuery = ({
         const records: TransactionRecord[] = []
         for (let read = 1; ; read++) {
             signal.throwIfAborted()
-            const { items: minedItems, next } =
-                await getMinedTransactionHistory(accountAddress, scope, page)
+            let mined: Page<TransactionRecord>
+            try {
+                mined = await getMinedTransactionHistory(
+                    accountAddress,
+                    scope,
+                    page,
+                    { assetId, signal },
+                )
+            } catch (error) {
+                // The pages read so far kept nothing, so an empty page resuming
+                // at the failed cursor spares a retry re-reading them. A
+                // refresh's pages replace page one, so it still throws.
+                if (
+                    read === 1 ||
+                    signal.aborted ||
+                    loadedNewestMinedId !== undefined
+                ) {
+                    throw error
+                }
+                return {
+                    page: {
+                        records,
+                        next: page ?? null,
+                        ...(newestMinedId !== undefined && { newestMinedId }),
+                    },
+                    hasReachedLoadedPages: false,
+                }
+            }
+            const { items: minedItems, next } = mined
             // The first read can be empty with a next page, so the newest id
             // is the first one any read lists.
             if (pageParam === null) newestMinedId ??= minedItems[0]?.id
@@ -286,6 +327,10 @@ export const useTransactionRecordsQuery = ({
                 }
                 // A cold start has nothing to lose: an empty page reads as the
                 // offline empty state, and the ledger's sends list beside it.
+                const coldQuery = queryClient
+                    .getQueryCache()
+                    .get(hashKey(queryKey))
+                if (coldQuery) failedFirstPageErrors.delete(coldQuery)
                 return { records: [], next: null }
             }
 
@@ -295,7 +340,7 @@ export const useTransactionRecordsQuery = ({
 
             const cachedQuery = queryClient
                 .getQueryCache()
-                .find({ queryKey, exact: true })
+                .get(hashKey(queryKey))
             const isFullRefetch =
                 cachedQuery !== undefined &&
                 consumeFullRefetchRequest(cachedQuery)
@@ -328,7 +373,14 @@ export const useTransactionRecordsQuery = ({
                 // spent, so it would only refresh the head. A failed later page
                 // is resumed by the retry itself, so it needs no such care.
                 if (isFullRefetch) requestFullRefetch(cachedQuery)
+                if (cachedQuery && !signal.aborted) {
+                    failedFirstPageErrors.set(cachedQuery, toError(error))
+                }
                 throw error
+            }
+            // A cancelled read can still answer; the read that replaces it owns the error.
+            if (cachedQuery && !signal.aborted) {
+                failedFirstPageErrors.delete(cachedQuery)
             }
             const { page, hasReachedLoadedPages } = read
             if (!loaded || !hasReachedLoadedPages) return page
@@ -345,6 +397,7 @@ export const useTransactionRecordsQuery = ({
         getNextPageParam: (lastPage: RecordsPage) => lastPage.next ?? undefined,
         networkMode: 'always',
         retry: shouldRetryHistoryRead,
+        retryDelay: historyReadRetryDelay,
         enabled: isActive,
     })
 
@@ -371,17 +424,22 @@ export const useTransactionRecordsQuery = ({
     const {
         isFetched,
         isFetching,
-        isError,
+        isError: isQueryError,
         hasNextPage,
         fetchNextPage,
         refetch,
     } = query
+    const rereadQuery =
+        isActive && query.isPending && isFetched
+            ? queryClient.getQueryCache().get(hashKey(queryKey))
+            : undefined
+    const keptError = rereadQuery && failedFirstPageErrors.get(rereadQuery)
     const pages = query.data?.pages ?? []
     const pageCount = pages.length
     const trailingEmptyPages =
         pageCount - 1 - pages.findLastIndex(page => page.records.length > 0)
     const isWalking =
-        isFetched && !isError && hasNextPage && trailingEmptyPages > 0
+        isFetched && !isQueryError && hasNextPage && trailingEmptyPages > 0
     // Gated on the next page only, so a background refetch of the loaded pages
     // keeps the paused state up instead of flipping back to the skeleton.
     const isSearchPaused =
@@ -405,13 +463,13 @@ export const useTransactionRecordsQuery = ({
 
     return {
         records,
-        isLoading: query.isLoading,
+        isLoading: query.isLoading && keptError === undefined,
         isFetched,
         isFetching,
         isFetchingNextPage: query.isFetchingNextPage,
-        isError,
+        isError: isQueryError || keptError !== undefined,
         isNextPageError: query.isFetchNextPageError,
-        error: query.error,
+        error: query.error ?? keptError ?? null,
         hasNextPage,
         isSearchPaused,
         fetchNextPage: handleFetchNextPage,

@@ -92,4 +92,53 @@ describe('useAccountSortContent', () => {
         expect(h.setSortMode).toHaveBeenCalledWith('balanceDesc')
         expect(h.setManualAccountOrder).not.toHaveBeenCalled()
     })
+
+    it('waits for a settling drop before committing', () => {
+        // Apply tapped between finger lift and onDragEnd must save the
+        // dropped order, not the order from before the drag.
+        const { result } = renderHook(() => useAccountSortContent())
+        const onCommitted = vi.fn()
+
+        act(() => result.current.handleSortModeChange('manual'))
+        act(() => result.current.beginDrop())
+        act(() => result.current.commitChanges(onCommitted))
+        expect(h.setManualAccountOrder).not.toHaveBeenCalled()
+        expect(onCommitted).not.toHaveBeenCalled()
+
+        act(() => result.current.handleReorder(['id2', 'id1']))
+
+        expect(h.setSortMode).toHaveBeenCalledWith('manual')
+        expect(h.setManualAccountOrder).toHaveBeenCalledWith(['id2', 'id1'])
+        expect(onCommitted).toHaveBeenCalledTimes(1)
+    })
+
+    it('commits at once when no drag is settling', () => {
+        const { result } = renderHook(() => useAccountSortContent())
+        const onCommitted = vi.fn()
+
+        act(() => result.current.handleSortModeChange('manual'))
+        act(() => result.current.beginDrop())
+        act(() => result.current.handleReorder(['id2', 'id1']))
+        act(() => result.current.commitChanges(onCommitted))
+
+        expect(h.setManualAccountOrder).toHaveBeenCalledWith(['id2', 'id1'])
+        expect(onCommitted).toHaveBeenCalledTimes(1)
+    })
+
+    it('drops a pending apply when the sort leaves manual', () => {
+        // Leaving manual unmounts the list, so the settling drop never lands.
+        const { result } = renderHook(() => useAccountSortContent())
+        const stale = vi.fn()
+        const onCommitted = vi.fn()
+
+        act(() => result.current.handleSortModeChange('manual'))
+        act(() => result.current.beginDrop())
+        act(() => result.current.commitChanges(stale))
+        act(() => result.current.handleSortModeChange('balanceDesc'))
+        act(() => result.current.commitChanges(onCommitted))
+
+        expect(h.setSortMode).toHaveBeenCalledWith('balanceDesc')
+        expect(onCommitted).toHaveBeenCalledTimes(1)
+        expect(stale).not.toHaveBeenCalled()
+    })
 })

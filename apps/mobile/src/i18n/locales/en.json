@@ -36,10 +36,10 @@
     "discover": {
         "home": {
             "title": "Discover",
-            "top_dapps": "Top dApps",
+            "explore_dapps": "Explore dApps",
             "news": "News",
             "dapps_error": "Failed loading featured dApps",
-            "dapps_empty": "No dApps on {{chain}} yet"
+            "dapps_empty_open_url": "No dApps listed on {{chain}} yet. Open any dApp by typing its URL above."
         },
         "dapp_row": {
             "favorite": "Add to favorites",
@@ -77,35 +77,28 @@
             "website": "Website",
             "open": "Open"
         },
-        "folders": {
-            "name_sheet": {
-                "title_new": "New Folder",
-                "title_rename": "Rename Folder",
-                "placeholder": "Folder name",
-                "create": "Create",
-                "save": "Save"
-            },
-            "empty": "No dApps in this folder yet"
-        },
         "favorites": {
             "title": "Favorites",
-            "new_folder": "New Folder",
-            "all_favorites": "All favorites",
-            "dapp_count": "{{count}} dApps",
-            "dapp_count_one": "{{count}} dApp",
             "see_all": "See all",
             "empty_title": "No favorites yet",
             "empty_body": "Start exploring the dApps",
-            "all_folders_title": "All Folders",
             "added_toast": {
-                "title": "Added to favorites",
-                "body": "Tap to add it to a folder"
+                "title": "Added to favorites"
+            },
+            "search_placeholder": "Search favorites",
+            "filter": {
+                "all_categories": "All categories",
+                "categories_title": "Categories",
+                "all": "All",
+                "sort_title": "Sort by",
+                "sort_recent": "Recently added",
+                "sort_visits": "Most visited"
+            },
+            "rearrange": {
+                "title": "Rearrange",
+                "open_label": "Rearrange favorites",
+                "remove_label": "Remove {{name}} from favorites"
             }
-        },
-        "add_to_folder": {
-            "title": "Add to Folder",
-            "new_folder": "New folder",
-            "done": "Done"
         }
     },
     "account_menu": {
@@ -1217,6 +1210,7 @@
             "empty_body": "You will see a chart here once you have some balance history",
             "asset_empty_body": "You will see a chart here once you have some balance history for this asset on this account",
             "excludes_networks": "This chart doesn't include {{networks}} assets yet",
+            "failed_networks": "Couldn't load {{networks}} history, so this chart leaves it out",
             "currency_unavailable_body": "This chart isn't available in {{currency}} right now"
         },
         "webview": {
@@ -3526,6 +3520,7 @@
         "notifications": {
             "push_notifications": "Push Notifications",
             "account_notifications": "Show notifications for",
+            "network_notifications": "Show notifications on",
             "push_service_unavailable": "This browser isn't delivering push notifications. In Brave, turn on \"Use Google services for push messaging\" in the privacy settings, then reopen Pera.",
             "no_accounts": "No accounts found.",
             "no_accounts_body": "No accounts found. Add an account to manage notification preferences."
@@ -3774,6 +3769,8 @@
             "title_clawback": "Clawback",
             "title_contract_interaction": "Contract interaction",
             "token_contract": "{{symbol}} token contract",
+            "unknown": "Can't tell",
+            "unknown_receive_body": "Pera can't tell what you receive from this app",
             "unverified": "Unverified",
             "you_receive": "You receive",
             "you_send": "You send",
@@ -3887,6 +3884,10 @@
         },
         "record_detail": {
             "read_failed": "Couldn't read this transaction's call details from the network.",
+            "not_found": {
+                "title": "Transaction not found",
+                "body": "Pera couldn't find this transaction in the account's history. A new transaction can take a minute to show up, so try again shortly."
+            },
             "inferred_notice": "Named from the balance changes. Pera couldn't read the call itself.",
             "transaction_id": "Transaction ID",
             "quantity": "Quantity",
@@ -4193,7 +4194,10 @@
             "to": "To",
             "balance_label": "Balance: <0/>",
             "max": "MAX",
-            "select_asset": "Select"
+            "select_asset": "Select",
+            "flip": "Flip pay and receive",
+            "flip_unavailable_title": "Can't flip this swap",
+            "flip_unavailable_body": "This account can't pay from the {{network}} network."
         },
         "asset_selection": {
             "swap_from_title": "Swap From",
@@ -4258,9 +4262,18 @@
         },
         "execution": {
             "error_title": "Swap Failed",
-            "error_body": "Something went wrong during the swap. Please try again.",
+            "failed_title": {
+                "prepare": "Couldn't start the swap",
+                "approval": "Approval failed",
+                "swap": "Swap failed"
+            },
             "provider_failed_body": "This provider couldn't complete the swap. Try another provider.",
-            "insufficient_native_title": "Insufficient {{symbol}}",
+            "provider_unavailable_body": "The provider is unavailable right now. Try again in a moment.",
+            "route_unverified_body": "Pera can't verify this provider's swap contract on {{network}} yet, so nothing was signed. Try another provider or try again later.",
+            "quote_mismatch_body": "The provider's transactions didn't match this quote, so nothing was signed. Try again or choose another provider.",
+            "unsupported_order_body": "Pera can't complete this provider's order, so nothing was signed. Choose another provider.",
+            "signing_failed_body": "The transaction couldn't be signed, so it wasn't sent. Try again.",
+            "order_insufficient_balance_body": "Your balance can't cover this amount and the network fee. Try a smaller amount or add funds for the fee.",
             "insufficient_native_body": "This account needs at least {{amount}} more {{symbol}} to cover this swap, its fees, and the minimum balance. Add more {{symbol}} and try again.",
             "success_title": "Swap Complete",
             "success_body": "{{fromAsset}} to {{toAsset}} swap successfully completed",
@@ -4302,6 +4315,10 @@
                 "empty": {
                     "title": "No swaps yet",
                     "body": "Your swap history will appear here."
+                },
+                "not_on_device": {
+                    "title": "History not available yet",
+                    "body": "This account isn't set up on this device yet, so its swap history can't load. Please try again later."
                 },
                 "error": {
                     "title": "Something went wrong",
@@ -4451,6 +4468,8 @@
             "for": "for",
             "empty_title": "No transactions yet",
             "empty_body": "Your buy transactions will appear here.",
+            "not_on_device_title": "History not available yet",
+            "not_on_device_body": "This account isn't set up on this device yet, so its buy history can't load. Please try again later.",
             "error_title": "Something went wrong",
             "error_body": "We could not load your buy history. Please try again."
         }

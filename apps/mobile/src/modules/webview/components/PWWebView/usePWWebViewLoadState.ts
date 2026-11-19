@@ -32,6 +32,7 @@ const withoutFragment = (url: string) => url.split('#')[0]
 export type HttpError = { url: string; statusCode: number }
 
 type UsePWWebViewLoadStateResult = {
+    isDocumentLoaded: boolean
     /** No document ever loaded and the device is offline — show the offline surface. */
     showOfflineView: boolean
     /** The initial load overran its budget without a document or a native error. */
@@ -131,6 +132,7 @@ export const usePWWebViewLoadState = ({
     const showOfflineView = !hasInternet && !hasDocument
 
     return {
+        isDocumentLoaded: hasDocument && !httpError,
         showOfflineView,
         showTimeoutView:
             hasInternet && isTimedOut && !hasDocument && !httpError,

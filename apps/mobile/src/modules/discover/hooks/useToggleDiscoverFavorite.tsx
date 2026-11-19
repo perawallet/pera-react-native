@@ -17,63 +17,21 @@ import { DiscoverEvent, trackEvent } from '@analytics'
 import { bottomSheetNotifier } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-import { useBottomSheet } from '@modules/bottom-sheet'
-import { AddToFolderSheet } from '../components/AddToFolderSheet'
 import { useDiscoverFavoritesStore } from '../store/useDiscoverFavoritesStore'
 import type { DiscoverDapp } from '../types'
 import { dappEventPayload } from '../utils/discoverAnalytics'
-
-// lanekeep-ignore-next-line pera/no-numeric-sizes reason: a duration in ms, not a size
-const FOLDER_TOAST_DURATION_MS = 5000
 
 export type UseToggleDiscoverFavoriteResult = (
     dapp: DiscoverDapp,
     chain: Nullable<ChainId>,
 ) => boolean
 
+/** Stars or unstars a dApp; starring confirms with an "Added to favorites" toast. */
 export const useToggleDiscoverFavorite =
     (): UseToggleDiscoverFavoriteResult => {
         const toggleFavorite = useDiscoverFavoritesStore(s => s.toggleFavorite)
         const { successToast } = useToast()
-        const { request } = useBottomSheet()
         const { t } = useLanguage()
-
-        // Starring stays one tap; the toast is the optional way into folders.
-        const offerFolders = useCallback(
-            (url: string) => {
-                successToast(
-                    t('discover.favorites.added_toast.title'),
-                    t('discover.favorites.added_toast.body'),
-                    {
-                        // Long enough to read and reach: the toast is the way into folders.
-                        duration: FOLDER_TOAST_DURATION_MS,
-                        // Shows above an open sheet, such as the in-app browser.
-                        notifier: bottomSheetNotifier.current ?? undefined,
-                        onPress: () => {
-                            trackEvent(DiscoverEvent.FavoriteToastTap)
-                            // Unstarred again before the tap: nothing to file.
-                            if (
-                                !useDiscoverFavoritesStore
-                                    .getState()
-                                    .isFavorite(url)
-                            ) {
-                                return
-                            }
-                            void request({
-                                contents: <AddToFolderSheet url={url} />,
-                                options: {
-                                    size: 'auto',
-                                    enablePanDownToClose: true,
-                                    // PWSheetLayout scrolls only without the auto container.
-                                    autoCreateContainer: false,
-                                },
-                            })
-                        },
-                    },
-                )
-            },
-            [successToast, request, t],
-        )
 
         return useCallback(
             (dapp, chain) => {
@@ -84,9 +42,18 @@ export const useToggleDiscoverFavorite =
                         : DiscoverEvent.DappUnfavoriteTap,
                     dappEventPayload(dapp, chain),
                 )
-                if (isNowFavorite) offerFolders(dapp.url)
+                if (isNowFavorite) {
+                    successToast(
+                        t('discover.favorites.added_toast.title'),
+                        '',
+                        {
+                            // Shows above an open sheet, such as the in-app browser.
+                            notifier: bottomSheetNotifier.current ?? undefined,
+                        },
+                    )
+                }
                 return isNowFavorite
             },
-            [toggleFavorite, offerFolders],
+            [toggleFavorite, successToast, t],
         )
     }

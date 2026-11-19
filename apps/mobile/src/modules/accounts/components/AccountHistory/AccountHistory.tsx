@@ -46,7 +46,7 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
         handleSelectChain,
         historyFeeds,
         failedNetworkNames,
-        isFailedRetryable,
+        unavailableNetworkNames,
         emptyBody,
         isOfflineEmpty,
         isRefreshing,
@@ -66,7 +66,7 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
             chainFilterOptions={chainFilterOptions}
             onSelectChain={handleSelectChain}
             failedNetworkNames={failedNetworkNames}
-            isFailedRetryable={isFailedRetryable}
+            unavailableNetworkNames={unavailableNetworkNames}
             onRetryFailed={handleRetry}
             isCsvExportVisible={isCsvExportVisible}
             isExportingCsv={isExportingCsv}

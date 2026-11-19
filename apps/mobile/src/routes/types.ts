@@ -75,9 +75,7 @@ export type RootStackParamList = {
     DiscoverSearch: undefined
     DiscoverNews: undefined
     DiscoverNewsDetail: { newsId: string }
-    DiscoverFolder: { folderId: string }
     DiscoverAllFavorites: undefined
-    DiscoverAllFolders: undefined
     /** Native dApp directory; opens on `chainId` when it supports Discover. */
     DiscoverDapps: Optional<{ chainId?: ChainId }>
     BannersCarouselModal: Optional<{ bannerId?: string }>
@@ -100,6 +98,8 @@ export type RootStackParamList = {
         historyTransaction?: TransactionHistoryItem
         /** The history record the user tapped, on a chain that keeps no cached rows; see the same param on `SigningStackParamList['TransactionDetails']`. */
         historyRecord?: TransactionRecord
+        /** The account whose history lists the transaction; see the same param on `SigningStackParamList['TransactionDetails']`. */
+        accountAddress?: string
         /** Set when the history marked the entry; the screen explains it and guards copying its counterparty. */
         suspectedPoisoning?: SuspectedPoisoning
         groupId?: string

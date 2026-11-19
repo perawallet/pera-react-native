@@ -21,11 +21,12 @@ import {
 } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { getAddress } from 'viem'
-import { http, HttpResponse } from 'msw'
+import { http, HttpResponse, type JsonBodyType } from 'msw'
 import { setupServer } from 'msw/node'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { peraEvmHandlers } from '../../accounts/msw-handlers'
 import { UnknownEvmNetworkError } from '../../blockchain/utils/caip19'
+import { readBackendRecording } from '../../__tests__/backend-recordings'
 import {
     PERA_URL,
     TEST_API_KEY,
@@ -34,10 +35,11 @@ import {
 import { evmCapabilityDefaults } from '../../capability-defaults'
 import { createEvmHistoryAdapter, getEvmTransactionHistory } from '../adapter'
 import { ETHEREUM } from '../../__tests__/evm-chains'
+import { fetchHistoryPage } from '../api/endpoints'
 import { evmHistoryItem, evmNftTransferLeg } from '../api/msw-handlers'
 import {
     evmRpcHandlers,
-    evmRpcTransaction,
+    evmSignedRpcTransaction,
 } from '../../blockchain/msw-handlers'
 import { TEST_RPC_URL, testChainContext } from '../../__tests__/context'
 
@@ -349,6 +351,263 @@ describe('getEvmTransactionHistory', () => {
             }),
         ).rejects.toBeInstanceOf(UnknownEvmNetworkError)
     })
+
+    it('has at most two pages in flight, and reads the rest as those answer', async () => {
+        let inFlight = 0
+        let mostInFlight = 0
+        server.use(
+            http.get(
+                `${PERA_URL}/api/v3/evm/:chainId/accounts/:address/transactions/`,
+                async () => {
+                    inFlight++
+                    mostInFlight = Math.max(mostInFlight, inFlight)
+                    await new Promise(resolve => setTimeout(resolve, 10))
+                    inFlight--
+                    return HttpResponse.json({
+                        next: null,
+                        previous: null,
+                        results: [],
+                    })
+                },
+            ),
+        )
+
+        const pages = await Promise.all(
+            Array.from({ length: 5 }, () =>
+                getEvmTransactionHistory(ETHEREUM, ME, MAINNET),
+            ),
+        )
+
+        expect(pages).toHaveLength(5)
+        expect(mostInFlight).toBe(2)
+    })
+
+    it('skips a cancelled queued page and lets the foreground read take its slot', async () => {
+        const started: string[] = []
+        const releases = new Map<string, () => void>()
+        server.use(
+            http.get(
+                `${PERA_URL}/api/v3/evm/:chainId/accounts/:address/transactions/`,
+                async ({ request }) => {
+                    const cursor = new URL(request.url).searchParams.get(
+                        'cursor',
+                    )!
+                    started.push(cursor)
+                    if (cursor !== 'foreground') {
+                        await new Promise<void>(resolve =>
+                            releases.set(cursor, resolve),
+                        )
+                    }
+                    return HttpResponse.json({ next: null, results: [] })
+                },
+            ),
+        )
+        const adapter = createEvmHistoryAdapter(ETHEREUM, testChainContext())
+        const read = (cursor: string, signal?: AbortSignal) =>
+            adapter.getTransactionHistory(
+                ME,
+                MAINNET,
+                { cursor },
+                {
+                    capabilities: evmCapabilityDefaults,
+                    signal,
+                },
+            )
+        const first = read('first')
+        const second = read('second')
+        const controller = new AbortController()
+        let obsolete: Promise<unknown> | undefined
+        let foreground: Promise<unknown> | undefined
+        try {
+            await vi.waitFor(() => expect(started).toEqual(['first', 'second']))
+            obsolete = read('obsolete', controller.signal).catch(error => error)
+            foreground = read('foreground')
+            controller.abort()
+
+            releases.get('first')!()
+
+            await vi.waitFor(() =>
+                expect(started).toEqual(['first', 'second', 'foreground']),
+            )
+            expect(await obsolete).toHaveProperty('name', 'AbortError')
+            await foreground
+            expect(started).toEqual(['first', 'second', 'foreground'])
+        } finally {
+            releases.forEach(release => release())
+            await Promise.allSettled([first, second, obsolete, foreground])
+        }
+    })
+
+    it('reads a page someone is waiting on before a queued background scan page', async () => {
+        const started: string[] = []
+        const releases = new Map<string, () => void>()
+        server.use(
+            http.get(
+                `${PERA_URL}/api/v3/evm/:chainId/accounts/:address/transactions/`,
+                async ({ request }) => {
+                    const cursor = new URL(request.url).searchParams.get(
+                        'cursor',
+                    )!
+                    started.push(cursor)
+                    await new Promise<void>(resolve =>
+                        releases.set(cursor, resolve),
+                    )
+                    return HttpResponse.json({ next: null, results: [] })
+                },
+            ),
+        )
+        const read = (cursor: string) =>
+            getEvmTransactionHistory(ETHEREUM, ME, MAINNET, { cursor })
+        const first = read('first')
+        const second = read('second')
+        let background: Promise<unknown> | undefined
+        let foreground: Promise<unknown> | undefined
+        try {
+            await vi.waitFor(() => expect(started).toEqual(['first', 'second']))
+            background = fetchHistoryPage(
+                MAINNET,
+                ETHEREUM,
+                ME,
+                { cursor: 'background' },
+                { isBackground: true },
+            )
+            foreground = read('foreground')
+
+            releases.get('first')!()
+
+            await vi.waitFor(() =>
+                expect(started).toEqual(['first', 'second', 'foreground']),
+            )
+        } finally {
+            for (const cursor of ['second', 'foreground', 'background']) {
+                await vi.waitFor(() => expect(releases.has(cursor)).toBe(true))
+                releases.get(cursor)!()
+            }
+            await Promise.allSettled([first, second, background, foreground])
+        }
+    })
+
+    it('cancels an active HTTP read without waiting for its response', async () => {
+        let received: Request | undefined
+        let release: (() => void) | undefined
+        server.use(
+            http.get(
+                `${PERA_URL}/api/v3/evm/:chainId/accounts/:address/transactions/`,
+                async ({ request }) => {
+                    received = request
+                    await new Promise<void>(resolve => {
+                        release = resolve
+                    })
+                    return HttpResponse.json({ next: null, results: [] })
+                },
+            ),
+        )
+        const adapter = createEvmHistoryAdapter(ETHEREUM, testChainContext())
+        const controller = new AbortController()
+        const read = adapter
+            .getTransactionHistory(ME, MAINNET, undefined, {
+                capabilities: evmCapabilityDefaults,
+                signal: controller.signal,
+            })
+            .then(
+                () => 'fulfilled',
+                () => 'rejected',
+            )
+        try {
+            await vi.waitFor(() => expect(received).toBeDefined())
+
+            controller.abort()
+
+            await vi.waitFor(() => expect(received?.signal.aborted).toBe(true))
+            expect(await read).toBe('rejected')
+        } finally {
+            release?.()
+            await read
+        }
+    })
+})
+
+describe('filtered to one asset', () => {
+    const USDC = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'
+    const BAYC = '0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d'
+
+    const readParams = async (assetId: string, cursor?: string) => {
+        let url: URL | undefined
+        server.use(
+            http.get(
+                `${PERA_URL}/api/v3/evm/:chainId/accounts/:address/transactions/`,
+                ({ request }) => {
+                    url = new URL(request.url)
+                    return HttpResponse.json({
+                        next: null,
+                        previous: null,
+                        results: [],
+                    })
+                },
+            ),
+        )
+        await createEvmHistoryAdapter(
+            ETHEREUM,
+            testChainContext(),
+        ).getTransactionHistory(ME, MAINNET, cursor ? { cursor } : undefined, {
+            capabilities: evmCapabilityDefaults,
+            assetId,
+        })
+        return url?.searchParams
+    }
+
+    it('asks the backend for an ERC-20 by its lowercased contract, on a cursor page too', async () => {
+        const params = await readParams(getAddress(USDC), 'abc')
+
+        expect(params?.get('asset_id')).toBe(`eip155:1/erc20:${USDC}`)
+        expect(params?.get('cursor')).toBe('abc')
+    })
+
+    it('reads the native coin’s history unfiltered, since its view drops other assets’ legs', async () => {
+        const params = await readParams(ETHEREUM.nativeAsset.assetId)
+
+        expect(params?.has('asset_id')).toBe(false)
+    })
+
+    it('reads an ERC-20 view’s rows with no fee or initiator, as the view names no sender', async () => {
+        const { request, response } = readBackendRecording(
+            'evm-account-transactions-erc20',
+        )
+        server.use(
+            http.get(
+                `${PERA_URL}/api/v3/evm/:chainId/accounts/:address/transactions/`,
+                () => HttpResponse.json(response as JsonBodyType),
+            ),
+        )
+
+        const { items } = await getEvmTransactionHistory(
+            ETHEREUM,
+            request.pathParams?.address ?? '',
+            MAINNET,
+            undefined,
+            false,
+            getAddress('0x6b175474e89094c44da98b954eedeac495271d0f'),
+        )
+
+        expect(items.length).toBeGreaterThan(0)
+        expect(
+            items.filter(
+                item => item.fee !== undefined || item.initiator !== undefined,
+            ),
+        ).toEqual([])
+    })
+
+    it('reads an NFT’s history unfiltered, since the backend filters no NFT view', async () => {
+        const params = await readParams(`${getAddress(BAYC)}/1234`)
+
+        expect(params?.has('asset_id')).toBe(false)
+    })
+
+    it('reads unfiltered, rather than failing, for an id it cannot place', async () => {
+        const params = await readParams('not-a-contract')
+
+        expect(params?.has('asset_id')).toBe(false)
+    })
 })
 
 describe('with contractDecoding', () => {
@@ -428,17 +687,16 @@ describe('with contractDecoding', () => {
     })
 
     it("reads a record's transaction from the node, with the fee the history gave", async () => {
-        serve([[swap]])
+        const mined = await evmSignedRpcTransaction({
+            chainId: 1,
+            to: PEER,
+            gasPrice: 1n,
+        })
+        serve([[{ ...swap, hash: mined.hash }]])
         server.use(
             ...evmRpcHandlers({
                 rpcUrl: TEST_RPC_URL,
-                responses: {
-                    eth_getTransactionByHash: evmRpcTransaction({
-                        hash: hash(2) as `0x${string}`,
-                        from: ME,
-                        to: PEER,
-                    }),
-                },
+                responses: { eth_getTransactionByHash: mined },
             }),
         )
         const adapter = createEvmHistoryAdapter(ETHEREUM, testChainContext())

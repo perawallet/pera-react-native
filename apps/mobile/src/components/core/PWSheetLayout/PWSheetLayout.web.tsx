@@ -71,6 +71,8 @@ export const PWSheetLayout = ({
         bottomInset: insets.bottom,
         hasFooter: footer != null,
         isKeyboardVisible,
+        // The web sheet is not content-measured by gorhom: the footer stacks.
+        footerInset: 0,
     })
 
     const scrollable = (
@@ -98,7 +100,13 @@ export const PWSheetLayout = ({
     return (
         <PWView style={styles.root}>
             {scrollable}
-            <PWView style={styles.footer}>{footer}</PWView>
+            <PWView
+                style={styles.footer}
+                {...getTestProps(testID, 'footer')}
+                accessible={false}
+            >
+                {footer}
+            </PWView>
         </PWView>
     )
 }

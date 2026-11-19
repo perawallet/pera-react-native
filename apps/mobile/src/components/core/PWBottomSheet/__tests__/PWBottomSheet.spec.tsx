@@ -20,6 +20,13 @@ import {
     type PWBottomSheetSize,
 } from '../PWBottomSheet'
 import { Text } from 'react-native'
+import { PWSheetSizeContext } from '../sheetSizeContext'
+import { LockOverlayProvider } from '@hooks/useIsLockOverlayVisible'
+import { useIsInHiddenContainer } from '@hooks/useIsAnimationVisible'
+
+const HiddenProbe = () => (
+    <Text>{useIsInHiddenContainer() ? 'hidden' : 'shown'}</Text>
+)
 
 // The shared mock's NotifierWrapper takes no ref; this one hands out a stable
 // handle per wrapper, as the real class-based NotifierRoot does.
@@ -151,6 +158,30 @@ describe('PWBottomSheet', () => {
         )
 
         expect(screen.getByText('Sheet Content')).toBeTruthy()
+    })
+
+    // The real sheet renders in a portal that drops the owner's contexts, so it
+    // hands the owner's visibility to its content itself.
+    it('marks its content hidden while its owner is hidden', () => {
+        render(
+            <LockOverlayProvider value={true}>
+                <PWBottomSheet isVisible={true}>
+                    <HiddenProbe />
+                </PWBottomSheet>
+            </LockOverlayProvider>,
+        )
+
+        expect(screen.getByText('hidden')).toBeTruthy()
+    })
+
+    it('marks its content shown while its owner is visible', () => {
+        render(
+            <PWBottomSheet isVisible={true}>
+                <HiddenProbe />
+            </PWBottomSheet>,
+        )
+
+        expect(screen.getByText('shown')).toBeTruthy()
     })
 
     it('does not show children when not visible', () => {
@@ -406,6 +437,22 @@ describe('PWBottomSheet', () => {
         )
 
         expect(capturedProps.keyboardBehavior).toBe('interactive')
+    })
+
+    it('tells its content its size', () => {
+        const SizeProbe = () => (
+            <Text>{`size:${React.useContext(PWSheetSizeContext)}`}</Text>
+        )
+        render(
+            <PWBottomSheet
+                isVisible={true}
+                size='auto'
+            >
+                <SizeProbe />
+            </PWBottomSheet>,
+        )
+
+        expect(screen.getByText('size:auto')).toBeTruthy()
     })
 
     it('renders children when autoCreateContainer is false', () => {

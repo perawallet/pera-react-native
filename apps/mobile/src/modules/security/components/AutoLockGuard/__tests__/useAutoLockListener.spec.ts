@@ -47,8 +47,11 @@ const appStateState = vi.hoisted(() => ({
     })),
 }))
 
+const keyboardState = vi.hoisted(() => ({ dismiss: vi.fn() }))
+
 vi.mock('react-native', () => ({
     AppState: appStateState,
+    Keyboard: keyboardState,
     Platform: platformState,
 }))
 
@@ -320,6 +323,51 @@ describe('useAutoLockListener', () => {
         expect(mockCheckAutoLock).toHaveBeenCalledTimes(1)
 
         expect(result.current.isLocked).toBe(true)
+    })
+
+    describe('dismissing the keyboard of the covered screen', () => {
+        it('dismisses it when a foreground check finds the lock expired', async () => {
+            const { result } = renderHook(() => useAutoLockListener())
+            await act(async () => {})
+            expect(keyboardState.dismiss).not.toHaveBeenCalled()
+
+            mockCheckAutoLock.mockResolvedValue(true)
+            act(() => {
+                appStateChangeHandler?.('background')
+                appStateChangeHandler?.('active')
+            })
+            await act(async () => {})
+
+            expect(result.current.isLocked).toBe(true)
+            expect(keyboardState.dismiss).toHaveBeenCalledTimes(1)
+        })
+
+        it('dismisses it when a lock request locks the app', async () => {
+            const { result, rerender } = renderHook(() => useAutoLockListener())
+            await act(async () => {})
+
+            mockCheckPinEnabled.mockResolvedValue(true)
+            securityStoreState.lockRequestVersion = 1
+            rerender()
+            await act(async () => {})
+
+            expect(result.current.isLocked).toBe(true)
+            expect(keyboardState.dismiss).toHaveBeenCalledTimes(1)
+        })
+
+        it('leaves it open when the app returns before the lock expires', async () => {
+            const { result } = renderHook(() => useAutoLockListener())
+            await act(async () => {})
+
+            act(() => {
+                appStateChangeHandler?.('background')
+                appStateChangeHandler?.('active')
+            })
+            await act(async () => {})
+
+            expect(result.current.isLocked).toBe(false)
+            expect(keyboardState.dismiss).not.toHaveBeenCalled()
+        })
     })
 
     it('should keep lock state and stop checking when foreground check fails', async () => {

@@ -223,6 +223,69 @@ describe('device/store', () => {
         ).toEqual([])
     })
 
+    test('setChainMuted adds a chain once and removes it', async () => {
+        const { useDeviceStore } = await import('../index')
+
+        act(() => {
+            useDeviceStore.getState().setChainMuted('ethereum', true)
+            useDeviceStore.getState().setChainMuted('ethereum', true)
+        })
+        expect(useDeviceStore.getState().mutedChainIds).toEqual(['ethereum'])
+
+        act(() => useDeviceStore.getState().setChainMuted('ethereum', false))
+        expect(useDeviceStore.getState().mutedChainIds).toEqual([])
+    })
+
+    test('persists mutedChainIds and rehydrates them', async () => {
+        const { getProvider } =
+            await import('@perawallet/wallet-extension-provider')
+        const { useDeviceStore } = await import('../index')
+        act(() => useDeviceStore.getState().setChainMuted('ethereum', true))
+
+        const { partialize } = useDeviceStore.persist.getOptions()
+        expect(partialize?.(useDeviceStore.getState())).toMatchObject({
+            mutedChainIds: ['ethereum'],
+        })
+
+        act(() => useDeviceStore.setState({ mutedChainIds: [] }))
+        getProvider().keyValueStorage.setItem(
+            'device-store',
+            JSON.stringify({
+                state: { mutedChainIds: ['base'] },
+                version: 2,
+            }),
+        )
+        await useDeviceStore.persist.rehydrate()
+
+        expect(useDeviceStore.getState().mutedChainIds).toEqual(['base'])
+    })
+
+    test('a persisted blob without mutedChainIds merges to none muted', async () => {
+        const { getProvider } =
+            await import('@perawallet/wallet-extension-provider')
+        const { useDeviceStore } = await import('../index')
+        getProvider().keyValueStorage.setItem(
+            'device-store',
+            JSON.stringify({
+                state: { deviceIDs: { 'algorand/mainnet': 'stored-id' } },
+                version: 2,
+            }),
+        )
+
+        await useDeviceStore.persist.rehydrate()
+
+        expect(useDeviceStore.getState().mutedChainIds).toEqual([])
+    })
+
+    test('resetState clears mutedChainIds', async () => {
+        const { useDeviceStore } = await import('../index')
+        act(() => useDeviceStore.getState().setChainMuted('ethereum', true))
+
+        act(() => useDeviceStore.getState().resetState())
+
+        expect(useDeviceStore.getState().mutedChainIds).toEqual([])
+    })
+
     test('registers a resetState and clearStorage callback with the store registry', async () => {
         await import('../index')
         const registration = registerStoreMock.mock.calls.at(-1)?.[0]

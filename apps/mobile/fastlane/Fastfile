@@ -62,6 +62,51 @@ def get_xcworkspace_path
   raise "Could not find any .xcworkspace file. CWD: #{Dir.pwd}"
 end
 
+# App and AutoFill extension bundle ids, which must match app.config.builder.js.
+# Production's extension is renamed to the legacy native id by
+# withAutofillExtensionBundleId.js so iOS keeps the user's password-manager
+# selection across the native→RN upgrade; staging/dev keep the passkey
+# plugin's default. Each id needs its own provisioning profile.
+def ios_bundle_ids(scheme)
+  production = scheme == "PeraAlgoWallet"
+  app = production ? "com.algorandllc.algorand" : "com.algorandllc.perarn.staging"
+  [app, app + (production ? ".autofill-extension" : ".PasskeyAutofillCredentialProvider")]
+end
+
+# The ad-hoc profile names, service credentials file, app id and tester groups
+# the Firebase export needs, raising on whichever is missing, so a
+# misconfiguration fails before the build rather than after TestFlight
+# accepted it.
+def ios_firebase_settings
+  app_profile = ENV["IOS_FIREBASE_PROVISIONING_PROFILE_NAME"].to_s.strip
+  extension_profile = ENV["IOS_FIREBASE_AUTOFILL_PROVISIONING_PROFILE_NAME"].to_s.strip
+  credentials = ENV["FIREBASE_IOS_SERVICE_CREDENTIALS_FILE"].to_s
+  UI.user_error!("Firebase needs separate ad-hoc profiles for the app and AutoFill extension") if app_profile.empty? || extension_profile.empty?
+  UI.user_error!("Firebase service credentials were not prepared by the iOS job") unless File.file?(credentials)
+  UI.user_error!("Firebase service credentials are not a service-account key") unless service_account_key?(credentials)
+  # Tester groups belong to each Firebase app, so the Android lanes' alias may not exist here.
+  groups = ENV["FIREBASE_TESTER_GROUPS"].to_s.strip
+  UI.user_error!("Firebase needs FIREBASE_TESTER_GROUPS naming groups of the iOS app") if groups.empty?
+
+  # Read the environment-selected config explicitly so CI never prompts to
+  # choose an app or relies on an archive's default plist location.
+  app_id = ENV["FIREBASE_APP_ID_IOS"].to_s.strip
+  if app_id.empty?
+    app_id = get_info_plist_value(path: "./config/GoogleService-Info.plist", key: "GOOGLE_APP_ID").to_s.strip
+  end
+  UI.user_error!("Firebase needs the selected environment's iOS GOOGLE_APP_ID") unless app_id.match?(/\A1:\d+:ios:[0-9a-f]+\z/)
+
+  [app_profile, extension_profile, credentials, app_id, groups]
+end
+
+def service_account_key?(path)
+  require 'json'
+  key = JSON.parse(File.read(path))
+  key.is_a?(Hash) && !key["client_email"].to_s.empty? && !key["project_id"].to_s.empty?
+rescue JSON::ParserError
+  false
+end
+
 # Firebase Apple 13 ships only as Swift packages, so Crashlytics' upload tool
 # sits in the package checkout under the workspace's DerivedData, not in Pods/.
 def get_crashlytics_upload_symbols_path
@@ -132,20 +177,7 @@ platform :ios do
       xcodeproj: get_xcodeproj_path
     )
 
-    # Bundle ID for export options. Must match app.config.builder.js's
-    # bundleIdentifiers (production vs staging/dev).
-    bundle_id = case options[:scheme]
-    when "PeraAlgoWallet" then "com.algorandllc.algorand"
-    else "com.algorandllc.perarn.staging"
-    end
-    # AutoFill credential-provider extension. Production is renamed to the
-    # legacy native id (.autofill-extension) by withAutofillExtensionBundleId.js
-    # so iOS keeps the user's password-manager selection across the native→RN
-    # upgrade (PERA-3945); staging/dev keep the passkey plugin's default id.
-    # This suffix MUST match that plugin, and each id needs its own App Store
-    # profile (see IOS_AUTOFILL_PROVISIONING_PROFILE_NAME).
-    extension_suffix = options[:scheme] == "PeraAlgoWallet" ? ".autofill-extension" : ".PasskeyAutofillCredentialProvider"
-    extension_bundle_id = "#{bundle_id}#{extension_suffix}"
+    bundle_id, extension_bundle_id = ios_bundle_ids(options[:scheme])
 
     app_profile = ENV["IOS_PROVISIONING_PROFILE_NAME"]
     extension_profile = ENV["IOS_AUTOFILL_PROVISIONING_PROFILE_NAME"]
@@ -208,6 +240,10 @@ platform :ios do
     clean = options[:clean]
     clean = true if clean.nil?
 
+    # Before the build: found only at the export, a Firebase misconfiguration
+    # fails a job whose build TestFlight has already accepted.
+    ios_firebase_settings if options[:firebase].to_s == "true" && options[:skip_upload].to_s != "true"
+
     # The prebuilt project only has Debug and Release. An unknown name falls
     # back to Release for the projects but not for Swift packages, which then
     # build into <name>-iphoneos while the app copies their bundles from
@@ -256,6 +292,40 @@ platform :ios do
       skip_waiting_for_build_processing: true,
       ipa: "./build/ios/#{scheme}.ipa"
     )
+
+    # Re-export the same archive for Firebase; App Store IPAs cannot be
+    # installed directly by testers. Never replace the TestFlight IPA.
+    distribute_firebase(scheme: scheme) if options[:firebase].to_s == "true"
+  end
+
+  desc "Export an existing iOS archive for Firebase App Distribution"
+  private_lane :distribute_firebase do |options|
+    scheme = options[:scheme] || "Pera7Staging"
+    archive = options[:archive_path] || lane_context[SharedValues::XCODEBUILD_ARCHIVE]
+    UI.user_error!("Firebase needs the archive produced by the TestFlight build") unless archive && File.directory?(archive)
+    app_profile, extension_profile, credentials, app_id, groups = ios_firebase_settings
+
+    bundle_id, extension_id = ios_bundle_ids(scheme)
+    # gym resolves a workspace and scheme even when only exporting, and the
+    # workspace is under ./ios, out of its auto-detection's reach.
+    ipa = gym(
+      workspace: get_xcworkspace_path,
+      scheme: scheme,
+      skip_build_archive: true,
+      archive_path: archive,
+      export_method: "ad-hoc",
+      output_directory: "./build/ios",
+      output_name: "#{scheme}-firebase.ipa",
+      export_options: {
+        signingStyle: "manual",
+        signingCertificate: "Apple Distribution",
+        teamID: ENV["IOS_TEAM_ID"],
+        provisioningProfiles: { bundle_id => app_profile, extension_id => extension_profile }
+      }
+    )
+    notes = unescape_changelog(ENV["RELEASE_NOTES"].to_s)
+    notes = "Build #{ENV['BUILD_NUMBER'] || 'dev'}" if notes.empty?
+    firebase_app_distribution(app: app_id, ipa_path: ipa, groups: groups, release_notes: notes, service_credentials_file: credentials)
   end
 
   desc "Increment build number"
@@ -348,6 +418,11 @@ platform :android do
       artifact_type: "aab"
     )
 
+    # Play's "What's new" for this build: pera-admin's summary of the release,
+    # when the job has one. Never RELEASE_NOTES, whose full changelog runs past
+    # Play's 500 characters and would fail the upload.
+    play_notes = play_changelog_dir(unescape_changelog(ENV["CI_RELEASE_NOTES_SUMMARY"].to_s), resolve_build_number)
+
     upload_to_play_store(
       track: "internal",
       package_name: package_name,
@@ -358,7 +433,8 @@ platform :android do
       skip_upload_metadata: true,
       skip_upload_images: true,
       skip_upload_screenshots: true,
-      skip_upload_changelogs: true
+      skip_upload_changelogs: play_notes.nil?,
+      **(play_notes ? { metadata_path: play_notes } : {})
     )
 
     # 2) Also distribute an APK to Firebase App Distribution for dogfooding.
@@ -441,6 +517,23 @@ end
 # Check if running in CI environment
 def is_ci
   ENV['CI'] == 'true' || ENV['GITHUB_ACTIONS'] == 'true'
+end
+
+PLAY_NOTES_MAX = 500
+
+# A metadata folder holding only this build's en-US changelog, the shape
+# upload_to_play_store reads release notes from; nil when there are no notes.
+def play_changelog_dir(notes, version_code)
+  text = notes.to_s.strip
+  return nil if text.empty?
+
+  require 'tmpdir'
+  require 'fileutils'
+  dir = File.join(Dir.mktmpdir("play-notes"), "en-US", "changelogs")
+  FileUtils.mkdir_p(dir)
+  UI.important("Play notes cut to #{PLAY_NOTES_MAX} characters (the summary has #{text.length})") if text.length > PLAY_NOTES_MAX
+  File.write(File.join(dir, "#{version_code}.txt"), text[0, PLAY_NOTES_MAX])
+  File.expand_path("../..", dir)
 end
 
 # Unescape literal \n sequences to real newlines for upload changelogs.

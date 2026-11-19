@@ -36,10 +36,10 @@
     "discover": {
         "home": {
             "title": "Entdecken",
-            "top_dapps": "Top-dApps",
+            "explore_dapps": "dApps entdecken",
             "news": "Neuigkeiten",
             "dapps_error": "Die empfohlenen dApps konnten nicht geladen werden",
-            "dapps_empty": "Noch keine dApps auf {{chain}}"
+            "dapps_empty_open_url": "Noch keine dApps auf {{chain}} gelistet. Öffne eine beliebige dApp, indem du oben ihre URL eingibst."
         },
         "dapp_row": {
             "favorite": "Zu Favoriten hinzufügen",
@@ -77,35 +77,28 @@
             "website": "Website",
             "open": "Öffnen"
         },
-        "folders": {
-            "name_sheet": {
-                "title_new": "Neuer Ordner",
-                "title_rename": "Ordner umbenennen",
-                "placeholder": "Ordnername",
-                "create": "Erstellen",
-                "save": "Speichern"
-            },
-            "empty": "Noch keine dApps in diesem Ordner"
-        },
         "favorites": {
             "title": "Favoriten",
-            "new_folder": "Neuer Ordner",
-            "all_favorites": "Alle Favoriten",
-            "dapp_count": "{{count}} dApps",
-            "dapp_count_one": "{{count}} dApp",
             "see_all": "Alle anzeigen",
             "empty_title": "Noch keine Favoriten",
             "empty_body": "Entdecke die dApps",
-            "all_folders_title": "Alle Ordner",
             "added_toast": {
-                "title": "Zu Favoriten hinzugefügt",
-                "body": "Tippe, um es einem Ordner hinzuzufügen"
+                "title": "Zu Favoriten hinzugefügt"
+            },
+            "search_placeholder": "Favoriten durchsuchen",
+            "filter": {
+                "all_categories": "Alle Kategorien",
+                "categories_title": "Kategorien",
+                "all": "Alle",
+                "sort_title": "Sortieren nach",
+                "sort_recent": "Zuletzt hinzugefügt",
+                "sort_visits": "Meistbesucht"
+            },
+            "rearrange": {
+                "title": "Neu anordnen",
+                "open_label": "Favoriten neu anordnen",
+                "remove_label": "{{name}} aus den Favoriten entfernen"
             }
-        },
-        "add_to_folder": {
-            "title": "Zu Ordner hinzufügen",
-            "new_folder": "Neuer Ordner",
-            "done": "Fertig"
         }
     },
     "account_menu": {
@@ -1209,6 +1202,7 @@
             "empty_body": "Sobald ein Guthabenverlauf vorliegt, wird hier ein Diagramm angezeigt",
             "asset_empty_body": "Sobald für dieses Asset auf diesem Konto ein Guthabenverlauf vorliegt, wird hier ein Diagramm angezeigt",
             "excludes_networks": "Dieses Diagramm enthält noch keine {{networks}}-Assets",
+            "failed_networks": "Der Verlauf von {{networks}} konnte nicht geladen werden und fehlt daher in diesem Diagramm",
             "currency_unavailable_body": "Dieses Diagramm ist in {{currency}} derzeit nicht verfügbar"
         },
         "webview": {
@@ -3518,6 +3512,7 @@
         "notifications": {
             "push_notifications": "Push-Benachrichtigungen",
             "account_notifications": "Benachrichtigungen anzeigen für",
+            "network_notifications": "Benachrichtigungen anzeigen auf",
             "push_service_unavailable": "Dieser Browser stellt keine Push-Benachrichtigungen zu. Aktiviere in Brave in den Datenschutzeinstellungen „Google-Dienste für Push-Benachrichtigungen verwenden“ und öffne Pera dann erneut.",
             "no_accounts": "Keine Konten gefunden.",
             "no_accounts_body": "Keine Konten gefunden. Füge ein Konto hinzu, um Benachrichtigungseinstellungen zu verwalten."
@@ -3766,6 +3761,8 @@
             "title_clawback": "Clawback",
             "title_contract_interaction": "Smart-Contract-Interaktion",
             "token_contract": "{{symbol}}-Token-Contract",
+            "unknown": "Unbekannt",
+            "unknown_receive_body": "Pera kann nicht erkennen, was du von dieser App erhältst",
             "unverified": "Nicht verifiziert",
             "you_receive": "Du erhältst",
             "you_send": "Du sendest",
@@ -3879,6 +3876,10 @@
         },
         "record_detail": {
             "read_failed": "Die Aufrufdetails dieser Transaktion konnten nicht aus dem Netzwerk gelesen werden.",
+            "not_found": {
+                "title": "Transaktion nicht gefunden",
+                "body": "Pera konnte diese Transaktion im Verlauf des Kontos nicht finden. Eine neue Transaktion kann eine Minute brauchen, bis sie erscheint. Versuche es in Kürze erneut."
+            },
             "inferred_notice": "Aus den Guthabenänderungen abgeleitet. Pera konnte den Aufruf selbst nicht lesen.",
             "transaction_id": "Transaktions-ID",
             "quantity": "Menge",
@@ -4185,7 +4186,10 @@
             "to": "An",
             "balance_label": "Guthaben: <0/>",
             "max": "MAX",
-            "select_asset": "Auswählen"
+            "select_asset": "Auswählen",
+            "flip": "Zahlen und Erhalten tauschen",
+            "flip_unavailable_title": "Tausch lässt sich nicht umkehren",
+            "flip_unavailable_body": "Dein Konto kann nicht über das {{network}}-Netzwerk bezahlen."
         },
         "asset_selection": {
             "swap_from_title": "Tauschen von",
@@ -4250,9 +4254,18 @@
         },
         "execution": {
             "error_title": "Tausch fehlgeschlagen",
-            "error_body": "Beim Tausch ist ein Fehler aufgetreten. Bitte versuche es erneut.",
+            "failed_title": {
+                "prepare": "Tausch konnte nicht gestartet werden",
+                "approval": "Freigabe fehlgeschlagen",
+                "swap": "Tausch fehlgeschlagen"
+            },
             "provider_failed_body": "Dieser Anbieter konnte den Tausch nicht durchführen. Versuche es mit einem anderen Anbieter.",
-            "insufficient_native_title": "Unzureichendes {{symbol}}",
+            "provider_unavailable_body": "Der Anbieter ist gerade nicht verfügbar. Versuche es gleich noch einmal.",
+            "route_unverified_body": "Pera kann den Vertrag dieses Anbieters für den Tausch auf {{network}} noch nicht überprüfen, deshalb wurde nichts signiert. Versuche einen anderen Anbieter oder versuche es später erneut.",
+            "quote_mismatch_body": "Die Transaktionen des Anbieters passten nicht zu diesem Angebot, deshalb wurde nichts signiert. Versuche es erneut oder wähle einen anderen Anbieter.",
+            "unsupported_order_body": "Pera kann die Bestellung dieses Anbieters nicht abschließen, deshalb wurde nichts signiert. Wähle einen anderen Anbieter.",
+            "signing_failed_body": "Die Transaktion konnte nicht signiert werden, deshalb wurde sie nicht gesendet. Versuche es erneut.",
+            "order_insufficient_balance_body": "Dein Guthaben reicht für diesen Betrag und die Netzwerkgebühr nicht aus. Versuche einen kleineren Betrag oder füge Guthaben für die Gebühr hinzu.",
             "insufficient_native_body": "Dieses Konto benötigt mindestens {{amount}} {{symbol}} mehr, um diesen Tausch, die Gebühren und das Mindestguthaben zu decken. Füge mehr {{symbol}} hinzu und versuche es erneut.",
             "success_title": "Tausch abgeschlossen",
             "success_body": "Tausch von {{fromAsset}} zu {{toAsset}} erfolgreich abgeschlossen",
@@ -4294,6 +4307,10 @@
                 "empty": {
                     "title": "Noch keine Tauschvorgänge",
                     "body": "Dein Tauschverlauf wird hier angezeigt."
+                },
+                "not_on_device": {
+                    "title": "Verlauf noch nicht verfügbar",
+                    "body": "Dieses Konto ist auf diesem Gerät noch nicht eingerichtet, daher kann sein Tauschverlauf nicht geladen werden. Bitte versuche es später erneut."
                 },
                 "error": {
                     "title": "Etwas ist schiefgelaufen",
@@ -4443,6 +4460,8 @@
             "for": "für",
             "empty_title": "Noch keine Transaktionen",
             "empty_body": "Deine Kauftransaktionen werden hier angezeigt.",
+            "not_on_device_title": "Verlauf noch nicht verfügbar",
+            "not_on_device_body": "Dieses Konto ist auf diesem Gerät noch nicht eingerichtet, daher kann sein Kaufverlauf nicht geladen werden. Bitte versuche es später erneut.",
             "error_title": "Etwas ist schiefgelaufen",
             "error_body": "Wir konnten deinen Kaufverlauf nicht laden. Bitte versuche es erneut."
         }

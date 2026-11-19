@@ -39,7 +39,11 @@ const dapp = (url: string): DiscoverDapp => ({
 
 describe('useOpenDapp', () => {
     beforeEach(() => {
-        useDiscoverFavoritesStore.setState({ favorites: {}, favoriteOrder: [] })
+        useDiscoverFavoritesStore.setState({
+            favorites: {},
+            favoriteOrder: [],
+            visits: {},
+        })
         pushWebView.mockClear()
         vi.mocked(trackEvent).mockClear()
         vi.mocked(useWebView).mockReturnValue({
@@ -64,6 +68,27 @@ describe('useOpenDapp', () => {
             dapp_url: 'https://a.io',
             chain_id: 'algorand',
         })
+    })
+
+    it('counts an open of a favorite for Most visited', () => {
+        useDiscoverFavoritesStore.getState().addFavorite(dapp('https://a.io'))
+        const { result } = renderHook(() => useOpenDapp())
+
+        result.current.openDapp(dapp('https://a.io'), null)
+        result.current.openDapp(dapp('https://other.io'), null)
+
+        expect(useDiscoverFavoritesStore.getState().visits).toEqual({
+            'https://a.io': 1,
+        })
+    })
+
+    it('openWebPage counts no visit', () => {
+        useDiscoverFavoritesStore.getState().addFavorite(dapp('https://a.io'))
+        const { result } = renderHook(() => useOpenDapp())
+
+        result.current.openWebPage('https://a.io')
+
+        expect(useDiscoverFavoritesStore.getState().visits).toEqual({})
     })
 
     it('the pushed onToggle favorites the url and tracks it', () => {

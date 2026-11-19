@@ -17,7 +17,12 @@ import {
     PeraServiceUnavailableError,
 } from '@perawallet/wallet-core-shared'
 import { SwapQuoteMismatchError } from '../../errors'
-import { isSwapQuoteGoneError, swapQuoteFailureOf } from '../routerErrors'
+import {
+    isAccountNotOnDeviceError,
+    isSwapQuoteGoneError,
+    swapOrderRefusalOf,
+    swapQuoteFailureOf,
+} from '../routerErrors'
 
 const refusal = (backendCode?: string) =>
     new PeraNetworkError('client', { status: 409, backendCode })
@@ -42,6 +47,78 @@ describe('isSwapQuoteGoneError', () => {
         expect(isSwapQuoteGoneError(refusal('invalid_request'))).toBe(false)
         expect(isSwapQuoteGoneError(refusal())).toBe(false)
         expect(isSwapQuoteGoneError(new Error('quote_not_found'))).toBe(false)
+    })
+})
+
+describe('isAccountNotOnDeviceError', () => {
+    it('matches the refusal by its code, parsed or in the body', () => {
+        expect(
+            isAccountNotOnDeviceError(
+                new PeraNetworkError('client', {
+                    status: 422,
+                    backendCode: 'account_not_on_device',
+                }),
+            ),
+        ).toBe(true)
+        expect(
+            isAccountNotOnDeviceError(
+                routerRefusal(422, {
+                    error: 'Not an account of this device',
+                    code: 'account_not_on_device',
+                }),
+            ),
+        ).toBe(true)
+    })
+
+    it('ignores other refusals and plain errors', () => {
+        expect(isAccountNotOnDeviceError(refusal('invalid_cursor'))).toBe(false)
+        expect(
+            isAccountNotOnDeviceError(new Error('account_not_on_device')),
+        ).toBe(false)
+    })
+})
+
+describe('swapOrderRefusalOf', () => {
+    it.each([
+        [422, 'insufficient_balance', 'client', 'insufficient-balance'],
+        [503, 'upstream_unavailable', 'server', 'provider-unavailable'],
+        [429, 'upstream_rate_limited', 'client', 'provider-unavailable'],
+        [503, 'route_unavailable', 'server', 'provider-unavailable'],
+        [422, 'order_rejected', 'client', 'provider-declined'],
+        [502, 'provider_response_rejected', 'server', 'provider-declined'],
+    ] as const)('maps %i %s', (status, code, kind, expected) => {
+        const error = routerRefusal(status, { error: 'Nope', code }, kind)
+
+        expect(swapOrderRefusalOf(error)).toBe(expected)
+    })
+
+    it('treats an uncoded 5xx as the provider being unavailable', () => {
+        expect(
+            swapOrderRefusalOf(new PeraNetworkError('server', { status: 500 })),
+        ).toBe('provider-unavailable')
+    })
+
+    it('treats an uncoded or unknown-coded 4xx as the provider declining', () => {
+        expect(
+            swapOrderRefusalOf(new PeraNetworkError('client', { status: 422 })),
+        ).toBe('provider-declined')
+        expect(swapOrderRefusalOf(refusal('something_new'))).toBe(
+            'provider-declined',
+        )
+    })
+
+    it('reads the code off the typed error when the body did not parse', () => {
+        expect(swapOrderRefusalOf(refusal('insufficient_balance'))).toBe(
+            'insufficient-balance',
+        )
+    })
+
+    it.each([
+        ['offline', new PeraNetworkError('offline')],
+        ['timeout', new PeraNetworkError('timeout')],
+        ['a plain error', new Error('boom')],
+    ])('has no refusal for %s', (_name, error) => {
+        expect(swapOrderRefusalOf(error)).toBeNull()
     })
 })
 

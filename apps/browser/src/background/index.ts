@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { handleAutoLockAlarm } from '@perawallet/wallet-extension-vault-chrome/vault/autolock'
+import {
+    handleAutoLockAlarm,
+    isSessionUnlocked,
+    onLockStateChanged,
+} from '@perawallet/wallet-extension-vault-chrome/vault/autolock'
 import {
     DB_CONTROL_SCOPE,
     ensureDeviceInstallationID,
@@ -20,6 +24,7 @@ import {
     ApprovalWindowBridge,
     CONNECTIONS_CONTROL_SCOPE,
     PasskeyRouter,
+    installLockStateHost,
 } from '@perawallet/wallet-core-browser-runtime'
 import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { config } from '@perawallet/wallet-core-config'
@@ -65,6 +70,13 @@ installPushHandlers({ uriSchemes: algorandDescriptor.uriSchemes })
 installIntegrityRenewal()
 installIntegrityEnrolment()
 installIntegrityControlRoute()
+
+// Top-level too: the auto-lock alarm can wake the worker just to lock, and the
+// offscreen host must hear it to withdraw accounts from connected pages.
+installLockStateHost({
+    isUnlocked: isSessionUnlocked,
+    onLockStateChanged,
+})
 
 chrome.runtime.onInstalled.addListener(details => {
     logger.info('[pera] extension installed', { reason: details.reason })

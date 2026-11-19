@@ -32,7 +32,7 @@ export const evmTxHashOf = raw =>
     `0x${bytesToHex(keccak_256(hexToBytes(raw.slice(2))))}`
 
 const GWEI = 1_000_000_000n
-const BLOCK_NUMBER = 16_777_216n
+export const BLOCK_NUMBER = 16_777_216n
 const BASE_FEE = 10n * GWEI
 const PRIORITY_FEE = 1n * GWEI
 
@@ -41,6 +41,10 @@ const hash32 = byte => `0x${byte.repeat(32)}`
 
 // 1 ETH, so a 1-wei send is always affordable.
 export const BALANCE_WEI = 10n ** 18n
+
+// What a plain eth_call (anything but Multicall3's aggregate3) returns: one
+// ABI word holding 42, so a dApp can decode it as a uint256.
+export const CALL_RESULT = `0x${'0'.repeat(62)}2a`
 
 const MULTICALL3_ADDRESS = '0xca11bde05977b3631167028862be2a173976ca11'
 const selectorOf = signature =>
@@ -122,6 +126,8 @@ export const createFakeEvmNode = () => {
         eth_blockNumber: () => toHex(BLOCK_NUMBER),
         eth_getTransactionCount: () => '0x0',
         eth_estimateGas: () => toHex(21_000n),
+        eth_call: () => CALL_RESULT,
+        eth_getCode: () => '0x',
         eth_gasPrice: () => toHex(BASE_FEE + PRIORITY_FEE),
         eth_maxPriorityFeePerGas: () => toHex(PRIORITY_FEE),
         eth_getBlockByNumber: () => block(),

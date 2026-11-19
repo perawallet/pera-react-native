@@ -219,7 +219,7 @@ export const TransactionConfirmationScreen = () => {
                                 scope={scope}
                                 forceShowIcon
                                 showChainBadge
-                                unnamedAddressFormat='full'
+                                addressFormat='full'
                                 showCopy={false}
                             />
                         </PWTouchableOpacity>

@@ -130,7 +130,7 @@
     "zustand": "catalog:"
   },
   "devDependencies": {
-    "@algorandfoundation/algokit-client-generator": "6.0.1",
+    "@algorandfoundation/algokit-client-generator": "6.0.2",
     "@algorandfoundation/react-native-keystore": "catalog:",
     "@perawallet/wallet-core-devtools": "workspace:*",
     "@perawallet/wallet-core-walletconnect": "workspace:*",

@@ -12,29 +12,27 @@
 
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { generateUniqueId } from '@perawallet/wallet-core-shared'
-import { DiscoverEvent, trackEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useBottomSheet } from '@modules/bottom-sheet'
+import { useOpenDapp } from '../../../hooks/useOpenDapp'
 import { useDiscoverFavoritesStore } from '../../../store/useDiscoverFavoritesStore'
+import { useDiscoverFavoritesFilterStore } from '../../../store/useDiscoverFavoritesFilterStore'
 import type { DiscoverDapp } from '../../../types'
-import { useFavoritesSection } from '../useFavoritesSection'
+import {
+    FAVORITES_GRID_LIMIT,
+    useFavoritesSection,
+} from '../useFavoritesSection'
 
-vi.mock('@analytics', async () => ({
-    ...(await vi.importActual<object>('@analytics')),
-    trackEvent: vi.fn(),
-}))
 vi.mock('@hooks/useAppNavigation', () => ({ useAppNavigation: vi.fn() }))
-vi.mock('@modules/bottom-sheet', () => ({ useBottomSheet: vi.fn() }))
+vi.mock('../../../hooks/useOpenDapp', () => ({ useOpenDapp: vi.fn() }))
 
 const navigate = vi.fn()
-const request = vi.fn()
+const openDapp = vi.fn()
 
-const dapp = (url: string): DiscoverDapp => ({
-    url,
-    name: url,
+const dapp = (n: number): DiscoverDapp => ({
+    url: `https://d${n}.io`,
+    name: `D${n}`,
     logo: null,
-    categories: [],
+    categories: n % 2 === 0 ? ['DeFi'] : ['Wallet'],
     chains: [],
 })
 
@@ -43,111 +41,64 @@ const store = () => useDiscoverFavoritesStore.getState()
 describe('useFavoritesSection', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        let next = 0
-        vi.mocked(generateUniqueId).mockImplementation(() => `folder-${++next}`)
         vi.mocked(useAppNavigation).mockReturnValue({ navigate } as never)
-        vi.mocked(useBottomSheet).mockReturnValue({ request } as never)
-        useDiscoverFavoritesStore.setState({
-            favorites: {},
-            favoriteOrder: [],
-            folders: {},
-            folderOrder: [],
-        })
+        vi.mocked(useOpenDapp).mockReturnValue({ openDapp } as never)
+        store().resetState()
+        useDiscoverFavoritesFilterStore.getState().reset()
     })
 
-    it('shows at most four folders, newest first, and flags more', () => {
-        // Arrange
-        ;['A', 'B', 'C', 'D', 'E'].forEach(name => store().createFolder(name))
-
-        // Act
+    it('is empty with no favorites', () => {
         const { result } = renderHook(() => useFavoritesSection())
 
-        // Assert
-        expect(result.current.folders.map(f => f.name)).toEqual([
-            'E',
-            'D',
-            'C',
-            'B',
-        ])
-        expect(result.current.hasMore).toBe(true)
-    })
-
-    it("counts every favorite and each folder's dApps", () => {
-        // Arrange
-        store().addFavorite(dapp('https://a.io'))
-        store().addFavorite(dapp('https://b.io'))
-        store().createFolder('One', 'https://a.io')
-
-        // Act
-        const { result } = renderHook(() => useFavoritesSection())
-
-        // Assert
-        expect(result.current.favoriteCount).toBe(2)
-        expect(result.current.folders).toEqual([
-            { id: 'folder-1', name: 'One', count: 1 },
-        ])
-        expect(result.current.hasMore).toBe(false)
-    })
-
-    it('is empty only with no favorites and no folders', () => {
-        const { result, rerender } = renderHook(() => useFavoritesSection())
         expect(result.current.isEmpty).toBe(true)
+        expect(result.current.dapps).toEqual([])
+    })
 
-        act(() => {
-            store().createFolder('One')
-        })
-        rerender()
+    it('shows at most six favorites, newest first', () => {
+        for (let n = 1; n <= 8; n += 1) store().addFavorite(dapp(n))
 
+        const { result } = renderHook(() => useFavoritesSection())
+
+        expect(FAVORITES_GRID_LIMIT).toBe(6)
+        expect(result.current.dapps.map(d => d.name)).toEqual([
+            'D8',
+            'D7',
+            'D6',
+            'D5',
+            'D4',
+            'D3',
+        ])
         expect(result.current.isEmpty).toBe(false)
     })
 
-    it('creates the named folder and tracks it', async () => {
-        // Arrange
-        request.mockResolvedValue('Swap')
+    it('follows the shared category filter', () => {
+        for (let n = 1; n <= 4; n += 1) store().addFavorite(dapp(n))
         const { result } = renderHook(() => useFavoritesSection())
 
-        // Act
-        await act(() => result.current.openNewFolder())
+        act(() =>
+            useDiscoverFavoritesFilterStore.getState().setCategory('DeFi'),
+        )
 
-        // Assert
-        expect(store().folders['folder-1']?.name).toBe('Swap')
-        expect(trackEvent).toHaveBeenCalledWith(DiscoverEvent.FolderCreate)
+        expect(result.current.dapps.map(d => d.name)).toEqual(['D4', 'D2'])
     })
 
-    it('opens the name sheet without the auto container, as PWSheetLayout needs', async () => {
-        request.mockResolvedValue(undefined)
+    it('opens a favorite with no chain context', () => {
+        store().addFavorite(dapp(1))
         const { result } = renderHook(() => useFavoritesSection())
 
-        await act(() => result.current.openNewFolder())
+        result.current.openDapp(result.current.dapps[0]!)
 
-        expect(request.mock.calls[0]?.[0].options).toEqual({
-            size: 'auto',
-            enablePanDownToClose: true,
-            autoCreateContainer: false,
-        })
+        expect(openDapp).toHaveBeenCalledWith(
+            expect.objectContaining({ url: 'https://d1.io' }),
+            null,
+        )
     })
 
-    it('creates nothing when the name sheet is dismissed', async () => {
-        request.mockResolvedValue(undefined)
+    it('See all opens the Favorites screen', () => {
         const { result } = renderHook(() => useFavoritesSection())
 
-        await act(() => result.current.openNewFolder())
+        result.current.openAll()
 
-        expect(store().folderOrder).toEqual([])
-        expect(trackEvent).not.toHaveBeenCalled()
-    })
-
-    it('opens all favorites, a folder and all folders', () => {
-        const { result } = renderHook(() => useFavoritesSection())
-
-        result.current.openAllFavorites()
-        result.current.openFolder('f1')
-        result.current.openAllFolders()
-
-        expect(navigate).toHaveBeenNthCalledWith(1, 'DiscoverAllFavorites')
-        expect(navigate).toHaveBeenNthCalledWith(2, 'DiscoverFolder', {
-            folderId: 'f1',
-        })
-        expect(navigate).toHaveBeenNthCalledWith(3, 'DiscoverAllFolders')
+        expect(navigate).toHaveBeenCalledWith('DiscoverAllFavorites')
     })
 })

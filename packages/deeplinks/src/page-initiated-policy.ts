@@ -66,6 +66,7 @@ export const DEEPLINK_PAGE_POLICY: Record<DeeplinkType, DeeplinkPagePolicy> = {
     // --- Switches the selected account ----------------------------------
     [DeeplinkType.ACCOUNT_DETAIL]: 'origin-gated',
     [DeeplinkType.ASSET_DETAIL]: 'origin-gated',
+    [DeeplinkType.TRANSACTION_DETAIL]: 'origin-gated',
     [DeeplinkType.ASSET_TRANSACTIONS]: 'origin-gated',
     [DeeplinkType.SWAP]: 'origin-gated',
     [DeeplinkType.BUY]: 'origin-gated',

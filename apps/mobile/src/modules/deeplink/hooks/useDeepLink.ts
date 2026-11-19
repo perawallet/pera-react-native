@@ -49,9 +49,12 @@ import {
     useSelectedAccountId,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { AssetRef, ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useSwapChainResolver } from '@perawallet/wallet-core-swaps'
-import { useBottomSheetStore } from '@modules/bottom-sheet'
+import {
+    isRegisteredBottomSheetOpen,
+    useBottomSheetStore,
+} from '@modules/bottom-sheet'
 import { BIDALI_SHEET_OPTIONS } from '@modules/gift-card'
 import { usePendingSignaturesSheet } from '@modules/multisig'
 import { useSendAccountResolver } from '@modules/transactions'
@@ -67,7 +70,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import { useIsGiftCardsEnabled } from '@hooks/useIsGiftCardsEnabled'
 import { useCapabilityCheck } from '@hooks/useCapability'
-import { navigateHome, navigateToScreen } from '../navigateToScreen'
+import { navigateHome, navigateToScreen, pushScreen } from '../navigateToScreen'
 import { capabilityRequirementForDeeplink } from '../capability-policy'
 import {
     useAssetOptInDeeplink,
@@ -290,6 +293,9 @@ export const useDeepLink = (): UseDeepLinkResult => {
             parsedType: string,
         ) => {
             const open = (account: WalletAccount) => {
+                // Checked again: the picker and enableChain settle later, and
+                // a Send the user opened meanwhile must keep its sender.
+                if (isRegisteredBottomSheetOpen('send-funds')) return
                 setSelectedAccountId(account.id)
                 openSendFunds({ ...prefill, chainId })
             }
@@ -312,6 +318,9 @@ export const useDeepLink = (): UseDeepLinkResult => {
             prefill: SendFundsDeeplinkPrefill,
             parsedType: string,
         ): boolean => {
+            // An open Send reads the selected account live, so a link must not
+            // pick or switch a sender under it.
+            if (isRegisteredBottomSheetOpen('send-funds')) return true
             const resolution = resolveSender(chainId)
             if (resolution.kind === 'none') {
                 showError({
@@ -361,6 +370,26 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 CHAIN_SELECTION_SHEET_OPTIONS,
             )
             if (chainId) await openAddressActions(chainId, address)
+        }
+
+        const openAssetDetail = (
+            chainId: ChainId,
+            address: string,
+            assetRef: Optional<AssetRef>,
+        ) => {
+            selectAccountByAddress(chainId, address)
+            navigateToScreen(replaceCurrentScreen, 'TabBar', {
+                screen: 'Home',
+                params: {
+                    screen: 'AssetDetails',
+                    params: {
+                        assetId:
+                            assetRef?.assetId ??
+                            nativeAssetFor(chainId).assetId,
+                        chainId,
+                    },
+                },
+            })
         }
 
         try {
@@ -594,20 +623,51 @@ export const useDeepLink = (): UseDeepLinkResult => {
 
                 case DeeplinkType.ASSET_DETAIL:
                 case DeeplinkType.ASSET_TRANSACTIONS: {
+                    openAssetDetail(
+                        parsedData.target.chainId,
+                        parsedData.address,
+                        parsedData.assetRef,
+                    )
+                    break
+                }
+
+                case DeeplinkType.TRANSACTION_DETAIL: {
                     const { chainId } = parsedData.target
-                    selectAccountByAddress(chainId, parsedData.address)
-                    navigateToScreen(replaceCurrentScreen, 'TabBar', {
-                        screen: 'Home',
-                        params: {
-                            screen: 'AssetDetails',
-                            params: {
-                                assetId:
-                                    parsedData.assetRef?.assetId ??
-                                    nativeAssetFor(chainId).assetId,
-                                chainId,
-                            },
-                        },
-                    })
+                    const account = findLinkedAccount(
+                        chainId,
+                        parsedData.address,
+                    )
+                    // The stored address, not the link's: History reads from it.
+                    const accountAddress = account
+                        ? chainAccountOf(account, chainId)?.address
+                        : undefined
+                    if (
+                        !account ||
+                        !accountAddress ||
+                        !isAllowed({
+                            chain: { chainId, capability: 'history' },
+                        })
+                    ) {
+                        openAssetDetail(
+                            chainId,
+                            parsedData.address,
+                            parsedData.assetRef,
+                        )
+                        break
+                    }
+                    setSelectedAccountId(account.id)
+                    const params = {
+                        scope: getSelectedScope(chainId),
+                        transactionId: parsedData.transactionId,
+                        accountAddress,
+                    }
+                    // `navigate` would reuse an open TransactionDetails and swap its params,
+                    // which breaks the screen when the other chain's detail hook differs.
+                    if (replaceCurrentScreen) {
+                        navigateToScreen(true, 'TransactionDetails', params)
+                    } else {
+                        pushScreen('TransactionDetails', params)
+                    }
                     break
                 }
 

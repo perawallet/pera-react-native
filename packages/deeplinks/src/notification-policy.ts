@@ -29,6 +29,8 @@ export const DEEPLINK_NOTIFICATION_POLICY: Record<DeeplinkType, boolean> = {
     [DeeplinkType.HOME]: true,
     [DeeplinkType.ACCOUNT_DETAIL]: true,
     [DeeplinkType.ASSET_DETAIL]: true,
+    // Navigation only; the screen reads the transaction from the account's own history.
+    [DeeplinkType.TRANSACTION_DETAIL]: true,
     [DeeplinkType.ASSET_TRANSACTIONS]: true,
     [DeeplinkType.ASSET_INBOX]: true,
     // Fetched by id from the backend and reviewed in the sheet; the link
