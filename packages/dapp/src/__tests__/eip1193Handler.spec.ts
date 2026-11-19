@@ -1303,6 +1303,23 @@ describe('createEip1193ConnectionHandler', () => {
             ])
         })
 
+        it('reports chainChanged when the site’s chain moved while the sheet was open', async () => {
+            const { transport, registry, proposals, store } = setup([
+                connectedOn('ethereum'),
+            ])
+            await registry.initialize()
+            const pending = ask(transport)
+            await flush()
+            await store.upsert(connectedOn('base'))
+
+            await proposals[0].approve([ADDR_X])
+            await pending
+
+            expect(notificationsOf(transport, 'chainChanged')).toEqual([
+                { origin: ORIGIN, params: '0x1' },
+            ])
+        })
+
         it('still needs a user gesture for a connected site', async () => {
             const { transport, registry, proposals } = setup([
                 connectedOn('ethereum'),

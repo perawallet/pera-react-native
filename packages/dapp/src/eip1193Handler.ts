@@ -543,7 +543,7 @@ export const createEip1193ConnectionHandler = (
                 }
                 // Other tabs of the site learn the grant here; the requesting
                 // one also reads it off the answer.
-                if (existing && !isOnChain(existing, chain.scope.chainId)) {
+                if (replaced && !isOnChain(replaced, chain.scope.chainId)) {
                     await notifyOrigin(
                         origin,
                         EIP1193_EVENT.chainChanged,
