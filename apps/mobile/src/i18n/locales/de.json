@@ -4458,6 +4458,7 @@
             "destination_amount": "Zielbetrag",
             "network": "Netzwerk",
             "created_at": "Erstellt am",
+            "pay_by": "Zahlen bis",
             "exchange_rate": "Effektiver Wechselkurs",
             "to_address": "Zieladresse"
         },

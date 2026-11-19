@@ -241,6 +241,7 @@ const xoOrder: RampOrder = {
     kind: 'xo',
     orderId: 'order-2',
     deposit: { address: 'PAY_IN', memo: null },
+    expiresAt: null,
 }
 
 const belowMinQuoteError = new RampAmountOutOfRangeError(

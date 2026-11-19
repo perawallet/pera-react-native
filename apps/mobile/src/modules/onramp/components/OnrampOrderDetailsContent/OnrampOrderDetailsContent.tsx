@@ -47,6 +47,7 @@ export const OnrampOrderDetailsContent = ({
         destinationAmountLabel,
         networkName,
         createdAtLabel,
+        payByLabel,
         exchangeRateLabel,
         toAddress,
         sourceLogo,
@@ -144,6 +145,12 @@ export const OnrampOrderDetailsContent = ({
                         label={t('onramp.order_details.created_at')}
                         value={createdAtLabel}
                     />
+                    {payByLabel !== null && (
+                        <OnrampDetailRow
+                            label={t('onramp.order_details.pay_by')}
+                            value={payByLabel}
+                        />
+                    )}
                     {exchangeRateLabel !== null && (
                         <OnrampDetailRow
                             label={t('onramp.order_details.exchange_rate')}

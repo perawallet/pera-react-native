@@ -4466,6 +4466,7 @@
             "destination_amount": "Destination Amount",
             "network": "Network",
             "created_at": "Created At",
+            "pay_by": "Pay By",
             "exchange_rate": "Effective Exchange Rate",
             "to_address": "To Address"
         },

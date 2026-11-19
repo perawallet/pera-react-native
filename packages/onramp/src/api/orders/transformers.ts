@@ -39,6 +39,7 @@ export const transformRampOrder = (api: RampOrderApiResponse): RampOrder => {
             kind: 'xo',
             orderId: api.order_id,
             deposit: { address: parsed.address, memo: parsed.memo ?? null },
+            expiresAt: api.expires_at ?? null,
         }
     }
 

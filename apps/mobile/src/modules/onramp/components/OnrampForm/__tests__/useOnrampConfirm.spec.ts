@@ -364,6 +364,7 @@ describe('useOnrampConfirm', () => {
             kind: 'xo',
             orderId: 'order-xo-1',
             deposit: { address: 'PAYIN', memo: '42' },
+            expiresAt: null,
         })
         const onNavigateToHistory = vi.fn()
         const { result } = renderHook(() =>
@@ -393,6 +394,7 @@ describe('useOnrampConfirm', () => {
             kind: 'xo',
             orderId: 'order-xo-2',
             deposit: { address: 'PAYIN', memo: null },
+            expiresAt: null,
         })
         const { result } = renderHook(() =>
             useOnrampConfirm({

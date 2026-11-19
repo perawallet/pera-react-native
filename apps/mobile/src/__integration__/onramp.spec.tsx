@@ -1132,6 +1132,68 @@ describe('Flow: Onramp buy (native XO)', () => {
         expect(screen.getAllByText(HISTORY_ORDER_ID).length).toBeGreaterThan(0)
     })
 
+    it('Given a pending deposit order this device never placed, when the user opens it from History, then the pay-in address, memo, deadline and Cancel come from the router', async () => {
+        seedSelectedAccount()
+        seedDeviceId()
+        markIntroSeen()
+        const orderId = 'history-deposit-1'
+
+        server.use(
+            ...buildXoPairHandlers(),
+            mockRampRegion({ response: REGION_RESPONSE }),
+            mockRampHistory({
+                response: {
+                    next: null,
+                    previous: null,
+                    results: [
+                        {
+                            ...buildMeldHistoryItem(orderId, 'pending'),
+                            aggregator: 'xo',
+                            provider: 'XO',
+                            funding_method: 'external_deposit',
+                            source_asset: BTC_ASSET,
+                            source_amount: '50000000',
+                            expires_at: '2025-12-24T00:16:00Z',
+                            steps: [
+                                {
+                                    kind: 'deposit_instructions',
+                                    address: PAY_IN_ADDRESS,
+                                    memo: '4242',
+                                    amount: '50000000',
+                                    expires_at: '2025-12-24T00:16:00Z',
+                                },
+                            ],
+                        },
+                    ],
+                },
+            }),
+        )
+
+        renderWithNavigation(OnrampScreen, 'Fund')
+
+        fireEvent.click(
+            await screen.findByTestId(
+                'onramp-tab-history',
+                {},
+                { timeout: 5000 },
+            ),
+        )
+        fireEvent.click(
+            await screen.findByTestId(
+                `onramp-history-item-${orderId}`,
+                {},
+                { timeout: 5000 },
+            ),
+        )
+
+        expect(
+            await screen.findByText(PAY_IN_ADDRESS, {}, { timeout: 5000 }),
+        ).toBeTruthy()
+        expect(screen.getByText('4242')).toBeTruthy()
+        expect(screen.getByText('onramp.order_details.pay_by')).toBeTruthy()
+        expect(screen.getByTestId('onramp-cancel-order')).toBeTruthy()
+    })
+
     it('Given an account the device has not registered, when the user opens the History tab, then it explains the account is not set up instead of failing', async () => {
         seedSelectedAccount()
         seedDeviceId()

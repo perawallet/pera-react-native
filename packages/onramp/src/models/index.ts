@@ -84,7 +84,13 @@ export type RampDepositInstructions = {
 
 export type RampOrder =
     | { kind: 'meld'; orderId: string; checkoutUrl: string }
-    | { kind: 'xo'; orderId: string; deposit: RampDepositInstructions }
+    | {
+          kind: 'xo'
+          orderId: string
+          deposit: RampDepositInstructions
+          /** ISO datetime the router stops watching the pay-in address; null if none. */
+          expiresAt: Nullable<string>
+      }
 
 export type RampRegion = { countryCode: string; countryName: string }
 
@@ -103,4 +109,6 @@ export type RampHistoryItem = {
     toAddress?: string
     payInAddress?: string
     payInAddressTag?: string
+    /** ISO datetime a pending order expires at, unpaid. */
+    expiresAt?: string
 }

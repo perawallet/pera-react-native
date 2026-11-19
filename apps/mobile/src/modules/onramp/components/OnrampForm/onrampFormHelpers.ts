@@ -63,4 +63,5 @@ export const buildPendingXoHistoryItem = (
     toAddress,
     payInAddress: order.deposit.address,
     payInAddressTag: order.deposit.memo ?? undefined,
+    ...(order.expiresAt ? { expiresAt: order.expiresAt } : {}),
 })

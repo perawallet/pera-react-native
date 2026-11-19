@@ -4466,6 +4466,7 @@
             "destination_amount": "Hedef miktarı",
             "network": "Ağ",
             "created_at": "Oluşturulma tarihi",
+            "pay_by": "Son ödeme tarihi",
             "exchange_rate": "Gerçekleşen kur",
             "to_address": "Alıcı adresi"
         },

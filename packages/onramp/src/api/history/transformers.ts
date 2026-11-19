@@ -26,6 +26,7 @@ import {
     toRampToken,
     type RampAssetItem,
 } from '../router-asset'
+import { depositInstructionsStepSchema } from '../orders/schema'
 import type { RampHistoryItemApiResponse } from './schema'
 
 // What a legacy order that names no asset renders as.
@@ -58,6 +59,19 @@ const toAmount = (
         : baseUnitsToDisplayUnits(baseUnits, decimals)
 }
 
+// A malformed step drops only the pay-in card, never the whole history page.
+const payInOf = (
+    item: RampHistoryItemApiResponse,
+): Pick<RampHistoryItem, 'payInAddress' | 'payInAddressTag'> => {
+    const step = item.steps?.find(s => s.kind === 'deposit_instructions')
+    const parsed = depositInstructionsStepSchema.safeParse(step)
+    if (!parsed.success) return {}
+    return {
+        payInAddress: parsed.data.address,
+        ...(parsed.data.memo ? { payInAddressTag: parsed.data.memo } : {}),
+    }
+}
+
 export const transformRampHistoryItem = (
     item: RampHistoryItemApiResponse,
 ): RampHistoryItem => ({
@@ -83,4 +97,6 @@ export const transformRampHistoryItem = (
     ...(item.destination_account
         ? { toAddress: addressOfRouterAccount(item.destination_account) }
         : {}),
+    ...(item.expires_at ? { expiresAt: item.expires_at } : {}),
+    ...payInOf(item),
 })

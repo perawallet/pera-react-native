@@ -35,8 +35,8 @@ type OnrampState = BaseStoreState & {
     senderAddress: string
     /**
      * Pay-in details of the deposit orders placed on this device, by order id.
-     * The router's order items don't carry them, so History's pay-in card and
-     * Cancel depend on this. Newest 20 kept.
+     * History falls back to these when the router's order item has no deposit
+     * step. Newest 20 kept.
      */
     depositInstructions: Record<string, RampDepositInstructions>
     setSelectedSourceTokenId: (id: Nullable<string>) => void
