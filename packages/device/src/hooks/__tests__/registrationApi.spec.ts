@@ -10,9 +10,14 @@
  limitations under the License
  */
 
+// @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { act, renderHook } from '@testing-library/react'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
-import { isDeviceRegistrationV4Enabled } from '../registrationApi'
+import {
+    isDeviceRegistrationV4Enabled,
+    useIsDeviceRegistrationV4Enabled,
+} from '../registrationApi'
 
 const mocks = vi.hoisted(() => ({
     remote: undefined as boolean | undefined,
@@ -83,5 +88,24 @@ describe('isDeviceRegistrationV4Enabled', () => {
             .setConfigOverride('enable_device_registration_v4', true)
 
         expect(isDeviceRegistrationV4Enabled()).toBe(true)
+    })
+})
+
+describe('useIsDeviceRegistrationV4Enabled', () => {
+    afterEach(() => {
+        useRemoteConfigStore.getState().resetState()
+    })
+
+    it('re-renders with the new value when a developer override flips it', () => {
+        const { result } = renderHook(() => useIsDeviceRegistrationV4Enabled())
+        expect(result.current).toBe(false)
+
+        act(() => {
+            useRemoteConfigStore
+                .getState()
+                .setConfigOverride('enable_device_registration_v4', true)
+        })
+
+        expect(result.current).toBe(true)
     })
 })

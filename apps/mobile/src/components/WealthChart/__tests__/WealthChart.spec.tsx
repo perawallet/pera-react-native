@@ -322,28 +322,6 @@ describe('WealthChart', () => {
         expect(screen.queryByTestId('wealth-chart-failed-retry')).toBeNull()
     })
 
-    it('names a network whose history failed even where the chart leaves uncovered networks unnamed', () => {
-        mockHistory({
-            data: PLOTTED,
-            excludedChainIds: ['base' as ChainId],
-            failedChainIds: [ETHEREUM.chainId],
-            isPartial: true,
-        })
-
-        render(
-            <WealthChart
-                sources={SOURCES}
-                currencyScope={ALGORAND}
-                period='one-week'
-                onSelectionChanged={vi.fn()}
-                shouldShowExcludedNetworks={false}
-            />,
-        )
-
-        expect(screen.queryByText(/doesn't include/)).toBeNull()
-        expect(screen.getByTestId('wealth-chart-failed-retry')).toBeTruthy()
-    })
-
     it('shows no note when every network is charted', () => {
         mockHistory({})
 

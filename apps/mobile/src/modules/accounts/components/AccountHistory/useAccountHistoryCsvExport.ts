@@ -13,6 +13,7 @@
 import { useCallback } from 'react'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
+    chainDisplayNameOf,
     useChainCapability,
     useIsCapabilityRestricted,
 } from '@perawallet/wallet-core-chain-shared'
@@ -36,6 +37,7 @@ import { shareFile } from '@utils/shareFile'
 export type UseAccountHistoryCsvExportParams = {
     scope: ChainScope
     accountAddress: Optional<string>
+    /** Rows from `scope`'s network alone. */
     transactionCount: number
     isMerged: boolean
 }
@@ -44,6 +46,7 @@ export type UseAccountHistoryCsvExportResult = {
     handleExportCsv: () => void
     isExportingCsv: boolean
     isCsvExportVisible: boolean
+    csvExportTitle: string
 }
 
 export const useAccountHistoryCsvExport = ({
@@ -105,11 +108,19 @@ export const useAccountHistoryCsvExport = ({
         scope.chainId,
         'csvExport',
     )
-    // Export is per network: on a merged history it would cover only one of them.
     const isCsvExportVisible =
-        !isMerged &&
-        transactionCount > 0 &&
-        (hasCsvExport || isCsvExportRestricted)
+        transactionCount > 0 && (hasCsvExport || isCsvExportRestricted)
+    // Export is per network, so on a merged history the action names the one it covers.
+    const csvExportTitle = isMerged
+        ? t('asset_details.transaction_list.csv_on_network', {
+              network: chainDisplayNameOf(scope.chainId) ?? scope.chainId,
+          })
+        : t('asset_details.transaction_list.csv')
 
-    return { handleExportCsv, isExportingCsv, isCsvExportVisible }
+    return {
+        handleExportCsv,
+        isExportingCsv,
+        isCsvExportVisible,
+        csvExportTitle,
+    }
 }

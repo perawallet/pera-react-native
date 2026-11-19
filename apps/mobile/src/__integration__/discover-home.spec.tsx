@@ -333,16 +333,18 @@ describe('Flow: Discover home', () => {
         await flush()
     })
 
-    it('Given an empty Ethereum list, when its chip is tapped, then the empty copy shows', async () => {
+    it('Given an empty Ethereum list, when its chip is tapped, then the empty copy points to typing a URL', async () => {
         useHandlers({ ethereum: { response: [], status: 200 } })
         renderHome()
         await screen.findByTestId(rowOf('Tinyman'))
 
         fireEvent.click(screen.getByTestId('discover_chain_filter_ethereum'))
 
-        expect(
-            await screen.findByText('discover.home.dapps_empty'),
-        ).toBeTruthy()
+        const body = await screen.findByText(
+            'discover.home.dapps_empty_open_url',
+        )
+        // Two sentences: the 3-line cap would ellipsize the instruction.
+        expect(body.style.webkitLineClamp).toBe('')
         await flush()
     })
 

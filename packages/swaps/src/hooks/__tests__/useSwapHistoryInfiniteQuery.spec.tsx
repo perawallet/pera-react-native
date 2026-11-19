@@ -16,13 +16,14 @@ import { renderHook, waitFor, act } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 import { useSwapHistoryInfiniteQuery } from '../useSwapHistoryInfiniteQuery'
 import { fetchSwapHistory } from '../../api'
 import { makeSwapHistoryItem } from '../../__tests__/swapHistoryFixture'
 
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 const ETH_SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
-const ACCOUNTS = [{ scope: SCOPE, address: 'ADDRESS' }]
+const ACCOUNTS = [{ scope: SCOPE, address: 'ADDRESS', isOnDevice: true }]
 
 vi.mock('../../api', async importOriginal => ({
     ...(await importOriginal<typeof import('../../api')>()),
@@ -210,8 +211,8 @@ describe('swaps/useSwapHistoryInfiniteQuery', () => {
         const { result } = renderHook(
             () =>
                 useSwapHistoryInfiniteQuery([
-                    { scope: SCOPE, address: 'ADDRESS' },
-                    { scope: ETH_SCOPE, address: '0xETH' },
+                    { scope: SCOPE, address: 'ADDRESS', isOnDevice: true },
+                    { scope: ETH_SCOPE, address: '0xETH', isOnDevice: true },
                 ]),
             { wrapper: createWrapper() },
         )
@@ -254,5 +255,100 @@ describe('swaps/useSwapHistoryInfiniteQuery', () => {
             'swap',
             'wallet',
         ])
+    })
+
+    test('leaves out an account the device does not hold and keeps it out of the next page', async () => {
+        const notOnDevice = new PeraNetworkError('client', {
+            status: 422,
+            backendCode: 'account_not_on_device',
+        })
+        vi.mocked(fetchSwapHistory).mockImplementation(async params => {
+            if (params.accounts.includes('fake-b:main:0xETH')) throw notOnDevice
+            return params.cursor
+                ? {
+                      results: [makeSwapHistoryItem({ orderId: 'b' })],
+                      next: null,
+                  }
+                : {
+                      results: [makeSwapHistoryItem({ orderId: 'a' })],
+                      next: 'c2',
+                  }
+        })
+
+        const { result } = renderHook(
+            () =>
+                useSwapHistoryInfiniteQuery([
+                    { scope: SCOPE, address: 'ADDRESS', isOnDevice: true },
+                    { scope: ETH_SCOPE, address: '0xETH', isOnDevice: true },
+                ]),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.swaps).toHaveLength(1))
+        expect(result.current.isError).toBe(false)
+        await act(async () => {
+            result.current.fetchNextPage()
+        })
+        await waitFor(() => expect(result.current.swaps).toHaveLength(2))
+        expect(vi.mocked(fetchSwapHistory).mock.calls.at(-1)?.[0]).toEqual(
+            expect.objectContaining({
+                accounts: ['fake-a:main:ADDRESS'],
+                cursor: 'c2',
+            }),
+        )
+    })
+
+    test('flags the refusal when the device holds none of the accounts', async () => {
+        vi.mocked(fetchSwapHistory).mockRejectedValue(
+            new PeraNetworkError('client', {
+                status: 422,
+                backendCode: 'account_not_on_device',
+            }),
+        )
+
+        const { result } = renderHook(
+            () => useSwapHistoryInfiniteQuery(ACCOUNTS),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(result.current.isAccountNotOnDevice).toBe(true)
+    })
+
+    test('asks only for the accounts device registration sends, on the first of them', async () => {
+        vi.mocked(fetchSwapHistory).mockResolvedValueOnce({
+            results: [makeSwapHistoryItem()],
+            next: null,
+        })
+
+        const { result } = renderHook(
+            () =>
+                useSwapHistoryInfiniteQuery([
+                    { scope: ETH_SCOPE, address: '0xETH', isOnDevice: false },
+                    { scope: SCOPE, address: 'ADDRESS', isOnDevice: true },
+                ]),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+        expect(vi.mocked(fetchSwapHistory).mock.calls[0]).toEqual([
+            expect.objectContaining({ accounts: ['fake-a:main:ADDRESS'] }),
+            SCOPE,
+        ])
+        expect(result.current.isAccountNotOnDevice).toBe(false)
+    })
+
+    test('asks for nothing and flags it when no account is on this device', () => {
+        const { result } = renderHook(
+            () =>
+                useSwapHistoryInfiniteQuery([
+                    { scope: SCOPE, address: 'ADDRESS', isOnDevice: false },
+                ]),
+            { wrapper: createWrapper() },
+        )
+
+        expect(fetchSwapHistory).not.toHaveBeenCalled()
+        expect(result.current.isAccountNotOnDevice).toBe(true)
+        expect(result.current.isLoading).toBe(false)
     })
 })

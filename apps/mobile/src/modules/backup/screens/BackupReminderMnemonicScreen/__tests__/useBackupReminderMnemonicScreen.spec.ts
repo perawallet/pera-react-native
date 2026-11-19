@@ -93,6 +93,7 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
 
 vi.mock('../../../hooks', () => ({
     useMnemonicForAddress: () => ({ executeWithMnemonic }),
+    usePassphraseAccount: () => null,
 }))
 
 import { useBackupReminderMnemonicScreen } from '../useBackupReminderMnemonicScreen'

@@ -40,8 +40,13 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
         },
         chains: {
             has: () => true,
-            get: () => ({
-                descriptor: { signing: { standaloneSecret: 'mnemonic' } },
+            get: (chainId: string) => ({
+                descriptor: {
+                    signing: {
+                        standaloneSecret:
+                            chainId === 'ethereum' ? 'privateKey' : 'mnemonic',
+                    },
+                },
             }),
         },
     }),
@@ -92,7 +97,7 @@ describe('useRequiresMnemonicBackup', () => {
     const render = async (account: WalletAccount | null) => {
         const { useRequiresMnemonicBackup } =
             await import('../useRequiresMnemonicBackup')
-        return renderHook(() => useRequiresMnemonicBackup(account, 'algorand'))
+        return renderHook(() => useRequiresMnemonicBackup(account))
     }
 
     const mark = async (id: string) => {
@@ -219,9 +224,7 @@ describe('useRequiresMnemonicBackup', () => {
         expect((await render(null)).result.current).toBe(false)
     })
 
-    test('returns false for an account on a chain with no backup adapter', async () => {
-        const { useRequiresMnemonicBackup } =
-            await import('../useRequiresMnemonicBackup')
+    test('requires a backup of an HD account that is only on a chain without a backup adapter', async () => {
         const account: WalletAccount = {
             id: 'account-evm',
             custody: {
@@ -232,9 +235,16 @@ describe('useRequiresMnemonicBackup', () => {
             chains: { ethereum: { address: '0xE1', keyPairId: 'a-child-0' } },
         }
 
-        const { result } = renderHook(() =>
-            useRequiresMnemonicBackup(account, 'ethereum'),
-        )
-        expect(result.current).toBe(false)
+        expect((await render(account)).result.current).toBe(true)
+    })
+
+    test('requires nothing of a raw private key, even one whose key resolves to a seed', async () => {
+        const account: WalletAccount = {
+            id: 'account-evm-key',
+            custody: { kind: 'local', seed: null },
+            chains: { ethereum: { address: '0xE2', keyPairId: 'a-child-0' } },
+        }
+
+        expect((await render(account)).result.current).toBe(false)
     })
 })

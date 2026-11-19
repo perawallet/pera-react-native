@@ -13,6 +13,7 @@
 export * from './useTransactionHistoryQuery'
 export * from './useTransactionRecordsQuery'
 export * from './useTransactionRecordDetailQuery'
+export * from './useTransactionRecordByIdQuery'
 export * from './useCsvExportMutation'
 export * from './useTransactionSendFlow'
 export * from './useAssetOptInMutation'

@@ -72,6 +72,18 @@ export const INVALID_HD_MNEMONIC_12_WORDS = Array.from(
 export const HD_TEST_ADDRESS =
     'RP35URKAEVP6PA3WIJGDGA3FZKNV76E7Y2QZPEJ4TDLV72T326B3IOFX7A'
 
+// The same seed's next two Algorand addresses at account 0.
+export const HD_TEST_ADDRESS_1 =
+    'BDB4LLM3GUIPLBMVOQX6WWDIDZTIS67UQLE2LBVEUWTI5KBT57JNVI5QKU'
+export const HD_TEST_ADDRESS_2 =
+    'SE3DEKH5K3WJX4ULS4UXUSSUOSAPNQNLTCULWWA2LLYAFFXJXCR3XXQ27Y'
+
+// Ethereum at m/44'/60'/{0,2}'/0/0 for the 24-word seed above.
+export const HD_24_ETHEREUM_ADDRESS_0 =
+    '0x60e94244Cb2053009e5a365D247A091D35BC6EbA'
+export const HD_24_ETHEREUM_ACCOUNT_2_ADDRESS_0 =
+    '0xfEC5b1B05abE7c49DC8C6E947d1C775C9C69755C'
+
 // Standard 25-word Algorand mnemonic.
 export const ALGO25_TEST_MNEMONIC =
     'evoke unique jaguar rapid silent sister kingdom farm anger brother begin fluid brave sister mixture wedding suffer spin spatial combine ginger neutral lunch absorb upset'

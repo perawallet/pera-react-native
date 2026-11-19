@@ -31,6 +31,7 @@ export const DeeplinkType = {
     WALLET_CONNECT: 'WALLET_CONNECT',
     ASSET_OPT_IN: 'ASSET_OPT_IN',
     ASSET_DETAIL: 'ASSET_DETAIL',
+    TRANSACTION_DETAIL: 'TRANSACTION_DETAIL',
     ASSET_TRANSACTIONS: 'ASSET_TRANSACTIONS',
     ASSET_INBOX: 'ASSET_INBOX',
     DISCOVER_BROWSER: 'DISCOVER_BROWSER',
@@ -151,6 +152,16 @@ export interface AssetDetailDeeplink extends ChainScopedDeeplink {
     assetRef?: AssetRef
 }
 
+export interface TransactionDetailDeeplink extends ChainScopedDeeplink {
+    type: typeof DeeplinkType.TRANSACTION_DETAIL
+    /** The account whose history lists the transaction. */
+    address: string
+    /** The chain-native transaction id. */
+    transactionId: string
+    /** What the asset-detail fallback opens. Absent: the target chain's native asset. */
+    assetRef?: AssetRef
+}
+
 export interface AssetTransactionsDeeplink extends ChainScopedDeeplink {
     type: typeof DeeplinkType.ASSET_TRANSACTIONS
     address: string
@@ -263,6 +274,7 @@ export type AnyParsedDeeplink =
     | WalletConnectDeeplink
     | AssetOptInDeeplink
     | AssetDetailDeeplink
+    | TransactionDetailDeeplink
     | AssetTransactionsDeeplink
     | AssetInboxDeeplink
     | DiscoverBrowserDeeplink

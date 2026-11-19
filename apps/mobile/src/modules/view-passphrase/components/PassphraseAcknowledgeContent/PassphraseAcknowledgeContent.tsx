@@ -26,6 +26,7 @@ import { useStyles } from './styles'
 
 export type PassphraseAcknowledgeContentProps = {
     address: string
+    accountId?: string
     testID?: string
 }
 
@@ -33,6 +34,7 @@ export type PassphraseAcknowledgeContentResult = 'confirm'
 
 export const PassphraseAcknowledgeContent = ({
     address,
+    accountId,
     testID = 'passphrase_acknowledge_bottom_sheet',
 }: PassphraseAcknowledgeContentProps) => {
     const { t } = useLanguage()
@@ -40,7 +42,7 @@ export const PassphraseAcknowledgeContent = ({
     const { resolve, dismiss } =
         useBottomSheetResult<PassphraseAcknowledgeContentResult>()
     const { rowKeys, scopeText, checked, allChecked, toggle, scrollRef } =
-        usePassphraseAcknowledgeContent({ address })
+        usePassphraseAcknowledgeContent({ address, accountId })
 
     return (
         <PWSheetLayout

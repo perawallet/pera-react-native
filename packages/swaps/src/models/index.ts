@@ -241,7 +241,12 @@ export interface SwapAccountAddress {
     address: string
 }
 
-export type SwapAccountAddressWithId = SwapAccountAddress & {
+export type SwapAccountAddressOnDevice = SwapAccountAddress & {
+    /** Whether device registration sends this address, so the router's history can name it. */
+    isOnDevice: boolean
+}
+
+export type SwapAccountAddressWithId = SwapAccountAddressOnDevice & {
     accountId: string
 }
 

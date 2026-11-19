@@ -34,6 +34,7 @@ import {
     createTokenSightings,
     receivedTokenIdsOf,
     scanReceivedTokens,
+    TOKEN_SCAN_INTERVAL_MS,
     TOKEN_SCAN_MAX_PAGES,
 } from '../token-detection'
 import {
@@ -42,7 +43,7 @@ import {
 } from '../../history/api/msw-handlers'
 import type { EvmHistoryItemResponse } from '../../history/api/schema'
 import { TEST_PERA_URL } from '../../__tests__/context'
-import { ETHEREUM } from '../../__tests__/evm-chains'
+import { ETHEREUM, POLYGON } from '../../__tests__/evm-chains'
 
 vi.mock('@perawallet/wallet-core-config', async importOriginal =>
     (await import('../../__tests__/pera-backend')).withEthereumPeraBackend(
@@ -170,6 +171,60 @@ describe('createHistoryScanBudget', () => {
         now = 1_000
         expect(budget.take()).toBe(true)
     })
+
+    it('serves every account in turn when more ask each interval than a window allows', () => {
+        let now = 0
+        const budget = createHistoryScanBudget(30, 10 * 60_000, () => now)
+        const keys = Array.from({ length: 31 }, (_, index) =>
+            index % 2 === 0
+                ? `ethereum/mainnet/${index}`
+                : `base/mainnet/${index}`,
+        )
+        const attemptedAt = new Map<string, number>()
+        const served = new Set<string>()
+
+        for (; now <= 30 * 60_000; now += 5 * 60_000) {
+            keys.forEach(key => {
+                const last = attemptedAt.get(key)
+                if (last !== undefined && now - last < TOKEN_SCAN_INTERVAL_MS) {
+                    return
+                }
+                attemptedAt.set(key, now)
+                if (budget.take(key)) served.add(key)
+            })
+        }
+
+        expect(served.size).toBe(keys.length)
+    })
+
+    it('holds the units left for a waiting account rather than another page of a running scan', () => {
+        let now = 0
+        const budget = createHistoryScanBudget(2, 1_000, () => now)
+
+        expect(budget.take('a')).toBe(true)
+        expect(budget.take()).toBe(true)
+        expect(budget.take('b')).toBe(false)
+        now = 1_000
+        expect(budget.take()).toBe(true)
+        expect(budget.take()).toBe(false)
+        expect(budget.take('a')).toBe(false)
+        expect(budget.take('b')).toBe(true)
+    })
+
+    it('serves waiters in the order they joined even when their requests share a clock tick', () => {
+        let now = 0
+        const budget = createHistoryScanBudget(1, 1000, () => now)
+        expect(budget.take()).toBe(true)
+        expect(budget.take('first')).toBe(false)
+        expect(budget.take('second')).toBe(false)
+
+        now = 1000
+        expect(budget.take('second')).toBe(false)
+        expect(budget.take('first')).toBe(true)
+
+        now = 2000
+        expect(budget.take('second')).toBe(true)
+    })
 })
 
 describe('scanReceivedTokens', () => {
@@ -195,6 +250,25 @@ describe('scanReceivedTokens', () => {
             scannedBlock: 30,
             resume: undefined,
         })
+    })
+
+    it("never finds Polygon's native-coin mirror 0x…1010 as a received token", async () => {
+        history([
+            [
+                received(30, '0x0000000000000000000000000000000000001010'),
+                received(29, TSLAX),
+            ],
+        ])
+
+        const scan = await scanReceivedTokens(
+            { chainId: 'polygon', networkId: 'amoy' },
+            POLYGON,
+            ME,
+            undefined,
+            openBudget(),
+        )
+
+        expect(scan.tokenIds).toEqual([getAddress(TSLAX)])
     })
 
     it("stops at the previous scan's block without reading older pages", async () => {

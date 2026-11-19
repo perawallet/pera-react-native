@@ -11,10 +11,40 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { fireEvent, renderHook, screen } from '@testing-library/react'
 import { useQueryClient } from '@tanstack/react-query'
 
-import { createQueryClientWrapper, createTestQueryClient } from '../render'
+import {
+    createQueryClientWrapper,
+    createTestQueryClient,
+    render,
+} from '../render'
+
+describe('render', () => {
+    it('keeps cached data when the rendered UI is rerendered', () => {
+        const key = ['render-test']
+        const CachedValue = () => {
+            const client = useQueryClient()
+            return (
+                <>
+                    <button
+                        onClick={() => client.setQueryData(key, 'cached value')}
+                    >
+                        Seed cache
+                    </button>
+                    <span>{client.getQueryData<string>(key) ?? 'empty'}</span>
+                </>
+            )
+        }
+
+        const { rerender } = render(<CachedValue />)
+        fireEvent.click(screen.getByRole('button', { name: 'Seed cache' }))
+
+        rerender(<CachedValue />)
+
+        expect(screen.queryByText('cached value')).not.toBeNull()
+    })
+})
 
 describe('createQueryClientWrapper', () => {
     it('provides the given client and keeps it across rerenders', () => {

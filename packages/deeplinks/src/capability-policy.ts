@@ -59,6 +59,8 @@ export const DEEPLINK_CHAIN_CAPABILITY: Record<
     [DeeplinkType.EDIT_CONTACT]: null,
     [DeeplinkType.RECOVER_ADDRESS]: null,
     [DeeplinkType.ASSET_DETAIL]: null,
+    // The app falls back to the asset detail when the chain's history is off.
+    [DeeplinkType.TRANSACTION_DETAIL]: null,
     [DeeplinkType.ASSET_TRANSACTIONS]: null,
     [DeeplinkType.BUY]: null,
     [DeeplinkType.CARDS]: null,

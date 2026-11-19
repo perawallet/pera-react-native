@@ -24,6 +24,7 @@ import {
     upsertAssets,
     upsertNodeAssets,
     type AssetGroup,
+    type AssetSearchPage,
     type AssetsChainAdapter,
     type DisplayableAsset,
     type PeraAsset,
@@ -58,6 +59,8 @@ import {
     fetchNftItems,
     NFTS_SERVICE,
     PRICES_SERVICE,
+    TOKEN_SEARCH_SERVICE,
+    fetchTokenSearchPage,
 } from './api/endpoints'
 import { cachedWhitelist, type ListedTokens } from './api/whitelist-cache'
 import {
@@ -65,6 +68,7 @@ import {
     toAssetMetadata,
     toNftAsset,
     toPriceRow,
+    toSearchResult,
 } from './api/transformers'
 import { NATIVE_ASSET_ID } from '../chains/create-evm-chain'
 
@@ -516,15 +520,60 @@ const unlistedToken = async (
     }
 }
 
-// The backend has no EVM token search, so its token list, which holds no
-// NFTs, is filtered here in one page.
+// The backend bounds text search by Unicode code points.
+const TOKEN_SEARCH_MIN_LENGTH = 2
+const TOKEN_SEARCH_MAX_LENGTH = 100
+
+// The search matches an address only whole and knows only tokens Pera
+// stored, so an address or its start is matched against the list here, and a
+// pasted one the list lacks is read from the chain.
+const ADDRESS_LIKE = /^0x[0-9a-f]*$/i
+
+// The backend's native row carries its own name for the coin; every other
+// screen names it from the chain table.
+const withChainNativeName =
+    (chain: EvmChain) =>
+    (asset: DisplayableAsset): DisplayableAsset =>
+        asset.assetId === NATIVE_ASSET_ID
+            ? {
+                  ...asset,
+                  name: chain.nativeAsset.name,
+                  unitName: chain.nativeAsset.unitName,
+              }
+            : asset
+
+// The token list, which holds no NFTs, filtered here in one page.
+const searchListedTokens = async (
+    ctx: ChainContext,
+    chain: EvmChain,
+    listedTokens: ListedTokens,
+    query: string,
+    scope: ChainScope,
+): Promise<AssetSearchPage> => {
+    const assets = (await listedTokens(scope)).map(({ asset }) =>
+        withChainNativeName(chain)(asset),
+    )
+    const needle = query.toLowerCase()
+    if (!needle) return { results: assets, nextCursor: undefined }
+    const matches = assets.filter(matchesQuery(needle))
+    return {
+        results:
+            matches.length > 0
+                ? matches
+                : await unlistedToken(ctx, chain, query, scope),
+        nextCursor: undefined,
+    }
+}
+
+// The backend's token search, paged; the token list stands in where the
+// chain's build doesn't list the search service.
 const search =
     (
         ctx: ChainContext,
         chain: EvmChain,
         listedTokens: ListedTokens,
     ): NonNullable<AssetsChainAdapter['search']> =>
-    async ({ query, hasCollectible }, scope) => {
+    async ({ query, cursor, hasCollectible }, scope) => {
         eip155ChainIdOf(scope, chain)
         if (hasCollectible) return { results: [], nextCursor: undefined }
         // An empty page would read as "No assets found" on a network that
@@ -534,27 +583,24 @@ const search =
                 isChainRefused: ctx.getPeraBackend(scope).isChainRefused,
             })
         }
-        // The list's native row carries the backend's name for it; every
-        // other screen names it from the chain table.
-        const assets = (await listedTokens(scope)).map(({ asset }) =>
-            asset.assetId === NATIVE_ASSET_ID
-                ? {
-                      ...asset,
-                      name: chain.nativeAsset.name,
-                      unitName: chain.nativeAsset.unitName,
-                  }
-                : asset,
-        )
         const trimmed = query.trim()
-        const needle = trimmed.toLowerCase()
-        if (!needle) return { results: assets, nextCursor: undefined }
-        const matches = assets.filter(matchesQuery(needle))
+        const length = [...trimmed].length
+        if (
+            !hasServices(ctx, scope, TOKEN_SEARCH_SERVICE) ||
+            length < TOKEN_SEARCH_MIN_LENGTH ||
+            length > TOKEN_SEARCH_MAX_LENGTH ||
+            trimmed.includes('\u0000') ||
+            ADDRESS_LIKE.test(trimmed)
+        ) {
+            return searchListedTokens(ctx, chain, listedTokens, trimmed, scope)
+        }
+        const page = await fetchTokenSearchPage(scope, chain, trimmed, cursor)
         return {
-            results:
-                matches.length > 0
-                    ? matches
-                    : await unlistedToken(ctx, chain, trimmed, scope),
-            nextCursor: undefined,
+            results: page.items.flatMap(item => {
+                const asset = toSearchResult(item, scope, chain)
+                return asset ? [withChainNativeName(chain)(asset)] : []
+            }),
+            nextCursor: page.nextCursor,
         }
     }
 

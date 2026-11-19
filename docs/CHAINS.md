@@ -220,8 +220,9 @@ Most EVM wiring reads `evm-networks.json` and the chain table, so the list is sh
       takes the shared predeploy fixture, `conformance-evm/src/vectors/opStackPredeploys.ts` (captured by
       `tools/dev/capture-op-predeploys.sh`), through `isOpStackEvmnetChain`.
 - [ ] Your `.env`: the id in `CHAINS` and an RPC URL per network, or `generate-config.sh` fails.
-- [ ] Outside the repo: the Pera backend must accept the chain id for device registration and serve
-      the services listed; the `chain_<id>_overrides` and `enable_ssl_pinning_<id>_rpc` remote keys
+- [ ] Outside the repo: the Pera backend must accept the chain id for device registration, in
+      `muted_chains` too (an EVM chain inherits `canMuteChain`, and an id the backend doesn't take
+      422s the whole registration), and serve the services listed; the `chain_<id>_overrides` and `enable_ssl_pinning_<id>_rpc` remote keys
       need no code.
 
 No change: composition roots, chain-name translations (names come from the row's `displayName`),

@@ -276,6 +276,33 @@ describe('Flow: Discover search', () => {
         expect(screen.getByTestId(DAPP_ROW)).toBeTruthy()
     })
 
+    const withNoAssets = () =>
+        server.use(
+            mockAssetSearch({
+                response: { results: [], next: null, previous: null },
+            }),
+        )
+
+    it('Given a typed domain nothing lists, then the typed-url row shows without No results', async () => {
+        withNoAssets()
+        renderSearch()
+        typeQuery('unlisted-dapp.org')
+        await settled()
+
+        expect(screen.getByTestId('discover_search_typed_url')).toBeTruthy()
+        expect(screen.queryByTestId('discover_search_no_results')).toBeNull()
+    })
+
+    it('Given a typed word nothing matches, then No results still shows under the web search row', async () => {
+        withNoAssets()
+        renderSearch()
+        typeQuery('zzzqqq')
+        await settled()
+
+        expect(screen.getByTestId('discover_search_web_row')).toBeTruthy()
+        expect(screen.getByTestId('discover_search_no_results')).toBeTruthy()
+    })
+
     it('Given a submitted domain in recents, when it is reopened, then it keeps the in-browser star', async () => {
         const first = renderSearch()
         typeQuery('uniswap.org')

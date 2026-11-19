@@ -20,7 +20,7 @@ import {
     it,
     vi,
 } from 'vitest'
-import { screen, waitFor, within } from '@testing-library/react'
+import { cleanup, screen, waitFor, within } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 
 import {
@@ -102,8 +102,8 @@ const rowOf = (account: WalletAccount) =>
         `account_switcher_row_${Object.values(account.chains)[0]?.address}`,
     )
 
-// 1.5 ETH at $2,000 (or unpriced) and 10 ALGO at $0.30.
-const seedBalances = async ({ isEthPriced = true } = {}) => {
+// 10 ALGO at $0.30.
+const seedAlgorandBalance = async () => {
     await seedAlgoAsset('mainnet')
     await seedAlgorandAccountState({
         accountAddress: ALGO25_TEST_ADDRESS,
@@ -120,7 +120,10 @@ const seedBalances = async ({ isEthPriced = true } = {}) => {
         prices: [{ assetId: '0', usdPrice: new Decimal('0.30') }],
         scope: ALGO_SCOPE,
     })
+}
 
+// 1.5 ETH at $2,000 (or unpriced).
+const seedEthereumBalance = async ({ isPriced = true } = {}) => {
     const eth = nativeAssetFor('ethereum')
     await upsertAssets({ items: [eth], scope: ETH_SCOPE })
     await upsertAccountChainState({
@@ -135,7 +138,7 @@ const seedBalances = async ({ isEthPriced = true } = {}) => {
         scope: ETH_SCOPE,
         amount: new Decimal('1500000000000000000'),
     })
-    if (isEthPriced) {
+    if (isPriced) {
         await upsertAssetPrices({
             prices: [{ assetId: eth.assetId, usdPrice: new Decimal('2000') }],
             scope: ETH_SCOPE,
@@ -155,15 +158,16 @@ describe('Flow: Account list with Ethereum registered', () => {
     beforeEach(async () => {
         await resetTestDatabase()
         useRemoteConfigStore.getState().resetState()
-        await seedBalances()
     })
 
     afterEach(() => {
+        cleanup()
         useAccountsStore.getState().setAccounts([])
         useCurrenciesStore.getState().resetState()
     })
 
     it('Given only Algorand accounts, when the account list renders, then rows carry no chain badge', async () => {
+        await seedAlgorandBalance()
         useAccountsStore.getState().setAccounts([ALGORAND_ACCOUNT])
 
         renderMenu()
@@ -178,7 +182,9 @@ describe('Flow: Account list with Ethereum registered', () => {
         expect(screen.getByText('portfolio.show_chart')).toBeTruthy()
     })
 
-    it("Given an Algorand and an Ethereum account, when the list renders, then rows carry no chain badge or native balance, only each account's fiat total", async () => {
+    it('Given priced Algorand and Ethereum accounts, when the list renders, then it shows their fiat balances and combined chart', async () => {
+        await seedAlgorandBalance()
+        await seedEthereumBalance()
         useAccountsStore
             .getState()
             .setAccounts([ALGORAND_ACCOUNT, ETHEREUM_ACCOUNT])
@@ -188,10 +194,13 @@ describe('Flow: Account list with Ethereum registered', () => {
             expect(
                 within(rowOf(ETHEREUM_ACCOUNT)).getByText(/3,000\.00/),
             ).toBeTruthy()
+            expect(
+                within(rowOf(ALGORAND_ACCOUNT)).getByText(/^\$ ?3\.00$/),
+            ).toBeTruthy()
+            expect(
+                screen.getByTestId('portfolio_total_value').textContent,
+            ).toMatch(/^\$ ?3,003\.00$/)
         })
-        expect(
-            within(rowOf(ALGORAND_ACCOUNT)).getByText(/^\$ ?3\.00$/),
-        ).toBeTruthy()
         expect(
             within(rowOf(ETHEREUM_ACCOUNT)).queryByText('Ethereum'),
         ).toBeNull()
@@ -199,10 +208,16 @@ describe('Flow: Account list with Ethereum registered', () => {
             within(rowOf(ALGORAND_ACCOUNT)).queryByText('Algorand'),
         ).toBeNull()
         expect(within(rowOf(ETHEREUM_ACCOUNT)).queryByText(/1\.5/)).toBeNull()
+        expect(screen.getByText('portfolio.show_chart')).toBeTruthy()
+        expect(
+            screen.queryByTestId('portfolio_total_partial_notice'),
+        ).toBeNull()
     })
 
     it('Given an ALGO preference stored before the upgrade, when a multi-chain list renders, then the Ethereum row and the portfolio total are in fiat', async () => {
-        getProvider().keyValueStorage.setItem(
+        await seedAlgorandBalance()
+        await seedEthereumBalance()
+        await getProvider().keyValueStorage.setItem(
             'currencies-store',
             JSON.stringify({
                 state: { preferredCurrency: 'ALGO', fallbackCurrency: 'USD' },
@@ -220,63 +235,36 @@ describe('Flow: Account list with Ethereum registered', () => {
             expect(
                 within(rowOf(ETHEREUM_ACCOUNT)).getByText(/\$ ?3,000\.00/),
             ).toBeTruthy()
-        })
-        expect(within(rowOf(ETHEREUM_ACCOUNT)).queryByText(/10,000/)).toBeNull()
-        // The ALGO row's fiat line stays in fiat rather than repeating the ALGO amount.
-        await waitFor(() => {
             expect(
                 within(rowOf(ALGORAND_ACCOUNT)).getByText(/^\$ ?3\.00$/),
             ).toBeTruthy()
-        })
-        await waitFor(() => {
             expect(
                 screen.getByTestId('portfolio_total_value').textContent,
             ).toMatch(/\$ ?3,003\.00/)
         })
-    })
-
-    it('Given an Ethereum account on mainnet, when the portfolio header renders, then its fiat value is in the total', async () => {
-        useAccountsStore
-            .getState()
-            .setAccounts([ALGORAND_ACCOUNT, ETHEREUM_ACCOUNT])
-
-        renderMenu()
-
-        // $3 of ALGO plus $3,000 of ETH.
-        await waitFor(() => {
-            expect(
-                screen.getByTestId('portfolio_total_value').textContent,
-            ).toMatch(/3,003\.00/)
-        })
-        // Both chains have balance history, so the chart plots the whole total.
-        expect(screen.getByText('portfolio.show_chart')).toBeTruthy()
-        expect(
-            screen.queryByTestId('portfolio_total_partial_notice'),
-        ).toBeNull()
+        expect(within(rowOf(ETHEREUM_ACCOUNT)).queryByText(/10,000/)).toBeNull()
     })
 
     it('Given the ETH balance has no price, when the list renders, then its row shows the fiat as unavailable and the total counts only the ALGO with a note', async () => {
-        await resetTestDatabase()
-        await seedBalances({ isEthPriced: false })
+        await seedAlgorandBalance()
+        await seedEthereumBalance({ isPriced: false })
         useAccountsStore
             .getState()
             .setAccounts([ALGORAND_ACCOUNT, ETHEREUM_ACCOUNT])
 
         renderMenu()
         await waitFor(() => {
+            expect(
+                screen.getByTestId('portfolio_total_value').textContent,
+            ).toMatch(/^\$ ?3\.00$/)
+            expect(
+                screen.getByTestId('portfolio_total_partial_notice'),
+            ).toBeTruthy()
             expect(
                 within(rowOf(ETHEREUM_ACCOUNT)).getByText('---'),
             ).toBeTruthy()
         })
         expect(within(rowOf(ETHEREUM_ACCOUNT)).queryByText(/0\.00/)).toBeNull()
-        await waitFor(() => {
-            expect(
-                screen.getByTestId('portfolio_total_value').textContent,
-            ).toMatch(/^\$ ?3\.00$/)
-        })
-        expect(
-            screen.getByTestId('portfolio_total_partial_notice'),
-        ).toBeTruthy()
     })
 
     it('Given an Ethereum account is opened, when its actions render, then it offers send, receive and swap', () => {

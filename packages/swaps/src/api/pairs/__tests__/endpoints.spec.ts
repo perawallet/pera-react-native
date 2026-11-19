@@ -13,7 +13,7 @@
 import { beforeEach, describe, expect, test, vi, type Mock } from 'vitest'
 import { queryClient } from '@perawallet/wallet-core-shared'
 import { fetchSwapPairs } from '../endpoints'
-import { routerAsset, SCOPE_A } from '../../__tests__/routerFixtures'
+import { routerAsset, SCOPE_A, SCOPE_B } from '../../__tests__/routerFixtures'
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
     ...(await importOriginal<
@@ -48,6 +48,66 @@ describe('fetchSwapPairs', () => {
                     signable: 'true',
                     q: 'usd',
                     cursor: 'c2',
+                },
+            }),
+        )
+    })
+
+    test('narrows the request to one counterpart network when there is no search text', async () => {
+        ;(queryClient as Mock).mockResolvedValue({ data: { results: [] } })
+
+        await fetchSwapPairs({
+            anchor,
+            direction: 'source',
+            counterpartScope: SCOPE_B,
+        })
+
+        expect(queryClient).toHaveBeenCalledWith(
+            expect.objectContaining({
+                params: {
+                    source: 'fake-a:main/token:native',
+                    signable: 'true',
+                    q: 'fake-b:main/',
+                },
+            }),
+        )
+    })
+
+    test('sends the typed search text instead of narrowing', async () => {
+        ;(queryClient as Mock).mockResolvedValue({ data: { results: [] } })
+
+        await fetchSwapPairs({
+            anchor,
+            direction: 'source',
+            q: 'usd',
+            counterpartScope: SCOPE_B,
+        })
+
+        expect(queryClient).toHaveBeenCalledWith(
+            expect.objectContaining({
+                params: {
+                    source: 'fake-a:main/token:native',
+                    signable: 'true',
+                    q: 'usd',
+                },
+            }),
+        )
+    })
+
+    test('does not narrow to a network the router has no id for', async () => {
+        ;(queryClient as Mock).mockResolvedValue({ data: { results: [] } })
+
+        await fetchSwapPairs({
+            anchor,
+            direction: 'source',
+            counterpartScope: { chainId: 'algorand', networkId: 'custom' },
+        })
+
+        expect(queryClient).toHaveBeenCalledWith(
+            expect.objectContaining({
+                params: {
+                    source: 'fake-a:main/token:native',
+                    signable: 'true',
                 },
             }),
         )

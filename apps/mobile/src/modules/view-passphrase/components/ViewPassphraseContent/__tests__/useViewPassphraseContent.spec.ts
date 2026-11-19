@@ -31,9 +31,14 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     zeroBytes: (buffer: Uint16Array | null) => buffer?.fill(0),
 }))
 
-vi.mock('@modules/backup', () => ({
-    useMnemonicForAddress: mockUseMnemonicForAddress,
-}))
+vi.mock('@modules/backup', async () => {
+    const { usePassphraseAccount } =
+        await import('@modules/backup/hooks/usePassphraseAccount')
+    return {
+        usePassphraseAccount,
+        useMnemonicForAddress: mockUseMnemonicForAddress,
+    }
+})
 
 import { useViewPassphraseContent } from '../useViewPassphraseContent'
 
