@@ -857,11 +857,14 @@ export const useSwapForm = (
 
         // A cross-chain or deposit payout lands minutes later; the tracked list
         // follows it.
-        const isTracked =
-            selectedQuote.routeKind === 'cross-chain' || result.isPaidOutLater
-        const successTitle = isTracked
-            ? t('swap.tracking.started')
-            : t('swap.execution.success_title')
+        const isCrossChainQuote = selectedQuote.routeKind === 'cross-chain'
+        const isTracked = isCrossChainQuote || result.isPaidOutLater
+        let successTitle = t('swap.execution.success_title')
+        if (isCrossChainQuote) {
+            successTitle = t('swap.tracking.started')
+        } else if (result.isPaidOutLater) {
+            successTitle = t('swap.tracking.same_chain_started')
+        }
         const successBody = isTracked
             ? t('swap.tracking.in_progress')
             : t('swap.execution.success_body', {

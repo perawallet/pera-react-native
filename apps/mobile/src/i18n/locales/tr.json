@@ -4362,6 +4362,7 @@
         },
         "tracking": {
             "started": "Zincirler arası swap gönderildi",
+            "same_chain_started": "Swap gönderildi",
             "in_progress": "Devam ediyor. Varlıkların yolda.",
             "completed": "Tamamlandı. {{toAsset}} varlığın hesabına ulaştı.",
             "failed": "Swap tamamlanamadı. Varlıkların gönderildiyse sağlayıcı onları hesabına iade edecek.",
