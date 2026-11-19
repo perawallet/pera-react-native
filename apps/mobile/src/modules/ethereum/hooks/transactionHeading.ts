@@ -70,6 +70,7 @@ const ACTION_ICON_NAMES: Record<
     repay: 'outflow',
     'add-liquidity': 'plus',
     'remove-liquidity': 'minus',
+    'collect-fees': 'inflow',
 }
 
 export const iconNameOf = (

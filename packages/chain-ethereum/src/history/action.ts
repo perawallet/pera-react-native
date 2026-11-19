@@ -66,7 +66,7 @@ type HistoryActionVariant =
     /** `pair` is absent when either side has no symbol. */
     | { kind: 'swap'; pair?: { from: SwapSide; to: SwapSide } }
     | { kind: 'supply' | 'withdraw' | 'borrow' | 'repay' | 'wrap' | 'unwrap' }
-    | { kind: 'add-liquidity' | 'remove-liquidity' }
+    | { kind: 'add-liquidity' | 'remove-liquidity' | 'collect-fees' }
     | { kind: 'send' | 'receive' }
 
 /** What a call the account sent did, mined or still pending; `isInferred` when only its balance changes said so. */
@@ -148,6 +148,7 @@ const TITLE_KEYS: Record<PlainActionKind, I18nKey> = {
     unwrap: i18nKey('transactions.list_item.unwrap'),
     'add-liquidity': i18nKey('transactions.list_item.add_liquidity'),
     'remove-liquidity': i18nKey('transactions.list_item.remove_liquidity'),
+    'collect-fees': i18nKey('transactions.list_item.collect_fees'),
     send: i18nKey('transactions.list_item.send'),
     receive: i18nKey('transactions.list_item.receive'),
 }

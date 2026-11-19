@@ -629,6 +629,17 @@ describe('useEthereumContractAction', () => {
             })
         })
 
+        it('passes a fee collect’s position through', () => {
+            const collect = render(
+                liquidityView({ kind: 'collect-fees', tokenId: '42' }),
+            )
+
+            expect(collect.contractAction).toEqual({
+                kind: 'collect-fees',
+                tokenId: '42',
+            })
+        })
+
         it('reads nothing while contractDecoding is off', () => {
             vi.mocked(useChainCapability).mockReturnValue(false)
 

@@ -3863,6 +3863,7 @@
             "swap_pair": "Tausch {{from}} → {{to}}",
             "add_liquidity": "Liquidität hinzufügen",
             "remove_liquidity": "Liquidität entfernen",
+            "collect_fees": "Gebühren einziehen",
             "contract_interaction": "Smart-Contract-Interaktion",
             "approval": "Freigabe",
             "revoke_approval": "Freigabe widerrufen",

@@ -116,6 +116,13 @@ export const ActionRows = ({ action, presentation }: ActionRowsProps) => {
                 </>
             )
         }
+        case 'collect-fees': {
+            return (
+                <PositionRow
+                    position={{ kind: 'existing', tokenId: action.tokenId }}
+                />
+            )
+        }
         case 'wrap':
         case 'unwrap': {
             return (

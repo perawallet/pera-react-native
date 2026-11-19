@@ -305,6 +305,9 @@ const isContractAction = (value: unknown): boolean => {
                 isDigits(value.tokenId) && typeof value.isClosing === 'boolean'
             )
         }
+        case 'collect-fees': {
+            return isDigits(value.tokenId)
+        }
         default: {
             return false
         }

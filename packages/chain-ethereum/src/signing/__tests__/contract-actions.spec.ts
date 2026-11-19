@@ -507,6 +507,19 @@ describe('decodeEvmContractAction', () => {
         })
 
         it.each([
+            ['on its own', () => collectCall(SENDER)],
+            ['in a multicall', () => multicall(collectCall(SENDER))],
+        ])(
+            'reads a collect to the signer %s as collecting fees',
+            (_name, build) => {
+                expect(decode(MANAGER, build())).toEqual({
+                    kind: 'collect-fees',
+                    tokenId: TOKEN_ID.toString(),
+                })
+            },
+        )
+
+        it.each([
             [
                 'a mint paying the position to someone else',
                 () => mintCall({ recipient: OTHER }),
@@ -545,9 +558,21 @@ describe('decodeEvmContractAction', () => {
                 0n,
             ],
             ['a trailing byte', () => `${mintCall()}00` as Hex, 0n],
+            ['a collect to someone else', () => collectCall(OTHER), 0n],
             [
-                'a collect with no removal',
-                () => multicall(collectCall(SENDER)),
+                'a collect to the manager paid out by an unwrap and a sweep',
+                () =>
+                    multicall(
+                        collectCall(ZERO),
+                        unwrapTo(SENDER),
+                        sweepTo(SENDER),
+                    ),
+                0n,
+            ],
+            ['a collect that sends ether', () => collectCall(SENDER), 1n],
+            [
+                'a collect followed by a burn',
+                () => multicall(collectCall(SENDER), burn()),
                 0n,
             ],
             ['two mints', () => multicall(mintCall(), mintCall()), 0n],
@@ -671,7 +696,7 @@ describe('decodeEvmContractAction', () => {
             expect(decode(MANAGER, build(), value)).toBeUndefined()
         })
 
-        it('gives nothing for a call to the V4 position manager', () => {
+        it('gives nothing for a V3 mint sent to the V4 position manager', () => {
             expect(
                 decodeEvmContractAction(
                     call(V4_MANAGER, mintCall()),
@@ -722,6 +747,7 @@ describe('contractActionTitleKeyOf', () => {
         ['repay', 'transactions.list_item.repay'],
         ['add-liquidity', 'transactions.list_item.add_liquidity'],
         ['remove-liquidity', 'transactions.list_item.remove_liquidity'],
+        ['collect-fees', 'transactions.list_item.collect_fees'],
     ] as const)('titles a %s', (kind, key) => {
         const action = {
             kind,
@@ -810,6 +836,9 @@ describe('hidesUnknownContractNotice', () => {
         expect(hidesUnknownContractNotice(swap([]))).toBe(true)
         expect(
             hidesUnknownContractNotice({ kind: 'wrap', amount: dec(1n) }),
+        ).toBe(true)
+        expect(
+            hidesUnknownContractNotice({ kind: 'collect-fees', tokenId: '7' }),
         ).toBe(true)
     })
 

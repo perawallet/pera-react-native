@@ -11,17 +11,8 @@
  */
 
 import { Decimal } from 'decimal.js'
-import {
-    decodeFunctionData,
-    encodeFunctionData,
-    getAddress,
-    maxUint256,
-    parseAbi,
-    size,
-    slice,
-    toFunctionSelector,
-} from 'viem'
-import type { AbiFunction, Address, Hex } from 'viem'
+import { getAddress, maxUint256, parseAbi } from 'viem'
+import type { Address, Hex } from 'viem'
 import {
     i18nKey,
     type I18nKey,
@@ -32,11 +23,11 @@ import { areEvmAddressesEqual } from '../accounts/address-codec'
 import type { EvmChain } from '../chains/types'
 import type { EvmContractAction } from './contract-action-types'
 import type { KnownEvmContract } from './known-contracts'
+import { readFunction } from './read-function'
+import { decodeUniswapV4PositionAction } from './uniswap-v4-positions'
 import { decodeUniversalRouterSwap } from './universal-router'
 
 type Call = { from: Address; to: Address; data: Hex; value: bigint }
-
-const SELECTOR_SIZE = 4
 
 const TITLE_KEYS: Record<EvmContractAction['kind'], I18nKey> = {
     swap: i18nKey('transactions.list_item.swap'),
@@ -48,6 +39,7 @@ const TITLE_KEYS: Record<EvmContractAction['kind'], I18nKey> = {
     repay: i18nKey('transactions.list_item.repay'),
     'add-liquidity': i18nKey('transactions.list_item.add_liquidity'),
     'remove-liquidity': i18nKey('transactions.list_item.remove_liquidity'),
+    'collect-fees': i18nKey('transactions.list_item.collect_fees'),
 }
 
 const CONTRACT_CALL_ICON = 'contract-call'
@@ -98,25 +90,6 @@ const UNISWAP_V3_POSITION_FUNCTIONS = parseAbi([
 ])
 
 const toDecimal = (value: bigint): Decimal => new Decimal(value.toString())
-
-// A lenient decoder would accept dirty padding or trailing bytes the contract
-// might read differently, so the call must re-encode to exactly its calldata.
-const readFunction = (
-    functions: readonly AbiFunction[],
-    data: Hex,
-): Optional<{ name: string; args: readonly unknown[] }> => {
-    if (size(data) < SELECTOR_SIZE) return undefined
-    const selector = slice(data, 0, SELECTOR_SIZE).toLowerCase()
-    const item = functions.find(
-        candidate => toFunctionSelector(candidate) === selector,
-    )
-    if (!item) return undefined
-    const { args = [] } = decodeFunctionData({ abi: [item], data })
-    const encoded = encodeFunctionData({ abi: [item], args })
-    return encoded.toLowerCase() === data.toLowerCase()
-        ? { name: item.name, args }
-        : undefined
-}
 
 const decodeWrappedNativeAction = (call: Call): Optional<EvmContractAction> => {
     const read = readFunction(WRAPPED_NATIVE_FUNCTIONS, call.data)
@@ -395,12 +368,28 @@ const decodeLiquidityRemove = (
     }
 }
 
+// The same proof as a removal's: the collect pays the signer directly, so the
+// fees can't sit in the manager for anyone to sweep.
+const decodeFeeCollect = (
+    calls: PositionCall[],
+    call: Call,
+): Optional<EvmContractAction> => {
+    if (call.value !== 0n || calls.length !== 1) return undefined
+    const [collect] = calls
+    if (collect.name !== 'collect') return undefined
+    const { tokenId, recipient } = collect.args[0] as CollectParams
+    return areEvmAddressesEqual(recipient, call.from)
+        ? { kind: 'collect-fees', tokenId: tokenId.toString() }
+        : undefined
+}
+
 const decodeUniswapV3PositionAction = (
     call: Call,
     wrappedNative: Optional<Address>,
 ): Optional<EvmContractAction> => {
     const calls = positionCallsOf(call.data)
     if (!calls) return undefined
+    if (calls[0]?.name === 'collect') return decodeFeeCollect(calls, call)
     if (
         calls.some(
             item => item.name === 'mint' || item.name === 'increaseLiquidity',
@@ -423,7 +412,11 @@ export const decodeEvmContractAction = (
     try {
         switch (contract.kind) {
             case 'uniswap-universal-router': {
-                return decodeUniversalRouterSwap(call, wrappedNative)
+                return decodeUniversalRouterSwap(
+                    call,
+                    wrappedNative,
+                    contract.universalRouterVersion,
+                )
             }
             case 'wrapped-native': {
                 return decodeWrappedNativeAction(call)
@@ -437,8 +430,10 @@ export const decodeEvmContractAction = (
             case 'uniswap-v3-position-manager': {
                 return decodeUniswapV3PositionAction(call, wrappedNative)
             }
+            case 'uniswap-v4-position-manager': {
+                return decodeUniswapV4PositionAction(call)
+            }
             case 'uniswap-permit2':
-            case 'uniswap-v4-position-manager':
             case 'aave-v3-rewards':
             case 'aave-v3-adapter': {
                 return undefined

@@ -27,6 +27,17 @@ import {
     V3_EXACT_IN_PERMIT_SWEEP,
     V4_SWAP,
 } from '../../signing/__tests__/contract-action-fixtures'
+import {
+    MSG_SENDER,
+    decrease,
+    plan,
+    routerExecute,
+    settleAll,
+    swapExactInSingle,
+    takeAll,
+    takePair,
+    v4Swap,
+} from '../../signing/__tests__/uniswap-v4-fixtures'
 import { evmHistoryItem } from '../api/msw-handlers'
 import {
     evmHistoryItemSchema,
@@ -44,6 +55,9 @@ const WETH: Address = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2'
 const APE: Address = '0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d'
 const POOL: Address = '0x87870bca3f3fd6335c3f4ce8392d69350b4fa4e2'
 const POSITIONS: Address = '0xc36442b4a4522e871399cd717abdd847ab11fe88'
+const V4_POSITIONS: Address = '0xbd216513d74c8cf14cf4747e6aaa6420ff64ee9e'
+const ROUTER_2_1: Address = '0x23617e59a5925b2a4bf75d73ff6711cd0b29de85'
+const ZERO: Address = '0x0000000000000000000000000000000000000000'
 const ROUTER = V3_EXACT_IN_PERMIT_SWEEP.to
 const ETH_ID = 'eip155:1/slip44:60'
 const USDC_ID = `eip155:1/erc20:${USDC}`
@@ -62,6 +76,7 @@ const ABI = parseAbi([
     'function decreaseLiquidity(DecreaseLiquidityParams params)',
     'function collect((uint256 tokenId, address recipient, uint128 amount0Max, uint128 amount1Max) params)',
     'function multicall(bytes[] data)',
+    'function modifyLiquidities(bytes unlockData, uint256 deadline)',
 ])
 
 type CallRow = {
@@ -408,7 +423,92 @@ describe('summarizeEthereumHistoryItem with the row calldata', () => {
             expect(summary.isActionUnknown).toBe(true)
         })
 
-        it('falls back to the balance changes for a call its decoders leave out, such as a V4 swap', () => {
+        it('names a standalone V3 fee collect', () => {
+            const summary = summarize(
+                sent({
+                    to: POSITIONS,
+                    input: encodeFunctionData({
+                        abi: ABI,
+                        functionName: 'collect',
+                        args: [
+                            {
+                                tokenId: 7n,
+                                recipient: ME,
+                                amount0Max: 2n ** 128n - 1n,
+                                amount1Max: 2n ** 128n - 1n,
+                            },
+                        ],
+                    }),
+                    impacts: [{ asset_id: USDC_ID, amount: '1200' }],
+                }),
+            )
+
+            expect(summary.title.key).toBe(
+                'transactions.list_item.collect_fees',
+            )
+        })
+
+        it('names a V4 fee collect and a V4 removal by their plan', () => {
+            const modify = (liquidity: bigint) =>
+                sent({
+                    to: V4_POSITIONS,
+                    input: encodeFunctionData({
+                        abi: ABI,
+                        functionName: 'modifyLiquidities',
+                        args: [
+                            plan(
+                                decrease(7n, liquidity),
+                                takePair(ZERO, getAddress(USDC), MSG_SENDER),
+                            ),
+                            1_800_000_000n,
+                        ],
+                    }),
+                    impacts: [{ asset_id: USDC_ID, amount: '1200' }],
+                })
+
+            expect(summarize(modify(0n)).title.key).toBe(
+                'transactions.list_item.collect_fees',
+            )
+            expect(summarize(modify(1_000n)).title.key).toBe(
+                'transactions.list_item.remove_liquidity',
+            )
+        })
+
+        it('names a V4 swap with the pair its balance changes show', () => {
+            const summary = summarize(
+                sent({
+                    to: ROUTER_2_1,
+                    input: routerExecute(
+                        v4Swap(
+                            swapExactInSingle(
+                                {
+                                    currency0: getAddress(USDC),
+                                    currency1: getAddress(WETH),
+                                    fee: 500,
+                                    tickSpacing: 10,
+                                    hooks: ZERO,
+                                },
+                                true,
+                                1_000_000n,
+                                1n,
+                                'with-hop-price',
+                            ),
+                            settleAll(getAddress(USDC), 1_000_000n),
+                            takeAll(getAddress(WETH), 1n),
+                        ),
+                    ),
+                    impacts: [
+                        { asset_id: USDC_ID, amount: '-1000000' },
+                        { asset_id: WETH_ID, amount: '300000000000000' },
+                    ],
+                }),
+            )
+
+            expect(summary.kind).toBe('swap')
+            expect(summary.isInferred).toBeUndefined()
+        })
+
+        it('falls back to the balance changes for a V4 swap its decoder leaves out, such as one paying someone else', () => {
             const impacts = [
                 { asset_id: USDC_ID, amount: '-1000000' },
                 { asset_id: WETH_ID, amount: '300000000000000' },

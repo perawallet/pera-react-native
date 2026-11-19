@@ -3888,6 +3888,7 @@
             "swap_pair": "Converter {{from}} → {{to}}",
             "add_liquidity": "Adicionar liquidez",
             "remove_liquidity": "Remover liquidez",
+            "collect_fees": "Coletar taxas",
             "contract_interaction": "Interação com contrato",
             "approval": "Aprovação",
             "revoke_approval": "Revogar aprovação",
