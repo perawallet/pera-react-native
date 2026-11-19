@@ -21,6 +21,7 @@ import {
     getTransactionRowKey,
     getTransactionRowType,
 } from '@modules/transactions'
+import { PendingSwaps } from '@modules/swap'
 import { RowSeparator } from './RowSeparator'
 
 export type AccountHistoryProps = {
@@ -42,6 +43,7 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
         handleSearchOlder,
         isEmpty,
         networkChainId,
+        shownScope,
         chainFilterOptions,
         handleSelectChain,
         historyFeeds,
@@ -76,6 +78,12 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
             onExportCsv={handleExportCsv}
         />
     )
+    const header = (
+        <>
+            {titleBar}
+            <PendingSwaps shownScope={shownScope} />
+        </>
+    )
 
     // Loading (nothing cached yet) and empty history render as plain views
     // rather than the list's ListEmptyComponent: an empty list inside the
@@ -96,7 +104,7 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
             <PWView style={styles.container}>
                 {feeds}
                 <PWView style={styles.stateContainer}>
-                    {titleBar}
+                    {header}
                     {isInitialLoad ? (
                         <HistorySkeleton />
                     ) : (
@@ -138,7 +146,7 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
                 // rather than at rows.
                 onEndReachedThreshold={1.5}
                 keyboardDismissMode='on-drag'
-                ListHeaderComponent={titleBar}
+                ListHeaderComponent={header}
                 ListFooterComponent={renderFooter}
                 refreshControl={
                     <PWRefreshControl

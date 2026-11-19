@@ -4344,7 +4344,13 @@
             },
             "list": {
                 "item": {
-                    "description": "Takas: <0/> → <1/>"
+                    "description": "Takas: <0/> → <1/>",
+                    "description_unsettled": "Takas: <0/> → <1/>",
+                    "status": {
+                        "in_progress": "Devam ediyor",
+                        "failed": "Başarısız",
+                        "refunded": "İade edildi"
+                    }
                 },
                 "empty": {
                     "title": "Henüz swap yok",

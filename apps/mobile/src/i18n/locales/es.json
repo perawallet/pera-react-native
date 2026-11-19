@@ -4344,7 +4344,13 @@
             },
             "list": {
                 "item": {
-                    "description": "Intercambiaste <0/> por <1/>"
+                    "description": "Intercambiaste <0/> por <1/>",
+                    "description_unsettled": "Swap de <0/> por <1/>",
+                    "status": {
+                        "in_progress": "En curso",
+                        "failed": "Fallido",
+                        "refunded": "Reembolsado"
+                    }
                 },
                 "empty": {
                     "title": "Aún no hay swaps",
