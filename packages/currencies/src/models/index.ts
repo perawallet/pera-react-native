@@ -24,6 +24,13 @@ export type CurrencyPrice = {
     usdPrice: Decimal
 }
 
+export type CurrencyHistoryPoint = {
+    /** UTC calendar day, `YYYY-MM-DD`; a string so the persisted query cache round-trips it. */
+    day: string
+    /** Units of the currency per one USD. */
+    usdPrice: Decimal
+}
+
 export type CurrenciesList = Currency[]
 
 export type CurrencyPreference = {

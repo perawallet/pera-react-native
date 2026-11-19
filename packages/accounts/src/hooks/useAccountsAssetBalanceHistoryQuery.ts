@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCurrency } from '@perawallet/wallet-core-currencies'
+import { useHistoricUsdToPreferred } from '@perawallet/wallet-core-currencies'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import type { HistoryPeriod, Nullable } from '@perawallet/wallet-core-shared'
@@ -42,13 +42,14 @@ export const useAccountsAssetsBalanceHistoryQuery = (
     const address = account
         ? (chainAccountOf(account, scope.chainId)?.address ?? '')
         : ''
-    const { usdToPreferred } = useCurrency(scope)
     const isUnavailableOnNetwork = !useChainCapability(
         scope.chainId,
         'balanceHistory',
     )
 
     const isQueryEnabled = enabled && !!account && !isUnavailableOnNetwork
+    const { usdToPreferredAt, isPending: isRatesPending } =
+        useHistoricUsdToPreferred(scope, period, isQueryEnabled)
 
     const query = useQuery({
         queryKey: getAccountAssetBalanceHistoryQueryKey(
@@ -61,16 +62,19 @@ export const useAccountsAssetsBalanceHistoryQuery = (
         queryFn: ({ signal }) =>
             fetchHoldingBalanceHistory(address, assetId, period, scope, signal),
         select: points =>
-            points.map(point => ({
-                datetime: new Date(point.timestamp),
-                amount: point.amount,
-                preferredValue: usdToPreferred(point.usdValue),
-            })),
+            points.map(point => {
+                const datetime = new Date(point.timestamp)
+                return {
+                    datetime,
+                    amount: point.amount,
+                    preferredValue: usdToPreferredAt(point.usdValue, datetime),
+                }
+            }),
     })
 
     return {
         data: query.data ?? [],
-        isPending: isQueryEnabled ? query.isPending : false,
+        isPending: isQueryEnabled && (query.isPending || isRatesPending),
         isSuccess: query.isSuccess,
         isError: query.isError,
         isPaused: query.isPaused,

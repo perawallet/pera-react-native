@@ -14,6 +14,7 @@ import type {
     ChainScope,
     WalletMode,
 } from '@perawallet/wallet-core-chain-contract'
+import type { HistoryPeriod } from '@perawallet/wallet-core-shared'
 
 const MODULE_PREFIX = 'currencies'
 
@@ -22,6 +23,12 @@ export const currencyQueryKeys = {
     list: (deployment: WalletMode) => [MODULE_PREFIX, { deployment }] as const,
     price: (deployment: WalletMode, preferredFiatCurrency: string) =>
         [MODULE_PREFIX, { deployment, preferredFiatCurrency }] as const,
+    history: (
+        deployment: WalletMode,
+        currencyId: string,
+        period: HistoryPeriod,
+    ) =>
+        [MODULE_PREFIX, 'history', { deployment, currencyId, period }] as const,
     nativeUsdPrice: (scope: ChainScope) =>
         ['assets', 'prices', 'native-usd', { scope }] as const,
 }

@@ -13,6 +13,8 @@
 export {
     fetchCurrenciesList,
     fetchCurrency,
+    fetchCurrencyHistory,
     type FetchCurrenciesListParams,
+    type FetchCurrencyHistoryParams,
     type FetchCurrencyParams,
 } from './endpoints'

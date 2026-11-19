@@ -19,7 +19,15 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     queryClient: queryClientMock,
 }))
 
-import { fetchCurrenciesList, fetchCurrency } from '../endpoints'
+vi.mock('@perawallet/wallet-core-app-integrity', () => ({
+    buildIntegrityHeadersWhenReady: async () => ({ 'x-integrity': 'token' }),
+}))
+
+import {
+    fetchCurrenciesList,
+    fetchCurrency,
+    fetchCurrencyHistory,
+} from '../endpoints'
 
 describe('currencies endpoints', () => {
     beforeEach(() => {
@@ -158,5 +166,52 @@ describe('currencies endpoints', () => {
         })
 
         expect(result.usdPrice.toString()).toBe('0')
+    })
+
+    test('fetchCurrencyHistory asks for one currency and period with the integrity headers', async () => {
+        queryClientMock.mockResolvedValue({
+            data: [
+                {
+                    datetime: '2026-11-01T00:00:00Z',
+                    price: '0.912345678901234567890123',
+                },
+            ],
+        })
+
+        const result = await fetchCurrencyHistory({
+            currencyId: 'EUR',
+            period: 'one-month',
+            deployment: 'live',
+        })
+
+        expect(queryClientMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+                backend: 'pera',
+                deployment: 'live',
+                method: 'GET',
+                url: '/api/v3/currencies/history/',
+                params: { currency: 'EUR', period: 'one-month' },
+                headers: { 'x-integrity': 'token' },
+            }),
+        )
+        expect(result).toEqual([
+            {
+                day: '2026-11-01',
+                usdPrice: new Decimal('0.912345678901234567890123'),
+            },
+        ])
+        expect(result[0]?.usdPrice.toFixed()).toBe('0.912345678901234567890123')
+    })
+
+    test('fetchCurrencyHistory throws when response fails schema validation', async () => {
+        queryClientMock.mockResolvedValue({ data: [{ datetime: 'x' }] })
+
+        await expect(
+            fetchCurrencyHistory({
+                currencyId: 'EUR',
+                period: 'one-day',
+                deployment: 'live',
+            }),
+        ).rejects.toThrow()
     })
 })

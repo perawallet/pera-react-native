@@ -36,3 +36,15 @@ export const currenciesListResponseSchema = z.array(currencyResponseSchema)
 export type CurrencyApiResponse = z.infer<typeof currencyResponseSchema>
 /** Pre-parse wire shape (usd_value may still be a number) — for MSW mocks. */
 export type CurrencyApiWireResponse = z.input<typeof currencyResponseSchema>
+
+/** `price` is units of the currency per one USD; days with no stored rate are left out. */
+export const currencyHistoryResponseSchema = z.array(
+    z.object({
+        datetime: z.string().regex(/^\d{4}-\d{2}-\d{2}T/),
+        price: z.string(),
+    }),
+)
+
+export type CurrencyHistoryApiResponse = z.infer<
+    typeof currencyHistoryResponseSchema
+>
