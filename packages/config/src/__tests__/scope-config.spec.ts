@@ -308,7 +308,7 @@ describe('deploymentOf', () => {
 })
 
 describe('peraServicesFor', () => {
-    test('lists exactly the eleven Pera services', () => {
+    test('lists exactly the twelve Pera services', () => {
         expect(PERA_SERVICES).toEqual([
             'accounts',
             'assets',
@@ -321,6 +321,7 @@ describe('peraServicesFor', () => {
             'contracts',
             'simulations',
             'approvals',
+            'tokenSearch',
         ])
     })
 
@@ -468,10 +469,14 @@ describe('ethereum scopes', () => {
 
         expect(
             fresh({ chainId: 'ethereum', networkId: 'sepolia' }),
-        ).toStrictEqual({ rpcUrls: ['https://sepolia.rpc.example'] })
+        ).toStrictEqual({
+            rpcUrls: ['https://sepolia.rpc.example'],
+        })
         expect(
             fresh({ chainId: 'ethereum', networkId: 'mainnet' }),
-        ).toStrictEqual({ rpcUrls: ['https://mainnet.rpc.example'] })
+        ).toStrictEqual({
+            rpcUrls: ['https://mainnet.rpc.example'],
+        })
     })
 
     test('a registered custom-node source never reaches an Ethereum scope', async () => {

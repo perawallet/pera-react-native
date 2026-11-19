@@ -473,6 +473,17 @@ describe('env-loader', () => {
             ])
         })
 
+        test('accepts the token search service in an EVM Pera services list', () => {
+            process.env.ETHEREUM_MAINNET_PERA_SERVICES = 'assets,tokenSearch'
+
+            const result = getConfigWithEnvOverrides(mockBaseConfig)
+
+            expect(result.ethereumMainnetPeraServices).toEqual([
+                'assets',
+                'tokenSearch',
+            ])
+        })
+
         test('overrides boolean flags correctly', () => {
             process.env.DEBUG_ENABLED = 'true'
             process.env.PROFILING_ENABLED = 'true'

@@ -70,6 +70,7 @@ export const PERA_SERVICES = [
     'contracts',
     'simulations',
     'approvals',
+    'tokenSearch',
 ] as const
 
 export type PeraService = (typeof PERA_SERVICES)[number]
