@@ -100,7 +100,7 @@ describe('swaps/useOpenSwapOrders', () => {
         track(
             order({
                 orderId: 'theirs',
-                sourceAddress: 'SOMEONE_ELSE',
+                sourceAddress: 'SIBLING',
                 destinationAddress: '0xsomeone',
             }),
             order({

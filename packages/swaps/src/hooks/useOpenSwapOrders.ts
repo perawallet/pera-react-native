@@ -34,9 +34,9 @@ const IN_FLIGHT_STATUSES: ReadonlySet<SwapStatus> = new Set([
 ])
 
 /**
- * Tracked orders still in flight where one of `accountAddresses`
- * pays or receives, newest first, leaving out any whose payer left the wallet. With `shownScope`, only orders with a side
- * on that network.
+ * Tracked orders still in flight where one of `accountAddresses` pays or
+ * receives, newest first, leaving out any whose payer left the wallet. With
+ * `shownScope`, only orders with a side on that network.
  */
 export const useOpenSwapOrders = (
     accountAddresses: SwapAccountAddress[],
