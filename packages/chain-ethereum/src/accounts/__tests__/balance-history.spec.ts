@@ -207,6 +207,77 @@ describe('valuation', () => {
     })
 })
 
+describe('valuation of an unreadable balance', () => {
+    const at = (
+        iso: string,
+        balances: [string, string][],
+        unreadable: string[] = [],
+    ): GridPoint => ({
+        timestamp: Date.parse(iso),
+        balances: new Map(balances.map(([id, units]) => [id, usd(units)])),
+        unreadable: new Set(unreadable),
+    })
+    const eth = {
+        decimals: 18,
+        prices: [pricePoint('2026-10-21T10:00:00Z', '2000')],
+    }
+    const usdc = {
+        decimals: 6,
+        prices: [pricePoint('2026-10-21T11:00:00Z', '1')],
+    }
+
+    it('leaves a portfolio point out when a token priced there is unreadable, and keeps it when the token has no price yet', () => {
+        const points = valuePortfolio(
+            [
+                at(
+                    '2026-10-21T10:00:00Z',
+                    [[ETH, '1000000000000000000']],
+                    [USDC_CAIP19],
+                ),
+                at(
+                    '2026-10-21T11:00:00Z',
+                    [[ETH, '1000000000000000000']],
+                    [USDC_CAIP19],
+                ),
+                at('2026-10-21T12:00:00Z', [
+                    [ETH, '1000000000000000000'],
+                    [USDC_CAIP19, '0'],
+                ]),
+            ],
+            new Map([
+                [ETH, eth],
+                [USDC_CAIP19, usdc],
+            ]),
+            ETH,
+        )
+
+        expect(
+            points.map(p => [
+                new Date(p.timestamp).toISOString(),
+                p.usdValue.toFixed(),
+            ]),
+        ).toEqual([
+            ['2026-10-21T10:00:00.000Z', '2000'],
+            ['2026-10-21T12:00:00.000Z', '2000'],
+        ])
+    })
+
+    it("leaves a holding's point out when its balance is unreadable", () => {
+        const points = valueHolding(
+            [
+                at('2026-10-21T11:00:00Z', [], [USDC_CAIP19]),
+                at('2026-10-21T12:00:00Z', [[USDC_CAIP19, '0']]),
+            ],
+            USDC_CAIP19,
+            usdc,
+        )
+
+        expect(points.map(p => new Date(p.timestamp).toISOString())).toEqual([
+            '2026-10-21T12:00:00.000Z',
+        ])
+    })
+})
+
 describe('fetchGridBalances', () => {
     it('splits a request under the read cap and keeps a point only when every call read it', async () => {
         const ids = Array.from(
@@ -548,6 +619,83 @@ describe('the adapter methods', () => {
                 excludeHidden: false,
             }),
         )
+    })
+
+    describe('when a token balance is unreadable at a point', () => {
+        const serve = (alice: Record<string, string | null>) =>
+            server.use(
+                ...peraEvmHandlers({
+                    baseUrl: TEST_PERA_URL,
+                    balanceHistory: {
+                        results: [
+                            answered('2026-10-20T00:00:00Z', {
+                                [ALICE.toLowerCase()]: {
+                                    [ETH]: '1000000000000000000',
+                                    [USDC_CAIP19]: '1000000',
+                                },
+                            }),
+                            answered('2026-10-21T00:00:00Z', {
+                                [ALICE.toLowerCase()]: {
+                                    [ETH]: '1000000000000000000',
+                                    ...alice,
+                                },
+                            }),
+                        ],
+                    } as BalanceHistoryResponse,
+                    charts: {
+                        [ETH]: [chartPoint('2026-10-20T00:00:00Z', '2000')],
+                        [USDC_CAIP19]: [
+                            chartPoint('2026-10-20T00:00:00Z', '1'),
+                        ],
+                    },
+                }),
+            )
+        const portfolio = async () =>
+            (await ops().fetchPortfolioHistory!([ALICE], 'one-month', SCOPE))
+                .slice(0, -1)
+                .map(p => [
+                    new Date(p.timestamp).toISOString(),
+                    p.usdValue.toFixed(),
+                ])
+
+        beforeEach(() => {
+            stored.holdings[ALICE] = [
+                { assetId: ETH_ID, amount: '1000000000000000000' },
+                { assetId: USDC, amount: '1000000' },
+            ]
+        })
+
+        it('leaves the point out of the portfolio rather than valuing the token at 0', async () => {
+            serve({ [USDC_CAIP19]: null })
+
+            expect(await portfolio()).toEqual([
+                ['2026-10-20T00:00:00.000Z', '2001'],
+            ])
+        })
+
+        it('values a token the backend read as 0 at 0', async () => {
+            serve({ [USDC_CAIP19]: '0' })
+
+            expect(await portfolio()).toEqual([
+                ['2026-10-20T00:00:00.000Z', '2001'],
+                ['2026-10-21T00:00:00.000Z', '2000'],
+            ])
+        })
+
+        it('keeps the point when the unreadable token is one the account hid', async () => {
+            useHiddenTokensStore.getState().setTokenHidden({
+                address: ALICE,
+                scope: SCOPE,
+                assetId: USDC,
+                isHidden: true,
+            })
+            serve({ [USDC_CAIP19]: null })
+
+            expect(await portfolio()).toEqual([
+                ['2026-10-20T00:00:00.000Z', '2000'],
+                ['2026-10-21T00:00:00.000Z', '2000'],
+            ])
+        })
     })
 
     it('fetches at most four price charts at once for a portfolio of many tokens', async () => {

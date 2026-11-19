@@ -39,7 +39,7 @@
             "explore_dapps": "Explore dApps",
             "news": "News",
             "dapps_error": "Failed loading featured dApps",
-            "dapps_empty": "No dApps on {{chain}} yet"
+            "dapps_empty_open_url": "No dApps listed on {{chain}} yet. Open any dApp by typing its URL above."
         },
         "dapp_row": {
             "favorite": "Add to favorites",
@@ -438,7 +438,8 @@
             "search_paused_body": "No transactions found in recent history.",
             "search_older": "Search Older",
             "filter": "Filter",
-            "csv": "CSV"
+            "csv": "CSV",
+            "csv_on_network": "{{network}} CSV"
         },
         "collectible": {
             "description": "Description",
@@ -3520,6 +3521,7 @@
         "notifications": {
             "push_notifications": "Push Notifications",
             "account_notifications": "Show notifications for",
+            "network_notifications": "Show notifications on",
             "push_service_unavailable": "This browser isn't delivering push notifications. In Brave, turn on \"Use Google services for push messaging\" in the privacy settings, then reopen Pera.",
             "no_accounts": "No accounts found.",
             "no_accounts_body": "No accounts found. Add an account to manage notification preferences."
@@ -3751,6 +3753,8 @@
             "nothing_back_title": "You get nothing back",
             "permission_collection": "All your {{collection}} NFTs",
             "permission_collection_note": "It can move every NFT you hold in this collection, now and later, until you remove this permission.",
+            "permission_increase": "{{spender}} can spend this much more",
+            "permission_increase_note": "This adds to what {{spender}} can already spend, so its total limit may be higher.",
             "permission_no_change": "No tokens leave your wallet with this transaction.",
             "permission_revoke": "{{spender}} can no longer spend",
             "permission_spender": "{{spender}} can spend",
@@ -3883,6 +3887,10 @@
         },
         "record_detail": {
             "read_failed": "Couldn't read this transaction's call details from the network.",
+            "not_found": {
+                "title": "Transaction not found",
+                "body": "Pera couldn't find this transaction in the account's history. A new transaction can take a minute to show up, so try again shortly."
+            },
             "inferred_notice": "Named from the balance changes. Pera couldn't read the call itself.",
             "transaction_id": "Transaction ID",
             "quantity": "Quantity",
@@ -4311,6 +4319,10 @@
                     "title": "No swaps yet",
                     "body": "Your swap history will appear here."
                 },
+                "not_on_device": {
+                    "title": "History not available yet",
+                    "body": "This account isn't set up on this device yet, so its swap history can't load. Please try again later."
+                },
                 "error": {
                     "title": "Something went wrong",
                     "body": "We couldn't load your swap history. Please try again."
@@ -4459,6 +4471,8 @@
             "for": "for",
             "empty_title": "No transactions yet",
             "empty_body": "Your buy transactions will appear here.",
+            "not_on_device_title": "History not available yet",
+            "not_on_device_body": "This account isn't set up on this device yet, so its buy history can't load. Please try again later.",
             "error_title": "Something went wrong",
             "error_body": "We could not load your buy history. Please try again."
         }

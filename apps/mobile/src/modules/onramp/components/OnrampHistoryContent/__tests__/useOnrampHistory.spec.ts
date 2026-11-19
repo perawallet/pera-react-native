@@ -76,6 +76,7 @@ const makeQueryResult = (
     isLoading: false,
     isFetchingNextPage: false,
     isError: false,
+    isAccountNotOnDevice: false,
     error: null,
     hasNextPage: false,
     fetchNextPage: mockFetchNextPage,
@@ -128,6 +129,16 @@ describe('useOnrampHistory', () => {
             status: 'completed',
             isActive: true,
         })
+    })
+
+    it('passes through that the device does not hold the account', () => {
+        vi.mocked(useRampHistoryInfiniteQuery).mockReturnValue(
+            makeQueryResult({ isError: true, isAccountNotOnDevice: true }),
+        )
+
+        const { result } = renderHook(() => useOnrampHistory())
+
+        expect(result.current.isAccountNotOnDevice).toBe(true)
     })
 
     it('passes hasNextPage and fetchNextPage through from the query', () => {

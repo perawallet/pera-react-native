@@ -17,7 +17,10 @@ import { screen } from '@test-utils/render'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
 import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainScope,
+    TransactionNative,
+} from '@perawallet/wallet-core-chain-contract'
 import type {
     SignRequestSource,
     TransactionWarning,
@@ -32,6 +35,8 @@ import {
 } from '@test-utils/algorand-display-fixtures'
 import { PWText } from '@components/core'
 import { TransactionReviewBody } from '../TransactionReviewBody'
+
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 const REVIEW_ACTIONS = <PWText testID='review_actions_probe' />
 
@@ -105,6 +110,7 @@ const renderReview = (
     ]
     const Review = () => (
         <TransactionReviewBody
+            scope={SCOPE}
             actions={REVIEW_ACTIONS}
             transaction={transaction}
             source={origin.source}
@@ -227,6 +233,7 @@ describe('TransactionReviewBody', () => {
         const { container } = renderWithNavigation(
             () => (
                 <TransactionReviewBody
+                    scope={SCOPE}
                     actions={REVIEW_ACTIONS}
                     transaction={
                         {

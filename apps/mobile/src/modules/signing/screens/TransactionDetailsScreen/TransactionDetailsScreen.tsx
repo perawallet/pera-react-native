@@ -55,6 +55,7 @@ export const TransactionDetailsScreen = () => {
                     )}
                     <TransactionDetailBody
                         transaction={renderState.transaction}
+                        scope={scope}
                         onRelatedTransactionPress={
                             handleRelatedTransactionPress
                         }

@@ -77,6 +77,9 @@ export const toSearchRows = (input: RowsInput): SearchRow[] => {
     if (!input.isTyping) return recentRows(input.recents)
 
     const rows: SearchRow[] = []
+    // A typed URL is itself the result: its row opens the page in the browser.
+    const hasTypedUrlRow =
+        input.isWebSearchRowVisible && input.typedUrl !== null
     if (input.isWebSearchRowVisible) {
         rows.push(
             input.typedUrl === null
@@ -113,6 +116,7 @@ export const toSearchRows = (input: RowsInput): SearchRow[] => {
     if (isLoadingTab(input)) {
         rows.push({ key: 'loading', kind: 'loading' })
     } else if (
+        !hasTypedUrlRow &&
         !isUnavailable &&
         !isDappsUnavailable &&
         input.dappResults.length === 0 &&

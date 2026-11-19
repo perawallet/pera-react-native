@@ -26,11 +26,13 @@ const SCREEN_CAPTURE_TAG = 'view-passphrase'
 
 export type ViewPassphraseContentProps = {
     address: string
+    accountId?: string
     testID?: string
 }
 
 export const ViewPassphraseContent = ({
     address,
+    accountId,
     testID = 'view_passphrase_bottom_sheet',
 }: ViewPassphraseContentProps) => {
     const { t } = useLanguage()
@@ -38,9 +40,14 @@ export const ViewPassphraseContent = ({
     const { dismiss } = useBottomSheetResult<void>()
     const { wordIndices, isLoading, error } = useViewPassphraseContent({
         address,
+        accountId,
     })
     const { isMultiNetwork, linkedAddresses, compatibilityKeys } =
-        usePassphraseReach({ address, wordCount: wordIndices?.length })
+        usePassphraseReach({
+            address,
+            accountId,
+            wordCount: wordIndices?.length,
+        })
     const hasWords = !isLoading && !error && (wordIndices?.length ?? 0) > 0
 
     usePreventScreenCapture(SCREEN_CAPTURE_TAG, true)

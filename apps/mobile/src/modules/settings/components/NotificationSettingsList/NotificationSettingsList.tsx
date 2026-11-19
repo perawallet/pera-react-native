@@ -20,6 +20,7 @@ import { useMemo } from 'react'
 import { useStyles } from './styles'
 import type { StyleProp, ViewStyle } from 'react-native'
 import { AccountNotificationItem } from './AccountNotificationItem'
+import { NetworkNotificationsSection } from './NetworkNotificationsSection'
 
 export type NotificationSettingsListProps = {
     style?: StyleProp<ViewStyle>
@@ -121,6 +122,7 @@ export const NotificationSettingsList = ({
                             )}
                         </PWText>
                     )}
+                    <NetworkNotificationsSection />
                     <PWView style={styles.headerRow}>
                         <PWView style={styles.headerLabelContainer}>
                             <PWText

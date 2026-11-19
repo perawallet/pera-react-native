@@ -1303,6 +1303,23 @@ describe('createEip1193ConnectionHandler', () => {
             ])
         })
 
+        it('reports chainChanged when the site’s chain moved while the sheet was open', async () => {
+            const { transport, registry, proposals, store } = setup([
+                connectedOn('ethereum'),
+            ])
+            await registry.initialize()
+            const pending = ask(transport)
+            await flush()
+            await store.upsert(connectedOn('base'))
+
+            await proposals[0].approve([ADDR_X])
+            await pending
+
+            expect(notificationsOf(transport, 'chainChanged')).toEqual([
+                { origin: ORIGIN, params: '0x1' },
+            ])
+        })
+
         it('still needs a user gesture for a connected site', async () => {
             const { transport, registry, proposals } = setup([
                 connectedOn('ethereum'),
@@ -1371,6 +1388,32 @@ describe('createEip1193ConnectionHandler', () => {
                 EIP1193_ERROR_CODE.invalidParams,
             )
             expect(proposals).toHaveLength(0)
+        })
+
+        it('frees the site’s slot when the approval cannot re-read its grant', async () => {
+            const { transport, registry, store, proposals } = setup([
+                connectedOn('ethereum'),
+            ])
+            await registry.initialize()
+            const pending = ask(transport)
+            await flush()
+            vi.spyOn(store, 'get').mockRejectedValueOnce(
+                new Error('store down'),
+            )
+
+            await expect(proposals[0].approve([ADDR_Y])).rejects.toThrow(
+                'store down',
+            )
+            const retry = ask(transport)
+            await flush()
+            expect(proposals).toHaveLength(2)
+            expect(errorOf(await pending)?.code).toBe(
+                EIP1193_ERROR_CODE.internal,
+            )
+            await proposals[1].approve([ADDR_Y])
+            expect(resultOf(await retry)).toMatchObject([
+                { parentCapability: 'eth_accounts' },
+            ])
         })
 
         it('frees the site’s slot when it throws before the proposal is handed over', async () => {
@@ -2183,6 +2226,58 @@ describe('createEip1193ConnectionHandler', () => {
                 await expect(
                     handler.changeAccount?.(ID, 'ethereum', ADDR_Y),
                 ).rejects.toMatchObject({ code: 'unknown-connection' })
+            })
+        })
+
+        describe('wallet_requestPermissions replacing the grant', () => {
+            const regrant = async (
+                context: Awaited<ReturnType<typeof connected>>,
+                account: string,
+            ) => {
+                const pending = context.transport.send(
+                    ORIGIN,
+                    'wallet_requestPermissions',
+                    [{ eth_accounts: {} }],
+                )
+                await flush()
+                await context.proposals[0].approve([account])
+                await pending
+                await flush()
+            }
+
+            it('hands the request on screen back and declines the ones queued behind it', async () => {
+                const context = await connected()
+                const head = context.sign()
+                const queued = context.sign()
+                await flush()
+
+                await regrant(context, ADDR_Y)
+
+                const [raised] = raisedOf(context.messages)
+                expect(context.messages).toContainEqual({
+                    kind: 'request-withdrawn',
+                    connectionId: raised!.connectionId,
+                    correlationId: raised!.correlationId,
+                })
+                expect(head.response).toBeUndefined()
+                expect(errorOf(queued.response!)?.code).toBe(
+                    EIP1193_ERROR_CODE.userRejected,
+                )
+            })
+
+            it('keeps the site’s requests when the same account is granted again', async () => {
+                const context = await connected()
+                const head = context.sign()
+                const queued = context.sign()
+                await flush()
+
+                await regrant(context, ADDR_X)
+
+                expect(context.messages).not.toContainEqual(
+                    expect.objectContaining({ kind: 'request-withdrawn' }),
+                )
+                expect(head.response).toBeUndefined()
+                expect(queued.response).toBeUndefined()
             })
         })
 

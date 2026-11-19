@@ -62,6 +62,21 @@ export const isDelegatedAccount = (
         .authority?.isDelegated(account, getSelectedScope(chainId)) ??
         false)
 
+/**
+ * The first of `chainIds` where the account's own local key signs for it:
+ * undefined for a watch, hardware or multisig account, or one delegated on
+ * every chain it holds a key on.
+ */
+export const ownKeyChainIdOf = (
+    account: WalletAccount,
+    chainIds: readonly ChainId[],
+): Optional<ChainId> =>
+    chainIds.find(
+        chainId =>
+            !!chainAccountOf(account, chainId)?.keyPairId &&
+            !isDelegatedAccount(account, chainId),
+    )
+
 export const isWatchAccount = (
     account: WalletAccount,
 ): account is WatchAccount => hasCustody(account, 'watch')

@@ -20,18 +20,19 @@ import { TransactionPreviewRow } from '../../transactions/TransactionPreviewRow'
 
 export const GroupDetailScreen = () => {
     const styles = useStyles()
-    const { transactions, handleTransactionPress, keyExtractor } =
+    const { transactions, reviewScope, handleTransactionPress, keyExtractor } =
         useGroupDetailScreen()
 
     const renderItem = useCallback(
         ({ item }: { item: SingleTransactionItem }) => (
             <TransactionPreviewRow
                 transaction={item.transaction}
+                scope={reviewScope}
                 isExternal={item.isExternal}
                 onPress={() => handleTransactionPress(item)}
             />
         ),
-        [handleTransactionPress],
+        [handleTransactionPress, reviewScope],
     )
 
     const ItemSeparator = useCallback(

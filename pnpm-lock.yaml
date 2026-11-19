@@ -970,8 +970,8 @@ importers:
         specifier: 58.0.6
         version: 58.0.6(expo@58.0.17)(react@19.3.0)
       expo-screen-orientation:
-        specifier: 58.0.4
-        version: 58.0.4(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))
+        specifier: 58.0.3
+        version: 58.0.3(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))
       expo-sensors:
         specifier: 58.0.5
         version: 58.0.5(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))
@@ -9202,8 +9202,8 @@ packages:
       expo: '*'
       react: 19.3.0
 
-  expo-screen-orientation@58.0.4:
-    resolution: {integrity: sha512-PN3nGluAC6vBY7Zs9jA9guZrKth7ynVHZjZNJZhrJrV7X+6rlvpr7LzktTNJveb2HZJUU94FySkKGrWePkkE2A==}
+  expo-screen-orientation@58.0.3:
+    resolution: {integrity: sha512-nvNA5VE0HBZDoZhzn0OngyVk/dSbaIMIvytgEAjADtC0pUXAeuMpfnM/e9oqM3naSDj52/F1kdg5Tx3D21QGHg==}
     peerDependencies:
       expo: '*'
       react-native: 0.88.0
@@ -16932,7 +16932,7 @@ snapshots:
       expo: 58.0.17(@babel/core@7.29.13)(@expo/dom-webview@58.0.2)(react-dom@19.3.0(react@19.3.0))(react-native-web@0.21.4(patch_hash=d74d289d61c4f13cd081ceb71b5a2ab4fd828cd1a063e337a43f5ab3fc0292e1)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-native-webview@14.0.1(patch_hash=6bdefba5a7e63c5f23afc5e15ef2769384591a98aae366b39449b14833b525fb)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(react-native-worklets@0.13.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(typescript@7.0.2)
       react: 19.3.0
 
-  expo-screen-orientation@58.0.4(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)):
+  expo-screen-orientation@58.0.3(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)):
     dependencies:
       expo: 58.0.17(@babel/core@7.29.13)(@expo/dom-webview@58.0.2)(react-dom@19.3.0(react@19.3.0))(react-native-web@0.21.4(patch_hash=d74d289d61c4f13cd081ceb71b5a2ab4fd828cd1a063e337a43f5ab3fc0292e1)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-native-webview@14.0.1(patch_hash=6bdefba5a7e63c5f23afc5e15ef2769384591a98aae366b39449b14833b525fb)(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(react-native-worklets@0.13.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(typescript@7.0.2)
       react-native: 0.88.0(@babel/core@7.29.13)(@react-native/metro-config@0.88.0(@babel/core@7.29.13))(@types/react@19.3.0)(react@19.3.0)

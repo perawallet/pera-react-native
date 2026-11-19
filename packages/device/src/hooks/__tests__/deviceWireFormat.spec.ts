@@ -90,6 +90,7 @@ describe('devices API wire format', () => {
                     'ethereum',
                 ),
             ],
+            mutedChainIds: ['ethereum'],
         }
 
         expect(onTheWire(registration)).toStrictEqual(
@@ -104,6 +105,7 @@ describe('devices API wire format', () => {
             locale: 'en-US',
             appVersion: '7.0.1',
             accounts: [],
+            mutedChainIds: [],
         }
 
         expect(onTheWire(registration)).toStrictEqual(

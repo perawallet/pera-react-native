@@ -10,13 +10,24 @@
  limitations under the License
  */
 
+import { useMemo } from 'react'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { deploymentOf } from '@perawallet/wallet-core-config'
 import { useDeviceIdLookup } from '@perawallet/wallet-core-device'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
-import { fetchSwapHistory, routerAccountId, type SwapHistoryPage } from '../api'
-import type { SwapAccountAddress, SwapHistoryItem, SwapStatus } from '../models'
+import {
+    fetchSwapHistory,
+    readForOwnedAccounts,
+    routerAccountId,
+    type SwapHistoryPage,
+} from '../api'
+import type {
+    SwapAccountAddressOnDevice,
+    SwapHistoryItem,
+    SwapStatus,
+} from '../models'
 import { isSwapHistoryRow } from '../utils/isSwapHistoryRow'
+import { isAccountNotOnDeviceError } from '../utils/routerErrors'
 import { swapQueryKeys } from './querykeys'
 
 const PAGE_SIZE = 20
@@ -29,30 +40,40 @@ export type UseSwapHistoryInfiniteQueryResult = {
     isLoading: boolean
     isFetchingNextPage: boolean
     isError: boolean
+    /** None of the accounts is on this device, so the router has no history to give. */
+    isAccountNotOnDevice: boolean
     error: Nullable<Error>
     hasNextPage: boolean
     fetchNextPage: () => void
     refetch: () => void
 }
 
+type HistoryPageParam = {
+    cursor: string
+    /** The router binds a cursor to the accounts it was issued for. */
+    accounts: string[]
+}
+
+type AccountsPage = SwapHistoryPage & { accounts: string[] }
+
 const fetchVisiblePage = async (
-    fetchPage: (cursor: Optional<string>) => Promise<SwapHistoryPage>,
+    fetchPage: (param: Optional<HistoryPageParam>) => Promise<AccountsPage>,
     statuses: Optional<SwapStatus[]>,
-    cursor: Optional<string>,
-): Promise<SwapHistoryPage> => {
-    const visibleOf = (page: SwapHistoryPage): SwapHistoryPage => ({
+    param: Optional<HistoryPageParam>,
+): Promise<AccountsPage> => {
+    const visibleOf = (page: AccountsPage): AccountsPage => ({
+        ...page,
         results: page.results.filter(
             item =>
                 isSwapHistoryRow(item) &&
                 (!statuses || statuses.includes(item.status)),
         ),
-        next: page.next,
     })
-    let page = await fetchPage(cursor)
+    let page = await fetchPage(param)
     for (let skipped = 0; skipped < MAX_SKIPPED_PAGES; skipped++) {
         const visible = visibleOf(page)
         if (visible.results.length > 0 || page.next === null) return visible
-        page = await fetchPage(page.next)
+        page = await fetchPage({ cursor: page.next, accounts: page.accounts })
     }
     return visibleOf(page)
 }
@@ -61,41 +82,66 @@ const fetchVisiblePage = async (
  * The router has no status filter, so `statuses` narrows each page, reading
  * ahead past pages it empties. The device and request scope come from the
  * first account; every account's address is asked for in one list, so an
- * order whose legs sit on two of them shows once.
+ * order whose legs sit on two of them shows once. An account the device
+ * doesn't hold is left out rather than failing the others: up front when
+ * registration doesn't send it, and after the router refuses it otherwise.
  */
 export const useSwapHistoryInfiniteQuery = (
-    accounts: SwapAccountAddress[],
+    accounts: SwapAccountAddressOnDevice[],
     statuses?: SwapStatus[],
     isEnabled: boolean = true,
 ): UseSwapHistoryInfiniteQueryResult => {
-    const requestScope = accounts.at(0)?.scope ?? null
+    const onDevice = useMemo(
+        () =>
+            accounts
+                .filter(account => account.isOnDevice)
+                .map(({ scope, address }) => ({ scope, address })),
+        [accounts],
+    )
+    const requestScope = onDevice.at(0)?.scope ?? null
     const deviceId = useDeviceIdLookup()(
         requestScope ? deploymentOf(requestScope) : null,
     )
     const query = useInfiniteQuery({
-        queryKey: swapQueryKeys.historyInfinite(accounts, statuses),
-        queryFn: ({ pageParam }: { pageParam: Optional<string> }) => {
+        queryKey: swapQueryKeys.historyInfinite(onDevice, statuses),
+        queryFn: ({ pageParam }: { pageParam: Optional<HistoryPageParam> }) => {
             if (!requestScope) throw new Error('No swap account to read')
-            return fetchVisiblePage(
-                cursor =>
-                    fetchSwapHistory(
-                        {
-                            deviceId: deviceId ?? '',
-                            accounts: accounts.map(account =>
-                                routerAccountId(account.scope, account.address),
-                            ),
-                            cursor,
-                            limit: PAGE_SIZE,
-                        },
-                        requestScope,
+            const read = (
+                routerIds: string[],
+                cursor: Optional<string>,
+                limit: number = PAGE_SIZE,
+            ) =>
+                fetchSwapHistory(
+                    {
+                        deviceId: deviceId ?? '',
+                        accounts: routerIds,
+                        cursor,
+                        limit,
+                    },
+                    requestScope,
+                )
+            const fetchPage = async (
+                param: Optional<HistoryPageParam>,
+            ): Promise<AccountsPage> => {
+                if (param) {
+                    const page = await read(param.accounts, param.cursor)
+                    return { ...page, accounts: param.accounts }
+                }
+                const { value, accounts: owned } = await readForOwnedAccounts(
+                    onDevice.map(account =>
+                        routerAccountId(account.scope, account.address),
                     ),
-                statuses,
-                pageParam,
-            )
+                    (routerIds, limit) => read(routerIds, undefined, limit),
+                )
+                return { ...value, accounts: owned }
+            }
+            return fetchVisiblePage(fetchPage, statuses, pageParam)
         },
-        initialPageParam: undefined as Optional<string>,
-        getNextPageParam: (lastPage: SwapHistoryPage) =>
-            lastPage.next ?? undefined,
+        initialPageParam: undefined as Optional<HistoryPageParam>,
+        getNextPageParam: (lastPage: AccountsPage) =>
+            lastPage.next === null
+                ? undefined
+                : { cursor: lastPage.next, accounts: lastPage.accounts },
         enabled: isEnabled && requestScope !== null && !!deviceId,
     })
 
@@ -106,6 +152,9 @@ export const useSwapHistoryInfiniteQuery = (
         isLoading: query.isLoading,
         isFetchingNextPage: query.isFetchingNextPage,
         isError: query.isError,
+        isAccountNotOnDevice:
+            (accounts.length > 0 && onDevice.length === 0) ||
+            isAccountNotOnDeviceError(query.error),
         error: query.error,
         hasNextPage: query.hasNextPage,
         fetchNextPage: () => void query.fetchNextPage(),

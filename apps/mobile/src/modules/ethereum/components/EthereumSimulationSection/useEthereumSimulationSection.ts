@@ -11,16 +11,18 @@
  */
 
 import { useMemo } from 'react'
-import type { Decimal } from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import {
     useAssetPricesQuery,
     useAssetsQuery,
     useNativeAsset,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
+import type { SpendApproval } from '@perawallet/wallet-core-chain-contract'
 import {
     parseEvmNftAssetId,
     simulationRequestOf,
+    toAllowanceAmount,
     useEvmTransactionSimulationQuery,
     type EvmApprovalChange,
     type EvmAssetChange,
@@ -46,8 +48,17 @@ import { isCallUnexplained } from '../../utils/contractCallNotice'
 
 export type EthereumApprovalGrant =
     | { kind: 'unlimited' }
-    /** `amount` is in display units of the token, or raw base units when `isBaseUnits`. */
-    | { kind: 'amount'; amount: Decimal; isBaseUnits: boolean }
+    /**
+     * `amount` is in display units of the token, or raw base units when
+     * `isBaseUnits`. `isIncrease` marks an amount added to an allowance the
+     * review can't see, so it is not the resulting limit.
+     */
+    | {
+          kind: 'amount'
+          amount: Decimal
+          isBaseUnits: boolean
+          isIncrease?: boolean
+      }
     /** One NFT. */
     | { kind: 'token'; tokenId: string }
     | { kind: 'revoke' }
@@ -80,6 +91,11 @@ const HIDDEN: EthereumSimulationSectionState = { status: 'hidden' }
 const LOADING: EthereumSimulationSectionState = { status: 'loading' }
 const NO_IDS: string[] = []
 
+const allowanceOf = (amount: Optional<Decimal>): Optional<Decimal> =>
+    amount === undefined
+        ? undefined
+        : toAllowanceAmount(BigInt(amount.toFixed()))
+
 const grantOf = (
     change: EvmApprovalChange,
     asset: Nullable<PeraAsset>,
@@ -89,12 +105,13 @@ const grantOf = (
     if (change.tokenId !== undefined) {
         return { kind: 'token', tokenId: change.tokenId }
     }
-    if (!change.amount) return { kind: 'unlimited' }
+    const amount = allowanceOf(change.amount)
+    if (amount === undefined) return { kind: 'unlimited' }
     return {
         kind: 'amount',
         amount: asset
-            ? baseUnitsToDisplayUnits(change.amount, asset.decimals)
-            : change.amount,
+            ? baseUnitsToDisplayUnits(amount, asset.decimals)
+            : amount,
         isBaseUnits: !asset,
     }
 }
@@ -102,7 +119,20 @@ const grantOf = (
 const sameAddress = (a: string, b: string): boolean =>
     a.toLowerCase() === b.toLowerCase()
 
-// The approval the call's own review already shows from its calldata.
+// Unlimited is compared as the calldata reads it, so a simulator's raw max
+// still matches an unlimited approve.
+const isSameAllowance = (
+    simulated: Optional<Decimal>,
+    approval: Optional<SpendApproval>,
+): boolean => {
+    const decoded = approval ? approval.allowances[0]?.amount : new Decimal(0)
+    const resulting = allowanceOf(simulated)
+    return decoded && resulting ? decoded.eq(resulting) : decoded === resulting
+}
+
+// The approval the call's own review already shows from its calldata. A
+// simulated allowance that differs, such as the total an increase leads to,
+// is what the spender will hold, so it is kept.
 const isDecodedApproval = (
     change: EvmApprovalChange,
     call: Nullable<EthereumStandardCallPresentation>,
@@ -110,10 +140,12 @@ const isDecodedApproval = (
     switch (call?.kind) {
         case 'token-approval': {
             return (
+                !call.isIncrease &&
                 !change.isCollectionWide &&
                 change.tokenId === undefined &&
                 sameAddress(change.contract, call.contract) &&
-                sameAddress(change.spender, call.spender)
+                sameAddress(change.spender, call.spender) &&
+                isSameAllowance(change.amount, call.spendApproval)
             )
         }
         case 'nft-approval': {

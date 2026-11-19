@@ -12,9 +12,14 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { fireEvent, render, screen } from '@test-utils/render'
-import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainScope,
+    TransactionNative,
+} from '@perawallet/wallet-core-chain-contract'
 import { buildAlgorandDisplayFixture } from '@test-utils/algorand-display-fixtures'
 import { TransactionPreviewRow } from '../TransactionPreviewRow'
+
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 // The global mock stubs the blockchain barrel; the row classifies with the real utils.
 vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () => ({
@@ -40,6 +45,7 @@ describe('TransactionPreviewRow', () => {
 
         render(
             <TransactionPreviewRow
+                scope={SCOPE}
                 transaction={buildAlgorandDisplayFixture('payment')}
                 isExternal
                 onPress={onPress}
@@ -56,7 +62,12 @@ describe('TransactionPreviewRow', () => {
     it('renders nothing for a family with no row', () => {
         const evm: TransactionNative = { family: 'evm', transaction: {} }
 
-        render(<TransactionPreviewRow transaction={evm} />)
+        render(
+            <TransactionPreviewRow
+                scope={SCOPE}
+                transaction={evm}
+            />,
+        )
 
         expect(screen.queryByTestId('transaction_preview_row')).toBeNull()
     })

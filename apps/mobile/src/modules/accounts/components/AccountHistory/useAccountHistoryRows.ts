@@ -20,6 +20,7 @@ import {
     type AccountHoldingSource,
 } from '@perawallet/wallet-core-accounts'
 import {
+    toScopeKey,
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
@@ -78,6 +79,8 @@ export type UseAccountHistoryRowsResult = Omit<
     unavailableNetworkNames: string[]
     /** The chip's network, or the account's own chain on All; on a merged history only analytics and CSV read it. */
     scope: ChainScope
+    /** The rows from `scope`'s network: on a merged history, only its share of `transactionCount`. */
+    scopeTransactionCount: number
     accountAddress: Optional<string>
     /** The network the history is narrowed to by the network chip; null is All. */
     networkChainId: Nullable<ChainId>
@@ -167,6 +170,15 @@ export const useAccountHistoryRows = ({
         : singleFailureNamesOf(single)
 
     const { scopeByTransactionId } = merged
+    const scopeTransactionCount = useMemo(() => {
+        if (!isMerged) return history.transactionCount
+        const scopeKey = toScopeKey(scope)
+        let count = 0
+        for (const rowScope of scopeByTransactionId.values()) {
+            if (toScopeKey(rowScope) === scopeKey) count++
+        }
+        return count
+    }, [isMerged, history.transactionCount, scopeByTransactionId, scope])
     const scopeOf = useCallback(
         (transactionId: string) =>
             (isMerged && scopeByTransactionId.get(transactionId)) || scope,
@@ -193,6 +205,7 @@ export const useAccountHistoryRows = ({
         isRetrying: history.isRetrying,
         suspectedPoisoningById: history.suspectedPoisoningById,
         scope,
+        scopeTransactionCount,
         accountAddress,
         networkChainId: selectedSource?.scope.chainId ?? null,
         isMerged,

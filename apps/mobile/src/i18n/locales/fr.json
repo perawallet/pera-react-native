@@ -39,7 +39,7 @@
             "explore_dapps": "Explorer les dApps",
             "news": "Actualités",
             "dapps_error": "Échec du chargement des dApps en vedette",
-            "dapps_empty": "Aucune dApp sur {{chain}} pour le moment"
+            "dapps_empty_open_url": "Aucune dApp répertoriée sur {{chain}} pour le moment. Ouvrez n’importe quelle dApp en saisissant son URL ci-dessus."
         },
         "dapp_row": {
             "favorite": "Ajouter aux favoris",
@@ -438,7 +438,8 @@
             "search_paused_body": "Aucune transaction trouvée dans l’historique récent.",
             "search_older": "Rechercher les plus anciennes",
             "filter": "Filtrer",
-            "csv": "CSV"
+            "csv": "CSV",
+            "csv_on_network": "CSV {{network}}"
         },
         "collectible": {
             "description": "Description",
@@ -3520,6 +3521,7 @@
         "notifications": {
             "push_notifications": "Notifications push",
             "account_notifications": "Afficher les notifications pour",
+            "network_notifications": "Afficher les notifications sur",
             "push_service_unavailable": "Ce navigateur ne reçoit pas les notifications push. Dans Brave, activez « Utiliser les services Google pour les messages push » dans les paramètres de confidentialité, puis rouvrez Pera.",
             "no_accounts": "Aucun compte trouvé.",
             "no_accounts_body": "Aucun compte trouvé. Ajoutez un compte pour gérer les préférences de notification."
@@ -3751,6 +3753,8 @@
             "nothing_back_title": "Vous ne recevez rien en retour",
             "permission_collection": "Tous vos NFT {{collection}}",
             "permission_collection_note": "Il pourra déplacer chaque NFT de cette collection que vous détenez, maintenant et plus tard, jusqu’à ce que vous retiriez cette autorisation.",
+            "permission_increase": "{{spender}} pourra dépenser ce montant en plus",
+            "permission_increase_note": "Ce montant s’ajoute à ce que {{spender}} peut déjà dépenser, sa limite totale peut donc être plus élevée.",
             "permission_no_change": "Aucun jeton ne quitte votre portefeuille avec cette transaction.",
             "permission_revoke": "{{spender}} ne pourra plus dépenser",
             "permission_spender": "{{spender}} pourra dépenser",
@@ -3883,6 +3887,10 @@
         },
         "record_detail": {
             "read_failed": "Impossible de lire depuis le réseau les détails de l’appel de cette transaction.",
+            "not_found": {
+                "title": "Transaction introuvable",
+                "body": "Pera n’a pas trouvé cette transaction dans l’historique du compte. Une nouvelle transaction peut mettre une minute à apparaître ; veuillez réessayer dans un instant."
+            },
             "inferred_notice": "Nom déduit des variations de solde. Pera n’a pas pu lire l’appel lui-même.",
             "transaction_id": "ID de transaction",
             "quantity": "Quantité",
@@ -4311,6 +4319,10 @@
                     "title": "Aucun swap pour le moment",
                     "body": "Votre historique de swaps apparaîtra ici."
                 },
+                "not_on_device": {
+                    "title": "Historique pas encore disponible",
+                    "body": "Ce compte n’est pas encore configuré sur cet appareil, son historique de swaps ne peut donc pas être chargé. Veuillez réessayer plus tard."
+                },
                 "error": {
                     "title": "Une erreur est survenue",
                     "body": "Nous n’avons pas pu charger votre historique de swaps. Veuillez réessayer."
@@ -4459,6 +4471,8 @@
             "for": "pour",
             "empty_title": "Aucune transaction pour le moment",
             "empty_body": "Vos transactions d’achat apparaîtront ici.",
+            "not_on_device_title": "Historique pas encore disponible",
+            "not_on_device_body": "Ce compte n’est pas encore configuré sur cet appareil, son historique d’achats ne peut donc pas être chargé. Veuillez réessayer plus tard.",
             "error_title": "Une erreur est survenue",
             "error_body": "Nous n’avons pas pu charger votre historique d’achats. Veuillez réessayer."
         }

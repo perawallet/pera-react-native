@@ -29,7 +29,6 @@ import {
     useMnemonicBackupStore,
     useRequiresMnemonicBackup,
 } from '@perawallet/wallet-core-backup'
-import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 
@@ -180,7 +179,7 @@ describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
             useMnemonicBackupStore.getState().isBackedUp(seedOf(accounts[0])),
         ).toBe(true)
         const { result } = renderHook(() =>
-            useRequiresMnemonicBackup(accounts[0], ALGORAND_CHAIN_ID),
+            useRequiresMnemonicBackup(accounts[0]),
         )
         expect(result.current).toBe(false)
     })

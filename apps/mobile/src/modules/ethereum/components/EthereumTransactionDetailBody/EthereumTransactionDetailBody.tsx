@@ -10,15 +10,11 @@
  limitations under the License
  */
 
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { TransactionDetailLayout, type DetailBodyProps } from '@modules/signing'
 import { EthereumTransactionDetailSection } from '../EthereumTransactionDetailSection'
 import { useEthereumTransactionDetailBody } from './useEthereumTransactionDetailBody'
 
-export type EthereumTransactionDetailBodyProps = DetailBodyProps & {
-    /** The chain the transaction is on; unset, the selected Ethereum scope. */
-    scope?: ChainScope
-}
+export type EthereumTransactionDetailBodyProps = DetailBodyProps
 
 export const EthereumTransactionDetailBody = ({
     transaction,

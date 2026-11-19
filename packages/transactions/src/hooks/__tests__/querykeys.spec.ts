@@ -379,6 +379,27 @@ describe('invalidateTransactionQueriesForAddresses', () => {
         expect(queryClient.getQueryState(baseKey)?.isInvalidated).toBe(false)
     })
 
+    test('reaches a record looked up by id for the targeted address', () => {
+        const queryClient = new QueryClient()
+        const targetKey = transactionQueryKeys.recordById(
+            '0xabc',
+            ETHEREUM,
+            '0xhash',
+        )
+        const otherKey = transactionQueryKeys.recordById(
+            '0xdef',
+            ETHEREUM,
+            '0xhash',
+        )
+        queryClient.setQueryData(targetKey, { value: 1 })
+        queryClient.setQueryData(otherKey, { value: 2 })
+
+        invalidateTransactionQueriesForAddresses(queryClient, ['0xabc'])
+
+        expect(queryClient.getQueryState(targetKey)?.isInvalidated).toBe(true)
+        expect(queryClient.getQueryState(otherKey)?.isInvalidated).toBe(false)
+    })
+
     test('invalidates only the targeted address histories', () => {
         const queryClient = new QueryClient()
         const targetKey = transactionQueryKeys.history('ADDR1', MAINNET)

@@ -41,7 +41,8 @@ export const GOLDEN_UPDATE_REQUEST = `{
     "locale": "en-US",
     "app_version": "7.0.1",
     "currency": "USD",
-    "accounts": ${GOLDEN_REGISTRATION_ACCOUNTS}
+    "accounts": ${GOLDEN_REGISTRATION_ACCOUNTS},
+    "muted_chains": ["eip155:1"]
 }`
 
 export const GOLDEN_CREATE_REQUEST = `{
@@ -49,5 +50,6 @@ export const GOLDEN_CREATE_REQUEST = `{
     "platform": "android",
     "locale": "en-US",
     "app_version": "7.0.1",
-    "accounts": []
+    "accounts": [],
+    "muted_chains": []
 }`

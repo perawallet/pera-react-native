@@ -181,7 +181,7 @@ describe('Flow: History on an account with Algorand and Ethereum', () => {
         useAccountsStore.getState().setAccounts([])
     })
 
-    it('Given history on both networks, when History opens on All, then it interleaves them newest first and labels each row with its network', async () => {
+    it('Given history on both networks, when History opens on All, then it interleaves them newest first, labels each row with its network, and offers the Algorand CSV export', async () => {
         renderWithNavigation(AccountHistory, 'AccountHistory')
 
         await waitFor(
@@ -205,8 +205,8 @@ describe('Flow: History on an account with Algorand and Ethereum', () => {
             ).getByTestId('chain_label_ethereum'),
         ).toBeTruthy()
         expect(
-            screen.queryByText('asset_details.transaction_list.csv'),
-        ).toBeNull()
+            screen.getByText('asset_details.transaction_list.csv_on_network'),
+        ).toBeTruthy()
     })
 
     it("Given Ethereum's history fails, when History opens on All, then Algorand's rows show under a notice naming Ethereum whose Retry brings its rows in", async () => {

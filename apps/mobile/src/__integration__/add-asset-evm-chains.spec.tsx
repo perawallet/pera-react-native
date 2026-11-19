@@ -68,12 +68,13 @@ const BASE_MAINNET: ChainScope = {
 const EVM_ADDRESS = '0x1111111111111111111111111111111111111111'
 const DAI = '0x6B175474E89094C44Da98b954EedeAC495271d0F'
 const AERO = '0x940181a94A35A4569E4529A3CDfB74e38FD98631'
+const EURC = '0x60a3E35Cc302bFA44Cb288Bc5a4F316Fdb1adb42'
 const ETHEREUM_LISTED: DisplayableAsset[] = [
     { assetId: 'native', name: 'Ether', unitName: 'ETH' },
     { assetId: DAI, name: 'Dai Stablecoin', unitName: 'DAI' },
 ]
 const BASE_LISTED: DisplayableAsset[] = [
-    { assetId: 'native', name: 'Base Ether', unitName: 'ETH' },
+    { assetId: EURC, name: 'Euro Coin', unitName: 'EURC' },
     { assetId: AERO, name: 'Aerodrome', unitName: 'AERO' },
 ]
 
@@ -85,6 +86,18 @@ const matching =
         ),
         nextCursor: undefined,
     })
+
+const searchFor = (value: string) => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    fireEvent.change(screen.getByTestId('searchable-list-search-input'), {
+        target: { value },
+    })
+    act(() => {
+        vi.advanceTimersByTime(SEARCH_DEBOUNCE_TIME)
+        // TanStack Query needs real timers for the notifications this update schedules.
+        vi.useRealTimers()
+    })
+}
 
 describe('Flow: Add Asset with a second EVM chain registered', () => {
     beforeEach(() => {
@@ -132,6 +145,7 @@ describe('Flow: Add Asset with a second EVM chain registered', () => {
     })
 
     afterEach(() => {
+        vi.useRealTimers()
         vi.restoreAllMocks()
         useAssetSearchAvailabilityStore.getState().resetState()
         useAccountsStore.getState().setAccounts([])
@@ -147,25 +161,20 @@ describe('Flow: Add Asset with a second EVM chain registered', () => {
     it("Given Add Asset opens on Base, then it lists Base's tokens with their addresses shortened, search filters them, and Ethereum's chip lists Ethereum's", async () => {
         renderAddAsset('base' as ChainId)
 
-        await waitFor(() => {
-            expect(screen.getByText('Aerodrome')).toBeTruthy()
-        })
+        await screen.findByText('Euro Coin')
+        expect(screen.getByText('Aerodrome')).toBeTruthy()
         expect(screen.getByText('AERO · 0x9401...8631')).toBeTruthy()
         expect(screen.queryByText(AERO, { exact: false })).toBeNull()
         expect(screen.queryByText('Dai Stablecoin')).toBeNull()
 
-        fireEvent.change(screen.getByTestId('searchable-list-search-input'), {
-            target: { value: 'aero' },
-        })
+        searchFor('aero')
 
         await waitFor(() => {
             expect(screen.getByText('Aerodrome')).toBeTruthy()
-            expect(screen.queryByText('Base Ether')).toBeNull()
+            expect(screen.queryByText('Euro Coin')).toBeNull()
         })
 
-        fireEvent.change(screen.getByTestId('searchable-list-search-input'), {
-            target: { value: '' },
-        })
+        searchFor('')
         fireEvent.click(screen.getByTestId('add_asset_network_filter_ethereum'))
 
         await waitFor(() => {
@@ -196,15 +205,7 @@ describe('Flow: Add Asset with a second EVM chain registered', () => {
         expect(screen.getByText('add_asset.not_listed.title')).toBeTruthy()
         expect(screen.getByText('add_asset.not_listed.body')).toBeTruthy()
 
-        fireEvent.change(screen.getByTestId('searchable-list-search-input'), {
-            target: { value: 'aero' },
-        })
-
-        await act(async () => {
-            await new Promise(resolve =>
-                setTimeout(resolve, SEARCH_DEBOUNCE_TIME + 100),
-            )
-        })
+        searchFor('aero')
 
         expect(screen.getByText('add_asset.not_listed.title')).toBeTruthy()
         expect(baseSearch).toHaveBeenCalledTimes(1)

@@ -34,6 +34,7 @@ describe('isNotificationAllowedDeeplinkType', () => {
         DeeplinkType.HOME,
         DeeplinkType.ACCOUNT_DETAIL,
         DeeplinkType.ASSET_DETAIL,
+        DeeplinkType.TRANSACTION_DETAIL,
         DeeplinkType.ASSET_INBOX,
         DeeplinkType.SIGN_REQUEST,
         DeeplinkType.ASSET_OPT_IN,

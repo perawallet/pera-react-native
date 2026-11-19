@@ -16,7 +16,6 @@ import type { Optional } from '@perawallet/wallet-core-shared'
 import { getInFlightSpends } from '../in-flight'
 import {
     transferChainAdapters,
-    type SpendableBalance,
     type SpendableBalanceInput,
 } from '../transfer-adapter'
 import { MODULE_PREFIX, transactionQueryKeys } from './querykeys'
@@ -40,7 +39,7 @@ export const spendableBalanceQueryOptions = (
                     : ([MODULE_PREFIX, 'spendable-balance'] as const),
             queryFn:
                 input && address
-                    ? async (): Promise<SpendableBalance> => {
+                    ? async () => {
                           // The hook reads the ledger: an adapter must not read
                           // the signing database.
                           const inFlight = await getInFlightSpends({

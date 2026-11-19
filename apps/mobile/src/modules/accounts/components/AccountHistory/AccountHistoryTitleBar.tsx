@@ -32,6 +32,7 @@ export type AccountHistoryTitleBarProps = {
     unavailableNetworkNames: string[]
     onRetryFailed: () => void
     isCsvExportVisible: boolean
+    csvExportTitle: string
     isExportingCsv: boolean
     onOpenFilter: () => void
     onExportCsv: () => void
@@ -52,6 +53,7 @@ export const AccountHistoryTitleBar = memo(
         unavailableNetworkNames,
         onRetryFailed,
         isCsvExportVisible,
+        csvExportTitle,
         isExportingCsv,
         onOpenFilter,
         onExportCsv,
@@ -81,7 +83,7 @@ export const AccountHistoryTitleBar = memo(
                         {isCsvExportVisible && (
                             <PWButton
                                 icon='document-download'
-                                title={t('asset_details.transaction_list.csv')}
+                                title={csvExportTitle}
                                 variant='helper'
                                 paddingStyle='dense'
                                 onPress={onExportCsv}
