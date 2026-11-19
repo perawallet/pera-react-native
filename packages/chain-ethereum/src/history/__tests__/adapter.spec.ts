@@ -34,7 +34,7 @@ import {
 } from '../../__tests__/pera-backend'
 import { evmCapabilityDefaults } from '../../capability-defaults'
 import { createEvmHistoryAdapter, getEvmTransactionHistory } from '../adapter'
-import { ETHEREUM } from '../../__tests__/evm-chains'
+import { ETHEREUM, POLYGON } from '../../__tests__/evm-chains'
 import { fetchHistoryPage } from '../api/endpoints'
 import { evmHistoryItem, evmNftTransferLeg } from '../api/msw-handlers'
 import {
@@ -205,6 +205,48 @@ describe('getEvmTransactionHistory', () => {
         expect(items[0]?.initiator).toBeUndefined()
         expect(items[1]?.fee).toEqual(new Decimal(21000))
         expect(items[1]?.initiator).toBe(PEER)
+    })
+
+    it("reads a plain POL transfer as a native receive, not as a token leg of Polygon's 0x…1010 mirror", async () => {
+        const mirror = '0x0000000000000000000000000000000000001010'
+        const scope: ChainScope = { chainId: 'polygon', networkId: 'mainnet' }
+        serve([
+            [
+                evmHistoryItem({
+                    hash: hash(1),
+                    from: PEER,
+                    to: ME,
+                    value: '7',
+                    token_transfers: [
+                        {
+                            asset_id: `eip155:137/erc20:${mirror}`,
+                            contract: mirror,
+                            from: PEER,
+                            to: ME,
+                            value: '7',
+                            token_name: 'Polygon Ecosystem Token',
+                            token_symbol: 'POL',
+                            token_decimals: 18,
+                        },
+                    ],
+                    balance_impacts: [
+                        { asset_id: 'eip155:137/slip44:966', amount: '7' },
+                        { asset_id: `eip155:137/erc20:${mirror}`, amount: '7' },
+                    ],
+                }),
+            ],
+        ])
+
+        const { items } = await getEvmTransactionHistory(POLYGON, ME, scope)
+
+        expect(items[0]?.summary).toMatchObject({
+            kind: 'transfer',
+            direction: 'in',
+            amount: {
+                assetRef: POLYGON.descriptor.nativeAsset.ref,
+                value: new Decimal(7),
+            },
+        })
     })
 
     it('carries the block number onto the record, and keeps a row whose block number is unreadable', async () => {
