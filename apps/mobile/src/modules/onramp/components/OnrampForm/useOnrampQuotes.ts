@@ -37,6 +37,7 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import {
     ONRAMP_QUOTE_DEBOUNCE_TIME,
+    ONRAMP_QUOTE_MAX_REFRESH_INTERVAL,
     ONRAMP_QUOTE_MIN_REFRESH_INTERVAL,
 } from '@constants/ui'
 import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
@@ -117,6 +118,8 @@ export const useOnrampQuotes = ({
         () => setRefreshCount(count => count + 1),
         [],
     )
+    // Failed background re-quotes in a row; backs off the next one.
+    const [refreshFailures, setRefreshFailures] = useState(0)
 
     // React Query v5 mutateAsync is referentially stable, so it can sit in the
     // effect dependency list without retriggering it.
@@ -173,6 +176,17 @@ export const useOnrampQuotes = ({
         ],
     )
 
+    // The inputs behind the quotes on screen. A fetch for the same ones is a
+    // background re-quote: its failure keeps them (Proceed re-checks expiry,
+    // and the order call refuses a gone quote) and retries later.
+    const shownInputsRef =
+        useRef<
+            Nullable<{
+                request: typeof quoteRequestFor
+                amountKey: Nullable<string>
+            }>
+        >(null)
+
     // --- debounced fetch -------------------------------------------------
     // Every provider quotes per amount: the router prices a request, so a
     // missing amount, or one under a single base unit, has nothing to ask.
@@ -182,12 +196,16 @@ export const useOnrampQuotes = ({
         if (request === null) return
         const requestId = ++requestIdRef.current
         if (amount === null || !isQuotableRampAmount(amount, sourceDecimals)) {
+            shownInputsRef.current = null
             setQuotes([])
             setQuotesError(null)
             setIsQuoting(false)
             return
         }
 
+        const isRefresh =
+            shownInputsRef.current?.request === quoteRequestFor &&
+            shownInputsRef.current.amountKey === amountKey
         setIsQuoting(true)
         const excludedIds = getExcludedPaymentMethodIds(Platform.OS)
 
@@ -211,6 +229,11 @@ export const useOnrampQuotes = ({
                                 ? { ...quote, expiresAt: null }
                                 : quote,
                         )
+                    shownInputsRef.current = {
+                        request: quoteRequestFor,
+                        amountKey,
+                    }
+                    setRefreshFailures(0)
                     setQuotes(filtered)
                     setQuotesError(
                         filtered.length === 0
@@ -220,6 +243,12 @@ export const useOnrampQuotes = ({
                     setIsQuoting(false)
                 } catch (error) {
                     if (requestId !== requestIdRef.current) return
+                    if (isRefresh) {
+                        setRefreshFailures(count => count + 1)
+                        setIsQuoting(false)
+                        return
+                    }
+                    shownInputsRef.current = null
                     setQuotes([])
                     const limits = resolveRampQuoteLimits(error)
                     setQuoteLimits(limits)
@@ -291,15 +320,16 @@ export const useOnrampQuotes = ({
             quote.expiresAt === null ? [] : [quote.expiresAt],
         )
         if (expiries.length === 0) return
+        const minDelay = Math.min(
+            ONRAMP_QUOTE_MIN_REFRESH_INTERVAL * 2 ** refreshFailures,
+            ONRAMP_QUOTE_MAX_REFRESH_INTERVAL,
+        )
         const timeoutId = setTimeout(
             refreshQuotes,
-            Math.max(
-                ONRAMP_QUOTE_MIN_REFRESH_INTERVAL,
-                Math.min(...expiries) - Date.now(),
-            ),
+            Math.max(minDelay, Math.min(...expiries) - Date.now()),
         )
         return () => clearTimeout(timeoutId)
-    }, [isLive, quotes, refreshQuotes])
+    }, [isLive, quotes, refreshFailures, refreshQuotes])
 
     // A probe answer for a pair the user has since left must not set limits.
     const pairIdRef = useRef(pairId)

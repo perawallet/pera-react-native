@@ -146,6 +146,38 @@ describe('useOnrampQuotes', () => {
         expect(mockCreateQuote).toHaveBeenCalledTimes(2)
     })
 
+    it('keeps the quotes when a background re-quote fails, and retries later', async () => {
+        const now = Date.now()
+        mockCreateQuote.mockResolvedValue([
+            { ...quote('x1', 'xo'), expiresAt: now + 60_000 + DEBOUNCE_MS },
+        ])
+        const { result } = render()
+        await settle()
+
+        mockCreateQuote.mockRejectedValueOnce(new NoConnectionError())
+        mockCreateQuote.mockResolvedValue([
+            { ...quote('x2', 'xo'), expiresAt: now + 600_000 },
+        ])
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(60_000)
+        })
+        await settle()
+
+        expect(mockCreateQuote).toHaveBeenCalledTimes(2)
+        expect(result.current.quotes.map(item => item.quoteId)).toEqual(['x1'])
+        expect(result.current.quotesError).toBeNull()
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(
+                2 * ONRAMP_QUOTE_MIN_REFRESH_INTERVAL,
+            )
+        })
+        await settle()
+
+        expect(mockCreateQuote).toHaveBeenCalledTimes(3)
+        expect(result.current.quotes.map(item => item.quoteId)).toEqual(['x2'])
+    })
+
     it('re-quotes on returning to the foreground with an expired quote', async () => {
         const changeAppState = captureAppStateChange()
         mockCreateQuote.mockResolvedValue([
