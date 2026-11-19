@@ -74,6 +74,7 @@ export const PWBottomSheet = ({
     children,
     enableCloseOnBackdropPress = true,
     avoidKeyboard = true,
+    handleOverlaysContent = false,
 }: PWBottomSheetProps) => {
     const bottomSheetModalRef = useRef<BottomSheetModal>(null)
     const notifierRef = useSheetNotifierRef()
@@ -189,6 +190,9 @@ export const PWBottomSheet = ({
             backdropComponent={renderBackdrop}
             onDismiss={handleDismiss}
             onAnimate={handleAnimate}
+            handleStyle={
+                handleOverlaysContent ? styles.handleOverlay : undefined
+            }
             handleIndicatorStyle={
                 enablePanDownToClose && !isFullScreen
                     ? styles.handleIndicator

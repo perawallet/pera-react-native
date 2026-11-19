@@ -24,6 +24,8 @@ export type BottomSheetOptions = {
     autoCreateContainer?: boolean
     /** Forwarded to `PWBottomSheetProps.avoidKeyboard`. Defaults to true. */
     avoidKeyboard?: boolean
+    /** Forwarded to `PWBottomSheetProps.handleOverlaysContent`. Defaults to false. */
+    handleOverlaysContent?: boolean
 }
 
 export type BottomSheetRequest = {

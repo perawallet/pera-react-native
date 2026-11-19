@@ -55,6 +55,7 @@ export const BottomSheetHost = ({ request }: BottomSheetHostProps) => {
             }
             autoCreateContainer={request.options?.autoCreateContainer}
             avoidKeyboard={request.options?.avoidKeyboard}
+            handleOverlaysContent={request.options?.handleOverlaysContent}
             onBackdropPress={handleBackdropPress}
             onDismiss={handleDismiss}
         >

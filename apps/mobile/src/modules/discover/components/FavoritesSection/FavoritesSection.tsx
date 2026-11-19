@@ -11,13 +11,14 @@
  */
 
 import FavoritesIcon from '@assets/icons/discover/favorites.svg'
-import { PWView } from '@components/core'
+import { PWText, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import type { DiscoverFavorite } from '../../types'
 import { DiscoverSectionHeader } from '../DiscoverSectionHeader'
 import { FavoriteTile } from '../FavoriteTile'
 import { FavoritesFilterBar } from '../FavoritesFilterBar'
+import { SuggestedDappTile } from '../SuggestedDappTile'
 import { useFavoritesSection } from './useFavoritesSection'
 import { useStyles } from './styles'
 
@@ -36,6 +37,55 @@ export const FavoritesSection = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const section = useFavoritesSection()
+
+    const renderEmpty = () => {
+        if (section.suggestions.length === 0) {
+            return (
+                <EmptyView
+                    title={t('discover.favorites.empty_title')}
+                    body={t('discover.favorites.empty_body')}
+                    style={styles.empty}
+                    testID='discover_home_favorites_empty'
+                />
+            )
+        }
+        return (
+            // Something to add right away, instead of a bare "no favorites".
+            <PWView
+                style={styles.suggestions}
+                testID='discover_home_favorites_empty'
+            >
+                <PWText
+                    variant='body'
+                    style={styles.suggestionsBody}
+                >
+                    {t('discover.favorites.suggestions.body')}
+                </PWText>
+                <PWView style={styles.gridRow}>
+                    {section.suggestions.map(dapp => (
+                        <SuggestedDappTile
+                            key={dapp.url}
+                            dapp={dapp}
+                            onPress={() => section.openDapp(dapp)}
+                            onAdd={() => section.addSuggestion(dapp)}
+                            testID={`discover_home_suggestion_${dapp.url}`}
+                        />
+                    ))}
+                    {Array.from(
+                        {
+                            length: GRID_COLUMNS - section.suggestions.length,
+                        },
+                        (_, i) => (
+                            <PWView
+                                key={`filler-${i}`}
+                                style={styles.filler}
+                            />
+                        ),
+                    )}
+                </PWView>
+            </PWView>
+        )
+    }
 
     return (
         <PWView
@@ -57,12 +107,7 @@ export const FavoritesSection = () => {
                 testID='discover_home_favorites_header'
             />
             {section.isEmpty ? (
-                <EmptyView
-                    title={t('discover.favorites.empty_title')}
-                    body={t('discover.favorites.empty_body')}
-                    style={styles.empty}
-                    testID='discover_home_favorites_empty'
-                />
+                renderEmpty()
             ) : (
                 <PWView style={styles.body}>
                     <FavoritesFilterBar testID='discover_home_favorites_filters' />

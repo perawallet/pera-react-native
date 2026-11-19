@@ -274,7 +274,12 @@ export const useDiscoverDappsScreen = (): UseDiscoverDappsScreenResult => {
                         isVerified={isVerified(item.dapp.url)}
                     />
                 ),
-                options: { size: 'auto', enablePanDownToClose: true },
+                options: {
+                    size: 'auto',
+                    enablePanDownToClose: true,
+                    // The banner runs up to the sheet's top edge.
+                    handleOverlaysContent: true,
+                },
             })
             if (result === undefined) {
                 trackEvent(DiscoverEvent.DetailsCloseTap, dappPayload)

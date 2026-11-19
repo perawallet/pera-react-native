@@ -34,6 +34,9 @@ export type DappDetailsSheetProps = {
     isVerified: boolean
 }
 
+// The star sits at the end of the title row, so its tap area reaches past the icon.
+const STAR_HIT_SLOP = 12
+
 export const DappDetailsSheet = ({
     item,
     chainId,
@@ -49,14 +52,15 @@ export const DappDetailsSheet = ({
         <PWSheetLayout testID='discover_dapp_details'>
             <PWView style={styles.container}>
                 <PWView>
-                    {item.backgroundImage ? (
-                        <PWImage
-                            source={{ uri: item.backgroundImage }}
-                            style={styles.banner}
-                        />
-                    ) : (
-                        <PWView style={styles.banner} />
-                    )}
+                    {/* The wrapper clips: an image does not round only its top corners itself. */}
+                    <PWView style={styles.banner}>
+                        {item.backgroundImage ? (
+                            <PWImage
+                                source={{ uri: item.backgroundImage }}
+                                style={styles.bannerImage}
+                            />
+                        ) : null}
+                    </PWView>
                     <PWView style={styles.logo}>
                         {dapp.logo ? (
                             <PWImage
@@ -87,6 +91,7 @@ export const DappDetailsSheet = ({
                     ) : null}
                     <PWTouchableOpacity
                         style={styles.star}
+                        hitSlop={STAR_HIT_SLOP}
                         onPress={sheet.toggleFavorite}
                         accessibilityLabel={t(
                             sheet.isFavorite

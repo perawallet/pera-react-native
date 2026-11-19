@@ -20,8 +20,18 @@ export const useStyles = makeStyles(theme => ({
     banner: {
         // lanekeep-ignore-next-line pera/no-numeric-sizes reason: banner height, as the web app's dApp modal
         height: 140,
-        borderRadius: theme.borderRadius.md,
+        // Covers the sheet's top: out to its side edges, up under the handle,
+        // and rounded like the sheet's own top corners.
+        marginHorizontal: -theme.spacing.xl,
+        marginTop: -theme.spacing.xl,
+        borderTopLeftRadius: theme.spacing.xl,
+        borderTopRightRadius: theme.spacing.xl,
+        overflow: 'hidden',
         backgroundColor: theme.colors.layerGray,
+    },
+    bannerImage: {
+        width: '100%',
+        height: '100%',
     },
     logo: {
         width: theme.spacing['4xl'],

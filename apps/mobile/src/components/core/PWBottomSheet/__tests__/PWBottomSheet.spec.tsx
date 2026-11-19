@@ -366,6 +366,33 @@ describe('PWBottomSheet', () => {
         },
     )
 
+    it('lays the handle over the content when asked, and in the flow otherwise', () => {
+        const { rerender } = render(
+            <PWBottomSheet
+                isVisible={true}
+                enablePanDownToClose={true}
+                handleOverlaysContent
+            >
+                <Text>Content</Text>
+            </PWBottomSheet>,
+        )
+
+        expect(capturedProps.handleStyle).toEqual(
+            expect.objectContaining({ position: 'absolute', top: 0 }),
+        )
+
+        rerender(
+            <PWBottomSheet
+                isVisible={true}
+                enablePanDownToClose={true}
+            >
+                <Text>Content</Text>
+            </PWBottomSheet>,
+        )
+
+        expect(capturedProps.handleStyle).toBeUndefined()
+    })
+
     it('shows the drag-handle notch on non-full pan-down sheets', () => {
         render(
             <PWBottomSheet
