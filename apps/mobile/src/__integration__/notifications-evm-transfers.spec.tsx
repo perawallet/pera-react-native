@@ -14,7 +14,13 @@
 // message; their tap target is a chain-scoped asset-detail link.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
+import {
+    act,
+    cleanup,
+    fireEvent,
+    screen,
+    waitFor,
+} from '@testing-library/react'
 import { StackActions } from '@react-navigation/native'
 import { Notifier } from 'react-native-notifier'
 import {
@@ -83,11 +89,23 @@ const assetDetailUrl = (chain: string, assetId?: string): string =>
     `perawallet://app/asset-detail/?chain=${encodeURIComponent(chain)}&address=${ETHEREUM_ADDRESS_LOWER}` +
     (assetId ? `&assetId=${assetId}` : '')
 
+const RECEIVED_HASH = `0x${'ab'.repeat(32)}`
+const SENT_HASH = `0x${'cd'.repeat(32)}`
+const FAILED_HASH = `0x${'ef'.repeat(32)}`
+const withTransactionId = (url: string, transactionId: string): string =>
+    `${url}&transactionId=${transactionId}`
+
 const RECEIVED_URL = assetDetailUrl('eip155:1')
 const SENT_URL = assetDetailUrl('eip155:1', TOKEN.toLowerCase())
 const FAILED_URL = assetDetailUrl('eip155:1')
 const SEPOLIA_URL = assetDetailUrl('eip155:11155111')
 const BASE_SENT_URL = assetDetailUrl('eip155:8453', TOKEN.toLowerCase())
+const RECEIVED_TX_URL = withTransactionId(RECEIVED_URL, RECEIVED_HASH)
+const SENT_TX_URL = withTransactionId(BASE_SENT_URL, SENT_HASH)
+const FAILED_TX_URL = withTransactionId(FAILED_URL, FAILED_HASH)
+const SEPOLIA_TX_URL = withTransactionId(SEPOLIA_URL, RECEIVED_HASH)
+// Algorand's own notification URL, which the legacy parser reads.
+const ALGORAND_LEGACY_URL = `perawallet://asset/transactions?account=${ALGO25_TEST_ADDRESS}&asset=31566704&transactionId=ALGOTXID`
 
 const evmRow = (
     id: string,
@@ -132,6 +150,24 @@ const EVM_ROWS = [
         'Transaction successful: 10 USDC to 0x1234…5678 on Base',
         BASE_SENT_URL,
     ),
+    evmRow(
+        '305',
+        'evm-transfer-received',
+        '1 ETH received from 0xabcd…ef01',
+        RECEIVED_TX_URL,
+    ),
+    evmRow(
+        '306',
+        'evm-transfer-sent',
+        'Transaction successful: 5 USDC to 0xabcd…ef01 on Base',
+        SENT_TX_URL,
+    ),
+    evmRow(
+        '307',
+        'evm-transfer-failed',
+        'Transaction failed: 2 ETH to 0xabcd…ef01',
+        FAILED_TX_URL,
+    ),
 ]
 
 const assetDetailsRoute = (assetId: string, chainId = 'ethereum') => ({
@@ -157,10 +193,18 @@ const DeepLinkProbe = () => {
     return null
 }
 
+const tapPush = (url: string, onError?: () => void) =>
+    act(async () => {
+        await captured.handleDeepLink!(url, false, 'notification', onError)
+    })
+
 describe('Flow: Ethereum transfer notifications', () => {
     // Unmount before MSW resets, so the list's polls don't outlive their handlers.
     afterEach(() => {
         cleanup()
+        captured.handleDeepLink = undefined
+        captured.parseDeeplink = undefined
+        vi.restoreAllMocks()
     })
 
     beforeEach(() => {
@@ -251,6 +295,37 @@ describe('Flow: Ethereum transfer notifications', () => {
             )
         })
 
+        it.each([
+            { id: '305', chainId: 'ethereum', transactionId: RECEIVED_HASH },
+            { id: '306', chainId: 'base', transactionId: SENT_HASH },
+            { id: '307', chainId: 'ethereum', transactionId: FAILED_HASH },
+        ])(
+            'When row $id is pressed, then its transaction opens on $chainId',
+            async ({ id, chainId, transactionId }) => {
+                const dispatch = vi
+                    .spyOn(navigationRef, 'dispatch')
+                    .mockImplementation(() => undefined)
+                renderWithNavigation(NotificationsScreen, 'Notifications')
+
+                fireEvent.click(
+                    await screen.findByTestId(`notification_row_${id}`),
+                )
+
+                await waitFor(() =>
+                    expect(dispatch).toHaveBeenCalledExactlyOnceWith(
+                        StackActions.replace('TransactionDetails', {
+                            scope: { chainId, networkId: 'mainnet' },
+                            transactionId,
+                            accountAddress: ETHEREUM_ADDRESS,
+                        }),
+                    ),
+                )
+                expect(useAccountsStore.getState().selectedAccountId).toBe(
+                    ETHEREUM_ACCOUNT.id,
+                )
+            },
+        )
+
         // Base has no deeplink adapter of its own; Ethereum's serves its links.
         it("When a sent row on another EVM chain is pressed, then that chain's token screen opens", async () => {
             const dispatch = vi
@@ -287,12 +362,7 @@ describe('Flow: Ethereum transfer notifications', () => {
                 .mockImplementation(() => undefined)
             const onError = vi.fn()
 
-            await captured.handleDeepLink!(
-                RECEIVED_URL,
-                false,
-                'notification',
-                onError,
-            )
+            await tapPush(RECEIVED_URL, onError)
 
             expect(navigate).toHaveBeenCalledWith(
                 'TabBar',
@@ -304,30 +374,73 @@ describe('Flow: Ethereum transfer notifications', () => {
             )
         })
 
-        // A notification refusal is silent; the push listener's onError lands Home.
-        it('When its link names another network, then it is refused without opening anything', async () => {
+        it('When its link carries a transaction hash, then that transaction is pushed on top of the open screen', async () => {
             const navigate = vi
                 .spyOn(navigationRef, 'navigate')
                 .mockImplementation(() => undefined)
+            const dispatch = vi
+                .spyOn(navigationRef, 'dispatch')
+                .mockImplementation(() => undefined)
             const onError = vi.fn()
-            expect(captured.parseDeeplink!(SEPOLIA_URL)).toMatchObject({
-                type: 'ASSET_DETAIL',
-                target: { chainId: 'ethereum', networkId: 'sepolia' },
-            })
 
-            await captured.handleDeepLink!(
-                SEPOLIA_URL,
-                false,
-                'notification',
-                onError,
+            await tapPush(RECEIVED_TX_URL, onError)
+
+            expect(dispatch).toHaveBeenCalledWith(
+                StackActions.push('TransactionDetails', {
+                    scope: { chainId: 'ethereum', networkId: 'mainnet' },
+                    transactionId: RECEIVED_HASH,
+                    accountAddress: ETHEREUM_ADDRESS,
+                }),
             )
-
-            expect(onError).toHaveBeenCalledTimes(1)
             expect(navigate).not.toHaveBeenCalled()
-            expect(Notifier.showNotification).not.toHaveBeenCalled()
-            expect(useAccountsStore.getState().selectedAccountId).toBe(
-                ALGORAND_ACCOUNT.id,
+            expect(onError).not.toHaveBeenCalled()
+        })
+
+        it("When it is Algorand's legacy transaction link, then the asset screen opens as before", async () => {
+            const navigate = vi
+                .spyOn(navigationRef, 'navigate')
+                .mockImplementation(() => undefined)
+
+            await tapPush(ALGORAND_LEGACY_URL)
+
+            expect(navigate).toHaveBeenCalledWith(
+                'TabBar',
+                assetDetailsRoute('31566704', 'algorand'),
+            )
+            expect(navigate).not.toHaveBeenCalledWith(
+                'TransactionDetails',
+                expect.anything(),
             )
         })
+
+        it.each([
+            { url: SEPOLIA_URL, type: 'ASSET_DETAIL' },
+            { url: SEPOLIA_TX_URL, type: 'TRANSACTION_DETAIL' },
+        ])(
+            'When a $type link names another network, then it is refused without opening anything',
+            async ({ url, type }) => {
+                const navigate = vi
+                    .spyOn(navigationRef, 'navigate')
+                    .mockImplementation(() => undefined)
+                const dispatch = vi
+                    .spyOn(navigationRef, 'dispatch')
+                    .mockImplementation(() => undefined)
+                const onError = vi.fn()
+                expect(captured.parseDeeplink!(url)).toMatchObject({
+                    type,
+                    target: { chainId: 'ethereum', networkId: 'sepolia' },
+                })
+
+                await tapPush(url, onError)
+
+                expect(onError).toHaveBeenCalledTimes(1)
+                expect(navigate).not.toHaveBeenCalled()
+                expect(dispatch).not.toHaveBeenCalled()
+                expect(Notifier.showNotification).not.toHaveBeenCalled()
+                expect(useAccountsStore.getState().selectedAccountId).toBe(
+                    ALGORAND_ACCOUNT.id,
+                )
+            },
+        )
     })
 })

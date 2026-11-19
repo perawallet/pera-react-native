@@ -23,6 +23,7 @@ import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 import { algorandHistoryAdapter } from '@perawallet/wallet-core-chain-algorand/transactions'
 import {
     historyChainAdapters,
+    TransactionDetailNotFoundError,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
@@ -60,6 +61,18 @@ vi.mock('@analytics', async importOriginal => ({
 }))
 
 const mockUseTransactionDetailQuery = vi.fn()
+
+const { mockUseTransactionRecordByIdQuery } = vi.hoisted(() => ({
+    mockUseTransactionRecordByIdQuery: vi.fn(),
+}))
+
+// The record lookup needs a query client this spec doesn't mount.
+vi.mock('@perawallet/wallet-core-transactions', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-transactions')
+    >()),
+    useTransactionRecordByIdQuery: mockUseTransactionRecordByIdQuery,
+}))
 
 const { mockRequestSheet } = vi.hoisted(() => ({ mockRequestSheet: vi.fn() }))
 
@@ -116,6 +129,7 @@ describe('useTransactionDetailsScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockUseTransactionDetailQuery.mockReturnValue(queryResult({}))
+        mockUseTransactionRecordByIdQuery.mockReturnValue(queryResult({}))
         routeParams.current = { scope: ALGORAND_SCOPE }
         useNetworkStatusStore.getState().setHasInternet(true)
         historyChainAdapters.reset()
@@ -470,6 +484,156 @@ describe('useTransactionDetailsScreen', () => {
                 titleKey: 'transactions.unknown.title',
                 bodyKey: 'transactions.unknown.body',
             })
+        })
+    })
+
+    describe('a record named only by its id', () => {
+        const ACCOUNT_ADDRESS = '0xfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359'
+        const TRANSACTION_ID = `0x${'ab'.repeat(32)}`
+        const record: TransactionRecord = {
+            id: TRANSACTION_ID,
+            scope: ETHEREUM_SCOPE as ChainScope,
+            status: 'failed',
+            summary: {
+                kind: 'contract-call',
+                title: { key: i18nKey('transactions.list_item.contract_call') },
+                direction: 'none',
+                icon: 'contract-call',
+                notice: {
+                    kind: 'error',
+                    title: { key: i18nKey('transactions.notice.failed') },
+                },
+            },
+            chainData: { family: 'evm' },
+        }
+
+        beforeEach(() => {
+            getProvider().chains.register(
+                { ...fixtureEthereumDescriptor, family: 'evm' },
+                allCapabilities(false),
+            )
+            routeParams.current = {
+                scope: ETHEREUM_SCOPE,
+                transactionId: TRANSACTION_ID,
+                accountAddress: ACCOUNT_ADDRESS,
+            }
+        })
+
+        it("renders the record the account's history lists, with its notice", () => {
+            mockUseTransactionRecordByIdQuery.mockReturnValue(
+                queryResult({ data: record }),
+            )
+
+            const { result } = renderHook(() => useTransactionDetailsScreen())
+
+            expect(result.current.renderState).toMatchObject({
+                kind: 'record',
+                record,
+            })
+            expect(result.current.notice).toMatchObject({
+                kind: 'error',
+                titleKey: 'transactions.notice.failed',
+            })
+            expect(mockUseTransactionRecordByIdQuery).toHaveBeenCalledWith({
+                accountAddress: ACCOUNT_ADDRESS,
+                scope: ETHEREUM_SCOPE,
+                transactionId: TRANSACTION_ID,
+                isEnabled: true,
+            })
+        })
+
+        it('shows loading while the lookup reads', () => {
+            mockUseTransactionRecordByIdQuery.mockReturnValue(
+                queryResult({ isLoading: true }),
+            )
+
+            const { result } = renderHook(() => useTransactionDetailsScreen())
+
+            expect(result.current.renderState).toEqual({ kind: 'loading' })
+        })
+
+        it('shows the offline state when the lookup is paused', () => {
+            mockUseTransactionRecordByIdQuery.mockReturnValue(
+                queryResult({ isPaused: true }),
+            )
+
+            const { result } = renderHook(() => useTransactionDetailsScreen())
+
+            expect(result.current.renderState).toEqual({ kind: 'offline' })
+        })
+
+        it('explains a transaction the history does not list', () => {
+            mockUseTransactionRecordByIdQuery.mockReturnValue(
+                queryResult({
+                    isError: true,
+                    error: new TransactionDetailNotFoundError(TRANSACTION_ID),
+                }),
+            )
+
+            const { result } = renderHook(() => useTransactionDetailsScreen())
+
+            expect(result.current.renderState).toEqual({
+                kind: 'error',
+                titleKey: 'transactions.record_detail.not_found.title',
+                bodyKey: 'transactions.record_detail.not_found.body',
+            })
+        })
+
+        it('shows typed error copy when the lookup fails on the network', () => {
+            mockUseTransactionRecordByIdQuery.mockReturnValue(
+                queryResult({
+                    isError: true,
+                    error: new PeraNetworkError('timeout'),
+                }),
+            )
+
+            const { result } = renderHook(() => useTransactionDetailsScreen())
+
+            expect(result.current.renderState).toEqual({
+                kind: 'error',
+                titleKey: 'errors.network.timeout.title',
+                bodyKey: 'errors.network.timeout.body',
+            })
+        })
+
+        it('retries the lookup', () => {
+            mockUseTransactionRecordByIdQuery.mockReturnValue(
+                queryResult({ isError: true, error: new Error('x') }),
+            )
+            const { result } = renderHook(() => useTransactionDetailsScreen())
+
+            act(() => result.current.handleRetry())
+
+            expect(mockRefetch).toHaveBeenCalledOnce()
+            expect(mockUseTransactionDetailQuery).not.toHaveBeenCalled()
+        })
+
+        it('does not look anything up without the account address', () => {
+            routeParams.current = {
+                scope: ETHEREUM_SCOPE,
+                transactionId: TRANSACTION_ID,
+            }
+
+            const { result } = renderHook(() => useTransactionDetailsScreen())
+
+            expect(mockUseTransactionRecordByIdQuery).toHaveBeenCalledWith(
+                expect.objectContaining({ isEnabled: false }),
+            )
+            expect(result.current.renderState).toMatchObject({ kind: 'error' })
+        })
+
+        it('does not look anything up on a chain that fetches a transaction by id', () => {
+            routeParams.current = {
+                scope: ALGORAND_SCOPE,
+                transactionId: 'TX123',
+                accountAddress: 'SOME_ADDR',
+            }
+
+            renderHook(() => useTransactionDetailsScreen())
+
+            expect(mockUseTransactionRecordByIdQuery).toHaveBeenCalledWith(
+                expect.objectContaining({ isEnabled: false }),
+            )
         })
     })
 

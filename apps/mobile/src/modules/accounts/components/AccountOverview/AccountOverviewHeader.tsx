@@ -148,7 +148,6 @@ export const AccountOverviewHeader = ({
                                 period={period}
                                 onSelectionChanged={handleChartSelectionChange}
                                 enabled={isChartShown}
-                                shouldShowExcludedNetworks={false}
                             />
                             <ChartPeriodSelection
                                 value={period}

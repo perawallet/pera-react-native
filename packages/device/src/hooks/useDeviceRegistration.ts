@@ -18,10 +18,9 @@ import {
     useWalletDeployment,
 } from '@perawallet/wallet-core-chain-shared'
 import { logger, useActiveLocale } from '@perawallet/wallet-core-shared'
-import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 
 import { useDevice } from './useDevice'
-import { isDeviceRegistrationV4Enabled } from './registrationApi'
+import { useIsDeviceRegistrationV4Enabled } from './registrationApi'
 import { useDeviceStore } from '../store'
 import type { DeviceAccountRegistration } from '../models'
 
@@ -79,11 +78,17 @@ export const useDeviceRegistration = (
         .sort()
         .join('\n')
 
+    // A mute change re-registers like an account change; sorted so reordering
+    // the same set doesn't.
+    const mutedChainsKey = useDeviceStore(state =>
+        [...state.mutedChainIds].sort().join(','),
+    )
+
     // Switching API versions changes what the backend holds (v3 carries only
     // the chains it always did), so a flip must re-register. Selected through
     // the overrides store so a developer override re-renders too; a fetched
     // remote value is re-read on the next render.
-    const isV4 = useRemoteConfigStore(() => isDeviceRegistrationV4Enabled())
+    const isV4 = useIsDeviceRegistrationV4Enabled()
 
     // The key is a digest, not a payload — keep the real array in a ref so
     // the effect and the retry closure both send the current registrations
@@ -139,6 +144,7 @@ export const useDeviceRegistration = (
             })
     }, [
         accountsKey,
+        mutedChainsKey,
         locale,
         deployment,
         isV4,

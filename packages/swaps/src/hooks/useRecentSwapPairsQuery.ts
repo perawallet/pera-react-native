@@ -31,7 +31,10 @@ export const useRecentSwapPairsQuery = (): UseRecentSwapPairsQueryResult => {
     const { accounts, sourceChainsByAccount } = useSwapSourceChainsByAccount()
     const payers = useSwapAccountsAddresses(accounts)
     const historyAccounts = useMemo(
-        () => payers.map(({ scope, address }) => ({ scope, address })),
+        () =>
+            payers
+                .filter(payer => payer.isOnDevice)
+                .map(({ scope, address }) => ({ scope, address })),
         [payers],
     )
     const { data, isLoading, isError } =

@@ -90,6 +90,42 @@ describe('useAssetSearchAcrossScopesQuery', () => {
         expect(ethereumSearch).toHaveBeenCalledTimes(1)
     })
 
+    it("pages a scope on with that scope's own cursor once the others are done", async () => {
+        algorandSearch.mockResolvedValue({
+            results: [asset('1')],
+            nextCursor: undefined,
+        })
+        ethereumSearch
+            .mockResolvedValueOnce({
+                results: [asset('usdc')],
+                nextCursor: 'E2',
+            })
+            .mockResolvedValueOnce({
+                results: [asset('dai')],
+                nextCursor: undefined,
+            })
+
+        const { result } = renderHook(
+            () => useAssetSearchAcrossScopesQuery('usd', [ALGORAND, ETHEREUM]),
+            { wrapper: createWrapper(queryClient) },
+        )
+
+        await waitFor(() => expect(result.current.hasNextPage).toBe(true))
+        act(() => result.current.fetchNextPage())
+
+        await waitFor(() => expect(result.current.results).toHaveLength(3))
+        expect(result.current.results[2]).toEqual({
+            scope: ETHEREUM,
+            asset: asset('dai'),
+        })
+        expect(ethereumSearch).toHaveBeenLastCalledWith(
+            { query: 'usd', cursor: 'E2', hasCollectible: false },
+            ETHEREUM,
+        )
+        expect(algorandSearch).toHaveBeenCalledTimes(1)
+        expect(result.current.hasNextPage).toBe(false)
+    })
+
     it('does not run, and is not loading, once every scope was found unavailable', () => {
         const { markSearchUnavailable } =
             useAssetSearchAvailabilityStore.getState()

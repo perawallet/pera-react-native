@@ -13,6 +13,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { queryClient } from '@perawallet/wallet-core-shared'
 import {
+    canMuteChainInDeviceRegistration,
     deleteDevice,
     isSentInDeviceRegistration,
     registerDevice,
@@ -47,6 +48,7 @@ const registration: DeviceRegistration = {
             receiveNotifications: true,
         },
     ],
+    mutedChainIds: [],
 }
 
 describe('device endpoints', () => {
@@ -82,6 +84,7 @@ describe('device endpoints', () => {
                             receive_notifications: true,
                         },
                     ],
+                    muted_chains: [],
                 },
             }),
         )
@@ -109,6 +112,72 @@ describe('device endpoints', () => {
             'algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDe',
             'eip155:11155111',
         ])
+    })
+
+    describe('muted chains', () => {
+        const withEthereum: DeviceRegistration = {
+            ...registration,
+            accounts: [
+                ...registration.accounts,
+                {
+                    chainId: 'ethereum',
+                    address: '0xabc',
+                    accountType: 'hdWallet',
+                    rank: 0,
+                    receiveNotifications: true,
+                },
+            ],
+            mutedChainIds: ['ethereum'],
+        }
+        const sentData = () =>
+            (
+                mockedQueryClient.mock.calls[0] as [
+                    {
+                        data: {
+                            accounts: { chain: string }[]
+                            muted_chains: string[]
+                        }
+                    },
+                ]
+            )[0].data
+
+        const registerEthereum = (canMuteChain?: boolean) => {
+            deviceChainAdapters.reset()
+            deviceChainAdapters.register({
+                chainId: 'ethereum',
+                accountTypeOf: () => 'hdWallet',
+                rankOf: () => 0,
+                ...(canMuteChain === undefined ? {} : { canMuteChain }),
+            })
+        }
+
+        it('sends a mute for a chain that can mute', async () => {
+            registerEthereum(true)
+
+            await registerDevice('live', withEthereum)
+
+            expect(sentData().muted_chains).toEqual(['eip155:1'])
+        })
+
+        it('drops a mute for a chain whose adapter does not say it can mute, keeping every account', async () => {
+            registerEthereum()
+
+            await registerDevice('live', withEthereum)
+
+            expect(sentData().muted_chains).toEqual([])
+            expect(sentData().accounts.map(account => account.chain)).toEqual([
+                'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k',
+                'eip155:1',
+            ])
+        })
+
+        it('drops a mute for a chain without a device adapter', async () => {
+            deviceChainAdapters.reset()
+
+            await registerDevice('live', withEthereum)
+
+            expect(sentData().muted_chains).toEqual([])
+        })
     })
 
     it('returns the response payload', async () => {
@@ -164,6 +233,18 @@ describe('device endpoints', () => {
                     }),
                 }),
             )
+        })
+
+        it('never sends muted chains', async () => {
+            await registerDevice('live', {
+                ...registration,
+                mutedChainIds: ['algorand'],
+            })
+
+            const [{ data }] = mockedQueryClient.mock.calls[0] as [
+                { data: object },
+            ]
+            expect('muted_chains' in data).toBe(false)
         })
     })
 
@@ -223,6 +304,14 @@ describe('isSentInDeviceRegistration', () => {
         )
     })
 
+    it('follows the API version it is given over the current flag', () => {
+        mocks.isV4 = true
+
+        expect(
+            isSentInDeviceRegistration(onEthereum, 'ethereum', 'live', false),
+        ).toBe(false)
+    })
+
     it('is false for an account its chain declines to register', () => {
         deviceChainAdapters.reset()
         deviceChainAdapters.register({
@@ -249,5 +338,49 @@ describe('isSentInDeviceRegistration', () => {
         expect(isSentInDeviceRegistration(onAlgorand, 'algorand', 'live')).toBe(
             false,
         )
+    })
+})
+
+describe('canMuteChainInDeviceRegistration', () => {
+    const adapter = (chainId: string, canMuteChain?: boolean) => ({
+        chainId,
+        accountTypeOf: () => 'hdWallet',
+        rankOf: () => 0,
+        ...(canMuteChain === undefined ? {} : { canMuteChain }),
+    })
+
+    beforeEach(() => {
+        mocks.isV4 = true
+        deviceChainAdapters.reset()
+        deviceChainAdapters.register(adapter('ethereum', true))
+    })
+
+    it('is true on v4 for a chain whose adapter can mute and that names a network', () => {
+        expect(canMuteChainInDeviceRegistration('ethereum', 'live')).toBe(true)
+    })
+
+    it('is false while v4 registration is off', () => {
+        mocks.isV4 = false
+
+        expect(canMuteChainInDeviceRegistration('ethereum', 'live')).toBe(false)
+    })
+
+    it('is false for an adapter that does not say it can mute', () => {
+        deviceChainAdapters.reset()
+        deviceChainAdapters.register(adapter('ethereum'))
+
+        expect(canMuteChainInDeviceRegistration('ethereum', 'live')).toBe(false)
+    })
+
+    it('is false for a chain without a device adapter', () => {
+        deviceChainAdapters.reset()
+
+        expect(canMuteChainInDeviceRegistration('ethereum', 'live')).toBe(false)
+    })
+
+    it('is false for a chain with no registration network', () => {
+        deviceChainAdapters.register(adapter('base', true))
+
+        expect(canMuteChainInDeviceRegistration('base', 'live')).toBe(false)
     })
 })

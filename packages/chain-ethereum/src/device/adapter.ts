@@ -48,4 +48,5 @@ export const createEvmDeviceAdapter = (
     chainId: chain.descriptor.id,
     accountTypeOf: (account: WalletAccount) => evmDeviceAccountType(account),
     rankOf: () => 0,
+    canMuteChain: true,
 })

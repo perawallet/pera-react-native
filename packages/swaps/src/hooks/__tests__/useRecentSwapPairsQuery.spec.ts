@@ -51,7 +51,14 @@ const pairPaidBy = (address: string) =>
 describe('swaps/useRecentSwapPairsQuery', () => {
     beforeEach(() => {
         mocks.sourceChains = { main: ['algorand'] }
-        mocks.payers = [{ scope: ALGO, address: 'MAIN', accountId: 'main' }]
+        mocks.payers = [
+            {
+                scope: ALGO,
+                address: 'MAIN',
+                accountId: 'main',
+                isOnDevice: true,
+            },
+        ]
         mocks.history.mockReset()
         mocks.history.mockReturnValue({
             data: undefined,
@@ -75,6 +82,31 @@ describe('swaps/useRecentSwapPairsQuery', () => {
         ])
         expect(result.current.isEnabled).toBe(true)
         expect(result.current.pairs).toEqual([{ ...paid, accountId: 'main' }])
+    })
+
+    test('leaves out of the history read an address the device does not register', () => {
+        const ETH = { chainId: 'ethereum', networkId: 'mainnet' } as const
+        mocks.payers = [
+            {
+                scope: ALGO,
+                address: 'MAIN',
+                accountId: 'main',
+                isOnDevice: true,
+            },
+            {
+                scope: ETH,
+                address: '0xETH',
+                accountId: 'main',
+                isOnDevice: false,
+            },
+        ]
+
+        const { result } = renderHook(() => useRecentSwapPairsQuery())
+
+        expect(mocks.history).toHaveBeenCalledWith([
+            { scope: ALGO, address: 'MAIN' },
+        ])
+        expect(result.current.isEnabled).toBe(true)
     })
 
     test('is off when no account can sign a swap', () => {

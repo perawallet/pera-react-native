@@ -39,7 +39,7 @@
             "explore_dapps": "Explorar dApps",
             "news": "Notícias",
             "dapps_error": "Falha ao carregar os dApps em destaque",
-            "dapps_empty": "Ainda não há dApps em {{chain}}"
+            "dapps_empty_open_url": "Ainda não há dApps listados em {{chain}}. Abra qualquer dApp digitando a URL acima."
         },
         "dapp_row": {
             "favorite": "Adicionar aos favoritos",
@@ -3541,6 +3541,7 @@
         "notifications": {
             "push_notifications": "Notificações push",
             "account_notifications": "Mostrar notificações de",
+            "network_notifications": "Mostrar notificações em",
             "push_service_unavailable": "Este navegador não está recebendo notificações push. No Brave, ative \"Usar os serviços do Google para mensagens push\" nas configurações de privacidade e abra a Pera novamente.",
             "no_accounts": "Nenhuma conta encontrada.",
             "no_accounts_body": "Nenhuma conta encontrada. Adicione uma conta para gerenciar as preferências de notificação."
@@ -3905,6 +3906,10 @@
         },
         "record_detail": {
             "read_failed": "Não foi possível ler da rede os detalhes da chamada desta transação.",
+            "not_found": {
+                "title": "Transação não encontrada",
+                "body": "A Pera não encontrou esta transação no histórico da conta. Uma nova transação pode levar um minuto para aparecer, então tente novamente em breve."
+            },
             "inferred_notice": "Nome deduzido das variações de saldo. A Pera não conseguiu ler a chamada em si.",
             "transaction_id": "ID da transação",
             "quantity": "Quantidade",
@@ -4338,6 +4343,10 @@
                     "title": "Nenhuma conversão ainda",
                     "body": "Seu histórico de conversões aparecerá aqui."
                 },
+                "not_on_device": {
+                    "title": "Histórico ainda indisponível",
+                    "body": "Esta conta ainda não está configurada neste dispositivo, por isso não foi possível carregar o histórico de conversões. Tente novamente mais tarde."
+                },
                 "error": {
                     "title": "Algo deu errado",
                     "body": "Não foi possível carregar seu histórico de conversões. Tente novamente."
@@ -4486,6 +4495,8 @@
             "for": "por",
             "empty_title": "Nenhuma transação ainda",
             "empty_body": "Suas transações de compra aparecerão aqui.",
+            "not_on_device_title": "Histórico ainda indisponível",
+            "not_on_device_body": "Esta conta ainda não está configurada neste dispositivo, por isso não foi possível carregar o histórico de compras. Tente novamente mais tarde.",
             "error_title": "Algo deu errado",
             "error_body": "Não foi possível carregar seu histórico de compras. Tente novamente."
         }

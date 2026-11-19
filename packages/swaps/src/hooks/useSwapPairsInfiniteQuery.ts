@@ -80,10 +80,19 @@ const fetchVisiblePage = async (
     cursor: Optional<string>,
 ): Promise<SwapPairsPage> => {
     const scopeKeys = new Set(scopes.map(toScopeKey))
+    // The router lists every network in one order, so a network late in it never reaches the first pages.
+    // Only a cross-network list is narrowed: the same-network list keeps the unsearched request it has always used.
+    const counterpartScope =
+        scopes.length === 1 &&
+        !q &&
+        toScopeKey(scopes[0]) !== toScopeKey(anchor)
+            ? scopes[0]
+            : undefined
     let page = await fetchSwapPairs({
         anchor,
         direction: 'source',
         q,
+        counterpartScope,
         cursor,
         limit: PAGE_SIZE,
     })
@@ -98,6 +107,7 @@ const fetchVisiblePage = async (
             anchor,
             direction: 'source',
             q,
+            counterpartScope,
             cursor: page.next,
             limit: PAGE_SIZE,
         })

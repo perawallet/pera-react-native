@@ -39,7 +39,7 @@
             "explore_dapps": "Explorar dApps",
             "news": "Noticias",
             "dapps_error": "No se pudieron cargar las dApps destacadas",
-            "dapps_empty": "Aún no hay dApps en {{chain}}"
+            "dapps_empty_open_url": "Aún no hay dApps listadas en {{chain}}. Abre cualquier dApp escribiendo su URL arriba."
         },
         "dapp_row": {
             "favorite": "Añadir a favoritos",
@@ -3525,6 +3525,7 @@
         "notifications": {
             "push_notifications": "Notificaciones push",
             "account_notifications": "Mostrar notificaciones de",
+            "network_notifications": "Mostrar notificaciones en",
             "push_service_unavailable": "Este navegador no está entregando notificaciones push. En Brave, activa «Usar los servicios de Google para mensajes push» en la configuración de privacidad y vuelve a abrir Pera.",
             "no_accounts": "No se encontraron cuentas.",
             "no_accounts_body": "No se encontraron cuentas. Añade una cuenta para gestionar las preferencias de notificaciones."
@@ -3888,6 +3889,10 @@
         },
         "record_detail": {
             "read_failed": "No se pudieron leer de la red los detalles de la llamada de esta transacción.",
+            "not_found": {
+                "title": "Transacción no encontrada",
+                "body": "Pera no encontró esta transacción en el historial de la cuenta. Una transacción nueva puede tardar un minuto en aparecer, así que inténtalo de nuevo en breve."
+            },
             "inferred_notice": "Nombre deducido de los cambios de saldo. Pera no pudo leer la llamada en sí.",
             "transaction_id": "ID de transacción",
             "quantity": "Cantidad",
@@ -4316,6 +4321,10 @@
                     "title": "Aún no hay swaps",
                     "body": "Tu historial de swaps aparecerá aquí."
                 },
+                "not_on_device": {
+                    "title": "Historial aún no disponible",
+                    "body": "Esta cuenta aún no está configurada en este dispositivo, así que no podemos cargar su historial de swaps. Vuelve a intentarlo más tarde."
+                },
                 "error": {
                     "title": "Algo salió mal",
                     "body": "No pudimos cargar tu historial de swaps. Vuelve a intentarlo."
@@ -4464,6 +4473,8 @@
             "for": "por",
             "empty_title": "Aún no hay transacciones",
             "empty_body": "Tus transacciones de compra aparecerán aquí.",
+            "not_on_device_title": "Historial aún no disponible",
+            "not_on_device_body": "Esta cuenta aún no está configurada en este dispositivo, así que no podemos cargar su historial de compras. Vuelve a intentarlo más tarde.",
             "error_title": "Algo salió mal",
             "error_body": "No pudimos cargar tu historial de compras. Vuelve a intentarlo."
         }

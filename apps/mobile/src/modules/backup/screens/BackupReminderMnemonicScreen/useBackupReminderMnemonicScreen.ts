@@ -17,14 +17,10 @@ import {
     useRoute,
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import {
-    findAccountByAnyChainAddress,
-    useAccountsStore,
-} from '@perawallet/wallet-core-accounts'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { logger, toError, type Nullable } from '@perawallet/wallet-core-shared'
 import { useRequirePinVerification } from '@modules/security'
-import { useMnemonicForAddress } from '../../hooks'
+import { useMnemonicForAddress, usePassphraseAccount } from '../../hooks'
 import type { BackupStackParamList } from '../../routes/types'
 
 export type UseBackupReminderMnemonicScreenResult = {
@@ -47,12 +43,8 @@ export const useBackupReminderMnemonicScreen =
         const route =
             useRoute<RouteProp<BackupStackParamList, 'BackupMnemonic'>>()
         const address = route.params?.address
-        const account = useAccountsStore(state =>
-            address
-                ? (findAccountByAnyChainAddress(state.accounts, address) ??
-                  null)
-                : null,
-        )
+        const accountId = route.params?.accountId
+        const account = usePassphraseAccount(address ?? '', accountId)
         const { requirePinVerification } = useRequirePinVerification()
         const [isPinGateResolved, setIsPinGateResolved] = useState(false)
         const { executeWithMnemonic } = useMnemonicForAddress(address, account)
@@ -150,8 +142,8 @@ export const useBackupReminderMnemonicScreen =
             // Zero the buffer before leaving so the phrase doesn't linger in
             // memory behind the verification screen; returning re-fetches it.
             clearIndices()
-            navigation.navigate('BackupVerification', { address })
-        }, [address, navigation, clearIndices])
+            navigation.navigate('BackupVerification', { address, accountId })
+        }, [address, accountId, navigation, clearIndices])
 
         return {
             // The component resolves each word from the index buffer at render

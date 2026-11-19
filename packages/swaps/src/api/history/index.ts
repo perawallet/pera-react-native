@@ -15,4 +15,9 @@ export {
     type FetchSwapHistoryParams,
     type SwapHistoryPage,
 } from './endpoints'
+export {
+    readForOwnedAccounts,
+    type OwnedAccountsRead,
+    type OwnedAccountsReader,
+} from './ownedAccounts'
 export type { SwapHistoryApiResponse } from './schema'

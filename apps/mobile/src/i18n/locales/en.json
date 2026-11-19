@@ -39,7 +39,7 @@
             "explore_dapps": "Explore dApps",
             "news": "News",
             "dapps_error": "Failed loading featured dApps",
-            "dapps_empty": "No dApps on {{chain}} yet"
+            "dapps_empty_open_url": "No dApps listed on {{chain}} yet. Open any dApp by typing its URL above."
         },
         "dapp_row": {
             "favorite": "Add to favorites",
@@ -3525,6 +3525,7 @@
         "notifications": {
             "push_notifications": "Push Notifications",
             "account_notifications": "Show notifications for",
+            "network_notifications": "Show notifications on",
             "push_service_unavailable": "This browser isn't delivering push notifications. In Brave, turn on \"Use Google services for push messaging\" in the privacy settings, then reopen Pera.",
             "no_accounts": "No accounts found.",
             "no_accounts_body": "No accounts found. Add an account to manage notification preferences."
@@ -3888,6 +3889,10 @@
         },
         "record_detail": {
             "read_failed": "Couldn't read this transaction's call details from the network.",
+            "not_found": {
+                "title": "Transaction not found",
+                "body": "Pera couldn't find this transaction in the account's history. A new transaction can take a minute to show up, so try again shortly."
+            },
             "inferred_notice": "Named from the balance changes. Pera couldn't read the call itself.",
             "transaction_id": "Transaction ID",
             "quantity": "Quantity",
@@ -4316,6 +4321,10 @@
                     "title": "No swaps yet",
                     "body": "Your swap history will appear here."
                 },
+                "not_on_device": {
+                    "title": "History not available yet",
+                    "body": "This account isn't set up on this device yet, so its swap history can't load. Please try again later."
+                },
                 "error": {
                     "title": "Something went wrong",
                     "body": "We couldn't load your swap history. Please try again."
@@ -4464,6 +4473,8 @@
             "for": "for",
             "empty_title": "No transactions yet",
             "empty_body": "Your buy transactions will appear here.",
+            "not_on_device_title": "History not available yet",
+            "not_on_device_body": "This account isn't set up on this device yet, so its buy history can't load. Please try again later.",
             "error_title": "Something went wrong",
             "error_body": "We could not load your buy history. Please try again."
         }

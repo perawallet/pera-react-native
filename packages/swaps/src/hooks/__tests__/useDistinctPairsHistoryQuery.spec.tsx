@@ -16,11 +16,13 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 import { useDistinctPairsHistoryQuery } from '../useDistinctPairsHistoryQuery'
 import { fetchSwapHistory } from '../../api'
 import { makeSwapHistoryItem } from '../../__tests__/swapHistoryFixture'
 
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
+const ETH_SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const ACCOUNT = { scope: SCOPE, address: 'ADDRESS' }
 
 vi.mock('../../api', async importOriginal => ({
@@ -253,5 +255,34 @@ describe('swaps/useDistinctPairsHistoryQuery', () => {
         )
 
         await waitFor(() => expect(result.current.isError).toBe(true))
+    })
+
+    test('reads the pairs of the accounts the router accepts when it refuses one', async () => {
+        vi.mocked(fetchSwapHistory).mockImplementation(async params => {
+            if (params.accounts.includes('fake-b:main:0xETH')) {
+                throw new PeraNetworkError('client', {
+                    status: 422,
+                    backendCode: 'account_not_on_device',
+                })
+            }
+            return { results: [makeSwapHistoryItem()], next: null }
+        })
+
+        const { result } = renderHook(
+            () =>
+                useDistinctPairsHistoryQuery([
+                    ACCOUNT,
+                    { scope: ETH_SCOPE, address: '0xETH' },
+                ]),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.data).toHaveLength(1))
+        expect(result.current.isError).toBe(false)
+        expect(vi.mocked(fetchSwapHistory).mock.calls.at(-1)?.[0]).toEqual({
+            deviceId: 'device-live',
+            accounts: ['fake-a:main:ADDRESS'],
+            limit: 50,
+        })
     })
 })

@@ -651,11 +651,11 @@ describe('Flow: a dApp asks to sign a call whose outcome the backend predicts', 
 
         await review(ROUTER, SWAP_DATA, SWAP_SIMULATION, ONE_MILLI_ETH)
 
-        // A request would follow the first render within a tick or two.
-        await new Promise(resolve => setTimeout(resolve, 300))
+        await screen.findByTestId(UNAVAILABLE)
+        await expectSlideEnabled()
         expect(screen.getByTestId(UNCHECKED_NOTICE)).toBeTruthy()
+        expect(screen.queryByTestId(CHANGES_LOADING)).toBeNull()
         expect(screen.queryByTestId(CHANGES)).toBeNull()
-        expect(screen.getByTestId(UNAVAILABLE)).toBeTruthy()
         expect(simulationPathsRequested).toEqual([])
     })
 })

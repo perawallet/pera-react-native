@@ -39,7 +39,7 @@
             "explore_dapps": "dApp’leri keşfet",
             "news": "Haberler",
             "dapps_error": "Öne çıkan dApp’ler yüklenemedi",
-            "dapps_empty": "{{chain}} ağında henüz dApp yok"
+            "dapps_empty_open_url": "{{chain}} için henüz listelenmiş dApp yok. Herhangi bir dApp’i açmak için URL’sini yukarıya yaz."
         },
         "dapp_row": {
             "favorite": "Favorilere ekle",
@@ -3525,6 +3525,7 @@
         "notifications": {
             "push_notifications": "Push bildirimleri",
             "account_notifications": "Bildirim gösterilecek hesaplar",
+            "network_notifications": "Bildirim gösterilecek ağlar",
             "push_service_unavailable": "Bu tarayıcı push bildirimlerini iletmiyor. Brave'de gizlilik ayarlarından \"Push mesajlaşma için Google hizmetlerini kullan\" seçeneğini aç, ardından Pera'yı yeniden aç.",
             "no_accounts": "Hesap bulunamadı.",
             "no_accounts_body": "Hesap bulunamadı. Bildirim tercihlerini yönetmek için bir hesap ekle."
@@ -3888,6 +3889,10 @@
         },
         "record_detail": {
             "read_failed": "Bu işlemin çağrı ayrıntıları ağdan okunamadı.",
+            "not_found": {
+                "title": "İşlem bulunamadı",
+                "body": "Pera bu işlemi hesabın geçmişinde bulamadı. Yeni bir işlemin görünmesi bir dakika sürebilir, bu yüzden kısa süre sonra tekrar dene."
+            },
             "inferred_notice": "Ad, bakiye değişikliklerinden çıkarıldı. Pera çağrının kendisini okuyamadı.",
             "transaction_id": "İşlem Kimliği",
             "quantity": "Adet",
@@ -4316,6 +4321,10 @@
                     "title": "Henüz swap yok",
                     "body": "Swap geçmişin burada görünecek."
                 },
+                "not_on_device": {
+                    "title": "Geçmiş henüz kullanılamıyor",
+                    "body": "Bu hesap bu cihazda henüz ayarlanmadı, bu yüzden swap geçmişi yüklenemiyor. Lütfen daha sonra tekrar dene."
+                },
                 "error": {
                     "title": "Bir şeyler ters gitti",
                     "body": "Swap geçmişin yüklenemedi. Lütfen tekrar dene."
@@ -4464,6 +4473,8 @@
             "for": "karşılığında",
             "empty_title": "Henüz işlem yok",
             "empty_body": "Satın alma işlemlerin burada görünecek.",
+            "not_on_device_title": "Geçmiş henüz kullanılamıyor",
+            "not_on_device_body": "Bu hesap bu cihazda henüz ayarlanmadı, bu yüzden satın alma geçmişi yüklenemiyor. Lütfen daha sonra tekrar dene.",
             "error_title": "Bir şeyler ters gitti",
             "error_body": "Satın alma geçmişin yüklenemedi. Lütfen tekrar dene."
         }

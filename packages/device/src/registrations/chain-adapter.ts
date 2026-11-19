@@ -44,6 +44,11 @@ export interface DeviceChainAdapter {
     rankOf(account: DeviceRegistrableAccount): number
     /** Whether the v3 devices API, which names no chain, takes this chain's accounts. */
     readonly isOnV3DevicesApi?: boolean
+    /**
+     * Whether the v4 devices API's `muted_chains` takes this chain. A chain it
+     * doesn't take 422s the whole registration, so absent means no.
+     */
+    readonly canMuteChain?: boolean
 }
 
 export const deviceChainAdapters =

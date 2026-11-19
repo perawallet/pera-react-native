@@ -52,6 +52,7 @@ export const DEEPLINK_ROUTE_REQUIREMENTS: Record<
     [DeeplinkType.EDIT_CONTACT]: null,
     [DeeplinkType.RECOVER_ADDRESS]: null,
     [DeeplinkType.ASSET_DETAIL]: null,
+    [DeeplinkType.TRANSACTION_DETAIL]: null,
     [DeeplinkType.ASSET_TRANSACTIONS]: null,
     [DeeplinkType.CARDS]: null,
     [DeeplinkType.SELL]: null,

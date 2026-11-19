@@ -18,6 +18,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { SwapQuoteMismatchError } from '../../errors'
 import {
+    isAccountNotOnDeviceError,
     isSwapQuoteGoneError,
     swapOrderRefusalOf,
     swapQuoteFailureOf,
@@ -46,6 +47,34 @@ describe('isSwapQuoteGoneError', () => {
         expect(isSwapQuoteGoneError(refusal('invalid_request'))).toBe(false)
         expect(isSwapQuoteGoneError(refusal())).toBe(false)
         expect(isSwapQuoteGoneError(new Error('quote_not_found'))).toBe(false)
+    })
+})
+
+describe('isAccountNotOnDeviceError', () => {
+    it('matches the refusal by its code, parsed or in the body', () => {
+        expect(
+            isAccountNotOnDeviceError(
+                new PeraNetworkError('client', {
+                    status: 422,
+                    backendCode: 'account_not_on_device',
+                }),
+            ),
+        ).toBe(true)
+        expect(
+            isAccountNotOnDeviceError(
+                routerRefusal(422, {
+                    error: 'Not an account of this device',
+                    code: 'account_not_on_device',
+                }),
+            ),
+        ).toBe(true)
+    })
+
+    it('ignores other refusals and plain errors', () => {
+        expect(isAccountNotOnDeviceError(refusal('invalid_cursor'))).toBe(false)
+        expect(
+            isAccountNotOnDeviceError(new Error('account_not_on_device')),
+        ).toBe(false)
     })
 })
 

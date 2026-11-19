@@ -313,7 +313,7 @@ describe('Flow: The balance chart of an account on Algorand and Ethereum', () =>
         ).toBeNull()
     })
 
-    it('Given Ethereum holds ether and serves no balance history, when the chart is shown, then it plots Algorand without Ethereum, never says unavailable, and shows no change', async () => {
+    it('Given Ethereum holds ether and serves no balance history, when the chart is shown, then it plots Algorand, names Ethereum as not covered without a retry, never says unavailable, and shows no change', async () => {
         await seedEthereumHolding('500000000000000000')
         serveHistory({
             algorand: [
@@ -354,6 +354,10 @@ describe('Flow: The balance chart of an account on Algorand and Ethereum', () =>
         expect(screen.queryByText('common.error.title')).toBeNull()
         expect(screen.queryByText('common.wealth_chart.empty_body')).toBeNull()
         expect(screen.queryByTestId('wealth_trend')).toBeNull()
+        expect(
+            screen.getByText('common.wealth_chart.excludes_networks'),
+        ).toBeTruthy()
+        expect(screen.queryByTestId('wealth-chart-failed-retry')).toBeNull()
     })
 
     it('Given Ethereum was just added, holds nothing and serves no balance history, when the chart is shown, then it plots Algorand with its change and never says unavailable', async () => {

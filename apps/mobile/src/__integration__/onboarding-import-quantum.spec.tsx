@@ -29,7 +29,6 @@ import {
     useMnemonicBackupStore,
     useRequiresMnemonicBackup,
 } from '@perawallet/wallet-core-backup'
-import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 import {
@@ -222,7 +221,7 @@ describe('Flow: Onboarding → Import Quantum (25-word)', () => {
             useMnemonicBackupStore.getState().isBackedUp(seedOf(accounts[0])),
         ).toBe(true)
         const { result: requiresBackup } = renderHook(() =>
-            useRequiresMnemonicBackup(accounts[0], ALGORAND_CHAIN_ID),
+            useRequiresMnemonicBackup(accounts[0]),
         )
         expect(requiresBackup.current).toBe(false)
         expect(useAccountsStore.getState().selectedAccountId).toBe(

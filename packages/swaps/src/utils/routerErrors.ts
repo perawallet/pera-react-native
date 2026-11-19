@@ -31,6 +31,12 @@ export const isSwapQuoteGoneError = (error: unknown): boolean =>
     error.backendCode !== undefined &&
     QUOTE_GONE_CODES.includes(error.backendCode)
 
+/** History named an account the device's registration doesn't hold (v3 registration, or one still pending). */
+export const isAccountNotOnDeviceError = (error: unknown): boolean =>
+    isPeraNetworkError(error) &&
+    (resolveRouterErrorBody(error)?.code ?? error.backendCode) ===
+        'account_not_on_device'
+
 /** What the order call's refusal means for the user, whatever the provider's own wording. */
 export type SwapOrderRefusal =
     | 'insufficient-balance'
