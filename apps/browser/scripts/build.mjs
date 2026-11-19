@@ -98,6 +98,9 @@ const POPUP_CSS =
 const GLOBAL_WEB_CSS = `<style>
 html, body { background-color: #FFFFFF; }
 @media (prefers-color-scheme: dark) { html, body { background-color: #18181B; } }
+.pera-bootstrap { position: fixed; inset: 0; display: grid; place-items: center; color: #18181B; }
+.pera-bootstrap img { width: 48px; height: 48px; }
+@media (prefers-color-scheme: dark) { .pera-bootstrap { color: #FFFFFF; } }
 *, *::before, *::after { -webkit-user-select: none; user-select: none; }
 input, textarea, [contenteditable], [contenteditable="true"] { -webkit-user-select: text; user-select: text; }
 * { scrollbar-width: thin; scrollbar-color: rgba(128,128,128,0.5) transparent; }

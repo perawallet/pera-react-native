@@ -10,13 +10,7 @@
  limitations under the License
  */
 
-/* oxlint-disable react-native/no-inline-styles, react-native/no-color-literals -- minimal pre-hydration bootstrap shell */
-
 import React, { useEffect, useState } from 'react'
-// oxlint-disable-next-line no-restricted-imports -- pre-hydration boot screen;
-// must not import @components/core (store-bearing graph) before hydration.
-// lanekeep-ignore-next-line pera/no-primitive-rn-components reason: temporary bootstrap; real shell loaded dynamically after hydration
-import { Text, View } from 'react-native'
 import {
     getSurface,
     hydratePlatform,
@@ -27,6 +21,7 @@ import { OffscreenStatus } from './app-root/OffscreenStatus'
 import { RootBoundary } from './app-root/RootBoundary'
 
 type ShellComponent = React.ComponentType
+const LOADING_DELAY_MS = 300
 
 // Dynamic for the same boot-order reason as the surfaces themselves. Runs after
 // a surface's module graph (which builds the provider) and before it starts.
@@ -42,6 +37,13 @@ const registerTransports = async (): Promise<void> => {
 export const App = (): React.JSX.Element => {
     const [Shell, setShell] = useState<Nullable<ShellComponent>>(null)
     const [error, setError] = useState<Nullable<string>>(null)
+    const [showLoading, setShowLoading] = useState(false)
+
+    useEffect(() => {
+        if (Shell || error || getSurface() === 'offscreen') return
+        const timer = setTimeout(() => setShowLoading(true), LOADING_DELAY_MS)
+        return () => clearTimeout(timer)
+    }, [Shell, error])
 
     useEffect(() => {
         const bootstrap = async (): Promise<void> => {
@@ -108,13 +110,27 @@ export const App = (): React.JSX.Element => {
                 <Shell />
             </RootBoundary>
         )
+    if (error)
+        return (
+            <div
+                className='pera-bootstrap'
+                role='alert'
+            >
+                {error}
+            </div>
+        )
+    if (!showLoading) return <></>
+
+    // The regular loading components import stores that require hydration.
     return (
-        <View
-            style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+        <div
+            className='pera-bootstrap'
+            role='status'
         >
-            <Text testID='bootstrap-status'>
-                {error ?? 'hydrating platform…'}
-            </Text>
-        </View>
+            <img
+                src='./icons/icon-128.png'
+                alt='Pera Wallet'
+            />
+        </div>
     )
 }
