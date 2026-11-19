@@ -82,9 +82,29 @@ const fetchWithPeraHeaders = async (
 ): Promise<Response> => {
     const headers = new Headers(init?.headers)
     if (config.backendAPIKey) headers.set('X-API-Key', config.backendAPIKey)
-    for (const [name, value] of Object.entries(
-        await buildIntegrityHeadersWhenReady(),
-    )) {
+    // viem's timeout aborts its signal; it cannot reject until this wait does.
+    const integrityHeaders = await new Promise<Record<string, string>>(
+        (resolve, reject) => {
+            const signal = init?.signal
+            if (signal?.aborted) {
+                reject(abortError())
+                return
+            }
+            const onAbort = () => reject(abortError())
+            signal?.addEventListener('abort', onAbort, { once: true })
+            buildIntegrityHeadersWhenReady().then(
+                result => {
+                    signal?.removeEventListener('abort', onAbort)
+                    resolve(result)
+                },
+                error => {
+                    signal?.removeEventListener('abort', onAbort)
+                    reject(error)
+                },
+            )
+        },
+    )
+    for (const [name, value] of Object.entries(integrityHeaders)) {
         headers.set(name, value)
     }
     return fetchWithAbortError(input, { ...init, headers })
