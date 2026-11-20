@@ -46,6 +46,7 @@ case "$query" in
           {"id":"s-progress","name":"In Progress","type":"started","position":1},
           {"id":"s-qa","name":"In QA","type":"started","position":3},
           {"id":"s-blocked","name":"Blocked","type":"started","position":4},
+          {"id":"s-passed","name":"QA Passed","type":"started","position":5},
           {"id":"s-done","name":"Done","type":"completed","position":0},
           {"id":"s-canceled","name":"Canceled","type":"canceled","position":0},
           {"id":"s-duplicate","name":"Duplicate","type":"canceled","position":1},
@@ -120,7 +121,7 @@ expect "an opened PR moves the ticket to In Review" \
     '.[0].input == {stateId: "s-review"}' \
     -- "In Code Review" "feat(x): thing [PER-12]" "fmota/per-12"
 
-expect "a merge moves the ticket to In QA and assigns QA" \
+expect "a nightly moves the ticket to In QA and assigns QA" \
     "assigned to eric.wollaeger" "" \
     '.[0].input == {stateId: "s-qa", assigneeId: "user-0"}' \
     STUB_STATE="In Code Review" LINEAR_ASSIGNEE=eric.wollaeger -- "In QA" "[PER-12]"
@@ -128,16 +129,38 @@ expect "a merge moves the ticket to In QA and assigns QA" \
 expect "a stable release closes a ticket in QA" \
     "'In QA' → 'Done'" "" \
     '.[0].input == {stateId: "s-done"}' \
-    STUB_STATE="In QA" LINEAR_ONLY_FROM_STATUSES="In QA" -- "Done" "PER-12"
+    STUB_STATE="In QA" LINEAR_MIN_FROM_STATUS="In QA" -- "Done" "PER-12"
+
+expect "a stable release closes a ticket QA moved past In QA" \
+    "'QA Passed' → 'Done'" "" \
+    '.[0].input == {stateId: "s-done"}' \
+    STUB_STATE="QA Passed" LINEAR_MIN_FROM_STATUS="In QA" -- "Done" "PER-12"
 
 # The store-release guard: shipping must not close what QA has not had.
 expect "a stable release does not close a ticket still in review" \
-    "not 'In QA' — left alone" "" '' \
-    STUB_STATE="In Code Review" LINEAR_ONLY_FROM_STATUSES="In QA" -- "Done" "PER-12"
+    "before 'In QA' — left alone" "" '' \
+    STUB_STATE="In Code Review" LINEAR_MIN_FROM_STATUS="In QA" -- "Done" "PER-12"
 
 expect "a stable release does not close a ticket still in progress" \
-    "not 'In QA' — left alone" "" '' \
-    LINEAR_ONLY_FROM_STATUSES="In QA" -- "Done" "PER-12"
+    "before 'In QA' — left alone" "" '' \
+    LINEAR_MIN_FROM_STATUS="In QA" -- "Done" "PER-12"
+
+expect "a stable release does not close a blocked ticket" \
+    "outside the pipeline" "" '' \
+    STUB_STATE=Blocked LINEAR_MIN_FROM_STATUS="In QA" -- "Done" "PER-12"
+
+expect "a minimum state the team does not have is skipped" \
+    "has no state 'In Testing'" "" '' \
+    STUB_STATE="In QA" LINEAR_MIN_FROM_STATUS="In Testing" -- "Done" "PER-12"
+
+expect "an unmerged close sends a ticket in review back to In Progress" \
+    "'In Code Review' → 'In Progress'" "" \
+    '.[0].input == {stateId: "s-progress"}' \
+    STUB_STATE="In Code Review" LINEAR_ALLOW_BACKWARD=1 LINEAR_ONLY_FROM_STATUSES="In Code Review" -- "In Progress" "[PER-12]"
+
+expect "an unmerged close leaves a ticket QA already has" \
+    "not 'In Code Review' — left alone" "" '' \
+    STUB_STATE="In QA" LINEAR_ALLOW_BACKWARD=1 LINEAR_ONLY_FROM_STATUSES="In Code Review" -- "In Progress" "[PER-12]"
 
 expect "lowercase keys and duplicates collapse to one issue" \
     "PER-12:" "" \
@@ -187,7 +210,7 @@ expect "a branch push does not demote a ticket already in review" \
     "already past 'In Progress'" "" '' \
     STUB_STATE="In Code Review" -- "In Progress" "[PER-12]"
 
-expect "a merge does not reopen a closed ticket" \
+expect "a nightly does not reopen a closed ticket" \
     "already past 'In QA'" "assigned" '' \
     STUB_STATE=Done LINEAR_ASSIGNEE=eric.wollaeger -- "In QA" "[PER-12]"
 
@@ -200,8 +223,8 @@ expect "a duplicate is left alone" \
     STUB_STATE=Duplicate -- "In Code Review" "[PER-12]"
 
 # Linear types Blocked as "started" and places it after In QA; ranked, it would
-# read as past In QA and a merge would leave it, but a release would close it.
-expect "a blocked ticket is left alone by a merge" \
+# read as past In QA and a nightly would leave it, but a release would close it.
+expect "a blocked ticket is left alone by a nightly" \
     "outside the pipeline" "" '' \
     STUB_STATE=Blocked -- "In QA" "[PER-12]"
 
@@ -217,19 +240,14 @@ expect "a triage ticket is left alone" \
     "outside the pipeline" "" '' \
     STUB_STATE=Triage -- "In Progress" "[PER-12]"
 
-expect "a ticket QA pushed back is advanced again by the next merge" \
+expect "a ticket QA pushed back is advanced again by the next nightly" \
     "'In Progress' → 'In QA'" "" \
     '.[0].input.stateId == "s-qa"' \
     -- "In QA" "[PER-12]"
 
-expect "a ticket already in the target is assigned without a state change" \
-    "assigned to eric.wollaeger" "→" \
-    '.[0].input == {assigneeId: "user-0"}' \
-    STUB_STATE="In QA" LINEAR_ASSIGNEE=eric.wollaeger -- "In QA" "[PER-12]"
-
-expect "a ticket already in the target and already assigned is not written" \
-    "already 'In QA'" "" '' \
-    STUB_STATE="In QA" STUB_ASSIGNEE=user-0 LINEAR_ASSIGNEE=eric.wollaeger -- "In QA" "[PER-12]"
+expect "an rc does not reassign a ticket QA handed back to its developer" \
+    "already 'In QA'" "assigned" '' \
+    STUB_STATE="In QA" STUB_ASSIGNEE=dev LINEAR_ASSIGNEE=eric.wollaeger -- "In QA" "[PER-12]"
 
 expect "an ambiguous assignee still moves the ticket" \
     "2 active users with username 'eric.wollaeger'" "assigned" \

@@ -13,16 +13,20 @@ Keys are parsed from branch names, PR titles and commit subjects. Only Linear ke
 of the Pera team (`PER-<digits>`) count, and only at a word boundary, so `pera-`
 branches, retired Jira `PERA-` keys and words like `super-12` are ignored.
 
-| When                                 | Target state   | Also                  | Workflow                  |
-| ------------------------------------ | -------------- | --------------------- | ------------------------- |
-| Ticket branch first pushed           | In Progress    |                       | `linear-sync.yml`         |
-| PR opened non-draft, or marked ready | In Code Review |                       | `linear-sync.yml`         |
-| PR merged to `main`                  | In QA          | assigned to Eric (QA) | `linear-sync.yml`         |
-| Store (`vX.Y.Z`) shipped green       | Done           | only from In QA       | `linear-release-sync.yml` |
+| When                                 | Target state   | Also                     | Workflow                  |
+| ------------------------------------ | -------------- | ------------------------ | ------------------------- |
+| Ticket branch first pushed           | In Progress    |                          | `linear-sync.yml`         |
+| PR opened non-draft, or marked ready | In Code Review |                          | `linear-sync.yml`         |
+| PR closed without merging            | In Progress    | only from In Code Review | `linear-sync.yml`         |
+| Nightly or rc shipped green          | In QA          | assigned to Eric (QA)    | `linear-release-sync.yml` |
+| Store (`vX.Y.Z`) shipped green       | Done           | from In QA or later      | `linear-release-sync.yml` |
 
 Only branch creation moves a ticket to In Progress; pushing review fixes to an
-open PR would otherwise drag it back out of In Code Review. A store release covers
-every commit since the previous store release; nightly and rc builds move nothing.
+open PR would otherwise drag it back out of In Code Review. Merging moves nothing:
+a ticket reaches In QA with the first green nightly or rc that contains it, so QA
+is only handed work it can install. The assignee is set only alongside that move,
+so a later build carrying the same ticket never undoes QA handing it back. A store
+release covers every commit since the previous store release.
 
 Linear's built-in GitHub automations for the team must stay off, or both will move
 the same issue.
@@ -53,14 +57,14 @@ dispatching one by name skips just as the scheduled path does. Pinned by
 
 What keeps the automation from damaging a live tracker.
 
-| Rule                       | Effect                                                                                        |
-| -------------------------- | --------------------------------------------------------------------------------------------- |
-| Forward-only               | A ticket only ever moves up the pipeline; a later commit citing a tested key cannot reopen it |
-| Off-pipeline is parked     | Blocked, Triage, Canceled and Duplicate are left alone                                        |
-| Team-scoped                | An issue that has moved out of the `PER` team is left alone                                   |
-| Commit mandatory           | Only tickets named in a commit are moved; ones that ship no code are moved by a person        |
-| Never fails a build        | Every stage exits 0; problems surface as warning annotations                                  |
-| Reads retry, writes do not | A timed-out write may already have applied server-side                                        |
+| Rule                       | Effect                                                                                 |
+| -------------------------- | -------------------------------------------------------------------------------------- |
+| Forward-only               | A ticket only ever moves up the pipeline, except an unmerged close back to In Progress |
+| Off-pipeline is parked     | Blocked, Triage, Canceled and Duplicate are left alone                                 |
+| Team-scoped                | An issue that has moved out of the `PER` team is left alone                            |
+| Commit mandatory           | Only tickets named in a commit are moved; ones that ship no code are moved by a person |
+| Never fails a build        | Every stage exits 0; problems surface as warning annotations                           |
+| Reads retry, writes do not | A timed-out write may already have applied server-side                                 |
 
 Forward-only ranks the team's own states by type (backlog, unstarted, started,
 completed), then board position, so the board's column order is the pipeline

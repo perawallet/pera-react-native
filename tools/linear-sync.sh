@@ -7,8 +7,9 @@ set -uo pipefail
 #
 # Moves Linear issues of one team to a target workflow state, optionally
 # assigning them. Shared by .github/workflows/linear-sync.yml (branch pushed /
-# PR opened / merged to main) and .github/workflows/linear-release-sync.yml
-# (stable store release), so the rules for talking to Linear live in one place.
+# PR opened / PR closed unmerged) and .github/workflows/linear-release-sync.yml
+# (nightly, rc and store releases), so the rules for talking to Linear live in
+# one place.
 #
 # Arguments are scanned for <TEAM>-<digits> tokens, so whole branch names, PR
 # titles or commit subjects can be passed verbatim; anything else is ignored.
@@ -17,12 +18,16 @@ set -uo pipefail
 #   LINEAR_API_KEY         required — a personal API key (sent without "Bearer")
 #   LINEAR_TEAM_KEY        default PER — the only team this may touch
 #   LINEAR_ASSIGNEE        optional — username (Linear's displayName, e.g.
-#                          eric.wollaeger) of an active user to assign; zero or
-#                          several matches skip the assignment
+#                          eric.wollaeger) of an active user to assign when the
+#                          issue moves; zero or several matches skip the
+#                          assignment
 #   LINEAR_PARKED_STATUSES default Blocked — comma-separated states that are a
 #                          deliberate park, never moved out of
 #   LINEAR_ONLY_FROM_STATUSES optional — comma-separated states to act on,
 #                          skipping every other
+#   LINEAR_MIN_FROM_STATUS optional — act only on issues at this state or later
+#   LINEAR_ALLOW_BACKWARD  when "1": the target may be behind the current state;
+#                          pair it with LINEAR_ONLY_FROM_STATUSES
 #   LINEAR_THROTTLE_SECONDS optional — pause between issues (default 0.1)
 #   DRY_RUN                when "1": read and report, but withhold every write
 #
@@ -170,13 +175,24 @@ for key in $KEYS; do
         degraded=1
         continue
     fi
-    if [ "$target_rank" -lt "$current_rank" ]; then
+    if [ "$target_rank" -lt "$current_rank" ] && [ "${LINEAR_ALLOW_BACKWARD:-}" != "1" ]; then
         echo "${key}: '${current}' is already past '${TARGET_STATUS}' — left alone"
         continue
     fi
 
     # Forward is necessary but not always sufficient: a store release closes
     # only what QA has, never work still in development or review.
+    if [ -n "${LINEAR_MIN_FROM_STATUS:-}" ]; then
+        if ! min_rank=$(jq -re --arg name "$LINEAR_MIN_FROM_STATUS" --arg parked "$PARKED" "$RANK_JQ" <<<"$issue" 2>/dev/null); then
+            echo "::warning::${key}: team ${team} has no state '${LINEAR_MIN_FROM_STATUS}' — skipped"
+            degraded=1
+            continue
+        fi
+        if [ "$current_rank" -lt "$min_rank" ]; then
+            echo "${key}: in '${current}', before '${LINEAR_MIN_FROM_STATUS}' — left alone"
+            continue
+        fi
+    fi
     if [ -n "${LINEAR_ONLY_FROM_STATUSES:-}" ]; then
         case ",${LINEAR_ONLY_FROM_STATUSES}," in
             *",${current},"*) ;;
@@ -187,19 +203,17 @@ for key in $KEYS; do
         esac
     fi
 
-    input='{}'
+    # Assigning only alongside a move: an rc re-delivers what a nightly already
+    # handed to QA, and must not undo QA passing the ticket back to its developer.
     if [ "$current" = "$TARGET_STATUS" ]; then
         echo "${key}: already '${TARGET_STATUS}'"
-    else
-        state_id=$(jq -r --arg name "$TARGET_STATUS" \
-            'first(.data.issue.team.states.nodes[] | select(.name == $name) | .id)' <<<"$issue")
-        input=$(jq -c --arg s "$state_id" '. + {stateId: $s}' <<<"$input")
+        continue
     fi
+    state_id=$(jq -r --arg name "$TARGET_STATUS" \
+        'first(.data.issue.team.states.nodes[] | select(.name == $name) | .id)' <<<"$issue")
+    input=$(jq -nc --arg s "$state_id" '{stateId: $s}')
     if [ -n "$ASSIGNEE_ID" ] && [ "$(jq -r '.data.issue.assignee.id // empty' <<<"$issue")" != "$ASSIGNEE_ID" ]; then
         input=$(jq -c --arg a "$ASSIGNEE_ID" '. + {assigneeId: $a}' <<<"$input")
-    fi
-    if [ "$input" = '{}' ]; then
-        continue
     fi
 
     if [ "${DRY_RUN:-}" = "1" ]; then
@@ -215,9 +229,7 @@ for key in $KEYS; do
         degraded=1
         continue
     fi
-    if jq -e '.stateId' <<<"$input" >/dev/null; then
-        echo "${key}: '${current}' → '${TARGET_STATUS}'"
-    fi
+    echo "${key}: '${current}' → '${TARGET_STATUS}'"
     if jq -e '.assigneeId' <<<"$input" >/dev/null; then
         echo "${key}: assigned to ${LINEAR_ASSIGNEE}"
     fi

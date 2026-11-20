@@ -4,9 +4,10 @@ name: Linear / Ticket Sync
 #
 #   branch first pushed  -> In Progress
 #   PR ready for review  -> In Code Review
-#   merged to main       -> In QA, assigned to QA
+#   PR closed unmerged   -> back to In Progress, only from In Code Review
 #
-# The stable-release half lives in .github/workflows/linear-release-sync.yml.
+# Merging moves nothing: a ticket reaches In QA with the first green nightly or rc
+# that contains it, in .github/workflows/linear-release-sync.yml.
 # Keys come from the branch name and the PR title; text without a PER key is a
 # no-op, and tools/linear-sync.sh exits 0 on every failure so ticket bookkeeping
 # never fails a push or blocks a merge. Linear's own GitHub automations for the
@@ -73,27 +74,27 @@ jobs:
           BRANCH: ${{ github.event.pull_request.head.ref }}
         run: ./tools/linear-sync.sh "In Code Review" "$TITLE" "$BRANCH"
 
-  merged-to-main:
-    name: Merged to main → In QA + assign QA
-    # base.ref pins this to main, so PRs into feature branches don't hand
-    # tickets to QA early.
+  closed-unmerged:
+    name: PR closed unmerged → back to In Progress
+    # The one backwards move: an abandoned review returns the ticket to its
+    # developer. Only from In Code Review, so work QA or a person moved on is
+    # never pulled back. A PR closed after its replacement opened drags the
+    # ticket back too; the replacement's next ready_for_review restores it.
     if: >-
       github.event_name == 'pull_request_target' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.action == 'closed' &&
-      github.event.pull_request.merged == true &&
-      github.event.pull_request.base.ref == 'main'
+      github.event.pull_request.merged == false
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Move ticket to In QA and assign QA
+      - name: Move ticket back to In Progress
         env:
           TITLE: ${{ github.event.pull_request.title }}
           BRANCH: ${{ github.event.pull_request.head.ref }}
-          # Eric (QA). His Linear username, resolved to a user id at run time;
-          # anything other than exactly one active match skips the assignment.
-          LINEAR_ASSIGNEE: eric.wollaeger
-        run: ./tools/linear-sync.sh "In QA" "$TITLE" "$BRANCH"
+          LINEAR_ALLOW_BACKWARD: "1"
+          LINEAR_ONLY_FROM_STATUSES: In Code Review
+        run: ./tools/linear-sync.sh "In Progress" "$TITLE" "$BRANCH"
