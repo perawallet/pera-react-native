@@ -171,7 +171,11 @@ export const useCreateAccount = (scope: ChainScope) => {
         account: number
         keyIndex: number
     }) => {
-        const newAccount = await buildHdWalletAccountForSeed(params)
+        // An account for an already-stored seed gets the chains a phrase import
+        // gets: discovery never crosses chain families, so one left off stays off.
+        const newAccount = await withDefaultChains(
+            await buildHdWalletAccountForSeed(params),
+        )
         return saveAndUpdateAccounts(newAccount)
     }
 

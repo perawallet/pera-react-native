@@ -26,21 +26,15 @@ vi.unmock('@perawallet/wallet-extension-platform')
 // platform-driver-test.ts), which carries the migration service.
 vi.unmock('@perawallet/wallet-extension-platform-driver')
 
-import { mnemonicToSecretKey } from 'algosdk'
 import { server, http, HttpResponse } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
-import { getPlatformServices } from '@test-utils/platform-driver-test'
 import type {
     LegacyAccount,
     LegacyDeviceIdentifiers,
     LegacyMigrationData,
-    MigrationService,
 } from '@perawallet/wallet-extension-platform'
-import {
-    createStubMigrationService,
-    createEmptyLegacyMigrationData,
-} from '@perawallet/wallet-extension-platform/test-utils'
+import { createEmptyLegacyMigrationData } from '@perawallet/wallet-extension-platform/test-utils'
 import {
     useAccountsStore,
     useAllAccounts,
@@ -56,8 +50,12 @@ import { InboxScreen } from '@modules/messages/screens/InboxScreen/InboxScreen'
 import { useDeviceAccountRegistrations } from '@hooks/useDeviceAccountRegistrations'
 
 import {
+    installStubMigrationService,
+    legacyAlgo25Account,
+    legacyKeylessAccount,
+} from './__fixtures__/migration'
+import {
     ALGO25_TEST_ADDRESS,
-    ALGO25_TEST_MNEMONIC,
     HD_TEST_ADDRESS as REKEYED_TEST_ADDRESS,
 } from './__fixtures__/onboarding'
 import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
@@ -70,45 +68,8 @@ const LEGACY_DEVICE_ID = 'LEGACY-DEVICE-1'
 // actually sent `LEGACY_DEVICE_ID` on the wire, never by coincidental echo.
 const FRESHLY_MINTED_DEVICE_ID = 'FRESHLY-MINTED-DEVICE'
 
-// Legacy payload builders. These wrap `createEmptyLegacyMigrationData()` so a
-// test only spells out the accounts + device id it asserts on.
-
-// A signable Pera 6 standard account: the 64-byte tweetnacl secret key whose
-// first 32 bytes are the ed25519 seed for ALGO25_TEST_ADDRESS. `runMigration`
-// re-derives the algo25 mnemonic from those seed bytes and imports the key, so
-// the account lands in the store with real signing material.
-const legacyAlgo25Account = (address: string): LegacyAccount => ({
-    address,
-    name: 'Trading',
-    type: 'standard',
-    preferredOrder: 0,
-    isBackedUp: true,
-    secretKey: mnemonicToSecretKey(ALGO25_TEST_MNEMONIC).sk,
-    hdSeedId: null,
-    ledger: null,
-    joint: null,
-    authAddress: null,
-})
-
-// A keyless (watch) account rekeyed to a signing account: `buildWatchAccount`
-// records `authAddress` as the account's authority, which is what lets
-// `canSignWith` follow the rekey to the signable auth account and pull this
-// address into the inbox signing set.
-const legacyKeylessAccount = (
-    address: string,
-    { authAddress }: { authAddress: string },
-): LegacyAccount => ({
-    address,
-    name: 'Rekeyed',
-    type: 'watch',
-    preferredOrder: 1,
-    isBackedUp: false,
-    secretKey: null,
-    hdSeedId: null,
-    ledger: null,
-    joint: null,
-    authAddress,
-})
+// Wraps `createEmptyLegacyMigrationData()` so a test only spells out the
+// accounts + device id it asserts on.
 
 const legacyPayloadWith = ({
     accounts,
@@ -123,31 +84,6 @@ const legacyPayloadWith = ({
         accounts,
         deviceIdentifiers: { ...base.deviceIdentifiers, ...deviceIdentifiers },
     }
-}
-
-// The platform provider owns the migration service; both `useNeedsMigration`
-// and the splash's `runMigration` read `getProvider().migration`, which
-// resolves to the test driver's cached migration object. Rebind that object's
-// methods to a fresh stub so the migration runs against our legacy payload —
-// the provider references this same object at runtime.
-const installStubMigrationService = (
-    options: Parameters<typeof createStubMigrationService>[0],
-): void => {
-    const stub = createStubMigrationService(options)
-    const target = getPlatformServices().migration
-    const rebound: MigrationService = {
-        hasLegacyData: () => stub.hasLegacyData(),
-        getLegacyData: () => stub.getLegacyData(),
-        isMigrationComplete: () => stub.isMigrationComplete(),
-        markMigrationComplete: platform => stub.markMigrationComplete(platform),
-        clearMigrationComplete: () => stub.clearMigrationComplete(),
-        getMigrationPlans: () => stub.getMigrationPlans(),
-        resetLegacyData: () => stub.resetLegacyData(),
-        getCompletedStepVersions: () => stub.getCompletedStepVersions(),
-        setCompletedStepVersions: versions =>
-            stub.setCompletedStepVersions(versions),
-    }
-    Object.assign(target, rebound)
 }
 
 // App-ish harness. Mirrors production's RootComponent gating: the migration
