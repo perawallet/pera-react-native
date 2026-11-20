@@ -109,8 +109,10 @@ export const fetchHistoryPage = async (
             }
             const headers = await buildIntegrityHeadersWhenReady()
             signal?.throwIfAborted()
+            // Re-stamping a free read would outlive the backend's entry,
+            // which was written by the miss that spent the unit.
             const recordFirstPage =
-                firstPageKey === undefined
+                firstPageKey === undefined || isCached
                     ? undefined
                     : firstPages.sent(firstPageKey)
             const response = await queryClient<unknown>({
@@ -133,6 +135,9 @@ export const fetchHistoryPage = async (
                 },
                 headers,
                 signal,
+                // ky's own retry would send a second request on one unit;
+                // `historyReadRetry` retries through the budget instead.
+                retry: { limit: 0 },
             })
             recordFirstPage?.()
             return response

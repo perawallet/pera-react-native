@@ -148,6 +148,39 @@ describe('fetchHistoryPage budget', () => {
         expect(budget.current.hasRoom()).toBe(false)
     })
 
+    it('sends one request per unit on a rate-limited 503, leaving retries to the caller', async () => {
+        budget.current = createHistoryPageBudget(
+            () => 5,
+            60_000,
+            () => 0,
+        )
+        const requests = countRequests(503)
+
+        await fetchHistoryPage(MAINNET, ETHEREUM, ME).catch(() => undefined)
+
+        expect(requests.count).toBe(1)
+    })
+
+    it('charges a page one once the miss that paid for it has expired, however often it was read for free', async () => {
+        let now = 0
+        budget.firstPages = createFirstPageCache(5 * 60_000, () => now)
+        budget.current = createHistoryPageBudget(
+            () => 2,
+            60 * 60_000,
+            () => now,
+        )
+        countRequests()
+
+        await fetchHistoryPage(MAINNET, ETHEREUM, ME)
+        now = 4 * 60_000
+        await fetchHistoryPage(MAINNET, ETHEREUM, ME)
+        expect(budget.current.hasRoom()).toBe(true)
+        now = 6 * 60_000
+        await fetchHistoryPage(MAINNET, ETHEREUM, ME)
+
+        expect(budget.current.hasRoom()).toBe(false)
+    })
+
     it('spends nothing for a read aborted before it was sent', async () => {
         budget.current = createHistoryPageBudget(
             () => 1,
