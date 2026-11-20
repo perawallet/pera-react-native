@@ -693,6 +693,70 @@ describe('usePromptContainer', () => {
         expect(useBottomSheetStore.getState().isPresentationHeld).toBe(false)
     })
 
+    it('waits for an open sheet to close before showing a nudge', async () => {
+        // The overlay paints beneath the sheet portal: a nudge shown over a
+        // deep-linked Send would sit hidden while its hold swallowed the
+        // discard confirmation that Send asks for.
+        mockGetPreference.mockReturnValue(false)
+        act(() => {
+            useBottomSheetStore.setState({
+                requests: [
+                    {
+                        id: 'send-funds',
+                        contents: null,
+                        isVisible: true,
+                        resolver: vi.fn(),
+                    },
+                ],
+            })
+        })
+
+        const { result } = renderHook(() => usePromptContainer())
+
+        await act(async () => {})
+        act(() => {
+            vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
+        })
+
+        expect(result.current.nextPrompt).toBeUndefined()
+        expect(useBottomSheetStore.getState().isPresentationHeld).toBe(false)
+
+        act(() => {
+            useBottomSheetStore.setState({ requests: [] })
+        })
+        await act(async () => {})
+        act(() => {
+            vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
+        })
+
+        expect(result.current.nextPrompt?.id).toBe(
+            UserPreferences._securityPinSetupPrompt,
+        )
+    })
+
+    it('still shows a gate over an open sheet', async () => {
+        mockGetPreference.mockReturnValue(false)
+        mockUseTermsAcceptance.mockReturnValue({ needsAcceptance: true })
+        act(() => {
+            useBottomSheetStore.setState({
+                requests: [
+                    {
+                        id: 'send-funds',
+                        contents: null,
+                        isVisible: true,
+                        resolver: vi.fn(),
+                    },
+                ],
+            })
+        })
+
+        const { result } = renderHook(() => usePromptContainer())
+
+        await act(async () => {})
+
+        expect(result.current.nextPrompt?.id).toBe('terms_acceptance_prompt')
+    })
+
     it('releases the hold when the lock overlay takes the prompt away', async () => {
         mockGetPreference.mockReturnValue(false)
 
