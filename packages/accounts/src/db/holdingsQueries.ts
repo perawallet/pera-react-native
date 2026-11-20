@@ -23,6 +23,7 @@ import {
     sql,
     type SQL,
 } from 'drizzle-orm'
+import type { SelectedFields } from 'drizzle-orm/sqlite-core'
 import { Decimal } from 'decimal.js'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import {
@@ -158,21 +159,24 @@ const assetIdMatching = (
  * against each other. Returns raw columns; callers decide how much of each row
  * to materialize.
  */
-async function queryHoldingRows({
-    db = getDatabase(),
-    sources,
-    sortMode = 'balanceDesc',
-    search,
-    hideZeroBalance,
-    keepZeroNative,
-    hideNfts,
-    hideZeroBalanceNfts,
-    excludeAssetTypes,
-    hideSuspicious,
-    excludeHidden,
-    limit,
-    offset,
-}: GetAccountHoldingsLiteParams) {
+async function queryHoldingRows<ExtraColumns extends SelectedFields>(
+    {
+        db = getDatabase(),
+        sources,
+        sortMode = 'balanceDesc',
+        search,
+        hideZeroBalance,
+        keepZeroNative,
+        hideNfts,
+        hideZeroBalanceNfts,
+        excludeAssetTypes,
+        hideSuspicious,
+        excludeHidden,
+        limit,
+        offset,
+    }: GetAccountHoldingsLiteParams,
+    extraColumns: ExtraColumns,
+) {
     const conditions = [isFromSources(sources)]
 
     if (hideZeroBalance) {
@@ -276,14 +280,10 @@ async function queryHoldingRows({
             assetId: AccountAssetHoldingsSchema.assetId,
             scope: AccountAssetHoldingsSchema.scope,
             amount: AccountAssetHoldingsSchema.amount,
-            native: AccountAssetHoldingsSchema.native,
             ...peraAssetJoinColumns(),
             isFavorited: AssetsPeraSchema.isFavorited,
-            isHidden: sql<number>`CASE WHEN ${hiddenHoldingSql(sources)} THEN 1 ELSE 0 END`,
             usdPrice: sql<Nullable<string>>`${AssetPricesSchema.usdPrice}`,
-            crossChainAssetGroupId: sql<
-                Nullable<string>
-            >`json_extract(${AssetsPeraSchema.peraMetadataJson}, '$.crossChainAssetGroup.id')`,
+            ...extraColumns,
         })
         .from(AccountAssetHoldingsSchema)
         .leftJoin(AssetsNodeSchema, holdingJoin(AssetsNodeSchema))
@@ -309,10 +309,14 @@ export async function getAccountHoldingsPage({
     scope,
     ...params
 }: GetAccountHoldingsPageParams): Promise<AccountHoldingsPageRow[]> {
-    const rows = await queryHoldingRows({
-        ...params,
-        sources: [{ address: accountAddress, scope }],
-    })
+    const sources = [{ address: accountAddress, scope }]
+    const rows = await queryHoldingRows(
+        { ...params, sources },
+        {
+            native: AccountAssetHoldingsSchema.native,
+            isHidden: sql<number>`CASE WHEN ${hiddenHoldingSql(sources)} THEN 1 ELSE 0 END`,
+        },
+    )
     return rows.map(r => ({
         assetId: r.assetId,
         amount: r.amount,
@@ -350,15 +354,25 @@ export async function getAccountHoldingsLite(
     params: GetAccountHoldingsLiteParams,
 ): Promise<AccountHoldingsLiteRow[]> {
     if (params.sources.length === 0) return []
-    const rows = await queryHoldingRows(params)
-    return rows.map(
-        ({ native: _native, isHidden: _isHidden, scope, ...r }) => ({
-            ...r,
-            scope: parseScopeKey(scope),
-            isFavorited: !!r.isFavorited,
-            usdPrice: r.usdPrice != null ? new Decimal(r.usdPrice) : null,
-        }),
-    )
+    const rows = await queryHoldingRows(params, {
+        crossChainAssetGroupId: sql<
+            Nullable<string>
+        >`json_extract(${AssetsPeraSchema.peraMetadataJson}, '$.crossChainAssetGroup.id')`,
+    })
+    const scopes = new Map<string, ChainScope>()
+    return rows.map(row => {
+        let scope = scopes.get(row.scope)
+        if (scope === undefined) {
+            scope = parseScopeKey(row.scope)
+            scopes.set(row.scope, scope)
+        }
+        return {
+            ...row,
+            scope,
+            isFavorited: !!row.isFavorited,
+            usdPrice: row.usdPrice != null ? new Decimal(row.usdPrice) : null,
+        }
+    })
 }
 
 /** An asset an account has a holding row for, on one scope. */
