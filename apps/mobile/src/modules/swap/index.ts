@@ -11,6 +11,7 @@
  */
 
 export { useSwapExecution, useSwapQuotes } from './hooks'
+export { PendingSwaps, type PendingSwapsProps } from './components/PendingSwaps'
 export {
     useSwapForNativeRoute,
     type UseSwapForNativeRouteResult,

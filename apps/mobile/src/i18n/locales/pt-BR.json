@@ -4366,7 +4366,13 @@
             },
             "list": {
                 "item": {
-                    "description": "Converteu <0/> por <1/>"
+                    "description": "Converteu <0/> por <1/>",
+                    "description_unsettled": "Conversão de <0/> por <1/>",
+                    "status": {
+                        "in_progress": "Em andamento",
+                        "failed": "Falhou",
+                        "refunded": "Reembolsada"
+                    }
                 },
                 "empty": {
                     "title": "Nenhuma conversão ainda",

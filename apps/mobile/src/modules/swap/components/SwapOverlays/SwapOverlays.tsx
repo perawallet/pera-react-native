@@ -21,7 +21,8 @@ import { useErrorToast } from '@hooks/useErrorToast'
 
 /**
  * Headless app-root mount for Swap's background work: the shared-account cosign
- * resolver, the order tracker, and keeping Swap on the selected account.
+ * resolver, the order tracker, and dropping the account picked in Swap when
+ * the app-wide selection changes.
  *
  * Mirrors {@link MultisigOverlays}'s resolver wiring: tracks foreground state
  * so polling pauses while the app is backgrounded (iOS suspends JS timers

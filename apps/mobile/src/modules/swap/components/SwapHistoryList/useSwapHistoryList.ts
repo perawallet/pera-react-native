@@ -15,7 +15,7 @@ import {
     toScopeKey,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { generateUniqueId } from '@perawallet/wallet-core-shared'
+import { generateUniqueId, type Optional } from '@perawallet/wallet-core-shared'
 import {
     swapExplorerUrlFor,
     useSwapHistoryInfiniteQuery,
@@ -33,9 +33,13 @@ import { useSwapAccountAddresses } from '../../hooks/useSwapAccountAddresses'
 export type ListedSwapHistoryItem = SwapHistoryItem & {
     assetIn: SwapAsset
     assetOut: SwapAsset
+    /** Absent until the router lists the swap's own transaction. */
+    explorerUrl: Optional<string>
 }
 
-const isListable = (item: SwapHistoryItem): item is ListedSwapHistoryItem =>
+const hasAssets = (
+    item: SwapHistoryItem,
+): item is SwapHistoryItem & { assetIn: SwapAsset; assetOut: SwapAsset } =>
     item.assetIn !== null && item.assetOut !== null
 
 export type UseSwapHistoryListParams = {
@@ -90,7 +94,14 @@ export const useSwapHistoryList = ({
         hasNextPage,
         fetchNextPage,
     } = useSwapHistoryInfiniteQuery(accounts, VISIBLE_SWAP_STATUSES)
-    const swaps = useMemo(() => loaded.filter(isListable), [loaded])
+    const swaps = useMemo(
+        () =>
+            loaded.filter(hasAssets).map(item => ({
+                ...item,
+                explorerUrl: swapExplorerUrlFor(scope, item),
+            })),
+        [loaded, scope],
+    )
 
     const keyExtractor = useCallback(
         (item: ListedSwapHistoryItem) => item.orderId,
@@ -99,7 +110,7 @@ export const useSwapHistoryList = ({
 
     const handleItemPress = useCallback(
         (item: ListedSwapHistoryItem) => {
-            const url = swapExplorerUrlFor(scope, item)
+            const url = item.explorerUrl
             if (!url) return
             trackEvent(SwapEvent.SelectHistoryInSeeAll, {
                 [AnalyticsMetadataKey.ChainId]: scope.chainId,

@@ -11,6 +11,13 @@
  */
 
 import {
+    i18nKey,
+    type ChainId,
+    type I18nKey,
+} from '@perawallet/wallet-core-chain-contract'
+import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import {
     TransactionFilter,
     type CustomDateRange,
 } from '../TransactionsFilterContent'
@@ -89,5 +96,29 @@ export const getFilterTimes = (
         default: {
             return {}
         }
+    }
+}
+
+/** What an empty history says, naming the network when narrowed to one. */
+export const emptyBodyCopy = ({
+    isFiltered,
+    networkChainId,
+}: {
+    isFiltered: boolean
+    networkChainId: Nullable<ChainId>
+}): { key: I18nKey; params?: Record<string, string> } => {
+    if (isFiltered) {
+        return {
+            key: i18nKey('asset_details.transaction_list.empty_filtered_body'),
+        }
+    }
+    if (networkChainId === null) {
+        return { key: i18nKey('asset_details.transaction_list.empty_body') }
+    }
+    return {
+        key: i18nKey('asset_details.transaction_list.empty_on_network_body'),
+        params: {
+            network: chainDisplayNameOf(networkChainId) ?? networkChainId,
+        },
     }
 }

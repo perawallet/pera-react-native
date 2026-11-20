@@ -13,7 +13,6 @@
 import { useEffect } from 'react'
 import { useQueries, useQueryClient } from '@tanstack/react-query'
 import {
-    addressOn,
     fetchAndPersistAccount,
     invalidateAccountQueriesForAddresses,
     useAllAccounts,
@@ -23,6 +22,7 @@ import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { fetchSwapOrder } from '../api'
 import type { SwapStatus, SwapTrackedOrder } from '../models'
 import { useSwapTrackingStore } from '../store'
+import { isSwapPayerInWallet } from '../utils/isSwapPayerInWallet'
 import { isSwapOrderSettled } from '../utils/swapOrderSettlement'
 import { getInvalidateSwapHistoryPredicate, swapQueryKeys } from './querykeys'
 
@@ -65,11 +65,7 @@ export const useSwapOrderTracker = (): void => {
     const open = Object.values(orders).filter(
         order =>
             !isSwapOrderSettled(order, Date.now()) &&
-            accounts.some(
-                account =>
-                    addressOn(account, order.sourceScope) ===
-                    order.sourceAddress,
-            ),
+            isSwapPayerInWallet(order, accounts),
     )
 
     // Read during render: TanStack re-renders only for fields read there.

@@ -4336,7 +4336,13 @@
             },
             "list": {
                 "item": {
-                    "description": "<0/> getauscht gegen <1/>"
+                    "description": "<0/> getauscht gegen <1/>",
+                    "description_unsettled": "Tausch: <0/> gegen <1/>",
+                    "status": {
+                        "in_progress": "In Bearbeitung",
+                        "failed": "Fehlgeschlagen",
+                        "refunded": "Erstattet"
+                    }
                 },
                 "empty": {
                     "title": "Noch keine Tauschvorgänge",

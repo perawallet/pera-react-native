@@ -37,7 +37,7 @@ export type UseSwapReceiveTargetResult = {
 /**
  * Who receives the swap's output. On the swap scope it is the swapper; on
  * another chain it is one of the user's own accounts that can sign there:
- * the one they picked, else the selected account, else the first eligible.
+ * the one they picked, else the swap account, else the first eligible.
  */
 export const useSwapReceiveTarget = (
     scope: ChainScope,

@@ -201,6 +201,7 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
                 selector ? selector(swapsState) : swapsState,
         ),
         useSwapTrackedOrders: vi.fn(() => []),
+        useOpenSwapOrders: vi.fn(() => []),
         useSwapTrackingStore: vi.fn(),
         useSwapOrderTracker: vi.fn(),
     }

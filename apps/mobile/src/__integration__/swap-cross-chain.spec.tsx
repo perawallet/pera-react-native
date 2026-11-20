@@ -86,6 +86,7 @@ import {
 } from '@modules/swap/hooks/useSwapExecution'
 import { useSwapToAssetSelectionList } from '@modules/swap/components/SwapToAssetSelectionList/useSwapToAssetSelectionList'
 import { SwapToAssetSelectionList } from '@modules/swap/components/SwapToAssetSelectionList'
+import { PendingSwaps } from '@modules/swap'
 
 import { registerChainAdapters } from '../bootstrap/chain-adapters'
 import { addressOf } from './__fixtures__/accounts'
@@ -190,7 +191,12 @@ const CrossChainHost = () => {
         }
         host = { execute, createQuotes, queryClient }
     }, [execute, createQuotes, queryClient, setPreference])
-    return <SigningOverlays />
+    return (
+        <>
+            <PendingSwaps shownScope={null} />
+            <SigningOverlays />
+        </>
+    )
 }
 
 const withEthereum = (account: WalletAccount): WalletAccount => ({
@@ -323,6 +329,34 @@ describe('Flow: Cross-chain swap (Algorand into an own Ethereum address)', () =>
                 api.queryClient.getQueryState(balanceKey)?.isInvalidated,
             ).toBe(true),
         )
+    })
+
+    it('Given a sent cross-chain swap, when the router reports it in progress, then History leads with it as in progress, and once it expires the row goes', async () => {
+        const { sender, api } = await startHost()
+        mockSwapOrderWithPayment({ sender, receiver: REVIEW_RECEIVER_ADDRESS })
+        const { reports } = spyOnSwapSubmissionAndReports()
+        server.use(mockFetchSwapOrder({ order: routerOrder('in_progress') }))
+
+        const quote = await quoteFor(api, sender, REVIEW_RECEIVER_ADDRESS)
+        await api.execute(quote)
+        await waitFor(() => expect(reports).toHaveLength(1))
+
+        const row = await screen.findByTestId(`pending_swap_${SWAP_ORDER_ID}`)
+        expect(within(row).getByText('ALGO → ETH')).toBeTruthy()
+        expect(within(row).getByText('swap.tracking.in_progress')).toBeTruthy()
+
+        server.use(mockFetchSwapOrder({ order: routerOrder('expired') }))
+        await api.queryClient.refetchQueries({ queryKey: ['swaps', 'order'] })
+
+        await waitFor(() =>
+            expect(
+                screen.queryByTestId(`pending_swap_${SWAP_ORDER_ID}`),
+            ).toBeNull(),
+        )
+        // Still followed: a provider can overturn an expired order for a week.
+        expect(
+            useSwapTrackingStore.getState().orders[SWAP_ORDER_ID].status,
+        ).toBe('expired')
     })
 
     it('Given an order whose source leg pays someone other than the quoted deposit address, when the swap runs, then nothing is broadcast and nothing is tracked', async () => {
