@@ -41,6 +41,7 @@ export const routeCapabilities: RouteCapabilities = {
     passkeysAutofillSettings: true,
     accountDrawer: true,
     storeRating: true,
+    deleteAllDataSuccessSheet: true,
     confirmationModeSetting: true,
     analyticsConsent: true,
     hapticFeedback: true,

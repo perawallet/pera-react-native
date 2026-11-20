@@ -87,7 +87,6 @@ export const ShellRouter = (): React.JSX.Element => {
                             // useVaultLockState observes and re-routes to onboarding.
                         }}
                     />
-                    {/* A wipe lands here with its success sheet queued. */}
                     <BottomSheetManager />
                 </>
             )
