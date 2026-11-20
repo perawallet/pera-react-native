@@ -278,8 +278,15 @@ export const usePromptContainer = (): UsePromptContainerResult => {
             // The overlay paints beneath gorhom's portal, so a nudge shown over an
             // open sheet (a deep-linked Send) sits hidden under it while its hold
             // swallows the sheets that sheet asks for, such as the discard
-            // confirmation. It waits for the sheet to close instead.
-            if (isSheetOpen) return
+            // confirmation. It waits for the sheet to close instead. A held sheet
+            // counts as open too, so an answered prompt must still leave: its hold
+            // would otherwise keep that sheet from ever presenting.
+            if (isSheetOpen) {
+                setNextPrompt(current =>
+                    current?.id === prompt.id ? current : undefined,
+                )
+                return
+            }
 
             if (hasPaidEntryDelay) {
                 showPrompt(prompt)
