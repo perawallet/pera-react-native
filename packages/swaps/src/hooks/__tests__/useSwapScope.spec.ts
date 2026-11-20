@@ -16,7 +16,11 @@ import { renderHook } from '@testing-library/react'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useSwapsStore } from '../../store'
-import { useSwapSigningAccounts, useSwapSourceScope } from '../useSwapScope'
+import {
+    useSwapAccount,
+    useSwapSigningAccounts,
+    useSwapSourceScope,
+} from '../useSwapScope'
 
 const mocks = vi.hoisted(() => ({
     capabilityScope: vi.fn(),
@@ -24,6 +28,7 @@ const mocks = vi.hoisted(() => ({
     swapChainOf: vi.fn<(account: WalletAccount) => ChainId | undefined>(),
     signable: new Set<string>(),
     states: {} as Record<string, unknown>,
+    selected: null as WalletAccount | null,
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -32,7 +37,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountChainStateStore: (selector: (state: unknown) => unknown) =>
         selector({ states: mocks.states }),
     useAccountCapabilityScope: mocks.capabilityScope,
-    useSelectedAccount: vi.fn(),
+    useSelectedAccount: () => mocks.selected,
     canSignWith: (account: WalletAccount) => mocks.signable.has(account.id),
 }))
 
@@ -133,5 +138,60 @@ describe('swaps/useSwapSigningAccounts', () => {
         mocks.states = {}
         rerender()
         expect(result.current).toEqual(mocks.accounts)
+    })
+})
+
+describe('swaps/useSwapAccount', () => {
+    const home = account('home')
+    const other = account('other')
+    const watch = account('watch')
+
+    beforeEach(() => {
+        useSwapsStore.getState().resetState()
+        mocks.states = {}
+        mocks.accounts = [home, other, watch]
+        mocks.signable = new Set(['home', 'other'])
+        mocks.swapChainOf.mockReset()
+        mocks.swapChainOf.mockReturnValue('algorand')
+        mocks.selected = home
+    })
+
+    test('follows the selected account until Swap picks one', () => {
+        const { result } = renderHook(() => useSwapAccount())
+
+        expect(result.current).toBe(home)
+    })
+
+    test('is the account picked inside Swap, not the selected one', () => {
+        useSwapsStore.getState().setAccountId('other')
+
+        const { result } = renderHook(() => useSwapAccount())
+
+        expect(result.current).toBe(other)
+    })
+
+    test('ignores a picked account that can no longer sign', () => {
+        useSwapsStore.getState().setAccountId('watch')
+
+        const { result } = renderHook(() => useSwapAccount())
+
+        expect(result.current).toBe(home)
+    })
+
+    test('falls to the first signer when the selected account cannot sign', () => {
+        mocks.selected = watch
+
+        const { result } = renderHook(() => useSwapAccount())
+
+        expect(result.current).toBe(home)
+    })
+
+    test('is the selected account when nothing can sign', () => {
+        mocks.signable = new Set()
+        mocks.selected = watch
+
+        const { result } = renderHook(() => useSwapAccount())
+
+        expect(result.current).toBe(watch)
     })
 })

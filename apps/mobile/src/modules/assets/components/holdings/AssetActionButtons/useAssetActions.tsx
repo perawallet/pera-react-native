@@ -21,7 +21,10 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
-import { useSwapSourceScope } from '@perawallet/wallet-core-swaps'
+import {
+    useSwapSourceScope,
+    useSwapsStore,
+} from '@perawallet/wallet-core-swaps'
 import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -67,6 +70,11 @@ export const useAssetActions = ({
     const { copyToClipboard } = useClipboard()
     const { showToast } = useToast()
     const swapChainId = useSwapSourceScope(account ?? null)?.chainId
+    // Moving Swap to this account resets its pair, so the route has to carry it.
+    const swapAccountId = useSwapsStore(state => state.accountId)
+    const isSwapOnAccount =
+        !account || swapAccountId === null || swapAccountId === account.id
+    const setSwapAccountId = useSwapsStore(state => state.setAccountId)
 
     const openReceiveFunds = useCallback(() => {
         trackEvent(AssetDetailsEvent.Receive, {
@@ -112,11 +120,23 @@ export const useAssetActions = ({
         const params = isAlgo
             ? { assetIn }
             : { assetIn, assetOut: { chainId, assetId: asset.assetId } }
+        if (account) setSwapAccountId(account.id)
         navigation.replace('TabBar', {
             screen: 'Swap',
-            params: isAlgo && swapChainId === chainId ? undefined : params,
+            params:
+                isAlgo && isSwapOnAccount && swapChainId === chainId
+                    ? undefined
+                    : params,
         })
-    }, [asset.assetId, chainId, navigation, swapChainId])
+    }, [
+        asset.assetId,
+        chainId,
+        navigation,
+        swapChainId,
+        account,
+        isSwapOnAccount,
+        setSwapAccountId,
+    ])
 
     const handleBuy = useCallback(() => {
         navigation.replace('TabBar', {

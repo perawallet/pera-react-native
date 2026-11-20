@@ -141,8 +141,11 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
     const { SwapQuoteMismatchError } = await vi.importActual<
         typeof import('@packages/swaps/src/errors')
     >('@packages/swaps/src/errors')
+    const swapsState = { accountId: null, setAccountId: vi.fn() }
     return {
         useSwaps: vi.fn(),
+        useSwapAccount: vi.fn(() => null),
+        useSwapAccountFollowsSelection: vi.fn(),
         isSwappableAsset: vi.fn(() => true),
         swapQuoteFailureOf,
         isSwapQuoteGoneError,
@@ -193,7 +196,10 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
         ),
         // Specs that load the real chain packages register their adapters here.
         swapChainAdapters: { register: vi.fn(), has: vi.fn(() => false) },
-        useSwapsStore: vi.fn(),
+        useSwapsStore: vi.fn(
+            (selector?: (state: typeof swapsState) => unknown) =>
+                selector ? selector(swapsState) : swapsState,
+        ),
         useSwapTrackedOrders: vi.fn(() => []),
         useOpenSwapOrders: vi.fn(() => []),
         useSwapTrackingStore: vi.fn(),

@@ -53,11 +53,11 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
     useSwapsStore: (select: (store: unknown) => unknown) =>
         select({ setAccountPair: mockSetAccountPair }),
     useRecentSwapPairsQuery: () => state.recent,
+    useSwapAccount: () => state.selected,
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     addressOn: (account: Account) => account.chains.algorand?.address,
-    useSelectedAccount: () => state.selected,
     useSelectedAccountId: () => ({
         setSelectedAccountId: mockSetSelectedAccountId,
     }),
@@ -121,7 +121,7 @@ describe('useSwapPairHistoryWidget', () => {
         })
     })
 
-    it('restores the pair and switches to the account that paid for it', () => {
+    it('restores the pair on the account that paid for it, leaving the selected account', () => {
         const { result } = renderHook(() => useSwapPairHistoryWidget(SCOPE))
 
         act(() => result.current.handlePairPress(pairPaidBy('other')))
@@ -132,23 +132,14 @@ describe('useSwapPairHistoryWidget', () => {
             fromAsset: '0',
             toAsset: '31566704',
         })
-        expect(mockSetSelectedAccountId).toHaveBeenCalledWith('other')
+        expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
         expect(mockTrackEvent).toHaveBeenCalledWith(SwapEvent.SelectHistory, {
             [AnalyticsMetadataKey.ChainId]: 'algorand',
             [AnalyticsMetadataKey.SwapPairing]: 'ALGO/USDC',
         })
     })
 
-    it('keeps the selected account when it paid for the pair', () => {
-        const { result } = renderHook(() => useSwapPairHistoryWidget(SCOPE))
-
-        act(() => result.current.handlePairPress(pairPaidBy('main')))
-
-        expect(mockSetAccountPair).toHaveBeenCalled()
-        expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
-    })
-
-    it('opens the full history sheet for the selected account on see all', () => {
+    it('opens the full history sheet for the swap account on see all', () => {
         const { result } = renderHook(() => useSwapPairHistoryWidget(SCOPE))
 
         act(() => result.current.handleSeeAllPress())

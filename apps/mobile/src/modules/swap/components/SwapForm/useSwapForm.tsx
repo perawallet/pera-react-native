@@ -18,8 +18,6 @@ import {
     addressOn,
     ownAddressOf,
     useAccountBalancesInvalidator,
-    useSelectedAccount,
-    useSelectedAccountId,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -35,6 +33,7 @@ import {
     peraFeeInSourceAsset,
     pickBestByAmountOut,
     swapAdapterFor,
+    useSwapAccount,
     useSwaps,
     type SwapQuote,
     type SwapQuoteFailure,
@@ -78,7 +77,7 @@ import {
 import { useSwapMinimum } from './useSwapMinimum'
 
 type UseSwapFormResult = {
-    selectedAccount: Nullable<WalletAccount>
+    swapAccount: Nullable<WalletAccount>
     payAssetId: string
     receiveAssetId: string
     /** Where the receive asset lives: the swap scope, or another chain's. */
@@ -152,10 +151,9 @@ export const useSwapForm = (
     const [selectedProviderName, setSelectedProviderName] =
         useState<Nullable<string>>(null)
     const { request: requestBottomSheet } = useBottomSheet()
-    const selectedAccount = useSelectedAccount()
-    const { setSelectedAccountId } = useSelectedAccountId()
-    const selectedAddress = selectedAccount
-        ? addressOn(selectedAccount, scope)
+    const swapAccount = useSwapAccount()
+    const selectedAddress = swapAccount
+        ? addressOn(swapAccount, scope)
         : undefined
     const nativeAssetId = nativeAssetFor(scope.chainId).assetId
     // Only a MAX or percentage fill follows the balance and the quote's fee; a
@@ -175,12 +173,8 @@ export const useSwapForm = (
         data: payAssetBalance,
         isFetched: isPayBalanceFetched,
         isError: isPayBalanceError,
-    } = useAccountAssetBalanceQuery(
-        selectedAccount ?? undefined,
-        fromAsset,
-        scope,
-    )
-    const sourceChainIds = useSwapSourceChains(selectedAccount)
+    } = useAccountAssetBalanceQuery(swapAccount ?? undefined, fromAsset, scope)
+    const sourceChainIds = useSwapSourceChains(swapAccount)
     const {
         receiveScope,
         isCrossChain,
@@ -202,9 +196,9 @@ export const useSwapForm = (
     const swapAdapter = swapAdapterFor(scope)
     const { data: spendable, isPending: isSpendablePending } =
         useSpendableBalanceQuery(
-            selectedAccount
+            swapAccount
                 ? {
-                      account: selectedAccount,
+                      account: swapAccount,
                       asset: { chainId: scope.chainId, assetId: fromAsset },
                       scope,
                       fee:
@@ -296,10 +290,10 @@ export const useSwapForm = (
         previousAddressRef.current = address
         resetAmounts()
         // A pick that also chose the account made the pair for it.
-        if (selectedAccount?.id !== pairAccountId) resetAssetPair()
+        if (swapAccount?.id !== pairAccountId) resetAssetPair()
     }, [
         selectedAddress,
-        selectedAccount?.id,
+        swapAccount?.id,
         pairAccountId,
         resetAmounts,
         resetAssetPair,
@@ -590,7 +584,7 @@ export const useSwapForm = (
         (selection: SwapAssetSelection) => {
             if (
                 selection.accountId &&
-                selection.accountId !== selectedAccount?.id
+                selection.accountId !== swapAccount?.id
             ) {
                 // The receive side survives an account switch on the same
                 // network, as it does a new pay asset on the same account.
@@ -605,7 +599,6 @@ export const useSwapForm = (
                         toAssetScope: isCrossChain ? receiveScope : null,
                     }),
                 })
-                setSelectedAccountId(selection.accountId)
                 return
             }
             if (toScopeKey(selection.scope) !== toScopeKey(scope)) {
@@ -626,9 +619,8 @@ export const useSwapForm = (
             toAsset,
             isCrossChain,
             receiveScope,
-            selectedAccount?.id,
+            swapAccount?.id,
             setAccountPair,
-            setSelectedAccountId,
             setSourceAsset,
             fromAsset,
             setFromAsset,
@@ -929,7 +921,7 @@ export const useSwapForm = (
     ])
 
     return {
-        selectedAccount: selectedAccount ?? null,
+        swapAccount: swapAccount ?? null,
         payAssetId: fromAsset,
         receiveAssetId: toAsset,
         receiveScope,

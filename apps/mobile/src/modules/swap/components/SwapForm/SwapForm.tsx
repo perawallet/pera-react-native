@@ -13,6 +13,7 @@
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { PWButton, PWScrollView, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { SwapAccountPill } from '../SwapAccountPill'
 import { SwapAmountSection } from '../SwapAmountSection'
 import { SwapPairHistoryWidget } from '../SwapPairHistoryWidget'
 import { SwapProviderRow } from '../SwapProviderRow'
@@ -33,6 +34,7 @@ export const SwapForm = ({ scope, initialPayAmount }: SwapFormProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
     const {
+        swapAccount,
         payAssetId,
         receiveAssetId,
         receiveScope,
@@ -72,6 +74,8 @@ export const SwapForm = ({ scope, initialPayAmount }: SwapFormProps) => {
     return (
         <PWScrollView contentContainerStyle={styles.formContainer}>
             <SwapTrackedOrders />
+
+            {swapAccount && <SwapAccountPill account={swapAccount} />}
 
             <PWView style={styles.amountSections}>
                 <SwapAmountSection

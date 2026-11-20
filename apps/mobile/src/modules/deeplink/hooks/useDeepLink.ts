@@ -50,7 +50,10 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { AssetRef, ChainId } from '@perawallet/wallet-core-chain-contract'
-import { useSwapChainResolver } from '@perawallet/wallet-core-swaps'
+import {
+    useSwapChainResolver,
+    useSwapsStore,
+} from '@perawallet/wallet-core-swaps'
 import {
     isRegisteredBottomSheetOpen,
     useBottomSheetStore,
@@ -148,6 +151,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
         if (account) setSelectedAccountId(account.id)
     }
     const swapChainOf = useSwapChainResolver()
+    const setSwapAccountId = useSwapsStore(state => state.setAccountId)
     // Fund's provider redirects back with the address it delivered to, on
     // whichever chain the purchase was for.
     const selectAccountByAnyChainAddress = (address: string) => {
@@ -741,6 +745,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         return
                     }
                     setSelectedAccountId(target.id)
+                    setSwapAccountId(target.id)
                     navigateToScreen(replaceCurrentScreen, 'TabBar', {
                         screen: 'Swap',
                         params: {

@@ -26,6 +26,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { isChainId } from '@perawallet/wallet-core-chain-contract'
+import { useSwapsStore } from '@perawallet/wallet-core-swaps'
 import { useSendFundsDeeplink } from '@modules/deeplink'
 import { useCapability } from '@hooks/useCapability'
 import { useToast } from '@hooks/useToast'
@@ -96,6 +97,7 @@ export const useTabResume = (
 ): (() => void) => {
     const accounts = useAllAccounts()
     const { setSelectedAccountId } = useSelectedAccountId()
+    const setSwapAccountId = useSwapsStore(state => state.setAccountId)
     const openSendFunds = useSendFundsDeeplink()
     const canSwap = useCapability({ platform: 'swapTab', anyChain: 'swap' })
     const swapChainOptionsOf = useAccountChainOptionsResolver('swap', {
@@ -156,6 +158,7 @@ export const useTabResume = (
             setSelectedAccountId(account.id)
 
             if (intent.flow === 'swap') {
+                setSwapAccountId(account.id)
                 navigate('TabBar', {
                     screen: 'Swap',
                     params: {
@@ -191,6 +194,7 @@ export const useTabResume = (
     }, [
         accounts,
         setSelectedAccountId,
+        setSwapAccountId,
         navigate,
         openSendFunds,
         canSwap,

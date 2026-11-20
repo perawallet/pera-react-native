@@ -27,7 +27,7 @@ import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { trackEvent, CardEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
-import { useSwapScope } from '@perawallet/wallet-core-swaps'
+import { useSwapScope, useSwapsStore } from '@perawallet/wallet-core-swaps'
 import { useCanFundAccount } from '@modules/onramp'
 import { useCardScope } from '../../hooks/useCardScope'
 import { CARD_WALLET_PRESENTATION } from '../../utils/cardWalletPresentation'
@@ -155,6 +155,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     const balance = cardBalance.plus(linkedBalance)
 
     const { setSelectedAccountId } = useSelectedAccountId()
+    const setSwapAccountId = useSwapsStore(state => state.setAccountId)
     const { pending: pendingWithdrawal, isReady: isWithdrawReady } =
         useCardWithdraw()
     const withdrawStateOf = (): CardWithdrawState => {
@@ -179,10 +180,12 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     const onFundLinkedAccount = useCallback(() => {
         if (fundingAccount === null || !canFundLinkedAccount) return
         trackEvent(CardEvent.HomeGetUsdc)
-        // Both tabs work on the selected account, so make it the linked one
-        // first or the USDC lands wherever the user last was.
+        // Fund works on the selected account and Swap on its own, so point both
+        // at the linked one, Home first, or the USDC lands wherever the user
+        // last was.
         setSelectedAccountId(fundingAccount.id)
         if (canSwapToUsdc) {
+            setSwapAccountId(fundingAccount.id)
             navigation.navigate('TabBar', {
                 screen: 'Swap',
                 params: {
@@ -212,6 +215,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         scope.chainId,
         usdcAssetId,
         setSelectedAccountId,
+        setSwapAccountId,
         navigation,
     ])
 

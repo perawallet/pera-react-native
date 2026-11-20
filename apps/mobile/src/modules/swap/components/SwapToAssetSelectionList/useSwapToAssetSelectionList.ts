@@ -15,7 +15,6 @@ import { Decimal } from 'decimal.js'
 import { useQueryClient } from '@tanstack/react-query'
 import {
     useAccountHoldingsAcrossChainsQuery,
-    useSelectedAccount,
     type AssetWithAccountBalance,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -32,6 +31,7 @@ import {
     scopeOfSwapAsset,
     useSwapPairsInfiniteQuery,
     type SwapAsset,
+    useSwapAccount,
 } from '@perawallet/wallet-core-swaps'
 import {
     useDebouncedValue,
@@ -111,8 +111,8 @@ export const useSwapToAssetSelectionList = ({
                 : null,
         [fromAssetId, scope.chainId, scope.networkId],
     )
-    const selectedAccount = useSelectedAccount()
-    const destinationScopes = useSwapDestinationScopes(selectedAccount, scope)
+    const swapAccount = useSwapAccount()
+    const destinationScopes = useSwapDestinationScopes(swapAccount, scope)
     const destinationChainIds = useMemo(
         () => destinationScopes.map(({ chainId }) => chainId),
         [destinationScopes],
@@ -157,8 +157,7 @@ export const useSwapToAssetSelectionList = ({
         if (hasNextPage) fetchNextPage()
     }, [hasNextPage, fetchNextPage])
 
-    const { assetBalances } =
-        useAccountHoldingsAcrossChainsQuery(selectedAccount)
+    const { assetBalances } = useAccountHoldingsAcrossChainsQuery(swapAccount)
 
     const balanceMap = useMemo(
         (): Map<string, Decimal> =>

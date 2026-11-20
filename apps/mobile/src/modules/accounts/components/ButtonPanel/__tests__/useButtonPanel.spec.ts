@@ -28,6 +28,9 @@ import { useButtonPanel } from '../useButtonPanel'
 const overview = vi.hoisted(() => ({ account: null as unknown }))
 const mockTrackEvent = vi.hoisted(() => vi.fn())
 const mockReplace = vi.hoisted(() => vi.fn())
+const mockSetSwapAccountId = vi.hoisted(() => vi.fn())
+// Unset, Swap is on the account the panel shows.
+const swap = vi.hoisted(() => ({ accountId: null as string | null }))
 
 vi.mock('@analytics', async () => ({
     ...(await vi.importActual<object>('@analytics')),
@@ -63,6 +66,16 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
         // The swap store's chosen chain, unset here, falls back to the default.
         useSwapSourceScope: (account: WalletAccount | null) =>
             useAccountCapabilityScope(account, 'swap'),
+        useSwapsStore: (
+            select: (state: {
+                accountId: string | null
+                setAccountId: typeof mockSetSwapAccountId
+            }) => unknown,
+        ) =>
+            select({
+                accountId: swap.accountId,
+                setAccountId: mockSetSwapAccountId,
+            }),
     }
 })
 
@@ -96,6 +109,7 @@ describe('useButtonPanel', () => {
             actualAccounts.useAccountChainOptionsResolver,
         )
         overview.account = onAlgorand
+        swap.accountId = null
         useAssetListViewStore.getState().setSelectedChainId(null)
     })
 
@@ -152,6 +166,16 @@ describe('useButtonPanel', () => {
             [AnalyticsMetadataKey.ChainId]: 'algorand',
         })
         expect(mockReplace).toHaveBeenCalledWith('TabBar', { screen: 'Swap' })
+    })
+
+    it('opens Swap on the account the panel shows', () => {
+        const { result } = renderHook(() => useButtonPanel())
+
+        act(() => {
+            result.current.handleSwap()
+        })
+
+        expect(mockSetSwapAccountId).toHaveBeenCalledWith('algo')
     })
 
     it('offers send and receive while another chain the account holds serves them', () => {
@@ -244,6 +268,33 @@ describe('useButtonPanel', () => {
         expect(mockReplace).toHaveBeenCalledWith('TabBar', {
             screen: 'Swap',
             params: undefined,
+        })
+    })
+
+    // Moving Swap onto this account resets its pair, so the chip's chain has to travel with it.
+    it('passes the chip network when Swap is on another account', () => {
+        registerEthereumChain()
+        overview.account = {
+            ...onAlgorand,
+            chains: { ...onAlgorand.chains, ...onEthereumOnly.chains },
+        }
+        swap.accountId = onEthereumOnly.id
+        useAssetListViewStore.getState().setSelectedChainId('algorand')
+
+        const { result } = renderHook(() => useButtonPanel())
+
+        act(() => {
+            result.current.handleSwap()
+        })
+
+        expect(mockReplace).toHaveBeenCalledWith('TabBar', {
+            screen: 'Swap',
+            params: {
+                assetIn: {
+                    chainId: 'algorand',
+                    assetId: expect.any(String),
+                },
+            },
         })
     })
 })

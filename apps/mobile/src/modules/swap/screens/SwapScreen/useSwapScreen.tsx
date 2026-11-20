@@ -14,26 +14,17 @@ import { useCallback, useEffect, useMemo, useRef } from 'react'
 import {
     type NavigationProp,
     type RouteProp,
-    useIsFocused,
     useNavigation,
     useRoute,
 } from '@react-navigation/native'
 import { Decimal } from 'decimal.js'
 import {
-    useSwapSigningAccounts,
+    useSwapAccount,
     useSwapSourceScope,
     useSwapsStore,
 } from '@perawallet/wallet-core-swaps'
-import {
-    useSelectedAccount,
-    useSelectedAccountId,
-} from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
-import {
-    useAccountListPicker,
-    type AccountDrawerPickerProps,
-} from '@modules/accounts'
 import type { SwapScreenParams } from '@modules/swap/routes/types'
 import { useSeedSwapRouteAssets } from './useSeedSwapRouteAssets'
 import { useWebView } from '@modules/webview'
@@ -51,7 +42,6 @@ export type UseSwapScreenResult = {
     /** Null when the selected account is on no chain that has swap. */
     scope: Nullable<ChainScope>
     initialPayAmount: Optional<SwapFormInitialPayAmount>
-    accountPicker: AccountDrawerPickerProps
     handleInfoPress: () => void
 }
 
@@ -68,17 +58,14 @@ export const useSwapScreen = (): UseSwapScreenResult => {
     const sourceChainId = useSwapsStore(state => state.sourceChainId)
     const setSourceChainId = useSwapsStore(state => state.setSourceChainId)
     const pairAccountId = useSwapsStore(state => state.pairAccountId)
-    const selectedAccount = useSelectedAccount()
-    const scope = useSwapSourceScope(selectedAccount)
-    const signingAccounts = useSwapSigningAccounts()
-    const accountPicker = useAccountListPicker(signingAccounts)
-    const { setSelectedAccountId } = useSelectedAccountId()
+    const account = useSwapAccount()
+    const scope = useSwapSourceScope(account)
 
     // A chain change the store didn't make, such as an account switch, keeps the
     // old chain's pair: the form remounts while focused, past both of its resets.
     // A pair picked together with its account is the exception: it is for the new one.
     const swapChainId = scope?.chainId
-    const selectedAccountId = selectedAccount?.id
+    const accountId = account?.id
     const previousChainsRef = useRef({ swapChainId, sourceChainId })
     useEffect(() => {
         const previous = previousChainsRef.current
@@ -88,17 +75,11 @@ export const useSwapScreen = (): UseSwapScreenResult => {
             swapChainId &&
             previous.swapChainId !== swapChainId &&
             previous.sourceChainId === sourceChainId &&
-            pairAccountId !== selectedAccountId
+            pairAccountId !== accountId
         ) {
             setSourceChainId(sourceChainId)
         }
-    }, [
-        swapChainId,
-        sourceChainId,
-        setSourceChainId,
-        pairAccountId,
-        selectedAccountId,
-    ])
+    }, [swapChainId, sourceChainId, setSourceChainId, pairAccountId, accountId])
 
     // Before the seeding effects: a chain change clears the pair they write.
     const routeSourceChainId = route.params?.assetIn?.chainId
@@ -149,20 +130,6 @@ export const useSwapScreen = (): UseSwapScreenResult => {
         assetOutScope: routeReceive?.scope,
         scope: routeScope,
     })
-
-    // The tab stays mounted once opened, and the selection is app-wide: switching
-    // while another screen is in front would undo an account picked there.
-    const isFocused = useIsFocused()
-    useEffect(() => {
-        if (
-            isFocused &&
-            selectedAccount &&
-            !signingAccounts.some(a => a.id === selectedAccount.id) &&
-            signingAccounts.length > 0
-        ) {
-            setSelectedAccountId(signingAccounts[0].id)
-        }
-    }, [isFocused, selectedAccount, signingAccounts, setSelectedAccountId])
 
     useEffect(() => {
         if (!assetInId) return
@@ -225,5 +192,5 @@ export const useSwapScreen = (): UseSwapScreenResult => {
         pushWebView({ url: config.swapSupportUrl })
     }, [pushWebView])
 
-    return { scope, initialPayAmount, accountPicker, handleInfoPress }
+    return { scope, initialPayAmount, handleInfoPress }
 }

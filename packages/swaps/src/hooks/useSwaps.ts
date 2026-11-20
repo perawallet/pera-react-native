@@ -38,7 +38,7 @@ type UseSwapsResult = {
     ) => Nullable<Decimal>
     setSlippage: (slippage: Nullable<string>) => void
     setIsLocalCurrencyInput: (value: boolean) => void
-    /** Restores the default pay/receive pair, keeping the user's settings. */
+    /** Restores the default pay/receive pair, keeping the account and the user's settings. */
     resetAssetPair: () => void
 }
 
@@ -68,7 +68,7 @@ export const useSwaps = (scope: ChainScope): UseSwapsResult => {
     const setIsLocalCurrencyInput = useSwapsStore(
         state => state.setIsLocalCurrencyInput,
     )
-    const resetAssetPair = useSwapsStore(state => state.resetState)
+    const resetAssetPair = useSwapsStore(state => state.resetAssetPair)
 
     return {
         fromAsset,

@@ -19,7 +19,6 @@ import {
     isMultisigAccount,
     useAccountsStore,
     useAddIncomingTokenMutation,
-    useSelectedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { deploymentOf } from '@perawallet/wallet-core-config'
@@ -37,7 +36,7 @@ import type { SwapAsset, SwapQuote, SwapTrackedOrder } from '../models'
 import { useSwapHandoffStore, useSwapTrackingStore } from '../store'
 import { useCreateSwapOrderMutation } from './useCreateSwapOrderMutation'
 import { useReportSwapOrderMutation } from './useReportSwapOrderMutation'
-import { useSwapSourceScope } from './useSwapScope'
+import { useSwapAccount, useSwapSourceScope } from './useSwapScope'
 
 export type ExecuteSwapVariables = Omit<ExecuteSwapParams, 'account' | 'signer'>
 
@@ -74,10 +73,10 @@ export type UseExecuteSwapMutationResult = {
     reset: () => void
 }
 
-/** Runs on the selected account's swap scope, so the scope and the signer can't disagree. */
+/** Runs on the swap account's scope, so the scope and the signer can't disagree. */
 export const useExecuteSwapMutation = (): UseExecuteSwapMutationResult => {
     const { addSignRequest } = useSigningRequest()
-    const account = useSelectedAccount()
+    const account = useSwapAccount()
     const scope = useSwapSourceScope(account)
     const deviceIdOf = useDeviceIdLookup()
     const registerHandoff = useSwapHandoffStore(s => s.registerHandoff)

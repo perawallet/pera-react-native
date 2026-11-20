@@ -15,7 +15,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
     canSignWith,
     useAllAccounts,
-    useSelectedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type {
@@ -23,7 +22,7 @@ import type {
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { useSwapsStore } from '@perawallet/wallet-core-swaps'
+import { useSwapAccount, useSwapsStore } from '@perawallet/wallet-core-swaps'
 import { useSwapReceiveTarget } from '../useSwapReceiveTarget'
 
 const ALGO_SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
@@ -64,7 +63,7 @@ describe('useSwapReceiveTarget', () => {
         vi.mocked(useSwapsStore).mockImplementation(((
             selector: (state: typeof store) => unknown,
         ) => selector(store)) as never)
-        vi.mocked(useSelectedAccount).mockReturnValue(SELECTED)
+        vi.mocked(useSwapAccount).mockReturnValue(SELECTED)
         vi.mocked(useAllAccounts).mockReturnValue([SELECTED, OTHER, ALGO_ONLY])
         vi.mocked(canSignWith).mockImplementation(
             (candidate: WalletAccount, _accounts, chainId: ChainId) =>
@@ -94,7 +93,7 @@ describe('useSwapReceiveTarget', () => {
 
     it('falls back when the stored account can no longer receive there', () => {
         store.receivingAccountId = 'removed'
-        vi.mocked(useSelectedAccount).mockReturnValue(ALGO_ONLY)
+        vi.mocked(useSwapAccount).mockReturnValue(ALGO_ONLY)
 
         const { result } = renderHook(() => useSwapReceiveTarget(ALGO_SCOPE))
 

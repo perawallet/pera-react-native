@@ -11,11 +11,11 @@
  */
 
 import { useMemo } from 'react'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import {
     isSwapOrderSettled,
     useSwapTrackedOrders,
     useSwapTrackingStore,
+    useSwapAccount,
 } from '@perawallet/wallet-core-swaps'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSwapAccountAddresses } from '../../hooks/useSwapAccountAddresses'
@@ -37,7 +37,7 @@ type UseSwapTrackedOrdersListResult = {
 
 export const useSwapTrackedOrdersList = (): UseSwapTrackedOrdersListResult => {
     const { t } = useLanguage()
-    const accountAddresses = useSwapAccountAddresses(useSelectedAccount())
+    const accountAddresses = useSwapAccountAddresses(useSwapAccount())
     const sourceAddresses = useMemo(
         () => accountAddresses.map(entry => entry.address),
         [accountAddresses],

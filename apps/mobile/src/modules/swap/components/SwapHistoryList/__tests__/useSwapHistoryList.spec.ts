@@ -41,6 +41,7 @@ const {
 vi.mock('@perawallet/wallet-core-swaps', () => ({
     swapExplorerUrlFor: mockExplorerUrlFor,
     useSwapHistoryInfiniteQuery: mockHistory,
+    useSwapAccount: () => null,
 }))
 
 vi.mock('../../../hooks/useSwapAccountAddresses', () => ({
