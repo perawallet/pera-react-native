@@ -15,11 +15,15 @@
 // direct coverage.
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createChromeFake, type ChromeFake } from '../../test-utils/chrome'
+import { deriveKvAuthKey } from '../kv-auth-key'
 import {
+    SESSION_KV_AUTH_KEY,
     SESSION_MASTER_KEY,
     clearSessionMasterKey,
+    getSessionKvAuthKey,
     getSessionMasterKey,
     isSessionUnlocked,
+    onKvAuthKeyChanged,
     putSessionMasterKey,
     requireSessionMasterKey,
 } from '../session'
@@ -148,6 +152,47 @@ describe('session master key', () => {
             await session.putSessionMasterKey(KEY)
 
             expect(await session.getSessionMasterKey()).toEqual(KEY)
+        })
+    })
+
+    describe('KV auth key', () => {
+        it('stores a key derived from the master key, never the master key itself', async () => {
+            await putSessionMasterKey(KEY)
+
+            const derived = await getSessionKvAuthKey()
+
+            expect(derived).toEqual(deriveKvAuthKey(KEY))
+            expect(derived).not.toEqual(KEY)
+            expect(deriveKvAuthKey(KEY)).toEqual(deriveKvAuthKey(KEY))
+        })
+
+        it('is removed with the master key and reads as absent', async () => {
+            await putSessionMasterKey(KEY)
+
+            await clearSessionMasterKey()
+
+            expect(fake.sessionData.has(SESSION_KV_AUTH_KEY)).toBe(false)
+            expect(await getSessionKvAuthKey()).toBeNull()
+        })
+
+        it('treats a malformed entry as absent', async () => {
+            fake.sessionData.set(SESSION_KV_AUTH_KEY, 'ab')
+
+            expect(await getSessionKvAuthKey()).toBeNull()
+        })
+
+        it('notifies listeners with the key on unlock and null on lock', async () => {
+            const listener = vi.fn()
+            const unsubscribe = onKvAuthKeyChanged(listener)
+
+            await putSessionMasterKey(KEY)
+            await clearSessionMasterKey()
+            unsubscribe()
+            await putSessionMasterKey(KEY)
+
+            expect(listener).toHaveBeenCalledTimes(2)
+            expect(listener).toHaveBeenNthCalledWith(1, deriveKvAuthKey(KEY))
+            expect(listener).toHaveBeenNthCalledWith(2, null)
         })
     })
 })

@@ -29,7 +29,14 @@ import {
 } from '../storage-keys'
 import { deriveArgon2id, type Argon2Params } from './argon2'
 import { armAutoLock, disarmAutoLock } from './autolock'
+import {
+    isMigrationClosed,
+    readOtherBlobState,
+    runLegacyRecordMigration,
+    type UnlockOptions,
+} from './kv-auth-key'
 import { runThrottledAttempt } from './lockout'
+import { createMarkedSalt, isMarkedSalt } from './marked-salt'
 import { clearPasswordAuth, stampPasswordAuth } from './password-auth'
 import {
     clearSessionMasterKey,
@@ -229,11 +236,16 @@ const readWrappedMasterKey = async (): Promise<WrappedMasterKey> => {
     return parsed
 }
 
+// An unmarked blob stays unmarked until its records are sealed: marking it
+// first would close the migration window with the records still unsealed.
 const writeWrappedMasterKey = async (
     password: string,
     masterKey: Uint8Array,
+    { isMarked = true }: { isMarked?: boolean } = {},
 ): Promise<void> => {
-    const salt = crypto.getRandomValues(new Uint8Array(16))
+    const salt = isMarked
+        ? createMarkedSalt()
+        : crypto.getRandomValues(new Uint8Array(16))
     const iv = crypto.getRandomValues(new Uint8Array(12))
     // Always v2 at the current cost: older blobs are read-only, re-wrapped on
     // the next successful unlock (see rewrapIfWeaker).
@@ -276,13 +288,20 @@ const writeWrappedMasterKey = async (
  *
  * On success the caller owns the returned key and MUST zero it.
  */
-const unwrapMasterKeyThrottled = (password: string): Promise<Uint8Array> =>
+const unwrapMasterKeyThrottledDetailed = (
+    password: string,
+): Promise<UnwrappedMasterKey> =>
     // Only a genuine wrong password counts — VaultCorruptedError must not burn
     // attempts, or a corrupt blob would lock the user out for good.
     runThrottledAttempt(
         () => unwrapMasterKey(password),
         error => error instanceof InvalidPasswordError,
     )
+
+const unwrapMasterKeyThrottled = async (
+    password: string,
+): Promise<Uint8Array> =>
+    (await unwrapMasterKeyThrottledDetailed(password)).masterKey
 
 // Exported for use by passkey.ts to verify the password and obtain the master
 // key when enabling passkey unlock. Not part of the public package API.
@@ -317,7 +336,15 @@ export const verifyVaultPassword = async (
     return true
 }
 
-const unwrapMasterKey = async (password: string): Promise<Uint8Array> => {
+type UnwrappedMasterKey = {
+    masterKey: Uint8Array
+    /** Whether the blob that opened carries the migration mark in its salt. */
+    isMarked: boolean
+}
+
+const unwrapMasterKey = async (
+    password: string,
+): Promise<UnwrappedMasterKey> => {
     const blob = await readWrappedMasterKey()
 
     // Decode outside the GCM try/catch — decode failures are corruption, not wrong password.
@@ -340,13 +367,16 @@ const unwrapMasterKey = async (password: string): Promise<Uint8Array> => {
 
     const kek = await deriveKekForBlob(password, blob, saltBytes)
     try {
-        return new Uint8Array(
-            await crypto.subtle.decrypt(
-                { name: 'AES-GCM', iv: ivBytes as BufferSource },
-                kek,
-                ciphertextBytes as BufferSource,
+        return {
+            masterKey: new Uint8Array(
+                await crypto.subtle.decrypt(
+                    { name: 'AES-GCM', iv: ivBytes as BufferSource },
+                    kek,
+                    ciphertextBytes as BufferSource,
+                ),
             ),
-        )
+            isMarked: isMarkedSalt(saltBytes),
+        }
     } catch {
         // AES-GCM auth failure — the only way to distinguish a wrong password.
         throw new InvalidPasswordError('Invalid password.')
@@ -391,27 +421,44 @@ export const createVault = async (password: string): Promise<void> => {
 const rewrapIfWeaker = async (
     password: string,
     masterKey: Uint8Array,
+    { isMarked, shouldMark }: { isMarked: boolean; shouldMark: boolean },
 ): Promise<void> => {
     try {
         const blob = await readWrappedMasterKey()
-        const isCurrent =
+        const isCurrentCost =
             blob.version === 2 &&
             blob.m >= ARGON2_MEMORY_KIB &&
             blob.t >= ARGON2_ITERATIONS
-        if (isCurrent) return
-        await writeWrappedMasterKey(password, masterKey)
+        if (isCurrentCost && shouldMark === isMarked) return
+        await writeWrappedMasterKey(password, masterKey, {
+            isMarked: shouldMark,
+        })
     } catch {
         // Intentionally swallowed — see the doc comment.
     }
 }
 
-export const unlockVault = async (password: string): Promise<void> => {
-    const masterKey = await unwrapMasterKeyThrottled(password)
+export const unlockVault = async (
+    password: string,
+    options?: UnlockOptions,
+): Promise<void> => {
+    const { masterKey, isMarked } =
+        await unwrapMasterKeyThrottledDetailed(password)
     try {
+        // Before the session key lands, so contexts reacting to the unlock
+        // already find sealed records.
+        const other = await readOtherBlobState('password')
+        const hasMigrated =
+            isMarked || isMigrationClosed(other)
+                ? false
+                : await runLegacyRecordMigration(masterKey, options)
         await putSessionMasterKey(masterKey)
         await armAutoLock()
         await stampPasswordAuth()
-        await rewrapIfWeaker(password, masterKey)
+        await rewrapIfWeaker(password, masterKey, {
+            isMarked,
+            shouldMark: isMarked || hasMigrated || other === 'marked',
+        })
     } finally {
         masterKey.fill(0)
     }
@@ -465,4 +512,5 @@ export const changePassword = async (
     }
 }
 
+export type { UnlockOptions } from './kv-auth-key'
 export { onLockStateChanged } from './session'

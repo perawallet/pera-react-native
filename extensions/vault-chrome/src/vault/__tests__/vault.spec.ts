@@ -34,6 +34,8 @@ import {
     PASSKEY_ENABLE_REAUTH_WINDOW_MS,
 } from '../password-auth'
 import { deriveArgon2id } from '../argon2'
+import { deriveKvAuthKey } from '../kv-auth-key'
+import { isMarkedSalt } from '../marked-salt'
 import {
     InvalidPasswordError,
     VaultCorruptedError,
@@ -554,6 +556,163 @@ describe('vault', () => {
             await createVault('pw')
             fake.sessionData.set('vault:password-auth-at', Date.now() + 60_000)
             expect(await hasRecentPasswordAuth()).toBe(false)
+        })
+    })
+
+    describe('legacy record migration', () => {
+        const MASTER_KEY = new Uint8Array(32).fill(5)
+        const BLOB_KEY = 'vault:wrapped-master-key'
+
+        // Current cost, so only the missing mark distinguishes it from a
+        // blob written after this change.
+        const writeUnmarkedBlob = async (password: string): Promise<void> => {
+            const salt = new Uint8Array(16).fill(4)
+            const iv = new Uint8Array(12).fill(6)
+            const kek = await crypto.subtle.importKey(
+                'raw',
+                (await deriveArgon2id({
+                    password: new TextEncoder().encode(password),
+                    salt,
+                    m: ARGON2_MEMORY_KIB,
+                    t: ARGON2_ITERATIONS,
+                    p: ARGON2_PARALLELISM,
+                })) as BufferSource,
+                'AES-GCM',
+                false,
+                ['encrypt'],
+            )
+            const ciphertext = new Uint8Array(
+                await crypto.subtle.encrypt(
+                    { name: 'AES-GCM', iv },
+                    kek,
+                    MASTER_KEY,
+                ),
+            )
+            fake.data.set(
+                BLOB_KEY,
+                JSON.stringify({
+                    version: 2,
+                    kdf: 'Argon2id',
+                    m: ARGON2_MEMORY_KIB,
+                    t: ARGON2_ITERATIONS,
+                    p: ARGON2_PARALLELISM,
+                    salt: base64.encode(salt),
+                    iv: base64.encode(iv),
+                    ciphertext: base64.encode(ciphertext),
+                }),
+            )
+        }
+
+        const storedSalt = (): Uint8Array =>
+            base64.decode(JSON.parse(String(fake.data.get(BLOB_KEY))).salt)
+
+        it('seals before the session key is set, then marks the blob and keeps the password working', async () => {
+            await writeUnmarkedBlob('pw')
+            let sawSessionKey = true
+            let receivedKey = new Uint8Array()
+            const migrate = vi.fn(async (key: Uint8Array) => {
+                sawSessionKey = fake.sessionData.has('vault:master-key')
+                receivedKey = new Uint8Array(key)
+            })
+
+            await unlockVault('pw', { migrateLegacyRecords: migrate })
+
+            expect(migrate).toHaveBeenCalledTimes(1)
+            expect(receivedKey).toEqual(deriveKvAuthKey(MASTER_KEY))
+            expect(sawSessionKey).toBe(false)
+            expect(isMarkedSalt(storedSalt())).toBe(true)
+            await lockVault()
+            await unlockVault('pw', { migrateLegacyRecords: migrate })
+            expect(await getSessionMasterKey()).toEqual(MASTER_KEY)
+        })
+
+        it('does not migrate again once the blob is marked', async () => {
+            await writeUnmarkedBlob('pw')
+            const migrate = vi.fn(async () => {})
+            await unlockVault('pw', { migrateLegacyRecords: migrate })
+            await lockVault()
+
+            await unlockVault('pw', { migrateLegacyRecords: migrate })
+
+            expect(migrate).toHaveBeenCalledTimes(1)
+        })
+
+        it('still unlocks when the migration throws, and leaves the blob unmarked to retry', async () => {
+            await writeUnmarkedBlob('pw')
+            const migrate = vi
+                .fn<(key: Uint8Array) => Promise<void>>()
+                .mockRejectedValueOnce(new Error('quota'))
+                .mockResolvedValue(undefined)
+
+            await unlockVault('pw', { migrateLegacyRecords: migrate })
+
+            expect(await isUnlocked()).toBe(true)
+            expect(isMarkedSalt(storedSalt())).toBe(false)
+            await lockVault()
+            await unlockVault('pw', { migrateLegacyRecords: migrate })
+            expect(migrate).toHaveBeenCalledTimes(2)
+            expect(isMarkedSalt(storedSalt())).toBe(true)
+        })
+
+        it('leaves the blob unmarked when no migration is supplied', async () => {
+            await writeUnmarkedBlob('pw')
+
+            await unlockVault('pw')
+
+            expect(isMarkedSalt(storedSalt())).toBe(false)
+        })
+
+        it('does not mark a below-cost blob it re-wraps without having migrated', async () => {
+            await writeUnmarkedBlob('pw')
+            const blob = JSON.parse(String(fake.data.get(BLOB_KEY)))
+            fake.data.set(
+                BLOB_KEY,
+                JSON.stringify({ ...blob, m: 19_456, t: 2 }),
+            )
+
+            await unlockVault('pw')
+
+            const rewrapped = JSON.parse(String(fake.data.get(BLOB_KEY)))
+            expect(rewrapped.m).toBe(ARGON2_MEMORY_KIB)
+            expect(isMarkedSalt(storedSalt())).toBe(false)
+        })
+
+        it('writes a marked salt from createVault and changePassword', async () => {
+            await createVault('first')
+            expect(isMarkedSalt(storedSalt())).toBe(true)
+
+            await changePassword('first', 'second')
+
+            expect(isMarkedSalt(storedSalt())).toBe(true)
+        })
+
+        it('never migrates a vault created after this change', async () => {
+            await createVault('pw')
+            await lockVault()
+            const migrate = vi.fn(async () => {})
+
+            await unlockVault('pw', { migrateLegacyRecords: migrate })
+
+            expect(migrate).not.toHaveBeenCalled()
+        })
+
+        it('cannot be reopened by stripping the mark from the stored salt', async () => {
+            await createVault('pw')
+            await lockVault()
+            const blob = JSON.parse(String(fake.data.get(BLOB_KEY)))
+            fake.data.set(
+                BLOB_KEY,
+                JSON.stringify({
+                    ...blob,
+                    salt: base64.encode(new Uint8Array(16).fill(1)),
+                }),
+            )
+            const migrate = vi.fn(async () => {})
+
+            await expect(
+                unlockVault('pw', { migrateLegacyRecords: migrate }),
+            ).rejects.toBeInstanceOf(InvalidPasswordError)
+            expect(migrate).not.toHaveBeenCalled()
         })
     })
 })

@@ -75,6 +75,7 @@ import {
 import { queryClient } from '@providers/queryClient'
 import { startConnectionsHost } from './connections/connectionsHost'
 import { createDatabaseRecovery } from './databaseRecovery'
+import { startOffscreenKvAuth } from './kvAuth'
 import { createWorkerExecutor } from './worker-executor'
 
 const OFFSCREEN_POLL_INTERVAL_MS = 30_000
@@ -144,6 +145,12 @@ export const runOffscreenApp = async ({
     await seedNativeAssets(getDatabase())
     host.setReady()
 
+    // Created before anything reads the network store's records: they are
+    // sealed under a key that exists only while the vault is unlocked, so what
+    // the store loads, and what sync and the dApp handlers see, depends on it.
+    const lockState = createOffscreenLockState()
+    await startOffscreenKvAuth(lockState)
+
     // chrome.storage here is the SW-proxied shim (offscreen docs have none), and
     // apps/mobile compiles without chrome ambient types, so the raw onChanged
     // listener lives in browser-runtime.
@@ -177,7 +184,6 @@ export const runOffscreenApp = async ({
         getSelectedScope(chainId).networkId
     const siteWarningOf = async (origin: string): Promise<SiteWarningLevel> =>
         (await assessSiteSafety({ urls: [origin] })).kind
-    const lockState = createOffscreenLockState()
     registry.register(
         createWalletConnectV1Handler({
             chainId: ALGORAND_CHAIN_ID,

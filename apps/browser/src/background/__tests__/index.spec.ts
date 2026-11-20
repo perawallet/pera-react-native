@@ -40,6 +40,7 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
 }))
 
 vi.mock('@perawallet/wallet-extension-vault-chrome/vault/autolock', () => ({
+    getSessionKvAuthKey: vi.fn(),
     handleAutoLockAlarm: handleAutoLockAlarmMock,
     isSessionUnlocked: isSessionUnlockedMock,
     onLockStateChanged: onLockStateChangedMock,
@@ -57,6 +58,7 @@ vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
     },
     CONNECTIONS_CONTROL_SCOPE: 'pera-connections-control',
     installLockStateHost: installLockStateHostMock,
+    installKvAuthKeyHost: vi.fn(),
     // connect-modal-pair.ts (pulled in transitively via ../index) imports
     // this guard directly — omitting it here is a trap: it's only touched
     // once a test actually delivers a message through the SW's listeners,

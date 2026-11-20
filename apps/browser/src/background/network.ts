@@ -16,15 +16,20 @@ import {
     type WalletMode,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
+import { kvRecordPayload } from '@perawallet/wallet-extension-platform-chrome'
 
 // The service worker never hydrates the network zustand store, so it reads the persisted envelope
 // straight from chrome.storage.local. That value is a JSON string, not an object, because the store
 // persists through ChromeKeyValueStorageService, which stringifies the whole envelope.
+//
+// The record may be sealed (see AuthenticatedKeyValueStorage); the tag is not checked here because
+// the worker holds no key, and a forged mode only selects which backend deployment mints the
+// integrity token, never which node the wallet reads.
 export const parseActiveDeployment = (raw: Optional<string>): WalletMode => {
     if (raw === undefined) return 'live'
     let envelope: unknown
     try {
-        envelope = JSON.parse(raw)
+        envelope = JSON.parse(kvRecordPayload(raw) ?? raw)
     } catch {
         return 'live'
     }

@@ -15,6 +15,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
     unlockVault: vi.fn(),
+    sealLegacyKvRecords: vi.fn(),
     unlockWithPasskey: vi.fn(),
     isPasskeyUnlockSupported: vi.fn().mockResolvedValue(false),
     isPasskeyUnlockEnabled: vi.fn().mockResolvedValue(false),
@@ -53,6 +54,10 @@ vi.mock('@perawallet/wallet-extension-vault-chrome', () => ({
     },
 }))
 
+vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
+    sealLegacyKvRecords: mocks.sealLegacyKvRecords,
+}))
+
 import { useUnlockScreen } from '../useUnlockScreen.web'
 
 describe('useUnlockScreen', () => {
@@ -78,6 +83,20 @@ describe('useUnlockScreen', () => {
         await act(() => result.current.handleUnlock())
         expect(result.current.hasError).toBe(true)
         expect(result.current.password).toBe('')
+    })
+
+    it('hands both unlock paths the legacy record migration', async () => {
+        const { result } = renderHook(() => useUnlockScreen())
+        act(() => result.current.setPassword('correctpassword'))
+        await act(() => result.current.handleUnlock())
+        await act(() => result.current.handlePasskeyUnlock())
+
+        const expected = { migrateLegacyRecords: mocks.sealLegacyKvRecords }
+        expect(mocks.unlockVault).toHaveBeenCalledWith(
+            'correctpassword',
+            expected,
+        )
+        expect(mocks.unlockWithPasskey).toHaveBeenCalledWith(expected)
     })
 
     it('clears password without error on successful unlock', async () => {
@@ -453,7 +472,10 @@ describe('useUnlockScreen', () => {
             act(() => result.current.setPassword('correctpassword'))
             await act(() => result.current.handleUnlock())
 
-            expect(mocks.unlockVault).toHaveBeenCalledWith('correctpassword')
+            expect(mocks.unlockVault).toHaveBeenCalledWith(
+                'correctpassword',
+                expect.anything(),
+            )
             expect(result.current.password).toBe('')
 
             // Let the still-pending passkey challenge resolve so it doesn't

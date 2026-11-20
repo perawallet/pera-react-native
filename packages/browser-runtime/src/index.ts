@@ -37,6 +37,11 @@ export {
     type OffscreenLockState,
 } from './lock-state'
 export {
+    KV_AUTH_KEY_SCOPE,
+    installKvAuthKeyHost,
+    requestKvAuthKey,
+} from './kv-auth-key'
+export {
     TAB_RESUME_DONE_SCOPE,
     TAB_RESUME_RESULT_SESSION_KEY,
     TAB_RESUME_SESSION_KEY,

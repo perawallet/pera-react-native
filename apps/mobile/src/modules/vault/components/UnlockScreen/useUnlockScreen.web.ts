@@ -23,6 +23,10 @@ import {
     unlockVault,
     unlockWithPasskey,
 } from '@perawallet/wallet-extension-vault-chrome'
+import { sealLegacyKvRecords } from '@perawallet/wallet-extension-platform-chrome'
+
+// Seals network records written before they were authenticated; the vault layer allows it once per wallet.
+const UNLOCK_OPTIONS = { migrateLegacyRecords: sealLegacyKvRecords }
 
 type UseUnlockScreenResult = {
     password: string
@@ -181,7 +185,7 @@ export const useUnlockScreen = (): UseUnlockScreenResult => {
         setHasCorruptedVaultError(false)
         setHasPasskeyError(false)
         try {
-            await unlockVault(password)
+            await unlockVault(password, UNLOCK_OPTIONS)
             setPassword('')
         } catch (error) {
             if (error instanceof VaultLockedOutError) {
@@ -213,7 +217,7 @@ export const useUnlockScreen = (): UseUnlockScreenResult => {
         setHasCorruptedVaultError(false)
         setHasPasskeyError(false)
         try {
-            await unlockWithPasskey()
+            await unlockWithPasskey(UNLOCK_OPTIONS)
         } catch (error) {
             if (error instanceof VaultLockedOutError) {
                 setLockoutEndTime(

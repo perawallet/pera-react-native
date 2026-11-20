@@ -11,6 +11,7 @@
  */
 
 import {
+    getSessionKvAuthKey,
     handleAutoLockAlarm,
     isSessionUnlocked,
     onLockStateChanged,
@@ -24,6 +25,7 @@ import {
     ApprovalWindowBridge,
     CONNECTIONS_CONTROL_SCOPE,
     PasskeyRouter,
+    installKvAuthKeyHost,
     installLockStateHost,
 } from '@perawallet/wallet-core-browser-runtime'
 import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
@@ -77,6 +79,10 @@ installLockStateHost({
     isUnlocked: isSessionUnlocked,
     onLockStateChanged,
 })
+
+// Top-level for the same wake reason. Relays only the derived key, which the
+// offscreen document needs to verify its network records; never the master key.
+installKvAuthKeyHost({ readKvAuthKey: getSessionKvAuthKey })
 
 chrome.runtime.onInstalled.addListener(details => {
     logger.info('[pera] extension installed', { reason: details.reason })

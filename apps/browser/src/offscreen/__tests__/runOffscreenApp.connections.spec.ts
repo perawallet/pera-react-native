@@ -63,6 +63,7 @@ const {
     importLegacyDappPermissions,
     registerChainAdapters,
     initializeSyncService,
+    startOffscreenKvAuth,
 } = vi.hoisted(() => {
     const handleControlMessage = vi.fn()
     const registry = { register: vi.fn() }
@@ -129,10 +130,12 @@ const {
         importLegacyDappPermissions: vi.fn(async () => ({ imported: 0 })),
         registerChainAdapters: vi.fn(),
         initializeSyncService: vi.fn(),
+        startOffscreenKvAuth: vi.fn(async (_lockState: unknown) => () => {}),
     }
 })
 
 vi.mock('../connections/connectionsHost', () => ({ startConnectionsHost }))
+vi.mock('../kvAuth', () => ({ startOffscreenKvAuth }))
 
 vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
     createChromeDappTransport,
@@ -400,6 +403,15 @@ describe('runOffscreenApp connections wiring', () => {
         )
         expect(registeredAt).toBeLessThan(
             createDappConnectionHandler.mock.invocationCallOrder[0],
+        )
+    })
+
+    it('authenticates the stores against the mirrored lock state before sync starts', async () => {
+        await boot()
+
+        expect(startOffscreenKvAuth).toHaveBeenCalledWith(lockState)
+        expect(startOffscreenKvAuth.mock.invocationCallOrder[0]).toBeLessThan(
+            initializeSyncService.mock.invocationCallOrder[0] ?? Infinity,
         )
     })
 
