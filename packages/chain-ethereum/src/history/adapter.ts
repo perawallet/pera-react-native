@@ -103,6 +103,13 @@ const filterIdOf = (
     }
 }
 
+export type EvmHistoryReadOptions = {
+    isDecoding?: boolean
+    assetId?: string
+    signal?: AbortSignal
+    isSupplementary?: boolean
+}
+
 /**
  * Newest first. A page can be empty and still have `next`. Mined rows only:
  * JSON-RPC can't enumerate history, so there is no fallback.
@@ -112,9 +119,12 @@ export const getEvmTransactionHistory = async (
     address: string,
     scope: ChainScope,
     page?: PageRef,
-    isDecoding = false,
-    assetId?: string,
-    signal?: AbortSignal,
+    {
+        isDecoding = false,
+        assetId,
+        signal,
+        isSupplementary,
+    }: EvmHistoryReadOptions = {},
 ): Promise<Page<TransactionRecord>> => {
     const caip19AssetId = filterIdOf(assetId, scope, chain)
     const { items, next } = await fetchHistoryPage(
@@ -122,7 +132,7 @@ export const getEvmTransactionHistory = async (
         chain,
         address,
         page,
-        { caip19AssetId, signal },
+        { caip19AssetId, signal, isSupplementary },
     )
     const nftApprovals = await readNftApprovals(items, address, scope)
     return {
@@ -144,15 +154,12 @@ export const createEvmHistoryAdapter = (
 ): HistoryChainAdapter => ({
     chainId: chain.row.id,
     getTransactionHistory: (address, scope, page, options) =>
-        getEvmTransactionHistory(
-            chain,
-            address,
-            scope,
-            page,
-            options?.capabilities.contractDecoding ?? false,
-            options?.assetId,
-            options?.signal,
-        ),
+        getEvmTransactionHistory(chain, address, scope, page, {
+            isDecoding: options?.capabilities.contractDecoding ?? false,
+            assetId: options?.assetId,
+            signal: options?.signal,
+            isSupplementary: options?.isSupplementary,
+        }),
     getTransactionDetail: (txId, scope, record) =>
         readEvmTransactionDetail(ctx, chain, scope, txId, record.fee),
     exportCsv: params => fetchEvmHistoryCsv(chain, params),

@@ -37,6 +37,7 @@ export const RemoteConfigKeys = {
     enable_listed_address_hard_block: 'enable_listed_address_hard_block',
     account_list_first_read_wait_ms: 'account_list_first_read_wait_ms',
     history_type_filter_scan_pages: 'history_type_filter_scan_pages',
+    evm_history_page_budget: 'evm_history_page_budget',
 } as const
 
 export type RemoteConfigKey =
@@ -125,6 +126,10 @@ export const RemoteConfigDefaults: Readonly<
     // before it asks to search older. Each page costs 5–6 Etherscan calls
     // against a per-device limit of 60 per 10 minutes.
     history_type_filter_scan_pages: 4,
+    // EVM history pages the app sends per epoch-aligned 10 minutes, every
+    // caller and chain together. Keep it under the backend's per-device limit
+    // of Etherscan-bound history requests (60), with room for clock skew.
+    evm_history_page_budget: 55,
 }
 
 export interface RemoteConfigService {
