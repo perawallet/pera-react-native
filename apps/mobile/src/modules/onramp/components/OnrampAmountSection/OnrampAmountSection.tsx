@@ -16,7 +16,7 @@ import { AmountField } from '@components/AmountField'
 import { AssetSelector } from '@components/AssetSelector'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { useLanguage } from '@hooks/useLanguage'
-import { ZERO_DECIMAL, type Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { RampToken } from '@perawallet/wallet-core-onramp'
 import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
 import { buildDisplayableAssetFromRampToken } from '../buildDisplayableAssetFromRampToken'
@@ -30,7 +30,7 @@ type OnrampAmountSectionPayProps = {
     /** Raw text of the pay field, owned by the form. */
     amountText: string
     onAmountTextChange: (text: string) => void
-    /** USD per unit of the token, from the selected quote; null renders the fiat line as zero. */
+    /** USD per unit of the token, from the selected quote when available. */
     usdPrice: Nullable<Decimal>
     onAssetPress: () => void
 }
@@ -40,7 +40,7 @@ type OnrampAmountSectionReceiveProps = {
     token: Nullable<RampToken>
     /** Quoted destination amount (`destinationAmount`). */
     amount: Nullable<Decimal>
-    /** USD per unit of the token, from the selected quote; null renders the fiat line as zero. */
+    /** USD per unit of the token, from the selected quote when available. */
     usdPrice: Nullable<Decimal>
     onAssetPress: () => void
     isLoading?: boolean
@@ -64,8 +64,7 @@ export const OnrampAmountSection = (props: OnrampAmountSectionProps) => {
         hasReceiveValue,
         isReceiveLoading,
         logoUrl,
-        fiatBaseAmount,
-        shouldUseUsdFallback,
+        fiatProps,
         sourceNetworkName,
         handleTextChange,
     } = useOnrampAmountSection({
@@ -76,6 +75,8 @@ export const OnrampAmountSection = (props: OnrampAmountSectionProps) => {
         isLoading: variant === 'receive' ? props.isLoading : false,
         onAmountTextChange:
             variant === 'pay' ? props.onAmountTextChange : undefined,
+        usdPrice: props.usdPrice,
+        accountScope: scope,
     })
 
     const renderAmount = () => {
@@ -159,10 +160,7 @@ export const OnrampAmountSection = (props: OnrampAmountSectionProps) => {
             }
             fiat={
                 <PreferredAmount
-                    sourceAmount={fiatBaseAmount}
-                    sourceAssetId={token?.id ?? ''}
-                    usdPrice={props.usdPrice ?? ZERO_DECIMAL}
-                    forceFallback={shouldUseUsdFallback}
+                    {...fiatProps}
                     variant='body'
                     style={styles.fiatValue}
                     testID={`onramp-${variant}-fiat-value`}
