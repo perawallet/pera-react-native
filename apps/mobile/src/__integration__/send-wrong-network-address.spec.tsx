@@ -69,7 +69,7 @@ const ConfirmStub = () => <Text>confirm-transaction-screen</Text>
 const typeIntoSearch = (text: string) => {
     // The sticky mirror renders first; the focusable field is the last.
     const fields = screen.getAllByPlaceholderText(
-        'address_entry.search_placeholder',
+        'address_entry.search_placeholder_recipient',
     )
     fireEvent.change(fields[fields.length - 1], { target: { value: text } })
 }
@@ -104,7 +104,7 @@ describe('Flow: send to an address on the other network', () => {
         await waitFor(() =>
             expect(
                 screen.getAllByPlaceholderText(
-                    'address_entry.search_placeholder',
+                    'address_entry.search_placeholder_recipient',
                 ).length,
             ).toBeGreaterThan(0),
         )

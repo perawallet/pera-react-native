@@ -345,6 +345,7 @@
         "search_placeholder": "Dirección de cuenta, nombre NFD o nombre corto",
         "search_placeholder_evm": "Dirección 0x, nombre ENS o nombre de cuenta",
         "search_placeholder_neutral": "Dirección o nombre de cuenta",
+        "search_placeholder_recipient": "Dirección, nombre o contacto",
         "nfd_results": "NFDomains",
         "ens_results": "ENS",
         "name_resolving": "Resolviendo nombre...",

@@ -15,6 +15,7 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
     addressCodecs,
+    i18nKey,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { fixtureCodec } from '@packages/chain-contract/src/__tests__/testing'
@@ -388,7 +389,7 @@ describe('useAddressSearchView', () => {
         expect(mockFindContacts).not.toHaveBeenCalled()
     })
 
-    it('shows all contacts when value is empty and showAllContactsWhenEmpty is true', () => {
+    it('lists contacts in name order and mentions them in the send search field', () => {
         const contacts = [
             { addresses: { algorand: 'CONT123' }, name: 'Friend' },
             { addresses: { algorand: 'CONT456' }, name: 'Buddy' },
@@ -399,6 +400,9 @@ describe('useAddressSearchView', () => {
             useAddressSearchView({
                 scope: ALGORAND_SCOPE,
                 showAllContactsWhenEmpty: true,
+                searchPlaceholderKey: i18nKey(
+                    'address_entry.search_placeholder_recipient',
+                ),
             }),
         )
 
@@ -416,12 +420,26 @@ describe('useAddressSearchView', () => {
             'section_header',
         )
 
-        expect(contactItems).toHaveLength(2)
+        expect(contactItems).toMatchObject([
+            { contact: { name: 'Buddy' } },
+            { contact: { name: 'Friend' } },
+        ])
+        expect(result.current.searchPlaceholder).toBe(
+            'address_entry.search_placeholder_recipient',
+        )
         expect(headers).toEqual(
             expect.arrayContaining([
                 expect.objectContaining({ title: 'address_entry.contacts' }),
             ]),
         )
+
+        act(() => result.current.setValue('d'))
+        expect(
+            itemsOfType(result.current.matchingItems, 'contact'),
+        ).toMatchObject([
+            { contact: { name: 'Buddy' } },
+            { contact: { name: 'Friend' } },
+        ])
     })
 
     it('returns section header and foreign address item when address is valid and not in wallet', () => {

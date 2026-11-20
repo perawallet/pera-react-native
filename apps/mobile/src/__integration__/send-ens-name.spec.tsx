@@ -216,7 +216,10 @@ describe('Flow: send to an ENS name', () => {
         ])
         renderWithNavigation(SelectDestinationScreen, 'SelectDestination')
 
-        await typeName('address_entry.search_placeholder_evm', 'Alice.ETH')
+        await typeName(
+            'address_entry.search_placeholder_recipient',
+            'Alice.ETH',
+        )
 
         const row = await findResultRow('ethereum', ALICE_ETHEREUM)
         expect(screen.getByText('address_entry.ens_results')).toBeTruthy()
@@ -247,7 +250,10 @@ describe('Flow: send to an ENS name', () => {
         )
         renderWithNavigation(SelectDestinationScreen, 'SelectDestination')
 
-        await typeName('address_entry.search_placeholder_evm', 'alice.eth')
+        await typeName(
+            'address_entry.search_placeholder_recipient',
+            'alice.eth',
+        )
         fireEvent.click(await findResultRow('ethereum', ALICE_ETHEREUM))
 
         await waitFor(() =>
@@ -271,7 +277,10 @@ describe('Flow: send to an ENS name', () => {
         )
         renderWithNavigation(SelectDestinationScreen, 'SelectDestination')
 
-        await typeName('address_entry.search_placeholder_evm', 'alice.eth')
+        await typeName(
+            'address_entry.search_placeholder_recipient',
+            'alice.eth',
+        )
 
         await waitFor(() =>
             expect(
@@ -305,7 +314,7 @@ describe('Flow: send to an ENS name', () => {
         )
         renderWithNavigation(SelectDestinationScreen, 'SelectDestination')
 
-        await typeName('address_entry.search_placeholder', 'bob.algo')
+        await typeName('address_entry.search_placeholder_recipient', 'bob.algo')
 
         expect(
             await screen.findByText('address_entry.nfd_results', undefined, {

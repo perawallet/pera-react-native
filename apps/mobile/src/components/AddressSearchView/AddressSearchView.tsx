@@ -12,7 +12,10 @@
 
 import { type ReactNode } from 'react'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainScope,
+    I18nKey,
+} from '@perawallet/wallet-core-chain-contract'
 import { PWLoadingIndicator, PWView } from '@components/core'
 import { SearchableList } from '@components/SearchableList'
 import { useStyles } from './styles'
@@ -26,6 +29,8 @@ export type AddressSearchViewProps = {
     excludeAddress?: string
     /** Only accounts passing this predicate are offered. */
     accountFilter?: (account: WalletAccount) => boolean
+    /** Overrides the chain family's search hint for this picker. */
+    searchPlaceholderKey?: I18nKey
     showAllContactsWhenEmpty?: boolean
     inBottomSheet?: boolean
     showAccountBalance?: boolean
@@ -44,6 +49,7 @@ export const AddressSearchView = ({
     scope,
     excludeAddress,
     accountFilter,
+    searchPlaceholderKey,
     showAllContactsWhenEmpty,
     inBottomSheet,
     showAccountBalance = false,
@@ -67,6 +73,7 @@ export const AddressSearchView = ({
         scope,
         excludeAddress,
         accountFilter,
+        searchPlaceholderKey,
         showAllContactsWhenEmpty,
         showClipboardPaste,
         sendingAssetLabel,

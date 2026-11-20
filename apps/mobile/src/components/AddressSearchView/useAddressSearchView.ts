@@ -80,6 +80,7 @@ type UseAddressSearchViewProps = {
     excludeAddress?: string
     /** Only accounts passing this predicate are offered. */
     accountFilter?: (account: WalletAccount) => boolean
+    searchPlaceholderKey?: I18nKey
     showAllContactsWhenEmpty?: boolean
     /**
      * Offer the clipboard's address as the first row. Opt-in because reading the
@@ -107,7 +108,7 @@ type UseAddressSearchViewResult = {
     mismatchedFamily: Optional<ChainFamily>
     /** Unset when either family registers no wrong-network copy. */
     wrongNetworkMessage: Optional<{ title: string; body: string }>
-    /** The scope family's own copy, so the field never names an address format it doesn't take. */
+    /** Search copy from the picker override or the chain family's name service. */
     searchPlaceholder: string
     /** Set when rows should name the scope's chain; see {@link useChainNameWhenMultiChain}. */
     chainBadgeName: Optional<string>
@@ -117,6 +118,7 @@ export const useAddressSearchView = ({
     scope,
     excludeAddress,
     accountFilter,
+    searchPlaceholderKey,
     showAllContactsWhenEmpty = false,
     showClipboardPaste = false,
     sendingAssetLabel,
@@ -132,7 +134,8 @@ export const useAddressSearchView = ({
     const chainFamily = getChainDescriptor(scope.chainId).family
     const chainBadgeName = useChainNameWhenMultiChain(scope.chainId)
     const searchPlaceholder = t(
-        chainUiFor(chainFamily).addressSearchPlaceholder ??
+        searchPlaceholderKey ??
+            chainUiFor(chainFamily).addressSearchPlaceholder ??
             i18nKey('address_entry.search_placeholder_neutral'),
     )
     const { accountValueTotals } = useAccountValueTotalsQuery(
@@ -252,13 +255,17 @@ export const useAddressSearchView = ({
             accounts.flatMap(a => addressOn(a, scope) ?? []),
         )
         if (excludeAddress) excludedAddresses.add(excludeAddress)
-        return findContacts({ keyword: value, family: chainFamily }).flatMap(
-            contact => {
-                const address = contact.addresses[chainFamily]
-                return address && !excludedAddresses.has(address)
-                    ? [{ contact, address }]
-                    : []
-            },
+        const matches = findContacts({
+            keyword: value,
+            family: chainFamily,
+        }).flatMap(contact => {
+            const address = contact.addresses[chainFamily]
+            return address && !excludedAddresses.has(address)
+                ? [{ contact, address }]
+                : []
+        })
+        return matches.sort((a, b) =>
+            a.contact.name.localeCompare(b.contact.name),
         )
     }, [
         value,

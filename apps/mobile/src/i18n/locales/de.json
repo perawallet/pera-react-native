@@ -345,6 +345,7 @@
         "search_placeholder": "Kontoadresse, NFD-Name oder Kurzname",
         "search_placeholder_evm": "0x-Adresse, ENS-Name oder Kontoname",
         "search_placeholder_neutral": "Adresse oder Kontoname",
+        "search_placeholder_recipient": "Adresse, Name oder Kontakt",
         "nfd_results": "NFDomains",
         "ens_results": "ENS",
         "name_resolving": "Name wird aufgelöst...",
