@@ -15,12 +15,9 @@ import { PWInput, PWSkeleton, PWText } from '@components/core'
 import { AmountField } from '@components/AmountField'
 import { AssetSelector } from '@components/AssetSelector'
 import { PreferredAmount } from '@components/PreferredAmount'
-import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import { useLanguage } from '@hooks/useLanguage'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { useAssetPricesQuery } from '@perawallet/wallet-core-assets'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { rampTokenAsset, type RampToken } from '@perawallet/wallet-core-onramp'
+import type { RampToken } from '@perawallet/wallet-core-onramp'
 import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
 import { buildDisplayableAssetFromRampToken } from '../buildDisplayableAssetFromRampToken'
 import { useStyles } from './styles'
@@ -59,7 +56,6 @@ export const OnrampAmountSection = (props: OnrampAmountSectionProps) => {
     const { theme } = useTheme()
     const styles = useStyles()
     const { scope } = useOnrampAccount()
-    const homeScope = useHomeChainScope()
 
     const {
         isPay,
@@ -68,8 +64,7 @@ export const OnrampAmountSection = (props: OnrampAmountSectionProps) => {
         hasReceiveValue,
         isReceiveLoading,
         logoUrl,
-        fiatBaseAmount,
-        shouldUseUsdFallback,
+        fiatProps,
         sourceNetworkName,
         handleTextChange,
     } = useOnrampAmountSection({
@@ -80,43 +75,9 @@ export const OnrampAmountSection = (props: OnrampAmountSectionProps) => {
         isLoading: variant === 'receive' ? props.isLoading : false,
         onAmountTextChange:
             variant === 'pay' ? props.onAmountTextChange : undefined,
+        usdPrice: props.usdPrice,
+        accountScope: scope,
     })
-
-    const pricingScope = useSelectedScope(
-        token?.network.chainId ?? scope?.chainId ?? homeScope.chainId,
-    )
-    const assetId = token
-        ? rampTokenAsset(token, pricingScope)?.assetId
-        : undefined
-    const needsWalletPrice =
-        props.usdPrice === null && assetId !== undefined && fiatBaseAmount.gt(0)
-    const { data: walletPrices, isPending: isWalletPricePending } =
-        useAssetPricesQuery(
-            pricingScope,
-            assetId === undefined ? [] : [assetId],
-            needsWalletPrice,
-            {
-                fetchMissing: true,
-            },
-        )
-    const walletPrice =
-        assetId === undefined ? undefined : walletPrices?.get(assetId)?.usdPrice
-    const usdPrice =
-        props.usdPrice ??
-        (walletPrice?.isFinite() && walletPrice.gt(0) ? walletPrice : null)
-    const fiatProps =
-        usdPrice === null
-            ? {
-                  value: null,
-                  isLoading: isWalletPricePending || isReceiveLoading,
-              }
-            : {
-                  sourceAmount: fiatBaseAmount,
-                  sourceAssetId: assetId ?? token?.id ?? '',
-                  usdPrice,
-                  forceFallback: shouldUseUsdFallback,
-                  scope: pricingScope,
-              }
 
     const renderAmount = () => {
         if (isPay) {

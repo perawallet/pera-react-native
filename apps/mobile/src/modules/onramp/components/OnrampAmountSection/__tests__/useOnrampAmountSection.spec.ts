@@ -11,22 +11,43 @@
  */
 
 import { renderHook } from '@test-utils/render'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import {
     DEFAULT_MAX_FRACTION_DIGITS,
     type RampToken,
 } from '@perawallet/wallet-core-onramp'
-import { makeDepositToken, makeFiatToken } from '@test-utils/rampFixtures'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    makeDepositToken,
+    makeFiatToken,
+    makeRampToken,
+} from '@test-utils/rampFixtures'
 import {
     getFiatBaseAmount,
     sanitizeAmountInput,
     useOnrampAmountSection,
 } from '../useOnrampAmountSection'
 
+const { mockUseAssetPricesQuery, mockRampTokenAsset } = vi.hoisted(() => ({
+    mockUseAssetPricesQuery: vi.fn(),
+    mockRampTokenAsset: vi.fn(),
+}))
+
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
     ...(await importOriginal<object>()),
     useNativeAsset: () => ({ unitName: 'ALGO' }),
+    useAssetPricesQuery: mockUseAssetPricesQuery,
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
+}))
+
+vi.mock('@perawallet/wallet-core-onramp', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    rampTokenAsset: mockRampTokenAsset,
 }))
 
 vi.mock('@perawallet/wallet-core-currencies', async importOriginal => ({
@@ -93,6 +114,13 @@ describe('getFiatBaseAmount', () => {
 })
 
 describe('useOnrampAmountSection', () => {
+    beforeEach(() => {
+        mockRampTokenAsset.mockReset().mockReturnValue(null)
+        mockUseAssetPricesQuery
+            .mockReset()
+            .mockReturnValue({ data: undefined, isPending: false })
+    })
+
     it('binds the pay text and parses it for the fiat row', () => {
         const { result } = renderHook(() =>
             useOnrampAmountSection({
@@ -100,6 +128,8 @@ describe('useOnrampAmountSection', () => {
                 token: usdToken,
                 amountText: '12.',
                 amount: null,
+                usdPrice: null,
+                accountScope: null,
             }),
         )
 
@@ -114,6 +144,8 @@ describe('useOnrampAmountSection', () => {
                 token: usdToken,
                 amountText: '.',
                 amount: null,
+                usdPrice: null,
+                accountScope: null,
             }),
         )
 
@@ -127,6 +159,8 @@ describe('useOnrampAmountSection', () => {
                 token: usdToken,
                 amountText: '',
                 amount: new Decimal('10.456'),
+                usdPrice: null,
+                accountScope: null,
             }),
         )
 
@@ -144,6 +178,8 @@ describe('useOnrampAmountSection', () => {
                 amountText: '',
                 amount: null,
                 onAmountTextChange,
+                usdPrice: null,
+                accountScope: null,
             }),
         )
 
@@ -160,6 +196,8 @@ describe('useOnrampAmountSection', () => {
                     token,
                     amountText: '',
                     amount: null,
+                    usdPrice: null,
+                    accountScope: null,
                 }),
             )
 
@@ -181,6 +219,109 @@ describe('useOnrampAmountSection', () => {
             const { result } = render(variant, token)
 
             expect(result.current.sourceNetworkName).toBeNull()
+        })
+    })
+
+    describe('fiatProps', () => {
+        const ACCOUNT_SCOPE: ChainScope = {
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        }
+        const usdcToken = makeRampToken()
+
+        const render = (
+            token: RampToken,
+            usdPrice: Decimal | null,
+            amountText = '10',
+        ) =>
+            renderHook(() =>
+                useOnrampAmountSection({
+                    variant: 'pay',
+                    token,
+                    amountText,
+                    amount: null,
+                    usdPrice,
+                    accountScope: ACCOUNT_SCOPE,
+                }),
+            )
+
+        const walletPrice = (usdPrice: Decimal) =>
+            mockUseAssetPricesQuery.mockReturnValue({
+                data: new Map([['31566704', { usdPrice }]]),
+                isPending: false,
+            })
+
+        it('prefers the quote price over the wallet price', () => {
+            mockRampTokenAsset.mockReturnValue({ assetId: '31566704' })
+            walletPrice(new Decimal('0.99'))
+
+            const { result } = render(usdcToken, new Decimal('1.01'))
+
+            expect(result.current.fiatProps).toMatchObject({
+                sourceAssetId: '31566704',
+                usdPrice: new Decimal('1.01'),
+                scope: ACCOUNT_SCOPE,
+            })
+            expect(mockUseAssetPricesQuery).toHaveBeenCalledWith(
+                ACCOUNT_SCOPE,
+                ['31566704'],
+                false,
+                { fetchMissing: true },
+            )
+        })
+
+        it('uses the wallet price when the quote has none and the asset resolves', () => {
+            mockRampTokenAsset.mockReturnValue({ assetId: '31566704' })
+            walletPrice(new Decimal('0.99'))
+
+            const { result } = render(usdcToken, null)
+
+            expect(result.current.fiatProps).toMatchObject({
+                sourceAmount: new Decimal(10),
+                usdPrice: new Decimal('0.99'),
+            })
+            expect(mockUseAssetPricesQuery).toHaveBeenCalledWith(
+                ACCOUNT_SCOPE,
+                ['31566704'],
+                true,
+                { fetchMissing: true },
+            )
+        })
+
+        it('loads while the wallet price is pending', () => {
+            mockRampTokenAsset.mockReturnValue({ assetId: '31566704' })
+            mockUseAssetPricesQuery.mockReturnValue({
+                data: undefined,
+                isPending: true,
+            })
+
+            const { result } = render(usdcToken, null)
+
+            expect(result.current.fiatProps).toEqual({
+                value: null,
+                isLoading: true,
+            })
+        })
+
+        it('shows no value for a deposit coin no wallet asset prices', () => {
+            const { result } = render(makeDepositToken(), null)
+
+            expect(result.current.fiatProps).toEqual({
+                value: null,
+                isLoading: false,
+            })
+        })
+
+        it('keeps the zero placeholder for an empty amount with no price', () => {
+            const { result } = render(makeDepositToken(), null, '')
+
+            const { fiatProps } = result.current
+            expect(
+                'sourceAmount' in fiatProps && fiatProps.sourceAmount.isZero(),
+            ).toBe(true)
+            expect('usdPrice' in fiatProps && fiatProps.usdPrice.isZero()).toBe(
+                true,
+            )
         })
     })
 })

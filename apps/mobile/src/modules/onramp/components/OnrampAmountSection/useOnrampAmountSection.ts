@@ -18,12 +18,18 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { useNativeAsset } from '@perawallet/wallet-core-assets'
+import {
+    useAssetPricesQuery,
+    useNativeAsset,
+} from '@perawallet/wallet-core-assets'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     DEFAULT_MAX_FRACTION_DIGITS,
     getMaxFractionDigits,
     parseCurrencyDecimalsConfig,
     parseRampAmount,
+    rampTokenAsset,
     type RampToken,
 } from '@perawallet/wallet-core-onramp'
 import {
@@ -47,7 +53,22 @@ type UseOnrampAmountSectionParams = {
     /** Receive variant only: a quote is in flight. */
     isLoading?: boolean
     onAmountTextChange?: (text: string) => void
+    /** USD per unit of the token, from the selected quote when available. */
+    usdPrice: Nullable<Decimal>
+    /** The onramp account's chain, used to price a token with no network. */
+    accountScope: Nullable<ChainScope>
 }
+
+/** Spread into `PreferredAmount`: a priced conversion, or `---` when unpriced. */
+export type OnrampFiatProps =
+    | { value: null; isLoading: boolean }
+    | {
+          sourceAmount: Decimal
+          sourceAssetId: string
+          usdPrice: Decimal
+          forceFallback: boolean
+          scope: ChainScope
+      }
 
 type UseOnrampAmountSectionResult = {
     isPay: boolean
@@ -62,8 +83,7 @@ type UseOnrampAmountSectionResult = {
     logoUrl: Optional<string>
     /** Token-unit amount feeding the fiat row; zero when not computable. */
     fiatBaseAmount: Decimal
-    /** ALGO-preferred users see fiat values in USD, like the rest of the app. */
-    shouldUseUsdFallback: boolean
+    fiatProps: OnrampFiatProps
     /** The chain a crypto pay asset comes from; null otherwise. */
     sourceNetworkName: Nullable<string>
     handleTextChange: (text: string) => void
@@ -103,12 +123,15 @@ export const useOnrampAmountSection = ({
     amount,
     isLoading = false,
     onAmountTextChange,
+    usdPrice: quoteUsdPrice,
+    accountScope,
 }: UseOnrampAmountSectionParams): UseOnrampAmountSectionResult => {
     const scope = useHomeChainScope()
     const nativeAsset = useNativeAsset(scope)
     const isPay = variant === 'pay'
 
     const { preferredCurrency } = useCurrency(scope)
+    // ALGO-preferred users see fiat values in USD, like the rest of the app.
     const shouldUseUsdFallback = preferredCurrency === nativeAsset.unitName
 
     const inputValue = isPay ? amountText : ''
@@ -136,6 +159,41 @@ export const useOnrampAmountSection = ({
         () => getFiatBaseAmount(isPay ? parseRampAmount(amountText) : amount),
         [isPay, amountText, amount],
     )
+
+    const pricingScope = useSelectedScope(
+        token?.network.chainId ?? accountScope?.chainId ?? scope.chainId,
+    )
+    const assetId = token
+        ? rampTokenAsset(token, pricingScope)?.assetId
+        : undefined
+    const needsWalletPrice =
+        quoteUsdPrice === null && assetId !== undefined && fiatBaseAmount.gt(0)
+    const { data: walletPrices, isPending: isWalletPricePending } =
+        useAssetPricesQuery(
+            pricingScope,
+            assetId === undefined ? [] : [assetId],
+            needsWalletPrice,
+            { fetchMissing: true },
+        )
+    const walletPrice =
+        assetId === undefined ? undefined : walletPrices?.get(assetId)?.usdPrice
+    const usdPrice =
+        quoteUsdPrice ??
+        (walletPrice?.isFinite() && walletPrice.gt(0) ? walletPrice : null)
+    // A zero amount isn't a missing price: it keeps the "0.00" placeholder.
+    const fiatProps: OnrampFiatProps =
+        usdPrice === null && !fiatBaseAmount.isZero()
+            ? {
+                  value: null,
+                  isLoading: isWalletPricePending || isReceiveLoading,
+              }
+            : {
+                  sourceAmount: fiatBaseAmount,
+                  sourceAssetId: assetId ?? token?.id ?? '',
+                  usdPrice: usdPrice ?? ZERO_DECIMAL,
+                  forceFallback: shouldUseUsdFallback,
+                  scope: pricingScope,
+              }
 
     // Fraction-digit cap for the pay field, resolved from the source currency
     // and any remote-config overrides (fiat → 2, known crypto → its decimals,
@@ -170,7 +228,7 @@ export const useOnrampAmountSection = ({
         isReceiveLoading,
         logoUrl,
         fiatBaseAmount,
-        shouldUseUsdFallback,
+        fiatProps,
         sourceNetworkName,
         handleTextChange,
     }
