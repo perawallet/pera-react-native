@@ -61,9 +61,19 @@ export const fetchWithAbortError = (
     })
 }
 
+// viem preserves this as the cause of an HTTP error. An AbortError would
+// become viem's own TimeoutError and we would lose the pre-dispatch signal.
+const PRE_DISPATCH_TIMEOUT = new Error('Timed out before the request was sent')
+
+const notSent = new WeakSet<object>()
+
+/** A request that never left the device, so no node can have taken it. */
+export const isNotSent = (error: unknown): boolean =>
+    typeof error === 'object' && error !== null && notSent.has(error)
+
 // Pera's RPC proxy is guarded like the other Pera EVM routes; the key and
 // token must never reach a public fallback or a custom node.
-const isPeraRpcUrl = (url: string): boolean => {
+export const isPeraRpcUrl = (url: string): boolean => {
     let host: string
     try {
         host = new URL(url).hostname
@@ -87,10 +97,10 @@ const fetchWithPeraHeaders = async (
         (resolve, reject) => {
             const signal = init?.signal
             if (signal?.aborted) {
-                reject(abortError())
+                reject(PRE_DISPATCH_TIMEOUT)
                 return
             }
-            const onAbort = () => reject(abortError())
+            const onAbort = () => reject(PRE_DISPATCH_TIMEOUT)
             signal?.addEventListener('abort', onAbort, { once: true })
             buildIntegrityHeadersWhenReady().then(
                 result => {
@@ -116,6 +126,14 @@ const fetchWithPeraHeaders = async (
 // thread and run the app out of memory. The class, status, code and URL are
 // what the error mapping reads, so they stay.
 const withoutRequestBody = (error: unknown, method: string): unknown => {
+    if (
+        error instanceof HttpRequestError &&
+        error.cause === PRE_DISPATCH_TIMEOUT
+    ) {
+        const timeout = new TimeoutError({ body: { method }, url: error.url })
+        notSent.add(timeout)
+        return timeout
+    }
     if (error instanceof TimeoutError) {
         return new TimeoutError({ body: { method }, url: error.url })
     }

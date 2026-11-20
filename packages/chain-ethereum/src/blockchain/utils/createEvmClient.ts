@@ -14,6 +14,7 @@ import {
     createPublicClient,
     defineChain,
     fallback,
+    HttpRequestError,
     type Chain,
     type PublicClient,
     type Transport,
@@ -23,10 +24,11 @@ import type {
     ChainRequestTimeouts,
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
+import { config } from '@perawallet/wallet-core-config'
 import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
 import type { EvmChain } from '../../chains/types'
 import { eip155ChainIdOfNetwork } from './caip19'
-import { evmHttpTransport } from './evmHttpTransport'
+import { evmHttpTransport, isNotSent, isPeraRpcUrl } from './evmHttpTransport'
 import { isNodeReply, markAfterUnconfirmedAttempt } from './nodeVerdict'
 
 export class UnconfiguredEvmRpcError extends AppError {
@@ -111,6 +113,16 @@ const timeoutBoundedTransport = (
 // that says nothing about whether the node took it; the error that ends the
 // loop is marked when an earlier URL left that open, so the caller doesn't
 // read a later node's refusal as "not on chain".
+// A request that never left the device or was refused at the door (the
+// proxy's API key and integrity guard) leaves nothing open.
+const leavesOutcomeOpen = (error: unknown): boolean =>
+    !isNotSent(error) &&
+    !(
+        error instanceof HttpRequestError &&
+        isPeraRpcUrl(error.url) &&
+        (error.status === 401 || error.status === 403)
+    )
+
 const broadcastInOrder = async (
     transports: readonly ReturnType<Transport>[],
     args: Parameters<ReturnType<Transport>['request']>[0],
@@ -127,7 +139,7 @@ const broadcastInOrder = async (
                 if (isOutcomeOpen) markAfterUnconfirmedAttempt(error)
                 throw error
             }
-            isOutcomeOpen = true
+            if (leavesOutcomeOpen(error)) isOutcomeOpen = true
             index += 1
         }
     }
@@ -209,17 +221,20 @@ const viemChainFor = (
 }
 
 /**
- * `ctx.getEndpoints()` maps each network id to its public JSON-RPC URLs,
- * preferred first; reads go straight to those nodes, not through the Pera
- * backend. A request that fails on one node is tried on the next, in order.
+ * `ctx.getEndpoints()` lists the network's RPC URLs in preference order.
+ * Without an API key the Pera proxy cannot serve the client, so the first
+ * remaining endpoint gets the primary time and batch budgets.
  */
 export const createEvmClient = (
     scope: ChainScope,
     ctx: Pick<ChainContext, 'getEndpoints' | 'timeouts'>,
     chain: EvmChain,
 ): PublicClient => {
-    const rpcUrls = ctx.getEndpoints()[scope.networkId]
-    if (!rpcUrls || rpcUrls.length === 0) {
+    const endpoints = ctx.getEndpoints()[scope.networkId] ?? []
+    const rpcUrls = config.backendAPIKey
+        ? endpoints
+        : endpoints.filter(url => !isPeraRpcUrl(url))
+    if (rpcUrls.length === 0) {
         throw new UnconfiguredEvmRpcError(scope)
     }
     return createPublicClient({

@@ -19,7 +19,11 @@ import {
     TimeoutError,
 } from 'viem'
 import { buildIntegrityHeadersWhenReady } from '@perawallet/wallet-core-app-integrity'
-import { evmHttpTransport, fetchWithAbortError } from '../evmHttpTransport'
+import {
+    evmHttpTransport,
+    fetchWithAbortError,
+    isNotSent,
+} from '../evmHttpTransport'
 
 vi.mock('@perawallet/wallet-core-app-integrity', () => ({
     buildIntegrityHeadersWhenReady: vi.fn(async () => ({
@@ -256,6 +260,7 @@ describe('evmHttpTransport integrity registration', () => {
 
         await vi.advanceTimersByTimeAsync(50)
         expect(settled).toHaveBeenCalledWith(expect.any(TimeoutError))
+        expect(isNotSent(await pending)).toBe(true)
         expect(fetchSpy).not.toHaveBeenCalled()
 
         completeRegistration({ 'x-app-integrity-token': 'late-token' })

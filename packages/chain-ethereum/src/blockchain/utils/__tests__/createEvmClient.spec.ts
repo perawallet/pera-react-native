@@ -31,6 +31,7 @@ import {
     splitCeilingMs,
     UnconfiguredEvmRpcError,
 } from '../createEvmClient'
+import { hasNodeVerdict } from '../nodeVerdict'
 import {
     EvmRpcErrorFixture,
     evmRpcHandlers,
@@ -38,17 +39,25 @@ import {
 } from '../../msw-handlers'
 import { ETHEREUM } from '../../../__tests__/evm-chains'
 
+const testConfig = vi.hoisted(() => ({ backendAPIKey: 'test-api-key' }))
+
 vi.mock('@perawallet/wallet-core-config', async importOriginal => {
     const original =
         await importOriginal<typeof import('@perawallet/wallet-core-config')>()
     return {
         ...original,
-        config: { ...original.config, backendAPIKey: 'test-api-key' },
+        config: {
+            ...original.config,
+            get backendAPIKey() {
+                return testConfig.backendAPIKey
+            },
+        },
     }
 })
 
 const MAINNET_RPC = 'https://mainnet.rpc.test/'
 const SEPOLIA_RPC = 'https://sepolia.rpc.test/'
+const PROXY_RPC = 'https://mainnet.api.perawallet.app/api/v3/evm/1/rpc'
 const MAINNET: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const SEPOLIA: ChainScope = { chainId: 'ethereum', networkId: 'sepolia' }
 const ADDRESS: Hex = '0x00000000000000000000000000000000000000aa'
@@ -71,7 +80,10 @@ const contextWith = ({
 // Unhandled requests fail the test: nothing here may reach a real node.
 const server = setupServer()
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
-afterEach(() => server.resetHandlers())
+afterEach(() => {
+    server.resetHandlers()
+    testConfig.backendAPIKey = 'test-api-key'
+})
 afterAll(() => server.close())
 
 describe('createEvmClient', () => {
@@ -307,6 +319,65 @@ describe('createEvmClient', () => {
             ).resolves.toBe(keccak256(RAW_TX))
         })
 
+        it.each([401, 403])(
+            'keeps a fallback broadcast rejection definitive after the Pera proxy returns %i',
+            async status => {
+                server.use(
+                    http.post(
+                        PROXY_RPC,
+                        () => new HttpResponse(null, { status }),
+                    ),
+                    ...evmRpcHandlers({
+                        rpcUrl: SECOND_RPC,
+                        responses: {
+                            eth_sendRawTransaction: new EvmRpcErrorFixture(
+                                -32_000,
+                                'insufficient funds',
+                            ),
+                        },
+                    }),
+                )
+                const client = createEvmClient(
+                    MAINNET,
+                    contextWith({
+                        endpoints: { mainnet: [PROXY_RPC, SECOND_RPC] },
+                    }),
+                    ETHEREUM,
+                )
+
+                await expect(
+                    client.sendRawTransaction({
+                        serializedTransaction: RAW_TX,
+                    }),
+                ).rejects.toSatisfy(hasNodeVerdict)
+            },
+        )
+
+        it('keeps the outcome open after an HTTP refusal from a public RPC URL', async () => {
+            server.use(
+                http.post(
+                    FIRST_RPC,
+                    () => new HttpResponse(null, { status: 403 }),
+                ),
+                ...evmRpcHandlers({
+                    rpcUrl: SECOND_RPC,
+                    responses: {
+                        eth_sendRawTransaction: new EvmRpcErrorFixture(
+                            -32_000,
+                            'insufficient funds',
+                        ),
+                    },
+                }),
+            )
+            const client = createEvmClient(MAINNET, withList(), ETHEREUM)
+
+            const result = client.sendRawTransaction({
+                serializedTransaction: RAW_TX,
+            })
+            await expect(result).rejects.toThrow(/insufficient funds/i)
+            await expect(result).rejects.not.toSatisfy(hasNodeVerdict)
+        })
+
         it('fails over from a first URL that answers too slowly, inside the whole ceiling', async () => {
             server.use(
                 http.post(FIRST_RPC, async () => {
@@ -373,8 +444,6 @@ describe('createEvmClient', () => {
         })
 
         it('sends the API key and integrity token to the Pera proxy alone', async () => {
-            const PROXY_RPC =
-                'https://mainnet.api.perawallet.app/api/v3/evm/1/rpc'
             const sent: Record<string, Headers> = {}
             server.use(
                 http.post(PROXY_RPC, ({ request }) => {
@@ -404,6 +473,23 @@ describe('createEvmClient', () => {
             )
             expect(sent.fallback?.get('x-api-key')).toBeNull()
             expect(sent.fallback?.get('x-app-integrity-token')).toBeNull()
+        })
+
+        it('skips the guarded Pera proxy when no API key is available', async () => {
+            testConfig.backendAPIKey = ''
+            server.use(...evmRpcHandlers({ rpcUrl: SECOND_RPC }))
+            const reachedProxy = countCalls(PROXY_RPC)
+            const client = createEvmClient(
+                MAINNET,
+                contextWith({
+                    endpoints: { mainnet: [PROXY_RPC, SECOND_RPC] },
+                }),
+                ETHEREUM,
+            )
+
+            await expect(client.getChainId()).resolves.toBe(1)
+            expect(client.chain?.rpcUrls.default.http).toEqual([SECOND_RPC])
+            expect(reachedProxy).not.toHaveBeenCalled()
         })
 
         it('keeps the API key and integrity token off a lookalike host', async () => {
