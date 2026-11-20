@@ -116,6 +116,28 @@ describe('asset prices repository', () => {
             expect(result[0].usdPrice).toEqual(new Decimal('2'))
         })
 
+        it('scopes prices to their network', async () => {
+            await upsertAssetPrices({
+                db,
+                prices: [{ assetId: '100', usdPrice: new Decimal('1.25') }],
+                scope: MAINNET_SCOPE,
+            })
+            await upsertAssetPrices({
+                db,
+                prices: [{ assetId: '100', usdPrice: new Decimal('9.5') }],
+                scope: TESTNET_SCOPE,
+            })
+
+            const [mainnet, testnet] = await Promise.all(
+                [MAINNET_SCOPE, TESTNET_SCOPE].map(scope =>
+                    getAssetPricesByIds({ db, assetIds: ['100'], scope }),
+                ),
+            )
+
+            expect(mainnet.map(r => r.usdPrice)).toEqual([new Decimal('1.25')])
+            expect(testnet.map(r => r.usdPrice)).toEqual([new Decimal('9.5')])
+        })
+
         it('keeps the last duplicate price within and across chunks without rounding', async () => {
             const precisePrice = new Decimal('9007199254740993.000000000000001')
             const initialPrice = new Decimal(1)
