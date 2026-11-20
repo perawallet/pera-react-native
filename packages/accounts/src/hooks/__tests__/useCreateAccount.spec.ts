@@ -292,8 +292,15 @@ describe('useCreateAccount', () => {
         expect(useAccountsStore.getState().accounts).toHaveLength(0)
     })
 
-    test('keeps an account built for a known seed on its own chain', async () => {
+    test('gives an account created for a known seed its default chains before saving it', async () => {
         uuidSpies.v7.mockImplementationOnce(() => 'ACC1')
+        withDefaultChainsMock.mockImplementationOnce(async draft => ({
+            ...draft,
+            chains: {
+                ...draft.chains,
+                second: { address: 'SECOND', keyPairId: 'second-key' },
+            },
+        }))
 
         const { result } = renderHook(() => useCreateAccount(MAINNET_SCOPE))
 
@@ -305,7 +312,11 @@ describe('useCreateAccount', () => {
             })
         })
 
-        expect(withDefaultChainsMock).not.toHaveBeenCalled()
+        expect(withDefaultChainsMock).toHaveBeenCalledWith(
+            expect.objectContaining({ id: 'ACC1' }),
+        )
+        const [saved] = useAccountsStore.getState().accounts
+        expect(Object.keys(saved.chains)).toEqual([FAKE_CHAIN_ID, 'second'])
     })
 
     test('createHdWalletAccountForSeed derives directly from seedKeyId without consulting getKey or createHDWalletKey (regression: stale useMemo)', async () => {
