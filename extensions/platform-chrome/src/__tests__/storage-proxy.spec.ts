@@ -107,6 +107,35 @@ describe('storage proxy', () => {
         })
     })
 
+    it('logs a redacted refresh error and handles the next storage change', async () => {
+        const listener = vi.fn()
+        offscreenChrome.storage.onChanged.addListener(listener)
+        vi.spyOn(fake.chrome.storage.local, 'get').mockRejectedValueOnce(
+            new Error('Failed at https://storage.test/?token=synthetic-value'),
+        )
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+        try {
+            fake.emitExternalChange('kv:fixture', 'first')
+            await vi.waitFor(() => expect(warn).toHaveBeenCalledOnce())
+            const logged = JSON.stringify(warn.mock.calls)
+            expect(logged).toContain('storage proxy get failed')
+            expect(logged).toContain('token=[REDACTED]')
+            expect(logged).not.toContain('synthetic-value')
+            expect(listener).not.toHaveBeenCalled()
+
+            fake.emitExternalChange('kv:fixture', 'second')
+            await vi.waitFor(() =>
+                expect(listener).toHaveBeenCalledExactlyOnceWith(
+                    { 'kv:fixture': { newValue: 'second' } },
+                    'local',
+                ),
+            )
+        } finally {
+            warn.mockRestore()
+        }
+    })
+
     it('stops relaying to removed listeners', async () => {
         const listener = vi.fn()
         offscreenChrome.storage.onChanged.addListener(listener)

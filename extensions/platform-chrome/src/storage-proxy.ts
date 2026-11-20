@@ -15,7 +15,7 @@
 // worker proxies storage over runtime messaging. Only the `local` area and the ops
 // the offscreen boot path uses are proxied: vault/session code never runs offscreen.
 
-import type { Optional } from '@perawallet/wallet-core-shared'
+import { logger, type Optional } from '@perawallet/wallet-core-shared'
 import { isTrustedExtensionPageSender } from './trusted-sender'
 
 export const STORAGE_PROXY_SCOPE = 'pera-storage-proxy'
@@ -170,9 +170,8 @@ export const installOffscreenStorageShim = (
                 )
                 listeners.forEach(listener => listener(changes, 'local'))
             })
-            .catch(() => {
-                // oxlint-disable-next-line no-console -- the offscreen storage shim also runs before platform hydration
-                console.warn('[pera] offscreen storage refresh failed')
+            .catch((error: unknown) => {
+                logger.warn('Offscreen storage refresh failed', { error })
             })
         return undefined
     })
