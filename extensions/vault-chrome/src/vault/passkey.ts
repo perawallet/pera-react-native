@@ -22,7 +22,8 @@ import {
 import { PRF_BLOB_KEY, PRF_CRED_ID_KEY } from '../storage-keys'
 import { armAutoLock } from './autolock'
 import {
-    isMigrationClosedByOtherBlob,
+    isMigrationClosed,
+    readOtherBlobState,
     runLegacyRecordMigration,
     type UnlockOptions,
 } from './kv-auth-key'
@@ -448,15 +449,18 @@ export const unlockWithPasskey = async (
     try {
         // Before the session key lands, so contexts reacting to the unlock
         // already find sealed records.
+        const other = await readOtherBlobState('passkey')
         const hasMigrated =
-            markedPrfBlob === undefined ||
-            (await isMigrationClosedByOtherBlob('passkey'))
+            markedPrfBlob === undefined || isMigrationClosed(other)
                 ? false
                 : await runLegacyRecordMigration(masterKey, options)
         await putSessionMasterKey(masterKey)
         await armAutoLock()
         await clearFailedAttempts()
-        if (hasMigrated && markedPrfBlob !== undefined) {
+        if (
+            markedPrfBlob !== undefined &&
+            (hasMigrated || other === 'marked')
+        ) {
             try {
                 await chrome.storage.local.set({
                     [PRF_BLOB_KEY]: markedPrfBlob,

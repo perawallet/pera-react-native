@@ -49,26 +49,33 @@ const readSaltField = (raw: unknown, field: string): Optional<Uint8Array> => {
     }
 }
 
+export type OtherBlobState = 'absent' | 'unmarked' | 'marked' | 'unreadable'
+
 /**
- * True when the other unlock method's blob already closed the migration, or
- * is present but unreadable. Each blob carries its own mark, so without this
- * a profile writer could delete or corrupt the unlock method the user just
- * migrated with and make the other, still-unmarked blob open a second window.
- * An absent blob says nothing: password-only vaults have no PRF blob.
+ * Each unlock method's blob carries its own mark, so one method's migration
+ * must close the other's: otherwise deleting or corrupting the blob the user
+ * migrated with, or simply turning passkey unlock off, would leave the other
+ * blob unmarked and open a second window. An absent blob says nothing:
+ * password-only vaults have no PRF blob.
  */
-export const isMigrationClosedByOtherBlob = async (
+export const readOtherBlobState = async (
     unlockedWith: 'password' | 'passkey',
-): Promise<boolean> => {
+): Promise<OtherBlobState> => {
     const [storageKey, field] =
         unlockedWith === 'password'
             ? [PRF_BLOB_KEY, 'hkdfSalt']
             : [VAULT_STORAGE_KEY, 'salt']
     const stored = await chrome.storage.local.get(storageKey)
     const raw: unknown = stored[storageKey]
-    if (raw === undefined) return false
+    if (raw === undefined) return 'absent'
     const salt = readSaltField(raw, field)
-    return salt === undefined || isMarkedSalt(salt)
+    if (salt === undefined) return 'unreadable'
+    return isMarkedSalt(salt) ? 'marked' : 'unmarked'
 }
+
+/** An unreadable blob closes the window but is not a mark to copy: it may be corrupt, not migrated. */
+export const isMigrationClosed = (other: OtherBlobState): boolean =>
+    other === 'marked' || other === 'unreadable'
 
 /**
  * Callers decide whether this unlock is the one allowed to migrate.

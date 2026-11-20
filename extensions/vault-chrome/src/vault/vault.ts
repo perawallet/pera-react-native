@@ -30,7 +30,8 @@ import {
 import { deriveArgon2id, type Argon2Params } from './argon2'
 import { armAutoLock, disarmAutoLock } from './autolock'
 import {
-    isMigrationClosedByOtherBlob,
+    isMigrationClosed,
+    readOtherBlobState,
     runLegacyRecordMigration,
     type UnlockOptions,
 } from './kv-auth-key'
@@ -420,7 +421,7 @@ export const createVault = async (password: string): Promise<void> => {
 const rewrapIfWeaker = async (
     password: string,
     masterKey: Uint8Array,
-    { isMarked, hasMigrated }: { isMarked: boolean; hasMigrated: boolean },
+    { isMarked, shouldMark }: { isMarked: boolean; shouldMark: boolean },
 ): Promise<void> => {
     try {
         const blob = await readWrappedMasterKey()
@@ -428,7 +429,6 @@ const rewrapIfWeaker = async (
             blob.version === 2 &&
             blob.m >= ARGON2_MEMORY_KIB &&
             blob.t >= ARGON2_ITERATIONS
-        const shouldMark = isMarked || hasMigrated
         if (isCurrentCost && shouldMark === isMarked) return
         await writeWrappedMasterKey(password, masterKey, {
             isMarked: shouldMark,
@@ -447,14 +447,18 @@ export const unlockVault = async (
     try {
         // Before the session key lands, so contexts reacting to the unlock
         // already find sealed records.
+        const other = await readOtherBlobState('password')
         const hasMigrated =
-            isMarked || (await isMigrationClosedByOtherBlob('password'))
+            isMarked || isMigrationClosed(other)
                 ? false
                 : await runLegacyRecordMigration(masterKey, options)
         await putSessionMasterKey(masterKey)
         await armAutoLock()
         await stampPasswordAuth()
-        await rewrapIfWeaker(password, masterKey, { isMarked, hasMigrated })
+        await rewrapIfWeaker(password, masterKey, {
+            isMarked,
+            shouldMark: isMarked || hasMigrated || other === 'marked',
+        })
     } finally {
         masterKey.fill(0)
     }

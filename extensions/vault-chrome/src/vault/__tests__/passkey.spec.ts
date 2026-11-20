@@ -973,8 +973,57 @@ describe('passkey vault', () => {
 
             expect(migrate).toHaveBeenCalledTimes(1)
             expect(isMarkedSalt(base64.decode(storedBlob().hkdfSalt))).toBe(
-                false,
+                true,
             )
+        })
+
+        it('does not migrate for the passkey after a password migration even if the password blob is then replaced', async () => {
+            await setUpUnmarked()
+            const migrate = vi.fn(async () => {})
+            await unlockVault('pw', { migrateLegacyRecords: migrate })
+            await lockVault()
+            await unlockWithPasskey({ migrateLegacyRecords: migrate })
+            await lockVault()
+            const passwordBlob = JSON.parse(
+                fake.data.get('vault:wrapped-master-key') as string,
+            )
+            passwordBlob.salt = base64.encode(new Uint8Array(16).fill(1))
+            fake.data.set(
+                'vault:wrapped-master-key',
+                JSON.stringify(passwordBlob),
+            )
+
+            await unlockWithPasskey({ migrateLegacyRecords: migrate })
+
+            expect(migrate).toHaveBeenCalledTimes(1)
+        })
+
+        it('marks the password blob on a password unlock after the passkey migrated', async () => {
+            await setUpUnmarked()
+            const migrate = vi.fn(async () => {})
+            await unlockWithPasskey({ migrateLegacyRecords: migrate })
+            await lockVault()
+
+            await unlockVault('pw', { migrateLegacyRecords: migrate })
+
+            const passwordBlob = JSON.parse(
+                fake.data.get('vault:wrapped-master-key') as string,
+            )
+            expect(isMarkedSalt(base64.decode(passwordBlob.salt))).toBe(true)
+        })
+
+        it('does not migrate for the password after the passkey migrated and passkey unlock was turned off', async () => {
+            await setUpUnmarked()
+            const migrate = vi.fn(async () => {})
+            await unlockWithPasskey({ migrateLegacyRecords: migrate })
+            await lockVault()
+            await unlockVault('pw', { migrateLegacyRecords: migrate })
+            await lockVault()
+            await disablePasskeyUnlock()
+
+            await unlockVault('pw', { migrateLegacyRecords: migrate })
+
+            expect(migrate).toHaveBeenCalledTimes(1)
         })
 
         it('does not open the password window when a marked passkey blob exists', async () => {
