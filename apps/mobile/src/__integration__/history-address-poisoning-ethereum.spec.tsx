@@ -123,6 +123,27 @@ const REAL_FROM_CONTACT_LOOK_ALIKE = transfer(
 )
 const SENT_TO_PAYEE = transfer(1, ME, PAYEE.toLowerCase(), '500000000000000000')
 
+// A row known only from its token log: the backend names no signer for it.
+const UNSIGNED_UNKNOWN_TOKEN_TO_CONTACT_LOOK_ALIKE = (() => {
+    const token = '0x0000000000000000000000000000000000000c0c'
+    return evmHistoryItem({
+        hash: hashOf(5),
+        block_time: '2026-01-05T00:00:00Z',
+        token_transfers: [
+            {
+                asset_id: `eip155:1/erc20:${token}`,
+                contract: token,
+                from: ME,
+                to: lookAlikeOf(CONTACT, '7'),
+                value: '0',
+                token_name: 'Fake Token',
+                token_symbol: 'FAKE',
+                token_decimals: 6,
+            },
+        ],
+    })
+})()
+
 const markerOf = (item: EvmHistoryItemResponse) =>
     `transaction_row_suspected_poisoning_${item.hash}`
 
@@ -213,5 +234,35 @@ describe('Flow: suspected address poisoning in Ethereum history', () => {
         expect(notice.textContent).toContain(
             'send_funds.recipient_safety.look_alike_known_label_history',
         )
+    })
+
+    it('Given a token send the history names no signer for, to a look-alike of a contact, then it is marked and its sheet names the contact', async () => {
+        server.use(
+            ...peraEvmHistoryHandlers({
+                history: {
+                    [ME]: [[UNSIGNED_UNKNOWN_TOKEN_TO_CONTACT_LOOK_ALIKE]],
+                },
+            }),
+        )
+        renderWithNavigation(AccountHistory, 'AccountHistory')
+        await screen.findByTestId(
+            markerOf(UNSIGNED_UNKNOWN_TOKEN_TO_CONTACT_LOOK_ALIKE),
+            undefined,
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+
+        const row = closestPressable(
+            screen.getByTestId(
+                `transaction_row_${UNSIGNED_UNKNOWN_TOKEN_TO_CONTACT_LOOK_ALIKE.hash}`,
+            ),
+        )
+        if (!row) throw new Error('Marked row is not pressable')
+        fireEvent.click(row)
+
+        const notice = await screen.findByTestId('suspected_poisoning_notice')
+        expect(
+            within(notice).getByTestId('suspected_poisoning_imitated_address')
+                .textContent,
+        ).toBe(addressCodecs.get('ethereum').normalize(CONTACT))
     })
 })

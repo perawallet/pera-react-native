@@ -293,8 +293,14 @@ describe.each([
 
     it.each([
         ['a worthless transfer', { kind: 'transfer', value: '0' }],
-        ['a zero-value token transfer', { kind: 'token-transfer', assetId: STABLE, value: '0' }],
-        ['a collectible', { kind: 'nft-transfer', assetId: UNPRICED, value: '1' }],
+        [
+            'a zero-value token transfer',
+            { kind: 'token-transfer', assetId: STABLE, value: '0' },
+        ],
+        [
+            'a collectible',
+            { kind: 'nft-transfer', assetId: UNPRICED, value: '1' },
+        ],
     ] as const)(
         'marks an outgoing %s with no signer on record, naming the contact',
         async (__, overrides) => {

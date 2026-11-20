@@ -11,6 +11,7 @@
  */
 
 import type { TransactionRecord } from '@perawallet/wallet-core-chain-contract'
+import { recordSignerOf } from '@perawallet/wallet-core-transactions'
 import type { Optional } from '@perawallet/wallet-core-shared'
 
 export type RecordParties = {
@@ -39,7 +40,10 @@ export const recordPartiesOf = (
 
     if (isInbound) return { from: counterparty, to: own }
     return {
-        from: initiator ?? (direction === 'out' ? own : undefined),
+        from:
+            direction === 'out'
+                ? recordSignerOf(record, ownAddress)
+                : initiator,
         to: counterparty,
     }
 }

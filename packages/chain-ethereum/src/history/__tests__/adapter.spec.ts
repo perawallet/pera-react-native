@@ -249,6 +249,40 @@ describe('getEvmTransactionHistory', () => {
         })
     })
 
+    it('reads a token leg moving nothing out of the account to a look-alike, on a row with no sender, as an unsigned send', async () => {
+        const token = '0x0000000000000000000000000000000000000c0c'
+        const lookAlike = `${PEER.slice(0, 5)}${'1'.repeat(34)}${PEER.slice(-3)}`
+        serve([
+            [
+                evmHistoryItem({
+                    hash: hash(1),
+                    token_transfers: [
+                        {
+                            asset_id: `eip155:1/erc20:${token}`,
+                            contract: token,
+                            from: ME,
+                            to: lookAlike,
+                            value: '0',
+                            token_name: 'Fake Token',
+                            token_symbol: 'FAKE',
+                            token_decimals: 6,
+                        },
+                    ],
+                }),
+            ],
+        ])
+
+        const { items } = await getEvmTransactionHistory(ETHEREUM, ME, MAINNET)
+
+        expect(items[0]?.summary).toMatchObject({
+            kind: 'token-transfer',
+            direction: 'out',
+        })
+        expect(items[0]?.summary.counterparty?.toLowerCase()).toBe(lookAlike)
+        expect(items[0]?.initiator).toBeUndefined()
+        expect(items[0]?.fee).toBeUndefined()
+    })
+
     it('carries the block number onto the record, and keeps a row whose block number is unreadable', async () => {
         serve([
             [

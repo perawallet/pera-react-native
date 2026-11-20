@@ -44,8 +44,12 @@ describe('algorandAddressCodec.resembles', () => {
             'GI4BMXKT5F6XO7SVE65TIFCVWOLEGFLFD4VYNDS4MMKY2SVDEASOJ6DNLE'
 
         it('takes an address sharing the first five and last four characters for a look-alike, both ways', () => {
-            expect(algorandAddressCodec.resembles(NEAR_MISS, CONTACT)).toBe(true)
-            expect(algorandAddressCodec.resembles(CONTACT, NEAR_MISS)).toBe(true)
+            expect(algorandAddressCodec.resembles(NEAR_MISS, CONTACT)).toBe(
+                true,
+            )
+            expect(algorandAddressCodec.resembles(CONTACT, NEAR_MISS)).toBe(
+                true,
+            )
         })
 
         it('takes an address missing the innermost character of both ends for a look-alike', () => {

@@ -173,19 +173,22 @@ describe('resembles', () => {
 
         expect(codec.resembles(HARDHAT_ADDRESS, nearMiss)).toBe(true)
         expect(codec.resembles(nearMiss, HARDHAT_ADDRESS)).toBe(true)
-        expect(
-            codec.resembles(HARDHAT_ADDRESS, nearMiss.toUpperCase()),
-        ).toBe(true)
+        expect(codec.resembles(HARDHAT_ADDRESS, nearMiss.toUpperCase())).toBe(
+            true,
+        )
     })
 
     it.each([
         ['only 0xf3 at the head', `0xf3${'0'.repeat(35)}266`],
         ['only the last two characters', `0xf39${'0'.repeat(35)}66`],
-    ])('does not take an address sharing %s for a look-alike', (_label, other) => {
-        expect(other).toHaveLength(HARDHAT_ADDRESS.length)
+    ])(
+        'does not take an address sharing %s for a look-alike',
+        (_label, other) => {
+            expect(other).toHaveLength(HARDHAT_ADDRESS.length)
 
-        expect(codec.resembles(HARDHAT_ADDRESS, other)).toBe(false)
-    })
+            expect(codec.resembles(HARDHAT_ADDRESS, other)).toBe(false)
+        },
+    )
 })
 
 describe('toPaymentUri', () => {

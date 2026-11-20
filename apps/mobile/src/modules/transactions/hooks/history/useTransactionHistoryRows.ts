@@ -20,6 +20,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import {
     hasCachedHistoryRows,
+    recordSignerOf,
     summarizeHistoryItem,
     useSuspectedPoisoningQuery,
     useTransactionHistoryQuery,
@@ -135,11 +136,12 @@ export const useTransactionHistoryRows = ({
                           accountAddress ?? '',
                           scope.chainId,
                       ),
+                      initiator: transaction.sender,
                   }))
                 : records.map(record => ({
                       id: record.id,
                       summary: record.summary,
-                      initiator: record.initiator,
+                      initiator: recordSignerOf(record, accountAddress ?? ''),
                   })),
         [isRowCached, transactions, records, accountAddress, scope.chainId],
     )
