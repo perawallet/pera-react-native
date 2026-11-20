@@ -34,6 +34,12 @@ export {
 // realms use; token acquisition and message receipt live in different realms.
 export { getFirebaseApp } from './services/firebase-app'
 export { getPlatformServices, hydratePlatform } from './resources'
+export {
+    AUTHENTICATED_KV_KEYS,
+    sealLegacyKvRecords,
+    setKvAuthKey,
+} from './key-value-singleton'
+export { kvRecordPayload } from './kv-record'
 export { getSurface, type ExtensionSurface } from './surface'
 export { isTrustedExtensionPageSender } from './trusted-sender'
 export {

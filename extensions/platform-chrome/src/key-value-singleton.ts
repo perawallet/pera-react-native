@@ -10,17 +10,62 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import { isSealedKvRecord, sealKvRecord } from './kv-record'
+import { AuthenticatedKeyValueStorage } from './services/authenticated-key-value-storage'
 import { ChromeKeyValueStorageService } from './services/key-value-storage'
+
+const KV_PREFIX = 'kv:'
+
+// Names persisted by `STORE_NAME` in chain-shared's network-store.ts and
+// `LEGACY_CUSTOM_NETWORK_KEY` in its legacy-network.ts. Neither is exported,
+// so renaming one silently drops authentication for it.
+export const AUTHENTICATED_KV_KEYS: readonly string[] = [
+    'network-store',
+    'custom-network-store',
+]
 
 // Separate from resources.ts so the pre-hydration ./bootstrap subpath can import
 // hydratePlatform without dragging in ChromeDatabaseService; resources.ts
 // imports this same singleton.
-export const keyValueStorage = new ChromeKeyValueStorageService()
+const chromeKeyValueStorage = new ChromeKeyValueStorageService()
+export const keyValueStorage = new AuthenticatedKeyValueStorage(
+    chromeKeyValueStorage,
+    AUTHENTICATED_KV_KEYS,
+)
+
+export const setKvAuthKey = (key: Nullable<Uint8Array>): void => {
+    keyValueStorage.setAuthKey(key)
+}
+
+/**
+ * Seals the unsealed network records already in chrome.storage.local. Reads
+ * storage directly because the cache hides unsealed values. Rejects if the
+ * write fails, so the caller leaves the migration unfinished.
+ */
+export const sealLegacyKvRecords = async (
+    authKey: Uint8Array,
+): Promise<void> => {
+    const storageKeys = AUTHENTICATED_KV_KEYS.map(key => KV_PREFIX + key)
+    const stored = await chrome.storage.local.get(storageKeys)
+    const sealed: Record<string, string> = {}
+    for (const storageKey of storageKeys) {
+        const value = stored[storageKey]
+        if (typeof value !== 'string' || isSealedKvRecord(value)) continue
+        sealed[storageKey] = sealKvRecord(
+            authKey,
+            storageKey.slice(KV_PREFIX.length),
+            value,
+        )
+    }
+    if (Object.keys(sealed).length === 0) return
+    await chrome.storage.local.set(sealed)
+}
 
 /**
  * The web app shell MUST await this before its first render — synchronous
  * storage reads throw until the cache is hydrated from chrome.storage.local.
  */
 export const hydratePlatform = async (): Promise<void> => {
-    await keyValueStorage.hydrate()
+    await chromeKeyValueStorage.hydrate()
 }

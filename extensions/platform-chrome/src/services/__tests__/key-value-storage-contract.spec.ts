@@ -12,7 +12,18 @@
 
 import { runKeyValueStorageContract } from '../../../../platform/src/test-utils/key-value-storage-contract'
 import { createChromeFake } from '../../test-utils/chrome'
+import { AuthenticatedKeyValueStorage } from '../authenticated-key-value-storage'
 import { ChromeKeyValueStorageService } from '../key-value-storage'
+
+runKeyValueStorageContract('keyed AuthenticatedKeyValueStorage', async () => {
+    const fake = createChromeFake()
+    globalThis.chrome = fake.chrome
+    const inner = new ChromeKeyValueStorageService()
+    await inner.hydrate()
+    const service = new AuthenticatedKeyValueStorage(inner, ['k', 'obj'])
+    service.setAuthKey(new Uint8Array(32).fill(1))
+    return service
+})
 
 runKeyValueStorageContract('ChromeKeyValueStorageService', async () => {
     const fake = createChromeFake()
