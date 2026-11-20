@@ -1,6 +1,6 @@
 ---
 name: upgrading-dependencies-safely
-description: Use when handling any dependency version change — Dependabot/Renovate PRs, advisory patches, manual bumps, audit fixes, override edits. Symptoms that mean STOP and load this skill — uncertain whether a bump tool's `from→to` reflects the actual spec change; deciding migration shape from a semver delta; about to classify a major as safe or a minor as breaking; about to add a transitive override or a freshness-window carveout. Applies during evaluation and triage, not only at install time. Heightened criticality during active supply-chain attacks (e.g. shai-hulud/npm).
+description: Use when handling any dependency version change — Dependabot/Renovate PRs, advisory patches, manual bumps, audit fixes, override edits. Also use Phase 3 when resolving a pnpm lockfile conflict. Symptoms that mean STOP and load this skill — uncertain whether a bump tool's `from→to` reflects the actual spec change; deciding migration shape from a semver delta; about to classify a major as safe or a minor as breaking; about to add a transitive override or a freshness-window carveout. Applies during evaluation and triage, not only at install time. Heightened criticality during active supply-chain attacks (e.g. shai-hulud/npm).
 ---
 
 # Upgrading Dependencies Safely
@@ -33,7 +33,7 @@ Even if you skim the rest, do not skip these. They are the failure modes that bi
 ## When NOT to use
 
 - First-time onboarding of a new dependency (use a supply-chain audit skill — different goal)
-- Routine lockfile regenerations with no version change
+- Routine lockfile regenerations with no version change, unless resolving a lockfile conflict
 
 ## The five phases
 
@@ -81,8 +81,11 @@ When batching multiple bumps:
 3. **Run `<pkg-manager> install` once** at the end of each logical group. Stacked installs make the lockfile diff unreviewable.
 4. **Don't bypass existing safety gates.** If `minimumReleaseAge` (pnpm) / `--prefer-online` rules / `cargo audit deny` / similar block something, that's the gate working. Investigate; don't disable.
 
-- **Resolve a pnpm lockfile conflict after merging the dependency specs.** Use `git restore --ours --worktree -- pnpm-lock.yaml` to give pnpm a valid input without staging that side. Run `pnpm install` against the merged manifests and catalog. Review the regenerated `pnpm-lock.yaml`, stage it, then verify with `pnpm install --lockfile-only --frozen-lockfile`.
+- **Resolve a pnpm lockfile conflict after merging the dependency specs.** Use `git restore --ours --worktree -- pnpm-lock.yaml` to give pnpm a valid input without staging that side. Either side supplies a valid lockfile. During a rebase, `--ours` is the branch you are rebasing onto and usually keeps the diff against that base smaller. Run `pnpm install` against the merged manifests and catalog. Review the regenerated `pnpm-lock.yaml`, stage it, then verify with `pnpm install --lockfile-only --frozen-lockfile`.
 - **Recheck patches against the new upstream version.** Keep each hunk only if upstream still needs it. Drop hunks that upstream already covers, remove the patch entry if none remain, and list the dropped hunks and their upstream replacements in the PR description.
+    - Each `patchedDependencies` key and patch filename pins an exact version. Update both to the new version when carrying a patch forward.
+    - Update the reason above the patch's `pnpm-workspace.yaml` entry when its hunks change. When removing a patch, delete the entry, its comment, and the `.patch` file.
+    - `pnpm patch-commit` rewrites `pnpm-workspace.yaml`. Restore its comments after using it.
 
 ### Phase 4 — Verify
 
