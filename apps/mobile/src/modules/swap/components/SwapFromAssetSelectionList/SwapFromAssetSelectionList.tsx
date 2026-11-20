@@ -102,7 +102,8 @@ export const SwapFromAssetSelectionList = ({
             )
         }
         if (isError) return undefined
-        return selectedChainId !== null ? (
+        // Without chips (one network or none can pay), the list would otherwise be blank.
+        return selectedChainId !== null || chainOptions.length === 0 ? (
             <EmptyView
                 title={emptyResultTitle}
                 body={emptyChainResultBody}

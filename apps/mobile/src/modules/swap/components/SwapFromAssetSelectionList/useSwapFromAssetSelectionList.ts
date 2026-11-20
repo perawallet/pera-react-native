@@ -18,13 +18,6 @@ import {
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScopes } from '@perawallet/wallet-core-chain-shared'
-import {
-    getPeraServicesConfig,
-    isPeraBackendSwitchedOff,
-    isPeraScopeRefused,
-} from '@perawallet/wallet-core-config'
-import { usePeraScopeRefusalsVersion } from '@perawallet/wallet-core-device'
 import { useDebouncedValue } from '@perawallet/wallet-core-shared'
 import {
     useSwapPayHoldings,
@@ -70,19 +63,13 @@ export const useSwapFromAssetSelectionList = (
         isPending,
         isError,
     } = useSwapPayHoldings()
-    const sourceScopes = useSelectedScopes(sourceChainIds)
-    usePeraScopeRefusalsVersion()
-    const supportedChainIds = sourceScopes
-        .filter(
-            source =>
-                getPeraServicesConfig(source).backendUrl !== '' &&
-                !isPeraBackendSwitchedOff(source.chainId) &&
-                !isPeraScopeRefused(source),
-        )
-        .map(source => source.chainId)
-    const chainIds = supportedChainIds.includes(scope.chainId)
-        ? [...new Set([scope.chainId, ...supportedChainIds])]
-        : supportedChainIds
+    const chainIds = useMemo(
+        () =>
+            sourceChainIds.includes(scope.chainId)
+                ? [...new Set<ChainId>([scope.chainId, ...sourceChainIds])]
+                : sourceChainIds,
+        [sourceChainIds, scope.chainId],
+    )
     const filter = useSwapChainFilter({ chainIds, scope, variant: 'from' })
 
     const [searchFilter, setSearchFilter] = useState('')
