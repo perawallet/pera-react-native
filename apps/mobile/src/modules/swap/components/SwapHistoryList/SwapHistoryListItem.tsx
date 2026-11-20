@@ -21,6 +21,7 @@ import {
     baseUnitsToDisplayUnits,
 } from '@perawallet/wallet-core-shared'
 import { useTheme } from '@rneui/themed'
+import { swapHistoryStatusKey } from '../../utils/swapHistoryStatusKey'
 import type { ListedSwapHistoryItem } from './useSwapHistoryList'
 import { useStyles } from './styles'
 
@@ -59,16 +60,19 @@ export const SwapHistoryListItem = ({
 
     const amountInLabel = `${formatAmount(item.amountIn, inDecimals)} ${inUnit}`
     const amountOutLabel = `${formatAmount(item.amountOut, outDecimals)} ${outUnit}`
+    const isCompleted = item.status === 'completed'
+    const statusKey = swapHistoryStatusKey(item.status)
+    const statusLabel = statusKey ? t(statusKey) : ''
     // A completed order is last updated when it completes.
-    const dateLabel =
-        item.status === 'completed'
-            ? formatDatetime(item.updatedAt, undefined, 'medium')
-            : ''
+    const trailingLabel = isCompleted
+        ? formatDatetime(item.updatedAt, undefined, 'medium')
+        : statusLabel
 
     return (
         <PWTouchableOpacity
             style={styles.item}
             onPress={() => onPress(item)}
+            disabled={!item.explorerUrl}
             testID={`swap-history-item-${item.orderId}`}
         >
             <SwapAssetPairIcon
@@ -83,7 +87,11 @@ export const SwapHistoryListItem = ({
                 >
                     <Trans
                         t={t}
-                        i18nKey='swap.history.list.item.description'
+                        i18nKey={
+                            isCompleted
+                                ? 'swap.history.list.item.description'
+                                : 'swap.history.list.item.description_unsettled'
+                        }
                         components={[
                             <PWText key='amount-in'>{amountInLabel}</PWText>,
                             <PWText
@@ -94,20 +102,22 @@ export const SwapHistoryListItem = ({
                             </PWText>,
                         ]}
                     />
-                    {!!dateLabel && (
+                    {!!trailingLabel && (
                         <PWText
                             variant='body'
                             style={styles.itemDate}
                         >
-                            {` · ${dateLabel}`}
+                            {` · ${trailingLabel}`}
                         </PWText>
                     )}
                 </PWText>
             </PWView>
-            <PWIcon
-                name='arrow-up-right'
-                size='sm'
-            />
+            {!!item.explorerUrl && (
+                <PWIcon
+                    name='arrow-up-right'
+                    size='sm'
+                />
+            )}
         </PWTouchableOpacity>
     )
 }

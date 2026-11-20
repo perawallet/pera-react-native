@@ -13,8 +13,10 @@
 import { useCallback, type ReactElement } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
+import type {
+    ChainId,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     historyItemGroupToOpen,
     type SuspectedPoisoning,
@@ -40,6 +42,7 @@ import { useStyles } from './styles'
 import { useAccountHistoryCsvExport } from './useAccountHistoryCsvExport'
 import { useAccountHistoryFilter } from './useAccountHistoryFilter'
 import { useAccountHistoryRows } from './useAccountHistoryRows'
+import { emptyBodyCopy } from './utils'
 
 export type UseAccountHistoryResult = {
     rows: TransactionListRow[]
@@ -74,6 +77,8 @@ export type UseAccountHistoryResult = {
     isEmpty: boolean
     /** The network the history is narrowed to by the network chip; null is All. */
     networkChainId: Nullable<ChainId>
+    /** Unlike `networkChainId` (the chip), the full scope the rows come from; null on a merged history. */
+    shownScope: Nullable<ChainScope>
     /** Empty when the account is on one network, so no chips show. */
     chainFilterOptions: FilterOption<Nullable<ChainId>>[]
     /** Shared with the Assets chips, so both tabs show the same network. */
@@ -220,18 +225,13 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         rows.length === 0 &&
         (!isFetched || hasNextPage)
 
-    const isFiltered =
-        activeFilter !== TransactionFilter.AllTime ||
-        (canFilterByType && historyType !== null)
-    const unfilteredEmptyBody =
-        networkChainId === null
-            ? t('asset_details.transaction_list.empty_body')
-            : t('asset_details.transaction_list.empty_on_network_body', {
-                  network: chainDisplayNameOf(networkChainId) ?? networkChainId,
-              })
-    const emptyBody = isFiltered
-        ? t('asset_details.transaction_list.empty_filtered_body')
-        : unfilteredEmptyBody
+    const emptyCopy = emptyBodyCopy({
+        isFiltered:
+            activeFilter !== TransactionFilter.AllTime ||
+            (canFilterByType && historyType !== null),
+        networkChainId,
+    })
+    const emptyBody = t(emptyCopy.key, emptyCopy.params)
 
     const renderItem = useCallback(
         ({ item }: { item: TransactionListRow }) => (
@@ -297,6 +297,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         handleFilterPress,
         isEmpty,
         networkChainId,
+        shownScope: isMerged ? null : scope,
         chainFilterOptions,
         handleSelectChain,
         isMerged,

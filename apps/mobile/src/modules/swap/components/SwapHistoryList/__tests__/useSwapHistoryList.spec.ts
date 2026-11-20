@@ -159,11 +159,16 @@ describe('useSwapHistoryList', () => {
             }),
         )
 
-        expect(result.current.swaps).toEqual([item])
-        expect(result.current.keyExtractor(item)).toBe('order-1')
+        expect(result.current.swaps).toEqual([
+            { ...item, explorerUrl: undefined },
+        ])
+        expect(result.current.keyExtractor(result.current.swaps[0])).toBe(
+            'order-1',
+        )
     })
 
     it("opens the swap on its chain's explorer", () => {
+        mockHistory.mockReturnValue(historyOf([item]))
         mockExplorerUrlFor.mockReturnValue(
             'https://explorer.test/tx-group/GROUP/',
         )
@@ -172,7 +177,9 @@ describe('useSwapHistoryList', () => {
             useSwapHistoryList({ scope: SCOPE, address: 'ADDR', onClose }),
         )
 
-        result.current.handleItemPress(item)
+        const [listed] = result.current.swaps
+        expect(listed.explorerUrl).toBe('https://explorer.test/tx-group/GROUP/')
+        result.current.handleItemPress(listed)
 
         expect(mockExplorerUrlFor).toHaveBeenCalledWith(SCOPE, item)
         expect(onClose).toHaveBeenCalled()
@@ -188,13 +195,16 @@ describe('useSwapHistoryList', () => {
     })
 
     it('does nothing when the swap has nothing to link to', () => {
+        mockHistory.mockReturnValue(historyOf([item]))
         mockExplorerUrlFor.mockReturnValue(undefined)
         const onClose = vi.fn()
         const { result } = renderHook(() =>
             useSwapHistoryList({ scope: SCOPE, address: 'ADDR', onClose }),
         )
 
-        result.current.handleItemPress(item)
+        const [listed] = result.current.swaps
+        expect(listed.explorerUrl).toBeUndefined()
+        result.current.handleItemPress(listed)
 
         expect(onClose).not.toHaveBeenCalled()
         expect(mockPushWebView).not.toHaveBeenCalled()
