@@ -21,7 +21,8 @@ import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { CreatePasswordScreen, PasskeyUnlockSetupScreen } from '@modules/vault'
 import { OnboardingStackNavigator } from '@modules/onboarding/routes'
 import { useLedgerHandoffTabExit } from '@modules/ledger'
-import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
+import { PWView } from '@components/core'
+import { StartupMark } from '@components/StartupMark'
 import { DeviceRegistrar } from '@components/DeviceRegistrar'
 import {
     CameraTabResult,
@@ -39,11 +40,13 @@ import { useNavigationDocumentTitle } from '@hooks/useNavigationDocumentTitle'
 import { useWebAppShell } from '../../useWebAppShell.web'
 import { ApprovalPlaceholder } from '../ApprovalPlaceholder'
 import { MainSurfaceLifecycle } from '../MainSurfaceLifecycle'
+import { useAppShellRootStyles } from '../styles.web'
 
 export const ShellRouter = (): React.JSX.Element => {
     const { shellState, fcmToken } = useWebAppShell()
     const { t } = useLanguage()
     const isDarkMode = useIsDarkMode()
+    const rootStyles = useAppShellRootStyles()
     const documentTitle = useNavigationDocumentTitle({
         fallback: i18nKey('common.app_name'),
     })
@@ -70,7 +73,13 @@ export const ShellRouter = (): React.JSX.Element => {
 
     switch (shellState) {
         case 'resolving': {
-            return <FullScreenLoadingView />
+            // The same mark as App.web's pre-hydration screen, so a slow open
+            // hands over with one look; mid-session loaders keep their spinner.
+            return (
+                <PWView style={rootStyles.startup}>
+                    <StartupMark />
+                </PWView>
+            )
         }
         case 'approval-placeholder': {
             return <ApprovalPlaceholder />
