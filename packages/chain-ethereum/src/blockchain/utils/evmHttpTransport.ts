@@ -19,6 +19,9 @@ import {
     type HttpTransport,
     type HttpTransportConfig,
 } from 'viem'
+import { buildIntegrityHeadersWhenReady } from '@perawallet/wallet-core-app-integrity'
+import { config } from '@perawallet/wallet-core-config'
+import { EVM_RPC_PIN_DOMAINS } from '../pinned-hosts'
 
 // expo/fetch rejects an aborted request with FetchError, but viem only maps
 // AbortError to TimeoutError, so a timeout would surface as HttpRequestError.
@@ -58,12 +61,79 @@ export const fetchWithAbortError = (
     })
 }
 
+// viem preserves this as the cause of an HTTP error. An AbortError would
+// become viem's own TimeoutError and we would lose the pre-dispatch signal.
+const PRE_DISPATCH_TIMEOUT = new Error('Timed out before the request was sent')
+
+const notSent = new WeakSet<object>()
+
+/** A request that never left the device, so no node can have taken it. */
+export const isNotSent = (error: unknown): boolean =>
+    typeof error === 'object' && error !== null && notSent.has(error)
+
+// Pera's RPC proxy is guarded like the other Pera EVM routes; the key and
+// token must never reach a public fallback or a custom node.
+export const isPeraRpcUrl = (url: string): boolean => {
+    let host: string
+    try {
+        host = new URL(url).hostname
+    } catch {
+        return false
+    }
+    return EVM_RPC_PIN_DOMAINS.some(
+        domain => host === domain || host.endsWith(`.${domain}`),
+    )
+}
+
+// Built per request: the integrity token expires and renews while a client lives.
+const fetchWithPeraHeaders = async (
+    input: string | URL | Request,
+    init?: RequestInit,
+): Promise<Response> => {
+    const headers = new Headers(init?.headers)
+    if (config.backendAPIKey) headers.set('X-API-Key', config.backendAPIKey)
+    // viem's timeout aborts its signal; it cannot reject until this wait does.
+    const integrityHeaders = await new Promise<Record<string, string>>(
+        (resolve, reject) => {
+            const signal = init?.signal
+            if (signal?.aborted) {
+                reject(PRE_DISPATCH_TIMEOUT)
+                return
+            }
+            const onAbort = () => reject(PRE_DISPATCH_TIMEOUT)
+            signal?.addEventListener('abort', onAbort, { once: true })
+            buildIntegrityHeadersWhenReady().then(
+                result => {
+                    signal?.removeEventListener('abort', onAbort)
+                    resolve(result)
+                },
+                error => {
+                    signal?.removeEventListener('abort', onAbort)
+                    reject(error)
+                },
+            )
+        },
+    )
+    for (const [name, value] of Object.entries(integrityHeaders)) {
+        headers.set(name, value)
+    }
+    return fetchWithAbortError(input, { ...init, headers })
+}
+
 // viem prints the whole request body into these errors, and every request of
 // a failed batch shares one; each caller's error wrapper then copies it. A
 // batch of balance reads made that megabytes per copy, enough to stall the JS
 // thread and run the app out of memory. The class, status, code and URL are
 // what the error mapping reads, so they stay.
 const withoutRequestBody = (error: unknown, method: string): unknown => {
+    if (
+        error instanceof HttpRequestError &&
+        error.cause === PRE_DISPATCH_TIMEOUT
+    ) {
+        const timeout = new TimeoutError({ body: { method }, url: error.url })
+        notSent.add(timeout)
+        return timeout
+    }
     if (error instanceof TimeoutError) {
         return new TimeoutError({ body: { method }, url: error.url })
     }
@@ -107,9 +177,12 @@ const withoutRpcRequestBody = (
 
 export const evmHttpTransport = (
     url: string,
-    config?: Omit<HttpTransportConfig, 'fetchFn'>,
+    transportConfig?: Omit<HttpTransportConfig, 'fetchFn'>,
 ): HttpTransport => {
-    const transport = http(url, { ...config, fetchFn: fetchWithAbortError })
+    const transport = http(url, {
+        ...transportConfig,
+        fetchFn: isPeraRpcUrl(url) ? fetchWithPeraHeaders : fetchWithAbortError,
+    })
     return params => {
         const built = transport(params)
         return {

@@ -13,11 +13,23 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
     createPublicClient,
+    fallback,
     HttpRequestError,
     InvalidParamsRpcError,
     TimeoutError,
 } from 'viem'
-import { evmHttpTransport, fetchWithAbortError } from '../evmHttpTransport'
+import { buildIntegrityHeadersWhenReady } from '@perawallet/wallet-core-app-integrity'
+import {
+    evmHttpTransport,
+    fetchWithAbortError,
+    isNotSent,
+} from '../evmHttpTransport'
+
+vi.mock('@perawallet/wallet-core-app-integrity', () => ({
+    buildIntegrityHeadersWhenReady: vi.fn(async () => ({
+        'x-app-integrity-token': 'test-integrity-token',
+    })),
+}))
 
 // expo/fetch rejects an aborted request with a FetchError, not an AbortError.
 const fetchThatRejectsOnAbort = () =>
@@ -183,5 +195,76 @@ describe('evmHttpTransport errors', () => {
         expect(error).toBeInstanceOf(TimeoutError)
         expect(error.message).toContain('eth_getBalance')
         expect(error.message).not.toContain(HOLDER.slice(2))
+    })
+})
+
+describe('evmHttpTransport integrity registration', () => {
+    afterEach(() => {
+        vi.useRealTimers()
+        vi.unstubAllGlobals()
+        vi.mocked(buildIntegrityHeadersWhenReady).mockReset()
+    })
+
+    it('reaches the public fallback while registration is still pending', async () => {
+        vi.useFakeTimers()
+        vi.mocked(buildIntegrityHeadersWhenReady).mockReturnValueOnce(
+            new Promise(() => {}),
+        )
+        const fetchSpy = vi.fn(async (_input: unknown, _init?: RequestInit) =>
+            Response.json({ jsonrpc: '2.0', id: 0, result: '0x1' }),
+        )
+        vi.stubGlobal('fetch', fetchSpy)
+        const client = createPublicClient({
+            transport: fallback(
+                [
+                    evmHttpTransport(
+                        'https://mainnet.api.perawallet.app/api/v3/evm/1/rpc',
+                        { timeout: 50, retryCount: 0 },
+                    ),
+                    evmHttpTransport('https://rpc.test', { retryCount: 0 }),
+                ],
+                { retryCount: 0 },
+            ),
+        })
+        const pending = client.getChainId()
+
+        await vi.advanceTimersByTimeAsync(50)
+
+        await expect(pending).resolves.toBe(1)
+        expect(fetchSpy).toHaveBeenCalledTimes(1)
+        expect(fetchSpy.mock.calls[0]?.[0]).toBe('https://rpc.test/')
+    })
+
+    it('times out while registration is pending without sending a late request', async () => {
+        vi.useFakeTimers()
+        let completeRegistration!: (headers: Record<string, string>) => void
+        vi.mocked(buildIntegrityHeadersWhenReady).mockReturnValueOnce(
+            new Promise(resolve => {
+                completeRegistration = resolve
+            }),
+        )
+        const fetchSpy = vi.fn()
+        vi.stubGlobal('fetch', fetchSpy)
+        const client = createPublicClient({
+            transport: evmHttpTransport(
+                'https://mainnet.api.perawallet.app/api/v3/evm/1/rpc',
+                {
+                    timeout: 50,
+                    retryCount: 0,
+                },
+            ),
+        })
+        const pending = client.getChainId().catch(error => error)
+        const settled = vi.fn()
+        void pending.then(settled)
+
+        await vi.advanceTimersByTimeAsync(50)
+        expect(settled).toHaveBeenCalledWith(expect.any(TimeoutError))
+        expect(isNotSent(await pending)).toBe(true)
+        expect(fetchSpy).not.toHaveBeenCalled()
+
+        completeRegistration({ 'x-app-integrity-token': 'late-token' })
+        await vi.runAllTimersAsync()
+        expect(fetchSpy).not.toHaveBeenCalled()
     })
 })
