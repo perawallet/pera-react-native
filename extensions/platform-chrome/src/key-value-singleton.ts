@@ -13,13 +13,14 @@
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { isSealedKvRecord, sealKvRecord } from './kv-record'
 import { AuthenticatedKeyValueStorage } from './services/authenticated-key-value-storage'
-import { ChromeKeyValueStorageService } from './services/key-value-storage'
+import {
+    ChromeKeyValueStorageService,
+    KV_PREFIX,
+} from './services/key-value-storage'
 
-const KV_PREFIX = 'kv:'
-
-// Names persisted by `STORE_NAME` in chain-shared's network-store.ts and
-// `LEGACY_CUSTOM_NETWORK_KEY` in its legacy-network.ts. Neither is exported,
-// so renaming one silently drops authentication for it.
+// Names persisted by `STORE_NAME` in chain-shared's network-store.ts (not
+// exported) and `LEGACY_CUSTOM_NETWORK_KEY` in its legacy-network.ts (not on
+// the package barrel). A mobile app spec pins the first against this list.
 export const AUTHENTICATED_KV_KEYS: readonly string[] = [
     'network-store',
     'custom-network-store',

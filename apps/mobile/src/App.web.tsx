@@ -88,9 +88,10 @@ export const App = (): React.JSX.Element => {
             ])
             initRuntime()
             // Before the shell mounts, so its first reads of the network
-            // records already verify; the watcher covers every later unlock.
-            await kvAuthKey.applySessionKvAuthKey()
+            // records already verify. The watcher goes first so a lock or
+            // unlock between the two is not missed.
             kvAuthKey.watchSessionKvAuthKey()
+            await kvAuthKey.applySessionKvAuthKey()
             await registerTransports()
             setShell(() => mod.AppShell)
         }

@@ -36,7 +36,11 @@ import {
     unlockVault,
     lockVault,
     verifyVaultPassword,
+    ARGON2_MEMORY_KIB,
+    ARGON2_ITERATIONS,
+    ARGON2_PARALLELISM,
 } from '../vault'
+import { deriveArgon2id } from '../argon2'
 import {
     hasRecentPasswordAuth,
     PASSKEY_ENABLE_REAUTH_WINDOW_MS,
@@ -781,6 +785,7 @@ describe('passkey vault', () => {
 
     describe('legacy record migration', () => {
         const PRF_BLOB = 'vault:wrapped-master-key-prf'
+        const PASSWORD_BLOB = 'vault:wrapped-master-key'
 
         // What a build before the mark wrote: same PRF output and eval salt,
         // a random unmarked hkdfSalt.
@@ -829,10 +834,51 @@ describe('passkey vault', () => {
 
         const storedBlob = () => JSON.parse(String(fake.data.get(PRF_BLOB)))
 
+        // createVault now marks the password blob; a pre-change vault has
+        // an unmarked one beside its unmarked PRF blob.
+        const downgradeToUnmarkedPasswordBlob = async (
+            password: string,
+            masterKey: Uint8Array,
+        ): Promise<void> => {
+            const blob = JSON.parse(String(fake.data.get(PASSWORD_BLOB)))
+            const salt = new Uint8Array(16).fill(4)
+            const iv = new Uint8Array(12).fill(6)
+            const kek = await crypto.subtle.importKey(
+                'raw',
+                (await deriveArgon2id({
+                    password: new TextEncoder().encode(password),
+                    salt,
+                    m: ARGON2_MEMORY_KIB,
+                    t: ARGON2_ITERATIONS,
+                    p: ARGON2_PARALLELISM,
+                })) as BufferSource,
+                'AES-GCM',
+                false,
+                ['encrypt'],
+            )
+            const ciphertext = new Uint8Array(
+                await crypto.subtle.encrypt(
+                    { name: 'AES-GCM', iv },
+                    kek,
+                    masterKey,
+                ),
+            )
+            fake.data.set(
+                PASSWORD_BLOB,
+                JSON.stringify({
+                    ...blob,
+                    salt: base64.encode(salt),
+                    iv: base64.encode(iv),
+                    ciphertext: base64.encode(ciphertext),
+                }),
+            )
+        }
+
         const setUpUnmarked = async (): Promise<Uint8Array> => {
             await createVault('pw')
             await enablePasskeyUnlock('pw')
             const masterKey = await downgradeToUnmarkedBlob()
+            await downgradeToUnmarkedPasswordBlob('pw', masterKey)
             await lockVault()
             return masterKey
         }
@@ -901,6 +947,45 @@ describe('passkey vault', () => {
             expect(isMarkedSalt(base64.decode(storedBlob().hkdfSalt))).toBe(
                 true,
             )
+        })
+
+        it('does not open a second window for the password after the passkey migrated', async () => {
+            await setUpUnmarked()
+            const migrate = vi.fn(async () => {})
+            await unlockWithPasskey({ migrateLegacyRecords: migrate })
+            await lockVault()
+            // The attacker corrupts the migrated blob so the user falls back
+            // to the password, whose blob is still unmarked.
+            fake.data.set(PRF_BLOB, 'not json')
+
+            await unlockVault('pw', { migrateLegacyRecords: migrate })
+
+            expect(migrate).toHaveBeenCalledTimes(1)
+        })
+
+        it('does not open a second window for the passkey after the password migrated', async () => {
+            await setUpUnmarked()
+            const migrate = vi.fn(async () => {})
+            await unlockVault('pw', { migrateLegacyRecords: migrate })
+            await lockVault()
+
+            await unlockWithPasskey({ migrateLegacyRecords: migrate })
+
+            expect(migrate).toHaveBeenCalledTimes(1)
+            expect(isMarkedSalt(base64.decode(storedBlob().hkdfSalt))).toBe(
+                false,
+            )
+        })
+
+        it('does not open the password window when a marked passkey blob exists', async () => {
+            await setUpUnmarked()
+            const migrate = vi.fn(async () => {})
+            await unlockWithPasskey({ migrateLegacyRecords: migrate })
+            await lockVault()
+
+            await unlockVault('pw', { migrateLegacyRecords: migrate })
+
+            expect(migrate).toHaveBeenCalledTimes(1)
         })
 
         it('verifyPasskey never migrates or rewrites the blob', async () => {

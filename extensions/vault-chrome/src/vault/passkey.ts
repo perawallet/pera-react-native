@@ -21,7 +21,11 @@ import {
 } from '../errors'
 import { PRF_BLOB_KEY, PRF_CRED_ID_KEY } from '../storage-keys'
 import { armAutoLock } from './autolock'
-import { migrateLegacyRecordsOnce, type UnlockOptions } from './kv-auth-key'
+import {
+    isMigrationClosedByOtherBlob,
+    runLegacyRecordMigration,
+    type UnlockOptions,
+} from './kv-auth-key'
 import { clearFailedAttempts, getLockoutRemainingSeconds } from './lockout'
 import { createMarkedSalt, isMarkedSalt } from './marked-salt'
 import { hasRecentPasswordAuth } from './password-auth'
@@ -415,12 +419,17 @@ const unwrapMasterKeyWithPasskey = async ({
         if (!shouldPrepareMarkedBlob || isMarkedSalt(hkdfSaltBytes)) {
             return { masterKey }
         }
-        const markedBlob = await wrapWithPrfOutput(
-            prfOutput,
-            masterKey,
-            prfEvalSaltBytes,
-        )
-        return { masterKey, markedPrfBlob: JSON.stringify(markedBlob) }
+        try {
+            const markedBlob = await wrapWithPrfOutput(
+                prfOutput,
+                masterKey,
+                prfEvalSaltBytes,
+            )
+            return { masterKey, markedPrfBlob: JSON.stringify(markedBlob) }
+        } catch {
+            // Best-effort: the unlock stands, and the next one retries.
+            return { masterKey }
+        }
     } finally {
         // Zero PRF output bytes after KEK derivation.
         if (prfOutput !== null) {
@@ -440,9 +449,10 @@ export const unlockWithPasskey = async (
         // Before the session key lands, so contexts reacting to the unlock
         // already find sealed records.
         const hasMigrated =
-            markedPrfBlob === undefined
+            markedPrfBlob === undefined ||
+            (await isMigrationClosedByOtherBlob('passkey'))
                 ? false
-                : await migrateLegacyRecordsOnce(masterKey, options)
+                : await runLegacyRecordMigration(masterKey, options)
         await putSessionMasterKey(masterKey)
         await armAutoLock()
         await clearFailedAttempts()

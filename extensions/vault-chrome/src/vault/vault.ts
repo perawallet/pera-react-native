@@ -29,7 +29,11 @@ import {
 } from '../storage-keys'
 import { deriveArgon2id, type Argon2Params } from './argon2'
 import { armAutoLock, disarmAutoLock } from './autolock'
-import { migrateLegacyRecordsOnce, type UnlockOptions } from './kv-auth-key'
+import {
+    isMigrationClosedByOtherBlob,
+    runLegacyRecordMigration,
+    type UnlockOptions,
+} from './kv-auth-key'
 import { runThrottledAttempt } from './lockout'
 import { createMarkedSalt, isMarkedSalt } from './marked-salt'
 import { clearPasswordAuth, stampPasswordAuth } from './password-auth'
@@ -443,9 +447,10 @@ export const unlockVault = async (
     try {
         // Before the session key lands, so contexts reacting to the unlock
         // already find sealed records.
-        const hasMigrated = isMarked
-            ? false
-            : await migrateLegacyRecordsOnce(masterKey, options)
+        const hasMigrated =
+            isMarked || (await isMigrationClosedByOtherBlob('password'))
+                ? false
+                : await runLegacyRecordMigration(masterKey, options)
         await putSessionMasterKey(masterKey)
         await armAutoLock()
         await stampPasswordAuth()

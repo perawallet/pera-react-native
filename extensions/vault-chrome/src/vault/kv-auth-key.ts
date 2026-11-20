@@ -13,7 +13,14 @@
 import { hkdf } from '@noble/hashes/hkdf.js'
 import { sha256 } from '@noble/hashes/sha2.js'
 import { utf8ToBytes } from '@noble/hashes/utils.js'
-import { logger, type Optional } from '@perawallet/wallet-core-shared'
+import { base64 } from '@scure/base'
+import {
+    logger,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
+import { PRF_BLOB_KEY, VAULT_STORAGE_KEY } from '../storage-keys'
+import { isMarkedSalt } from './marked-salt'
 
 const KV_AUTH_INFO = utf8ToBytes('pera-kv-record-auth-v1')
 
@@ -31,12 +38,44 @@ export type UnlockOptions = {
     migrateLegacyRecords?: (kvAuthKey: Uint8Array) => Promise<void>
 }
 
+const readSaltField = (raw: unknown, field: string): Optional<Uint8Array> => {
+    if (typeof raw !== 'string') return undefined
+    try {
+        const parsed: unknown = JSON.parse(raw)
+        const value = (parsed as Nullable<Record<string, unknown>>)?.[field]
+        return typeof value === 'string' ? base64.decode(value) : undefined
+    } catch {
+        return undefined
+    }
+}
+
 /**
- * Runs the migration for the first unlock of an unmarked blob. Best-effort: a
- * failure returns false, which leaves the blob unmarked so the next unlock
- * retries, and the unlock itself still succeeds.
+ * True when the other unlock method's blob already closed the migration, or
+ * is present but unreadable. Each blob carries its own mark, so without this
+ * a profile writer could delete or corrupt the unlock method the user just
+ * migrated with and make the other, still-unmarked blob open a second window.
+ * An absent blob says nothing: password-only vaults have no PRF blob.
  */
-export const migrateLegacyRecordsOnce = async (
+export const isMigrationClosedByOtherBlob = async (
+    unlockedWith: 'password' | 'passkey',
+): Promise<boolean> => {
+    const [storageKey, field] =
+        unlockedWith === 'password'
+            ? [PRF_BLOB_KEY, 'hkdfSalt']
+            : [VAULT_STORAGE_KEY, 'salt']
+    const stored = await chrome.storage.local.get(storageKey)
+    const raw: unknown = stored[storageKey]
+    if (raw === undefined) return false
+    const salt = readSaltField(raw, field)
+    return salt === undefined || isMarkedSalt(salt)
+}
+
+/**
+ * Callers decide whether this unlock is the one allowed to migrate.
+ * Best-effort: a failure returns false, which leaves the blob unmarked so the
+ * next unlock retries, and the unlock itself still succeeds.
+ */
+export const runLegacyRecordMigration = async (
     masterKey: Uint8Array,
     options: Optional<UnlockOptions>,
 ): Promise<boolean> => {
@@ -45,8 +84,10 @@ export const migrateLegacyRecordsOnce = async (
     try {
         await options.migrateLegacyRecords(kvAuthKey)
         return true
-    } catch {
-        logger.error('[vault] sealing the legacy network records failed')
+    } catch (error) {
+        logger.error('[vault] sealing the legacy network records failed', {
+            reason: error instanceof Error ? error.name : 'unknown',
+        })
         return false
     } finally {
         kvAuthKey.fill(0)

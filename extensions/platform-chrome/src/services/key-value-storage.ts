@@ -18,7 +18,7 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 
 // Namespaces app KV entries apart from other extension storage (device id,
 // dapp permissions, vault) sharing chrome.storage.local.
-const KV_PREFIX = 'kv:'
+export const KV_PREFIX = 'kv:'
 
 /**
  * The KeyValueStorageService surface is synchronous (MMKV-shaped), so a write

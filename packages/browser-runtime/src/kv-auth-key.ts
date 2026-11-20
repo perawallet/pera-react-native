@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import {
+    bytesToHex,
+    hexToBytes,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { isTrustedExtensionPageSender } from '@perawallet/wallet-extension-platform-chrome/messaging'
 
 // The offscreen document has no chrome.storage.session, so the derived key
@@ -31,14 +35,9 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const isKvAuthKeyQuery = (value: unknown): value is KvAuthKeyQuery =>
     isRecord(value) && value.scope === KV_AUTH_KEY_SCOPE && value.kind === 'get'
 
-const toHex = (bytes: Uint8Array): string =>
-    [...bytes].map(b => b.toString(16).padStart(2, '0')).join('')
-
-const fromHex = (hex: string): Nullable<Uint8Array> =>
+const parseKeyHex = (hex: string): Nullable<Uint8Array> =>
     /^[0-9a-f]+$/i.test(hex) && hex.length === KEY_HEX_LENGTH
-        ? Uint8Array.from(hex.match(/.{2}/g) ?? [], pair =>
-              Number.parseInt(pair, 16),
-          )
+        ? hexToBytes(hex)
         : null
 
 /**
@@ -65,7 +64,7 @@ export const installKvAuthKeyHost = ({
             }
             void readKvAuthKey().then(
                 key => {
-                    sendResponse(key === null ? {} : { key: toHex(key) })
+                    sendResponse(key === null ? {} : { key: bytesToHex(key) })
                     key?.fill(0)
                 },
                 () => sendResponse({}),
@@ -83,7 +82,7 @@ export const requestKvAuthKey = async (
     try {
         const answer: unknown = await chromeLike.runtime.sendMessage(query)
         if (!isRecord(answer) || typeof answer.key !== 'string') return null
-        return fromHex(answer.key)
+        return parseKeyHex(answer.key)
     } catch {
         return null
     }

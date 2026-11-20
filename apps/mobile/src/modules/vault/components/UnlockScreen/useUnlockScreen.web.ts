@@ -25,7 +25,7 @@ import {
 } from '@perawallet/wallet-extension-vault-chrome'
 import { sealLegacyKvRecords } from '@perawallet/wallet-extension-platform-chrome'
 
-// Seals network records written before they were authenticated, once per unlock method.
+// Seals network records written before they were authenticated; the vault layer allows it once per wallet.
 const UNLOCK_OPTIONS = { migrateLegacyRecords: sealLegacyKvRecords }
 
 type UseUnlockScreenResult = {
