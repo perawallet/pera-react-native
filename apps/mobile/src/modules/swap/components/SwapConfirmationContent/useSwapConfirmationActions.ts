@@ -34,7 +34,7 @@ import {
     useSwapHistoryInvalidator,
     type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
-import type { Maybe } from '@perawallet/wallet-core-shared'
+import { logger, type Maybe } from '@perawallet/wallet-core-shared'
 import type { SwapConfirmationResult } from './SwapConfirmationContent'
 
 const buildSwapStatusPayload = (
@@ -71,7 +71,7 @@ type UseSwapConfirmationActionsParams = {
 type UseSwapConfirmationActionsResult = {
     swapStatus: SwapExecutionStatus
     handleSlideConfirm: () => Promise<void>
-    handleClose: (isCommitted: boolean, isCancellable: boolean) => void
+    handleClose: () => void
 }
 
 export const useSwapConfirmationActions = ({
@@ -83,6 +83,7 @@ export const useSwapConfirmationActions = ({
     const swapExecution = useSwapExecution()
     const successCloseTimer = useRunAfterDelay()
     const inFlightRef = useRef(false)
+    const hasFinishedRef = useRef(false)
     const { t } = useLanguage()
     const { infoToast } = useToast()
     const { playSuccess } = useTransactionOutcomeHaptics()
@@ -91,7 +92,7 @@ export const useSwapConfirmationActions = ({
 
     const { execute, cancel, reset, status: swapStatus } = swapExecution
     const handleSlideConfirm = useCallback(async () => {
-        if (inFlightRef.current) return
+        if (inFlightRef.current || hasFinishedRef.current) return
         trackEvent(SwapEvent.Confirm, {
             [AnalyticsMetadataKey.ChainId]: scope.chainId,
         })
@@ -109,6 +110,17 @@ export const useSwapConfirmationActions = ({
                           }),
                       )
                     : await execute(quote)
+            if (hasFinishedRef.current) {
+                if (outcome.kind !== 'cancelled') {
+                    logger.warn('Swap outcome after the sheet closed', {
+                        kind: outcome.kind,
+                    })
+                }
+                return
+            }
+            // Resolution starts an animation; confirm events can still arrive
+            // before the sheet unmounts.
+            hasFinishedRef.current = true
             if (outcome.kind === 'success') {
                 // With the sheet's confirmed state, which the same status flip renders.
                 playSuccess()
@@ -189,24 +201,22 @@ export const useSwapConfirmationActions = ({
         playSuccess,
     ])
 
-    const handleClose = useCallback(
-        (isCommitted: boolean, isCancellable: boolean) => {
-            // While preparing, closing must genuinely abandon the attempt:
-            // the in-flight execute() observes the cancel after prepare
-            // settles and resolves the sheet as cancelled — a slow prepare
-            // can never resume into the signing sheet with nobody watching.
-            if (isCancellable) {
-                cancel()
-                return
+    const handleClose = useCallback(() => {
+        if (hasFinishedRef.current) {
+            successCloseTimer.flush()
+            return
+        }
+        if (inFlightRef.current) {
+            if (cancel()) {
+                hasFinishedRef.current = true
+                resolve({ kind: 'cancelled' })
             }
-            // Signing onward the swap may already be committing — the sheet
-            // stays until the outcome lands.
-            if (isCommitted) return
+        } else {
+            hasFinishedRef.current = true
             successCloseTimer.flush()
             dismiss()
-        },
-        [cancel, successCloseTimer, dismiss],
-    )
+        }
+    }, [cancel, successCloseTimer, resolve, dismiss])
 
     // Reset execution state once on mount so a re-opened sheet starts clean.
     useEffect(() => {

@@ -273,6 +273,10 @@ export const executeAlgorandSwap = async (
             })
             blocked = true
         }
+        if (isCancelled()) {
+            cancelOrder()
+            return { kind: 'cancelled' }
+        }
         if (blocked) {
             cancelOrder()
             return { kind: 'verifying-previous' }

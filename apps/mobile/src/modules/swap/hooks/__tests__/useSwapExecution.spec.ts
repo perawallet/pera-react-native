@@ -23,6 +23,7 @@ import type {
 import {
     NoConnectionError,
     PeraNetworkError,
+    logger,
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import {
@@ -231,16 +232,33 @@ describe('useSwapExecution', () => {
             expect(result.current.status).toBe('idle')
         })
 
-        it('creates no order when the sheet closed meanwhile', async () => {
+        it('waits for destination preparation before closing a cancelled swap', async () => {
             const { result } = renderHook(() => useSwapExecution())
 
             const outcome = await run(async () => {
-                result.current.cancel()
+                expect(result.current.cancel()).toBe(false)
                 return true
             }, result.current)
 
             expect(mockExecuteSwap).not.toHaveBeenCalled()
             expect(outcome).toEqual({ kind: 'cancelled' })
+        })
+
+        it('logs a preparation error that lands after cancel and ends cancelled', async () => {
+            const warn = vi.spyOn(logger, 'warn')
+            const thrown = new Error('opt-in unknown')
+            const { result } = renderHook(() => useSwapExecution())
+
+            const outcome = await run(async () => {
+                result.current.cancel()
+                throw thrown
+            }, result.current)
+
+            expect(outcome).toEqual({ kind: 'cancelled' })
+            expect(warn).toHaveBeenCalledWith(
+                'Swap destination preparation failed after cancel',
+                expect.objectContaining({ error: thrown }),
+            )
         })
 
         it('fails in the prepare phase when it throws, with no order', async () => {
@@ -441,7 +459,6 @@ describe('useSwapExecution', () => {
             outcomePromise = result.current.execute(makeQuote('quote-1'))
         })
 
-        // `isCancellable` in the confirmation sheet is `status === 'preparing'`.
         for (const phase of [
             'preparing',
             'signing',
@@ -475,7 +492,7 @@ describe('useSwapExecution', () => {
         expect(held.variables()?.isCancelled()).toBe(false)
 
         act(() => {
-            result.current.cancel()
+            expect(result.current.cancel()).toBe(true)
         })
         expect(held.variables()?.isCancelled()).toBe(true)
 
@@ -488,6 +505,28 @@ describe('useSwapExecution', () => {
         expect(outcome).toEqual({ kind: 'cancelled' })
         expect(result.current.status).toBe('idle')
         expect(result.current.error).toBeNull()
+    })
+
+    it('refuses cancellation as soon as signing starts, before React updates', async () => {
+        const held = holdExecution()
+        const { result } = renderHook(() => useSwapExecution())
+
+        let pending: Optional<Promise<SwapExecutionOutcome>>
+        act(() => {
+            pending = result.current.execute(makeQuote('quote-1'))
+        })
+        expect(result.current.status).toBe('preparing')
+
+        act(() => {
+            held.variables()?.onProgress('signing')
+            expect(result.current.cancel()).toBe(false)
+        })
+        expect(held.variables()?.isCancelled()).toBe(false)
+
+        await act(async () => {
+            held.release({ kind: 'success', orderId: '1', txIds: [] })
+            await pending
+        })
     })
 
     it('clears a previous cancel request on the next execute', async () => {
@@ -987,24 +1026,62 @@ describe('useSwapExecution', () => {
         })
     })
 
-    it('leaves status on the last phase when the execution throws', async () => {
+    it('exits preparation with a visible error when execution throws', async () => {
+        const warn = vi.spyOn(logger, 'warn')
+        const thrown = new Error('decode failed')
         mockExecuteSwap.mockImplementationOnce(
             async (vars: ExecuteSwapVariables) => {
                 vars.onProgress('preparing')
-                throw new Error('decode failed')
+                throw thrown
             },
         )
         const { result } = renderHook(() => useSwapExecution())
 
-        await act(async () => {
-            await expect(
-                result.current.execute(makeQuote('quote-throw')),
-            ).rejects.toThrow('decode failed')
-        })
+        const outcome = await executeOnce(result.current.execute)
 
-        expect(result.current.status).toBe('preparing')
-        expect(result.current.error).toBeNull()
+        expect(warn).toHaveBeenCalledWith(
+            'Swap execution stopped with an error',
+            expect.objectContaining({ phase: 'prepare', error: thrown }),
+        )
+
+        expect(outcome).toEqual({
+            kind: 'error',
+            phase: 'prepare',
+            message: 'errors.general.body',
+            title: 'swap.execution.failed_title.prepare',
+        })
+        expect(result.current.status).toBe('error')
+        expect(result.current.error).toEqual({
+            phase: 'prepare',
+            message: 'errors.general.body',
+        })
     })
+
+    it.each([
+        ['submitting', 'submission'],
+        ['updating-status', 'status-update'],
+    ] as const)(
+        'keeps the swap outcome uncertain when execution throws during %s',
+        async (progress, phase) => {
+            mockExecuteSwap.mockImplementationOnce(
+                async (vars: ExecuteSwapVariables) => {
+                    vars.onProgress(progress)
+                    throw new Error('execution interrupted')
+                },
+            )
+            const { result } = renderHook(() => useSwapExecution())
+
+            const outcome = await executeOnce(result.current.execute)
+
+            expect(outcome).toEqual({
+                kind: 'error',
+                phase,
+                message: 'errors.submission.unknown_outcome.body',
+                title: 'errors.submission.unknown_outcome.title',
+            })
+            expect(result.current.status).toBe('error')
+        },
+    )
 
     it('reports a swap the account cannot run as an error, not a rejection', async () => {
         const { SwapAccountUnsupportedError } =

@@ -18,6 +18,7 @@ import {
     useEnsureSwapDestination,
     type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
+import { logger } from '@perawallet/wallet-core-shared'
 
 const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 
@@ -292,7 +293,7 @@ describe('useSwapConfirmationActions', () => {
     // F1: the submission-phase outcome's resolved title must reach the
     // confirmation result so the form/card toasts can prefer it over their
     // hardcoded default.
-    it('forwards the resolved title from the outcome', async () => {
+    it('forwards an unknown outcome and ignores a late second confirmation', async () => {
         mockExecute.mockResolvedValueOnce({
             kind: 'error',
             phase: 'submission',
@@ -309,8 +310,11 @@ describe('useSwapConfirmationActions', () => {
 
         await act(async () => {
             await result.current.handleSlideConfirm()
+            await result.current.handleSlideConfirm()
         })
 
+        expect(mockExecute).toHaveBeenCalledTimes(1)
+        expect(mockResolve).toHaveBeenCalledTimes(1)
         expect(mockResolve).toHaveBeenCalledWith({
             kind: 'error',
             message: 'may have landed',
@@ -406,14 +410,22 @@ describe('useSwapConfirmationActions', () => {
         )
 
         act(() => {
-            result.current.handleClose(false, false)
+            result.current.handleClose()
         })
 
         expect(mockFlush).toHaveBeenCalledTimes(1)
         expect(mockDismiss).toHaveBeenCalledTimes(1)
     })
 
-    it('handleClose cancels the in-flight execution while preparing instead of trapping', () => {
+    it('closes immediately during preparation and ignores the late result', async () => {
+        let release: () => void = () => {}
+        mockExecutionCancel.mockReturnValueOnce(true)
+        mockExecute.mockImplementationOnce(
+            () =>
+                new Promise(resolve => {
+                    release = () => resolve({ kind: 'cancelled' })
+                }),
+        )
         const { result } = renderHook(() =>
             useSwapConfirmationActions({
                 scope: SCOPE,
@@ -421,17 +433,66 @@ describe('useSwapConfirmationActions', () => {
             }),
         )
 
+        let pending: Promise<void> | undefined
         act(() => {
-            result.current.handleClose(false, true)
+            pending = result.current.handleSlideConfirm()
+            result.current.handleClose()
         })
 
-        // The execute() in flight observes the cancel and resolves the
-        // sheet as cancelled — no direct dismiss from here.
         expect(mockExecutionCancel).toHaveBeenCalledTimes(1)
-        expect(mockDismiss).not.toHaveBeenCalled()
+        expect(mockResolve).toHaveBeenCalledWith({ kind: 'cancelled' })
+
+        await act(async () => {
+            release()
+            await pending
+        })
+        expect(mockResolve).toHaveBeenCalledTimes(1)
     })
 
-    it('handleClose stays blocked once the swap has committed (signing onward)', () => {
+    it('logs an outcome other than cancelled that lands after the sheet closed', async () => {
+        const warn = vi.spyOn(logger, 'warn')
+        let release: () => void = () => {}
+        mockExecutionCancel.mockReturnValueOnce(true)
+        mockExecute.mockImplementationOnce(
+            () =>
+                new Promise(resolve => {
+                    release = () =>
+                        resolve({ kind: 'success', isPaidOutLater: false })
+                }),
+        )
+        const { result } = renderHook(() =>
+            useSwapConfirmationActions({
+                scope: SCOPE,
+                quote: makeQuote('quote-7'),
+            }),
+        )
+
+        let pending: Promise<void> | undefined
+        act(() => {
+            pending = result.current.handleSlideConfirm()
+            result.current.handleClose()
+        })
+        await act(async () => {
+            release()
+            await pending
+        })
+
+        expect(mockResolve).toHaveBeenCalledTimes(1)
+        expect(warn).toHaveBeenCalledWith(
+            'Swap outcome after the sheet closed',
+            { kind: 'success' },
+        )
+    })
+
+    it('keeps the sheet open once an in-flight swap has committed', async () => {
+        let release: () => void = () => {}
+        mockExecutionCancel.mockReturnValueOnce(false)
+        mockExecute.mockImplementationOnce(
+            () =>
+                new Promise(resolve => {
+                    release = () => resolve({ kind: 'cancelled' })
+                }),
+        )
         const { result } = renderHook(() =>
             useSwapConfirmationActions({
                 scope: SCOPE,
@@ -439,13 +500,21 @@ describe('useSwapConfirmationActions', () => {
             }),
         )
 
+        let pending: Promise<void> | undefined
         act(() => {
-            result.current.handleClose(true, false)
+            pending = result.current.handleSlideConfirm()
+            result.current.handleClose()
         })
 
-        expect(mockExecutionCancel).not.toHaveBeenCalled()
+        expect(mockExecutionCancel).toHaveBeenCalledTimes(1)
+        expect(mockResolve).not.toHaveBeenCalled()
         expect(mockFlush).not.toHaveBeenCalled()
         expect(mockDismiss).not.toHaveBeenCalled()
+
+        await act(async () => {
+            release()
+            await pending
+        })
     })
 
     it('resets execution state on mount', () => {

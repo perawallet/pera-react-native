@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
 import { PWDivider, PWSheetLayout, PWText, PWView } from '@components/core'
 import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
 import { SheetHeader } from '@modules/bottom-sheet'
@@ -59,8 +58,6 @@ export const SwapConfirmationContent = ({
         inAsset,
         outAsset,
         isProcessing,
-        isCancellable,
-        isCommitted,
         payDisplay,
         receiveDisplay,
         payFiatValue,
@@ -80,17 +77,12 @@ export const SwapConfirmationContent = ({
         crossChainNote,
     } = useSwapConfirmation({ scope, quote, swapStatus })
 
-    const onClosePress = useCallback(
-        () => handleClose(isCommitted, isCancellable),
-        [handleClose, isCommitted, isCancellable],
-    )
-
     return (
         <PWSheetLayout
             horizontalPadding='none'
             header={
                 <SheetHeader
-                    onClose={onClosePress}
+                    onClose={handleClose}
                     testID='swap-confirm'
                     title={
                         <PWView style={styles.headerCenter}>

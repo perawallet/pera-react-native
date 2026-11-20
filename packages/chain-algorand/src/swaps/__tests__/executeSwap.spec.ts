@@ -736,6 +736,30 @@ describe('executeAlgorandSwap', () => {
         expect(mockReportOrder).toHaveBeenCalledWith(cancelledReport())
     })
 
+    it('abandons a cancelled execution during the earlier-attempt lookup', async () => {
+        let releaseLookup: () => void = () => {}
+        mockGetOpenSubmissionAttempts.mockImplementationOnce(
+            () =>
+                new Promise(resolve => {
+                    releaseLookup = () => resolve([])
+                }),
+        )
+        let isCancelled = false
+        const resultPromise = run(makeQuote('quote-cancel-lookup'), {
+            isCancelled: () => isCancelled,
+        })
+        await vi.waitFor(() =>
+            expect(mockGetOpenSubmissionAttempts).toHaveBeenCalled(),
+        )
+
+        isCancelled = true
+        releaseLookup()
+
+        expect(await resultPromise).toEqual({ kind: 'cancelled' })
+        expect(mockAddSignRequest).not.toHaveBeenCalled()
+        expect(mockReportOrder).toHaveBeenCalledWith(cancelledReport())
+    })
+
     it('reports a prepare rejection with its error for the display layer', async () => {
         const prepareError = new Error('Prepare failed')
         mockCreateOrder.mockRejectedValue(prepareError)

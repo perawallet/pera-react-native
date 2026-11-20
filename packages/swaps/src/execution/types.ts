@@ -111,7 +111,11 @@ export type ExecuteSwapParams = {
     /** Localized source metadata shown on the signing request. */
     signingSource: { name: string; description: string }
     onProgress: (progress: SwapExecutionProgress) => void
-    /** Polled at the cancellable checkpoints, all before signing starts. */
+    /**
+     * Polled at the cancellable checkpoints, all before signing starts. The
+     * last check must run synchronously before `onProgress('signing')`; once
+     * it passes, the caller may already have closed.
+     */
     isCancelled: () => boolean
 }
 
