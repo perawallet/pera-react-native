@@ -22,7 +22,6 @@ Unfunded Wallet Gets No Backup Reminder
 
 Passphrase Screen Shows The Wallet's Whole Phrase
     [Tags]    id:backup.passphrase.matches    p1    needs-funded    excludefromci
-    Skip If    not $MNEMONIC_FUNDED    MNEMONIC_24_FUNDED is not set.
     Start With Wallet Needing Backup
     Open Passphrase
     Remember Passphrase
@@ -30,7 +29,6 @@ Passphrase Screen Shows The Wallet's Whole Phrase
 
 Next Stays Disabled Until The Quiz Is Answered
     [Tags]    id:backup.verify.next-disabled    p1    needs-funded    excludefromci
-    Skip If    not $MNEMONIC_FUNDED    MNEMONIC_24_FUNDED is not set.
     Start With Wallet Needing Backup
     Open Verification Quiz
     Page Should Contain Element    ${QUIZ_ITEM_ANY}
@@ -38,7 +36,6 @@ Next Stays Disabled Until The Quiz Is Answered
 
 Answering Every Word Correctly Enables Next
     [Tags]    id:backup.verify.correct-enables-next    p2    integration-covered    needs-funded    excludefromci
-    Skip If    not $MNEMONIC_FUNDED    MNEMONIC_24_FUNDED is not set.
     Start With Wallet Needing Backup
     Open Verification Quiz
     Answer Quiz Correctly
@@ -46,7 +43,6 @@ Answering Every Word Correctly Enables Next
 
 Completed Backup Clears The Reminder
     [Tags]    id:backup.complete.clears-banner    p1    needs-funded    excludefromci
-    Skip If    not $MNEMONIC_FUNDED    MNEMONIC_24_FUNDED is not set.
     Start With Wallet Needing Backup
     Open Verification Quiz
     Answer Quiz Correctly

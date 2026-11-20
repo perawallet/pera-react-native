@@ -7,6 +7,9 @@ Resource            app.resource
 ${MNEMONIC_24}                          %{MNEMONIC_24_WORD=}
 ${MNEMONIC_25}                          %{MNEMONIC_25_WORD=}
 ${MNEMONIC_24_REKEYED}                  %{MNEMONIC_24_REKEYED_ACCOUNT=}
+# These fixture wallets live on Algorand testnet, so their faucet funds cost nothing. Any other
+# phrase (the swap suite's mainnet wallet among them) imports on the build's default network.
+@{TESTNET_PHRASES}                      MNEMONIC_24_WORD    MNEMONIC_25_WORD    MNEMONIC_24_REKEYED_ACCOUNT
 
 ${WALLET_NAME}                          E2E Onboarding
 # A public address with no key on the device; watching it needs no funds or secrets.
@@ -173,8 +176,9 @@ Finish Import
     VAR    ${saw_rekeyed}    ${False}
     VAR    ${saw_confetti}    ${False}
     FOR    ${i}    IN RANGE    240
-        Tap If Present    ${PIN_PROMPT_DONT_ASK}
-        Tap If Present    ${BANNERS_MODAL_CLOSE}
+        # The PIN nudge, banners and, on a fresh install, the analytics gate open over the import
+        # flow as soon as the first account exists.
+        Dismiss Startup Prompts
         ${confetti}=    Is Shown    ${CONFETTI}
         IF    ${confetti}    VAR    ${saw_confetti}    ${True}
         ${select}=    Is Shown    ${SELECT_ADDRESSES_CONTINUE}
@@ -201,6 +205,10 @@ Finish Import
         END
         ${naming}=    Is Shown    ${ACCOUNT_FINISH_BUTTON}
         IF    ${naming}
+            # The name field opens the keyboard, which hides a sheet prompt from the tree and
+            # takes a tap meant for it; with the keyboard down the prompt can be found and closed.
+            Dismiss Keyboard
+            Dismiss Startup Prompts
             Tap    ${ACCOUNT_FINISH_BUTTON}
             VAR    ${passed}    ${True}
             VAR    ${clear_polls}    ${0}
@@ -230,26 +238,41 @@ Continue With Selected Addresses
 
 Leave Rekeyed Addresses
     [Arguments]    ${choice}
+    # The PIN nudge can land over this screen right after it appears and swallow a tap, so every
+    # step clears the prompts first and the selection is retried.
     IF    $choice == 'skip'
+        Dismiss Startup Prompts
         Tap    ${REKEYED_SKIP}
     ELSE
-        ${ready}=    Run Keyword And Return Status
-        ...    Expect Element    ${REKEYED_CONTINUE}    enabled    timeout=0s    loglevel=NONE
-        IF    not ${ready}    Tap    ${REKEYED_CHECKBOX_ANY}
-        Expect Element    ${REKEYED_CONTINUE}    enabled    timeout=3s    retry_interval=0.5s    loglevel=NONE
+        Wait Until Keyword Succeeds    20s    1s    Rekeyed Continue Should Be Ready
+        Dismiss Startup Prompts
         Tap    ${REKEYED_CONTINUE}
     END
     Run Keyword And Ignore Error
     ...    Wait Until Page Does Not Contain Element    ${REKEYED_CONTINUE}    timeout=10s
 
+Rekeyed Continue Should Be Ready
+    Dismiss Startup Prompts
+    ${ready}=    Run Keyword And Return Status
+    ...    Expect Element    ${REKEYED_CONTINUE}    enabled    timeout=0s    loglevel=NONE
+    IF    not ${ready}    Tap    ${REKEYED_CHECKBOX_ANY}
+    Expect Element    ${REKEYED_CONTINUE}    enabled    timeout=3s    retry_interval=0.5s    loglevel=NONE
+
 Import From Welcome
     [Documentation]    Fresh device to Home with the phrase's wallet imported.
     [Arguments]    ${phrase_type}    ${phrase_env}    ${rekeyed}=import
     Start Without Wallet
+    Use Network For Phrase    ${phrase_env}
     Open Import Options From Welcome
     Enter Recovery Phrase For    ${phrase_type}    ${phrase_env}
     ${saw_rekeyed}    ${saw_confetti}=    Finish Import    ${rekeyed}
     RETURN    ${saw_rekeyed}    ${saw_confetti}
+
+Use Network For Phrase
+    [Documentation]    Import discovers accounts on the selected network, so a testnet fixture is
+    ...                imported there. Remove All Accounts brings the default network back.
+    [Arguments]    ${phrase_env}
+    IF    $phrase_env in $TESTNET_PHRASES    Load Fixture    testnet
 
 Open Add Account
     Tap    ${ACCOUNT_SELECTION_BUTTON}
@@ -267,6 +290,7 @@ Add Multichain Account
 
 Enter Recovery Phrase From Add Account
     [Arguments]    ${phrase_type}    ${phrase_env}
+    Use Network For Phrase    ${phrase_env}
     Open Add Account
     Tap    ${ADD_ACCOUNT_IMPORT_BUTTON}
     Wait Until Page Contains Element    ${IMPORT_OPTION_RECOVER_WALLET}    timeout=20s

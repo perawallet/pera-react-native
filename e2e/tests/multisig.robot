@@ -268,7 +268,8 @@ Removing A Shared Account Takes It Out Of The Wallet
     [Setup]    Start With Shared Account    ${NAME_MANAGED}    ${PARTICIPANT_2}    ${PARTICIPANT_3}    ${PARTICIPANT_4}
     Remove Selected Account
     Open Account Menu
-    Page Should Not Contain Element    xpath=//*[@resource-id='${ACCOUNT_ROW_PREFIX}${CREATED}' or @name='${ACCOUNT_ROW_PREFIX}${CREATED}' or @content-desc='${ACCOUNT_ROW_PREFIX}${CREATED}'][${NAME_MANAGED}]
+    ${row}=    Set Variable    ${ACCOUNT_ROW_PREFIX}${CREATED}[${NAME_MANAGED}]
+    Page Should Not Contain Element    xpath=//*[@resource-id='${row}' or @name='${row}' or @content-desc='${row}']
     Close Account Menu
 
 Signable Shared Account Rekeys Only To A Shared Account

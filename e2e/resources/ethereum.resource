@@ -23,6 +23,7 @@ ${SEND_ETHER_ROW}                  tid=asset-list-item-native
 ${SEND_SUCCESS}                    tid=send_success
 ${SEND_AWAITING_TITLE}             Transaction Submitted
 ${ETHEREUM_TX_ROW_PREFIX}          transaction_row_0x
+${HISTORY_FILTER_ETHEREUM}         tid=history_network_filter_ethereum
 
 
 *** Keywords ***
@@ -49,10 +50,13 @@ Ethereum Address Of Selected Account
         Unlock With Known Pins
         Wait Until Page Contains Element    ${ETHEREUM_NETWORK_COPY}    timeout=60s
     END
-    ${text}=    Text Under    ${ETHEREUM_NETWORK_ROW}
-    ${address}=    Evaluate    (__import__('re').search(r'0x[0-9a-fA-F]{40}', $text) or [None])[0]
+    # The row prints the address shortened (0x03Af...15a6); its copy action hands over all of it.
+    Scroll Until Tappable    ${ETHEREUM_NETWORK_COPY}
+    Tap    ${ETHEREUM_NETWORK_COPY}
+    ${text}=    AppiumLibrary.Get Clipboard Text
+    ${address}=    Evaluate    (__import__('re').fullmatch(r'0x[0-9a-fA-F]{40}', $text.strip()) or [None])[0]
     Should Not Be Equal    ${address}    ${None}
-    ...    msg=The Ethereum row shows no 0x address: "${text}".
+    ...    msg=The Ethereum copy action put no 0x address on the clipboard: "${text}".
     RETURN    ${address}
 
 Open Ether Amount Entry
@@ -72,6 +76,11 @@ Newest Ethereum Transaction Id
     [Documentation]    The hash of the first EVM row in History: EVM hashes start with 0x and Algorand
     ...                ids never do. The funded wallet holds Sepolia ETH alone, so its EVM rows are
     ...                Ethereum ones, and its funding transaction means no row is History still loading.
+    # Android lists only on-screen rows, and the funded wallet's Algorand activity can push every
+    # Ethereum row below the fold, so History is narrowed to Ethereum first.
+    ${chips}=    Run Keyword And Return Status
+    ...    Wait Until Page Contains Element    ${HISTORY_FILTER_ETHEREUM}    timeout=15s
+    IF    ${chips}    Tap    ${HISTORY_FILTER_ETHEREUM}
     ${rows}=    Rows With Prefix    ${ETHEREUM_TX_ROW_PREFIX}
     Wait Until Page Contains Element    ${rows}    timeout=45s
     ...    error=History lists no Ethereum transaction, though the funded wallet has at least its funding one.

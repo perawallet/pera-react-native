@@ -158,6 +158,19 @@ Wait Clear Of Startup Prompts
     END
     Fail    Startup prompts kept coming back.
 
+Dismiss Startup Prompts
+    [Documentation]    One probe for any startup prompt, then a tap on each one that is up. Unlike Wait
+    ...                Clear Of Startup Prompts it does not wait out their arrival, so a polling loop can
+    ...                call it every round. Returns whether any was up.
+    ${any}=    Run Keyword And Return Status    Page Should Contain Element    ${STARTUP_PROMPT_ANY}
+    IF    not ${any}    RETURN    ${False}
+    # A focused field's keyboard can cover a sheet prompt's buttons, and a tap there types instead.
+    Dismiss Keyboard
+    FOR    ${id}    IN    @{STARTUP_PROMPT_IDS}
+        Tap If Present    tid=${id}
+    END
+    RETURN    ${True}
+
 Load Fixture
     [Documentation]    Requires a build bundled with E2E_FIXTURES=1; any other build ignores the link.
     [Arguments]    ${name}
@@ -470,6 +483,10 @@ Displayed Value
     ...                that rather than assert against the id.
     [Arguments]    ${test_id}
     ${text}=    Get Text    tid=${test_id}
+    # A row container reads empty on Android; its value sits in the text nodes it draws.
+    IF    not $text.strip()
+        ${text}=    Text Under    tid=${test_id}
+    END
     Skip If    $text.strip() == $test_id
     ...    App gap: PWText passes its testID through getTestProps (apps/mobile/src/components/core/PWText/PWText.tsx), which makes it the iOS accessibility label, so ${test_id}'s value cannot be read.
     RETURN    ${text}
@@ -494,18 +511,8 @@ Displayed Number Should Be At Least
     RETURN    ${value}
 
 Text Under
-    [Documentation]    The text a container renders, gathered from its child text nodes. Reading a
-    ...                container directly gives back an empty string on Android.
+    [Documentation]    The text a container renders; PeraAppiumLibrary.text_under says how it is read.
     [Arguments]    ${locator}
-    # Resolve the container through Appium first so tid= and XPath both work.
-    ${container}=    Get Webelement    ${locator}
-    ${nodes}=    Call Method    ${container}    find_elements    xpath
-    ...    .//*[string-length(@text) > 0 or string-length(@label) > 0 or string-length(@name) > 0]
-    @{parts}=    Create List
-    FOR    ${node}    IN    @{nodes}
-        ${text}=    Get Text    ${node}
-        ${seen}=    Evaluate    $text in $parts
-        IF    $text and not ${seen}    Append To List    ${parts}    ${text}
-    END
-    RETURN    ${{ ' '.join($parts) }}
+    ${text}=    AppiumLibrary.Text Under    ${locator}
+    RETURN    ${text}
 

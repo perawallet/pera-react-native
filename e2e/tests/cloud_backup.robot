@@ -7,7 +7,9 @@ Documentation       Cloud Backup on Android and iOS from one suite. Each case wa
 Resource            ../resources/cloud_backup.resource
 
 Suite Setup         Start Pera With Wallet
-Suite Teardown      Close Pera
+# A backup left on makes later suites' deletions ask about the cloud copy too; removing every
+# account clears it with the rest of the app's stores.
+Suite Teardown      Run Keywords    Reset To Fresh Wallet    AND    Close Pera
 Test Teardown       Capture Failure Screenshot
 Test Timeout        ${E2E_TEST_TIMEOUT}
 Test Tags           cloud-backup

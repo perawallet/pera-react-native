@@ -70,7 +70,8 @@ ALGO Transfer Link Cold Starts Onto Send
     [Tags]    id:deeplinks.algo-transfer.cold    p1
     Open Deeplink Cold    ${ALGO_TRANSFER_LINK}
     Wait Until Page Contains Element    ${SEND_NEXT}    timeout=60s
-    # The startup prompts arrive over the send sheet and would swallow the taps below.
+    # A gate due at launch (analytics consent) holds the send sheet until it is answered; nudges
+    # wait for the sheet to close.
     Wait Clear Of Startup Prompts
     Send Amount Should Be Prefilled
     Next Should Be Refused For Lack Of Funds
@@ -96,6 +97,8 @@ Asset Opt-In Link Asks For An Account Then Shows The Opt-In
     Open Deeplink    ${OPT_IN_LINK}
     Wait Until Settled    ${OPT_IN_ACCOUNT_ROW}
     Tap Upper Half    ${OPT_IN_ACCOUNT_ROW}
+    # A nudge waiting for the account picker to close shows next and holds the opt-in sheet.
+    Wait Clear Of Startup Prompts
     Wait Until Settled    ${OPT_IN_COPY_ID}
     Page Should Contain Element    ${OPT_IN_CONFIRM}
     Page Should Contain Text    ${OPT_IN_ASSET_ID}

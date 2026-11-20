@@ -197,10 +197,12 @@ Flip Swaps Pay And Receive And Flips Back
     Open Swap
     Choose USDC To Receive
     Page Should Not Contain Element    ${PAY_IS_USDC}
+    Wait Until Settled    ${SWAP_FLIP_BUTTON}
     Tap    ${SWAP_FLIP_BUTTON}
     Wait Until Page Contains Element    ${PAY_IS_USDC}    timeout=15s
-    Tap    ${SWAP_FLIP_BUTTON}
-    Wait Until Page Does Not Contain Element    ${PAY_IS_USDC}    timeout=15s
+    # The form re-renders after a flip, and a second tap straight after it can be dropped.
+    Wait Until Settled    ${SWAP_FLIP_BUTTON}
+    Wait Until Keyword Succeeds    30s    1s    Flip Back From USDC
 
 Pay Picker Leaves Out An Asset The Account Does Not Hold
     [Tags]    id:swap.asset.pay-held-only    swap-asset    p1

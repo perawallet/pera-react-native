@@ -179,6 +179,9 @@ Any USDC Row
     Wait Until Settled    ${ADD_ASSET_BUTTON}
     Tap    ${ADD_ASSET_BUTTON}
     Wait Until Page Contains Element    ${ASSET_SEARCH_INPUT}    timeout=15s
+    # On an account that is also on Ethereum, Ethereum's USDC-named tokens crowd the Algorand row
+    # out of view; both ids below are Algorand ones, so the search is narrowed to Algorand.
+    Tap If Present    ${ADD_ASSET_NETWORK_FILTER}_algorand
     Input Text    ${ASSET_SEARCH_INPUT}    USDC
     ${either}=    Set Variable
     ...    xpath=//*[@resource-id='${USDC_MAINNET_ID}' or @name='${USDC_MAINNET_ID}' or @resource-id='${USDC_TESTNET_ID}' or @name='${USDC_TESTNET_ID}']
