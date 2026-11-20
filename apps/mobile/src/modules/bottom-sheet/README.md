@@ -48,12 +48,14 @@ const { resolve, dismiss } = useBottomSheetResult<'confirm' | 'cancel'>()
     - Prefer `PWSheetLayout`. It is the sheet skeleton, with a sticky `header`,
       a scrolling `children` body, an optional pinned `footer`, and a
       `horizontalPadding` prop.
+    - `modal` and `full` sheets always fill their fixed height, so the scroll
+      gets a definite height without any flag.
     - A content-sized sheet (`size='auto'`) grows to fit and then scrolls, and
-      uses the default container. A sheet whose body must scroll within a bound
-      needs `autoCreateContainer={false}` so the scroll gets a definite height.
-      The `footer` slot only pins under that same flag. In an `auto` sheet it is
-      pinned over the bottom and the body is padded by its height, so the
-      content-sized sheet counts the footer and never clips the body.
+      uses the default container. An `auto` sheet whose body must scroll within
+      a bound needs `autoCreateContainer={false}` so the scroll gets a definite
+      height. The `footer` slot only pins under that same flag. In an `auto`
+      sheet it is pinned over the bottom and the body is padded by its height,
+      so the content-sized sheet counts the footer and never clips the body.
     - Exception: `ModelViewerBottomSheet` is a direct `BottomSheetModal` rather
       than a `PWBottomSheet`, so it owns its own inset.
 
