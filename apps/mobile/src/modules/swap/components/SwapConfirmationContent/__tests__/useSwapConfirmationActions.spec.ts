@@ -18,6 +18,7 @@ import {
     useEnsureSwapDestination,
     type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
+import { logger } from '@perawallet/wallet-core-shared'
 
 const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 
@@ -446,6 +447,41 @@ describe('useSwapConfirmationActions', () => {
             await pending
         })
         expect(mockResolve).toHaveBeenCalledTimes(1)
+    })
+
+    it('logs an outcome other than cancelled that lands after the sheet closed', async () => {
+        const warn = vi.spyOn(logger, 'warn')
+        let release: () => void = () => {}
+        mockExecutionCancel.mockReturnValueOnce(true)
+        mockExecute.mockImplementationOnce(
+            () =>
+                new Promise(resolve => {
+                    release = () =>
+                        resolve({ kind: 'success', isPaidOutLater: false })
+                }),
+        )
+        const { result } = renderHook(() =>
+            useSwapConfirmationActions({
+                scope: SCOPE,
+                quote: makeQuote('quote-7'),
+            }),
+        )
+
+        let pending: Promise<void> | undefined
+        act(() => {
+            pending = result.current.handleSlideConfirm()
+            result.current.handleClose()
+        })
+        await act(async () => {
+            release()
+            await pending
+        })
+
+        expect(mockResolve).toHaveBeenCalledTimes(1)
+        expect(warn).toHaveBeenCalledWith(
+            'Swap outcome after the sheet closed',
+            { kind: 'success' },
+        )
     })
 
     it('keeps the sheet open once an in-flight swap has committed', async () => {

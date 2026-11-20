@@ -23,6 +23,7 @@ import type {
 import {
     NoConnectionError,
     PeraNetworkError,
+    logger,
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import {
@@ -241,6 +242,23 @@ describe('useSwapExecution', () => {
 
             expect(mockExecuteSwap).not.toHaveBeenCalled()
             expect(outcome).toEqual({ kind: 'cancelled' })
+        })
+
+        it('logs a preparation error that lands after cancel and ends cancelled', async () => {
+            const warn = vi.spyOn(logger, 'warn')
+            const thrown = new Error('opt-in unknown')
+            const { result } = renderHook(() => useSwapExecution())
+
+            const outcome = await run(async () => {
+                result.current.cancel()
+                throw thrown
+            }, result.current)
+
+            expect(outcome).toEqual({ kind: 'cancelled' })
+            expect(warn).toHaveBeenCalledWith(
+                'Swap destination preparation failed after cancel',
+                expect.objectContaining({ error: thrown }),
+            )
         })
 
         it('fails in the prepare phase when it throws, with no order', async () => {
@@ -1009,15 +1027,22 @@ describe('useSwapExecution', () => {
     })
 
     it('exits preparation with a visible error when execution throws', async () => {
+        const warn = vi.spyOn(logger, 'warn')
+        const thrown = new Error('decode failed')
         mockExecuteSwap.mockImplementationOnce(
             async (vars: ExecuteSwapVariables) => {
                 vars.onProgress('preparing')
-                throw new Error('decode failed')
+                throw thrown
             },
         )
         const { result } = renderHook(() => useSwapExecution())
 
         const outcome = await executeOnce(result.current.execute)
+
+        expect(warn).toHaveBeenCalledWith(
+            'Swap execution stopped with an error',
+            expect.objectContaining({ phase: 'prepare', error: thrown }),
+        )
 
         expect(outcome).toEqual({
             kind: 'error',

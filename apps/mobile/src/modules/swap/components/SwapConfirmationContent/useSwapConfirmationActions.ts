@@ -34,7 +34,7 @@ import {
     useSwapHistoryInvalidator,
     type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
-import type { Maybe } from '@perawallet/wallet-core-shared'
+import { logger, type Maybe } from '@perawallet/wallet-core-shared'
 import type { SwapConfirmationResult } from './SwapConfirmationContent'
 
 const buildSwapStatusPayload = (
@@ -110,7 +110,14 @@ export const useSwapConfirmationActions = ({
                           }),
                       )
                     : await execute(quote)
-            if (hasFinishedRef.current) return
+            if (hasFinishedRef.current) {
+                if (outcome.kind !== 'cancelled') {
+                    logger.warn('Swap outcome after the sheet closed', {
+                        kind: outcome.kind,
+                    })
+                }
+                return
+            }
             // Resolution starts an animation; confirm events can still arrive
             // before the sheet unmounts.
             hasFinishedRef.current = true

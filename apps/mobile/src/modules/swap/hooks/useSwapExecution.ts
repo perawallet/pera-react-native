@@ -276,6 +276,10 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                     isPrepared = await prepareDestination()
                 } catch (error) {
                     if (cancelRequestedRef.current) {
+                        logger.warn(
+                            'Swap destination preparation failed after cancel',
+                            { quoteId: quote.quoteId, error },
+                        )
                         setStatus('idle')
                         return { kind: 'cancelled' }
                     }
@@ -363,6 +367,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                 logger.warn('Swap execution stopped with an error', {
                     quoteId: quoteToRun.quoteId,
                     phase,
+                    error,
                 })
                 const copy = couldHaveSubmitted
                     ? {
