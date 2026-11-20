@@ -12,6 +12,8 @@ Resource            onboarding.resource
 # reminder needs a wallet the app created, which the treasury funds: an unfunded account with
 # nothing rekeyed to it is never reminded.
 ${TREASURY_MNEMONIC}                %{MNEMONIC_25_WORD=}
+# run.sh passes the real path, since the snapshot holds only tests/ and resources/; this default
+# covers robot started by hand from e2e/.
 ${TESTNET_FIXTURES_TOOL}            ${EXECDIR}/tools/testnet_fixtures.mjs
 # 0.1 ALGO minimum balance plus room for nothing else: the wallet is thrown away after the case.
 ${BACKUP_FUNDING_MICROALGOS}        100000

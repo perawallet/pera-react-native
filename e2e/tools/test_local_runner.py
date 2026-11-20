@@ -119,3 +119,27 @@ with open(os.environ['ARGUMENT_DUMP'], 'w') as output:
     pairs = list(zip(args, args[1:]))
     assert ('--exclude', 'slow') in pairs
     assert (('--exclude', 'needs-funded') in pairs) is excluded
+
+
+def test_local_runner_passes_the_fixtures_tool_path_wherever_it_is_started(tmp_path):
+    # The snapshot holds only tests/ and resources/, and ${EXECDIR} is the caller's cwd.
+    bin_dir = tmp_path / 'venv/bin'
+    bin_dir.mkdir(parents=True)
+    interpreter = bin_dir / 'python'
+    interpreter.write_text(f'''#!{sys.executable}
+import json, os, sys
+with open(os.environ['ARGUMENT_DUMP'], 'w') as output:
+    json.dump(sys.argv[1:], output)
+''')
+    interpreter.chmod(0o755)
+    dump = tmp_path / 'args.json'
+    env = dict(os.environ, ANDROID_UDID='test-device', ANDROID_SYSTEM_PORT='8300',
+               E2E_VENV=str(bin_dir.parent), E2E_RESULTS_DIR=str(tmp_path / 'results'),
+               ARGUMENT_DUMP=str(dump))
+    result = subprocess.run(['bash', str(RUNNER), 'android'], env=env, cwd=tmp_path,
+                            capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    args = json.loads(dump.read_text())
+    tool = RUNNER.with_name('testnet_fixtures.mjs')
+    assert ('--variable', f'TESTNET_FIXTURES_TOOL:{tool}') in list(zip(args, args[1:]))
+    assert tool.exists()

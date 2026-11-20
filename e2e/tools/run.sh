@@ -122,7 +122,9 @@ run_robot() {
   "$PYTHON" -m robot \
     "${excludes[@]}" \
     --variable "E2E_TEST_TIMEOUT:${E2E_TEST_TIMEOUT:-5 minutes}" \
-    --variable "PLATFORM:$PLATFORM" "${DEVICE[@]}" "$@" \
+    --variable "PLATFORM:$PLATFORM" \
+    --variable "TESTNET_FIXTURES_TOOL:$E2E_DIR/tools/testnet_fixtures.mjs" \
+    "${DEVICE[@]}" "$@" \
     --outputdir "$OUT" "$SNAPSHOT/tests${SUITE:+/$SUITE.robot}" || status=$?
   echo "$PLATFORM finished with status $status; results in $OUT"
   exit "$status"
