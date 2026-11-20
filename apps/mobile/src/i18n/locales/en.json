@@ -2517,6 +2517,9 @@
             "cancelled_none_body": "Nothing new was found before you stopped the scan.",
             "retry_networks": "Check {{networks}} again",
             "scan_again": "Scan again",
+            "limit_reached_title": "There may be more accounts",
+            "limit_reached_body": "The scan stops after a set number of addresses. If you've used more on this wallet, keep scanning to find them.",
+            "scan_further": "Keep scanning",
             "done": "Done",
             "incomplete_title": "Scan incomplete",
             "updated_title_one": "Found new networks on {{count}} account",
@@ -2571,7 +2574,10 @@
             "all_imported_body": "All accounts from this wallet are already in Pera. If one is added as a watch account, remove it first, then import again to add it with full access.",
             "unchecked_networks_title": "Couldn't check {{networks}}",
             "unchecked_networks_body": "Accounts on the other networks are listed. You can scan for new accounts again later.",
-            "retry_networks": "Check {{networks}} again"
+            "retry_networks": "Check {{networks}} again",
+            "limit_reached_title": "There may be more accounts",
+            "limit_reached_body": "The search stops after a set number of addresses. If you've used more on this wallet, keep scanning to find them.",
+            "scan_further": "Keep scanning"
         },
         "import_rekeyed_addresses": {
             "title_one": "{{count}} rekeyed account found",

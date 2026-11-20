@@ -18,7 +18,7 @@ import {
     type HdBatchProbe,
     type ProbedHdIndex,
 } from '../hd-walk'
-import type { HdIndex } from '../models'
+import type { HdIndex, HdIndexLimit } from '../models'
 import {
     ALGORAND,
     BASE,
@@ -170,12 +170,60 @@ describe('walkHdTree', () => {
         expect(Math.max(...probed.map(index => index.keyIndex))).toBe(2)
     })
 
+    it("reaches past an account index's own held keys without raising the limit on the others", async () => {
+        const probe = vi.fn<HdBatchProbe>(async indices =>
+            indices.map(() => true),
+        )
+        vi.spyOn(logger, 'warn').mockImplementation(() => {})
+
+        await walkHdTree({
+            probe,
+            accountIndexLimit: 2,
+            keyIndexLimit: 3,
+            heldIndexes: [{ account: 0, keyIndex: 6 }],
+        })
+
+        const probed = probe.mock.calls.flatMap(([indices]) => indices)
+        const highestKeyOn = (account: number) =>
+            Math.max(
+                ...probed
+                    .filter(index => index.account === account)
+                    .map(index => index.keyIndex),
+            )
+        expect(highestKeyOn(0)).toBe(11)
+        expect(highestKeyOn(1)).toBe(2)
+    })
+
     it('does not warn when the gaps end the walk', async () => {
         const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
         await walkHdTree({ probe: probeActiveAt(['0/0', '1/4']) })
 
         expect(warn).not.toHaveBeenCalled()
+    })
+
+    it('says once that it stopped at a limit, and not when the gaps end it', async () => {
+        vi.spyOn(logger, 'warn').mockImplementation(() => {})
+        const onLimitReached = vi.fn()
+        const onGapsClosed = vi.fn()
+
+        await walkHdTree({
+            probe: async indices => indices.map(() => true),
+            accountIndexLimit: 2,
+            keyIndexLimit: 3,
+            onLimitReached,
+        })
+        await walkHdTree({
+            probe: probeActiveAt(['0/0', '0/1']),
+            keyIndexLimit: 20,
+            onLimitReached: onGapsClosed,
+        })
+
+        expect(onLimitReached).toHaveBeenCalledExactlyOnceWith([
+            'account',
+            'key',
+        ])
+        expect(onGapsClosed).not.toHaveBeenCalled()
     })
 
     it('returns the active indexes by account, then key index', async () => {
@@ -288,7 +336,10 @@ describe('discoverWalletActivity', () => {
         ])
     })
 
-    const walkEveryAddressActive = async (heldIndexes?: HdIndex[]) => {
+    const walkEveryAddressActive = async (
+        heldIndexes?: HdIndex[],
+        extendLimits?: HdIndexLimit[],
+    ) => {
         const families = registerChainFamilies([ALGORAND])
         families.checkActivity
             .get(ALGORAND)!
@@ -301,6 +352,7 @@ describe('discoverWalletActivity', () => {
             walletId: 'seed',
             chainIds: [ALGORAND],
             heldIndexes,
+            extendLimits,
         })
         warn.mockRestore()
         return {
@@ -317,6 +369,76 @@ describe('discoverWalletActivity', () => {
         await expect(walkEveryAddressActive()).resolves.toEqual({
             highestAccount: 49,
             highestKeyIndex: 19,
+        })
+    })
+
+    const walkFirstAccountAllActive = async (
+        options: {
+            heldIndexes?: HdIndex[]
+            extendLimits?: HdIndexLimit[]
+        } = {},
+    ) => {
+        const families = registerChainFamilies([ALGORAND])
+        families.checkActivity
+            .get(ALGORAND)!
+            .mockImplementation(
+                async (probed: string[]) =>
+                    new Map(
+                        probed.map(address => [
+                            address,
+                            Array.from({ length: 100 }, (_, keyIndex) =>
+                                familyHdAddress('algorand', 0, keyIndex),
+                            ).includes(address),
+                        ]),
+                    ),
+            )
+        const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+        const onLimitReached = vi.fn()
+        const probed = await discoverWalletActivity({
+            walletId: 'seed',
+            chainIds: [ALGORAND],
+            onLimitReached,
+            ...options,
+        })
+        warn.mockRestore()
+        return {
+            highestKeyIndex: Math.max(
+                ...probed.map(({ index }) => index.keyIndex),
+            ),
+            reachedLimits: onLimitReached.mock.calls[0]?.[0] ?? [],
+        }
+    }
+
+    it('says when it stopped at the key index limit with keys still active', async () => {
+        await expect(walkFirstAccountAllActive()).resolves.toEqual({
+            highestKeyIndex: 19,
+            reachedLimits: ['key'],
+        })
+    })
+
+    it('reaches past the highest key index the wallet already holds', async () => {
+        await expect(
+            walkFirstAccountAllActive({
+                heldIndexes: [{ account: 0, keyIndex: 29 }],
+            }),
+        ).resolves.toEqual({ highestKeyIndex: 34, reachedLimits: ['key'] })
+    })
+
+    it('scans one more key index limit past what it holds when asked to scan further', async () => {
+        await expect(
+            walkFirstAccountAllActive({
+                heldIndexes: [{ account: 0, keyIndex: 19 }],
+                extendLimits: ['key'],
+            }),
+        ).resolves.toEqual({ highestKeyIndex: 44, reachedLimits: ['key'] })
+    })
+
+    it('raises only the limit it is asked to, so a key limit scan never widens the account walk', async () => {
+        await expect(
+            walkEveryAddressActive(undefined, ['key']),
+        ).resolves.toEqual({
+            highestAccount: 49,
+            highestKeyIndex: 39,
         })
     })
 

@@ -32,7 +32,12 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import type { AccountChains, ChainAccount, HdIndex } from './models'
+import type {
+    AccountChains,
+    ChainAccount,
+    HdIndex,
+    HdIndexLimit,
+} from './models'
 import { seedMintableScheme } from './credentials'
 import { accountsChainAdapters, type GetPublicKey } from './chain-adapter'
 
@@ -40,7 +45,10 @@ const ACCOUNT_GAP_LIMIT = 5
 const KEY_INDEX_GAP_LIMIT = 5
 // The wallet walk's hard stops, well past the gaps, so a node that reports
 // every address active can't walk forever: every index it probes saves a key
-// per chain family. A single-chain search derives in memory and stays unbounded.
+// per chain family. Kept low on purpose, as an unattended walk shouldn't run
+// long on a node's say-so; a walk that stops here says so, and the user can ask
+// for one more step past it (`extendLimits`). A single-chain search
+// derives in memory and stays unbounded.
 const WALLET_ACCOUNT_INDEX_LIMIT = 50
 const WALLET_KEY_INDEX_LIMIT = 20
 // How long the walk may hear nothing from any chain, once one has answered,
@@ -70,14 +78,23 @@ type WalkHdTreeParams = {
     probe: HdBatchProbe
     accountGapLimit?: number
     keyIndexGapLimit?: number
-    /** Account indexes past this many are never probed. Unbounded by default. */
+    /**
+     * Account indexes past this many are never probed, or past the highest
+     * held one plus the gap when that is further. Unbounded by default.
+     */
     accountIndexLimit?: number
-    /** Key indexes past this many, per account index, are never probed. Unbounded by default. */
+    /** As `accountIndexLimit`, for key indexes, per account index and its own held keys. */
     keyIndexLimit?: number
+    /** Probed past `accountIndexLimit` as reached past the held indexes. */
+    accountIndexExtension?: number
+    /** Probed past `keyIndexLimit` as reached past each account index's held keys. */
+    keyIndexExtension?: number
     /** Once aborted, no further batch starts; the walk resolves to what it found. */
     signal?: AbortSignal
     /** Called with each account index's active keys once the gaps confirm them. */
     onFound?: (indices: readonly HdIndex[]) => void
+    /** Called once, as the walk ends, with the limits it stopped at while a gap was still open. */
+    onLimitReached?: (limits: HdIndexLimit[]) => void
     /**
      * Indexes the wallet already holds. They keep both gaps open as an active
      * index would, so a walk narrowed to some chains still reaches them.
@@ -88,11 +105,23 @@ type WalkHdTreeParams = {
 type ScanLimits = {
     keyIndexGapLimit: number
     keyIndexLimit: number
+    keyIndexExtension: number
     /** The highest key index held on each account index. */
     heldKeyIndexes: ReadonlyMap<number, number>
     onLimit: () => void
     signal?: AbortSignal
 }
+
+// Held indexes keep the gap open, so a limit short of them would cut the walk
+// off from accounts the wallet already has.
+const limitPastHeld = (
+    limit: number,
+    heldIndex: number,
+    gapLimit: number,
+    extension: number,
+): number =>
+    (heldIndex < 0 ? limit : Math.max(limit, heldIndex + 1 + gapLimit)) +
+    extension
 
 export const hdPathKey = ({ account, keyIndex }: HdIndex): string =>
     `${account}/${keyIndex}`
@@ -104,7 +133,8 @@ async function scanAccountIndex(
     account: number,
     {
         keyIndexGapLimit,
-        keyIndexLimit,
+        keyIndexLimit: baseKeyIndexLimit,
+        keyIndexExtension,
         heldKeyIndexes,
         onLimit,
         signal,
@@ -112,6 +142,12 @@ async function scanAccountIndex(
     probe: HdBatchProbe,
 ): Promise<HdIndex[]> {
     const heldKeyIndex = heldKeyIndexes.get(account) ?? -1
+    const keyIndexLimit = limitPastHeld(
+        baseKeyIndexLimit,
+        heldKeyIndex,
+        keyIndexGapLimit,
+        keyIndexExtension,
+    )
     const active: HdIndex[] = []
     let keyGap = 0
     let keyIndex = 0
@@ -165,19 +201,28 @@ export async function walkHdTree({
     probe,
     accountGapLimit = ACCOUNT_GAP_LIMIT,
     keyIndexGapLimit = KEY_INDEX_GAP_LIMIT,
-    accountIndexLimit = Infinity,
+    accountIndexLimit: baseAccountIndexLimit = Infinity,
     keyIndexLimit = Infinity,
+    accountIndexExtension = 0,
+    keyIndexExtension = 0,
     signal,
     onFound,
+    onLimitReached,
     heldIndexes = [],
 }: WalkHdTreeParams): Promise<HdIndex[]> {
     const found: HdIndex[] = []
     let accountGap = 0
     let accountIndex = 0
-    let hasHitLimit = false
+    const reached = new Set<HdIndexLimit>()
     const heldAccountIndex = Math.max(
         -1,
         ...heldIndexes.map(({ account }) => account),
+    )
+    const accountIndexLimit = limitPastHeld(
+        baseAccountIndexLimit,
+        heldAccountIndex,
+        accountGapLimit,
+        accountIndexExtension,
     )
     const heldKeyIndexes = new Map<number, number>()
     for (const { account, keyIndex } of heldIndexes) {
@@ -189,16 +234,17 @@ export async function walkHdTree({
     const limits: ScanLimits = {
         keyIndexGapLimit,
         keyIndexLimit,
+        keyIndexExtension,
         heldKeyIndexes,
         onLimit: () => {
-            hasHitLimit = true
+            reached.add('key')
         },
         signal,
     }
 
     while (accountGap < accountGapLimit && !signal?.aborted) {
         if (accountIndex >= accountIndexLimit) {
-            hasHitLimit = true
+            reached.add('account')
             break
         }
         // As above, for account indexes: a batch past the one that closes the
@@ -229,11 +275,13 @@ export async function walkHdTree({
         accountIndex += size
     }
 
-    if (hasHitLimit) {
+    if (reached.size > 0) {
+        const limits = [...reached].sort()
         logger.warn(
             'HD walk stopped at its index limits with activity still being found',
-            { accountIndexLimit, keyIndexLimit },
+            { limits, accountIndexLimit, keyIndexLimit },
         )
+        onLimitReached?.(limits)
     }
     return found.sort(byPath)
 }
@@ -291,6 +339,15 @@ type DiscoverWalletActivityParams = {
      * them; an index active past a gap is probed but never reported.
      */
     onFound?: (found: readonly ProbedHdIndex[]) => void
+    /** Called once with the index limits the walk stopped at, so more accounts may lie past them. */
+    onLimitReached?: (limits: HdIndexLimit[]) => void
+    /**
+     * The limits an earlier walk stopped at, each raised by one more default
+     * limit, for a user who asked to keep scanning. The limits already reach
+     * past `heldIndexes`, so passing what that walk found continues it. Only
+     * the limits named are raised: every EVM index probed saves a key.
+     */
+    extendLimits?: readonly HdIndexLimit[]
     /** Once aborted, no further batch is derived or probed; the walk resolves to what it found. */
     signal?: AbortSignal
 }
@@ -310,10 +367,12 @@ export async function discoverWalletActivity({
     heldIndexes = [],
     rootKey,
     accountGapLimit = ACCOUNT_GAP_LIMIT,
-    keyIndexGapLimit,
+    keyIndexGapLimit = KEY_INDEX_GAP_LIMIT,
     onProbeSettled,
     onBatchProbed,
     onFound,
+    onLimitReached,
+    extendLimits = [],
     signal,
 }: DiscoverWalletActivityParams): Promise<ProbedHdIndex[]> {
     const { chains: registry } = getProvider()
@@ -680,24 +739,24 @@ export async function discoverWalletActivity({
         return results
     }
 
-    const heldAccountIndex = Math.max(
-        -1,
-        ...heldIndexes.map(({ account }) => account),
-    )
     const walked = new Set(
         (
             await walkHdTree({
                 probe,
                 accountGapLimit,
                 keyIndexGapLimit,
-                accountIndexLimit: Math.max(
-                    WALLET_ACCOUNT_INDEX_LIMIT,
-                    heldAccountIndex + 1 + accountGapLimit,
-                ),
-                heldIndexes,
+                accountIndexLimit: WALLET_ACCOUNT_INDEX_LIMIT,
                 keyIndexLimit: WALLET_KEY_INDEX_LIMIT,
+                accountIndexExtension: extendLimits.includes('account')
+                    ? WALLET_ACCOUNT_INDEX_LIMIT
+                    : 0,
+                keyIndexExtension: extendLimits.includes('key')
+                    ? WALLET_KEY_INDEX_LIMIT
+                    : 0,
+                heldIndexes,
                 signal,
                 onFound: indices => onFound?.(indices.map(probedAt)),
+                onLimitReached,
             })
         ).map(hdPathKey),
     )

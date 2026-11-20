@@ -46,6 +46,7 @@ export const useScanAccountsResultScreen =
             createdAccountIds,
             failedChainIds,
             isCancelled,
+            reachedLimits,
         } = params
         const { t } = useLanguage()
         const navigation = useAppNavigation()
@@ -64,11 +65,21 @@ export const useScanAccountsResultScreen =
         const hasFailedNetworks = failedChainIds.length > 0
         const isIncomplete =
             params.isIncomplete && !isCancelled && !hasFailedNetworks
+        const isLimitReached =
+            reachedLimits.length > 0 && !isCancelled && !hasFailedNetworks
 
         const scanAgain = useCallback(
             (chainIds?: typeof failedChainIds) =>
                 navigation.replace('SearchAccounts', { account, chainIds }),
             [navigation, account],
+        )
+        const scanFurther = useCallback(
+            () =>
+                navigation.replace('SearchAccounts', {
+                    account,
+                    extendLimits: reachedLimits,
+                }),
+            [navigation, account, reachedLimits],
         )
 
         const { variant, title, body } = useMemo(() => {
@@ -112,6 +123,17 @@ export const useScanAccountsResultScreen =
                           ),
                 }
             }
+            // Before the unfinished note: its Keep scanning reruns all a
+            // Scan again would, so the body matches the button offered.
+            if (isLimitReached) {
+                return {
+                    variant: 'warning' as const,
+                    title: foundTitle,
+                    body: t(
+                        'onboarding.scan_accounts_result.limit_reached_body',
+                    ),
+                }
+            }
             if (isIncomplete) {
                 return {
                     variant: 'warning' as const,
@@ -153,6 +175,7 @@ export const useScanAccountsResultScreen =
             hasFailedNetworks,
             isCancelled,
             isIncomplete,
+            isLimitReached,
             networks,
             t,
         ])
@@ -166,6 +189,12 @@ export const useScanAccountsResultScreen =
                     onPress: () => scanAgain(failedChainIds),
                 }
             }
+            if (isLimitReached) {
+                return {
+                    label: t('onboarding.scan_accounts_result.scan_further'),
+                    onPress: scanFurther,
+                }
+            }
             if (isCancelled || isIncomplete) {
                 return {
                     label: t('onboarding.scan_accounts_result.scan_again'),
@@ -177,9 +206,11 @@ export const useScanAccountsResultScreen =
             hasFailedNetworks,
             isCancelled,
             isIncomplete,
+            isLimitReached,
             networks,
             failedChainIds,
             scanAgain,
+            scanFurther,
             t,
         ])
 

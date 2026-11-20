@@ -107,6 +107,7 @@ const walked = (overrides: object = {}) => ({
     coverage: 'complete',
     failedChainIds: [],
     isCancelled: false,
+    reachedLimits: [],
     ...overrides,
 })
 
@@ -139,7 +140,12 @@ describe('useHdWalletRescan', () => {
 
         expect(mocks.discoverWalletAccounts).toHaveBeenCalledExactlyOnceWith(
             SEED,
-            { chainIds: ['base'], signal, onProgress },
+            {
+                chainIds: ['base'],
+                extendLimits: undefined,
+                signal,
+                onProgress,
+            },
         )
     })
 
@@ -195,8 +201,43 @@ describe('useHdWalletRescan', () => {
                 failedChainIds: ['base', 'bsc'],
                 isCancelled: false,
                 isIncomplete: true,
+                reachedLimits: [],
             },
         )
+    })
+
+    it('scans further when asked, and opens the result saying it stopped at the limits', async () => {
+        mocks.discoverWalletAccounts.mockResolvedValue(
+            walked({ reachedLimits: ['key'] }),
+        )
+
+        await rescan(algorandAccount, { extendLimits: ['key'] })
+
+        expect(mocks.discoverWalletAccounts).toHaveBeenCalledWith(
+            SEED,
+            expect.objectContaining({ extendLimits: ['key'] }),
+        )
+        expect(mocks.replace).toHaveBeenCalledWith(
+            'ScanAccountsResult',
+            expect.objectContaining({ reachedLimits: ['key'] }),
+        )
+    })
+
+    it('says more accounts may exist before opening the rekeyed picker, which stands in for the result', async () => {
+        mocks.discoverWalletAccounts.mockResolvedValue(
+            walked({ reachedLimits: ['key'] }),
+        )
+        mocks.scanRekeyed.mockResolvedValue([
+            hdAccount('rekeyed', { algorand: { address: 'NEW_REKEYED' } }),
+        ])
+
+        await rescan()
+
+        expect(mocks.showToast).toHaveBeenCalledExactlyOnceWith({
+            type: 'warning',
+            title: 'onboarding.scan_accounts_result.limit_reached_title',
+            body: 'onboarding.scan_accounts_result.limit_reached_body',
+        })
     })
 
     it('opens the result after a cancel without a rekey scan, even when nothing answered', async () => {

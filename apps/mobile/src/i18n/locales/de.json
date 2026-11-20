@@ -2509,6 +2509,9 @@
             "cancelled_none_body": "Bis zum Stoppen wurde nichts Neues gefunden.",
             "retry_networks": "Erneut prüfen: {{networks}}",
             "scan_again": "Erneut scannen",
+            "limit_reached_title": "Möglicherweise gibt es weitere Konten",
+            "limit_reached_body": "Der Scan endet nach einer festen Anzahl von Adressen. Wenn du in dieser Wallet mehr verwendet hast, scanne weiter, um sie zu finden.",
+            "scan_further": "Weiter scannen",
             "done": "Fertig",
             "incomplete_title": "Scan unvollständig",
             "updated_title_one": "Neue Netzwerke bei {{count}} Konto gefunden",
@@ -2563,7 +2566,10 @@
             "all_imported_body": "Alle Konten aus diesem Wallet sind bereits in Pera. Ist eines als Beobachtungskonto hinzugefügt, entferne es zuerst und importiere es dann erneut, um es mit vollem Zugriff hinzuzufügen.",
             "unchecked_networks_title": "Nicht geprüft: {{networks}}",
             "unchecked_networks_body": "Die Konten der anderen Netzwerke sind aufgelistet. Du kannst später erneut nach neuen Konten suchen.",
-            "retry_networks": "Erneut prüfen: {{networks}}"
+            "retry_networks": "Erneut prüfen: {{networks}}",
+            "limit_reached_title": "Möglicherweise gibt es weitere Konten",
+            "limit_reached_body": "Die Suche endet nach einer festen Anzahl von Adressen. Wenn du in dieser Wallet mehr verwendet hast, scanne weiter, um sie zu finden.",
+            "scan_further": "Weiter scannen"
         },
         "import_rekeyed_addresses": {
             "title_one": "{{count}} rekeyed Konto gefunden",

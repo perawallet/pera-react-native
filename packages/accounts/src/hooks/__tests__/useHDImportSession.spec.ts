@@ -20,6 +20,7 @@ import {
     type MockInstance,
 } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import { logger } from '@perawallet/wallet-core-shared'
 import { useHDImportSession } from '../useHDImportSession'
 import { accountsChainAdapters } from '../../chain-adapter'
 import { useHDImportSessionStore } from '../../import-session'
@@ -417,6 +418,7 @@ describe('useHDImportSession', () => {
             accounts: [],
             failedChainIds: [],
             isOriginFallback: false,
+            reachedLimits: [],
         })
     })
 
@@ -679,6 +681,39 @@ describe('useHDImportSession', () => {
                 { account: 1, keyIndex: 0 },
                 { account: 2, keyIndex: 0 },
             ])
+        })
+
+        test('says a search stopped at its limits, and a further search continues from what it found', async () => {
+            setUpChains({
+                [ETHEREUM]: Array.from({ length: 30 }, (_, keyIndex) =>
+                    familyHdAddress('evm', 0, keyIndex),
+                ),
+            })
+            const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+            const { result } = renderHook(() => useHDImportSession(MAINNET))
+            await prepare(result)
+            let first: Awaited<
+                ReturnType<typeof result.current.discoverImportAccounts>
+            > = { accounts: [], failedChainIds: [] }
+            await act(async () => {
+                first = await result.current.discoverImportAccounts({
+                    walletKeyId: 'w-1',
+                })
+            })
+            let further: typeof first = { accounts: [], failedChainIds: [] }
+            await act(async () => {
+                further = await result.current.discoverImportAccounts({
+                    walletKeyId: 'w-1',
+                    previous: first,
+                    extendLimits: ['key'],
+                })
+            })
+            warn.mockRestore()
+
+            expect(first.reachedLimits).toEqual(['key'])
+            expect(first.accounts).toHaveLength(20)
+            expect(further.reachedLimits).toEqual([])
+            expect(further.accounts).toHaveLength(30)
         })
 
         test('records only the indexes whose candidate the wallet can still take', async () => {

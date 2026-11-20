@@ -18,6 +18,8 @@ import {
 import { mapWithConcurrency } from '@perawallet/wallet-core-shared'
 import type {
     AccountChains,
+    HdIndex,
+    HdIndexLimit,
     LocalAccount,
     WalletAccount,
     WalletCandidates,
@@ -132,6 +134,10 @@ type DiscoverWalletCandidatesParams = {
     onProgress?: (progress: WalletDiscoveryProgress) => void
     /** True for an active index the wallet already holds, which isn't counted as found. */
     isHeld?: (found: ProbedHdIndex) => boolean
+    /** Indexes known active, e.g. an earlier search's; the walk reaches past them. */
+    heldIndexes?: readonly HdIndex[]
+    /** The limits an earlier walk stopped at; each goes one more default limit past `heldIndexes`. */
+    extendLimits?: readonly HdIndexLimit[]
 }
 
 /**
@@ -152,8 +158,11 @@ export async function discoverWalletCandidates({
     signal,
     onProgress,
     isHeld = () => false,
+    heldIndexes,
+    extendLimits,
 }: DiscoverWalletCandidatesParams): Promise<WalletCandidates> {
     let hasProbeAnswered = false
+    let reachedLimits: HdIndexLimit[] = []
     const tracker = createWalletDiscoveryTracker({
         chainIds,
         onProgress,
@@ -171,6 +180,11 @@ export async function discoverWalletCandidates({
         onProbeSettled: tracker.onProbeSettled,
         onBatchProbed: tracker.onBatchProbed,
         onFound: tracker.onFound,
+        onLimitReached: limits => {
+            reachedLimits = limits
+        },
+        heldIndexes,
+        extendLimits,
     })
     const failedChainIds = tracker.failedChainIds(signal?.aborted === true)
     if (!hasProbeAnswered) return { accounts: [], failedChainIds }
@@ -213,7 +227,7 @@ export async function discoverWalletCandidates({
             }),
         ]
     })
-    return { accounts, failedChainIds, isOriginFallback }
+    return { accounts, failedChainIds, isOriginFallback, reachedLimits }
 }
 
 /**
@@ -292,6 +306,19 @@ export const mergeWalletCandidates = (
         ),
         isOriginFallback:
             kept.length > 0 && !hasActivity(previous) && !hasActivity(next),
+        // The later walk reached at least as far, unless a network failed in
+        // it: one holding the activity then reads as unused, and the gap
+        // closes short of the limit the earlier walk stopped at.
+        reachedLimits:
+            next.failedChainIds.length > 0 &&
+            (previous.reachedLimits?.length ?? 0) > 0
+                ? [
+                      ...new Set([
+                          ...(previous.reachedLimits ?? []),
+                          ...(next.reachedLimits ?? []),
+                      ]),
+                  ].sort()
+                : next.reachedLimits,
     }
 }
 

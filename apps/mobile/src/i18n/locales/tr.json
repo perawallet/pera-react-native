@@ -2517,6 +2517,9 @@
             "cancelled_none_body": "Durdurmadan önce yeni bir şey bulunamadı.",
             "retry_networks": "Yeniden kontrol et: {{networks}}",
             "scan_again": "Yeniden tara",
+            "limit_reached_title": "Daha fazla hesap olabilir",
+            "limit_reached_body": "Tarama belirli sayıda adresten sonra durur. Bu cüzdanda daha fazlasını kullandıysan bulmak için taramaya devam et.",
+            "scan_further": "Taramaya devam et",
             "done": "Tamam",
             "incomplete_title": "Tarama tamamlanmadı",
             "updated_title_one": "{{count}} hesapta yeni ağlar bulundu",
@@ -2571,7 +2574,10 @@
             "all_imported_body": "Bu cüzdandaki tüm hesaplar zaten Pera’da. Biri izleme hesabı olarak eklendiyse önce onu kaldır, ardından tam erişimle eklemek için yeniden içe aktar.",
             "unchecked_networks_title": "Kontrol edilemeyen ağlar: {{networks}}",
             "unchecked_networks_body": "Diğer ağlardaki hesaplar listelendi. Yeni hesapları daha sonra yeniden tarayabilirsin.",
-            "retry_networks": "Yeniden kontrol et: {{networks}}"
+            "retry_networks": "Yeniden kontrol et: {{networks}}",
+            "limit_reached_title": "Daha fazla hesap olabilir",
+            "limit_reached_body": "Arama belirli sayıda adresten sonra durur. Bu cüzdanda daha fazlasını kullandıysan bulmak için taramaya devam et.",
+            "scan_further": "Taramaya devam et"
         },
         "import_rekeyed_addresses": {
             "title_one": "{{count}} rekey yapılmış hesap bulundu",

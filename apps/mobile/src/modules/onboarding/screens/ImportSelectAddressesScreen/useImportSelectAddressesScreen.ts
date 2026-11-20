@@ -29,6 +29,7 @@ import {
     isFoundActiveOnlyElsewhere,
     signingKeyOn,
     useSyncCandidateAccounts,
+    type HdIndexLimit,
     type LocalAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -72,12 +73,17 @@ export type UseImportSelectAddressesScreenResult = {
     uncheckedNetworks: Optional<string>
     /** An import whose search left networks unchecked can search the wallet again. */
     canRetryNetworks: boolean
+    /** The search stopped at its index limits, so more accounts may lie past them. */
+    isLimitReached: boolean
+    /** An import whose search stopped at its limits can search past them. */
+    canScanFurther: boolean
     /** Some account holds more than one distinct address, so rows and copy speak of accounts rather than addresses. */
     hasLinkedAddresses: boolean
     toggleSelection: (accountId: string) => void
     toggleSelectAll: () => void
     handleContinue: () => void
     handleRetryNetworks: () => void
+    handleScanFurther: () => void
     t: (key: string, options?: Record<string, unknown>) => string
 }
 
@@ -91,6 +97,8 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
     const importWalletKeyId = isImportMode ? params.walletKeyId : null
     const failedChainIds = isImportMode ? params.failedChainIds : undefined
     const isOriginFallback = isImportMode ? params.isOriginFallback : undefined
+    const reachedLimits = isImportMode ? params.reachedLimits : undefined
+    const isLimitReached = (reachedLimits?.length ?? 0) > 0
 
     const { t } = useLanguage()
     const { errorToast } = useToast()
@@ -391,25 +399,38 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
     // Searches every network again, not only the unchecked ones: a walk over
     // some chains alone lists accounts without the others' addresses. The new
     // search adds to this one, so a retry that hears from less loses nothing.
-    const handleRetryNetworks = useCallback(() => {
-        if (!importWalletKeyId) return
-        isRetryingRef.current = true
-        navigation.replace('SearchAccounts', {
-            mode: 'import',
-            walletKeyId: importWalletKeyId,
-            previous: {
-                accounts,
-                failedChainIds: failedChainIds ?? [],
-                isOriginFallback,
-            },
-        })
-    }, [
-        importWalletKeyId,
-        navigation,
-        accounts,
-        failedChainIds,
-        isOriginFallback,
-    ])
+    const searchAgain = useCallback(
+        (extendLimits?: HdIndexLimit[]) => {
+            if (!importWalletKeyId) return
+            isRetryingRef.current = true
+            navigation.replace('SearchAccounts', {
+                mode: 'import',
+                walletKeyId: importWalletKeyId,
+                previous: {
+                    accounts,
+                    failedChainIds: failedChainIds ?? [],
+                    isOriginFallback,
+                    reachedLimits,
+                },
+                extendLimits,
+            })
+        },
+        [
+            importWalletKeyId,
+            navigation,
+            accounts,
+            failedChainIds,
+            isOriginFallback,
+            reachedLimits,
+        ],
+    )
+    const handleRetryNetworks = useCallback(() => searchAgain(), [searchAgain])
+    const handleScanFurther = useCallback(
+        () => searchAgain(reachedLimits),
+        [searchAgain, reachedLimits],
+    )
+    const canScanFurther =
+        importWalletKeyId !== null && isLimitReached && !isProcessing
 
     const areAllImported = newAccounts.length === 0
     const canContinue = areAllImported || selectedAccountIds.size > 0
@@ -424,11 +445,14 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         importedAccountIds,
         uncheckedNetworks,
         canRetryNetworks,
+        isLimitReached,
+        canScanFurther,
         hasLinkedAddresses,
         toggleSelection,
         toggleSelectAll,
         handleContinue: () => void handleContinue(),
         handleRetryNetworks,
+        handleScanFurther,
         t,
     }
 }

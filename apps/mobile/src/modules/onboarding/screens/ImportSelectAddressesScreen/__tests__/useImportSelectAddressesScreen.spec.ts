@@ -720,7 +720,46 @@ describe('useImportSelectAddressesScreen — import mode', () => {
                 accounts: sampleDiscovered,
                 failedChainIds: ['ethereum'],
                 isOriginFallback: true,
+                reachedLimits: undefined,
             },
+            extendLimits: undefined,
+        })
+        expect(mockCancelImport).not.toHaveBeenCalled()
+    })
+
+    test('a search stopped at its limits can scan further from what it found, keeping the import session', async () => {
+        let beforeRemoveCallback: Optional<() => void>
+        const reactNavigationMock = await import('@react-navigation/native')
+        ;(
+            reactNavigationMock as unknown as { useNavigation: () => unknown }
+        ).useNavigation = () => ({
+            addListener: (eventName: string, cb: () => void) => {
+                if (eventName === 'beforeRemove') beforeRemoveCallback = cb
+                return () => {}
+            },
+        })
+        mockRouteParams.current = {
+            ...mockRouteParams.current,
+            failedChainIds: [],
+            reachedLimits: ['key'],
+        }
+        const { result } = renderHook(() => useImportSelectAddressesScreen())
+
+        expect(result.current.isLimitReached).toBe(true)
+        expect(result.current.canScanFurther).toBe(true)
+        act(() => result.current.handleScanFurther())
+        act(() => beforeRemoveCallback?.())
+
+        expect(mockReplace).toHaveBeenCalledWith('SearchAccounts', {
+            mode: 'import',
+            walletKeyId: 'w-1',
+            previous: {
+                accounts: sampleDiscovered,
+                failedChainIds: [],
+                isOriginFallback: undefined,
+                reachedLimits: ['key'],
+            },
+            extendLimits: ['key'],
         })
         expect(mockCancelImport).not.toHaveBeenCalled()
     })

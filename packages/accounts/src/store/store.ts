@@ -21,6 +21,7 @@ import {
     type EnableChainOptions,
     type HardwareWalletAccount,
     type HardwareWalletDetails,
+    type HdIndexLimit,
     type LaunchAccountMode,
     type RecordedAuthorities,
     type WalletAccount,
@@ -1326,6 +1327,7 @@ export const useAccountsStore: UseBoundStore<
                                 ) !== undefined,
                         })
                         let isWalkIncomplete = false
+                        let reachedLimits: HdIndexLimit[] = []
                         // Only the probes read the root key; the adds derive
                         // through the keystore, so it is zeroed before them.
                         try {
@@ -1338,6 +1340,10 @@ export const useAccountsStore: UseBoundStore<
                                 onFound: tracker.onFound,
                                 signal: options.signal,
                                 rootKey: options.rootKey,
+                                extendLimits: options.extendLimits,
+                                onLimitReached: limits => {
+                                    reachedLimits = limits
+                                },
                                 heldIndexes: get().accounts.flatMap(account =>
                                     seedOf(account) === walletId
                                         ? (hdIndexOf(account) ?? [])
@@ -1469,6 +1475,7 @@ export const useAccountsStore: UseBoundStore<
                             createdAccountIds: [...createdIds],
                             failedChainIds,
                             isCancelled,
+                            reachedLimits,
                         }
                     }),
                 ),
