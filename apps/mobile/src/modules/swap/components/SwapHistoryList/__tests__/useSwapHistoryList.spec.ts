@@ -190,7 +190,7 @@ describe('useSwapHistoryList', () => {
             }),
         )
         expect(mockTrackEvent).toHaveBeenCalledWith(
-            'swapscr_swap_history_see_all_asset_select',
+            'swapscr_swap_history_see_all_select',
             { chain_id: 'algorand', swap_pairing: 'ALGO/USDC' },
         )
     })

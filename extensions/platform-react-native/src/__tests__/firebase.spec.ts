@@ -54,7 +54,7 @@ vi.mock('@react-native-firebase/remote-config', () => ({
 
 vi.mock('@react-native-firebase/analytics', () => ({
     getAnalytics: vi.fn(() => ({})),
-    logEvent: vi.fn(),
+    logEvent: vi.fn().mockResolvedValue(undefined),
     setAnalyticsCollectionEnabled: vi.fn(() => Promise.resolve()),
     setConsent: vi.fn(() => Promise.resolve()),
     resetAnalyticsData: vi.fn(() => Promise.resolve()),
@@ -932,6 +932,40 @@ describe('RNFirebaseService', () => {
 
         it('initializeAnalytics is callable without throwing', () => {
             expect(() => service.initializeAnalytics()).not.toThrow()
+        })
+
+        it.each(['a'.repeat(41), '0event', 'a-b'])(
+            'skips invalid event name %s',
+            name => {
+                service.logEvent(name)
+
+                expect(analytics.logEvent).not.toHaveBeenCalled()
+            },
+        )
+
+        it('does not propagate synchronous Firebase validation errors', () => {
+            vi.mocked(analytics.logEvent).mockImplementationOnce(() => {
+                throw new Error('Firebase validation failed')
+            })
+
+            expect(() => service.logEvent('test_event')).not.toThrow()
+        })
+
+        it('handles a rejected Firebase event delivery', async () => {
+            const error = new Error('Firebase delivery failed')
+            vi.mocked(analytics.logEvent).mockRejectedValueOnce(error)
+            const warn = vi.spyOn(logger, 'warn')
+            try {
+                service.logEvent('test_event')
+                await Promise.resolve()
+
+                expect(warn).toHaveBeenCalledWith(
+                    '[analytics] Firebase event delivery failed',
+                    { error },
+                )
+            } finally {
+                warn.mockRestore()
+            }
         })
     })
 

@@ -21,7 +21,7 @@ export enum MultisigEvent {
     EditAccount = 'onb_jointAccount_editAccount_press', // Tapped edit account
     RemoveAddress = 'onb_jointAccount_removeAddress_press', // Removed an address
     AddAccountContinue = 'onb_jointAccount_addAcc_continue_press', // Continued after adding accounts
-    ThresholdContinue = 'onb_jointAccount_thresholdContinue_press', // Continued after setting the threshold
+    ThresholdContinue = 'onb_jointAcct_thresholdContinue_press', // Continued after setting the threshold
     NameAccount = 'onb_jointAccount_nameAccount_press', // Named the joint account
     CancelTransaction = 'jointAccount_cancelTx_press', // Cancelled a joint-account transaction
     ConfirmTransaction = 'jointAccount_confirmTx_slide', // Confirmed/signed a joint-account transaction
