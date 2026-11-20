@@ -81,11 +81,16 @@ export const App = (): React.JSX.Element => {
             // BOOT-ORDER CONTRACT: Zustand persist stores read getProvider().keyValueStorage
             // at module evaluation, which throws before hydrate() resolves. Everything
             // that transitively imports a store MUST stay behind this dynamic import.
-            const [mod, { initRuntime }] = await Promise.all([
+            const [mod, { initRuntime }, kvAuthKey] = await Promise.all([
                 import('./AppShell.web'),
                 import('./bootstrap/preReact.web'),
+                import('./bootstrap/kvAuthKey.web'),
             ])
             initRuntime()
+            // Before the shell mounts, so its first reads of the network
+            // records already verify; the watcher covers every later unlock.
+            await kvAuthKey.applySessionKvAuthKey()
+            kvAuthKey.watchSessionKvAuthKey()
             await registerTransports()
             setShell(() => mod.AppShell)
         }

@@ -98,6 +98,22 @@ describe('readActiveDeployment', () => {
         expect(await readActiveDeployment()).toBe('developer')
     })
 
+    it('reads the deployment from a sealed record without a key', async () => {
+        const fake = createLocalChromeFake()
+        globalThis.chrome = fake.chrome
+        fake.local.set(
+            'kv:network-store',
+            JSON.stringify({
+                v: 1,
+                payload:
+                    '{"state":{"mode":"developer","network":"betanet"},"version":3}',
+                tag: '00',
+            }),
+        )
+
+        expect(await readActiveDeployment()).toBe('developer')
+    })
+
     it('defaults to live when nothing is stored', async () => {
         const fake = createLocalChromeFake()
         globalThis.chrome = fake.chrome
