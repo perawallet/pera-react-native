@@ -140,7 +140,12 @@ export const useSettingsScreen = () => {
         })
         if (!confirmed) return
         await deleteAllData()
-        await showDeleteSuccess()
+        if (routeCapabilities.deleteAllDataSuccessSheet) {
+            await showDeleteSuccess()
+        } else {
+            // The vault shell owns navigation after the wipe.
+            clearAccountsStore()
+        }
     }, [requestBottomSheet, t, deleteAllData, showDeleteSuccess])
 
     return {

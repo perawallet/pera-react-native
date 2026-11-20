@@ -40,6 +40,8 @@ export type RouteCapabilities = {
      * PWDrawer.web.tsx is a passthrough there. */
     accountDrawer: boolean
     storeRating: boolean
+    /** Settings shows a completion sheet before navigating to onboarding after a data wipe. */
+    deleteAllDataSuccessSheet: boolean
     /** The slide-vs-tap confirmation choice in Advanced Preferences. Web
      * hides it: swipe is awkward with a mouse, so ConfirmAction.web.tsx
      * always uses tap-to-confirm and the setting would be a no-op. */

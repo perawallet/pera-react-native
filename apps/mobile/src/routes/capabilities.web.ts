@@ -45,6 +45,7 @@ export const routeCapabilities: RouteCapabilities = {
     passkeysAutofillSettings: true, // WebAuthn-interception credential provider + settings toggle
     accountDrawer: false, // no edge-swipe in a popup; the bottom-sheet switcher stays
     storeRating: false, // permanently off: no store review flow
+    deleteAllDataSuccessSheet: false, // Destroying the vault switches the shell to Create Password.
     // Off: ConfirmAction.web.tsx always renders tap-to-confirm (swipe is
     // awkward with a mouse), so the slide/tap choice would be a no-op here.
     confirmationModeSetting: false,
