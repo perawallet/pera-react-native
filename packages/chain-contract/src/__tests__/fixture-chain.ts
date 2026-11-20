@@ -56,10 +56,14 @@ export const fixtureCodec: AddressCodec = {
     normalize: address => address.toLowerCase(),
     areEqual: (a, b) => a.toLowerCase() === b.toLowerCase(),
     truncate: address => `${address.slice(0, 6)}...${address.slice(-4)}`,
-    resembles: (a, b) =>
-        !fixtureCodec.areEqual(a, b) &&
-        fixtureCodec.truncate(a).toLowerCase() ===
-            fixtureCodec.truncate(b).toLowerCase(),
+    resembles: (a, b) => {
+        const [left, right] = [a.toLowerCase(), b.toLowerCase()]
+        return (
+            left !== right &&
+            left.slice(0, 5) === right.slice(0, 5) &&
+            left.slice(-3) === right.slice(-3)
+        )
+    },
     toPaymentUri: (address, opts) => {
         const query = new URLSearchParams()
         if (opts?.amount) query.set('amount', opts.amount.toString())

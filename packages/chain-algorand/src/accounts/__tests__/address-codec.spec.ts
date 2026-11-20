@@ -36,6 +36,36 @@ describe('algorandAddressCodec.resembles', () => {
     it('does not take an address with different shown ends for a look-alike', () => {
         expect(algorandAddressCodec.resembles(VALID, KNOWN)).toBe(false)
     })
+
+    describe('one character short of the shown ends', () => {
+        const CONTACT =
+            'GI4BM3CBF3YIFD5VBH6VLWNVIDEZQAN3GDFVDDF4VHZ3AL4KHGTPKGDNLE'
+        const NEAR_MISS =
+            'GI4BMXKT5F6XO7SVE65TIFCVWOLEGFLFD4VYNDS4MMKY2SVDEASOJ6DNLE'
+
+        it('takes an address sharing the first five and last four characters for a look-alike, both ways', () => {
+            expect(algorandAddressCodec.resembles(NEAR_MISS, CONTACT)).toBe(true)
+            expect(algorandAddressCodec.resembles(CONTACT, NEAR_MISS)).toBe(true)
+        })
+
+        it('takes an address missing the innermost character of both ends for a look-alike', () => {
+            const other = `${CONTACT.slice(0, 4)}Z${CONTACT.slice(5, -5)}Z${CONTACT.slice(-4)}`
+
+            expect(algorandAddressCodec.resembles(other, CONTACT)).toBe(true)
+        })
+
+        it('does not take an address sharing only three leading characters for a look-alike', () => {
+            const other = `${CONTACT.slice(0, 3)}Z${CONTACT.slice(4)}`
+
+            expect(algorandAddressCodec.resembles(other, CONTACT)).toBe(false)
+        })
+
+        it('does not take an address sharing only three trailing characters for a look-alike', () => {
+            const other = `${CONTACT.slice(0, -4)}Z${CONTACT.slice(-3)}`
+
+            expect(algorandAddressCodec.resembles(other, CONTACT)).toBe(false)
+        })
+    })
 })
 
 describe('algorandAddressCodec payment URIs', () => {

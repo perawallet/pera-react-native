@@ -31,8 +31,11 @@ export interface AddressCodec {
     /** A short display form, as shown for an account with no name. */
     truncate(address: string): string
     /**
-     * Two different addresses a person would take for the same one, because
-     * their `truncate` forms read alike. Address poisoning relies on this.
+     * Two different addresses a person would take for the same one. Address
+     * poisoning relies on this. Every chain follows one rule: they share every
+     * character of each end their `truncate` form shows, except the innermost
+     * one, since a reader compares the ends at a glance and a poisoner missing
+     * one character beside the ellipsis still passes.
      * Only defined for input that passes `isValid`.
      */
     resembles(a: string, b: string): boolean

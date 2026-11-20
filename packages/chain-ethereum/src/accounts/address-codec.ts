@@ -54,10 +54,20 @@ export const truncateEvmAddress = (address: string): string =>
         ? address
         : `${address.slice(0, TRUNCATED_HEAD)}...${address.slice(-TRUNCATED_TAIL)}`
 
-// Checksum case is noise to a reader, so the short forms compare case-blind.
-const doEvmAddressesResemble = (a: string, b: string): boolean =>
-    !areEvmAddressesEqual(a, b) &&
-    truncateEvmAddress(a).toLowerCase() === truncateEvmAddress(b).toLowerCase()
+// One character short of each end the short form shows, so a poisoner missing
+// only the character beside the ellipsis still reads as the same address.
+const RESEMBLING_HEAD = TRUNCATED_HEAD - 1
+const RESEMBLING_TAIL = TRUNCATED_TAIL - 1
+
+// Checksum case is noise to a reader, so the ends compare case-blind.
+const doEvmAddressesResemble = (a: string, b: string): boolean => {
+    if (areEvmAddressesEqual(a, b)) return false
+    const [left, right] = [a.toLowerCase(), b.toLowerCase()]
+    return (
+        left.slice(0, RESEMBLING_HEAD) === right.slice(0, RESEMBLING_HEAD) &&
+        left.slice(-RESEMBLING_TAIL) === right.slice(-RESEMBLING_TAIL)
+    )
+}
 
 export const createEvmAddressCodec = (chain: EvmChain): AddressCodec => ({
     chainId: chain.row.id,
