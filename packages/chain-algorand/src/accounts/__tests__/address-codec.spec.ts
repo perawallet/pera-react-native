@@ -52,6 +52,7 @@ describe('algorandAddressCodec.resembles', () => {
             )
         })
 
+        // Edited strings fail the checksum; `resembles` compares text and never validates.
         it('takes an address missing the innermost character of both ends for a look-alike', () => {
             const other = `${CONTACT.slice(0, 4)}Z${CONTACT.slice(5, -5)}Z${CONTACT.slice(-4)}`
 

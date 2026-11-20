@@ -23,7 +23,7 @@ export const recordSignerOf = (
     accountAddress: string,
 ): Optional<string> => {
     if (record.initiator !== undefined) return record.initiator
-    return accountAddress && record.status !== 'confirmed'
+    return accountAddress !== '' && record.status !== 'confirmed'
         ? accountAddress
         : undefined
 }

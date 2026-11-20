@@ -256,7 +256,8 @@ describe('Flow: suspected address poisoning in Algorand history', () => {
         )
         expect(Clipboard.setStringAsync).not.toHaveBeenCalled()
     })
-    describe('a look-alike matching all but the innermost character of each shown end', () => {
+
+    describe('a look-alike of a saved contact, one character short of the shown tail', () => {
         const TX_OLDER = payment(
             'TXNEARMISS0000000000000000000000000000000000000000001',
             NEAR_MISS_LOOK_ALIKE,
@@ -295,7 +296,7 @@ describe('Flow: suspected address poisoning in Algorand history', () => {
             })
         })
 
-        it('Given 1 microAlgo sent from it before and after its contact was saved, then both rows are marked in place once the contact exists', async () => {
+        it('Given two 1 microAlgo payments from it, when its contact is saved, then both rows are marked in place', async () => {
             renderWithNavigation(AccountHistory, 'AccountHistory')
             await screen.findByTestId(
                 `transaction_row_${TX_NEWER.id}`,
