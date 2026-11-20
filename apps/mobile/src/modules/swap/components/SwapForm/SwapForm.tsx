@@ -50,6 +50,7 @@ export const SwapForm = ({ scope, initialPayAmount }: SwapFormProps) => {
         quoteFailure,
         selectedQuote,
         providerSelectionMode,
+        canChooseProvider,
         canSwap,
         hasInsufficientBalance,
         isLocalCurrencyInput,
@@ -125,7 +126,7 @@ export const SwapForm = ({ scope, initialPayAmount }: SwapFormProps) => {
                 <SwapProviderRow
                     quote={selectedQuote}
                     selectionMode={providerSelectionMode}
-                    onPress={handleOpenProvider}
+                    onPress={canChooseProvider ? handleOpenProvider : undefined}
                 />
             )}
 

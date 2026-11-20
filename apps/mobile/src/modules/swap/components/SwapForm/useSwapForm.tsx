@@ -95,6 +95,7 @@ type UseSwapFormResult = {
     quoteFailure: Nullable<SwapQuoteFailure>
     selectedQuote: Nullable<SwapQuote>
     providerSelectionMode: 'auto' | 'manual'
+    canChooseProvider: boolean
     canSwap: boolean
     /** Pay amount exceeds what the account actually holds of the pay asset. */
     hasInsufficientBalance: boolean
@@ -232,14 +233,18 @@ export const useSwapForm = (
     })
 
     const bestQuote = useMemo(() => pickBestByAmountOut(allQuotes), [allQuotes])
+    const canChooseProvider = useMemo(
+        () => new Set(allQuotes.map(quote => quote.provider)).size > 1,
+        [allQuotes],
+    )
 
     // When a manually selected provider drops from the latest quote set, fall
     // back to the best quote for display and reset selection state to null so
     // providerSelectionMode reports 'auto'.
     const selectedQuote = useMemo<Nullable<SwapQuote>>(() => {
         if (selectedProviderName === null) return bestQuote
-        const match = allQuotes.find(
-            quote => quote.provider === selectedProviderName,
+        const match = pickBestByAmountOut(
+            allQuotes.filter(quote => quote.provider === selectedProviderName),
         )
         return match ?? bestQuote
     }, [allQuotes, selectedProviderName, bestQuote])
@@ -732,6 +737,8 @@ export const useSwapForm = (
     ])
 
     const handleOpenProvider = useCallback(async () => {
+        if (!canChooseProvider) return
+
         trackEvent(SwapEvent.SelectProviderOpen, {
             [AnalyticsMetadataKey.ChainId]: scope.chainId,
             [AnalyticsMetadataKey.RouterName]:
@@ -759,7 +766,13 @@ export const useSwapForm = (
         // undefined means the sheet was dismissed; null means Auto was applied.
         if (result === undefined) return
         setSelectedProviderName(result)
-    }, [requestBottomSheet, scope, allQuotes, selectedProviderName])
+    }, [
+        canChooseProvider,
+        requestBottomSheet,
+        scope,
+        allQuotes,
+        selectedProviderName,
+    ])
 
     const handleOpenConfirm = useCallback(async () => {
         if (!selectedQuote) return
@@ -940,6 +953,7 @@ export const useSwapForm = (
         quoteFailure,
         selectedQuote,
         providerSelectionMode,
+        canChooseProvider,
         canSwap,
         hasInsufficientBalance,
         isLocalCurrencyInput,

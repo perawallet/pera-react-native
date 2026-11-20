@@ -11,10 +11,11 @@
  */
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { PWText, PWView } from '@components/core'
+import { swapProviderDisplayName } from '../../utils/swapProviderDisplayName'
 import { useStyles } from './styles'
 
 export type SwapProviderDisplayProps = {
-    /** The router's id for the offer's provider, shown as it comes. */
+    /** The router's id for the offer's provider. */
     provider: Optional<string>
     testID?: string
 }
@@ -31,7 +32,7 @@ export const SwapProviderDisplay = ({
                 style={styles.label}
                 testID={testID}
             >
-                {provider ?? '-'}
+                {provider == null ? '-' : swapProviderDisplayName(provider)}
             </PWText>
         </PWView>
     )

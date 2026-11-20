@@ -123,7 +123,33 @@ describe('useSwapProviderContent', () => {
         expect(result.current.rows).toEqual([])
     })
 
-    it("names the row by the router's provider id", () => {
+    it('keeps one row per alternative provider, using its best quote', () => {
+        const worseAutoQuote = makeQuote({
+            provider: BEST.provider,
+            amountOut: new Decimal('250'),
+        })
+        const bestTinymanQuote = makeQuote({
+            provider: 'tinyman-v2',
+            amountOut: new Decimal('200'),
+        })
+        const worseTinymanQuote = makeQuote({
+            provider: 'tinyman-v2',
+            amountOut: new Decimal('150'),
+        })
+        const { result } = renderContent([
+            worseAutoQuote,
+            worseTinymanQuote,
+            BEST,
+            bestTinymanQuote,
+        ])
+
+        expect(result.current.rows.map(row => row.quote)).toEqual([
+            bestTinymanQuote,
+        ])
+        expect(result.current.rows[0].displayName).toBe('Tinyman v2')
+    })
+
+    it("keeps an unknown provider's router id as its label", () => {
         const quote = makeQuote({
             provider: 'mid',
             amountOut: new Decimal('200'),

@@ -20,7 +20,7 @@ import { useStyles } from './styles'
 export type SwapProviderRowProps = {
     quote: SwapQuote
     selectionMode: 'auto' | 'manual'
-    onPress: () => void
+    onPress?: () => void
 }
 
 export const SwapProviderRow = ({
@@ -34,9 +34,31 @@ export const SwapProviderRow = ({
     const rateDisplay = useMemo(() => formatSwapRate(quote), [quote])
 
     const title =
-        selectionMode === 'auto'
+        onPress && selectionMode === 'auto'
             ? t('swap.provider.title_auto')
             : t('swap.provider.title_manual')
+
+    const row = (
+        <>
+            <SwapProviderDisplay provider={quote.provider} />
+            <PWView style={styles.right}>
+                <PWText
+                    variant='body'
+                    style={styles.rate}
+                    truncate
+                >
+                    {rateDisplay}
+                </PWText>
+                {onPress && (
+                    <PWIcon
+                        name='chevron-right'
+                        size='xs'
+                        variant='secondary'
+                    />
+                )}
+            </PWView>
+        </>
+    )
 
     return (
         <PWView style={styles.container}>
@@ -47,27 +69,22 @@ export const SwapProviderRow = ({
             >
                 {title}
             </PWText>
-            <PWTouchableOpacity
-                style={styles.row}
-                onPress={onPress}
-                testID='swap-provider-row'
-            >
-                <SwapProviderDisplay provider={quote.provider} />
-                <PWView style={styles.right}>
-                    <PWText
-                        variant='body'
-                        style={styles.rate}
-                        truncate
-                    >
-                        {rateDisplay}
-                    </PWText>
-                    <PWIcon
-                        name='chevron-right'
-                        size='xs'
-                        variant='secondary'
-                    />
+            {onPress ? (
+                <PWTouchableOpacity
+                    style={styles.row}
+                    onPress={onPress}
+                    testID='swap-provider-row'
+                >
+                    {row}
+                </PWTouchableOpacity>
+            ) : (
+                <PWView
+                    style={styles.row}
+                    testID='swap-provider-row'
+                >
+                    {row}
                 </PWView>
-            </PWTouchableOpacity>
+            )}
         </PWView>
     )
 }
