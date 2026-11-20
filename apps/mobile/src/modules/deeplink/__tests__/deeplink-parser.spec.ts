@@ -456,7 +456,7 @@ describe('Deeplink Parser - dev locale tour', () => {
 })
 
 describe('Deeplink Parser - dev e2e fixture', () => {
-    it.each(['home', 'contacts-empty', 'contacts-one'])(
+    it.each(['home', 'contacts-empty', 'contacts-one', 'testnet', 'mainnet'])(
         'parses the %s fixture',
         name => {
             const parsed = parseDeeplink(

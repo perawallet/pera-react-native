@@ -161,6 +161,9 @@ Wipe Survives An App Restart
     Set Duress Pin    ${DURESS_PIN}
     Lock By Restart
     Enter Duress Pin At Lock Screen    ${DURESS_PIN}
+    # Restart only once the decoy wallet has landed: a kill while it is still provisioning
+    # relaunches on onboarding instead (recorded as a finding, not what this case covers).
+    Wait Until Page Contains Element    ${MENU_TAB}    timeout=30s
     Restart Pera
     Wait Until Page Contains Element    ${MENU_TAB}    timeout=30s
     Settle After Wipe

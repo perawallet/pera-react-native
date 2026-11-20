@@ -94,3 +94,28 @@ raise SystemExit(7)
 
     assert result.returncode == 7, result.stderr
     assert 'ios finished with status 7' in result.stdout
+
+
+@pytest.mark.parametrize('funded, excluded', [(None, True), ('0', True), ('1', False)])
+def test_local_runner_runs_funded_cases_only_when_asked(tmp_path, funded, excluded):
+    bin_dir = tmp_path / 'venv/bin'
+    bin_dir.mkdir(parents=True)
+    interpreter = bin_dir / 'python'
+    interpreter.write_text(f'''#!{sys.executable}
+import json, os, sys
+with open(os.environ['ARGUMENT_DUMP'], 'w') as output:
+    json.dump(sys.argv[1:], output)
+''')
+    interpreter.chmod(0o755)
+    dump = tmp_path / 'args.json'
+    env = {k: v for k, v in os.environ.items() if k != 'E2E_FUNDED'}
+    env.update(ANDROID_UDID='test-device', ANDROID_SYSTEM_PORT='8300', E2E_VENV=str(bin_dir.parent),
+               E2E_RESULTS_DIR=str(tmp_path / 'results'), ARGUMENT_DUMP=str(dump))
+    if funded is not None:
+        env['E2E_FUNDED'] = funded
+    result = subprocess.run(['bash', str(RUNNER), 'android'], env=env, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    args = json.loads(dump.read_text())
+    pairs = list(zip(args, args[1:]))
+    assert ('--exclude', 'slow') in pairs
+    assert (('--exclude', 'needs-funded') in pairs) is excluded

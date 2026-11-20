@@ -14,6 +14,8 @@ import { useCallback, useEffect } from 'react'
 import { LogBox } from 'react-native'
 
 import { useHasAccounts } from '@perawallet/wallet-core-accounts'
+import { type WalletMode } from '@perawallet/wallet-core-chain-contract'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
     type Contact,
     replaceAllContacts,
@@ -22,16 +24,33 @@ import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { navigationRef } from '@routes/navigationRef'
 
 import type { DevE2eFixtureDeeplink, E2eFixtureName } from '../types'
-import { snapshotOnNextState, startNavTracer } from './e2eNavTracer'
+import {
+    snapshotOnNextState,
+    startNavTracer,
+    traceSnapshot,
+} from './e2eNavTracer'
 
 const READY_TIMEOUT_MS = 3000
+
+type NetworkFixture = 'testnet' | 'mainnet'
+
+const NETWORK_MODES: Record<NetworkFixture, WalletMode> = {
+    testnet: 'developer',
+    mainnet: 'live',
+}
+
+const isNetworkFixture = (name: E2eFixtureName): name is NetworkFixture =>
+    name in NETWORK_MODES
 
 export type E2eFixtureDeeplinkHandler = (
     deeplink: Pick<DevE2eFixtureDeeplink, 'fixture'>,
 ) => void
 
 // e2e/resources/contacts.resource mirrors these values; change both together.
-const FIXTURE_CONTACTS: Record<Exclude<E2eFixtureName, 'home'>, Contact[]> = {
+const FIXTURE_CONTACTS: Record<
+    Exclude<E2eFixtureName, 'home' | NetworkFixture>,
+    Contact[]
+> = {
     'contacts-empty': [],
     'contacts-one': [
         {
@@ -50,17 +69,28 @@ const FIXTURE_CONTACTS: Record<Exclude<E2eFixtureName, 'home'>, Contact[]> = {
  * contacts wholesale and land on the contacts list. Either way the back stack is
  * fresh and no sheet is open, so a test starts from the same screen whatever the
  * last one left up.
- * Does nothing without a wallet: TabBar only exists once an account does, and
- * resetting onto it anyway yields a state no user can reach. Creating the
+ * Those do nothing without a wallet: TabBar only exists once an account does,
+ * and resetting onto it anyway yields a state no user can reach. Creating the
  * wallet stays a UI journey so this hook never touches key material.
+ * `testnet` and `mainnet` are the exception: they switch every chain to its
+ * default test or live network and stay on the current screen, so an import
+ * from Welcome can find accounts that only exist on testnet. Remove All
+ * Accounts also restores the build's default network.
  */
 export const useE2eFixtureDeeplink = (): E2eFixtureDeeplinkHandler => {
     const hasAccounts = useHasAccounts()
+    const setMode = useNetworkStore(state => state.setMode)
 
     useEffect(startNavTracer, [])
 
     return useCallback(
         ({ fixture }) => {
+            if (isNetworkFixture(fixture)) {
+                setMode(NETWORK_MODES[fixture])
+                // No navigation follows, so the harness's applied marker is logged here.
+                traceSnapshot(`fixture:${fixture}`)
+                return
+            }
             if (!hasAccounts) return
             // A dev client's LogBox toast sits over bottom-anchored buttons;
             // the errors still reach Metro.
@@ -70,13 +100,16 @@ export const useE2eFixtureDeeplink = (): E2eFixtureDeeplinkHandler => {
             useBottomSheetStore.getState().dismissAll()
             resetWhenReady(fixture)
         },
-        [hasAccounts],
+        [hasAccounts, setMode],
     )
 }
 
 // Navigation can be briefly unready (a theme switch remounts the container);
 // dropping the fixture then would leave the test on the previous screen.
-const resetWhenReady = (fixture: E2eFixtureName, waitedMs = 0): void => {
+const resetWhenReady = (
+    fixture: Exclude<E2eFixtureName, NetworkFixture>,
+    waitedMs = 0,
+): void => {
     if (!navigationRef.isReady()) {
         if (waitedMs < READY_TIMEOUT_MS) {
             setTimeout(() => resetWhenReady(fixture, waitedMs + 100), 100)

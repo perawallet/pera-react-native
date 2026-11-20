@@ -42,7 +42,12 @@ export interface DevLocaleTourDeeplink {
     run?: 'all'
 }
 
-export type E2eFixtureName = 'home' | 'contacts-empty' | 'contacts-one'
+export type E2eFixtureName =
+    | 'home'
+    | 'contacts-empty'
+    | 'contacts-one'
+    | 'testnet'
+    | 'mainnet'
 
 /**
  * `perawallet://app/dev/e2e-fixture?name=<fixture>` puts the app into a named

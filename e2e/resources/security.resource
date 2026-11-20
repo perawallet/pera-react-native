@@ -3,6 +3,7 @@ Documentation       PIN, duress PIN and lock screen keywords. A PIN set at the s
 ...                 the app on its next cold start (useAutoLockListener), so Restart Pera is the fast
 ...                 lock; only the background auto-lock path needs the two-minute wait.
 Resource            app.resource
+Resource            feature_flags.resource
 
 
 *** Variables ***
@@ -70,6 +71,10 @@ Open Security Settings
     ${opened}=    Run Keyword And Return Status
     ...    Wait Until Page Contains Element    ${PIN_TOGGLE}    timeout=5s
     IF    ${opened}    RETURN
+    # After an unlock the startup prompts (PIN, banner) still arrive and can cover Settings.
+    Wait Clear Of Startup Prompts
+    ${opened}=    Run Keyword And Return Status    Page Should Contain Element    ${PIN_TOGGLE}
+    IF    ${opened}    RETURN
     # XCUITest can report a successful click while Settings remains visible.
     ${still_on_settings}=    Run Keyword And Return Status
     ...    Expect Element    ${SETTINGS_SECURITY_ITEM}    visible    timeout=1ms    retry_interval=0s    loglevel=NONE
@@ -83,12 +88,18 @@ Require Duress Pin Feature
 
 Require Security Switch
     [Documentation]    Duress PIN (enable_duress_pin) and shake to lock (enable_motion_lock) are
-    ...                remote-config flags that default to off. The PIN switch proves this is the
-    ...                Security screen, so a missing switch is the flag, not a broken navigation.
+    ...                remote-config flags that default to off, so an off flag is overridden on. The PIN
+    ...                switch proves this is the Security screen, so a missing switch is the flag, not a
+    ...                broken navigation.
     [Arguments]    ${test_id}    ${flag}
     Page Should Contain Element    ${PIN_TOGGLE}
     ${shown}=    Reveal On Security Screen    ${test_id}
-    Skip If    not ${shown}    Remote config flag ${flag} is off on this build.
+    IF    not ${shown}
+        Turn On Feature Flag    ${flag}
+        Open Security Settings
+        ${shown}=    Reveal On Security Screen    ${test_id}
+    END
+    Should Be True    ${shown}    The ${test_id} switch is missing with ${flag} overridden on.
 
 Reveal On Security Screen
     [Documentation]    The advanced switches sit at the bottom of the screen and Android only reports
@@ -155,8 +166,12 @@ Ensure Duress Pin Off
 
 Close Pin Sheet
     [Documentation]    The PIN sheet ignores backdrop taps and swipes; its close button is the only way out.
-    Tap    ${PIN_SHEET_CLOSE}
-    Wait Until Page Does Not Contain Element    ${PIN_SHEET}    timeout=10s
+    ...                A rejected PIN restarts the sheet under an error toast that can take the tap.
+    Wait Until Keyword Succeeds    20s    1s    Tap Pin Sheet Close
+
+Tap Pin Sheet Close
+    Tap If Present    ${PIN_SHEET_CLOSE}
+    Wait Until Page Does Not Contain Element    ${PIN_SHEET}    timeout=4s
 
 Change Regular Pin
     [Arguments]    ${current}    ${new}

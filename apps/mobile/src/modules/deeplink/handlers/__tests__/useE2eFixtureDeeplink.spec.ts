@@ -19,7 +19,11 @@ const {
     mockIsReady,
     mockHasAccounts,
     mockDismissAll,
+    mockSetMode,
+    mockTraceSnapshot,
 } = vi.hoisted(() => ({
+    mockSetMode: vi.fn(),
+    mockTraceSnapshot: vi.fn(),
     mockReplaceAllContacts: vi.fn(),
     mockHasAccounts: vi.fn(() => true),
     mockDismissAll: vi.fn(),
@@ -29,6 +33,12 @@ const {
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useHasAccounts: mockHasAccounts,
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useNetworkStore: (
+        select: (state: { setMode: typeof mockSetMode }) => unknown,
+    ) => select({ setMode: mockSetMode }),
 }))
 
 vi.mock('@perawallet/wallet-core-contacts', () => ({
@@ -46,6 +56,7 @@ vi.mock('@modules/bottom-sheet', () => ({
 vi.mock('../e2eNavTracer', () => ({
     startNavTracer: vi.fn(),
     snapshotOnNextState: vi.fn(),
+    traceSnapshot: mockTraceSnapshot,
 }))
 
 vi.mock('@routes/navigationRef', () => ({
@@ -144,6 +155,28 @@ describe('useE2eFixtureDeeplink', () => {
         result.current({ fixture: 'contacts-empty' })
 
         expect(mockReplaceAllContacts).not.toHaveBeenCalled()
+        expect(mockReset).not.toHaveBeenCalled()
+    })
+
+    it('switches to the test networks before a wallet exists, staying on the screen', () => {
+        mockHasAccounts.mockReturnValue(false)
+        const { result } = renderHook(() => useE2eFixtureDeeplink())
+
+        result.current({ fixture: 'testnet' })
+
+        expect(mockSetMode).toHaveBeenCalledWith('developer')
+        expect(mockTraceSnapshot).toHaveBeenCalledWith('fixture:testnet')
+        expect(mockReset).not.toHaveBeenCalled()
+        expect(mockDismissAll).not.toHaveBeenCalled()
+    })
+
+    it('switches back to the live networks', () => {
+        const { result } = renderHook(() => useE2eFixtureDeeplink())
+
+        result.current({ fixture: 'mainnet' })
+
+        expect(mockSetMode).toHaveBeenCalledWith('live')
+        expect(mockTraceSnapshot).toHaveBeenCalledWith('fixture:mainnet')
         expect(mockReset).not.toHaveBeenCalled()
     })
 })

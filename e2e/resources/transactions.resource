@@ -46,3 +46,18 @@ Open First Transaction
     Wait Until Page Contains Element    ${TX_ROW_ANY}    timeout=45s
     Tap    ${TX_ROW_ANY}
     Wait Until Page Contains Element    ${TX_DETAILS_SCREEN}    timeout=20s
+
+Open Newest Fee Paying Transaction
+    [Documentation]    A receive shows no fee row: the sender paid it. The funded account also receives
+    ...                top-ups and fixtures, so its newest row is not always one it sent.
+    Open History
+    Wait Until Page Contains Element    ${TX_ROW_ANY}    timeout=45s
+    FOR    ${index}    IN RANGE    1    6
+        Tap    xpath=(${TX_ROW_ANY.removeprefix('xpath=')})[${index}]
+        Wait Until Page Contains Element    ${TX_DETAILS_SCREEN}    timeout=20s
+        ${paid}=    Run Keyword And Return Status    Scroll Until Present    ${TX_DETAIL_FEE}
+        IF    ${paid}    RETURN
+        Tap Back
+        Wait Until Page Contains Element    ${TX_ROW_ANY}    timeout=20s
+    END
+    Fail    None of the five newest transactions shows a fee: the funded account sent none of them.

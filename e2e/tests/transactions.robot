@@ -60,7 +60,7 @@ Transaction Detail Shows Fee And Explorer Link
     [Tags]    id:transactions.detail.open    p0    needs-funded    excludefromci
     [Setup]    Use Funded Testnet Account
     [Teardown]    Leave Funded Testnet Account
-    Open First Transaction
+    Open Newest Fee Paying Transaction
     # A fee row that renders with the wrong number passes any presence check, so read it.
     # Every Algorand transaction pays at least the 0.001 ALGO minimum.
     Displayed Number Should Be At Least    transaction_detail_fee    ${0.001}

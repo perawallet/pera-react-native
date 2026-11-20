@@ -29,6 +29,8 @@ const FIXTURE_NAMES: ReadonlySet<string> = new Set<E2eFixtureName>([
     'home',
     'contacts-empty',
     'contacts-one',
+    'testnet',
+    'mainnet',
 ])
 
 /** Parses `perawallet://app/dev/e2e-fixture?name=<fixture>`; an unknown name is unrecognized input. */

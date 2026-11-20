@@ -28,6 +28,9 @@ ${LEDGER_INTRO_START}               tid=rekey-to-ledger-intro-start
 ${RESCAN_SELECT_ALL}                tid=rescan-rekeyed-select-all-checkbox
 ${RESCAN_ADD}                       tid=rescan-rekeyed-add
 ${RESCAN_SKIP}                      tid=rescan-rekeyed-skip
+${UNDO_REKEY_LINK}                  tid=account_info_undo_rekey_link
+${UNDO_REKEY_CONFIRM_CTA}           tid=undo-rekey-confirm-cta
+${UNDO_REKEY_CONFIRM_SCREEN}        xpath=//*[@resource-id='undo-rekey-confirm-screen' or @name='undo-rekey-confirm-screen']
 # Screen containers are not accessibility elements: Android exposes their testID only as
 # resource-id, iOS only as name.
 ${STANDARD_SELECT_TARGET}           tid=rekey-to-standard-select-target-screen
@@ -92,8 +95,11 @@ Skip Unless Env Set
     Skip If    $missing    Needs a funded or rekeyed test account from the environment: ${missing}
 
 Use Account From Environment
-    [Documentation]    Selects the account when the wallet already holds it, otherwise imports it.
+    [Documentation]    Selects the account when the wallet already holds it, otherwise imports it, on
+    ...                testnet, where the environment's accounts are funded. Pair with Leave Testnet
+    ...                as the case teardown.
     [Arguments]    ${mnemonic_env}    ${address}
+    Load Fixture    testnet
     Open Account Switcher
     ${row}=    Switcher Row    ${address}
     ${held}=    Tap If Present    ${row}
@@ -103,6 +109,27 @@ Use Account From Environment
     END
     Go Home
 
+Select Rekeyed Account Held By Auth
+    [Documentation]    Selects ${REKEYED_ADDRESS}, adding it through Rescan rekeyed accounts from the
+    ...                selected auth account when the wallet does not hold it yet.
+    Open Account Switcher
+    ${row}=    Switcher Row    ${REKEYED_ADDRESS}
+    ${held}=    Tap If Present    ${row}
+    IF    ${held}    RETURN
+    Go Home
+    Open Rescan Rekeyed
+    Tap    tid=rescan-rekeyed-row-checkbox-${REKEYED_ADDRESS}
+    Wait Until Settled    ${RESCAN_ADD}
+    Tap    ${RESCAN_ADD}
+    Wait Until Page Does Not Contain Element    ${RESCAN_ADD}    timeout=30s
+    Go Home
+    Open Account Switcher
+    Tap    ${row}
+
+Leave Testnet
+    Capture Failure Screenshot
+    Load Fixture    mainnet
+
 Import Passphrase
     [Documentation]    From the Add Account screen. A 24-word phrase is an HD wallet, 25 words algo25.
     [Arguments]    ${mnemonic_env}
@@ -110,18 +137,19 @@ Import Passphrase
     ${level}=    Set Log Level    NONE
     ${words}=    Evaluate    os.environ[$mnemonic_env].split()    modules=os
     Wait Until Page Contains Element    ${ADD_ACCOUNT_IMPORT_BUTTON}    timeout=15s
-    Tap    ${ADD_ACCOUNT_IMPORT_BUTTON}
-    Wait Until Page Contains Element    ${IMPORT_RECOVER_WALLET_BUTTON}    timeout=15s
+    # Add Account can take the first tap without moving on (see Add Account To Wallet).
+    Tap Until    ${ADD_ACCOUNT_IMPORT_BUTTON}    ${IMPORT_RECOVER_WALLET_BUTTON}    timeout=20s
     Tap    ${IMPORT_RECOVER_WALLET_BUTTON}
     ${kind}=    Set Variable If    len($words) == 24    ${IMPORT_HD_BUTTON}    ${IMPORT_ALGO25_BUTTON}
     Wait Until Settled    ${kind}
     Tap    ${kind}
     Wait Until Page Contains Element    ${IMPORT_INFO_RECOVER_BUTTON}    timeout=15s
     Tap    ${IMPORT_INFO_RECOVER_BUTTON}
-    FOR    ${i}    IN RANGE    ${{len($words)}}
-        ${field}=    quantum.Indexed Row    ${IMPORT_WORD_INPUT_ID}    ${i}
-        Input Password    ${field}    ${words}[${i}]
-    END
+    ${first}=    quantum.Indexed Row    ${IMPORT_WORD_INPUT_ID}    0
+    Wait Until Page Contains Element    ${first}    timeout=20s
+    # The first field spreads a pasted phrase over the rest; Android leaves the fields below the
+    # fold out of the tree, so they cannot be typed one by one.
+    Enter Recovery Phrase    ${{ ' '.join($words) }}
     Set Log Level    ${level}
     Dismiss Keyboard
     Tap    ${IMPORT_ACCOUNT_BUTTON}

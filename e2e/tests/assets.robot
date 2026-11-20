@@ -89,8 +89,10 @@ Remove Assets Offers Select All For A Removable Asset
     [Tags]    id:assets.remove.select-all    p0    needs-funded    excludefromci
     [Setup]    Use Funded Testnet Account
     [Teardown]    Leave Funded Testnet Account
+    # The funded account holds no testnet USDC, so an opt-in leaves exactly the zero-balance holding
+    # Remove Assets offers.
     ${held}=    Holds Testnet USDC
-    Skip If    not ${held}    No zero-balance opted-in asset to remove on the funded account.
+    IF    not ${held}    Opt In To Testnet USDC
     Open Remove Assets
     Wait Until Page Contains Element    ${REMOVE_SELECT_ALL}    timeout=10s
 

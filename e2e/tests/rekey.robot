@@ -34,6 +34,7 @@ Rekey To Standard Is Blocked On An Unfunded Source
 
 Rekey To Standard Can Be Confirmed From A Funded Source
     [Tags]    id:rekey.standard.funded-confirm    p1    needs-funded    excludefromci
+    [Teardown]    Leave Testnet
     Skip Unless Env Set    E2E_FUNDED_MNEMONIC    E2E_FUNDED_ADDRESS
     Use Account From Environment    E2E_FUNDED_MNEMONIC    ${FUNDED_ADDRESS}
     Open Standard Rekey Intro
@@ -75,6 +76,7 @@ Rescan Rekeyed Settles Without An Error
 
 Rescan Lists The Account Rekeyed To This One
     [Tags]    id:rekey.rescan.select-list    p2    needs-funded    excludefromci
+    [Teardown]    Leave Testnet
     Skip Unless Env Set    E2E_REKEY_AUTH_MNEMONIC    E2E_REKEY_AUTH_ADDRESS    E2E_REKEYED_ADDRESS
     Use Account From Environment    E2E_REKEY_AUTH_MNEMONIC    ${REKEY_AUTH_ADDRESS}
     Open Rescan Rekeyed
@@ -85,6 +87,7 @@ Rescan Lists The Account Rekeyed To This One
 
 Skipping Rescan Adds Nothing And Returns Home
     [Tags]    id:rekey.rescan.skip    p2    needs-funded    excludefromci
+    [Teardown]    Leave Testnet
     Skip Unless Env Set    E2E_REKEY_AUTH_MNEMONIC    E2E_REKEY_AUTH_ADDRESS    E2E_REKEYED_ADDRESS
     Use Account From Environment    E2E_REKEY_AUTH_MNEMONIC    ${REKEY_AUTH_ADDRESS}
     Open Rescan Rekeyed
@@ -96,7 +99,14 @@ Skipping Rescan Adds Nothing And Returns Home
     Page Should Not Contain Element    ${row}
 
 Undo Rekey Confirmation Opens For A Rekeyed Account
+    [Documentation]    Stops on the confirmation: undoing would spend the testnet fixture's rekey.
     [Tags]    id:rekey.undo.confirm    p1    needs-funded    excludefromci
-    # The Undo rekey link does carry a testID (account_info_undo_rekey_link). What this case
-    # waits on is a rekeyed account, which costs a funded rekey to set up.
-    Skip    Needs an account that is already rekeyed; setting one up costs a funded rekey.
+    [Teardown]    Leave Testnet
+    Skip Unless Env Set    E2E_REKEY_AUTH_MNEMONIC    E2E_REKEY_AUTH_ADDRESS    E2E_REKEYED_ADDRESS
+    Use Account From Environment    E2E_REKEY_AUTH_MNEMONIC    ${REKEY_AUTH_ADDRESS}
+    Select Rekeyed Account Held By Auth
+    Open Account Options
+    Scroll Until Tappable    ${UNDO_REKEY_LINK}
+    Tap    ${UNDO_REKEY_LINK}
+    Wait Until Page Contains Element    ${UNDO_REKEY_CONFIRM_SCREEN}    timeout=20s
+    Page Should Contain Element    ${UNDO_REKEY_CONFIRM_CTA}

@@ -12,6 +12,9 @@
 # drifts away from this one.
 #
 # Device selection comes from ANDROID_UDID / IOS_UDID, or pass --variable yourself.
+#
+# E2E_FUNDED=1 also runs the needs-funded cases. Each reads its wallet from the environment and
+# skips without it; README "Funded fixtures" lists the variables.
 set -euo pipefail
 
 PLATFORM="${1:?usage: tools/run.sh <android|ios> [robot args...]}"
@@ -114,8 +117,10 @@ esac
 run_robot() {
   echo "running $PLATFORM from snapshot $SNAPSHOT -> $OUT"
   local status=0
+  local excludes=(--exclude slow)
+  [ "${E2E_FUNDED:-}" = 1 ] || excludes+=(--exclude needs-funded)
   "$PYTHON" -m robot \
-    --exclude slow --exclude needs-funded \
+    "${excludes[@]}" \
     --variable "E2E_TEST_TIMEOUT:${E2E_TEST_TIMEOUT:-5 minutes}" \
     --variable "PLATFORM:$PLATFORM" "${DEVICE[@]}" "$@" \
     --outputdir "$OUT" "$SNAPSHOT/tests${SUITE:+/$SUITE.robot}" || status=$?
