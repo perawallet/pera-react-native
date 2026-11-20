@@ -440,7 +440,7 @@ describe('Flow: Cross-chain swap (Algorand into an own Ethereum address)', () =>
             expect(picker.current.chainOptions).toEqual([])
         })
 
-        it('Given ETH held on the Ethereum address, when the list shows All, then each row keeps its symbol line under a network badge and ETH shows its balance', async () => {
+        it('Given ETH held on the Ethereum address, when the list shows All, each row names its network and ETH shows its balance', async () => {
             await seedHoldings()
             selectAccount(withEthereum(await seedAlgo25Signer()))
             servePairs()
@@ -462,11 +462,17 @@ describe('Flow: Cross-chain swap (Algorand into an own Ethereum address)', () =>
             )
             expect(within(usdcRow).getByText('USDC · 31566704')).toBeTruthy()
             expect(
+                within(usdcRow).getByTestId('swap-asset-network-algorand'),
+            ).toBeTruthy()
+            expect(
                 within(usdcRow).getByTestId('chain_avatar_badge_algorand'),
             ).toBeTruthy()
             const ethRow = screen.getByTestId(
                 `swap-asset-item-ethereum-${ETH_ASSET}`,
             )
+            expect(
+                within(ethRow).getByTestId('swap-asset-network-ethereum'),
+            ).toBeTruthy()
             expect(
                 within(ethRow).getByTestId('chain_avatar_badge_ethereum'),
             ).toBeTruthy()
@@ -509,6 +515,9 @@ describe('Flow: Cross-chain swap (Algorand into an own Ethereum address)', () =>
             expect(
                 screen.queryByTestId('chain_avatar_badge_ethereum'),
             ).toBeNull()
+            expect(
+                await screen.findByTestId('swap-asset-network-ethereum'),
+            ).toBeTruthy()
         })
     })
 })
