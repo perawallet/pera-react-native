@@ -11,10 +11,15 @@
  */
 
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { SESSION_MASTER_KEY, SESSION_UNLOCKED_KEY } from '../storage-keys'
+import {
+    SESSION_KV_AUTH_KEY,
+    SESSION_MASTER_KEY,
+    SESSION_UNLOCKED_KEY,
+} from '../storage-keys'
 import { VaultLockedError } from '../errors'
+import { deriveKvAuthKey } from './kv-auth-key'
 
-export { SESSION_MASTER_KEY, SESSION_UNLOCKED_KEY }
+export { SESSION_KV_AUTH_KEY, SESSION_MASTER_KEY, SESSION_UNLOCKED_KEY }
 
 // JS strings are immutable heap copies until GC, so .fill(0) on the byte
 // arrays below is best-effort, not a complete guarantee — inherent to
@@ -44,10 +49,16 @@ const ensureAccessLevel = async (): Promise<void> => {
 
 export const putSessionMasterKey = async (key: Uint8Array): Promise<void> => {
     await ensureAccessLevel()
-    await chrome.storage.session.set({
-        [SESSION_MASTER_KEY]: toHex(key),
-        [SESSION_UNLOCKED_KEY]: true,
-    })
+    const kvAuthKey = deriveKvAuthKey(key)
+    try {
+        await chrome.storage.session.set({
+            [SESSION_MASTER_KEY]: toHex(key),
+            [SESSION_KV_AUTH_KEY]: toHex(kvAuthKey),
+            [SESSION_UNLOCKED_KEY]: true,
+        })
+    } finally {
+        kvAuthKey.fill(0)
+    }
 }
 
 export const getSessionMasterKey = async (): Promise<Nullable<Uint8Array>> => {
@@ -59,8 +70,36 @@ export const getSessionMasterKey = async (): Promise<Nullable<Uint8Array>> => {
 export const clearSessionMasterKey = async (): Promise<void> => {
     await chrome.storage.session.remove([
         SESSION_MASTER_KEY,
+        SESSION_KV_AUTH_KEY,
         SESSION_UNLOCKED_KEY,
     ])
+}
+
+/** The derived key only, so the service worker can relay it without ever holding the master key. */
+export const getSessionKvAuthKey = async (): Promise<Nullable<Uint8Array>> => {
+    const stored = await chrome.storage.session.get(SESSION_KV_AUTH_KEY)
+    const raw = stored[SESSION_KV_AUTH_KEY]
+    return typeof raw === 'string' && raw.length === 64 ? fromHex(raw) : null
+}
+
+/** Reports the key on unlock and `null` on lock; returns an unsubscribe function. */
+export const onKvAuthKeyChanged = (
+    listener: (key: Nullable<Uint8Array>) => void,
+): (() => void) => {
+    const handler = (
+        changes: Record<string, chrome.storage.StorageChange>,
+        areaName: string,
+    ): void => {
+        if (areaName !== 'session') return
+        const change = changes[SESSION_KV_AUTH_KEY]
+        if (!change) return
+        const raw: unknown = change.newValue
+        listener(
+            typeof raw === 'string' && raw.length === 64 ? fromHex(raw) : null,
+        )
+    }
+    chrome.storage.onChanged.addListener(handler)
+    return () => chrome.storage.onChanged.removeListener(handler)
 }
 
 // Reads the flag, never the key: the service worker asks on every dApp

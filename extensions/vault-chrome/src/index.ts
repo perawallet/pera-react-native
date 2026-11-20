@@ -30,6 +30,7 @@ export {
     onLockStateChanged,
     unlockVault,
     verifyVaultPassword,
+    type UnlockOptions,
     PBKDF2_ITERATIONS,
     PBKDF2_MAX_ITERATIONS,
 } from './vault/vault'
@@ -43,7 +44,9 @@ export {
     writePasskeySetupPending,
 } from './vault/passkey-setup'
 export {
+    getSessionKvAuthKey,
     getSessionMasterKey,
+    onKvAuthKeyChanged,
     requireSessionMasterKey,
     SESSION_MASTER_KEY,
 } from './vault/session'

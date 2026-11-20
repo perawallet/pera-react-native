@@ -23,6 +23,11 @@ export const PRF_CRED_ID_KEY = 'vault:prf-credential-id'
 /** chrome.storage.session — raw unlocked master key (memory-only). */
 export const SESSION_MASTER_KEY = 'vault:master-key'
 /**
+ * chrome.storage.session — hex key derived from the master key that seals
+ * authenticated KV records; the only secret the service worker relays.
+ */
+export const SESSION_KV_AUTH_KEY = 'vault:kv-auth-key'
+/**
  * chrome.storage.session: `true` while SESSION_MASTER_KEY is held. Written and
  * removed with the key in the same call, so the lock state is readable without
  * reading the key.

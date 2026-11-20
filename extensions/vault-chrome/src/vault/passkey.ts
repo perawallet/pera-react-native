@@ -21,7 +21,9 @@ import {
 } from '../errors'
 import { PRF_BLOB_KEY, PRF_CRED_ID_KEY } from '../storage-keys'
 import { armAutoLock } from './autolock'
+import { migrateLegacyRecordsOnce, type UnlockOptions } from './kv-auth-key'
 import { clearFailedAttempts, getLockoutRemainingSeconds } from './lockout'
+import { createMarkedSalt, isMarkedSalt } from './marked-salt'
 import { hasRecentPasswordAuth } from './password-auth'
 import { putSessionMasterKey, requireSessionMasterKey } from './session'
 import { unwrapMasterKeyWithPassword } from './vault'
@@ -172,6 +174,32 @@ export const isPasskeyUnlockEnabled = async (): Promise<boolean> => {
     return typeof stored[PRF_BLOB_KEY] === 'string'
 }
 
+// The marked salt is the migration marker; see createMarkedSalt.
+const wrapWithPrfOutput = async (
+    prfOutput: BufferSource,
+    masterKey: Uint8Array,
+    prfEvalSalt: Uint8Array,
+): Promise<WrappedMasterKeyPrfV1> => {
+    const hkdfSalt = createMarkedSalt()
+    const iv = crypto.getRandomValues(new Uint8Array(12))
+    const kek = await deriveKekFromPrf(prfOutput, hkdfSalt)
+    const ciphertext = new Uint8Array(
+        await crypto.subtle.encrypt(
+            { name: 'AES-GCM', iv: iv as BufferSource },
+            kek,
+            masterKey as BufferSource,
+        ),
+    )
+    return {
+        version: 1,
+        kdf: 'HKDF-SHA256-PRF',
+        hkdfSalt: base64.encode(hkdfSalt),
+        iv: base64.encode(iv),
+        ciphertext: base64.encode(ciphertext),
+        prfEvalSalt: base64.encode(prfEvalSalt),
+    }
+}
+
 /**
  * Establishes a SECOND KEK path for the same master key — password unlock stays
  * valid and is the recovery path.
@@ -251,26 +279,7 @@ const wrapMasterKeyWithPasskey = async (
         }
 
         // Derive a KEK from the PRF output and wrap the master key.
-        const hkdfSalt = crypto.getRandomValues(new Uint8Array(16))
-        const iv = crypto.getRandomValues(new Uint8Array(12))
-        const kek = await deriveKekFromPrf(prfOutput, hkdfSalt)
-
-        const ciphertext = new Uint8Array(
-            await crypto.subtle.encrypt(
-                { name: 'AES-GCM', iv: iv as BufferSource },
-                kek,
-                masterKey as BufferSource,
-            ),
-        )
-
-        const blob: WrappedMasterKeyPrfV1 = {
-            version: 1,
-            kdf: 'HKDF-SHA256-PRF',
-            hkdfSalt: base64.encode(hkdfSalt),
-            iv: base64.encode(iv),
-            ciphertext: base64.encode(ciphertext),
-            prfEvalSalt: base64.encode(prfEvalSalt),
-        }
+        const blob = await wrapWithPrfOutput(prfOutput, masterKey, prfEvalSalt)
 
         // Fix: store rawId bytes (base64-encoded) not the base64url string id —
         // allowCredentials descriptors require the raw binary credential id.
@@ -316,13 +325,23 @@ export const enablePasskeyUnlockWithSession = async (): Promise<void> => {
     }
 }
 
+type UnwrappedPasskeyKey = {
+    masterKey: Uint8Array
+    /** Set only when the blob that opened is unmarked; same credential and `prfEvalSalt`. */
+    markedPrfBlob?: string
+}
+
 /**
  * Honours the lockout, reads and validates the PRF blob, runs the assertion,
  * and unwraps the master key. Shared by `unlockWithPasskey` and `verifyPasskey`
  * so the two cannot drift on which failures count as corruption versus a bad
  * assertion. The caller owns zeroing the returned key.
  */
-const unwrapMasterKeyWithPasskey = async (): Promise<Uint8Array> => {
+const unwrapMasterKeyWithPasskey = async ({
+    shouldPrepareMarkedBlob = false,
+}: {
+    shouldPrepareMarkedBlob?: boolean
+} = {}): Promise<UnwrappedPasskeyKey> => {
     // Biometric/passkey auth must NOT bypass the password lockout — mirrors
     // useLockScreen.ts, which skips the biometric prompt entirely while
     // locked out.
@@ -378,8 +397,9 @@ const unwrapMasterKeyWithPasskey = async (): Promise<Uint8Array> => {
 
         const kek = await deriveKekFromPrf(prfOutput, hkdfSaltBytes)
 
+        let masterKey: Uint8Array
         try {
-            return new Uint8Array(
+            masterKey = new Uint8Array(
                 await crypto.subtle.decrypt(
                     { name: 'AES-GCM', iv: ivBytes as BufferSource },
                     kek,
@@ -390,6 +410,17 @@ const unwrapMasterKeyWithPasskey = async (): Promise<Uint8Array> => {
             // AES-GCM tag failure — wrong PRF output (tampered or wrong key).
             throw new PasskeyUnlockError()
         }
+        // Built here because the PRF output, which can't be had again without
+        // another assertion, is zeroed on the way out.
+        if (!shouldPrepareMarkedBlob || isMarkedSalt(hkdfSaltBytes)) {
+            return { masterKey }
+        }
+        const markedBlob = await wrapWithPrfOutput(
+            prfOutput,
+            masterKey,
+            prfEvalSaltBytes,
+        )
+        return { masterKey, markedPrfBlob: JSON.stringify(markedBlob) }
     } finally {
         // Zero PRF output bytes after KEK derivation.
         if (prfOutput !== null) {
@@ -399,12 +430,31 @@ const unwrapMasterKeyWithPasskey = async (): Promise<Uint8Array> => {
 }
 
 /** Ends in the same session state as `unlockVault`. */
-export const unlockWithPasskey = async (): Promise<void> => {
-    const masterKey = await unwrapMasterKeyWithPasskey()
+export const unlockWithPasskey = async (
+    options?: UnlockOptions,
+): Promise<void> => {
+    const { masterKey, markedPrfBlob } = await unwrapMasterKeyWithPasskey({
+        shouldPrepareMarkedBlob: true,
+    })
     try {
+        // Before the session key lands, so contexts reacting to the unlock
+        // already find sealed records.
+        const hasMigrated =
+            markedPrfBlob === undefined
+                ? false
+                : await migrateLegacyRecordsOnce(masterKey, options)
         await putSessionMasterKey(masterKey)
         await armAutoLock()
         await clearFailedAttempts()
+        if (hasMigrated && markedPrfBlob !== undefined) {
+            try {
+                await chrome.storage.local.set({
+                    [PRF_BLOB_KEY]: markedPrfBlob,
+                })
+            } catch {
+                // The next unlock retries; the unlock itself has succeeded.
+            }
+        }
     } finally {
         masterKey.fill(0)
     }
@@ -422,7 +472,7 @@ export const unlockWithPasskey = async (): Promise<void> => {
  * authenticator is touched.
  */
 export const verifyPasskey = async (): Promise<void> => {
-    const masterKey = await unwrapMasterKeyWithPasskey()
+    const { masterKey } = await unwrapMasterKeyWithPasskey()
     try {
         await clearFailedAttempts()
     } finally {

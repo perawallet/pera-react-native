@@ -16,7 +16,11 @@ import { clearSessionMasterKey } from './session'
 
 export { AUTO_LOCK_MINUTES_KEY }
 // The service worker bundles only this entry, so it reads the lock state here.
-export { isSessionUnlocked, onLockStateChanged } from './session'
+export {
+    getSessionKvAuthKey,
+    isSessionUnlocked,
+    onLockStateChanged,
+} from './session'
 
 export const AUTO_LOCK_ALARM = 'pera-vault-auto-lock'
 export const DEFAULT_AUTO_LOCK_MINUTES = 15

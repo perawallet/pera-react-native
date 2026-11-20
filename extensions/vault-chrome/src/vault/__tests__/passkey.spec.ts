@@ -42,6 +42,8 @@ import {
     PASSKEY_ENABLE_REAUTH_WINDOW_MS,
 } from '../password-auth'
 import { InvalidPasswordError } from '../../errors'
+import { deriveKvAuthKey } from '../kv-auth-key'
+import { isMarkedSalt } from '../marked-salt'
 import { getLockoutRemainingSeconds, runThrottledAttempt } from '../lockout'
 
 // Records one wrong-password attempt the way a password check would.
@@ -774,6 +776,140 @@ describe('passkey vault', () => {
             // The PRF blob for the old master key must have been removed.
             expect(await isPasskeyUnlockEnabled()).toBe(false)
             expect(fake.data.has('vault:prf-credential-id')).toBe(false)
+        })
+    })
+
+    describe('legacy record migration', () => {
+        const PRF_BLOB = 'vault:wrapped-master-key-prf'
+
+        // What a build before the mark wrote: same PRF output and eval salt,
+        // a random unmarked hkdfSalt.
+        const downgradeToUnmarkedBlob = async (): Promise<Uint8Array> => {
+            const masterKey = (await getSessionMasterKey()) as Uint8Array
+            const blob = JSON.parse(String(fake.data.get(PRF_BLOB)))
+            const hkdfSalt = new Uint8Array(16).fill(3)
+            const iv = new Uint8Array(12).fill(8)
+            const material = await crypto.subtle.importKey(
+                'raw',
+                FAKE_PRF_BYTES,
+                'HKDF',
+                false,
+                ['deriveKey'],
+            )
+            const kek = await crypto.subtle.deriveKey(
+                {
+                    name: 'HKDF',
+                    hash: 'SHA-256',
+                    salt: hkdfSalt,
+                    info: new TextEncoder().encode('pera-vault-prf-kek-v1'),
+                },
+                material,
+                { name: 'AES-GCM', length: 256 },
+                false,
+                ['encrypt'],
+            )
+            const ciphertext = new Uint8Array(
+                await crypto.subtle.encrypt(
+                    { name: 'AES-GCM', iv },
+                    kek,
+                    masterKey,
+                ),
+            )
+            fake.data.set(
+                PRF_BLOB,
+                JSON.stringify({
+                    ...blob,
+                    hkdfSalt: base64.encode(hkdfSalt),
+                    iv: base64.encode(iv),
+                    ciphertext: base64.encode(ciphertext),
+                }),
+            )
+            return masterKey
+        }
+
+        const storedBlob = () => JSON.parse(String(fake.data.get(PRF_BLOB)))
+
+        const setUpUnmarked = async (): Promise<Uint8Array> => {
+            await createVault('pw')
+            await enablePasskeyUnlock('pw')
+            const masterKey = await downgradeToUnmarkedBlob()
+            await lockVault()
+            return masterKey
+        }
+
+        it('seals before the session key is set, then re-wraps the blob marked under the same credential', async () => {
+            const masterKey = await setUpUnmarked()
+            const before = storedBlob()
+            const credentialId = fake.data.get('vault:prf-credential-id')
+            let sawSessionKey = true
+            let receivedKey = new Uint8Array()
+            const migrate = vi.fn(async (key: Uint8Array) => {
+                sawSessionKey = fake.sessionData.has('vault:master-key')
+                receivedKey = new Uint8Array(key)
+            })
+
+            await unlockWithPasskey({ migrateLegacyRecords: migrate })
+
+            expect(migrate).toHaveBeenCalledTimes(1)
+            expect(receivedKey).toEqual(deriveKvAuthKey(masterKey))
+            expect(sawSessionKey).toBe(false)
+            const after = storedBlob()
+            expect(isMarkedSalt(base64.decode(after.hkdfSalt))).toBe(true)
+            expect(after.prfEvalSalt).toBe(before.prfEvalSalt)
+            expect(fake.data.get('vault:prf-credential-id')).toBe(credentialId)
+            await lockVault()
+            await unlockWithPasskey({ migrateLegacyRecords: migrate })
+            expect(await getSessionMasterKey()).toEqual(masterKey)
+            expect(migrate).toHaveBeenCalledTimes(1)
+        })
+
+        it('still unlocks when the migration throws, and leaves the blob unmarked to retry', async () => {
+            await setUpUnmarked()
+            const migrate = vi
+                .fn<(key: Uint8Array) => Promise<void>>()
+                .mockRejectedValueOnce(new Error('quota'))
+                .mockResolvedValue(undefined)
+
+            await unlockWithPasskey({ migrateLegacyRecords: migrate })
+
+            expect(await getSessionMasterKey()).not.toBeNull()
+            expect(isMarkedSalt(base64.decode(storedBlob().hkdfSalt))).toBe(
+                false,
+            )
+            await lockVault()
+            await unlockWithPasskey({ migrateLegacyRecords: migrate })
+            expect(migrate).toHaveBeenCalledTimes(2)
+            expect(isMarkedSalt(base64.decode(storedBlob().hkdfSalt))).toBe(
+                true,
+            )
+        })
+
+        it('leaves the blob unmarked when no migration is supplied', async () => {
+            await setUpUnmarked()
+
+            await unlockWithPasskey()
+
+            expect(isMarkedSalt(base64.decode(storedBlob().hkdfSalt))).toBe(
+                false,
+            )
+        })
+
+        it('writes a marked hkdfSalt when passkey unlock is enabled', async () => {
+            await createVault('pw')
+            await enablePasskeyUnlock('pw')
+
+            expect(isMarkedSalt(base64.decode(storedBlob().hkdfSalt))).toBe(
+                true,
+            )
+        })
+
+        it('verifyPasskey never migrates or rewrites the blob', async () => {
+            await setUpUnmarked()
+            const before = fake.data.get(PRF_BLOB)
+
+            await verifyPasskey()
+
+            expect(fake.data.get(PRF_BLOB)).toBe(before)
         })
     })
 })
