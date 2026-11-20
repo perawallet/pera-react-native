@@ -12,6 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { logger } from '@perawallet/wallet-core-shared'
 import {
     discoverAccounts,
     discoverDelegatedAccounts,
@@ -431,6 +432,38 @@ describe('discoverWalletCandidates', () => {
         })
     })
 
+    it('says a walk stopped at its key index limit, and a further scan from what it found finds the rest', async () => {
+        const families = registerChainFamilies(CHAIN_IDS)
+        const used = Array.from({ length: 30 }, (_, keyIndex) =>
+            familyHdAddress('evm', 0, keyIndex),
+        )
+        activeOn(families, ALGORAND, [])
+        activeOn(families, ETHEREUM, used)
+        activeOn(families, BASE, [])
+        const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+
+        const first = await discoverWalletCandidates({
+            walletKeyId: 'seed',
+            chainIds: CHAIN_IDS,
+        })
+        const further = await discoverWalletCandidates({
+            walletKeyId: 'seed',
+            chainIds: CHAIN_IDS,
+            heldIndexes: first.accounts.flatMap(
+                account => hdIndexOf(account) ?? [],
+            ),
+            extendLimits: ['key'],
+        })
+        warn.mockRestore()
+
+        expect(first.reachedLimits).toEqual(['key'])
+        expect(first.accounts).toHaveLength(20)
+        expect(further.reachedLimits).toEqual([])
+        expect(further.accounts.map(a => hdIndexOf(a)?.keyIndex)).toEqual(
+            Array.from({ length: 30 }, (_, keyIndex) => keyIndex),
+        )
+    })
+
     it('marks a default chain found active as discovered, and one only derived as created', async () => {
         const families = registerChainFamilies(CHAIN_IDS)
         activeOn(families, ALGORAND, [])
@@ -610,6 +643,37 @@ describe('mergeWalletCandidates', () => {
             ...first,
             isOriginFallback: false,
         })
+    })
+
+    it("keeps the later walk's stop at the limits, as it reached at least as far", () => {
+        const first = {
+            accounts: [accountAt(0, { algorand: 'ALGO0' })],
+            failedChainIds: [] as ChainId[],
+            reachedLimits: ['key' as const],
+        }
+        const further = { ...first, reachedLimits: [] }
+
+        expect(mergeWalletCandidates(first, further).reachedLimits).toEqual([])
+        expect(mergeWalletCandidates(further, first).reachedLimits).toEqual([
+            'key',
+        ])
+    })
+
+    it('keeps the earlier walk stopping at its limits when a network failed in the retry, as its gap then closes short of them', () => {
+        const first = {
+            accounts: [accountAt(0, { ethereum: '0x0' })],
+            failedChainIds: ['base'] as ChainId[],
+            reachedLimits: ['key' as const],
+        }
+        const retry = {
+            accounts: [accountAt(0, { base: '0x0' })],
+            failedChainIds: ['ethereum'] as ChainId[],
+            reachedLimits: [],
+        }
+
+        expect(mergeWalletCandidates(first, retry).reachedLimits).toEqual([
+            'key',
+        ])
     })
 
     it("adds the retry's accounts and joins the chains of an index both found, in index order", () => {

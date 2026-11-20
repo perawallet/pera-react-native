@@ -184,7 +184,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         )
     })
 
-    it('Given an Algorand send, when the user reviews it, then the review shows the network chip and the network badge on both avatars', async () => {
+    it('Given an Algorand send, when the user reviews it, then the review shows both network badges and the ALGO total including the fee', async () => {
         await seedAlgo25Sender()
         useSendFundsStore
             .getState()
@@ -200,6 +200,11 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         expect(
             screen.getAllByTestId('chain_avatar_badge_algorand'),
         ).toHaveLength(2)
+        await waitFor(() => {
+            expect(
+                screen.getByTestId('send_confirm_total').textContent,
+            ).toMatch(/¦\s*1\.0010*(?![\d.])/)
+        })
     })
 
     it('Given a pre-filled send-funds store, when the user taps the confirm button, then the pipeline signs locally, POSTs to algod, and the success screen renders', async () => {

@@ -2518,6 +2518,9 @@
             "cancelled_none_body": "Nothing new was found before you stopped the scan.",
             "retry_networks": "Check {{networks}} again",
             "scan_again": "Scan again",
+            "limit_reached_title": "There may be more accounts",
+            "limit_reached_body": "The scan stops after a set number of addresses. If you've used more on this wallet, keep scanning to find them.",
+            "scan_further": "Keep scanning",
             "done": "Done",
             "incomplete_title": "Scan incomplete",
             "updated_title_one": "Found new networks on {{count}} account",
@@ -2572,7 +2575,10 @@
             "all_imported_body": "All accounts from this wallet are already in Pera. If one is added as a watch account, remove it first, then import again to add it with full access.",
             "unchecked_networks_title": "Couldn't check {{networks}}",
             "unchecked_networks_body": "Accounts on the other networks are listed. You can scan for new accounts again later.",
-            "retry_networks": "Check {{networks}} again"
+            "retry_networks": "Check {{networks}} again",
+            "limit_reached_title": "There may be more accounts",
+            "limit_reached_body": "The search stops after a set number of addresses. If you've used more on this wallet, keep scanning to find them.",
+            "scan_further": "Keep scanning"
         },
         "import_rekeyed_addresses": {
             "title_one": "{{count}} rekeyed account found",
@@ -4211,7 +4217,7 @@
     "swap": {
         "introduction": {
             "title": "Swap in Pera",
-            "description": "Pera Wallet provides an easy and fast way to swap assets. With P.E.R.A., swap requests are intelligently routed across multiple Algorand based decentralized exchanges to secure the best available price.",
+            "description": "Pera Wallet provides an easy and fast way to swap assets. With P.E.R.A., swap requests are intelligently routed across multiple exchange providers to secure the best available price.",
             "powered_by": "Powered by <0>P.E.R.A.</0>",
             "start_swapping": "Start Swapping",
             "terms_agreement": "By continuing, you agree to our swap partner's <0>Terms of Service</0>"
@@ -4345,7 +4351,13 @@
             },
             "list": {
                 "item": {
-                    "description": "Swapped <0/> for <1/>"
+                    "description": "Swapped <0/> for <1/>",
+                    "description_unsettled": "Swap <0/> for <1/>",
+                    "status": {
+                        "in_progress": "In progress",
+                        "failed": "Failed",
+                        "refunded": "Refunded"
+                    }
                 },
                 "empty": {
                     "title": "No swaps yet",
@@ -4363,6 +4375,7 @@
         },
         "tracking": {
             "started": "Cross-chain swap sent",
+            "same_chain_started": "Swap sent",
             "in_progress": "In progress. Your funds are on their way.",
             "completed": "Completed. Your {{toAsset}} has arrived.",
             "failed": "The swap couldn't complete. If your funds were sent, the provider returns them to your account.",

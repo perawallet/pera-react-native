@@ -84,4 +84,11 @@ describe('WebMainRoutes registration', () => {
     it('registers BannersCarouselModal, which has no capability gate', () => {
         expect(registeredRoutes.has('BannersCarouselModal')).toBe(true)
     })
+
+    // SwapOverlays, which mounts it on native, never renders on web.
+    it('mounts the rule that keeps Swap on the selected account', () => {
+        expect(webRoutesSource).toMatch(
+            /^\s+useSwapAccountFollowsSelection\(\)$/m,
+        )
+    })
 })

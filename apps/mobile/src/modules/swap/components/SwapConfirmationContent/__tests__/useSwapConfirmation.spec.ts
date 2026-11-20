@@ -16,11 +16,11 @@ import { Decimal } from 'decimal.js'
 import { formatNumber } from '@perawallet/wallet-core-shared'
 import {
     useAllAccounts,
-    useSelectedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
+    useSwapAccount,
     useSwapSourceCostQuery,
     type SwapQuote,
     type SwapSourceCost,
@@ -275,15 +275,15 @@ describe('useSwapConfirmation', () => {
         )
     })
 
-    it('exposes the selected account', () => {
+    it('exposes the swap account', () => {
         const account = { id: 'acc-1' }
-        vi.mocked(useSelectedAccount).mockReturnValueOnce(
-            account as unknown as ReturnType<typeof useSelectedAccount>,
+        vi.mocked(useSwapAccount).mockReturnValueOnce(
+            account as unknown as ReturnType<typeof useSwapAccount>,
         )
 
         const { result } = renderConfirmation(makeQuote())
 
-        expect(result.current.selectedAccount).toBe(account)
+        expect(result.current.swapAccount).toBe(account)
     })
 
     it('resolves both swap assets from the quote', () => {

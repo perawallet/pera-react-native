@@ -66,6 +66,8 @@ export type AddressDisplayProps = {
     scope?: ChainScope
     /** Pins the address's chain icon to the avatar's bottom-left corner. Not drawn by the unified layout. */
     showChainBadge?: boolean
+    /** Hides the backup warning when the address resolves to the user's account. */
+    hideBackupBadge?: boolean
     /**
      * How the address reads when no account, contact or name service names it;
      * `addressFormat` when unset. `full` wraps instead of truncating, so an
@@ -89,6 +91,7 @@ export const AddressDisplay = ({
     hugContent = false,
     scope,
     showChainBadge = false,
+    hideBackupBadge = false,
     unnamedAddressFormat,
     ...rest
 }: AddressDisplayProps) => {
@@ -170,6 +173,7 @@ export const AddressDisplay = ({
                 showChevron={false}
                 chainId={scope?.chainId}
                 showChainBadge={showChainBadge}
+                hideBackupBadge={hideBackupBadge}
             />
         )
     } else if (contact) {

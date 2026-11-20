@@ -34,6 +34,7 @@ export type AddressSearchViewProps = {
     showAllContactsWhenEmpty?: boolean
     inBottomSheet?: boolean
     showAccountBalance?: boolean
+    hideBackupBadge?: boolean
     showAddIcon?: boolean
     /** See {@link UseAddressSearchViewProps.showClipboardPaste}. */
     showClipboardPaste?: boolean
@@ -52,6 +53,7 @@ export const AddressSearchView = ({
     showAllContactsWhenEmpty,
     inBottomSheet,
     showAccountBalance = false,
+    hideBackupBadge = false,
     showAddIcon = false,
     showClipboardPaste = false,
     sendingAssetLabel,
@@ -90,6 +92,7 @@ export const AddressSearchView = ({
         setValue,
         chainBadgeName,
         showAccountBalance,
+        hideBackupBadge,
         showAddIcon,
         wrongNetworkMessage,
     })

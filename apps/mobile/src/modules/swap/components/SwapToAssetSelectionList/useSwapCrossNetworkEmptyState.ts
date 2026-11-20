@@ -11,7 +11,6 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { nativeAssetFor, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import {
     toScopeKey,
@@ -20,6 +19,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { useSwapAccount } from '@perawallet/wallet-core-swaps'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSwapSourceChains } from '../../hooks/useSwapSourceChains'
 
@@ -60,8 +60,8 @@ export const useSwapCrossNetworkEmptyState = ({
     onSwitchPayAsset,
 }: UseSwapCrossNetworkEmptyStateParams): UseSwapCrossNetworkEmptyStateResult => {
     const { t } = useLanguage()
-    const selectedAccount = useSelectedAccount()
-    const sourceChainIds = useSwapSourceChains(selectedAccount)
+    const swapAccount = useSwapAccount()
+    const sourceChainIds = useSwapSourceChains(swapAccount)
     const { data: payAssets } = useAssetsQuery(
         scope,
         fromAssetId ? [fromAssetId] : [],

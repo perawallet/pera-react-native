@@ -3,13 +3,21 @@ Documentation       The passphrase backup reminder: the banner on a funded accou
 ...                 been backed up, and the wizard behind it. Not Cloud Backup.
 Library             Collections
 Library             String
+Library             Process
 Resource            onboarding.resource
 
 
 *** Variables ***
-# A funded 24-word Universal wallet. Recovering it does not mark its phrase backed up, so the
-# reminder shows; an unfunded account with nothing rekeyed to it is never reminded.
-${MNEMONIC_FUNDED}                  %{MNEMONIC_24_FUNDED=}
+# The testnet treasury (README, "Funded fixtures"). An imported phrase counts as backed up, so the
+# reminder needs a wallet the app created, which the treasury funds: an unfunded account with
+# nothing rekeyed to it is never reminded.
+${TREASURY_MNEMONIC}                %{MNEMONIC_25_WORD=}
+# run.sh passes the real path, since the snapshot holds only tests/ and resources/; this default
+# covers robot started by hand from e2e/.
+${TESTNET_FIXTURES_TOOL}            ${EXECDIR}/tools/testnet_fixtures.mjs
+# 0.1 ALGO minimum balance plus room for nothing else: the wallet is thrown away after the case.
+${BACKUP_FUNDING_MICROALGOS}        100000
+${ALGORAND_COPY}                    tid=account_network_algorand_copy
 
 ${BACKUP_BANNER_CTA}                tid=backup_reminder_banner_cta
 ${BACKUP_INFO_CONTINUE}             tid=backup_info_continue
@@ -30,10 +38,37 @@ Start With Unfunded Wallet
     Wait Until Page Contains Element    ${MORE_BUTTON}    timeout=30s
 
 Start With Wallet Needing Backup
-    Import From Welcome    ${RECOVER_UNIVERSAL_WALLET}    MNEMONIC_24_FUNDED
+    [Documentation]    A created wallet funded on testnet: the reminder counts a balance on any network.
+    Skip If    not $TREASURY_MNEMONIC    MNEMONIC_25_WORD (the testnet treasury) is not set.
+    Skip If    not os.path.exists($TESTNET_FIXTURES_TOOL)    ${TESTNET_FIXTURES_TOOL} is missing.
+    Start With New Wallet
+    Load Fixture    testnet
+    ${address}=    Algorand Address Of Selected Account
+    VAR    ${WALLET_ADDRESS}    ${address}    scope=TEST
+    ${paid}=    Run Process    node    ${TESTNET_FIXTURES_TOOL}    pay    ${address}
+    ...    ${BACKUP_FUNDING_MICROALGOS}
+    Should Be Equal As Integers    ${paid.rc}    0    msg=Funding the new wallet failed: ${paid.stderr}
+    Go Home
     Wait Clear Of Startup Prompts
-    # The banner waits on the account's funded-state query.
-    Wait Until Page Contains Element    ${BACKUP_BANNER_CTA}    timeout=60s
+    # The banner waits on the account's funded-state query, which the next sync tick refreshes;
+    # a relaunch reads the balance afresh when that tick is slow.
+    ${shown}=    Run Keyword And Return Status
+    ...    Wait Until Page Contains Element    ${BACKUP_BANNER_CTA}    timeout=60s
+    IF    not ${shown}
+        Relaunch Pera
+        Wait Clear Of Startup Prompts
+        Wait Until Page Contains Element    ${BACKUP_BANNER_CTA}    timeout=60s
+    END
+
+Algorand Address Of Selected Account
+    [Documentation]    The row prints the address shortened; its copy action hands over all of it.
+    Wait Until Settled    ${MORE_BUTTON}
+    Open Account Options Sheet
+    Scroll Until Tappable    ${ALGORAND_COPY}
+    Tap    ${ALGORAND_COPY}
+    ${address}=    AppiumLibrary.Get Clipboard Text
+    Should Match Regexp    ${address}    ^[A-Z2-7]{58}$    msg=The copy action put no Algorand address on the clipboard.
+    RETURN    ${address}
 
 Open Backup Info
     Tap    ${BACKUP_BANNER_CTA}
@@ -64,13 +99,19 @@ Remember Passphrase
     END
 
 Passphrase Should Match The Wallet
+    [Documentation]    Derives the address the shown words open, the way the app derives it, and
+    ...                compares it with the wallet's. The words reach the tool through the environment,
+    ...                never a command line or the log.
     ${level}=    Set Log Level    NONE
     TRY
-        ${matches}=    Evaluate    $PASSPHRASE == $MNEMONIC_FUNDED.split()
+        Set Environment Variable    E2E_SHOWN_PHRASE    ${{ ' '.join($PASSPHRASE) }}
+        ${derived}=    Run Process    node    ${TESTNET_FIXTURES_TOOL}    address-of-env    E2E_SHOWN_PHRASE
     FINALLY
+        Remove Environment Variable    E2E_SHOWN_PHRASE
         Set Log Level    ${level}
     END
-    Should Be True    ${matches}    msg=The grid did not show the wallet's recovery phrase word for word.
+    Should Be Equal    ${derived.stdout.strip()}    ${WALLET_ADDRESS}
+    ...    msg=The grid's words open another wallet than this one.    values=False
 
 Open Verification Quiz
     Open Passphrase
@@ -89,6 +130,10 @@ Answer Quiz Correctly
     ${level}=    Set Log Level    NONE
     TRY
         FOR    ${i}    IN RANGE    ${count}
+            # Android leaves the lower items out of the tree until they are on screen. The option
+            # IDs carry positions, not words, so scrolling to them logs nothing secret.
+            Run Keyword And Ignore Error    Scroll Until Tappable    tid=backup_verification_item_${i}_option_0
+            Run Keyword And Ignore Error    Scroll Until Tappable    tid=backup_verification_item_${i}_option_2
             ${label}=    Get Text In Container    backup_verification_item_${i}    1
             ${digits}=    Get Regexp Matches    ${label}    \\d+
             Should Not Be Empty    ${digits}    msg=A quiz label no longer carries the word position.

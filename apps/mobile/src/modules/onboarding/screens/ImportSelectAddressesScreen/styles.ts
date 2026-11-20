@@ -36,10 +36,10 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.positive,
         marginRight: theme.spacing.xs,
     },
-    uncheckedNetworks: {
+    notice: {
         marginBottom: theme.spacing.md,
     },
-    retryNetworks: {
+    noticeAction: {
         alignSelf: 'flex-start',
         marginTop: theme.spacing.sm,
     },

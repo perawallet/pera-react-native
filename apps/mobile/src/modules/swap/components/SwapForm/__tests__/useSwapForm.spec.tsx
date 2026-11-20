@@ -129,13 +129,14 @@ vi.mock('@perawallet/wallet-core-swaps', async () => ({
         maxAmountFeeReserve: new Decimal(100_000),
         holdingReserve: () => new Decimal(100_000),
     }),
+    useSwapAccount: () => mockSwapAccount,
 }))
 
 const accountAt = (address: string, id = 'account-1') => ({
     id,
     chains: { algorand: { address } },
 })
-let mockSelectedAccount = accountAt('TESTADDRESS123')
+let mockSwapAccount = accountAt('TESTADDRESS123')
 let mockPayBalance: Nullable<Decimal> = new Decimal('5000000')
 let mockIsPayBalanceFetched = true
 let mockIsPayBalanceError = false
@@ -156,7 +157,6 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     addressOn: (account: { chains: { algorand?: { address: string } } }) =>
         account.chains.algorand?.address,
-    useSelectedAccount: () => mockSelectedAccount,
     useSelectedAccountId: () => ({
         setSelectedAccountId: mockSetSelectedAccountId,
     }),
@@ -265,9 +265,9 @@ type MockReceiveTarget = {
 const sameScopeTarget = (): MockReceiveTarget => ({
     receiveScope: SCOPE,
     isCrossChain: false,
-    receivingAccount: mockSelectedAccount,
+    receivingAccount: mockSwapAccount,
     receivingAddress: 'TESTADDRESS123',
-    receivingAccounts: [mockSelectedAccount],
+    receivingAccounts: [mockSwapAccount],
     selectReceivingAccount: vi.fn(),
 })
 let mockReceiveTarget: MockReceiveTarget
@@ -326,7 +326,7 @@ describe('useSwapForm', () => {
         mockSlippage = null
         mockPairAccountId = null
         mockSourceChainIds = ['algorand']
-        mockSelectedAccount = accountAt('TESTADDRESS123')
+        mockSwapAccount = accountAt('TESTADDRESS123')
         mockPayBalance = new Decimal('5000000')
         mockSpendableMax = new Decimal('5000000')
         mockIsSpendablePending = false
@@ -646,7 +646,7 @@ describe('useSwapForm', () => {
         expect(mockResetQuoteMutation).toHaveBeenCalled()
     })
 
-    it('pays from the account picked with the asset, switching to it with the pair pinned to it', async () => {
+    it('pays from the account picked with the asset, pinning the pair to it and leaving the selected account', async () => {
         mockRequestBottomSheet.mockResolvedValueOnce({
             assetId: '123',
             scope: SCOPE,
@@ -666,7 +666,7 @@ describe('useSwapForm', () => {
             toAsset: '31566704',
             toAssetScope: null,
         })
-        expect(mockSetSelectedAccountId).toHaveBeenCalledWith('account-2')
+        expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
         expect(mockSetFromAsset).not.toHaveBeenCalled()
     })
 
@@ -691,7 +691,7 @@ describe('useSwapForm', () => {
         })
     })
 
-    it('keeps the selected account when the asset was picked on it', async () => {
+    it('keeps the swap account when the asset was picked on it', async () => {
         mockRequestBottomSheet.mockResolvedValueOnce({
             assetId: '123',
             scope: SCOPE,
@@ -705,7 +705,7 @@ describe('useSwapForm', () => {
         })
 
         expect(mockSetFromAsset).toHaveBeenCalledWith('123')
-        expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
+        expect(mockSetAccountPair).not.toHaveBeenCalled()
     })
 
     it('handleOpenPayAssetSelection no-ops when picker is dismissed', async () => {
@@ -1158,7 +1158,7 @@ describe('useSwapForm', () => {
         })
     })
 
-    it('clears the amounts and the asset pair when the selected account changes', async () => {
+    it('clears the amounts and the asset pair when the swap account changes', async () => {
         const { result, rerender } = renderHook(() => useSwapForm(SCOPE))
 
         await act(async () => {
@@ -1166,7 +1166,7 @@ describe('useSwapForm', () => {
         })
         expect(result.current.payAmount).not.toBeNull()
 
-        mockSelectedAccount = accountAt('OTHERADDRESS456')
+        mockSwapAccount = accountAt('OTHERADDRESS456')
         rerender()
 
         expect(result.current.payAmount).toBeNull()
@@ -1181,7 +1181,7 @@ describe('useSwapForm', () => {
         })
 
         mockPairAccountId = 'account-2'
-        mockSelectedAccount = accountAt('OTHERADDRESS456', 'account-2')
+        mockSwapAccount = accountAt('OTHERADDRESS456', 'account-2')
         rerender()
 
         expect(result.current.payAmount).toBeNull()
@@ -1419,7 +1419,10 @@ describe('useSwapForm', () => {
             await act(async () => {
                 result.current.handlePayAmountChange(new Decimal(5))
             })
-            mockRequestBottomSheet.mockResolvedValueOnce({ kind: 'success' })
+            mockRequestBottomSheet.mockResolvedValueOnce({
+                kind: 'confirm',
+                isPaidOutLater: true,
+            })
 
             await act(async () => {
                 await result.current.handleOpenConfirm()
@@ -1443,7 +1446,7 @@ describe('useSwapForm', () => {
             })
 
             expect(mockSuccessToast).toHaveBeenCalledWith(
-                'swap.tracking.started',
+                'swap.tracking.same_chain_started',
                 'swap.tracking.in_progress',
             )
         })

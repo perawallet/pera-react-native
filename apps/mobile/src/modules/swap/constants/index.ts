@@ -12,4 +12,12 @@
 
 import type { SwapStatus } from '@perawallet/wallet-core-swaps'
 
-export const VISIBLE_SWAP_STATUSES: SwapStatus[] = ['completed', 'in_progress']
+// Expired and cancelled orders stay out: they usually end before the wallet
+// pays, and the Swap screen's tracked-orders banner follows one that didn't.
+export const VISIBLE_SWAP_STATUSES: SwapStatus[] = [
+    'pending',
+    'in_progress',
+    'completed',
+    'failed',
+    'refunded',
+]

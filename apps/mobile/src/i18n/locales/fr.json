@@ -2518,6 +2518,9 @@
             "cancelled_none_body": "Rien de nouveau n’a été trouvé avant l’arrêt du scan.",
             "retry_networks": "Vérifier à nouveau : {{networks}}",
             "scan_again": "Relancer le scan",
+            "limit_reached_title": "Il peut y avoir d'autres comptes",
+            "limit_reached_body": "Le scan s'arrête après un nombre fixe d'adresses. Si vous en avez utilisé davantage sur ce portefeuille, poursuivez le scan pour les trouver.",
+            "scan_further": "Poursuivre le scan",
             "done": "Terminé",
             "incomplete_title": "Scan incomplet",
             "updated_title_one": "Nouveaux réseaux trouvés sur {{count}} compte",
@@ -2572,7 +2575,10 @@
             "all_imported_body": "Tous les comptes de ce wallet figurent déjà dans Pera. Si l’un d’eux est ajouté comme compte de suivi, supprimez-le d’abord, puis importez-le à nouveau pour l’ajouter avec un accès complet.",
             "unchecked_networks_title": "Impossible de vérifier : {{networks}}",
             "unchecked_networks_body": "Les comptes des autres réseaux sont listés. Vous pourrez relancer le scan plus tard pour trouver de nouveaux comptes.",
-            "retry_networks": "Vérifier à nouveau : {{networks}}"
+            "retry_networks": "Vérifier à nouveau : {{networks}}",
+            "limit_reached_title": "Il peut y avoir d'autres comptes",
+            "limit_reached_body": "La recherche s'arrête après un nombre fixe d'adresses. Si vous en avez utilisé davantage sur ce portefeuille, poursuivez le scan pour les trouver.",
+            "scan_further": "Poursuivre le scan"
         },
         "import_rekeyed_addresses": {
             "title_one": "{{count}} compte rekeyé trouvé",
@@ -4211,7 +4217,7 @@
     "swap": {
         "introduction": {
             "title": "Le swap dans Pera",
-            "description": "Pera Wallet offre un moyen simple et rapide d’échanger des actifs. Grâce à P.E.R.A., les demandes de swap sont routées intelligemment entre plusieurs plateformes d’échange décentralisées basées sur Algorand afin d’obtenir le meilleur prix disponible.",
+            "description": "Pera Wallet offre un moyen simple et rapide d’échanger des actifs. Grâce à P.E.R.A., les demandes de swap sont routées intelligemment entre plusieurs prestataires d’échange afin d’obtenir le meilleur prix disponible.",
             "powered_by": "Propulsé par <0>P.E.R.A.</0>",
             "start_swapping": "Commencer à échanger",
             "terms_agreement": "En continuant, vous acceptez les <0>conditions d’utilisation</0> de notre partenaire de swap"
@@ -4345,7 +4351,13 @@
             },
             "list": {
                 "item": {
-                    "description": "<0/> échangés contre <1/>"
+                    "description": "<0/> échangés contre <1/>",
+                    "description_unsettled": "Swap de <0/> contre <1/>",
+                    "status": {
+                        "in_progress": "En cours",
+                        "failed": "Échoué",
+                        "refunded": "Remboursé"
+                    }
                 },
                 "empty": {
                     "title": "Aucun swap pour le moment",
@@ -4363,6 +4375,7 @@
         },
         "tracking": {
             "started": "Swap inter-chaînes envoyé",
+            "same_chain_started": "Swap envoyé",
             "in_progress": "En cours. Vos fonds sont en route.",
             "completed": "Terminé. Vos fonds en {{toAsset}} sont arrivés.",
             "failed": "Le swap n’a pas pu aboutir. Si vos fonds ont été envoyés, le fournisseur les restituera sur votre compte.",

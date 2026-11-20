@@ -7,6 +7,7 @@ Documentation       Cloud Backup keywords. The feature is gated on the enable_cl
 Library             Collections
 Library             String
 Resource            app.resource
+Resource            feature_flags.resource
 
 
 *** Variables ***
@@ -15,15 +16,6 @@ ${BACKEND_KEYED}                    %{PERA_E2E_BACKEND_KEYED=}
 ${CB_QUIZ_ITEMS}                    3
 
 ${MENU_SETTINGS_BUTTON}             tid=menu_settings_button
-${SETTINGS_DEVELOPER_ROW}           tid=settings_item_developer_settings
-${SETTINGS_APP_VERSION}             tid=settings_app_version
-# The toast carries no testID; matched on settings.developer.debug_tools_enabled (English). iOS keeps
-# a dismissed toast in the tree off-screen with visible=false.
-${DEBUG_TOOLS_ENABLED_TOAST}        xpath=//*[(@text='Debug tools enabled' or @label='Debug tools enabled') and not(@visible='false')]
-${DEBUG_TOOLS_ROW}                  tid=developer_settings_debug_tools_item
-${FEATURE_FLAGS_ROW}                tid=debug_tools_feature_flags_item
-${CB_FLAG_EXPAND}                   tid=feature_flag_expand_enable_cloud_backup
-${CB_FLAG_OVERRIDE}                 tid=feature_flag_override_enable_cloud_backup
 ${CB_SETTINGS_ROW}                  tid=settings_item_cloud_backup
 
 ${CB_INTRO_SCREEN}                  tid=cloud_backup_intro_screen
@@ -98,55 +90,7 @@ Open Cloud Backup
     Wait Until Page Contains Element    ${CB_ENTRY_ANY}    timeout=20s
 
 Enable Cloud Backup Flag
-    [Documentation]    Settings -> Developer -> Debug Tools -> Feature Flags. Only called while the flag is
-    ...                off: the override switch toggles, so tapping it when already on turns it off.
-    Unlock Debug Tools
-    Swipe Until In View    ${SETTINGS_DEVELOPER_ROW}
-    Tap    ${SETTINGS_DEVELOPER_ROW}
-    Swipe Until In View    ${DEBUG_TOOLS_ROW}
-    Tap    ${DEBUG_TOOLS_ROW}
-    # Debug Tools is still sliding in when its rows appear; a tap then misses the row.
-    Wait Until Settled    ${FEATURE_FLAGS_ROW}
-    Tap    ${FEATURE_FLAGS_ROW}
-    Scroll Into View    feature_flag_expand_enable_cloud_backup
-    Tap    ${CB_FLAG_EXPAND}
-    Scroll Into View    feature_flag_override_enable_cloud_backup
-    Tap    ${CB_FLAG_OVERRIDE}
-
-Unlock Debug Tools
-    [Documentation]    Ten taps on the version row, each within 1s of the last (AppVersion.tsx resets the
-    ...                count on a longer gap). Re-locating the element per tap can exceed that on a
-    ...                loaded device, so the point is resolved once and tapped by coordinate.
-    # The footer stays in the lower quarter even scrolled to the end, which Swipe Until In View refuses.
-    Scroll Into View    settings_app_version
-    ${loc}=    Get Element Location    ${SETTINGS_APP_VERSION}
-    ${size}=    Get Element Size    ${SETTINGS_APP_VERSION}
-    VAR    @{point}    ${{int($loc['x'] + $size['width'] / 2)}}    ${{int($loc['y'] + $size['height'] / 2)}}
-    AppiumLibrary.Tap    ${point}    count=10    duration=0.05s
-    # The success toast proves the unlock, and while up it swallows taps on the top row of the next
-    # screens (Feature Flags on Debug Tools).
-    Wait Until Page Contains Element    ${DEBUG_TOOLS_ENABLED_TOAST}    timeout=5s
-    Wait Until Page Does Not Contain Element    ${DEBUG_TOOLS_ENABLED_TOAST}    timeout=10s
-
-Swipe Until In View
-    [Documentation]    Swipes until the element sits in the upper three quarters of the window, clear of
-    ...                sticky footers. Android leaves off-screen rows out of the tree; iOS keeps them
-    ...                with an off-screen position, which also says which way to scroll.
-    [Arguments]    ${locator}
-    ${h}=    Get Window Height
-    FOR    ${i}    IN RANGE    8
-        ${present}=    Run Keyword And Return Status    Page Should Contain Element    ${locator}
-        IF    ${present}
-            ${loc}=    Get Element Location    ${locator}
-            IF    0 < ${loc}[y] < ${h} * 0.75    RETURN
-            IF    ${loc}[y] <= 0
-                Swipe By Percent    50    35    50    70    duration=0.4s
-                CONTINUE
-            END
-        END
-        Swipe By Percent    50    70    50    35    duration=0.4s
-    END
-    Fail    ${locator} never scrolled into view.
+    Turn On Feature Flag    enable_cloud_backup
 
 Start At Choice
     [Documentation]    The set-up-or-restore screen with no backup configured. A configured backup is

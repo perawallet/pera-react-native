@@ -45,6 +45,7 @@ import { logger } from '@perawallet/wallet-core-shared'
 import { capabilityState } from '@test-utils/capability-mock'
 import { registerLegacyAddressCodec } from '@test-utils/chain-fixtures'
 import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
+import { useSwapsStore } from '@perawallet/wallet-core-swaps'
 
 const { mockNavigate, mockDispatch, mockGetCurrentRoute } = vi.hoisted(() => ({
     mockNavigate: vi.fn(),
@@ -1943,7 +1944,7 @@ describe('useDeepLink', () => {
         })
     })
 
-    it("selects the link's account before opening the swap", async () => {
+    it("selects the link's account and puts Swap on it before opening the swap", async () => {
         const linked = {
             id: 'linked',
             custody: { kind: 'local', seed: null },
@@ -1970,6 +1971,9 @@ describe('useDeepLink', () => {
         expect(accountsState.setSelectedAccountId).toHaveBeenCalledWith(
             'linked',
         )
+        expect(
+            vi.mocked(useSwapsStore)(state => state.setAccountId),
+        ).toHaveBeenCalledWith('linked')
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
             screen: 'Swap',
             params: {

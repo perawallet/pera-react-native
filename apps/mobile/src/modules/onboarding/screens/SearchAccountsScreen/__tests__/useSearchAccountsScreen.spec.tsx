@@ -307,6 +307,7 @@ describe('useSearchAccountsScreen', () => {
                 walletKeyId: 'w-1',
                 accounts: discovered,
                 failedChainIds: ['base'],
+                reachedLimits: undefined,
             })
             expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
             expect(mockCancelImport).not.toHaveBeenCalled()
@@ -354,6 +355,48 @@ describe('useSearchAccountsScreen', () => {
                 expect.objectContaining({ walletKeyId: 'w-1', previous }),
             ),
         )
+    })
+
+    it('in import mode, scans further when asked and tells the selection the search stopped at its limits', async () => {
+        mockRouteParams.current = {
+            mode: 'import',
+            walletKeyId: 'w-1',
+            previous: { accounts: [], failedChainIds: [] },
+            extendLimits: ['key'],
+        } as unknown as SearchAccountsParams
+        mockDiscoverImportAccounts.mockResolvedValue({
+            accounts: [{ id: '1', chains: {}, custody: { kind: 'local' } }],
+            failedChainIds: [],
+            reachedLimits: ['key'],
+        })
+
+        renderHook(() => useSearchAccountsScreen())
+
+        await waitFor(() =>
+            expect(mockReplace).toHaveBeenCalledWith(
+                'ImportSelectAddresses',
+                expect.objectContaining({ reachedLimits: ['key'] }),
+            ),
+        )
+        expect(mockDiscoverImportAccounts).toHaveBeenCalledWith(
+            expect.objectContaining({ extendLimits: ['key'] }),
+        )
+    })
+
+    it('passes a further scan on to the wallet rescan', async () => {
+        mockRouteParams.current = {
+            ...(mockRouteParams.current as object),
+            extendLimits: ['key'],
+        } as SearchAccountsParams
+
+        renderHook(() => useSearchAccountsScreen())
+
+        await waitFor(() => {
+            expect(mockRescanHdWallet).toHaveBeenCalledWith(
+                expect.anything(),
+                expect.objectContaining({ extendLimits: ['key'] }),
+            )
+        })
     })
 
     it('in import mode, shows each network as the walk reports, with no Cancel button', async () => {

@@ -62,6 +62,9 @@ export type PrivateKeyImportOptions = {
  */
 export type WalletDiscoveryCoverage = 'complete' | 'partial' | 'unanswered'
 
+/** An HD walk's hard stop: how many account indexes, or key indexes on one, it probes. */
+export type HdIndexLimit = 'account' | 'key'
+
 export type WalletDiscoveryResult = {
     /** The accounts the walk created or enabled a chain on, as stored after it ends. */
     accounts: WalletAccount[]
@@ -72,6 +75,8 @@ export type WalletDiscoveryResult = {
     failedChainIds: ChainId[]
     /** The walk was aborted; what it found before that was still added. */
     isCancelled: boolean
+    /** The index limits the walk stopped at with activity still turning up; more accounts may lie past them. */
+    reachedLimits: HdIndexLimit[]
 }
 
 export type WalletDiscoveryProgress = {
@@ -94,6 +99,8 @@ export type WalletCandidates = {
     failedChainIds: ChainId[]
     /** No index was active on a chain the walk heard from, so `accounts` is the first account alone. */
     isOriginFallback?: boolean
+    /** The index limits the walk stopped at; more accounts may lie past them. */
+    reachedLimits?: HdIndexLimit[]
 }
 
 export type AccountsState = BaseStoreState & {
@@ -225,6 +232,8 @@ export type AccountsState = BaseStoreState & {
             chainIds?: readonly ChainId[]
             signal?: AbortSignal
             onProgress?: (progress: WalletDiscoveryProgress) => void
+            /** The limits an earlier walk stopped at; each goes one more default limit past the indexes the wallet holds. */
+            extendLimits?: readonly HdIndexLimit[]
         },
     ) => Promise<WalletDiscoveryResult>
     /**

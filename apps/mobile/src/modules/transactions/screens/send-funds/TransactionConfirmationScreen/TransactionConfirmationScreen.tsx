@@ -201,6 +201,7 @@ export const TransactionConfirmationScreen = () => {
                             chainId={scope.chainId}
                             showChevron={false}
                             showChainBadge
+                            hideBackupBadge
                         />
                     </KeyValueRow>
                 )}
@@ -219,6 +220,7 @@ export const TransactionConfirmationScreen = () => {
                                 scope={scope}
                                 forceShowIcon
                                 showChainBadge
+                                hideBackupBadge
                                 addressFormat='full'
                                 showCopy={false}
                             />
@@ -248,12 +250,10 @@ export const TransactionConfirmationScreen = () => {
                         isQuantumFee ? <QuantumFeeExplainer /> : undefined
                     }
                 />
-                {total && (
-                    <SendTotalRow
-                        total={total}
-                        chainId={scope.chainId}
-                    />
-                )}
+                <SendTotalRow
+                    total={total}
+                    chainId={scope.chainId}
+                />
                 <PWDivider />
                 {currentBalance && (
                     <KeyValueRow

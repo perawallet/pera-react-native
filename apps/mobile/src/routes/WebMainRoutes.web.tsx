@@ -19,6 +19,7 @@ import { NavigationContainer } from '@react-navigation/native'
 import ErrorBoundary from 'react-native-error-boundary'
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
+import { useSwapAccountFollowsSelection } from '@perawallet/wallet-core-swaps'
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useTokenListener } from '@modules/token'
 import { PromptContainer } from '@modules/prompts'
@@ -102,6 +103,8 @@ export const WebMainRoutes = ({
     useTokenListener(fcmToken)
     useNotificationDeeplinkListener()
     useNotificationReceivedListener()
+    // SwapOverlays is native-only, so the web Swap tab gets this here.
+    useSwapAccountFollowsSelection()
     const navTheme = getNavigationTheme(isDarkMode ? 'dark' : 'light')
 
     useTabResumeResultToast()

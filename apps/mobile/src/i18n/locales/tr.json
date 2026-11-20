@@ -2518,6 +2518,9 @@
             "cancelled_none_body": "Durdurmadan önce yeni bir şey bulunamadı.",
             "retry_networks": "Yeniden kontrol et: {{networks}}",
             "scan_again": "Yeniden tara",
+            "limit_reached_title": "Daha fazla hesap olabilir",
+            "limit_reached_body": "Tarama belirli sayıda adresten sonra durur. Bu cüzdanda daha fazlasını kullandıysan bulmak için taramaya devam et.",
+            "scan_further": "Taramaya devam et",
             "done": "Tamam",
             "incomplete_title": "Tarama tamamlanmadı",
             "updated_title_one": "{{count}} hesapta yeni ağlar bulundu",
@@ -2572,7 +2575,10 @@
             "all_imported_body": "Bu cüzdandaki tüm hesaplar zaten Pera’da. Biri izleme hesabı olarak eklendiyse önce onu kaldır, ardından tam erişimle eklemek için yeniden içe aktar.",
             "unchecked_networks_title": "Kontrol edilemeyen ağlar: {{networks}}",
             "unchecked_networks_body": "Diğer ağlardaki hesaplar listelendi. Yeni hesapları daha sonra yeniden tarayabilirsin.",
-            "retry_networks": "Yeniden kontrol et: {{networks}}"
+            "retry_networks": "Yeniden kontrol et: {{networks}}",
+            "limit_reached_title": "Daha fazla hesap olabilir",
+            "limit_reached_body": "Arama belirli sayıda adresten sonra durur. Bu cüzdanda daha fazlasını kullandıysan bulmak için taramaya devam et.",
+            "scan_further": "Taramaya devam et"
         },
         "import_rekeyed_addresses": {
             "title_one": "{{count}} rekey yapılmış hesap bulundu",
@@ -4211,7 +4217,7 @@
     "swap": {
         "introduction": {
             "title": "Pera’da swap",
-            "description": "Pera Wallet, varlıkları takas etmenin kolay ve hızlı bir yolunu sunar. P.E.R.A. sayesinde swap talepleri, mevcut en iyi fiyatı yakalamak için Algorand tabanlı birden fazla merkeziyetsiz borsa arasında akıllıca yönlendirilir.",
+            "description": "Pera Wallet, varlıkları takas etmenin kolay ve hızlı bir yolunu sunar. P.E.R.A. sayesinde swap talepleri, mevcut en iyi fiyatı yakalamak için birden fazla takas sağlayıcısı arasında akıllıca yönlendirilir.",
             "powered_by": "Destekleyen: <0>P.E.R.A.</0>",
             "start_swapping": "Swap’a başla",
             "terms_agreement": "Devam ederek swap partnerimizin <0>Hizmet Şartları</0> belgesini kabul etmiş olursun"
@@ -4345,7 +4351,13 @@
             },
             "list": {
                 "item": {
-                    "description": "Takas: <0/> → <1/>"
+                    "description": "Takas: <0/> → <1/>",
+                    "description_unsettled": "Takas: <0/> → <1/>",
+                    "status": {
+                        "in_progress": "Devam ediyor",
+                        "failed": "Başarısız",
+                        "refunded": "İade edildi"
+                    }
                 },
                 "empty": {
                     "title": "Henüz swap yok",
@@ -4363,6 +4375,7 @@
         },
         "tracking": {
             "started": "Zincirler arası swap gönderildi",
+            "same_chain_started": "Swap gönderildi",
             "in_progress": "Devam ediyor. Varlıkların yolda.",
             "completed": "Tamamlandı. {{toAsset}} varlığın hesabına ulaştı.",
             "failed": "Swap tamamlanamadı. Varlıkların gönderildiyse sağlayıcı onları hesabına iade edecek.",

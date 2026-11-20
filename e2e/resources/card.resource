@@ -3,6 +3,7 @@ Documentation       Pera Card: the intro offered from Add Account, the sign-in f
 ...                 step, and the dashboard of a card already connected on the device. The suite has no
 ...                 card account of its own, since one needs KYC and a card backend session.
 Resource            accounts.resource
+Resource            feature_flags.resource
 
 
 *** Variables ***
@@ -28,7 +29,8 @@ ${CARD_ONBOARDING_WAITLIST_JOIN}    tid=card-onboarding-waitlist-join
 # The form settles on one of the two once the region's country is preselected.
 ${CARD_ONBOARDING_CONFIRM_OR_JOIN}  xpath=//*[@name='card-onboarding-email-confirm' or @resource-id='card-onboarding-email-confirm' or @content-desc='card-onboarding-email-confirm' or @name='card-onboarding-waitlist-join' or @resource-id='card-onboarding-waitlist-join' or @content-desc='card-onboarding-waitlist-join']
 # The country picker is a searchable sheet with no testID of its own.
-${CARD_COUNTRY_SEARCH_INPUT}        tid=searchable-list-search-input
+# The picker's search box carries no testID; its rows do (card-country-<ISO code>).
+${CARD_COUNTRY_ROW_ANY}             xpath=//*[starts-with(@resource-id,'card-country-') or starts-with(@name,'card-country-') or starts-with(@content-desc,'card-country-')]
 
 ${CARD_CONNECTED_ROW}               tid=pera_card_connected_row
 ${CARD_DASHBOARD_SCREEN}            tid=pera_card_account_screen
@@ -70,6 +72,15 @@ Open Pera Card Intro
     Tap    ${ACCOUNT_MENU_ADD_BUTTON}
     Wait Until Page Contains Element    ${ADD_ACCOUNT_IMPORT_BUTTON}    timeout=20s
     ${offered}=    Run Keyword And Return Status    Scroll Until Tappable    ${ADD_ACCOUNT_PERA_CARD_BUTTON}
+    # Remote config can switch the card off on a build that ships it; the override turns it back on.
+    IF    not ${offered}
+        Turn On Feature Flag    enable_pera_card
+        Go Home
+        Open Account Switcher
+        Tap    ${ACCOUNT_MENU_ADD_BUTTON}
+        Wait Until Page Contains Element    ${ADD_ACCOUNT_IMPORT_BUTTON}    timeout=20s
+        ${offered}=    Run Keyword And Return Status    Scroll Until Tappable    ${ADD_ACCOUNT_PERA_CARD_BUTTON}
+    END
     IF    ${E2E_EXPECT_CARD}
         Should Be True    ${offered}    Add Account offers no Pera Card entry although E2E_EXPECT_CARD is set.
     END

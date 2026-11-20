@@ -18,6 +18,7 @@ import {
 import { findNativeAsset } from '@perawallet/wallet-core-assets'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
+import { useSwapsStore } from '@perawallet/wallet-core-swaps'
 import { trackEvent, HomeEvent, AnalyticsMetadataKey } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
@@ -76,11 +77,13 @@ export const useNetworkFundingState = ({
         navigation.navigate('TabBar', { screen: 'Fund', params: { chainId } })
     }, [chainId, navigation])
 
+    const setSwapAccountId = useSwapsStore(state => state.setAccountId)
     const handleSwap = useCallback(() => {
         if (!swapParams) return
         trackEvent(HomeEvent.Swap, { [AnalyticsMetadataKey.ChainId]: chainId })
+        setSwapAccountId(account.id)
         navigation.replace('TabBar', { screen: 'Swap', params: swapParams })
-    }, [swapParams, chainId, navigation])
+    }, [swapParams, chainId, setSwapAccountId, account.id, navigation])
 
     return {
         title: t('account_details.assets.funding_title', { network }),

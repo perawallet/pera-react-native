@@ -16,7 +16,6 @@ import {
     type WalletAccount,
     useSigningAccountsOnAnyChain,
 } from '@perawallet/wallet-core-accounts'
-import { useSwapSigningAccounts } from '@perawallet/wallet-core-swaps'
 
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { AccountDrawerSelectHeader } from './AccountDrawerSelectHeader'
@@ -27,12 +26,7 @@ import type { AccountDrawerPickerProps } from './types'
  * than the props themselves: the props include a header element rebuilt on every
  * render, and pushing that through context state would re-render on a loop.
  */
-export type AccountPickerKind =
-    | 'portfolio'
-    | 'select'
-    | 'swap'
-    | 'card'
-    | 'fund'
+export type AccountPickerKind = 'portfolio' | 'select' | 'card' | 'fund'
 
 /** Browsing: portfolio value on top, search, and the Pera Card row. */
 export const usePortfolioPicker = (): AccountDrawerPickerProps =>
@@ -61,10 +55,6 @@ export const useAccountListPicker = (
 /** Picking an account to act with — only accounts this wallet can sign for. */
 export const useSigningPicker = (): AccountDrawerPickerProps =>
     useAccountListPicker(useSigningAccountsOnAnyChain())
-
-/** Picking an account to swap with — only accounts that can sign on their swap chain. */
-export const useSwapPicker = (): AccountDrawerPickerProps =>
-    useAccountListPicker(useSwapSigningAccounts())
 
 /** Picking an account to fund: accounts that something held signs for on a chain Fund can buy onto. */
 export const useFundPicker = (): AccountDrawerPickerProps =>
@@ -106,12 +96,11 @@ export const useAccountPickers = (): Record<
 > => {
     const portfolio = usePortfolioPicker()
     const select = useSigningPicker()
-    const swap = useSwapPicker()
     const card = useCardPicker()
     const fund = useFundPicker()
 
     return useMemo(
-        () => ({ portfolio, select, swap, card, fund }),
-        [portfolio, select, swap, card, fund],
+        () => ({ portfolio, select, card, fund }),
+        [portfolio, select, card, fund],
     )
 }

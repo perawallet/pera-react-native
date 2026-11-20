@@ -104,7 +104,7 @@ describe('useSwapFromAssetSelectionList', () => {
     })
 
     it('keeps the swap chain first among the chains offered', () => {
-        mocks.sourceChainIds = ['ethereum', 'base']
+        mocks.sourceChainIds = ['ethereum', 'algorand', 'base']
 
         const { result } = renderHook(() =>
             useSwapFromAssetSelectionList(SCOPE),
@@ -115,6 +115,27 @@ describe('useSwapFromAssetSelectionList', () => {
             'ethereum',
             'base',
         ])
+    })
+
+    it('omits the swap chain when no account can pay from it', () => {
+        mocks.sourceChainIds = ['ethereum', 'base']
+
+        const { result } = renderHook(() =>
+            useSwapFromAssetSelectionList(SCOPE),
+        )
+
+        expect(result.current.visibleChainIds).toEqual(['ethereum', 'base'])
+    })
+
+    it('keeps the chain chips stable across renders', () => {
+        const { result, rerender } = renderHook(() =>
+            useSwapFromAssetSelectionList(SCOPE),
+        )
+        const { chainOptions } = result.current
+
+        rerender()
+
+        expect(result.current.chainOptions).toBe(chainOptions)
     })
 
     it('follows the picked chip with the placeholder of its network', () => {

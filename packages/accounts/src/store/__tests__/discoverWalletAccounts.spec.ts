@@ -12,7 +12,7 @@
 
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { PeraNetworkError } from '@perawallet/wallet-core-shared'
+import { logger, PeraNetworkError } from '@perawallet/wallet-core-shared'
 import {
     getKeystoreStore,
     getProvider,
@@ -105,6 +105,30 @@ describe('discoverWalletAccounts', () => {
             keyPairId: familyHdKeyId(SEED, 'evm', 0, 0),
             enabledBy: 'discovery',
         })
+    })
+
+    test('says it stopped at the key index limit, and a further scan adds the accounts past it', async () => {
+        activeAt(ALGORAND, [])
+        activeAt(
+            ETHEREUM,
+            Array.from({ length: 30 }, (_, keyIndex) => ({
+                account: 0,
+                keyIndex,
+            })),
+        )
+        const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+
+        const first = await state().discoverWalletAccounts(SEED)
+        const further = await state().discoverWalletAccounts(SEED, {
+            extendLimits: ['key'],
+        })
+        warn.mockRestore()
+
+        expect(first.reachedLimits).toEqual(['key'])
+        expect(first.createdAccountIds).toHaveLength(20)
+        expect(further.reachedLimits).toEqual([])
+        expect(further.createdAccountIds).toHaveLength(10)
+        expect(state().accounts).toHaveLength(30)
     })
 
     test('marks an active chain the account already holds as discovered, and leaves an inactive one as it was', async () => {
@@ -202,6 +226,7 @@ describe('discoverWalletAccounts', () => {
             coverage: 'complete',
             failedChainIds: [],
             isCancelled: false,
+            reachedLimits: [],
         })
 
         expect(state().accounts[0].chains[ETHEREUM]).toBeUndefined()
@@ -224,6 +249,7 @@ describe('discoverWalletAccounts', () => {
             coverage: 'complete',
             failedChainIds: [],
             isCancelled: false,
+            reachedLimits: [],
         })
 
         expect(
@@ -365,6 +391,7 @@ describe('discoverWalletAccounts', () => {
             coverage: 'unanswered',
             failedChainIds: [ALGORAND, ETHEREUM],
             isCancelled: false,
+            reachedLimits: [],
         })
         expect(state().accounts).toEqual([holder])
     })
@@ -385,6 +412,7 @@ describe('discoverWalletAccounts', () => {
             coverage: 'complete',
             failedChainIds: [],
             isCancelled: false,
+            reachedLimits: [],
         })
         expect(state().accounts).toEqual(afterFirst)
     })
@@ -524,6 +552,7 @@ describe('discoverWalletAccounts', () => {
             coverage: 'partial',
             failedChainIds: [ETHEREUM],
             isCancelled: false,
+            reachedLimits: [],
         })
 
         expect(removed()).toEqual(
@@ -594,6 +623,7 @@ describe('discoverWalletAccounts', () => {
                 coverage: 'complete',
                 failedChainIds: [],
                 isCancelled: false,
+                reachedLimits: [],
             })
         })
 
@@ -705,6 +735,7 @@ describe('discoverWalletAccounts', () => {
                 coverage: 'partial',
                 failedChainIds: [],
                 isCancelled: false,
+                reachedLimits: [],
             })
         })
     })
@@ -798,6 +829,7 @@ describe('discoverWalletAccounts', () => {
 
             expect(result).toMatchObject({
                 isCancelled: true,
+                reachedLimits: [],
                 failedChainIds: [],
             })
             expect(
@@ -832,6 +864,7 @@ describe('discoverWalletAccounts', () => {
                 coverage: 'complete',
                 failedChainIds: [],
                 isCancelled: false,
+                reachedLimits: [],
             })
         })
     })
@@ -853,6 +886,7 @@ describe('discoverWalletAccounts', () => {
             coverage: 'complete',
             failedChainIds: [],
             isCancelled: false,
+            reachedLimits: [],
         })
         const derived = (
             await Promise.all(

@@ -11,15 +11,15 @@
  */
 
 import { useMemo } from 'react'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import {
     isSwapOrderSettled,
     useSwapTrackedOrders,
     useSwapTrackingStore,
-    type SwapTrackedAsset,
+    useSwapAccount,
 } from '@perawallet/wallet-core-swaps'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSwapAccountAddresses } from '../../hooks/useSwapAccountAddresses'
+import { swapAssetUnit, swapPairLabel } from '../../utils/swapPairLabel'
 import { swapTrackingStatusKey } from '../../utils/swapTrackingStatusKey'
 
 export type SwapTrackedOrderRow = {
@@ -35,12 +35,9 @@ type UseSwapTrackedOrdersListResult = {
     handleDismiss: (orderId: string) => void
 }
 
-const unitOf = (asset: SwapTrackedAsset): string =>
-    asset.unitName ?? asset.ref.assetId
-
 export const useSwapTrackedOrdersList = (): UseSwapTrackedOrdersListResult => {
     const { t } = useLanguage()
-    const accountAddresses = useSwapAccountAddresses(useSelectedAccount())
+    const accountAddresses = useSwapAccountAddresses(useSwapAccount())
     const sourceAddresses = useMemo(
         () => accountAddresses.map(entry => entry.address),
         [accountAddresses],
@@ -51,11 +48,11 @@ export const useSwapTrackedOrdersList = (): UseSwapTrackedOrdersListResult => {
     const rows = useMemo(() => {
         const now = Date.now()
         return orders.map(order => {
-            const fromAsset = unitOf(order.assetIn)
-            const toAsset = unitOf(order.assetOut)
+            const fromAsset = swapAssetUnit(order.assetIn)
+            const toAsset = swapAssetUnit(order.assetOut)
             return {
                 orderId: order.orderId,
-                pairLabel: `${fromAsset} → ${toAsset}`,
+                pairLabel: swapPairLabel(order),
                 statusText: t(swapTrackingStatusKey(order.status), {
                     fromAsset,
                     toAsset,

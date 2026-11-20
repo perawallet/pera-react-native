@@ -15,6 +15,9 @@ ${ANDROID_UDID}         ${EMPTY}
 # Off UiAutomator2's default 8200, which another session's forward can hold and crash instrumentation.
 # Give each device its own port when several run in parallel.
 ${ANDROID_SYSTEM_PORT}  8201
+# Under pabot, a comma list of devices: each process takes the one at its pool id, and a system
+# port of its own.
+${ANDROID_UDIDS}        ${EMPTY}
 ${WEBVIEW}             xpath=//android.webkit.WebView
 ${MENU_TAB}             xpath=//*[@resource-id='tab_menu_button' or @content-desc='Menu' or @name='Menu']
 # One probe for every startup prompt in @{STARTUP_PROMPT_IDS} (app.resource).
@@ -23,6 +26,12 @@ ${STARTUP_PROMPT_ANY}   xpath=//*[@resource-id='pin_security_prompt_dont_ask_but
 
 *** Keywords ***
 Open Pera
+    ${pool}=    Get Variable Value    \${PABOTEXECUTIONPOOLID}    ${None}
+    IF    $pool is not None and $ANDROID_UDIDS
+        ${udids}=    Evaluate    $ANDROID_UDIDS.split(',')
+        Set Global Variable    ${ANDROID_UDID}    ${udids}[${{ int($pool) }}]
+        Set Global Variable    ${ANDROID_SYSTEM_PORT}    ${{ int($ANDROID_SYSTEM_PORT) + 100 + int($pool) }}
+    END
     &{caps}=    Create Dictionary
     ...    platformName=Android
     ...    automationName=UiAutomator2

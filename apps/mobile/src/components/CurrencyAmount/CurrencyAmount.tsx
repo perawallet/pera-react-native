@@ -64,19 +64,23 @@ export const getAlgoSymbolWeight = (
  * The precision policy is expressed semantically (see {@link PrecisionVariant}),
  * never as raw digit counts — that is the single door through which every
  * currency figure picks up its decimals. `assetDecimals` is only meaningful
- * for (and only accepted by) the `assetFull`, `significant` and `compact`
- * variants.
+ * for the asset-precision variants.
  */
 type PrecisionProps =
     | {
           precision: Exclude<
               PrecisionVariant,
-              'assetFull' | 'significant' | 'compact' | 'list'
+              'assetFull' | 'assetExact' | 'significant' | 'compact' | 'list'
           >
           assetDecimals?: never
       }
     | {
-          precision: 'assetFull' | 'significant' | 'compact' | 'list'
+          precision:
+              | 'assetFull'
+              | 'assetExact'
+              | 'significant'
+              | 'compact'
+              | 'list'
           assetDecimals?: number
       }
 

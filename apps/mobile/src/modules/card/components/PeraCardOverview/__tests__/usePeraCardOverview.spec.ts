@@ -41,6 +41,7 @@ const mockTrackEvent = vi.hoisted(() => vi.fn())
 const mockOpenFundingTypeSheet = vi.hoisted(() => vi.fn())
 const mockNavigate = vi.fn()
 const mockSetSelectedAccountId = vi.fn()
+const mockSetSwapAccountId = vi.hoisted(() => vi.fn())
 
 vi.mock('@react-navigation/native', async () => {
     const actual = await vi.importActual<object>('@react-navigation/native')
@@ -154,6 +155,11 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
         useSwapScope: (
             account: Parameters<typeof useAccountCapabilityScope>[0],
         ) => useAccountCapabilityScope(account, 'swap'),
+        useSwapsStore: (
+            select: (state: {
+                setAccountId: typeof mockSetSwapAccountId
+            }) => unknown,
+        ) => select({ setAccountId: mockSetSwapAccountId }),
     }
 })
 
@@ -470,7 +476,7 @@ describe('usePeraCardOverview', () => {
     })
 
     // Swapping is the shortest route to USDC when there is ALGO to swap, and
-    // the Swap tab reads the selected account too.
+    // Swap keeps its own account, so it is pointed at the linked one too.
     it('opens the Swap tab from ALGO to USDC when the linked account holds ALGO', () => {
         mockState.selectedFundingType = 'AUTO'
         setLinkedAlgo('12.5')
@@ -479,6 +485,7 @@ describe('usePeraCardOverview', () => {
         result.current.onFundLinkedAccount()
 
         expect(mockSetSelectedAccountId).toHaveBeenCalledWith('linked-account')
+        expect(mockSetSwapAccountId).toHaveBeenCalledWith('linked-account')
         // The spec runs on the default (mainnet) network, where USDC is 31566704.
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
             screen: 'Swap',

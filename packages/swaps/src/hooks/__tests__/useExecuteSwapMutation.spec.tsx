@@ -38,7 +38,7 @@ const {
     mockRegisterHandoff,
     mockTrackOrder,
     mockRemoveOrder,
-    mockSelectedAccount,
+    mockSwapAccount,
     mockSwapScope,
     mockAddIncomingToken,
 } = vi.hoisted(() => ({
@@ -49,7 +49,7 @@ const {
     mockCreateSwapOrder: vi.fn(),
     mockReportSwapOrder: vi.fn(),
     mockRegisterHandoff: vi.fn(),
-    mockSelectedAccount: { current: null as WalletAccount | null },
+    mockSwapAccount: { current: null as WalletAccount | null },
     mockSwapScope: { current: null as ChainScope | null },
 }))
 
@@ -66,7 +66,6 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-accounts')
     >()),
-    useSelectedAccount: () => mockSelectedAccount.current,
     useAddIncomingTokenMutation: () => ({
         addIncomingToken: mockAddIncomingToken,
     }),
@@ -76,8 +75,9 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
 }))
 
 vi.mock('../useSwapScope', () => ({
+    useSwapAccount: () => mockSwapAccount.current,
     useSwapSourceScope: (selected: WalletAccount | null) =>
-        selected === mockSelectedAccount.current ? mockSwapScope.current : null,
+        selected === mockSwapAccount.current ? mockSwapScope.current : null,
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
@@ -130,7 +130,7 @@ describe('useExecuteSwapMutation', () => {
     let executeSwap: SwapChainAdapter['executeSwap']
 
     beforeEach(() => {
-        mockSelectedAccount.current = account('SELECTED', {
+        mockSwapAccount.current = account('SWAPPER', {
             kind: 'local',
             seed: null,
         })
@@ -143,7 +143,7 @@ describe('useExecuteSwapMutation', () => {
         registerFakeSwapAdapter({ executeSwap })
     })
 
-    test("hands the selected account, its signer and the wired context to its swap chain's adapter", async () => {
+    test("hands the swap account, its signer and the wired context to its swap chain's adapter", async () => {
         vi.mocked(executeSwap).mockResolvedValue({
             kind: 'success',
             orderId: 'O',
@@ -162,8 +162,8 @@ describe('useExecuteSwapMutation', () => {
         expect(executeSwap).toHaveBeenCalledWith(
             {
                 ...variables,
-                account: mockSelectedAccount.current,
-                signer: { address: 'signer-of-SELECTED-on-algorand' },
+                account: mockSwapAccount.current,
+                signer: { address: 'signer-of-SWAPPER-on-algorand' },
             },
             {
                 scope: { chainId: 'algorand', networkId: 'testnet' },
@@ -276,7 +276,7 @@ describe('useExecuteSwapMutation', () => {
     })
 
     test('refuses a shared-account swap on a chain without co-sign support', async () => {
-        mockSelectedAccount.current = account('JOINT', { kind: 'multisig' })
+        mockSwapAccount.current = account('JOINT', { kind: 'multisig' })
         mockSwapScope.current = SCOPE
         registerFakeSwapAdapter({
             executeSwap,
@@ -295,13 +295,13 @@ describe('useExecuteSwapMutation', () => {
         expect(executeSwap).not.toHaveBeenCalled()
     })
 
-    test('executes on the account, signer and scope it was called with when the selection changes mid-swap', async () => {
+    test('executes on the account, signer and scope it was called with when the swap account changes mid-swap', async () => {
         vi.mocked(executeSwap).mockResolvedValue({
             kind: 'success',
             orderId: 'O',
             txIds: ['T'],
         })
-        const original = mockSelectedAccount.current
+        const original = mockSwapAccount.current
         const { result, rerender } = renderHook(
             () => useExecuteSwapMutation(),
             { wrapper },
@@ -311,7 +311,7 @@ describe('useExecuteSwapMutation', () => {
         act(() => {
             swap = result.current.mutateAsync(variables)
         })
-        mockSelectedAccount.current = account('OTHER', {
+        mockSwapAccount.current = account('OTHER', {
             kind: 'local',
             seed: null,
         })
@@ -325,7 +325,7 @@ describe('useExecuteSwapMutation', () => {
             {
                 ...variables,
                 account: original,
-                signer: { address: 'signer-of-SELECTED-on-algorand' },
+                signer: { address: 'signer-of-SWAPPER-on-algorand' },
             },
             expect.objectContaining({ scope: SCOPE }),
         )

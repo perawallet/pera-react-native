@@ -38,6 +38,7 @@ import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 
 import {
+    HD_24_ETHEREUM_ACCOUNT_0_ADDRESSES,
     HD_24_ETHEREUM_ACCOUNT_2_ADDRESS_0,
     HD_TEST_ADDRESS,
     HD_TEST_MNEMONIC_24,
@@ -373,6 +374,79 @@ describe('Flow: Import HD wallet → discover the other chains it was used on', 
         expect(
             screen.getByTestId('import_select_addresses_retry_networks_button'),
         ).toBeTruthy()
+    })
+
+    it('Given a seed used on Ethereum at more addresses than the search checks, when the user keeps scanning, then the addresses past the limit are found and every one is imported', async () => {
+        const used = new Set(
+            HD_24_ETHEREUM_ACCOUNT_0_ADDRESSES.map(address =>
+                address.toLowerCase(),
+            ),
+        )
+        server.use(
+            mockAccountFastLookup({
+                address: HD_TEST_ADDRESS,
+                response: { account_exists: true },
+            }),
+            mockAccountFastLookup({
+                address: ':any',
+                response: { account_exists: false },
+            }),
+            mockIndexerSearchForAccounts(),
+            ...evmRpcHandlers({
+                rpcUrl: ETHEREUM_RPC_URL,
+                responses: {
+                    eth_getTransactionCount: params =>
+                        used.has(String(params[0]).toLowerCase())
+                            ? '0x1'
+                            : '0x0',
+                },
+            }),
+        )
+
+        await reachSelection()
+        expect(
+            screen.getByTestId('import_select_addresses_limit_reached'),
+        ).toBeTruthy()
+
+        fireEvent.click(
+            screen.getByTestId('import_select_addresses_scan_further_button'),
+        )
+        // Back on the selection, from the further search, with nothing left past it.
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByTestId(
+                        'import_select_addresses_continue_button',
+                    ),
+                ).toBeTruthy()
+                expect(
+                    screen.queryByTestId(
+                        'import_select_addresses_limit_reached',
+                    ),
+                ).toBeNull()
+            },
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+        fireEvent.click(
+            screen.getByTestId('import_select_addresses_continue_button'),
+        )
+        await waitFor(
+            () =>
+                expect(useOnboardingStore.getState().isOnboarding).toBe(false),
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+
+        const accounts = useAccountsStore.getState().accounts
+        expect(
+            accounts
+                .map(account => hdIndexOf(account)?.keyIndex)
+                .sort((a, b) => (a ?? 0) - (b ?? 0)),
+        ).toEqual(Array.from({ length: 25 }, (_, keyIndex) => keyIndex))
+        expect(
+            accounts.map(
+                account => chainAccountOf(account, 'ethereum')?.address,
+            ),
+        ).toContain(HD_24_ETHEREUM_ACCOUNT_0_ADDRESSES[24])
     })
 
     it('Given a seed used on Ethereum alone at a later account, when the user keeps every preselected account, then that account is stored holding Algorand and Ethereum with its Ethereum key in the keystore', async () => {

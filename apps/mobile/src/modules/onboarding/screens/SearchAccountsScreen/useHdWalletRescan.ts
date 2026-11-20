@@ -17,6 +17,7 @@ import {
     seedOf,
     useAccountsStore,
     useSelectedAccountId,
+    type HdIndexLimit,
     type WalletAccount,
     type WalletDiscoveryProgress,
 } from '@perawallet/wallet-core-accounts'
@@ -34,6 +35,8 @@ import {
 export type HdWalletRescanOptions = {
     /** Walks only these chains, e.g. the ones an earlier scan couldn't check. */
     chainIds?: ChainId[]
+    /** The limits an earlier scan stopped at; each goes one more default limit past the wallet's indexes. */
+    extendLimits?: HdIndexLimit[]
     signal?: AbortSignal
     onProgress?: (progress: WalletDiscoveryProgress) => void
     /** True once the user left the screen; the rescan then navigates nowhere. */
@@ -64,6 +67,7 @@ export const useHdWalletRescan = (): UseHdWalletRescanResult => {
             account: WalletAccount,
             {
                 chainIds,
+                extendLimits,
                 signal,
                 onProgress,
                 hasLeft,
@@ -79,8 +83,10 @@ export const useHdWalletRescan = (): UseHdWalletRescanResult => {
                     coverage,
                     failedChainIds,
                     isCancelled,
+                    reachedLimits,
                 } = await discoverWalletAccounts(walletId, {
                     chainIds,
+                    extendLimits,
                     signal,
                     onProgress,
                 })
@@ -108,7 +114,20 @@ export const useHdWalletRescan = (): UseHdWalletRescanResult => {
                     if (rekeyed.length > 0) {
                         // The rekeyed picker takes the place of the result
                         // screen, so an unfinished scan is said here instead.
-                        if (coverage !== 'complete') {
+                        if (
+                            reachedLimits.length > 0 &&
+                            failedChainIds.length === 0
+                        ) {
+                            showToast({
+                                type: 'warning',
+                                title: t(
+                                    'onboarding.scan_accounts_result.limit_reached_title',
+                                ),
+                                body: t(
+                                    'onboarding.scan_accounts_result.limit_reached_body',
+                                ),
+                            })
+                        } else if (coverage !== 'complete') {
                             showToast({
                                 type: 'warning',
                                 title: t(
@@ -146,6 +165,7 @@ export const useHdWalletRescan = (): UseHdWalletRescanResult => {
                     failedChainIds,
                     isCancelled,
                     isIncomplete: coverage !== 'complete',
+                    reachedLimits,
                 })
             } catch (error) {
                 if (hasLeft?.()) return

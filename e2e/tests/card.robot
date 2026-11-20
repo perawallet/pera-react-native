@@ -57,7 +57,7 @@ Country Field Opens The Country Picker
     Open Card Sign Up
     Wait Until Settled    ${CARD_ONBOARDING_COUNTRY_FIELD}
     Tap    ${CARD_ONBOARDING_COUNTRY_FIELD}
-    Wait Until Page Contains Element    ${CARD_COUNTRY_SEARCH_INPUT}    timeout=15s
+    Wait Until Page Contains Element    ${CARD_COUNTRY_ROW_ANY}    timeout=15s
 
 Sign In Requires A Valid Email And A Password
     [Tags]    id:card.sign-in.validation    p1

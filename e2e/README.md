@@ -33,6 +33,38 @@ Fixture names and their data are defined in
 `apps/mobile/src/modules/deeplink/handlers/useE2eFixtureDeeplink.ts`, and
 `resources/contacts.resource` mirrors the values the tests assert on. Change both together.
 
+`testnet` and `mainnet` switch every chain to its default test or live network and leave the screen
+as it is. They are the only fixtures that act before a wallet exists, so an import from Welcome can
+find accounts that only exist on testnet. Remove All Accounts restores the build's default network.
+
+## Funded fixtures
+
+Cases tagged `needs-funded` read a wallet from the environment and skip when it is unset.
+`run.sh` leaves them out unless `E2E_FUNDED=1`; BrowserStack never runs them. Sends go back to the
+sending address and most cases only read balances or stop before signing. The exception is backup:
+an imported phrase counts as backed up, so each of its funded cases creates a wallet and pays it
+0.1 ALGO from the treasury (`MNEMONIC_25_WORD`), about 0.4 testnet ALGO a run.
+
+| Variables                                                                  | Network                       | What the wallet needs                                                                     | Suites                                              |
+| -------------------------------------------------------------------------- | ----------------------------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| `E2E_FUNDED_MNEMONIC`, `E2E_FUNDED_ADDRESS`                                | Algorand testnet              | 24-word Universal wallet; its first account (the address) holds a few ALGO                | send_receive, transactions, assets, accounts, rekey |
+| `MNEMONIC_24_WORD`                                                         | Algorand testnet              | 24-word Universal wallet whose first account is funded                                    | onboarding                                          |
+| `MNEMONIC_25_WORD`                                                         | Algorand testnet              | funded algo25 account; also the treasury that funds the wallets backup creates            | onboarding, backup                                  |
+| `MNEMONIC_24_REKEYED_ACCOUNT`                                              | Algorand testnet              | 24-word Universal wallet with another account rekeyed to it                               | onboarding                                          |
+| `E2E_REKEY_AUTH_MNEMONIC`, `E2E_REKEY_AUTH_ADDRESS`, `E2E_REKEYED_ADDRESS` | Algorand testnet              | the auth account, and the address rekeyed to it                                           | rekey                                               |
+| `PERA_E2E_SWAP_MNEMONIC`                                                   | Algorand and Ethereum mainnet | ALGO for 0.1 ALGO quotes; its Ethereum account holds an ERC-20 (1 USDC is enough, no ETH) | swap                                                |
+| `E2E_ETHEREUM_FUNDED_MNEMONIC`                                             | Sepolia                       | see [Ethereum](#ethereum)                                                                 | ethereum                                            |
+
+`node e2e/tools/testnet_fixtures.mjs generate <file>` creates every testnet wallet above with the
+app's own derivation and prints the one treasury address to fund from a faucet; `fund <file>` then
+spreads ALGO from it and sets up both rekeys. Keep the file outside the repo, and load it with
+`set -a; . <file>; set +a` before `E2E_FUNDED=1 tools/run.sh`.
+
+Onboarding loads the `testnet` fixture before importing these phrases, backup before funding the
+wallet it creates, and rekey before importing its accounts. The swap wallet is the only one holding real funds: swap providers quote on
+mainnet only. Keep it local, since a cloud session video shows the phrase as it is typed; only
+`PERA_E2E_SWAP_ALLOW_SPEND=1` lets a case spend from it.
+
 ## Running
 
 Build the app with the hook in release mode on both platforms (no dev client, Metro or dev menu,

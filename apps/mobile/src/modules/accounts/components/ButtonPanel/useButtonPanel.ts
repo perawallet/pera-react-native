@@ -11,7 +11,11 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { useSwapScope, useSwapSourceScope } from '@perawallet/wallet-core-swaps'
+import {
+    useSwapScope,
+    useSwapSourceScope,
+    useSwapsStore,
+} from '@perawallet/wallet-core-swaps'
 import {
     useAccountCapabilityScope,
     useAccountChainOptionsResolver,
@@ -48,11 +52,18 @@ export const useButtonPanel = (): UseButtonPanelResult => {
         useAccountHoldingSources(account),
     )?.scope.chainId
     const swapChainId = useSwapScope(account, filterChainId)?.chainId
+    const setSwapAccountId = useSwapsStore(state => state.setAccountId)
+    // The stored id rather than useSwapAccount, which would re-render Home on
+    // every chain-state write. Unset, Swap is on Home's account.
+    const swapAccountId = useSwapsStore(state => state.accountId)
+    const isSwapOnAccount =
+        swapAccountId === null || swapAccountId === account.id
     // Swap already opens on its current chain, so only a move to another chain
-    // needs a starting asset.
+    // needs a starting asset; moving Swap to this account resets its pair, so
+    // that move needs one too.
     const openSwapChainId = useSwapSourceScope(account)?.chainId
     const startChainId =
-        filterChainId && filterChainId !== openSwapChainId
+        filterChainId && (!isSwapOnAccount || filterChainId !== openSwapChainId)
             ? filterChainId
             : undefined
     const canSwap = swapChainId !== undefined && canSignOn(account, swapChainId)
@@ -72,6 +83,7 @@ export const useButtonPanel = (): UseButtonPanelResult => {
         trackEvent(HomeEvent.Swap, {
             [AnalyticsMetadataKey.ChainId]: swapChainId,
         })
+        setSwapAccountId(account.id)
         navigation.replace('TabBar', {
             screen: 'Swap',
             params: startChainId
@@ -83,7 +95,7 @@ export const useButtonPanel = (): UseButtonPanelResult => {
                   }
                 : undefined,
         })
-    }, [swapChainId, startChainId, navigation])
+    }, [swapChainId, startChainId, setSwapAccountId, account.id, navigation])
 
     return {
         canSwap,

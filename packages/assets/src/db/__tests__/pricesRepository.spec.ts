@@ -13,6 +13,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import {
+    DB_WRITE_CHUNK_SIZE,
     runMigrations,
     migrations,
     type Database,
@@ -113,6 +114,113 @@ describe('asset prices repository', () => {
 
             expect(result).toHaveLength(1)
             expect(result[0].usdPrice).toEqual(new Decimal('2'))
+        })
+
+        it('scopes prices to their network', async () => {
+            await upsertAssetPrices({
+                db,
+                prices: [{ assetId: '100', usdPrice: new Decimal('1.25') }],
+                scope: MAINNET_SCOPE,
+            })
+            await upsertAssetPrices({
+                db,
+                prices: [{ assetId: '100', usdPrice: new Decimal('9.5') }],
+                scope: TESTNET_SCOPE,
+            })
+
+            const [mainnet, testnet] = await Promise.all(
+                [MAINNET_SCOPE, TESTNET_SCOPE].map(scope =>
+                    getAssetPricesByIds({ db, assetIds: ['100'], scope }),
+                ),
+            )
+
+            expect(mainnet.map(r => r.usdPrice)).toEqual([new Decimal('1.25')])
+            expect(testnet.map(r => r.usdPrice)).toEqual([new Decimal('9.5')])
+        })
+
+        it('keeps the last duplicate price within and across chunks without rounding', async () => {
+            const precisePrice = new Decimal('9007199254740993.000000000000001')
+            const initialPrice = new Decimal(1)
+            await upsertAssetPrices({
+                db,
+                scope: MAINNET_SCOPE,
+                prices: [
+                    { assetId: '100', usdPrice: initialPrice },
+                    { assetId: '101', usdPrice: initialPrice },
+                    { assetId: '100', usdPrice: precisePrice },
+                    ...Array.from(
+                        { length: DB_WRITE_CHUNK_SIZE - 3 },
+                        (_, i) => ({
+                            assetId: String(1_000 + i),
+                            usdPrice: initialPrice,
+                        }),
+                    ),
+                    { assetId: '101', usdPrice: precisePrice },
+                ],
+            })
+
+            const rows = await getAssetPricesByIds({
+                db,
+                assetIds: ['100', '101'],
+                scope: MAINNET_SCOPE,
+            })
+
+            expect(rows).toHaveLength(2)
+            expect(rows).toEqual(
+                expect.arrayContaining([
+                    { assetId: '100', usdPrice: precisePrice },
+                    { assetId: '101', usdPrice: precisePrice },
+                ]),
+            )
+        })
+
+        it('keeps successful chunks when a later chunk fails and accepts a retry', async () => {
+            let priceWrites = 0
+            const failing = createTestDatabase({
+                beforeExec: statement => {
+                    if (
+                        /^\s*insert into "asset_prices"/i.test(statement) &&
+                        ++priceWrites === 2
+                    ) {
+                        throw new Error('Price write failed')
+                    }
+                },
+            })
+
+            try {
+                await runMigrations(failing.db, migrations)
+                const prices = Array.from(
+                    { length: DB_WRITE_CHUNK_SIZE + 1 },
+                    (_, i) => ({
+                        assetId: String(1_000 + i),
+                        usdPrice: new Decimal(1),
+                    }),
+                )
+                const write = {
+                    db: failing.db,
+                    scope: MAINNET_SCOPE,
+                    prices,
+                }
+                const read = {
+                    db: failing.db,
+                    scope: MAINNET_SCOPE,
+                    assetIds: prices.map(row => row.assetId),
+                }
+                const readPrices = async () =>
+                    (await getAssetPricesByIds(read)).toSorted((a, b) =>
+                        a.assetId.localeCompare(b.assetId),
+                    )
+
+                await expect(upsertAssetPrices(write)).rejects.toThrow()
+                expect(await readPrices()).toEqual(
+                    prices.slice(0, DB_WRITE_CHUNK_SIZE),
+                )
+
+                await upsertAssetPrices(write)
+                expect(await readPrices()).toEqual(prices)
+            } finally {
+                failing.teardown()
+            }
         })
 
         it('does nothing for empty prices', async () => {

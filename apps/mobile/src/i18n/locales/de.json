@@ -2510,6 +2510,9 @@
             "cancelled_none_body": "Bis zum Stoppen wurde nichts Neues gefunden.",
             "retry_networks": "Erneut prüfen: {{networks}}",
             "scan_again": "Erneut scannen",
+            "limit_reached_title": "Möglicherweise gibt es weitere Konten",
+            "limit_reached_body": "Der Scan endet nach einer festen Anzahl von Adressen. Wenn du in dieser Wallet mehr verwendet hast, scanne weiter, um sie zu finden.",
+            "scan_further": "Weiter scannen",
             "done": "Fertig",
             "incomplete_title": "Scan unvollständig",
             "updated_title_one": "Neue Netzwerke bei {{count}} Konto gefunden",
@@ -2564,7 +2567,10 @@
             "all_imported_body": "Alle Konten aus diesem Wallet sind bereits in Pera. Ist eines als Beobachtungskonto hinzugefügt, entferne es zuerst und importiere es dann erneut, um es mit vollem Zugriff hinzuzufügen.",
             "unchecked_networks_title": "Nicht geprüft: {{networks}}",
             "unchecked_networks_body": "Die Konten der anderen Netzwerke sind aufgelistet. Du kannst später erneut nach neuen Konten suchen.",
-            "retry_networks": "Erneut prüfen: {{networks}}"
+            "retry_networks": "Erneut prüfen: {{networks}}",
+            "limit_reached_title": "Möglicherweise gibt es weitere Konten",
+            "limit_reached_body": "Die Suche endet nach einer festen Anzahl von Adressen. Wenn du in dieser Wallet mehr verwendet hast, scanne weiter, um sie zu finden.",
+            "scan_further": "Weiter scannen"
         },
         "import_rekeyed_addresses": {
             "title_one": "{{count}} rekeyed Konto gefunden",
@@ -4203,7 +4209,7 @@
     "swap": {
         "introduction": {
             "title": "Tauschen in Pera",
-            "description": "Pera Wallet bietet eine einfache und schnelle Möglichkeit, Assets zu tauschen. Mit P.E.R.A. werden Tauschanfragen intelligent über mehrere Algorand-basierte dezentrale Börsen geleitet, um den besten verfügbaren Preis zu sichern.",
+            "description": "Pera Wallet bietet eine einfache und schnelle Möglichkeit, Assets zu tauschen. Mit P.E.R.A. werden Tauschanfragen intelligent über mehrere Handelsanbieter geleitet, um den besten verfügbaren Preis zu sichern.",
             "powered_by": "Unterstützt von <0>P.E.R.A.</0>",
             "start_swapping": "Tauschen starten",
             "terms_agreement": "Durch Fortfahren stimmst du den <0>Nutzungsbedingungen</0> unseres Tauschpartners zu"
@@ -4337,7 +4343,13 @@
             },
             "list": {
                 "item": {
-                    "description": "<0/> getauscht gegen <1/>"
+                    "description": "<0/> getauscht gegen <1/>",
+                    "description_unsettled": "Tausch: <0/> gegen <1/>",
+                    "status": {
+                        "in_progress": "In Bearbeitung",
+                        "failed": "Fehlgeschlagen",
+                        "refunded": "Erstattet"
+                    }
                 },
                 "empty": {
                     "title": "Noch keine Tauschvorgänge",
@@ -4355,6 +4367,7 @@
         },
         "tracking": {
             "started": "Cross-Chain-Swap gesendet",
+            "same_chain_started": "Tausch gesendet",
             "in_progress": "Läuft. Dein Guthaben ist unterwegs.",
             "completed": "Abgeschlossen. Dein {{toAsset}} ist angekommen.",
             "failed": "Der Tausch konnte nicht abgeschlossen werden. Falls dein Guthaben gesendet wurde, gibt der Anbieter es an dein Konto zurück.",

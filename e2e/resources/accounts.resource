@@ -91,6 +91,10 @@ ${ASSET_NETWORK_FILTER_ALGORAND}    tid=asset_network_filter_algorand
 ${ASSET_NETWORK_FILTER_ETHEREUM}    tid=asset_network_filter_ethereum
 
 
+${FIRST_HD_WALLET_ROW}              tid=select_hd_wallet_item_0
+${NAMING_OR_WALLET_PICKER}          xpath=//*[@resource-id='name_account_finish_button' or @name='name_account_finish_button' or @resource-id='select_hd_wallet_item_0' or @name='select_hd_wallet_item_0']
+
+
 *** Keywords ***
 Open Account Switcher
     Wait Until Page Contains Element    ${ACCOUNT_SELECTION_BUTTON}    timeout=30s
@@ -148,7 +152,14 @@ Add Account To Wallet
     # the screen simply stays. Waiting it out for a minute found nothing on the way; a second tap
     # opens it at once, and the cases that follow inherited the missing account as their own failure.
     Tap Until    ${ADD_ACCOUNT_ADD_BUTTON}    ${ADD_ACCOUNT_MULTICHAIN_BUTTON}    timeout=20s
-    Tap Until    ${ADD_ACCOUNT_MULTICHAIN_BUTTON}    ${ACCOUNT_FINISH_BUTTON}    timeout=30s
+    # With more than one Universal wallet the app first asks which one to derive from.
+    Tap Until    ${ADD_ACCOUNT_MULTICHAIN_BUTTON}    ${NAMING_OR_WALLET_PICKER}    timeout=30s
+    ${picker}=    Run Keyword And Return Status    Page Should Contain Element    ${FIRST_HD_WALLET_ROW}
+    IF    ${picker}
+        Wait Until Settled    ${FIRST_HD_WALLET_ROW}
+        Tap    ${FIRST_HD_WALLET_ROW}
+        Wait Until Page Contains Element    ${ACCOUNT_FINISH_BUTTON}    timeout=30s
+    END
     # The name field takes focus and the keyboard lifts the button; a tap while it moves misses.
     Wait Until Settled    ${ACCOUNT_FINISH_BUTTON}
     Tap    ${ACCOUNT_FINISH_BUTTON}
@@ -313,7 +324,10 @@ Switch To Testnet
     Wait Until Page Contains Element    ${NODE_DEVELOPER_MODE_SWITCH}    timeout=20s
     ${listed}=    Run Keyword And Return Status    Page Should Contain Element    ${NODE_CHAIN_NETWORKS}
     IF    not ${listed}    Tap    ${NODE_DEVELOPER_MODE_SWITCH}
-    Scroll Until Tappable    ${NODE_TESTNET_RADIO}
+    # Algorand's radio heads a list that, on a multichain build, runs several screens down: a
+    # scroll that starts before the list renders passes it and never comes back.
+    Wait Until Page Contains Element    ${NODE_TESTNET_RADIO}    timeout=15s
+    Scroll Until Tappable    ${NODE_TESTNET_RADIO}    start
     Tap    ${NODE_TESTNET_RADIO}
     Go Home
 

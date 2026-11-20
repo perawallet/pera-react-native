@@ -22,7 +22,10 @@
     "tools/dev/backend-capture-preload.mjs",
     // Release scripts CI runs with node by path (.bitrise/bitrise.yml,
     // ci/jobs/web.sh) rather than importing them.
-    "tools/release/*.mjs"
+    "tools/release/*.mjs",
+    // Run with node by path from the e2e Robot resources (Run Process) and by hand
+    // to generate and fund the testnet fixture wallets.
+    "e2e/tools/testnet_fixtures.mjs"
   ],
 
   // Test infrastructure the runner (vitest) resolves by convention, never imported.

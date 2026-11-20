@@ -10,10 +10,14 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, onTestFinished } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import { nativeAssetFor, type PeraAsset } from '@perawallet/wallet-core-assets'
-import { useSwapSourceScope } from '@perawallet/wallet-core-swaps'
+import {
+    useSwapSourceScope,
+    useSwapsStore,
+    type SwapsState,
+} from '@perawallet/wallet-core-swaps'
 import { useAssetActions } from '../useAssetActions'
 
 const mocks = vi.hoisted(() => ({
@@ -115,6 +119,37 @@ describe('useAssetActions', () => {
         expect(mocks.replace).toHaveBeenCalledWith('TabBar', {
             screen: 'Swap',
             params: undefined,
+        })
+    })
+
+    it("moves Swap onto the asset's account, carrying the native pair it resets", () => {
+        vi.mocked(useSwapSourceScope).mockReturnValueOnce(ETHEREUM_SCOPE)
+        const setSwapAccountId = vi.fn()
+        const swapsStore = vi.mocked(useSwapsStore)
+        const sharedImplementation = swapsStore.getMockImplementation()
+        swapsStore.mockImplementation(select =>
+            select({
+                accountId: 'other',
+                setAccountId: setSwapAccountId,
+            } as Partial<SwapsState> as SwapsState),
+        )
+        onTestFinished(() => {
+            swapsStore.mockImplementation(sharedImplementation!)
+        })
+        const { result } = renderHook(() =>
+            useAssetActions({
+                asset: { assetId: NATIVE_ETH },
+                chainId: 'ethereum',
+                account: { id: 'viewed' },
+            } as unknown as Parameters<typeof useAssetActions>[0]),
+        )
+
+        act(() => result.current.handleSwap())
+
+        expect(setSwapAccountId).toHaveBeenCalledWith('viewed')
+        expect(mocks.replace).toHaveBeenCalledWith('TabBar', {
+            screen: 'Swap',
+            params: { assetIn: { chainId: 'ethereum', assetId: NATIVE_ETH } },
         })
     })
 

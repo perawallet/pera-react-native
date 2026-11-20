@@ -13,14 +13,11 @@
 import { useCallback, type ReactElement } from 'react'
 import {
     useRecentSwapPairsQuery,
+    useSwapAccount,
     useSwapsStore,
     type SwapHistoryPair,
 } from '@perawallet/wallet-core-swaps'
-import {
-    addressOn,
-    useSelectedAccount,
-    useSelectedAccountId,
-} from '@perawallet/wallet-core-accounts'
+import { addressOn } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { PWView } from '@components/core'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -46,12 +43,9 @@ export type UseSwapPairHistoryWidgetResult = {
 export const useSwapPairHistoryWidget = (
     scope: ChainScope,
 ): UseSwapPairHistoryWidgetResult => {
-    const selectedAccount = useSelectedAccount()
-    const { setSelectedAccountId } = useSelectedAccountId()
+    const swapAccount = useSwapAccount()
     const setAccountPair = useSwapsStore(state => state.setAccountPair)
-    const address = selectedAccount
-        ? (addressOn(selectedAccount, scope) ?? '')
-        : ''
+    const address = swapAccount ? (addressOn(swapAccount, scope) ?? '') : ''
     const { request: requestBottomSheet } = useBottomSheet()
     const styles = useStyles()
 
@@ -69,11 +63,8 @@ export const useSwapPairHistoryWidget = (
                 fromAsset: pair.assetIn.assetId,
                 toAsset: pair.assetOut.assetId,
             })
-            if (pair.accountId !== selectedAccount?.id) {
-                setSelectedAccountId(pair.accountId)
-            }
         },
-        [setAccountPair, selectedAccount?.id, setSelectedAccountId],
+        [setAccountPair],
     )
 
     const handleSeeAllPress = useCallback(() => {

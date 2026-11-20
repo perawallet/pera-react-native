@@ -124,3 +124,41 @@ Settle And Check
     assert run(str(suite), variable=['PLATFORM:android'], outputdir=str(tmp_path),
                log='NONE', report='NONE', console='none') == 0
     assert find.call_count == 3
+
+
+class Node:
+    def __init__(self, text='', rect=None, children=()):
+        self.text = text
+        self.rect = rect or bounds()
+        self.children = list(children)
+
+    def find_elements(self, by, value):
+        return self.children
+
+
+def test_reads_text_below_a_container_in_order_without_repeats(appium, monkeypatch):
+    container = Node(children=[Node('Ethereum'), Node('0xB0B7'), Node('Ethereum')])
+    monkeypatch.setattr(appium, '_element_find', Mock(return_value=container))
+
+    assert appium.text_under('tid=row') == 'Ethereum 0xB0B7'
+
+
+def test_reads_text_drawn_inside_a_container_mounted_without_children(appium, monkeypatch):
+    row = dict(x=0, y=100, width=300, height=50)
+    container = Node(rect=row)
+    screen = Node(children=[
+        Node('Algorand', dict(x=10, y=40, width=100, height=20)),
+        Node('Ethereum', dict(x=10, y=105, width=100, height=20)),
+        Node('0xB0B7', dict(x=10, y=125, width=100, height=20)),
+    ])
+    monkeypatch.setattr(appium, '_element_find', Mock(return_value=container))
+    monkeypatch.setattr(appium, '_current_application', Mock(return_value=screen))
+
+    assert appium.text_under('tid=row') == 'Ethereum 0xB0B7'
+
+
+def test_reads_the_device_clipboard_as_text(appium, monkeypatch):
+    driver = Mock(get_clipboard_text=Mock(return_value='0x03Af7750c3F180Ba5c220da098147902cbF215a6'))
+    monkeypatch.setattr(appium, '_current_application', Mock(return_value=driver))
+
+    assert appium.get_clipboard_text() == '0x03Af7750c3F180Ba5c220da098147902cbF215a6'

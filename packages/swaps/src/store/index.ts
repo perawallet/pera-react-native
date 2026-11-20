@@ -13,3 +13,4 @@
 export * from './store'
 export * from './swapHandoffStore'
 export * from './swapTrackingStore'
+export * from './watchSelectedAccount'

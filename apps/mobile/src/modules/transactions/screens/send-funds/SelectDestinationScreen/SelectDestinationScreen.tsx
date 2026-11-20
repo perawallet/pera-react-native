@@ -80,6 +80,7 @@ export const SelectDestinationScreen = () => {
                 excludeAddress={senderAddress}
                 showAllContactsWhenEmpty
                 showClipboardPaste
+                hideBackupBadge
                 searchPlaceholderKey={i18nKey(
                     'address_entry.search_placeholder_recipient',
                 )}

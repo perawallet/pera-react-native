@@ -2518,6 +2518,9 @@
             "cancelled_none_body": "No se encontró nada nuevo antes de detener la búsqueda.",
             "retry_networks": "Volver a comprobar: {{networks}}",
             "scan_again": "Volver a buscar",
+            "limit_reached_title": "Puede haber más cuentas",
+            "limit_reached_body": "El escaneo se detiene tras un número fijo de direcciones. Si has usado más en esta billetera, sigue buscando para encontrarlas.",
+            "scan_further": "Seguir buscando",
             "done": "Listo",
             "incomplete_title": "Búsqueda incompleta",
             "updated_title_one": "Nuevas redes en {{count}} cuenta",
@@ -2572,7 +2575,10 @@
             "all_imported_body": "Todas las cuentas de esta wallet ya están en Pera. Si alguna está añadida como cuenta de observación, elimínala primero y vuelve a importarla para añadirla con acceso completo.",
             "unchecked_networks_title": "No se pudo comprobar: {{networks}}",
             "unchecked_networks_body": "Se muestran las cuentas de las demás redes. Puedes volver a buscar cuentas nuevas más tarde.",
-            "retry_networks": "Volver a comprobar: {{networks}}"
+            "retry_networks": "Volver a comprobar: {{networks}}",
+            "limit_reached_title": "Puede haber más cuentas",
+            "limit_reached_body": "La búsqueda se detiene tras un número fijo de direcciones. Si has usado más en esta billetera, sigue buscando para encontrarlas.",
+            "scan_further": "Seguir buscando"
         },
         "import_rekeyed_addresses": {
             "title_one": "{{count}} cuenta con rekey encontrada",
@@ -4211,7 +4217,7 @@
     "swap": {
         "introduction": {
             "title": "Swap en Pera",
-            "description": "Pera Wallet ofrece una forma fácil y rápida de intercambiar activos. Con P.E.R.A., las solicitudes de swap se enrutan de forma inteligente entre varios exchanges descentralizados basados en Algorand para conseguir el mejor precio disponible.",
+            "description": "Pera Wallet ofrece una forma fácil y rápida de intercambiar activos. Con P.E.R.A., las solicitudes de swap se enrutan de forma inteligente entre varios proveedores de intercambio para conseguir el mejor precio disponible.",
             "powered_by": "Con la tecnología de <0>P.E.R.A.</0>",
             "start_swapping": "Empezar a intercambiar",
             "terms_agreement": "Al continuar, aceptas los <0>Términos del servicio</0> de nuestro socio de swap"
@@ -4345,7 +4351,13 @@
             },
             "list": {
                 "item": {
-                    "description": "Intercambiaste <0/> por <1/>"
+                    "description": "Intercambiaste <0/> por <1/>",
+                    "description_unsettled": "Swap de <0/> por <1/>",
+                    "status": {
+                        "in_progress": "En curso",
+                        "failed": "Fallido",
+                        "refunded": "Reembolsado"
+                    }
                 },
                 "empty": {
                     "title": "Aún no hay swaps",
@@ -4363,6 +4375,7 @@
         },
         "tracking": {
             "started": "Swap entre cadenas enviado",
+            "same_chain_started": "Swap enviado",
             "in_progress": "En curso. Tus fondos están en camino.",
             "completed": "Completado. Tu {{toAsset}} ha llegado.",
             "failed": "El swap no se pudo completar. Si se enviaron tus fondos, el proveedor los devolverá a tu cuenta.",

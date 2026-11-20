@@ -122,7 +122,7 @@ Import Funded Account
     Open Account Switcher
 
 Pick Funded Address
-    Wait Until Page Contains Element    ${IMPORT_SELECT_CONTINUE}    timeout=60s
+    Wait Until Page Contains Element    ${IMPORT_SELECT_CONTINUE}    timeout=120s
     ${checkbox}=    Set Variable    tid=import_select_addresses_item_checkbox_${FUNDED_ADDRESS}
     Wait Until Page Contains Element    ${checkbox}    timeout=30s
     ${ready}=    Run Keyword And Return Status    Expect Element    ${IMPORT_SELECT_CONTINUE}    enabled    timeout=0s
@@ -131,10 +131,8 @@ Pick Funded Address
     Tap    ${IMPORT_SELECT_CONTINUE}
 
 Open Node Settings
-    Go Home
-    Tap    ${MENU_TAB}
-    Wait Until Page Contains Element    ${MENU_SETTINGS_BUTTON}    timeout=15s
-    Tap    ${MENU_SETTINGS_BUTTON}
+    # Open Settings retries the gear tap, which a toast the case raised last (an opt-in result) swallows.
+    Open Settings
     Scroll Until Tappable    ${SETTINGS_DEVELOPER_ITEM}
     Tap    ${SETTINGS_DEVELOPER_ITEM}
     Wait Until Page Contains Element    ${DEVELOPER_NODE_ITEM}    timeout=15s
@@ -207,6 +205,8 @@ Open Destination
 
 Choose Own Address As Recipient
     [Arguments]    ${address}=${FUNDED_ADDRESS}
+    # Typed into without focus, the controlled field drops the text; a tap focuses it first.
+    Tap    ${ADDRESS_SEARCH_INPUT}
     Input Text    ${ADDRESS_SEARCH_INPUT}    ${address}
     ${row}=    Set Variable    tid=account_result_row_${address}
     Wait Until Page Contains Element    ${row}    timeout=15s

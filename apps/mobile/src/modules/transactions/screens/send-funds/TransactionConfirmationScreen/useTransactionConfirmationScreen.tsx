@@ -116,8 +116,8 @@ type useTransactionConfirmationScreenResult = {
     isRecipientInfoPending: boolean
     recipientSafety: UseRecipientSafetyResult
     isSigning: boolean
-    /** The amount plus its fee; set on a chain whose fee is checked against the native balance. */
-    total: Optional<UseSendTotalResult>
+    /** The amount plus its fee. */
+    total: UseSendTotalResult
     /** Set while the native balance can't cover the send at the selected preset's worst-case fee. */
     feeShortfall: Optional<{ title: string; body: string }>
     /** True while the fee coverage check still waits on the fee or the native balance. */
@@ -526,7 +526,7 @@ export const useTransactionConfirmationScreen =
             isRecipientInfoPending,
             recipientSafety,
             isSigning,
-            total: isFeeCoverageChecked ? sendTotal : undefined,
+            total: sendTotal,
             feeShortfall,
             isFeeCoveragePending,
             feeError,

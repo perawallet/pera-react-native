@@ -46,8 +46,8 @@ export const useSwapSourceScope = (
     return chosen ?? fallback
 }
 
-export const useSelectedSwapScope = (): Nullable<ChainScope> =>
-    useSwapSourceScope(useSelectedAccount())
+export const useSwapAccountScope = (): Nullable<ChainScope> =>
+    useSwapSourceScope(useSwapAccount())
 
 export const useSwapChainResolver = (): ((
     account: WalletAccount,
@@ -70,4 +70,25 @@ export const useSwapSigningAccounts = (): WalletAccount[] => {
         // eslint-disable-next-line react-hooks/exhaustive-deps -- chainStates re-runs the memo: canSignWith reads the chain-state store, not its arguments
         [accounts, swapChainOf, chainStates],
     )
+}
+
+/**
+ * The account Swap pays from: the one picked inside Swap, else the selected
+ * account, else the first that can sign on its swap chain. Falls back to the
+ * selected account when none can, so Swap still shows what it is unavailable for.
+ */
+export const useSwapAccount = (): Nullable<WalletAccount> => {
+    const accountId = useSwapsStore(state => state.accountId)
+    const selectedAccount = useSelectedAccount()
+    const signingAccounts = useSwapSigningAccounts()
+    return useMemo(() => {
+        const signerWith = (id: Optional<string>) =>
+            id ? signingAccounts.find(account => account.id === id) : undefined
+        return (
+            signerWith(accountId ?? undefined) ??
+            signerWith(selectedAccount?.id) ??
+            signingAccounts[0] ??
+            selectedAccount
+        )
+    }, [accountId, selectedAccount, signingAccounts])
 }

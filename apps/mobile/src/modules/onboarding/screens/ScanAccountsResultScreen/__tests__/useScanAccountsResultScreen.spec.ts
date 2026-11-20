@@ -61,6 +61,7 @@ const render = (params: Record<string, unknown> = {}) => {
         failedChainIds: [],
         isCancelled: false,
         isIncomplete: false,
+        reachedLimits: [],
         ...params,
     }
     return renderHook(() => useScanAccountsResultScreen()).result.current
@@ -169,6 +170,48 @@ describe('useScanAccountsResultScreen', () => {
         )
         expect(result.secondaryAction?.label).toBe(
             'onboarding.scan_accounts_result.scan_again',
+        )
+    })
+
+    it('says more accounts may lie past the limits, and offers to keep scanning past them', () => {
+        const result = render({
+            changedAccountIds: ['hd-2'],
+            createdAccountIds: ['hd-2'],
+            reachedLimits: ['key'],
+        })
+
+        expect(result.variant).toBe('warning')
+        expect(result.body).toBe(
+            'onboarding.scan_accounts_result.limit_reached_body',
+        )
+
+        result.secondaryAction?.onPress()
+
+        expect(mocks.replace).toHaveBeenCalledExactlyOnceWith(
+            'SearchAccounts',
+            { account: scanned, extendLimits: ['key'] },
+        )
+    })
+
+    it('says more accounts may exist rather than scan again when a scan is both unfinished and at its limits, matching the Keep scanning button', () => {
+        const result = render({ isIncomplete: true, reachedLimits: ['key'] })
+
+        expect(result.body).toBe(
+            'onboarding.scan_accounts_result.limit_reached_body',
+        )
+        expect(result.secondaryAction?.label).toBe(
+            'onboarding.scan_accounts_result.scan_further',
+        )
+    })
+
+    it('offers the networks it could not check before scanning past the limits', () => {
+        const result = render({
+            failedChainIds: ['base'],
+            reachedLimits: ['key'],
+        })
+
+        expect(result.secondaryAction?.label).toBe(
+            'onboarding.scan_accounts_result.retry_networks:{"networks":"base"}',
         )
     })
 

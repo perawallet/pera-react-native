@@ -1,6 +1,7 @@
 *** Settings ***
 Library             String
 Resource            app.resource
+Resource            feature_flags.resource
 
 
 *** Variables ***
@@ -25,7 +26,6 @@ ${SETTINGS_REMOVE_ALL_BUTTON}           tid=settings_remove_all_accounts_button
 ${SETTINGS_DELETE_ALL_CANCEL_BUTTON}    tid=settings_delete_all_cancel_button
 # Ids set as a bare testID on a container or Pressable reach Android as resource-id only, never
 # content-desc, so accessibility_id cannot see them there.
-${SETTINGS_APP_VERSION}                 tid=settings_app_version
 ${SETTINGS_RATINGS_SHEET}               tid=settings_ratings_bottom_sheet
 ${SETTINGS_NOTIFICATIONS_SCREEN}        tid=settings_notifications_screen
 ${SETTINGS_PASSKEYS_SCREEN}             tid=settings_passkeys_screen
@@ -61,8 +61,6 @@ ${WALLET_CONNECT_CONNECT_BUTTON}        tid=wallet_connect_connect_button
 ${WEBVIEW_CLOSE_BUTTON}                 tid=webview_close_button
 
 ${DEBUG_TOOLS_FEATURE_FLAGS_ITEM}       tid=debug_tools_feature_flags_item
-# The toast has no testID; its text is the only handle.
-${DEBUG_TOOLS_ENABLED_TOAST}            xpath=//*[@text='Debug tools enabled' or @label='Debug tools enabled']
 ${CLOUD_BACKUP_FLAG}                    enable_cloud_backup
 ${FLAG_EXPAND_CLOUD_BACKUP}             tid=feature_flag_expand_${CLOUD_BACKUP_FLAG}
 ${FLAG_OVERRIDE_CLOUD_BACKUP}           tid=feature_flag_override_${CLOUD_BACKUP_FLAG}
@@ -85,6 +83,9 @@ Is Visible
 Open From Settings
     [Arguments]    ${item}    ${anchor}
     Scroll To    ${item}
+    # The list draws under Android's navigation bar, and Scroll To stops once a row is in the tree:
+    # a tap at a row's centre there presses Home instead.
+    Scroll Until Tappable    ${item}
     Tap    ${item}
     Wait Until Page Contains Element    ${anchor}    timeout=15s
 
@@ -159,21 +160,6 @@ Main Currency Should Be
 
 Open Developer Settings
     Open From Settings    ${SETTINGS_ITEM_DEVELOPER}    ${DEVELOPER_NODE_ITEM}
-
-Unlock Debug Tools
-    [Documentation]    Ten taps on the version row, each within 1s of the last or the app restarts
-    ...                the count. Resolving the point once keeps every gap to one tap round trip.
-    Scroll To    ${SETTINGS_APP_VERSION}
-    ${location}=    Get Element Location    ${SETTINGS_APP_VERSION}
-    ${size}=    Get Element Size    ${SETTINGS_APP_VERSION}
-    VAR    @{point}    ${{ int($location['x'] + $size['width'] / 2) }}    ${{ int($location['y'] + $size['height'] / 2) }}
-    # ponytail: one request per tap; a remote grid slower than ~1s per round trip needs a single
-    # W3C action sequence instead.
-    AppiumLibrary.Tap    ${point}    count=10    duration=50ms
-    Wait Until Page Contains Element    ${DEBUG_TOOLS_ENABLED_TOAST}    timeout=10s
-    # The toast covers the top rows for ~3s and swallows taps there. iOS keeps it in the tree
-    # off-screen once hidden, so wait on visibility rather than presence.
-    Wait Until Keyword Succeeds    10s    0.3s    Should Not Be Visible    ${DEBUG_TOOLS_ENABLED_TOAST}
 
 Should Not Be Visible
     [Arguments]    ${locator}

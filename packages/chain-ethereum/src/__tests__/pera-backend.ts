@@ -84,6 +84,11 @@ export const withEthereumPeraBackend = async (
             served.clear()
             actual.resetPeraScopeRefusals()
         },
+        hasPeraBackend: scope =>
+            isEvmChainId(scope.chainId)
+                ? !isEvmScopeRefused(scope) &&
+                  !actual.isPeraBackendSwitchedOff(scope.chainId)
+                : actual.hasPeraBackend(scope),
         hasPeraService: (scope, service) =>
             isEvmChainId(scope.chainId)
                 ? !isEvmScopeRefused(scope) &&

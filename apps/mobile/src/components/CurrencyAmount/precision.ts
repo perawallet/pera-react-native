@@ -41,6 +41,7 @@ export const PREFERRED_MAX_PRECISION = ASSET_MAX_PRECISION
  * {@link DEFAULT_PRECISION} → the asset's own `decimals`, capped at
  * {@link ASSET_MAX_PRECISION} (see `resolveAssetDisplayPrecision`).
  * Collectibles / 0-decimal assets resolve to 0 dp. Pair with `assetDecimals`.
+ * - `assetExact` — a transaction total, preserving the asset's full decimal precision.
  * - `preferredFull` — a preferred-currency amount on a detail surface. Fiat
  * shows {@link DEFAULT_PRECISION} dp, a non-zero amount under a cent as
  * `< 0.01` like `compact`; non-fiat trims {@link DEFAULT_PRECISION} →
@@ -60,6 +61,7 @@ export type PrecisionVariant =
     | 'noDecimal'
     | 'compact'
     | 'assetFull'
+    | 'assetExact'
     | 'preferredFull'
     | 'unitPrice'
     | 'significant'
@@ -120,7 +122,7 @@ export const resolveSignificantPrecision = (
 /**
  * Single source of truth mapping a {@link PrecisionVariant} to the
  * `{ precision, minPrecision }` pair the formatter consumes. `assetDecimals` is
- * consulted only for `assetFull`, `significant` and `compact`; when absent it falls back to
+ * consulted for the asset-precision variants; when absent it falls back to
  * {@link DEFAULT_PRECISION}, matching the legacy `asset?.decimals ?? DEFAULT_PRECISION`.
  * `value` is consulted only for `compact` and `assetFull`, whose caps can
  * hide an amount entirely, and `significant`, which falls back to 2 dp
@@ -170,6 +172,13 @@ export const resolvePrecision = (
                 minPrecision: Math.min(DEFAULT_PRECISION, decimals),
                 // Down, so a balance never reads as more than the account holds.
                 rounding: Decimal.ROUND_DOWN,
+            }
+        }
+        case 'assetExact': {
+            const decimals = assetDecimals ?? DEFAULT_PRECISION
+            return {
+                precision: decimals,
+                minPrecision: Math.min(DEFAULT_PRECISION, decimals),
             }
         }
         case 'list': {

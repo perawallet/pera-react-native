@@ -23,8 +23,7 @@ export const useStyles = makeStyles(theme => ({
     toolbar: {
         flexShrink: 0,
         width: '100%',
-        paddingHorizontal: theme.spacing.lg,
-        paddingBottom: theme.spacing.md,
+        paddingHorizontal: theme.spacing.xl,
     },
     formWrapper: {
         flex: 1,
@@ -32,12 +31,5 @@ export const useStyles = makeStyles(theme => ({
         width: '100%',
         minWidth: 0,
         overflow: 'hidden',
-    },
-    titleSection: {
-        paddingTop: theme.spacing.xs,
-        paddingHorizontal: theme.spacing.xl,
-    },
-    infoIcon: {
-        marginRight: theme.spacing.lg,
     },
 }))

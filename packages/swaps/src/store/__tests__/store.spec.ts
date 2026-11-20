@@ -63,6 +63,7 @@ describe('swaps/store', () => {
             sourceChainId: 'ethereum',
             fromAsset: 'native',
             toAsset: '0xusdc',
+            accountId: 'account-2',
             pairAccountId: 'account-2',
         })
     })
@@ -249,6 +250,45 @@ describe('swaps/store', () => {
             useSwapsStore.getState().resetState()
 
             expect(useSwapsStore.getState().flippedPayAmount).toBeNull()
+        })
+    })
+
+    test('resetAssetPair restores the default pair and keeps the account', () => {
+        useSwapsStore.getState().setAccountPair({
+            accountId: 'account-2',
+            chainId: 'ethereum',
+            fromAsset: 'native',
+            toAsset: '0xusdc',
+        })
+
+        useSwapsStore.getState().resetAssetPair()
+
+        expect(useSwapsStore.getState()).toMatchObject({
+            sourceChainId: null,
+            fromAsset: null,
+            toAsset: null,
+            pairAccountId: null,
+            accountId: 'account-2',
+        })
+    })
+
+    test('resetState forgets the account', () => {
+        useSwapsStore.getState().setAccountId('account-2')
+
+        useSwapsStore.getState().resetState()
+
+        expect(useSwapsStore.getState().accountId).toBeNull()
+    })
+
+    test('setAccountId leaves the pair alone', () => {
+        useSwapsStore.getState().setSourceAsset('ethereum', 'native')
+
+        useSwapsStore.getState().setAccountId('account-2')
+
+        expect(useSwapsStore.getState()).toMatchObject({
+            accountId: 'account-2',
+            sourceChainId: 'ethereum',
+            fromAsset: 'native',
         })
     })
 

@@ -53,6 +53,35 @@ class PeraAppiumLibrary(AppiumLibrary):
                 previous, stable = None, 0
         raise AssertionError(f"{locator} did not stop moving or resizing.")
 
+    def text_under(self, locator):
+        """The text a container renders, joined in screen order without repeats.
+
+        Reading a container directly gives back an empty string on Android, so its text nodes are
+        read instead. React Native can also mount a testID'd card as an empty view with its content
+        as siblings, so a container with no text below it falls back to the text nodes drawn inside
+        its rectangle.
+        """
+        container = self._element_find(locator, first_only=True, required=True)
+        texts = "//*[string-length(@text) > 0 or string-length(@label) > 0 or string-length(@name) > 0]"
+        nodes = container.find_elements(AppiumBy.XPATH, "." + texts)
+        if not nodes:
+            box = container.rect
+            nodes = [
+                node
+                for node in self._current_application().find_elements(AppiumBy.XPATH, texts)
+                if _inside(node.rect, box)
+            ]
+        parts = []
+        for node in nodes:
+            text = node.text
+            if text and text not in parts:
+                parts.append(text)
+        return " ".join(parts)
+
+    def get_clipboard_text(self):
+        """The device clipboard as text, for values a screen shows only shortened."""
+        return self._current_application().get_clipboard_text()
+
     def _retry_assertion(self, assert_func, timeout=timedelta(seconds=5), retry_interval=timedelta(seconds=1)):
         # AppiumLibrary 3.2.1 skips its loop at zero and raises None instead of checking once.
         if timeout.total_seconds() == 0:
@@ -80,3 +109,12 @@ class PeraAppiumLibrary(AppiumLibrary):
         return self._element_finder._filter_elements(
             application.find_elements(by=by, value=value), tag, constraints
         )
+
+
+def _inside(inner, outer):
+    return (
+        inner["x"] >= outer["x"]
+        and inner["y"] >= outer["y"]
+        and inner["x"] + inner["width"] <= outer["x"] + outer["width"]
+        and inner["y"] + inner["height"] <= outer["y"] + outer["height"]
+    )

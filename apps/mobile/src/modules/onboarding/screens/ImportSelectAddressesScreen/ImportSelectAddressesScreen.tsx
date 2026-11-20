@@ -41,11 +41,14 @@ export const ImportSelectAddressesScreen = () => {
         importedAccountIds,
         uncheckedNetworks,
         canRetryNetworks,
+        isLimitReached,
+        canScanFurther,
         hasLinkedAddresses,
         toggleSelection,
         toggleSelectAll,
         handleContinue,
         handleRetryNetworks,
+        handleScanFurther,
         t,
     } = useImportSelectAddressesScreen()
 
@@ -56,6 +59,116 @@ export const ImportSelectAddressesScreen = () => {
             isImported={importedAccountIds.has(item.id)}
             onToggle={toggleSelection}
         />
+    )
+
+    const intro = (
+        <>
+            <ScreenHeader
+                title={t('onboarding.import_select_addresses.title')}
+                description={
+                    !areAllImported
+                        ? t(
+                              hasLinkedAddresses
+                                  ? 'onboarding.import_select_addresses.description_linked'
+                                  : 'onboarding.import_select_addresses.description',
+                              {
+                                  count: accounts.length,
+                              },
+                          )
+                        : undefined
+                }
+            />
+
+            {uncheckedNetworks !== undefined && (
+                <PWView style={styles.notice}>
+                    <InfoCallout
+                        testID='import_select_addresses_unchecked_networks'
+                        title={t(
+                            'onboarding.import_select_addresses.unchecked_networks_title',
+                            { networks: uncheckedNetworks },
+                        )}
+                        body={t(
+                            'onboarding.import_select_addresses.unchecked_networks_body',
+                        )}
+                    />
+                    {canRetryNetworks && (
+                        <PWButton
+                            testID='import_select_addresses_retry_networks_button'
+                            variant='linkPositive'
+                            paddingStyle='none'
+                            title={t(
+                                'onboarding.import_select_addresses.retry_networks',
+                                { networks: uncheckedNetworks },
+                            )}
+                            titleLines={2}
+                            onPress={handleRetryNetworks}
+                            style={styles.noticeAction}
+                        />
+                    )}
+                </PWView>
+            )}
+
+            {isLimitReached && (
+                <PWView style={styles.notice}>
+                    <InfoCallout
+                        testID='import_select_addresses_limit_reached'
+                        title={t(
+                            'onboarding.import_select_addresses.limit_reached_title',
+                        )}
+                        body={t(
+                            'onboarding.import_select_addresses.limit_reached_body',
+                        )}
+                    />
+                    {canScanFurther && (
+                        <PWButton
+                            testID='import_select_addresses_scan_further_button'
+                            variant='linkPositive'
+                            paddingStyle='none'
+                            title={t(
+                                'onboarding.import_select_addresses.scan_further',
+                            )}
+                            onPress={handleScanFurther}
+                            style={styles.noticeAction}
+                        />
+                    )}
+                </PWView>
+            )}
+        </>
+    )
+
+    const countRow = (
+        <PWView style={styles.headerRow}>
+            <PWText
+                variant='bodySemibold'
+                style={styles.headerCount}
+            >
+                {t(
+                    hasLinkedAddresses
+                        ? 'onboarding.import_select_addresses.accounts_count'
+                        : 'onboarding.import_select_addresses.addresses_count',
+                    {
+                        count: accounts.length,
+                    },
+                )}
+            </PWText>
+
+            <PWTouchableOpacity
+                onPress={toggleSelectAll}
+                style={styles.selectAllContainer}
+            >
+                <PWText
+                    variant='link'
+                    style={styles.selectAllText}
+                >
+                    {t('onboarding.import_select_addresses.select_all')}
+                </PWText>
+                <PWCheckbox
+                    checked={isAllSelected}
+                    onPress={toggleSelectAll}
+                    testID='import_select_addresses_select_all_checkbox'
+                />
+            </PWTouchableOpacity>
+        </PWView>
     )
 
     return (
@@ -78,51 +191,7 @@ export const ImportSelectAddressesScreen = () => {
                 }
             >
                 <PWView style={styles.content}>
-                    <ScreenHeader
-                        title={t('onboarding.import_select_addresses.title')}
-                        description={
-                            !areAllImported
-                                ? t(
-                                      hasLinkedAddresses
-                                          ? 'onboarding.import_select_addresses.description_linked'
-                                          : 'onboarding.import_select_addresses.description',
-                                      {
-                                          count: accounts.length,
-                                      },
-                                  )
-                                : undefined
-                        }
-                    />
-
-                    {uncheckedNetworks !== undefined && (
-                        <PWView style={styles.uncheckedNetworks}>
-                            <InfoCallout
-                                testID='import_select_addresses_unchecked_networks'
-                                title={t(
-                                    'onboarding.import_select_addresses.unchecked_networks_title',
-                                    { networks: uncheckedNetworks },
-                                )}
-                                body={t(
-                                    'onboarding.import_select_addresses.unchecked_networks_body',
-                                )}
-                            />
-                            {canRetryNetworks && (
-                                <PWButton
-                                    testID='import_select_addresses_retry_networks_button'
-                                    variant='linkPositive'
-                                    paddingStyle='none'
-                                    title={t(
-                                        'onboarding.import_select_addresses.retry_networks',
-                                        { networks: uncheckedNetworks },
-                                    )}
-                                    titleLines={2}
-                                    onPress={handleRetryNetworks}
-                                    style={styles.retryNetworks}
-                                />
-                            )}
-                        </PWView>
-                    )}
-
+                    {areAllImported && intro}
                     {areAllImported ? (
                         // Distinct from `searching_accounts.no_new_addresses`,
                         // which says nothing was FOUND. Reaching this screen
@@ -143,51 +212,22 @@ export const ImportSelectAddressesScreen = () => {
                             shouldTruncateBody={false}
                         />
                     ) : (
-                        <>
-                            <PWView style={styles.headerRow}>
-                                <PWText
-                                    variant='bodySemibold'
-                                    style={styles.headerCount}
-                                >
-                                    {t(
-                                        hasLinkedAddresses
-                                            ? 'onboarding.import_select_addresses.accounts_count'
-                                            : 'onboarding.import_select_addresses.addresses_count',
-                                        {
-                                            count: accounts.length,
-                                        },
-                                    )}
-                                </PWText>
-
-                                <PWTouchableOpacity
-                                    onPress={toggleSelectAll}
-                                    style={styles.selectAllContainer}
-                                >
-                                    <PWText
-                                        variant='link'
-                                        style={styles.selectAllText}
-                                    >
-                                        {t(
-                                            'onboarding.import_select_addresses.select_all',
-                                        )}
-                                    </PWText>
-                                    <PWCheckbox
-                                        checked={isAllSelected}
-                                        onPress={toggleSelectAll}
-                                        testID='import_select_addresses_select_all_checkbox'
-                                    />
-                                </PWTouchableOpacity>
-                            </PWView>
-
-                            <PWFlatList
-                                data={accounts}
-                                renderItem={renderItem}
-                                keyExtractor={item => item.id}
-                                extraData={selectedAccountIds}
-                                cardLayout
-                                showsVerticalScrollIndicator={false}
-                            />
-                        </>
+                        <PWFlatList
+                            data={accounts}
+                            renderItem={renderItem}
+                            keyExtractor={item => item.id}
+                            extraData={selectedAccountIds}
+                            // The header scrolls with the rows: fixed above
+                            // them, the notices left the list too short to use.
+                            ListHeaderComponent={
+                                <>
+                                    {intro}
+                                    {countRow}
+                                </>
+                            }
+                            cardLayout
+                            showsVerticalScrollIndicator={false}
+                        />
                     )}
                 </PWView>
             </PWScreen>
