@@ -80,6 +80,21 @@ describe('AccountDisplay', () => {
         expect(screen.getByTestId('chain_avatar_badge_ethereum')).toBeTruthy()
     })
 
+    it('keeps the chain badge when a send hides the backup badge', () => {
+        mockDisplayResult.showBackupBadge = true
+
+        render(
+            <AccountDisplay
+                account={ACCOUNT}
+                showChainBadge
+                hideBackupBadge
+            />,
+        )
+
+        expect(screen.queryByTestId('account_backup_badge')).toBeNull()
+        expect(screen.getByTestId('chain_avatar_badge_ethereum')).toBeTruthy()
+    })
+
     it('puts the badges on the line under the name, beside the secondary label', () => {
         render(
             <AccountDisplay

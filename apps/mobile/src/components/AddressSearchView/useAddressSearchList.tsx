@@ -29,6 +29,7 @@ export type UseAddressSearchListProps = {
     setValue: (value: string) => void
     chainBadgeName: Optional<string>
     showAccountBalance: boolean
+    hideBackupBadge?: boolean
     showAddIcon: boolean
     wrongNetworkMessage: Optional<{ title: string; body: string }>
 }
@@ -47,6 +48,7 @@ export const useAddressSearchList = ({
     setValue,
     chainBadgeName,
     showAccountBalance,
+    hideBackupBadge,
     showAddIcon,
     wrongNetworkMessage,
 }: UseAddressSearchListProps): UseAddressSearchListResult => {
@@ -68,6 +70,7 @@ export const useAddressSearchList = ({
                 setValue={setValue}
                 chainBadge={chainBadge}
                 showAccountBalance={showAccountBalance}
+                hideBackupBadge={hideBackupBadge}
                 showAddIcon={showAddIcon}
             />
         ),
@@ -77,6 +80,7 @@ export const useAddressSearchList = ({
             setValue,
             chainBadge,
             showAccountBalance,
+            hideBackupBadge,
             showAddIcon,
         ],
     )

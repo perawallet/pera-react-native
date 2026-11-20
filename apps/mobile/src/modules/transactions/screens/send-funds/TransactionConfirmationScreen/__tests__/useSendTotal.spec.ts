@@ -33,11 +33,6 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         value.div(new Decimal(10).pow(asset.decimals)),
 }))
 
-// The barrel pulls in the component tree; the precision policy is all this needs.
-vi.mock('@components/CurrencyAmount', () =>
-    vi.importActual('@components/CurrencyAmount/precision'),
-)
-
 vi.mock('@components/PreferredAmount', () => ({
     usePreferredAmount: vi.fn(),
 }))
@@ -49,7 +44,7 @@ const USDC = {
     decimals: 6,
 } as PeraAsset
 const ETHER_ASSET = ETHER as PeraAsset
-// 0.000008523412 ETH, which the fee row shows as 0.00000852.
+// 0.000008523412 ETH.
 const FEE_WEI = new Decimal('8523412000000')
 
 const priceAt = (
@@ -75,7 +70,7 @@ describe('useSendTotal', () => {
         priceAt({ native: 2000, '0xusdc': 1 })
     })
 
-    it('adds the fee, as the fee row rounds it, to a native send', () => {
+    it('adds the full estimated fee to a native send', () => {
         const { result } = renderHook(() =>
             useSendTotal({
                 scope: SCOPE,
@@ -88,7 +83,20 @@ describe('useSendTotal', () => {
         expect(result.current.isPending).toBe(false)
         expect(result.current.lines).toHaveLength(1)
         expect(result.current.lines[0].asset).toBe(ETHER_ASSET)
-        expect(result.current.lines[0].amount.toFixed()).toBe('0.50000852')
+        expect(result.current.lines[0].amount.toFixed()).toBe('0.500008523412')
+    })
+
+    it('adds a sub-micro ETH fee to a Base send', () => {
+        const { result } = renderHook(() =>
+            useSendTotal({
+                scope: { ...SCOPE, chainId: 'base' },
+                asset: ETHER_ASSET,
+                amount: new Decimal('0.0125'),
+                feeAmount: new Decimal('216000000000'),
+            }),
+        )
+
+        expect(result.current.lines[0].amount.toFixed()).toBe('0.012500216')
     })
 
     it('lists a token send and its native fee apart', () => {
@@ -108,7 +116,7 @@ describe('useSendTotal', () => {
             ]),
         ).toEqual([
             ['USDC', '25'],
-            ['ETH', '0.00000852'],
+            ['ETH', '0.000008523412'],
         ])
     })
 
@@ -122,7 +130,7 @@ describe('useSendTotal', () => {
             }),
         )
 
-        expect(result.current.preferredValue?.toFixed()).toBe('25.01704')
+        expect(result.current.preferredValue?.toFixed()).toBe('25.017046824')
         expect(usePreferredAmount).toHaveBeenCalledWith(
             new Decimal(25),
             '0xusdc',

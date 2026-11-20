@@ -63,6 +63,8 @@ export type AccountDisplayProps = {
     chainId?: ChainId
     /** Pins the displayed chain's icon to the avatar's bottom-left corner, clear of the backup badge. */
     showChainBadge?: boolean
+    /** Hides the backup warning in contexts where the account is only a transfer participant. */
+    hideBackupBadge?: boolean
     /** Rendered after the secondary label, on the line under the name; never on the name's line. */
     badges?: ReactNode
     /** Replaces the secondary label on the line under the name, e.g. with the network the account is on. */
@@ -86,6 +88,7 @@ export const AccountDisplay = ({
     alwaysShowAccountType = false,
     chainId,
     showChainBadge = false,
+    hideBackupBadge = false,
     badges,
     secondaryContent,
     shouldShowSecondaryLabel = true,
@@ -183,7 +186,7 @@ export const AccountDisplay = ({
                             <AvatarBadge>{avatarBadge}</AvatarBadge>
                         </PWView>
                     )}
-                    {!avatarBadge && showBackupBadge && (
+                    {!avatarBadge && !hideBackupBadge && showBackupBadge && (
                         <PWView
                             style={styles.avatarBadge}
                             testID='account_backup_badge'

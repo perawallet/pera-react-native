@@ -26,10 +26,24 @@ import type { Maybe } from '@perawallet/wallet-core-shared'
  * - `compact` — a fixed 2 dp, for dense list rows; an asset with more than 6
  *   decimals keeps its detailed precision so a row reads like its detail.
  * - `significant` — a few significant digits, for a tiny amount such as a fee.
+ * - `exact` — all of the asset's decimals, for a transaction total.
  * - `list` — for an asset list row: up to 4 dp, rounded down, whatever the
  *   asset's decimals; dust reads "< 0.0001".
  */
-export type AssetAmountDensity = 'compact' | 'detailed' | 'significant' | 'list'
+export type AssetAmountDensity =
+    | 'compact'
+    | 'detailed'
+    | 'significant'
+    | 'exact'
+    | 'list'
+
+const PRECISION_BY_DENSITY = {
+    compact: 'compact',
+    detailed: 'assetFull',
+    significant: 'significant',
+    exact: 'assetExact',
+    list: 'list',
+} as const
 
 export type AssetAmountProps = {
     /**
@@ -63,27 +77,13 @@ export const AssetAmount = ({
     // fiat-symbol mapping.
     const assetId = asset?.assetId ?? ''
 
-    if (density === 'compact' || density === 'list') {
-        return (
-            <CurrencyAmount
-                currency={currency}
-                assetId={assetId}
-                chainId={chainId}
-                value={value}
-                precision={density}
-                assetDecimals={asset?.decimals}
-                {...displayProps}
-            />
-        )
-    }
-
     return (
         <CurrencyAmount
             currency={currency}
             assetId={assetId}
             chainId={chainId}
             value={value}
-            precision={density === 'significant' ? 'significant' : 'assetFull'}
+            precision={PRECISION_BY_DENSITY[density]}
             assetDecimals={asset?.decimals}
             {...displayProps}
         />

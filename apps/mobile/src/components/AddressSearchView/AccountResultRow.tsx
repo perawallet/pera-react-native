@@ -21,6 +21,7 @@ type AccountResultRowProps = {
     account: WalletAccount
     showBalance: boolean
     chainId: ChainId
+    hideBackupBadge?: boolean
     /** Shown after the address; the balance row badges itself. */
     badges?: ReactNode
 }
@@ -29,6 +30,7 @@ export const AccountResultRow = ({
     account,
     showBalance,
     chainId,
+    hideBackupBadge,
     badges,
 }: AccountResultRowProps) => {
     const styles = useStyles()
@@ -40,6 +42,7 @@ export const AccountResultRow = ({
                 chainId={chainId}
                 badges={badges}
                 showChevron={false}
+                hideBackupBadge={hideBackupBadge}
                 style={styles.accountDisplay}
             />
         )

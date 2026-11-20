@@ -97,6 +97,14 @@ describe('resolvePrecision + real formatNumber', () => {
         expect(format('0.0013449999', 'assetFull', 18)).toBe('0.001344')
     })
 
+    it('preserves the fee digits in an exact native transfer total', () => {
+        expect(format('0.012500216', 'assetExact', 18)).toBe('0.012500216')
+        expect(format('0.000000000000000001', 'assetExact', 18)).toBe(
+            '0.000000000000000001',
+        )
+        expect(format('1.001', 'assetExact', 6)).toBe('1.001')
+    })
+
     it('compact reads like assetFull for an 18-decimal asset', () => {
         expect(format('0.001344293173', 'compact', 18)).toBe('0.001344')
     })
