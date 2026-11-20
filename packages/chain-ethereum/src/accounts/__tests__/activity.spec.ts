@@ -28,6 +28,7 @@ import {
     isPeraNetworkError,
     isTransientNetworkError,
 } from '@perawallet/wallet-core-shared'
+import { whitelistPath } from '../../assets/api/endpoints'
 import { cachedWhitelist } from '../../assets/api/whitelist-cache'
 import {
     evmNftItem,
@@ -35,10 +36,7 @@ import {
     unknownAssetItem,
 } from '../../assets/api/msw-handlers'
 import type { WhitelistItemResponse } from '../../assets/api/schema'
-import {
-    evmHistoryItem,
-    evmNftTransferLeg,
-} from '../../history/api/msw-handlers'
+import { evmHistoryItem } from '../../history/api/msw-handlers'
 import { createEthereumAccountStateOps } from '../account-state'
 import { peraEvmHandlers } from '../msw-handlers'
 import {
@@ -65,16 +63,6 @@ const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const QUIET: Hex = '0x00000000000000000000000000000000000000aa'
 const OTHER: Hex = '0x00000000000000000000000000000000000000bb'
 const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
-const TOKEN_LEG = {
-    asset_id: `eip155:1/erc20:${USDC.toLowerCase()}`,
-    contract: USDC.toLowerCase(),
-    from: OTHER,
-    to: QUIET,
-    value: '1000000',
-    token_name: 'USD Coin',
-    token_symbol: 'USDC',
-    token_decimals: 6,
-}
 
 const server = setupServer()
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
@@ -129,247 +117,66 @@ const recordPera = (): Seen[] => {
 }
 
 describe('createEvmActivityCheck', () => {
-    describe('with a history service', () => {
-        it('counts an address that only received an ERC-20', async () => {
+    describe('Pera reads', () => {
+        const ALL = ['history', 'assets', 'nfts']
+
+        it('reads neither history nor NFT holdings, deciding a quiet address from its listed tokens', async () => {
             server.use(
-                ...rpc(),
+                ...rpc('0x0', erc20CallResponder({ [USDC]: usdc(5n) })),
                 ...peraEvmHandlers({
                     baseUrl: TEST_PERA_URL,
-                    history: {
-                        [QUIET]: [
-                            [evmHistoryItem({ token_transfers: [TOKEN_LEG] })],
-                        ],
-                    },
+                    whitelist: { 1: [nativeWhitelistItem(1), listedUsdc()] },
+                    history: { [OTHER]: [[evmHistoryItem()]] },
+                    nftHoldings: { [OTHER]: [[evmNftItem()]] },
                 }),
             )
+            const seen = recordPera()
 
-            const active = await checkWith(['history'])([QUIET], SCOPE)
+            const active = await checkWith(ALL)([QUIET, OTHER], SCOPE)
 
-            expect(active).toEqual(new Map([[QUIET, true]]))
-        })
-
-        it('counts an address that only received an NFT', async () => {
-            server.use(
-                ...rpc(),
-                ...peraEvmHandlers({
-                    baseUrl: TEST_PERA_URL,
-                    history: {
-                        [QUIET]: [
-                            [
-                                evmHistoryItem({
-                                    nft_transfers: [evmNftTransferLeg()],
-                                }),
-                            ],
-                        ],
-                    },
-                }),
+            expect(active).toEqual(
+                new Map([
+                    [QUIET, true],
+                    [OTHER, false],
+                ]),
             )
-
-            const active = await checkWith(['history'])([QUIET], SCOPE)
-
-            expect(active.get(QUIET)).toBe(true)
+            expect(
+                seen.filter(({ url }) =>
+                    /\/(transactions|nfts)\/$/.test(url.pathname),
+                ),
+            ).toEqual([])
         })
 
-        it('counts a token received and later moved out by a spender', async () => {
-            const moved = { ...TOKEN_LEG, from: QUIET, to: OTHER }
-            server.use(
-                ...rpc(),
-                ...peraEvmHandlers({
-                    baseUrl: TEST_PERA_URL,
-                    history: {
-                        [QUIET]: [
-                            [
-                                evmHistoryItem({ token_transfers: [moved] }),
-                                evmHistoryItem({
-                                    token_transfers: [TOKEN_LEG],
-                                }),
-                            ],
-                        ],
-                    },
-                }),
-            )
-
-            const active = await checkWith(['history'])([QUIET], SCOPE)
-
-            expect(active.get(QUIET)).toBe(true)
-        })
-
-        it('reads an address with an empty history as inactive', async () => {
-            server.use(...rpc(), ...peraEvmHandlers({ baseUrl: TEST_PERA_URL }))
-
-            const active = await checkWith(['history'])([QUIET], SCOPE)
-
-            expect(active).toEqual(new Map([[QUIET, false]]))
-        })
-
-        it('makes no history request for an address with a nonce', async () => {
+        it('makes no Pera request for an address with a nonce', async () => {
             server.use(
                 ...rpc('0x1'),
                 ...peraEvmHandlers({ baseUrl: TEST_PERA_URL }),
             )
             const seen = recordPera()
 
-            const active = await checkWith(['history'])([QUIET], SCOPE)
+            const active = await checkWith(ALL)([QUIET], SCOPE)
 
             expect(active.get(QUIET)).toBe(true)
             expect(seen).toEqual([])
         })
 
-        it('makes one limit=1 history GET per quiet address and never follows a cursor', async () => {
+        it('rejects with the refusal when the backend has the chain switched off', async () => {
             server.use(
-                ...rpc(),
-                ...peraEvmHandlers({
-                    baseUrl: TEST_PERA_URL,
-                    history: { [QUIET]: [[], [evmHistoryItem()]] },
-                }),
-            )
-            const seen = recordPera()
-
-            await checkWith(['history'])([QUIET, OTHER], SCOPE)
-
-            expect(seen).toHaveLength(2)
-            for (const { url } of seen) {
-                expect(url.searchParams.get('limit')).toBe('1')
-                expect(url.searchParams.has('cursor')).toBe(false)
-            }
-        })
-
-        it('keeps at most four history GETs in flight across concurrent checks', async () => {
-            let inFlight = 0
-            let peak = 0
-            server.use(
-                http.get(
-                    `${TEST_PERA_URL}/api/v3/evm/:chainId/accounts/:address/transactions/`,
-                    async () => {
-                        inFlight++
-                        peak = Math.max(peak, inFlight)
-                        await new Promise(resolve => setTimeout(resolve, 5))
-                        inFlight--
-                        return undefined
-                    },
+                http.get(`${TEST_PERA_URL}${whitelistPath(':chainId')}`, () =>
+                    HttpResponse.json(
+                        {
+                            code: 'chain_not_enabled',
+                            error: 'Chain 1 is not enabled.',
+                        },
+                        { status: 422 },
+                    ),
                 ),
                 ...rpc(),
-                ...peraEvmHandlers({ baseUrl: TEST_PERA_URL }),
-            )
-            const quietAt = (n: number): Hex =>
-                `0x${n.toString(16).padStart(40, '0')}`
-            const batch = (from: number) =>
-                Array.from({ length: 6 }, (_, i) => quietAt(from + i))
-            const check = checkWith(['history'])
-
-            const [first, second] = await Promise.all([
-                check(batch(1), SCOPE),
-                check(batch(100), SCOPE),
-            ])
-
-            expect(first.size + second.size).toBe(12)
-            expect(peak).toBe(4)
-        })
-
-        it('sends no history GET once the walk has abandoned the chain, though the node reads were made', async () => {
-            server.use(...rpc(), ...peraEvmHandlers({ baseUrl: TEST_PERA_URL }))
-            const seen = recordPera()
-            const abandoned = new AbortController()
-            abandoned.abort()
-
-            await expect(
-                checkWith(['history'])([QUIET, OTHER], SCOPE, abandoned.signal),
-            ).rejects.toThrow('Activity lookup abandoned')
-
-            expect(seen).toEqual([])
-        })
-
-        it('cancels a history GET still in flight when the walk abandons the chain', async () => {
-            let hasFinished = false
-            server.use(
-                ...rpc(),
-                http.get(
-                    `${TEST_PERA_URL}/api/v3/evm/:chainId/accounts/:address/transactions/`,
-                    async () => {
-                        await new Promise(resolve => setTimeout(resolve, 400))
-                        hasFinished = true
-                        return HttpResponse.json({ results: [], next: null })
-                    },
-                ),
-            )
-            const abandoned = new AbortController()
-            const startedAt = performance.now()
-            const check = checkWith(['history'])(
-                [QUIET],
-                SCOPE,
-                abandoned.signal,
-            )
-            setTimeout(() => abandoned.abort(), 30)
-
-            await expect(check).rejects.toThrow()
-
-            expect(performance.now() - startedAt).toBeLessThan(300)
-            expect(hasFinished).toBe(false)
-        })
-
-        it('counts an address whose only page is empty but carries a cursor', async () => {
-            server.use(
-                ...rpc(),
-                ...peraEvmHandlers({
-                    baseUrl: TEST_PERA_URL,
-                    history: { [QUIET]: [[], [evmHistoryItem()]] },
-                }),
-            )
-
-            const active = await checkWith(['history'])([QUIET], SCOPE)
-
-            expect(active.get(QUIET)).toBe(true)
-        })
-
-        it('leaves out an address whose history read was rate limited and keeps the others', async () => {
-            server.use(
-                http.get(
-                    `${TEST_PERA_URL}/api/v3/evm/:chainId/accounts/${QUIET}/transactions/`,
-                    () => HttpResponse.json({}, { status: 429 }),
-                ),
-                ...rpc(),
-                ...peraEvmHandlers({
-                    baseUrl: TEST_PERA_URL,
-                    history: {
-                        [OTHER]: [
-                            [evmHistoryItem({ token_transfers: [TOKEN_LEG] })],
-                        ],
-                    },
-                }),
-            )
-
-            const active = await checkWith(['history'])([QUIET, OTHER], SCOPE)
-
-            expect(active).toEqual(new Map([[OTHER, true]]))
-        })
-
-        it('rejects with the refusal when the backend has the chain switched off, even if another address answered', async () => {
-            server.use(
-                http.get(
-                    `${TEST_PERA_URL}/api/v3/evm/:chainId/accounts/${QUIET}/transactions/`,
-                    () =>
-                        HttpResponse.json(
-                            {
-                                code: 'chain_not_enabled',
-                                error: 'Chain 1 is not enabled.',
-                            },
-                            { status: 422 },
-                        ),
-                ),
-                ...rpc(),
-                ...peraEvmHandlers({
-                    baseUrl: TEST_PERA_URL,
-                    history: {
-                        [OTHER]: [
-                            [evmHistoryItem({ token_transfers: [TOKEN_LEG] })],
-                        ],
-                    },
-                }),
             )
 
             // The query client remembers a refused scope for the rest of the
             // run, so this one refuses a scope no other test uses.
-            const error = await checkWith(['history'])([QUIET, OTHER], {
+            const error = await checkWith(ALL)([QUIET, OTHER], {
                 chainId: 'ethereum',
                 networkId: 'sepolia',
             }).catch((rejected: unknown) => rejected)
@@ -400,7 +207,7 @@ describe('createEvmActivityCheck', () => {
         })
     })
 
-    describe('without a history service', () => {
+    describe('token and node reads', () => {
         it('counts a listed ERC-20 balance with one aggregate3 call', async () => {
             const calls: string[] = []
             server.use(
@@ -436,36 +243,6 @@ describe('createEvmActivityCheck', () => {
                 ]),
             )
             expect(calls).toHaveLength(1)
-        })
-
-        it('counts an address whose first NFT page has a row and never asks for the second', async () => {
-            server.use(
-                ...rpc(),
-                ...peraEvmHandlers({
-                    baseUrl: TEST_PERA_URL,
-                    nftHoldings: { [QUIET]: [[evmNftItem()], [evmNftItem()]] },
-                }),
-            )
-            const seen = recordPera()
-
-            const active = await checkWith(['nfts'])([QUIET], SCOPE)
-
-            expect(active.get(QUIET)).toBe(true)
-            expect(seen).toHaveLength(1)
-            expect(seen[0]!.url.searchParams.has('cursor')).toBe(false)
-        })
-
-        it('sends no NFT GET once the walk has abandoned the chain', async () => {
-            server.use(...rpc(), ...peraEvmHandlers({ baseUrl: TEST_PERA_URL }))
-            const seen = recordPera()
-            const abandoned = new AbortController()
-            abandoned.abort()
-
-            await expect(
-                checkWith(['nfts'])([QUIET], SCOPE, abandoned.signal),
-            ).rejects.toThrow('Activity lookup abandoned')
-
-            expect(seen).toEqual([])
         })
 
         it('reads only the node when no Pera service is listed', async () => {

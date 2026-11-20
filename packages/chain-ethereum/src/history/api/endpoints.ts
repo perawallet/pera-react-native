@@ -22,9 +22,13 @@ import {
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
-import { DISCOVERY_LOOKUP_BOUNDS } from '../../accounts/discovery-bounds'
 import { eip155ChainIdOf } from '../../blockchain/utils/caip19'
 import type { EvmChain } from '../../chains/types'
+import {
+    historyBudgetSpentError,
+    sharedFirstPageCache,
+    sharedHistoryPageBudget,
+} from './page-budget'
 import {
     evmHistoryItemSchema,
     evmHistoryPageSchema,
@@ -49,7 +53,6 @@ export type EvmHistoryPage = {
 // One gate for every EVM chain and every paged reader: each page costs the
 // backend several upstream explorer calls under one shared rate limit, so the
 // All view asking every chain at once got most of its pages refused.
-// Discovery's single-row lookup, `fetchHasHistory`, keeps its own cap.
 const HISTORY_PAGES_IN_FLIGHT = 2
 let historyPageGate: Optional<ConcurrencyLimit>
 
@@ -71,6 +74,9 @@ export type HistoryPageReadOptions = {
  * Newest first; rows this client can't read are dropped. Rejects with
  * `UnknownEvmNetworkError` for a scope that isn't the chain's, and with
  * `PeraNetworkError` or `PeraServiceUnavailableError` from `queryClient`.
+ * Each page spends one unit of the shared history page budget as it is sent,
+ * except a page one the backend still has cached; with none left it rejects
+ * with `RequestBudgetSpentError` and sends nothing.
  */
 export const fetchHistoryPage = async (
     scope: ChainScope,
@@ -84,21 +90,35 @@ export const fetchHistoryPage = async (
     }: HistoryPageReadOptions = {},
 ): Promise<EvmHistoryPage> => {
     signal?.throwIfAborted()
+    const eip155ChainId = eip155ChainIdOf(scope, chain)
+    const lowerAddress = address.toLowerCase()
+    const firstPageKey =
+        page === undefined
+            ? `${eip155ChainId}/${lowerAddress}/${caip19AssetId ?? ''}`
+            : undefined
     const { data } = await gatedHistoryPage(
         async () => {
             // A read can become obsolete while another chain owns the shared slots.
             signal?.throwIfAborted()
+            const firstPages = sharedFirstPageCache()
+            const isCached =
+                firstPageKey !== undefined && firstPages.isCached(firstPageKey)
+            const budget = sharedHistoryPageBudget()
+            if (!isCached && !budget.take()) {
+                throw historyBudgetSpentError(budget)
+            }
             const headers = await buildIntegrityHeadersWhenReady()
             signal?.throwIfAborted()
-            return queryClient<unknown>({
+            const recordFirstPage =
+                firstPageKey === undefined
+                    ? undefined
+                    : firstPages.sent(firstPageKey)
+            const response = await queryClient<unknown>({
                 backend: 'pera',
                 service: HISTORY_SERVICE,
                 scope,
                 method: 'GET',
-                url: historyPath(
-                    eip155ChainIdOf(scope, chain),
-                    address.toLowerCase(),
-                ),
+                url: historyPath(eip155ChainId, lowerAddress),
                 params: {
                     ...(page && { cursor: page.cursor }),
                     ...(page?.limit !== undefined && {
@@ -114,6 +134,8 @@ export const fetchHistoryPage = async (
                 headers,
                 signal,
             })
+            recordFirstPage?.()
+            return response
         },
         { isPriority: !isBackground },
     )
@@ -129,31 +151,4 @@ export const fetchHistoryPage = async (
         }),
         next,
     }
-}
-
-/**
- * Whether the backend lists any row for `address`: one GET for the newest row,
- * never a cursor. Raw rows count, since one this client predates still proves
- * history, and a cursor means older rows exist behind an empty page. Rejects
- * the way `fetchHistoryPage` does.
- */
-export const fetchHasHistory = async (
-    scope: ChainScope,
-    chain: EvmChain,
-    address: string,
-    signal?: AbortSignal,
-): Promise<boolean> => {
-    const { data } = await queryClient<unknown>({
-        backend: 'pera',
-        service: HISTORY_SERVICE,
-        scope,
-        method: 'GET',
-        url: historyPath(eip155ChainIdOf(scope, chain), address.toLowerCase()),
-        params: { limit: 1 },
-        headers: await buildIntegrityHeadersWhenReady(),
-        signal,
-        ...DISCOVERY_LOOKUP_BOUNDS,
-    })
-    const { next, results } = evmHistoryPageSchema.parse(data)
-    return results.length > 0 || next !== null
 }

@@ -15,6 +15,7 @@ import { onlineManager } from '@tanstack/react-query'
 import {
     PeraNetworkError,
     PeraServiceUnavailableError,
+    RequestBudgetSpentError,
 } from '@perawallet/wallet-core-shared'
 import {
     historyReadRetryDelay,
@@ -53,6 +54,19 @@ describe('shouldRetryHistoryRead', () => {
                 new PeraNetworkError('server', { status: 503 }),
             ),
         ).toBe(false)
+    })
+
+    it('retries a read refused by the client budget like a 429', () => {
+        const spent = new RequestBudgetSpentError('evm-history', 60_000)
+
+        expect(shouldRetryHistoryRead(2, spent)).toBe(true)
+        expect(shouldRetryHistoryRead(3, spent)).toBe(false)
+    })
+
+    it('fails at once when the client budget renews after every retry would be spent', () => {
+        const spent = new RequestBudgetSpentError('evm-history', 5 * 60_000)
+
+        expect(shouldRetryHistoryRead(0, spent)).toBe(false)
     })
 
     it('never retries a Pera service the network lacks', () => {

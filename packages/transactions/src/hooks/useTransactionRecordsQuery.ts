@@ -29,9 +29,8 @@ import { isNativeAssetId } from '@perawallet/wallet-core-assets'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { SECONDS_PER_DAY } from '@perawallet/wallet-core-config'
 import {
-    readRemoteConfigWithOverrides,
+    readPositiveIntegerConfig,
     RemoteConfigKeys,
-    useRemoteConfigStore,
 } from '@perawallet/wallet-core-remote-config'
 import {
     isoDateToUnixSeconds,
@@ -40,7 +39,6 @@ import {
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
-import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     getMinedTransactionHistory,
     mergePendingRecords,
@@ -168,18 +166,11 @@ export const DEFAULT_TYPED_SCAN_PAGES = 4
 const MAX_TYPED_RECORD_PAGE_READS = 2
 
 /** Backend pages a type filter reads in all, across every network, before it asks to go on. */
-export const readTypedScanPages = (): number => {
-    const value = readRemoteConfigWithOverrides(
-        getProvider().remoteConfig,
-        useRemoteConfigStore.getState().configOverrides,
-    ).getNumberValue(
+export const readTypedScanPages = (): number =>
+    readPositiveIntegerConfig(
         RemoteConfigKeys.history_type_filter_scan_pages,
         DEFAULT_TYPED_SCAN_PAGES,
     )
-    return Number.isInteger(value) && value > 0
-        ? value
-        : DEFAULT_TYPED_SCAN_PAGES
-}
 
 /**
  * One history's share of `scanPages` when `share` histories scan at once: the

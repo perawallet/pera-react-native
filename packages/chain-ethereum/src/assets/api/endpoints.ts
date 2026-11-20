@@ -23,7 +23,6 @@ import {
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
-import { DISCOVERY_LOOKUP_BOUNDS } from '../../accounts/discovery-bounds'
 import { eip155ChainIdOf, toCaip19 } from '../../blockchain/utils/caip19'
 import type { EvmChain } from '../../chains/types'
 import {
@@ -277,39 +276,6 @@ export const fetchNftHoldings = async (
     throw new Error(
         `Pera NFT holdings for ${scope.chainId}/${scope.networkId} ran past ${NFT_HOLDINGS_MAX_PAGES} pages`,
     )
-}
-
-/**
- * Whether `address` holds any NFT the backend lists: one GET of the first
- * page, never a cursor. Resolves `false` when the chain has no NFT reads;
- * rejects with a `PeraNetworkError` on any other failed request.
- */
-export const fetchHasNftHoldings = async (
-    scope: ChainScope,
-    chain: EvmChain,
-    address: string,
-    signal?: AbortSignal,
-): Promise<boolean> => {
-    try {
-        const { data } = await queryClient<unknown>({
-            backend: 'pera',
-            service: NFTS_SERVICE,
-            scope,
-            method: 'GET',
-            url: nftHoldingsPath(
-                eip155ChainIdOf(scope, chain),
-                address.toLowerCase(),
-            ),
-            headers: await buildIntegrityHeadersWhenReady(),
-            signal,
-            ...DISCOVERY_LOOKUP_BOUNDS,
-        })
-        const { results, next } = nftHoldingsPageSchema.parse(data)
-        return results.length > 0 || next !== null
-    } catch (error) {
-        if (isNftNotSupportedError(error)) return false
-        throw error
-    }
 }
 
 /**

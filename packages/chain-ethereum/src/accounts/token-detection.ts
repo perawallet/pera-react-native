@@ -24,6 +24,10 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import type { EvmChain } from '../chains/types'
 import { fetchHistoryPage } from '../history/api/endpoints'
+import {
+    sharedHistoryPageBudget,
+    type HistoryPageBudget,
+} from '../history/api/page-budget'
 
 /** A scan per account at most this often; the backend caches history's first page for as long. */
 export const TOKEN_SCAN_INTERVAL_MS = 5 * 60_000
@@ -183,16 +187,31 @@ export const createHistoryScanBudget = (
     }
 }
 
+/**
+ * `scans` only while `pages` has room, so a scan never spends its own unit on
+ * a page the shared history budget would refuse.
+ */
+export const withinHistoryPageBudget = (
+    scans: HistoryScanBudget,
+    pages: HistoryPageBudget,
+): HistoryScanBudget => ({
+    take: key => pages.hasRoom() && scans.take(key),
+})
+
 let sharedBudget: Optional<HistoryScanBudget>
 
-// One budget for every EVM chain: the backend limits history requests per
-// device, not per chain. Built on first use, so importing runs nothing.
+// Token scans' share of the history page budget every caller spends from:
+// the rest is left to reads someone is waiting on. Built on first use, so
+// importing runs nothing.
 // ponytail: past ~15 account-networks scans space out, so detection lags.
 export const sharedHistoryScanBudget = (): HistoryScanBudget => {
-    sharedBudget ??= createHistoryScanBudget(
-        HISTORY_SCAN_BUDGET,
-        HISTORY_SCAN_WINDOW_MS,
-        Date.now,
+    sharedBudget ??= withinHistoryPageBudget(
+        createHistoryScanBudget(
+            HISTORY_SCAN_BUDGET,
+            HISTORY_SCAN_WINDOW_MS,
+            Date.now,
+        ),
+        sharedHistoryPageBudget(),
     )
     return sharedBudget
 }

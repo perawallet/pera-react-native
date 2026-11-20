@@ -32,6 +32,7 @@ import {
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     createHistoryScanBudget,
+    withinHistoryPageBudget,
     createTokenSightings,
     receivedTokenIdsOf,
     scanReceivedTokens,
@@ -39,6 +40,7 @@ import {
     TOKEN_SCAN_INTERVAL_MS,
     TOKEN_SCAN_MAX_PAGES,
 } from '../token-detection'
+import { createHistoryPageBudget } from '../../history/api/page-budget'
 import {
     evmHistoryItem,
     peraEvmHistoryHandlers,
@@ -222,6 +224,27 @@ describe('createTokenSightings', () => {
         ])
         expect(sightings.of({ ...SCOPE, networkId: 'testnet' }, ME)).toEqual([])
         expect(sightings.of(SCOPE, OTHER)).toEqual([])
+    })
+})
+
+describe('withinHistoryPageBudget', () => {
+    it('refuses a scan page without spending the scan unit while the shared page budget is spent', () => {
+        let now = 0
+        const pages = createHistoryPageBudget(
+            () => 1,
+            1_000,
+            () => now,
+        )
+        const scans = createHistoryScanBudget(1, 60_000, () => now)
+        const budget = withinHistoryPageBudget(scans, pages)
+        pages.take()
+
+        const takenWhileSpent = budget.take()
+        now = 1_000
+        const takenAfterRenewal = budget.take()
+
+        expect(takenWhileSpent).toBe(false)
+        expect(takenAfterRenewal).toBe(true)
     })
 })
 
