@@ -210,6 +210,11 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
 
         renderSendStack()
 
+        await waitFor(() => {
+            const total = screen.getByTestId('send_confirm_total').textContent
+            expect(total).toMatch(/1\.50*\s*tUSD/)
+            expect(total).toMatch(/¦\s*\+\s*0\.0010*(?![\d.])/)
+        })
         const confirmButton = await findEnabledByTestId('send_confirm_button', {
             timeout: 5000,
         })
