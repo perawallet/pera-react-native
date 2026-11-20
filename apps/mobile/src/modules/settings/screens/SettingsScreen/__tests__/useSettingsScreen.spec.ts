@@ -10,7 +10,15 @@
  limitations under the License
  */
 
-import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
+import {
+    afterEach,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+    type Mock,
+} from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useSettingsScreen } from '../useSettingsScreen'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -189,6 +197,14 @@ describe('useSettingsScreen', () => {
     })
 
     describe('openDeleteConfirm', () => {
+        beforeEach(() => {
+            vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+        })
+
+        afterEach(() => {
+            vi.useRealTimers()
+        })
+
         it('opens the confirm sheet but does not delete when user cancels', async () => {
             mockRequestBottomSheet.mockResolvedValueOnce(undefined)
             const { result } = renderHook(() => useSettingsScreen())
@@ -210,10 +226,14 @@ describe('useSettingsScreen', () => {
 
             await act(async () => {
                 await result.current.openDeleteConfirm()
+                await vi.runOnlyPendingTimersAsync()
             })
 
             expect(mockDeleteAllData).toHaveBeenCalledTimes(1)
             expect(mockRequestBottomSheet).toHaveBeenCalledTimes(2)
+            expect(mockNavigate).toHaveBeenCalledExactlyOnceWith('Onboarding', {
+                screen: 'OnboardingHome',
+            })
             const successArg = mockRequestBottomSheet.mock.calls[1][0]
             expect(successArg.options).toEqual({
                 size: 'auto',
@@ -228,6 +248,7 @@ describe('useSettingsScreen', () => {
 
             await act(async () => {
                 await result.current.openDeleteConfirm()
+                await vi.runOnlyPendingTimersAsync()
             })
 
             expect(mockDeleteAllData).toHaveBeenCalledTimes(1)
