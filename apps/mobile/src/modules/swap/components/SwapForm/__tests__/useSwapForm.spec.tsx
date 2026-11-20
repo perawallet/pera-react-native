@@ -1419,7 +1419,10 @@ describe('useSwapForm', () => {
             await act(async () => {
                 result.current.handlePayAmountChange(new Decimal(5))
             })
-            mockRequestBottomSheet.mockResolvedValueOnce({ kind: 'success' })
+            mockRequestBottomSheet.mockResolvedValueOnce({
+                kind: 'confirm',
+                isPaidOutLater: true,
+            })
 
             await act(async () => {
                 await result.current.handleOpenConfirm()
@@ -1443,7 +1446,7 @@ describe('useSwapForm', () => {
             })
 
             expect(mockSuccessToast).toHaveBeenCalledWith(
-                'swap.tracking.started',
+                'swap.tracking.same_chain_started',
                 'swap.tracking.in_progress',
             )
         })

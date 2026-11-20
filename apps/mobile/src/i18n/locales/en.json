@@ -4368,6 +4368,7 @@
         },
         "tracking": {
             "started": "Cross-chain swap sent",
+            "same_chain_started": "Swap sent",
             "in_progress": "In progress. Your funds are on their way.",
             "completed": "Completed. Your {{toAsset}} has arrived.",
             "failed": "The swap couldn't complete. If your funds were sent, the provider returns them to your account.",

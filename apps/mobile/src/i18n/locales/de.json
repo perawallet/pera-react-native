@@ -4360,6 +4360,7 @@
         },
         "tracking": {
             "started": "Cross-Chain-Swap gesendet",
+            "same_chain_started": "Tausch gesendet",
             "in_progress": "Läuft. Dein Guthaben ist unterwegs.",
             "completed": "Abgeschlossen. Dein {{toAsset}} ist angekommen.",
             "failed": "Der Tausch konnte nicht abgeschlossen werden. Falls dein Guthaben gesendet wurde, gibt der Anbieter es an dein Konto zurück.",

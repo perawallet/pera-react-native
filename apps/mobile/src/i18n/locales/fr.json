@@ -4368,6 +4368,7 @@
         },
         "tracking": {
             "started": "Swap inter-chaînes envoyé",
+            "same_chain_started": "Swap envoyé",
             "in_progress": "En cours. Vos fonds sont en route.",
             "completed": "Terminé. Vos fonds en {{toAsset}} sont arrivés.",
             "failed": "Le swap n’a pas pu aboutir. Si vos fonds ont été envoyés, le fournisseur les restituera sur votre compte.",
