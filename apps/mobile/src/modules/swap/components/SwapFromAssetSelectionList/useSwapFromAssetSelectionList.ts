@@ -64,7 +64,10 @@ export const useSwapFromAssetSelectionList = (
         isError,
     } = useSwapPayHoldings()
     const chainIds = useMemo(
-        () => [...new Set<ChainId>([scope.chainId, ...sourceChainIds])],
+        () =>
+            sourceChainIds.includes(scope.chainId)
+                ? [...new Set<ChainId>([scope.chainId, ...sourceChainIds])]
+                : sourceChainIds,
         [sourceChainIds, scope.chainId],
     )
     const filter = useSwapChainFilter({ chainIds, scope, variant: 'from' })

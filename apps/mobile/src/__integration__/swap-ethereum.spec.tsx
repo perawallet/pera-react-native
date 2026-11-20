@@ -109,6 +109,7 @@ const {
     SWAP_ROUTER_PATH,
     swapChainAdapters,
     useSwapOrderTracker,
+    useSwapSourceChainsResolver,
     useSwapsStore,
     useSwapSigningAccounts,
     useSwapTrackingStore,
@@ -1140,6 +1141,22 @@ describe('Flow: Swap from an Ethereum account', () => {
         expect(buttons.current.canSwap).toBe(true)
         expect(panel.current.canSwap).toBe(true)
         expect(isDeeplinkAllowed.current(swapDeeplinkRequirement())).toBe(true)
+    })
+
+    it('updates existing Swap source eligibility when Pera services are switched off and back on', () => {
+        selectSender(ETHEREUM_SENDER)
+        const { result } = renderHook(() => useSwapSourceChainsResolver(), {
+            wrapper: createQueryClientWrapper(),
+        })
+        expect(result.current(ETHEREUM_SENDER)).toEqual(['ethereum'])
+
+        const key = chainOverridesKey('ethereum')
+        const { setConfigOverride } = useRemoteConfigStore.getState()
+        act(() => setConfigOverride(key, JSON.stringify({ enabled: false })))
+        expect(result.current(ETHEREUM_SENDER)).toEqual([])
+
+        act(() => setConfigOverride(key, JSON.stringify({ enabled: true })))
+        expect(result.current(ETHEREUM_SENDER)).toEqual(['ethereum'])
     })
 
     it('Given the remote override turns swap off, then an Ethereum account has no way into it', () => {

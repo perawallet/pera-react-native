@@ -10,25 +10,42 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import {
     useAccountChainOptionsResolver,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { CHAIN_IDS, type ChainId } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScopes } from '@perawallet/wallet-core-chain-shared'
+import { hasPeraBackend } from '@perawallet/wallet-core-config'
+import { usePeraScopeRefusalsVersion } from '@perawallet/wallet-core-device'
 
-/** Resolves the chains an account can pay a swap from. */
+/** Resolves the enabled chains an account can pay from on a network served by Pera. */
 export const useSwapSourceChainsResolver = (): ((
     account: WalletAccount,
 ) => ChainId[]) => {
     const optionsOf = useAccountChainOptionsResolver('swap', {
         isSignerRequired: true,
     })
+    // The account capability resolver subscribes to remote flag overrides.
+    // Re-read the backend gate on those renders as well as on scope refusals.
+    usePeraScopeRefusalsVersion()
+    const backedKey = useSelectedScopes(CHAIN_IDS)
+        .filter(hasPeraBackend)
+        .map(({ chainId }) => chainId)
+        .join(',')
+    const backedChainIds = useMemo(
+        () => new Set(backedKey ? backedKey.split(',') : []),
+        [backedKey],
+    )
     return useCallback(
         (account: WalletAccount) =>
             optionsOf(account)
-                .filter(option => option.isEnabled)
+                .filter(
+                    option =>
+                        option.isEnabled && backedChainIds.has(option.chainId),
+                )
                 .map(option => option.chainId),
-        [optionsOf],
+        [optionsOf, backedChainIds],
     )
 }
