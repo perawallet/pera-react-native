@@ -172,11 +172,13 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                     accounts: discovered,
                     failedChainIds,
                     isOriginFallback,
+                    reachedLimits,
                 } = await discoverImportAccounts({
                     walletKeyId: params.walletKeyId,
                     signal: searchAbort.signal,
                     onProgress: setProgress,
                     previous: params.previous,
+                    extendLimits: params.extendLimits,
                 })
                 isSearchingImportRef.current = false
                 if (hasLeftRef.current) return
@@ -190,19 +192,21 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                     accounts: discovered,
                     failedChainIds,
                     isOriginFallback,
+                    reachedLimits,
                 })
                 return
             }
 
             // Existing mode: `params` is the variant the import branch above
             // ruled out.
-            const { account, chainIds } = params as Extract<
+            const { account, chainIds, extendLimits } = params as Extract<
                 typeof params,
                 { account: unknown }
             >
             if (hdIndexOf(account) !== undefined) {
                 await rescanHdWallet(account, {
                     chainIds,
+                    extendLimits,
                     signal: searchAbort.signal,
                     onProgress: setProgress,
                     hasLeft: () => hasLeftRef.current,

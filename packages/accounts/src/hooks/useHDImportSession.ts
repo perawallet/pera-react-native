@@ -39,6 +39,7 @@ import {
 } from '../chain-adapter'
 import type {
     ChainAccount,
+    HdIndexLimit,
     LocalAccount,
     WalletCandidates,
     WalletDiscoveryProgress,
@@ -64,6 +65,8 @@ export type UseHDImportSessionResult = {
         onProgress?: (progress: WalletDiscoveryProgress) => void
         /** An earlier search of this session, which a retry adds to. */
         previous?: WalletCandidates
+        /** The limits `previous` stopped at; each goes one more default limit past what it found. */
+        extendLimits?: readonly HdIndexLimit[]
     }) => Promise<WalletCandidates>
     commitImport: (params: {
         walletKeyId: string
@@ -105,11 +108,13 @@ export const useHDImportSession = (
             signal,
             onProgress,
             previous,
+            extendLimits,
         }: {
             walletKeyId: string
             signal?: AbortSignal
             onProgress?: (progress: WalletDiscoveryProgress) => void
             previous?: WalletCandidates
+            extendLimits?: readonly HdIndexLimit[]
         }): Promise<WalletCandidates> => {
             const pending = useHDImportSessionStore.getState().pending
             if (!pending || pending.walletKeyId !== walletKeyId) {
@@ -119,6 +124,7 @@ export const useHDImportSession = (
             let discovered: LocalAccount[]
             let failedChainIds: WalletCandidates['failedChainIds'] = []
             let isOriginFallback = false
+            let reachedLimits: HdIndexLimit[] = []
             if (chainIds.length > 1) {
                 const needsKeystore = chainIds.some(
                     chainId =>
@@ -167,10 +173,19 @@ export const useHDImportSession = (
                             index,
                             derived,
                         ) !== undefined,
+                    // What an earlier search found keeps the gaps open, so a
+                    // deeper search carries on past it rather than stopping short.
+                    heldIndexes: previous?.isOriginFallback
+                        ? []
+                        : (previous?.accounts ?? []).flatMap(
+                              account => hdIndexOf(account) ?? [],
+                          ),
+                    extendLimits,
                 })
                 discovered = walked.accounts
                 failedChainIds = walked.failedChainIds
                 isOriginFallback = walked.isOriginFallback ?? false
+                reachedLimits = walked.reachedLimits ?? []
                 // A cancel mid-walk removed the seed while a derive was still
                 // writing children under it, so they are swept once it ends.
                 if (
@@ -198,10 +213,12 @@ export const useHDImportSession = (
                     accounts: discovered,
                     failedChainIds,
                     isOriginFallback,
+                    reachedLimits,
                 })
                 discovered = merged.accounts
                 failedChainIds = merged.failedChainIds
                 isOriginFallback = merged.isOriginFallback ?? false
+                reachedLimits = merged.reachedLimits ?? []
             }
             // Only the indexes the user can pick: one the wallet already holds
             // is shown disabled, and must not read as declined later.
@@ -214,7 +231,12 @@ export const useHDImportSession = (
                         : (hdIndexOf(account) ?? []),
                 ),
             )
-            return { accounts: discovered, failedChainIds, isOriginFallback }
+            return {
+                accounts: discovered,
+                failedChainIds,
+                isOriginFallback,
+                reachedLimits,
+            }
         },
         [scope, persistHDMasterKey, removeKeyAndChildren],
     )

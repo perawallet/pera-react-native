@@ -2521,6 +2521,9 @@
             "cancelled_none_body": "Nada de novo foi encontrado antes da interrupção.",
             "retry_networks": "Verificar novamente: {{networks}}",
             "scan_again": "Buscar novamente",
+            "limit_reached_title": "Pode haver mais contas",
+            "limit_reached_body": "A verificação para após um número fixo de endereços. Se você usou mais nesta carteira, continue buscando para encontrá-los.",
+            "scan_further": "Continuar buscando",
             "done": "Concluir",
             "incomplete_title": "Busca incompleta",
             "updated_title_one": "Novas redes em {{count}} conta",
@@ -2575,7 +2578,10 @@
             "all_imported_body": "Todas as contas desta wallet já estão na Pera. Se alguma foi adicionada como conta de observação, remova-a primeiro e importe novamente para adicioná-la com acesso completo.",
             "unchecked_networks_title": "Não foi possível verificar: {{networks}}",
             "unchecked_networks_body": "As contas das outras redes estão listadas. Você pode buscar novas contas novamente mais tarde.",
-            "retry_networks": "Verificar novamente: {{networks}}"
+            "retry_networks": "Verificar novamente: {{networks}}",
+            "limit_reached_title": "Pode haver mais contas",
+            "limit_reached_body": "A busca para após um número fixo de endereços. Se você usou mais nesta carteira, continue buscando para encontrá-los.",
+            "scan_further": "Continuar buscando"
         },
         "import_rekeyed_addresses": {
             "title_one": "{{count}} conta com rekey encontrada",

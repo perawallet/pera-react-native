@@ -2517,6 +2517,9 @@
             "cancelled_none_body": "Rien de nouveau n’a été trouvé avant l’arrêt du scan.",
             "retry_networks": "Vérifier à nouveau : {{networks}}",
             "scan_again": "Relancer le scan",
+            "limit_reached_title": "Il peut y avoir d'autres comptes",
+            "limit_reached_body": "Le scan s'arrête après un nombre fixe d'adresses. Si vous en avez utilisé davantage sur ce portefeuille, poursuivez le scan pour les trouver.",
+            "scan_further": "Poursuivre le scan",
             "done": "Terminé",
             "incomplete_title": "Scan incomplet",
             "updated_title_one": "Nouveaux réseaux trouvés sur {{count}} compte",
@@ -2571,7 +2574,10 @@
             "all_imported_body": "Tous les comptes de ce wallet figurent déjà dans Pera. Si l’un d’eux est ajouté comme compte de suivi, supprimez-le d’abord, puis importez-le à nouveau pour l’ajouter avec un accès complet.",
             "unchecked_networks_title": "Impossible de vérifier : {{networks}}",
             "unchecked_networks_body": "Les comptes des autres réseaux sont listés. Vous pourrez relancer le scan plus tard pour trouver de nouveaux comptes.",
-            "retry_networks": "Vérifier à nouveau : {{networks}}"
+            "retry_networks": "Vérifier à nouveau : {{networks}}",
+            "limit_reached_title": "Il peut y avoir d'autres comptes",
+            "limit_reached_body": "La recherche s'arrête après un nombre fixe d'adresses. Si vous en avez utilisé davantage sur ce portefeuille, poursuivez le scan pour les trouver.",
+            "scan_further": "Poursuivre le scan"
         },
         "import_rekeyed_addresses": {
             "title_one": "{{count}} compte rekeyé trouvé",

@@ -11,6 +11,7 @@
  */
 
 import type {
+    HdIndexLimit,
     LocalAccount,
     LocalKeySeed,
     WalletAccount,
@@ -41,12 +42,16 @@ export type SearchAccountsParams =
           account: WalletAccount
           /** An HD rescan walks only these chains, e.g. the ones an earlier scan couldn't check. */
           chainIds?: ChainId[]
+          /** The limits an earlier HD rescan stopped at; each goes one more default limit past the held indexes. */
+          extendLimits?: HdIndexLimit[]
       }
     | {
           mode: 'import'
           walletKeyId: string
           /** What an earlier search of this import found, which a retry adds to. */
           previous?: WalletCandidates
+          /** The limits `previous` stopped at; each goes one more default limit past what it found. */
+          extendLimits?: HdIndexLimit[]
       }
 
 export type ImportSelectAddressesParams =
@@ -62,6 +67,8 @@ export type ImportSelectAddressesParams =
           failedChainIds?: ChainId[]
           /** `accounts` is the first account alone, offered because no activity was found. */
           isOriginFallback?: boolean
+          /** The index limits the search stopped at; more accounts may lie past them. */
+          reachedLimits?: HdIndexLimit[]
       }
 
 /**
@@ -110,6 +117,8 @@ export type ImportFlowParamList = {
         isCancelled: boolean
         /** Something didn't finish, so a rerun may find more. */
         isIncomplete: boolean
+        /** The index limits the scan stopped at; more accounts may lie past them. */
+        reachedLimits: HdIndexLimit[]
     }
     // Each Ledger route runs on `chainId`; without one, the first chain with
     // Ledger on (see `useLedgerFlowChainId`).
