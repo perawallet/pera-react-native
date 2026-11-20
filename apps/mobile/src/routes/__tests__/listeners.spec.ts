@@ -13,6 +13,9 @@
 // @vitest-environment node
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { globSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import {
     screenListeners,
     resetPreviousRouteNameForTesting,
@@ -25,6 +28,22 @@ import {
     AnalyticsMetadataKey,
     NavigationEvent,
 } from '@analytics'
+
+// Route stacks expose their registration only while mounted. Read their
+// literal JSX names and descriptors without rendering the entire app shell.
+const sourceDirectory = fileURLToPath(new URL('../../', import.meta.url))
+const routeFiles = globSync(['routes/*.tsx', 'modules/**/routes/**/*.tsx'], {
+    cwd: sourceDirectory,
+})
+const registeredRouteNames = new Set(
+    routeFiles.flatMap(file =>
+        [
+            ...readFileSync(join(sourceDirectory, file), 'utf8').matchAll(
+                /(?:<[\w.]+\.Screen\b[^>]*?\bname\s*=|\bname\s*:)\s*['"]([A-Za-z0-9_]+)['"]/g,
+            ),
+        ].map(match => match[1]),
+    ),
+)
 
 const logEventMock = vi.fn()
 
@@ -118,6 +137,24 @@ describe('screenListeners', () => {
             previous: null,
             path: undefined,
         })
+    })
+
+    it('keeps every statically registered route event within the Firebase budget', () => {
+        expect(registeredRouteNames.size).toBeGreaterThan(50)
+        expect(
+            registeredRouteNames.has('CloudBackupRestoreSelectAccounts'),
+        ).toBe(true)
+        expect(
+            registeredRouteNames.has('CardOnboardingAutoFundingSigning'),
+        ).toBe(true)
+
+        for (const name of registeredRouteNames) {
+            screenListeners({ route: createRoute(name) as any }).focus()
+        }
+        const invalidEvents = logEventMock.mock.calls
+            .map(([eventName]) => eventName)
+            .filter(name => !/^[A-Za-z][A-Za-z0-9_]{0,39}$/.test(name))
+        expect(invalidEvents).toEqual([])
     })
 
     it('updates previous route name and logs correct previous screen', () => {

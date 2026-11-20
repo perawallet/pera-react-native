@@ -22,11 +22,14 @@ const rawEventValues = Object.entries(contexts)
     .flatMap(([, value]) => Object.values(value as Record<string, string>))
 
 describe('analytics event catalog', () => {
-    it('uses Firebase-compatible names', () => {
+    it('uses Firebase-compatible names even with the testnet prefix', () => {
         const names = [...rawEventValues, ...Object.values(AnalyticsScreenName)]
-        const firebaseName = /^[A-Za-z][A-Za-z0-9_]{0,39}$/
+        const firebaseNameWithRoomForTestnetPrefix =
+            /^[A-Za-z][A-Za-z0-9_]{0,37}$/
 
-        for (const name of names) expect(name).toMatch(firebaseName)
+        for (const name of names) {
+            expect(name).toMatch(firebaseNameWithRoomForTestnetPrefix)
+        }
     })
 
     it('maps every event across all contexts to a unique raw Firebase string', () => {

@@ -23,8 +23,8 @@ export enum SwapEvent {
     SelectProviderOpen = 'swapscr_swap_select_provider', // Opened the provider selector (opt. router)
     SelectProviderRouter = 'swapscr_swap_select_provider_router', // Chose a specific router (opt. router)
     SettingsApply = 'swapscr_swap_settings_apply', // Applied swap settings
-    SettingsLocalCurrencyOn = 'swapscr_swap_settings_local_currency_on', // Turned local-currency display on
-    SettingsLocalCurrencyOff = 'swapscr_swap_settings_local_currency_off', // Turned local-currency display off
+    SettingsLocalCurrencyOn = 'swapscr_swap_settings_currency_on', // Turned local-currency display on
+    SettingsLocalCurrencyOff = 'swapscr_swap_settings_currency_off', // Turned local-currency display off
     Completed = 'swapscr_assets_completed', // A swap completed (full details: assets, amounts, fees)
     Failed = 'swapscr_assets_failed', // A swap failed (asset/amount details)
     Confirm = 'swapscr_assets_confirm', // Slid to confirm the swap
