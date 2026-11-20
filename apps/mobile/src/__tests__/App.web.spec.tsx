@@ -11,11 +11,12 @@
  */
 
 import React from 'react'
-import { describe, expect, it, vi } from 'vitest'
-import { render, waitFor } from '@test-utils/render'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { act, render, screen, waitFor } from '@test-utils/render'
 import { App } from '../App.web'
 
 const mocks = vi.hoisted(() => ({
+    getSurface: vi.fn(() => 'offscreen'),
     hydratePlatform: vi.fn(() => Promise.resolve()),
     installOffscreenStorageShim: vi.fn(),
     runOffscreenApp: vi.fn(() => Promise.resolve()),
@@ -26,10 +27,12 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@perawallet/wallet-extension-platform-chrome/bootstrap', () => ({
-    getSurface: () => 'offscreen',
+    getSurface: mocks.getSurface,
     hydratePlatform: mocks.hydratePlatform,
     installOffscreenStorageShim: mocks.installOffscreenStorageShim,
 }))
+vi.mock('../AppShell.web', () => ({ AppShell: () => <div>Wallet ready</div> }))
+vi.mock('../bootstrap/preReact.web', () => ({ initRuntime: vi.fn() }))
 vi.mock('@browser/offscreen/runOffscreenApp', () => ({
     runOffscreenApp: mocks.runOffscreenApp,
 }))
@@ -81,5 +84,58 @@ describe('App (web) on the offscreen surface', () => {
 
         await expect(submitSignedTransactions(signed)).resolves.toEqual(['0xh'])
         expect(mocks.submitAndAutoRefresh).toHaveBeenCalledWith(scope, signed)
+    })
+})
+
+describe('App (web) startup', () => {
+    afterEach(() => {
+        vi.useRealTimers()
+        vi.restoreAllMocks()
+        mocks.getSurface.mockReturnValue('offscreen')
+    })
+
+    it('shows the wallet mark only if hydration is still pending after the delay', async () => {
+        vi.useFakeTimers()
+        vi.spyOn(performance, 'now').mockReturnValue(0)
+        mocks.getSurface.mockReturnValue('popup')
+        let finishHydration!: () => void
+        mocks.hydratePlatform.mockReturnValueOnce(
+            new Promise(resolve => {
+                finishHydration = resolve
+            }),
+        )
+        render(<App />)
+
+        expect(screen.queryByRole('status')).toBeNull()
+        await act(async () => vi.advanceTimersByTimeAsync(300))
+        expect(screen.getByRole('img', { name: 'Pera Wallet' })).toBeTruthy()
+
+        await act(async () => {
+            finishHydration()
+        })
+        expect(screen.getByText('Wallet ready')).toBeTruthy()
+        expect(screen.queryByRole('status')).toBeNull()
+    })
+
+    it('describes a startup failure without showing internal error details', async () => {
+        mocks.getSurface.mockReturnValue('popup')
+        const failure = new Error('storage initialization failed')
+        mocks.hydratePlatform.mockRejectedValueOnce(failure)
+        const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+        try {
+            render(<App />)
+            const alert = await screen.findByRole('alert')
+            expect(alert.textContent).toBe(
+                'Pera Wallet failed to start. Reopen the extension to try again.',
+            )
+            expect(log).toHaveBeenCalledWith(
+                '[pera] popup bootstrap failed:',
+                failure,
+            )
+            expect(screen.queryByRole('status')).toBeNull()
+        } finally {
+            log.mockRestore()
+        }
     })
 })

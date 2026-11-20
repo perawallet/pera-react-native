@@ -10,13 +10,7 @@
  limitations under the License
  */
 
-/* oxlint-disable react-native/no-inline-styles, react-native/no-color-literals -- minimal pre-hydration bootstrap shell */
-
 import React, { useEffect, useState } from 'react'
-// oxlint-disable-next-line no-restricted-imports -- pre-hydration boot screen;
-// must not import @components/core (store-bearing graph) before hydration.
-// lanekeep-ignore-next-line pera/no-primitive-rn-components reason: temporary bootstrap; real shell loaded dynamically after hydration
-import { Text, View } from 'react-native'
 import {
     getSurface,
     hydratePlatform,
@@ -25,6 +19,7 @@ import {
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { OffscreenStatus } from './app-root/OffscreenStatus'
 import { RootBoundary } from './app-root/RootBoundary'
+import { StartupMark } from './components/StartupMark'
 
 type ShellComponent = React.ComponentType
 
@@ -41,7 +36,7 @@ const registerTransports = async (): Promise<void> => {
 
 export const App = (): React.JSX.Element => {
     const [Shell, setShell] = useState<Nullable<ShellComponent>>(null)
-    const [error, setError] = useState<Nullable<string>>(null)
+    const [bootstrapFailed, setBootstrapFailed] = useState(false)
 
     useEffect(() => {
         const bootstrap = async (): Promise<void> => {
@@ -90,15 +85,16 @@ export const App = (): React.JSX.Element => {
             setShell(() => mod.AppShell)
         }
         bootstrap().catch((err: unknown) => {
+            const surface = getSurface()
+            console.error(`[pera] ${surface} bootstrap failed:`, err)
             // A dead offscreen document is worse than none: `hasDocument()` keeps
             // returning true so nothing ever recreates it and the database stays
             // unreachable until a manual reload. Closing lets `ensure-offscreen` rebuild it.
-            if (getSurface() === 'offscreen') {
-                console.error('[pera] offscreen bootstrap failed:', err)
+            if (surface === 'offscreen') {
                 window.close()
                 return
             }
-            setError(`bootstrap failed: ${String(err)}`)
+            setBootstrapFailed(true)
         })
     }, [])
 
@@ -108,13 +104,17 @@ export const App = (): React.JSX.Element => {
                 <Shell />
             </RootBoundary>
         )
-    return (
-        <View
-            style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
-        >
-            <Text testID='bootstrap-status'>
-                {error ?? 'hydrating platform…'}
-            </Text>
-        </View>
-    )
+    if (bootstrapFailed)
+        return (
+            <div
+                className='pera-bootstrap'
+                role='alert'
+            >
+                {/* oxlint-disable-next-line pera/no-hardcoded-ui-strings -- bootstrap errors render before i18n can load */}
+                Pera Wallet failed to start. Reopen the extension to try again.
+            </div>
+        )
+    if (getSurface() === 'offscreen') return <></>
+
+    return <StartupMark />
 }
