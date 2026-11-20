@@ -27,3 +27,10 @@ export const scaleLineHeight = (
     _fontScale: number,
     _maxMultiplier: number,
 ): Optional<number> => lineHeight
+
+export const renderedLineHeight = (
+    lineHeight: Optional<number>,
+    _fontSize: Optional<number>,
+    _fontScale: number,
+    _maxMultiplier: number,
+): Optional<number> => lineHeight

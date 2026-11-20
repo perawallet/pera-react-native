@@ -37,6 +37,8 @@
         "home": {
             "title": "Explorar",
             "explore_dapps": "Explorar dApps",
+            "see_chain_dapps": "Ver dApps em {{chain}}",
+            "see_chain_dapps_count": "Ver dApps em {{chain}} ({{count}})",
             "news": "Notícias",
             "dapps_error": "Falha ao carregar os dApps em destaque",
             "dapps_empty_open_url": "Ainda não há dApps listados em {{chain}}. Abra qualquer dApp digitando a URL acima."

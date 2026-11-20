@@ -37,6 +37,8 @@
         "home": {
             "title": "Discover",
             "explore_dapps": "Explore dApps",
+            "see_chain_dapps": "See dApps on {{chain}}",
+            "see_chain_dapps_count": "See dApps on {{chain}} ({{count}})",
             "news": "News",
             "dapps_error": "Failed loading featured dApps",
             "dapps_empty_open_url": "No dApps listed on {{chain}} yet. Open any dApp by typing its URL above."

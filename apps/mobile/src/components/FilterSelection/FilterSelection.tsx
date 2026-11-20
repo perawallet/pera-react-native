@@ -38,6 +38,8 @@ export type FilterSelectionProps<T> = {
     selectedValue: T
     onSelect: (value: T) => void
     contentContainerStyle?: StyleProp<ViewStyle>
+    emphasizeSelection?: boolean
+    showsHorizontalScrollIndicator?: boolean
     testID?: string
 }
 
@@ -51,6 +53,8 @@ export const FilterSelection = <T,>({
     selectedValue,
     onSelect,
     contentContainerStyle,
+    emphasizeSelection = false,
+    showsHorizontalScrollIndicator = false,
     testID,
 }: FilterSelectionProps<T>) => {
     const styles = useStyles()
@@ -74,7 +78,7 @@ export const FilterSelection = <T,>({
             onScroll={handleScroll}
             scrollEventThrottle={SCROLL_EVENT_THROTTLE}
             horizontal
-            showsHorizontalScrollIndicator={false}
+            showsHorizontalScrollIndicator={showsHorizontalScrollIndicator}
             contentContainerStyle={[styles.row, contentContainerStyle]}
             testID={testID}
         >
@@ -89,7 +93,15 @@ export const FilterSelection = <T,>({
                         }}
                         onLayout={chipLayoutHandlerOf(index)}
                         testID={option.testID}
-                        style={[styles.chip, isActive && styles.activeChip]}
+                        accessibilityRole='button'
+                        accessibilityState={{ selected: isActive }}
+                        style={[
+                            styles.chip,
+                            isActive && styles.activeChip,
+                            isActive &&
+                                emphasizeSelection &&
+                                styles.emphasizedChip,
+                        ]}
                     >
                         {option.renderIcon ? (
                             // Decorative: the label already names the option,
@@ -102,7 +114,12 @@ export const FilterSelection = <T,>({
                             </PWView>
                         ) : null}
                         <PWText
-                            style={isActive ? styles.activeLabel : styles.label}
+                            style={[
+                                isActive ? styles.activeLabel : styles.label,
+                                isActive &&
+                                    emphasizeSelection &&
+                                    styles.emphasizedLabel,
+                            ]}
                         >
                             {option.label}
                         </PWText>

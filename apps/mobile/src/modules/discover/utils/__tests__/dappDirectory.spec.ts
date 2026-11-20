@@ -62,6 +62,21 @@ describe('dappDirectory', () => {
             expect(names(items)).toEqual(['First'])
         })
 
+        it('keeps a chain listing whose URL also appears on another chain', () => {
+            const projects = [
+                project('Algorand', { url: 'https://same.example' }),
+                project('Ethereum', {
+                    url: 'https://same.example/',
+                    chains: ['eip155:1'],
+                }),
+            ]
+
+            expect(names(toDirectoryDapps(projects))).toEqual(['Algorand'])
+            expect(names(toDirectoryDapps(projects, 'ethereum'))).toEqual([
+                'Ethereum',
+            ])
+        })
+
         it('carries the description, banner and popularity, or nulls and 0', () => {
             const [full, bare] = toDirectoryDapps([
                 project('Full', {

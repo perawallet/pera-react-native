@@ -11,37 +11,85 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { MAX_FONT_SIZE_MULTIPLIER } from '@components/core'
+import { renderedLineHeight } from '@theme/scaling'
+import { getTypography, type TypographyVariant } from '@theme/typography'
+import {
+    DISCOVER_ROW_LEAD_SIZE,
+    TOP_DAPPS_COUNT,
+    discoverRowMetrics,
+} from '../../utils/discoverLayout'
 
-export const useStyles = makeStyles(theme => ({
-    content: {
-        gap: theme.spacing.xl,
-        paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing.md,
-        paddingBottom: theme.spacing.xl,
-    },
-    section: {
-        gap: theme.spacing.md,
-        // Sections sit 40 apart (content gap 24 + 16).
-        marginTop: theme.spacing.lg,
-    },
-    // A horizontal row that scrolls under the screen's side padding, edge to edge.
-    bleed: {
-        marginHorizontal: -theme.spacing.xl,
-    },
-    bleedContent: {
-        paddingHorizontal: theme.spacing.xl,
-    },
-    // The last card's own right margin already gives part of the end inset.
-    newsContent: {
-        paddingLeft: theme.spacing.xl,
-        paddingRight: theme.spacing.sm,
-    },
-    emptyDapps: {
-        paddingVertical: theme.spacing.lg,
-    },
-    newsCard: {
-        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: news card width (about two thirds of a phone screen, so the next card peeks)
-        width: 240,
-        marginRight: theme.spacing.lg,
-    },
-}))
+export const useStyles = makeStyles((theme, fontScale: number) => {
+    const lineBoxOf = (variant: TypographyVariant) => {
+        const { lineHeight, fontSize } = getTypography(theme, variant)
+        return (
+            renderedLineHeight(
+                lineHeight,
+                fontSize,
+                fontScale,
+                MAX_FONT_SIZE_MULTIPLIER,
+            ) ?? 0
+        )
+    }
+    const { rowVerticalPadding, dividerOuterHeight } = discoverRowMetrics(theme)
+    const rowHeight =
+        Math.max(
+            DISCOVER_ROW_LEAD_SIZE,
+            lineBoxOf('bodyLarge') + lineBoxOf('footnoteMedium'),
+        ) + rowVerticalPadding
+
+    return {
+        content: {
+            gap: theme.spacing.xl,
+            paddingHorizontal: theme.spacing.xl,
+            paddingTop: theme.spacing.md,
+            paddingBottom: theme.spacing.xl,
+        },
+        section: {
+            gap: theme.spacing.md,
+            // Sections sit 40 apart (content gap 24 + 16).
+            marginTop: theme.spacing.lg,
+        },
+        // A horizontal row that scrolls under the screen's side padding, edge to edge.
+        bleed: {
+            marginHorizontal: -theme.spacing.xl,
+        },
+        bleedContent: {
+            paddingHorizontal: theme.spacing.xl,
+        },
+        // The last card's own right margin already gives part of the end inset.
+        newsContent: {
+            paddingLeft: theme.spacing.xl,
+            paddingRight: theme.spacing.sm,
+        },
+        emptyDapps: {
+            paddingVertical: theme.spacing.lg,
+        },
+        dappPreview: {
+            minHeight:
+                TOP_DAPPS_COUNT * rowHeight +
+                (TOP_DAPPS_COUNT - 1) * dividerOuterHeight,
+        },
+        dappLoadingRow: {
+            height: rowHeight,
+            alignItems: 'center',
+            flexDirection: 'row',
+            gap: theme.spacing.lg,
+        },
+        dappLoadingLogo: {
+            height: DISCOVER_ROW_LEAD_SIZE,
+            width: DISCOVER_ROW_LEAD_SIZE,
+            borderRadius: theme.borderRadius.md,
+        },
+        dappLoadingName: {
+            height: theme.spacing.lg,
+            width: '40%',
+        },
+        newsCard: {
+            // lanekeep-ignore-next-line pera/no-numeric-sizes reason: news card width (about two thirds of a phone screen, so the next card peeks)
+            width: 240,
+            marginRight: theme.spacing.lg,
+        },
+    }
+})

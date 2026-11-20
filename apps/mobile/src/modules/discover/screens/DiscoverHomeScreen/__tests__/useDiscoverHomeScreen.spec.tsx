@@ -55,6 +55,7 @@ const uniswap: DiscoverDapp = {
 const mockTopDapps = (over: Partial<UseTopDappsResult> = {}) =>
     vi.mocked(useTopDapps).mockReturnValue({
         dapps: [uniswap],
+        count: 1,
         verifiedUrls: new Set(['https://app.uniswap.org']),
         isLoading: false,
         isError: false,

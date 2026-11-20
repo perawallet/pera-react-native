@@ -36,9 +36,16 @@ export const useStyles = makeStyles(theme => ({
     activeChip: {
         backgroundColor: theme.colors.layerGrayLighter,
     },
+    emphasizedChip: {
+        borderColor: theme.colors.buttonPrimaryBg,
+        backgroundColor: theme.colors.buttonPrimaryBg,
+    },
     label: {
         ...getFontWeightVariant(theme, 'body', 500),
         color: theme.colors.textGrayLighter,
     },
     activeLabel: getFontWeightVariant(theme, 'body', 500),
+    emphasizedLabel: {
+        color: theme.colors.buttonPrimaryText,
+    },
 }))

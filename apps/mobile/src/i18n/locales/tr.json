@@ -37,6 +37,8 @@
         "home": {
             "title": "Discover",
             "explore_dapps": "dApp’leri keşfet",
+            "see_chain_dapps": "{{chain}} ağındaki dApp’leri gör",
+            "see_chain_dapps_count": "{{chain}} ağındaki dApp’leri gör ({{count}})",
             "news": "Haberler",
             "dapps_error": "Öne çıkan dApp’ler yüklenemedi",
             "dapps_empty_open_url": "{{chain}} için henüz listelenmiş dApp yok. Herhangi bir dApp’i açmak için URL’sini yukarıya yaz."

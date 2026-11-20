@@ -11,13 +11,19 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { DISCOVER_ROW_LEAD_SIZE } from '../../utils/discoverLayout'
+import {
+    DISCOVER_ROW_LEAD_SIZE,
+    discoverRowMetrics,
+} from '../../utils/discoverLayout'
 
-export const useStyles = makeStyles(theme => ({
-    divider: {
-        height: theme.borders.sm,
-        marginVertical: theme.spacing.xxs,
-        marginLeft: DISCOVER_ROW_LEAD_SIZE + theme.spacing.lg,
-        backgroundColor: theme.colors.layerGray,
-    },
-}))
+export const useStyles = makeStyles(theme => {
+    const metrics = discoverRowMetrics(theme)
+    return {
+        divider: {
+            height: metrics.dividerThickness,
+            marginVertical: metrics.dividerMarginVertical,
+            marginLeft: DISCOVER_ROW_LEAD_SIZE + theme.spacing.lg,
+            backgroundColor: theme.colors.layerGray,
+        },
+    }
+})

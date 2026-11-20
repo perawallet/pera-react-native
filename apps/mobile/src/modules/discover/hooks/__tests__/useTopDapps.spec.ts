@@ -61,6 +61,7 @@ describe('useTopDapps', () => {
             ...[1, 2, 3, 4, 5].map(listed),
         ])
         const { result } = renderHook(() => useTopDapps('ethereum'))
+        expect(result.current.count).toBe(5)
         expect(result.current.dapps.map(d => d.name)).toEqual([
             'App 1',
             'App 2',

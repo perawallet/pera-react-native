@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+export { MAX_FONT_SIZE_MULTIPLIER } from './constants'
 export * from './PWBadge'
 export * from './PWBottomSheet'
 export * from './PWBottomSheetView'
