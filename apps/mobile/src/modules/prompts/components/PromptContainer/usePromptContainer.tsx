@@ -106,6 +106,9 @@ export const usePromptContainer = (): UsePromptContainerResult => {
     const setPresentationHeld = useBottomSheetStore(
         state => state.setPresentationHeld,
     )
+    const isSheetOpen = useBottomSheetStore(state =>
+        state.requests.some(request => request.isVisible),
+    )
     const bannerPrompt = useBannerPrompt()
     const legacyQuantumPrompt = useLegacyQuantumPrompt()
     const biometricsDisabledPrompt = useBiometricsDisabledPrompt()
@@ -272,6 +275,19 @@ export const usePromptContainer = (): UsePromptContainerResult => {
                 return
             }
 
+            // The overlay paints beneath gorhom's portal, so a nudge shown over an
+            // open sheet (a deep-linked Send) sits hidden under it while its hold
+            // swallows the sheets that sheet asks for, such as the discard
+            // confirmation. It waits for the sheet to close instead. A held sheet
+            // counts as open too, so an answered prompt must still leave: its hold
+            // would otherwise keep that sheet from ever presenting.
+            if (isSheetOpen) {
+                setNextPrompt(current =>
+                    current?.id === prompt.id ? current : undefined,
+                )
+                return
+            }
+
             if (hasPaidEntryDelay) {
                 showPrompt(prompt)
                 return
@@ -301,6 +317,7 @@ export const usePromptContainer = (): UsePromptContainerResult => {
         hasPaidEntryDelay,
         markEntryDelayPaid,
         showPrompt,
+        isSheetOpen,
     ])
 
     // The prompt overlay is in-tree, so gorhom's portal (and the sheets every
