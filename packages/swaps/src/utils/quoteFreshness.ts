@@ -13,6 +13,7 @@
 import type { Decimal } from 'decimal.js'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { SwapQuote } from '../models'
+import { pickBestByAmountOut } from './swapQuoteHelpers'
 
 /**
  * How long a fetched quote stays executable on the client, even when the
@@ -45,9 +46,11 @@ export const pickRefreshedQuote = (
     offers: readonly SwapQuote[],
     nowMs: number = Date.now(),
 ): Nullable<SwapQuote> =>
-    offers.find(
-        offer =>
-            offer.provider === confirmed.provider &&
-            isQuoteFresh(offer, nowMs) &&
-            floorOf(offer).gte(floorOf(confirmed)),
-    ) ?? null
+    pickBestByAmountOut(
+        offers.filter(
+            offer =>
+                offer.provider === confirmed.provider &&
+                isQuoteFresh(offer, nowMs) &&
+                floorOf(offer).gte(floorOf(confirmed)),
+        ),
+    )

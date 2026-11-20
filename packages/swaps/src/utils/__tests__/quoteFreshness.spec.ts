@@ -144,7 +144,24 @@ describe('pickRefreshedQuote', () => {
         ).not.toBeNull()
     })
 
-    it('returns the first qualifying offer', () => {
+    it('chooses the highest amount out among qualifying offers', () => {
+        const first = offer({ quoteId: 'first' })
+        const higher = offer({
+            quoteId: 'higher',
+            amountOut: new Decimal('1250'),
+        })
+        const unsafe = offer({
+            quoteId: 'unsafe',
+            amountOut: new Decimal('1300'),
+            minimumAmountOut: new Decimal('1189'),
+        })
+
+        expect(
+            pickRefreshedQuote(confirmed, [first, unsafe, higher], NOW),
+        ).toBe(higher)
+    })
+
+    it('keeps the first qualifying offer when amounts are equal', () => {
         const first = offer({ quoteId: 'first' })
         const second = offer({ quoteId: 'second' })
 

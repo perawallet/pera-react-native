@@ -376,6 +376,45 @@ describe('useSwapForm', () => {
         },
     )
 
+    it("resolves a manually chosen provider to that provider's best offer", async () => {
+        const assetIn = { assetId: '0', unitName: 'ALGO', decimals: 6 }
+        const assetOut = { assetId: '31566704', unitName: 'USDC', decimals: 6 }
+        mockCreateQuotes.mockResolvedValue([
+            {
+                provider: 'tinyman',
+                amountOut: new Decimal('9000000'),
+                assetIn,
+                assetOut,
+            },
+            {
+                provider: 'vestige-v4',
+                amountOut: new Decimal('6000000'),
+                assetIn,
+                assetOut,
+            },
+            {
+                provider: 'vestige-v4',
+                amountOut: new Decimal('8000000'),
+                assetIn,
+                assetOut,
+            },
+        ])
+        const { result } = renderHook(() => useSwapForm(SCOPE))
+        await act(async () => {
+            result.current.handlePayAmountChange(new Decimal(5))
+        })
+        mockRequestBottomSheet.mockResolvedValueOnce('vestige-v4')
+
+        await act(async () => {
+            await result.current.handleOpenProvider()
+        })
+
+        expect(result.current.selectedQuote?.provider).toBe('vestige-v4')
+        expect(result.current.selectedQuote?.amountOut?.toString()).toBe(
+            '8000000',
+        )
+    })
+
     describe('receiving on another chain', () => {
         beforeEach(() => {
             mockToAsset = '0'

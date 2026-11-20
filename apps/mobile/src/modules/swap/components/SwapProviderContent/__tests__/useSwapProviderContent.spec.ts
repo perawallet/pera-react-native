@@ -146,7 +146,7 @@ describe('useSwapProviderContent', () => {
         expect(result.current.rows.map(row => row.quote)).toEqual([
             bestTinymanQuote,
         ])
-        expect(result.current.rows[0].displayName).toBe('Tinyman')
+        expect(result.current.rows[0].displayName).toBe('Tinyman v2')
     })
 
     it("keeps an unknown provider's router id as its label", () => {

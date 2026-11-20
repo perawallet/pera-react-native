@@ -12,11 +12,14 @@
 
 const PROVIDER_DISPLAY_NAMES = new Map([
     ['xo', 'XO'],
-    ['vestige', 'Vestige'],
-    ['vestige-v4', 'Vestige'],
     ['tinyman', 'Tinyman'],
-    ['tinyman-v2', 'Tinyman'],
-    ['hay', 'Haystack'],
+    ['tinyman-v2', 'Tinyman v2'],
+    ['tinyman-swap-router', 'Tinyman Swap Router'],
+    ['vestige', 'Vestige'],
+    ['vestige-v3', 'Vestige v3'],
+    ['vestige-v4', 'Vestige v4'],
+    ['folks-router', 'Folks Router'],
+    ['deflex', 'Deflex'],
     ['haystack', 'Haystack'],
 ])
 
