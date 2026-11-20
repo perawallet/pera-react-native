@@ -37,11 +37,11 @@ export const moderateScale = (
 // OS font scale — iOS clamps that at maxFontSizeMultiplier, Android applies
 // the raw scale (sp conversion, no clamp). Pre-dividing by that native
 // multiplier lets us pick the rendered line box exactly:
-// `fontSize × clampedScale + leading`, so glyphs grow with accessibility
+// `fontSize × clampedScale + leading` (`renderedLineHeight`), so glyphs grow with accessibility
 // font sizes while the design's leading (lineHeight − fontSize) stays
 // constant — scaling the whole box would multiply the leading too,
 // ballooning vertical rhythm in rows and multi-line titles (Issue 2).
-export const scaleLineHeight = (
+export const renderedLineHeight = (
     lineHeight: Optional<number>,
     fontSize: Optional<number>,
     fontScale: number,
@@ -50,12 +50,31 @@ export const scaleLineHeight = (
     if (lineHeight === undefined) return undefined
     if (fontScale <= 0 || fontScale === 1) return lineHeight
     const clampedScale = Math.min(fontScale, maxMultiplier)
-    const nativeMultiplier = isAndroid() ? fontScale : clampedScale
     if (fontSize === undefined || fontSize <= 0) {
-        // No font size to anchor the leading on: keep the whole-box scaling
-        // but neutralize the native multiplication so it applies once.
-        return (lineHeight * clampedScale) / nativeMultiplier
+        // No font size to anchor the leading on: scale the whole box.
+        return lineHeight * clampedScale
     }
     const leading = Math.max(lineHeight - fontSize, 0)
-    return (fontSize * clampedScale + leading) / nativeMultiplier
+    return fontSize * clampedScale + leading
+}
+
+export const scaleLineHeight = (
+    lineHeight: Optional<number>,
+    fontSize: Optional<number>,
+    fontScale: number,
+    maxMultiplier: number,
+): Optional<number> => {
+    const rendered = renderedLineHeight(
+        lineHeight,
+        fontSize,
+        fontScale,
+        maxMultiplier,
+    )
+    if (rendered === undefined || fontScale <= 0 || fontScale === 1) {
+        return rendered
+    }
+    const nativeMultiplier = isAndroid()
+        ? fontScale
+        : Math.min(fontScale, maxMultiplier)
+    return rendered / nativeMultiplier
 }

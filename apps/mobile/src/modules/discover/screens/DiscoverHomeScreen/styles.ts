@@ -12,40 +12,32 @@
 
 import { makeStyles } from '@rneui/themed'
 import { MAX_FONT_SIZE_MULTIPLIER } from '@components/core'
-import { scaleLineHeight } from '@theme/scaling'
+import { renderedLineHeight } from '@theme/scaling'
 import { getTypography, type TypographyVariant } from '@theme/typography'
-import { isAndroid, isIOS } from '@utils/platform'
 import {
     DISCOVER_ROW_LEAD_SIZE,
     TOP_DAPPS_COUNT,
+    discoverRowMetrics,
 } from '../../utils/discoverLayout'
 
 export const useStyles = makeStyles((theme, fontScale: number) => {
-    const android = isAndroid()
-    const requestedScale = (android || isIOS()) && fontScale > 0 ? fontScale : 1
-    const nativeMultiplier = android
-        ? requestedScale
-        : Math.min(requestedScale, MAX_FONT_SIZE_MULTIPLIER)
-    const renderedLineHeight = (variant: TypographyVariant) => {
+    const lineBoxOf = (variant: TypographyVariant) => {
         const { lineHeight, fontSize } = getTypography(theme, variant)
-        const styleHeight = scaleLineHeight(
-            lineHeight,
-            fontSize,
-            requestedScale,
-            MAX_FONT_SIZE_MULTIPLIER,
+        return (
+            renderedLineHeight(
+                lineHeight,
+                fontSize,
+                fontScale,
+                MAX_FONT_SIZE_MULTIPLIER,
+            ) ?? 0
         )
-        return (styleHeight ?? 0) * nativeMultiplier
     }
-    // lanekeep-ignore-next-line pera/no-numeric-sizes reason: DappRow has this vertical padding on both sides
-    const rowPadding = 2 * theme.spacing.sm
+    const { rowVerticalPadding, dividerOuterHeight } = discoverRowMetrics(theme)
     const rowHeight =
         Math.max(
             DISCOVER_ROW_LEAD_SIZE,
-            renderedLineHeight('bodyLarge') +
-                renderedLineHeight('footnoteMedium'),
-        ) + rowPadding
-    // lanekeep-ignore-next-line pera/no-numeric-sizes reason: RowDivider's line and both vertical margins occupy the preview
-    const dividerHeight = theme.borders.sm + 2 * theme.spacing.xxs
+            lineBoxOf('bodyLarge') + lineBoxOf('footnoteMedium'),
+        ) + rowVerticalPadding
 
     return {
         content: {
@@ -77,7 +69,7 @@ export const useStyles = makeStyles((theme, fontScale: number) => {
         dappPreview: {
             minHeight:
                 TOP_DAPPS_COUNT * rowHeight +
-                (TOP_DAPPS_COUNT - 1) * dividerHeight,
+                (TOP_DAPPS_COUNT - 1) * dividerOuterHeight,
         },
         dappLoadingRow: {
             height: rowHeight,

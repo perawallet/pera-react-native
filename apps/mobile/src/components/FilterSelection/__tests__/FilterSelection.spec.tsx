@@ -11,6 +11,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest'
+import { TouchableOpacity } from 'react-native'
 import { PWText } from '@components/core'
 import { fireEvent, render, screen } from '@test-utils/render'
 import { FilterSelection, type FilterOption } from '../FilterSelection'
@@ -57,6 +58,29 @@ describe('FilterSelection', () => {
         fireEvent.click(screen.getByTestId('filter-fiat'))
 
         expect(onSelect).toHaveBeenCalledWith('fiat')
+    })
+
+    it('only exposes the active chip as selected to assistive technology', () => {
+        const touchable = vi.mocked(TouchableOpacity)
+        touchable.mockClear()
+        render(
+            <FilterSelection
+                options={OPTIONS}
+                selectedValue='fiat'
+                emphasizeSelection
+                onSelect={vi.fn()}
+            />,
+        )
+
+        for (const option of OPTIONS) {
+            const props = touchable.mock.calls
+                .map(([chipProps]) => chipProps)
+                .find(chipProps => chipProps.testID === option.testID)
+            expect(props).toMatchObject({
+                accessibilityRole: 'button',
+                accessibilityState: { selected: option.value === 'fiat' },
+            })
+        }
     })
 
     it('plays the selection haptic for an unselected chip only', () => {

@@ -147,20 +147,11 @@ export const useDiscoverDappsScreen = (): UseDiscoverDappsScreenResult => {
             : chainUiFor(getChainDescriptor(listChainId).family)
                   .discoverApplyUrl
 
-    const all = useMemo(
-        () => toDirectoryDapps(directory.projects),
-        [directory.projects],
-    )
-    // Filtered by chain only, in API order: the category chips come from this
-    // list, so their order does not move with the sort.
+    // Filter before URL deduplication so the chain's listings match the preview.
+    // Category chip order follows the API order and does not move with the sort.
     const onChain = useMemo(
-        () =>
-            selectedChainId === null
-                ? all
-                : all.filter(({ dapp }) =>
-                      dapp.chains.includes(selectedChainId),
-                  ),
-        [all, selectedChainId],
+        () => toDirectoryDapps(directory.projects, selectedChainId),
+        [directory.projects, selectedChainId],
     )
     const categories = useMemo(() => directoryCategories(onChain), [onChain])
     const selectedCategory =

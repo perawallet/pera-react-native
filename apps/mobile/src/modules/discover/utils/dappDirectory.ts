@@ -33,14 +33,17 @@ export type DirectoryFilter = {
     sort: DappSort
 }
 
-/** Projects that can open, one per normalised url, in API order. */
+/** Eligible projects that can open, one per normalised URL, in API order. */
 export const toDirectoryDapps = (
     projects: readonly PeraProject[],
+    chainId: Nullable<ChainId> = null,
 ): DirectoryDapp[] => {
     const seen = new Set<string>()
     return projects.flatMap(project => {
         const dapp = toDiscoverDapp(project)
         if (dapp === null) return []
+        // A project on a different chain must not hide this chain's listing.
+        if (chainId !== null && !dapp.chains.includes(chainId)) return []
         const key = normalizeDappUrl(dapp.url) ?? dapp.url
         if (seen.has(key)) return []
         seen.add(key)

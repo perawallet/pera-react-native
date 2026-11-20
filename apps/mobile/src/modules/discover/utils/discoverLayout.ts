@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Theme } from '@rneui/themed'
+
 /** Figma "Discover – Home": every list row leads with a 40 pt icon or logo. */
 // lanekeep-ignore-next-line pera/no-numeric-sizes reason: the design's row leading size (40), between the xxl (36) and 3xl (48) tokens
 export const DISCOVER_ROW_LEAD_SIZE = 40
@@ -18,3 +20,19 @@ export const DISCOVER_ROW_LEAD_SIZE = 40
 export const DISCOVER_TILE_LOGO_SIZE = 56
 
 export const TOP_DAPPS_COUNT = 4
+
+/** Vertical sizes of DappRow and RowDivider, shared with placeholders that must match them. */
+export const discoverRowMetrics = (theme: Theme) => {
+    const rowPaddingVertical = theme.spacing.sm
+    const dividerThickness = theme.borders.sm
+    const dividerMarginVertical = theme.spacing.xxs
+    return {
+        rowPaddingVertical,
+        dividerThickness,
+        dividerMarginVertical,
+        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: padding on both sides of the row
+        rowVerticalPadding: 2 * rowPaddingVertical,
+        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: the line plus its margin on both sides
+        dividerOuterHeight: dividerThickness + 2 * dividerMarginVertical,
+    }
+}

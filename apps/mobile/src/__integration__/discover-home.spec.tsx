@@ -349,6 +349,13 @@ describe('Flow: Discover home', () => {
         )
         // Two sentences: the 3-line cap would ellipsize the instruction.
         expect(body.style.webkitLineClamp).toBe('')
+        const directory = screen.getByTestId(
+            'discover_home_top_dapps_directory',
+        )
+        expect(directory.textContent).toContain('discover.home.see_chain_dapps')
+        expect(directory.textContent).not.toContain(
+            'discover.home.see_chain_dapps_count',
+        )
         await flush()
     })
 

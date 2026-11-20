@@ -197,7 +197,9 @@ export const DiscoverHomeScreen = () => {
                         <PWButton
                             variant='secondary'
                             title={
-                                !topDapps.isLoading && !topDapps.isError
+                                !topDapps.isLoading &&
+                                !topDapps.isError &&
+                                topDapps.count > 0
                                     ? t('discover.home.see_chain_dapps_count', {
                                           count: topDapps.count,
                                           chain: home.selectedChainName,

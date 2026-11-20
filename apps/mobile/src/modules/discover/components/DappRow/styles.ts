@@ -11,13 +11,14 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { discoverRowMetrics } from '../../utils/discoverLayout'
 
 export const useStyles = makeStyles(theme => ({
     row: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.sm,
-        paddingVertical: theme.spacing.sm,
+        paddingVertical: discoverRowMetrics(theme).rowPaddingVertical,
     },
     main: {
         flex: 1,
