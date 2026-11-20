@@ -15,8 +15,9 @@ import { renderHook, act } from '@testing-library/react'
 import { useSettingsScreen } from '../useSettingsScreen'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useWebView } from '@modules/webview'
-import { useDeleteAllData } from '@hooks/useDeleteAllData'
+import { clearAccountsStore, useDeleteAllData } from '@hooks/useDeleteAllData'
 import { trackEvent, SettingsEvent } from '@analytics'
+import { routeCapabilities } from '@routes/capabilities'
 
 const { mockRequestBottomSheet } = vi.hoisted(() => ({
     mockRequestBottomSheet: vi.fn(),
@@ -51,6 +52,14 @@ vi.mock('@modules/bottom-sheet', () => ({
     }),
 }))
 
+vi.mock('@routes/capabilities', async importOriginal => {
+    const actual = await importOriginal<typeof import('@routes/capabilities')>()
+    return {
+        ...actual,
+        routeCapabilities: { ...actual.routeCapabilities },
+    }
+})
+
 vi.mock('@components/ConfirmActionContent', () => ({
     ConfirmActionContent: () => null,
 }))
@@ -82,14 +91,16 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
 describe('useSettingsScreen', () => {
     const mockPush = vi.fn()
     const mockPushWebView = vi.fn()
+    const mockNavigate = vi.fn()
     const mockDeleteAllData = vi.fn().mockResolvedValue(undefined)
 
     beforeEach(() => {
         vi.clearAllMocks()
+        routeCapabilities.deleteAllDataSuccessSheet = true
         mockRequestBottomSheet.mockResolvedValue(undefined)
         ;(useAppNavigation as Mock).mockReturnValue({
             push: mockPush,
-            navigate: vi.fn(),
+            navigate: mockNavigate,
         })
         ;(useWebView as Mock).mockReturnValue({
             pushWebView: mockPushWebView,
@@ -208,6 +219,21 @@ describe('useSettingsScreen', () => {
                 size: 'auto',
                 enablePanDownToClose: true,
             })
+        })
+
+        it('clears the account store without a success sheet or navigation when the capability is off', async () => {
+            routeCapabilities.deleteAllDataSuccessSheet = false
+            mockRequestBottomSheet.mockResolvedValueOnce(true)
+            const { result } = renderHook(() => useSettingsScreen())
+
+            await act(async () => {
+                await result.current.openDeleteConfirm()
+            })
+
+            expect(mockDeleteAllData).toHaveBeenCalledTimes(1)
+            expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+            expect(clearAccountsStore).toHaveBeenCalledTimes(1)
+            expect(mockNavigate).not.toHaveBeenCalled()
         })
     })
 })
