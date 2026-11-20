@@ -4232,7 +4232,7 @@
     "swap": {
         "introduction": {
             "title": "Converter na Pera",
-            "description": "A Pera Wallet oferece uma forma rápida e fácil de converter ativos. Com o P.E.R.A., as solicitações de conversão são roteadas de forma inteligente entre várias exchanges descentralizadas baseadas em Algorand para garantir o melhor preço disponível.",
+            "description": "A Pera Wallet oferece uma forma rápida e fácil de converter ativos. Com o P.E.R.A., as solicitações de conversão são roteadas de forma inteligente entre várias plataformas de conversão para garantir o melhor preço disponível.",
             "powered_by": "Com tecnologia <0>P.E.R.A.</0>",
             "start_swapping": "Começar a converter",
             "terms_agreement": "Ao continuar, você concorda com os <0>Termos de Serviço</0> do nosso parceiro de swap"
