@@ -43,6 +43,7 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal =>
 const budget = vi.hoisted(() => ({
     current: undefined as HistoryPageBudget | undefined,
     firstPages: undefined as FirstPageCache | undefined,
+    supplementary: undefined as HistoryPageBudget | undefined,
 }))
 vi.mock('../page-budget', async importOriginal => {
     const actual = await importOriginal<typeof import('../page-budget')>()
@@ -50,6 +51,7 @@ vi.mock('../page-budget', async importOriginal => {
         ...actual,
         sharedHistoryPageBudget: () => budget.current,
         sharedFirstPageCache: () => budget.firstPages,
+        sharedSupplementaryPageShare: () => budget.supplementary,
     }
 })
 
@@ -62,6 +64,7 @@ const server = setupServer()
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 beforeEach(() => {
     budget.firstPages = createFirstPageCache(60_000, () => 0)
+    budget.supplementary = undefined
 })
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
@@ -197,5 +200,65 @@ describe('fetchHistoryPage budget', () => {
         ).rejects.toThrow()
 
         expect(budget.current.hasRoom()).toBe(true)
+    })
+
+    describe('a supplementary read', () => {
+        it('spends from its share and the page budget, and once the share is spent is refused without spending a page unit', async () => {
+            budget.current = createHistoryPageBudget(
+                () => 5,
+                60_000,
+                () => 0,
+            )
+            budget.supplementary = createHistoryPageBudget(
+                () => 1,
+                60_000,
+                () => 0,
+            )
+            const requests = countRequests()
+
+            await fetchHistoryPage(MAINNET, ETHEREUM, ME, undefined, {
+                isSupplementary: true,
+            })
+            const refusal = await fetchHistoryPage(
+                MAINNET,
+                ETHEREUM,
+                ME,
+                { cursor: 'older' },
+                { isSupplementary: true },
+            ).catch((error: unknown) => error)
+            await fetchHistoryPage(MAINNET, ETHEREUM, ME, { cursor: 'older' })
+
+            expect(isRequestBudgetSpentError(refusal)).toBe(true)
+            expect(requests.count).toBe(2)
+            const left = Array.from({ length: 5 }, () =>
+                budget.current?.take(),
+            ).filter(Boolean).length
+            expect(left).toBe(3)
+        })
+
+        it('is refused without spending its share when the page budget is spent', async () => {
+            budget.current = createHistoryPageBudget(
+                () => 0,
+                60_000,
+                () => 0,
+            )
+            budget.supplementary = createHistoryPageBudget(
+                () => 1,
+                60_000,
+                () => 0,
+            )
+            countRequests()
+
+            const refusal = await fetchHistoryPage(
+                MAINNET,
+                ETHEREUM,
+                ME,
+                undefined,
+                { isSupplementary: true },
+            ).catch((error: unknown) => error)
+
+            expect(isRequestBudgetSpentError(refusal)).toBe(true)
+            expect(budget.supplementary.hasRoom()).toBe(true)
+        })
     })
 })

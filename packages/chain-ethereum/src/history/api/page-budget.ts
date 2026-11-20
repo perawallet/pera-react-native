@@ -82,6 +82,21 @@ export const sharedHistoryPageBudget = (): HistoryPageBudget => {
     return sharedBudget
 }
 
+// Counterparty checks' share (Send's recipient safety and History's poisoning
+// flags), so the reads a screen lists keep the rest.
+export const SUPPLEMENTARY_HISTORY_PAGE_SHARE = 15
+
+let sharedSupplementary: Optional<HistoryPageBudget>
+
+export const sharedSupplementaryPageShare = (): HistoryPageBudget => {
+    sharedSupplementary ??= createHistoryPageBudget(
+        () => SUPPLEMENTARY_HISTORY_PAGE_SHARE,
+        HISTORY_PAGE_WINDOW_MS,
+        Date.now,
+    )
+    return sharedSupplementary
+}
+
 // The backend serves page one from a cache for up to this long per chain,
 // address, limit and asset filter, and counts only a miss against the device.
 export const FIRST_PAGE_CACHE_MS = 5 * 60_000

@@ -23,6 +23,7 @@ import {
 import { getChainCapabilities } from '@perawallet/wallet-core-chain-shared'
 import {
     baseUnitsToDisplayUnits,
+    isRequestBudgetSpentError,
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { historyChainAdapters } from '../history-adapter'
@@ -163,12 +164,20 @@ export const fetchTrustedCounterparties = async ({
     let page: Optional<PageRef>
     for (let read = 0; read < MAX_COUNTERPARTY_HISTORY_PAGES; read++) {
         signal?.throwIfAborted()
-        const result = await adapter.getTransactionHistory(
-            accountAddress,
-            scope,
-            page,
-            { capabilities: getChainCapabilities(scope.chainId), signal },
-        )
+        const result = await adapter
+            .getTransactionHistory(accountAddress, scope, page, {
+                capabilities: getChainCapabilities(scope.chainId),
+                signal,
+                isSupplementary: true,
+            })
+            // Out of budget: the counterparties found so far still count.
+            .catch((error: unknown) => {
+                if (read > 0 && isRequestBudgetSpentError(error)) {
+                    return undefined
+                }
+                throw error
+            })
+        if (result === undefined) break
         const transfers = result.items.flatMap(record =>
             toCounterpartyTransfer(record, accountAddress, codec),
         )

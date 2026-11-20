@@ -148,6 +148,12 @@ export type HistoryReadOptions = {
      */
     assetId?: string
     signal?: AbortSignal
+    /**
+     * A read that only sharpens a check, not one a screen lists. A chain whose
+     * history source is rate limited may cap these, rejecting with
+     * `RequestBudgetSpentError`, to keep room for the reads a screen lists.
+     */
+    isSupplementary?: boolean
 }
 
 /** The chain-specific history source; registered by the chain package. */

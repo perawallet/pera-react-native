@@ -28,6 +28,7 @@ import {
     historyBudgetSpentError,
     sharedFirstPageCache,
     sharedHistoryPageBudget,
+    sharedSupplementaryPageShare,
 } from './page-budget'
 import {
     evmHistoryItemSchema,
@@ -68,6 +69,8 @@ export type HistoryPageReadOptions = {
     signal?: AbortSignal
     /** No one waits on it, as with a token scan, so it queues behind every other read. */
     isBackground?: boolean
+    /** Spends from the capped supplementary share as well as the page budget. */
+    isSupplementary?: boolean
 }
 
 /**
@@ -87,6 +90,7 @@ export const fetchHistoryPage = async (
         caip19AssetId,
         signal,
         isBackground = false,
+        isSupplementary = false,
     }: HistoryPageReadOptions = {},
 ): Promise<EvmHistoryPage> => {
     signal?.throwIfAborted()
@@ -104,8 +108,18 @@ export const fetchHistoryPage = async (
             const isCached =
                 firstPageKey !== undefined && firstPages.isCached(firstPageKey)
             const budget = sharedHistoryPageBudget()
-            if (!isCached && !budget.take()) {
-                throw historyBudgetSpentError(budget)
+            if (!isCached) {
+                const share = isSupplementary
+                    ? sharedSupplementaryPageShare()
+                    : undefined
+                // Checked before either is spent, so a refusal costs neither.
+                if (share && !(budget.hasRoom() && share.hasRoom())) {
+                    throw historyBudgetSpentError(
+                        budget.hasRoom() ? share : budget,
+                    )
+                }
+                if (!budget.take()) throw historyBudgetSpentError(budget)
+                share?.take()
             }
             const headers = await buildIntegrityHeadersWhenReady()
             signal?.throwIfAborted()
