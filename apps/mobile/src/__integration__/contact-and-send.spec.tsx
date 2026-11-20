@@ -10,21 +10,41 @@
  limitations under the License
  */
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+    afterEach,
+    afterAll,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    it,
+} from 'vitest'
 import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
+import { Decimal } from 'decimal.js'
 
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
+import {
+    resetTestDatabase,
+    seedAlgoAsset,
+    setupTestDatabase,
+    teardownTestDatabase,
+} from '@test-utils/database-setup'
 import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useContacts } from '@perawallet/wallet-core-contacts'
 import { ContactListScreen } from '@modules/contacts/screens/ContactListScreen/ContactListScreen'
-import { AddressSearchView } from '@components/AddressSearchView'
+import { useSendFundsStore } from '@modules/transactions'
+import { SelectDestinationScreen } from '@modules/transactions/screens/send-funds/SelectDestinationScreen'
 
 import { closestPressable, getAllPressables } from '@test-utils/rnw'
-import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
+import {
+    ALGO25_TEST_ADDRESS,
+    HD_TEST_ADDRESS,
+    HD_TEST_ADDRESS_1,
+} from './__fixtures__/onboarding'
 
 // Add a contact via the public `useContacts` hook (no direct store
 // access — `useContactsStore` is internal). Ensures the persisted
@@ -52,10 +72,16 @@ const SENDER_ACCOUNT: WalletAccount = {
 }
 
 describe('Flow: Contacts → use in send destination picker', () => {
-    beforeEach(() => {
+    beforeAll(setupTestDatabase)
+    afterAll(teardownTestDatabase)
+
+    beforeEach(async () => {
+        await resetTestDatabase()
+        await seedAlgoAsset()
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([SENDER_ACCOUNT])
         useAccountsStore.getState().setSelectedAccountId(SENDER_ACCOUNT.id)
+        useSendFundsStore.getState().reset()
         resetTestContacts()
     })
 
@@ -97,43 +123,42 @@ describe('Flow: Contacts → use in send destination picker', () => {
         ).toBeGreaterThan(0)
     })
 
-    it('Given a contact is in the store, when AddressSearchView searches by name, then the matching contact surfaces and tapping it fires onSelected with the address', async () => {
+    it('Given saved contacts, when Send opens the destination screen, then contacts show in alphabetical order before and after searching', async () => {
+        addTestContact('Zara', HD_TEST_ADDRESS_1)
         addTestContact('Alice', HD_TEST_ADDRESS)
-
-        const onSelected = vi.fn()
-        renderWithNavigation(
-            () => (
-                <AddressSearchView
-                    onSelected={onSelected}
-                    scope={{ chainId: 'algorand', networkId: 'mainnet' }}
-                    showAllContactsWhenEmpty
-                />
-            ),
-            'AddressSearchHost',
-        )
-
-        // With `showAllContactsWhenEmpty`, contacts surface without
-        // typing. Each row renders an `AddressDisplay` with the
-        // contact's name as its label (when one is set) — match by
-        // the name, not the address.
-        await waitFor(() => {
-            expect(
-                screen.queryAllByText(
-                    (_, node) => (node?.textContent ?? '') === 'Alice',
-                ).length,
-            ).toBeGreaterThan(0)
+        useSendFundsStore.getState().setSelectedAsset({
+            chainId: 'algorand',
+            assetId: '0',
         })
+        useSendFundsStore.getState().setAmount(new Decimal(1))
 
-        const matches = screen.getAllByText(
-            (_, node) => (node?.textContent ?? '') === 'Alice',
+        const ConfirmStub = () => null
+        renderWithNavigation(SelectDestinationScreen, 'SelectDestination', {
+            additionalScreens: [
+                { name: 'ConfirmTransaction', component: ConfirmStub },
+            ],
+        })
+        const names = () =>
+            screen.getAllByText(/^(Alice|Zara)$/).map(row => row.textContent)
+        await waitFor(() => {
+            expect(names()).toEqual(['Alice', 'Zara'])
+        })
+        const fields = screen.getAllByPlaceholderText(
+            'address_entry.search_placeholder_recipient',
         )
-        const leaf = matches.find(el => el.children.length === 0) ?? matches[0]
-        const row = closestPressable(leaf)
+        fireEvent.change(fields[fields.length - 1], { target: { value: 'a' } })
+        await waitFor(() => expect(names()).toEqual(['Alice', 'Zara']))
+
+        const row = closestPressable(screen.getByText('Alice'))
         if (!row) {
             throw new Error('Contact row button not found')
         }
         fireEvent.click(row)
 
-        expect(onSelected).toHaveBeenCalledWith(HD_TEST_ADDRESS)
+        await waitFor(() =>
+            expect(useSendFundsStore.getState().destination).toBe(
+                HD_TEST_ADDRESS,
+            ),
+        )
     })
 })

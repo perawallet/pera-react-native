@@ -20,6 +20,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { useSelectDestinationScreen } from './useSelectDestinationScreen'
 import { LoadingView } from '@components/LoadingView'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 export const SelectDestinationScreen = () => {
     const styles = useStyles()
@@ -79,6 +80,9 @@ export const SelectDestinationScreen = () => {
                 excludeAddress={senderAddress}
                 showAllContactsWhenEmpty
                 showClipboardPaste
+                searchPlaceholderKey={i18nKey(
+                    'address_entry.search_placeholder_recipient',
+                )}
                 sendingAssetLabel={selectedAsset.unitName || selectedAsset.name}
                 isSendingMultiChainAsset={
                     !!selectedAsset.peraMetadata?.crossChainAssetGroup

@@ -80,6 +80,7 @@ type UseAddressSearchViewProps = {
     excludeAddress?: string
     /** Only accounts passing this predicate are offered. */
     accountFilter?: (account: WalletAccount) => boolean
+    searchPlaceholderKey?: I18nKey
     showAllContactsWhenEmpty?: boolean
     /**
      * Offer the clipboard's address as the first row. Opt-in because reading the
@@ -107,7 +108,7 @@ type UseAddressSearchViewResult = {
     mismatchedFamily: Optional<ChainFamily>
     /** Unset when either family registers no wrong-network copy. */
     wrongNetworkMessage: Optional<{ title: string; body: string }>
-    /** Search copy for the current recipient picker or chain family. */
+    /** Search copy from the picker override or the chain family's name service. */
     searchPlaceholder: string
     /** Set when rows should name the scope's chain; see {@link useChainNameWhenMultiChain}. */
     chainBadgeName: Optional<string>
@@ -117,6 +118,7 @@ export const useAddressSearchView = ({
     scope,
     excludeAddress,
     accountFilter,
+    searchPlaceholderKey,
     showAllContactsWhenEmpty = false,
     showClipboardPaste = false,
     sendingAssetLabel,
@@ -132,10 +134,9 @@ export const useAddressSearchView = ({
     const chainFamily = getChainDescriptor(scope.chainId).family
     const chainBadgeName = useChainNameWhenMultiChain(scope.chainId)
     const searchPlaceholder = t(
-        sendingAssetLabel !== undefined
-            ? i18nKey('address_entry.search_placeholder_recipient')
-            : (chainUiFor(chainFamily).addressSearchPlaceholder ??
-                  i18nKey('address_entry.search_placeholder_neutral')),
+        searchPlaceholderKey ??
+            chainUiFor(chainFamily).addressSearchPlaceholder ??
+            i18nKey('address_entry.search_placeholder_neutral'),
     )
     const { accountValueTotals } = useAccountValueTotalsQuery(
         allAccounts,
@@ -263,11 +264,9 @@ export const useAddressSearchView = ({
                 ? [{ contact, address }]
                 : []
         })
-        return value.length
-            ? matches
-            : matches.sort((a, b) =>
-                  a.contact.name.localeCompare(b.contact.name),
-              )
+        return matches.sort((a, b) =>
+            a.contact.name.localeCompare(b.contact.name),
+        )
     }, [
         value,
         findContacts,

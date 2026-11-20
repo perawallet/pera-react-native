@@ -15,6 +15,7 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
     addressCodecs,
+    i18nKey,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { fixtureCodec } from '@packages/chain-contract/src/__tests__/testing'
@@ -399,7 +400,9 @@ describe('useAddressSearchView', () => {
             useAddressSearchView({
                 scope: ALGORAND_SCOPE,
                 showAllContactsWhenEmpty: true,
-                sendingAssetLabel: 'ALGO',
+                searchPlaceholderKey: i18nKey(
+                    'address_entry.search_placeholder_recipient',
+                ),
             }),
         )
 
@@ -429,6 +432,14 @@ describe('useAddressSearchView', () => {
                 expect.objectContaining({ title: 'address_entry.contacts' }),
             ]),
         )
+
+        act(() => result.current.setValue('d'))
+        expect(
+            itemsOfType(result.current.matchingItems, 'contact'),
+        ).toMatchObject([
+            { contact: { name: 'Buddy' } },
+            { contact: { name: 'Friend' } },
+        ])
     })
 
     it('returns section header and foreign address item when address is valid and not in wallet', () => {
