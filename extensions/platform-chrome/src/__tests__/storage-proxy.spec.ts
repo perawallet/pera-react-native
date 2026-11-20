@@ -13,9 +13,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
     installOffscreenStorageShim,
+    STORAGE_EVENT_SCOPE,
     STORAGE_PROXY_SCOPE,
     startStorageProxyHost,
 } from '../storage-proxy'
+import { ChromeKeyValueStorageService } from '../services/key-value-storage'
 import { createChromeFake, type ChromeFake } from '../test-utils/chrome'
 
 // Simulates the two real contexts: the service worker (full chrome.storage)
@@ -72,17 +74,66 @@ describe('storage proxy', () => {
         offscreenChrome.storage.onChanged.addListener(listener)
 
         fake.emitExternalChange('kv:accounts-store', '{"state":{}}')
-        // The relay hops the async message bus once.
-        await new Promise(resolve => setTimeout(resolve, 0))
-
-        expect(listener).toHaveBeenCalledWith(
-            expect.objectContaining({
-                'kv:accounts-store': expect.objectContaining({
-                    newValue: '{"state":{}}',
+        await vi.waitFor(() =>
+            expect(listener).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    'kv:accounts-store': { newValue: '{"state":{}}' },
                 }),
-            }),
-            'local',
+                'local',
+            ),
         )
+    })
+
+    it('broadcasts only key names while the offscreen listener gets the current value', async () => {
+        const listener = vi.fn()
+        offscreenChrome.storage.onChanged.addListener(listener)
+        const broadcast = vi.fn()
+        fake.chrome.runtime.onMessage.addListener(message => {
+            if (message?.scope === STORAGE_EVENT_SCOPE) broadcast(message)
+        })
+        const key = 'kv:wc1-session-key:fixture'
+        fake.data.set(key, 'old-fixture-value')
+        fake.emitExternalChange(key, 'new-fixture-value')
+
+        await vi.waitFor(() =>
+            expect(listener).toHaveBeenCalledWith(
+                { [key]: { newValue: 'new-fixture-value' } },
+                'local',
+            ),
+        )
+        expect(broadcast).toHaveBeenCalledExactlyOnceWith({
+            scope: STORAGE_EVENT_SCOPE,
+            keys: [key],
+        })
+    })
+
+    it('logs a redacted refresh error and handles the next storage change', async () => {
+        const listener = vi.fn()
+        offscreenChrome.storage.onChanged.addListener(listener)
+        vi.spyOn(fake.chrome.storage.local, 'get').mockRejectedValueOnce(
+            new Error('Failed at https://storage.test/?token=synthetic-value'),
+        )
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+        try {
+            fake.emitExternalChange('kv:fixture', 'first')
+            await vi.waitFor(() => expect(warn).toHaveBeenCalledOnce())
+            const logged = JSON.stringify(warn.mock.calls)
+            expect(logged).toContain('storage proxy get failed')
+            expect(logged).toContain('token=[REDACTED]')
+            expect(logged).not.toContain('synthetic-value')
+            expect(listener).not.toHaveBeenCalled()
+
+            fake.emitExternalChange('kv:fixture', 'second')
+            await vi.waitFor(() =>
+                expect(listener).toHaveBeenCalledExactlyOnceWith(
+                    { 'kv:fixture': { newValue: 'second' } },
+                    'local',
+                ),
+            )
+        } finally {
+            warn.mockRestore()
+        }
     })
 
     it('stops relaying to removed listeners', async () => {
@@ -106,21 +157,40 @@ describe('storage proxy', () => {
         expect(listener).not.toHaveBeenCalled()
     })
 
-    it('DOES relay local-area changes to the offscreen shim', async () => {
+    it('notifies offscreen listeners when a key is removed', async () => {
         const listener = vi.fn()
         offscreenChrome.storage.onChanged.addListener(listener)
+        fake.data.set('kv:accounts-store', '{"state":{}}')
 
-        fake.emitExternalChange('kv:accounts-store', '{"state":{}}', 'local')
-        await new Promise(resolve => setTimeout(resolve, 0))
+        await fake.chrome.storage.local.remove('kv:accounts-store')
 
-        expect(listener).toHaveBeenCalledWith(
-            expect.objectContaining({
-                'kv:accounts-store': expect.objectContaining({
-                    newValue: '{"state":{}}',
-                }),
-            }),
-            'local',
+        await vi.waitFor(() =>
+            expect(listener).toHaveBeenCalledWith(
+                { 'kv:accounts-store': {} },
+                'local',
+            ),
         )
+    })
+
+    it('updates and clears the offscreen key-value cache after external changes', async () => {
+        vi.stubGlobal('chrome', offscreenChrome)
+        try {
+            const key = 'accounts-store'
+            fake.data.set(`kv:${key}`, 'initial-fixture')
+            const storage = new ChromeKeyValueStorageService()
+            await storage.hydrate()
+            expect(storage.getItem(key)).toBe('initial-fixture')
+
+            fake.emitExternalChange(`kv:${key}`, 'updated-fixture')
+            await vi.waitFor(() =>
+                expect(storage.getItem(key)).toBe('updated-fixture'),
+            )
+
+            await fake.chrome.storage.local.remove(`kv:${key}`)
+            await vi.waitFor(() => expect(storage.getItem(key)).toBeNull())
+        } finally {
+            vi.unstubAllGlobals()
+        }
     })
 
     it('refuses storage-proxy messages from a non-offscreen sender (content-script shape)', async () => {
@@ -150,9 +220,8 @@ describe('storage proxy', () => {
         await fake.chrome.runtime
             .sendMessage(
                 {
-                    scope: 'pera-storage-event',
-                    changes: { 'kv:x': { newValue: 'y' } },
-                    areaName: 'local',
+                    scope: STORAGE_EVENT_SCOPE,
+                    keys: ['kv:x'],
                 },
                 { url: 'https://dapp.example' },
             )
