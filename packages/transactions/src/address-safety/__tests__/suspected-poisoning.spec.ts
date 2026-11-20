@@ -262,7 +262,6 @@ describe.each([
             'an outgoing transfer the account signed',
             { direction: 'out', initiator: ME },
         ],
-        ['an outgoing transfer with no signer on record', { direction: 'out' }],
         ['a transfer to itself', { direction: 'self' }],
         ['a contract call', { kind: 'contract-call' }],
     ] as const)('does not mark %s', async (__, overrides) => {
@@ -290,6 +289,59 @@ describe.each([
         ])
 
         expect(suspected?.imitates).toEqual(KNOWN[3])
+    })
+
+    it.each([
+        ['a worthless transfer', { kind: 'transfer', value: '0' }],
+        [
+            'a zero-value token transfer',
+            { kind: 'token-transfer', assetId: STABLE, value: '0' },
+        ],
+        [
+            'a collectible',
+            { kind: 'nft-transfer', assetId: UNPRICED, value: '1' },
+        ],
+    ] as const)(
+        'marks an outgoing %s with no signer on record, naming the contact',
+        async (__, overrides) => {
+            const [suspected] = await detect([
+                entry({
+                    counterparty: lookAlikeOf(CONTACT),
+                    direction: 'out',
+                    ...overrides,
+                }),
+            ])
+
+            expect(suspected?.imitates).toEqual(KNOWN[2])
+        },
+    )
+
+    it('does not mark an outgoing transfer of real value with no signer on record', async () => {
+        expect(
+            await detect([
+                entry({
+                    counterparty: lookAlikeOf(CONTACT),
+                    direction: 'out',
+                    kind: 'token-transfer',
+                    assetId: STABLE,
+                    value: '5000000',
+                }),
+            ]),
+        ).toEqual([])
+    })
+
+    it('does not mark an outgoing transfer with no signer on record to the contact itself', async () => {
+        expect(
+            await detect([
+                entry({
+                    counterparty: CONTACT,
+                    direction: 'out',
+                    kind: 'token-transfer',
+                    assetId: STABLE,
+                    value: '0',
+                }),
+            ]),
+        ).toEqual([])
     })
 
     it('never lets a marked counterparty become a trusted one', async () => {

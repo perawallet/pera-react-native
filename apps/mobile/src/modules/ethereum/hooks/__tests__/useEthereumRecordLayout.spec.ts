@@ -128,6 +128,21 @@ describe('useEthereumRecordLayout', () => {
         expect(amountRows).toEqual([])
     })
 
+    it('Given a listed token send the history names no signer for, then the detail names no sender', () => {
+        const { summary } = layoutOf(
+            recordOf(
+                { initiator: undefined },
+                {
+                    kind: 'token-transfer',
+                    amount: { assetRef: USDC_REF, value: new Decimal(0) },
+                },
+            ),
+        )
+
+        expect(summary.from).toBeUndefined()
+        expect(summary.to).toBe(PEER)
+    })
+
     it("Given a transfer of ETH, then the hero's amount is the ETH sent, unsigned", () => {
         const { summary } = layoutOf(recordOf())
 

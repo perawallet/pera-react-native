@@ -23,11 +23,12 @@ const PEER = '0x00000000000000000000000000000000000000bb'
 const recordOf = (
     summary: Partial<TransactionSummary>,
     initiator?: string,
+    status: TransactionRecord['status'] = 'confirmed',
 ): TransactionRecord =>
     ({
         id: '0x1',
         scope: { chainId: 'ethereum', networkId: 'mainnet' },
-        status: 'confirmed',
+        status,
         initiator,
         summary: { kind: 'transfer', direction: 'out', ...summary },
         chainData: { family: 'evm' },
@@ -76,10 +77,35 @@ describe('recordPartiesOf', () => {
         expect(parties).toEqual({ from: PEER.toUpperCase(), to: ME })
     })
 
-    it('Given no initiator, then a sent record falls back to the account as the sender', () => {
-        expect(recordPartiesOf(recordOf({ counterparty: PEER }), ME).from).toBe(
-            ME,
-        )
+    it('Given a pending send the wallet built, which names no initiator, then the account is the sender', () => {
+        expect(
+            recordPartiesOf(
+                recordOf({ counterparty: PEER }, undefined, 'pending'),
+                ME,
+            ).from,
+        ).toBe(ME)
+    })
+
+    it('Given a confirmed send the wallet built that the backend has not listed, then the account is the sender', () => {
+        expect(
+            recordPartiesOf(
+                recordOf(
+                    { kind: 'token-transfer', counterparty: PEER },
+                    ME,
+                    'confirmed',
+                ),
+                ME,
+            ),
+        ).toEqual({ from: ME, to: PEER })
+    })
+
+    it('Given a confirmed token transfer out with no initiator, then no sender is named', () => {
+        expect(
+            recordPartiesOf(
+                recordOf({ kind: 'token-transfer', counterparty: PEER }),
+                ME,
+            ),
+        ).toEqual({ from: undefined, to: PEER })
     })
 
     it('Given no initiator and no direction, then the sender is left unknown', () => {

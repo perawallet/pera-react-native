@@ -55,6 +55,10 @@ for (const chain of EVM_TEST_CHAINS) {
             '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed',
             '0x5aae00000000000000000000000000000000eaed',
         ],
+        nearMissPair: [
+            '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed',
+            `0x5aa${'0'.repeat(34)}aed`,
+        ],
         invalid: [
             '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAeD',
             '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeA',
@@ -163,6 +167,28 @@ describe('resembles', () => {
             ),
         ).toBe(false)
     })
+
+    it('takes an address one character short of each shown end for a look-alike, in either case', () => {
+        const nearMiss = `0xf39${'0'.repeat(34)}266`
+
+        expect(codec.resembles(HARDHAT_ADDRESS, nearMiss)).toBe(true)
+        expect(codec.resembles(nearMiss, HARDHAT_ADDRESS)).toBe(true)
+        expect(codec.resembles(HARDHAT_ADDRESS, nearMiss.toUpperCase())).toBe(
+            true,
+        )
+    })
+
+    it.each([
+        ['only 0xf3 at the head', `0xf3${'0'.repeat(35)}266`],
+        ['only the last two characters', `0xf39${'0'.repeat(35)}66`],
+    ])(
+        'does not take an address sharing %s for a look-alike',
+        (_label, other) => {
+            expect(other).toHaveLength(HARDHAT_ADDRESS.length)
+
+            expect(codec.resembles(HARDHAT_ADDRESS, other)).toBe(false)
+        },
+    )
 })
 
 describe('toPaymentUri', () => {

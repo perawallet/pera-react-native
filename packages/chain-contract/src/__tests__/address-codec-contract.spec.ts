@@ -22,6 +22,10 @@ addressCodecContractTests(() => fixtureCodec, {
         `tfxcdcd${'00'.repeat(16)}cdcd`,
         `tfxcdcd${'11'.repeat(16)}cdcd`,
     ],
+    nearMissPair: [
+        `tfxcdcd${'00'.repeat(16)}cdcd`,
+        `tfxcde${'0'.repeat(33)}edcd`,
+    ],
     invalid: [`fx${'ab'.repeat(19)}`, `fx${'zz'.repeat(20)}`, 'not-an-address'],
     foreignUri: `otherchain:fx${'ab'.repeat(20)}`,
     paymentUriOpts: {

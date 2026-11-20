@@ -21,6 +21,11 @@ export interface AddressCodecContractFixtures {
     equivalentSpellings?: readonly [string, string, ...string[]]
     /** Two different valid addresses whose `truncate` forms read alike. */
     lookAlikePair: readonly [string, string]
+    /**
+     * Two different valid addresses that share each shown end except its
+     * innermost character, so their `truncate` forms differ.
+     */
+    nearMissPair: readonly [string, string]
     invalid: readonly string[]
     /** A payment URI of another scheme, which the codec must decline. */
     foreignUri: string
@@ -88,6 +93,21 @@ export const addressCodecContractTests = (
 
             expect(codec.isValid(a)).toBe(true)
             expect(codec.isValid(b)).toBe(true)
+            expect(codec.resembles(a, b)).toBe(true)
+            expect(codec.resembles(b, a)).toBe(true)
+        })
+
+        it('takes an address one character short of the shown ends for a look-alike', () => {
+            const codec = makeCodec()
+            const [a, b] = fixtures.nearMissPair
+
+            expect(codec.isValid(a)).toBe(true)
+            expect(codec.isValid(b)).toBe(true)
+            expect(codec.truncate(a)).not.toBe(codec.truncate(b))
+            const [head, tail] = codec.truncate(a).toLowerCase().split('...')
+            const other = b.toLowerCase()
+            expect(other.startsWith(head.slice(0, -1))).toBe(true)
+            expect(other.endsWith(tail.slice(1))).toBe(true)
             expect(codec.resembles(a, b)).toBe(true)
             expect(codec.resembles(b, a)).toBe(true)
         })

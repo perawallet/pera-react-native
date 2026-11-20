@@ -25,7 +25,7 @@ import {
     vi,
 } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import * as Clipboard from 'expo-clipboard'
 import { http, HttpResponse } from 'msw'
 import { server } from '@test-utils/msw-server'
@@ -45,6 +45,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useContactsStore } from '@perawallet/wallet-core-contacts'
+import { upsertAssetPrices } from '@perawallet/wallet-core-assets'
 import {
     upsertTransactions,
     type TransactionHistoryItem,
@@ -63,6 +64,12 @@ const MAINNET_SCOPE = {
 // Same short form, different middle.
 const CONTACT = '2SSSXMFNG55PKDGKJB7MLTGIRSIYAXFCJAWSQFD6C3M7L6JLG5NJIBTGAA'
 const LOOK_ALIKE = '2SSSXMBXVWYMJ33BCFI5PED5O7LMFJZWXXSAJCU44W5M4NP4Q5YIJBTGAA'
+
+// B shares A's first five and last four characters, not the five and five its short form shows.
+const NEAR_MISS_CONTACT =
+    'GI4BM3CBF3YIFD5VBH6VLWNVIDEZQAN3GDFVDDF4VHZ3AL4KHGTPKGDNLE'
+const NEAR_MISS_LOOK_ALIKE =
+    'GI4BMXKT5F6XO7SVE65TIFCVWOLEGFLFD4VYNDS4MMKY2SVDEASOJ6DNLE'
 
 const ACCOUNT: WalletAccount = {
     id: 'observer-1',
@@ -121,7 +128,7 @@ const serveDetail = (transaction: TransactionHistoryItem) =>
                     fee: 1000,
                     'payment-transaction': {
                         receiver: transaction.receiver,
-                        amount: 0,
+                        amount: transaction.amount?.toNumber() ?? 0,
                         'close-amount': 0,
                     },
                 },
@@ -248,5 +255,162 @@ describe('Flow: suspected address poisoning in Algorand history', () => {
             ).toBeNull(),
         )
         expect(Clipboard.setStringAsync).not.toHaveBeenCalled()
+    })
+
+    describe('a look-alike of a saved contact, one character short of the shown tail', () => {
+        const TX_OLDER = payment(
+            'TXNEARMISS0000000000000000000000000000000000000000001',
+            NEAR_MISS_LOOK_ALIKE,
+            new Decimal(1),
+            1_700_000_000,
+        )
+        const TX_NEWER = payment(
+            'TXNEARMISS0000000000000000000000000000000000000000002',
+            NEAR_MISS_LOOK_ALIKE,
+            new Decimal(1),
+            1_700_100_000,
+        )
+        const rowIds = () =>
+            screen
+                .queryAllByTestId(/^transaction_row_TX[A-Z0-9]+$/)
+                .map(row => row.getAttribute('data-testid'))
+
+        beforeEach(async () => {
+            await resetTestDatabase()
+            await seedAlgoAsset('mainnet')
+            await upsertAssetPrices({
+                prices: [{ assetId: '0', usdPrice: new Decimal(0.2) }],
+                scope: MAINNET_SCOPE,
+            })
+            useContactsStore.setState({ contacts: [] })
+            await seedAlgorandAccountState({
+                accountAddress: ALGO25_TEST_ADDRESS,
+                scope: MAINNET_SCOPE,
+                nativeBalance: new Decimal(5_000_000),
+                minBalance: new Decimal(100_000),
+            })
+            await upsertTransactions({
+                items: [TX_OLDER, TX_NEWER],
+                accountAddress: ALGO25_TEST_ADDRESS,
+                scope: MAINNET_SCOPE,
+            })
+        })
+
+        it('Given two 1 microAlgo payments from it, when its contact is saved, then both rows are marked in place', async () => {
+            renderWithNavigation(AccountHistory, 'AccountHistory')
+            await screen.findByTestId(
+                `transaction_row_${TX_NEWER.id}`,
+                undefined,
+                {
+                    timeout: SLOW_WAIT_TIMEOUT_MS,
+                },
+            )
+            expect(rowIds()).toEqual([
+                `transaction_row_${TX_NEWER.id}`,
+                `transaction_row_${TX_OLDER.id}`,
+            ])
+            expect(
+                screen.queryByTestId(
+                    `transaction_row_suspected_poisoning_${TX_NEWER.id}`,
+                ),
+            ).toBeNull()
+
+            act(() => {
+                useContactsStore.setState({
+                    contacts: [
+                        {
+                            id: 'pera-test',
+                            name: 'Pera Test',
+                            addresses: { algorand: NEAR_MISS_CONTACT },
+                        },
+                    ],
+                })
+            })
+
+            await screen.findByTestId(
+                `transaction_row_suspected_poisoning_${TX_NEWER.id}`,
+                undefined,
+                { timeout: SLOW_WAIT_TIMEOUT_MS },
+            )
+            expect(
+                screen.getByTestId(
+                    `transaction_row_suspected_poisoning_${TX_OLDER.id}`,
+                ),
+            ).toBeDefined()
+            expect(rowIds()).toEqual([
+                `transaction_row_${TX_NEWER.id}`,
+                `transaction_row_${TX_OLDER.id}`,
+            ])
+        })
+
+        it('Given a marked row opened, then the details name the contact it imitates and copying its sender waits for a warning', async () => {
+            useContactsStore.setState({
+                contacts: [
+                    {
+                        id: 'pera-test',
+                        name: 'Pera Test',
+                        addresses: { algorand: NEAR_MISS_CONTACT },
+                    },
+                ],
+            })
+            serveDetail(TX_NEWER)
+            renderWithNavigation(AccountHistory, 'AccountHistory', {
+                additionalScreens: [
+                    {
+                        name: 'TransactionDetails',
+                        component: TransactionDetailsScreen,
+                    },
+                ],
+            })
+            await screen.findByTestId(
+                `transaction_row_suspected_poisoning_${TX_NEWER.id}`,
+                undefined,
+                { timeout: SLOW_WAIT_TIMEOUT_MS },
+            )
+
+            const row = closestPressable(
+                screen.getByTestId(`transaction_row_${TX_NEWER.id}`),
+            )
+            if (!row) throw new Error('Marked row is not pressable')
+            fireEvent.click(row)
+
+            const notice = await screen.findByTestId(
+                'suspected_poisoning_notice',
+                undefined,
+                { timeout: SLOW_WAIT_TIMEOUT_MS },
+            )
+            expect(
+                within(notice).getByTestId(
+                    'suspected_poisoning_imitated_address',
+                ).textContent,
+            ).toBe(NEAR_MISS_CONTACT)
+
+            const from = await screen.findByTestId('transaction_detail_from')
+            const sender = closestPressable(
+                within(from).getByText(
+                    truncateAlgorandAddress(NEAR_MISS_LOOK_ALIKE),
+                ),
+            )
+            if (!sender) throw new Error('Sender address is not copyable')
+            await longPress(sender)
+
+            const warning = await screen.findByTestId(
+                'suspected_address_reuse_warning',
+            )
+            expect(
+                within(warning).getByTestId(
+                    'suspected_address_reuse_imitated_address',
+                ).textContent,
+            ).toBe(NEAR_MISS_CONTACT)
+            fireEvent.click(
+                screen.getByTestId('suspected_address_reuse_warning_cancel'),
+            )
+            await waitFor(() =>
+                expect(
+                    screen.queryByTestId('suspected_address_reuse_warning'),
+                ).toBeNull(),
+            )
+            expect(Clipboard.setStringAsync).not.toHaveBeenCalled()
+        })
     })
 })

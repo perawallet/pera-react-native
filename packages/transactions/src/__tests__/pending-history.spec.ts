@@ -156,6 +156,22 @@ describe('getPendingTransactionRecords', () => {
         expect(record.summary.notice).toBeUndefined()
     })
 
+    it('names the sender as the signer of a confirmed attempt, and of no other', async () => {
+        ledger(
+            attempt({ id: 'landed', txIds: ['0xa'], status: 'confirmed' }),
+            attempt({ id: 'waiting', txIds: ['0xb'], status: 'submitted' }),
+            attempt({ id: 'rejected', txIds: ['0xc'], status: 'failed' }),
+        )
+
+        const records = await pendingRecords()
+
+        expect(records.map(r => [r.id, r.initiator])).toEqual([
+            ['0xa', ADDRESS],
+            ['0xb', undefined],
+            ['0xc', undefined],
+        ])
+    })
+
     it("builds the record from the attempt's id, scope, fee and entry", async () => {
         ledger(attempt())
 

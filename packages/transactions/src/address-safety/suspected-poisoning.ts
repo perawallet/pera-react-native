@@ -35,7 +35,8 @@ const SUSPECTABLE_KINDS: ReadonlySet<TransactionSummary['kind']> = new Set([
 type Candidate = { entry: SuspectableEntry; imitates: KnownAddress }
 
 // A token contract can emit a transfer "from" the account to a look-alike that
-// the account never signed, so an outgoing entry someone else signed counts too.
+// the account never signed, so an outgoing entry counts unless the history says
+// the account signed it.
 export const findImitatedAddress = ({
     entry,
     accountAddress,
@@ -47,11 +48,10 @@ export const findImitatedAddress = ({
         return undefined
     }
     const codec = addressCodecs.get(chainId)
-    const isSpoofedSend =
+    const isUnsignedSend =
         summary.direction === 'out' &&
-        initiator !== undefined &&
-        !codec.areEqual(initiator, accountAddress)
-    if (summary.direction !== 'in' && !isSpoofedSend) return undefined
+        (initiator === undefined || !codec.areEqual(initiator, accountAddress))
+    if (summary.direction !== 'in' && !isUnsignedSend) return undefined
 
     const assessment = assessRecipient({
         recipient: summary.counterparty,

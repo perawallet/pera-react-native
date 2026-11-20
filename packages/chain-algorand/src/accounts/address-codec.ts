@@ -19,10 +19,17 @@ import {
     encodeAlgorandAddress,
     isValidAlgorandAddress,
 } from '../blockchain'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import {
+    SHORT_ADDRESS_LENGTH,
+    truncateAlgorandAddress,
+} from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { isAlgorandNativeAssetId } from '../descriptor'
 import { readArc90Uri, writeArc90PaymentUri } from '../deeplinks/arc90'
+
+// One character short of each end the short form shows: a poisoner missing
+// only the character beside the ellipsis still reads as the same address.
+const RESEMBLING_END_LENGTH = (SHORT_ADDRESS_LENGTH - 1) / 2 - 1
 
 // Algorand addresses are upper-case base32 with a checksum, and a lower-case
 // spelling fails the checksum, so there is exactly one valid spelling.
@@ -37,7 +44,10 @@ export const algorandAddressCodec: AddressCodec = {
     areEqual: (a, b) => a === b,
     truncate: address => truncateAlgorandAddress(address),
     resembles: (a, b) =>
-        a !== b && truncateAlgorandAddress(a) === truncateAlgorandAddress(b),
+        a !== b &&
+        a.slice(0, RESEMBLING_END_LENGTH) ===
+            b.slice(0, RESEMBLING_END_LENGTH) &&
+        a.slice(-RESEMBLING_END_LENGTH) === b.slice(-RESEMBLING_END_LENGTH),
     toPaymentUri: writeArc90PaymentUri,
     parsePaymentUri: uri => {
         const read = readArc90Uri(uri)

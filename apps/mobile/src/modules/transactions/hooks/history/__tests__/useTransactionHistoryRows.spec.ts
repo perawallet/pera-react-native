@@ -31,7 +31,12 @@ import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
 import { useKnownAddresses } from '../../address-safety/useKnownAddresses'
 import { useTransactionHistoryRows } from '../useTransactionHistoryRows'
 
-vi.mock('@perawallet/wallet-core-transactions', () => ({
+vi.mock('@perawallet/wallet-core-transactions', async importOriginal => ({
+    recordSignerOf: (
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-transactions')
+        >()
+    ).recordSignerOf,
     hasCachedHistoryRows: vi.fn(),
     summarizeHistoryItem: vi.fn(),
     useSuspectedPoisoningQuery: vi.fn(),
@@ -343,6 +348,7 @@ describe('useTransactionHistoryRows', () => {
             ({
                 id,
                 timestamp,
+                status: 'confirmed',
                 initiator: '0xSIGNER',
                 summary: { kind: 'transfer', direction: 'in' },
             }) as TransactionRecord
@@ -395,6 +401,7 @@ describe('useTransactionHistoryRows', () => {
             vi.mocked(summarizeHistoryItem).mockReturnValue(summary as never)
             const transaction = {
                 id: 'TX1',
+                sender: 'SENDER',
                 roundTime: 1_704_067_200,
             } as TransactionHistoryItem
             vi.mocked(useTransactionHistoryQuery).mockReturnValue(
@@ -415,7 +422,59 @@ describe('useTransactionHistoryRows', () => {
             )
             expect(useSuspectedPoisoningQuery).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    entries: [{ id: 'TX1', summary }],
+                    entries: [{ id: 'TX1', summary, initiator: 'SENDER' }],
+                }),
+            )
+        })
+
+        it.each([
+            [
+                "a pending record with no initiator enters as the account's own",
+                'pending',
+                '0xabc',
+                undefined,
+            ],
+            [
+                'a confirmed record with no initiator enters with none',
+                'confirmed',
+                undefined,
+                undefined,
+            ],
+            [
+                "a confirmed record of the wallet's own send enters with its initiator",
+                'confirmed',
+                '0xabc',
+                '0xabc',
+            ],
+        ] as const)('%s', (_label, status, expected, initiator) => {
+            vi.mocked(hasCachedHistoryRows).mockReturnValue(false)
+            const record = {
+                id: '0xunsigned',
+                timestamp: 1_704_067_200_000,
+                status,
+                initiator,
+                summary: { kind: 'token-transfer', direction: 'out' },
+            } as TransactionRecord
+            vi.mocked(useTransactionRecordsQuery).mockReturnValue(
+                recordsResult({ records: [record] }),
+            )
+
+            renderHook(() =>
+                useTransactionHistoryRows({
+                    accountAddress: '0xabc',
+                    scope: ETH_SCOPE,
+                }),
+            )
+
+            expect(useSuspectedPoisoningQuery).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    entries: [
+                        {
+                            id: '0xunsigned',
+                            summary: record.summary,
+                            initiator: expected,
+                        },
+                    ],
                 }),
             )
         })
