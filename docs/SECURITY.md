@@ -117,7 +117,8 @@ review showed: the EIP-155 chain id comes from the chain table, not the RPC, and
 the reviewed transaction. A fee it inflates shows on the review, and the build refuses to sign past
 the max fee the user confirmed; see [EVM fees](EVM_FEES.md).
 
-`tools/check-evm-rpc-endpoints.mjs` checks every built-in URL's chain id before a build is signed. A
+`tools/check-evm-rpc-endpoints.mjs` checks every built-in URL's chain id before a build is signed,
+except Pera's own proxy, which a CI job can only see answer its integrity guard. A
 developer's endpoint override is checked before it applies: `checkEvmRpcChainId`
 (`packages/chain-ethereum/src/blockchain/utils/checkEvmRpcChainId.ts`) asks the URL for its chain id
 and rejects one serving another network, so a testnet can't be pointed at mainnet.

@@ -23,7 +23,11 @@
  *    outage shouldn't stop a staging build;
  *  - with APP_ENV=production, every mainnet URL must be https. No domain is
  *    required: the fallback is a public node, and whoever can set these lists
- *    can as easily edit this check.
+ *    can as easily edit this check;
+ *  - Pera's own proxy (a *.perawallet.app URL) needs an app integrity token a
+ *    CI job can't get. It is sent BACKEND_API_KEY, and a 403
+ *    APP_INTEGRITY_TOKEN_REQUIRED counts as reachable: that proves the host
+ *    and the route, not the chain id, which the backend pins per host.
  *
  * URLs are printed without their path or query: a paid provider's API key
  * usually sits there, and this output lands in CI logs.
@@ -58,14 +62,27 @@ const urlsOf = value =>
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 
+const isPeraProxy = url => {
+    try {
+        return new URL(url).hostname.endsWith('.perawallet.app')
+    } catch {
+        return false
+    }
+}
+
+const INTEGRITY_REQUIRED = 'APP_INTEGRITY_TOKEN_REQUIRED'
+
 /** The chain id a node answers with, retrying only while it can't be reached. */
 const fetchChainId = async url => {
     let failure
+    const headers = { 'content-type': 'application/json' }
+    const apiKey = process.env.BACKEND_API_KEY
+    if (isPeraProxy(url) && apiKey) headers['x-api-key'] = apiKey
     for (let attempt = 1; attempt <= ATTEMPTS; attempt += 1) {
         try {
             const response = await fetch(url, {
                 method: 'POST',
-                headers: { 'content-type': 'application/json' },
+                headers,
                 body: JSON.stringify({
                     jsonrpc: '2.0',
                     id: 1,
@@ -74,6 +91,11 @@ const fetchChainId = async url => {
                 }),
                 signal: AbortSignal.timeout(TIMEOUT_MS),
             })
+            if (response.status === 403 && isPeraProxy(url)) {
+                const body = await response.json().catch(() => null)
+                if (body?.code === INTEGRITY_REQUIRED)
+                    return { isGuarded: true }
+            }
             if (!response.ok) throw new Error(`HTTP ${response.status}`)
             const { result } = await response.json()
             if (typeof result !== 'string' || !/^0x[0-9a-f]+$/i.test(result)) {
@@ -102,7 +124,7 @@ const shown = url => {
     }
 }
 
-/** `undefined` when the URL checks out; `isUnreachable` marks a failure that says nothing about the network it serves. */
+/** `undefined` when the URL checks out; `isGuarded` when Pera's proxy answered but its chain id can't be read; `isUnreachable` marks a failure that says nothing about the network it serves. */
 const problemWith = async (url, scope, isProduction) => {
     let parsed
     try {
@@ -117,8 +139,9 @@ const problemWith = async (url, scope, isProduction) => {
     ) {
         return { message: 'a production mainnet endpoint must be https' }
     }
-    const { chainId, error, isUnreachable } = await fetchChainId(url)
+    const { chainId, error, isUnreachable, isGuarded } = await fetchChainId(url)
     if (error) return { message: error, isUnreachable }
+    if (isGuarded) return { isGuarded: true }
     if (chainId !== BigInt(scope.eip155ChainId)) {
         return {
             message: `serves chain id ${chainId}, expected ${scope.eip155ChainId}`,
@@ -139,6 +162,10 @@ const main = async () => {
             const label = `${scope.rpcUrlEnv} ${shown(url)}`
             if (!problem) {
                 console.log(`PASS ${label} — chain id ${scope.eip155ChainId}`)
+            } else if (problem.isGuarded) {
+                console.log(
+                    `PASS ${label} — reachable, integrity-guarded (chain id not checked)`,
+                )
             } else if (problem.isUnreachable && !isProduction) {
                 console.warn(`WARN ${label} — ${problem.message}`)
             } else {

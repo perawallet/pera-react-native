@@ -286,6 +286,7 @@ per batch item. The app lays a developer's per-network endpoint override from th
 over that record, replacing the list, and only over test networks the chain's config already
 carries: the stored override is unauthenticated, so a mainnet one is ignored.
 `tools/check-evm-rpc-endpoints.mjs` checks every built-in URL's chain id before a build is signed
+(Pera's own proxy only answers its integrity guard, so it is checked as reachable, not by chain id)
 and requires production mainnet URLs to be https, on any domain. Only hosts under
 `perawallet.app` are pinned, and pinning does not yet cover requests made through `expo/fetch`,
 which the RPC transport uses, so the pin group is declared but does not yet protect them on a
