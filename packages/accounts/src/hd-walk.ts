@@ -344,8 +344,9 @@ type DiscoverWalletActivityParams = {
     /**
      * The limits an earlier walk stopped at, each raised by one more default
      * limit, for a user who asked to keep scanning. The limits already reach
-     * past `heldIndexes`, so passing what that walk found continues it. Only
-     * the limits named are raised: every EVM index probed saves a key.
+     * past `heldIndexes`, so passing what that walk found continues it. A node
+     * reporting every address active hits both, so each step past them costs
+     * a keystore derive per EVM index; the user asking for it is the cap.
      */
     extendLimits?: readonly HdIndexLimit[]
     /** Once aborted, no further batch is derived or probed; the walk resolves to what it found. */
