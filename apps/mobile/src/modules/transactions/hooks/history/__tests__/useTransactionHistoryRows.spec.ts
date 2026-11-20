@@ -432,18 +432,27 @@ describe('useTransactionHistoryRows', () => {
                 "a pending record with no initiator enters as the account's own",
                 'pending',
                 '0xabc',
+                undefined,
             ],
             [
                 'a confirmed record with no initiator enters with none',
                 'confirmed',
                 undefined,
+                undefined,
             ],
-        ] as const)('%s', (_label, status, expected) => {
+            [
+                "a confirmed record of the wallet's own send enters with its initiator",
+                'confirmed',
+                '0xabc',
+                '0xabc',
+            ],
+        ] as const)('%s', (_label, status, expected, initiator) => {
             vi.mocked(hasCachedHistoryRows).mockReturnValue(false)
             const record = {
                 id: '0xunsigned',
                 timestamp: 1_704_067_200_000,
                 status,
+                initiator,
                 summary: { kind: 'token-transfer', direction: 'out' },
             } as TransactionRecord
             vi.mocked(useTransactionRecordsQuery).mockReturnValue(

@@ -15,8 +15,8 @@ import type { Optional } from '@perawallet/wallet-core-shared'
 
 /**
  * Who signed the record, as far as the history says. The wallet's own attempts
- * name no initiator until the chain lists them, while a confirmed record with
- * none came from a transfer log or an ERC-20 view, which don't say who signed.
+ * that haven't landed name no initiator, while a confirmed record with none
+ * came from a transfer log or an ERC-20 view, which don't say who signed.
  */
 export const recordSignerOf = (
     record: TransactionRecord,

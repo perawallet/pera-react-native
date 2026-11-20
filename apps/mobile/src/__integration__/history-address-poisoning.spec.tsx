@@ -394,7 +394,14 @@ describe('Flow: suspected address poisoning in Algorand history', () => {
             if (!sender) throw new Error('Sender address is not copyable')
             await longPress(sender)
 
-            await screen.findByTestId('suspected_address_reuse_warning')
+            const warning = await screen.findByTestId(
+                'suspected_address_reuse_warning',
+            )
+            expect(
+                within(warning).getByTestId(
+                    'suspected_address_reuse_imitated_address',
+                ).textContent,
+            ).toBe(NEAR_MISS_CONTACT)
             fireEvent.click(
                 screen.getByTestId('suspected_address_reuse_warning_cancel'),
             )

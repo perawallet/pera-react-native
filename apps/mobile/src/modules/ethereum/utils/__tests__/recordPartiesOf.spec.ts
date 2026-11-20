@@ -86,6 +86,19 @@ describe('recordPartiesOf', () => {
         ).toBe(ME)
     })
 
+    it('Given a confirmed send the wallet built that the backend has not listed, then the account is the sender', () => {
+        expect(
+            recordPartiesOf(
+                recordOf(
+                    { kind: 'token-transfer', counterparty: PEER },
+                    ME,
+                    'confirmed',
+                ),
+                ME,
+            ),
+        ).toEqual({ from: ME, to: PEER })
+    })
+
     it('Given a confirmed token transfer out with no initiator, then no sender is named', () => {
         expect(
             recordPartiesOf(

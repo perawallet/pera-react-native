@@ -51,6 +51,15 @@ describe('recordSignerOf', () => {
         },
     )
 
+    it("Given a confirmed record of the wallet's own send, which names the account, then the account is the signer", () => {
+        expect(
+            recordSignerOf(
+                recordOf({ initiator: ME, status: 'confirmed' }),
+                ME,
+            ),
+        ).toBe(ME)
+    })
+
     it('Given a confirmed record with no initiator, then nobody is the signer', () => {
         expect(recordSignerOf(recordOf(), ME)).toBeUndefined()
     })

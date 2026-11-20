@@ -48,10 +48,10 @@ export const findImitatedAddress = ({
         return undefined
     }
     const codec = addressCodecs.get(chainId)
-    const isSpoofedSend =
+    const isUnsignedSend =
         summary.direction === 'out' &&
-        !(initiator !== undefined && codec.areEqual(initiator, accountAddress))
-    if (summary.direction !== 'in' && !isSpoofedSend) return undefined
+        (initiator === undefined || !codec.areEqual(initiator, accountAddress))
+    if (summary.direction !== 'in' && !isUnsignedSend) return undefined
 
     const assessment = assessRecipient({
         recipient: summary.counterparty,
