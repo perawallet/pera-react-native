@@ -10,7 +10,7 @@
 // The env file holds recovery phrases: it is written mode 600 and belongs outside the repo.
 // `fund` only ever talks to testnet, and is safe to rerun: funded accounts and finished rekeys
 // are skipped.
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
@@ -100,8 +100,6 @@ const newAlgo25 = () => {
 }
 
 const generate = async file => {
-    if (existsSync(file))
-        throw new Error(`${file} exists; delete it first or run fund.`)
     await checkDerivation()
     const treasury = newAlgo25()
     const funded = await newUniversal()
@@ -127,7 +125,15 @@ const generate = async file => {
     const body = Object.entries(env)
         .map(([name, value]) => `${name}='${value}'`)
         .join('\n')
-    writeFileSync(file, `${body}\n`, { mode: 0o600 })
+    // 'wx' fails if the file exists, in the same call that creates it, so a second
+    // run can never overwrite phrases that already hold testnet funds.
+    try {
+        writeFileSync(file, `${body}\n`, { flag: 'wx', mode: 0o600 })
+    } catch (error) {
+        if (error.code === 'EEXIST')
+            throw new Error(`${file} exists; delete it first or run fund.`)
+        throw error
+    }
     console.log(`Wrote ${file} (mode 600).`)
     console.log(`Fund the treasury with 10 testnet ALGO: ${treasury.address}`)
     console.log(
@@ -215,7 +221,7 @@ const fund = async file => {
         })
         await submit(txn, treasury.sk)
         console.log(
-            `  ${label}: sent ${Number(amount - held) / 1e6} ALGO to ${address}`,
+            `  ${label}: sent ${Number(amount - held) / 1e6} ALGO`,
         )
     }
 
