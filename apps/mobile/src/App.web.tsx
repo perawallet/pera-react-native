@@ -19,9 +19,9 @@ import {
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { OffscreenStatus } from './app-root/OffscreenStatus'
 import { RootBoundary } from './app-root/RootBoundary'
+import { StartupMark } from './components/StartupMark'
 
 type ShellComponent = React.ComponentType
-const LOADING_DELAY_MS = 300
 
 // Dynamic for the same boot-order reason as the surfaces themselves. Runs after
 // a surface's module graph (which builds the provider) and before it starts.
@@ -37,13 +37,6 @@ const registerTransports = async (): Promise<void> => {
 export const App = (): React.JSX.Element => {
     const [Shell, setShell] = useState<Nullable<ShellComponent>>(null)
     const [bootstrapFailed, setBootstrapFailed] = useState(false)
-    const [showLoading, setShowLoading] = useState(false)
-
-    useEffect(() => {
-        if (Shell || bootstrapFailed || getSurface() === 'offscreen') return
-        const timer = setTimeout(() => setShowLoading(true), LOADING_DELAY_MS)
-        return () => clearTimeout(timer)
-    }, [Shell, bootstrapFailed])
 
     useEffect(() => {
         const bootstrap = async (): Promise<void> => {
@@ -121,18 +114,7 @@ export const App = (): React.JSX.Element => {
                 Pera Wallet failed to start. Reopen the extension to try again.
             </div>
         )
-    if (!showLoading) return <></>
+    if (getSurface() === 'offscreen') return <></>
 
-    // The regular loading components import stores that require hydration.
-    return (
-        <div
-            className='pera-bootstrap'
-            role='status'
-        >
-            <img
-                src='./icons/icon-128.png'
-                alt='Pera Wallet'
-            />
-        </div>
-    )
+    return <StartupMark />
 }

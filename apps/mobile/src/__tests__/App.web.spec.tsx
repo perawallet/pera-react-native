@@ -90,11 +90,13 @@ describe('App (web) on the offscreen surface', () => {
 describe('App (web) startup', () => {
     afterEach(() => {
         vi.useRealTimers()
+        vi.restoreAllMocks()
         mocks.getSurface.mockReturnValue('offscreen')
     })
 
     it('shows the wallet mark only if hydration is still pending after the delay', async () => {
         vi.useFakeTimers()
+        vi.spyOn(performance, 'now').mockReturnValue(0)
         mocks.getSurface.mockReturnValue('popup')
         let finishHydration!: () => void
         mocks.hydratePlatform.mockReturnValueOnce(
