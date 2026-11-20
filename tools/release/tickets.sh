@@ -3,8 +3,9 @@ set -uo pipefail
 
 # tools/release/tickets.sh <tag>
 #
-# Prints the PERA keys a release delivered — every ticket named in a commit
-# subject within this tag's range, one per line.
+# Prints the Linear PER keys a release delivered — every ticket named in a
+# commit subject within this tag's range, one per line. The key must start at a
+# word boundary, so neither super-12 nor a retired Jira PERA key matches.
 #
 # This list is what makes a commit mandatory for every automated ticket move.
 # Plenty of tickets legitimately ship no code — QA verification tasks,
@@ -17,7 +18,7 @@ set -uo pipefail
 # whole history, which is genuinely what the first one ships.
 #
 # Subject line only. A squash commit body can cite tickets the PR merely
-# references ("blocked by PERA-x"), and those are not what shipped.
+# references ("blocked by PER-x"), and those are not what shipped.
 
 TAG="${1:-}"
 if [ -z "$TAG" ]; then
@@ -49,6 +50,7 @@ fi
 
 echo "release-tickets: range ${RANGE}" >&2
 git log "$RANGE" --pretty='%s' 2>/dev/null |
-    grep -oE '[Pp][Ee][Rr][Aa]-[0-9]+' |
+    grep -oiE '(^|[^A-Za-z0-9])PER-[0-9]+' |
+    grep -oE '[A-Za-z]+-[0-9]+' |
     tr '[:lower:]' '[:upper:]' |
     sort -u
