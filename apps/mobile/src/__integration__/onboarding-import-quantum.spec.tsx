@@ -334,8 +334,7 @@ describe('Flow: Onboarding → Import Quantum (25-word)', () => {
             await startAlgo25ImportThroughMnemonic(ALGO25_TEST_MNEMONIC_WORDS)
 
             await waitForQuantumSheet()
-            // The importing overlay is a native modal above every sheet, so it
-            // must be gone while the sheet waits for a tap.
+            // Overlay must be gone while the sheet waits.
             expect(screen.queryByText(IMPORTING_TEXT)).toBeNull()
             expect(
                 screen.getByTestId('quantum_passphrase_detected_sheet_address')
