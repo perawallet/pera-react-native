@@ -58,6 +58,7 @@ const ENABLED = [
     'cloudBackup',
     'discover',
     'tokenApprovals',
+    'csvExport',
 ]
 
 describe('ethereumModule', () => {
@@ -115,8 +116,8 @@ describe.each(EVM_TEST_CHAINS)('the $row.id module', chain => {
         }
     })
 
-    it('leaves the CSV export off until remote config switches it on', () => {
-        expect(module.capabilityDefaults.csvExport).toBe(false)
+    it('turns the CSV export on by default, since it reads the history on the device', () => {
+        expect(module.capabilityDefaults.csvExport).toBe(true)
         expect(module.supportedCapabilities).toContain('csvExport')
     })
 

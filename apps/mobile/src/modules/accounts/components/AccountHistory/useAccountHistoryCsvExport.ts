@@ -43,6 +43,10 @@ export type UseAccountHistoryCsvExportParams = {
     /** One per network the rows can come from; `scope`'s alone off a merged history. */
     sources: HistorySource[]
     isMerged: boolean
+    /** `YYYY-MM-DD`, inclusive, UTC. */
+    afterTime?: string
+    /** `YYYY-MM-DD`, inclusive, UTC. */
+    beforeTime?: string
 }
 
 export type UseAccountHistoryCsvExportResult = {
@@ -62,6 +66,8 @@ export const useAccountHistoryCsvExport = ({
     scope,
     sources,
     isMerged,
+    afterTime,
+    beforeTime,
 }: UseAccountHistoryCsvExportParams): UseAccountHistoryCsvExportResult => {
     const { t } = useLanguage()
     const { showError } = useErrorToast()
@@ -89,8 +95,7 @@ export const useAccountHistoryCsvExport = ({
         },
     })
 
-    // The Pera export-history endpoint returns 404 for an empty history, so
-    // a network is offered once it has rows; counting rows rather than
+    // A network is offered once it has rows; counting rows rather than
     // `!isEmpty` also keeps the action hidden through the initial load.
     // A chain whose build has no CSV export hides the action outright; one that
     // only restricts it on this network (BetaNet, custom) keeps it to explain why.
@@ -137,6 +142,8 @@ export const useAccountHistoryCsvExport = ({
               })
             : t('asset_details.transaction_list.csv')
 
+    const isPeriodSelected = afterTime !== undefined || beforeTime !== undefined
+
     const exportFrom = useCallback(
         (source: HistorySource) => {
             const isOwnScope = toScopeKey(source.scope) === scopeKey
@@ -155,9 +162,22 @@ export const useAccountHistoryCsvExport = ({
             exportCsv({
                 accountAddress: source.address,
                 ...(!isOwnScope && { scope: source.scope }),
+                ...(isPeriodSelected && {
+                    dateRange: { startDate: afterTime, endDate: beforeTime },
+                }),
             })
         },
-        [exportCsv, isUnavailableOnNetwork, scope, scopeKey, showError, t],
+        [
+            afterTime,
+            beforeTime,
+            exportCsv,
+            isPeriodSelected,
+            isUnavailableOnNetwork,
+            scope,
+            scopeKey,
+            showError,
+            t,
+        ],
     )
 
     const handleExportCsv = useCallback(() => {

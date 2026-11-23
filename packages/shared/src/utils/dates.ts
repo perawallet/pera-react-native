@@ -31,10 +31,12 @@ export const isValidISODate = (dateString: string): boolean => {
     const month = parseInt(datePieces[1], 10)
     const day = parseInt(datePieces[2], 10)
 
+    // `new Date('YYYY-MM-DD')` is UTC midnight, so read it back in UTC: the
+    // local getters see the previous day west of UTC.
     return (
-        date.getFullYear() === year &&
-        date.getMonth() + 1 === month &&
-        date.getDate() === day
+        date.getUTCFullYear() === year &&
+        date.getUTCMonth() + 1 === month &&
+        date.getUTCDate() === day
     )
 }
 

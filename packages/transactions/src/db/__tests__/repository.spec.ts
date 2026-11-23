@@ -290,6 +290,50 @@ describe('transaction repository', () => {
         )
     })
 
+    it('merges the keys of a merged object path, replacing only the keys an upsert carries', async () => {
+        const scope = { chainId: 'algorand', networkId: 'mainnet' } as const
+        historyChainAdapters.reset()
+        historyChainAdapters.register(
+            fixtureHistoryAdapter({
+                chainData: {
+                    encode: ({ chainData }) => JSON.stringify(chainData),
+                    decode: json => ({
+                        roundTime: 0,
+                        chainData: JSON.parse(json),
+                    }),
+                    assetIdPaths: [],
+                    stickyPaths: [],
+                    mergedObjectPaths: ['$.byAccount'],
+                },
+            }),
+        )
+        const reading = (byAccount: Record<string, number[]>) =>
+            ({
+                ...makeTx(),
+                chainData: { byAccount },
+            }) as unknown as TransactionHistoryItem
+        await upsertTransactions({
+            db,
+            items: [reading({ A: [1], B: [2] })],
+            accountAddress: 'A',
+            scope,
+        })
+        await upsertTransactions({
+            db,
+            items: [reading({ B: [3], C: [4] })],
+            accountAddress: 'B',
+            scope,
+        })
+
+        const [row] = await getTransactionHistory({
+            db,
+            accountAddress: 'A',
+            scope,
+        })
+
+        expect(row.chainData).toEqual({ byAccount: { A: [1], B: [3], C: [4] } })
+    })
+
     it('lists the rows holding every present path and none of the missing ones', async () => {
         await upsertTransactions({
             db,

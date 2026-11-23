@@ -201,11 +201,16 @@ export const useAssetTransactionList = ({
             exportCsv({
                 accountAddress,
                 assetId,
+                ...((afterTime !== undefined || beforeTime !== undefined) && {
+                    dateRange: { startDate: afterTime, endDate: beforeTime },
+                }),
             })
         }
     }, [
         accountAddress,
+        afterTime,
         assetId,
+        beforeTime,
         exportCsv,
         isUnavailableOnNetwork,
         scope,
@@ -267,13 +272,9 @@ export const useAssetTransactionList = ({
         !isSearchPaused &&
         rows.length === 0 &&
         (!isFetched || hasNextPage)
-    // CSV export is only meaningful when there are transactions to export.
-    // The Pera export-history endpoint returns 404 for empty histories, so
-    // hiding the button avoids a guaranteed-failure user action. Gating on
-    // `transactionCount > 0` rather than `!isEmpty` also keeps the button
-    // hidden during the initial load (when results may still end up empty),
-    // avoiding a brief visible-then-gone flicker. Capability-gated as in
-    // `useAccountHistory`.
+    // Gating on `transactionCount > 0` rather than `!isEmpty` keeps the button
+    // hidden during the initial load, avoiding a visible-then-gone flicker.
+    // Capability-gated as in `useAccountHistory`.
     const hasCsvExport = useChainCapability(scope.chainId, 'csvExport')
     const isCsvExportRestricted = useIsCapabilityRestricted(
         scope.chainId,

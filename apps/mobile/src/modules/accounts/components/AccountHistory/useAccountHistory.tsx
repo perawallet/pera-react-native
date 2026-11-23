@@ -178,6 +178,8 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         scope,
         sources: historySources,
         isMerged,
+        afterTime,
+        beforeTime,
     })
 
     const handleTransactionPress = useCallback(

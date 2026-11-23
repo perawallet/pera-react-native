@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { Decimal } from 'decimal.js'
 import type {
     ChainContext,
     ChainScope,
@@ -23,61 +22,11 @@ import type { Optional } from '@perawallet/wallet-core-shared'
 import { isEvmNftAssetId, toCaip19 } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
 import { fetchHistoryPage } from './api/endpoints'
-import { fetchEvmHistoryCsv } from './api/export'
-import type { EvmHistoryItem } from './api/schema'
+import { exportStoredEvmHistoryCsv } from './csv-export'
 import { readEvmTransactionDetail } from './detail'
+import { evmHistoryChainData, storeEvmHistoryPage } from './history-cache'
 import { readNftApprovals } from './nft-approvals'
-import { singleNftOf, summarizeEthereumHistoryItem } from './summarize'
-
-// A withdrawal row has no hash; its first EIP-4895 index is unique
-// chain-wide. Explorer links must special-case these ids.
-const recordId = (item: EvmHistoryItem): Optional<string> =>
-    item.kind === 'withdrawal'
-        ? item.withdrawals[0] && `withdrawal:${item.withdrawals[0].index}`
-        : (item.hash ?? undefined)
-
-const toRecords = (
-    item: EvmHistoryItem,
-    address: string,
-    scope: ChainScope,
-    chain: EvmChain,
-    isDecoding: boolean,
-    nftApprovals: ReadonlySet<string>,
-): TransactionRecord[] => {
-    const id = recordId(item)
-    if (id === undefined) return []
-    const summary = summarizeEthereumHistoryItem(
-        item,
-        address,
-        scope,
-        chain,
-        isDecoding,
-        nftApprovals,
-    )
-    const nft = singleNftOf(item, address, summary)
-    return [
-        {
-            id,
-            scope,
-            status: item.status === 'success' ? 'confirmed' : 'failed',
-            timestamp: Date.parse(item.block_time),
-            ...(item.block_number !== undefined && {
-                blockNumber: item.block_number,
-            }),
-            // No `from` means the row is known only from a transfer log. Read
-            // unfiltered, another address signed it and the gas was never this
-            // account's; an ERC-20 view names no sender on any row, so there
-            // the account's own sends lose their fee and initiator too.
-            fee:
-                item.fee === null || item.from === null
-                    ? undefined
-                    : new Decimal(item.fee),
-            ...(item.from !== null && { initiator: item.from }),
-            summary,
-            chainData: { family: 'evm', ...(nft && { nft }) },
-        },
-    ]
-}
+import { toEvmHistoryRecords } from './records'
 
 // Only an ERC-20's view is asked for. The backend filters no NFT view, and its
 // native view strips the other assets' legs from each row, so a token send
@@ -134,10 +83,24 @@ export const getEvmTransactionHistory = async (
         page,
         { caip19AssetId, signal, isSupplementary },
     )
-    const nftApprovals = await readNftApprovals(items, address, scope)
+    // An ERC-20 view lists that token's transfers alone, and storing one would
+    // replace the full row History read from the unfiltered view.
+    const [nftApprovals] = await Promise.all([
+        readNftApprovals(items, address, scope),
+        caip19AssetId === undefined
+            ? storeEvmHistoryPage(items, address, scope)
+            : undefined,
+    ])
     return {
         items: items.flatMap(item =>
-            toRecords(item, address, scope, chain, isDecoding, nftApprovals),
+            toEvmHistoryRecords(
+                item,
+                address,
+                scope,
+                chain,
+                isDecoding,
+                nftApprovals,
+            ),
         ),
         ...(next !== null && { next: { cursor: next } }),
     }
@@ -162,5 +125,6 @@ export const createEvmHistoryAdapter = (
         }),
     getTransactionDetail: (txId, scope, record) =>
         readEvmTransactionDetail(ctx, chain, scope, txId, record.fee),
-    exportCsv: params => fetchEvmHistoryCsv(chain, params),
+    chainData: evmHistoryChainData,
+    exportCsv: params => exportStoredEvmHistoryCsv(chain, params),
 })

@@ -33,6 +33,9 @@ import type { EvmHistoryItemResponse } from '@perawallet/wallet-core-chain-ether
 import { server } from '@test-utils/msw-server'
 import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
 
+const shared = vi.hoisted(() => ({ shareFile: vi.fn() }))
+vi.mock('@utils/shareFile', () => ({ shareFile: shared.shareFile }))
+
 vi.mock('@perawallet/wallet-core-config', async importOriginal => {
     const withBackend = await (
         await import('@packages/chain-ethereum/src/__tests__/pera-backend')
@@ -70,8 +73,6 @@ const { AccountHistory } =
     await import('@modules/accounts/components/AccountHistory/AccountHistory')
 const { useAssetListViewStore } =
     await import('@modules/accounts/hooks/useAssetListViewStore')
-const { chainOverridesKey, useRemoteConfigStore } =
-    await import('@perawallet/wallet-core-remote-config')
 const { registerAppBottomSheets } =
     await import('../bootstrap/bottom-sheet-registrations')
 
@@ -186,7 +187,7 @@ describe('Flow: History on an account with Algorand and Ethereum', () => {
         useAccountsStore.getState().setAccounts([])
     })
 
-    it('Given history on both networks, when History opens on All, then it interleaves them newest first, labels each row with its network, and offers the Algorand CSV export', async () => {
+    it('Given history on both networks, when History opens on All, then it interleaves them newest first, labels each row with its network, and offers the CSV export for both networks', async () => {
         renderWithNavigation(AccountHistory, 'AccountHistory')
 
         await waitFor(
@@ -210,83 +211,59 @@ describe('Flow: History on an account with Algorand and Ethereum', () => {
             ).getByTestId('chain_label_ethereum'),
         ).toBeTruthy()
         expect(
-            screen.getByText('asset_details.transaction_list.csv_on_network'),
+            screen.getByText('asset_details.transaction_list.csv'),
         ).toBeTruthy()
     })
 
-    describe("when Ethereum's CSV export is switched on", () => {
-        const ethereumOverrides = chainOverridesKey('ethereum')
-
-        beforeEach(() => {
-            useRemoteConfigStore
-                .getState()
-                .setConfigOverride(
-                    ethereumOverrides,
-                    JSON.stringify({ capabilities: { csvExport: true } }),
-                )
+    it('Given rows on both networks, when CSV is tapped on All and Ethereum picked, then it shares a file built from the stored Ethereum rows without asking the export route', async () => {
+        let exportHits = 0
+        server.use(
+            http.get(
+                '*/api/v3/evm/:chainId/accounts/:address/export-history/',
+                () => {
+                    exportHits += 1
+                    return new HttpResponse('"Date"\r\n')
+                },
+            ),
+        )
+        renderWithNavigation(AccountHistory, 'AccountHistory')
+        await waitFor(() => expect(rowIds()).toHaveLength(4), {
+            timeout: SLOW_WAIT_TIMEOUT_MS,
         })
 
-        afterEach(() => {
-            useRemoteConfigStore
-                .getState()
-                .setConfigOverride(ethereumOverrides, null)
-        })
-
-        it('Given rows on both networks, when CSV is tapped on All and Ethereum picked, then it asks the EVM export for the Ethereum address', async () => {
-            const exportRequest = Promise.withResolvers<URL>()
-            server.use(
-                http.get(
-                    '*/api/v3/evm/:chainId/accounts/:address/export-history/',
-                    ({ request }) => {
-                        exportRequest.resolve(new URL(request.url))
-                        return new HttpResponse('"Date"\r\n', {
-                            headers: {
-                                'Content-Type': 'text/csv',
-                                'Content-Disposition':
-                                    'attachment; filename=Transactions-1-0x5aae--beed-Pera.csv',
-                            },
-                        })
-                    },
-                ),
-            )
-            renderWithNavigation(AccountHistory, 'AccountHistory')
-            await waitFor(() => expect(rowIds()).toHaveLength(4), {
+        fireEvent.click(screen.getByText('asset_details.transaction_list.csv'))
+        fireEvent.click(
+            await screen.findByTestId('chain_selection_ethereum', undefined, {
                 timeout: SLOW_WAIT_TIMEOUT_MS,
-            })
+            }),
+        )
 
-            fireEvent.click(
-                screen.getByText('asset_details.transaction_list.csv'),
-            )
-            fireEvent.click(
-                await screen.findByTestId(
-                    'chain_selection_ethereum',
-                    undefined,
-                    {
-                        timeout: SLOW_WAIT_TIMEOUT_MS,
-                    },
-                ),
-            )
+        await waitFor(() => expect(shared.shareFile).toHaveBeenCalledTimes(1), {
+            timeout: SLOW_WAIT_TIMEOUT_MS,
+        })
+        const [filename, content] = shared.shareFile.mock.calls[0] as [
+            string,
+            string,
+        ]
+        expect(filename).toBe('Transactions-1-0x5aae--eaed-Pera.csv')
+        expect(content).toContain(hashOf(3))
+        expect(content).toContain(hashOf(1))
+        expect(content).not.toContain(ALGO_TX.id)
+        expect(exportHits).toBe(0)
+    })
 
-            expect((await exportRequest.promise).pathname).toBe(
-                `/api/v3/evm/1/accounts/${ETH_ADDRESS}/export-history/`,
-            )
+    it('Given rows on Ethereum alone, when History opens on All, then the export names Ethereum', async () => {
+        await resetTestDatabase()
+        serveUnfundedAlgorandAddress()
+
+        renderWithNavigation(AccountHistory, 'AccountHistory')
+        await waitFor(() => expect(rowIds()).toHaveLength(2), {
+            timeout: SLOW_WAIT_TIMEOUT_MS,
         })
 
-        it('Given rows on Ethereum alone, when History opens on All, then the export names Ethereum', async () => {
-            await resetTestDatabase()
-            serveUnfundedAlgorandAddress()
-
-            renderWithNavigation(AccountHistory, 'AccountHistory')
-            await waitFor(() => expect(rowIds()).toHaveLength(2), {
-                timeout: SLOW_WAIT_TIMEOUT_MS,
-            })
-
-            expect(
-                screen.getByText(
-                    'asset_details.transaction_list.csv_on_network',
-                ),
-            ).toBeTruthy()
-        })
+        expect(
+            screen.getByText('asset_details.transaction_list.csv_on_network'),
+        ).toBeTruthy()
     })
 
     it("Given Ethereum's history fails, when History opens on All, then Algorand's rows show under a notice naming Ethereum whose Retry brings its rows in", async () => {
