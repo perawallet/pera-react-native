@@ -17,7 +17,14 @@ import type { MigrationStepVersions } from '@perawallet/wallet-extension-platfor
 const { accountsStoreMock, hydrationMock, keystoreMock, gateMock } = vi.hoisted(
     () => ({
         accountsStoreMock: { accounts: [] as WalletAccount[] },
-        hydrationMock: { hasHydrated: vi.fn(() => true) },
+        hydrationMock: {
+            hasHydrated: vi.fn(() => true),
+            finishListeners: [] as (() => void)[],
+            onFinishHydration: vi.fn((listener: () => void) => {
+                hydrationMock.finishListeners.push(listener)
+                return vi.fn()
+            }),
+        },
         keystoreMock: {
             ids: new Set<string>(),
             parents: new Map<string, string>(),
@@ -149,9 +156,27 @@ describe('wipeMigratedLegacyData', () => {
         expect(data.auth.pin?.every(b => b === 0)).toBe(true)
     })
 
-    it('wipes when the user has since removed a migrated account', async () => {
+    it('keeps and remembers the refusal when a key-bearing account was removed', async () => {
         accountsStoreMock.accounts = []
         const { service } = buildService()
+
+        expect(await wipeMigratedLegacyData(service, 'algorand')).toBe(
+            'keyed-account-removed',
+        )
+        expect(service.wipeLegacyData).not.toHaveBeenCalled()
+        expect(gateMock.setLegacyWipeBlock).toHaveBeenCalledWith({
+            versions: MIGRATION_STEP_TARGET_VERSIONS,
+            addresses: ['ADDR'],
+        })
+    })
+
+    it('wipes when a removed account had no key in the legacy store', async () => {
+        accountsStoreMock.accounts = []
+        const { service } = buildService({
+            data: legacyData({
+                accounts: [legacyAccount({ secretKey: null })],
+            }),
+        })
 
         expect(await wipeMigratedLegacyData(service, 'algorand')).toBe('wiped')
     })
@@ -166,14 +191,20 @@ describe('wipeMigratedLegacyData', () => {
         expect(service.wipeLegacyData).not.toHaveBeenCalled()
     })
 
-    it('keeps the store before the accounts store has rehydrated', async () => {
+    it('waits for the accounts store to rehydrate before checking', async () => {
         hydrationMock.hasHydrated.mockReturnValue(false)
+        hydrationMock.finishListeners = []
         const { service } = buildService()
 
-        expect(await wipeMigratedLegacyData(service, 'algorand')).toBe(
-            'accounts-not-hydrated',
+        const pending = wipeMigratedLegacyData(service, 'algorand')
+        await vi.waitFor(() =>
+            expect(hydrationMock.finishListeners).toHaveLength(1),
         )
-        expect(service.wipeLegacyData).not.toHaveBeenCalled()
+        expect(service.getLegacyData).not.toHaveBeenCalled()
+
+        hydrationMock.finishListeners[0]()
+
+        expect(await pending).toBe('wiped')
     })
 
     it('keeps the store while a step is below its target version', async () => {
@@ -282,11 +313,7 @@ describe('wipeMigratedLegacyData', () => {
         expect(await wipeMigratedLegacyData(service, 'algorand')).toBe('wiped')
     })
 
-    it.each([
-        ['removed the watch account', () => []],
-        ['re-imported it with its key', () => [localAccount('ADDR')]],
-    ])('re-checks and wipes once the user has %s', async (_label, accounts) => {
-        accountsStoreMock.accounts = accounts()
+    it('re-checks and wipes once the user has re-imported the account with its key', async () => {
         gateMock.legacyWipeBlock = {
             versions: { ...MIGRATION_STEP_TARGET_VERSIONS },
             addresses: ['ADDR'],
@@ -294,6 +321,20 @@ describe('wipeMigratedLegacyData', () => {
         const { service } = buildService()
 
         expect(await wipeMigratedLegacyData(service, 'algorand')).toBe('wiped')
+    })
+
+    it('stays blocked without re-reading after the user removes the watch account', async () => {
+        accountsStoreMock.accounts = []
+        gateMock.legacyWipeBlock = {
+            versions: { ...MIGRATION_STEP_TARGET_VERSIONS },
+            addresses: ['ADDR'],
+        }
+        const { service } = buildService()
+
+        expect(await wipeMigratedLegacyData(service, 'algorand')).toBe(
+            'still-blocked',
+        )
+        expect(service.getLegacyData).not.toHaveBeenCalled()
     })
 
     it('keeps and remembers the refusal when the keystore lacks the account key', async () => {

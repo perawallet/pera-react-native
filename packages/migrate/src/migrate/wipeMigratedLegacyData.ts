@@ -42,17 +42,20 @@ import {
 export type LegacyWipeOutcome =
     | 'wiped'
     | 'no-legacy-data'
-    | 'accounts-not-hydrated'
     | 'steps-pending'
     | 'still-blocked'
     | 'undecodable-accounts'
     | 'keys-held-as-watch'
     | 'keys-missing-from-keystore'
+    | 'keyed-account-removed'
     | 'failed'
 
 type BlockingReason = Extract<
     LegacyWipeOutcome,
-    'undecodable-accounts' | 'keys-held-as-watch' | 'keys-missing-from-keystore'
+    | 'undecodable-accounts'
+    | 'keys-held-as-watch'
+    | 'keys-missing-from-keystore'
+    | 'keyed-account-removed'
 >
 
 type WipeBlockFinding = { reason: BlockingReason; addresses: string[] }
@@ -79,12 +82,13 @@ const migratedAccountsByAddress = (
     return byAddress
 }
 
-// An account the user removed after migrating no longer needs its legacy key.
 const accountBlockReason = (
     migrated: Optional<WalletAccount>,
     chainId: ChainId,
 ): Nullable<BlockingReason> => {
-    if (!migrated) return null
+    // It may have been removed while it showed as watch-only, so the legacy
+    // store can still hold the only copy of its key.
+    if (!migrated) return 'keyed-account-removed'
     // A later accounts-step bump re-imports these from the legacy keys.
     if (isWatchAccount(migrated)) return 'keys-held-as-watch'
     return holdsKey(chainAccountOf(migrated, chainId)?.keyPairId)
@@ -150,17 +154,27 @@ export const wipeMigratedLegacyData = async (
     return outcome
 }
 
+// Before rehydration the account list is empty, which would hide a watch-held
+// key and wipe it.
+const accountsHydrated = (): Promise<void> =>
+    new Promise(resolve => {
+        if (useAccountsStore.persist.hasHydrated()) {
+            resolve()
+            return
+        }
+        const unsubscribe = useAccountsStore.persist.onFinishHydration(() => {
+            unsubscribe()
+            resolve()
+        })
+    })
+
 const resolveAndWipe = async (
     migration: MigrationService,
     chainId: ChainId,
 ): Promise<LegacyWipeOutcome> => {
     try {
-        // Before rehydration the account list is empty, which would hide a
-        // watch-held key and wipe it.
-        if (!useAccountsStore.persist.hasHydrated()) {
-            return 'accounts-not-hydrated'
-        }
         if (!(await migration.hasLegacyData())) return 'no-legacy-data'
+        await accountsHydrated()
         // Until its metadata loads, every key would read as missing.
         await getKeystore().ready
         const completed = await resolveCompletedStepVersions(migration)

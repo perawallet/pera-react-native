@@ -183,10 +183,12 @@ export class RNMigrationService implements MigrationService {
 
     async wipeLegacyData(): Promise<void> {
         const module = getNativeModule()
-        if (!module || typeof module.resetLegacyData !== 'function') {
-            return
+        if (!module || typeof module.wipeMigratedLegacyData !== 'function') {
+            throw new Error(
+                'Native LegacyMigration module cannot wipe migrated data',
+            )
         }
-        await module.resetLegacyData()
+        await module.wipeMigratedLegacyData()
     }
 
     async getCompletedStepVersions(): Promise<Nullable<MigrationStepVersions>> {
@@ -284,6 +286,8 @@ interface NativeLegacyMigrationModule {
     simulatePreSixxAccounts?(): Promise<void>
 
     resetLegacyData?(): Promise<void>
+
+    wipeMigratedLegacyData?(): Promise<void>
 }
 
 const getNativeModule = (): Nullable<NativeLegacyMigrationModule> =>
