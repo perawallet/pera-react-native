@@ -43,13 +43,14 @@ const ENABLED: ReadonlySet<ChainCapability> = new Set<ChainCapability>([
     'discover',
     // Its candidate pairs come from the approvals service, so a scope without it shows the list's error, never a wrong one.
     'tokenApprovals',
+    // Built from the history the device holds; no backend route is reached.
+    'csvExport',
 ])
 
 // Off by default but safe for remote config to switch on: no Algorand-only code,
 // and no Pera endpoint a scope without a deployment could reach. A chain row turns
 // these on where its routes and providers exist. Anything else stays off.
-// csvExport waits on the backend's export route, which remote config switches on chain by chain.
-const SWITCHABLE: readonly ChainCapability[] = ['onramp', 'swap', 'csvExport']
+const SWITCHABLE: readonly ChainCapability[] = ['onramp', 'swap']
 
 const SUPPORTED: readonly ChainCapability[] = [...ENABLED, ...SWITCHABLE]
 

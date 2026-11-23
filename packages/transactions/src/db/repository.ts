@@ -74,12 +74,20 @@ const jsonPathAsText = (
 const keepStickyChainData = (
     incoming: string,
     stickyPaths: readonly string[],
-): SQL =>
-    stickyPaths.reduce<SQL>(
+    mergedObjectPaths: readonly string[],
+): SQL => {
+    const sticky = stickyPaths.reduce<SQL>(
         (doc, path) =>
             sql`json_set(${doc}, ${path}, COALESCE(json_extract(${incoming}, ${path}), CASE WHEN json_valid(${TransactionsSchema.chainData}) THEN json_extract(${TransactionsSchema.chainData}, ${path}) END))`,
         sql`${incoming}`,
     )
+    // json_patch, so the incoming keys win and the stored ones stay.
+    return mergedObjectPaths.reduce<SQL>(
+        (doc, path) =>
+            sql`json_set(${doc}, ${path}, json_patch(COALESCE(CASE WHEN json_valid(${TransactionsSchema.chainData}) THEN json_extract(${TransactionsSchema.chainData}, ${path}) END, '{}'), COALESCE(json_extract(${incoming}, ${path}), '{}')))`,
+        sticky,
+    )
+}
 
 export async function upsertTransactions({
     db = getDatabase(),
@@ -122,6 +130,7 @@ export async function upsertTransactions({
                     chainData: keepStickyChainData(
                         row.chainData,
                         codec.stickyPaths,
+                        codec.mergedObjectPaths ?? [],
                     ),
                     updatedAt: now,
                 },

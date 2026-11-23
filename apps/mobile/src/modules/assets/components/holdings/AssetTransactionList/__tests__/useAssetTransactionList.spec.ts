@@ -683,6 +683,34 @@ describe('useAssetTransactionList', () => {
             })
         })
 
+        it('limits the export to the period the list is filtered to', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce({
+                filter: TransactionFilter.Today,
+            })
+            const { result } = renderHook(() =>
+                useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
+                    account: mockAccount,
+                    asset: mockAsset,
+                }),
+            )
+            await act(async () => {
+                await result.current.handleOpenFilter()
+            })
+            const { afterTime, beforeTime } = vi.mocked(
+                useTransactionHistoryQuery,
+            ).mock.lastCall![0]
+
+            result.current.handleExportCsv()
+
+            expect(afterTime).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+            expect(mockExportCsv).toHaveBeenCalledWith({
+                accountAddress: ACCOUNT_ADDRESS,
+                assetId: '12345',
+                dateRange: { startDate: afterTime, endDate: beforeTime },
+            })
+        })
+
         it('does not call exportCsv if no account address', () => {
             const accountWithoutAddress = { ...mockAccount, chains: {} }
 
@@ -1218,7 +1246,7 @@ describe('useAssetTransactionList', () => {
             ])
         })
 
-        it('offers no CSV export on a chain whose build has none', () => {
+        it('offers the CSV export on an EVM chain once it lists records', () => {
             const { result } = renderHook(() =>
                 useAssetTransactionList({
                     scope: ETH_SCOPE,
@@ -1227,7 +1255,7 @@ describe('useAssetTransactionList', () => {
                 }),
             )
 
-            expect(result.current.isCsvExportVisible).toBe(false)
+            expect(result.current.isCsvExportVisible).toBe(true)
         })
 
         it('offers to search older history, not a skeleton, for a barely used token', () => {

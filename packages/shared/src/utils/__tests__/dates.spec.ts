@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, expect } from 'vitest'
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
 import {
     isValidISODate,
     formatISODate,
@@ -41,6 +41,40 @@ describe('isValidISODate', () => {
         expect(isValidISODate('2023-02-29')).toBe(false) // not a leap year
         expect(isValidISODate('2024-13-01')).toBe(false) // month 13
         expect(isValidISODate('2024-00-01')).toBe(false) // month 0
+    })
+
+    describe('in a timezone west of UTC', () => {
+        // `process.env.TZ` can't move a vm worker's zone, so the local getters
+        // are read five hours behind UTC, as in America/New_York.
+        const westOf = (date: Date): Date =>
+            new Date(date.getTime() - 5 * 60 * 60 * 1000)
+
+        beforeEach(() => {
+            vi.spyOn(Date.prototype, 'getFullYear').mockImplementation(
+                function (this: Date) {
+                    return westOf(this).getUTCFullYear()
+                },
+            )
+            vi.spyOn(Date.prototype, 'getMonth').mockImplementation(function (
+                this: Date,
+            ) {
+                return westOf(this).getUTCMonth()
+            })
+            vi.spyOn(Date.prototype, 'getDate').mockImplementation(function (
+                this: Date,
+            ) {
+                return westOf(this).getUTCDate()
+            })
+        })
+
+        afterEach(() => {
+            vi.restoreAllMocks()
+        })
+
+        it('accepts a real date and rejects an impossible one', () => {
+            expect(isValidISODate('2026-10-23')).toBe(true)
+            expect(isValidISODate('2026-02-30')).toBe(false)
+        })
     })
 })
 

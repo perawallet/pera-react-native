@@ -135,6 +135,12 @@ export interface HistoryChainDataCodec {
      * shared across accounts, so an upsert that lacks one keeps the stored value.
      */
     stickyPaths: readonly string[]
+    /**
+     * Objects keyed by account address, each key one account's reading of the
+     * shared row. An upsert merges its keys into the stored object, replacing
+     * only the keys it carries, so one account's reading never erases another's.
+     */
+    mergedObjectPaths?: readonly string[]
 }
 
 /** What the app knows that a chain package can't read for itself. */
@@ -159,11 +165,11 @@ export type HistoryReadOptions = {
 /** The chain-specific history source; registered by the chain package. */
 export interface HistoryChainAdapter {
     chainId: ChainId
-    /** Absent on a chain whose history isn't cached as `TransactionHistoryItem` rows. */
+    /** Absent on a chain that doesn't list its history from cached `TransactionHistoryItem` rows. */
     fetchHistory?(
         params: FetchTransactionHistoryParams,
     ): Promise<TransactionHistoryResult>
-    /** Absent on a chain whose history isn't cached as `TransactionHistoryItem` rows. */
+    /** Absent on a chain that doesn't list its history from cached `TransactionHistoryItem` rows. */
     fetchMoreHistory?(
         params: FetchMoreTransactionsParams,
     ): Promise<TransactionHistoryResult>
@@ -185,7 +191,7 @@ export interface HistoryChainAdapter {
     ): Promise<Nullable<TransactionNative>>
     /**
      * The list row for a stored item, read from `address`'s side. Absent on a
-     * chain whose history isn't cached as `TransactionHistoryItem` rows.
+     * chain that doesn't list its history from cached `TransactionHistoryItem` rows.
      */
     summarize?(
         item: TransactionHistoryItem,
@@ -196,7 +202,7 @@ export interface HistoryChainAdapter {
      * or null when the press opens the row's own detail.
      */
     groupToOpen?(item: TransactionHistoryItem): Nullable<string>
-    /** Absent on a chain whose history isn't cached as `TransactionHistoryItem` rows. */
+    /** Absent on a chain that doesn't list its history from cached `TransactionHistoryItem` rows. */
     toTransactionNative?(
         item: TransactionHistoryItem,
     ): Nullable<TransactionNative>
@@ -205,7 +211,7 @@ export interface HistoryChainAdapter {
      * cached row is read back: the syncer never refetches an old row.
      */
     resolveAssetFacts?: AssetFactsResolver
-    /** Absent on a chain whose history isn't cached as `TransactionHistoryItem` rows. */
+    /** Absent on a chain that stores no rows in `transactions`. */
     chainData?: HistoryChainDataCodec
     /** The account's history as a CSV file; required where `csvExport` can be on. Rejects with `CsvExportError`. */
     exportCsv?(params: FetchCsvParams): Promise<CsvExportResult>
@@ -231,8 +237,8 @@ export const assetFactsResolverFor = (chainId: ChainId): AssetFactsResolver =>
         : undefined) ?? keepFacts
 
 /**
- * False on a chain that reads its history as records through
- * `getTransactionHistory` instead of caching rows, where every row-path
+ * False on a chain that lists its history as records through
+ * `getTransactionHistory` rather than from cached rows, where every row-path
  * call would reject with {@link TransactionHistoryRowsUnsupportedError}.
  */
 export const hasCachedHistoryRows = (chainId: ChainId): boolean =>

@@ -847,7 +847,10 @@ describe('useAccountHistory', () => {
             })
         }
 
-        it('offers the Algorand CSV export on All, named for Algorand and run at its address', () => {
+        it('offers the Algorand CSV export on All while Ethereum has none, named for Algorand and run at its address', () => {
+            vi.mocked(useChainCapabilityCheck).mockReturnValue(
+                ({ chain }) => chain?.chainId !== 'ethereum',
+            )
             const { result } = renderHook(() => useAccountHistory())
 
             reportRecords(result, {
@@ -936,7 +939,8 @@ describe('useAccountHistory', () => {
             expect(mockExportCsv).not.toHaveBeenCalled()
         })
 
-        it('hides the CSV export on All while only Ethereum has rows, since the export would be empty', () => {
+        it('hides the CSV export on All while only Ethereum has rows and no export', () => {
+            vi.mocked(useChainCapabilityCheck).mockReturnValue(() => false)
             const { result } = renderHook(() => useAccountHistory())
 
             reportRecords(result, { ethereum: ['0xeth'] })
@@ -1077,7 +1081,10 @@ describe('useAccountHistory', () => {
             AccountDetailsEvent.TransactionDownload,
             { [AnalyticsMetadataKey.ChainId]: 'ethereum' },
         )
-        expect(mockExportCsv).toHaveBeenCalledWith({ accountAddress: address })
+        expect(mockExportCsv).toHaveBeenCalledWith({
+            accountAddress: address,
+            dateRange: { startDate: expect.any(String), endDate: undefined },
+        })
     })
 
     it('offers types on Ethereum, filters its records by the picked one and tracks it', async () => {
@@ -1257,6 +1264,32 @@ describe('useAccountHistory', () => {
                 AccountDetailsEvent.TransactionDownload,
                 { [AnalyticsMetadataKey.ChainId]: 'algorand' },
             )
+        })
+
+        it('limits the export to the period the history is filtered to', async () => {
+            vi.mocked(useTransactionHistoryQuery).mockReturnValue({
+                transactions: [{ id: '1', roundTime: 1_704_067_200 }],
+                isLoading: false,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
+            mockRequestBottomSheet.mockResolvedValueOnce({
+                filter: TransactionFilter.Today,
+            })
+            const { result } = renderHook(() => useAccountHistory())
+            await act(async () => {
+                await result.current.handleOpenFilter()
+            })
+            const { afterTime, beforeTime } = vi.mocked(
+                useTransactionHistoryQuery,
+            ).mock.lastCall![0]
+
+            result.current.handleExportCsv()
+
+            expect(afterTime).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+            expect(mockExportCsv).toHaveBeenCalledWith({
+                accountAddress: ACCOUNT_ADDRESS,
+                dateRange: { startDate: afterTime, endDate: beforeTime },
+            })
         })
 
         it('does not call exportCsv if no account is selected', () => {

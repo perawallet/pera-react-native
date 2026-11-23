@@ -37,6 +37,7 @@ import { evmCapabilityDefaults } from '../../capability-defaults'
 import { createEvmHistoryAdapter, getEvmTransactionHistory } from '../adapter'
 import { ETHEREUM, POLYGON } from '../../__tests__/evm-chains'
 import { fetchHistoryPage } from '../api/endpoints'
+import { storeEvmHistoryPage } from '../history-cache'
 import { evmHistoryItem, evmNftTransferLeg } from '../api/msw-handlers'
 import {
     createHistoryPageBudget,
@@ -53,6 +54,11 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal =>
         importOriginal,
     ),
 )
+
+vi.mock('../history-cache', async importOriginal => ({
+    ...(await importOriginal<typeof import('../history-cache')>()),
+    storeEvmHistoryPage: vi.fn().mockResolvedValue(undefined),
+}))
 
 const supplementary = vi.hoisted(() => ({
     share: undefined as HistoryPageBudget | undefined,
@@ -85,6 +91,7 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => {
     server.resetHandlers()
     supplementary.share = undefined
+    vi.mocked(storeEvmHistoryPage).mockClear()
 })
 afterAll(() => server.close())
 
@@ -620,6 +627,63 @@ describe('getEvmTransactionHistory', () => {
             release?.()
             await read
         }
+    })
+})
+
+describe('storing the pages it reads', () => {
+    const USDC = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'
+
+    const read = (assetId?: string) =>
+        createEvmHistoryAdapter(
+            ETHEREUM,
+            testChainContext(),
+        ).getTransactionHistory(ME, MAINNET, undefined, {
+            capabilities: evmCapabilityDefaults,
+            assetId,
+        })
+
+    it('stores an unfiltered page for the account', async () => {
+        serve([[send]])
+
+        await read()
+
+        expect(storeEvmHistoryPage).toHaveBeenCalledTimes(1)
+        expect(storeEvmHistoryPage).toHaveBeenCalledWith(
+            [expect.objectContaining({ hash: hash(1) })],
+            ME,
+            MAINNET,
+        )
+    })
+
+    it('stores a native-asset read, which is the unfiltered view', async () => {
+        serve([[send]])
+
+        await read(ETHEREUM.nativeAsset.assetId)
+
+        expect(storeEvmHistoryPage).toHaveBeenCalledTimes(1)
+    })
+
+    it('stores nothing from an ERC-20 view, which lists the token legs alone', async () => {
+        serve([[send]])
+
+        await read(getAddress(USDC))
+
+        expect(storeEvmHistoryPage).not.toHaveBeenCalled()
+    })
+
+    it('still returns the page when the database is unavailable', async () => {
+        serve([[send]])
+        vi.mocked(storeEvmHistoryPage).mockImplementationOnce(
+            (
+                await vi.importActual<typeof import('../history-cache')>(
+                    '../history-cache',
+                )
+            ).storeEvmHistoryPage,
+        )
+
+        const { items } = await read()
+
+        expect(items.map(item => item.id)).toEqual([hash(1)])
     })
 })
 
