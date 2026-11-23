@@ -174,6 +174,7 @@ export const buildPaymentTransaction = ({
     fee = 1000n,
     closeRemainderTo,
     rekeyTo,
+    note,
 }: {
     sender?: string
     receiver?: string
@@ -181,11 +182,13 @@ export const buildPaymentTransaction = ({
     fee?: bigint
     closeRemainderTo?: string
     rekeyTo?: string
+    note?: string
 } = {}): Transaction =>
     new Transaction({
         type: TransactionType.pay,
         sender: Address.fromString(sender),
         suggestedParams: { ...BASE_TX_PARAMS, fee },
+        note: note ? new TextEncoder().encode(note) : undefined,
         ...(rekeyTo ? { rekeyTo: Address.fromString(rekeyTo) } : {}),
         paymentParams: {
             receiver: Address.fromString(receiver),
