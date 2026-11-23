@@ -112,6 +112,8 @@ export const SwapDetailsSection = ({
             <DetailRow label={t('swap.quote.provider')}>
                 <SwapProviderDisplay
                     provider={quote.provider}
+                    displayName={quote.providerDisplayName}
+                    iconUrl={quote.providerIconUrl}
                     testID='swap-confirm-provider'
                 />
             </DetailRow>

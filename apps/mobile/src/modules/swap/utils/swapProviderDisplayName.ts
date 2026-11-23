@@ -10,8 +10,11 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
+// Fallback for providers the router gives no display name (XO, Meld partners, older backends).
 const PROVIDER_DISPLAY_NAMES = new Map([
-    ['xo', 'XO'],
+    ['xo', 'XO Swap'],
     ['tinyman', 'Tinyman'],
     ['tinyman-v2', 'Tinyman v2'],
     ['tinyman-swap-router', 'Tinyman Swap Router'],
@@ -23,5 +26,10 @@ const PROVIDER_DISPLAY_NAMES = new Map([
     ['haystack', 'Haystack'],
 ])
 
-export const swapProviderDisplayName = (provider: string): string =>
-    PROVIDER_DISPLAY_NAMES.get(provider.toLowerCase()) ?? provider
+export const swapProviderDisplayName = (
+    provider: string,
+    displayName?: Nullable<string>,
+): string =>
+    displayName ??
+    PROVIDER_DISPLAY_NAMES.get(provider.toLowerCase()) ??
+    provider

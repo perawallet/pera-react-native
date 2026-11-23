@@ -25,4 +25,14 @@ describe('swapProviderDisplayName', () => {
     ])('names %s as %s', (provider, name) => {
         expect(swapProviderDisplayName(provider)).toBe(name)
     })
+
+    it("prefers the router's display name", () => {
+        expect(swapProviderDisplayName('deflex', 'Hay Router')).toBe(
+            'Hay Router',
+        )
+    })
+
+    it('falls back when the router gives a null display name', () => {
+        expect(swapProviderDisplayName('xo', null)).toBe('XO Swap')
+    })
 })

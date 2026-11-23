@@ -149,6 +149,22 @@ describe('useSwapProviderContent', () => {
         expect(result.current.rows[0].displayName).toBe('Tinyman v2')
     })
 
+    it("labels a row with the router's display name and icon", () => {
+        const quote = makeQuote({
+            provider: 'deflex',
+            providerDisplayName: 'Hay Router',
+            providerIconUrl: 'https://cdn.test/haystack.png',
+            amountOut: new Decimal('200'),
+        })
+
+        const { result } = renderContent([BEST, quote])
+
+        expect(result.current.rows[0]).toMatchObject({
+            displayName: 'Hay Router',
+            iconUrl: 'https://cdn.test/haystack.png',
+        })
+    })
+
     it("keeps an unknown provider's router id as its label", () => {
         const quote = makeQuote({
             provider: 'mid',

@@ -11,8 +11,10 @@
  */
 
 import { useCallback } from 'react'
+import { useTheme } from '@rneui/themed'
 import {
     PWIcon,
+    PWImage,
     PWSheetLayout,
     PWText,
     PWTouchableOpacity,
@@ -45,6 +47,7 @@ export const SwapProviderContent = ({
 }: SwapProviderContentProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
+    const { theme } = useTheme()
     const { resolve } = useBottomSheetResult<SwapProviderResult>()
 
     const { userSelection, rows, handleSelect } = useSwapProviderContent({
@@ -99,7 +102,18 @@ export const SwapProviderContent = ({
                 {rows.map((row, index) => (
                     <ProviderSelectionItem
                         key={`${row.quote.provider}-${index}`}
-                        left={<PWView style={styles.logo} />}
+                        left={
+                            row.iconUrl ? (
+                                <PWImage
+                                    source={{ uri: row.iconUrl }}
+                                    width={theme.spacing.xl}
+                                    height={theme.spacing.xl}
+                                    containerStyle={styles.logo}
+                                />
+                            ) : (
+                                <PWView style={styles.logo} />
+                            )
+                        }
                         label={row.displayName}
                         right={
                             <PWView style={styles.rightTextColumn}>

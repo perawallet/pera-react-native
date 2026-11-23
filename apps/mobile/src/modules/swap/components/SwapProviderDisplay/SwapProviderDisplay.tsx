@@ -9,30 +9,46 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
-import type { Optional } from '@perawallet/wallet-core-shared'
-import { PWText, PWView } from '@components/core'
+import { useTheme } from '@rneui/themed'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import { PWImage, PWText, PWView } from '@components/core'
 import { swapProviderDisplayName } from '../../utils/swapProviderDisplayName'
 import { useStyles } from './styles'
 
 export type SwapProviderDisplayProps = {
     /** The router's id for the offer's provider. */
     provider: Optional<string>
+    displayName?: Nullable<string>
+    iconUrl?: Nullable<string>
     testID?: string
 }
 
 export const SwapProviderDisplay = ({
     provider,
+    displayName,
+    iconUrl,
     testID,
 }: SwapProviderDisplayProps) => {
     const styles = useStyles()
+    const { theme } = useTheme()
 
     return (
         <PWView style={styles.container}>
+            {iconUrl && (
+                <PWImage
+                    source={{ uri: iconUrl }}
+                    width={theme.spacing.lg}
+                    height={theme.spacing.lg}
+                    containerStyle={styles.logo}
+                />
+            )}
             <PWText
                 style={styles.label}
                 testID={testID}
             >
-                {provider == null ? '-' : swapProviderDisplayName(provider)}
+                {provider == null
+                    ? '-'
+                    : swapProviderDisplayName(provider, displayName)}
             </PWText>
         </PWView>
     )

@@ -18,6 +18,12 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         gap: theme.spacing.xs,
     },
+    logo: {
+        width: theme.spacing.lg,
+        height: theme.spacing.lg,
+        borderRadius: theme.borderRadius.sm,
+        overflow: 'hidden',
+    },
     label: {
         color: theme.colors.textMain,
     },

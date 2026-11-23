@@ -74,6 +74,8 @@ export const buildRouterSwapQuote = (
         slippage: null,
     },
     provider: 'tinyman',
+    providerDisplayName: null,
+    providerIconUrl: null,
     routeKind: 'single-chain',
     assetIn: {
         assetId: '0',

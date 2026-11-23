@@ -176,9 +176,20 @@ describe('useSwapQuoteDetails', () => {
         expect(result.current.peraFeeDisplay).toBe('-')
     })
 
-    it('names the provider by the router id', () => {
+    it("names the provider by the router's display name", () => {
+        const quote = makeQuote({
+            provider: 'deflex',
+            providerDisplayName: 'Hay Router',
+        })
+
+        const { result } = renderHook(() => useSwapQuoteDetails(quote))
+
+        expect(result.current.providerDisplay).toBe('Hay Router')
+    })
+
+    it('falls back to its own label when the router has no display name', () => {
         const { result } = renderHook(() => useSwapQuoteDetails(makeQuote()))
 
-        expect(result.current.providerDisplay).toBe('tinyman')
+        expect(result.current.providerDisplay).toBe('Tinyman')
     })
 })

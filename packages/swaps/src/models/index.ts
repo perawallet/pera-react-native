@@ -156,6 +156,9 @@ export interface SwapQuote {
     quoteId: string
     request: SwapQuoteRequest
     provider: SwapProvider
+    /** Null when the router has no name for `provider`; fall back to the id. */
+    providerDisplayName: Nullable<string>
+    providerIconUrl: Nullable<string>
     routeKind: SwapRouteKind
     assetIn: SwapAsset
     assetOut: SwapAsset
