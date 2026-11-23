@@ -22,6 +22,7 @@ import { IntegrityCheckFrameHost } from '@components/IntegrityCheckFrameHost'
 import { OfflineBanner } from '@components/OfflineBanner'
 import { useNetworkStatusListener } from '@modules/network'
 import { usePhishingListRehydration } from '@modules/site-safety/web'
+import { useStartupThemeMirror } from '@hooks/useStartupThemeMirror.web'
 import { useAppShellRootStyles } from '../styles.web'
 import { NetworkSwitchInvalidation } from '../NetworkSwitchInvalidation'
 import { ActivityAutoLock } from '../ActivityAutoLock'
@@ -44,6 +45,7 @@ export const AppShellThemedRoot = ({
     // keeps whatever seed initNetworkStatus left.
     useNetworkStatusListener()
     usePhishingListRehydration()
+    useStartupThemeMirror()
 
     return (
         <SafeAreaProvider>

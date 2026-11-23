@@ -85,19 +85,26 @@ const POPUP_CSS =
 // against a dark app background. Mid-gray at 0.5 alpha reads against both
 // light and dark grounds, so one rule covers every OS/app theme combination.
 //
-// html/body background-color IS keyed off `prefers-color-scheme` (unlike the
-// scrollbar thumb above) because this is only the pre-mount fallback: before
-// React mounts (or if the themed root View below it ever fails to cover the
-// viewport), these colors paint instead of the browser's default grey/white.
-// They can only see the OS theme, not an in-app light/dark override -- that
-// override is handled authoritatively once mounted by the themed root View
-// in app-root/AppShellThemedRoot (theme.colors.background via ThemeProvider), which
-// takes precedence visually because it paints on top. Hex values mirror
+// html/body background-color and the startup mark's color are the pre-mount
+// fallback: before React mounts (or if the themed root View below it ever
+// fails to cover the viewport), these colors paint instead of the browser's
+// default grey/white. They follow `prefers-color-scheme` unless the surface
+// boot script found a forced in-app theme and set `data-pera-theme` on
+// <html> (mirrored to localStorage by useStartupThemeMirror.web, since the
+// settings store itself persists asynchronously). Once mounted, the themed
+// root View in app-root/AppShellThemedRoot paints on top. Hex values mirror
 // apps/mobile/src/theme/colors.ts: light = palette.white (#FFFFFF), dark =
 // palette.gray[900] (#18181B), matching theme.ts's light/dark `background`.
 const GLOBAL_WEB_CSS = `<style>
 html, body { background-color: #FFFFFF; }
 @media (prefers-color-scheme: dark) { html, body { background-color: #18181B; } }
+.pera-bootstrap { position: fixed; inset: 0; display: grid; place-items: center; color: #18181B; }
+.pera-bootstrap img { width: 48px; height: 48px; }
+@media (prefers-color-scheme: dark) { .pera-bootstrap { color: #FFFFFF; } }
+html[data-pera-theme=light], html[data-pera-theme=light] body { background-color: #FFFFFF; }
+html[data-pera-theme=dark], html[data-pera-theme=dark] body { background-color: #18181B; }
+html[data-pera-theme=light] .pera-bootstrap { color: #18181B; }
+html[data-pera-theme=dark] .pera-bootstrap { color: #FFFFFF; }
 *, *::before, *::after { -webkit-user-select: none; user-select: none; }
 input, textarea, [contenteditable], [contenteditable="true"] { -webkit-user-select: text; user-select: text; }
 * { scrollbar-width: thin; scrollbar-color: rgba(128,128,128,0.5) transparent; }
@@ -108,6 +115,10 @@ input, textarea, [contenteditable], [contenteditable="true"] { -webkit-user-sele
 /* RN UIs never rely on browser scroll anchoring (native scroll views have none); left on, it fights collapsing/expanding content and can cause scroll-position feedback loops. */
 * { overflow-anchor: none; }
 </style>`
+
+// Key and values mirror apps/mobile/src/hooks/useStartupThemeMirror.web.ts.
+const STARTUP_THEME_BOOT =
+    "try{var t=localStorage.getItem('pera.startupTheme');if(t==='light'||t==='dark')document.documentElement.dataset.peraTheme=t}catch(e){}\n"
 
 rmSync(dist, { recursive: true, force: true })
 
@@ -398,7 +409,7 @@ if (!indexHtml.includes('<head>') || !indexHtml.includes('</head>')) {
 for (const surface of SURFACES) {
     writeFileSync(
         path.join(dist, `surface-${surface}.js`),
-        `window.__PERA_SURFACE__=${JSON.stringify(surface)}\n`,
+        `window.__PERA_SURFACE__=${JSON.stringify(surface)}\n${STARTUP_THEME_BOOT}`,
     )
     let html = indexHtml.replace(
         '<head>',

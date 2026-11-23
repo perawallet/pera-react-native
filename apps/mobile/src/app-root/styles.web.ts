@@ -29,4 +29,8 @@ export const useAppShellRootStyles = makeStyles(theme => ({
         alignSelf: 'center',
         backgroundColor: theme.colors.background,
     },
+    startup: {
+        flex: 1,
+        backgroundColor: theme.colors.background,
+    },
 }))
