@@ -247,7 +247,7 @@ describe('QRScannerView', () => {
             )
             await screen.findByText('camera.scanner_load_failed.title')
 
-            // Let the import succeed now, as a dev-server/MLKit recovery would.
+            // Let the import succeed now, as a dev-server/scanner-init recovery would.
             scannerModule.failImport = false
             fireEvent.click(screen.getByText('common.retry.label'))
 
