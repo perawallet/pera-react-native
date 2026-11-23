@@ -16,7 +16,7 @@ export const useStyles = makeStyles(theme => ({
     body: {
         paddingHorizontal: theme.spacing.xl,
         paddingTop: theme.spacing.lg,
-        paddingBottom: theme.spacing.xxl,
+        paddingBottom: theme.spacing.xl,
         gap: theme.spacing.sm,
     },
     country: {

@@ -21,7 +21,7 @@ type StyleProps = {
 export const useStyles = makeStyles(
     (theme, { bottomInset, hasActions, isMessageCentered }: StyleProps) => ({
         container: {
-            paddingBottom: hasActions ? theme.spacing.lg : bottomInset,
+            paddingBottom: hasActions ? theme.spacing.xl : bottomInset,
             alignItems: 'center',
         },
         // In a content-sized sheet nothing else separates the icon from the top edge.

@@ -15,7 +15,6 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     container: {
         gap: theme.spacing.lg,
-        paddingBottom: theme.spacing.lg,
     },
     banner: {
         // lanekeep-ignore-next-line pera/no-numeric-sizes reason: banner height, as the web app's dApp modal

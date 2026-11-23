@@ -13,9 +13,11 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
+    sections: {
+        gap: theme.spacing.xl,
+    },
     section: {
         paddingHorizontal: theme.spacing.lg,
-        marginBottom: theme.spacing.xl,
     },
     sectionTitle: {
         color: theme.colors.textGray,

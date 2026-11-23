@@ -16,7 +16,7 @@ export type HorizontalPaddingMode = 'xl' | 'none'
 
 type StyleProps = {
     horizontalPadding: HorizontalPaddingMode
-    bottomInset: number
+    endGap: number
     hasFooter: boolean
     isKeyboardVisible: boolean
 }
@@ -24,15 +24,13 @@ type StyleProps = {
 export const useStyles = makeStyles(
     (
         theme,
-        {
-            horizontalPadding,
-            bottomInset,
-            hasFooter,
-            isKeyboardVisible,
-        }: StyleProps,
+        { horizontalPadding, endGap, hasFooter, isKeyboardVisible }: StyleProps,
     ) => {
         const paddingHorizontal =
             horizontalPadding === 'none' ? 0 : theme.spacing[horizontalPadding]
+        // With a footer, md here plus its md top padding make the xl gap above
+        // its controls.
+        const paddingBottom = hasFooter ? theme.spacing.md : endGap
 
         return {
             root: {
@@ -60,13 +58,13 @@ export const useStyles = makeStyles(
                 // the content into (header scrolls off above a fitting form).
                 flexGrow: isKeyboardVisible ? 0 : 1,
                 paddingHorizontal,
-                paddingBottom: hasFooter ? theme.spacing.lg : bottomInset,
+                paddingBottom,
             },
             fixedBody: {
                 flex: 1,
                 minHeight: 0,
                 paddingHorizontal,
-                paddingBottom: hasFooter ? theme.spacing.lg : bottomInset,
+                paddingBottom,
             },
             footerSafeArea: {
                 backgroundColor: theme.colors.background,

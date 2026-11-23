@@ -17,6 +17,7 @@ import type { FlashListProps } from '@shopify/flash-list'
 import { render } from '@test-utils/render'
 import { PWFlatList } from '../PWFlatList'
 import { PWInBottomSheetContext } from '../../PWBottomSheet/inSheetContext'
+import { PWScreenNestedContext } from '../../PWScreen/nestedContext'
 
 // Capture the props the wrapped FlashList receives so we can assert on the
 // branching logic (separators, padding, keyboard handling, in-sheet detection).
@@ -146,6 +147,19 @@ describe('PWFlatList', () => {
         )
 
         expect(capturedContentStyle().paddingBottom).toBeGreaterThan(0)
+    })
+
+    it('leaves the end gap to an enclosing PWScreen', () => {
+        render(
+            <PWScreenNestedContext.Provider value={true}>
+                <PWFlatList
+                    data={[1, 2]}
+                    renderItem={() => null}
+                />
+            </PWScreenNestedContext.Provider>,
+        )
+
+        expect(capturedContentStyle().paddingBottom).toBe(0)
     })
 
     it("defaults keyboardShouldPersistTaps to 'handled'", () => {

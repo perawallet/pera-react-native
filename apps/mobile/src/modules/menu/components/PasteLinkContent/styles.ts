@@ -12,10 +12,10 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
+export const useStyles = makeStyles((theme, bottomInset: number) => ({
     body: {
         paddingHorizontal: theme.spacing.lg,
-        paddingBottom: theme.spacing.lg,
+        paddingBottom: theme.spacing.xl + bottomInset,
         gap: theme.spacing.md,
     },
     description: {

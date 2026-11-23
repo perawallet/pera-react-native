@@ -37,7 +37,8 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
         flex: 1,
     },
     content: {
-        paddingBottom: theme.spacing.xl,
+        // Plus the footer's md top padding, the xl gap above its button.
+        paddingBottom: theme.spacing.md,
     },
     hero: {
         width: '100%',

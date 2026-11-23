@@ -16,7 +16,6 @@ export const useStyles = makeStyles(theme => ({
     body: {
         alignItems: 'center',
         gap: theme.spacing.xl,
-        paddingBottom: theme.spacing.xl,
     },
     warning: {
         color: theme.colors.textGray,

@@ -23,6 +23,7 @@ export const DiscoverScreen = () => {
         <PWScreen
             scroll='never'
             horizontalPadding='none'
+            bottomGap='none'
             // The Discover web app sizes its search modal from a viewport
             // height snapshotted at load and anchors it to the viewport
             // bottom; shrinking the WebView with the keyboard pushes the

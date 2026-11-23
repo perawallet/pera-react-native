@@ -16,6 +16,5 @@ export const useStyles = makeStyles(theme => ({
     list: {
         gap: theme.spacing.md,
         paddingHorizontal: theme.spacing.lg,
-        paddingBottom: theme.spacing.lg,
     },
 }))

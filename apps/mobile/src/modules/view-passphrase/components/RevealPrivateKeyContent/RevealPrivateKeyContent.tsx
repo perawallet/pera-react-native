@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { formatPrivateKey } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { PWHeader, PWText, PWView } from '@components/core'
@@ -30,7 +31,8 @@ export const RevealPrivateKeyContent = ({
     testID = 'reveal_private_key_bottom_sheet',
 }: RevealPrivateKeyContentProps) => {
     const { t } = useLanguage()
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles(insets)
     const { dismiss } = useBottomSheetResult<void>()
     useRevealPrivateKeyContent({ privateKey })
 

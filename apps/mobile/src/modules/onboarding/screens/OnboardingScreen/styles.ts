@@ -66,7 +66,6 @@ export const useStyles = makeStyles((theme, props: StyleProps) => {
             justifyContent: 'flex-end',
             alignItems: 'center',
             paddingHorizontal: theme.spacing.xl,
-            paddingBottom: theme.spacing['3xl'],
         },
         termsAndPrivacyText: {
             textAlign: 'center',

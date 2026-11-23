@@ -81,6 +81,9 @@ export const AccountNfts = ({ offset, pageIndex }: AccountNftsProps) => {
     } = useAccountNfts()
 
     const isGrid = galleryLayout === 'grid'
+    const lastRowStart =
+        collectibles.length -
+        (collectibles.length % GRID_COLUMNS || GRID_COLUMNS)
 
     const renderItem = useCallback(
         ({
@@ -94,11 +97,12 @@ export const AccountNfts = ({ offset, pageIndex }: AccountNftsProps) => {
                 item={item}
                 index={index}
                 isGrid={isGrid}
+                isLastRow={index >= lastRowStart}
                 shouldShowNetwork={shouldShowNetwork}
                 onPress={handlePress}
             />
         ),
-        [isGrid, shouldShowNetwork, handlePress],
+        [isGrid, lastRowStart, shouldShowNetwork, handlePress],
     )
 
     if (!hasAccount) {

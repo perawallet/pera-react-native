@@ -44,7 +44,6 @@ export const useStyles = makeStyles((theme, fontScale: number) => {
             gap: theme.spacing.xl,
             paddingHorizontal: theme.spacing.xl,
             paddingTop: theme.spacing.md,
-            paddingBottom: theme.spacing.xl,
         },
         section: {
             gap: theme.spacing.md,

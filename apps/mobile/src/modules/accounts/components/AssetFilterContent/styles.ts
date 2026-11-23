@@ -13,11 +13,13 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
+    filterRows: {
+        gap: theme.spacing.xl,
+    },
     filterRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingBottom: theme.spacing.xl,
     },
     filterRowDisabled: {
         opacity: 0.5,

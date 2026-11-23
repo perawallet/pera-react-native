@@ -20,7 +20,7 @@ export const useStyles = makeStyles(theme => {
     return {
         formContainer: {
             paddingHorizontal: theme.spacing.lg,
-            paddingVertical: theme.spacing.lg,
+            paddingTop: theme.spacing.lg,
             gap: theme.spacing.md,
         },
         // Gap between the pay and receive sections (the absolutely-positioned

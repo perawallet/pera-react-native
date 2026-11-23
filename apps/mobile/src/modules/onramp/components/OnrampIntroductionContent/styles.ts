@@ -25,7 +25,6 @@ export const useStyles = makeStyles(theme => ({
     contentSection: {
         paddingHorizontal: theme.spacing.xl,
         paddingTop: theme.spacing.md,
-        paddingBottom: theme.spacing.xl,
         gap: theme.spacing.xl,
         width: '100%',
         minWidth: 0,

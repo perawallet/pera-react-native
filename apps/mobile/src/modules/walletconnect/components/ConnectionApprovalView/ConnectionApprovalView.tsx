@@ -143,9 +143,10 @@ export const ConnectionApprovalView = ({
                 }
                 showsVerticalScrollIndicator={false}
                 inBottomSheet
+                hasBottomInset={false}
             />
             <PWView
-                style={styles.buttonContainer}
+                style={[styles.buttonContainer, styles.sheetButtonContainer]}
                 testID='wc_connection_screen'
             >
                 <PWButton

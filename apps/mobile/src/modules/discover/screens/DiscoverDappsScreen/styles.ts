@@ -48,7 +48,7 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         gap: theme.spacing.md,
         padding: theme.spacing.lg,
-        marginVertical: theme.spacing.lg,
+        marginTop: theme.spacing.lg,
         borderRadius: theme.borderRadius.md,
         backgroundColor: theme.colors.layerGrayLighter,
     },

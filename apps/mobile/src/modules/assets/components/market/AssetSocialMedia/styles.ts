@@ -14,13 +14,13 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        paddingVertical: theme.spacing.xl,
+        paddingTop: theme.spacing.xl,
+        gap: theme.spacing.md,
     },
     row: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: theme.spacing.md,
     },
     labelContainer: {
         flexDirection: 'row',
@@ -32,7 +32,6 @@ export const useStyles = makeStyles(theme => ({
     sectionTitle: {
         color: theme.colors.textGray,
         marginTop: theme.spacing.xl,
-        marginBottom: theme.spacing.md,
         textTransform: 'uppercase',
     },
 }))

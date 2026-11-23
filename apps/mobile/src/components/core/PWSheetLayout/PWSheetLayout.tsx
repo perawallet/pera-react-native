@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useKeyboardState } from 'react-native-keyboard-controller'
 import { getTestProps } from '@utils/test-id-helper'
 import { PWView } from '../PWView'
+import { PWScreenNestedContext } from '../PWScreen/nestedContext'
 import { useStyles } from './styles'
 import { usePWSheetLayoutFooter } from './usePWSheetLayoutFooter'
 
@@ -104,7 +105,9 @@ export const PWSheetLayout = ({
             {header != null ? (
                 <PWView style={styles.header}>{header}</PWView>
             ) : null}
-            <PWView style={styles.body}>{children}</PWView>
+            <PWScreenNestedContext.Provider value={true}>
+                <PWView style={styles.body}>{children}</PWView>
+            </PWScreenNestedContext.Provider>
         </BottomSheetScrollView>
     )
 

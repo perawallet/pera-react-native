@@ -11,16 +11,18 @@
  */
 
 import { useCallback } from 'react'
-import { PWButton, PWSheetLayout } from '@components/core'
+import { PWButton, PWSheetLayout, PWView } from '@components/core'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { FilterRow } from './FilterRow'
 import { useAssetFilterContent } from './useAssetFilterContent'
+import { useStyles } from './styles'
 
 export type AssetFilterContentProps = Record<string, never>
 
 export const AssetFilterContent = (_: AssetFilterContentProps = {}) => {
     const { t } = useLanguage()
+    const styles = useStyles()
     const { dismiss } = useBottomSheetResult<void>()
     const {
         hideZeroBalance,
@@ -56,38 +58,42 @@ export const AssetFilterContent = (_: AssetFilterContentProps = {}) => {
                 />
             }
         >
-            <FilterRow
-                label={t('asset_filter.hide_zero_balance')}
-                description={t('asset_filter.hide_zero_balance_description')}
-                value={hideZeroBalance}
-                onToggle={handleToggleHideZeroBalance}
-                testID='asset_filter_hide_zero_balance'
-            />
-            <FilterRow
-                label={t('asset_filter.display_nfts')}
-                description={t('asset_filter.display_nfts_description')}
-                value={displayNfts}
-                onToggle={handleToggleDisplayNfts}
-                testID='asset_filter_display_nfts'
-            />
-            <FilterRow
-                label={t('asset_filter.display_opted_in_nfts')}
-                description={t(
-                    'asset_filter.display_opted_in_nfts_description',
-                )}
-                // Opted-in NFTs are a subset of NFTs, so this is gated on the NFTs toggle.
-                value={displayNfts && displayOptedInNfts}
-                onToggle={handleToggleDisplayOptedInNfts}
-                testID='asset_filter_display_opted_in_nfts'
-                disabled={!displayNfts}
-            />
-            <FilterRow
-                label={t('asset_filter.show_suspicious')}
-                description={t('asset_filter.show_suspicious_description')}
-                value={showSuspicious}
-                onToggle={handleToggleShowSuspicious}
-                testID='asset_filter_show_suspicious'
-            />
+            <PWView style={styles.filterRows}>
+                <FilterRow
+                    label={t('asset_filter.hide_zero_balance')}
+                    description={t(
+                        'asset_filter.hide_zero_balance_description',
+                    )}
+                    value={hideZeroBalance}
+                    onToggle={handleToggleHideZeroBalance}
+                    testID='asset_filter_hide_zero_balance'
+                />
+                <FilterRow
+                    label={t('asset_filter.display_nfts')}
+                    description={t('asset_filter.display_nfts_description')}
+                    value={displayNfts}
+                    onToggle={handleToggleDisplayNfts}
+                    testID='asset_filter_display_nfts'
+                />
+                <FilterRow
+                    label={t('asset_filter.display_opted_in_nfts')}
+                    description={t(
+                        'asset_filter.display_opted_in_nfts_description',
+                    )}
+                    // Opted-in NFTs are a subset of NFTs, so this is gated on the NFTs toggle.
+                    value={displayNfts && displayOptedInNfts}
+                    onToggle={handleToggleDisplayOptedInNfts}
+                    testID='asset_filter_display_opted_in_nfts'
+                    disabled={!displayNfts}
+                />
+                <FilterRow
+                    label={t('asset_filter.show_suspicious')}
+                    description={t('asset_filter.show_suspicious_description')}
+                    value={showSuspicious}
+                    onToggle={handleToggleShowSuspicious}
+                    testID='asset_filter_show_suspicious'
+                />
+            </PWView>
         </PWSheetLayout>
     )
 }

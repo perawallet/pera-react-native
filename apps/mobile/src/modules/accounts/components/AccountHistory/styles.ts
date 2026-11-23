@@ -40,7 +40,6 @@ export const useStyles = makeStyles(theme => ({
     rootContainer: {
         flexGrow: 1,
         paddingHorizontal: theme.spacing.xl,
-        paddingBottom: theme.spacing.xl,
     },
     // Skeleton geometry traces a real row: icon, stacked title/subtitle, and a
     // trailing amount.

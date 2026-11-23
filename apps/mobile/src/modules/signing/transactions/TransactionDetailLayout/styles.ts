@@ -16,7 +16,6 @@ export const useStyles = makeStyles(theme => ({
     container: {
         alignItems: 'stretch',
         gap: theme.spacing.md,
-        paddingBottom: theme.spacing.lg,
         width: '100%',
     },
     explorerRow: {

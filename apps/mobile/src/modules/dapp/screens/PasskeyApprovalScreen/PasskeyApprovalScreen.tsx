@@ -43,7 +43,35 @@ export const PasskeyApprovalScreen = (): React.JSX.Element => {
     }
 
     return (
-        <PWScreen scroll='never'>
+        <PWScreen
+            scroll='never'
+            footer={
+                <PWView style={styles.buttonContainer}>
+                    <PWButton
+                        variant='secondary'
+                        title={t('dapp.passkey.decline_button')}
+                        onPress={() => void decline()}
+                        style={styles.declineButton}
+                        isDisabled={isBusy || isConfirmed}
+                        testID='dapp-passkey-decline'
+                    />
+                    <PWButton
+                        variant='primary'
+                        title={
+                            isConfirmed
+                                ? undefined
+                                : t('dapp.passkey.approve_button')
+                        }
+                        icon={isConfirmed ? 'check' : undefined}
+                        onPress={() => void approve()}
+                        style={styles.approveButton}
+                        isLoading={isBusy}
+                        isDisabled={!canApprove}
+                        testID='dapp-passkey-approve'
+                    />
+                </PWView>
+            }
+        >
             <PWView style={styles.container}>
                 <PWText
                     variant='h3'
@@ -80,30 +108,6 @@ export const PasskeyApprovalScreen = (): React.JSX.Element => {
                         {error}
                     </PWText>
                 )}
-            </PWView>
-            <PWView style={styles.buttonContainer}>
-                <PWButton
-                    variant='secondary'
-                    title={t('dapp.passkey.decline_button')}
-                    onPress={() => void decline()}
-                    style={styles.declineButton}
-                    isDisabled={isBusy || isConfirmed}
-                    testID='dapp-passkey-decline'
-                />
-                <PWButton
-                    variant='primary'
-                    title={
-                        isConfirmed
-                            ? undefined
-                            : t('dapp.passkey.approve_button')
-                    }
-                    icon={isConfirmed ? 'check' : undefined}
-                    onPress={() => void approve()}
-                    style={styles.approveButton}
-                    isLoading={isBusy}
-                    isDisabled={!canApprove}
-                    testID='dapp-passkey-approve'
-                />
             </PWView>
         </PWScreen>
     )

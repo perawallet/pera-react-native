@@ -16,9 +16,6 @@ export const useStyles = makeStyles(theme => ({
     list: {
         flex: 1,
     },
-    listContent: {
-        paddingBottom: theme.spacing.xl,
-    },
     content: {
         paddingTop: theme.spacing.lg,
         gap: theme.spacing.xxl,

@@ -23,6 +23,18 @@ type StyleProps = {
     footerInset: number
 }
 
+const bodyEndGap = (
+    spacing: { sm: number; xl: number },
+    hasFooter: boolean,
+    isKeyboardVisible: boolean,
+    bottomInset: number,
+) => {
+    // With a footer, sm here plus its lg top padding make the xl gap above
+    // its controls.
+    if (hasFooter) return spacing.sm
+    return isKeyboardVisible ? spacing.xl : spacing.xl + bottomInset
+}
+
 export const useStyles = makeStyles(
     (
         theme,
@@ -55,9 +67,12 @@ export const useStyles = makeStyles(
                     : theme.spacing[horizontalPadding],
             paddingTop: theme.spacing.xl,
             paddingBottom:
-                (hasFooter || isKeyboardVisible
-                    ? theme.spacing.xl
-                    : theme.spacing.xl + bottomInset) + footerInset,
+                bodyEndGap(
+                    theme.spacing,
+                    hasFooter,
+                    isKeyboardVisible,
+                    bottomInset,
+                ) + footerInset,
         },
         // Bottom inset dropped when the keyboard is open (it already covers the
         // home indicator).

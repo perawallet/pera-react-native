@@ -33,7 +33,6 @@ export const useStyles = makeStyles(theme => ({
     networkList: {
         paddingHorizontal: theme.spacing.xl,
         gap: theme.spacing.sm,
-        marginBottom: theme.spacing.lg,
     },
     seeAllButton: {
         flexDirection: 'row',
@@ -57,6 +56,6 @@ export const useStyles = makeStyles(theme => ({
         borderRadius: theme.borderRadius.full,
     },
     sharedAccountOptions: {
-        marginBottom: theme.spacing.lg,
+        marginTop: theme.spacing.lg,
     },
 }))

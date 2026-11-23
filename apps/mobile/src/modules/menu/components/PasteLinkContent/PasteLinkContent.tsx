@@ -11,6 +11,8 @@
  */
 
 import React from 'react'
+import { useKeyboardState } from 'react-native-keyboard-controller'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWButton, PWInput, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
@@ -24,7 +26,9 @@ export const PasteLinkContent = () => {
     // Whatever the scanner accepts can be pasted here too, including a Pera Web
     // transfer key or a recovery mnemonic.
     usePreventScreenCapture(SCREEN_CAPTURE_TAG)
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const isKeyboardVisible = useKeyboardState(state => state.isVisible)
+    const styles = useStyles(isKeyboardVisible ? 0 : insets.bottom)
     const { t } = useLanguage()
     // Sheet contents dismiss themselves through the id-scoped handle rather
     // than a callback threaded down from the call site (same pattern as

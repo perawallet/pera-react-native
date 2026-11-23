@@ -74,7 +74,6 @@ export const DiscoverAllFavoritesScreen = () => {
                 maintainVisibleContentPosition={{ disabled: true }}
                 data={screen.dapps}
                 keyExtractor={dapp => dapp.url}
-                contentContainerStyle={styles.list}
                 ListEmptyComponent={
                     <EmptyView
                         body={

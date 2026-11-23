@@ -24,6 +24,7 @@ export type GalleryCellProps = {
     item: AccountCollectibleLiteRow
     index: number
     isGrid: boolean
+    isLastRow: boolean
     shouldShowNetwork: boolean
     onPress: (item: AccountCollectibleLiteRow) => void
 }
@@ -32,6 +33,7 @@ const GalleryCellView = ({
     item,
     index,
     isGrid,
+    isLastRow,
     shouldShowNetwork,
     onPress,
 }: GalleryCellProps) => {
@@ -73,7 +75,7 @@ const GalleryCellView = ({
     return (
         <PWView
             style={[
-                styles.gridColumn,
+                !isLastRow && styles.gridColumn,
                 index % GRID_COLUMNS === 0
                     ? styles.gridColumnLeft
                     : styles.gridColumnRight,

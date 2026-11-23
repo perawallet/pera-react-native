@@ -27,7 +27,6 @@ export const useStyles = makeStyles(theme => {
         },
         contentContainer: {
             paddingTop: theme.spacing.lg,
-            paddingBottom: theme.spacing.xl,
             paddingHorizontal: theme.spacing.xl,
         },
         header: {
