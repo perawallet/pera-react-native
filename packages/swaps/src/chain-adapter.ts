@@ -41,7 +41,6 @@ export type SwapSourceCost = {
     expectedNetworkFee: Decimal
     /** Base units of the native asset the account is short by; null when it can pay. */
     shortfall: Nullable<Decimal>
-    needsSpendApproval: boolean
     nativeSymbol: string
     nativeDecimals: number
 }

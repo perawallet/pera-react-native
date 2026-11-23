@@ -4274,7 +4274,6 @@
             "provider_fee": "Anbietergebühr",
             "route": "Route",
             "cross_chain_note": "Dein {{asset}} kommt auf {{network}} an, sobald der Anbieter den Tausch abgeschlossen hat. Du kannst ihn auf dem Bildschirm „Tauschen“ verfolgen.",
-            "spend_approval_note": "Du signierst zuerst eine Freigabe für den Betrag dieses Tauschs und danach den Tausch selbst.",
             "insufficient_network_fee": "Möglicherweise hast du nicht genug {{symbol}} für die Netzwerkgebühr. Pera prüft die genaue Gebühr, bevor etwas signiert wird.",
             "provider": "Anbieter",
             "minimum_received": "Mindestbetrag erhalten",

@@ -79,7 +79,6 @@ type UseSwapConfirmationResult = {
     providerFeeDisplay: Nullable<string>
     /** The source chain's own estimate, else the quote's source-chain fee; null while that estimate loads, or when neither has one. */
     networkFeeDisplay: Nullable<string>
-    needsSpendApproval: boolean
     /** Non-null while the account can't pay the source chain's fee: confirm stays off. */
     insufficientFeeMessage: Nullable<string>
     /** Set when the network fee is more than 10% of the swap's value; confirm stays on. */
@@ -268,7 +267,6 @@ export const useSwapConfirmation = ({
         peraFeeDisplay,
         providerFeeDisplay,
         networkFeeDisplay,
-        needsSpendApproval: sourceCost?.needsSpendApproval ?? false,
         insufficientFeeMessage,
         highNetworkFeeMessage,
         slippageDisplay,
