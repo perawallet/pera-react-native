@@ -360,7 +360,7 @@ describe("Flow: One account's assets across chains", () => {
         expect(prompt.textContent).toContain(
             'account_details.assets.funding_title',
         )
-        // Base swaps outside production, but nothing buys onto it. Swap pays
+        // Base swaps, but nothing buys onto it. Swap pays
         // with what the account holds on another network, once that is read.
         expect(
             (await screen.findByTestId('network_funding_swap_button'))
