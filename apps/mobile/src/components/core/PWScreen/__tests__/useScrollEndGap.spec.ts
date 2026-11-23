@@ -67,6 +67,17 @@ describe('useScrollEndGap', () => {
         expect(nestedInSheet).toBe(0)
     })
 
+    it('keeps only the home-indicator inset for a full-bleed body', () => {
+        const bare = renderHook(() => useScrollEndGap({ hasGap: false })).result
+            .current
+        const tab = renderHook(() => useScrollEndGap({ hasGap: false }), {
+            wrapper: inTabs,
+        }).result.current
+
+        expect(bare).toBe(34)
+        expect(tab).toBe(0)
+    })
+
     it('leaves the inset to whatever sits below when told to', () => {
         const tab = renderHook(() => useScrollEndGap(), { wrapper: inTabs })
             .result.current
