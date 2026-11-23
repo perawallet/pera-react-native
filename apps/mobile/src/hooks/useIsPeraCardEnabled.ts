@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { isDebug, isStaging } from '@perawallet/wallet-core-config'
 import {
+    readBooleanFlagBuildDefault,
     RemoteConfigKeys,
     useRemoteConfig,
 } from '@perawallet/wallet-core-remote-config'
@@ -33,7 +33,7 @@ export const useIsPeraCardEnabled = (): boolean => {
         isCardAvailable &&
         remoteConfig.getBooleanValue(
             RemoteConfigKeys.enable_pera_card,
-            isDebug || isStaging,
+            readBooleanFlagBuildDefault(RemoteConfigKeys.enable_pera_card),
         )
     )
 }

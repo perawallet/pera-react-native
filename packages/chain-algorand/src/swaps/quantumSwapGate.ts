@@ -10,13 +10,15 @@
  limitations under the License
  */
 
-import { isDebug, isStaging } from '@perawallet/wallet-core-config'
 import {
     readRemoteConfigWithOverrides,
     useRemoteConfigStore,
 } from '@perawallet/wallet-core-remote-config'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { AlgorandRemoteConfigKeys } from '../blockchain'
+import {
+    AlgorandRemoteConfigKeys,
+    algorandRemoteConfigDefaults,
+} from '../blockchain'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 
 /**
@@ -36,7 +38,7 @@ export const isAlgorandQuantumSwapEnabled = (): boolean => {
             useRemoteConfigStore.getState().configOverrides,
         ).getBooleanValue(
             AlgorandRemoteConfigKeys.enable_quantum_swap,
-            isDebug || isStaging,
+            algorandRemoteConfigDefaults.enable_quantum_swap === true,
         )
     )
 }

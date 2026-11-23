@@ -19,7 +19,7 @@ Each chain ships a `ChainModule` (`packages/chain-contract/src/models/module.ts`
 | `supportedCapabilities`  | Every capability the chain has code for; no override can switch on any other                |
 | `capabilityRestrictions` | The developer modes a capability is off in                                                  |
 | `register(ctx)`          | Adds the chain's adapter to every feature registry it implements                            |
-| `remoteConfigDefaults`   | Chain-specific remote-config keys; the names are a wire contract and never change           |
+| `remoteConfigDefaults`   | Chain remote-config keys and no-fetch defaults; names are a wire contract, never change     |
 | `pinnedHosts`            | Hosts to certificate-pin once their remote flag is `true`                                   |
 
 `register` receives a `ChainContext`: the current scope, the chain's endpoints, its Pera backend and

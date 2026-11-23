@@ -60,10 +60,6 @@ vi.mock('@perawallet/wallet-core-config', () => ({
 
 const BUILD_ENVS = {
     production: () => {},
-    __DEV__: () => vi.stubGlobal('__DEV__', true),
-    'appEnvironment staging': () => {
-        buildFlags.appEnvironment = 'staging'
-    },
     isDebug: () => {
         buildFlags.isDebug = true
     },
@@ -99,13 +95,13 @@ const FLAG_HOOKS: FlagHookCase[] = [
         name: 'useIsCardAutoFundingEnabled',
         hook: useIsCardAutoFundingEnabled,
         key: 'enable_card_auto_funding',
-        enabledWhenUnsetIn: ['__DEV__', 'appEnvironment staging'],
+        enabledWhenUnsetIn: ['isDebug', 'isStaging'],
     },
     {
         name: 'useIsCardPushProvisioningEnabled',
         hook: useIsCardPushProvisioningEnabled,
         key: 'enable_card_push_provisioning',
-        enabledWhenUnsetIn: ['__DEV__', 'appEnvironment staging'],
+        enabledWhenUnsetIn: ['isDebug', 'isStaging'],
     },
     {
         name: 'useIsGiftCardsEnabled',
