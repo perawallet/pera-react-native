@@ -1205,6 +1205,10 @@
             "title": "Copié dans le presse-papiers",
             "body": ""
         },
+        "address_copied": {
+            "algorand": "Adresse Algorand copiée",
+            "evm": "Adresse EVM copiée"
+        },
         "email_failed": {
             "title": "Impossible d’ouvrir l’app e-mail",
             "body": "Aucune app e-mail n’est configurée sur cet appareil. Vous pouvez écrire directement à {{email}}."

@@ -1205,6 +1205,10 @@
             "title": "Copiado al portapapeles",
             "body": ""
         },
+        "address_copied": {
+            "algorand": "Dirección de Algorand copiada",
+            "evm": "Dirección EVM copiada"
+        },
         "email_failed": {
             "title": "No se pudo abrir la app de correo",
             "body": "No hay ninguna app de correo configurada en este dispositivo. Puedes escribir directamente a {{email}}."
