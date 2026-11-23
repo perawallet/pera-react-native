@@ -25,6 +25,7 @@ export const notificationResponseSchema = z.object({
     type: z.string().nullish(),
     account_address: z.string().nullish(),
     message: z.string().nullish(),
+    counterparty_address: z.string().nullish(),
     url: z.string().nullish(),
     creation_datetime: z.string(),
     is_unread: z.boolean().nullish(),

@@ -15,4 +15,8 @@ export const name = '@perawallet/wallet-core-messages'
 export * from './api'
 export * from './hooks'
 export * from './models'
+export {
+    notificationCounterpartyAddress,
+    nameNotificationCounterparty,
+} from './counterparty'
 export { useNotificationsStore } from './store'

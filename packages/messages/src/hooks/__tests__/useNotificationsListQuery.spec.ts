@@ -105,6 +105,7 @@ describe('useNotificationsListQuery', () => {
                     type: null,
                     account_address: null,
                     message: null,
+                    counterparty_address: null,
                     url: null,
                     creation_datetime: '2023-01-01T00:00:00Z',
                     is_unread: null,
@@ -125,12 +126,41 @@ describe('useNotificationsListQuery', () => {
                 type: null,
                 accountAddress: null,
                 message: null,
+                counterpartyAddress: null,
                 url: null,
                 createdAt: new Date('2023-01-01T00:00:00Z'),
                 isUnread: null,
                 icon: null,
             },
         ])
+    })
+
+    it('maps counterparty_address to counterpartyAddress', async () => {
+        vi.mocked(fetchNotificationList).mockResolvedValue({
+            count: 1,
+            next: null,
+            previous: null,
+            results: [
+                {
+                    id: '6',
+                    type: 'evm-transfer-received',
+                    message: '1 ETH received from 0x7099…79c8',
+                    counterparty_address:
+                        '0x70997970c51812dc3a010c7d01b50e0d17dc79c8',
+                    creation_datetime: '2023-01-01T00:00:00Z',
+                },
+            ],
+        })
+
+        const { result } = renderHook(() => useNotificationsListQuery(), {
+            wrapper: createWrapper(),
+        })
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+
+        expect(result.current.data[0].counterpartyAddress).toBe(
+            '0x70997970c51812dc3a010c7d01b50e0d17dc79c8',
+        )
     })
 
     it('maps a response with no icon to icon: null', async () => {

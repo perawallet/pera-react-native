@@ -58,6 +58,8 @@ export type PeraNotification = {
     type?: Maybe<string>
     accountAddress: Maybe<string>
     message: Maybe<string>
+    /** The full address whose shortened form `message` shows as the transfer's other party; the backend sets it on transfer rows only. */
+    counterpartyAddress?: Maybe<string>
     url: Maybe<string>
     createdAt: Date
     isUnread?: Maybe<boolean>
