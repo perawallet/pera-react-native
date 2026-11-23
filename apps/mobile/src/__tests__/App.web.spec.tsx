@@ -33,6 +33,10 @@ vi.mock('@perawallet/wallet-extension-platform-chrome/bootstrap', () => ({
 }))
 vi.mock('../AppShell.web', () => ({ AppShell: () => <div>Wallet ready</div> }))
 vi.mock('../bootstrap/preReact.web', () => ({ initRuntime: vi.fn() }))
+vi.mock('../bootstrap/kvAuthKey.web', () => ({
+    watchSessionKvAuthKey: vi.fn(),
+    applySessionKvAuthKey: vi.fn(() => Promise.resolve()),
+}))
 vi.mock('@browser/offscreen/runOffscreenApp', () => ({
     runOffscreenApp: mocks.runOffscreenApp,
 }))
