@@ -935,6 +935,25 @@ describe('RNMigrationService', () => {
         })
     })
 
+    describe('wipeLegacyData', () => {
+        test('is a no-op when the native module is missing', async () => {
+            await expect(service.wipeLegacyData()).resolves.toBeUndefined()
+        })
+
+        test('wipes natively but keeps the sentinel and step versions', async () => {
+            storage.setItem(MIGRATION_SENTINEL_KEY, 'x')
+            storage.setItem(MIGRATION_STEPS_KEY, '{"accounts":2}')
+            const module = createNativeModule()
+            nativeModulesMock.LegacyMigration = module
+
+            await service.wipeLegacyData()
+
+            expect(module.resetLegacyData).toHaveBeenCalledOnce()
+            expect(storage.getItem(MIGRATION_SENTINEL_KEY)).toBe('x')
+            expect(storage.getItem(MIGRATION_STEPS_KEY)).toBe('{"accounts":2}')
+        })
+    })
+
     describe('step versions', () => {
         test('returns null when no step record exists', async () => {
             await expect(service.getCompletedStepVersions()).resolves.toBeNull()

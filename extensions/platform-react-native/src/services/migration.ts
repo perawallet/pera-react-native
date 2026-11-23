@@ -181,6 +181,14 @@ export class RNMigrationService implements MigrationService {
         this.keyValueStorage.removeItem(MIGRATION_STEPS_KEY)
     }
 
+    async wipeLegacyData(): Promise<void> {
+        const module = getNativeModule()
+        if (!module || typeof module.resetLegacyData !== 'function') {
+            return
+        }
+        await module.resetLegacyData()
+    }
+
     async getCompletedStepVersions(): Promise<Nullable<MigrationStepVersions>> {
         const raw = this.keyValueStorage.getItem(MIGRATION_STEPS_KEY)
         if (!raw) return null

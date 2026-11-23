@@ -54,6 +54,7 @@ const buildMigrationService = (overrides: Partial<MigrationService> = {}) => {
         clearMigrationComplete: vi.fn().mockResolvedValue(undefined),
         getMigrationPlans: vi.fn().mockResolvedValue([]),
         resetLegacyData: vi.fn().mockResolvedValue(undefined),
+        wipeLegacyData: vi.fn().mockResolvedValue(undefined),
         getCompletedStepVersions: vi
             .fn()
             .mockImplementation(async () => storedStepVersions),
