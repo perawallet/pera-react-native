@@ -31,22 +31,24 @@ export const useCounterpartyNamedNotifications = (
     const accounts = useAllAccounts()
     const contacts = useContactsStore(state => state.contacts)
 
-    return useMemo(
-        () =>
-            notifications.map(notification => {
-                const address = notificationCounterpartyAddress(notification)
-                if (!address) return notification
+    return useMemo(() => {
+        let hasNamedRow = false
+        const named = notifications.map(notification => {
+            const address = notificationCounterpartyAddress(notification)
+            if (!address) return notification
 
-                const accountName = findAccountByAnyChainAddress(
-                    accounts,
-                    address,
-                )?.name
-                const name =
-                    accountName || findContactByAddress(contacts, address)?.name
-                return name
-                    ? nameNotificationCounterparty(notification, name)
-                    : notification
-            }),
-        [notifications, accounts, contacts],
-    )
+            const accountName = findAccountByAnyChainAddress(
+                accounts,
+                address,
+            )?.name
+            const name =
+                accountName || findContactByAddress(contacts, address)?.name
+            if (!name) return notification
+
+            const result = nameNotificationCounterparty(notification, name)
+            if (result !== notification) hasNamedRow = true
+            return result
+        })
+        return hasNamedRow ? named : notifications
+    }, [notifications, accounts, contacts])
 }

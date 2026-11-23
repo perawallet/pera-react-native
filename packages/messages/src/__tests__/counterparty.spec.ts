@@ -38,9 +38,12 @@ describe('nameNotificationCounterparty', () => {
         expect(result.id).toBe('1')
     })
 
-    it('finds a lowercase short form for a checksummed address', () => {
+    it('finds an uppercase short form for a lowercase address', () => {
         const result = nameNotificationCounterparty(
-            row({ message: 'Sent to 0x7099…79C8' }),
+            row({
+                message: 'Sent to 0x7099…79C8',
+                counterpartyAddress: CHECKSUM_ADDRESS.toLowerCase(),
+            }),
             'Savings',
         )
 
@@ -74,14 +77,13 @@ describe('nameNotificationCounterparty', () => {
         )
     })
 
-    it('leaves a row alone when lowercasing would shift its characters', () => {
-        const notification = row({
-            message: 'İ received from 0x7099…79c8',
-        })
-
-        expect(nameNotificationCounterparty(notification, 'Savings')).toBe(
-            notification,
+    it('names a row whose text holds characters that change length when lowercased', () => {
+        const result = nameNotificationCounterparty(
+            row({ message: 'İşlem received from 0x7099…79c8' }),
+            'Savings',
         )
+
+        expect(result.message).toBe('İşlem received from Savings')
     })
 
     it('leaves the row alone for an empty name', () => {

@@ -348,7 +348,7 @@ describe('Flow: Ethereum transfer notifications', () => {
     })
 
     describe('Given transfer rows carry a counterparty address', () => {
-        // Hardhat accounts #1 and #2; the backend sends addresses lowercase.
+        // Hardhat accounts #1 to #3; the backend sends addresses lowercase.
         const SAVINGS_ADDRESS = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
         const ALICE_ADDRESS = '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC'
         const UNKNOWN_ADDRESS = '0x90F79bf6EB2c4f870365E785982E1f101E93b906'
@@ -436,7 +436,7 @@ describe('Flow: Ethereum transfer notifications', () => {
                                     ALGORAND_LEGACY_URL,
                                 ),
                                 counterparty_address:
-                                    ALGO25_TEST_ADDRESS.toLowerCase(),
+                                    SAVINGS_ADDRESS.toLowerCase(),
                             },
                         ],
                     },

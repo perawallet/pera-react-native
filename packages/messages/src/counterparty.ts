@@ -23,6 +23,9 @@ const COUNTERPARTY_NOTIFICATION_TYPES: ReadonlySet<string> = new Set([
 const backendShortAddress = (address: string): string =>
     `${address.slice(0, 6)}…${address.slice(-4)}`
 
+const asciiLowerCase = (value: string): string =>
+    value.replace(/[A-Z]/g, letter => letter.toLowerCase())
+
 export const notificationCounterpartyAddress = (
     notification: PeraNotification,
 ): Optional<string> => {
@@ -40,12 +43,11 @@ export const nameNotificationCounterparty = (
     const message = notification.message
     if (!address || !name || !message) return notification
 
-    // The backend sends lowercase hex while accounts store EIP-55. Slicing by
-    // index below is only safe when lowercasing kept every character in place.
-    const haystack = message.toLowerCase()
-    if (haystack.length !== message.length) return notification
-
-    const needle = backendShortAddress(address).toLowerCase()
+    // The address and the message's short form may differ in hex case. Fold
+    // ASCII only: full Unicode lowercasing can change string length ('İ'),
+    // which would misalign the slice indices below.
+    const haystack = asciiLowerCase(message)
+    const needle = asciiLowerCase(backendShortAddress(address))
     const start = haystack.indexOf(needle)
     if (start === -1 || haystack.indexOf(needle, start + 1) !== -1) {
         return notification

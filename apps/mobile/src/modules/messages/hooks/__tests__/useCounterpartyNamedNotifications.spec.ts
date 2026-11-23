@@ -134,6 +134,17 @@ describe('useCounterpartyNamedNotifications', () => {
         expect(result.current[0]).toBe(notifications[0])
     })
 
+    it('returns the same list when no row is named', () => {
+        seed({ accounts: [account('Savings', OTHER_ADDRESS)] })
+        const notifications = [row()]
+
+        const { result } = renderHook(() =>
+            useCounterpartyNamedNotifications(notifications),
+        )
+
+        expect(result.current).toBe(notifications)
+    })
+
     it('keeps a row without a counterparty address', () => {
         seed({ accounts: [account('Savings')] })
         const notifications = [row({ counterpartyAddress: null })]
