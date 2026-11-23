@@ -19,6 +19,7 @@ import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
 
 import { PWScreen } from '../PWScreen'
 import { usePWScreenInsets } from '../usePWScreenInsets'
+import { useScrollEndGap } from '../useScrollEndGap'
 import { PWInBottomSheetContext } from '../../PWBottomSheet/inSheetContext'
 
 vi.mock('react-native-keyboard-controller', async importOriginal => {
@@ -97,6 +98,20 @@ describe('PWScreen', () => {
         )
 
         expect(screen.getByText('nested:0')).toBeTruthy()
+    })
+
+    it('leaves the end gap to the scroller of a fixed body above the tab bar', () => {
+        const GapProbe = () => <Text>{`gap:${useScrollEndGap()}`}</Text>
+
+        render(
+            <BottomTabBarHeightContext.Provider value={49}>
+                <PWScreen scroll='never'>
+                    <GapProbe />
+                </PWScreen>
+            </BottomTabBarHeightContext.Provider>,
+        )
+
+        expect(screen.queryByText('gap:0')).toBeNull()
     })
 
     it('renders inside a tab navigator without crashing', () => {

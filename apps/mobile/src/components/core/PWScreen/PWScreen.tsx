@@ -131,9 +131,18 @@ export const PWScreen = ({
         isInSheet,
         hasGap: bottomGap === 'xl',
     })
+    const isNested = useContext(PWScreenNestedContext)
+    // Above the tab bar a fixed body leaves the gap to the scroller it hosts,
+    // so rows scroll down to the bar instead of clipping a gap short of it.
+    const leavesEndGapToScroller =
+        scroll !== 'auto' &&
+        footer == null &&
+        isBottomHandledOutside &&
+        !isNested &&
+        !isInSheet
     const styles = useStyles({
         horizontalPadding,
-        endGap,
+        endGap: leavesEndGapToScroller ? 0 : endGap,
         hasFooter: footer != null,
         isKeyboardVisible,
     })
@@ -256,7 +265,7 @@ export const PWScreen = ({
     // PWFlatList). `behavior='padding'` shrinks the container as the keyboard
     // opens, lifting the fixed body and its footer above it.
     return (
-        <PWScreenNestedContext.Provider value={true}>
+        <PWScreenNestedContext.Provider value={!leavesEndGapToScroller}>
             <PWView
                 style={[styles.root, style]}
                 testID={testID}
