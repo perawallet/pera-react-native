@@ -39,7 +39,7 @@ vi.mock('@hooks/useClipboard', () => ({
     }),
 }))
 
-const mockOpenURL = vi.fn()
+const mockOpenURL = vi.fn().mockResolvedValue(true)
 vi.mock('react-native', async importOriginal => {
     const actual = await importOriginal<object>()
     return {
@@ -47,17 +47,6 @@ vi.mock('react-native', async importOriginal => {
         Linking: { openURL: (...args: unknown[]) => mockOpenURL(...args) },
     }
 })
-
-// Mutable capability map: mutate `mockCapabilities` per test to simulate the
-// native-shaped (inAppWebView: true) and web-shaped (false) route capability
-// maps without re-mocking.
-const { mockCapabilities } = vi.hoisted(() => ({
-    mockCapabilities: { inAppWebView: true },
-}))
-
-vi.mock('@routes/capabilities', () => ({
-    routeCapabilities: mockCapabilities,
-}))
 
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useTransactionHashRow } from '../useTransactionHashRow'
@@ -68,7 +57,6 @@ const TX_URL = `https://explorer.test/tx/${TX_HASH}`
 describe('useTransactionHashRow', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        Object.assign(mockCapabilities, { inAppWebView: true })
         getCardTransactionUrl.mockReturnValue(TX_URL)
     })
 
@@ -85,7 +73,7 @@ describe('useTransactionHashRow', () => {
         )
     })
 
-    it('opens the explorer transaction page in the in-app webview', () => {
+    it('opens the explorer transaction page in the system browser, not the in-app webview', () => {
         const { result } = renderHook(() =>
             useTransactionHashRow(TX_HASH, 'algorand'),
         )
@@ -97,27 +85,12 @@ describe('useTransactionHashRow', () => {
             'algorand',
             SCOPE,
         )
-        expect(mockPushWebView).toHaveBeenCalledWith(
-            expect.objectContaining({ url: TX_URL }),
-        )
-        expect(mockOpenURL).not.toHaveBeenCalled()
-    })
-
-    it('opens the explorer page in a browser tab when inAppWebView is off (web)', () => {
-        Object.assign(mockCapabilities, { inAppWebView: false })
-        const { result } = renderHook(() =>
-            useTransactionHashRow(TX_HASH, 'algorand'),
-        )
-
-        result.current.onOpenExplorer?.()
-
         expect(mockOpenURL).toHaveBeenCalledWith(TX_URL)
         expect(mockPushWebView).not.toHaveBeenCalled()
     })
 
-    // On `custom` (no explorer) this is the worst of the explorer sites: with
-    // inAppWebView off it would reach Linking.openURL('/tx/…'), which rejects
-    // rather than no-opping.
+    // On `custom` (no explorer) the action would reach Linking.openURL('/tx/…'),
+    // which rejects rather than no-opping.
     it('offers no explorer action when the adapter has no link for the leg', () => {
         getCardTransactionUrl.mockReturnValue(null)
 

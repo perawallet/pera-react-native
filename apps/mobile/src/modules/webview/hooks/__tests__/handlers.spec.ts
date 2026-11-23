@@ -23,6 +23,7 @@ import {
     isSafeRelativePath,
     isTrustedWebviewOrigin,
     JsonRpcErrorCode,
+    openExplorerUrl,
     openValidatedBrowserUrl,
     requireSecure,
     sanitizeErrorForWebview,
@@ -553,6 +554,24 @@ describe('openValidatedBrowserUrl', () => {
             'Failed to open external URL',
             expect.objectContaining({ url: 'https://perawallet.app' }),
         )
+    })
+})
+
+describe('openExplorerUrl', () => {
+    beforeEach(() => {
+        vi.spyOn(Linking, 'openURL').mockResolvedValue(true)
+    })
+
+    it('hands the explorer page to the system browser', () => {
+        expect(openExplorerUrl('https://basescan.org/tx/0xabc')).toBe(true)
+        expect(Linking.openURL).toHaveBeenCalledWith(
+            'https://basescan.org/tx/0xabc',
+        )
+    })
+
+    it('refuses a non-https explorer URL', () => {
+        expect(openExplorerUrl('http://basescan.org/tx/0xabc')).toBe(false)
+        expect(Linking.openURL).not.toHaveBeenCalled()
     })
 })
 

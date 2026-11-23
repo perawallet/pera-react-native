@@ -23,9 +23,11 @@ import {
     describe,
     expect,
     it,
+    onTestFinished,
     vi,
 } from 'vitest'
 import React from 'react'
+import { Linking } from 'react-native'
 import { Decimal } from 'decimal.js'
 import {
     act,
@@ -1444,14 +1446,19 @@ describe('Flow: History on an Ethereum account', () => {
                     ).toBeTruthy()
                 })
 
+                const openURL = vi
+                    .spyOn(Linking, 'openURL')
+                    .mockResolvedValue(true)
+                onTestFinished(() => openURL.mockRestore())
                 fireEvent.click(
                     closestPressable(
                         screen.getByTestId('transaction_detail_explorer'),
                     ) ?? screen.getByTestId('transaction_detail_explorer'),
                 )
-                expect(
-                    useWebViewStore.getState().openWebViews.map(v => v.url),
-                ).toEqual([`https://etherscan.io/tx/${SENT_HASH}`])
+                expect(openURL).toHaveBeenCalledWith(
+                    `https://etherscan.io/tx/${SENT_HASH}`,
+                )
+                expect(useWebViewStore.getState().openWebViews).toEqual([])
                 expect(nodeReads).toEqual([])
             })
         })

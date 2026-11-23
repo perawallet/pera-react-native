@@ -26,13 +26,13 @@ const { SCOPE, ETH_SCOPE } = vi.hoisted(() => ({
 
 const {
     mockExplorerUrlFor,
-    mockPushWebView,
+    mockOpenExplorerUrl,
     mockTrackEvent,
     mockHistory,
     mockAddresses,
 } = vi.hoisted(() => ({
     mockExplorerUrlFor: vi.fn(),
-    mockPushWebView: vi.fn(),
+    mockOpenExplorerUrl: vi.fn(),
     mockTrackEvent: vi.fn(),
     mockHistory: vi.fn(),
     mockAddresses: { current: [] as unknown[] },
@@ -49,7 +49,7 @@ vi.mock('../../../hooks/useSwapAccountAddresses', () => ({
 }))
 
 vi.mock('@modules/webview', () => ({
-    useWebView: () => ({ pushWebView: mockPushWebView }),
+    openExplorerUrl: mockOpenExplorerUrl,
 }))
 
 vi.mock('@analytics', async importOriginal => ({
@@ -184,10 +184,8 @@ describe('useSwapHistoryList', () => {
 
         expect(mockExplorerUrlFor).toHaveBeenCalledWith(SCOPE, item)
         expect(onClose).toHaveBeenCalled()
-        expect(mockPushWebView).toHaveBeenCalledWith(
-            expect.objectContaining({
-                url: 'https://explorer.test/tx-group/GROUP/',
-            }),
+        expect(mockOpenExplorerUrl).toHaveBeenCalledWith(
+            'https://explorer.test/tx-group/GROUP/',
         )
         expect(mockTrackEvent).toHaveBeenCalledWith(
             'swapscr_swap_history_see_all_select',
@@ -208,7 +206,7 @@ describe('useSwapHistoryList', () => {
         result.current.handleItemPress(listed)
 
         expect(onClose).not.toHaveBeenCalled()
-        expect(mockPushWebView).not.toHaveBeenCalled()
+        expect(mockOpenExplorerUrl).not.toHaveBeenCalled()
         expect(mockTrackEvent).not.toHaveBeenCalled()
     })
 })

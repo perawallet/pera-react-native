@@ -17,8 +17,7 @@ import { useCollectibleInfo } from '../useCollectibleInfo'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 
-const mockPushWebView = vi.fn()
-const mockOpenURL = vi.fn()
+const mockOpenExplorerUrl = vi.fn()
 const mockNavigate = vi.fn()
 const mockCopyToClipboard = vi.fn()
 
@@ -26,23 +25,8 @@ vi.mock('@hooks/useClipboard', () => ({
     useClipboard: () => ({ copyToClipboard: mockCopyToClipboard }),
 }))
 
-// Mutable capability map: mutate `mockCapabilities` per test to simulate the
-// native-shaped (inAppWebView: true) and web-shaped (false) route capability
-// maps without re-mocking.
-const { mockCapabilities } = vi.hoisted(() => ({
-    mockCapabilities: { inAppWebView: true },
-}))
-
-vi.mock('@routes/capabilities', () => ({
-    routeCapabilities: mockCapabilities,
-}))
-
-vi.mock('react-native', () => ({
-    Linking: { openURL: (...args: unknown[]) => mockOpenURL(...args) },
-}))
-
 vi.mock('@modules/webview', () => ({
-    useWebView: () => ({ pushWebView: mockPushWebView }),
+    openExplorerUrl: (url: string) => mockOpenExplorerUrl(url),
 }))
 
 vi.mock('@hooks/useAppNavigation', () => ({
@@ -58,8 +42,7 @@ vi.mock(
     }),
 )
 
-// Mutable for the same reason as `mockCapabilities`: a network with no
-// explorer (a custom one) needs to be reachable per-test.
+// Mutable so a network with no explorer (a custom one) needs to be reachable per-test.
 const { mockExplorer, mockChainUi } = vi.hoisted(() => ({
     mockExplorer: { base: 'https://explorer.perawallet.app' },
     mockChainUi: { collectibleDetails: undefined as unknown },
@@ -136,7 +119,6 @@ const makeAsset = (): PeraAsset =>
 describe('useCollectibleInfo', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        Object.assign(mockCapabilities, { inAppWebView: true })
         mockExplorer.base = 'https://explorer.perawallet.app'
         mockChainUi.collectibleDetails = ALGORAND_DISPLAY
     })
@@ -170,64 +152,28 @@ describe('useCollectibleInfo', () => {
         })
     })
 
-    describe('on native (inAppWebView on)', () => {
-        it('pushes the creator address into the in-app webview', () => {
-            const { result } = renderHook(() =>
-                useCollectibleInfo(makeAsset(), SCOPE),
-            )
+    it('opens the creator address on the explorer in the system browser', () => {
+        const { result } = renderHook(() =>
+            useCollectibleInfo(makeAsset(), SCOPE),
+        )
 
-            result.current.onCreatorPressed?.()
+        result.current.onCreatorPressed?.()
 
-            expect(mockPushWebView).toHaveBeenCalledWith({
-                url: 'https://explorer.perawallet.app/address/CREATOR_ADDRESS',
-            })
-            expect(mockOpenURL).not.toHaveBeenCalled()
-        })
-
-        it('pushes the asset explorer URL into the in-app webview', () => {
-            const { result } = renderHook(() =>
-                useCollectibleInfo(makeAsset(), SCOPE),
-            )
-
-            result.current.onOpenExplorer?.()
-
-            expect(mockPushWebView).toHaveBeenCalledWith({
-                url: 'https://explorer.perawallet.app/asset/12345',
-            })
-            expect(mockOpenURL).not.toHaveBeenCalled()
-        })
+        expect(mockOpenExplorerUrl).toHaveBeenCalledWith(
+            'https://explorer.perawallet.app/address/CREATOR_ADDRESS',
+        )
     })
 
-    describe('on web (inAppWebView off)', () => {
-        beforeEach(() => {
-            Object.assign(mockCapabilities, { inAppWebView: false })
-        })
+    it('opens the asset explorer URL in the system browser', () => {
+        const { result } = renderHook(() =>
+            useCollectibleInfo(makeAsset(), SCOPE),
+        )
 
-        it('opens the creator address in a real browser tab instead of the in-app webview', () => {
-            const { result } = renderHook(() =>
-                useCollectibleInfo(makeAsset(), SCOPE),
-            )
+        result.current.onOpenExplorer?.()
 
-            result.current.onCreatorPressed?.()
-
-            expect(mockOpenURL).toHaveBeenCalledWith(
-                'https://explorer.perawallet.app/address/CREATOR_ADDRESS',
-            )
-            expect(mockPushWebView).not.toHaveBeenCalled()
-        })
-
-        it('opens the asset explorer URL in a real browser tab instead of the in-app webview', () => {
-            const { result } = renderHook(() =>
-                useCollectibleInfo(makeAsset(), SCOPE),
-            )
-
-            result.current.onOpenExplorer?.()
-
-            expect(mockOpenURL).toHaveBeenCalledWith(
-                'https://explorer.perawallet.app/asset/12345',
-            )
-            expect(mockPushWebView).not.toHaveBeenCalled()
-        })
+        expect(mockOpenExplorerUrl).toHaveBeenCalledWith(
+            'https://explorer.perawallet.app/asset/12345',
+        )
     })
 
     it('navigates to AssetDetails when the asset id row is pressed', () => {
@@ -390,8 +336,7 @@ describe('useCollectibleInfo', () => {
             result.current.onCreatorLongPressed()
 
             expect(mockCopyToClipboard).toHaveBeenCalledWith('CREATOR_ADDRESS')
-            expect(mockPushWebView).not.toHaveBeenCalled()
-            expect(mockOpenURL).not.toHaveBeenCalled()
+            expect(mockOpenExplorerUrl).not.toHaveBeenCalled()
         })
 
         it('copies the asset id without navigating', () => {

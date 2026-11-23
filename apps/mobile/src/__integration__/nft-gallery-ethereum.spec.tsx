@@ -25,6 +25,7 @@ import {
     it,
     vi,
 } from 'vitest'
+import { Linking } from 'react-native'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { server } from '@test-utils/msw-server'
 import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
@@ -223,7 +224,7 @@ describe('Flow: an Ethereum account with NFTs', () => {
         expect(result.current.showRefreshNotice).toBe(false)
     })
 
-    it('Given a synced ERC-1155, when its detail opens, then it shows the contract, token id, standard, traits and an Etherscan link that opens in the in-app webview', async () => {
+    it('Given a synced ERC-1155, when its detail opens, then it shows the contract, token id, standard, traits and an Etherscan link that opens in the system browser', async () => {
         serveHoldings({
             nftHoldings: { [SENDER.toLowerCase()]: [[swords()]] },
             nfts: { [ITEM_CAIP19]: swords() },
@@ -251,11 +252,13 @@ describe('Flow: an Ethereum account with NFTs', () => {
         expect(screen.getByText('Rarity')).toBeTruthy()
         expect(screen.getByText('Epic')).toBeTruthy()
 
+        const openURL = vi.spyOn(Linking, 'openURL').mockResolvedValue(true)
         fireEvent.click(screen.getByText('etherscan.io'))
 
-        expect(useWebViewStore.getState().openWebViews[0]?.url).toBe(
+        expect(openURL).toHaveBeenCalledWith(
             `https://etherscan.io/nft/${ITEM_CONTRACT}/10`,
         )
+        expect(useWebViewStore.getState().openWebViews).toEqual([])
     })
 
     it('Given both NFTs synced, when the user hides the ERC-721 from its detail, then the gallery and count leave it out until Display Hidden NFTs is on', async () => {

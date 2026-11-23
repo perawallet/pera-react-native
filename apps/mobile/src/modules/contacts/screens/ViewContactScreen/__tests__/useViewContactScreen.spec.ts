@@ -43,7 +43,7 @@ const mocks = vi.hoisted(() => ({
     requestBottomSheet: vi.fn(),
     shareText: vi.fn(),
     copyToClipboard: vi.fn(),
-    pushWebView: vi.fn(),
+    openExplorerUrl: vi.fn(),
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
@@ -59,7 +59,7 @@ vi.mock('@modules/contacts/components/ContactNetworkContent', () => ({
 }))
 
 vi.mock('@modules/webview', () => ({
-    useWebView: () => ({ pushWebView: mocks.pushWebView }),
+    openExplorerUrl: mocks.openExplorerUrl,
 }))
 
 vi.mock('@hooks/useClipboard', () => ({
@@ -203,9 +203,9 @@ describe('useViewContactScreen', () => {
         await act(() => result.current.openExplorer('evm', '0xA11CE'))
 
         expect(mocks.requestBottomSheet).not.toHaveBeenCalled()
-        expect(mocks.pushWebView).toHaveBeenCalledWith({
-            url: accountUrl(ETHEREUM_CHAIN_ID, '0xA11CE'),
-        })
+        expect(mocks.openExplorerUrl).toHaveBeenCalledWith(
+            accountUrl(ETHEREUM_CHAIN_ID, '0xA11CE'),
+        )
     })
 
     describe('when the family has more than one chain', () => {
@@ -229,9 +229,9 @@ describe('useViewContactScreen', () => {
                     autoCreateContainer: false,
                 },
             })
-            expect(mocks.pushWebView).toHaveBeenCalledWith({
-                url: accountUrl(BASE_CHAIN_ID, '0xA11CE'),
-            })
+            expect(mocks.openExplorerUrl).toHaveBeenCalledWith(
+                accountUrl(BASE_CHAIN_ID, '0xA11CE'),
+            )
         })
 
         it('leaves a chain on a custom network out, opening the remaining one directly', async () => {
@@ -241,9 +241,9 @@ describe('useViewContactScreen', () => {
             await act(() => result.current.openExplorer('evm', '0xA11CE'))
 
             expect(mocks.requestBottomSheet).not.toHaveBeenCalled()
-            expect(mocks.pushWebView).toHaveBeenCalledWith({
-                url: accountUrl(BASE_CHAIN_ID, '0xA11CE'),
-            })
+            expect(mocks.openExplorerUrl).toHaveBeenCalledWith(
+                accountUrl(BASE_CHAIN_ID, '0xA11CE'),
+            )
         })
 
         it('keeps a switched-off chain among the explorers, as it only turns off its Pera backend', async () => {
@@ -267,7 +267,7 @@ describe('useViewContactScreen', () => {
 
             await act(() => result.current.openExplorer('evm', '0xA11CE'))
 
-            expect(mocks.pushWebView).not.toHaveBeenCalled()
+            expect(mocks.openExplorerUrl).not.toHaveBeenCalled()
         })
     })
 

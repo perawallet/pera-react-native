@@ -15,7 +15,7 @@ import {
     toScopeKey,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { generateUniqueId, type Optional } from '@perawallet/wallet-core-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     swapExplorerUrlFor,
     useSwapHistoryInfiniteQuery,
@@ -24,7 +24,7 @@ import {
     useSwapAccount,
 } from '@perawallet/wallet-core-swaps'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
-import { useWebView } from '@modules/webview'
+import { openExplorerUrl } from '@modules/webview'
 
 import { VISIBLE_SWAP_STATUSES } from '../../constants'
 import { useSwapAccountAddresses } from '../../hooks/useSwapAccountAddresses'
@@ -67,7 +67,6 @@ export const useSwapHistoryList = ({
     address,
     onClose,
 }: UseSwapHistoryListParams): UseSwapHistoryListResult => {
-    const { pushWebView } = useWebView()
     const accountAddresses = useSwapAccountAddresses(useSwapAccount())
 
     // The request runs on the first registered entry's scope, so the swap scope
@@ -117,10 +116,9 @@ export const useSwapHistoryList = ({
                 [AnalyticsMetadataKey.SwapPairing]: `${item.assetIn.unitName}/${item.assetOut.unitName}`,
             })
             onClose()
-            // oxlint-disable-next-line pera/no-unvalidated-open-url -- swap adapter builds it from the chain's explorer config
-            pushWebView({ url, id: generateUniqueId() })
+            openExplorerUrl(url)
         },
-        [scope, onClose, pushWebView],
+        [scope, onClose],
     )
 
     const handleEndReached = useCallback(() => {
