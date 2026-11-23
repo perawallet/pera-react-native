@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import { Linking } from 'react-native'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -34,6 +35,8 @@ type UseAssetAboutResult = {
     projectUrl: Nullable<string>
     copyToClipboard: (text: string) => Promise<void>
     openLink: (url: string) => void
+    /** Opens the system browser, for the rows labelled as opening one. */
+    openInBrowser: (url: string) => void
 }
 
 export const useAssetAbout = (
@@ -78,6 +81,12 @@ export const useAssetAbout = (
         [pushWebView],
     )
 
+    const openInBrowser = useCallback((url: string) => {
+        const validatedUrl = toValidatedBrowserUrl(url)
+        if (!validatedUrl) return
+        void Linking.openURL(validatedUrl)
+    }, [])
+
     return {
         creatorDisplayName,
         assetLink,
@@ -85,5 +94,6 @@ export const useAssetAbout = (
         projectUrl,
         copyToClipboard,
         openLink,
+        openInBrowser,
     }
 }

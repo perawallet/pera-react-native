@@ -107,12 +107,8 @@ describe('resolveEthereumAssetAbout', () => {
 })
 
 describe('resolveEthereumAssetSupply', () => {
-    it('calls the native coin circulating supply and has no figure for it', () => {
-        expect(resolveEthereumAssetSupply(paramsFor('native'))).toEqual({
-            labelKey: 'asset_details.markets.circulating_supply',
-            infoBodyKey: 'asset_details.markets.circulating_supply_info_body',
-            amount: null,
-        })
+    it('leaves the supply row out for the native coin', () => {
+        expect(resolveEthereumAssetSupply(paramsFor('native'))).toBeNull()
     })
 
     it('shows a token its total supply under the token copy', () => {
@@ -120,15 +116,15 @@ describe('resolveEthereumAssetSupply', () => {
             paramsFor(USDC, new Decimal('61234567890000000')),
         )
 
-        expect(display.labelKey).toBe('asset_details.markets.total_supply')
-        expect(display.infoBodyKey).toBe(
+        expect(display?.labelKey).toBe('asset_details.markets.total_supply')
+        expect(display?.infoBodyKey).toBe(
             'asset_details.markets.token_total_supply_info_body',
         )
-        expect(display.amount?.toFixed()).toBe('61234567890000000')
+        expect(display?.amount?.toFixed()).toBe('61234567890000000')
     })
 
     it('has no figure for a token whose supply is unknown', () => {
-        expect(resolveEthereumAssetSupply(paramsFor(USDC)).amount).toBeNull()
+        expect(resolveEthereumAssetSupply(paramsFor(USDC))?.amount).toBeNull()
     })
 })
 

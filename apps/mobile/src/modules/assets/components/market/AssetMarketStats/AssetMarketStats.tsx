@@ -14,6 +14,7 @@ import { useStyles } from './styles'
 import {
     abbreviateLargeAmount,
     formatNumber,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { Decimal } from 'decimal.js'
@@ -29,7 +30,7 @@ import { UNKNOWN_AMOUNT_PLACEHOLDER } from '@constants/ui'
 export type AssetMarketStatsProps = {
     assetDetails: PeraAsset
     scope: ChainScope
-    supply: AssetSupplyDisplay
+    supply: Nullable<AssetSupplyDisplay>
 }
 
 export const AssetMarketStats = ({
@@ -41,7 +42,7 @@ export const AssetMarketStats = ({
     const { t } = useLanguage()
 
     const supplyText = useMemo(() => {
-        if (supply.amount === null) {
+        if (supply === null || supply.amount === null) {
             return UNKNOWN_AMOUNT_PLACEHOLDER
         }
 
@@ -51,7 +52,7 @@ export const AssetMarketStats = ({
         })
         const { integer, fraction } = formatNumber(amount, 2)
         return `${integer}${fraction}${unit}`
-    }, [supply.amount, assetDetails])
+    }, [supply, assetDetails])
 
     return (
         <PWView style={styles.container}>
@@ -75,25 +76,27 @@ export const AssetMarketStats = ({
                     />
                 </PWView>
 
-                <PWView style={styles.itemContainer}>
-                    <PWView style={styles.labelContainer}>
-                        <PWText style={styles.label}>
-                            {t(supply.labelKey)}
-                        </PWText>
-                        <InfoButton
-                            variant='secondary'
-                            title={t(supply.labelKey)}
+                {supply && (
+                    <PWView style={styles.itemContainer}>
+                        <PWView style={styles.labelContainer}>
+                            <PWText style={styles.label}>
+                                {t(supply.labelKey)}
+                            </PWText>
+                            <InfoButton
+                                variant='secondary'
+                                title={t(supply.labelKey)}
+                            >
+                                <PWText>{t(supply.infoBodyKey)}</PWText>
+                            </InfoButton>
+                        </PWView>
+                        <PWText
+                            style={styles.value}
+                            variant='h2'
                         >
-                            <PWText>{t(supply.infoBodyKey)}</PWText>
-                        </InfoButton>
+                            {supplyText}
+                        </PWText>
                     </PWView>
-                    <PWText
-                        style={styles.value}
-                        variant='h2'
-                    >
-                        {supplyText}
-                    </PWText>
-                </PWView>
+                )}
             </PWView>
         </PWView>
     )

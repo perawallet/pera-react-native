@@ -19,7 +19,7 @@ import {
     EVM_NFT_STANDARD_LABELS,
     parseEvmNftAssetId,
 } from '@perawallet/wallet-core-chain-ethereum'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import {
     extractDomain,
     resolveTotalSupply,
@@ -66,17 +66,10 @@ export const resolveEthereumAssetAbout = ({
 
 export const resolveEthereumAssetSupply = (
     params: AssetDisplayParams,
-): AssetSupplyDisplay => {
-    if (params.isNativeAsset) {
-        return {
-            labelKey: i18nKey('asset_details.markets.circulating_supply'),
-            infoBodyKey: i18nKey(
-                'asset_details.markets.circulating_supply_info_body',
-            ),
-            // A native coin has no contract, so no total supply; its circulating supply is market data.
-            amount: null,
-        }
-    }
+): Nullable<AssetSupplyDisplay> => {
+    // A native coin has no contract, so no total supply, and no source serves
+    // its circulating supply: the row is left out rather than shown blank.
+    if (params.isNativeAsset) return null
     return {
         ...resolveTotalSupply(params),
         infoBodyKey: i18nKey(

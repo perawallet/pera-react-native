@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { Linking } from 'react-native'
 import { renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
@@ -136,5 +137,20 @@ describe('useAssetAbout', () => {
         )
 
         expect(result.current.projectUrl).toBeNull()
+    })
+
+    it('opens the project website in the system browser, not the webview', () => {
+        const { result } = renderHook(() =>
+            useAssetAbout(
+                makeAsset(undefined, 'https://project.example'),
+                makeAbout(null),
+                SCOPE,
+            ),
+        )
+
+        result.current.openInBrowser('https://project.example')
+
+        expect(Linking.openURL).toHaveBeenCalledWith('https://project.example')
+        expect(mockPushWebView).not.toHaveBeenCalled()
     })
 })
