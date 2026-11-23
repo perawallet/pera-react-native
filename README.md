@@ -217,7 +217,7 @@ in reviewed PRs, not via `fallow fix`.
 | [Translation Guide](docs/I18N_TRANSLATION_GUIDE.md)        | Locale bundles, plural traps, per-language rules             |
 | [WebView Architecture](docs/WEBVIEW_ARCHITECTURE.md)       | The in-app webview bridge, its trust model and v3 method set |
 | [Pera Card](docs/PERA_CARD.md)                             | Baanx contract, onboarding, AutoDraw                         |
-| [CI Automation](docs/CI_AUTOMATION.md)                     | Jira sync and release publishing                             |
+| [CI Automation](docs/CI_AUTOMATION.md)                     | Linear ticket sync and release publishing                    |
 | [Release](docs/RELEASE.md)                                 | Tags, pipelines, store submission                            |
 | [Documentation Standards](docs/DOCUMENTATION_STANDARDS.md) | Where a given piece of documentation belongs                 |
 | [Contributing](CONTRIBUTING.md)                            | Branches, commits, PRs                                       |

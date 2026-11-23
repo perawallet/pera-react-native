@@ -826,7 +826,7 @@ jobs:
           set -euo pipefail
           git ls-files -z '*.sh' | xargs -0 shellcheck --severity=error
 
-      # These cover tools/jira-sync.sh and tools/release/previous-release-tag.sh, which
+      # These cover tools/linear-sync.sh and tools/release/previous-release-tag.sh, which
       # only ever run unattended and write to a live tracker.
       - name: Shell script tests
         run: |
