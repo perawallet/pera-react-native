@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
     AlgorandRemoteConfigKeys,
     algorandRemoteConfigDefaults,
@@ -80,10 +80,13 @@ describe('algorandRemoteConfigDefaults', () => {
             expect(fresh.algorandRemoteConfigDefaults.enable_quantum_swap).toBe(
                 expected,
             )
-            buildFlags.isDebug = false
-            buildFlags.isStaging = false
         },
     )
+})
+
+afterEach(() => {
+    buildFlags.isDebug = false
+    buildFlags.isStaging = false
 })
 
 beforeEach(() => {

@@ -10,15 +10,7 @@
  limitations under the License
  */
 
-import {
-    afterEach,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-    type Mock,
-} from 'vitest'
+import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useRemoteConfig } from '@perawallet/wallet-core-remote-config'
 import { useCapability, type CapabilityRequirement } from '@hooks/useCapability'
@@ -130,10 +122,6 @@ beforeEach(() => {
     ;(useRemoteConfig as Mock).mockReturnValue({
         getBooleanValue: mockGetBooleanValue,
     })
-})
-
-afterEach(() => {
-    vi.unstubAllGlobals()
 })
 
 describe.each(FLAG_HOOKS)(
