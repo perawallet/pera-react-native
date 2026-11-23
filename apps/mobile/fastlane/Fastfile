@@ -391,6 +391,20 @@ platform :android do
     )
   end
 
+  # Resolve the publishing package from CI env so WB-1/WB-2 identity changes
+  # flow through bitrise.yml's ANDROID_PACKAGE_NAME, not this file.
+  def android_package_name(flavor)
+    ENV["ANDROID_PACKAGE_NAME"] ||
+      (flavor == "production" ? "com.algorand.android" : "com.algorand.perarn.staging")
+  end
+
+  # Checks the production identity on the project the build just produced, so a
+  # wrong one fails before anything is uploaded.
+  def verify_production_identity(package_name)
+    return unless package_name == "com.algorand.android"
+    sh("node", "../scripts/verify-android-identity.mjs", "--from-build")
+  end
+
   # Returns the artifact path for a given flavor and type
   def android_artifact_path(flavor, artifact_type)
     if artifact_type == "apk"
@@ -405,10 +419,7 @@ platform :android do
     flavor = options[:flavor] || "staging"
     clean = options[:clean].nil? ? true : options[:clean]
 
-    # Resolve the publishing package from CI env so WB-1/WB-2 identity changes
-    # flow through bitrise.yml's ANDROID_PACKAGE_NAME, not this file.
-    package_name = ENV["ANDROID_PACKAGE_NAME"] ||
-      (flavor == "production" ? "com.algorand.android" : "com.algorand.perarn.staging")
+    package_name = android_package_name(flavor)
 
     # 1) Build the AAB and upload it to the Play internal track.
     build_android(
@@ -417,6 +428,7 @@ platform :android do
       clean: clean,
       artifact_type: "aab"
     )
+    verify_production_identity(package_name)
 
     # Play's "What's new" for this build: pera-admin's summary of the release,
     # when the job has one. Never RELEASE_NOTES, whose full changelog runs past
@@ -480,6 +492,7 @@ platform :android do
       clean: clean,
       artifact_type: "apk"
     )
+    verify_production_identity(android_package_name(flavor))
 
     # Unescape literal \n to real newlines for Firebase release notes
     notes = unescape_changelog(ENV["RELEASE_NOTES"] || "Build #{ENV['BUILD_NUMBER'] || 'dev'}")
