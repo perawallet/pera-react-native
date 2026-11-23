@@ -113,12 +113,19 @@ export const mockSwapOrderWithPayment = ({
     sender,
     receiver,
     amount = 1_000_000n,
+    note,
 }: {
     sender: string
     receiver: string
     amount?: bigint
+    note?: string
 }): void => {
-    const unsigned = buildPaymentTransaction({ sender, receiver, amount })
+    const unsigned = buildPaymentTransaction({
+        sender,
+        receiver,
+        amount,
+        note,
+    })
     server.use(
         mockCreateSwapOrder({
             response: {

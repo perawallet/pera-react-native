@@ -11,6 +11,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
+import { ALGORAND_ZERO_ADDRESS_STRING } from 'algosdk'
 import { Decimal } from 'decimal.js'
 import {
     SwapQuoteMismatchError,
@@ -394,6 +395,24 @@ describe('validateSwapGroupAgainstQuote', () => {
             ).toThrow(SwapQuoteMismatchError)
         })
 
+        it('rejects a deposit address that is the swapper', () => {
+            expect(() =>
+                validateSwapGroupAgainstQuote(
+                    [axfer({ receiver: SWAPPER })],
+                    crossChain(SWAPPER),
+                ),
+            ).toThrow(SwapQuoteMismatchError)
+        })
+
+        it('rejects an empty deposit address', () => {
+            expect(() =>
+                validateSwapGroupAgainstQuote(
+                    [axfer({ receiver: 'ATTACKER' })],
+                    crossChain(''),
+                ),
+            ).toThrow(SwapQuoteMismatchError)
+        })
+
         it('rejects a second receiver beside the deposit address', () => {
             expect(() =>
                 validateSwapGroupAgainstQuote(
@@ -402,15 +421,6 @@ describe('validateSwapGroupAgainstQuote', () => {
                         axfer({ receiver: 'SECOND', amount: 2_500_000n }),
                     ],
                     crossChain(DEPOSIT),
-                ),
-            ).toThrow(SwapQuoteMismatchError)
-        })
-
-        it('rejects a quote that names no deposit address', () => {
-            expect(() =>
-                validateSwapGroupAgainstQuote(
-                    [axfer({ receiver: 'ANYONE' })],
-                    crossChain(null),
                 ),
             ).toThrow(SwapQuoteMismatchError)
         })
@@ -480,6 +490,99 @@ describe('validateSwapGroupAgainstQuote', () => {
                     crossChain(DEPOSIT, { amountIn: 9_000_000 }),
                 ),
             ).toThrow(SwapQuoteMismatchError)
+        })
+
+        describe('when the router names no deposit address', () => {
+            const PAY_IN = 'ROUTER_PAY_IN'
+
+            it('accepts a single ALGO payment to one receiver within the request', () => {
+                expect(() =>
+                    validateSwapGroupAgainstQuote(
+                        [payment({ receiver: PAY_IN, amount: 1_000_000n })],
+                        crossChain(null, {
+                            sourceAssetId: '0',
+                            sourceAmount: 1_000_000,
+                        }),
+                    ),
+                ).not.toThrow()
+            })
+
+            it('accepts a single transfer of the input ASA to one receiver', () => {
+                expect(() =>
+                    validateSwapGroupAgainstQuote(
+                        [axfer({ receiver: PAY_IN })],
+                        crossChain(null),
+                    ),
+                ).not.toThrow()
+            })
+
+            it('rejects two different receivers', () => {
+                expect(() =>
+                    validateSwapGroupAgainstQuote(
+                        [
+                            axfer({ receiver: PAY_IN, amount: 2_500_000n }),
+                            axfer({ receiver: 'SECOND', amount: 2_500_000n }),
+                        ],
+                        crossChain(null),
+                    ),
+                ).toThrow(SwapQuoteMismatchError)
+            })
+
+            it('rejects a Pera fee sent as a transfer of its own', () => {
+                expect(() =>
+                    validateSwapGroupAgainstQuote(
+                        [
+                            axfer({ receiver: PAY_IN }),
+                            axfer({
+                                receiver: 'FEE_ADDRESS',
+                                amount: 100_000n,
+                            }),
+                        ],
+                        crossChain(null, {
+                            fees: [peraFee('31566704', 100_000)],
+                        }),
+                    ),
+                ).toThrow(SwapQuoteMismatchError)
+            })
+
+            it('rejects a transfer back to the swapper', () => {
+                expect(() =>
+                    validateSwapGroupAgainstQuote(
+                        [axfer({ receiver: SWAPPER })],
+                        crossChain(null),
+                    ),
+                ).toThrow(SwapQuoteMismatchError)
+            })
+
+            it('rejects a transfer to the zero address', () => {
+                expect(() =>
+                    validateSwapGroupAgainstQuote(
+                        [axfer({ receiver: ALGORAND_ZERO_ADDRESS_STRING })],
+                        crossChain(null),
+                    ),
+                ).toThrow(SwapQuoteMismatchError)
+            })
+
+            it('rejects an input above the request', () => {
+                expect(() =>
+                    validateSwapGroupAgainstQuote(
+                        [axfer({ receiver: PAY_IN, amount: 5_000_001n })],
+                        crossChain(null),
+                    ),
+                ).toThrow(SwapQuoteMismatchError)
+            })
+
+            it('ignores a zero-amount payment to another address when counting receivers', () => {
+                expect(() =>
+                    validateSwapGroupAgainstQuote(
+                        [
+                            axfer({ receiver: PAY_IN }),
+                            payment({ receiver: 'ANYONE', amount: 0n }),
+                        ],
+                        crossChain(null),
+                    ),
+                ).not.toThrow()
+            })
         })
     })
 })

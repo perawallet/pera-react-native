@@ -130,27 +130,39 @@ const routerAsset = (assetId: string, unitName: string, decimals: number) => ({
     cross_chain_asset_group: null,
 })
 
-const crossChainOffer = (depositAddress: string) => ({
+// The router never names a deposit address for an Algorand source: the pay-in
+// address exists only once the provider's order does.
+const XO_PAY_IN = REVIEW_RECEIVER_ADDRESS
+const XO_DEPOSIT_TAG = '2967708750'
+
+const crossChainOffer = (depositAddress?: string) => ({
     quote_id: 'quote-xo-1',
-    aggregator: 'xo-v4',
+    aggregator: 'xo-v3',
     provider: 'xo',
     source_asset: routerAsset(ALGO_ID, 'ALGO', 6),
     destination_asset: routerAsset(ETH_ID, 'ETH', 18),
     source_amount: '1000000',
     destination_amount_expected: '50000000000000',
-    destination_amount_minimum: '49000000000000',
+    destination_amount_minimum: null,
     source_amount_usd_value: null,
     destination_amount_usd_value: null,
-    fees: [],
+    fees: [
+        {
+            kind: 'network' as const,
+            asset_id: ETH_ID,
+            amount: '1000000000000',
+            usd_value: null,
+        },
+    ],
     funding_method: 'wallet_transaction',
     expires_at: null,
-    deposit_address: depositAddress,
+    ...(depositAddress ? { deposit_address: depositAddress } : {}),
     extras: null,
 })
 
 const routerOrder = (status: SwapStatus) => ({
     order_id: SWAP_ORDER_ID,
-    aggregator: 'xo-v4',
+    aggregator: 'xo-v3',
     provider: 'xo',
     status,
     funding_method: 'wallet_transaction',
@@ -236,10 +248,14 @@ const requestOf = (sender: string): SwapQuoteRequest => ({
     slippage: null,
 })
 
-const quoteFor = async (api: HostApi, sender: string, deposit: string) => {
+const quoteFor = async (
+    api: HostApi,
+    sender: string,
+    depositAddress?: string,
+) => {
     server.use(
         mockCreateSwapQuotes({
-            response: { results: [crossChainOffer(deposit)] },
+            response: { results: [crossChainOffer(depositAddress)] },
         }),
     )
     const [quote] = await api.createQuotes(requestOf(sender))
@@ -283,7 +299,11 @@ describe('Flow: Cross-chain swap (Algorand into an own Ethereum address)', () =>
 
     it("Given a quote into the user's Ethereum address, when the swap runs, then the order is tracked until completed and the Ethereum balance is refreshed", async () => {
         const { sender, api } = await startHost()
-        mockSwapOrderWithPayment({ sender, receiver: REVIEW_RECEIVER_ADDRESS })
+        mockSwapOrderWithPayment({
+            sender,
+            receiver: XO_PAY_IN,
+            note: XO_DEPOSIT_TAG,
+        })
         const { algodBodies, reports } = spyOnSwapSubmissionAndReports()
         server.use(mockFetchSwapOrder({ order: routerOrder('in_progress') }))
         const balanceKey = getAccountBalancesQueryKey(ETH_ADDRESS, ETH_SCOPE)
@@ -291,8 +311,9 @@ describe('Flow: Cross-chain swap (Algorand into an own Ethereum address)', () =>
         api.queryClient.setQueryDefaults(balanceKey, { gcTime: Infinity })
         api.queryClient.setQueryData(balanceKey, { seeded: true })
 
-        const quote = await quoteFor(api, sender, REVIEW_RECEIVER_ADDRESS)
+        const quote = await quoteFor(api, sender)
         expect(quote.routeKind).toBe('cross-chain')
+        expect(quote.depositAddress).toBeNull()
         const outcome = await api.execute(quote)
 
         expect(outcome).toEqual({ kind: 'success', isPaidOutLater: false })
@@ -333,11 +354,15 @@ describe('Flow: Cross-chain swap (Algorand into an own Ethereum address)', () =>
 
     it('Given a sent cross-chain swap, when the router reports it in progress, then History leads with it as in progress, and once it expires the row goes', async () => {
         const { sender, api } = await startHost()
-        mockSwapOrderWithPayment({ sender, receiver: REVIEW_RECEIVER_ADDRESS })
+        mockSwapOrderWithPayment({
+            sender,
+            receiver: XO_PAY_IN,
+            note: XO_DEPOSIT_TAG,
+        })
         const { reports } = spyOnSwapSubmissionAndReports()
         server.use(mockFetchSwapOrder({ order: routerOrder('in_progress') }))
 
-        const quote = await quoteFor(api, sender, REVIEW_RECEIVER_ADDRESS)
+        const quote = await quoteFor(api, sender)
         await api.execute(quote)
         await waitFor(() => expect(reports).toHaveLength(1))
 
@@ -359,15 +384,39 @@ describe('Flow: Cross-chain swap (Algorand into an own Ethereum address)', () =>
         ).toBe('expired')
     })
 
-    it('Given an order whose source leg pays someone other than the quoted deposit address, when the swap runs, then nothing is broadcast and nothing is tracked', async () => {
+    it("Given a quote that names a deposit address, when the order's source leg pays another address, then nothing is broadcast and nothing is tracked", async () => {
         const { sender, api } = await startHost()
-        mockSwapOrderWithPayment({ sender, receiver: REVIEW_RECEIVER_ADDRESS })
+        mockSwapOrderWithPayment({ sender, receiver: XO_PAY_IN })
         const { algodBodies } = spyOnSwapSubmissionAndReports()
 
         const quote = await quoteFor(api, sender, sender)
         const outcome = await api.execute(quote)
 
-        expect(outcome.kind).toBe('error')
+        expect(outcome).toMatchObject({
+            kind: 'error',
+            message: 'swap.execution.quote_mismatch_body',
+        })
+        expect(algodBodies).toHaveLength(0)
+        expect(useSwapTrackingStore.getState().orders).toEqual({})
+    })
+
+    it("Given a quote that names no deposit address, when the order's source leg pays more than the request, then nothing is broadcast and nothing is tracked", async () => {
+        const { sender, api } = await startHost()
+        // Above the 1_000_000 request plus the 100_000 network allowance.
+        mockSwapOrderWithPayment({
+            sender,
+            receiver: XO_PAY_IN,
+            amount: 1_200_000n,
+        })
+        const { algodBodies } = spyOnSwapSubmissionAndReports()
+
+        const quote = await quoteFor(api, sender)
+        const outcome = await api.execute(quote)
+
+        expect(outcome).toMatchObject({
+            kind: 'error',
+            message: 'swap.execution.quote_mismatch_body',
+        })
         expect(algodBodies).toHaveLength(0)
         expect(useSwapTrackingStore.getState().orders).toEqual({})
     })

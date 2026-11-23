@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { ALGORAND_ZERO_ADDRESS_STRING } from 'algosdk'
 import type { Decimal } from 'decimal.js'
 import {
     swapFeeOf,
@@ -52,21 +53,19 @@ const receiverOf = (tx: PeraDisplayableTransaction): Optional<string> => {
 }
 
 /**
- * The rules a cross-chain source leg adds: pay/axfer only, every non-zero
- * transfer to the quote's deposit address, and the summed fee within the
- * router's cap. A Pera fee sent as a transfer of its own fails here: a fee
- * has to be folded into the deposit.
+ * The rules a cross-chain source leg adds: pay/axfer only, the summed fee
+ * within the router's cap, and every non-zero transfer to one receiver that is
+ * neither the swapper nor the zero address, exactly the deposit address when
+ * the quote names one. A quote that names none leaves the request bound in
+ * {@link validateSwapGroupAgainstQuote} to cap what can leave.
  */
 const validateCrossChainSourceLeg = (
     signableTransactions: PeraDisplayableTransaction[],
     depositAddress: SwapQuote['depositAddress'],
+    swapper: string,
 ): void => {
-    if (!depositAddress) {
-        throw new SwapQuoteMismatchError(
-            'Cross-chain swap quote names no deposit address',
-        )
-    }
     let fees = 0n
+    const receivers = new Set<string>()
     for (const tx of signableTransactions) {
         if (!tx.txType || !CROSS_CHAIN_TX_TYPES.has(tx.txType)) {
             throw new SwapQuoteMismatchError(
@@ -75,15 +74,31 @@ const validateCrossChainSourceLeg = (
         }
         fees += toBig(tx.fee)
         const receiver = receiverOf(tx)
-        if (receiver !== undefined && receiver !== depositAddress) {
+        if (receiver === undefined) continue
+        if (depositAddress !== null && receiver !== depositAddress) {
             throw new SwapQuoteMismatchError(
                 'Cross-chain swap leg pays an address other than the deposit address',
             )
         }
+        receivers.add(receiver)
     }
     if (fees > CROSS_CHAIN_FEE_LIMIT_MICRO_ALGO) {
         throw new SwapQuoteMismatchError(
             'Cross-chain swap leg fees exceed the allowed total',
+        )
+    }
+    if (receivers.size > 1) {
+        throw new SwapQuoteMismatchError(
+            'Cross-chain swap leg pays more than one address',
+        )
+    }
+    const [receiver] = receivers
+    if (
+        receiver !== undefined &&
+        (receiver === swapper || receiver === ALGORAND_ZERO_ADDRESS_STRING)
+    ) {
+        throw new SwapQuoteMismatchError(
+            'Cross-chain swap leg pays back to the sender or to the zero address',
         )
     }
 }
@@ -208,6 +223,10 @@ export const validateSwapGroupAgainstQuote = (
     }
 
     if (quote.routeKind === 'cross-chain') {
-        validateCrossChainSourceLeg(signableTransactions, quote.depositAddress)
+        validateCrossChainSourceLeg(
+            signableTransactions,
+            quote.depositAddress,
+            swapper,
+        )
     }
 }
