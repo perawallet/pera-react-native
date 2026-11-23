@@ -23,8 +23,11 @@ const { accountsStoreMock, hydrationMock, keystoreMock, gateMock } = vi.hoisted(
             parents: new Map<string, string>(),
         },
         gateMock: {
-            wipeBlockedAtVersions: null as MigrationStepVersions | null,
-            setWipeBlockedAtVersions: vi.fn(),
+            legacyWipeBlock: null as {
+                versions: MigrationStepVersions
+                addresses: string[]
+            } | null,
+            setLegacyWipeBlock: vi.fn(),
         },
     }),
 )
@@ -47,6 +50,12 @@ vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
         const parentKeyId = keystoreMock.parents.get(id)
         return parentKeyId ? { parentKeyId } : {}
     },
+}))
+
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getKeystore: () => ({ ready: Promise.resolve() }),
+    getKeystoreStore: vi.fn(),
+    getProvider: vi.fn(),
 }))
 
 vi.mock('../../store', () => ({
@@ -124,8 +133,8 @@ describe('wipeMigratedLegacyData', () => {
         hydrationMock.hasHydrated.mockReturnValue(true)
         keystoreMock.ids = new Set(['kp-ADDR'])
         keystoreMock.parents = new Map()
-        gateMock.wipeBlockedAtVersions = null
-        gateMock.setWipeBlockedAtVersions.mockClear()
+        gateMock.legacyWipeBlock = null
+        gateMock.setLegacyWipeBlock.mockClear()
     })
 
     it('wipes once every step is done and each key is held by the keystore', async () => {
@@ -135,7 +144,7 @@ describe('wipeMigratedLegacyData', () => {
 
         expect(outcome).toBe('wiped')
         expect(service.wipeLegacyData).toHaveBeenCalledOnce()
-        expect(gateMock.setWipeBlockedAtVersions).toHaveBeenCalledWith(null)
+        expect(gateMock.setLegacyWipeBlock).toHaveBeenCalledWith(null)
         expect(data.accounts[0].secretKey?.every(b => b === 0)).toBe(true)
         expect(data.auth.pin?.every(b => b === 0)).toBe(true)
     })
@@ -192,9 +201,10 @@ describe('wipeMigratedLegacyData', () => {
             'undecodable-accounts',
         )
         expect(service.wipeLegacyData).not.toHaveBeenCalled()
-        expect(gateMock.setWipeBlockedAtVersions).toHaveBeenCalledWith(
-            MIGRATION_STEP_TARGET_VERSIONS,
-        )
+        expect(gateMock.setLegacyWipeBlock).toHaveBeenCalledWith({
+            versions: MIGRATION_STEP_TARGET_VERSIONS,
+            addresses: [],
+        })
         expect(data.accounts[0].secretKey?.every(b => b === 0)).toBe(true)
     })
 
@@ -216,9 +226,10 @@ describe('wipeMigratedLegacyData', () => {
                 'keys-held-as-watch',
             )
             expect(service.wipeLegacyData).not.toHaveBeenCalled()
-            expect(gateMock.setWipeBlockedAtVersions).toHaveBeenCalledWith(
-                MIGRATION_STEP_TARGET_VERSIONS,
-            )
+            expect(gateMock.setLegacyWipeBlock).toHaveBeenCalledWith({
+                versions: MIGRATION_STEP_TARGET_VERSIONS,
+                addresses: ['ADDR'],
+            })
         },
     )
 
@@ -233,28 +244,59 @@ describe('wipeMigratedLegacyData', () => {
         expect(await wipeMigratedLegacyData(service, 'algorand')).toBe('wiped')
     })
 
-    it('does not read the legacy payload again at the step versions it was refused at', async () => {
-        gateMock.wipeBlockedAtVersions = { ...MIGRATION_STEP_TARGET_VERSIONS }
+    it('does not read the legacy payload again while a remembered address still blocks', async () => {
+        accountsStoreMock.accounts = [watchAccount('ADDR')]
+        gateMock.legacyWipeBlock = {
+            versions: { ...MIGRATION_STEP_TARGET_VERSIONS },
+            addresses: ['ADDR'],
+        }
         const { service } = buildService()
 
         expect(await wipeMigratedLegacyData(service, 'algorand')).toBe(
-            'blocked-until-steps-change',
+            'still-blocked',
         )
         expect(service.getLegacyData).not.toHaveBeenCalled()
         expect(service.wipeLegacyData).not.toHaveBeenCalled()
     })
 
+    it('stays blocked on an undecodable account until a step version moves', async () => {
+        gateMock.legacyWipeBlock = {
+            versions: { ...MIGRATION_STEP_TARGET_VERSIONS },
+            addresses: [],
+        }
+        const { service } = buildService()
+
+        expect(await wipeMigratedLegacyData(service, 'algorand')).toBe(
+            'still-blocked',
+        )
+        expect(service.getLegacyData).not.toHaveBeenCalled()
+    })
+
     it('re-checks once a step version has moved on since the refusal', async () => {
-        gateMock.wipeBlockedAtVersions = {
-            ...MIGRATION_STEP_TARGET_VERSIONS,
-            accounts: 1,
+        gateMock.legacyWipeBlock = {
+            versions: { ...MIGRATION_STEP_TARGET_VERSIONS, accounts: 1 },
+            addresses: [],
         }
         const { service } = buildService()
 
         expect(await wipeMigratedLegacyData(service, 'algorand')).toBe('wiped')
     })
 
-    it('keeps the store, without remembering it, when the keystore lacks the account key', async () => {
+    it.each([
+        ['removed the watch account', () => []],
+        ['re-imported it with its key', () => [localAccount('ADDR')]],
+    ])('re-checks and wipes once the user has %s', async (_label, accounts) => {
+        accountsStoreMock.accounts = accounts()
+        gateMock.legacyWipeBlock = {
+            versions: { ...MIGRATION_STEP_TARGET_VERSIONS },
+            addresses: ['ADDR'],
+        }
+        const { service } = buildService()
+
+        expect(await wipeMigratedLegacyData(service, 'algorand')).toBe('wiped')
+    })
+
+    it('keeps and remembers the refusal when the keystore lacks the account key', async () => {
         keystoreMock.ids = new Set()
         const { service } = buildService()
 
@@ -262,7 +304,10 @@ describe('wipeMigratedLegacyData', () => {
             'keys-missing-from-keystore',
         )
         expect(service.wipeLegacyData).not.toHaveBeenCalled()
-        expect(gateMock.setWipeBlockedAtVersions).not.toHaveBeenCalled()
+        expect(gateMock.setLegacyWipeBlock).toHaveBeenCalledWith({
+            versions: MIGRATION_STEP_TARGET_VERSIONS,
+            addresses: ['ADDR'],
+        })
     })
 
     it('keeps the store when an HD key is held but its seed is gone', async () => {

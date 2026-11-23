@@ -31,8 +31,7 @@ import type {
     MigrationStepVersions,
 } from '@perawallet/wallet-extension-platform'
 import { getKeystore } from '@perawallet/wallet-extension-provider'
-import { useMigrationGateStore } from '../store'
-import type { LegacyWipeBlock } from '../store/migrationGateStore'
+import { useMigrationGateStore, type LegacyWipeBlock } from '../store'
 import { scrubLegacyPayloadSecrets } from './scrubLegacyPayload'
 import {
     ALL_MIGRATION_STEPS,
@@ -55,6 +54,8 @@ type BlockingReason = Extract<
     LegacyWipeOutcome,
     'undecodable-accounts' | 'keys-held-as-watch' | 'keys-missing-from-keystore'
 >
+
+type WipeBlockFinding = { reason: BlockingReason; addresses: string[] }
 
 const hasSigningMaterial = (account: LegacyAccount): boolean =>
     (account.secretKey !== null && account.secretKey.length > 0) ||
@@ -94,7 +95,7 @@ const accountBlockReason = (
 const findBlock = (
     data: LegacyMigrationData,
     chainId: ChainId,
-): Nullable<{ reason: BlockingReason; addresses: string[] }> => {
+): Nullable<WipeBlockFinding> => {
     // A future decoder fix can only recover these from the legacy store.
     if (data.undecodableAccounts.length > 0) {
         return { reason: 'undecodable-accounts', addresses: [] }
@@ -175,7 +176,7 @@ const resolveAndWipe = async (
         }
 
         const data = await migration.getLegacyData()
-        let block: Nullable<{ reason: BlockingReason; addresses: string[] }>
+        let block: Nullable<WipeBlockFinding>
         try {
             block = findBlock(data, chainId)
         } finally {
