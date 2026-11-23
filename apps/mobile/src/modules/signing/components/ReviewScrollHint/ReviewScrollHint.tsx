@@ -22,7 +22,7 @@ import Animated, {
     withSequence,
     withTiming,
 } from 'react-native-reanimated'
-import { PWIcon, PWTouchableOpacity } from '@components/core'
+import { PWIcon, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
@@ -36,11 +36,14 @@ const RING_OPACITY = 0.6
 
 export type ReviewScrollHintProps = {
     isVisible: boolean
+    /** Keeps the hint's slot while it is hidden, so it never covers the review nor moves it. */
+    isReserved: boolean
     onPress: () => void
 }
 
 export const ReviewScrollHint = ({
     isVisible,
+    isReserved,
     onPress,
 }: ReviewScrollHintProps) => {
     const styles = useStyles()
@@ -89,27 +92,30 @@ export const ReviewScrollHint = ({
         ],
     }))
 
-    if (!isVisible) return null
+    if (!isReserved && !isVisible) return null
 
     return (
-        <PWTouchableOpacity
-            style={styles.container}
-            onPress={onPress}
-            accessibilityRole='button'
-            accessibilityLabel={t('signing.review.scroll_hint')}
-            testID='review_scroll_hint'
-        >
-            <Animated.View style={[styles.chip, animatedStyle]}>
-                <Animated.View
-                    pointerEvents='none'
-                    style={[styles.ring, ringStyle]}
-                />
-                <PWIcon
-                    name='chevron-down'
-                    size='sm'
-                    variant='secondary'
-                />
-            </Animated.View>
-        </PWTouchableOpacity>
+        <PWView style={styles.container}>
+            {isVisible && (
+                <PWTouchableOpacity
+                    onPress={onPress}
+                    accessibilityRole='button'
+                    accessibilityLabel={t('signing.review.scroll_hint')}
+                    testID='review_scroll_hint'
+                >
+                    <Animated.View style={[styles.chip, animatedStyle]}>
+                        <Animated.View
+                            pointerEvents='none'
+                            style={[styles.ring, ringStyle]}
+                        />
+                        <PWIcon
+                            name='chevron-down'
+                            size='sm'
+                            variant='secondary'
+                        />
+                    </Animated.View>
+                </PWTouchableOpacity>
+            )}
+        </PWView>
     )
 }

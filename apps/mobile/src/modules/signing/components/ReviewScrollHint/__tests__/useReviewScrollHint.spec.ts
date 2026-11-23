@@ -63,6 +63,19 @@ describe('useReviewScrollHint', () => {
         expect(result.current.isMoreBelow).toBe(true)
     })
 
+    it('keeps the hint slot for an overflowing review once scrolled to the end', () => {
+        const { result } = measured(400, 1000)
+
+        act(() => result.current.handleScroll(scrollTo(600)))
+
+        expect(result.current.isMoreBelow).toBe(false)
+        expect(result.current.isScrollable).toBe(true)
+    })
+
+    it('reserves no slot for a review that fits its body', () => {
+        expect(measured(400, 424).result.current.isScrollable).toBe(false)
+    })
+
     it('scrolls the body to its end', () => {
         const { result } = renderHook(() => useReviewScrollHint())
         const scrollToEnd = vi.fn()
