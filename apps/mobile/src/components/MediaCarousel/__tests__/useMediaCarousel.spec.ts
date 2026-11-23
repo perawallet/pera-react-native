@@ -12,6 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
+import { render, screen } from '@test-utils/render'
 import { useMediaCarousel } from '../useMediaCarousel'
 import type { MediaItem } from '../resolveMediaImageUri'
 
@@ -47,5 +48,35 @@ describe('useMediaCarousel', () => {
         act(() => result.current.handlePageSelected(1))
 
         expect(result.current.activeIndex).toBe(1)
+    })
+
+    it('labels each page with its position out of the total', () => {
+        const { result } = renderHook(() =>
+            useMediaCarousel({ media: [image('a'), image('b')] }),
+        )
+
+        render(
+            result.current.renderMediaItem({
+                item: result.current.pages[1],
+                index: 1,
+            }),
+        )
+
+        expect(screen.getByText('2 / 2')).toBeTruthy()
+    })
+
+    it('shows no counter for a single media item', () => {
+        const { result } = renderHook(() =>
+            useMediaCarousel({ media: [image('a')] }),
+        )
+
+        render(
+            result.current.renderMediaItem({
+                item: result.current.pages[0],
+                index: 0,
+            }),
+        )
+
+        expect(screen.queryByTestId('media-carousel-counter')).toBeNull()
     })
 })
