@@ -52,6 +52,7 @@ const signIn = (overrides: Partial<SignInSummary> = {}): SignInSummary => ({
     isOtherChain: false,
     grants: [],
     hasUnreadableGrants: false,
+    isMalformed: false,
     ...overrides,
 })
 
@@ -153,6 +154,13 @@ describe('useSignInMessageDetails', () => {
         expect(
             render(signIn({ hasUnreadableGrants: true })).grantsWarning?.body,
         ).toContain('signing.sign_in.grants_unreadable_body')
+    })
+
+    it('warns when the message strays from the sign-in format', () => {
+        expect(render(signIn()).malformedWarning).toBeUndefined()
+        expect(render(signIn({ isMalformed: true })).malformedWarning).toBe(
+            `signing.sign_in.malformed_body ${JSON.stringify({ domain: 'opensea.io' })}`,
+        )
     })
 
     it('shows no notes for a message that matches the request', () => {

@@ -57,7 +57,13 @@ export const decodeRecap = (uri: string): Optional<SignInGrant[]> => {
     } catch {
         return undefined
     }
-    if (!isRecord(parsed) || !isRecord(parsed.att)) return undefined
+    if (
+        !isRecord(parsed) ||
+        !isRecord(parsed.att) ||
+        Array.isArray(parsed.att)
+    ) {
+        return undefined
+    }
     const grants: SignInGrant[] = []
     for (const [target, abilities] of Object.entries(parsed.att)) {
         if (

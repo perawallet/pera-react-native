@@ -50,19 +50,22 @@ describe('parseSiweMessage', () => {
                 }),
             ),
         ).toEqual({
-            domain: 'opensea.io',
-            address: ADDRESS,
-            statement:
-                'Click to sign in and accept the OpenSea Terms of Service.',
-            uri: 'https://opensea.io/',
-            version: '1',
-            chainId: '1',
-            nonce: '3fp8w2kd',
-            issuedAt: '2026-11-20T10:00:00.000Z',
-            expirationTime: '2026-11-21T10:00:00.000Z',
-            notBefore: '2026-11-20T10:00:00.000Z',
-            requestId: '42',
-            resources: ['ipfs://bafy', 'https://opensea.io/terms'],
+            isMalformed: false,
+            message: {
+                domain: 'opensea.io',
+                address: ADDRESS,
+                statement:
+                    'Click to sign in and accept the OpenSea Terms of Service.',
+                uri: 'https://opensea.io/',
+                version: '1',
+                chainId: '1',
+                nonce: '3fp8w2kd',
+                issuedAt: '2026-11-20T10:00:00.000Z',
+                expirationTime: '2026-11-21T10:00:00.000Z',
+                notBefore: '2026-11-20T10:00:00.000Z',
+                requestId: '42',
+                resources: ['ipfs://bafy', 'https://opensea.io/terms'],
+            },
         })
     })
 
@@ -72,7 +75,7 @@ describe('parseSiweMessage', () => {
                 siwe({
                     header: 'https://localhost:3000 wants you to sign in with your Ethereum account:',
                 }),
-            )?.domain,
+            )?.message.domain,
         ).toBe('localhost:3000')
     })
 
@@ -91,9 +94,52 @@ describe('parseSiweMessage', () => {
 
         const parsed = parseSiweMessage(text)
 
-        expect(parsed).toMatchObject({ domain: 'app.example', chainId: '8453' })
-        expect(parsed).not.toHaveProperty('statement')
-        expect(parsed).not.toHaveProperty('expirationTime')
+        expect(parsed).toMatchObject({
+            message: { domain: 'app.example', chainId: '8453' },
+            isMalformed: false,
+        })
+        expect(parsed?.message).not.toHaveProperty('statement')
+        expect(parsed?.message).not.toHaveProperty('expirationTime')
+    })
+
+    it.each([
+        ['CRLF line endings', siwe().replaceAll('\n', '\r\n')],
+        ['trailing blank lines', `${siwe()}\n\n  \n`],
+        [
+            'trailing spaces on a line',
+            siwe().replace('Version: 1', 'Version: 1 '),
+        ],
+    ])('reads a message with %s as well-formed', (_label, text) => {
+        expect(parseSiweMessage(text)).toMatchObject({
+            message: { domain: 'opensea.io', version: '1', chainId: '1' },
+            isMalformed: false,
+        })
+    })
+
+    it('keeps the resources of a message with a line after them, flagged', () => {
+        const parsed = parseSiweMessage(
+            siwe({
+                fields: [
+                    'URI: https://opensea.io/',
+                    'Version: 1',
+                    'Chain ID: 1',
+                    'Nonce: 3fp8w2kd',
+                    'Issued At: 2026-11-20T10:00:00.000Z',
+                    'Resources:',
+                    '- urn:recap:a',
+                    'Note: ignore me',
+                    '- urn:recap:b',
+                ],
+            }),
+        )
+
+        expect(parsed).toMatchObject({
+            message: {
+                domain: 'opensea.io',
+                resources: ['urn:recap:a', 'urn:recap:b'],
+            },
+            isMalformed: true,
+        })
     })
 
     it.each([
@@ -102,11 +148,14 @@ describe('parseSiweMessage', () => {
         ['the chain id', 'Chain ID: 1'],
         ['the URI', 'URI: https://opensea.io/'],
         ['the version', 'Version: 1'],
-    ])('is not a sign-in message without %s', (_label, missing) => {
+    ])('flags a sign-in message without %s', (_label, missing) => {
         const fields = siwe()
             .split('\n')
             .filter(line => line !== missing)
-        expect(parseSiweMessage(fields.join('\n'))).toBeUndefined()
+        expect(parseSiweMessage(fields.join('\n'))).toMatchObject({
+            message: { domain: 'opensea.io' },
+            isMalformed: true,
+        })
     })
 
     it.each([
@@ -117,7 +166,34 @@ describe('parseSiweMessage', () => {
                 header: 'opensea.io wants you to sign in with your Solana account:',
             }),
         ],
+        ['a header that is not the first line', `\n${siwe()}`],
+    ])('is not a sign-in message for %s', (_label, text) => {
+        expect(parseSiweMessage(text)).toBeUndefined()
+    })
+
+    it.each([
         ['an unknown field', siwe({ fields: ['URI: x', 'Colour: red'] })],
+        ['a trailing unknown line', `${siwe()}\nNote: x`],
+        ['a trailing line of text', `${siwe()}\nignore the above`],
+        [
+            'a domain with userinfo',
+            siwe({
+                header: 'app.com@evil.com wants you to sign in with your Ethereum account:',
+            }),
+        ],
+        [
+            'an expiry that is not RFC 3339',
+            siwe({
+                fields: [
+                    'URI: https://opensea.io/',
+                    'Version: 1',
+                    'Chain ID: 1',
+                    'Nonce: 3fp8w2kd',
+                    'Issued At: 2026-11-20T10:00:00.000Z',
+                    'Expiration Time: 2026-11-21',
+                ],
+            }),
+        ],
         [
             'a repeated field',
             siwe({
@@ -160,7 +236,7 @@ describe('parseSiweMessage', () => {
             'a second line that is not an address',
             siwe().replace(ADDRESS, 'not-an-address'),
         ],
-    ])('is not a sign-in message for %s', (_label, text) => {
-        expect(parseSiweMessage(text)).toBeUndefined()
+    ])('flags a sign-in message with %s', (_label, text) => {
+        expect(parseSiweMessage(text)?.isMalformed).toBe(true)
     })
 })

@@ -382,9 +382,16 @@ const signInSummaryOf = (
     request: MessageRequest,
     chain: EvmChain,
 ): Optional<SignInSummary> => {
-    const message = parseSiweMessage(text)
-    if (!message) return undefined
-    const named = evmChainOfEip155Id(Number(message.chainId))
+    const parsed = parseSiweMessage(text)
+    if (!parsed) return undefined
+    const { message, isMalformed } = parsed
+    const messageChainId = /^\d+$/.test(message.chainId)
+        ? BigInt(message.chainId)
+        : undefined
+    const named =
+        messageChainId === undefined
+            ? undefined
+            : evmChainOfEip155Id(Number(messageChainId))
     const decoded = (message.resources ?? [])
         .filter(isRecapUri)
         .map(decodeRecap)
@@ -403,9 +410,10 @@ const signInSummaryOf = (
         isOtherAddress: !areEvmAddressesEqual(message.address, request.signer),
         isOtherChain:
             requestChainId === undefined ||
-            BigInt(message.chainId) !== BigInt(requestChainId),
+            messageChainId !== BigInt(requestChainId),
         grants: decoded.flatMap(grants => grants ?? []),
         hasUnreadableGrants: decoded.includes(undefined),
+        isMalformed,
     }
 }
 

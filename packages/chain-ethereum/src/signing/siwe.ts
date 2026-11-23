@@ -14,9 +14,12 @@ import { isAddress } from 'viem'
 import type { SiwxMessage } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
 
-// The scheme before the domain is optional in EIP-4361.
+// The scheme before the domain is optional in EIP-4361. Any non-space domain
+// matches, so a malformed one still reviews as a sign-in; `AUTHORITY` holds it
+// to the host[:port] form verifiers accept.
 const HEADER =
     /^(?:[a-zA-Z][a-zA-Z0-9+.-]*:\/\/)?(\S+) wants you to sign in with your Ethereum account:$/
+const AUTHORITY = /^[a-zA-Z0-9+.-]+(?::\d{1,5})?$/
 
 const FIELD_KEYS = {
     URI: 'uri',
@@ -36,27 +39,43 @@ const isFieldName = (name: string): name is FieldName =>
     Object.hasOwn(FIELD_KEYS, name)
 
 const DIGITS = /^\d+$/
+// RFC 3339, as EIP-4361 requires; `Date.parse` alone accepts looser forms.
+const DATE_TIME =
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/
 const RESOURCES = 'Resources:'
 const RESOURCE_PREFIX = '- '
+const DATE_KEYS = ['issuedAt', 'expirationTime', 'notBefore'] as const
 
-const isDateOrAbsent = (value: Optional<string>): boolean =>
-    value === undefined || !Number.isNaN(Date.parse(value))
+const isDateTime = (value: string): boolean =>
+    DATE_TIME.test(value) && !Number.isNaN(Date.parse(value))
+
+export type ParsedSiweMessage = {
+    message: SiwxMessage
+    /** The text strays from EIP-4361, so a verifier may read it differently than `message`. */
+    isMalformed: boolean
+}
 
 /**
- * Reads an EIP-4361 (Sign-In with Ethereum) message. Text that strays from the
- * format, or lacks a field the EIP requires, is not a sign-in message and
- * returns undefined, so it reviews as plain text.
+ * Reads an EIP-4361 (Sign-In with Ethereum) message; text without its header
+ * line returns undefined. Past the header, text that strays from the format is
+ * read as far as it goes and marked `isMalformed` rather than dropped: lenient
+ * verifiers still accept it, so its domain and resources must be checked.
  */
-export const parseSiweMessage = (text: string): Optional<SiwxMessage> => {
-    const lines = text.split('\n')
+export const parseSiweMessage = (text: string): Optional<ParsedSiweMessage> => {
+    // Verifiers tolerate CRLF and trailing whitespace, so neither is malformed.
+    const lines = text.split(/\r?\n/).map(line => line.trimEnd())
     while (lines.length > 0 && lines[lines.length - 1] === '') lines.pop()
     const domain = HEADER.exec(lines[0] ?? '')?.[1]
-    const address = lines[1]
-    if (!domain || !address || !isAddress(address, { strict: false })) {
-        return undefined
+    if (!domain) return undefined
+
+    let isMalformed = !AUTHORITY.test(domain)
+    const address = lines[1] ?? ''
+    if (!isAddress(address, { strict: false })) isMalformed = true
+    let uriLine = lines.findIndex(line => line.startsWith('URI: '))
+    if (uriLine < 2) {
+        isMalformed = true
+        uriLine = lines.length
     }
-    const uriLine = lines.findIndex(line => line.startsWith('URI: '))
-    if (uriLine < 2) return undefined
     const statement = lines
         .slice(2, uriLine)
         .filter(line => line !== '')
@@ -65,9 +84,14 @@ export const parseSiweMessage = (text: string): Optional<SiwxMessage> => {
     const fields = new Map<FieldKey, string>()
     let resources: Optional<string[]>
     for (const line of lines.slice(uriLine)) {
+        // Every `- ` line past `Resources:` is kept, so no capability a
+        // lenient verifier might read escapes the review.
         if (resources) {
-            if (!line.startsWith(RESOURCE_PREFIX)) return undefined
-            resources.push(line.slice(RESOURCE_PREFIX.length))
+            if (line.startsWith(RESOURCE_PREFIX)) {
+                resources.push(line.slice(RESOURCE_PREFIX.length))
+            } else {
+                isMalformed = true
+            }
             continue
         }
         if (line === RESOURCES) {
@@ -76,47 +100,54 @@ export const parseSiweMessage = (text: string): Optional<SiwxMessage> => {
         }
         const separator = line.indexOf(': ')
         const name = line.slice(0, separator)
-        if (separator < 0 || !isFieldName(name)) return undefined
-        const key = FIELD_KEYS[name]
         // A repeated field would let the review show one value while the
         // dApp's verifier reads the other.
-        if (fields.has(key)) return undefined
-        fields.set(key, line.slice(separator + 2))
+        if (
+            separator < 0 ||
+            !isFieldName(name) ||
+            fields.has(FIELD_KEYS[name])
+        ) {
+            isMalformed = true
+            continue
+        }
+        fields.set(FIELD_KEYS[name], line.slice(separator + 2))
     }
 
-    const uri = fields.get('uri')
-    const version = fields.get('version')
-    const chainId = fields.get('chainId')
+    const uri = fields.get('uri') ?? ''
+    const version = fields.get('version') ?? ''
+    const chainId = fields.get('chainId') ?? ''
     const nonce = fields.get('nonce')
-    const issuedAt = fields.get('issuedAt')
-    const expirationTime = fields.get('expirationTime')
-    const notBefore = fields.get('notBefore')
     const requestId = fields.get('requestId')
+    const [issuedAt, expirationTime, notBefore] = DATE_KEYS.map(key => {
+        const value = fields.get(key)
+        if (value === undefined || isDateTime(value)) return value
+        isMalformed = true
+        return undefined
+    })
     if (
         !uri ||
         version !== '1' ||
-        !chainId ||
         !DIGITS.test(chainId) ||
         !nonce ||
-        !issuedAt ||
-        !isDateOrAbsent(issuedAt) ||
-        !isDateOrAbsent(expirationTime) ||
-        !isDateOrAbsent(notBefore)
+        !issuedAt
     ) {
-        return undefined
+        isMalformed = true
     }
     return {
-        domain,
-        address,
-        uri,
-        version,
-        chainId,
-        nonce,
-        issuedAt,
-        ...(statement !== '' && { statement }),
-        ...(expirationTime !== undefined && { expirationTime }),
-        ...(notBefore !== undefined && { notBefore }),
-        ...(requestId !== undefined && { requestId }),
-        ...(resources && { resources }),
+        message: {
+            domain,
+            address,
+            uri,
+            version,
+            chainId,
+            ...(nonce !== undefined && { nonce }),
+            ...(issuedAt !== undefined && { issuedAt }),
+            ...(statement !== '' && { statement }),
+            ...(expirationTime !== undefined && { expirationTime }),
+            ...(notBefore !== undefined && { notBefore }),
+            ...(requestId !== undefined && { requestId }),
+            ...(resources && { resources }),
+        },
+        isMalformed,
     }
 }

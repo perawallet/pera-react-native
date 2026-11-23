@@ -547,6 +547,8 @@ export interface SignInSummary {
     grants: SignInGrant[]
     /** A capability resource could not be read, so it grants something unknown. */
     hasUnreadableGrants: boolean
+    /** The message strays from the sign-in format, so the site may read it differently than shown. */
+    isMalformed: boolean
 }
 
 export interface MessageSummary {

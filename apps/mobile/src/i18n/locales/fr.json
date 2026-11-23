@@ -3647,7 +3647,9 @@
             "resource": "Ressource",
             "grants_title": "Cette connexion accorde aussi des autorisations",
             "grants_body": "En signant, vous permettez à {{domain}} d’agir pour vous avec les autorisations ci-dessous. N’approuvez que si vous faites confiance à ce site.",
-            "grants_unreadable_body": "Cette connexion accorde à {{domain}} des autorisations que Pera ne peut pas lire. N’approuvez que si vous faites confiance à ce site."
+            "grants_unreadable_body": "Cette connexion accorde à {{domain}} des autorisations que Pera ne peut pas lire. N’approuvez que si vous faites confiance à ce site.",
+            "malformed_title": "Ce message de connexion contient un contenu inattendu",
+            "malformed_body": "Certaines parties de ce message ne suivent pas le format de connexion, donc {{domain}} pourrait le lire autrement qu'affiché ici. Vérifiez le message complet dans Avancé et n'approuvez que si vous faites confiance au site."
         },
         "spend_approval": {
             "spend_warning": "Cette signature permet à une autre adresse de déplacer des tokens depuis votre compte sans vous redemander votre accord.",

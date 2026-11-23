@@ -726,6 +726,7 @@ const signInText = (
     address: string,
     chainId: number,
     resources: string[] = [],
+    trailing: string[] = [],
 ) =>
     toHex(
         [
@@ -742,6 +743,7 @@ const signInText = (
             ...(resources.length > 0
                 ? ['Resources:', ...resources.map(uri => `- ${uri}`)]
                 : []),
+            ...trailing,
         ].join('\n'),
     )
 
@@ -777,9 +779,44 @@ describe('ethereumMessageSignerAdapter.describe for a sign-in message', () => {
                 isOtherChain: false,
                 grants: [],
                 hasUnreadableGrants: false,
+                isMalformed: false,
             },
         })
         expect(summary.preview).toContain('opensea.io wants you to sign in')
+    })
+
+    it('keeps the sign-in review and its grants when a line is appended', () => {
+        const summary = adapter.describe(
+            personal(signInText(SENDER, 1, [RECAP], ['Note: ignore me'])),
+        )
+
+        expect(summary.title).toEqual({
+            key: 'signing.sign_in.title',
+            params: { domain: 'opensea.io' },
+        })
+        expect(summary.signIn).toMatchObject({
+            message: { domain: 'opensea.io' },
+            grants: [
+                { target: 'https://opensea.io/', abilities: ['crud/update'] },
+            ],
+            isMalformed: true,
+        })
+    })
+
+    it('flags a chain it cannot read as another chain', () => {
+        const text = [
+            'opensea.io wants you to sign in with your Ethereum account:',
+            SENDER,
+            '',
+            'URI: https://opensea.io/',
+            'Version: 1',
+            'Chain ID: base',
+        ].join('\n')
+
+        expect(adapter.describe(personal(toHex(text))).signIn).toMatchObject({
+            isOtherChain: true,
+            isMalformed: true,
+        })
     })
 
     it('reads what its ReCap resources grant, alongside its other resources', () => {

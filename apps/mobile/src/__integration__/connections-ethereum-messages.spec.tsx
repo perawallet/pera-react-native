@@ -126,6 +126,7 @@ const signInMessage = (
     domain: string,
     chainId: number,
     resources: string[] = [],
+    trailing: string[] = [],
 ) =>
     `0x${Buffer.from(
         [
@@ -142,6 +143,7 @@ const signInMessage = (
             ...(resources.length > 0
                 ? ['Resources:', ...resources.map(uri => `- ${uri}`)]
                 : []),
+            ...trailing,
         ].join('\n'),
     ).toString('hex')}`
 
@@ -410,6 +412,26 @@ describe('Flow: an eip155 dApp asks for a message signature', () => {
         )
 
         expect(screen.queryByTestId('sign_in_other_chain')).toBeNull()
+        expect(screen.queryByTestId('sign_in_malformed')).toBeNull()
+        fireEvent.click(screen.getByTestId(REJECT_BUTTON))
+        expect((await answerOf(walletKit)).error).toMatchObject({ code: 4001 })
+    })
+
+    it('Given a connected session, when the dApp sends a Sign-In with Ethereum message for another domain with a ReCap and an extra trailing line, then the review keeps the site and permission warnings and flags the unexpected content', async () => {
+        const walletKit = await connectSession()
+
+        send(walletKit, 'personal_sign', [
+            signInMessage('opensea.io', 1, [RECAP], ['Note: ignore me']),
+            SENDER,
+        ])
+        await waitFor(
+            () => expect(screen.getByTestId('sign_in_malformed')).toBeTruthy(),
+            { timeout: 15_000 },
+        )
+
+        expect(screen.getByText('signing.sign_in.title')).toBeTruthy()
+        expect(screen.getByTestId('sign_in_site_mismatch')).toBeTruthy()
+        expect(screen.getByTestId('sign_in_grants_warning')).toBeTruthy()
         fireEvent.click(screen.getByTestId(REJECT_BUTTON))
         expect((await answerOf(walletKit)).error).toMatchObject({ code: 4001 })
     })

@@ -46,6 +46,7 @@ export const SignInMessageDetails = ({
         unknownChainRow,
         resourceRows,
         grantsWarning,
+        malformedWarning,
         otherAddressNote,
         otherChainNote,
     } = useSignInMessageDetails(signIn)
@@ -62,6 +63,14 @@ export const SignInMessageDetails = ({
 
     return (
         <PWView style={styles.container}>
+            {!!malformedWarning && (
+                <WarningBanner
+                    title={t('signing.sign_in.malformed_title')}
+                    testID='sign_in_malformed'
+                >
+                    <WarningBannerBody>{malformedWarning}</WarningBannerBody>
+                </WarningBanner>
+            )}
             {!!siteMismatch && (
                 <WarningBanner
                     title={t('signing.sign_in.site_mismatch_title')}

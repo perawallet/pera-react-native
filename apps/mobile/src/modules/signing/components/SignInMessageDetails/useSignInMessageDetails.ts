@@ -36,6 +36,8 @@ export type UseSignInMessageDetailsResult = {
     resourceRows: SignInDetailRow[]
     /** Set when signing also delegates capabilities to the site. */
     grantsWarning: Optional<{ body: string; rows: SignInDetailRow[] }>
+    /** Set when the message strays from the sign-in format, so the site may read it differently. */
+    malformedWarning: Optional<string>
     otherAddressNote: Optional<string>
     otherChainNote: Optional<string>
 }
@@ -147,6 +149,11 @@ export const useSignInMessageDetails = (
                           testID: `sign_in_grant_${index}`,
                       })),
                   }
+                : undefined,
+            malformedWarning: signIn.isMalformed
+                ? t('signing.sign_in.malformed_body', {
+                      domain: message.domain,
+                  })
                 : undefined,
             unknownChainRow: messageScope
                 ? undefined

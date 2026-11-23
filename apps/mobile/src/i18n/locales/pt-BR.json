@@ -3663,7 +3663,9 @@
             "resource": "Recurso",
             "grants_title": "Este login também concede permissões",
             "grants_body": "Ao assinar, {{domain}} poderá agir por você com as permissões abaixo. Aprove somente se você confiar no site.",
-            "grants_unreadable_body": "Este login concede a {{domain}} permissões que a Pera não consegue ler. Aprove somente se você confiar no site."
+            "grants_unreadable_body": "Este login concede a {{domain}} permissões que a Pera não consegue ler. Aprove somente se você confiar no site.",
+            "malformed_title": "Esta mensagem de login tem conteúdo inesperado",
+            "malformed_body": "Partes desta mensagem não seguem o formato de login, então {{domain}} pode lê-la de forma diferente da mostrada aqui. Confira a mensagem completa em Avançado e só aprove se confiar no site."
         },
         "spend_approval": {
             "spend_warning": "Esta assinatura permite que outro endereço movimente tokens da sua conta sem pedir sua confirmação de novo.",

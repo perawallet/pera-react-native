@@ -3647,7 +3647,9 @@
             "resource": "Recurso",
             "grants_title": "Este inicio de sesión también concede permisos",
             "grants_body": "Al firmar, {{domain}} podrá actuar en tu nombre con los permisos de abajo. Aprueba solo si confías en el sitio.",
-            "grants_unreadable_body": "Este inicio de sesión concede a {{domain}} permisos que Pera no puede leer. Aprueba solo si confías en el sitio."
+            "grants_unreadable_body": "Este inicio de sesión concede a {{domain}} permisos que Pera no puede leer. Aprueba solo si confías en el sitio.",
+            "malformed_title": "Este mensaje de inicio de sesión tiene contenido inesperado",
+            "malformed_body": "Partes de este mensaje no siguen el formato de inicio de sesión, así que {{domain}} podría leerlo de forma distinta a como se muestra aquí. Revisa el mensaje completo en Avanzado y apruébalo solo si confías en el sitio."
         },
         "spend_approval": {
             "spend_warning": "Esta firma permite que otra dirección mueva tokens de tu cuenta sin volver a preguntarte.",

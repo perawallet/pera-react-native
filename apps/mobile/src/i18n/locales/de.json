@@ -3639,7 +3639,9 @@
             "resource": "Ressource",
             "grants_title": "Diese Anmeldung erteilt auch Berechtigungen",
             "grants_body": "Mit der Signatur kann {{domain}} mit den folgenden Berechtigungen in deinem Namen handeln. Bestätige nur, wenn du der Website vertraust.",
-            "grants_unreadable_body": "Diese Anmeldung erteilt {{domain}} Berechtigungen, die Pera nicht lesen kann. Bestätige nur, wenn du der Website vertraust."
+            "grants_unreadable_body": "Diese Anmeldung erteilt {{domain}} Berechtigungen, die Pera nicht lesen kann. Bestätige nur, wenn du der Website vertraust.",
+            "malformed_title": "Diese Anmeldenachricht enthält unerwartete Inhalte",
+            "malformed_body": "Teile dieser Nachricht entsprechen nicht dem Anmeldeformat, daher könnte {{domain}} sie anders lesen als hier angezeigt. Prüfe die vollständige Nachricht unter Erweitert und bestätige nur, wenn du der Website vertraust."
         },
         "spend_approval": {
             "spend_warning": "Diese Signatur erlaubt einer anderen Adresse, Token ohne erneute Rückfrage von deinem Konto zu bewegen.",

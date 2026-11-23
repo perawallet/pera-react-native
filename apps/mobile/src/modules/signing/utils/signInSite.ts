@@ -10,21 +10,16 @@
  limitations under the License
  */
 
-import type { SignRequestSource } from '@perawallet/wallet-core-signing'
+import {
+    isAuthDataOriginMismatch,
+    type SignRequestSource,
+} from '@perawallet/wallet-core-signing'
 import {
     originOf,
     stripUrlScheme,
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { attestedOriginOf } from './knownContractSite'
-
-const authorityOf = (url: string): Optional<string> => {
-    try {
-        return new URL(url).host
-    } catch {
-        return undefined
-    }
-}
 
 /**
  * The requesting site when a sign-in message names another domain, else
@@ -37,9 +32,6 @@ export const signInSiteMismatchOf = (
     verifiedOrigin?: string,
 ): Optional<string> => {
     const origin = attestedOriginOf(source, verifiedOrigin) ?? source?.url
-    const site = origin ? authorityOf(origin) : undefined
-    if (!origin || !site) return undefined
-    // EIP-4361's domain is an RFC 3986 authority, so it parses as one.
-    if (authorityOf(`https://${domain}`) === site) return undefined
+    if (!origin || !isAuthDataOriginMismatch(domain, origin)) return undefined
     return stripUrlScheme(originOf(origin) ?? origin)
 }

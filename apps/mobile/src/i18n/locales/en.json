@@ -3647,7 +3647,9 @@
             "resource": "Resource",
             "grants_title": "This sign-in also grants permissions",
             "grants_body": "Signing lets {{domain}} act for you with the permissions below. Only approve if you trust it.",
-            "grants_unreadable_body": "This sign-in grants {{domain}} permissions Pera can't read. Only approve if you trust it."
+            "grants_unreadable_body": "This sign-in grants {{domain}} permissions Pera can't read. Only approve if you trust it.",
+            "malformed_title": "This sign-in message has unexpected content",
+            "malformed_body": "Parts of this message don't follow the sign-in format, so {{domain}} may read it differently than shown here. Check the full message under Advanced, and only approve if you trust the site."
         },
         "spend_approval": {
             "spend_warning": "This signature lets another address move tokens out of your account without asking you again.",

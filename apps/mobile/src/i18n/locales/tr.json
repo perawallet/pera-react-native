@@ -3647,7 +3647,9 @@
             "resource": "Kaynak",
             "grants_title": "Bu oturum açma izin de veriyor",
             "grants_body": "İmzaladığında bu site aşağıdaki izinlerle senin adına işlem yapabilir: {{domain}}. Yalnızca siteye güveniyorsan onayla.",
-            "grants_unreadable_body": "Bu oturum açma, Pera'nın okuyamadığı izinler veriyor. Site: {{domain}}. Yalnızca siteye güveniyorsan onayla."
+            "grants_unreadable_body": "Bu oturum açma, Pera'nın okuyamadığı izinler veriyor. Site: {{domain}}. Yalnızca siteye güveniyorsan onayla.",
+            "malformed_title": "Bu oturum açma mesajında beklenmeyen içerik var",
+            "malformed_body": "Bu mesajın bazı bölümleri oturum açma biçimine uymuyor, bu yüzden {{domain}} onu burada gösterilenden farklı okuyabilir. Tam mesajı Gelişmiş bölümünde kontrol et ve yalnızca siteye güveniyorsan onayla."
         },
         "spend_approval": {
             "spend_warning": "Bu imza, başka bir adresin hesabından sana tekrar sormadan token hareket ettirmesine izin verir.",

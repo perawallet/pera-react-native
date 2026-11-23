@@ -76,6 +76,16 @@ describe('signInSiteMismatchOf', () => {
         ).toBe('app.uniswap.org')
     })
 
+    it('does not read a domain with userinfo as the host after it', () => {
+        expect(
+            signInSiteMismatchOf(
+                'app.com@evil.com',
+                undefined,
+                'https://evil.com',
+            ),
+        ).toBe('evil.com')
+    })
+
     it('reports nothing when the request names no site at all', () => {
         expect(signInSiteMismatchOf('opensea.io')).toBeUndefined()
     })
