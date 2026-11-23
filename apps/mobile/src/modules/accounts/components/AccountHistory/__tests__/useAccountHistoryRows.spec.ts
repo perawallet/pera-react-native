@@ -30,6 +30,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
     ...(await vi.importActual<object>(
         '@packages/accounts/src/models/accounts',
     )),
+    useAccountsStore: { subscribe: () => () => {} },
     useSelectedAccount: () => ({
         chains: { algorand: { address: 'ALGO_ADDRESS' } },
     }),

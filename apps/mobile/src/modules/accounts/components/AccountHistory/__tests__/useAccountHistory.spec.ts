@@ -80,6 +80,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
     ...(await vi.importActual<object>(
         '@packages/accounts/src/models/accounts',
     )),
+    useAccountsStore: { subscribe: () => () => {} },
     useSelectedAccount: vi.fn(),
     useAccountHoldingSources: () => mockSources.current,
     useAccountCapabilityScope: () => null,

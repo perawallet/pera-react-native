@@ -10,8 +10,11 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useAssetListViewStore } from '../useAssetListViewStore'
+
+vi.unmock('@perawallet/wallet-core-accounts')
 
 describe('useAssetListViewStore', () => {
     beforeEach(() => {
@@ -49,5 +52,23 @@ describe('useAssetListViewStore', () => {
         expect(useAssetListViewStore.getState().expandedGroupIds).toEqual([
             'usdt',
         ])
+    })
+
+    it('starts the network chip on All when another account is selected', () => {
+        useAccountsStore.setState({ selectedAccountId: 'first' })
+        useAssetListViewStore.getState().setSelectedChainId('base')
+
+        useAccountsStore.setState({ selectedAccountId: 'second' })
+
+        expect(useAssetListViewStore.getState().selectedChainId).toBeNull()
+    })
+
+    it('keeps the network chip while the same account stays selected', () => {
+        useAccountsStore.setState({ selectedAccountId: 'first' })
+        useAssetListViewStore.getState().setSelectedChainId('base')
+
+        useAccountsStore.setState({ selectedAccountId: 'first' })
+
+        expect(useAssetListViewStore.getState().selectedChainId).toBe('base')
     })
 })
