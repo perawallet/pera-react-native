@@ -230,6 +230,46 @@ describe('useMessageSigningScreen', () => {
         expect(result.current.isPending).toBe(true)
     })
 
+    it('names the requesting site when a sign-in message is for another domain', () => {
+        mockPipeline.resolved = {
+            signerAccount: SIGNER_ACCOUNT,
+            kind: {
+                type: 'message',
+                summary: {
+                    ...SUMMARY,
+                    signIn: { message: { domain: 'opensea.io' } },
+                },
+            },
+        }
+
+        const { result } = renderHook(() => useMessageSigningScreen())
+
+        expect(result.current.signInSiteMismatch).toBe('dapp.example')
+    })
+
+    it('reports no site mismatch for a sign-in message from its own domain', () => {
+        mockPipeline.resolved = {
+            signerAccount: SIGNER_ACCOUNT,
+            kind: {
+                type: 'message',
+                summary: {
+                    ...SUMMARY,
+                    signIn: { message: { domain: 'dapp.example' } },
+                },
+            },
+        }
+
+        const { result } = renderHook(() => useMessageSigningScreen())
+
+        expect(result.current.signInSiteMismatch).toBeUndefined()
+    })
+
+    it('reports no site mismatch for a message that is not a sign-in', () => {
+        const { result } = renderHook(() => useMessageSigningScreen())
+
+        expect(result.current.signInSiteMismatch).toBeUndefined()
+    })
+
     it('is idle otherwise', () => {
         const { result } = renderHook(() => useMessageSigningScreen())
 

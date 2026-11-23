@@ -10,7 +10,15 @@
  limitations under the License
  */
 
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import {
+    afterAll,
+    afterEach,
+    beforeAll,
+    describe,
+    expect,
+    it,
+    vi,
+} from 'vitest'
 import {
     bytesToHex,
     concat,
@@ -21,16 +29,18 @@ import {
 } from 'viem'
 import type { Hex } from 'viem'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type {
-    ChainScope,
-    MessageRequest,
-    Signature,
+import {
+    addressCodecs,
+    type ChainScope,
+    type MessageRequest,
+    type Signature,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     CannotSignError,
     messageSignerChainAdapters,
     signMessages,
 } from '@perawallet/wallet-core-signing'
+import { createEvmAddressCodec } from '../../accounts/address-codec'
 import { UnknownEvmNetworkError } from '../../blockchain'
 import { decodeEthereumLedgerMessage } from '../../ledger/messagePayload'
 import {
@@ -57,7 +67,7 @@ import {
     VIEM_PERA,
     vectorSignature,
 } from './fixtures'
-import { ETHEREUM } from '../../__tests__/evm-chains'
+import { BASE, ETHEREUM } from '../../__tests__/evm-chains'
 
 const MAINNET: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const OTHER = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
@@ -709,6 +719,82 @@ describe('ethereumMessageSignerAdapter.reviewedAddresses', () => {
                 payload: { typedData: 'not typed data' },
             }),
         ).toEqual([])
+    })
+})
+
+const signInText = (address: string, chainId: number) =>
+    toHex(
+        [
+            'opensea.io wants you to sign in with your Ethereum account:',
+            address,
+            '',
+            'Click to sign in.',
+            '',
+            'URI: https://opensea.io/',
+            'Version: 1',
+            `Chain ID: ${chainId}`,
+            'Nonce: 3fp8w2kd',
+            'Issued At: 2026-11-20T10:00:00.000Z',
+        ].join('\n'),
+    )
+
+describe('ethereumMessageSignerAdapter.describe for a sign-in message', () => {
+    beforeAll(() => {
+        addressCodecs.reset()
+        addressCodecs.register(createEvmAddressCodec(ETHEREUM))
+        addressCodecs.register(createEvmAddressCodec(BASE))
+    })
+    afterAll(() => addressCodecs.reset())
+
+    it('titles it by its domain and reads its fields', () => {
+        const summary = adapter.describe(personal(signInText(SENDER, 1)))
+
+        expect(summary).toMatchObject({
+            kind: 'text',
+            title: {
+                key: 'signing.sign_in.title',
+                params: { domain: 'opensea.io' },
+            },
+            signIn: {
+                message: {
+                    domain: 'opensea.io',
+                    address: SENDER,
+                    chainId: '1',
+                },
+                messageScope: MAINNET,
+                isOtherAddress: false,
+                isOtherChain: false,
+            },
+        })
+        expect(summary.preview).toContain('opensea.io wants you to sign in')
+    })
+
+    it('flags an address other than the signer', () => {
+        expect(
+            adapter.describe(personal(signInText(OTHER, 1))).signIn
+                ?.isOtherAddress,
+        ).toBe(true)
+    })
+
+    it('flags a chain other than the network signed on, naming it', () => {
+        const summary = adapter.describe(personal(signInText(SENDER, 8453)))
+
+        expect(summary.signIn).toMatchObject({
+            messageScope: { chainId: 'base', networkId: 'mainnet' },
+            isOtherChain: true,
+        })
+    })
+
+    it.each([
+        ['an id in no chain table', 987654321],
+        ['a chain this build does not register', 10],
+    ])('flags %s, with no scope to name it', (_label, chainId) => {
+        const signIn = adapter.describe(
+            personal(signInText(SENDER, chainId)),
+        ).signIn
+
+        expect(signIn?.isOtherChain).toBe(true)
+        expect(signIn).not.toHaveProperty('messageScope')
     })
 })
 

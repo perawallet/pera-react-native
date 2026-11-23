@@ -41,6 +41,7 @@ import {
     TOPIC as V2_SESSION_TOPIC,
     V2_URI,
 } from '@packages/walletconnect/src/v2/__tests__/fakeWalletKit'
+import { truncateEvmAddress } from '@packages/chain-ethereum/src/accounts/address-codec'
 import { useSigningStore } from '@packages/signing/src/store'
 import { __resetSigningActorRegistryForTests } from '@packages/signing/src/hooks/useSigningActorLifecycle'
 import {
@@ -73,6 +74,7 @@ import type { Optional } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { ConnectionsProvider } from '@modules/connections/shell'
 import { SigningOverlays } from '@modules/signing/shell'
+import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 
 // The integration setup registers whichever chains config enables, and v2
 // builds no client without a Reown project id.
@@ -110,6 +112,31 @@ const ETHEREUM_ACCOUNT: WalletAccount = {
     chains: { ethereum: { address: SENDER, keyPairId: SIGNER_KEY_PAIR_ID } },
     name: 'Ether',
 }
+
+const MULTICHAIN_ACCOUNT: WalletAccount = {
+    ...ETHEREUM_ACCOUNT,
+    id: 'multichain-msg-account',
+    chains: {
+        algorand: { address: ALGO25_TEST_ADDRESS, keyPairId: 'algo-key' },
+        ...ETHEREUM_ACCOUNT.chains,
+    },
+}
+
+const signInMessage = (domain: string, chainId: number) =>
+    `0x${Buffer.from(
+        [
+            `${domain} wants you to sign in with your Ethereum account:`,
+            SENDER,
+            '',
+            'Click to sign in.',
+            '',
+            `URI: https://${domain}/`,
+            'Version: 1',
+            `Chain ID: ${chainId}`,
+            'Nonce: 3fp8w2kd',
+            'Issued At: 2026-11-20T10:00:00.000Z',
+        ].join('\n'),
+    ).toString('hex')}`
 
 const IN_APP_ORIGIN: ConnectionOrigin = { source: 'in-app' }
 
@@ -156,7 +183,9 @@ const waitForWalletKit = (): Promise<FakeWalletKit> =>
     )
 
 // Connects the Ethereum account over a session that lists the message methods.
-const connectSession = async (): Promise<FakeWalletKit> => {
+const connectSession = async (
+    account: WalletAccount = ETHEREUM_ACCOUNT,
+): Promise<FakeWalletKit> => {
     renderWithNavigation(ConnectionsWithSigning, 'ConnectionsWithSigning')
     await waitFor(() => {
         expect(captured.registry).toBeTruthy()
@@ -186,7 +215,7 @@ const connectSession = async (): Promise<FakeWalletKit> => {
     await waitFor(() => {
         expect(findButton('common.connect.label')).toBeTruthy()
     })
-    await selectEvmConnectAccount(ETHEREUM_ACCOUNT)
+    await selectEvmConnectAccount(account)
     await waitFor(() => {
         expect(isElementDisabled(findButton('common.connect.label')!)).toBe(
             false,
@@ -277,6 +306,70 @@ describe('Flow: an eip155 dApp asks for a message signature', () => {
                 signature: response.result,
             }),
         ).resolves.toBe(true)
+    })
+
+    it('Given an account on Algorand and Ethereum, when the dApp sends personal_sign, then the review names the account by its 0x address, never its Algorand address', async () => {
+        useAccountsStore.getState().setAccounts([MULTICHAIN_ACCOUNT])
+        const walletKit = await connectSession(MULTICHAIN_ACCOUNT)
+
+        send(walletKit, 'personal_sign', [HELLO_WORLD_HEX, SENDER])
+        await waitFor(
+            () => expect(screen.getByTestId(CONFIRM_SLIDE)).toBeTruthy(),
+            { timeout: 15_000 },
+        )
+
+        const review = document.body.textContent ?? ''
+        expect(review).toContain(truncateEvmAddress(SENDER))
+        expect(review).not.toContain(ALGO25_TEST_ADDRESS.slice(0, 5))
+        fireEvent.click(screen.getByTestId(REJECT_BUTTON))
+        expect((await answerOf(walletKit)).error).toMatchObject({ code: 4001 })
+    })
+
+    it('Given a connected session, when the dApp sends a Sign-In with Ethereum message for its own domain on another chain, then the review is titled by the domain, lists the parsed fields and notes the chain', async () => {
+        const walletKit = await connectSession()
+
+        send(walletKit, 'personal_sign', [
+            signInMessage('dapp.example', 8453),
+            SENDER,
+        ])
+        await waitFor(
+            () => expect(screen.getByTestId(CONFIRM_SLIDE)).toBeTruthy(),
+            { timeout: 15_000 },
+        )
+
+        expect(screen.getByText('signing.sign_in.title')).toBeTruthy()
+        expect(screen.getByTestId('sign_in_domain').textContent).toContain(
+            'dapp.example',
+        )
+        expect(screen.getByTestId('sign_in_nonce').textContent).toContain(
+            '3fp8w2kd',
+        )
+        expect(screen.getByTestId('sign_in_other_chain')).toBeTruthy()
+        expect(screen.queryByTestId('sign_in_other_address')).toBeNull()
+        expect(screen.queryByTestId('sign_in_site_mismatch')).toBeNull()
+        expect(screen.getByTestId('sign_in_advanced')).toBeTruthy()
+        fireEvent.click(screen.getByTestId(REJECT_BUTTON))
+        expect((await answerOf(walletKit)).error).toMatchObject({ code: 4001 })
+    })
+
+    it('Given a connected session, when the dApp sends a Sign-In with Ethereum message for another domain, then the review warns that the sign-in is for another site', async () => {
+        const walletKit = await connectSession()
+
+        send(walletKit, 'personal_sign', [
+            signInMessage('opensea.io', 1),
+            SENDER,
+        ])
+        await waitFor(
+            () =>
+                expect(
+                    screen.getByTestId('sign_in_site_mismatch'),
+                ).toBeTruthy(),
+            { timeout: 15_000 },
+        )
+
+        expect(screen.queryByTestId('sign_in_other_chain')).toBeNull()
+        fireEvent.click(screen.getByTestId(REJECT_BUTTON))
+        expect((await answerOf(walletKit)).error).toMatchObject({ code: 4001 })
     })
 
     it('Given a connected session, when the dApp sends eth_signTypedData_v4 as a JSON string and the user slides to confirm, then the dApp receives a signature viem verifies for the signer', async () => {

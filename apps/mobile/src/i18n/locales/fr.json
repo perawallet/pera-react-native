@@ -3628,6 +3628,21 @@
             "typed_data_warning_title": "Cette signature peut déplacer vos tokens",
             "typed_data_warning_body": "Signer des données structurées peut autoriser une application à dépenser ou échanger vos tokens sans vous redemander votre accord. N’approuvez que si vous faites confiance à cette application."
         },
+        "sign_in": {
+            "title": "Se connecter à {{domain}}",
+            "domain": "Domaine",
+            "address": "Adresse",
+            "uri": "URI",
+            "chain_id": "ID de chaîne",
+            "nonce": "Nonce",
+            "issued_at": "Émis",
+            "expires_at": "Expire",
+            "advanced": "Avancé",
+            "site_mismatch_title": "Cette connexion concerne un autre site",
+            "site_mismatch_body": "Le message vous connecte à {{domain}}, mais la demande provient de {{site}}. N’approuvez que si vous faites confiance aux deux.",
+            "other_address_note": "Le message indique {{address}}, et non le compte qui signe.",
+            "other_chain_note": "Le message indique {{chain}}, et non le réseau de cette demande. La connexion n’envoie aucune transaction."
+        },
         "spend_approval": {
             "spend_warning": "Cette signature permet à une autre adresse de déplacer des tokens depuis votre compte sans vous redemander votre accord.",
             "spend_warning_transaction": "Cette transaction permet à une autre adresse de déplacer des tokens depuis votre compte sans vous redemander votre accord.",

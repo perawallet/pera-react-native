@@ -3628,6 +3628,21 @@
             "typed_data_warning_title": "Bu imza token’larını hareket ettirebilir",
             "typed_data_warning_body": "Yapılandırılmış veriyi imzalamak, bir uygulamaya token’larını sana tekrar sormadan harcama veya takas etme yetkisi verebilir. Yalnızca bu uygulamaya güveniyorsan onayla."
         },
+        "sign_in": {
+            "title": "Oturum aç: {{domain}}",
+            "domain": "Alan adı",
+            "address": "Adres",
+            "uri": "URI",
+            "chain_id": "Zincir kimliği",
+            "nonce": "Nonce",
+            "issued_at": "Oluşturulma",
+            "expires_at": "Bitiş",
+            "advanced": "Gelişmiş",
+            "site_mismatch_title": "Bu oturum açma başka bir site için",
+            "site_mismatch_body": "Mesaj şu alan adında oturum açar: {{domain}}. Ancak istek şu siteden geliyor: {{site}}. Yalnızca ikisine de güveniyorsan onayla.",
+            "other_address_note": "Mesajdaki adres imzalayan hesap değil: {{address}}",
+            "other_chain_note": "Mesajdaki ağ bu isteğin ağı değil: {{chain}}. Oturum açmak işlem göndermez."
+        },
         "spend_approval": {
             "spend_warning": "Bu imza, başka bir adresin hesabından sana tekrar sormadan token hareket ettirmesine izin verir.",
             "spend_warning_transaction": "Bu işlem, başka bir adresin hesabından sana tekrar sormadan token hareket ettirmesine izin verir.",

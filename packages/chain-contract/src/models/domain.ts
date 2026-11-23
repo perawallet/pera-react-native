@@ -506,6 +506,37 @@ export interface SpendApproval {
     isLongLived: boolean
 }
 
+/**
+ * The CAIP-122 data model shared by SIWE, SIWS and Algorand's sign-in. Each
+ * chain owns the serialisation and the signature `type`, so neither is here.
+ */
+export type SiwxMessage = {
+    domain: string
+    address: string
+    uri: string
+    version: string
+    chainId: string
+    statement?: string
+    nonce?: string
+    issuedAt?: string
+    expirationTime?: string
+    notBefore?: string
+    requestId?: string
+    resources?: string[]
+}
+
+/** A sign-in message, checked against the request it arrived in. */
+export interface SignInSummary {
+    /** Requester text, never translated. */
+    message: SiwxMessage
+    /** The network `message.chainId` names; absent when the wallet knows no such network. */
+    messageScope?: ChainScope
+    /** The message names an address other than the request's signer. */
+    isOtherAddress: boolean
+    /** The message names a chain other than the network the request is signed on. */
+    isOtherChain: boolean
+}
+
 export interface MessageSummary {
     kind: 'text' | 'typed-data' | 'raw'
     title: LocalizedText
@@ -514,6 +545,8 @@ export interface MessageSummary {
     tree?: MessageTreeNode[]
     /** Set on kind `'typed-data'` when signing lets someone else move the signer's assets. */
     spendApproval?: SpendApproval
+    /** Set on kind `'text'` when the text is a sign-in message. */
+    signIn?: SignInSummary
 }
 
 export interface MessageRequest {

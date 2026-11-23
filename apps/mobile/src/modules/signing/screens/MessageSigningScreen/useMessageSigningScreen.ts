@@ -29,6 +29,7 @@ import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useHaptics } from '@hooks/useHaptics'
 import { useRequestAddressSafety } from '../../hooks/useRequestAddressSafety'
 import { useRequestSiteSafety } from '../../hooks/useRequestSiteSafety'
+import { signInSiteMismatchOf } from '../../utils/signInSite'
 
 type UseMessageSigningScreenResult = {
     summary: Nullable<MessageSummary>
@@ -43,6 +44,8 @@ type UseMessageSigningScreenResult = {
     isListedAddressBlocking: boolean
     /** A flagged address or site still waits on the user's acknowledgement. */
     isConfirmBlocked: boolean
+    /** The requesting site, when a sign-in message is for another domain. */
+    signInSiteMismatch: Optional<string>
     handleApprove: () => void
     handleReject: () => void
 }
@@ -76,6 +79,22 @@ export const useMessageSigningScreen = (): UseMessageSigningScreenResult => {
     } = useRequestAddressSafety({ addresses: reviewedAddresses })
     const { isConfirmBlocked: isSiteConfirmBlocked } = useRequestSiteSafety()
     const isConfirmBlocked = isAddressConfirmBlocked || isSiteConfirmBlocked
+    const signInDomain = summary?.signIn?.message.domain
+    const signInSiteMismatch = useMemo(
+        () =>
+            signInDomain
+                ? signInSiteMismatchOf(
+                      signInDomain,
+                      currentRequest?.sourceMetadata,
+                      currentRequest?.verifiedOrigin,
+                  )
+                : undefined,
+        [
+            signInDomain,
+            currentRequest?.sourceMetadata,
+            currentRequest?.verifiedOrigin,
+        ],
+    )
 
     const handleApprove = useCallback(() => {
         if (isConfirmBlocked) return
@@ -98,6 +117,7 @@ export const useMessageSigningScreen = (): UseMessageSigningScreenResult => {
         reviewedAddresses,
         isListedAddressBlocking,
         isConfirmBlocked,
+        signInSiteMismatch,
         handleApprove,
         handleReject,
     }
