@@ -500,6 +500,7 @@ describe('Flow: an eip155 dApp asks for a message signature', () => {
     it.each([
         ['personal_sign', [HELLO_WORLD_HEX, SENDER]],
         ['eth_signTypedData_v4', [SENDER, JSON.stringify(MAIL_TYPED_DATA)]],
+        ['eth_signTypedData', [SENDER, MAIL_TYPED_DATA]],
     ])(
         'Given a connected session, when messageSigning is switched off for Ethereum and the dApp sends %s, then it is answered 4200 and no review opens',
         async (method, params) => {

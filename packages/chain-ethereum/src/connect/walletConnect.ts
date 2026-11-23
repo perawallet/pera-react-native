@@ -191,10 +191,11 @@ const refuseAsUnsupported = (
 // The route is where the version is known: the validator only sees
 // `sign-typed-data`, and v1 orders its params differently.
 const routeUnversionedTypedData = (
+    chain: EvmChain,
     params: unknown,
 ): WalletConnectRequestRoute =>
     isTypedDataV4Params(params)
-        ? { kind: 'operation', type: 'sign-typed-data', params }
+        ? routeMessage(chain, 'sign-typed-data', params)
         : refuseAsUnsupported(
               'eth_signTypedData is served only for a v4 typed-data object',
           )
@@ -272,7 +273,7 @@ const createV2 = (
                 return routeMessage(chain, 'sign-typed-data', params)
             }
             case ETHEREUM_WC_V2_METHOD.signTypedData: {
-                return routeUnversionedTypedData(params)
+                return routeUnversionedTypedData(chain, params)
             }
             case ETHEREUM_WC_V2_METHOD.switchChain: {
                 return routeSwitch(params)

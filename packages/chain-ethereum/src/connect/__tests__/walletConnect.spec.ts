@@ -261,6 +261,19 @@ describe('message signing gate', () => {
         },
     )
 
+    it('refuses unversioned eth_signTypedData with a v4 object with 4200 when switched off', () => {
+        chains.setCapabilityOverrides(() => ({
+            developer: { ethereum: { messageSigning: false } },
+        }))
+
+        expect(
+            v2.handleRequest(ETHEREUM_WC_V2_METHOD.signTypedData, [
+                ADDRESS,
+                '{"types":{}}',
+            ]),
+        ).toEqual(REFUSED)
+    })
+
     it('follows a change made after the table was built', () => {
         const route = () =>
             v2.handleRequest(ETHEREUM_WC_V2_METHOD.personalSign, [ADDRESS])
