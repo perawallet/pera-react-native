@@ -19,7 +19,7 @@ export const useStyles = makeStyles(theme => ({
     // content align even though the grey surround is wider.
     formContainer: {
         paddingHorizontal: theme.spacing.sm,
-        paddingVertical: theme.spacing.lg,
+        paddingTop: theme.spacing.lg,
         gap: theme.spacing.md,
     },
     receiveWrapper: {

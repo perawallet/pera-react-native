@@ -19,7 +19,6 @@ export const useStyles = makeStyles(theme => ({
     // flexGrow lets the empty/loading view fill the screen and center.
     listContent: {
         flexGrow: 1,
-        paddingBottom: theme.spacing.xl,
     },
     loadingContainer: {
         flex: 1,

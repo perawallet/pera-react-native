@@ -22,9 +22,8 @@ import {
     BottomSheetScrollView,
     type BottomSheetScrollViewMethods,
 } from '@gorhom/bottom-sheet'
-import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWInBottomSheetContext } from '../PWBottomSheet/inSheetContext'
+import { useScrollEndGap } from '../PWScreen/useScrollEndGap'
 import { useStyles } from './styles'
 
 export type PWScrollViewRef = {
@@ -50,14 +49,12 @@ export const PWScrollView = ({
     showsHorizontalScrollIndicator = false,
     ...props
 }: PWScrollViewProps) => {
-    const insets = useSafeAreaInsets()
-    const isInTabNavigator = useContext(BottomTabBarHeightContext) !== undefined
     // Auto-detect a surrounding sheet: a plain ScrollView silently fails to
     // scroll there otherwise.
     const isInSheet = useContext(PWInBottomSheetContext)
     const isInBottomSheet = inBottomSheet ?? isInSheet
-    const bottomInset = isInBottomSheet || !isInTabNavigator ? insets.bottom : 0
-    const styles = useStyles({ bottomInset })
+    const endGap = useScrollEndGap({ isInSheet: isInBottomSheet })
+    const styles = useStyles({ endGap })
     const scrollRef = useRef<RNScrollView>(null)
     const sheetScrollRef = useRef<BottomSheetScrollViewMethods>(null)
 
@@ -75,9 +72,10 @@ export const PWScrollView = ({
         callerPadding.paddingBottom != null ||
         callerPadding.paddingVertical != null ||
         callerPadding.padding != null
-    const resolvedContentContainerStyle = hasBottomPadding
-        ? contentContainerStyle
-        : [styles.contentContainer, contentContainerStyle]
+    const resolvedContentContainerStyle =
+        hasBottomPadding || props.horizontal
+            ? contentContainerStyle
+            : [styles.contentContainer, contentContainerStyle]
 
     if (isInBottomSheet) {
         return (

@@ -21,8 +21,7 @@ import type { TextStyle, ViewStyle } from 'react-native'
  *
  * These screens render inside `PWScreen`, whose body/footer zones own the
  * horizontal + bottom padding. So `scrollContent`/`footer` here only carry the
- * inner gaps (and `scrollContent` keeps `flex: 1` so its `spacer` can push the
- * content down to the footer).
+ * inner gaps.
  */
 export const getConfirmScreenStyles = (
     theme: Theme,
@@ -30,7 +29,6 @@ export const getConfirmScreenStyles = (
     | 'container'
     | 'scrollContent'
     | 'summarySection'
-    | 'spacer'
     | 'summaryLabel'
     | 'learnMore'
     | 'summaryCard'
@@ -48,14 +46,10 @@ export const getConfirmScreenStyles = (
         backgroundColor: theme.colors.background,
     },
     scrollContent: {
-        flex: 1,
         gap: theme.spacing.xl,
     },
     summarySection: {
         gap: theme.spacing.lg,
-    },
-    spacer: {
-        flexGrow: 1,
     },
     summaryLabel: {
         color: theme.colors.textGray,

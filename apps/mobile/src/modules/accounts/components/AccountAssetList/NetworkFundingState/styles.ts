@@ -17,7 +17,7 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         gap: theme.spacing.md,
         paddingHorizontal: theme.spacing.xl,
-        paddingVertical: theme.spacing.xxl,
+        paddingTop: theme.spacing.xxl,
     },
     text: {
         textAlign: 'center',

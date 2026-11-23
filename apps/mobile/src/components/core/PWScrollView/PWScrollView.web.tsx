@@ -17,7 +17,7 @@
 // the shell's error boundary.
 //
 // This file never imports `@gorhom/bottom-sheet` at all, so it can't hit that.
-// `isInBottomSheet` is still computed because it feeds `bottomInset` — a sheet
+// `isInBottomSheet` is still computed because it feeds the end gap — a sheet
 // has no tab bar to clear.
 import { useContext, useImperativeHandle, useRef, type Ref } from 'react'
 import { getContainerTestProps } from '@utils/test-id-helper'
@@ -27,9 +27,8 @@ import {
     StyleSheet,
 } from 'react-native'
 import { ScrollView } from 'react-native-gesture-handler'
-import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWInBottomSheetContext } from '../PWBottomSheet/inSheetContext'
+import { useScrollEndGap } from '../PWScreen/useScrollEndGap'
 import { useStyles } from './styles'
 
 export type PWScrollViewRef = {
@@ -54,14 +53,12 @@ export const PWScrollView = ({
     showsHorizontalScrollIndicator = false,
     ...props
 }: PWScrollViewProps) => {
-    const insets = useSafeAreaInsets()
-    const isInTabNavigator = useContext(BottomTabBarHeightContext) !== undefined
-    // Auto-detect a surrounding sheet: only used for the bottomInset calc
+    // Auto-detect a surrounding sheet: only used for the end-gap calc
     // below on web — never selects gorhom's BottomSheetScrollView.
     const isInSheet = useContext(PWInBottomSheetContext)
     const isInBottomSheet = inBottomSheet ?? isInSheet
-    const bottomInset = isInBottomSheet || !isInTabNavigator ? insets.bottom : 0
-    const styles = useStyles({ bottomInset })
+    const endGap = useScrollEndGap({ isInSheet: isInBottomSheet })
+    const styles = useStyles({ endGap })
     const scrollRef = useRef<RNScrollView>(null)
 
     useImperativeHandle(ref, () => ({
@@ -75,9 +72,10 @@ export const PWScrollView = ({
         callerPadding.paddingBottom != null ||
         callerPadding.paddingVertical != null ||
         callerPadding.padding != null
-    const resolvedContentContainerStyle = hasBottomPadding
-        ? contentContainerStyle
-        : [styles.contentContainer, contentContainerStyle]
+    const resolvedContentContainerStyle =
+        hasBottomPadding || props.horizontal
+            ? contentContainerStyle
+            : [styles.contentContainer, contentContainerStyle]
 
     return (
         <ScrollView

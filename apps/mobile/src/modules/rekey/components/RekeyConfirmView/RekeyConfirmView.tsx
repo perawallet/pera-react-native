@@ -174,8 +174,6 @@ export const RekeyConfirmView = ({
                         <RekeySummaryRow account={target} />
                     </PWView>
                 </PWView>
-
-                <PWView style={styles.spacer} />
             </PWView>
         </PWScreen>
     )

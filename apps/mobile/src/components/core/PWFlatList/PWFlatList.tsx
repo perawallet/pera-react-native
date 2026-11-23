@@ -23,9 +23,9 @@ import {
     type FlashListRef,
 } from '@shopify/flash-list'
 import { useBottomSheetScrollableCreator } from '@gorhom/bottom-sheet'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { PWInBottomSheetContext } from '../PWBottomSheet/inSheetContext'
+import { useScrollEndGap } from '../PWScreen/useScrollEndGap'
 import { useStyles } from './styles'
 import { useSyncPauseOnInteraction } from './useSyncPauseOnInteraction'
 import { ListSeparator } from './ListSeparator'
@@ -55,6 +55,9 @@ export type PWFlatListProps<T> = FlashListProps<T> & {
      * makes it staler.
      */
     pauseSyncOnInteraction?: boolean
+    /** False when something rendered below the list, such as a button row,
+     * already clears the home indicator. */
+    hasBottomInset?: boolean
 }
 
 /**
@@ -71,6 +74,7 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
             inBottomSheet,
             cardLayout,
             pauseSyncOnInteraction = false,
+            hasBottomInset = true,
             ItemSeparatorComponent,
             contentContainerStyle,
             showsVerticalScrollIndicator = false,
@@ -84,14 +88,17 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
         ref,
     ) => {
         const innerRef = useRef<FlashListRef<unknown>>(null)
-        const insets = useSafeAreaInsets()
-        const styles = useStyles({ bottomInset: insets.bottom })
         const BottomSheetScrollable = useBottomSheetScrollableCreator()
 
         // Auto-detect a surrounding sheet: a missing flag silently breaks
         // scrolling, so the gesture can't cooperate with the sheet pan.
         const isInSheet = useContext(PWInBottomSheetContext)
         const isInBottomSheet = inBottomSheet ?? isInSheet
+        const endGap = useScrollEndGap({
+            isInSheet: isInBottomSheet,
+            hasBottomInset,
+        })
+        const styles = useStyles({ endGap })
 
         useImperativeHandle(ref, () => ({
             scrollToOffset: params => innerRef.current?.scrollToOffset(params),
@@ -133,9 +140,12 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
             ItemSeparatorComponent: resolvedSeparator,
             contentContainerStyle: StyleSheet.flatten([
                 isVerticalList && styles.content,
+                isVerticalList && !isInBottomSheet && styles.endGap,
                 fillEmpty && styles.fillEmpty,
                 contentContainerStyle,
-                isInBottomSheet && isVerticalList && styles.sheetBottomInset,
+                // In a sheet the home-indicator inset isn't optional: it wins
+                // over caller padding.
+                isVerticalList && isInBottomSheet && styles.endGap,
             ]),
         }
 

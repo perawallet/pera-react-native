@@ -48,7 +48,6 @@ export const useStyles = makeStyles(
         },
         innerContainer: {
             flexGrow: 1,
-            paddingBottom: isFull ? theme.spacing.md : 0,
         },
         // Fills the fixed-height sheet so KeyboardAvoidingView (behavior:
         // 'height') can shrink it to the space above the keyboard.

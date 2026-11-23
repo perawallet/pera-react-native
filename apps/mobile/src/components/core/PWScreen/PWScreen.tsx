@@ -43,6 +43,7 @@ import { PWView } from '../PWView'
 import { PWInBottomSheetContext } from '../PWBottomSheet/inSheetContext'
 import { PWScreenNestedContext } from './nestedContext'
 import { usePWScreenInsets } from './usePWScreenInsets'
+import { useScrollEndGap } from './useScrollEndGap'
 import { useStyles, type HorizontalPaddingMode } from './styles'
 
 const SCROLL_EVENT_THROTTLE = 32
@@ -68,6 +69,9 @@ export type PWScreenProps = {
      * against a viewport height it snapshots at load. */
     keyboardAvoidance?: 'auto' | 'never'
     horizontalPadding?: HorizontalPaddingMode
+    /** `'none'` for a full-bleed body such as a web view: it still clears the
+     * tab bar or home indicator, but adds no `xl` gap under its content. */
+    bottomGap?: 'xl' | 'none'
     /** Body scroll events (`scroll='auto'` only). */
     onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void
     /** Body viewport size. Pair with `onContentSizeChange` to tell whether the body overflows. */
@@ -100,6 +104,7 @@ export const PWScreen = ({
     scroll = 'auto',
     keyboardAvoidance = 'auto',
     horizontalPadding = 'xl',
+    bottomGap = 'xl',
     onScroll,
     onBodyLayout,
     onContentSizeChange,
@@ -122,9 +127,13 @@ export const PWScreen = ({
     // Inside a sheet a plain/keyboard-aware ScrollView silently fails to scroll
     // because the sheet's pan gesture owns the touch — swap in gorhom's.
     const isInSheet = useContext(PWInBottomSheetContext)
+    const endGap = useScrollEndGap({
+        isInSheet,
+        hasGap: bottomGap === 'xl',
+    })
     const styles = useStyles({
         horizontalPadding,
-        bottomInset,
+        endGap,
         hasFooter: footer != null,
         isKeyboardVisible,
     })

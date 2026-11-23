@@ -15,10 +15,18 @@ import { makeStyles } from '@rneui/themed'
 type AddAccountPillStyleProps = {
     pillHeight: number
     bottomInset: number
+    safeAreaBottomInset: number
 }
 
 export const useAddAccountPillStyles = makeStyles(
-    (theme, { pillHeight, bottomInset }: AddAccountPillStyleProps) => ({
+    (
+        theme,
+        {
+            pillHeight,
+            bottomInset,
+            safeAreaBottomInset,
+        }: AddAccountPillStyleProps,
+    ) => ({
         // Floats over the list; box-none keeps the rows beside the pill tappable.
         container: {
             position: 'absolute',
@@ -28,9 +36,14 @@ export const useAddAccountPillStyles = makeStyles(
             alignItems: 'center',
             pointerEvents: 'box-none',
         },
-        // Lets the last row scroll clear of the pill.
+        // Lets the last row scroll clear of the pill. The list already ends
+        // xl + the full safe-area inset below this, so subtract that inset.
         footerSpacer: {
-            height: pillHeight + theme.spacing.lg + bottomInset,
+            height:
+                pillHeight +
+                theme.spacing.lg +
+                bottomInset -
+                safeAreaBottomInset,
         },
     }),
 )

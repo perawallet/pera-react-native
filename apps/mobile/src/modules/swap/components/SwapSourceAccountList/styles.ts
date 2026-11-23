@@ -16,7 +16,6 @@ export const useStyles = makeStyles(theme => ({
     content: {
         gap: theme.spacing.md,
         paddingHorizontal: theme.spacing.lg,
-        paddingBottom: theme.spacing.xl,
     },
     subtitle: {
         color: theme.colors.textGray,

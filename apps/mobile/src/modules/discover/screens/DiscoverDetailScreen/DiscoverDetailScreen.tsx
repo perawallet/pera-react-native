@@ -28,6 +28,7 @@ export const DiscoverDetailScreen = () => {
         <PWScreen
             scroll='never'
             horizontalPadding='none'
+            bottomGap='none'
             style={styles.container}
         >
             {isReady ? (

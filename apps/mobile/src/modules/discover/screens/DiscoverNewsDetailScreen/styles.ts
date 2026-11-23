@@ -15,7 +15,7 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     content: {
         gap: theme.spacing.lg,
-        paddingVertical: theme.spacing.lg,
+        paddingTop: theme.spacing.lg,
     },
     date: {
         color: theme.colors.textGray,

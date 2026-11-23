@@ -44,7 +44,6 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'space-between',
         gap: theme.spacing.md,
         paddingHorizontal: theme.spacing.xl,
-        paddingBottom: theme.spacing.lg,
     },
     declineButton: {
         flexGrow: 1,

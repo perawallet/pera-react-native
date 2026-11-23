@@ -15,7 +15,7 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     body: {
         paddingHorizontal: theme.spacing.lg,
-        paddingBottom: theme.spacing.lg,
+        paddingBottom: theme.spacing.xl,
         gap: theme.spacing.md,
     },
     // Gray rounded field matching the design.

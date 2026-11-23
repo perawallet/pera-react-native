@@ -23,7 +23,8 @@ export const useStyles = makeStyles(
         return {
             container: {
                 flex: 1,
-                padding: theme.spacing.xl,
+                paddingHorizontal: theme.spacing.xl,
+                paddingTop: theme.spacing.xl,
             },
             contentContainer: {
                 paddingBottom: theme.spacing.xl,
@@ -121,11 +122,13 @@ export const useStyles = makeStyles(
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 gap: theme.spacing.md,
-                // Footer sits outside the PWFlatList, so it doesn't get the list's
-                // sheet bottom inset — add the safe-area inset here so the buttons
-                // clear the home indicator / gesture bar.
-                marginBottom: theme.spacing.lg + bottomInset,
                 marginHorizontal: theme.spacing.xl,
+            },
+            // In the sheet the buttons sit outside the PWFlatList, so they don't
+            // get the list's sheet bottom inset — add the safe-area inset here so
+            // they clear the home indicator / gesture bar.
+            sheetButtonContainer: {
+                marginBottom: theme.spacing.xl + bottomInset,
             },
             cancelButton: {
                 flexGrow: 1,

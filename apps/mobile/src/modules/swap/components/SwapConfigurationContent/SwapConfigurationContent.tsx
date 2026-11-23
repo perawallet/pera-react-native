@@ -18,6 +18,7 @@ import {
     PWSheetLayout,
     PWText,
     PWToolbar,
+    PWView,
 } from '@components/core'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
@@ -26,6 +27,7 @@ import { SlippageToleranceSection } from './SlippageToleranceSection'
 import { PrimaryCurrencyToggle } from './PrimaryCurrencyToggle'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useSwapConfigurationContent } from './useSwapConfigurationContent'
+import { useStyles } from './styles'
 
 export type SwapConfigurationContentProps = {
     scope: ChainScope
@@ -35,6 +37,7 @@ export const SwapConfigurationContent = ({
     scope,
 }: SwapConfigurationContentProps) => {
     const { t } = useLanguage()
+    const styles = useStyles()
     const { resolve, dismiss } = useBottomSheetResult<SwapConfigurationResult>()
 
     const handleApplyInternal = useCallback(
@@ -94,22 +97,24 @@ export const SwapConfigurationContent = ({
                 />
             }
         >
-            <BalancePercentageSection
-                text={balanceText}
-                onTextChange={setBalanceText}
-                isError={isBalanceError}
-            />
-            <SlippageToleranceSection
-                text={slippageText}
-                onTextChange={setSlippageText}
-                onOptionSelect={selectSlippageOption}
-                isError={isSlippageError}
-            />
-            <PrimaryCurrencyToggle
-                value={useLocalCurrency}
-                onValueChange={setUseLocalCurrency}
-                testID='swap_local_currency_toggle'
-            />
+            <PWView style={styles.sections}>
+                <BalancePercentageSection
+                    text={balanceText}
+                    onTextChange={setBalanceText}
+                    isError={isBalanceError}
+                />
+                <SlippageToleranceSection
+                    text={slippageText}
+                    onTextChange={setSlippageText}
+                    onOptionSelect={selectSlippageOption}
+                    isError={isSlippageError}
+                />
+                <PrimaryCurrencyToggle
+                    value={useLocalCurrency}
+                    onValueChange={setUseLocalCurrency}
+                    testID='swap_local_currency_toggle'
+                />
+            </PWView>
         </PWSheetLayout>
     )
 }

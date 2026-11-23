@@ -12,10 +12,10 @@
 
 import { makeStyles } from '@rneui/themed'
 
-type StyleProps = { bottomInset: number }
+type StyleProps = { endGap: number }
 
-export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
+export const useStyles = makeStyles((_theme, { endGap }: StyleProps) => ({
     contentContainer: {
-        paddingBottom: theme.spacing.xl + bottomInset,
+        paddingBottom: endGap,
     },
 }))

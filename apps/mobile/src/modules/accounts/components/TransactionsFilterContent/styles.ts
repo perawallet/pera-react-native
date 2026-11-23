@@ -96,12 +96,12 @@ export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => {
             width: '100%',
             minWidth: 0,
             overflow: 'hidden',
+            gap: theme.spacing.xl,
         },
         dateInputsContainer: {
             flexDirection: 'row',
             justifyContent: 'space-between',
             marginTop: theme.spacing.md,
-            marginBottom: theme.spacing.xl,
             width: '100%',
             minWidth: 0,
             gap: theme.spacing.md,

@@ -13,10 +13,10 @@
 import { makeStyles } from '@rneui/themed'
 
 // Density + placement overrides on top of InfoCallout's base box (tighter
-// padding than the default, plus bottom spacing for the details list).
+// padding than the default, plus top spacing from the details list).
 export const useStyles = makeStyles(theme => ({
     container: {
         padding: theme.spacing.md,
-        marginBottom: theme.spacing.md,
+        marginTop: theme.spacing.lg,
     },
 }))

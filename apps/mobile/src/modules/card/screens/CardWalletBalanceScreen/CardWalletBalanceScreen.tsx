@@ -208,7 +208,6 @@ export const CardWalletBalanceScreen = () => {
                 renderItem={renderItem}
                 renderSectionHeader={renderSectionHeader}
                 keyExtractor={keyExtractor}
-                contentContainerStyle={styles.listContent}
                 stickySectionHeadersEnabled={false}
                 onEndReached={handleLoadMore}
                 onEndReachedThreshold={0.5}

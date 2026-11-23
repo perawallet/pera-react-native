@@ -147,8 +147,6 @@ export const UndoRekeyConfirmScreen = () => {
                         />
                     </PWView>
                 </PWView>
-
-                <PWView style={styles.spacer} />
             </PWView>
         </PWScreen>
     )

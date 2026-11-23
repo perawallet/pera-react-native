@@ -13,18 +13,15 @@
 import { makeStyles } from '@rneui/themed'
 
 type StyleProps = {
-    bottomInset: number
+    endGap: number
 }
 
-export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
+export const useStyles = makeStyles((theme, { endGap }: StyleProps) => ({
     content: {
-        paddingBottom: theme.spacing.xl,
         paddingTop: theme.spacing.sm,
     },
-    // Hosting sheets use autoCreateContainer:false (no inner-container inset),
-    // so in-sheet content must carry the bottom safe-area inset itself.
-    sheetBottomInset: {
-        paddingBottom: theme.spacing.xl + bottomInset,
+    endGap: {
+        paddingBottom: endGap,
     },
     fillEmpty: {
         flexGrow: 1,

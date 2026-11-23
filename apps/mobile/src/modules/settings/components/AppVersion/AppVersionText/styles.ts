@@ -16,7 +16,6 @@ export const useStyles = makeStyles(theme => ({
     versionText: {
         color: theme.colors.textGrayLighter,
         paddingTop: theme.spacing.sm,
-        paddingBottom: theme.spacing.xxl,
         textAlign: 'center',
         width: '100%',
     },

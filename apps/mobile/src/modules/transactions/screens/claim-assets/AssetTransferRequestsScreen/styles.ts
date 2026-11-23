@@ -15,7 +15,7 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     contentContainer: {
         flex: 1,
-        paddingVertical: theme.spacing.md,
+        paddingTop: theme.spacing.md,
     },
     loadingView: {
         justifyContent: 'flex-start',

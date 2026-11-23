@@ -20,7 +20,6 @@ export const useStyles = makeStyles(theme => ({
     },
     scrollContent: {
         paddingHorizontal: theme.spacing.md,
-        paddingBottom: theme.spacing.xl,
         gap: theme.spacing.xxs,
     },
     centered: {

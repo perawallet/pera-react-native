@@ -21,7 +21,6 @@ export const useStyles = makeStyles(theme => ({
     },
     body: {
         gap: theme.spacing.lg,
-        paddingBottom: theme.spacing.xl,
     },
     title: {
         textAlign: 'left',

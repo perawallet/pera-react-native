@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
     ownAddressOf,
     type WalletAccount,
@@ -59,9 +60,11 @@ export const AccountMenu = (props: AccountMenuProps) => {
         addAccountPillBottomInset,
         handleAddAccountPillLayout,
     } = useAccountMenu(props)
+    const insets = useSafeAreaInsets()
     const pillStyles = useAddAccountPillStyles({
         pillHeight: addAccountPillHeight,
         bottomInset: addAccountPillBottomInset,
+        safeAreaBottomInset: insets.bottom,
     })
     const {
         onAddAccount,
