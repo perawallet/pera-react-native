@@ -44,4 +44,21 @@ else
     failures=$((failures + 1))
 fi
 
+cat >"$BITRISE_YML" <<'EOF'
+app:
+  envs:
+  - CARD: "line one\n🚀 ⭐ done"
+  - LITERAL: '\U0001F680'
+EOF
+bash "$SCRIPT" >/dev/null 2>&1
+if grep -qF "$(printf '\360\237\232\200')" "$BITRISE_YML"; then
+    echo "  ok    an astral emoji is written as the character, as the editor saves it"
+else
+    echo "  FAIL  an astral emoji was escaped:"
+    cat "$BITRISE_YML"
+    failures=$((failures + 1))
+fi
+ruby -ryaml -e 'e = YAML.load_file(ARGV[0])["app"]["envs"]; exit(e[0]["CARD"] == "line one\n\u{1F680} \u2B50 done" && e[1]["LITERAL"] == "\\U0001F680" ? 0 : 1)' "$BITRISE_YML"
+check "the rewrite keeps every value" 0 $?
+
 [ "$failures" -eq 0 ] || exit 1

@@ -6,7 +6,9 @@ set -euo pipefail
 # YAML.dump of the config with every key sorted. Keeping .bitrise/bitrise.yml in
 # exactly that text is what lets a paste into the editor diff only the real
 # changes. A save there drops YAML comments, so the canonical form has none: put
-# rationale inside a step's script instead.
+# rationale inside a step's script instead. The editor also writes an emoji
+# outside the Basic Multilingual Plane as the character, where Ruby's emitter
+# escapes it (\U0001F680), so those escapes are written back as characters.
 #
 # Rewrites the file in place; with --check, fails instead when it differs.
 
@@ -22,7 +24,8 @@ ruby -ryaml -e '
     else node
     end
   end
-  print YAML.dump(sorted(YAML.load_file(ARGV[0])))
+  dumped = YAML.dump(sorted(YAML.load_file(ARGV[0])))
+  print dumped.gsub(/(?<!\\)((?:\\\\)*)\\U(\h{8})/) { $1 + [$2.hex].pack("U") }
 ' "$FILE" >"$CANONICAL"
 
 if [ "${1:-}" = "--check" ]; then
