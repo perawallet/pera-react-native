@@ -2769,6 +2769,9 @@ importers:
       '@perawallet/wallet-core-onramp':
         specifier: workspace:*
         version: link:../onramp
+      '@perawallet/wallet-core-remote-config':
+        specifier: workspace:*
+        version: link:../remote-config
       '@perawallet/wallet-core-security':
         specifier: workspace:*
         version: link:../security

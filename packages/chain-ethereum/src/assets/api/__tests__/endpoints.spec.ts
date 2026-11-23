@@ -28,7 +28,6 @@ import {
 } from '@perawallet/wallet-core-shared'
 import {
     fetchAssetItems,
-    fetchHasNftHoldings,
     fetchNftHoldings,
     NFT_LISTING_REUSE_MS,
     fetchNftItems,
@@ -551,34 +550,6 @@ describe('nftCursorOf', () => {
         'https://pera.test/?cursor=',
     ])('throws on %s', next => {
         expect(() => nftCursorOf(next)).toThrow()
-    })
-})
-
-describe('fetchHasNftHoldings', () => {
-    it('is true for a first page with an item or a next page, false for none', async () => {
-        server.use(
-            ...peraEvmAssetHandlers({
-                baseUrl: PERA_URL,
-                nftHoldings: { [HOLDER.toLowerCase()]: [[ape('1')]] },
-            }),
-        )
-
-        await expect(
-            fetchHasNftHoldings(SCOPE, ETHEREUM, HOLDER),
-        ).resolves.toBe(true)
-        await expect(
-            fetchHasNftHoldings(SCOPE, ETHEREUM, '0x' + '1'.repeat(40)),
-        ).resolves.toBe(false)
-    })
-
-    it('answers false for a chain without NFT reads', async () => {
-        server.use(
-            ...peraEvmAssetHandlers({ baseUrl: PERA_URL, nftHoldings: 422 }),
-        )
-
-        await expect(
-            fetchHasNftHoldings(SCOPE, ETHEREUM, HOLDER),
-        ).resolves.toBe(false)
     })
 })
 

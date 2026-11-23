@@ -33,6 +33,7 @@
     "@perawallet/wallet-core-kms": "workspace:*",
     "@perawallet/wallet-core-names": "workspace:*",
     "@perawallet/wallet-core-onramp": "workspace:*",
+    "@perawallet/wallet-core-remote-config": "workspace:*",
     "@perawallet/wallet-core-security": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
     "@perawallet/wallet-core-signing": "workspace:*",

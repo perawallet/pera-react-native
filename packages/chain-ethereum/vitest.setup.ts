@@ -45,9 +45,18 @@ const chains = {
             : registry.capabilities(chainId),
 }
 
+// Every remote value reads as its bundled fallback; the override layer asks
+// for the platform.
+const deviceInfo = { getDevicePlatform: () => 'ios', isStoreBuild: () => false }
+const remoteConfig = {
+    getNumberValue: (_key: string, fallback: number) => fallback,
+    getStringValue: (_key: string, fallback: string) => fallback,
+    getBooleanValue: (_key: string, fallback: boolean) => fallback,
+}
+
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getKeystoreStore: () => ({ state: { keys: [] } }),
-    getProvider: () => ({ keyValueStorage, chains }),
+    getProvider: () => ({ keyValueStorage, chains, remoteConfig, deviceInfo }),
 }))
 
 // Every Pera EVM route is integrity-guarded; the MSW handlers refuse a request

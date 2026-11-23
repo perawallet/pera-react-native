@@ -24,6 +24,7 @@ import { getAddress } from 'viem'
 import { http, HttpResponse, type JsonBodyType } from 'msw'
 import { setupServer } from 'msw/node'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { isRequestBudgetSpentError } from '@perawallet/wallet-core-shared'
 import { peraEvmHandlers } from '../../accounts/msw-handlers'
 import { UnknownEvmNetworkError } from '../../blockchain/utils/caip19'
 import { readBackendRecording } from '../../__tests__/backend-recordings'
@@ -38,6 +39,10 @@ import { ETHEREUM, POLYGON } from '../../__tests__/evm-chains'
 import { fetchHistoryPage } from '../api/endpoints'
 import { evmHistoryItem, evmNftTransferLeg } from '../api/msw-handlers'
 import {
+    createHistoryPageBudget,
+    type HistoryPageBudget,
+} from '../api/page-budget'
+import {
     evmRpcHandlers,
     evmSignedRpcTransaction,
 } from '../../blockchain/msw-handlers'
@@ -48,6 +53,18 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal =>
         importOriginal,
     ),
 )
+
+const supplementary = vi.hoisted(() => ({
+    share: undefined as HistoryPageBudget | undefined,
+}))
+vi.mock('../api/page-budget', async importOriginal => {
+    const actual = await importOriginal<typeof import('../api/page-budget')>()
+    return {
+        ...actual,
+        sharedSupplementaryPageShare: () =>
+            supplementary.share ?? actual.sharedSupplementaryPageShare(),
+    }
+})
 
 const MAINNET: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const SEPOLIA: ChainScope = { chainId: 'ethereum', networkId: 'sepolia' }
@@ -65,7 +82,10 @@ const send = evmHistoryItem({
 
 const server = setupServer()
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
-afterEach(() => server.resetHandlers())
+afterEach(() => {
+    server.resetHandlers()
+    supplementary.share = undefined
+})
 afterAll(() => server.close())
 
 const serve = (rows: (typeof send)[][]) =>
@@ -723,6 +743,30 @@ describe('with contractDecoding', () => {
             expect(items[0]?.summary.title.key).toBe(titleKey)
         },
     )
+
+    it('holds a supplementary read to its capped share', async () => {
+        serve([[swap], [swap]])
+        supplementary.share = createHistoryPageBudget(
+            () => 0,
+            60_000,
+            () => 0,
+        )
+        const adapter = createEvmHistoryAdapter(ETHEREUM, testChainContext())
+
+        const refusal = await adapter
+            .getTransactionHistory(
+                ME,
+                MAINNET,
+                { cursor: 'older' },
+                {
+                    capabilities: evmCapabilityDefaults,
+                    isSupplementary: true,
+                },
+            )
+            .catch((error: unknown) => error)
+
+        expect(isRequestBudgetSpentError(refusal)).toBe(true)
+    })
 
     it('reads the capability fresh on every page', async () => {
         serve([[swap], [swap]])

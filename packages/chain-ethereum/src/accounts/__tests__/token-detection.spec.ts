@@ -32,6 +32,7 @@ import {
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     createHistoryScanBudget,
+    withinHistoryPageBudget,
     createTokenSightings,
     receivedTokenIdsOf,
     scanReceivedTokens,
@@ -39,6 +40,12 @@ import {
     TOKEN_SCAN_INTERVAL_MS,
     TOKEN_SCAN_MAX_PAGES,
 } from '../token-detection'
+import {
+    createFirstPageCache,
+    createHistoryPageBudget,
+    type FirstPageCache,
+    type HistoryPageBudget,
+} from '../../history/api/page-budget'
 import {
     evmHistoryItem,
     peraEvmHistoryHandlers,
@@ -53,6 +60,22 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal =>
         ['history'],
     ),
 )
+
+const pageBudget = vi.hoisted(() => ({
+    override: undefined as HistoryPageBudget | undefined,
+    firstPages: undefined as FirstPageCache | undefined,
+}))
+vi.mock('../../history/api/page-budget', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('../../history/api/page-budget')>()
+    return {
+        ...actual,
+        sharedHistoryPageBudget: () =>
+            pageBudget.override ?? actual.sharedHistoryPageBudget(),
+        sharedFirstPageCache: () =>
+            pageBudget.firstPages ?? actual.sharedFirstPageCache(),
+    }
+})
 
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const ME: Hex = '0x00000000000000000000000000000000000000aa'
@@ -106,7 +129,11 @@ const received = (
 
 const server = setupServer()
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
-afterEach(() => server.resetHandlers())
+afterEach(() => {
+    server.resetHandlers()
+    pageBudget.override = undefined
+    pageBudget.firstPages = undefined
+})
 afterAll(() => server.close())
 
 const history = (pages: EvmHistoryItemResponse[][]) =>
@@ -222,6 +249,27 @@ describe('createTokenSightings', () => {
         ])
         expect(sightings.of({ ...SCOPE, networkId: 'testnet' }, ME)).toEqual([])
         expect(sightings.of(SCOPE, OTHER)).toEqual([])
+    })
+})
+
+describe('withinHistoryPageBudget', () => {
+    it('refuses a scan page without spending the scan unit while the shared page budget is spent', () => {
+        let now = 0
+        const pages = createHistoryPageBudget(
+            () => 1,
+            1_000,
+            () => now,
+        )
+        const scans = createHistoryScanBudget(1, 60_000, () => now)
+        const budget = withinHistoryPageBudget(scans, pages)
+        pages.take()
+
+        const takenWhileSpent = budget.take()
+        now = 1_000
+        const takenAfterRenewal = budget.take()
+
+        expect(takenWhileSpent).toBe(false)
+        expect(takenAfterRenewal).toBe(true)
     })
 })
 
@@ -446,6 +494,32 @@ describe('scanReceivedTokens', () => {
             scannedBlock: 30,
             resume: undefined,
         })
+    })
+
+    it('cuts short, keeping what it found and where to carry on, when the shared page budget runs out before a page is sent', async () => {
+        history([
+            [received(30, TSLAX)],
+            [received(20, USDC)],
+            [received(5, ME)],
+        ])
+        pageBudget.firstPages = createFirstPageCache(60_000, () => 0)
+        pageBudget.override = createHistoryPageBudget(
+            () => 1,
+            60_000,
+            () => 0,
+        )
+
+        const scan = await scanReceivedTokens(
+            SCOPE,
+            ETHEREUM,
+            ME,
+            10,
+            openBudget(),
+        )
+
+        expect(scan.tokenIds).toEqual([getAddress(TSLAX)])
+        expect(scan.scannedBlock).toBeUndefined()
+        expect(scan.resume).toMatchObject({ ceiling: 30 })
     })
 
     it('rejects when a page fails', async () => {

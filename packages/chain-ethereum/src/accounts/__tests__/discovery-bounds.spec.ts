@@ -13,19 +13,19 @@
 import { describe, expect, it } from 'vitest'
 import { testChainContext } from '../../__tests__/context'
 import {
-    DISCOVERY_LOOKUP_BOUNDS,
+    DISCOVERY_READ_CEILING_MS,
     withDiscoveryReadCeiling,
 } from '../discovery-bounds'
 
 describe('withDiscoveryReadCeiling', () => {
-    it('caps the read ceiling at the lookup timeout and keeps the submit ceiling', () => {
+    it('caps the read ceiling at the discovery ceiling and keeps the submit ceiling', () => {
         const ctx = {
             ...testChainContext(),
             timeouts: { readMs: 15_000, submitMs: 30_000 },
         }
 
         expect(withDiscoveryReadCeiling(ctx).timeouts).toEqual({
-            readMs: DISCOVERY_LOOKUP_BOUNDS.timeout,
+            readMs: DISCOVERY_READ_CEILING_MS,
             submitMs: 30_000,
         })
     })

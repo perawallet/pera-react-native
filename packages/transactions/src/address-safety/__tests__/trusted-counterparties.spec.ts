@@ -25,6 +25,7 @@ import {
     getAssetPricesByIds,
     getAssetsByIds,
 } from '@perawallet/wallet-core-assets'
+import { RequestBudgetSpentError } from '@perawallet/wallet-core-shared'
 import {
     historyChainAdapters,
     type HistoryReadOptions,
@@ -487,6 +488,38 @@ describe('fetchTrustedCounterparties', () => {
 
         expect(getTransactionHistory.mock.calls[0]?.[3]?.signal).toBe(
             controller.signal,
+        )
+    })
+
+    it('asks for every page as a supplementary read, which a rate-limited chain may cap', async () => {
+        historyOf([])
+
+        await trustedFor()
+
+        expect(getTransactionHistory.mock.calls[0]?.[3]?.isSupplementary).toBe(
+            true,
+        )
+    })
+
+    it('keeps the counterparties found so far when the history budget refuses a later page', async () => {
+        getTransactionHistory.mockImplementation(async (_, __, page) => {
+            if (page) throw new RequestBudgetSpentError('evm-history', 1000)
+            return {
+                items: [record({ direction: 'out', counterparty: 'PAYEE' })],
+                next: { cursor: '1' },
+            }
+        })
+
+        expect(await trustedFor()).toEqual([paid('PAYEE')])
+    })
+
+    it('rejects when the history budget refuses the first page, so the check reads as having no history', async () => {
+        getTransactionHistory.mockRejectedValue(
+            new RequestBudgetSpentError('evm-history', 1000),
+        )
+
+        await expect(trustedFor()).rejects.toBeInstanceOf(
+            RequestBudgetSpentError,
         )
     })
 

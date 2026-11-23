@@ -14,7 +14,9 @@ import { onlineManager } from '@tanstack/react-query'
 import {
     isPeraNetworkError,
     isPeraServiceUnavailableError,
+    isRequestBudgetSpentError,
     type PeraNetworkError,
+    type RequestBudgetSpentError,
 } from '@perawallet/wallet-core-shared'
 
 /** Quiet re-reads a failed history page gets before the screen shows its error. */
@@ -29,10 +31,20 @@ const MAX_RETRY_DELAY_MS = 30_000
 
 // The backend also answers an upstream explorer's rate limit as 503
 // `upstream_unavailable`, a code no other history service sends.
-const isRateLimited = (error: Error): error is PeraNetworkError =>
-    isPeraNetworkError(error) &&
-    (error.status === 429 ||
-        (error.status === 503 && error.backendCode === 'upstream_unavailable'))
+const isRateLimited = (
+    error: Error,
+): error is PeraNetworkError | RequestBudgetSpentError =>
+    isRequestBudgetSpentError(error) ||
+    (isPeraNetworkError(error) &&
+        (error.status === 429 ||
+            (error.status === 503 &&
+                error.backendCode === 'upstream_unavailable')))
+
+// The client's own budget refused the read and renews only after every retry
+// would have been spent, so retrying only delays the error.
+const outlastsRetries = (error: Error): boolean =>
+    isRequestBudgetSpentError(error) &&
+    error.retryAfterMs > MAX_RETRY_DELAY_MS * HISTORY_RATE_LIMITED_RETRY_LIMIT
 
 // The app's query default is no retry, so a read that raced something not yet
 // ready at launch would show the error state. A service the network doesn't
@@ -46,13 +58,14 @@ export const shouldRetryHistoryRead = (
             ? HISTORY_RATE_LIMITED_RETRY_LIMIT
             : HISTORY_READ_RETRY_LIMIT) &&
     onlineManager.isOnline() &&
-    !isPeraServiceUnavailableError(error)
+    !isPeraServiceUnavailableError(error) &&
+    !outlastsRetries(error)
 
 /**
  * TanStack's default delay, except a rate-limited read waits the response's
- * `Retry-After`, or else 2s, 4s, then 8s, each plus up to half again at
- * random, so reads that failed together don't come back in the same second
- * and hit the limit again.
+ * `Retry-After` or the local budget's renewal (capped at 30s), or else 2s,
+ * 4s, then 8s, each plus up to half again at random, so reads that failed
+ * together don't come back in the same second and hit the limit again.
  */
 export const historyReadRetryDelay = (
     failureCount: number,
