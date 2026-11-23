@@ -17,7 +17,9 @@ import { Text, type GestureResponderEvent } from 'react-native'
 import { PWTouchableOpacity } from '../PWTouchableOpacity'
 
 const mocks = vi.hoisted(() => ({
-    receivedOnPress: [] as Array<((event: unknown) => void) | undefined>,
+    receivedOnPress: [] as Array<
+        ((event: GestureResponderEvent) => void) | undefined
+    >,
 }))
 
 vi.mock('react-native', async importOriginal => {
