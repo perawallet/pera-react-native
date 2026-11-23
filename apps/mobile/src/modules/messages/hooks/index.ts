@@ -11,6 +11,7 @@
  */
 
 export { useNotificationPress } from './useNotificationPress'
+export { useCounterpartyNamedNotifications } from './useCounterpartyNamedNotifications'
 export {
     getMultisigIntentKind,
     isTerminalMultisigNotification,

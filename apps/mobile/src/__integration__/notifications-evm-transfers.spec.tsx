@@ -27,6 +27,7 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { useContactsStore } from '@perawallet/wallet-core-contacts'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 import {
     mockInbox,
@@ -344,6 +345,147 @@ describe('Flow: Ethereum transfer notifications', () => {
                 ),
             )
         })
+    })
+
+    describe('Given transfer rows carry a counterparty address', () => {
+        // Hardhat accounts #1 to #3; the backend sends addresses lowercase.
+        const SAVINGS_ADDRESS = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
+        const ALICE_ADDRESS = '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC'
+        const UNKNOWN_ADDRESS = '0x90F79bf6EB2c4f870365E785982E1f101E93b906'
+        const LOOK_ALIKE_ADDRESS = `0x7099${'0'.repeat(32)}79c8`
+
+        const SAVINGS_ACCOUNT: WalletAccount = {
+            id: 'savings-account',
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 1, keyIndex: 0 },
+            },
+            chains: {
+                ethereum: { address: SAVINGS_ADDRESS, keyPairId: 'sav-key' },
+                base: { address: SAVINGS_ADDRESS, keyPairId: 'sav-key' },
+            },
+            name: 'Savings',
+        } as WalletAccount
+
+        const counterpartyRow = (
+            id: string,
+            type: string,
+            message: string,
+            counterpartyAddress: Optional<string>,
+        ) => ({
+            ...evmRow(id, type, message, RECEIVED_URL),
+            counterparty_address: counterpartyAddress?.toLowerCase(),
+        })
+
+        beforeEach(() => {
+            useAccountsStore
+                .getState()
+                .setAccounts([
+                    ALGORAND_ACCOUNT,
+                    ETHEREUM_ACCOUNT,
+                    SAVINGS_ACCOUNT,
+                ])
+            useContactsStore.getState().resetState()
+            useContactsStore.getState().addContact({
+                name: 'Alice',
+                addresses: { evm: ALICE_ADDRESS },
+            })
+            server.use(
+                mockNotificationList({
+                    deviceID: DEVICE_ID,
+                    response: {
+                        next: null,
+                        previous: null,
+                        results: [
+                            counterpartyRow(
+                                '401',
+                                'evm-transfer-received',
+                                '2 ETH received from 0x7099…79c8 on Ethereum',
+                                SAVINGS_ADDRESS,
+                            ),
+                            counterpartyRow(
+                                '402',
+                                'evm-transfer-sent',
+                                'Transaction successful: 5 USDC to 0x3c44…93bc on Ethereum',
+                                ALICE_ADDRESS,
+                            ),
+                            counterpartyRow(
+                                '403',
+                                'evm-transfer-received',
+                                '3 ETH received from 0x90f7…b906 on Ethereum',
+                                UNKNOWN_ADDRESS,
+                            ),
+                            counterpartyRow(
+                                '404',
+                                'evm-transfer-received',
+                                '4 ETH received from 0x7099…79c8 on Ethereum',
+                                LOOK_ALIKE_ADDRESS,
+                            ),
+                            counterpartyRow(
+                                '405',
+                                'evm-transfer-received',
+                                '5 ETH received from 0x7099…79c8 on Ethereum',
+                                undefined,
+                            ),
+                            {
+                                ...evmRow(
+                                    '406',
+                                    'transaction-received',
+                                    '6 ALGO received from 0x7099…79c8',
+                                    ALGORAND_LEGACY_URL,
+                                ),
+                                counterparty_address:
+                                    SAVINGS_ADDRESS.toLowerCase(),
+                            },
+                        ],
+                    },
+                }),
+            )
+        })
+
+        it('When the counterparty is one of the accounts, then the account name replaces the address', async () => {
+            renderWithNavigation(NotificationsScreen, 'Notifications')
+
+            expect(
+                await screen.findByText(
+                    '2 ETH received from Savings on Ethereum',
+                ),
+            ).toBeTruthy()
+        })
+
+        it('When the counterparty is a contact, then the contact name replaces the address', async () => {
+            renderWithNavigation(NotificationsScreen, 'Notifications')
+
+            expect(
+                await screen.findByText(
+                    'Transaction successful: 5 USDC to Alice on Ethereum',
+                ),
+            ).toBeTruthy()
+        })
+
+        it.each([
+            [
+                'an unknown counterparty',
+                '3 ETH received from 0x90f7…b906 on Ethereum',
+            ],
+            [
+                'a look-alike of an own account',
+                '4 ETH received from 0x7099…79c8 on Ethereum',
+            ],
+            [
+                'a row with no counterparty address',
+                '5 ETH received from 0x7099…79c8 on Ethereum',
+            ],
+            ['an Algorand row', '6 ALGO received from 0x7099…79c8'],
+        ])(
+            'When the row is %s, then the backend text stays',
+            async (_case, message) => {
+                renderWithNavigation(NotificationsScreen, 'Notifications')
+
+                expect(await screen.findByText(message)).toBeTruthy()
+            },
+        )
     })
 
     describe('Given a push for a transfer is tapped', () => {

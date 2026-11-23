@@ -10,14 +10,7 @@
  limitations under the License
  */
 
-import {
-    useCallback,
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-    type RefObject,
-} from 'react'
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
 import { useFocusEffect } from '@react-navigation/native'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
@@ -32,7 +25,10 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import type { PWFlatListRef } from '@components/core'
-import { useNotificationPress } from '@modules/messages/hooks'
+import {
+    useCounterpartyNamedNotifications,
+    useNotificationPress,
+} from '@modules/messages/hooks'
 import { useNetworkStatus } from '@modules/network'
 
 export type UseNotificationsScreenResult = {
@@ -86,7 +82,7 @@ export const useNotificationsScreen = (): UseNotificationsScreenResult => {
     const { markAsRead } = useMarkNotificationsAsReadMutation()
     const { handleNotificationPress } = useNotificationPress()
 
-    const notifications = useMemo(() => data ?? [], [data])
+    const notifications = useCounterpartyNamedNotifications(data)
 
     // Mark notifications as read only when leaving the screen (unmount), so the
     // per-item unread dots stay visible the whole time the user is viewing the

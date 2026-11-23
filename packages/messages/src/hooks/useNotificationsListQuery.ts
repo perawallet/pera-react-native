@@ -34,6 +34,7 @@ const mapNotificationResponseToNotification = (
     type: response.type,
     accountAddress: response.account_address,
     message: response.message,
+    counterpartyAddress: response.counterparty_address,
     url: response.url,
     createdAt: new Date(response.creation_datetime),
     isUnread: response.is_unread,

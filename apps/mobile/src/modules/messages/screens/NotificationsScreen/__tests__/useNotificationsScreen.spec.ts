@@ -13,6 +13,7 @@
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useNetworkStatusStore } from '@modules/network'
+import { useCounterpartyNamedNotifications } from '@modules/messages/hooks'
 import { useNotificationsScreen } from '../useNotificationsScreen'
 import {
     useInboxStatus,
@@ -32,6 +33,9 @@ vi.mock('@perawallet/wallet-core-messages', () => ({
 
 vi.mock('@modules/messages/hooks', () => ({
     useNotificationPress: () => ({ handleNotificationPress: vi.fn() }),
+    useCounterpartyNamedNotifications: vi.fn(
+        (notifications: PeraNotification[]) => notifications,
+    ),
 }))
 
 const notification = (id: string): PeraNotification =>
@@ -138,6 +142,18 @@ describe('useNotificationsScreen', () => {
         unmount()
 
         expect(mockMarkAsRead).not.toHaveBeenCalled()
+    })
+
+    it('lists the notifications with their counterparties named', () => {
+        const fetched = [notification('42')]
+        const named = [{ id: '42', message: 'named' } as PeraNotification]
+        mockList(fetched)
+        vi.mocked(useCounterpartyNamedNotifications).mockReturnValueOnce(named)
+
+        const { result } = renderHook(() => useNotificationsScreen())
+
+        expect(useCounterpartyNamedNotifications).toHaveBeenCalledWith(fetched)
+        expect(result.current.notifications).toBe(named)
     })
 
     it('forwards isUnavailableOnNetwork from the notifications list query', () => {

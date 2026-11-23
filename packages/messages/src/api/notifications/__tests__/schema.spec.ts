@@ -146,6 +146,25 @@ describe('notificationResponseSchema', () => {
         expect(result.type).toBeNull()
     })
 
+    test('keeps a counterparty_address', () => {
+        const input = {
+            ...validNotification,
+            counterparty_address: '0x70997970c51812dc3a010c7d01b50e0d17dc79c8',
+        }
+        const result = notificationResponseSchema.parse(input)
+        expect(result.counterparty_address).toBe(input.counterparty_address)
+    })
+
+    test('parses a null or absent counterparty_address', () => {
+        const withNull = notificationResponseSchema.parse({
+            ...validNotification,
+            counterparty_address: null,
+        })
+        const without = notificationResponseSchema.parse(validNotification)
+        expect(withNull.counterparty_address).toBeNull()
+        expect(without.counterparty_address).toBeUndefined()
+    })
+
     test('rejects rows without creation_datetime', () => {
         expect(() => notificationResponseSchema.parse({ id: '1' })).toThrow()
     })
