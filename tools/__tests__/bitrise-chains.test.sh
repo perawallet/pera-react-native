@@ -11,15 +11,15 @@ PIPELINES_YML="$ROOT_DIR/ci/pipelines.yml"
 
 failures=0
 
-# The Pera services the staging backend serves for every EVM network; change
-# them only with the backend. NFTs are served for Ethereum alone: the backend
+# The Pera services the backend serves for every EVM network; change them only
+# with the backend. NFTs are served for Ethereum alone: the backend
 # answers 422 `nft_not_supported` on any other network that lists `nfts`.
 EVM_STAGING_SERVICES="prices,assets,history,blockFollowing,contracts,simulations"
 ETHEREUM_STAGING_SERVICES="prices,assets,history,blockFollowing,nfts,contracts,simulations"
 
 # Every build-gated chain and network, from the table generate-config.sh bakes
-# from. The staging expectations below are chain-ethereum's; another chain
-# package needs its own.
+# from. The expectations below are chain-ethereum's; another chain package
+# needs its own.
 CHAIN_CONFIG="$(node "$ROOT_DIR/tools/dev/chain-packages.cjs")"
 EVM_PACKAGE="@perawallet/wallet-core-chain-ethereum"
 evm_field_envs() { # $1 field
@@ -27,7 +27,6 @@ evm_field_envs() { # $1 field
         '$1 == "scope" && $6 == pkg && $7 == field { print $4 }' <<< "$CHAIN_CONFIG"
 }
 GATED_CHAIN_IDS="$(awk '$1 == "chain" { print $2 }' <<< "$CHAIN_CONFIG")"
-SCOPE_ENVS="$(awk '$1 == "scope" { print $4 }' <<< "$CHAIN_CONFIG")"
 EVM_RPC_URL_ENVS="$(evm_field_envs rpcUrl)"
 EVM_SERVICES_ENVS="$(evm_field_envs peraServices)"
 if [ -z "$GATED_CHAIN_IDS" ] || [ -z "$EVM_RPC_URL_ENVS" ] || [ -z "$EVM_SERVICES_ENVS" ]; then
@@ -51,8 +50,8 @@ provider_of() { # $1 URL -> the last two labels of its hostname
     awk -F. '{ print (NF > 1 ? $(NF - 1) "." $NF : $0) }' <<< "$host"
 }
 
-# One provider failing must not take the network down, so a staging list is
-# the main node and a fallback on another provider, both over https.
+# One provider failing must not take the network down, so a list is the main
+# node and a fallback on another provider, both over https.
 two_provider_list() { # $1 comma list -> "yes", or "no (<reason>)"
     local -a urls
     if [[ "$1" == *, ]]; then
@@ -99,15 +98,11 @@ pipelines_env() { yaml_env "$PIPELINES_YML" "      $1" "          " "$2"; }
 
 for source in bitrise pipelines; do
     env_of="${source}_env"
-    # A pera-ci job sees only its declared env, so an unset CHAINS there is the
-    # config default, Algorand alone. Bitrise must pin it against an app-level CHAINS.
-    production_unset_chains=""
-    [ "$source" = pipelines ] && production_unset_chains="algorand"
 
     echo "${source} chain env"
     check "the parser finds a job's envs" "staging" "$("$env_of" ios-staging APP_ENV)"
 
-    for job in ios-staging android-staging web-staging; do
+    for job in ios-staging android-staging web-staging ios-production android-production web-production; do
         check "${job} ships every chain" \
             "$(sorted_csv "algorand,$(paste -sd, - <<< "$GATED_CHAIN_IDS")")" \
             "$(sorted_csv "$("$env_of" "$job" CHAINS)")"
@@ -122,19 +117,10 @@ for source in bitrise pipelines; do
                 "$expected" "$("$env_of" "$job" "$services_env")"
         done <<< "$EVM_SERVICES_ENVS"
     done
-
-    for job in ios-production android-production web-production; do
-        chains="$("$env_of" "$job" CHAINS)"
-        check "${job} ships Algorand alone" \
-            "algorand" "$(sorted_csv "${chains:-$production_unset_chains}")"
-        while read -r key; do
-            check "${job} sets no ${key}" "" "$("$env_of" "$job" "$key")"
-        done <<< "$SCOPE_ENVS"
-    done
 done
 
 echo "bitrise and pipelines agree"
-for job in ios-staging android-staging web-staging; do
+for job in ios-staging android-staging web-staging ios-production android-production web-production; do
     while read -r rpc_env; do
         check "${job} gives ${rpc_env} the same list in both files" \
             "$(bitrise_env "$job" "$rpc_env")" "$(pipelines_env "$job" "$rpc_env")"
