@@ -963,19 +963,33 @@ describe('spam names', () => {
         expect(full[0]?.peraMetadata?.verificationTier).toBe('verified')
     })
 
-    it('flags a look-alike of a listed symbol on another contract', async () => {
+    it('flags a look-alike of a listed symbol the backend has no record of', async () => {
         server.use(
-            ...rpc({ [DAI]: daiOnChain }),
-            ...peraEvmAssetHandlers({
-                baseUrl: TEST_PERA_URL,
-                assets: { [DAI_CAIP19]: daiNamed('USD Coin', 'USDC') },
+            ...rpc({
+                [DAI]: { ...daiOnChain, name: 'USD Coin', symbol: 'USDC' },
             }),
+            ...peraEvmAssetHandlers({ baseUrl: TEST_PERA_URL, assets: {} }),
         )
         const { full } = memoryPersistence()
 
         await adapter().syncAssets([ref(DAI)], SCOPE)
 
         expect(full[0]?.peraMetadata?.verificationTier).toBe('suspicious')
+    })
+
+    it('leaves a token the backend knows alone for sharing a listed symbol, as a bridged USDC does', async () => {
+        server.use(
+            ...rpc({ [DAI]: daiOnChain }),
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                assets: { [DAI_CAIP19]: daiNamed('USD Coin (Arb1)', 'USDC') },
+            }),
+        )
+        const { full } = memoryPersistence()
+
+        await adapter().syncAssets([ref(DAI)], SCOPE)
+
+        expect(full[0]?.peraMetadata?.verificationTier).toBe('unverified')
     })
 
     it('leaves the listed contract itself unflagged', async () => {
@@ -1032,6 +1046,38 @@ describe('spam names', () => {
 
         expect(full).toEqual([])
         expect(node.map(asset => asset.assetId)).toEqual([DAI])
+    })
+
+    it('clears a stored name flag once a token the backend lacks no longer matches', async () => {
+        repository.stored = [
+            {
+                assetId: DAI,
+                name: 'Old claim name',
+                unitName: 'DAI',
+                decimals: 18,
+                creator: { address: '' },
+                totalSupply: new Decimal(0),
+                peraMetadata: {
+                    isDeleted: false,
+                    verificationTier: 'suspicious',
+                    type: 'standard_asset',
+                },
+            } as PeraAsset,
+        ]
+        server.use(...rpc({ [DAI]: daiOnChain }))
+        const { full } = memoryPersistence()
+
+        await adapter([]).syncAssets([ref(DAI)], SCOPE)
+
+        expect(full).toEqual([
+            expect.objectContaining({
+                assetId: DAI,
+                name: daiOnChain.name,
+                peraMetadata: expect.objectContaining({
+                    verificationTier: 'unverified',
+                }),
+            }),
+        ])
     })
 
     it('re-flags a fresh cached unverified token without a network read', async () => {

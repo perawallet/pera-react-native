@@ -327,7 +327,10 @@ export type AccountHoldingsFilters = {
     hideZeroBalanceNfts?: boolean
     /** Asset types to exclude regardless of holding amount. */
     excludeAssetTypes?: string[]
-    /** When true, rows whose asset Pera flags suspicious are excluded; rows with no metadata yet stay. */
+    /**
+     * When true, rows whose asset Pera flags suspicious are excluded; rows with no metadata yet stay.
+     * The list read keeps the ones their address kept; the single-account read, which feeds totals, doesn't.
+     */
     hideSuspicious?: boolean
     /** Leaves out holdings the user hid, whatever the other filters keep. */
     excludeHidden?: boolean
@@ -430,8 +433,10 @@ export async function getAccountHoldings({
     }
 
     const source = [{ address: accountAddress, scope }]
+    // Strict here: this read feeds totals and the balance chart, which a kept
+    // suspicious token never counts toward. The list reads let it through.
     if (hideSuspicious) {
-        joinConditions.push(or(isNotSuspiciousSql(), keptHoldingSql(source))!)
+        joinConditions.push(isNotSuspiciousSql())
     }
     if (onlyAutoHidden) {
         joinConditions.push(

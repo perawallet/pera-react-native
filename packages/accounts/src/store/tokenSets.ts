@@ -59,3 +59,20 @@ export const withAssetIds = (
         ? { ...otherScopes, [scopeKey]: addresses }
         : otherScopes
 }
+
+/** Every id either set holds; `a` comes back when `b` adds nothing. */
+export const unionTokenSets = (a: TokenSets, b: TokenSets): TokenSets => {
+    let merged = a
+    for (const [scopeKey, byAddress] of Object.entries(b)) {
+        for (const [address, assetIds] of Object.entries(byAddress)) {
+            const held = merged[scopeKey]?.[address] ?? []
+            const next = [...new Set([...held, ...assetIds])].sort()
+            if (next.length === held.length) continue
+            merged = {
+                ...merged,
+                [scopeKey]: { ...merged[scopeKey], [address]: next },
+            }
+        }
+    }
+    return merged
+}

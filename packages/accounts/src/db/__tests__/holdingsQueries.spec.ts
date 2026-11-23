@@ -415,7 +415,7 @@ describe('account holdings queries', () => {
             ])
         })
 
-        it('lets a kept row through the single-account read', async () => {
+        it('leaves a kept row out of the single-account read the balance chart counts', async () => {
             keep('ADDR1', '11')
 
             const rows = await getAccountHoldings({
@@ -425,7 +425,7 @@ describe('account holdings queries', () => {
                 hideSuspicious: true,
             })
 
-            expect(rows.map(row => row.assetId).sort()).toEqual(['11', '20'])
+            expect(rows.map(row => row.assetId)).toEqual(['20'])
         })
     })
 

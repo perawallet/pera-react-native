@@ -112,6 +112,15 @@ const asSuspicious = (asset: PeraAsset): PeraAsset => ({
     },
 })
 
+const asUnflagged = (asset: PeraAsset): PeraAsset => ({
+    ...asset,
+    peraMetadata: {
+        isDeleted: false,
+        ...asset.peraMetadata,
+        verificationTier: PeraAssetVerificationTier.unverified,
+    },
+})
+
 // The backend rejects the whole batch for an erc20 id at the zero address,
 // its native coin's contract.
 const isTokenAddress = (address: string): boolean => address !== zeroAddress
@@ -162,10 +171,13 @@ const spamCheck = (
 const flagSpam = async (
     assets: PeraAsset[],
     isSpam: SpamCheck,
+    hasBackendRecord: boolean,
 ): Promise<PeraAsset[]> =>
     Promise.all(
         assets.map(async asset =>
-            (await isSpam(asset)) ? asSuspicious(asset) : asset,
+            (await isSpam(asset, hasBackendRecord))
+                ? asSuspicious(asset)
+                : asset,
         ),
     )
 
@@ -173,7 +185,9 @@ const isFlagged = (asset: PeraAsset): boolean =>
     asset.peraMetadata?.verificationTier ===
     PeraAssetVerificationTier.suspicious
 
-// A spam-named token needs both halves, so its tier is stored with it.
+// A spam-named token needs both halves, so its tier is stored with it. With no
+// backend verdict on this path, a stored suspicious tier came from an earlier
+// name check, so a token that now passes has it cleared rather than kept.
 const persistOnChain = async (
     ctx: ChainContext,
     chain: EvmChain,
@@ -184,15 +198,31 @@ const persistOnChain = async (
     const items = await flagSpam(
         await readOnChain(ctx, chain, assetIds, scope),
         isSpam,
+        false,
     )
-    const flagged = items.filter(isFlagged)
     const plain = items.filter(asset => !isFlagged(asset))
-    if (flagged.length > 0) await upsertAssets({ items: flagged, scope })
-    if (plain.length > 0) await upsertNodeAssets({ items: plain, scope })
+    const wasFlagged = new Set(
+        (
+            await getAssetsByIds({
+                assetIds: plain.map(asset => asset.assetId),
+                scope,
+            })
+        )
+            .filter(isFlagged)
+            .map(asset => asset.assetId),
+    )
+    const full = items.flatMap(asset => {
+        if (isFlagged(asset)) return [asset]
+        return wasFlagged.has(asset.assetId) ? [asUnflagged(asset)] : []
+    })
+    const nodeOnly = plain.filter(asset => !wasFlagged.has(asset.assetId))
+    if (full.length > 0) await upsertAssets({ items: full, scope })
+    if (nodeOnly.length > 0) await upsertNodeAssets({ items: nodeOnly, scope })
 }
 
 // A token cached before its name was checked stays fresh for the TTL; its
-// stored name is enough to flag it now, without a request.
+// stored name is enough to flag it now, without a request. Whether the backend
+// knew it isn't stored, so the symbol rule waits for the token's next sync.
 const reflagStored = async (
     tokenIds: string[],
     scope: ChainScope,
@@ -200,7 +230,7 @@ const reflagStored = async (
 ): Promise<void> => {
     if (tokenIds.length === 0) return
     const stored = await getAssetsByIds({ assetIds: tokenIds, scope })
-    const items = (await flagSpam(stored, isSpam)).filter(
+    const items = (await flagSpam(stored, isSpam, true)).filter(
         (asset, index) => isFlagged(asset) && !isFlagged(stored[index]!),
     )
     if (items.length > 0) await upsertAssets({ items, scope })
@@ -347,7 +377,7 @@ const syncTokens = async (
     await persistWithChainDecimals(
         ctx,
         chain,
-        await flagSpam(known, isSpam),
+        await flagSpam(known, isSpam, true),
         scope,
     )
     if (unknown.length > 0) {
@@ -490,7 +520,7 @@ const readCheckedToken = async (
     isSpam: SpamCheck,
 ): Promise<TokenRead> => {
     const read = await readToken(ctx, chain, tokenId, scope)
-    if (!(await isSpam(read.asset))) return read
+    if (!(await isSpam(read.asset, read.cache !== 'node'))) return read
     return {
         asset: asSuspicious(read.asset),
         cache: read.cache === 'none' ? 'none' : 'both',

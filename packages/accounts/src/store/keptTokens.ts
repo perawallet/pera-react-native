@@ -22,7 +22,12 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { canHideHolding } from '../chainProtocol'
-import { assetIdsIn, withAssetIds, type TokenSets } from './tokenSets'
+import {
+    assetIdsIn,
+    unionTokenSets,
+    withAssetIds,
+    type TokenSets,
+} from './tokenSets'
 
 /**
  * Tokens each address keeps listed although Pera flags them suspicious: ones
@@ -50,6 +55,8 @@ type KeptTokensActions = BaseStoreState & {
     setTokenKept: (params: SetTokenKeptParams) => void
     keepTokens: (params: KeepTokensParams) => void
     replaceKeptTokens: (keptTokens: KeptTokens) => void
+    /** Adds every token `keptTokens` holds; nothing is ever un-kept, so a backup merges rather than replaces. */
+    mergeKeptTokens: (keptTokens: KeptTokens) => void
 }
 
 export type KeptTokensState = KeptTokensData & KeptTokensActions
@@ -110,6 +117,16 @@ export const useKeptTokensStore: UseBoundStore<
                     }),
                 keepTokens: params => update({ ...params, isIncluded: true }),
                 replaceKeptTokens: keptTokens => set({ keptTokens }),
+                mergeKeptTokens: incoming =>
+                    set(state => {
+                        const keptTokens = unionTokenSets(
+                            state.keptTokens,
+                            incoming,
+                        )
+                        return keptTokens === state.keptTokens
+                            ? state
+                            : { keptTokens }
+                    }),
                 resetState: () => set(initialState),
             }
         },

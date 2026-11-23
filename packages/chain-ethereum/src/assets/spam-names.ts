@@ -48,8 +48,16 @@ export const isSpamNamedToken = (
     return !!token.unitName && listedSymbols.has(symbolOf(token.unitName))
 }
 
-/** Whether a token Pera hasn't vetted should be stored as suspicious for its name. */
-export type SpamCheck = (asset: DisplayableAsset) => Promise<boolean>
+/**
+ * Whether a token Pera hasn't vetted should be stored as suspicious for its
+ * name. `hasBackendRecord` turns off the look-alike symbol rule: a real
+ * bridged token (Arbitrum's USDC) shares a listed symbol on another contract,
+ * so only a token the backend has never seen is judged by its symbol.
+ */
+export type SpamCheck = (
+    asset: DisplayableAsset,
+    hasBackendRecord: boolean,
+) => Promise<boolean>
 
 const NO_SYMBOLS: ReadonlySet<string> = new Set()
 
@@ -82,7 +90,7 @@ export const spamCheckFor = (
             }),
             () => ({ symbols: new Set([native]), ids: new Set<string>() }),
         ))
-    return async asset => {
+    return async (asset, hasBackendRecord) => {
         const tier = asset.peraMetadata?.verificationTier
         if (
             tier === PeraAssetVerificationTier.verified ||
@@ -91,6 +99,7 @@ export const spamCheckFor = (
             return false
         }
         if (isSpamNamedToken(asset, NO_SYMBOLS)) return true
+        if (hasBackendRecord) return false
         const { symbols, ids } = await readListed()
         return !ids.has(asset.assetId) && isSpamNamedToken(asset, symbols)
     }

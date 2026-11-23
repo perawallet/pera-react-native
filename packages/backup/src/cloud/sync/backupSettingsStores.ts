@@ -172,6 +172,6 @@ export const applyBackupSettings = (
         useHiddenTokensStore.getState().replaceHiddenTokens(hiddenTokens)
     }
     if (keptTokens) {
-        useKeptTokensStore.getState().replaceKeptTokens(keptTokens)
+        useKeptTokensStore.getState().mergeKeptTokens(keptTokens)
     }
 }

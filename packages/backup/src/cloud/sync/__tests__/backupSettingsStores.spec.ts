@@ -111,6 +111,23 @@ describe('backupSettingsStores', () => {
         })
     })
 
+    it('adds the kept tokens a backup carries to the ones this device kept', () => {
+        useKeptTokensStore.getState().keepTokens({
+            address: '0xabc',
+            scope: ETH_SCOPE,
+            assetIds: ['0x1'],
+        })
+
+        applyBackupSettings(
+            { keptTokens: { 'ethereum/mainnet': { '0xabc': ['0x2'] } } },
+            'algorand',
+        )
+
+        expect(readBackupSettings('algorand').keptTokens).toEqual({
+            'ethereum/mainnet': { '0xabc': ['0x1', '0x2'] },
+        })
+    })
+
     it('leaves the hidden tokens alone when the backup carries none', () => {
         useHiddenTokensStore.getState().setTokenHidden({
             address: '0xabc',

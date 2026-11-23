@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { Decimal } from 'decimal.js'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useKeptTokensStore } from '@perawallet/wallet-core-accounts'
 import type { EvmChain } from '../chains/types'
@@ -26,8 +27,10 @@ const idOf = (caip19: string, scope: ChainScope, chain: EvmChain): string[] => {
 }
 
 /**
- * A token the account sent or swapped in a transaction it signed is one the
- * user chose, so Pera's suspicious flag never takes it out of the list.
+ * A token the account sent in a transaction it signed is one the user chose,
+ * so Pera's suspicious flag never takes it out of the list. Only what left the
+ * account: signing a scam's "claim" call delivers the spam it advertises. An
+ * in-app swap or purchase keeps the token it delivers when it adds it.
  */
 export const keepTokensTheAccountMoved = (
     items: readonly EvmHistoryItem[],
@@ -42,8 +45,10 @@ export const keepTokensTheAccountMoved = (
                 item.from?.toLowerCase() === address.toLowerCase(),
         )
         .flatMap(item =>
-            item.balance_impacts.flatMap(({ asset_id }) =>
-                idOf(asset_id, scope, chain),
+            item.balance_impacts.flatMap(({ asset_id, amount }) =>
+                new Decimal(amount).isNegative()
+                    ? idOf(asset_id, scope, chain)
+                    : [],
             ),
         )
     if (assetIds.length === 0) return

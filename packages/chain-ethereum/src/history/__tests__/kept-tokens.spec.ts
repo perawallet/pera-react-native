@@ -27,9 +27,9 @@ const ME = '0x00000000000000000000000000000000000000aa'
 const PEER = '0x00000000000000000000000000000000000000bb'
 const TOKEN = '0x6b175474e89094c44da98b954eedeac495271d0f'
 const OTHER = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'
-const impact = (contract: string) => ({
+const impact = (contract: string, amount = '-1') => ({
     asset_id: `eip155:1/erc20:${contract}`,
-    amount: '1',
+    amount,
 })
 
 const item = (overrides: Parameters<typeof evmHistoryItem>[0]) =>
@@ -63,13 +63,30 @@ describe('keepTokensTheAccountMoved', () => {
         expect(kept()).toEqual([getAddress(TOKEN)])
     })
 
+    it('leaves out a token the account only received, as a signed scam claim delivers', () => {
+        keepTokensTheAccountMoved(
+            [
+                item({
+                    from: ME,
+                    to: PEER,
+                    balance_impacts: [impact(TOKEN), impact(OTHER, '1000')],
+                }),
+            ],
+            ME,
+            SCOPE,
+            ETHEREUM,
+        )
+
+        expect(kept()).toEqual([getAddress(TOKEN)])
+    })
+
     it('keeps nothing from a transfer someone else sent', () => {
         keepTokensTheAccountMoved(
             [
                 item({
                     from: PEER,
                     to: ME,
-                    balance_impacts: [impact(OTHER)],
+                    balance_impacts: [impact(OTHER, '1')],
                 }),
             ],
             ME,
