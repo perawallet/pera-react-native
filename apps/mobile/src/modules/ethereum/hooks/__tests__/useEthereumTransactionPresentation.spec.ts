@@ -728,7 +728,7 @@ describe('useEthereumTransactionPresentation', () => {
                 'supply',
                 {
                     kind: 'supply',
-                    asset: ETHEREUM_FIXTURE_TOKEN,
+                    asset: { kind: 'token', contract: ETHEREUM_FIXTURE_TOKEN },
                     amount: new Decimal(1_000_000),
                     isEntireBalance: false,
                 },

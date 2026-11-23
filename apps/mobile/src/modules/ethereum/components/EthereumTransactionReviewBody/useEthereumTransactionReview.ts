@@ -13,6 +13,7 @@
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import {
+    useAssetPricesQuery,
     useAssetsQuery,
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
@@ -41,6 +42,11 @@ import {
     ethereumPermissionsOf,
     type EthereumPermission,
 } from './ethereumPermissions'
+import {
+    ethereumActionAssetIdsOf,
+    ethereumActionChangesOf,
+    type EthereumActionChanges,
+} from './ethereumActionChanges'
 import { ethereumReviewWarningsOf } from './ethereumReviewWarnings'
 import { ethereumReviewWarningItemOf } from './ethereumReviewWarningItemOf'
 
@@ -64,6 +70,8 @@ export type UseEthereumTransactionReviewResult = {
     permissions: EthereumPermission[]
     /** What a transfer sends, for a review the simulation doesn't cover. */
     transferSpend: BalanceImpactItem[]
+    /** What a decoded call's calldata fixes it moves, for a review the simulation doesn't cover. */
+    actionChanges: EthereumActionChanges
     /** The site the request came from, as the platform observed it. */
     requesterHost: Optional<string>
 }
@@ -111,15 +119,45 @@ export const useEthereumTransactionReview = ({
         nftItems,
     } = presentation
     const approvedContract = approvedContractOf(presentation)
+    const wrappedNativeContract =
+        (contractAction?.kind === 'wrap' ||
+            contractAction?.kind === 'unwrap') &&
+        view.to
+            ? view.to
+            : undefined
     const verifiedCall = useEthereumVerifiedCall(view, scope, true)
-    const { data: tokenAssets } = useAssetsQuery(
-        scope,
-        approvedContract ? [approvedContract] : [],
-        { fetchMissing: true },
+    const recordIds = [approvedContract, wrappedNativeContract].filter(
+        (id): id is string => !!id,
     )
+    const { data: tokenAssets } = useAssetsQuery(scope, recordIds, {
+        fetchMissing: true,
+    })
     const tokenAsset = approvedContract
         ? (tokenAssets.get(approvedContract) ?? null)
         : null
+    const wrappedNative = wrappedNativeContract
+        ? (tokenAssets.get(wrappedNativeContract) ?? null)
+        : null
+    const actionAssetIds = ethereumActionAssetIdsOf(
+        contractAction,
+        wrappedNative,
+    )
+    const { data: actionPrices } = useAssetPricesQuery(
+        scope,
+        actionAssetIds,
+        actionAssetIds.length > 0,
+        { fetchMissing: true },
+    )
+    const actionChanges = useMemo(
+        () =>
+            ethereumActionChangesOf(
+                contractAction,
+                wrappedNative,
+                scope.chainId,
+                assetId => actionPrices.get(assetId)?.usdPrice,
+            ),
+        [contractAction, wrappedNative, scope.chainId, actionPrices],
+    )
 
     const warningItems = useMemo(
         () =>
@@ -266,6 +304,7 @@ export const useEthereumTransactionReview = ({
         target,
         permissions,
         transferSpend,
+        actionChanges,
         requesterHost: requesterHostOf(source, verifiedOrigin),
     }
 }
