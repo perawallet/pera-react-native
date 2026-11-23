@@ -148,7 +148,7 @@ const crossChainOffer = (depositAddress?: string) => ({
     destination_amount_usd_value: null,
     fees: [
         {
-            kind: 'network',
+            kind: 'network' as const,
             asset_id: ETH_ID,
             amount: '1000000000000',
             usd_value: null,
