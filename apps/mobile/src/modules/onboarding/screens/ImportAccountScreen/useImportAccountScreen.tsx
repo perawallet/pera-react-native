@@ -171,6 +171,8 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
             )
             if (!alternate) return accountType
 
+            // The overlay is a native modal drawn above every bottom sheet, so it must be down while the sheet waits for a tap.
+            setProcessing(false)
             const choice =
                 await requestBottomSheet<QuantumPassphraseDetectedContentResult>(
                     {
@@ -186,7 +188,10 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
                         },
                     },
                 )
-            return choice === 'import-quantum' ? alternate.seed : undefined
+            if (choice !== 'import-quantum') return undefined
+
+            setProcessing(true)
+            return alternate.seed
         },
         [
             accountType,

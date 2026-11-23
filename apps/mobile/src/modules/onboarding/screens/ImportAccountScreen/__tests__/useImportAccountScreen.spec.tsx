@@ -16,6 +16,7 @@ import { useRoute } from '@react-navigation/native'
 import { mnemonicFromSeed } from 'algosdk'
 import {
     consumePendingImportMnemonic,
+    DuplicateAccountError,
     useFindAlternateImportKinds,
     useImportAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -81,6 +82,7 @@ vi.mock('@hooks/useAppNavigation', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    DuplicateAccountError: class DuplicateAccountError extends Error {},
     useImportAccount: vi.fn(),
     useFindAlternateImportKinds: vi.fn(),
     consumePendingImportMnemonic: vi.fn(),
@@ -832,7 +834,121 @@ describe('useImportAccountScreen', () => {
 
                 expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
                 expect(mockImportAccount).not.toHaveBeenCalled()
+                expect(mockErrorToast).not.toHaveBeenCalled()
                 expect(result.current.processing).toBe(false)
+            })
+
+            const flush = async (settle: () => void) => {
+                await act(async () => {
+                    settle()
+                    await new Promise(resolve => setTimeout(resolve, 0))
+                })
+            }
+
+            const startSubmit = async () => {
+                const { result } = renderHook(() => useImportAccountScreen())
+                act(() => {
+                    result.current.updateWord(
+                        new Array(25).fill('abandon').join(' '),
+                        0,
+                    )
+                })
+                await act(async () => {
+                    result.current.handleImportAccount()
+                    await new Promise(resolve => setTimeout(resolve, 0))
+                })
+                return result
+            }
+
+            it('keeps the importing overlay up while the words are checked', async () => {
+                mockFindAlternateImportKinds.mockReturnValue(
+                    new Promise(() => {}),
+                )
+
+                const result = await startSubmit()
+
+                expect(result.current.processing).toBe(true)
+                expect(mockRequestBottomSheet).not.toHaveBeenCalled()
+            })
+
+            it('takes the importing overlay down while the sheet waits, and back up once the user picks the quantum account', async () => {
+                let settleSheet: (choice: string) => void = () => {}
+                let settleImport: (accounts: unknown[]) => void = () => {}
+                mockRequestBottomSheet.mockReturnValue(
+                    new Promise(resolve => {
+                        settleSheet = resolve
+                    }),
+                )
+                mockImportAccount.mockReturnValue(
+                    new Promise(resolve => {
+                        settleImport = resolve
+                    }),
+                )
+
+                const result = await startSubmit()
+
+                expect(result.current.processing).toBe(false)
+                expect(mockImportAccount).not.toHaveBeenCalled()
+
+                await flush(() => settleSheet('import-quantum'))
+
+                expect(result.current.processing).toBe(true)
+                expect(mockImportAccount).toHaveBeenCalledWith({
+                    mnemonicIndices: expect.any(Uint16Array),
+                    seed: 'quantum',
+                })
+
+                await flush(() => settleImport([QUANTUM_ACCOUNT]))
+
+                expect(result.current.processing).toBe(false)
+                expect(mockMarkBackupComplete).toHaveBeenCalledWith(
+                    QUANTUM_ACCOUNT,
+                )
+                expect(mockReplace).toHaveBeenCalledWith('SearchAccounts', {
+                    account: QUANTUM_ACCOUNT,
+                })
+            })
+
+            it('ends the overlay with the failure toast when the quantum import fails', async () => {
+                mockRequestBottomSheet.mockResolvedValue('import-quantum')
+                mockImportAccount.mockRejectedValue(new Error('keystore'))
+
+                const result = await startSubmit()
+
+                expect(mockErrorToast).toHaveBeenCalledWith(
+                    'onboarding.import_account.failed_title',
+                    'onboarding.import_account.failed_body',
+                )
+                expect(result.current.processing).toBe(false)
+                expect(mockReplace).not.toHaveBeenCalled()
+            })
+
+            it('shows the already-added toast when the quantum account is already in the wallet', async () => {
+                mockRequestBottomSheet.mockResolvedValue('import-quantum')
+                mockImportAccount.mockRejectedValue(
+                    new DuplicateAccountError('QUANTUMADDRESS'),
+                )
+
+                const result = await startSubmit()
+
+                expect(mockErrorToast).toHaveBeenCalledWith(
+                    'onboarding.import_account.duplicate_account_title',
+                    'onboarding.import_account.duplicate_account_body',
+                )
+                expect(result.current.processing).toBe(false)
+            })
+
+            it('ends the overlay with the failure toast when the sheet cannot open', async () => {
+                mockRequestBottomSheet.mockRejectedValue(new Error('no host'))
+
+                const result = await startSubmit()
+
+                expect(mockErrorToast).toHaveBeenCalledWith(
+                    'onboarding.import_account.failed_title',
+                    'onboarding.import_account.failed_body',
+                )
+                expect(result.current.processing).toBe(false)
+                expect(mockImportAccount).not.toHaveBeenCalled()
             })
 
             it('imports the standard account without checking where the platform has no quantum support', async () => {
