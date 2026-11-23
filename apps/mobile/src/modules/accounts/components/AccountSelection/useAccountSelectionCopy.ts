@@ -35,7 +35,8 @@ export type AccountSelectionCopy = {
 /**
  * What a long press on the header account copies: the address on the network
  * chip's chain, else on the account's own chain (the 0x one for an EVM-first
- * account). Undefined when the account has no address to copy.
+ * account). A chain this build doesn't register copies its raw address.
+ * Undefined when the account has no address to copy.
  */
 export const useAccountSelectionCopy = (
     account: Maybe<WalletAccount>,
@@ -54,6 +55,10 @@ export const useAccountSelectionCopy = (
         const address =
             filteredSource?.address ?? chainAccountOf(account, chainId)?.address
         if (!address) return undefined
+        // A stored chain this build doesn't register has no adapter or codec to ask.
+        if (!registeredChainIds.includes(chainId)) {
+            return { copyValue: address, copyOptions: {} }
+        }
         const { addressCopiedTitle } = chainUiFor(
             getProvider().chains.get(chainId).descriptor.family,
             chainId,

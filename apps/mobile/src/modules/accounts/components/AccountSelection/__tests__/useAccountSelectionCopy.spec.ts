@@ -12,7 +12,10 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@test-utils/render'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useRegisteredChainIds,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { useAssetListViewStore } from '../../../hooks/useAssetListViewStore'
 import { useAccountSelectionCopy } from '../useAccountSelectionCopy'
 
@@ -60,6 +63,10 @@ const multichain = accountWith({
 
 describe('useAccountSelectionCopy', () => {
     beforeEach(() => {
+        vi.mocked(useRegisteredChainIds).mockReturnValue([
+            'algorand',
+            'ethereum',
+        ])
         useAssetListViewStore.setState({
             selectedChainId: null,
             expandedGroupIds: [],
@@ -110,6 +117,42 @@ describe('useAccountSelectionCopy', () => {
                 body: `short:${ALGO}`,
             },
         })
+    })
+
+    it('copies the Algorand address of a default multichain account', () => {
+        const { result } = renderHook(() => useAccountSelectionCopy(multichain))
+
+        expect(result.current?.copyValue).toBe(`normalized:${ALGO}`)
+        expect(result.current?.copyOptions.title).toBe(
+            'common.address_copied.algorand',
+        )
+    })
+
+    it('copies the Algorand address of an Algorand-only account under an EVM filter', () => {
+        useAssetListViewStore.getState().setSelectedChainId('ethereum')
+        const account = accountWith({
+            algorand: { address: ALGO, enabledBy: 'created' },
+        })
+
+        const { result } = renderHook(() => useAccountSelectionCopy(account))
+
+        expect(result.current).toEqual({
+            copyValue: `normalized:${ALGO}`,
+            copyOptions: {
+                title: 'common.address_copied.algorand',
+                body: `short:${ALGO}`,
+            },
+        })
+    })
+
+    it('copies the raw address of an account held only on an unregistered chain', () => {
+        const account = accountWith({
+            avalanche: { address: EVM, enabledBy: 'created' },
+        })
+
+        const { result } = renderHook(() => useAccountSelectionCopy(account))
+
+        expect(result.current).toEqual({ copyValue: EVM, copyOptions: {} })
     })
 
     it('copies nothing without an account', () => {
