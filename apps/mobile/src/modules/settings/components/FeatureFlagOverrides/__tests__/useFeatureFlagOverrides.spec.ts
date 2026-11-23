@@ -168,19 +168,19 @@ describe('useFeatureFlagOverrides', () => {
 
     describe('booleanFlagValues', () => {
         it('shows true for a flag with no override that reads true', () => {
-            mockEffectiveValues['enable_motion_lock'] = true
+            mockEffectiveValues['enable_pera_card'] = true
             const { result } = renderHook(() => useFeatureFlagOverrides())
 
-            expect(result.current.booleanFlagValues['enable_motion_lock']).toBe(
+            expect(result.current.booleanFlagValues['enable_pera_card']).toBe(
                 true,
             )
         })
 
         it('shows false for a flag with no override that reads false', () => {
-            mockEffectiveValues['enable_pera_card'] = false
+            mockEffectiveValues['enable_motion_lock'] = false
             const { result } = renderHook(() => useFeatureFlagOverrides())
 
-            expect(result.current.booleanFlagValues['enable_pera_card']).toBe(
+            expect(result.current.booleanFlagValues['enable_motion_lock']).toBe(
                 false,
             )
         })

@@ -40,16 +40,10 @@ vi.mock('@perawallet/wallet-core-remote-config', async importOriginal => ({
 vi.mock('@hooks/useCapability', () => ({ useCapability: vi.fn() }))
 
 const buildFlags = vi.hoisted(() => ({
-    appEnvironment: 'production',
     isDebug: false,
     isStaging: false,
 }))
 vi.mock('@perawallet/wallet-core-config', () => ({
-    config: {
-        get appEnvironment() {
-            return buildFlags.appEnvironment
-        },
-    },
     get isDebug() {
         return buildFlags.isDebug
     },
@@ -130,8 +124,6 @@ const mockGetBooleanValue = vi.fn()
 
 beforeEach(() => {
     vi.clearAllMocks()
-    vi.stubGlobal('__DEV__', false)
-    buildFlags.appEnvironment = 'production'
     buildFlags.isDebug = false
     buildFlags.isStaging = false
     vi.mocked(useCapability).mockReturnValue(true)
