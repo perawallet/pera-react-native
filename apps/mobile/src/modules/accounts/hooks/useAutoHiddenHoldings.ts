@@ -18,13 +18,9 @@ import {
     type AccountHoldingsLiteRow,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { useAssetPreferencesStore } from '@perawallet/wallet-core-assets'
 import type { Maybe } from '@perawallet/wallet-core-shared'
 import { useSelectedNetworkSource } from './useSelectedNetworkSource'
-
-const AUTO_HIDDEN = {
-    sortMode: 'alphabeticalAsc',
-    filters: { hideNfts: true, onlyAutoHidden: true },
-} as const
 
 export type UseAutoHiddenHoldingsResult = {
     holdings: AccountHoldingsLiteRow[]
@@ -46,6 +42,16 @@ export const useAutoHiddenHoldings = (
             ),
         [accountSources, selected],
     )
-    const { holdings, isPending } = useAccountAssetsQuery(sources, AUTO_HIDDEN)
+    const hideZeroBalance = useAssetPreferencesStore(
+        state => state.hideZeroBalance,
+    )
+    const options = useMemo(
+        () => ({
+            sortMode: 'alphabeticalAsc' as const,
+            filters: { hideNfts: true, onlyAutoHidden: true, hideZeroBalance },
+        }),
+        [hideZeroBalance],
+    )
+    const { holdings, isPending } = useAccountAssetsQuery(sources, options)
     return { holdings, isPending, showsNetwork: sources.length > 1 }
 }

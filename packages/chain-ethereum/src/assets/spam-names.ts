@@ -34,8 +34,8 @@ const symbolOf = (unitName: string): string =>
 /**
  * Whether an ERC-20's own name or symbol advertises a scam: a link, a lure
  * emoji, a call to claim, or a symbol copied from a listed token.
- * `listedSymbols` are upper-cased; the caller never passes a listed contract
- * or a backend-verified token.
+ * `listedSymbols` are upper-cased. The caller keeps a listed contract out of
+ * the symbol rule only; its name is still checked.
  */
 export const isSpamNamedToken = (
     token: { name?: Nullable<string>; unitName?: Nullable<string> },

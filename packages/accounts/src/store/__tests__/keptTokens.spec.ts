@@ -111,6 +111,32 @@ describe('keepTokens', () => {
     })
 })
 
+describe('mergeKeptTokens', () => {
+    it('adds another device’s keeps to this one’s instead of replacing them', () => {
+        state().keepTokens({ address: ADDRESS, scope: ETH, assetIds: ['0xa'] })
+
+        state().mergeKeptTokens({ [toScopeKey(ETH)]: { [ADDRESS]: ['0xb'] } })
+
+        expect(keptAssetIdsOf(state().keptTokens, ADDRESS, ETH)).toEqual([
+            '0xa',
+            '0xb',
+        ])
+    })
+
+    it('writes nothing when the merge adds nothing', () => {
+        state().keepTokens({ address: ADDRESS, scope: ETH, assetIds: ['0xa'] })
+        let writes = 0
+        const unsubscribe = useKeptTokensStore.subscribe(() => {
+            writes += 1
+        })
+
+        state().mergeKeptTokens({ [toScopeKey(ETH)]: { [ADDRESS]: ['0xa'] } })
+        unsubscribe()
+
+        expect(writes).toBe(0)
+    })
+})
+
 describe('replaceKeptTokens', () => {
     it('replaces the whole map', () => {
         state().keepTokens({ address: ADDRESS, scope: ETH, assetIds: ['0xa'] })

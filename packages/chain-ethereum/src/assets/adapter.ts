@@ -24,6 +24,7 @@ import {
     PeraAssetVerificationTier,
     upsertAssets,
     upsertNodeAssets,
+    upsertPeraAssets,
     type AssetGroup,
     type AssetSearchPage,
     type AssetsChainAdapter,
@@ -185,11 +186,8 @@ const isFlagged = (asset: PeraAsset): boolean =>
     asset.peraMetadata?.verificationTier ===
     PeraAssetVerificationTier.suspicious
 
-// A spam-named token needs both halves, so its tier is stored with it.
-// `hasBackendAnswered` is true only when the backend just said it has no
-// record: a stored suspicious tier then came from an earlier name check, so a
-// token that now passes has it cleared. Without an answer (no assets service)
-// the stored tier may be the backend's own verdict, and it stays.
+// After the backend's "no record" (`hasBackendAnswered`), a stored suspicious
+// tier can only be an old name flag; otherwise it may be the backend's verdict.
 const persistOnChain = async (
     ctx: ChainContext,
     chain: EvmChain,
@@ -234,11 +232,14 @@ const reflagStored = async (
     isSpam: SpamCheck,
 ): Promise<void> => {
     if (tokenIds.length === 0) return
-    const stored = await getAssetsByIds({ assetIds: tokenIds, scope })
-    const items = (await flagSpam(stored, isSpam, true)).filter(
-        (asset, index) => isFlagged(asset) && !isFlagged(stored[index]!),
-    )
-    if (items.length > 0) await upsertAssets({ items, scope })
+    const stored = await getAssetsByIds({
+        assetIds: tokenIds,
+        scope,
+        isUnvettedOnly: true,
+    })
+    const items = (await flagSpam(stored, isSpam, true)).filter(isFlagged)
+    // Pera's half alone, so the chain half keeps its own freshness.
+    if (items.length > 0) await upsertPeraAssets({ items, scope })
 }
 
 // Both halves, so the suspicious tier is persisted, not just the intrinsics.
@@ -474,7 +475,7 @@ type TokenRead = {
     asset: PeraAsset
     /** Which halves a caller that caches may store. */
     cache: 'both' | 'node' | 'none'
-    /** False only when the backend answered with a blank item, or there is no assets service to ask; a failed request or an unreadable row is true. */
+    /** False only on a blank item or no assets service, as syncTokens reads "no record"; a failed request or an unreadable row isn't one. */
     hasBackendRecord: boolean
 }
 
@@ -497,9 +498,6 @@ const readToken = async (
             ? toAssetMetadata(tokenId, pera.value[0])
             : undefined
     const fromPera = item?.asset ?? null
-    // "No record" is what syncTokens treats as one: no assets service to ask,
-    // or a blank item. A failed request or a row this client can't read is
-    // no answer, so the look-alike rule must not run on it.
     const hasNoRecord =
         pera.status === 'fulfilled' &&
         (pera.value.length === 0 ||

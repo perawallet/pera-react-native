@@ -77,14 +77,32 @@ const repository = vi.hoisted(() => ({
     full: [] as PeraAsset[],
     cached: null as PeraAsset | null,
     stored: [] as PeraAsset[],
+    pera: [] as PeraAsset[],
 }))
 
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
     ...(await importOriginal<object>()),
     getAssetById: vi.fn(async () => repository.cached),
-    getAssetsByIds: vi.fn(async ({ assetIds }: { assetIds: string[] }) =>
-        repository.stored.filter(asset => assetIds.includes(asset.assetId)),
+    getAssetsByIds: vi.fn(
+        async ({
+            assetIds,
+            isUnvettedOnly,
+        }: {
+            assetIds: string[]
+            isUnvettedOnly?: boolean
+        }) =>
+            repository.stored.filter(
+                asset =>
+                    assetIds.includes(asset.assetId) &&
+                    (!isUnvettedOnly ||
+                        [undefined, 'unverified'].includes(
+                            asset.peraMetadata?.verificationTier,
+                        )),
+            ),
     ),
+    upsertPeraAssets: vi.fn(async ({ items }: { items: PeraAsset[] }) => {
+        repository.pera.push(...items)
+    }),
     getStaleOrMissingAssetIds: vi.fn(
         async ({ assetIds }: { assetIds: string[] }) =>
             repository.stale(assetIds),
@@ -199,6 +217,7 @@ beforeEach(() => {
     repository.full.length = 0
     repository.cached = null
     repository.stored = []
+    repository.pera = []
     vi.mocked(getStaleOrMissingAssetIds).mockClear()
     vi.mocked(upsertAssets).mockClear()
     vi.mocked(upsertNodeAssets).mockClear()
@@ -1192,12 +1211,15 @@ describe('spam names', () => {
             } as PeraAsset,
         ]
         const urls = recordRequests()
-        const { full } = memoryPersistence(() => [])
+        const { node, full } = memoryPersistence(() => [])
 
         await adapter().syncAssets([ref(DAI)], SCOPE)
 
         expect(urls).toEqual([])
-        expect(full).toEqual([
+        // Only Pera's half: the chain half and its freshness stay as stored.
+        expect(full).toEqual([])
+        expect(node).toEqual([])
+        expect(repository.pera).toEqual([
             expect.objectContaining({
                 assetId: DAI,
                 peraMetadata: expect.objectContaining({

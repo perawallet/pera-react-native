@@ -16,6 +16,7 @@ import type {
     AccountHoldingSource,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { useAssetPreferencesStore } from '@perawallet/wallet-core-assets'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     registerEthereumChain,
@@ -31,6 +32,7 @@ const ETH_ADDRESS = `0x${'a'.repeat(40)}`
 const mocks = vi.hoisted(() => ({
     sources: [] as AccountHoldingSource[],
     calls: [] as { sources: unknown; options: unknown }[],
+    hideZeroBalance: false,
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
@@ -62,7 +64,13 @@ describe('useAutoHiddenHoldings', () => {
             { address: ETH_ADDRESS, scope: ETHEREUM },
         ]
         mocks.calls = []
+        mocks.hideZeroBalance = false
         useAssetListViewStore.getState().setSelectedChainId(null)
+        vi.mocked(useAssetPreferencesStore).mockImplementation(selector =>
+            selector({
+                hideZeroBalance: mocks.hideZeroBalance,
+            } as ReturnType<typeof useAssetPreferencesStore.getState>),
+        )
     })
 
     afterEach(() => {
@@ -96,5 +104,17 @@ describe('useAutoHiddenHoldings', () => {
         expect(mocks.calls.at(-1)?.sources).toEqual([
             { address: ETH_ADDRESS, scope: ETHEREUM },
         ])
+    })
+
+    it('leaves out zero balances when the asset list does', () => {
+        mocks.hideZeroBalance = true
+
+        renderHook(() => useAutoHiddenHoldings(account))
+
+        expect(mocks.calls.at(-1)?.options).toEqual(
+            expect.objectContaining({
+                filters: expect.objectContaining({ hideZeroBalance: true }),
+            }),
+        )
     })
 })
