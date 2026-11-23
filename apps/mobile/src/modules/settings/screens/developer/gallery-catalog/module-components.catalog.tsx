@@ -426,6 +426,8 @@ const mockSwapQuote: SwapQuote = {
         slippage: '0.5',
     },
     provider: 'tinyman',
+    providerDisplayName: null,
+    providerIconUrl: null,
     routeKind: 'single-chain',
     assetIn: mockSwapAssetAlgo,
     assetOut: mockSwapAssetUsdc,

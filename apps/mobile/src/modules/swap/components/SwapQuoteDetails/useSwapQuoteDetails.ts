@@ -19,6 +19,7 @@ import {
 import { formatSwapRate, type SwapQuote } from '@perawallet/wallet-core-swaps'
 import type { Maybe } from '@perawallet/wallet-core-shared'
 import { formatSwapFee, formatSwapSlippage } from '../../utils/formatSwapFee'
+import { swapProviderDisplayName } from '../../utils/swapProviderDisplayName'
 
 export type PriceImpactLevel = 'none' | 'low' | 'medium' | 'high'
 
@@ -75,7 +76,10 @@ export const useSwapQuoteDetails = (
             ),
             slippageDisplay: formatSwapSlippage(quote),
             peraFeeDisplay: formatSwapFee(quote, 'pera') ?? '-',
-            providerDisplay: quote.provider,
+            providerDisplay: swapProviderDisplayName(
+                quote.provider,
+                quote.providerDisplayName,
+            ),
         }),
         [quote, lowThreshold, highThreshold],
     )

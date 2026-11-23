@@ -51,6 +51,8 @@ export const makeSwapQuote = ({
         ...request,
     },
     provider: 'provider-x',
+    providerDisplayName: null,
+    providerIconUrl: null,
     routeKind: 'single-chain',
     assetIn: { ...asset('native', 'NAT'), ...assetIn },
     assetOut: { ...asset('31566704', 'USDC'), ...assetOut },

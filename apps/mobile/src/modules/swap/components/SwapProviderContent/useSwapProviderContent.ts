@@ -31,6 +31,7 @@ type UseSwapProviderContentParams = {
 
 type SwapProviderRow = {
     quote: SwapQuote
+    iconUrl: Nullable<string>
     displayName: string
     amountDisplay: string
     /** In the preferred currency; null until a rate resolves. */
@@ -89,7 +90,11 @@ export const useSwapProviderContent = ({
                     : null
                 return {
                     quote,
-                    displayName: swapProviderDisplayName(quote.provider),
+                    iconUrl: quote.providerIconUrl,
+                    displayName: swapProviderDisplayName(
+                        quote.provider,
+                        quote.providerDisplayName,
+                    ),
                     amountDisplay,
                     fiatValue,
                 }

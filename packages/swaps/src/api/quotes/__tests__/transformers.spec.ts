@@ -153,6 +153,28 @@ describe('transformSwapQuote', () => {
         ).toThrow(SwapQuoteMismatchError)
     })
 
+    test("reads the provider's display name and icon", () => {
+        const quote = transformSwapQuote(
+            {
+                ...routerOffer(),
+                provider_display_name: 'Hay Router',
+                provider_icon_url: 'https://cdn.test/haystack.png',
+            },
+            request,
+            swapAssetRefOf,
+        )
+
+        expect(quote.providerDisplayName).toBe('Hay Router')
+        expect(quote.providerIconUrl).toBe('https://cdn.test/haystack.png')
+    })
+
+    test('leaves the provider display null when the offer omits it', () => {
+        const quote = transformSwapQuote(routerOffer(), request, swapAssetRefOf)
+
+        expect(quote.providerDisplayName).toBeNull()
+        expect(quote.providerIconUrl).toBeNull()
+    })
+
     test('reads the deposit address the offer names', () => {
         const quote = transformSwapQuote(
             { ...routerOffer(), deposit_address: 'DEPOSIT' },

@@ -40,7 +40,11 @@ export const SwapProviderRow = ({
 
     const row = (
         <>
-            <SwapProviderDisplay provider={quote.provider} />
+            <SwapProviderDisplay
+                provider={quote.provider}
+                displayName={quote.providerDisplayName}
+                iconUrl={quote.providerIconUrl}
+            />
             <PWView style={styles.right}>
                 <PWText
                     variant='body'

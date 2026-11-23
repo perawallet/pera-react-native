@@ -78,6 +78,8 @@ export const transformSwapQuote = (
         quoteId: offer.quote_id,
         request,
         provider: offer.provider,
+        providerDisplayName: offer.provider_display_name ?? null,
+        providerIconUrl: offer.provider_icon_url ?? null,
         // From the request, not the offer: this decides which checks the router's own transactions face.
         routeKind: routeKindOf(request.sourceAsset, request.destinationAsset),
         assetIn,

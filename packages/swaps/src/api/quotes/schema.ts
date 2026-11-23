@@ -36,6 +36,9 @@ const swapOfferSchema = z.object({
     quote_id: z.string(),
     aggregator: z.string(),
     provider: z.string(),
+    // Null for providers outside the router's DEX catalog (XO, Meld partners); absent on older backends.
+    provider_display_name: z.string().nullish(),
+    provider_icon_url: z.string().nullish(),
     source_asset: swapAssetItemSchema,
     destination_asset: swapAssetItemSchema,
     source_amount: baseUnits,
