@@ -185,15 +185,18 @@ const isFlagged = (asset: PeraAsset): boolean =>
     asset.peraMetadata?.verificationTier ===
     PeraAssetVerificationTier.suspicious
 
-// A spam-named token needs both halves, so its tier is stored with it. With no
-// backend verdict on this path, a stored suspicious tier came from an earlier
-// name check, so a token that now passes has it cleared rather than kept.
+// A spam-named token needs both halves, so its tier is stored with it.
+// `hasBackendAnswered` is true only when the backend just said it has no
+// record: a stored suspicious tier then came from an earlier name check, so a
+// token that now passes has it cleared. Without an answer (no assets service)
+// the stored tier may be the backend's own verdict, and it stays.
 const persistOnChain = async (
     ctx: ChainContext,
     chain: EvmChain,
     assetIds: string[],
     scope: ChainScope,
     isSpam: SpamCheck,
+    hasBackendAnswered: boolean,
 ): Promise<void> => {
     const items = await flagSpam(
         await readOnChain(ctx, chain, assetIds, scope),
@@ -202,14 +205,16 @@ const persistOnChain = async (
     )
     const plain = items.filter(asset => !isFlagged(asset))
     const wasFlagged = new Set(
-        (
-            await getAssetsByIds({
-                assetIds: plain.map(asset => asset.assetId),
-                scope,
-            })
-        )
-            .filter(isFlagged)
-            .map(asset => asset.assetId),
+        hasBackendAnswered
+            ? (
+                  await getAssetsByIds({
+                      assetIds: plain.map(asset => asset.assetId),
+                      scope,
+                  })
+              )
+                  .filter(isFlagged)
+                  .map(asset => asset.assetId)
+            : [],
     )
     const full = items.flatMap(asset => {
         if (isFlagged(asset)) return [asset]
@@ -348,7 +353,7 @@ const syncTokens = async (
     if (stale.length === 0) return
 
     if (!hasServices(ctx, scope, ASSETS_SERVICE)) {
-        await persistOnChain(ctx, chain, stale, scope, isSpam)
+        await persistOnChain(ctx, chain, stale, scope, isSpam, false)
         return
     }
 
@@ -381,7 +386,7 @@ const syncTokens = async (
         scope,
     )
     if (unknown.length > 0) {
-        await persistOnChain(ctx, chain, unknown, scope, isSpam)
+        await persistOnChain(ctx, chain, unknown, scope, isSpam, true)
     }
     if (quarantined.length > 0) {
         await persistQuarantined(ctx, chain, quarantined, scope)
@@ -469,6 +474,8 @@ type TokenRead = {
     asset: PeraAsset
     /** Which halves a caller that caches may store. */
     cache: 'both' | 'node' | 'none'
+    /** False only when the backend answered with a blank item, or there is no assets service to ask; a failed request or an unreadable row is true. */
+    hasBackendRecord: boolean
 }
 
 // Pera's opinion (tier, quarantine) beside the chain's intrinsics; writes
@@ -490,16 +497,28 @@ const readToken = async (
             ? toAssetMetadata(tokenId, pera.value[0])
             : undefined
     const fromPera = item?.asset ?? null
+    // "No record" is what syncTokens treats as one: no assets service to ask,
+    // or a blank item. A failed request or a row this client can't read is
+    // no answer, so the look-alike rule must not run on it.
+    const hasNoRecord =
+        pera.status === 'fulfilled' &&
+        (pera.value.length === 0 ||
+            (!!item && !fromPera && !item.isQuarantined))
+    const hasBackendRecord = !hasNoRecord
     if (fromNode.status === 'rejected') {
         // A quarantined token has no backend record to fall back on.
         if (!fromPera) throw fromNode.reason
         // Unverified decimals: caching them would keep them for the TTL.
-        return { asset: fromPera, cache: 'none' }
+        return { asset: fromPera, cache: 'none', hasBackendRecord }
     }
     if (item?.isQuarantined) {
         // Both halves, as in syncAssets: a node row alone would read as
         // fresh and render without the tier.
-        return { asset: asSuspicious(fromNode.value), cache: 'both' }
+        return {
+            asset: asSuspicious(fromNode.value),
+            cache: 'both',
+            hasBackendRecord,
+        }
     }
     return {
         asset: fromPera
@@ -508,6 +527,7 @@ const readToken = async (
         // Without Pera's half the row reads as fresh for the TTL, so the
         // token's logo and tier would stay out of the store.
         cache: fromPera ? 'both' : 'node',
+        hasBackendRecord,
     }
 }
 
@@ -520,8 +540,9 @@ const readCheckedToken = async (
     isSpam: SpamCheck,
 ): Promise<TokenRead> => {
     const read = await readToken(ctx, chain, tokenId, scope)
-    if (!(await isSpam(read.asset, read.cache !== 'node'))) return read
+    if (!(await isSpam(read.asset, read.hasBackendRecord))) return read
     return {
+        ...read,
         asset: asSuspicious(read.asset),
         cache: read.cache === 'none' ? 'none' : 'both',
     }

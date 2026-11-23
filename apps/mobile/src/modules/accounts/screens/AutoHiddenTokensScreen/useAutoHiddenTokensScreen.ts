@@ -14,7 +14,6 @@ import { useCallback } from 'react'
 import {
     addressOn,
     assetFromHoldingLiteRow,
-    useHiddenTokensStore,
     useKeptTokensStore,
     useSelectedAccount,
     type AccountHoldingsLiteRow,
@@ -39,24 +38,19 @@ export const useAutoHiddenTokensScreen =
         const { holdings, isPending, showsNetwork } =
             useAutoHiddenHoldings(account)
         const setTokenKept = useKeptTokensStore(state => state.setTokenKept)
-        const setTokenHidden = useHiddenTokensStore(
-            state => state.setTokenHidden,
-        )
 
-        // Unhiding outranks an earlier hide too: the user asked to see it.
         const handleUnhide = useCallback(
             (row: AccountHoldingsLiteRow) => {
                 const address = account
                     ? addressOn(account, row.scope)
                     : undefined
                 if (address === undefined) return
-                const target = {
+                setTokenKept({
                     address,
                     scope: row.scope,
                     assetId: row.assetId,
-                }
-                setTokenKept({ ...target, isKept: true })
-                setTokenHidden({ ...target, isHidden: false })
+                    isKept: true,
+                })
                 const asset = assetFromHoldingLiteRow(row, row.scope.chainId)
                 showToast({
                     title: t('token_visibility.shown_toast_title', {
@@ -66,7 +60,7 @@ export const useAutoHiddenTokensScreen =
                     type: 'success',
                 })
             },
-            [account, setTokenKept, setTokenHidden, showToast, t],
+            [account, setTokenKept, showToast, t],
         )
 
         return { rows: holdings, isPending, showsNetwork, handleUnhide, t }

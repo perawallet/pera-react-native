@@ -45,6 +45,7 @@ export {
     useKeptTokensStore,
     keptAssetIdsOf,
     isAutoHiddenHolding,
+    unionTokenSets,
     hydrateAccountChainStates,
     recordAuthority,
     getAllAccounts,

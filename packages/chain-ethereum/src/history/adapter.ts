@@ -25,7 +25,7 @@ import { fetchHistoryPage } from './api/endpoints'
 import { exportStoredEvmHistoryCsv } from './csv-export'
 import { readEvmTransactionDetail } from './detail'
 import { evmHistoryChainData, storeEvmHistoryPage } from './history-cache'
-import { keepTokensTheAccountMoved } from './kept-tokens'
+import { keepTokensTheAccountSent } from './kept-tokens'
 import { readNftApprovals } from './nft-approvals'
 import { toEvmHistoryRecords } from './records'
 
@@ -85,7 +85,7 @@ export const getEvmTransactionHistory = async (
         { caip19AssetId, signal, isSupplementary },
     )
     try {
-        keepTokensTheAccountMoved(items, address, scope, chain)
+        keepTokensTheAccountSent(items, address, scope, chain)
     } catch (error) {
         logger.warn('evm history: keeping moved tokens failed', {
             error,

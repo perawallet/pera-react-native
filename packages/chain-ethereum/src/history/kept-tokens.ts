@@ -32,7 +32,7 @@ const idOf = (caip19: string, scope: ChainScope, chain: EvmChain): string[] => {
  * account: signing a scam's "claim" call delivers the spam it advertises. An
  * in-app swap or purchase keeps the token it delivers when it adds it.
  */
-export const keepTokensTheAccountMoved = (
+export const keepTokensTheAccountSent = (
     items: readonly EvmHistoryItem[],
     address: string,
     scope: ChainScope,
@@ -46,9 +46,7 @@ export const keepTokensTheAccountMoved = (
         )
         .flatMap(item =>
             item.balance_impacts.flatMap(({ asset_id, amount }) =>
-                new Decimal(amount).isNegative()
-                    ? idOf(asset_id, scope, chain)
-                    : [],
+                new Decimal(amount).lt(0) ? idOf(asset_id, scope, chain) : [],
             ),
         )
     if (assetIds.length === 0) return

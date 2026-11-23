@@ -14,9 +14,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import {
-    hiddenAssetIdsOf,
     keptAssetIdsOf,
-    useHiddenTokensStore,
     useKeptTokensStore,
     type AccountHoldingsLiteRow,
     type WalletAccount,
@@ -69,7 +67,6 @@ describe('useAutoHiddenTokensScreen', () => {
     beforeEach(() => {
         mocks.holdings = [row]
         mocks.showToast.mockClear()
-        useHiddenTokensStore.getState().resetState()
         useKeptTokensStore.getState().resetState()
     })
 
@@ -79,13 +76,7 @@ describe('useAutoHiddenTokensScreen', () => {
         expect(result.current.rows).toEqual([row])
     })
 
-    it('keeps an unhidden token listed for good, and clears a hide of it', () => {
-        useHiddenTokensStore.getState().setTokenHidden({
-            address: ETH_ADDRESS,
-            scope: ETHEREUM,
-            assetId: '0xspam',
-            isHidden: true,
-        })
+    it('keeps an unhidden token listed for good', () => {
         const { result } = renderHook(() => useAutoHiddenTokensScreen())
 
         act(() => result.current.handleUnhide(row))
@@ -97,13 +88,6 @@ describe('useAutoHiddenTokensScreen', () => {
                 ETHEREUM,
             ),
         ).toEqual(['0xspam'])
-        expect(
-            hiddenAssetIdsOf(
-                useHiddenTokensStore.getState().hiddenTokens,
-                ETH_ADDRESS,
-                ETHEREUM,
-            ),
-        ).toEqual([])
         expect(mocks.showToast).toHaveBeenCalledWith(
             expect.objectContaining({
                 type: 'success',

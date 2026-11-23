@@ -38,7 +38,7 @@ import { createEvmHistoryAdapter, getEvmTransactionHistory } from '../adapter'
 import { ETHEREUM, POLYGON } from '../../__tests__/evm-chains'
 import { fetchHistoryPage } from '../api/endpoints'
 import { storeEvmHistoryPage } from '../history-cache'
-import { keepTokensTheAccountMoved } from '../kept-tokens'
+import { keepTokensTheAccountSent } from '../kept-tokens'
 import { evmHistoryItem, evmNftTransferLeg } from '../api/msw-handlers'
 import {
     createHistoryPageBudget,
@@ -57,7 +57,7 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal =>
 )
 
 vi.mock('../kept-tokens', () => ({
-    keepTokensTheAccountMoved: vi.fn(),
+    keepTokensTheAccountSent: vi.fn(),
 }))
 
 vi.mock('../history-cache', async importOriginal => ({
@@ -648,12 +648,12 @@ describe('storing the pages it reads', () => {
         })
 
     it('keeps the tokens the account moved on every page it reads', async () => {
-        vi.mocked(keepTokensTheAccountMoved).mockClear()
+        vi.mocked(keepTokensTheAccountSent).mockClear()
         serve([[send]])
 
         await read(getAddress(USDC))
 
-        expect(keepTokensTheAccountMoved).toHaveBeenCalledWith(
+        expect(keepTokensTheAccountSent).toHaveBeenCalledWith(
             [expect.objectContaining({ hash: hash(1) })],
             ME,
             MAINNET,
@@ -662,7 +662,7 @@ describe('storing the pages it reads', () => {
     })
 
     it('still returns the page when keeping tokens throws', async () => {
-        vi.mocked(keepTokensTheAccountMoved).mockImplementationOnce(() => {
+        vi.mocked(keepTokensTheAccountSent).mockImplementationOnce(() => {
             throw new Error('store unavailable')
         })
         serve([[send]])

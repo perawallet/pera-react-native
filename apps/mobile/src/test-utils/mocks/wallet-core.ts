@@ -573,6 +573,9 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         replaceKeptTokens: (
             keptTokens: Record<string, Record<string, string[]>>,
         ) => void
+        mergeKeptTokens: (
+            keptTokens: Record<string, Record<string, string[]>>,
+        ) => void
         resetState: () => void
     }>(set => {
         const update = (
@@ -601,6 +604,24 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             keepTokens: ({ address, scope, assetIds }) =>
                 update(address, scope, assetIds, true),
             replaceKeptTokens: keptTokens => set({ keptTokens }),
+            mergeKeptTokens: incoming =>
+                set(state => {
+                    const keptTokens = { ...state.keptTokens }
+                    for (const [key, byAddress] of Object.entries(incoming)) {
+                        for (const [address, ids] of Object.entries(
+                            byAddress,
+                        )) {
+                            const held = keptTokens[key]?.[address] ?? []
+                            keptTokens[key] = {
+                                ...keptTokens[key],
+                                [address]: [
+                                    ...new Set([...held, ...ids]),
+                                ].sort(),
+                            }
+                        }
+                    }
+                    return { keptTokens }
+                }),
             resetState: () => set({ keptTokens: {} }),
         }
     })

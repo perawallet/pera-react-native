@@ -433,8 +433,6 @@ export async function getAccountHoldings({
     }
 
     const source = [{ address: accountAddress, scope }]
-    // Strict here: this read feeds totals and the balance chart, which a kept
-    // suspicious token never counts toward. The list reads let it through.
     if (hideSuspicious) {
         joinConditions.push(isNotSuspiciousSql())
     }

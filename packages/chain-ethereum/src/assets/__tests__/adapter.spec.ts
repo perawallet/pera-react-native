@@ -1064,10 +1064,13 @@ describe('spam names', () => {
                 },
             } as PeraAsset,
         ]
-        server.use(...rpc({ [DAI]: daiOnChain }))
+        server.use(
+            ...rpc({ [DAI]: daiOnChain }),
+            ...peraEvmAssetHandlers({ baseUrl: TEST_PERA_URL, assets: {} }),
+        )
         const { full } = memoryPersistence()
 
-        await adapter([]).syncAssets([ref(DAI)], SCOPE)
+        await adapter().syncAssets([ref(DAI)], SCOPE)
 
         expect(full).toEqual([
             expect.objectContaining({
@@ -1078,6 +1081,98 @@ describe('spam names', () => {
                 }),
             }),
         ])
+    })
+
+    it('keeps a stored suspicious tier when the backend is out of reach, as it may be its own verdict', async () => {
+        repository.stored = [
+            {
+                assetId: DAI,
+                name: 'Dai',
+                unitName: 'DAI',
+                decimals: 18,
+                creator: { address: '' },
+                totalSupply: new Decimal(0),
+                peraMetadata: {
+                    isDeleted: false,
+                    verificationTier: 'suspicious',
+                    type: 'standard_asset',
+                },
+            } as PeraAsset,
+        ]
+        server.use(...rpc({ [DAI]: daiOnChain }))
+        const { node, full } = memoryPersistence()
+
+        await adapter([]).syncAssets([ref(DAI)], SCOPE)
+
+        expect(full).toEqual([])
+        expect(node.map(asset => asset.assetId)).toEqual([DAI])
+    })
+
+    it('judges a single token read by its symbol only when the backend has no record', async () => {
+        server.use(
+            ...rpc({
+                [DAI]: { ...daiOnChain, name: 'USD Coin', symbol: 'USDC' },
+            }),
+            ...peraEvmAssetHandlers({ baseUrl: TEST_PERA_URL, assets: {} }),
+        )
+        memoryPersistence()
+
+        const asset = await adapter().getAssetMetadata(ref(DAI), SCOPE)
+
+        expect(asset.peraMetadata?.verificationTier).toBe('suspicious')
+    })
+
+    it('leaves a single token the backend knows alone for sharing a listed symbol', async () => {
+        server.use(
+            ...rpc({
+                [DAI]: { ...daiOnChain, name: 'USD Coin', symbol: 'USDC' },
+            }),
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                assets: { [DAI_CAIP19]: daiNamed('USD Coin (Arb1)', 'USDC') },
+            }),
+        )
+        memoryPersistence()
+
+        const asset = await adapter().getAssetMetadata(ref(DAI), SCOPE)
+
+        expect(asset.peraMetadata?.verificationTier).not.toBe('suspicious')
+    })
+
+    it('leaves a single token alone for its symbol when the backend row cannot be read', async () => {
+        server.use(
+            ...rpc({
+                [DAI]: { ...daiOnChain, name: 'USD Coin', symbol: 'USDC' },
+            }),
+            http.post(`${TEST_PERA_URL}${ASSETS_PATH}`, () =>
+                HttpResponse.json({
+                    results: [{ asset_id: DAI_CAIP19, type: 'erc20' }],
+                }),
+            ),
+        )
+        const { full } = memoryPersistence()
+
+        const asset = await adapter().getAssetMetadata(ref(DAI), SCOPE)
+
+        expect(asset.peraMetadata?.verificationTier).not.toBe('suspicious')
+        expect(full).toEqual([])
+    })
+
+    it('leaves a single token alone for its symbol when the backend request fails', async () => {
+        server.use(
+            ...rpc({
+                [DAI]: { ...daiOnChain, name: 'USD Coin', symbol: 'USDC' },
+            }),
+            http.post(`${TEST_PERA_URL}${ASSETS_PATH}`, () =>
+                HttpResponse.json({}, { status: 503 }),
+            ),
+        )
+        const { full } = memoryPersistence()
+
+        const asset = await adapter().getAssetMetadata(ref(DAI), SCOPE)
+
+        expect(asset.peraMetadata?.verificationTier).not.toBe('suspicious')
+        expect(full).toEqual([])
     })
 
     it('re-flags a fresh cached unverified token without a network read', async () => {

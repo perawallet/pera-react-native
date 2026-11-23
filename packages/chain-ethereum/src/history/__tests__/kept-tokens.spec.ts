@@ -20,7 +20,7 @@ import {
 import { ETHEREUM } from '../../__tests__/evm-chains'
 import { evmHistoryItem } from '../api/msw-handlers'
 import { evmHistoryItemSchema } from '../api/schema'
-import { keepTokensTheAccountMoved } from '../kept-tokens'
+import { keepTokensTheAccountSent } from '../kept-tokens'
 
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const ME = '0x00000000000000000000000000000000000000aa'
@@ -42,9 +42,9 @@ beforeEach(() => {
     useKeptTokensStore.getState().resetState()
 })
 
-describe('keepTokensTheAccountMoved', () => {
+describe('keepTokensTheAccountSent', () => {
     it('keeps the tokens of a transaction the account signed', () => {
-        keepTokensTheAccountMoved(
+        keepTokensTheAccountSent(
             [
                 item({
                     from: ME.toUpperCase().replace('0X', '0x'),
@@ -64,7 +64,7 @@ describe('keepTokensTheAccountMoved', () => {
     })
 
     it('leaves out a token the account only received, as a signed scam claim delivers', () => {
-        keepTokensTheAccountMoved(
+        keepTokensTheAccountSent(
             [
                 item({
                     from: ME,
@@ -81,7 +81,7 @@ describe('keepTokensTheAccountMoved', () => {
     })
 
     it('keeps nothing from a transfer someone else sent', () => {
-        keepTokensTheAccountMoved(
+        keepTokensTheAccountSent(
             [
                 item({
                     from: PEER,
@@ -98,7 +98,7 @@ describe('keepTokensTheAccountMoved', () => {
     })
 
     it('keeps nothing from a failed transaction', () => {
-        keepTokensTheAccountMoved(
+        keepTokensTheAccountSent(
             [
                 item({
                     from: ME,
