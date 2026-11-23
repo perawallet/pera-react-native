@@ -524,6 +524,7 @@
             "empty_title": "NFTs",
             "empty_body": "Boas-vindas à sua galeria de NFTs! Você ainda não tem nenhum NFT. Todos os NFTs disponíveis na sua wallet aparecerão aqui.",
             "empty_body_multichain": "Boas-vindas à sua galeria de NFTs!\nVocê ainda não tem nenhum NFT. Os NFTs que você receber em redes como a Ethereum aparecem aqui automaticamente. NFTs da Algorand precisam de opt-in primeiro.",
+            "empty_body_unsupported": "NFTs na rede {{chains}} ainda não são exibidos na Pera.",
             "empty_optin": "Adicionar NFT",
             "empty_optin_algorand": "Adicionar NFT da Algorand",
             "nomatch_title": "Nenhum NFT encontrado",

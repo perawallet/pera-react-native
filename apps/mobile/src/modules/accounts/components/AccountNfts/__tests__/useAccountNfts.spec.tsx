@@ -764,6 +764,15 @@ describe('useAccountNfts', () => {
 
             expect(result.current.canOptIn).toBe(false)
         })
+
+        it('returns false, and names the networks, when none of them shows NFTs', () => {
+            mockUseCanSignWith.mockReturnValue(true)
+            setCapabilityOverrides({ nft: false })
+            const { result } = renderHook(() => useAccountNfts())
+
+            expect(result.current.canOptIn).toBe(false)
+            expect(result.current.unsupportedNetworkNames).toBe('Algorand')
+        })
     })
 
     describe('networks', () => {

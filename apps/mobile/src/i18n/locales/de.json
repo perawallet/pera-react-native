@@ -524,6 +524,7 @@
             "empty_title": "NFTs",
             "empty_body": "Willkommen in deiner NFT-Galerie! Du hast noch keine NFTs. Alle NFTs in deinem Wallet werden hier angezeigt.",
             "empty_body_multichain": "Willkommen in deiner NFT-Galerie!\nDu hast noch keine NFTs. NFTs, die du in Netzwerken wie Ethereum erhältst, erscheinen hier automatisch. Für Algorand-NFTs musst du dich zuerst anmelden.",
+            "empty_body_unsupported": "NFTs auf {{chains}} werden in Pera noch nicht angezeigt.",
             "empty_optin": "Für NFT anmelden",
             "empty_optin_algorand": "Für Algorand-NFT anmelden",
             "nomatch_title": "Keine passenden NFTs",

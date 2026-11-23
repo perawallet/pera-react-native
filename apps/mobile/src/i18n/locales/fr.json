@@ -524,6 +524,7 @@
             "empty_title": "NFT",
             "empty_body": "Bienvenue dans votre galerie NFT ! Vous n’avez pas encore de NFT. Tous les NFT disponibles dans votre wallet apparaîtront ici.",
             "empty_body_multichain": "Bienvenue dans votre galerie NFT !\nVous n’avez pas encore de NFT. Les NFT que vous recevez sur des réseaux comme Ethereum apparaissent ici automatiquement. Les NFT Algorand nécessitent d’abord un opt-in.",
+            "empty_body_unsupported": "Les NFT sur {{chains}} ne sont pas encore affichés dans Pera.",
             "empty_optin": "Opt-in à un NFT",
             "empty_optin_algorand": "Opt-in à un NFT Algorand",
             "nomatch_title": "Aucun NFT correspondant",

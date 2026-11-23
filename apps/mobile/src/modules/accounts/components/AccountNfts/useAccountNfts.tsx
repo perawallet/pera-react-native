@@ -25,6 +25,7 @@ import {
     type AccountCollectibleLiteRow,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import {
     useCollectiblePreferencesStore,
     type CollectibleSortMode,
@@ -33,9 +34,11 @@ import {
 import {
     useDebouncedValue,
     type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import { SEARCH_DEBOUNCE_TIME_SHORT } from '@constants/ui'
 import type { FilterOption } from '@components/FilterSelection'
+import { useCapability } from '@hooks/useCapability'
 import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSyncRefreshAll } from '@hooks/useSyncRefresh'
@@ -57,6 +60,8 @@ type UseAccountNftsResult = {
     canOptIn: boolean
     /** On more than one NFT network, where the copy has to say opt-in is Algorand-only. */
     isMultiChain: boolean
+    /** The account's networks, named, when none of them shows NFTs. */
+    unsupportedNetworkNames: Optional<string>
     /** No NFTs on any network: an active network chip, search or suspicious filter doesn't count. */
     showEmptyState: boolean
     /** The last refresh failed and the gallery is showing stored NFTs. */
@@ -100,8 +105,18 @@ export const useAccountNfts = (): UseAccountNftsResult => {
     const sources = useNftHoldingSources(account)
     const address = account ? addressOn(account, scope) : undefined
     const canSign = useCanSignWith(account, scope.chainId)
-    const canOptIn = canSign && manageScope !== null
+    // Opt-in only where the gallery would show what it adds.
+    const hasNftsOnManageChain = useCapability({
+        chain: { chainId: scope.chainId, capability: 'nft' },
+    })
+    const canOptIn = canSign && manageScope !== null && hasNftsOnManageChain
     const isMultiChain = sources.length > 1
+    const unsupportedNetworkNames =
+        account && sources.length === 0
+            ? (Object.keys(account.chains) as ChainId[])
+                  .map(chainId => chainDisplayNameOf(chainId) ?? chainId)
+                  .join(', ')
+            : undefined
     // Shared with Overview and History, so a chip picked there carries here;
     // a chain the account holds no NFTs on reads as All.
     const selectedChainId =
@@ -267,6 +282,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         hasAccount: account !== null,
         canOptIn,
         isMultiChain,
+        unsupportedNetworkNames,
         showEmptyState:
             !isPending &&
             rows.length === 0 &&
