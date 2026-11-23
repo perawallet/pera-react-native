@@ -164,6 +164,7 @@ type ProposalRefusal =
 const screenRequiredNamespaces = (
     chains: readonly WalletConnectV2Chain[],
     namespaces: ProposalNamespaces,
+    getNetworkId: (chainId: ChainId) => NetworkId,
 ): Nullable<ProposalRefusal> => {
     if (
         !Object.keys(namespaces).every(key =>
@@ -176,8 +177,8 @@ const screenRequiredNamespaces = (
     // each know only their own.
     if (
         !chains.every(({ support }) =>
-            requestedChains(support, namespaces).every(
-                chainId => chainServing(chains, chainId) !== null,
+            requestedChains(support, namespaces).every(chainId =>
+                isSelectedNetwork(chains, chainId, getNetworkId),
             ),
         )
     ) {
@@ -243,20 +244,24 @@ export type CreateWalletConnectV2HandlerOptions = {
 const dedupe = (values: string[]): string[] => [...new Set(values)]
 
 /**
- * The networks a proposal asks for on one chain. Network ids are chain-local,
- * so each chain's are resolved through its own adapter and never compared
- * across chains.
+ * The networks a proposal asks for on one chain, narrowed to the chain's
+ * selected one. Network ids are chain-local, so each chain's are resolved
+ * through its own adapter and never compared across chains.
  */
 const requestedNetworks = (
-    support: WalletConnectSupport,
+    { chainId, support }: WalletConnectV2Chain,
     proposal: WalletKitSessionProposal['params'],
+    getNetworkId: (chainId: ChainId) => NetworkId,
 ): NetworkId[] =>
     dedupe([
         ...requestedChains(support, proposal.requiredNamespaces),
         ...requestedChains(support, proposal.optionalNamespaces),
-    ]).flatMap(chainId => {
-        const network = support.networkForCaip2ChainId(chainId)
-        return network === null ? [] : [network]
+    ]).flatMap(caip2 => {
+        const network = support.networkForCaip2ChainId(caip2)
+        // Only the selected network is ever served, and the connect sheet
+        // badges the chain by what is listed here: granting the rest would
+        // hand the dApp networks (a mainnet's testnet) the user never saw.
+        return network === getNetworkId(chainId) ? [network] : []
     })
 
 type SupportedNamespace = {
@@ -296,6 +301,19 @@ const chainServing = (
 const v2ChainForCaip2 = (caip2: string): Nullable<WalletConnectV2Chain> =>
     chainServing(v2Chains(), caip2)
 
+const isSelectedNetwork = (
+    chains: readonly WalletConnectV2Chain[],
+    caip2: string,
+    getNetworkId: (chainId: ChainId) => NetworkId,
+): boolean => {
+    const chain = chainServing(chains, caip2)
+    return (
+        chain !== null &&
+        chain.support.networkForCaip2ChainId(caip2) ===
+            getNetworkId(chain.chainId)
+    )
+}
+
 // No codec means no addresses: an address nobody can validate must not be
 // offered to, or signed for, a chain.
 const addressesOnChain = (
@@ -322,16 +340,20 @@ const supportedNamespacesFor = (
     chains: readonly WalletConnectV2Chain[],
     proposal: WalletKitSessionProposal['params'],
     addresses: readonly string[],
+    getNetworkId: (chainId: ChainId) => NetworkId,
     canSignWith?: (chainId: ChainId, address: string) => boolean,
 ): Record<string, SupportedNamespace> => {
     const namespaces = new Map<string, SupportedNamespace>()
-    for (const { chainId, support, v2 } of chains) {
-        const caip2Ids = requestedNetworks(support, proposal).flatMap(
-            network => {
-                const caip2 = support.caip2ChainIdFor(network)
-                return caip2 === null ? [] : [caip2]
-            },
-        )
+    for (const chain of chains) {
+        const { chainId, support, v2 } = chain
+        const caip2Ids = requestedNetworks(
+            chain,
+            proposal,
+            getNetworkId,
+        ).flatMap(network => {
+            const caip2 = support.caip2ChainIdFor(network)
+            return caip2 === null ? [] : [caip2]
+        })
         const own = addressesOnChain(chainId, addresses).filter(
             address => !canSignWith || canSignWith(chainId, address),
         )
@@ -1158,6 +1180,7 @@ export const createWalletConnectV2Handler = (
         const refusal = screenRequiredNamespaces(
             chains,
             input.proposal.requiredNamespaces,
+            getNetworkId,
         )
         if (refusal) {
             throw new WalletConnectError(
@@ -1169,6 +1192,7 @@ export const createWalletConnectV2Handler = (
             chains,
             input.proposal,
             input.accounts,
+            getNetworkId,
             canSignWith,
         )
         // Typed and terminal: the library's own refusal is a plain Error the
@@ -1359,6 +1383,7 @@ export const createWalletConnectV2Handler = (
         const refusal = screenRequiredNamespaces(
             chains,
             params.requiredNamespaces,
+            getNetworkId,
         )
         if (refusal) {
             await deliverRejection(id, refusal, undefined, pairingId)
@@ -1375,7 +1400,7 @@ export const createWalletConnectV2Handler = (
         }
 
         const offered = chains.flatMap(chain => {
-            const chainNetworks = requestedNetworks(chain.support, params)
+            const chainNetworks = requestedNetworks(chain, params, getNetworkId)
             return chainNetworks.length === 0
                 ? []
                 : [{ chain, networks: chainNetworks }]
@@ -1751,10 +1776,12 @@ export const createWalletConnectV2Handler = (
                 )
                 const { support } = inNamespace[0]
                 const held = session.namespaces[namespace]?.chains ?? []
+                // The dApp's first chain may be one the session was not
+                // granted, an unselected network, and it still starts there.
                 const named = dedupe([
                     ...requestedChains(support, proposal.requiredNamespaces),
                     ...requestedChains(support, proposal.optionalNamespaces),
-                ]).filter(caip2 => held.includes(caip2))
+                ]).filter(caip2 => chainServing(inNamespace, caip2) !== null)
                 const selectedOn = (caip2: string) => {
                     const chain = chainServing(inNamespace, caip2)
                     if (!chain) return null
@@ -1764,7 +1791,7 @@ export const createWalletConnectV2Handler = (
                         : null
                 }
                 if (named.length === 0 || selectedOn(named[0])) return []
-                for (const caip2 of named) {
+                for (const caip2 of named.filter(id => held.includes(id))) {
                     const target = selectedOn(caip2)
                     if (target) return [target]
                 }

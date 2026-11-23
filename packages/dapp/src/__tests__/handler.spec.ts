@@ -896,16 +896,22 @@ describe('DappConnectionHandler', () => {
     })
 
     describe('matchesChainScope', () => {
-        it('matches every network of its own chain and no other chain', () => {
+        it('matches only the selected network of its own chain', () => {
             const { handler } = setup()
             const connection = connected()
 
             expect(
                 handler.matchesChainScope(connection, {
                     chainId: 'algorand',
-                    networkId: 'testnet',
+                    networkId: 'mainnet',
                 }),
             ).toBe(true)
+            expect(
+                handler.matchesChainScope(connection, {
+                    chainId: 'algorand',
+                    networkId: 'testnet',
+                }),
+            ).toBe(false)
             expect(
                 handler.matchesChainScope(connection, {
                     chainId: 'ethereum',

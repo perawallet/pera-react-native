@@ -2466,6 +2466,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
 
         describe('network switching and session events', () => {
             const ETH_SEPOLIA = 'eip155:11155111'
+            const BASE_SEPOLIA = 'eip155:84532'
             const EVENTS = ['chainChanged', 'accountsChanged']
             const ALGORAND_TESTNET_GENESIS_HASH =
                 'SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI='
@@ -2493,10 +2494,16 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     walletKit.emit('session_request', makeRequest(request))
                 })
 
-            const settleEthereum = async (chains = [ETH_MAINNET]) => {
+            const settleEthereum = async (
+                chains = [ETH_MAINNET],
+                namespaceKind:
+                    | 'requiredNamespaces'
+                    | 'optionalNamespaces' = 'requiredNamespaces',
+            ) => {
                 await mountProvider()
                 const walletKit = await propose({
-                    requiredNamespaces: {
+                    requiredNamespaces: {},
+                    [namespaceKind]: {
                         eip155: {
                             chains,
                             methods: [
@@ -2583,7 +2590,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                                 events: [],
                             },
                             eip155: {
-                                chains: [ETH_MAINNET],
+                                chains: [BASE_SEPOLIA],
                                 methods: [
                                     'wallet_switchEthereumChain',
                                     'eth_chainId',
@@ -2622,7 +2629,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                         id: 22,
                         method: 'wallet_switchEthereumChain',
                         params: [{ chainId: '0xaa36a7' }],
-                        chainId: ETH_MAINNET,
+                        chainId: BASE_SEPOLIA,
                     })
                     await waitFor(() => {
                         expect(
@@ -2768,29 +2775,22 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                         ([call]) => call,
                     )
 
-                it('Given a session approved for both Ethereum networks, when the wallet leaves live mode, then it hears chainChanged and an Algorand-only one hears nothing', async () => {
-                    const walletKit = await settleEthereum([
-                        ETH_MAINNET,
-                        ETH_SEPOLIA,
-                    ])
+                it('Given a dApp naming both Ethereum networks in live mode, when it connects, then the session holds mainnet only and leaving live mode sends it nothing', async () => {
+                    const walletKit = await settleEthereum(
+                        [ETH_MAINNET, ETH_SEPOLIA],
+                        'optionalNamespaces',
+                    )
                     await openAlgorandOnlySession(walletKit)
 
-                    act(() => {
+                    expect(approvedNamespaces(walletKit).eip155.chains).toEqual(
+                        [ETH_MAINNET],
+                    )
+
+                    await act(async () => {
                         useNetworkStore.getState().setMode('developer')
                     })
 
-                    await waitFor(() => {
-                        expect(emitted(walletKit)).toEqual([
-                            {
-                                topic: V2_SESSION_TOPIC,
-                                event: {
-                                    name: 'chainChanged',
-                                    data: '0xaa36a7',
-                                },
-                                chainId: ETH_SEPOLIA,
-                            },
-                        ])
-                    })
+                    expect(emitted(walletKit)).toEqual([])
                     expect(walletKit.updateSession).not.toHaveBeenCalled()
                 })
 
@@ -2798,11 +2798,14 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     act(() => {
                         useNetworkStore.getState().setMode('developer')
                     })
-                    const walletKit = await settleEthereum([
-                        ETH_MAINNET,
-                        ETH_SEPOLIA,
-                    ])
+                    const walletKit = await settleEthereum(
+                        [ETH_MAINNET, ETH_SEPOLIA],
+                        'optionalNamespaces',
+                    )
 
+                    expect(approvedNamespaces(walletKit).eip155.chains).toEqual(
+                        [ETH_SEPOLIA],
+                    )
                     await waitFor(() => {
                         expect(emitted(walletKit)).toEqual([
                             {

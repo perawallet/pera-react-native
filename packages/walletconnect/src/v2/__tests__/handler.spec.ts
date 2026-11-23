@@ -1469,7 +1469,7 @@ describe('session proposals', () => {
         await registry.teardown()
     })
 
-    it('maps the optional namespaces back to networks alongside the required ones', async () => {
+    it('maps the optional namespaces back to networks, keeping only the selected one', async () => {
         const { requireProposal, registry } = await openProposal({
             proposal: makeProposal({
                 optionalNamespaces: {
@@ -1484,7 +1484,7 @@ describe('session proposals', () => {
 
         const proposal = requireProposal()
 
-        expect(proposal.requested.networks).toEqual(['mainnet', 'testnet'])
+        expect(proposal.requested.networks).toEqual(['mainnet'])
         // `eth_sign` is not a method this wallet implements.
         expect(proposal.requested.methods).toEqual([
             'algo_signTxn',
@@ -1512,6 +1512,27 @@ describe('session proposals', () => {
             reason: expect.objectContaining({ code: expect.any(Number) }),
         })
         expect(errors.at(-1)?.scope).toEqual({ pairingId: PAIRING_TOPIC })
+        await registry.teardown()
+    })
+
+    it('rejects a proposal requiring a network that is not the selected one, and never surfaces it', async () => {
+        const { proposals, walletKit, registry } = await openProposal({
+            proposal: makeProposal({
+                requiredNamespaces: {
+                    algorand: {
+                        chains: [MAINNET_CHAIN_ID, TESTNET_CHAIN_ID],
+                        methods: ['algo_signTxn'],
+                        events: [],
+                    },
+                },
+            }),
+        })
+
+        expect(proposals).toEqual([])
+        expect(walletKit.rejectSession).toHaveBeenCalledWith({
+            id: PROPOSAL_ID,
+            reason: expect.objectContaining({ code: expect.any(Number) }),
+        })
         await registry.teardown()
     })
 
@@ -1730,10 +1751,11 @@ describe('approving a proposal', () => {
         await registry.teardown()
     })
 
-    it('approves every selected address on every approved chain', async () => {
+    it('approves every selected address on the selected network only', async () => {
         const { walletKit, requireProposal, registry } = await openProposal({
             proposal: makeProposal({
-                requiredNamespaces: {
+                requiredNamespaces: {},
+                optionalNamespaces: {
                     algorand: {
                         chains: [MAINNET_CHAIN_ID, TESTNET_CHAIN_ID],
                         methods: ['algo_signTxn', 'algo_signData'],
@@ -1749,14 +1771,12 @@ describe('approving a proposal', () => {
             id: PROPOSAL_ID,
             namespaces: {
                 algorand: {
-                    chains: [MAINNET_CHAIN_ID, TESTNET_CHAIN_ID],
+                    chains: [MAINNET_CHAIN_ID],
                     methods: ['algo_signTxn', 'algo_signData'],
                     events: [],
                     accounts: [
                         `${MAINNET_CHAIN_ID}:${ADDRESS}`,
                         `${MAINNET_CHAIN_ID}:${OTHER_ADDRESS}`,
-                        `${TESTNET_CHAIN_ID}:${ADDRESS}`,
-                        `${TESTNET_CHAIN_ID}:${OTHER_ADDRESS}`,
                     ],
                 },
             },

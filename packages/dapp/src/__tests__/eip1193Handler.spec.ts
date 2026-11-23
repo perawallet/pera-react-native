@@ -2609,6 +2609,24 @@ describe('createEip1193ConnectionHandler', () => {
             ])
         })
 
+        it('matches only the selected network of the site’s chain', () => {
+            const { handler, networks } = setup()
+            const base = connectedOn('base')
+            const sepolia = { chainId: 'base', networkId: 'sepolia' } as const
+
+            expect(handler.matchesChainScope(base, sepolia)).toBe(false)
+
+            networks.base = 'sepolia'
+
+            expect(handler.matchesChainScope(base, sepolia)).toBe(true)
+            expect(
+                handler.matchesChainScope(base, {
+                    chainId: 'base',
+                    networkId: 'mainnet',
+                }),
+            ).toBe(false)
+        })
+
         it('restores only its own records', async () => {
             const algorand: Connection = {
                 ...connectedOn('ethereum'),

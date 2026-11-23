@@ -533,6 +533,25 @@ describe('telling a new session the selected network', () => {
         return opened
     }
 
+    it('grants Ethereum and Base mainnet without the Sepolia networks the dApp also named', async () => {
+        const { walletKit, proposals } = await settle([
+            ETHEREUM_MAINNET,
+            BASE_MAINNET,
+            ETHEREUM_SEPOLIA,
+            BASE_SEPOLIA,
+        ])
+
+        expect(proposals[0].requested.networks).not.toContain('sepolia')
+        expect(approvedEip155(walletKit).chains).toEqual([
+            ETHEREUM_MAINNET,
+            BASE_MAINNET,
+        ])
+        expect(approvedEip155(walletKit).accounts).toEqual([
+            `${ETHEREUM_MAINNET}:${ETH}`,
+            `${BASE_MAINNET}:${ETH}`,
+        ])
+    })
+
     it('sends nothing while the first chain the dApp named is a selected network', async () => {
         const { walletKit } = await settle([
             ETHEREUM_MAINNET,
