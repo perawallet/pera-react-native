@@ -223,14 +223,10 @@ describe('shortenUri', () => {
 
     it('keeps the scheme and host of a long URL and elides its path', () => {
         const uri = `https://a-very-long-subdomain.opensea.io/${'p'.repeat(60)}/end-tail`
-        const short = shortenUri(uri)
 
-        expect(
-            short.startsWith('https://a-very-long-subdomain.opensea.io'),
-        ).toBe(true)
-        expect(short).toContain('…')
-        expect(short.endsWith('end-tail')).toBe(true)
-        expect(short.length).toBeLessThan(uri.length)
+        expect(shortenUri(uri)).toBe(
+            'https://a-very-long-subdomain.opensea.io…end-tail',
+        )
     })
 
     it('elides the payload of a long URN', () => {
