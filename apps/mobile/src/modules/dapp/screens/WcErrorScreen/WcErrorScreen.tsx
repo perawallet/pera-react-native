@@ -26,7 +26,11 @@ export const WcErrorScreen = (): React.JSX.Element => {
     }
 
     return (
-        <PWScreen scroll='never'>
+        // ConfirmActionLayout already ends xl below its button.
+        <PWScreen
+            scroll='never'
+            bottomGap='none'
+        >
             <WalletConnectErrorContent
                 error={error}
                 onConfirm={handleAcknowledge}
