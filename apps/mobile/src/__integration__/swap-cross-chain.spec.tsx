@@ -392,7 +392,10 @@ describe('Flow: Cross-chain swap (Algorand into an own Ethereum address)', () =>
         const quote = await quoteFor(api, sender, sender)
         const outcome = await api.execute(quote)
 
-        expect(outcome.kind).toBe('error')
+        expect(outcome).toMatchObject({
+            kind: 'error',
+            message: 'swap.execution.quote_mismatch_body',
+        })
         expect(algodBodies).toHaveLength(0)
         expect(useSwapTrackingStore.getState().orders).toEqual({})
     })
@@ -410,7 +413,10 @@ describe('Flow: Cross-chain swap (Algorand into an own Ethereum address)', () =>
         const quote = await quoteFor(api, sender)
         const outcome = await api.execute(quote)
 
-        expect(outcome.kind).toBe('error')
+        expect(outcome).toMatchObject({
+            kind: 'error',
+            message: 'swap.execution.quote_mismatch_body',
+        })
         expect(algodBodies).toHaveLength(0)
         expect(useSwapTrackingStore.getState().orders).toEqual({})
     })

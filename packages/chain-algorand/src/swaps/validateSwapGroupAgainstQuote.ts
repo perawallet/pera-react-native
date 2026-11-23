@@ -55,12 +55,9 @@ const receiverOf = (tx: PeraDisplayableTransaction): Optional<string> => {
 /**
  * The rules a cross-chain source leg adds: pay/axfer only, the summed fee
  * within the router's cap, and every non-zero transfer to one receiver that is
- * neither the swapper nor the zero address. When the quote names a deposit
- * address that receiver must be exactly it. A route that builds its deposit at
- * order time names none in the quote, so the receiver is the router's and the
- * request bound in {@link validateSwapGroupAgainstQuote} caps what can leave.
- * A Pera fee sent as a transfer of its own fails here: a fee has to be folded
- * into the deposit.
+ * neither the swapper nor the zero address, exactly the deposit address when
+ * the quote names one. A quote that names none leaves the request bound in
+ * {@link validateSwapGroupAgainstQuote} to cap what can leave.
  */
 const validateCrossChainSourceLeg = (
     signableTransactions: PeraDisplayableTransaction[],
@@ -78,7 +75,7 @@ const validateCrossChainSourceLeg = (
         fees += toBig(tx.fee)
         const receiver = receiverOf(tx)
         if (receiver === undefined) continue
-        if (depositAddress && receiver !== depositAddress) {
+        if (depositAddress !== null && receiver !== depositAddress) {
             throw new SwapQuoteMismatchError(
                 'Cross-chain swap leg pays an address other than the deposit address',
             )

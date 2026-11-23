@@ -395,6 +395,24 @@ describe('validateSwapGroupAgainstQuote', () => {
             ).toThrow(SwapQuoteMismatchError)
         })
 
+        it('rejects a deposit address that is the swapper', () => {
+            expect(() =>
+                validateSwapGroupAgainstQuote(
+                    [axfer({ receiver: SWAPPER })],
+                    crossChain(SWAPPER),
+                ),
+            ).toThrow(SwapQuoteMismatchError)
+        })
+
+        it('rejects an empty deposit address', () => {
+            expect(() =>
+                validateSwapGroupAgainstQuote(
+                    [axfer({ receiver: 'ATTACKER' })],
+                    crossChain(''),
+                ),
+            ).toThrow(SwapQuoteMismatchError)
+        })
+
         it('rejects a second receiver beside the deposit address', () => {
             expect(() =>
                 validateSwapGroupAgainstQuote(
@@ -475,12 +493,12 @@ describe('validateSwapGroupAgainstQuote', () => {
         })
 
         describe('when the router names no deposit address', () => {
-            const XO_PAY_IN = 'XO_PAY_IN'
+            const PAY_IN = 'ROUTER_PAY_IN'
 
             it('accepts a single ALGO payment to one receiver within the request', () => {
                 expect(() =>
                     validateSwapGroupAgainstQuote(
-                        [payment({ receiver: XO_PAY_IN, amount: 1_000_000n })],
+                        [payment({ receiver: PAY_IN, amount: 1_000_000n })],
                         crossChain(null, {
                             sourceAssetId: '0',
                             sourceAmount: 1_000_000,
@@ -492,7 +510,7 @@ describe('validateSwapGroupAgainstQuote', () => {
             it('accepts a single transfer of the input ASA to one receiver', () => {
                 expect(() =>
                     validateSwapGroupAgainstQuote(
-                        [axfer({ receiver: XO_PAY_IN })],
+                        [axfer({ receiver: PAY_IN })],
                         crossChain(null),
                     ),
                 ).not.toThrow()
@@ -502,7 +520,7 @@ describe('validateSwapGroupAgainstQuote', () => {
                 expect(() =>
                     validateSwapGroupAgainstQuote(
                         [
-                            axfer({ receiver: XO_PAY_IN, amount: 2_500_000n }),
+                            axfer({ receiver: PAY_IN, amount: 2_500_000n }),
                             axfer({ receiver: 'SECOND', amount: 2_500_000n }),
                         ],
                         crossChain(null),
@@ -514,7 +532,7 @@ describe('validateSwapGroupAgainstQuote', () => {
                 expect(() =>
                     validateSwapGroupAgainstQuote(
                         [
-                            axfer({ receiver: XO_PAY_IN }),
+                            axfer({ receiver: PAY_IN }),
                             axfer({
                                 receiver: 'FEE_ADDRESS',
                                 amount: 100_000n,
@@ -548,7 +566,7 @@ describe('validateSwapGroupAgainstQuote', () => {
             it('rejects an input above the request', () => {
                 expect(() =>
                     validateSwapGroupAgainstQuote(
-                        [axfer({ receiver: XO_PAY_IN, amount: 5_000_001n })],
+                        [axfer({ receiver: PAY_IN, amount: 5_000_001n })],
                         crossChain(null),
                     ),
                 ).toThrow(SwapQuoteMismatchError)
@@ -558,7 +576,7 @@ describe('validateSwapGroupAgainstQuote', () => {
                 expect(() =>
                     validateSwapGroupAgainstQuote(
                         [
-                            axfer({ receiver: XO_PAY_IN }),
+                            axfer({ receiver: PAY_IN }),
                             payment({ receiver: 'ANYONE', amount: 0n }),
                         ],
                         crossChain(null),
