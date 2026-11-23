@@ -12,7 +12,7 @@
 
 import { describe, expect, test } from 'vitest'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { matchAccount, namesNetwork } from '../matchAccount'
+import { matchAccount } from '../matchAccount'
 
 const CHAINS = [
     { id: 'algorand', displayName: 'Algorand' },
@@ -47,28 +47,6 @@ const TWO_CHAIN = makeAccount(
     'ETH',
 )
 
-describe('namesNetwork', () => {
-    test.each([
-        ['ethereum', ETH],
-        ['eth', ETH],
-        ['bnb', CHAINS[3]],
-        ['bsc', CHAINS[3]],
-        ['chain', CHAINS[3]],
-        ['one', CHAINS[4]],
-        ['c-chain', CHAINS[5]],
-        ['poly', CHAINS[6]],
-    ])('"%s" names %o', (query, chain) => {
-        expect(namesNetwork(chain, query)).toBe(true)
-    })
-
-    test.each([['thereum'], ['basement'], ['alg0']])(
-        '"%s" names no network in the list',
-        query => {
-            expect(CHAINS.some(chain => namesNetwork(chain, query))).toBe(false)
-        },
-    )
-})
-
 describe('matchAccount', () => {
     test('an EVM address match picks that chain', () => {
         expect(matchAccount(TWO_CHAIN, '0xc3', CHAINS)).toEqual({
@@ -83,26 +61,13 @@ describe('matchAccount', () => {
         )
     })
 
-    test('an address match wins over a network-name match', () => {
-        const account = makeAccount({
-            algorand: { address: 'ETHALGOADDRESS' },
-            ethereum: { address: '0x1234' },
-        })
-
-        expect(matchAccount(account, 'eth', CHAINS)?.chainId).toBe('algorand')
-    })
-
-    test('a network name matches an account with an address on it', () => {
-        expect(matchAccount(TWO_CHAIN, 'ethereum', CHAINS)).toEqual({
-            account: TWO_CHAIN,
-            chainId: 'ethereum',
-        })
-    })
-
-    test('a network name leaves out an account with no address on it', () => {
-        const algorandOnly = makeAccount({ algorand: { address: 'ALGO' } })
-
-        expect(matchAccount(algorandOnly, 'ethereum', CHAINS)).toBeUndefined()
+    test('a network name matches no account', () => {
+        expect(matchAccount(makeAccount(TWO_CHAIN.chains), 'eth', CHAINS)).toBe(
+            undefined,
+        )
+        expect(
+            matchAccount(makeAccount(TWO_CHAIN.chains), 'ethereum', CHAINS),
+        ).toBeUndefined()
     })
 
     test('a name-only match carries no chain', () => {

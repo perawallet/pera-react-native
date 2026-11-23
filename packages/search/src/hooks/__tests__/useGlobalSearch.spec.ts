@@ -248,20 +248,16 @@ describe('useGlobalSearch', () => {
         expect(result.current.query).toBe('0xc3')
     })
 
-    test('a network name lists only the accounts with an address on it', async () => {
+    test('a network name lists no account', async () => {
         const universal = makeAccount('UNI_ADDR', 'Universal', {
             ethereum: { address: '0xAAAA' },
         })
-        const algorandOnly = makeAccount('SOLO_ADDR', 'Solo')
-        mockAllAccounts.mockReturnValue([universal, algorandOnly])
+        mockAllAccounts.mockReturnValue([universal])
 
         const { result } = await search({}, 'ethereum')
 
-        await waitFor(() =>
-            expect(result.current.results.accounts).toEqual([
-                { account: universal, chainId: 'ethereum' },
-            ]),
-        )
+        await waitFor(() => expect(result.current.query).toBe('ethereum'))
+        expect(result.current.results.accounts).toEqual([])
     })
 
     test('lists the chains any account is on, in registry order', () => {

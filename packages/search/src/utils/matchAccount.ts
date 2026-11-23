@@ -23,25 +23,6 @@ import type { AccountSearchResult } from '../models'
 
 export type SearchableChain = Pick<ChainDescriptor, 'id' | 'displayName'>
 
-const isWordStart = (text: string, index: number): boolean =>
-    index === 0 || /[\s-]/.test(text.charAt(index - 1))
-
-// Prefix of the id or of any word in the name, not a substring: "as" must not
-// pull in every account on Base. A query may span words ("c-chain").
-export const namesNetwork = (
-    chain: SearchableChain,
-    query: string,
-): boolean => {
-    const name = chain.displayName.toLowerCase()
-    return (
-        chain.id.startsWith(query) ||
-        [...name].some(
-            (_, index) =>
-                isWordStart(name, index) && name.startsWith(query, index),
-        )
-    )
-}
-
 /**
  * `query` is lowercased and `chains` are in registry order, so an address
  * that matches on several chains resolves to the earliest registered one.
@@ -66,9 +47,6 @@ export const matchAccount = (
             .includes(query),
     )
     if (addressChain) return { account, chainId: addressChain.id }
-
-    const networkChain = held.find(chain => namesNetwork(chain, query))
-    if (networkChain) return { account, chainId: networkChain.id }
 
     if (account.name?.toLowerCase().includes(query)) {
         return { account, chainId: filterChainId }
