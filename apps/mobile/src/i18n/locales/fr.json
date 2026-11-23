@@ -4292,6 +4292,7 @@
             "quote_error": "Impossible d’obtenir des cotations. Veuillez réessayer.",
             "amount_too_low": "Montant trop faible pour un swap sur {{network}}. Le minimum est de {{amount}} {{unit}}.",
             "amount_too_low_fiat": "Montant trop faible pour un swap sur {{network}}. Le minimum est de {{amount}} {{unit}} (~{{fiat}}).",
+            "amount_too_low_after_fees": "Votre solde après les frais de réseau est inférieur au minimum de {{amount}} {{unit}} pour un swap sur {{network}}.",
             "use_minimum": "Utiliser le minimum",
             "amount_too_low_unknown": "Montant trop faible pour un swap sur {{network}}. Essayez un montant plus élevé ou un réseau aux frais plus bas.",
             "amount_too_high": "Montant trop élevé pour un swap. Le maximum est de {{amount}} {{unit}}.",

@@ -108,6 +108,25 @@ describe('useSwapMinimum', () => {
         })
     })
 
+    describe('isMinimumAboveSpendable', () => {
+        it('flags a refused minimum above what the account can spend after fees', () => {
+            expect(
+                render({ spendableMax: new Decimal(8_999_999) })
+                    .isMinimumAboveSpendable,
+            ).toBe(true)
+        })
+
+        it('is clear when the account can spend the minimum', () => {
+            expect(render().isMinimumAboveSpendable).toBe(false)
+        })
+
+        it('is clear while the spendable amount is still unknown', () => {
+            expect(render({ spendableMax: null }).isMinimumAboveSpendable).toBe(
+                false,
+            )
+        })
+    })
+
     it('fills the minimum in display units', () => {
         const onFillMinimum = vi.fn()
 

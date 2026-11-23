@@ -13,6 +13,7 @@
 export * from './useSwaps'
 export * from './useSwapScope'
 export * from './useSwapSourceCostQuery'
+export * from './useSwapFeeReservesQuery'
 export * from './useEnsureSwapDestination'
 export * from './useSwapSettings'
 export * from './useSwapHistoryInfiniteQuery'

@@ -4284,6 +4284,7 @@
             "quote_error": "Angebote konnten nicht abgerufen werden. Bitte versuche es erneut.",
             "amount_too_low": "Betrag zu klein für einen Tausch auf {{network}}. Das Minimum beträgt {{amount}} {{unit}}.",
             "amount_too_low_fiat": "Betrag zu klein für einen Tausch auf {{network}}. Das Minimum beträgt {{amount}} {{unit}} (~{{fiat}}).",
+            "amount_too_low_after_fees": "Dein Guthaben nach Netzwerkgebühren liegt unter dem Minimum von {{amount}} {{unit}} für einen Tausch auf {{network}}.",
             "use_minimum": "Minimum verwenden",
             "amount_too_low_unknown": "Betrag zu klein für einen Tausch auf {{network}}. Versuche einen höheren Betrag oder ein Netzwerk mit niedrigeren Gebühren.",
             "amount_too_high": "Betrag zu groß für einen Tausch. Das Maximum beträgt {{amount}} {{unit}}.",

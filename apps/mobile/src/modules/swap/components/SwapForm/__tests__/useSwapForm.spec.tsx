@@ -126,8 +126,11 @@ vi.mock('@perawallet/wallet-core-swaps', async () => ({
         reset: mockResetQuoteMutation,
     }),
     swapAdapterFor: () => ({
-        maxAmountFeeReserve: new Decimal(100_000),
         holdingReserve: () => new Decimal(100_000),
+    }),
+    useSwapFeeReservesQuery: () => ({
+        reserves: [mockFeeReserve],
+        isPending: false,
     }),
     useSwapAccount: () => mockSwapAccount,
 }))
@@ -142,6 +145,7 @@ let mockIsPayBalanceFetched = true
 let mockIsPayBalanceError = false
 let mockUnheldAssetId: Nullable<string> = null
 let mockSpendableMax: Nullable<Decimal> = new Decimal('5000000')
+let mockFeeReserve: Decimal | undefined = new Decimal(100_000)
 let mockIsSpendablePending = false
 const mockUseSpendableBalanceQuery = vi.fn()
 vi.mock('@perawallet/wallet-core-transactions', () => ({
@@ -329,6 +333,7 @@ describe('useSwapForm', () => {
         mockSwapAccount = accountAt('TESTADDRESS123')
         mockPayBalance = new Decimal('5000000')
         mockSpendableMax = new Decimal('5000000')
+        mockFeeReserve = new Decimal(100_000)
         mockIsSpendablePending = false
         mockUnheldAssetId = null
         mockIsPayBalanceFetched = true
@@ -1105,6 +1110,27 @@ describe('useSwapForm', () => {
         expect(result.current.payAmount).toBeNull()
         expect(mockInfoToast).toHaveBeenCalled()
         expect(mockErrorToast).not.toHaveBeenCalled()
+    })
+
+    it('holds the native MAX until its fee reserve is priced', () => {
+        mockFeeReserve = undefined
+
+        renderHook(() => useSwapForm(SCOPE))
+
+        expect(mockUseSpendableBalanceQuery).toHaveBeenLastCalledWith(undefined)
+    })
+
+    it("prices a token's MAX without waiting on the native fee reserve", () => {
+        mockFeeReserve = undefined
+        mockFromAsset = '123'
+
+        renderHook(() => useSwapForm(SCOPE))
+
+        expect(mockUseSpendableBalanceQuery).toHaveBeenLastCalledWith(
+            expect.objectContaining({
+                asset: { chainId: 'algorand', assetId: '123' },
+            }),
+        )
     })
 
     it('reserves the first holding of a receive asset the account does not hold', () => {

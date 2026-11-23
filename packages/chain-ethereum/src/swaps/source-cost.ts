@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { encodeFunctionData, erc20Abi, getAddress } from 'viem'
+import { encodeFunctionData, erc20Abi, getAddress, zeroAddress } from 'viem'
 import type { PublicClient } from 'viem'
 import { Decimal } from 'decimal.js'
 import {
@@ -41,6 +41,39 @@ export const evmShortfallOf = (
     required: bigint,
 ): SwapSourceCost['shortfall'] =>
     required > balance ? toDecimal(required - balance) : null
+
+// Twice the deposit ceiling's maximum fee: room for the fee to climb between
+// MAX and the order, and for a route that costs more than one deposit.
+const MAX_AMOUNT_FEE_RESERVE_MULTIPLE = 2n
+
+/** Wei held back from a MAX native swap: a multiple of what the swap can be charged now. */
+export const estimateEvmSwapFeeReserve = async ({
+    client,
+    chain,
+    scope,
+}: {
+    client: PublicClient
+    chain: EvmChain
+    scope: ChainScope
+}): Promise<Decimal> => {
+    const { presets } = await readEvmFeePresets(client, chain, scope.networkId)
+    const gas = SWAP_TOKEN_DEPOSIT_GAS_CEILING
+    const surcharge = await readEvmSurcharge(client, chain, {
+        type: 'eip1559',
+        chainId: eip155ChainIdOf(scope, chain),
+        nonce: 0,
+        gas,
+        ...presets.normal,
+        to: zeroAddress,
+        value: 0n,
+        data: '0x',
+    })
+    return toDecimal(
+        MAX_AMOUNT_FEE_RESERVE_MULTIPLE *
+            (gas * presets.normal.maxFeePerGas +
+                SURCHARGE_HEADROOM * surcharge),
+    )
+}
 
 export const estimateEvmSwapSourceCost = async ({
     client,

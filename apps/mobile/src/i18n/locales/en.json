@@ -4292,6 +4292,7 @@
             "quote_error": "Unable to get quotes. Please try again.",
             "amount_too_low": "Amount too small to swap on {{network}}. The minimum is {{amount}} {{unit}}.",
             "amount_too_low_fiat": "Amount too small to swap on {{network}}. The minimum is {{amount}} {{unit}} (~{{fiat}}).",
+            "amount_too_low_after_fees": "Your balance after network fees is below the {{amount}} {{unit}} minimum to swap on {{network}}.",
             "use_minimum": "Use minimum",
             "amount_too_low_unknown": "Amount too small to swap on {{network}}. Try a larger amount or a lower-fee network.",
             "amount_too_high": "Amount too large to swap. The maximum is {{amount}} {{unit}}.",

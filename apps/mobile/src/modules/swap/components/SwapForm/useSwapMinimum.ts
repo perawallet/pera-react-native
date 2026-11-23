@@ -38,6 +38,8 @@ type UseSwapMinimumResult = {
     liftToMinimum: (amount: Decimal) => Decimal
     /** The router refused the amount as too small, named a minimum, and the account can spend at least that. */
     canUseMinimum: boolean
+    /** The router refused the amount as too small, and what the account can spend after fees falls short of its minimum. */
+    isMinimumAboveSpendable: boolean
     handleUseMinimum: () => void
 }
 
@@ -66,8 +68,15 @@ export const useSwapMinimum = ({
         onFillMinimum(baseUnitsToDisplayUnits(pairMinimum, payDecimals))
     }, [pairMinimum, payDecimals, onFillMinimum])
 
+    const minimum =
+        quoteFailure?.kind === 'amount-too-low' ? quoteFailure.minimum : null
+
     return {
         liftToMinimum,
+        isMinimumAboveSpendable:
+            minimum !== null &&
+            spendableMax !== null &&
+            spendableMax.lessThan(minimum),
         // A refusal that names no floor shows the no-minimum copy, so it gets no button either.
         canUseMinimum:
             quoteFailure?.kind === 'amount-too-low' &&

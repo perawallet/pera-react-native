@@ -51,7 +51,11 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
     const { Decimal } = await import('decimal.js')
     return {
         isSwapChain: () => true,
-        swapAdapterFor: () => ({ maxAmountFeeReserve: new Decimal(1000) }),
+        swapAdapterFor: () => ({ nativeAssetId: 'native' }),
+        useSwapFeeReservesQuery: (scopes: unknown[]) => ({
+            reserves: scopes.map(() => new Decimal(1000)),
+            isPending: false,
+        }),
         useSwapScope: (_account: unknown, chainId: string) =>
             state.hasReceiveScope ? { chainId, networkId: 'mainnet' } : null,
     }

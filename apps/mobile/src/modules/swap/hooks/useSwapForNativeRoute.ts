@@ -11,6 +11,7 @@
  */
 
 import { useMemo } from 'react'
+import { Decimal } from 'decimal.js'
 import {
     useAccountChainStateStore,
     useAccountHoldingsAcrossChainsQuery,
@@ -25,6 +26,7 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     isSwapChain,
     swapAdapterFor,
+    useSwapFeeReservesQuery,
     useSwapScope,
 } from '@perawallet/wallet-core-swaps'
 import {
@@ -37,6 +39,8 @@ import {
     canSwapCrossChain,
 } from '../utils/crossChainEligibility'
 import { rankSwapPayAssets } from '../utils/rankSwapPayAssets'
+
+const ZERO = new Decimal(0)
 
 export type UseSwapForNativeRouteResult = {
     /** Opens a cross-chain swap into `chainId`'s native coin; null when none can. */
@@ -95,27 +99,47 @@ export const useSwapForNativeRoute = (
     )
 
     // Held is not spendable: Algorand's minimum balance can lock all of it, and
-    // a few wei can't cover gas. Same reserve as the Swap form's MAX.
+    // a few wei can't cover gas. Same reserve as the Swap form's MAX; a native
+    // coin whose fee is unknown isn't offered.
+    const reserveScopes = useMemo(
+        () => candidates.map(candidate => candidate.scope),
+        [candidates],
+    )
+    const { reserves, isPending: isReservePending } =
+        useSwapFeeReservesQuery(reserveScopes)
+    const pricedCandidates = useMemo(
+        () =>
+            candidates.flatMap((candidate, index) => {
+                const fee =
+                    reserves[index] ??
+                    (candidate.assetId ===
+                    swapAdapterFor(candidate.scope).nativeAssetId
+                        ? undefined
+                        : ZERO)
+                return fee ? [{ candidate, fee }] : []
+            }),
+        [candidates, reserves],
+    )
     const spendableInputs = useMemo(
         (): SpendableBalanceInput[] =>
-            candidates.map(candidate => ({
+            pricedCandidates.map(({ candidate, fee }) => ({
                 account,
                 asset: {
                     chainId: candidate.scope.chainId,
                     assetId: candidate.assetId,
                 },
                 scope: candidate.scope,
-                fee: swapAdapterFor(candidate.scope).maxAmountFeeReserve,
+                fee,
             })),
-        [candidates, account],
+        [pricedCandidates, account],
     )
     const { data: spendables, isPending: isSpendablePending } =
         useSpendableBalancesQuery(spendableInputs)
 
     const params = useMemo((): Nullable<SwapScreenParams> => {
-        const payAsset = candidates.find(
-            (_candidate, index) => spendables[index]?.max.gt(0) ?? false,
-        )
+        const payAsset = pricedCandidates.find(
+            (_priced, index) => spendables[index]?.max.gt(0) ?? false,
+        )?.candidate
         if (!payAsset || !receiveScope) return null
         return {
             assetIn: {
@@ -128,7 +152,10 @@ export const useSwapForNativeRoute = (
                 accountId: account.id,
             },
         }
-    }, [candidates, spendables, receiveScope, chainId, account.id])
+    }, [pricedCandidates, spendables, receiveScope, chainId, account.id])
 
-    return { params, isPending: isHoldingsPending || isSpendablePending }
+    return {
+        params,
+        isPending: isHoldingsPending || isReservePending || isSpendablePending,
+    }
 }
