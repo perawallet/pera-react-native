@@ -164,6 +164,7 @@ const broadcast = async (): Promise<string> => {
 
 describe('Flow: Ethereum switched off remotely, then back on', () => {
     const requests: string[] = []
+    let isMined = true
 
     beforeAll(async () => {
         await setupTestDatabase()
@@ -193,6 +194,7 @@ describe('Flow: Ethereum switched off remotely, then back on', () => {
             amount: new Decimal('5000000'),
         })
         requests.length = 0
+        isMined = true
         server.events.on('request:start', ({ request }) => {
             requests.push(request.url)
         })
@@ -212,9 +214,11 @@ describe('Flow: Ethereum switched off remotely, then back on', () => {
                         },
                     }),
                     eth_getTransactionReceipt: params =>
-                        evmTransactionReceipt({
-                            transactionHash: params[0] as `0x${string}`,
-                        }),
+                        isMined
+                            ? evmTransactionReceipt({
+                                  transactionHash: params[0] as `0x${string}`,
+                              })
+                            : null,
                 },
             }),
             ...peraEvmHandlers({ baseUrl: PERA_URL }),
@@ -277,5 +281,27 @@ describe('Flow: Ethereum switched off remotely, then back on', () => {
         expect(
             requests.some(url => url.includes('/api/v3/evm/1/tokens/')),
         ).toBe(true)
+    })
+
+    // Last: its back-on tick caches the token list, which the test above must fetch.
+    it('Given a send still unmined while Ethereum is off, when a tick runs, then it stays open; when Ethereum is switched back on and the next tick sees it mined, then it settles', async () => {
+        isMined = false
+        await broadcast()
+        const service = newService()
+        switchEthereum(SWITCH_OFF)
+
+        await runTick(service)
+
+        expect(
+            await getOpenSubmissionAttempts({ chainId: 'ethereum' }),
+        ).toHaveLength(1)
+
+        switchEthereum(null)
+        isMined = true
+        await runTick(service)
+
+        expect(
+            await getOpenSubmissionAttempts({ chainId: 'ethereum' }),
+        ).toHaveLength(0)
     })
 })

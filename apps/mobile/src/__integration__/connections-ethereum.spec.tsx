@@ -40,7 +40,10 @@ import { Address, Transaction, TransactionType } from 'algosdk'
 import { http, HttpResponse } from 'msw'
 import { render } from '@test-utils/render'
 import { server, setSuiteUnhandledRequestMode } from '@test-utils/msw-server'
-import { setCapabilityOverrides } from '@test-utils/capability-overrides'
+import {
+    setCapabilityOverrides,
+    setChainEnabled,
+} from '@test-utils/capability-overrides'
 import {
     resetTestDatabase,
     seedAlgoAsset,
@@ -1006,6 +1009,37 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                         result: HASH,
                     })
                 })
+            })
+
+            it("Given a connected session, when Ethereum's Pera backend is switched off remotely, then the session stays open and an approved request still answers the dApp with its hash", async () => {
+                const walletKit = await settle()
+
+                // Drops the suite's dappConnect override, so the build layer decides.
+                act(() => setChainEnabled('ethereum', false))
+                expect(getProvider().chains.isSwitchedOff('ethereum')).toBe(
+                    true,
+                )
+                expect(
+                    getProvider().chains.capabilities('ethereum').dappConnect,
+                ).toBe(true)
+                sendTransaction(walletKit, {
+                    from: CHECKSUMMED_ETH_ADDRESS,
+                    to: RECIPIENT,
+                    value: '0x1',
+                    gasPrice: '0x3b9aca00',
+                })
+                const request = await queued()
+                await act(async () => {
+                    await request.approve([], { txIds: [HASH] })
+                })
+
+                await waitFor(() => {
+                    expect(answerOf(walletKit)).toMatchObject({
+                        id: 7,
+                        result: HASH,
+                    })
+                })
+                expect(walletKit.disconnectSession).not.toHaveBeenCalled()
             })
 
             it('Given a valid request, when it is queued, then the review is titled Send and shows the fee estimate and max fee', async () => {

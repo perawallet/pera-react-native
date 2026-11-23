@@ -37,6 +37,7 @@ import {
 import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useCurrenciesStore } from '@perawallet/wallet-core-currencies'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import {
@@ -215,6 +216,7 @@ describe('Flow: Ethereum switched off remotely, then back on', () => {
         "Given Ethereum's kill switch is on, when a %s account's actions render, then it still offers send and receive",
         (_chain, account) => {
             switchEthereum(SWITCH_OFF)
+            expect(getProvider().chains.isSwitchedOff('ethereum')).toBe(true)
 
             renderPanel(account)
 

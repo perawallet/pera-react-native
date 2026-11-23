@@ -74,14 +74,16 @@ independent booleans: `send`, `receive`, `history`, `dappConnect`, `nft` and the
 another. Each one resolves per chain in `resolveCapabilityWithSource`
 (`packages/chain-contract/src/capabilities/resolve.ts`), first match wins:
 
-1. **Kill switch.** `chain_<id>_overrides` with `enabled: false` turns every capability off, before
-   any layer is read (`capabilities()` in `chain-registry.ts`).
-2. **Developer.** The Feature Flags screen. Skipped wherever `areConfigOverridesIgnored()` is true.
-3. **Chain mode.** Off when the chain's network is in a developer mode its module's
+1. **Developer.** The Feature Flags screen. Skipped wherever `areConfigOverridesIgnored()` is true.
+2. **Chain mode.** Off when the chain's network is in a developer mode its module's
    `capabilityRestrictions` lists. It sits above remote because remote values are mostly `true` and
    would turn the feature back on in developer mode.
-4. **Remote.** The `capabilities` object in `chain_<id>_overrides`.
-5. **Build.** `capabilityDefaults`, replaced by `CHAIN_<ID>_CAPABILITIES` when that is set.
+3. **Remote.** The `capabilities` object in `chain_<id>_overrides`.
+4. **Build.** `capabilityDefaults`, replaced by `CHAIN_<ID>_CAPABILITIES` when that is set.
+
+The kill switch (`enabled: false` in the same key) is not a layer: every capability keeps resolving
+as above. What it does switch off is in
+[Architecture: Networks without a Pera backend](ARCHITECTURE.md#networks-without-a-pera-backend).
 
 A layer whose value isn't a boolean falls through rather than being coerced. No layer switches on a
 capability outside the module's `supportedCapabilities`: the developer and remote layers drop that
