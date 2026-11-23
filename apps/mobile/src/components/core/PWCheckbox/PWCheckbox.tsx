@@ -10,61 +10,93 @@
  limitations under the License
  */
 
-import { TouchableOpacity } from 'react-native'
+import type { ReactNode } from 'react'
+import type { StyleProp, ViewStyle } from 'react-native'
+import { CheckBox } from '@rneui/themed'
 
+import { getCheckboxAccessibilityProps } from '@utils/test-id-helper'
 import { PWIcon } from '../PWIcon'
+import { PWText } from '../PWText'
+import { PWTouchableOpacity } from '../PWTouchableOpacity'
 import { PWView } from '../PWView'
-
-import { CheckBox, type CheckBoxProps } from '@rneui/themed'
-import {
-    getCheckboxAccessibilityProps,
-    getCheckboxTestProps,
-} from '@utils/test-id-helper'
 import { useStyles } from './styles'
 
-// The theme pins the CheckBox container to a fixed square, so a title rendered
-// inside it collapses the box. A labelled checkbox is CheckboxRow.
-export type PWCheckboxProps = Omit<
-    CheckBoxProps,
-    'title' | 'checkedTitle' | 'titleProps' | 'textStyle' | 'children'
->
-
-const DEFAULT_ACTIVE_OPACITY = 0.8
+export type PWCheckboxProps = {
+    isChecked: boolean
+    onPress: () => void
+    /**
+     * A string, or a node for a custom row. The box and label are one press
+     * target and one accessible checkbox; a pressable nested in the label (an
+     * inline link) still takes its own press.
+     */
+    label?: ReactNode
+    boxPosition?: 'leading' | 'trailing'
+    isDisabled?: boolean
+    testID?: string
+    /** Tags the box for automation. A tap on it still lands on the row. */
+    boxTestID?: string
+    style?: StyleProp<ViewStyle>
+    boxStyle?: StyleProp<ViewStyle>
+}
 
 export const PWCheckbox = ({
-    testID,
-    checked,
-    disabled,
+    isChecked,
     onPress,
-    ...props
+    label,
+    boxPosition = 'leading',
+    isDisabled = false,
+    testID,
+    boxTestID,
+    style,
+    boxStyle,
 }: PWCheckboxProps) => {
     const styles = useStyles()
 
-    const accessibilityProps = testID
-        ? getCheckboxTestProps(testID, !!checked, disabled)
-        : getCheckboxAccessibilityProps(!!checked, disabled)
+    // RNE's CheckBox is a Pressable with its own checkbox role. Left live, it
+    // would take presses on the box and be a second screen-reader and tab stop.
+    const box = (
+        <PWView
+            pointerEvents='none'
+            testID={boxTestID}
+        >
+            <CheckBox
+                checked={isChecked}
+                disabled={isDisabled}
+                // An explicit undefined would wipe the themed container style.
+                {...(boxStyle ? { containerStyle: boxStyle } : {})}
+                accessible={false}
+                tabIndex={-1}
+                aria-hidden
+                checkedIcon={
+                    <PWIcon
+                        name='check'
+                        variant='positive'
+                    />
+                }
+                uncheckedIcon={<PWView style={styles.uncheckedIcon} />}
+            />
+        </PWView>
+    )
+
+    const isTextLabel = typeof label === 'string'
+    // A node label is a custom row: its spacing comes from `style`.
+    const labelNode = isTextLabel ? (
+        <PWText style={styles.label}>{label}</PWText>
+    ) : (
+        label
+    )
 
     return (
-        <TouchableOpacity
-            {...accessibilityProps}
-            onPress={onPress ?? undefined}
-            disabled={disabled}
-            activeOpacity={DEFAULT_ACTIVE_OPACITY}
+        <PWTouchableOpacity
+            onPress={onPress}
+            disabled={isDisabled}
+            style={[styles.row, isTextLabel && styles.textRow, style]}
+            testID={testID}
+            {...getCheckboxAccessibilityProps(isChecked, isDisabled)}
         >
-            <PWView pointerEvents='none'>
-                <CheckBox
-                    {...props}
-                    checked={checked}
-                    disabled={disabled}
-                    checkedIcon={
-                        <PWIcon
-                            name='check'
-                            variant='positive'
-                        />
-                    }
-                    uncheckedIcon={<PWView style={styles.uncheckedIcon} />}
-                />
-            </PWView>
-        </TouchableOpacity>
+            {boxPosition === 'trailing' && labelNode}
+            {box}
+            {boxPosition === 'leading' && labelNode}
+        </PWTouchableOpacity>
     )
 }

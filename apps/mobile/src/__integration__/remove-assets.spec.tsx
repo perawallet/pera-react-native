@@ -28,7 +28,7 @@ import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { seedAlgo25Signer } from '@test-utils/signing-review'
-import { findEnabledByTestId } from '@test-utils/rnw'
+import { findEnabledByTestId, isElementDisabled } from '@test-utils/rnw'
 import {
     resetTestDatabase,
     seedAlgoAsset,
@@ -153,6 +153,22 @@ describe('Flow: Remove assets', () => {
                 ) as HTMLButtonElement
             ).disabled,
         ).toBe(true)
+    })
+
+    it('Given the zero-balance asset, when the asset itself is pressed rather than its checkbox, then it is selected and removal enables', async () => {
+        renderWithNavigation(RemoveAssetsScreen, 'RemoveAssets')
+
+        fireEvent.click(
+            await screen.findByTestId(`asset_row_${USDC_TEST_ASSET_ID}`),
+        )
+
+        await waitFor(() =>
+            expect(
+                isElementDisabled(
+                    screen.getByTestId('remove_assets_confirm_slide'),
+                ),
+            ).toBe(false),
+        )
     })
 
     it('Given the zero-balance asset is selected, when the user confirms removal, then a zero-amount transfer closing to the creator is POSTed to algod and the holding is deleted', async () => {

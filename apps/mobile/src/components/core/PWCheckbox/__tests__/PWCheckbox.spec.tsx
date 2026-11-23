@@ -12,21 +12,105 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
+import { TouchableOpacity } from 'react-native'
 import { render, fireEvent, screen } from '@test-utils/render'
 import { PWCheckbox } from '../PWCheckbox'
 
 describe('PWCheckbox', () => {
-    it('calls onPress when pressed', () => {
+    it('toggles when the label text is pressed', () => {
         const onPress = vi.fn()
         render(
             <PWCheckbox
-                checked={false}
+                label='I have saved my passphrase'
+                isChecked={false}
                 onPress={onPress}
-                testID='terms_checkbox'
+                testID='acknowledge'
             />,
         )
 
-        fireEvent.click(screen.getByTestId('terms_checkbox'))
+        fireEvent.click(screen.getByText('I have saved my passphrase'))
+
         expect(onPress).toHaveBeenCalledTimes(1)
+    })
+
+    it('toggles once when the box itself is pressed', () => {
+        const onPress = vi.fn()
+        render(
+            <PWCheckbox
+                label='I have saved my passphrase'
+                isChecked={false}
+                onPress={onPress}
+                testID='acknowledge'
+                boxTestID='acknowledge_box'
+            />,
+        )
+
+        fireEvent.click(screen.getByTestId('acknowledge_box'))
+
+        expect(onPress).toHaveBeenCalledTimes(1)
+    })
+
+    it('ignores presses while disabled', () => {
+        const onPress = vi.fn()
+        render(
+            <PWCheckbox
+                label='I have saved my passphrase'
+                isChecked={false}
+                isDisabled
+                onPress={onPress}
+                testID='acknowledge'
+            />,
+        )
+
+        fireEvent.click(screen.getByText('I have saved my passphrase'))
+
+        expect(onPress).not.toHaveBeenCalled()
+    })
+
+    it.each([
+        { isChecked: false, isDisabled: false },
+        { isChecked: true, isDisabled: true },
+    ])(
+        'exposes the row as one checkbox with checked=$isChecked, disabled=$isDisabled',
+        ({ isChecked, isDisabled }) => {
+            render(
+                <PWCheckbox
+                    label='I have saved my passphrase'
+                    isChecked={isChecked}
+                    isDisabled={isDisabled}
+                    onPress={vi.fn()}
+                />,
+            )
+
+            expect(
+                vi.mocked(TouchableOpacity).mock.lastCall?.[0],
+            ).toMatchObject({
+                accessibilityRole: 'checkbox',
+                accessibilityState: {
+                    checked: isChecked,
+                    disabled: isDisabled,
+                },
+            })
+        },
+    )
+
+    it('renders the label after the box when the box trails', () => {
+        render(
+            <PWCheckbox
+                label='Select all'
+                boxPosition='trailing'
+                isChecked={false}
+                onPress={vi.fn()}
+                testID='select_all'
+                boxTestID='select_all_box'
+            />,
+        )
+
+        const [first, second] = Array.from(
+            screen.getByTestId('select_all').children,
+        )
+
+        expect(first?.textContent).toBe('Select all')
+        expect(second?.getAttribute('data-testid')).toBe('select_all_box')
     })
 })

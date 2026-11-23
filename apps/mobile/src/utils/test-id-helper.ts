@@ -56,17 +56,3 @@ export function getCheckboxAccessibilityProps(
         accessibilityState: { checked, disabled: !!disabled },
     }
 }
-
-/**
- * Checkbox automation props for Appium on iOS and Android.
- */
-export function getCheckboxTestProps(
-    id: string,
-    checked: boolean,
-    disabled?: boolean,
-) {
-    return {
-        ...getTestProps(id),
-        ...getCheckboxAccessibilityProps(checked, disabled),
-    }
-}

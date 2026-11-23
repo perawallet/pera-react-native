@@ -11,14 +11,14 @@
  */
 
 import type { ReactNode } from 'react'
-import { PWCheckbox, PWText, PWView } from '@components/core'
+import { PWCheckbox, PWText } from '@components/core'
 import { useStyles } from './styles'
 
 type CardConsentCheckboxRowProps = {
     checked: boolean
     onPress: () => void
     testID: string
-    /** The consent label — plain text or a `<Trans>` with inline links. */
+    /** The consent label: plain text or a `<Trans>` with inline links. */
     children: ReactNode
 }
 
@@ -36,19 +36,20 @@ export const CardConsentCheckboxRow = ({
     const styles = useStyles()
 
     return (
-        <PWView style={styles.row}>
-            <PWCheckbox
-                checked={checked}
-                onPress={onPress}
-                testID={testID}
-            />
-            <PWText
-                variant='footnoteMedium'
-                weight={400}
-                style={styles.label}
-            >
-                {children}
-            </PWText>
-        </PWView>
+        <PWCheckbox
+            label={
+                <PWText
+                    variant='footnoteMedium'
+                    weight={400}
+                    style={styles.label}
+                >
+                    {children}
+                </PWText>
+            }
+            isChecked={checked}
+            onPress={onPress}
+            style={styles.row}
+            testID={testID}
+        />
     )
 }

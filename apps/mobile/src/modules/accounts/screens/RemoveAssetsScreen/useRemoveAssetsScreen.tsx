@@ -18,12 +18,7 @@ import {
     type RefObject,
     type ReactElement,
 } from 'react'
-import {
-    PWCheckbox,
-    PWTouchableOpacity,
-    PWView,
-    type PWFlatListRef,
-} from '@components/core'
+import { PWCheckbox, PWView, type PWFlatListRef } from '@components/core'
 import { AccountAssetItemView } from '@modules/assets'
 import {
     addressOn,
@@ -211,24 +206,28 @@ export const useRemoveAssetsScreen = (): UseRemoveAssetsScreenResult => {
     const renderItem = useCallback(
         ({ item }: { item: AssetWithAccountBalance }) => {
             const isSelected = selectedAssetIds.has(item.assetId)
+            const handleToggle = () => handleToggleSelect(item.assetId)
 
             return (
-                <PWTouchableOpacity
+                <PWCheckbox
+                    label={
+                        <PWView style={styles.assetInfo}>
+                            {/* The asset row is its own touchable (long press
+                                copies the id) and would swallow the tap. */}
+                            <AccountAssetItemView
+                                accountBalance={item}
+                                scope={scope}
+                                iconSize='md'
+                                onPress={handleToggle}
+                            />
+                        </PWView>
+                    }
+                    boxPosition='trailing'
+                    isChecked={isSelected}
+                    onPress={handleToggle}
                     style={styles.itemContainer}
-                    onPress={() => handleToggleSelect(item.assetId)}
                     testID={`remove_asset_row_${item.assetId}`}
-                >
-                    <PWView style={styles.assetInfo}>
-                        <AccountAssetItemView
-                            accountBalance={item}
-                            scope={scope}
-                            iconSize='md'
-                        />
-                    </PWView>
-                    <PWView pointerEvents='none'>
-                        <PWCheckbox checked={isSelected} />
-                    </PWView>
-                </PWTouchableOpacity>
+                />
             )
         },
         [selectedAssetIds, handleToggleSelect, scope, styles],
