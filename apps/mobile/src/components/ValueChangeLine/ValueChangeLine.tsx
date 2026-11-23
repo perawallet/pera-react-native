@@ -48,6 +48,8 @@ export const ValueChangeLine = ({
     const direction = directionOf(absolute)
     const sign = SIGN_BY_DIRECTION[direction]
     const style = styles[direction]
+    // A zero percentage beside a non-zero change means the start was zero, which has no percentage.
+    const hasPercentage = direction === 'flat' || !percentage.isZero()
 
     return (
         <PWText
@@ -57,9 +59,8 @@ export const ValueChangeLine = ({
             truncate
         >
             {sign}
-            {formatCurrency(absolute.abs(), 2, currency, undefined, true)} (
-            {sign}
-            {formatPercentage(percentage.abs())})
+            {formatCurrency(absolute.abs(), 2, currency, undefined, true)}
+            {hasPercentage && ` (${sign}${formatPercentage(percentage.abs())})`}
         </PWText>
     )
 }
