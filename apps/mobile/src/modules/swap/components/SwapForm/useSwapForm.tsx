@@ -811,6 +811,7 @@ export const useSwapForm = (
                     <SwapConfirmationContent
                         scope={scope}
                         quote={selectedQuote}
+                        canChooseProvider={canChooseProvider}
                     />
                 ),
                 options: {
@@ -885,6 +886,7 @@ export const useSwapForm = (
         receivingAddress,
         scope,
         selectedQuote,
+        canChooseProvider,
         requestBottomSheet,
         invalidateAccountBalances,
         successToast,

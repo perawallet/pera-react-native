@@ -40,17 +40,19 @@ export type SwapConfirmationResult =
 export type SwapConfirmationContentProps = {
     scope: ChainScope
     quote: SwapQuote
+    canChooseProvider: boolean
 }
 
 export const SwapConfirmationContent = ({
     scope,
     quote,
+    canChooseProvider,
 }: SwapConfirmationContentProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
 
     const { swapStatus, handleSlideConfirm, handleClose } =
-        useSwapConfirmationActions({ scope, quote })
+        useSwapConfirmationActions({ scope, quote, canChooseProvider })
 
     const {
         swapAccount,

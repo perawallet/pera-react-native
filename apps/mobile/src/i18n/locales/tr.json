@@ -4311,9 +4311,12 @@
                 "swap": "Swap başarısız"
             },
             "provider_failed_body": "Bu sağlayıcı swap işlemini tamamlayamadı. Başka bir sağlayıcı dene.",
+            "provider_failed_single_body": "Sağlayıcı swap işlemini tamamlayamadı. Daha sonra tekrar dene veya farklı bir tutar dene.",
             "provider_unavailable_body": "Sağlayıcı şu anda kullanılamıyor. Biraz sonra tekrar dene.",
             "quote_mismatch_body": "Sağlayıcının işlemleri bu teklifle eşleşmedi, bu yüzden hiçbir şey imzalanmadı. Tekrar dene veya başka bir sağlayıcı seç.",
+            "quote_mismatch_single_body": "Sağlayıcının işlemleri bu teklifle eşleşmedi, bu yüzden hiçbir şey imzalanmadı. Daha sonra tekrar dene.",
             "unsupported_order_body": "Pera bu sağlayıcının siparişini tamamlayamıyor, bu yüzden hiçbir şey imzalanmadı. Başka bir sağlayıcı seç.",
+            "unsupported_order_single_body": "Pera bu sağlayıcının siparişini tamamlayamıyor, bu yüzden hiçbir şey imzalanmadı. Daha sonra tekrar dene.",
             "signing_failed_body": "İşlem imzalanamadı, bu yüzden gönderilmedi. Tekrar dene.",
             "order_insufficient_balance_body": "Bakiyen bu tutarı ve ağ ücretini karşılamıyor. Daha küçük bir tutar dene veya ücret için bakiye ekle.",
             "insufficient_native_body": "Bu hesapta bu swap işlemini, ücretleri ve minimum bakiyeyi karşılamak için en az {{amount}} {{symbol}} daha gerekiyor. Daha fazla {{symbol}} ekle ve tekrar dene.",
