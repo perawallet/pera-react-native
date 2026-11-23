@@ -43,31 +43,42 @@ const installOverrideReader = (): void => {
     }))
 }
 
+type ChainOverrides = {
+    enabled?: boolean
+    capabilities?: Partial<Record<ChainCapability, boolean>>
+}
+
 /**
- * Switches capabilities through the developer-override layer, the way the
- * Feature Flags screen does, so the real registry resolves them. Cleared by
+ * Writes a chain's whole `chain_<id>_overrides` developer override, the way the
+ * Feature Flags screen does, so the real registry resolves it. The kill switch
+ * and capabilities share that key: use this to set both at once. Cleared by
  * `useRemoteConfigStore.getState().resetState()`.
  */
-export const setCapabilityOverrides = (
-    capabilities: Partial<Record<ChainCapability, boolean>>,
-    chainId: ChainId = 'algorand',
+export const setChainOverrides = (
+    chainId: ChainId,
+    overrides: ChainOverrides,
 ): void => {
     installOverrideReader()
     useRemoteConfigStore
         .getState()
         .setConfigOverride(
             chainOverridesKey(chainId),
-            JSON.stringify({ capabilities }),
+            JSON.stringify(overrides),
         )
 }
 
-/** Flips a chain's kill switch through the developer-override layer. */
-export const setChainEnabled = (chainId: ChainId, isEnabled: boolean): void => {
-    installOverrideReader()
-    useRemoteConfigStore
-        .getState()
-        .setConfigOverride(
-            chainOverridesKey(chainId),
-            JSON.stringify({ enabled: isEnabled }),
-        )
-}
+/**
+ * Replaces the chain's whole override, so it also turns a kill switch set by
+ * `setChainEnabled` back on; pass both to `setChainOverrides` to keep it.
+ */
+export const setCapabilityOverrides = (
+    capabilities: Partial<Record<ChainCapability, boolean>>,
+    chainId: ChainId = 'algorand',
+): void => setChainOverrides(chainId, { capabilities })
+
+/**
+ * Replaces the chain's whole override, so it also drops capabilities set by
+ * `setCapabilityOverrides`; pass both to `setChainOverrides` to keep them.
+ */
+export const setChainEnabled = (chainId: ChainId, isEnabled: boolean): void =>
+    setChainOverrides(chainId, { enabled: isEnabled })
