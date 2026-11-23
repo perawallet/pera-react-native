@@ -295,7 +295,12 @@ workflows:
             #!/usr/bin/env bash
             set -ex
             asdf plugin add java || true
-            asdf install java
+            # The JDK download can drop mid-transfer (curl 56); retry instead of failing the build.
+            for attempt in 1 2 3; do
+              asdf install java && break
+              [ "$attempt" -lt 3 ] || exit 1
+              sleep $((attempt * 15))
+            done
             # Set JAVA_HOME for Gradle
             JAVA_HOME=$(asdf where java)
             envman add --key JAVA_HOME --value "$JAVA_HOME"
