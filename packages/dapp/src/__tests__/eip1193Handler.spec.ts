@@ -24,6 +24,7 @@ import {
     type InboundMessage,
 } from '@perawallet/wallet-core-connections'
 import { memoryStore } from '@perawallet/wallet-core-connections/testing'
+import { logger } from '@perawallet/wallet-core-shared'
 import type { ChainId, NetworkId } from '@perawallet/wallet-core-chain-contract'
 import type { Connection } from '@perawallet/wallet-extension-connections'
 import type { JsonRpcResponse } from '../codec'
@@ -297,6 +298,7 @@ describe('createEip1193ConnectionHandler', () => {
 
     afterEach(() => {
         vi.useRealTimers()
+        vi.restoreAllMocks()
     })
 
     describe('eth_chainId', () => {
@@ -814,6 +816,43 @@ describe('createEip1193ConnectionHandler', () => {
             expect(notificationsOf(transport, 'accountsChanged')).toEqual([
                 { origin: ORIGIN, params: [] },
             ])
+        })
+    })
+
+    describe('rejection logging', () => {
+        it('logs the method, code and message of a rejected request, never its params', async () => {
+            const debug = vi.spyOn(logger, 'debug')
+            nodeRead.mockResolvedValue({
+                ok: false,
+                error: {
+                    code: -32_602,
+                    message: 'Archive requests require a personal token',
+                },
+            })
+            const { transport, registry } = setup([connectedOn('ethereum')])
+            await registry.initialize()
+
+            await transport.send(ORIGIN, 'eth_call', [{ to: ADDR_X }, 'latest'])
+
+            expect(debug).toHaveBeenCalledWith('[eip1193] request rejected', {
+                method: 'eth_call',
+                code: -32_602,
+                message: 'Archive requests require a personal token',
+            })
+            expect(JSON.stringify(debug.mock.calls)).not.toContain(ADDR_X)
+        })
+
+        it('logs nothing for an answered request', async () => {
+            const debug = vi.spyOn(logger, 'debug')
+            const { transport, registry } = setup([connectedOn('ethereum')])
+            await registry.initialize()
+
+            await transport.send(ORIGIN, 'eth_blockNumber')
+
+            expect(debug).not.toHaveBeenCalledWith(
+                '[eip1193] request rejected',
+                expect.anything(),
+            )
         })
     })
 
@@ -1360,13 +1399,11 @@ describe('createEip1193ConnectionHandler', () => {
         })
 
         it.each([
-            [
-                'another permission alongside it',
-                [{ eth_accounts: {}, wallet_snap: {} }],
-            ],
             ['a non-object value', [{ eth_accounts: 'x' }]],
             ['a second entry', [{ eth_accounts: {} }, { eth_accounts: {} }]],
-        ])('refuses %s', async (_name, params) => {
+            ['no entry', []],
+            ['an empty request', [{}]],
+        ])('answers %s as invalid params', async (_name, params) => {
             const { transport, registry, proposals } = setup()
             await registry.initialize()
 
@@ -1376,16 +1413,21 @@ describe('createEip1193ConnectionHandler', () => {
             expect(proposals).toHaveLength(0)
         })
 
-        it('refuses a request for anything but eth_accounts', async () => {
+        it.each([
+            [
+                'another permission alongside it',
+                [{ eth_accounts: {}, wallet_snap: {} }],
+            ],
+            [
+                'a permission other than eth_accounts',
+                [{ eth_signTypedData: {} }],
+            ],
+        ])('answers %s as an unsupported method', async (_name, params) => {
             const { transport, registry, proposals } = setup()
             await registry.initialize()
 
-            expect(
-                errorOf(await ask(transport, [{ eth_signTypedData: {} }]))
-                    ?.code,
-            ).toBe(EIP1193_ERROR_CODE.invalidParams)
-            expect(errorOf(await ask(transport, []))?.code).toBe(
-                EIP1193_ERROR_CODE.invalidParams,
+            expect(errorOf(await ask(transport, params))?.code).toBe(
+                EIP1193_ERROR_CODE.unsupportedMethod,
             )
             expect(proposals).toHaveLength(0)
         })
