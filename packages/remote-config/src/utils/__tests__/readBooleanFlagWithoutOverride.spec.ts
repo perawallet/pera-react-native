@@ -27,10 +27,6 @@ vi.mock('../readBooleanFlagBuildDefault', () => ({
     readBooleanFlagBuildDefault: vi.fn(() => false),
 }))
 
-vi.mock('../areConfigOverridesIgnored', () => ({
-    areConfigOverridesIgnored: () => false,
-}))
-
 import { useRemoteConfigStore } from '../../store'
 import { readBooleanFlagBuildDefault } from '../readBooleanFlagBuildDefault'
 import { readBooleanFlagWithoutOverride } from '../readBooleanFlagWithoutOverride'

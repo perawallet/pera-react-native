@@ -18,7 +18,6 @@ import {
 
 // The platform registry holds production values because extensions/platform
 // can't import the build flags, so these keys need the variant read here.
-// Thunks keep the flags read at call time, not at module load.
 const VARIANT_BOOLEAN_DEFAULTS: Partial<Record<string, () => boolean>> = {
     [RemoteConfigKeys.enable_pera_card]: () => isDebug || isStaging,
     [RemoteConfigKeys.enable_card_auto_funding]: () => isDebug || isStaging,
@@ -32,8 +31,9 @@ const VARIANT_BOOLEAN_DEFAULTS: Partial<Record<string, () => boolean>> = {
 
 /**
  * What a boolean flag reads when Remote Config holds no fetched value and no
- * developer override applies. Every reader passes this as its fallback so the
- * Feature Flags screen shows what the app actually uses.
+ * developer override applies. Readers of the variant-dependent keys pass it as
+ * their fallback so the Feature Flags screen shows what the app actually uses;
+ * every other reader's literal fallback matches its registry default.
  */
 export const readBooleanFlagBuildDefault = (key: string): boolean =>
     VARIANT_BOOLEAN_DEFAULTS[key]?.() ??

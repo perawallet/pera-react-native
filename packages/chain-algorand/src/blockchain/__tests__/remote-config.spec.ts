@@ -18,6 +18,19 @@ import {
     readAlgorandFeeConfig,
 } from '../remote-config'
 
+const buildFlags = vi.hoisted(() => ({ isDebug: false, isStaging: false }))
+vi.mock('@perawallet/wallet-core-config', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-config')
+    >()),
+    get isDebug() {
+        return buildFlags.isDebug
+    },
+    get isStaging() {
+        return buildFlags.isStaging
+    },
+}))
+
 const getNumberValueMock = vi.fn()
 const remoteConfig = { getNumberValue: getNumberValueMock }
 
@@ -48,6 +61,29 @@ describe('algorandRemoteConfigDefaults', () => {
             address_poisoning_dust_ceiling: 1000,
         })
     })
+
+    // The value is fixed when the module loads, so each build flavour needs a
+    // fresh import.
+    it.each([
+        { isDebug: true, isStaging: false, expected: true },
+        { isDebug: false, isStaging: true, expected: true },
+        { isDebug: false, isStaging: false, expected: false },
+    ])(
+        'declares enable_quantum_swap as $expected for isDebug $isDebug and isStaging $isStaging',
+        async ({ isDebug, isStaging, expected }) => {
+            buildFlags.isDebug = isDebug
+            buildFlags.isStaging = isStaging
+            vi.resetModules()
+
+            const fresh = await import('../remote-config')
+
+            expect(fresh.algorandRemoteConfigDefaults.enable_quantum_swap).toBe(
+                expected,
+            )
+            buildFlags.isDebug = false
+            buildFlags.isStaging = false
+        },
+    )
 })
 
 beforeEach(() => {
