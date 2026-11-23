@@ -306,32 +306,37 @@ describe('Flow: Onboarding → Import Quantum (25-word)', () => {
     })
 
     describe('Given quantum words entered through the Recover-a-wallet (algo25) flow, and the quantum account they control exists on chain', () => {
+        const IMPORTING_TEXT = 'onboarding.import_account.importing'
+
         beforeEach(() => {
             server.use(
                 mockAlgodAccountInformation({
                     address: ALGO25_TEST_ADDRESS,
                     response: {},
                 }),
-            )
-        })
-
-        it('then the user is offered the quantum account and importing it persists only that account', async () => {
-            server.use(
                 mockAlgodAccountInformation({
                     address: QUANTUM_TEST_ADDRESS,
                     response: { amount: 5_000_000 },
                 }),
             )
+        })
 
-            await startAlgo25ImportThroughMnemonic(ALGO25_TEST_MNEMONIC_WORDS)
-
-            await waitFor(
+        const waitForQuantumSheet = () =>
+            waitFor(
                 () =>
                     screen.getByTestId(
                         'quantum_passphrase_detected_sheet_import_quantum',
                     ),
                 { timeout: SLOW_WAIT_TIMEOUT_MS },
             )
+
+        it('then the user is offered the quantum account and importing it persists only that account', async () => {
+            await startAlgo25ImportThroughMnemonic(ALGO25_TEST_MNEMONIC_WORDS)
+
+            await waitForQuantumSheet()
+            // The importing overlay is a native modal above every sheet, so it
+            // must be gone while the sheet waits for a tap.
+            expect(screen.queryByText(IMPORTING_TEXT)).toBeNull()
             expect(
                 screen.getByTestId('quantum_passphrase_detected_sheet_address')
                     .textContent,
@@ -346,6 +351,17 @@ describe('Flow: Onboarding → Import Quantum (25-word)', () => {
                 () => screen.getByTestId('name_account_finish_button'),
                 { timeout: SLOW_WAIT_TIMEOUT_MS },
             )
+            fireEvent.click(screen.getByTestId('name_account_finish_button'))
+
+            await waitFor(
+                () => {
+                    expect(useOnboardingStore.getState().isOnboarding).toBe(
+                        false,
+                    )
+                },
+                { timeout: 5000 },
+            )
+
             const accounts = useAccountsStore.getState().accounts
             expect(accounts).toHaveLength(1)
             expect(accounts[0].custody).toEqual({
@@ -353,6 +369,93 @@ describe('Flow: Onboarding → Import Quantum (25-word)', () => {
                 seed: 'quantum',
             })
             expect(addressOf(accounts[0])).toBe(QUANTUM_TEST_ADDRESS)
+            expect(accounts[0].chains.algorand?.native).toMatchObject({
+                pq: { scheme: 'falcon-1024' },
+            })
+            expect(
+                useMnemonicBackupStore
+                    .getState()
+                    .isBackedUp(seedOf(accounts[0])),
+            ).toBe(true)
+            const { result: requiresBackup } = renderHook(() =>
+                useRequiresMnemonicBackup(accounts[0]),
+            )
+            expect(requiresBackup.current).toBe(false)
+            expect(useAccountsStore.getState().selectedAccountId).toBe(
+                accounts[0].id,
+            )
+        })
+
+        it('then Cancel closes the sheet and leaves the user on the passphrase screen with nothing imported', async () => {
+            await startAlgo25ImportThroughMnemonic(ALGO25_TEST_MNEMONIC_WORDS)
+
+            await waitForQuantumSheet()
+            fireEvent.click(
+                screen.getByTestId('quantum_passphrase_detected_sheet_back'),
+            )
+
+            await waitFor(() =>
+                expect(
+                    screen.queryByTestId('quantum_passphrase_detected_sheet'),
+                ).toBeNull(),
+            )
+            expect(screen.queryByText(IMPORTING_TEXT)).toBeNull()
+            expect(
+                screen.getByTestId('import_account_word_input_24'),
+            ).toBeTruthy()
+            expect(
+                isElementDisabled(
+                    screen.getByTestId('import_account_import_button'),
+                ),
+            ).toBe(false)
+            expect(useAccountsStore.getState().accounts).toHaveLength(0)
+        })
+
+        it('then a quantum account already in the wallet shows the already-added toast and is not stored twice', async () => {
+            useAccountsStore.getState().setAccounts([
+                {
+                    id: 'existing-quantum-1',
+                    name: '',
+                    custody: { kind: 'local', seed: 'quantum' },
+                    chains: {
+                        algorand: {
+                            address: QUANTUM_TEST_ADDRESS,
+                            keyPairId: 'pre-seeded',
+                        },
+                    },
+                },
+            ])
+
+            await startAlgo25ImportThroughMnemonic(ALGO25_TEST_MNEMONIC_WORDS)
+
+            await waitForQuantumSheet()
+            fireEvent.click(
+                screen.getByTestId(
+                    'quantum_passphrase_detected_sheet_import_quantum',
+                ),
+            )
+
+            await waitFor(
+                () => {
+                    expect(
+                        vi.mocked(Notifier.showNotification),
+                    ).toHaveBeenCalledWith(
+                        expect.objectContaining({
+                            title: 'onboarding.import_account.duplicate_account_title',
+                        }),
+                    )
+                },
+                { timeout: 5000 },
+            )
+            expect(screen.queryByText(IMPORTING_TEXT)).toBeNull()
+            expect(
+                isElementDisabled(
+                    screen.getByTestId('import_account_import_button'),
+                ),
+            ).toBe(false)
+            const accounts = useAccountsStore.getState().accounts
+            expect(accounts).toHaveLength(1)
+            expect(accounts[0].id).toBe('existing-quantum-1')
         })
     })
 })
