@@ -191,6 +191,8 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
             if (choice !== 'import-quantum') return undefined
 
             setProcessing(true)
+            // importAccount runs the Falcon keygens synchronously before its first await, so let the overlay paint first.
+            await deferToNextCycle()
             return alternate.seed
         },
         [

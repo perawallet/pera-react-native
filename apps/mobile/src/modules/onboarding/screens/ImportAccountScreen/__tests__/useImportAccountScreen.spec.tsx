@@ -102,7 +102,7 @@ vi.mock('@perawallet/wallet-core-backup', () => ({
 // modules that extend its AppError.
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
     ...(await importOriginal<Record<string, unknown>>()),
-    deferToNextCycle: (fn: () => void) => fn(),
+    deferToNextCycle: (fn?: () => unknown) => (fn ? fn() : Promise.resolve()),
     logger: {
         error: vi.fn(),
         info: vi.fn(),
@@ -830,10 +830,22 @@ describe('useImportAccountScreen', () => {
             })
 
             it('imports nothing when the user backs out', async () => {
+                mockFindAlternateImportKinds.mockImplementation(
+                    async (_type: unknown, indices: Uint16Array) => {
+                        indices.fill(7)
+                        return [{ seed: 'quantum', address: 'QUANTUMADDRESS' }]
+                    },
+                )
+
                 const result = await submit25Words()
 
                 expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
                 expect(mockImportAccount).not.toHaveBeenCalled()
+                const checkedIndices = mockFindAlternateImportKinds.mock
+                    .calls[0][1] as Uint16Array
+                expect(Array.from(checkedIndices).every(i => i === 0)).toBe(
+                    true,
+                )
                 expect(mockErrorToast).not.toHaveBeenCalled()
                 expect(result.current.processing).toBe(false)
             })
@@ -845,27 +857,12 @@ describe('useImportAccountScreen', () => {
                 })
             }
 
-            const startSubmit = async () => {
-                const { result } = renderHook(() => useImportAccountScreen())
-                act(() => {
-                    result.current.updateWord(
-                        new Array(25).fill('abandon').join(' '),
-                        0,
-                    )
-                })
-                await act(async () => {
-                    result.current.handleImportAccount()
-                    await new Promise(resolve => setTimeout(resolve, 0))
-                })
-                return result
-            }
-
             it('keeps the importing overlay up while the words are checked', async () => {
                 mockFindAlternateImportKinds.mockReturnValue(
                     new Promise(() => {}),
                 )
 
-                const result = await startSubmit()
+                const result = await submit25Words()
 
                 expect(result.current.processing).toBe(true)
                 expect(mockRequestBottomSheet).not.toHaveBeenCalled()
@@ -885,7 +882,7 @@ describe('useImportAccountScreen', () => {
                     }),
                 )
 
-                const result = await startSubmit()
+                const result = await submit25Words()
 
                 expect(result.current.processing).toBe(false)
                 expect(mockImportAccount).not.toHaveBeenCalled()
@@ -913,7 +910,7 @@ describe('useImportAccountScreen', () => {
                 mockRequestBottomSheet.mockResolvedValue('import-quantum')
                 mockImportAccount.mockRejectedValue(new Error('keystore'))
 
-                const result = await startSubmit()
+                const result = await submit25Words()
 
                 expect(mockErrorToast).toHaveBeenCalledWith(
                     'onboarding.import_account.failed_title',
@@ -929,7 +926,7 @@ describe('useImportAccountScreen', () => {
                     new DuplicateAccountError('QUANTUMADDRESS'),
                 )
 
-                const result = await startSubmit()
+                const result = await submit25Words()
 
                 expect(mockErrorToast).toHaveBeenCalledWith(
                     'onboarding.import_account.duplicate_account_title',
@@ -941,7 +938,7 @@ describe('useImportAccountScreen', () => {
             it('ends the overlay with the failure toast when the sheet cannot open', async () => {
                 mockRequestBottomSheet.mockRejectedValue(new Error('no host'))
 
-                const result = await startSubmit()
+                const result = await submit25Words()
 
                 expect(mockErrorToast).toHaveBeenCalledWith(
                     'onboarding.import_account.failed_title',
