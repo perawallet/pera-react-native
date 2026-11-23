@@ -68,11 +68,11 @@ describe('ValueChangeLine', () => {
         )
     })
 
-    it('takes the direction from the amount when the percentage is unknown', () => {
-        renderLine('5', '0')
+    it('leaves the percentage out when the change started from zero', () => {
+        renderLine('23.48', '0')
 
         expect(screen.getByTestId('change').textContent).toMatch(
-            /^\+\D*5(\.00)? \(\+0\.00%\)$/,
+            /^\+\D*23\.48$/,
         )
     })
 
