@@ -44,6 +44,8 @@ export const SignInMessageDetails = ({
         leadingRows,
         trailingRows,
         unknownChainRow,
+        resourceRows,
+        grantsWarning,
         otherAddressNote,
         otherChainNote,
     } = useSignInMessageDetails(signIn)
@@ -73,6 +75,15 @@ export const SignInMessageDetails = ({
                     </WarningBannerBody>
                 </WarningBanner>
             )}
+            {!!grantsWarning && (
+                <WarningBanner
+                    title={t('signing.sign_in.grants_title')}
+                    testID='sign_in_grants_warning'
+                >
+                    <WarningBannerBody>{grantsWarning.body}</WarningBannerBody>
+                    {grantsWarning.rows.map(renderRow)}
+                </WarningBanner>
+            )}
             {!!signIn.message.statement && (
                 <PWText>{signIn.message.statement}</PWText>
             )}
@@ -84,6 +95,7 @@ export const SignInMessageDetails = ({
                     !!unknownChainRow && renderRow(unknownChainRow)
                 )}
                 {trailingRows.map(renderRow)}
+                {resourceRows.map(renderRow)}
             </PWView>
             {!!otherAddressNote && (
                 <CautionCard

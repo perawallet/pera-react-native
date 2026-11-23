@@ -32,8 +32,25 @@ export type UseSignInMessageDetailsResult = {
     trailingRows: SignInDetailRow[]
     /** Set when the message names a chain the wallet doesn't know, so it can't be shown by name. */
     unknownChainRow: Optional<SignInDetailRow>
+    /** One per resource the message lists, in message order. */
+    resourceRows: SignInDetailRow[]
+    /** Set when signing also delegates capabilities to the site. */
+    grantsWarning: Optional<{ body: string; rows: SignInDetailRow[] }>
     otherAddressNote: Optional<string>
     otherChainNote: Optional<string>
+}
+
+const MAX_URI_LENGTH = 40
+const URI_TAIL_LENGTH = 8
+const AUTHORITY = /^[a-z][a-z0-9+.-]*:(?:\/\/[^/?#]*)?/i
+
+// The scheme and host stay whole, since they say where the resource lives;
+// only the path or payload after them is elided.
+export const shortenUri = (uri: string): string => {
+    if (uri.length <= MAX_URI_LENGTH) return uri
+    const head = AUTHORITY.exec(uri)?.[0] ?? ''
+    const kept = Math.max(head.length, MAX_URI_LENGTH - URI_TAIL_LENGTH)
+    return `${uri.slice(0, kept)}…${uri.slice(-URI_TAIL_LENGTH)}`
 }
 
 const chainNameOf = (scope: ChainScope): string => {
@@ -51,7 +68,30 @@ export const useSignInMessageDetails = (
 
     return useMemo(() => {
         const { message, messageScope, isOtherAddress, isOtherChain } = signIn
-        const expiresAt = dateOf(message.expirationTime)
+        const optionalRows: Array<Optional<SignInDetailRow>> = [
+            message.expirationTime === undefined
+                ? undefined
+                : {
+                      label: t('signing.sign_in.expires_at'),
+                      value: dateOf(message.expirationTime) ?? '',
+                      testID: 'sign_in_expires_at',
+                  },
+            message.notBefore === undefined
+                ? undefined
+                : {
+                      label: t('signing.sign_in.not_before'),
+                      value: dateOf(message.notBefore) ?? '',
+                      testID: 'sign_in_not_before',
+                  },
+            message.requestId === undefined
+                ? undefined
+                : {
+                      label: t('signing.sign_in.request_id'),
+                      value: message.requestId,
+                      testID: 'sign_in_request_id',
+                  },
+        ]
+        const hasGrants = signIn.grants.length > 0 || signIn.hasUnreadableGrants
         const chainName = messageScope
             ? chainNameOf(messageScope)
             : `${t('signing.sign_in.chain_id')} ${message.chainId}`
@@ -85,16 +125,29 @@ export const useSignInMessageDetails = (
                     value: dateOf(message.issuedAt) ?? '',
                     testID: 'sign_in_issued_at',
                 },
-                ...(expiresAt
-                    ? [
-                          {
-                              label: t('signing.sign_in.expires_at'),
-                              value: expiresAt,
-                              testID: 'sign_in_expires_at',
-                          },
-                      ]
-                    : []),
+                ...optionalRows.filter(row => row !== undefined),
             ],
+            resourceRows: (message.resources ?? []).map((uri, index) => ({
+                label: t('signing.sign_in.resource'),
+                value: shortenUri(uri),
+                testID: `sign_in_resource_${index}`,
+            })),
+            grantsWarning: hasGrants
+                ? {
+                      body: signIn.hasUnreadableGrants
+                          ? t('signing.sign_in.grants_unreadable_body', {
+                                domain: message.domain,
+                            })
+                          : t('signing.sign_in.grants_body', {
+                                domain: message.domain,
+                            }),
+                      rows: signIn.grants.map((grant, index) => ({
+                          label: shortenUri(grant.target),
+                          value: grant.abilities.join(', '),
+                          testID: `sign_in_grant_${index}`,
+                      })),
+                  }
+                : undefined,
             unknownChainRow: messageScope
                 ? undefined
                 : {

@@ -3633,7 +3633,13 @@
             "site_mismatch_title": "Diese Anmeldung gilt für eine andere Website",
             "site_mismatch_body": "Die Nachricht meldet dich bei {{domain}} an, die Anfrage kommt aber von {{site}}. Bestätige nur, wenn du beiden vertraust.",
             "other_address_note": "Die Nachricht nennt {{address}}, nicht das signierende Konto.",
-            "other_chain_note": "Die Nachricht nennt {{chain}}, nicht das Netzwerk dieser Anfrage. Bei der Anmeldung wird keine Transaktion gesendet."
+            "other_chain_note": "Die Nachricht nennt {{chain}}, nicht das Netzwerk dieser Anfrage. Bei der Anmeldung wird keine Transaktion gesendet.",
+            "not_before": "Gültig ab",
+            "request_id": "Anfrage-ID",
+            "resource": "Ressource",
+            "grants_title": "Diese Anmeldung erteilt auch Berechtigungen",
+            "grants_body": "Mit der Signatur kann {{domain}} mit den folgenden Berechtigungen in deinem Namen handeln. Bestätige nur, wenn du der Website vertraust.",
+            "grants_unreadable_body": "Diese Anmeldung erteilt {{domain}} Berechtigungen, die Pera nicht lesen kann. Bestätige nur, wenn du der Website vertraust."
         },
         "spend_approval": {
             "spend_warning": "Diese Signatur erlaubt einer anderen Adresse, Token ohne erneute Rückfrage von deinem Konto zu bewegen.",

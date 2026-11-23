@@ -73,6 +73,7 @@ import {
 } from './digests'
 import { isPermitTypedData, spendApprovalOf } from './permits'
 import { toViemSignature } from './sign'
+import { decodeRecap, isRecapUri } from './recap'
 import { parseSiweMessage } from './siwe'
 import { hasUnreadableTypedDataValue } from './typedDataValues'
 
@@ -384,6 +385,9 @@ const signInSummaryOf = (
     const message = parseSiweMessage(text)
     if (!message) return undefined
     const named = evmChainOfEip155Id(Number(message.chainId))
+    const decoded = (message.resources ?? [])
+        .filter(isRecapUri)
+        .map(decodeRecap)
     // Only a registered chain can be shown by name; the review falls back to the bare id.
     const messageScope: Optional<ChainScope> =
         named && addressCodecs.has(named.chain.row.id)
@@ -400,6 +404,8 @@ const signInSummaryOf = (
         isOtherChain:
             requestChainId === undefined ||
             BigInt(message.chainId) !== BigInt(requestChainId),
+        grants: decoded.flatMap(grants => grants ?? []),
+        hasUnreadableGrants: decoded.includes(undefined),
     }
 }
 

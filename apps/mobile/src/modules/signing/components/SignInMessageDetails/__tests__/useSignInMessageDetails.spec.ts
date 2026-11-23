@@ -14,7 +14,7 @@ import { renderHook } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import type { SignInSummary } from '@perawallet/wallet-core-chain-contract'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
-import { useSignInMessageDetails } from '../useSignInMessageDetails'
+import { shortenUri, useSignInMessageDetails } from '../useSignInMessageDetails'
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
@@ -50,6 +50,8 @@ const signIn = (overrides: Partial<SignInSummary> = {}): SignInSummary => ({
     messageScope: { chainId: 'ethereum', networkId: 'mainnet' },
     isOtherAddress: false,
     isOtherChain: false,
+    grants: [],
+    hasUnreadableGrants: false,
     ...overrides,
 })
 
@@ -83,6 +85,74 @@ describe('useSignInMessageDetails', () => {
             testID: 'sign_in_expires_at',
             value: formatDatetime(new Date(EXPIRES_AT)),
         })
+    })
+
+    it('adds the not-before time and request id when the message has them', () => {
+        const { trailingRows } = render(
+            signIn({
+                message: {
+                    ...signIn().message,
+                    notBefore: ISSUED_AT,
+                    requestId: 'req-42',
+                },
+            }),
+        )
+
+        expect(trailingRows.map(row => row.testID)).toEqual([
+            'sign_in_nonce',
+            'sign_in_issued_at',
+            'sign_in_not_before',
+            'sign_in_request_id',
+        ])
+        expect(trailingRows.at(-1)?.value).toBe('req-42')
+    })
+
+    it('lists every resource as its own row', () => {
+        const { resourceRows } = render(
+            signIn({
+                message: {
+                    ...signIn().message,
+                    resources: ['ipfs://bafy', 'https://opensea.io/terms'],
+                },
+            }),
+        )
+
+        expect(resourceRows.map(row => row.value)).toEqual([
+            'ipfs://bafy',
+            'https://opensea.io/terms',
+        ])
+    })
+
+    it('warns of no permissions for a plain sign-in', () => {
+        expect(render(signIn()).grantsWarning).toBeUndefined()
+    })
+
+    it('warns of the permissions a ReCap grants, one row per target', () => {
+        const { grantsWarning } = render(
+            signIn({
+                grants: [
+                    {
+                        target: 'https://opensea.io/',
+                        abilities: ['crud/read', 'crud/update'],
+                    },
+                ],
+            }),
+        )
+
+        expect(grantsWarning?.body).toContain('signing.sign_in.grants_body')
+        expect(grantsWarning?.rows).toEqual([
+            {
+                label: 'https://opensea.io/',
+                value: 'crud/read, crud/update',
+                testID: 'sign_in_grant_0',
+            },
+        ])
+    })
+
+    it('warns of permissions it cannot read', () => {
+        expect(
+            render(signIn({ hasUnreadableGrants: true })).grantsWarning?.body,
+        ).toContain('signing.sign_in.grants_unreadable_body')
     })
 
     it('shows no notes for a message that matches the request', () => {
@@ -133,5 +203,32 @@ describe('useSignInMessageDetails', () => {
 
         expect(unknownChainRow?.value).toBe('987654321')
         expect(otherChainNote).toContain('signing.sign_in.chain_id 987654321')
+    })
+})
+
+describe('shortenUri', () => {
+    it('keeps a short URI whole', () => {
+        expect(shortenUri('https://opensea.io/terms')).toBe(
+            'https://opensea.io/terms',
+        )
+    })
+
+    it('keeps the scheme and host of a long URL and elides its path', () => {
+        const uri = `https://a-very-long-subdomain.opensea.io/${'p'.repeat(60)}/end-tail`
+        const short = shortenUri(uri)
+
+        expect(
+            short.startsWith('https://a-very-long-subdomain.opensea.io'),
+        ).toBe(true)
+        expect(short).toContain('…')
+        expect(short.endsWith('end-tail')).toBe(true)
+        expect(short.length).toBeLessThan(uri.length)
+    })
+
+    it('elides the payload of a long URN', () => {
+        const short = shortenUri(`urn:recap:${'e'.repeat(200)}`)
+
+        expect(short.startsWith('urn:recap:')).toBe(true)
+        expect(short.length).toBeLessThan(60)
     })
 })

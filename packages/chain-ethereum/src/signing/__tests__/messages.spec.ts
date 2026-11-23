@@ -722,7 +722,11 @@ describe('ethereumMessageSignerAdapter.reviewedAddresses', () => {
     })
 })
 
-const signInText = (address: string, chainId: number) =>
+const signInText = (
+    address: string,
+    chainId: number,
+    resources: string[] = [],
+) =>
     toHex(
         [
             'opensea.io wants you to sign in with your Ethereum account:',
@@ -735,8 +739,15 @@ const signInText = (address: string, chainId: number) =>
             `Chain ID: ${chainId}`,
             'Nonce: 3fp8w2kd',
             'Issued At: 2026-11-20T10:00:00.000Z',
+            ...(resources.length > 0
+                ? ['Resources:', ...resources.map(uri => `- ${uri}`)]
+                : []),
         ].join('\n'),
     )
+
+const RECAP = `urn:recap:${Buffer.from(
+    JSON.stringify({ att: { 'https://opensea.io/': { 'crud/update': [{}] } } }),
+).toString('base64url')}`
 
 describe('ethereumMessageSignerAdapter.describe for a sign-in message', () => {
     beforeAll(() => {
@@ -764,9 +775,32 @@ describe('ethereumMessageSignerAdapter.describe for a sign-in message', () => {
                 messageScope: MAINNET,
                 isOtherAddress: false,
                 isOtherChain: false,
+                grants: [],
+                hasUnreadableGrants: false,
             },
         })
         expect(summary.preview).toContain('opensea.io wants you to sign in')
+    })
+
+    it('reads what its ReCap resources grant, alongside its other resources', () => {
+        const signIn = adapter.describe(
+            personal(signInText(SENDER, 1, ['ipfs://bafy', RECAP])),
+        ).signIn
+
+        expect(signIn?.message.resources).toEqual(['ipfs://bafy', RECAP])
+        expect(signIn?.grants).toEqual([
+            { target: 'https://opensea.io/', abilities: ['crud/update'] },
+        ])
+        expect(signIn?.hasUnreadableGrants).toBe(false)
+    })
+
+    it('flags a ReCap it cannot read', () => {
+        const signIn = adapter.describe(
+            personal(signInText(SENDER, 1, [RECAP, 'urn:recap:%%%'])),
+        ).signIn
+
+        expect(signIn?.grants).toHaveLength(1)
+        expect(signIn?.hasUnreadableGrants).toBe(true)
     })
 
     it('flags an address other than the signer', () => {

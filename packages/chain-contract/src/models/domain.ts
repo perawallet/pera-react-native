@@ -525,6 +525,14 @@ export type SiwxMessage = {
     resources?: string[]
 }
 
+/** A capability a sign-in delegates to the site; requester text, never translated. */
+export interface SignInGrant {
+    /** The resource the abilities apply to, e.g. a URL or a DID. */
+    target: string
+    /** Namespaced ability names, e.g. `crud/update`. */
+    abilities: string[]
+}
+
 /** A sign-in message, checked against the request it arrived in. */
 export interface SignInSummary {
     /** Requester text, never translated. */
@@ -535,6 +543,10 @@ export interface SignInSummary {
     isOtherAddress: boolean
     /** The message names a chain other than the network the request is signed on. */
     isOtherChain: boolean
+    /** What the message's capability resources grant the site, in message order. */
+    grants: SignInGrant[]
+    /** A capability resource could not be read, so it grants something unknown. */
+    hasUnreadableGrants: boolean
 }
 
 export interface MessageSummary {

@@ -3641,7 +3641,13 @@
             "site_mismatch_title": "This sign-in is for another site",
             "site_mismatch_body": "The message signs you in to {{domain}}, but the request comes from {{site}}. Only approve if you trust both.",
             "other_address_note": "The message names {{address}}, not the account signing it.",
-            "other_chain_note": "The message names {{chain}}, not the network this request is for. Signing in sends no transaction."
+            "other_chain_note": "The message names {{chain}}, not the network this request is for. Signing in sends no transaction.",
+            "not_before": "Valid from",
+            "request_id": "Request ID",
+            "resource": "Resource",
+            "grants_title": "This sign-in also grants permissions",
+            "grants_body": "Signing lets {{domain}} act for you with the permissions below. Only approve if you trust it.",
+            "grants_unreadable_body": "This sign-in grants {{domain}} permissions Pera can't read. Only approve if you trust it."
         },
         "spend_approval": {
             "spend_warning": "This signature lets another address move tokens out of your account without asking you again.",

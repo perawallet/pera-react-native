@@ -3641,7 +3641,13 @@
             "site_mismatch_title": "Bu oturum açma başka bir site için",
             "site_mismatch_body": "Mesaj şu alan adında oturum açar: {{domain}}. Ancak istek şu siteden geliyor: {{site}}. Yalnızca ikisine de güveniyorsan onayla.",
             "other_address_note": "Mesajdaki adres imzalayan hesap değil: {{address}}",
-            "other_chain_note": "Mesajdaki ağ bu isteğin ağı değil: {{chain}}. Oturum açmak işlem göndermez."
+            "other_chain_note": "Mesajdaki ağ bu isteğin ağı değil: {{chain}}. Oturum açmak işlem göndermez.",
+            "not_before": "Geçerlilik başlangıcı",
+            "request_id": "İstek kimliği",
+            "resource": "Kaynak",
+            "grants_title": "Bu oturum açma izin de veriyor",
+            "grants_body": "İmzaladığında bu site aşağıdaki izinlerle senin adına işlem yapabilir: {{domain}}. Yalnızca siteye güveniyorsan onayla.",
+            "grants_unreadable_body": "Bu oturum açma, Pera'nın okuyamadığı izinler veriyor. Site: {{domain}}. Yalnızca siteye güveniyorsan onayla."
         },
         "spend_approval": {
             "spend_warning": "Bu imza, başka bir adresin hesabından sana tekrar sormadan token hareket ettirmesine izin verir.",

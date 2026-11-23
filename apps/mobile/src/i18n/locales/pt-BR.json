@@ -3657,7 +3657,13 @@
             "site_mismatch_title": "Este login é para outro site",
             "site_mismatch_body": "A mensagem faz seu login em {{domain}}, mas a solicitação vem de {{site}}. Aprove somente se você confiar em ambos.",
             "other_address_note": "A mensagem indica {{address}}, não a conta que está assinando.",
-            "other_chain_note": "A mensagem indica {{chain}}, não a rede desta solicitação. Fazer login não envia nenhuma transação."
+            "other_chain_note": "A mensagem indica {{chain}}, não a rede desta solicitação. Fazer login não envia nenhuma transação.",
+            "not_before": "Válido a partir de",
+            "request_id": "ID da solicitação",
+            "resource": "Recurso",
+            "grants_title": "Este login também concede permissões",
+            "grants_body": "Ao assinar, {{domain}} poderá agir por você com as permissões abaixo. Aprove somente se você confiar no site.",
+            "grants_unreadable_body": "Este login concede a {{domain}} permissões que a Pera não consegue ler. Aprove somente se você confiar no site."
         },
         "spend_approval": {
             "spend_warning": "Esta assinatura permite que outro endereço movimente tokens da sua conta sem pedir sua confirmação de novo.",

@@ -122,7 +122,11 @@ const MULTICHAIN_ACCOUNT: WalletAccount = {
     },
 }
 
-const signInMessage = (domain: string, chainId: number) =>
+const signInMessage = (
+    domain: string,
+    chainId: number,
+    resources: string[] = [],
+) =>
     `0x${Buffer.from(
         [
             `${domain} wants you to sign in with your Ethereum account:`,
@@ -135,8 +139,17 @@ const signInMessage = (domain: string, chainId: number) =>
             `Chain ID: ${chainId}`,
             'Nonce: 3fp8w2kd',
             'Issued At: 2026-11-20T10:00:00.000Z',
+            ...(resources.length > 0
+                ? ['Resources:', ...resources.map(uri => `- ${uri}`)]
+                : []),
         ].join('\n'),
     ).toString('hex')}`
+
+const RECAP = `urn:recap:${Buffer.from(
+    JSON.stringify({
+        att: { 'https://dapp.example/': { 'crud/update': [{}] } },
+    }),
+).toString('base64url')}`
 
 const IN_APP_ORIGIN: ConnectionOrigin = { source: 'in-app' }
 
@@ -347,7 +360,36 @@ describe('Flow: an eip155 dApp asks for a message signature', () => {
         expect(screen.getByTestId('sign_in_other_chain')).toBeTruthy()
         expect(screen.queryByTestId('sign_in_other_address')).toBeNull()
         expect(screen.queryByTestId('sign_in_site_mismatch')).toBeNull()
+        expect(screen.queryByTestId('sign_in_grants_warning')).toBeNull()
         expect(screen.getByTestId('sign_in_advanced')).toBeTruthy()
+        fireEvent.click(screen.getByTestId(REJECT_BUTTON))
+        expect((await answerOf(walletKit)).error).toMatchObject({ code: 4001 })
+    })
+
+    it('Given a connected session, when the dApp sends a Sign-In with Ethereum message whose resources include a ReCap, then the review lists each resource and warns of the permissions it grants', async () => {
+        const walletKit = await connectSession()
+
+        send(walletKit, 'personal_sign', [
+            signInMessage('dapp.example', 1, ['ipfs://bafy', RECAP]),
+            SENDER,
+        ])
+        await waitFor(
+            () =>
+                expect(
+                    screen.getByTestId('sign_in_grants_warning'),
+                ).toBeTruthy(),
+            { timeout: 15_000 },
+        )
+
+        expect(screen.getByTestId('sign_in_grant_0').textContent).toContain(
+            'crud/update',
+        )
+        expect(screen.getByTestId('sign_in_resource_0').textContent).toContain(
+            'ipfs://bafy',
+        )
+        expect(screen.getByTestId('sign_in_resource_1').textContent).toContain(
+            'urn:recap:',
+        )
         fireEvent.click(screen.getByTestId(REJECT_BUTTON))
         expect((await answerOf(walletKit)).error).toMatchObject({ code: 4001 })
     })
