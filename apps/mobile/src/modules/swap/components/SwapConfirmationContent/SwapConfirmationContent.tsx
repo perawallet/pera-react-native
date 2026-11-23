@@ -67,7 +67,6 @@ export const SwapConfirmationContent = ({
         peraFeeDisplay,
         providerFeeDisplay,
         networkFeeDisplay,
-        needsSpendApproval,
         insufficientFeeMessage,
         highNetworkFeeMessage,
         slippageDisplay,
@@ -122,17 +121,6 @@ export const SwapConfirmationContent = ({
                         >
                             <PWText style={styles.warningText}>
                                 {highNetworkFeeMessage}
-                            </PWText>
-                        </PWView>
-                    )}
-
-                    {needsSpendApproval && (
-                        <PWView
-                            style={styles.noteBanner}
-                            testID='swap-confirm-spend-approval-note'
-                        >
-                            <PWText variant='caption'>
-                                {t('swap.quote.spend_approval_note')}
                             </PWText>
                         </PWView>
                     )}
