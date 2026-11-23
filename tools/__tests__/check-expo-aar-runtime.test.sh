@@ -96,7 +96,7 @@ PIN_027='def expoModulesV2Version = "0.2.7"'
 # $1 label  $2 expected exit  $3 expo-modules-core build.gradle line  $4 buildFromSource JSON array
 # $5 modules (space-separated)
 run_case() {
-    local label="$1" want="$2" pin="$3" from_source="$4" modules="$5"
+    local label="$1" want="$2" pin="$3" from_source="$4" modules="$5" says="${6:-}"
     echo "$pin" > "$WORK/pkgs/expo-modules-core/android/build.gradle"
     local entries
     entries=$(printf '{ "packageName": "expo-modules-core", "packageVersion": "58.0.24", "projects": [{ "name": "expo-modules-core", "sourceDir": "%s/pkgs/expo-modules-core/android" }] }' "$WORK")
@@ -108,7 +108,8 @@ run_case() {
     output=$(GRADLE_USER_HOME="$WORK/gradle" node "$WORK/repo/tools/check-expo-aar-runtime.mjs" 2>&1)
     status=$?
     # A crash also exits 1; a real verdict starts with FAIL:.
-    if [ "$status" -eq "$want" ] && { [ "$want" -eq 0 ] || [[ "$output" == FAIL:* ]]; }; then
+    if [ "$status" -eq "$want" ] && { [ "$want" -eq 0 ] || [[ "$output" == FAIL:* ]]; } &&
+        [[ "$output" == *"$says"* ]]; then
         echo "  ok    ${label}"
     else
         echo "  FAIL  ${label}: expected exit ${want}, got ${status}"
@@ -130,6 +131,8 @@ run_case "members inherited from a runtime superclass resolve" 0 "$PIN_025" '[]'
 echo "── no vacuous pass"
 run_case "no prebuilt module at all fails" 1 "$PIN_025" '[]' ""
 run_case "an unreadable runtime pin fails" 1 'def expoModulesV2Version = libs.versions.v2' '[]' "haptics"
+run_case "a runtime pin that isn't a plain version fails before any download" 1 \
+    'def expoModulesV2Version = "0.2.5/../../evil"' '[]' "haptics" "could not find expoModulesV2Version"
 
 if [ "$failures" -gt 0 ]; then
     echo "check-expo-aar-runtime: ${failures} failure(s)"

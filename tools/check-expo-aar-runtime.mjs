@@ -253,14 +253,16 @@ async function main() {
     const core = coreModule?.projects?.[0]
     if (!core) fail('autolinking resolved no expo-modules-core project')
     const pin = readFileSync(join(core.sourceDir, 'build.gradle'), 'utf8').match(
-        /^def expoModulesV2Version = "([^"]+)"/m,
+        /^def expoModulesV2Version = "(\d+)\.(\d+)\.(\d+)"/m,
     )
     if (!pin) {
         fail(
             `could not find expoModulesV2Version in ${join(core.sourceDir, 'build.gradle')}. expo-modules-core changed how it pins the v2 runtime; teach this check the new form rather than dropping it.`,
         )
     }
-    const runtimeVersion = pin[1]
+    // Rebuilt from numbers: the version goes into a download URL, so no raw
+    // text from a dependency's build file reaches the request.
+    const runtimeVersion = pin.slice(1, 4).map(Number).join('.')
     const runtime = new Map(
         classesInAar(await readRuntimeAar(runtimeVersion)).map(cls => [cls.name, cls]),
     )
