@@ -98,7 +98,7 @@ type NodeOptions = {
     baseFeeAfterFirstSend?: Hex
     balance?: Hex
     /** Answers `eth_call`, such as an allowance read. */
-    callResult?: Hex
+    callResult?: Hex | ((params: readonly unknown[]) => Hex)
     /** Every endpoint serves the one ledger, as an extension's separate contexts each reach the same node. */
     rpcUrls?: readonly string[]
 }

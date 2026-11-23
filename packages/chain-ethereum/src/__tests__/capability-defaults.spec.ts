@@ -124,7 +124,7 @@ describe('the optimism capabilities', () => {
         vi.resetModules()
     })
 
-    it.each(['development', 'staging', 'production'])(
+    it.each(ENVIRONMENTS)(
         'leave swap and onramp off in %s, where remote config can still switch them',
         async env => {
             const { row, supported, defaults } = await loadWith(env, 'optimism')
