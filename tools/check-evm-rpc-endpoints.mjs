@@ -25,9 +25,9 @@
  *    required: the fallback is a public node, and whoever can set these lists
  *    can as easily edit this check;
  *  - Pera's own proxy (a *.perawallet.app URL) needs an app integrity token a
- *    CI job can't get. It is sent BACKEND_API_KEY, and a 403
- *    APP_INTEGRITY_TOKEN_REQUIRED counts as reachable: that proves the host
- *    and the route, not the chain id, which the backend pins per host.
+ *    CI job can't get, so its chain id is read from the route's /evm/<id>/
+ *    segment instead. It must be https, since it is sent BACKEND_API_KEY, and
+ *    a 403 APP_INTEGRITY_TOKEN_REQUIRED counts as reachable.
  *
  * URLs are printed without their path or query: a paid provider's API key
  * usually sits there, and this output lands in CI logs.
@@ -76,8 +76,8 @@ const INTEGRITY_REQUIRED = 'APP_INTEGRITY_TOKEN_REQUIRED'
 const fetchChainId = async url => {
     let failure
     const headers = { 'content-type': 'application/json' }
-    const apiKey = process.env.BACKEND_API_KEY
-    if (isPeraProxy(url) && apiKey) headers['x-api-key'] = apiKey
+    // Only ever over https: problemWith refuses a plain-http Pera URL first.
+    if (isPeraProxy(url)) headers['x-api-key'] = process.env.BACKEND_API_KEY
     for (let attempt = 1; attempt <= ATTEMPTS; attempt += 1) {
         try {
             const response = await fetch(url, {
@@ -124,7 +124,7 @@ const shown = url => {
     }
 }
 
-/** `undefined` when the URL checks out; `isGuarded` when Pera's proxy answered but its chain id can't be read; `isUnreachable` marks a failure that says nothing about the network it serves. */
+/** `undefined` when the URL checks out; `isGuarded` when Pera's proxy answered its integrity guard, its chain id read from the route; `isUnreachable` marks a failure that says nothing about the network it serves. */
 const problemWith = async (url, scope, isProduction) => {
     let parsed
     try {
@@ -138,6 +138,27 @@ const problemWith = async (url, scope, isProduction) => {
         parsed.protocol !== 'https:'
     ) {
         return { message: 'a production mainnet endpoint must be https' }
+    }
+    if (isPeraProxy(url)) {
+        if (parsed.protocol !== 'https:') {
+            return {
+                message:
+                    "Pera's proxy must be https, as it is sent BACKEND_API_KEY",
+            }
+        }
+        const routeChainId = parsed.pathname.match(/\/evm\/(\d+)\//)?.[1]
+        if (routeChainId !== String(scope.eip155ChainId)) {
+            return {
+                message: `Pera proxy route is for chain ${routeChainId ?? '(none)'}, expected ${scope.eip155ChainId}`,
+            }
+        }
+        if (!process.env.BACKEND_API_KEY) {
+            return {
+                message:
+                    "BACKEND_API_KEY is unset, and Pera's proxy refuses calls without it",
+                isUnreachable: true,
+            }
+        }
     }
     const { chainId, error, isUnreachable, isGuarded } = await fetchChainId(url)
     if (error) return { message: error, isUnreachable }
@@ -164,7 +185,7 @@ const main = async () => {
                 console.log(`PASS ${label} — chain id ${scope.eip155ChainId}`)
             } else if (problem.isGuarded) {
                 console.log(
-                    `PASS ${label} — reachable, integrity-guarded (chain id not checked)`,
+                    `PASS ${label} — reachable, integrity-guarded, chain id ${scope.eip155ChainId} from the route`,
                 )
             } else if (problem.isUnreachable && !isProduction) {
                 console.warn(`WARN ${label} — ${problem.message}`)

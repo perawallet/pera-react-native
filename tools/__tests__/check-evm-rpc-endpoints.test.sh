@@ -84,11 +84,12 @@ for _ in $(seq 1 50); do
 done
 GUARD_PORT=$(cat "$out")
 GUARD_NODE="http://127.0.0.1:${GUARD_PORT}"
-PROXY_URL="http://mainnet.api.perawallet.app:${GUARD_PORT}/api/v3/evm/1/rpc"
-# Sends *.perawallet.app to the local guard, so the proxy path runs without DNS.
+PROXY_URL="https://testnet.api.perawallet.app:${GUARD_PORT}/api/v3/evm/11155111/rpc"
+# Sends https://*.perawallet.app to the local plain-http guard, so the proxy path
+# runs without DNS or TLS while the script still sees an https URL.
 cat > "$WORK/resolve-pera.mjs" <<'JS'
 const realFetch = globalThis.fetch
-globalThis.fetch = (url, init) => realFetch(String(url).replace(/\/\/[^/:]*\.perawallet\.app/, '//127.0.0.1'), init)
+globalThis.fetch = (url, init) => realFetch(String(url).replace(/^https:\/\/[^/:]*\.perawallet\.app/, 'http://127.0.0.1'), init)
 JS
 RESOLVE_PERA="--import=$WORK/resolve-pera.mjs"
 
@@ -140,10 +141,19 @@ run_case "staging leaves a plain-http mainnet URL alone" 0 "" \
     APP_ENV=staging ETHEREUM_MAINNET_RPC_URL="$MAINNET_NODE"
 
 run_case "Pera's proxy answering 403 integrity-required passes with the API key" 0 \
-    "PASS ETHEREUM_SEPOLIA_RPC_URL http://mainnet.api.perawallet.app:${GUARD_PORT} — reachable, integrity-guarded" \
+    "PASS ETHEREUM_SEPOLIA_RPC_URL https://testnet.api.perawallet.app:${GUARD_PORT} — reachable, integrity-guarded, chain id 11155111 from the route" \
     APP_ENV=production BACKEND_API_KEY=test-key NODE_OPTIONS="$RESOLVE_PERA" ETHEREUM_SEPOLIA_RPC_URL="$PROXY_URL"
-run_case "Pera's proxy without the API key fails a production build" 1 "HTTP 401" \
+run_case "Pera's proxy routed to another chain fails" 1 \
+    "Pera proxy route is for chain 1, expected 11155111" \
+    BACKEND_API_KEY=test-key NODE_OPTIONS="$RESOLVE_PERA" ETHEREUM_SEPOLIA_RPC_URL="https://mainnet.api.perawallet.app:${GUARD_PORT}/api/v3/evm/1/rpc"
+run_case "Pera's proxy without the API key fails a production build" 1 \
+    "BACKEND_API_KEY is unset" \
     APP_ENV=production NODE_OPTIONS="$RESOLVE_PERA" ETHEREUM_SEPOLIA_RPC_URL="$PROXY_URL"
+run_case "Pera's proxy refusing a wrong API key fails a production build" 1 "HTTP 401" \
+    APP_ENV=production BACKEND_API_KEY=wrong-key NODE_OPTIONS="$RESOLVE_PERA" ETHEREUM_SEPOLIA_RPC_URL="$PROXY_URL"
+run_case "a plain-http Pera proxy URL fails, so the API key never goes out in cleartext" 1 \
+    "Pera's proxy must be https" \
+    BACKEND_API_KEY=test-key ETHEREUM_SEPOLIA_RPC_URL="http://testnet.api.perawallet.app:${GUARD_PORT}/api/v3/evm/11155111/rpc"
 run_case "the API key goes only to Pera's own hosts" 1 "HTTP 401" \
     APP_ENV=production BACKEND_API_KEY=test-key ETHEREUM_SEPOLIA_RPC_URL="$GUARD_NODE"
 
