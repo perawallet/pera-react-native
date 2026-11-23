@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { getAddress } from 'viem'
+import { erc20Abi, getAddress } from 'viem'
 import type { Address, Hex, PublicClient } from 'viem'
 import type {
     ChainContext,
@@ -72,7 +72,7 @@ import {
     decodeSwapTransaction,
     type EvmSwapCall,
 } from './decode-swap-transaction'
-import { evmShortfallOf, readEvmAllowance } from './source-cost'
+import { evmShortfallOf } from './source-cost'
 import {
     validateEvmSwapTransactions,
     type EvmSwapPlan,
@@ -80,6 +80,21 @@ import {
 
 // The router's label for the allowance transaction it prepares in a swap step.
 const APPROVAL_PURPOSE = 'approval'
+
+const readEvmAllowance = (
+    client: PublicClient,
+    {
+        token,
+        owner,
+        spender,
+    }: { token: Address; owner: Address; spender: Address },
+): Promise<bigint> =>
+    client.readContract({
+        address: token,
+        abi: erc20Abi,
+        functionName: 'allowance',
+        args: [owner, spender],
+    })
 
 const failed = (failure: SwapExecutionFailure): ExecuteSwapResult => ({
     kind: 'failed',
@@ -382,10 +397,9 @@ export const executeEvmSwap = async ({
     const client = createEvmClient(scope, ctx, chain)
     const sender = getAddress(quote.request.sourceAddress)
 
-    // No preflight against the estimate: it's a ceiling for an order not yet
-    // made, several times what XO's deposits cost, so it would refuse swaps the
-    // account can pay. Each transaction's exact check refuses a real shortfall
-    // before anything is signed.
+    // No preflight against the estimate: it prices an order not yet made, so it
+    // can refuse a swap the account can pay. Each transaction's exact check
+    // refuses a real shortfall before anything is signed.
     let order: SwapOrder
     try {
         onProgress('preparing')

@@ -543,15 +543,6 @@ Cross Chain Confirmation Names The Receiving Account
     Should Not Be Empty    ${note.strip()}    The cross-network note is empty.
     Tap    ${CONFIRM_CLOSE}
 
-Ethereum Swap Confirmation Warns About The Spend Approval
-    [Documentation]    Paying with an ERC-20 that has no allowance yet warns on the confirmation that a spend approval comes first.
-    [Tags]    id:swap.confirm.spend-approval    swap-exec    p1    needs-funded    excludefromci
-    Open Ethereum Swap Confirmation
-    Wait Until Page Contains Element    ${CONFIRM_SPEND_APPROVAL_NOTE}    timeout=30s
-    ${note}=    Text Under    ${CONFIRM_SPEND_APPROVAL_NOTE}
-    Should Not Be Empty    ${note.strip()}    The spend approval note is empty.
-    Tap    ${CONFIRM_CLOSE}
-
 Real ALGO To USDC Swap Completes And Lands In History
     [Documentation]    Spends real mainnet funds (about 0.1 ALGO), hence the second opt-in.
     [Tags]    id:swap.exec.algo-to-usdc    swap-exec    p0    needs-funded    needs-testid    excludefromci    mainnet-exec

@@ -19,7 +19,7 @@ import {
     isAddressEqual,
     numberToHex,
     parseAbi,
-    size,
+    parseTransaction,
     toHex,
 } from 'viem'
 import type { Address, Hex } from 'viem'
@@ -41,14 +41,16 @@ import {
 } from '../../__tests__/evm-chains'
 import { evmRpcHandlers } from '../../blockchain/msw-handlers'
 import type { EvmChain } from '../../chains/types'
-import { readEvmFeePresets, SURCHARGE_HEADROOM } from '../../transfer/fees'
+import {
+    INTRINSIC_TRANSFER_GAS,
+    readEvmFeePresets,
+    SURCHARGE_HEADROOM,
+} from '../../transfer/fees'
 import { OP_STACK_ORACLE_ADDRESS } from '../../transfer/__tests__/op-stack-oracle'
 import {
     estimateEvmSwapSourceCost,
     evmShortfallOf,
-    SWAP_APPROVAL_GAS_CEILING,
-    SWAP_CALLDATA_BYTES_CEILING,
-    SWAP_CALL_GAS_CEILING,
+    SWAP_TOKEN_DEPOSIT_GAS_CEILING,
 } from '../source-cost'
 
 const AMOUNT = 1_000_000n
@@ -63,13 +65,6 @@ const quoteOf = (assetId: string): SwapQuote =>
             sourceAddress: SENDER,
         },
     }) as unknown as SwapQuote
-
-const allowanceOf = (amount: bigint): Hex =>
-    encodeFunctionResult({
-        abi: erc20Abi,
-        functionName: 'allowance',
-        result: amount,
-    })
 
 const estimate = (assetId: string) =>
     estimateEvmSwapSourceCost({
@@ -86,25 +81,31 @@ afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
 describe('estimateEvmSwapSourceCost', () => {
-    it('prices only the swap for the native asset', async () => {
-        fakeNode({ balance: RICH, callResult: allowanceOf(0n) })
-        const withApproval = await estimate(TOKEN)
-        server.resetHandlers()
+    it.each([
+        ['a token', TOKEN, SWAP_TOKEN_DEPOSIT_GAS_CEILING],
+        [
+            'the native asset',
+            ETHEREUM.nativeAsset.assetId,
+            INTRINSIC_TRANSFER_GAS,
+        ],
+    ])('prices %s source as one deposit', async (_, assetId, gas) => {
         fakeNode({ balance: RICH })
+        const client = createEvmClient(scope, ctx, ETHEREUM)
+        const { presets } = await readEvmFeePresets(
+            client,
+            ETHEREUM,
+            scope.networkId,
+        )
 
-        const cost = await estimate(ETHEREUM.nativeAsset.assetId)
+        const cost = await estimate(assetId)
 
         expect(cost).toMatchObject({
-            needsSpendApproval: false,
             shortfall: null,
             nativeSymbol: 'ETH',
             nativeDecimals: 18,
         })
-        const gasRatio = new Decimal(
-            (SWAP_CALL_GAS_CEILING + SWAP_APPROVAL_GAS_CEILING).toString(),
-        ).div(SWAP_CALL_GAS_CEILING.toString())
-        expect(withApproval.networkFee.div(cost.networkFee).toString()).toBe(
-            gasRatio.toString(),
+        expect(cost.networkFee.toString()).toBe(
+            (gas * presets.normal.maxFeePerGas).toString(),
         )
     })
 
@@ -121,23 +122,15 @@ describe('estimateEvmSwapSourceCost', () => {
 
         expect(cost.expectedNetworkFee.toString()).toBe(
             (
-                SWAP_CALL_GAS_CEILING *
+                INTRINSIC_TRANSFER_GAS *
                 (baseFeePerGas + presets.normal.maxPriorityFeePerGas)
             ).toString(),
         )
         expect(cost.expectedNetworkFee.lessThan(cost.networkFee)).toBe(true)
     })
 
-    it('prices a token source with a spend approval, since no spender is known before the order', async () => {
-        fakeNode({ balance: RICH })
-
-        const cost = await estimate(TOKEN)
-
-        expect(cost.needsSpendApproval).toBe(true)
-    })
-
     it('counts only the fee against the balance for a token source', async () => {
-        fakeNode({ balance: '0x1', callResult: allowanceOf(AMOUNT) })
+        fakeNode({ balance: '0x1' })
 
         const cost = await estimate(TOKEN)
 
@@ -165,8 +158,7 @@ describe('estimateEvmSwapSourceCost surcharge', () => {
         'function getOperatorFee(uint256 _gasUsed) view returns (uint256)',
     ])
 
-    // Any encoding is priced alike: the stand-in calldata is the ceiling's, not a real call's.
-    const useNode = (balance: bigint, allowance = 0n) => {
+    const useNode = (balance: bigint) => {
         const encodings: Hex[] = []
         server.use(
             ...evmRpcHandlers({
@@ -179,7 +171,7 @@ describe('estimateEvmSwapSourceCost surcharge', () => {
                             data: Hex
                         }
                         if (!isAddressEqual(to, OP_STACK_ORACLE_ADDRESS)) {
-                            return allowanceOf(allowance)
+                            return '0x'
                         }
                         const call = decodeFunctionData({
                             abi: oracleAbi,
@@ -241,7 +233,7 @@ describe('estimateEvmSwapSourceCost surcharge', () => {
             )
             const surcharge = L1_FEE + OPERATOR_FEE
             const maximum =
-                SWAP_CALL_GAS_CEILING * presets.normal.maxFeePerGas +
+                INTRINSIC_TRANSFER_GAS * presets.normal.maxFeePerGas +
                 SURCHARGE_HEADROOM * surcharge
 
             const { networkFee, expectedNetworkFee, shortfall } = await cost
@@ -249,7 +241,7 @@ describe('estimateEvmSwapSourceCost surcharge', () => {
             expect(networkFee.toString()).toBe(maximum.toString())
             expect(expectedNetworkFee.toString()).toBe(
                 (
-                    SWAP_CALL_GAS_CEILING *
+                    INTRINSIC_TRANSFER_GAS *
                         (baseFeePerGas + presets.normal.maxPriorityFeePerGas) +
                     surcharge
                 ).toString(),
@@ -258,12 +250,13 @@ describe('estimateEvmSwapSourceCost surcharge', () => {
                 (maximum + AMOUNT - 1n).toString(),
             )
             expect(encodings).toHaveLength(1)
-            expect(size(encodings[0])).toBeGreaterThan(
-                SWAP_CALLDATA_BYTES_CEILING,
-            )
+            const priced = parseTransaction(encodings[0])
+            expect(isAddressEqual(priced.to!, SENDER)).toBe(true)
+            expect(priced.value).toBe(AMOUNT)
+            expect(priced.data).toBeUndefined()
         })
 
-        it('prices the spend approval apart from the swap', async () => {
+        it('prices a token source on its transfer to the token contract', async () => {
             const encodings = useNode(10n ** 21n)
             const { client, cost } = estimateOn(chain, TOKEN)
             const { presets } = await readEvmFeePresets(
@@ -274,12 +267,20 @@ describe('estimateEvmSwapSourceCost surcharge', () => {
 
             const { networkFee } = await cost
 
-            expect(encodings).toHaveLength(2)
+            expect(encodings).toHaveLength(1)
+            const priced = parseTransaction(encodings[0])
+            expect(isAddressEqual(priced.to!, TOKEN)).toBe(true)
+            expect(
+                decodeFunctionData({ abi: erc20Abi, data: priced.data! }),
+            ).toMatchObject({
+                functionName: 'transfer',
+                args: [SENDER, AMOUNT],
+            })
             expect(networkFee.toString()).toBe(
                 (
-                    (SWAP_CALL_GAS_CEILING + SWAP_APPROVAL_GAS_CEILING) *
+                    SWAP_TOKEN_DEPOSIT_GAS_CEILING *
                         presets.normal.maxFeePerGas +
-                    SURCHARGE_HEADROOM * 2n * (L1_FEE + OPERATOR_FEE)
+                    SURCHARGE_HEADROOM * (L1_FEE + OPERATOR_FEE)
                 ).toString(),
             )
         })

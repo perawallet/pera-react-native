@@ -88,7 +88,7 @@ const GAS_LIMIT_PADDING_NUMERATOR = 6n
 const GAS_LIMIT_PADDING_DENOMINATOR = 5n
 
 // What a send with no calldata costs when nothing runs at the recipient.
-const INTRINSIC_TRANSFER_GAS = 21_000n
+export const INTRINSIC_TRANSFER_GAS = 21_000n
 
 // A zero tip is never accepted, so this is the least the fallback may floor at.
 const MIN_FALLBACK_PRIORITY_FEE = 1n

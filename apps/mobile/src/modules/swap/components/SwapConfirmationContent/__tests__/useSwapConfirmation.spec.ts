@@ -82,7 +82,6 @@ const SOURCE_COST: SwapSourceCost = {
     networkFee: new Decimal(10).pow(15),
     expectedNetworkFee: new Decimal(10).pow(14),
     shortfall: null,
-    needsSpendApproval: false,
     nativeSymbol: 'ETH',
     nativeDecimals: 18,
 }
@@ -137,7 +136,6 @@ describe('useSwapConfirmation', () => {
 
             expect(result.current).toMatchObject({
                 networkFeeDisplay: null,
-                needsSpendApproval: false,
                 insufficientFeeMessage: null,
             })
         })
@@ -151,14 +149,6 @@ describe('useSwapConfirmation', () => {
                 `${SOURCE_COST.networkFee.toString()} ETH`,
             )
             expect(result.current.insufficientFeeMessage).toBeNull()
-        })
-
-        it('passes the spend approval on', () => {
-            mockSourceCost({ ...SOURCE_COST, needsSpendApproval: true })
-
-            const { result } = renderConfirmation(makeQuote())
-
-            expect(result.current.needsSpendApproval).toBe(true)
         })
 
         it('passes the estimate and its loading state to the high-fee warning', () => {

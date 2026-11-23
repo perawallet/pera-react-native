@@ -50,11 +50,6 @@ ${RECEIVE_BALANCE_IS_USDC}          xpath=(${RECEIVE_BALANCE_VIEW}/descendant-or
 ${PAY_CHAIN_FILTER}                 tid=swap_from_chain_filter
 ${RECEIVE_CHAIN_FILTER}             tid=swap_to_chain_filter
 ${OTHER_CHAIN_RECEIVE_CHIP}         xpath=(//*[(starts-with(@content-desc,'swap_to_chain_filter_') or starts-with(@resource-id,'swap_to_chain_filter_') or starts-with(@name,'swap_to_chain_filter_')) and not(contains(concat(@content-desc,@resource-id,@name),'_all')) and not(contains(concat(@content-desc,@resource-id,@name),'_algorand'))])[1]
-${PAY_ETHEREUM_CHIP}                 tid=swap_from_chain_filter_ethereum
-${RECEIVE_ETHEREUM_CHIP}             tid=swap_to_chain_filter_ethereum
-# Pay rows carry the chain when several are shown; an ERC-20's asset id is its 0x contract address.
-${PAY_ERC20_ROW_ANY}                 xpath=(//*[(starts-with(@content-desc,'asset-list-item-') or starts-with(@resource-id,'asset-list-item-') or starts-with(@name,'asset-list-item-')) and contains(concat(@content-desc,@resource-id,@name),'0x')])[1]
-${NO_ERC20_TO_PAY}                   The funded wallet's Ethereum account holds no ERC-20 on mainnet; send it a little of one (1 USDC is enough, no ETH needed) to run this case.
 # The selector's label is the asset's unit; iOS folds it into the touchable, Android keeps a child.
 ${PAY_IS_USDC}                      xpath=//*[@content-desc='swap-pay-asset-selector' or @resource-id='swap-pay-asset-selector' or @name='swap-pay-asset-selector'][descendant-or-self::*[contains(@text,'USDC') or contains(@label,'USDC')]]
 
@@ -93,7 +88,6 @@ ${CONFIRM_CLOSE}                    tid=swap-confirm-close
 ${CONFIRM_ROUTE}                    tid=swap-confirm-route
 ${CONFIRM_RECEIVE_ACCOUNT}          tid=swap-confirm-receive-account
 ${CONFIRM_CROSS_CHAIN_NOTE}         tid=swap-confirm-cross-chain-note
-${CONFIRM_SPEND_APPROVAL_NOTE}      tid=swap-confirm-spend-approval-note
 ${CONFIRM_NETWORK_FEE}              tid=swap-confirm-network-fee
 ${CONFIRM_PROVIDER_FEE}             tid=swap-confirm-provider-fee
 ${CONFIRM_TITLE}                    xpath=//*[@text='Confirm Swap' or @label='Confirm Swap']
@@ -374,38 +368,6 @@ Open Cross Chain Confirmation
     Tap    ${RECEIVE_ASSET_ROW_ANY}
     Wait Until Page Does Not Contain Element    ${ASSET_SEARCH_INPUT}    timeout=15s
     Enter Amount And Wait For Quote    ${FUNDED_PAY_AMOUNT}
-    Expect Element    ${SWAP_BUTTON}    enabled    timeout=30s
-    Tap    ${SWAP_BUTTON}
-    Wait Until Settled    ${CONFIRM_SLIDE}
-
-Open Ethereum Swap Confirmation
-    [Documentation]    Pays with an ERC-20 the funded wallet's Ethereum account holds. No case executes an
-    ...                Ethereum swap, so that account never approves a spender and every quote needs an
-    ...                approval first. Only the token balance is needed: a missing ETH fee disables the
-    ...                slide, not the sheet.
-    Open Swap With Funded Account
-    Go Home
-    Ensure Account On Ethereum
-    Open Swap
-    Open Pay Asset Picker
-    ${multichain}=    Run Keyword And Return Status    Wait Until Page Contains Element    ${PAY_CHAIN_FILTER}    timeout=10s
-    Skip If    not ${multichain}    This build or wallet offers no Ethereum to pay from.
-    Tap    ${PAY_ETHEREUM_CHIP}
-    ${held}=    Run Keyword And Return Status    Wait Until Page Contains Element    ${PAY_ERC20_ROW_ANY}    timeout=20s
-    Skip If    not ${held}    ${NO_ERC20_TO_PAY}
-    Tap    ${PAY_ERC20_ROW_ANY}
-    Wait Until Page Does Not Contain Element    ${ASSET_SEARCH_INPUT}    timeout=15s
-    Open Receive Asset Picker
-    ${filtered}=    Run Keyword And Return Status    Wait Until Page Contains Element    ${RECEIVE_ETHEREUM_CHIP}    timeout=10s
-    IF    ${filtered}    Tap    ${RECEIVE_ETHEREUM_CHIP}
-    Receive Rows Or Skip
-    # The paid token is left out of this list, so the first row is always a different asset.
-    Tap    ${RECEIVE_ASSET_ROW_ANY}
-    Wait Until Page Does Not Contain Element    ${ASSET_SEARCH_INPUT}    timeout=15s
-    Tap    ${SWAP_MAX_BUTTON}
-    ${empty}=    Run Keyword And Return Status    Wait Until Page Contains Element    ${NOTHING_TO_SWAP_TOAST}    timeout=3s
-    Skip If    ${empty}    ${NO_ERC20_TO_PAY}
-    Wait For Quote
     Expect Element    ${SWAP_BUTTON}    enabled    timeout=30s
     Tap    ${SWAP_BUTTON}
     Wait Until Settled    ${CONFIRM_SLIDE}
