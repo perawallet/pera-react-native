@@ -32,7 +32,11 @@ const APP_ID = 'com.algorand.android'
 const { version, versionCodeBase } = JSON.parse(
     readFileSync(join(mobileRoot, 'package.json'), 'utf8'),
 )
-const EXPECTED_VERSION_NAME = version.split('-')[0]
+
+// `--from-build` checks the project a release build has just produced, before
+// it is uploaded. Generating and merging a project here instead compiles every
+// native module, doubling the CI build.
+const isFromBuild = process.argv.includes('--from-build')
 
 const failures = []
 const assert = (condition, message) => {
@@ -48,26 +52,33 @@ const env = {
     APP_ENV: 'production',
     PASSKEY_AUTOFILL_SITE: 'https://perawallet.app',
 }
-// The release workflow exports both before this runs, and either would move the
-// values asserted below off their committed floor.
-delete env.BUILD_NUMBER
-delete env.APP_VERSION
+// The release workflow exports both, and either would move the values asserted
+// below off their committed floor. A release build carries them, so keep them.
+if (!isFromBuild) {
+    delete env.BUILD_NUMBER
+    delete env.APP_VERSION
+}
+const EXPECTED_VERSION_NAME = env.APP_VERSION || version.split('-')[0]
+// Mirrors the Fastfile's resolve_build_number.
+const EXPECTED_VERSION_CODE = versionCodeBase + Number(env.BUILD_NUMBER || 0)
 const run = (cmd, args, cwd) =>
     execFileSync(cmd, args, { cwd, stdio: 'inherit', env })
 
 // 1. Generate the production Android project, then run the manifest merger.
-run(
-    'npx',
-    ['expo', 'prebuild', '-p', 'android', '--no-install', '--clean'],
-    mobileRoot,
-)
-// processReleaseManifest / processProdReleaseManifest runs the AGP manifest
-// merger and writes the fully-merged manifest under build/intermediates.
-run(
-    './gradlew',
-    [':app:processReleaseManifest', '--console=plain'],
-    androidRoot,
-)
+if (!isFromBuild) {
+    run(
+        'npx',
+        ['expo', 'prebuild', '-p', 'android', '--no-install', '--clean'],
+        mobileRoot,
+    )
+    // processReleaseManifest / processProdReleaseManifest runs the AGP manifest
+    // merger and writes the fully-merged manifest under build/intermediates.
+    run(
+        './gradlew',
+        [':app:processReleaseManifest', '--console=plain'],
+        androidRoot,
+    )
+}
 
 // 2. Locate build.gradle + the merged manifest.
 const buildGradle = readFileSync(join(androidRoot, 'app/build.gradle'), 'utf8')
@@ -229,7 +240,7 @@ for (const path of ['/qr/perawallet/', '/qr/perawallet-wc/']) {
     )
 }
 
-// 4c. Versioning floor — read from the merged manifest.
+// 4c. Versioning — read from the merged manifest.
 const versionCodeMatch = manifest.match(/android:versionCode="(\d+)"/)
 assert(
     versionCodeMatch !== null,
@@ -238,8 +249,8 @@ assert(
 if (versionCodeMatch) {
     const versionCode = Number(versionCodeMatch[1])
     assert(
-        versionCode === versionCodeBase,
-        `versionCode ${versionCode} does not equal versionCodeBase ${versionCodeBase} (prebuild runs without BUILD_NUMBER)`,
+        versionCode === EXPECTED_VERSION_CODE,
+        `versionCode ${versionCode} does not equal ${EXPECTED_VERSION_CODE} (versionCodeBase ${versionCodeBase} + BUILD_NUMBER)`,
     )
 }
 assert(
