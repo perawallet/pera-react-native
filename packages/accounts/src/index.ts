@@ -42,6 +42,9 @@ export {
     useHoldingsRefreshStore,
     useHiddenTokensStore,
     hiddenAssetIdsOf,
+    useKeptTokensStore,
+    keptAssetIdsOf,
+    isAutoHiddenHolding,
     hydrateAccountChainStates,
     recordAuthority,
     getAllAccounts,
@@ -56,6 +59,9 @@ export {
     type AccountChainStateSlice,
     type HiddenTokens,
     type SetTokenHiddenParams,
+    type KeptTokens,
+    type SetTokenKeptParams,
+    type KeepTokensParams,
 } from './store'
 export {
     fetchAndPersistAccount,

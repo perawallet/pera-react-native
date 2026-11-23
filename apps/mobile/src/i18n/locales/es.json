@@ -287,7 +287,11 @@
         "hidden_toast_body": "Ya no aparecerá en tus activos ni se contará en tu saldo. Vuelve a mostrarlo desde Gestionar activos > Ocultar tokens.",
         "hidden_swipe_toast_body": "Toca para deshacer. Ya no aparecerá en tus activos ni se contará en tu saldo.",
         "shown_toast_title": "Se mostró {{assetName}}",
-        "filtered_note": "Pera marcó este token como sospechoso, por eso no aparece en tus activos. Puedes mostrarlo con «Mostrar activos sospechosos» en los filtros de activos."
+        "filtered_note": "Pera marcó este token como sospechoso, por eso no aparece en tus activos. Puedes mostrarlo desde «Tokens ocultos», al final de tus activos.",
+        "auto_hidden_row_title": "Tokens ocultos ({{total}})",
+        "auto_hidden_title": "Tokens ocultos",
+        "auto_hidden_description": "Pera ocultó estos tokens porque parecen spam o estafas. No visites los sitios web que mencionan. Muestra un token para volver a verlo en la lista; seguirá sin contarse en tu saldo.",
+        "auto_hidden_empty_title": "No hay tokens ocultos"
     },
     "deeplink": {
         "error": {
@@ -4098,6 +4102,9 @@
             "reuse_body": "Empieza y termina como una dirección que conoces, pero no es la misma. Compara las direcciones completas antes de usarla.",
             "reuse_confirm": "Continuar de todos modos",
             "reuse_cancel": "Cancelar"
+        },
+        "suspicious_token": {
+            "marker": "Token sospechoso"
         }
     },
     "tabbar": {

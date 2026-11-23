@@ -21,6 +21,7 @@ const mockUseAccountHoldingsAcrossChainsQuery = vi.hoisted(() => vi.fn())
 const mockHiddenTokens = vi.hoisted(() => ({
     current: {} as Record<string, Record<string, string[]>>,
 }))
+const mockShowSuspicious = vi.hoisted(() => ({ current: false }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: mockUseSelectedAccount,
@@ -38,6 +39,12 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     ) => hiddenTokens[`${scope.chainId}/${scope.networkId}`]?.[address] ?? [],
     canHideHolding: (chainId: string, assetId: string) =>
         chainId === 'ethereum' && assetId !== 'native',
+    useKeptTokensStore: (
+        selector: (state: { keptTokens: unknown }) => unknown,
+    ) => selector({ keptTokens: {} }),
+    isAutoHiddenHolding: (holding: {
+        asset?: { peraMetadata?: { verificationTier?: string } }
+    }) => holding.asset?.peraMetadata?.verificationTier === 'suspicious',
     chainAccountOf: (
         account: { chains: Record<string, unknown> },
         chainId: string,
@@ -52,6 +59,9 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     nativeAssetFor: (chainId: string) => ({
         assetId: chainId === 'algorand' ? '0' : 'native',
     }),
+    useAssetPreferencesStore: (
+        selector: (state: { showSuspicious: boolean }) => unknown,
+    ) => selector({ showSuspicious: mockShowSuspicious.current }),
 }))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
@@ -98,6 +108,7 @@ describe('useAccountAssetSelectionList', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockHiddenTokens.current = {}
+        mockShowSuspicious.current = false
         mockUseAccountHoldingsAcrossChainsQuery.mockReturnValue({
             assetBalances: [],
             isPending: false,
@@ -472,6 +483,58 @@ describe('useAccountAssetSelectionList', () => {
             )
 
             expect(result.current.filteredBalanceData).toHaveLength(3)
+        })
+    })
+
+    describe('suspicious tokens', () => {
+        const spam = {
+            assetId: '0xspam',
+            amount: '1',
+            asset: {
+                assetId: '0xspam',
+                name: 'Visit t.me/x',
+                peraMetadata: { verificationTier: 'suspicious' },
+            },
+            scope: { chainId: 'ethereum', networkId: 'mainnet' },
+        }
+        const dai = {
+            assetId: '0xdai',
+            amount: '1',
+            asset: { assetId: '0xdai', name: 'Dai' },
+            scope: { chainId: 'ethereum', networkId: 'mainnet' },
+        }
+
+        beforeEach(() => {
+            mockUseSelectedAccount.mockReturnValue({
+                chains: { ethereum: { address: '0xabc' } },
+            })
+            mockUseAccountHoldingsAcrossChainsQuery.mockReturnValue({
+                assetBalances: [spam, dai],
+                isPending: false,
+                isError: false,
+            })
+        })
+
+        it('leaves out a token the asset list hides as suspicious', () => {
+            const { result } = renderHook(() =>
+                useAccountAssetSelectionList({ chainIds: ['ethereum'] }),
+            )
+
+            expect(
+                result.current.filteredBalanceData.map(b => b.assetId),
+            ).toEqual(['0xdai'])
+        })
+
+        it('lists it while the user shows suspicious assets', () => {
+            mockShowSuspicious.current = true
+
+            const { result } = renderHook(() =>
+                useAccountAssetSelectionList({ chainIds: ['ethereum'] }),
+            )
+
+            expect(
+                result.current.filteredBalanceData.map(b => b.assetId),
+            ).toEqual(['0xspam', '0xdai'])
         })
     })
 })

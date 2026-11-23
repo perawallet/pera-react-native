@@ -16,6 +16,7 @@ import {
     LaunchAccountModes,
     useAccountsStore,
     useHiddenTokensStore,
+    useKeptTokensStore,
 } from '@perawallet/wallet-core-accounts'
 import { useCurrenciesStore } from '@perawallet/wallet-core-currencies'
 import { useSettingsStore } from '@perawallet/wallet-core-settings'
@@ -37,6 +38,7 @@ describe('backupSettingsStores', () => {
         useSettingsStore.getState().resetState()
         useAccountsStore.getState().resetState()
         useHiddenTokensStore.getState().resetState()
+        useKeptTokensStore.getState().resetState()
         useAccountsStore.setState({
             accounts: [
                 {
@@ -67,6 +69,11 @@ describe('backupSettingsStores', () => {
             assetId: '0x1',
             isHidden: true,
         })
+        useKeptTokensStore.getState().keepTokens({
+            address: '0xabc',
+            scope: ETH_SCOPE,
+            assetIds: ['0x2'],
+        })
 
         expect(readBackupSettings('algorand')).toEqual({
             currency: { preferred: 'EUR', fallback: 'ALGO' },
@@ -75,6 +82,7 @@ describe('backupSettingsStores', () => {
             launchAccount: { mode: 'specific', address: 'HELD' },
             accountOrder: { mode: 'alphabeticalAsc', addresses: ['HELD'] },
             hiddenTokens: { 'ethereum/mainnet': { '0xabc': ['0x1'] } },
+            keptTokens: { 'ethereum/mainnet': { '0xabc': ['0x2'] } },
         })
     })
 
@@ -87,6 +95,7 @@ describe('backupSettingsStores', () => {
                 launchAccount: { mode: 'specific', address: 'HELD' },
                 accountOrder: { mode: 'balanceDesc', addresses: ['HELD'] },
                 hiddenTokens: { 'ethereum/mainnet': { '0xabc': ['0x1'] } },
+                keptTokens: { 'ethereum/mainnet': { '0xabc': ['0x2'] } },
             },
             'algorand',
         )
@@ -98,6 +107,7 @@ describe('backupSettingsStores', () => {
             launchAccount: { mode: 'specific', address: 'HELD' },
             accountOrder: { mode: 'balanceDesc', addresses: ['HELD'] },
             hiddenTokens: { 'ethereum/mainnet': { '0xabc': ['0x1'] } },
+            keptTokens: { 'ethereum/mainnet': { '0xabc': ['0x2'] } },
         })
     })
 

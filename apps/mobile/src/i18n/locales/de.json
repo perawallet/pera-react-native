@@ -287,7 +287,11 @@
         "hidden_toast_body": "Das Token erscheint nicht mehr in deinen Assets und zählt nicht zu deinem Guthaben. Du kannst es unter Assets verwalten > Tokens ausblenden wieder einblenden.",
         "hidden_swipe_toast_body": "Tippe, um es rückgängig zu machen. Das Token erscheint nicht mehr in deinen Assets und zählt nicht zu deinem Guthaben.",
         "shown_toast_title": "{{assetName}} eingeblendet",
-        "filtered_note": "Pera hat dieses Token als verdächtig markiert, daher erscheint es nicht in deinen Assets. Mit „Verdächtige Assets anzeigen“ in den Asset-Filtern kannst du es einblenden."
+        "filtered_note": "Pera hat dieses Token als verdächtig markiert, daher erscheint es nicht in deinen Assets. Unter „Ausgeblendete Tokens“ am Ende deiner Assets kannst du es einblenden.",
+        "auto_hidden_row_title": "Ausgeblendete Tokens ({{total}})",
+        "auto_hidden_title": "Ausgeblendete Tokens",
+        "auto_hidden_description": "Pera hat diese Tokens ausgeblendet, weil sie nach Spam oder Betrug aussehen. Besuche keine Websites, die darin genannt werden. Blende ein Token ein, um es wieder anzuzeigen; zu deinem Guthaben zählt es weiterhin nicht.",
+        "auto_hidden_empty_title": "Keine ausgeblendeten Tokens"
     },
     "deeplink": {
         "error": {
@@ -4090,6 +4094,9 @@
             "reuse_body": "Sie beginnt und endet wie eine Adresse, die du kennst, ist aber nicht dieselbe. Vergleiche die vollständigen Adressen, bevor du sie verwendest.",
             "reuse_confirm": "Trotzdem fortfahren",
             "reuse_cancel": "Abbrechen"
+        },
+        "suspicious_token": {
+            "marker": "Verdächtiges Token"
         }
     },
     "tabbar": {

@@ -449,6 +449,10 @@ export const settingsBackupPayloadSchema = z.object({
     hiddenTokens: settingsField(
         z.record(z.string(), z.record(z.string(), z.array(z.string()))),
     ),
+    /** Same shape and merge as `hiddenTokens`: suspicious tokens each address keeps listed. */
+    keptTokens: settingsField(
+        z.record(z.string(), z.record(z.string(), z.array(z.string()))),
+    ),
 })
 
 export type SettingsBackupPayload = z.infer<typeof settingsBackupPayloadSchema>
@@ -468,4 +472,5 @@ export const BACKUP_SETTINGS_FIELDS: readonly BackupSettingsField[] = [
     'launchAccount',
     'accountOrder',
     'hiddenTokens',
+    'keptTokens',
 ]

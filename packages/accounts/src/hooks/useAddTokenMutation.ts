@@ -21,6 +21,7 @@ import { addAccountToken, insertAssetHolding } from '../db'
 import { TokenMetadataUnavailableError } from '../errors'
 import { fetchAndPersistAccount } from '../sync/account-syncer'
 import { useHiddenTokensStore } from '../store/hiddenTokens'
+import { useKeptTokensStore } from '../store/keptTokens'
 import { invalidateAccountQueriesForAddresses } from './querykeys'
 
 type AddTokenVariables = {
@@ -49,12 +50,19 @@ export const useAddTokenMutation = (): UseAddTokenMutationResult => {
                 throw new TokenMetadataUnavailableError(assetId)
             }
             await addAccountToken({ accountAddress, scope, assetId })
-            // Adding a token the user hid is asking to see it again.
+            // Adding a token is asking to see it: unhidden, and listed even
+            // if Pera flags it. A swap or a purchase adds its token here too.
             useHiddenTokensStore.getState().setTokenHidden({
                 address: accountAddress,
                 scope,
                 assetId,
                 isHidden: false,
+            })
+            useKeptTokensStore.getState().setTokenKept({
+                address: accountAddress,
+                scope,
+                assetId,
+                isKept: true,
             })
             await insertAssetHolding({ accountAddress, assetId, scope })
             // The change signal won't flag an account the add didn't touch on

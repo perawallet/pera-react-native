@@ -38,8 +38,8 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 import { describeHolding } from '../chain-adapter'
 import type { HoldingRestriction } from '../models'
 import { isEqualChainData } from '../store/accountChainState'
-import { isNotSuspiciousSql } from './holdingSuspicion'
-import { hiddenHoldingSql } from './holdingVisibility'
+import { isNotSuspiciousSql, isSuspiciousSql } from './holdingSuspicion'
+import { hiddenHoldingSql, keptHoldingSql } from './holdingVisibility'
 import { AccountAddedTokensSchema, AccountAssetHoldingsSchema } from './schema'
 
 export type HoldingRow = {
@@ -331,6 +331,8 @@ export type AccountHoldingsFilters = {
     hideSuspicious?: boolean
     /** Leaves out holdings the user hid, whatever the other filters keep. */
     excludeHidden?: boolean
+    /** Only the holdings `hideSuspicious` drops: suspicious, neither kept nor hidden. */
+    onlyAutoHidden?: boolean
 }
 
 type GetAccountHoldingsParams = {
@@ -349,12 +351,14 @@ export async function getAccountHoldings({
     excludeAssetTypes,
     hideSuspicious,
     excludeHidden,
+    onlyAutoHidden,
 }: GetAccountHoldingsParams): Promise<HoldingRow[]> {
     const scopeKey = toScopeKey(scope)
     const needsAssetJoin =
         hideNfts === true ||
         hideZeroBalanceNfts === true ||
         hideSuspicious === true ||
+        onlyAutoHidden === true ||
         !!excludeAssetTypes?.length
 
     const baseConditions = [
@@ -425,8 +429,16 @@ export async function getAccountHoldings({
         )
     }
 
+    const source = [{ address: accountAddress, scope }]
     if (hideSuspicious) {
-        joinConditions.push(isNotSuspiciousSql())
+        joinConditions.push(or(isNotSuspiciousSql(), keptHoldingSql(source))!)
+    }
+    if (onlyAutoHidden) {
+        joinConditions.push(
+            isSuspiciousSql(),
+            not(keptHoldingSql(source)),
+            not(hiddenHoldingSql(source)),
+        )
     }
 
     const rows = await db

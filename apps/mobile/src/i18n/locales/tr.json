@@ -287,7 +287,11 @@
         "hidden_toast_body": "Varlıklarında görünmez ve bakiyene dahil edilmez. Varlıkları yönet > Tokenları gizle bölümünden yeniden gösterebilirsin.",
         "hidden_swipe_toast_body": "Geri almak için dokun. Varlıklarında görünmez ve bakiyene dahil edilmez.",
         "shown_toast_title": "{{assetName}} gösterildi",
-        "filtered_note": "Pera bu tokenı şüpheli olarak işaretledi, bu yüzden varlıklarında görünmez. Varlık filtrelerindeki “Şüpheli varlıkları göster” ile listeleyebilirsin."
+        "filtered_note": "Pera bu tokenı şüpheli olarak işaretledi, bu yüzden varlıklarında görünmez. Varlıklarının sonundaki “Gizli tokenlar” bölümünden gösterebilirsin.",
+        "auto_hidden_row_title": "Gizli tokenlar ({{total}})",
+        "auto_hidden_title": "Gizli tokenlar",
+        "auto_hidden_description": "Pera bu tokenları spam veya dolandırıcılık gibi göründükleri için gizledi. İçlerinde adı geçen web sitelerini ziyaret etme. Bir tokenı yeniden listelemek için göster; yine de bakiyene dahil edilmez.",
+        "auto_hidden_empty_title": "Gizli token yok"
     },
     "deeplink": {
         "error": {
@@ -4098,6 +4102,9 @@
             "reuse_body": "Tanıdığın bir adres gibi başlayıp bitiyor ama aynı değil. Kullanmadan önce tam adresleri karşılaştır.",
             "reuse_confirm": "Yine de devam et",
             "reuse_cancel": "İptal"
+        },
+        "suspicious_token": {
+            "marker": "Şüpheli token"
         }
     },
     "tabbar": {

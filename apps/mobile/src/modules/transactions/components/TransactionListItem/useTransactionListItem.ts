@@ -12,10 +12,15 @@
 
 import { useCallback, useMemo } from 'react'
 import {
+    canHideHolding,
     chainAccountOf,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useAssetsQuery, useNativeAsset } from '@perawallet/wallet-core-assets'
+import {
+    PeraAssetVerificationTier,
+    useAssetsQuery,
+    useNativeAsset,
+} from '@perawallet/wallet-core-assets'
 import { imitatedCurrencyOf } from '@perawallet/wallet-core-currencies'
 import {
     i18nKey,
@@ -82,6 +87,8 @@ export type UseTransactionListItemResult = {
     /** Long-press copies the transaction id (with the shared copied toast). */
     handleLongPress: () => void
     isSuspectedPoisoning: boolean
+    /** A visible amount moves a token Pera flags suspicious on a chain that receives tokens unasked. */
+    isSuspiciousToken: boolean
     /** Code imitated by the first visible amount whose unit name passes itself off as a currency (its chain's native ticker or a fiat code), or null. */
     imitatedCurrency: Nullable<string>
 }
@@ -156,6 +163,18 @@ export const useTransactionListItem = (
         [visibleAmounts, storedAssets],
     )
 
+    const isSuspiciousToken = useMemo(
+        () =>
+            visibleAmounts.some(
+                ({ assetRef }) =>
+                    storedAssets.get(assetRef.assetId)?.peraMetadata
+                        ?.verificationTier ===
+                        PeraAssetVerificationTier.suspicious &&
+                    canHideHolding(assetRef.chainId, assetRef.assetId),
+            ),
+        [visibleAmounts, storedAssets],
+    )
+
     const imitatedCurrency = useMemo<Nullable<string>>(() => {
         for (const a of amounts) {
             const code = imitatedCurrencyOf(
@@ -225,6 +244,7 @@ export const useTransactionListItem = (
         handlePress: record ? recordPress : handleTransactionPress,
         handleLongPress,
         isSuspectedPoisoning: !!suspectedPoisoning,
+        isSuspiciousToken,
         imitatedCurrency,
     }
 }

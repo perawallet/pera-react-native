@@ -287,7 +287,11 @@
         "hidden_toast_body": "It won't show in your assets or count toward your balance. Unhide it from Manage Assets > Hide Tokens.",
         "hidden_swipe_toast_body": "Tap to undo. It won't show in your assets or count toward your balance.",
         "shown_toast_title": "{{assetName}} shown",
-        "filtered_note": "Pera flagged this token as suspicious, so it stays out of your assets. List it with Show suspicious assets in the asset filters."
+        "filtered_note": "Pera flagged this token as suspicious, so it stays out of your assets. Unhide it from Hidden tokens at the end of your assets.",
+        "auto_hidden_row_title": "Hidden tokens ({{total}})",
+        "auto_hidden_title": "Hidden tokens",
+        "auto_hidden_description": "Pera hid these tokens because they look like spam or scams. Don't visit websites named in them. Unhide a token to list it again; it still won't count toward your balance.",
+        "auto_hidden_empty_title": "No hidden tokens"
     },
     "deeplink": {
         "error": {
@@ -4098,6 +4102,9 @@
             "reuse_body": "It starts and ends like an address you know, but it isn't the same. Compare the full addresses before you use it.",
             "reuse_confirm": "Continue anyway",
             "reuse_cancel": "Cancel"
+        },
+        "suspicious_token": {
+            "marker": "Suspicious token"
         }
     },
     "tabbar": {

@@ -21,6 +21,7 @@ import {
     CollectibleDetailScreen,
 } from '@modules/assets/routes'
 import { HideTokensScreen } from '@modules/accounts/screens/HideTokensScreen'
+import { AutoHiddenTokensScreen } from '@modules/accounts/screens/AutoHiddenTokensScreen'
 import { RemoveAssetsScreen } from '@modules/accounts/screens/RemoveAssetsScreen'
 import { TokenApprovalsScreen } from '@modules/accounts/screens/TokenApprovalsScreen'
 import { peraCardAccountScreens } from '@modules/card'
@@ -74,6 +75,11 @@ export const AccountStackNavigator = () => {
                 name='HideTokens'
                 component={HideTokensScreen}
                 options={{ title: 'hide_tokens.title' }}
+            />
+            <AccountStack.Screen
+                name='AutoHiddenTokens'
+                component={AutoHiddenTokensScreen}
+                options={{ title: 'token_visibility.auto_hidden_title' }}
             />
             <AccountStack.Screen
                 name='TokenApprovals'

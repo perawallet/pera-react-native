@@ -17,6 +17,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useHiddenTokensStore } from '../../store/hiddenTokens'
+import { useKeptTokensStore } from '../../store/keptTokens'
 import {
     changedHiddenTokenAddresses,
     useHiddenTokensInvalidation,
@@ -70,6 +71,7 @@ describe('changedHiddenTokenAddresses', () => {
 describe('useHiddenTokensInvalidation', () => {
     beforeEach(() => {
         useHiddenTokensStore.getState().resetState()
+        useKeptTokensStore.getState().resetState()
     })
 
     it('invalidates only the account queries of the address that changed', async () => {
@@ -95,6 +97,35 @@ describe('useHiddenTokensInvalidation', () => {
                 scope: SCOPE,
                 assetId: '0x1',
                 isHidden: true,
+            })
+        })
+
+        expect(queryClient.getQueryState(key('0xa'))?.isInvalidated).toBe(true)
+        expect(queryClient.getQueryState(key('0xb'))?.isInvalidated).toBe(false)
+    })
+
+    it('invalidates the account queries of an address whose kept tokens changed', async () => {
+        const queryClient = new QueryClient()
+        const key = (address: string) => [
+            MODULE_PREFIX,
+            'balance',
+            { address, scope: SCOPE },
+        ]
+        queryClient.setQueryData(key('0xa'), 'a')
+        queryClient.setQueryData(key('0xb'), 'b')
+        const wrapper = ({ children }: { children: React.ReactNode }) =>
+            React.createElement(
+                QueryClientProvider,
+                { client: queryClient },
+                children,
+            )
+        renderHook(() => useHiddenTokensInvalidation(), { wrapper })
+
+        await act(async () => {
+            useKeptTokensStore.getState().keepTokens({
+                address: '0xa',
+                scope: SCOPE,
+                assetIds: ['0x1'],
             })
         })
 

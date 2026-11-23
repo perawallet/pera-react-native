@@ -37,6 +37,7 @@ const remoteOf = (updatedAt: number): SettingsBackupPayload => ({
     launchAccount: { value: TEST_SETTINGS.launchAccount, updatedAt },
     accountOrder: { value: TEST_SETTINGS.accountOrder, updatedAt },
     hiddenTokens: { value: TEST_SETTINGS.hiddenTokens, updatedAt },
+    keptTokens: { value: TEST_SETTINGS.keptTokens, updatedAt },
 })
 
 describe('observeLocalSettings', () => {
