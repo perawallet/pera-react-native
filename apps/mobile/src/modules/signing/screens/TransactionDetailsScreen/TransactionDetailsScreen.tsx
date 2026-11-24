@@ -35,12 +35,25 @@ export const TransactionDetailsScreen = () => {
         addressReuseGuard,
         handleRelatedTransactionPress,
         handleRetry,
+        handleClose,
     } = useTransactionDetailsScreen()
+
+    const poisoningFooter = suspectedPoisoning ? (
+        <PWButton
+            variant='primary'
+            title={t('transactions.suspected_poisoning.dismiss')}
+            onPress={handleClose}
+            testID='suspected_poisoning_dismiss'
+        />
+    ) : undefined
 
     if (renderState.kind === 'content') {
         return (
             <AddressReuseGuardProvider guard={addressReuseGuard}>
-                <PWScreen testID='transaction_details_screen'>
+                <PWScreen
+                    testID='transaction_details_screen'
+                    footer={poisoningFooter}
+                >
                     {notice && (
                         <ChainNotice
                             {...notice}
@@ -77,7 +90,10 @@ export const TransactionDetailsScreen = () => {
         const { RecordDetailBody, record } = renderState
         return (
             <AddressReuseGuardProvider guard={addressReuseGuard}>
-                <PWScreen testID='transaction_details_screen'>
+                <PWScreen
+                    testID='transaction_details_screen'
+                    footer={poisoningFooter}
+                >
                     {notice && (
                         <ChainNotice
                             {...notice}

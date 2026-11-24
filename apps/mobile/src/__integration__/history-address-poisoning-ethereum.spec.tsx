@@ -62,7 +62,8 @@ vi.doMock('@react-navigation/native-stack', async () => ({
 const { setTestTheme } = await import('@test-utils/test-theme')
 const { getTheme } = await import('@theme/theme')
 setTestTheme(getTheme('light'))
-const { fireEvent, screen, within } = await import('@testing-library/react')
+const { fireEvent, screen, waitFor, within } =
+    await import('@testing-library/react')
 const { Decimal } = await import('decimal.js')
 const { useAccountsStore } = await import('@perawallet/wallet-core-accounts')
 const { SeedScheme } = await import('@perawallet/wallet-core-kms')
@@ -259,6 +260,32 @@ describe('Flow: suspected address poisoning in Ethereum history', () => {
         expect(notice.textContent).toContain(
             'send_funds.recipient_safety.look_alike_known_label_history',
         )
+        expect(notice.textContent).toContain(
+            'transactions.suspected_poisoning.do_not_reuse',
+        )
+
+        fireEvent.click(screen.getByTestId('suspected_poisoning_dismiss'))
+
+        await waitFor(() =>
+            expect(
+                screen.queryByTestId('transaction_details_screen'),
+            ).toBeNull(),
+        )
+    })
+
+    it('Given an unmarked row, when the user opens it, then no explanation or Got it shows', async () => {
+        renderHistory()
+        await screen.findByTestId(
+            markerOf(DUST_FROM_PAYEE_LOOK_ALIKE),
+            undefined,
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+
+        openRow(REAL_FROM_CONTACT_LOOK_ALIKE)
+
+        await screen.findByTestId('transaction_details_screen')
+        expect(screen.queryByTestId('suspected_poisoning_notice')).toBeNull()
+        expect(screen.queryByTestId('suspected_poisoning_dismiss')).toBeNull()
     })
 
     it('Given a token send the history names no signer for, to a look-alike of a contact, then it is marked and its details name the contact', async () => {
