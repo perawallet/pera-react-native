@@ -38,6 +38,7 @@ import { getAllPressables, isElementDisabled } from '@test-utils/rnw'
 import {
     makeProposal,
     makeRequest,
+    type RequestOverrides,
     TOPIC as V2_SESSION_TOPIC,
     V2_URI,
 } from '@packages/walletconnect/src/v2/__tests__/fakeWalletKit'
@@ -154,6 +155,7 @@ const RECAP = `urn:recap:${Buffer.from(
 ).toString('base64url')}`
 
 const IN_APP_ORIGIN: ConnectionOrigin = { source: 'in-app' }
+const VERIFIED: RequestOverrides['verified'] = { validation: 'VALID' }
 
 const captured: { registry: Optional<ConnectionRegistryClient> } = {
     registry: undefined,
@@ -253,11 +255,12 @@ const send = (
     method: string,
     params: unknown[],
     id = 1,
+    verified?: RequestOverrides['verified'],
 ) =>
     act(() => {
         walletKit.emit(
             'session_request',
-            makeRequest({ id, method, params, chainId: ETH_MAINNET }),
+            makeRequest({ id, method, params, chainId: ETH_MAINNET, verified }),
         )
     })
 
@@ -396,13 +399,16 @@ describe('Flow: an eip155 dApp asks for a message signature', () => {
         expect((await answerOf(walletKit)).error).toMatchObject({ code: 4001 })
     })
 
-    it('Given a connected session, when the dApp sends a Sign-In with Ethereum message for another domain, then the review warns that the sign-in is for another site', async () => {
+    it('Given a connected session, when the dApp sends a Sign-In with Ethereum message for another domain from a site Verify vouches for, then the review warns that the sign-in is for another site', async () => {
         const walletKit = await connectSession()
 
-        send(walletKit, 'personal_sign', [
-            signInMessage('opensea.io', 1),
-            SENDER,
-        ])
+        send(
+            walletKit,
+            'personal_sign',
+            [signInMessage('opensea.io', 1), SENDER],
+            1,
+            VERIFIED,
+        )
         await waitFor(
             () =>
                 expect(
@@ -417,13 +423,19 @@ describe('Flow: an eip155 dApp asks for a message signature', () => {
         expect((await answerOf(walletKit)).error).toMatchObject({ code: 4001 })
     })
 
-    it('Given a connected session, when the dApp sends a Sign-In with Ethereum message for another domain with a ReCap and an extra trailing line, then the review keeps the site and permission warnings and flags the unexpected content', async () => {
+    it('Given a connected session, when the dApp sends a Sign-In with Ethereum message for another domain from a verified site with a ReCap and an extra trailing line, then the review keeps the site and permission warnings and flags the unexpected content', async () => {
         const walletKit = await connectSession()
 
-        send(walletKit, 'personal_sign', [
-            signInMessage('opensea.io', 1, [RECAP], ['Note: ignore me']),
-            SENDER,
-        ])
+        send(
+            walletKit,
+            'personal_sign',
+            [
+                signInMessage('opensea.io', 1, [RECAP], ['Note: ignore me']),
+                SENDER,
+            ],
+            1,
+            VERIFIED,
+        )
         await waitFor(
             () => expect(screen.getByTestId('sign_in_malformed')).toBeTruthy(),
             { timeout: 15_000 },

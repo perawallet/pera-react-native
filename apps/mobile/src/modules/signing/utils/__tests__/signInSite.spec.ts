@@ -67,13 +67,13 @@ describe('signInSiteMismatchOf', () => {
         ).toBe('phish.example')
     })
 
-    it('falls back to the claimed URL when no origin was attested', () => {
+    it('reports nothing against a claimed URL no origin attests', () => {
         expect(
             signInSiteMismatchOf('opensea.io', {
                 url: 'https://app.uniswap.org',
                 verification: { status: 'unknown' },
             }),
-        ).toBe('app.uniswap.org')
+        ).toBeUndefined()
     })
 
     it('does not read a domain with userinfo as the host after it', () => {

@@ -23,15 +23,15 @@ import { attestedOriginOf } from './knownContractSite'
 
 /**
  * The requesting site when a sign-in message names another domain, else
- * undefined. Without an attested origin the dApp's own claimed URL is used:
- * a message for another domain is suspect even against that.
+ * undefined. A request with no attested origin is not a mismatch: the dApp's
+ * claimed URL proves nothing either way.
  */
 export const signInSiteMismatchOf = (
     domain: string,
     source?: SignRequestSource,
     verifiedOrigin?: string,
 ): Optional<string> => {
-    const origin = attestedOriginOf(source, verifiedOrigin) ?? source?.url
+    const origin = attestedOriginOf(source, verifiedOrigin)
     if (!origin || !isAuthDataOriginMismatch(domain, origin)) return undefined
     return stripUrlScheme(originOf(origin) ?? origin)
 }
