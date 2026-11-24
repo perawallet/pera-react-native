@@ -15,6 +15,7 @@ import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { AppError, ErrorCategory, ErrorSeverity } from './base'
 
 const INTEGRITY_CODE_PREFIX = 'APP_INTEGRITY_'
+const PLATFORM_NOT_ALLOWED_CODE = 'APP_INTEGRITY_PLATFORM_NOT_ALLOWED'
 
 type IntegrityRefusal = {
     /** The backend's `APP_INTEGRITY_*` code; null when it sent none (a bare 401). */
@@ -99,6 +100,9 @@ export const toIntegrityRequiredError = (
         body.code.startsWith(INTEGRITY_CODE_PREFIX)
             ? body.code
             : null
+    // The guard answers this only after the key check accepted the token: the
+    // route is closed to this platform, and no other token would open it.
+    if (code === PLATFORM_NOT_ALLOWED_CODE) return null
     const headers = error.request?.headers
     if (headers?.has('X-API-Key')) return null
     const authorization = headers?.get('Authorization') ?? ''

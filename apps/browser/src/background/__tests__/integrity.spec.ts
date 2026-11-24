@@ -23,6 +23,7 @@ import { createLocalChromeFake, type LocalChromeFake } from './chrome-fake'
 
 const mockRequestChallenge = vi.fn()
 const mockAttestDevice = vi.fn()
+const mockVerifyIntegrityToken = vi.fn()
 const mockSignChallenge = vi.fn()
 const mockExportPublicKey = vi.fn()
 const mockClearInstallKey = vi.fn()
@@ -46,6 +47,7 @@ vi.mock('@perawallet/wallet-core-app-integrity/api', async () => {
         ...actual,
         requestChallenge: mockRequestChallenge,
         attestDevice: mockAttestDevice,
+        verifyIntegrityToken: mockVerifyIntegrityToken,
     }
 })
 
@@ -179,6 +181,10 @@ describe('ensureIntegrityToken', () => {
             integrityToken: 'jwt-value',
             expiresAt: new Date(NOW + 15 * 60 * 1000).toISOString(),
         })
+        // The backend's own check refuses the token unless a test says otherwise.
+        mockVerifyIntegrityToken.mockRejectedValue(
+            Object.assign(new Error('Unauthorized'), { status: 401 }),
+        )
     })
 
     it('mints and persists a token when none exists', async () => {
@@ -519,6 +525,10 @@ describe('integrity failures, recovery and control', () => {
             integrityToken: 'jwt-value',
             expiresAt: new Date(NOW + 15 * 60 * 1000).toISOString(),
         })
+        // The backend's own check refuses the token unless a test says otherwise.
+        mockVerifyIntegrityToken.mockRejectedValue(
+            Object.assign(new Error('Unauthorized'), { status: 401 }),
+        )
     })
 
     const keys = () => import('@perawallet/wallet-core-browser-runtime')
@@ -797,6 +807,74 @@ describe('integrity failures, recovery and control', () => {
             ).toMatchObject({
                 failures: 1,
             })
+        })
+
+        it("keeps an enrolled token the backend's own check still accepts: the refusal was that route's, not an outage", async () => {
+            mockVerifyIntegrityToken.mockResolvedValue({
+                ok: true,
+                deviceInstallationId: 'install-1',
+                platform: 'web',
+            })
+            const expiresAt = await storeToken(ENROLLED_JWT, 10 * 1000)
+            const { handleIntegrityControl } = await import('../integrity')
+            const {
+                INTEGRITY_LAST_FAILURE_SESSION_KEY,
+                INTEGRITY_BACKOFF_SESSION_KEY,
+                INTEGRITY_TOKEN_SESSION_KEY,
+            } = await keys()
+
+            await handleIntegrityControl(
+                control({ kind: 'token-rejected', tokenExpiresAt: expiresAt }),
+            )
+
+            expect(mockVerifyIntegrityToken).toHaveBeenCalledWith(
+                expect.objectContaining({ integrityToken: ENROLLED_JWT }),
+            )
+            expect(mockAttestDevice).not.toHaveBeenCalled()
+            expect(mockClearSessionIntegrityToken).not.toHaveBeenCalled()
+            expect(fake.session.get(INTEGRITY_TOKEN_SESSION_KEY)).toMatchObject(
+                { integrityToken: ENROLLED_JWT },
+            )
+            expect(fake.session.has(INTEGRITY_LAST_FAILURE_SESSION_KEY)).toBe(
+                false,
+            )
+            expect(fake.session.has(INTEGRITY_BACKOFF_SESSION_KEY)).toBe(false)
+        })
+
+        it("keeps an older enrolled token the backend's own check still accepts, rather than minting another", async () => {
+            mockVerifyIntegrityToken.mockResolvedValue({
+                ok: true,
+                deviceInstallationId: 'install-1',
+                platform: 'web',
+            })
+            const expiresAt = await storeToken(ENROLLED_JWT, 5 * 60 * 1000)
+            const { handleIntegrityControl } = await import('../integrity')
+
+            await handleIntegrityControl(
+                control({ kind: 'token-rejected', tokenExpiresAt: expiresAt }),
+            )
+
+            expect(mockAttestDevice).not.toHaveBeenCalled()
+            expect(mockClearSessionIntegrityToken).not.toHaveBeenCalled()
+        })
+
+        it('asks the backend about a token only once, however many routes refuse it', async () => {
+            mockVerifyIntegrityToken.mockResolvedValue({
+                ok: true,
+                deviceInstallationId: 'install-1',
+                platform: 'web',
+            })
+            const expiresAt = await storeToken(ENROLLED_JWT, 10 * 1000)
+            const { handleIntegrityControl } = await import('../integrity')
+            const rejected = control({
+                kind: 'token-rejected',
+                tokenExpiresAt: expiresAt,
+            })
+
+            await handleIntegrityControl(rejected)
+            await handleIntegrityControl(rejected)
+
+            expect(mockVerifyIntegrityToken).toHaveBeenCalledTimes(1)
         })
 
         it('takes the refusal of an unenrolled token as enrolment still to do, not an outage', async () => {
