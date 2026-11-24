@@ -137,6 +137,10 @@ export const createEvmBroadcasterAdapter = (
                         ),
                         historyEntries: signedData.historyEntries,
                         flow: 'pipeline',
+                        replacesTxId:
+                            source.type === 'replacement'
+                                ? source.replacesTxId
+                                : undefined,
                     })
                 } catch (error) {
                     reportSubmitFailure(error, 'pipeline')

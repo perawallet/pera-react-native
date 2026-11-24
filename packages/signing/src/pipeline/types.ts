@@ -237,6 +237,9 @@ export interface SourceMetadata {
 
     callbacks?: SourceCallbacks
 
+    /** Id of the pending transaction a `'replacement'` request re-prices at its sequence number. */
+    replacesTxId?: string
+
     /**
      * Serializable WalletConnect sync-flow delivery context, set only for
      * WalletConnect requests (identified by a JSON-RPC `payloadId`). Carried to

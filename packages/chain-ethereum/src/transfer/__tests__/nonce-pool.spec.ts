@@ -20,7 +20,7 @@ import {
     it,
 } from 'vitest'
 import { setupServer } from 'msw/node'
-import { hexToBytes, toHex } from 'viem'
+import { hexToBytes, keccak256, toHex } from 'viem'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     recordSubmissionAttempt,
@@ -106,6 +106,7 @@ describe('allocateEthereumNonce', () => {
             ],
             flow: 'pipeline',
             historyEntries: [],
+            replacesTxId: keccak256(VIEM_TRANSFER_NONCE_0),
             db,
         })
 
