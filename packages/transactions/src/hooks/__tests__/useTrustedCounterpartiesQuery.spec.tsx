@@ -223,6 +223,31 @@ describe('useTrustedCounterpartiesQuery', () => {
             expect(result.current.hasSenderHistory).toBe(false)
             expect(readSignal?.aborted).toBe(true)
         })
+
+        it('keeps payees from a completed page when the next page times out', async () => {
+            vi.mocked(fetchTrustedCounterparties).mockImplementation(
+                ({ onPage }) => {
+                    onPage?.([paid('EARLIER-PAYEE')])
+                    return never()
+                },
+            )
+
+            const { result } = render(['A'])
+
+            await act(async () => {
+                await vi.advanceTimersByTimeAsync(
+                    TRUSTED_COUNTERPARTIES_DEADLINE_MS,
+                )
+            })
+
+            await waitFor(() =>
+                expect(result.current).toEqual({
+                    data: [paid('EARLIER-PAYEE')],
+                    isPending: false,
+                    hasSenderHistory: false,
+                }),
+            )
+        })
     })
 
     it('does not wait on history while offline', () => {
