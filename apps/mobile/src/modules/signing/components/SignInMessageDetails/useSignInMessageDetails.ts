@@ -115,6 +115,13 @@ export const useSignInMessageDetails = (
                   },
         ]
         const hasGrants = signIn.grants.length > 0 || signIn.hasUnreadableGrants
+        const otherChainNote = messageScope
+            ? t('signing.sign_in.other_chain_note', {
+                  chain: chainNameOf(messageScope),
+              })
+            : t('signing.sign_in.other_chain_id_note', {
+                  chainId: message.chainId,
+              })
 
         return {
             leadingRows: [
@@ -197,15 +204,7 @@ export const useSignInMessageDetails = (
                       address: message.address,
                   })
                 : undefined,
-            otherChainNote: !isOtherChain
-                ? undefined
-                : messageScope
-                  ? t('signing.sign_in.other_chain_note', {
-                        chain: chainNameOf(messageScope),
-                    })
-                  : t('signing.sign_in.other_chain_id_note', {
-                        chainId: message.chainId,
-                    }),
+            otherChainNote: isOtherChain ? otherChainNote : undefined,
         }
     }, [signIn, t])
 }
