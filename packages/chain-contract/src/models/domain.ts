@@ -511,6 +511,8 @@ export interface SpendApproval {
  * chain owns the serialisation and the signature `type`, so neither is here.
  */
 export type SiwxMessage = {
+    /** The scheme the message names before its domain, when it names one. */
+    scheme?: string
     domain: string
     address: string
     uri: string

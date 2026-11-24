@@ -103,7 +103,10 @@ export const useSignInMessageDetails = (
             leadingRows: [
                 {
                     label: t('signing.sign_in.domain'),
-                    value: message.domain,
+                    // Shown so a plaintext `http://` origin doesn't read as a normal site.
+                    value: message.scheme
+                        ? `${message.scheme}://${message.domain}`
+                        : message.domain,
                     testID: 'sign_in_domain',
                 },
                 {

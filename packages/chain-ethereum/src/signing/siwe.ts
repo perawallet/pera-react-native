@@ -13,12 +13,13 @@
 import { isAddress } from 'viem'
 import type { SiwxMessage } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import { isRecapUri } from './recap'
 
 // The scheme before the domain is optional in EIP-4361. Any non-space domain
 // matches, so a malformed one still reviews as a sign-in; `AUTHORITY` holds it
 // to the host[:port] form verifiers accept.
 const HEADER =
-    /^(?:[a-zA-Z][a-zA-Z0-9+.-]*:\/\/)?(\S+) wants you to sign in with your Ethereum account:$/
+    /^(?:([a-zA-Z][a-zA-Z0-9+.-]*):\/\/)?(\S+) wants you to sign in with your Ethereum account:$/
 const AUTHORITY = /^[a-zA-Z0-9+.-]+(?::\d{1,5})?$/
 
 const FIELD_KEYS = {
@@ -65,7 +66,7 @@ export const parseSiweMessage = (text: string): Optional<ParsedSiweMessage> => {
     // Verifiers tolerate CRLF and trailing whitespace, so neither is malformed.
     const lines = text.split(/\r?\n/).map(line => line.trimEnd())
     while (lines.length > 0 && lines[lines.length - 1] === '') lines.pop()
-    const domain = HEADER.exec(lines[0] ?? '')?.[1]
+    const [, scheme, domain] = HEADER.exec(lines[0] ?? '') ?? []
     if (!domain) return undefined
 
     let isMalformed = !AUTHORITY.test(domain)
@@ -76,17 +77,22 @@ export const parseSiweMessage = (text: string): Optional<ParsedSiweMessage> => {
         isMalformed = true
         uriLine = lines.length
     }
-    const statement = lines
-        .slice(2, uriLine)
-        .filter(line => line !== '')
-        .join('\n')
+    const statementLines = lines.slice(2, uriLine).filter(line => line !== '')
+    // EIP-4361's statement is one line; more can hide a `Resources:` block
+    // from the review while a verifier that scans for ReCaps still reads it.
+    if (statementLines.length > 1) isMalformed = true
+    const resources = statementLines
+        .filter(line => line.startsWith(RESOURCE_PREFIX))
+        .map(line => line.slice(RESOURCE_PREFIX.length))
+        .filter(isRecapUri)
+    const statement = statementLines.join('\n')
 
     const fields = new Map<FieldKey, string>()
-    let resources: Optional<string[]>
+    let isInResources = false
     for (const line of lines.slice(uriLine)) {
         // Every `- ` line past `Resources:` is kept, so no capability a
         // lenient verifier might read escapes the review.
-        if (resources) {
+        if (isInResources) {
             if (line.startsWith(RESOURCE_PREFIX)) {
                 resources.push(line.slice(RESOURCE_PREFIX.length))
             } else {
@@ -95,7 +101,7 @@ export const parseSiweMessage = (text: string): Optional<ParsedSiweMessage> => {
             continue
         }
         if (line === RESOURCES) {
-            resources = []
+            isInResources = true
             continue
         }
         const separator = line.indexOf(': ')
@@ -135,6 +141,7 @@ export const parseSiweMessage = (text: string): Optional<ParsedSiweMessage> => {
     }
     return {
         message: {
+            ...(scheme !== undefined && { scheme }),
             domain,
             address,
             uri,
@@ -146,7 +153,7 @@ export const parseSiweMessage = (text: string): Optional<ParsedSiweMessage> => {
             ...(expirationTime !== undefined && { expirationTime }),
             ...(notBefore !== undefined && { notBefore }),
             ...(requestId !== undefined && { requestId }),
-            ...(resources && { resources }),
+            ...((isInResources || resources.length > 0) && { resources }),
         },
         isMalformed,
     }

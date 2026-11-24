@@ -79,6 +79,28 @@ describe('parseSiweMessage', () => {
         ).toBe('localhost:3000')
     })
 
+    it('keeps the scheme the header names', () => {
+        expect(
+            parseSiweMessage(
+                siwe({
+                    header: 'http://opensea.io wants you to sign in with your Ethereum account:',
+                }),
+            )?.message,
+        ).toMatchObject({ scheme: 'http', domain: 'opensea.io' })
+        expect(parseSiweMessage(siwe())?.message).not.toHaveProperty('scheme')
+    })
+
+    it('reads and flags a ReCap placed before the fields', () => {
+        const parsed = parseSiweMessage(
+            siwe({ statement: 'Resources:\n- urn:recap:eyJhdHQiOnt9fQ' }),
+        )
+
+        expect(parsed).toMatchObject({
+            message: { resources: ['urn:recap:eyJhdHQiOnt9fQ'] },
+            isMalformed: true,
+        })
+    })
+
     it('reads a message without a statement or optional fields', () => {
         const text = [
             'app.example wants you to sign in with your Ethereum account:',
@@ -232,6 +254,7 @@ describe('parseSiweMessage', () => {
                 ],
             }),
         ],
+        ['a statement over several lines', siwe({ statement: 'One\nTwo' })],
         [
             'a second line that is not an address',
             siwe().replace(ADDRESS, 'not-an-address'),

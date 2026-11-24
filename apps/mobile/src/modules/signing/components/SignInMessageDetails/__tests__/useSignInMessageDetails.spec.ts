@@ -75,6 +75,14 @@ describe('useSignInMessageDetails', () => {
         expect(unknownChainRow).toBeUndefined()
     })
 
+    it('shows the scheme the message names before its domain', () => {
+        const { leadingRows } = render(
+            signIn({ message: { ...signIn().message, scheme: 'http' } }),
+        )
+
+        expect(leadingRows[0]?.value).toBe('http://opensea.io')
+    })
+
     it('adds the expiry when the message has one', () => {
         const { trailingRows } = render(
             signIn({
