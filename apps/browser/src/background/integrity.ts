@@ -390,14 +390,20 @@ const replaceRejectedToken = async (
     lastRejectedToken = current.integrityToken
     // One route can refuse a token the rest of the backend accepts; only the
     // backend's own check tells that apart from a token it refuses everywhere.
-    if (
-        isEnrolledToken(current.integrityToken) &&
-        (await isAcceptedByBackend(current))
-    ) {
-        logger.warn(
-            'One route refused a web integrity token the backend accepts',
-        )
-        return
+    if (isEnrolledToken(current.integrityToken)) {
+        if (await isAcceptedByBackend(current)) {
+            logger.warn(
+                'One route refused a web integrity token the backend accepts',
+            )
+            return
+        }
+        // The check is a round trip: a token minted meanwhile is not the one
+        // refused, and clearing below would take it down.
+        const latest = await getSessionIntegrityToken()
+        if (latest && latest.integrityToken !== current.integrityToken) {
+            cachedToken = latest
+            return
+        }
     }
     await clearSessionIntegrityToken()
     cachedToken = null

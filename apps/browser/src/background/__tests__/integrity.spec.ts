@@ -877,6 +877,37 @@ describe('integrity failures, recovery and control', () => {
             expect(mockVerifyIntegrityToken).toHaveBeenCalledTimes(1)
         })
 
+        it('leaves alone a token minted while the backend checked the refused one', async () => {
+            const expiresAt = await storeToken(ENROLLED_JWT, 10 * 1000)
+            const {
+                INTEGRITY_TOKEN_SESSION_KEY,
+                INTEGRITY_LAST_FAILURE_SESSION_KEY,
+            } = await keys()
+            const successor = {
+                integrityToken: 'successor-jwt',
+                mintedAt: new Date(NOW).toISOString(),
+                expiresAt: new Date(NOW + 15 * 60 * 1000).toISOString(),
+                deviceInstallationId: 'install-1',
+            }
+            mockVerifyIntegrityToken.mockImplementation(async () => {
+                fake.session.set(INTEGRITY_TOKEN_SESSION_KEY, successor)
+                throw Object.assign(new Error('Unauthorized'), { status: 401 })
+            })
+            const { handleIntegrityControl } = await import('../integrity')
+
+            await handleIntegrityControl(
+                control({ kind: 'token-rejected', tokenExpiresAt: expiresAt }),
+            )
+
+            expect(mockClearSessionIntegrityToken).not.toHaveBeenCalled()
+            expect(fake.session.get(INTEGRITY_TOKEN_SESSION_KEY)).toEqual(
+                successor,
+            )
+            expect(fake.session.has(INTEGRITY_LAST_FAILURE_SESSION_KEY)).toBe(
+                false,
+            )
+        })
+
         it('takes the refusal of an unenrolled token as enrolment still to do, not an outage', async () => {
             const expiresAt = await storeToken(UNENROLLED_JWT, 10 * 1000)
             const { handleIntegrityControl } = await import('../integrity')
