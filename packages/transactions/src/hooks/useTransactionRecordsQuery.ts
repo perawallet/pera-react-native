@@ -126,8 +126,9 @@ const mergedPagesByCursor = new WeakMap<PageRef, RecordsPage>()
 // moment it re-reads, so a failed page one would read as loading and then as
 // empty. The error is kept here, per cache entry, until the re-read settles; a
 // chip tap mounts a new hook on the same entry and must see it from render one.
-// An offline read rethrows it: an empty page would read as an empty history
-// once back online.
+// An offline read rethrows it, since nothing re-reads on reconnect. A cold entry
+// (never failed, or its record lost to a cold start or gc) still settles empty
+// offline and reads as "no transactions" until the next sync tick or Retry.
 const failedFirstPageErrors = new WeakMap<Query, Error>()
 
 // A record that leaves page one without a replacement stays until a full

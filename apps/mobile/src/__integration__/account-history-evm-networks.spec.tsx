@@ -381,14 +381,6 @@ describe('Flow: History on an account with every EVM network', () => {
             ),
         ).toBeNull()
 
-        // Any read after reconnect is held so the assertions below run while it is out.
-        const { gate, release } = holdRead()
-        server.use(
-            serveChain('bsc', async () => {
-                await gate
-                return failing()
-            }),
-        )
         act(() => setConnectivity(true))
 
         expect(
@@ -396,6 +388,27 @@ describe('Flow: History on an account with every EVM network', () => {
                 timeout: SLOW_WAIT_TIMEOUT_MS,
             }),
         ).toBeTruthy()
+        expect(
+            screen.queryByText(
+                'asset_details.transaction_list.empty_on_network_body',
+            ),
+        ).toBeNull()
+
+        const { gate, release } = holdRead()
+        let heldReads = 0
+        server.use(
+            serveChain('bsc', async () => {
+                heldReads += 1
+                await gate
+                return failing()
+            }),
+        )
+        fireEvent.click(screen.getByText('common.retry.label'))
+        await waitFor(() => expect(heldReads).toBeGreaterThan(0), {
+            timeout: SLOW_WAIT_TIMEOUT_MS,
+        })
+
+        expect(screen.getByText('common.error.title')).toBeTruthy()
         expect(
             screen.queryByText(
                 'asset_details.transaction_list.empty_on_network_body',
