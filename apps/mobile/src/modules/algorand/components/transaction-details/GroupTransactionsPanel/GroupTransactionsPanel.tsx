@@ -34,6 +34,7 @@ export const GroupTransactionsPanel = (props: GroupTransactionsPanelProps) => {
 
     return (
         <TitledExpandablePanel
+            containerStyle={styles.panel}
             title={t('transactions.group_transactions', {
                 count: groupSize,
             })}
