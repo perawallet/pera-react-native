@@ -44,8 +44,12 @@ export const useReviewScrollHint = (): UseReviewScrollHintResult => {
     const update = useCallback(() => {
         const { viewport, content, offset } = metrics.current
         const overflow = viewport > 0 ? content - viewport : 0
-        setIsScrollable(overflow > END_THRESHOLD)
-        setIsMoreBelow(overflow - offset > END_THRESHOLD)
+        const isOverflowing = overflow > END_THRESHOLD
+        setIsScrollable(isOverflowing)
+        // iOS rubber-banding reports a negative offset on a review that fits; clamp it or the strip appears and makes the body overflow.
+        setIsMoreBelow(
+            isOverflowing && overflow - Math.max(offset, 0) > END_THRESHOLD,
+        )
     }, [])
 
     const handleScroll = useCallback(

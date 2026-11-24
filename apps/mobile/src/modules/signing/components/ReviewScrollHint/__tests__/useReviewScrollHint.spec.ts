@@ -76,6 +76,15 @@ describe('useReviewScrollHint', () => {
         expect(measured(400, 424).result.current.isScrollable).toBe(false)
     })
 
+    it('stays hidden when a fitting review is pulled past its top', () => {
+        const { result } = measured(400, 424)
+
+        act(() => result.current.handleScroll(scrollTo(-60)))
+
+        expect(result.current.isMoreBelow).toBe(false)
+        expect(result.current.isScrollable).toBe(false)
+    })
+
     it('scrolls the body to its end', () => {
         const { result } = renderHook(() => useReviewScrollHint())
         const scrollToEnd = vi.fn()
