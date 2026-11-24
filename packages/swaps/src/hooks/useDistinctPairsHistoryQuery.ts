@@ -12,17 +12,8 @@
 
 import { useCallback, useMemo } from 'react'
 import { useQueries, type UseQueryResult } from '@tanstack/react-query'
-import type {
-    ChainScope,
-    WalletMode,
-} from '@perawallet/wallet-core-chain-contract'
-import { deploymentOf } from '@perawallet/wallet-core-config'
 import { useDeviceIdLookup } from '@perawallet/wallet-core-device'
-import {
-    fetchSwapHistory,
-    readForOwnedAccounts,
-    routerAccountIdOrNull,
-} from '../api'
+import { fetchSwapHistory, readForOwnedAccounts } from '../api'
 import type {
     SwapAccountAddress,
     SwapDistinctPairItem,
@@ -30,23 +21,12 @@ import type {
 } from '../models'
 import { distinctSwapPairs } from '../utils/distinctSwapPairs'
 import { isSwapHistoryRow } from '../utils/isSwapHistoryRow'
+import { swapHistoryBatchesOf } from '../utils/swapHistoryBatches'
 import { swapQueryKeys } from './querykeys'
 
 const DISTINCT_PAIRS_LIMIT = 10
 // The pairs are read off the newest history page; the router has no pair view.
 const HISTORY_PAGE_SIZE = 50
-// The accounts travel in the URL, one CAIP-10 id each; a wallet with many
-// accounts on several chains would outgrow it in a single request.
-const ACCOUNTS_PER_REQUEST = 20
-
-type RoutableAccount = SwapAccountAddress & { routerId: string }
-
-type HistoryBatch = {
-    /** The deployment's own device id and router scope serve every account in it. */
-    scope: ChainScope
-    deployment: WalletMode
-    accounts: RoutableAccount[]
-}
 
 export type UseDistinctPairsHistoryQueryResult = {
     data: SwapDistinctPairItem[]
@@ -54,32 +34,6 @@ export type UseDistinctPairsHistoryQueryResult = {
     isLoading: boolean
     /** True only when every batch failed; a failed batch alone leaves the others' pairs and retries on its own. */
     isError: boolean
-}
-
-const chunksOf = <T>(items: readonly T[], size: number): T[][] =>
-    Array.from({ length: Math.ceil(items.length / size) }, (_, index) =>
-        items.slice(index * size, (index + 1) * size),
-    )
-
-const batchesOf = (accounts: readonly SwapAccountAddress[]): HistoryBatch[] => {
-    const byDeployment = new Map<WalletMode, RoutableAccount[]>()
-    for (const account of accounts) {
-        // An account on a network the router has no id for, such as a custom
-        // node, or with no Pera deployment, can't have swapped there.
-        const routerId = routerAccountIdOrNull(account.scope, account.address)
-        const deployment = deploymentOf(account.scope)
-        if (!routerId || !deployment) continue
-        const group = byDeployment.get(deployment) ?? []
-        group.push({ ...account, routerId })
-        byDeployment.set(deployment, group)
-    }
-    return [...byDeployment].flatMap(([deployment, group]) =>
-        chunksOf(group, ACCOUNTS_PER_REQUEST).map(chunk => ({
-            scope: chunk[0].scope,
-            deployment,
-            accounts: chunk,
-        })),
-    )
 }
 
 /**
@@ -92,7 +46,7 @@ export const useDistinctPairsHistoryQuery = (
     accounts: SwapAccountAddress[],
 ): UseDistinctPairsHistoryQueryResult => {
     const deviceIdOf = useDeviceIdLookup()
-    const batches = useMemo(() => batchesOf(accounts), [accounts])
+    const batches = useMemo(() => swapHistoryBatchesOf(accounts), [accounts])
 
     const combine = useCallback(
         (results: UseQueryResult<SwapHistoryItem[]>[]) => {

@@ -4364,6 +4364,8 @@
                         "refunded": "Erstattet"
                     }
                 },
+                "account_filter_all": "Alle Konten",
+                "load_more": "Mehr laden",
                 "empty": {
                     "title": "Noch keine Tauschvorgänge",
                     "body": "Dein Tauschverlauf wird hier angezeigt."

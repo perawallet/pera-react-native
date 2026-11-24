@@ -4372,6 +4372,8 @@
                         "refunded": "Reembolsado"
                     }
                 },
+                "account_filter_all": "Todas las cuentas",
+                "load_more": "Cargar más",
                 "empty": {
                     "title": "Aún no hay swaps",
                     "body": "Tu historial de swaps aparecerá aquí."

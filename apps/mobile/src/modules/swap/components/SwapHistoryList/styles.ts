@@ -30,6 +30,15 @@ export const useStyles = makeStyles(theme => ({
     },
     itemBody: {
         flex: 1,
+        gap: theme.spacing.xs,
+    },
+    filterContent: {
+        paddingHorizontal: theme.spacing.xl,
+        paddingBottom: theme.spacing.sm,
+    },
+    loadMore: {
+        alignItems: 'center',
+        paddingVertical: theme.spacing.xl,
     },
     itemDescription: {
         color: theme.colors.textMain,

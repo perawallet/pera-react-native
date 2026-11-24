@@ -11,10 +11,16 @@
  */
 
 import { useCallback } from 'react'
-import { PWFlatList, PWLoadingIndicator, PWView } from '@components/core'
+import {
+    PWButton,
+    PWFlatList,
+    PWLoadingIndicator,
+    PWView,
+} from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import { FilterSelection } from '@components/FilterSelection'
 import { SwapHistoryListItem } from './SwapHistoryListItem'
 import {
     useSwapHistoryList,
@@ -23,15 +29,11 @@ import {
 import { useStyles } from './styles'
 
 export type SwapHistoryListProps = {
-    scope: ChainScope
-    address: string
     onClose: () => void
     inBottomSheet?: boolean
 }
 
 export const SwapHistoryList = ({
-    scope,
-    address,
     onClose,
     inBottomSheet = false,
 }: SwapHistoryListProps) => {
@@ -42,13 +44,17 @@ export const SwapHistoryList = ({
         swaps,
         isLoading,
         isFetchingNextPage,
+        accountOptions,
+        selectedAccountId,
+        handleSelectAccount,
         keyExtractor,
         handleItemPress,
         handleEndReached,
         shouldShowNotOnDeviceState,
         shouldShowErrorState,
         shouldShowEmptyState,
-    } = useSwapHistoryList({ scope, address, onClose })
+        shouldShowLoadMore,
+    } = useSwapHistoryList({ onClose })
 
     const renderItem = useCallback(
         ({ item }: { item: ListedSwapHistoryItem }) => (
@@ -65,33 +71,53 @@ export const SwapHistoryList = ({
         [styles.itemSeparator],
     )
 
+    const accountFilter =
+        accountOptions.length > 0 ? (
+            <FilterSelection<Nullable<string>>
+                options={accountOptions}
+                selectedValue={selectedAccountId}
+                onSelect={handleSelectAccount}
+                contentContainerStyle={styles.filterContent}
+                testID='swap_history_account_filter'
+            />
+        ) : null
+
     if (shouldShowNotOnDeviceState) {
         return (
-            <EmptyView
-                icon='info'
-                title={t('swap.history.list.not_on_device.title')}
-                body={t('swap.history.list.not_on_device.body')}
-            />
+            <PWView style={styles.container}>
+                {accountFilter}
+                <EmptyView
+                    icon='info'
+                    title={t('swap.history.list.not_on_device.title')}
+                    body={t('swap.history.list.not_on_device.body')}
+                />
+            </PWView>
         )
     }
 
     if (shouldShowErrorState) {
         return (
-            <EmptyView
-                icon='info'
-                title={t('swap.history.list.error.title')}
-                body={t('swap.history.list.error.body')}
-            />
+            <PWView style={styles.container}>
+                {accountFilter}
+                <EmptyView
+                    icon='info'
+                    title={t('swap.history.list.error.title')}
+                    body={t('swap.history.list.error.body')}
+                />
+            </PWView>
         )
     }
 
     if (shouldShowEmptyState) {
         return (
-            <EmptyView
-                icon='swap'
-                title={t('swap.history.list.empty.title')}
-                body={t('swap.history.list.empty.body')}
-            />
+            <PWView style={styles.container}>
+                {accountFilter}
+                <EmptyView
+                    icon='swap'
+                    title={t('swap.history.list.empty.title')}
+                    body={t('swap.history.list.empty.body')}
+                />
+            </PWView>
         )
     }
 
@@ -100,6 +126,7 @@ export const SwapHistoryList = ({
             style={styles.container}
             testID='swap-history-list'
         >
+            {accountFilter}
             <PWFlatList
                 pauseSyncOnInteraction
                 data={swaps}
@@ -111,11 +138,23 @@ export const SwapHistoryList = ({
                 onEndReachedThreshold={0.3}
                 inBottomSheet={inBottomSheet}
                 ListEmptyComponent={
-                    <EmptyView
-                        isLoading={isLoading}
-                        loadingStyle={styles.listContent}
-                        body=''
-                    />
+                    shouldShowLoadMore ? (
+                        <PWView style={styles.loadMore}>
+                            <PWButton
+                                variant='linkPositive'
+                                paddingStyle='none'
+                                title={t('swap.history.list.load_more')}
+                                onPress={handleEndReached}
+                                testID='swap_history_load_more'
+                            />
+                        </PWView>
+                    ) : (
+                        <EmptyView
+                            isLoading={isLoading || isFetchingNextPage}
+                            loadingStyle={styles.listContent}
+                            body=''
+                        />
+                    )
                 }
                 ListFooterComponent={
                     isFetchingNextPage ? (
