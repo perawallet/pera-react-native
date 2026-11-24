@@ -68,7 +68,7 @@ export const aggregateTransactionWarnings = (
         // wallet can actually sign for (standard, ledger,
         // multisig-with-local-participant). Watch-only accounts and dApp
         // escrow/contract accounts (Folks Finance, Tinyman) are excluded.
-        // An authAddr signs with its own key, so held is enough (as in the resolver).
+        // A named signer signs with its own key, so held is enough (as in the resolver).
         const signsRekey = authorizerByIndex?.has(index)
             ? userAccountAddresses.has(authorizer)
             : signableAddresses.has(authorizer)
