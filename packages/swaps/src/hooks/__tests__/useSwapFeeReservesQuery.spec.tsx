@@ -14,7 +14,11 @@
 import React from 'react'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import {
+    onlineManager,
+    QueryClient,
+    QueryClientProvider,
+} from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import { swapChainAdapters } from '../../chain-adapter'
 import { registerFakeSwapAdapter } from '../../__tests__/fakeSwapAdapter'
@@ -40,6 +44,8 @@ const render = () =>
 describe('swaps/useSwapFeeReservesQuery', () => {
     afterEach(() => {
         swapChainAdapters.reset()
+        onlineManager.setOnline(true)
+        vi.useRealTimers()
     })
 
     test("reads each scope's reserve from its chain adapter", async () => {
@@ -66,5 +72,37 @@ describe('swaps/useSwapFeeReservesQuery', () => {
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
         expect(result.current.reserves).toEqual([undefined])
+    })
+
+    test('re-reads the reserve every minute while mounted', async () => {
+        vi.useFakeTimers({ shouldAdvanceTime: true })
+        const maxAmountFeeReserve = vi
+            .fn()
+            .mockResolvedValueOnce(new Decimal(1))
+            .mockResolvedValue(new Decimal(2))
+        registerFakeSwapAdapter({ maxAmountFeeReserve })
+
+        const { result } = render()
+        await waitFor(() =>
+            expect(result.current.reserves).toEqual([new Decimal(1)]),
+        )
+        await vi.advanceTimersByTimeAsync(60_000)
+
+        await waitFor(() =>
+            expect(result.current.reserves).toEqual([new Decimal(2)]),
+        )
+    })
+
+    test('still asks the adapter while offline', async () => {
+        onlineManager.setOnline(false)
+        registerFakeSwapAdapter({
+            maxAmountFeeReserve: async () => new Decimal(7),
+        })
+
+        const { result } = render()
+
+        await waitFor(() =>
+            expect(result.current.reserves).toEqual([new Decimal(7)]),
+        )
     })
 })

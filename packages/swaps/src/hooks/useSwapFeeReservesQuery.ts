@@ -23,8 +23,9 @@ export type UseSwapFeeReservesQueryResult = {
     isPending: boolean
 }
 
-// Fees move by the block; a minute-old price is still well inside the reserve's margin.
-const FEE_RESERVE_STALE_TIME_MS = 60_000
+// Fees move by the block; re-read each minute while mounted, since the Swap tab
+// stays mounted and nothing else would refresh it.
+const FEE_RESERVE_REFRESH_MS = 60_000
 
 const combine = (
     results: UseQueryResult<Decimal>[],
@@ -41,7 +42,13 @@ export const useSwapFeeReservesQuery = (
         queries: scopes.map(scope => ({
             queryKey: swapQueryKeys.feeReserve(scope),
             queryFn: () => swapAdapterFor(scope).maxAmountFeeReserve(scope),
-            staleTime: FEE_RESERVE_STALE_TIME_MS,
+            staleTime: FEE_RESERVE_REFRESH_MS,
+            refetchInterval: FEE_RESERVE_REFRESH_MS,
+            // Offline the adapter answers with its fallback reserve instead of
+            // the query pausing with no answer.
+            networkMode: 'always' as const,
+            // A failed read leaves MAX on its "try again" toast; not a crash.
+            meta: { isExpectedFailure: true },
         })),
         combine,
     })
