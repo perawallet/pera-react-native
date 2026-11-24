@@ -40,7 +40,10 @@ import {
     evmChainOf,
     evmScopeOf,
 } from '../../__tests__/evm-chains'
-import { evmRpcHandlers } from '../../blockchain/msw-handlers'
+import {
+    EvmRpcErrorFixture,
+    evmRpcHandlers,
+} from '../../blockchain/msw-handlers'
 import type { EvmChain } from '../../chains/types'
 import {
     INTRINSIC_TRANSFER_GAS,
@@ -365,8 +368,7 @@ describe('estimateEvmSwapFeeReserve', () => {
         expect(reserve.toString()).toBe(
             (
                 2n *
-                (SWAP_TOKEN_DEPOSIT_GAS_CEILING *
-                    (2n * 5_000_000n + 1_000_000n) +
+                (INTRINSIC_TRANSFER_GAS * (2n * 5_000_000n + 1_000_000n) +
                     SURCHARGE_HEADROOM * l1Fee)
             ).toString(),
         )
@@ -395,23 +397,36 @@ describe('estimateEvmSwapFeeReserve', () => {
         expect(reserve.lessThan(bound.toString())).toBe(true)
     })
 
-    it('covers a router swap at the going gas price on Ethereum', async () => {
-        const baseFee = 20n * GWEI
+    it('holds back twice a native deposit at twice the base fee on Ethereum', async () => {
+        const baseFee = 40n * GWEI
         const tip = GWEI
 
         const reserve = await reserveOn(ETHEREUM, { baseFee, tip })
 
-        const routerSwapFee = 200_000n * (baseFee + tip)
-        expect(reserve.greaterThanOrEqualTo(routerSwapFee.toString())).toBe(
-            true,
-        )
         expect(reserve.toString()).toBe(
-            (
-                2n *
-                SWAP_TOKEN_DEPOSIT_GAS_CEILING *
-                (2n * baseFee + tip)
-            ).toString(),
+            (2n * INTRINSIC_TRANSFER_GAS * (2n * baseFee + tip)).toString(),
         )
+        // 0.01 ETH at 40 gwei keeps most of its balance spendable.
+        expect(reserve.lessThan((ETH / 200n).toString())).toBe(true)
+    })
+
+    it('falls back to a flat reserve when the fee read fails', async () => {
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: TEST_RPC_URL,
+                responses: {
+                    eth_feeHistory: new EvmRpcErrorFixture(-32_603, 'down'),
+                },
+            }),
+        )
+
+        const reserve = await estimateEvmSwapFeeReserve({
+            client: createEvmClient(scope, ctx, ETHEREUM),
+            chain: ETHEREUM,
+            scope,
+        })
+
+        expect(reserve.toString()).toBe((ETH / 200n).toString())
     })
 })
 

@@ -17,7 +17,10 @@ import {
     isNativeAsset,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { toBigInt } from '@perawallet/wallet-core-shared'
+import {
+    displayUnitsToBaseUnits,
+    toBigInt,
+} from '@perawallet/wallet-core-shared'
 import type { SwapQuote, SwapSourceCost } from '@perawallet/wallet-core-swaps'
 import { eip155ChainIdOf } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
@@ -42,12 +45,16 @@ export const evmShortfallOf = (
 ): SwapSourceCost['shortfall'] =>
     required > balance ? toDecimal(required - balance) : null
 
-// Twice the deposit ceiling's maximum fee: room for the fee to climb between
-// MAX and the order, and for a route that costs more than one deposit.
+// Twice the native deposit's maximum fee, itself priced at twice the base fee:
+// room for the fee to climb between MAX and the order.
 const MAX_AMOUNT_FEE_RESERVE_MULTIPLE = 2n
 
-/** Wei held back from a MAX native swap: a multiple of what the swap can be charged now. */
-export const estimateEvmSwapFeeReserve = async ({
+// Of the native unit: held back when the fee can't be read, so MAX still works
+// offline or on a failing node. Generous on purpose; the live price replaces it
+// on the next read.
+const FALLBACK_MAX_AMOUNT_FEE_RESERVE = '0.005'
+
+const readEvmSwapFeeReserve = async ({
     client,
     chain,
     scope,
@@ -57,7 +64,7 @@ export const estimateEvmSwapFeeReserve = async ({
     scope: ChainScope
 }): Promise<Decimal> => {
     const { presets } = await readEvmFeePresets(client, chain, scope.networkId)
-    const gas = SWAP_TOKEN_DEPOSIT_GAS_CEILING
+    const gas = INTRINSIC_TRANSFER_GAS
     const surcharge = await readEvmSurcharge(client, chain, {
         type: 'eip1559',
         chainId: eip155ChainIdOf(scope, chain),
@@ -73,6 +80,25 @@ export const estimateEvmSwapFeeReserve = async ({
             (gas * presets.normal.maxFeePerGas +
                 SURCHARGE_HEADROOM * surcharge),
     )
+}
+
+/**
+ * Wei held back from a MAX native swap: a multiple of what its one deposit can
+ * be charged now, or a flat fallback when the fee can't be read.
+ */
+export const estimateEvmSwapFeeReserve = async (params: {
+    client: PublicClient
+    chain: EvmChain
+    scope: ChainScope
+}): Promise<Decimal> => {
+    try {
+        return await readEvmSwapFeeReserve(params)
+    } catch {
+        return displayUnitsToBaseUnits(
+            FALLBACK_MAX_AMOUNT_FEE_RESERVE,
+            params.chain.row.nativeAsset.decimals,
+        )
+    }
 }
 
 export const estimateEvmSwapSourceCost = async ({
