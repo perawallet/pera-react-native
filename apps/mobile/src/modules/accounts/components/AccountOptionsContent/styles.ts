@@ -22,6 +22,9 @@ export const useStyles = makeStyles(theme => ({
     topAction: {
         flex: 1,
     },
+    writeDownPassphraseOption: {
+        marginBottom: theme.spacing.lg,
+    },
     accountInfoContainer: {
         paddingHorizontal: theme.spacing.xl,
         marginBottom: theme.spacing.lg,

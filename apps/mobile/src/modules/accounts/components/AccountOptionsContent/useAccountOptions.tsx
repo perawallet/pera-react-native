@@ -45,7 +45,11 @@ import {
     useNotificationPreferences,
     useNotificationsAddressResolver,
 } from '@perawallet/wallet-core-messages'
-import { getBackupSyncManager } from '@perawallet/wallet-core-backup'
+import {
+    getBackupSyncManager,
+    useIsAccountCoveredByCloudBackup,
+    useRequiresMnemonicBackup,
+} from '@perawallet/wallet-core-backup'
 import { logger, toError, type Optional } from '@perawallet/wallet-core-shared'
 import type { SheetOption } from '@components/SheetOptionRow'
 import { useHaptics } from '@hooks/useHaptics'
@@ -56,6 +60,7 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCapability } from '@hooks/useCapability'
 import { rekeyRequirementFor } from '@hooks/capabilityRequirements'
 import { useAccountNotificationToggle } from '@hooks/useAccountNotificationToggle'
+import { useBackupFlowLauncher } from '@modules/backup'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     useRevealPrivateKeyFlow,
@@ -99,6 +104,8 @@ export type UseAccountOptionsResult = {
     /** Rename, notifications where the account's chain can notify it, remove, then the account's secret if it has one. */
     topActions: SheetOption[]
     sharedAccountOptions: SheetOption[]
+    /** Offered on a Cloud Backup-covered account that still has no written-down passphrase; never required. */
+    writeDownPassphraseOption: Optional<SheetOption>
     networks: UseAccountNetworksResult
     isCloudBackupAvailable: boolean
     isRekeyed: boolean
@@ -143,6 +150,9 @@ export const useAccountOptions = ({
     const sheetTitle = getAccountDisplayName(account, accountChainId)
     const address = addressOn(account, scope) ?? ''
     const isBackedUp = useIsAccountBackedUp(address)
+    const isCoveredByCloudBackup = useIsAccountCoveredByCloudBackup(account)
+    const requiresMnemonicBackup = useRequiresMnemonicBackup(account)
+    const launchBackupFlow = useBackupFlowLauncher()
 
     useMultisigDetailsBackfill(account, scope)
 
@@ -194,6 +204,11 @@ export const useAccountOptions = ({
         account.id,
         accountChainId,
     ])
+
+    const handleWriteDownPassphrase = useCallback(() => {
+        onClose()
+        launchBackupFlow(account)
+    }, [onClose, launchBackupFlow, account])
 
     const handleViewPrivateKey = useCallback(() => {
         if (!privateKeyScope) return
@@ -571,10 +586,34 @@ export const useAccountOptions = ({
         handleExportShareAccount,
     ])
 
+    const writeDownPassphraseOption = useMemo((): Optional<SheetOption> => {
+        if (
+            !showPassphrase ||
+            !isCoveredByCloudBackup ||
+            !requiresMnemonicBackup
+        ) {
+            return undefined
+        }
+        return {
+            id: 'write-down-passphrase',
+            icon: 'shield-check',
+            title: t('account_options.write_down_passphrase'),
+            subtitle: t('account_options.write_down_passphrase_subtitle'),
+            onPress: handleWriteDownPassphrase,
+        }
+    }, [
+        t,
+        showPassphrase,
+        isCoveredByCloudBackup,
+        requiresMnemonicBackup,
+        handleWriteDownPassphrase,
+    ])
+
     return {
         sheetTitle,
         topActions,
         sharedAccountOptions,
+        writeDownPassphraseOption,
         networks,
         isCloudBackupAvailable,
         isRekeyed,
