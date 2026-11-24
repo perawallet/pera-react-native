@@ -13,6 +13,10 @@
 import { useEffect } from 'react'
 import { AppState } from 'react-native'
 import {
+    getPasskeyAnchorSeedIds,
+    useAccountsStore,
+} from '@perawallet/wallet-core-accounts'
+import {
     bootstrapPasskeyAutofill,
     passkeysQueryKeyRoot,
     type PasskeyAutofillService,
@@ -42,7 +46,7 @@ const getService = (): Optional<PasskeyAutofillService> => {
  * package serializes overlapping invocations into a single in-flight run.
  * Does nothing while the `liquidAuth` capability is off.
  */
-export const runPasskeyAutofillBootstrap = async (): Promise<void> => {
+const configurePasskeyAutofill = async (): Promise<void> => {
     // Read at call time: this runs outside React, on cold start and on every refresh.
     const { chains } = getProvider()
     if (!chains.list().some(({ id }) => chains.capabilities(id).liquidAuth)) {
@@ -59,7 +63,28 @@ export const runPasskeyAutofillBootstrap = async (): Promise<void> => {
     await bootstrapPasskeyAutofill({
         service,
         intentActions: PASSKEY_INTENT_ACTIONS,
+        getPasskeyAnchorSeedIds,
     })
+}
+
+let activeRefresh: Optional<Promise<void>>
+let refreshRequested = false
+
+export const runPasskeyAutofillBootstrap = (): Promise<void> => {
+    refreshRequested = true
+    if (activeRefresh) return activeRefresh
+
+    activeRefresh = (async () => {
+        try {
+            while (refreshRequested) {
+                refreshRequested = false
+                await configurePasskeyAutofill()
+            }
+        } finally {
+            activeRefresh = undefined
+        }
+    })()
+    return activeRefresh
 }
 
 /**
@@ -115,6 +140,13 @@ export const usePasskeyAutofillLifecycle = (): void => {
                 handleRefresh()
             }
         })
+        const accountsUnsubscribe = useAccountsStore.subscribe(
+            (state, previous) => {
+                if (state.accounts !== previous.accounts) handleRefresh()
+            },
+        )
+        const hydrationUnsubscribe =
+            useAccountsStore.persist.onFinishHydration(handleRefresh)
 
         const appStateSub = AppState.addEventListener('change', state => {
             if (state === 'active') handleRefresh()
@@ -125,6 +157,8 @@ export const usePasskeyAutofillLifecycle = (): void => {
 
         return () => {
             keystoreSub.unsubscribe()
+            accountsUnsubscribe()
+            hydrationUnsubscribe()
             appStateSub.remove()
             addedSub.remove()
             authedSub.remove()

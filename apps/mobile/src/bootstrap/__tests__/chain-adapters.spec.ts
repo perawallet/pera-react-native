@@ -118,6 +118,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => mocks.provider,
+    setKeystorePasskeyAnchorResolver: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-config', async importOriginal => ({
@@ -183,7 +184,12 @@ vi.mock('../evm-chain-modules', () => ({
     },
 }))
 
-import { rehydrateAccountsStore } from '@perawallet/wallet-core-accounts'
+import {
+    getPasskeyAnchorSeedIds,
+    rehydrateAccountsStore,
+    useAccountsStore,
+} from '@perawallet/wallet-core-accounts'
+import { setKeystorePasskeyAnchorResolver } from '@perawallet/wallet-extension-provider'
 import { rehydrateSigningStore } from '@perawallet/wallet-core-signing'
 import {
     pinnedHostRegistry,
@@ -313,6 +319,29 @@ describe('registerChainAdapters', () => {
         expect(
             vi.mocked(rehydrateAccountsStore).mock.invocationCallOrder[0],
         ).toBeGreaterThan(mocks.registerModule.mock.invocationCallOrder[0])
+    })
+
+    it('resolves passkey anchors from the accounts once they have hydrated', async () => {
+        vi.mocked(getPasskeyAnchorSeedIds).mockReturnValueOnce(
+            new Set(['hd-1']),
+        )
+        registerChainAdapters()
+        const resolve = vi.mocked(setKeystorePasskeyAnchorResolver).mock
+            .lastCall![0]
+
+        await expect(resolve([])).resolves.toEqual(new Set(['hd-1']))
+    })
+
+    it('rejects passkey anchor resolution when the accounts failed to hydrate', async () => {
+        vi.mocked(useAccountsStore.persist.hasHydrated).mockReturnValueOnce(
+            false,
+        )
+        registerChainAdapters()
+        const resolve = vi.mocked(setKeystorePasskeyAnchorResolver).mock
+            .lastCall![0]
+
+        await expect(resolve([])).rejects.toThrow('did not hydrate')
+        expect(getPasskeyAnchorSeedIds).not.toHaveBeenCalled()
     })
 
     it('rehydrates the signing store, naming the legacy chain for requests stored without one', () => {

@@ -12,44 +12,52 @@
 
 import { clearProvisionalSeed } from '@perawallet/wallet-core-kms'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
+import {
+    getKeystoreStore,
+    isPasskeyCredentialType,
+} from '@perawallet/wallet-extension-provider'
 import type { KeystoreSnapshot } from '../credentials/credentialScheme'
 import type { WalletAccount } from '../models'
 import { useAccountsStore } from '../store'
 
-const referencedKeys = (
-    accounts: readonly WalletAccount[],
+const keyAncestors = (
+    keyIds: readonly string[],
     keys: KeystoreSnapshot,
 ): ReadonlySet<string> => {
     const byId = new Map(keys.map(key => [key.id, key]))
     const referenced = new Set<string>()
-    for (const account of accounts) {
-        for (const entry of Object.values(account.chains)) {
-            let id = entry?.keyPairId
-            while (id !== undefined && !referenced.has(id)) {
-                referenced.add(id)
-                const parent: unknown = (
-                    byId.get(id)?.metadata as Optional<Record<string, unknown>>
-                )?.parentKeyId
-                id = typeof parent === 'string' ? parent : undefined
-            }
+    for (const keyId of keyIds) {
+        let id: Optional<string> = keyId
+        while (id !== undefined && !referenced.has(id)) {
+            referenced.add(id)
+            const parent: unknown = byId.get(id)?.metadata?.parentKeyId
+            id = typeof parent === 'string' ? parent : undefined
         }
     }
     return referenced
 }
 
+const accountKeyIds = (accounts: readonly WalletAccount[]): string[] =>
+    accounts.flatMap(account =>
+        Object.values(account?.chains ?? {}).flatMap(entry =>
+            typeof entry?.keyPairId === 'string' ? entry.keyPairId : [],
+        ),
+    )
+
 export const getPasskeyAnchorSeedIds = (
     keys: KeystoreSnapshot,
 ): ReadonlySet<string> =>
     useAccountsStore.persist.hasHydrated()
-        ? referencedKeys(
-              useAccountsStore
-                  .getState()
-                  .accounts.filter(
-                      account =>
-                          account.custody.kind === 'local' &&
-                          account.custody.seed === 'bip39',
-                  ),
+        ? keyAncestors(
+              accountKeyIds(
+                  useAccountsStore
+                      .getState()
+                      .accounts.filter(
+                          account =>
+                              account?.custody?.kind === 'local' &&
+                              account.custody.seed === 'bip39',
+                      ),
+              ),
               keys,
           )
         : new Set()
@@ -61,8 +69,15 @@ export const discardUnclaimedImportSeed = async (
 ): Promise<boolean> => {
     if (!useAccountsStore.persist.hasHydrated()) return false
     const keys = getKeystoreStore().state.keys
-    const claimed = referencedKeys(
-        useAccountsStore.getState().accounts,
+    const claimed = keyAncestors(
+        [
+            ...accountKeyIds(useAccountsStore.getState().accounts),
+            // Existing credentials can still need the seed for assertion
+            // derivation or PRF. Only account ancestry authorizes new ones.
+            ...keys
+                .filter(key => isPasskeyCredentialType(key.type))
+                .map(key => key.id),
+        ],
         keys,
     ).has(seedId)
     if (!claimed) await removeKeyAndChildren(seedId)

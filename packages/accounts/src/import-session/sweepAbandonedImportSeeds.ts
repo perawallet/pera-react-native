@@ -19,8 +19,8 @@ import { discardUnclaimedImportSeed } from './provisionalImportSeeds'
 
 /**
  * Removes the seeds an HD import saved and then lost track of when the
- * process died before the user confirmed or cancelled it. A seed any stored
- * account still uses is only unmarked, never removed.
+ * process died before the user confirmed or cancelled it. A seed needed by a
+ * stored account or existing passkey is only unmarked.
  */
 export const sweepAbandonedImportSeeds = async (
     removeKeyAndChildren: (seedId: string) => Promise<void>,

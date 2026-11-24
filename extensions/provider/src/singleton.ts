@@ -47,6 +47,7 @@ import {
     PQ_DERIVATION_CANONICAL,
 } from './keystore/pqDerivation'
 import { createPeraMigrationLedger } from './keystore/migrationsLedger'
+import { withDeferredRevisions } from './keystore/migrations/deferredRevisions'
 import { safeErrorMessage, safeWarn } from './keystore/migrations/safeLog'
 import { PeraProvider } from './pera-provider'
 
@@ -93,7 +94,9 @@ const instance = new PeraProvider(
             // applied — permanently.
             subtle,
         },
-        migrations: { ledger: createPeraMigrationLedger() },
+        migrations: {
+            ledger: withDeferredRevisions(createPeraMigrationLedger()),
+        },
     },
 )
 

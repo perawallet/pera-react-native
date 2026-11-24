@@ -24,10 +24,20 @@ vi.mock('@perawallet/wallet-core-passkeys', () => ({
     bootstrapPasskeyAutofill: vi.fn(async () => {}),
     passkeysQueryKeyRoot: ['passkeys'],
 }))
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    getPasskeyAnchorSeedIds: vi.fn(),
+    useAccountsStore: {
+        subscribe: () => vi.fn(),
+        persist: { onFinishHydration: () => vi.fn() },
+    },
+}))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
-        chains: { capabilities: () => ({ liquidAuth: false }) },
+        chains: {
+            list: () => [{ id: 'algorand' }],
+            capabilities: () => ({ liquidAuth: false }),
+        },
         passkeyAutofill: {
             onPasskeyAdded: () => ({ remove: vi.fn() }),
             onPasskeyAuthenticated: mocks.onPasskeyAuthenticated,

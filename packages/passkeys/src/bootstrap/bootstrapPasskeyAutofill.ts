@@ -17,7 +17,7 @@ import {
     readMasterKey,
     storage as keystoreStorage,
 } from '@algorandfoundation/react-native-keystore'
-import type { KeyData } from '@algorandfoundation/keystore-core'
+import type { Key, KeyData } from '@algorandfoundation/keystore-core'
 import {
     logger,
     type Nullable,
@@ -28,6 +28,8 @@ import type { PasskeyAutofillService } from '@perawallet/wallet-extension-passke
 export interface BootstrapPasskeyAutofillOptions {
     /** Required. The service registered on the provider. */
     service: PasskeyAutofillService
+    /** Confirms which wallet roots are backed by an account. */
+    getPasskeyAnchorSeedIds?: (keys: readonly Key[]) => ReadonlySet<string>
     /**
      * Android-only intent action ids matching the values declared in the
      * autofill Expo plugin / AndroidManifest.xml.
@@ -124,10 +126,17 @@ export const bootstrapPasskeyAutofill = (
 const runBootstrap = async (
     options: BootstrapPasskeyAutofillOptions,
 ): Promise<PasskeyBootstrapOutcome> => {
-    const { service, intentActions } = options
+    const { service, intentActions, getPasskeyAnchorSeedIds } = options
 
     let masterKey: Nullable<Buffer> = null
     try {
+        const parentKeys = findParentKeyCandidates()
+        const anchorIds = getPasskeyAnchorSeedIds?.(parentKeys.keys)
+        const registrationParent = findRegistrationParent(parentKeys, anchorIds)
+        await service
+            .setRegistrationParentKeyId(registrationParent?.id ?? '')
+            .catch(err => abortStep('setRegistrationParentKeyId', err))
+
         try {
             masterKey = await readMasterKey()
         } catch (err) {
@@ -158,7 +167,7 @@ const runBootstrap = async (
             masterKeyBytes.fill(0)
         }
 
-        await configureParentKey(service)
+        await configureParentKey(service, parentKeys)
 
         await service
             .configureIntentActions(
@@ -223,11 +232,15 @@ const byId = (a: KeyData, b: KeyData): number => {
  * `getAllKeys` order is arbitrary — without the sort, which root wins a tie
  * would silently change between launches.
  */
-const findParentKeyCandidates = (): {
+type ParentKeyCandidates = {
+    keys: KeyData[]
     mainKeys: KeyData[]
     hdRoots: KeyData[]
-} => {
+}
+
+const findParentKeyCandidates = (): ParentKeyCandidates => {
     let scanned = 0
+    const keys: KeyData[] = []
     const mainKeys: KeyData[] = []
     const hdRoots: KeyData[] = []
 
@@ -248,6 +261,8 @@ const findParentKeyCandidates = (): {
             continue
         }
 
+        if (!record || typeof record !== 'object') continue
+        keys.push(record)
         const scheme = (record.metadata as Optional<{ scheme?: unknown }>)
             ?.scheme
         if (
@@ -269,14 +284,43 @@ const findParentKeyCandidates = (): {
         )
     }
 
-    return { mainKeys: mainKeys.sort(byId), hdRoots: hdRoots.sort(byId) }
+    return { keys, mainKeys: mainKeys.sort(byId), hdRoots: hdRoots.sort(byId) }
+}
+
+const findRegistrationParent = (
+    { keys, mainKeys, hdRoots }: ParentKeyCandidates,
+    anchorIds: Optional<ReadonlySet<string>>,
+): Optional<KeyData> => {
+    if (!anchorIds?.size) return undefined
+
+    const entropyIds = new Set(
+        keys
+            .filter(key => {
+                const { entropyKey, parentKeyId } = key.metadata ?? {}
+                return (
+                    key.type === 'secret-key' &&
+                    entropyKey === true &&
+                    typeof parentKeyId === 'string' &&
+                    anchorIds.has(parentKeyId)
+                )
+            })
+            .map(key => key.id),
+    )
+
+    return (
+        mainKeys.find(key => {
+            const parentKeyId = key.metadata?.parentKeyId
+            return (
+                typeof parentKeyId === 'string' && entropyIds.has(parentKeyId)
+            )
+        }) ?? hdRoots.find(root => anchorIds.has(root.id))
+    )
 }
 
 const configureParentKey = async (
     service: PasskeyAutofillService,
+    { mainKeys, hdRoots }: ParentKeyCandidates,
 ): Promise<void> => {
-    const { mainKeys, hdRoots } = findParentKeyCandidates()
-
     if (mainKeys.length > 0) {
         if (mainKeys.length > 1) {
             // The dp256 main key is a device-wide singleton (`usePasskeyMainKey`

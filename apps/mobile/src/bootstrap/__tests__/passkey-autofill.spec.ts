@@ -47,6 +47,24 @@ describe('runPasskeyAutofillBootstrap', () => {
         expect(mocks.bootstrapPasskeyAutofill).toHaveBeenCalledTimes(1)
     })
 
+    it('refreshes registration approval again if the wallet changes during bootstrap', async () => {
+        let finishBootstrap!: () => void
+        mocks.bootstrapPasskeyAutofill.mockReturnValueOnce(
+            new Promise<void>(resolve => {
+                finishBootstrap = resolve
+            }),
+        )
+
+        const first = runPasskeyAutofillBootstrap()
+        const refresh = runPasskeyAutofillBootstrap()
+        expect(mocks.bootstrapPasskeyAutofill).toHaveBeenCalledTimes(1)
+
+        finishBootstrap()
+        await Promise.all([first, refresh])
+
+        expect(mocks.bootstrapPasskeyAutofill).toHaveBeenCalledTimes(2)
+    })
+
     it('does nothing while the liquidAuth capability is off', async () => {
         setCapabilityOverrides({ liquidAuth: false })
 

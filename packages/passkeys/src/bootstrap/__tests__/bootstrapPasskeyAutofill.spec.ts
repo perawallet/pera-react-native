@@ -111,6 +111,7 @@ const makeService = () => ({
     setMasterKey: vi.fn().mockResolvedValue(undefined),
     setHdRootKeyId: vi.fn().mockResolvedValue(undefined),
     setMainKeyId: vi.fn().mockResolvedValue(undefined),
+    setRegistrationParentKeyId: vi.fn().mockResolvedValue(undefined),
     getHdRootKeyId: vi.fn().mockResolvedValue(null),
     configureIntentActions: vi.fn().mockResolvedValue(undefined),
     isProviderActive: vi.fn().mockResolvedValue(true),
@@ -161,13 +162,13 @@ const seedHdRoot = (id = 'root-id') =>
     seedKeystore({ id, type: 'hd-root-key', algorithm: 'raw' }, ROOT_SEED)
 
 /** The dp256 main key, distinguished from the XHD root only by its scheme. */
-const seedPasskeyMainKey = (id = 'main-id') =>
+const seedPasskeyMainKey = (id = 'main-id', parentKeyId?: string) =>
     seedKeystore(
         {
             id,
             type: 'hd-root-key',
             algorithm: 'P256',
-            metadata: { storage: 'bytes', scheme: 'pbkdf2-p256' },
+            metadata: { storage: 'bytes', scheme: 'pbkdf2-p256', parentKeyId },
         },
         new Uint8Array(64).fill(6),
     )
@@ -318,6 +319,60 @@ describe('bootstrapPasskeyAutofill', () => {
         })
 
         expect(service.setMainKeyId).toHaveBeenCalledWith('main-id')
+    })
+
+    it('keeps the existing assertion parent and authorizes an account-backed root for registration', async () => {
+        const service = makeService()
+        await seedHdRoot('unclaimed')
+        await seedPasskeyMainKey('existing-main', 'unclaimed/entropy')
+        await seedHdRoot('wallet-root')
+
+        await bootstrapPasskeyAutofill({
+            service: service as never,
+            intentActions,
+            getPasskeyAnchorSeedIds: () => new Set(['wallet-root']),
+        })
+
+        expect(service.setMainKeyId).toHaveBeenCalledWith('existing-main')
+        expect(service.setRegistrationParentKeyId).toHaveBeenCalledWith(
+            'wallet-root',
+        )
+    })
+
+    it('authorizes a main key through the entropy of an account-backed root', async () => {
+        const service = makeService()
+        await seedHdRoot()
+        await seedKeystore({
+            id: 'entropy',
+            type: 'secret-key',
+            metadata: { parentKeyId: 'root-id', entropyKey: true },
+        })
+        await seedPasskeyMainKey('main-id', 'entropy')
+
+        await bootstrapPasskeyAutofill({
+            service: service as never,
+            intentActions,
+            getPasskeyAnchorSeedIds: () => new Set(['root-id']),
+        })
+
+        expect(service.setRegistrationParentKeyId).toHaveBeenCalledWith(
+            'main-id',
+        )
+    })
+
+    it('revokes registration approval without clearing an existing assertion parent', async () => {
+        const service = makeService()
+        await seedHdRoot()
+        await seedPasskeyMainKey()
+
+        await bootstrapPasskeyAutofill({
+            service: service as never,
+            intentActions,
+            getPasskeyAnchorSeedIds: () => new Set(),
+        })
+
+        expect(service.setMainKeyId).toHaveBeenCalledWith('main-id')
+        expect(service.setRegistrationParentKeyId).toHaveBeenCalledWith('')
     })
 
     it('falls back to the XHD root when no main key exists yet', async () => {

@@ -15,7 +15,11 @@ import type { WalletAccount } from '../../models'
 
 const state = vi.hoisted(() => ({
     provisional: [] as string[],
-    keys: [] as { id: string; metadata?: { parentKeyId: string } }[],
+    keys: [] as {
+        id: string
+        type?: string
+        metadata?: { parentKeyId: string }
+    }[],
     accounts: [] as WalletAccount[],
     hydrated: true,
     pending: null as { walletKeyId: string } | null,
@@ -31,6 +35,7 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getKeystore: () => ({ ready: Promise.resolve() }),
     getKeystoreStore: () => ({ state: { keys: state.keys } }),
+    isPasskeyCredentialType: (type: unknown) => type === 'hd-derived-p256',
 }))
 
 vi.mock('../../store', () => ({
@@ -75,6 +80,29 @@ describe('sweepAbandonedImportSeeds', () => {
         state.pending = null
     })
 
+    it('preserves roots needed by existing credentials without authorizing a new anchor', async () => {
+        state.provisional = ['seed']
+        state.keys = [
+            { id: 'seed' },
+            { id: 'main', metadata: { parentKeyId: 'seed' } },
+            {
+                id: 'credential',
+                type: 'hd-derived-p256',
+                metadata: { parentKeyId: 'main' },
+            },
+        ]
+
+        await sweepAbandonedImportSeeds(remove)
+
+        expect(remove).not.toHaveBeenCalled()
+        expect(state.provisional).toEqual([])
+        expect(
+            getPasskeyAnchorSeedIds(
+                state.keys as Parameters<typeof getPasskeyAnchorSeedIds>[0],
+            ).has('seed'),
+        ).toBe(false)
+    })
+
     it('removes the seed of an import the app was killed in, on the next launch', async () => {
         state.provisional = ['abandoned']
         state.keys = [{ id: 'abandoned' }, ...heldKeys()]
@@ -106,6 +134,24 @@ describe('sweepAbandonedImportSeeds', () => {
 
         expect(remove).toHaveBeenCalledExactlyOnceWith('abandoned')
         expect(state.provisional).toEqual([])
+    })
+
+    it('keeps processing accounts when one stored record lacks chain entries', async () => {
+        state.provisional = ['kept', 'abandoned']
+        state.keys = [{ id: 'abandoned' }, ...heldKeys()]
+        state.accounts = [
+            { id: 'incomplete' } as WalletAccount,
+            hdAccount('acc-1', 'kept/child'),
+        ]
+
+        await sweepAbandonedImportSeeds(remove)
+
+        expect(remove).toHaveBeenCalledExactlyOnceWith('abandoned')
+        expect(
+            getPasskeyAnchorSeedIds(
+                state.keys as Parameters<typeof getPasskeyAnchorSeedIds>[0],
+            ).has('kept'),
+        ).toBe(true)
     })
 
     it('protects a seed referenced on another chain when the first key is missing', async () => {
