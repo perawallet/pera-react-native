@@ -29,6 +29,14 @@ export const resealLegacyMaterialWith = async (
     legacyKeyRemoved: false,
 })
 
+export const discardLegacyKeyWith = async (
+    _deps: ResealDeps,
+): Promise<ResealReport> => ({
+    resealed: 0,
+    unrecoverable: [],
+    legacyKeyRemoved: false,
+})
+
 export const checkLegacyMaterialWith = async (
     _deps: LegacyCheckDeps,
 ): Promise<LegacyCheckReport> => ({

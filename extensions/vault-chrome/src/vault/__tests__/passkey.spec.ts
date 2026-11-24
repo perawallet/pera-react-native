@@ -47,7 +47,7 @@ import {
 } from '../password-auth'
 import { InvalidPasswordError } from '../../errors'
 import { deriveKvAuthKey } from '../kv-auth-key'
-import { isMarkedSalt, readSaltMarks } from '../marked-salt'
+import { createMarkedSalt, isMarkedSalt, readSaltMarks } from '../marked-salt'
 import { getLockoutRemainingSeconds, runThrottledAttempt } from '../lockout'
 
 // Records one wrong-password attempt the way a password check would.
@@ -789,10 +789,11 @@ describe('passkey vault', () => {
 
         // What a build before the mark wrote: same PRF output and eval salt,
         // a random unmarked hkdfSalt.
-        const downgradeToUnmarkedBlob = async (): Promise<Uint8Array> => {
+        const downgradeToUnmarkedBlob = async (
+            hkdfSalt: Uint8Array = new Uint8Array(16).fill(3),
+        ): Promise<Uint8Array> => {
             const masterKey = (await getSessionMasterKey()) as Uint8Array
             const blob = JSON.parse(String(fake.data.get(PRF_BLOB)))
-            const hkdfSalt = new Uint8Array(16).fill(3)
             const iv = new Uint8Array(12).fill(8)
             const material = await crypto.subtle.importKey(
                 'raw',
@@ -839,9 +840,9 @@ describe('passkey vault', () => {
         const downgradeToUnmarkedPasswordBlob = async (
             password: string,
             masterKey: Uint8Array,
+            salt: Uint8Array = new Uint8Array(16).fill(4),
         ): Promise<void> => {
             const blob = JSON.parse(String(fake.data.get(PASSWORD_BLOB)))
-            const salt = new Uint8Array(16).fill(4)
             const iv = new Uint8Array(12).fill(6)
             const kek = await crypto.subtle.importKey(
                 'raw',
@@ -1104,7 +1105,7 @@ describe('passkey vault', () => {
                 expect(reseal).toHaveBeenCalledTimes(1)
             })
 
-            it("carries the password blob's keystore mark when passkey unlock is enabled", async () => {
+            it("carries the password blob's marks when passkey unlock is enabled", async () => {
                 await createVault('pw')
                 await enablePasskeyUnlock('pw')
                 const masterKey = (await getSessionMasterKey()) as Uint8Array
@@ -1113,10 +1114,89 @@ describe('passkey vault', () => {
                 await enablePasskeyUnlock('pw')
 
                 expect(prfMarks()).toEqual({
-                    isKvSealed: true,
+                    isKvSealed: false,
                     isKeystoreResealed: false,
                 })
-                expect(passwordMarks().isKeystoreResealed).toBe(false)
+                expect(passwordMarks()).toEqual({
+                    isKvSealed: false,
+                    isKeystoreResealed: false,
+                })
+            })
+
+            it('discards a leftover legacy key instead of re-sealing once the blob is marked', async () => {
+                await createVault('pw')
+                await enablePasskeyUnlock('pw')
+                await lockVault()
+                const reseal = vi.fn(async () => {})
+                const discard = vi.fn(async () => {})
+
+                await unlockWithPasskey({
+                    resealLegacyKeystore: reseal,
+                    discardLegacyKeystoreKey: discard,
+                })
+
+                expect(reseal).not.toHaveBeenCalled()
+                expect(discard).toHaveBeenCalledTimes(1)
+            })
+
+            describe('from an upgraded vault (network marked, keystore not)', () => {
+                const upgradedSalt = () =>
+                    createMarkedSalt({
+                        isKvSealed: true,
+                        isKeystoreResealed: false,
+                    })
+
+                const setUpUpgraded = async (): Promise<void> => {
+                    await createVault('pw')
+                    await enablePasskeyUnlock('pw')
+                    const masterKey =
+                        await downgradeToUnmarkedBlob(upgradedSalt())
+                    await downgradeToUnmarkedPasswordBlob(
+                        'pw',
+                        masterKey,
+                        upgradedSalt(),
+                    )
+                    await lockVault()
+                }
+
+                it('marks the keystore once the re-seal succeeds, without re-running the network migration', async () => {
+                    await setUpUpgraded()
+                    const migrate = vi.fn(async () => {})
+                    const reseal = vi.fn(async () => {})
+
+                    await unlockWithPasskey({
+                        migrateLegacyRecords: migrate,
+                        resealLegacyKeystore: reseal,
+                    })
+
+                    expect(migrate).not.toHaveBeenCalled()
+                    expect(reseal).toHaveBeenCalledTimes(1)
+                    expect(prfMarks()).toEqual({
+                        isKvSealed: true,
+                        isKeystoreResealed: true,
+                    })
+                })
+
+                it('writes nothing when the re-seal fails, and retries next unlock', async () => {
+                    await setUpUpgraded()
+                    const before = fake.data.get(PRF_BLOB)
+                    const reseal = vi
+                        .fn<(key: CryptoKey) => Promise<void>>()
+                        .mockRejectedValueOnce(new Error('idb'))
+                        .mockResolvedValue(undefined)
+
+                    await unlockWithPasskey({ resealLegacyKeystore: reseal })
+
+                    expect(await getSessionMasterKey()).not.toBeNull()
+                    expect(fake.data.get(PRF_BLOB)).toBe(before)
+                    await lockVault()
+                    await unlockWithPasskey({ resealLegacyKeystore: reseal })
+                    expect(reseal).toHaveBeenCalledTimes(2)
+                    expect(prfMarks()).toEqual({
+                        isKvSealed: true,
+                        isKeystoreResealed: true,
+                    })
+                })
             })
         })
     })

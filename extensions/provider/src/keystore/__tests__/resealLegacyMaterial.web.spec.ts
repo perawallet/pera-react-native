@@ -40,6 +40,7 @@ import { createPeraKeystore } from '../createKeystore.web'
 import { setEngineKeySource } from '../engineKeySource'
 import {
     checkLegacyMaterialWith,
+    discardLegacyKeyWith,
     resealLegacyMaterialWith,
 } from '../resealLegacyMaterial.web'
 import { safeWarn } from '../migrations/safeLog'
@@ -294,6 +295,80 @@ describe('legacy keystore material', () => {
             })
             expect(await readMaterial(factory, MASTER_KEY_ID)).toBeUndefined()
             expect(await opensUnderEngine(factory, 'seed-1')).toBe(true)
+        })
+    })
+
+    describe('discardLegacyKeyWith', () => {
+        const plantKeyBesideSwappedRoot = async (): Promise<void> => {
+            const plantedKey = await subtle.generateKey(
+                { name: 'AES-GCM', length: 256 },
+                false,
+                ['encrypt', 'decrypt'],
+            )
+            const sealed = await seal(subtle, plantedKey, ATTACKER_SEED)
+            const db = await openDatabase('keystore', factory)
+            await db.put<MaterialRecord>(MATERIAL_STORE, {
+                id: MASTER_KEY_ID,
+                kind: 'cryptokey',
+                privateKey: plantedKey,
+            })
+            await db.put<MaterialRecord>(MATERIAL_STORE, {
+                id: 'seed-1',
+                kind: 'bytes',
+                ...sealed,
+            })
+            db.close()
+        }
+
+        it('deletes a key planted beside a swapped root, reporting the root and re-sealing nothing', async () => {
+            await resealLegacyMaterialWith(await resealDeps())
+            await checkLegacyMaterialWith(checkDeps())
+            await plantKeyBesideSwappedRoot()
+
+            const report = await discardLegacyKeyWith(await resealDeps())
+
+            expect(report).toEqual({
+                resealed: 0,
+                unrecoverable: ['seed-1'],
+                legacyKeyRemoved: true,
+            })
+            expect(await readMaterial(factory, MASTER_KEY_ID)).toBeUndefined()
+            expect(await opensUnderEngine(factory, 'seed-1')).toBe(false)
+            expect(await opensUnderEngine(factory, 'pin')).toBe(true)
+            expect(await checkLegacyMaterialWith(checkDeps())).toEqual({
+                reminted: 0,
+                unrecoverable: [],
+            })
+        })
+
+        it('deletes a key orphaned by a reset that kept the reserved id', async () => {
+            await resealLegacyMaterialWith(await resealDeps())
+            const legacy = createIndexedDBDriver({
+                host: subtle,
+                indexedDB: factory,
+            })
+            await legacy.ready
+
+            const report = await discardLegacyKeyWith(await resealDeps())
+
+            expect(report).toEqual({
+                resealed: 0,
+                unrecoverable: [],
+                legacyKeyRemoved: true,
+            })
+            expect(await readMaterial(factory, MASTER_KEY_ID)).toBeUndefined()
+        })
+
+        it('does nothing without a legacy key', async () => {
+            await resealLegacyMaterialWith(await resealDeps())
+
+            const report = await discardLegacyKeyWith(await resealDeps())
+
+            expect(report).toEqual({
+                resealed: 0,
+                unrecoverable: [],
+                legacyKeyRemoved: false,
+            })
         })
     })
 

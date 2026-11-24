@@ -41,7 +41,7 @@ import {
     isClosedByOtherBlob,
     nextSaltMarks,
     readOtherBlobState,
-    runLegacyKeystoreReseal,
+    runLegacyKeystoreStep,
     type UnlockOptions,
 } from './migration-window'
 import { clearPasswordAuth, stampPasswordAuth } from './password-auth'
@@ -458,11 +458,12 @@ export const unlockVault = async (
             marks.isKvSealed || isClosedByOtherBlob(other, 'isKvSealed')
                 ? false
                 : await runLegacyRecordMigration(masterKey, options)
-        const hasResealed =
-            marks.isKeystoreResealed ||
-            isClosedByOtherBlob(other, 'isKeystoreResealed')
-                ? false
-                : await runLegacyKeystoreReseal(masterKey, options)
+        const hasResealed = await runLegacyKeystoreStep({
+            masterKey,
+            marks,
+            other,
+            options,
+        })
         await putSessionMasterKey(masterKey)
         await armAutoLock()
         await stampPasswordAuth()
@@ -521,12 +522,9 @@ export const changePassword = async (
     const { masterKey, marks } =
         await unwrapMasterKeyThrottledDetailed(currentPassword)
     try {
-        // The keystore mark is carried, not granted: a password change must
-        // not close a re-seal that has yet to succeed.
-        await writeWrappedMasterKey(nextPassword, masterKey, {
-            isKvSealed: true,
-            isKeystoreResealed: marks.isKeystoreResealed,
-        })
+        // Marks are carried, not granted: a password change must not close a
+        // migration that has yet to succeed.
+        await writeWrappedMasterKey(nextPassword, masterKey, marks)
     } finally {
         masterKey.fill(0)
     }

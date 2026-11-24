@@ -23,12 +23,17 @@ import { PRF_BLOB_KEY, PRF_CRED_ID_KEY } from '../storage-keys'
 import { armAutoLock } from './autolock'
 import { runLegacyRecordMigration } from './kv-auth-key'
 import { clearFailedAttempts, getLockoutRemainingSeconds } from './lockout'
-import { createMarkedSalt, readSaltMarks, type SaltMarks } from './marked-salt'
+import {
+    ALL_SALT_MARKS,
+    createMarkedSalt,
+    readSaltMarks,
+    type SaltMarks,
+} from './marked-salt'
 import {
     isClosedByOtherBlob,
     nextSaltMarks,
     readOtherBlobState,
-    runLegacyKeystoreReseal,
+    runLegacyKeystoreStep,
     type UnlockOptions,
 } from './migration-window'
 import { hasRecentPasswordAuth } from './password-auth'
@@ -286,19 +291,17 @@ const wrapMasterKeyWithPasskey = async (
             throw new PasskeyPrfUnsupportedError()
         }
 
-        // The keystore mark follows the password blob: enabling a passkey
-        // must not close a re-seal that has yet to succeed there.
+        // Marks follow the password blob: enabling a passkey must not close a
+        // migration that has yet to succeed there. Without a readable one
+        // there is nothing to carry, so the windows close.
         const passwordBlob = await readOtherBlobState('passkey')
         const blob = await wrapWithPrfOutput(
             prfOutput,
             masterKey,
             prfEvalSalt,
-            {
-                isKvSealed: true,
-                isKeystoreResealed:
-                    passwordBlob.status !== 'read' ||
-                    passwordBlob.marks.isKeystoreResealed,
-            },
+            passwordBlob.status === 'read'
+                ? passwordBlob.marks
+                : ALL_SALT_MARKS,
         )
 
         // Fix: store rawId bytes (base64-encoded) not the base64url string id —
@@ -499,12 +502,13 @@ export const unlockWithPasskey = async (
             isClosedByOtherBlob(other, 'isKvSealed')
                 ? false
                 : await runLegacyRecordMigration(masterKey, options)
-        const hasResealed =
-            !canMark ||
-            marks.isKeystoreResealed ||
-            isClosedByOtherBlob(other, 'isKeystoreResealed')
-                ? false
-                : await runLegacyKeystoreReseal(masterKey, options)
+        const hasResealed = await runLegacyKeystoreStep({
+            masterKey,
+            marks,
+            other,
+            options,
+            canMark,
+        })
         await putSessionMasterKey(masterKey)
         await armAutoLock()
         await clearFailedAttempts()

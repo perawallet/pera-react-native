@@ -29,6 +29,8 @@ export type UnlockOptions = {
      * context can see the session unlocked.
      */
     resealLegacyKeystore?: (engineKey: CryptoKey) => Promise<unknown>
+    /** Removes a pre-vault key from a profile whose re-seal is already recorded. */
+    discardLegacyKeystoreKey?: (engineKey: CryptoKey) => Promise<unknown>
 }
 
 export type OtherBlobState =
@@ -96,29 +98,68 @@ export const nextSaltMarks = (
         hasOtherBlobMark(other, 'isKeystoreResealed'),
 })
 
+const importEngineKey = (masterKey: Uint8Array): Promise<CryptoKey> =>
+    crypto.subtle.importKey(
+        'raw',
+        masterKey as BufferSource,
+        { name: 'AES-GCM' },
+        false,
+        ['encrypt', 'decrypt'],
+    )
+
+const logKeystoreFailure = (
+    step: 'discard' | 'reseal',
+    error: unknown,
+): void => {
+    logger.error('[vault] legacy keystore step failed', {
+        step,
+        reason: error instanceof Error ? error.name : 'unknown',
+    })
+}
+
 /**
+ * Re-seals while neither blob records a finished re-seal, and returns whether
+ * this unlock earned the mark. Once one does, any pre-vault key left is planted
+ * or orphaned, so it is discarded instead. An unreadable other blob closes the
+ * window but proves nothing, so the key is kept for a later unlock.
+ *
  * Best-effort like the record migration: a failure leaves the blob unmarked so
  * the next unlock retries, and the unlock itself still succeeds.
  */
-export const runLegacyKeystoreReseal = async (
-    masterKey: Uint8Array,
-    options: Optional<UnlockOptions>,
-): Promise<boolean> => {
+export const runLegacyKeystoreStep = async ({
+    masterKey,
+    marks,
+    other,
+    options,
+    canMark = true,
+}: {
+    masterKey: Uint8Array
+    marks: SaltMarks
+    other: OtherBlobState
+    options: Optional<UnlockOptions>
+    canMark?: boolean
+}): Promise<boolean> => {
+    if (
+        marks.isKeystoreResealed ||
+        hasOtherBlobMark(other, 'isKeystoreResealed')
+    ) {
+        if (!options?.discardLegacyKeystoreKey) return false
+        try {
+            await options.discardLegacyKeystoreKey(
+                await importEngineKey(masterKey),
+            )
+        } catch (error) {
+            logKeystoreFailure('discard', error)
+        }
+        return false
+    }
+    if (!canMark || other.status === 'unreadable') return false
     if (!options?.resealLegacyKeystore) return false
     try {
-        const engineKey = await crypto.subtle.importKey(
-            'raw',
-            masterKey as BufferSource,
-            { name: 'AES-GCM' },
-            false,
-            ['encrypt', 'decrypt'],
-        )
-        await options.resealLegacyKeystore(engineKey)
+        await options.resealLegacyKeystore(await importEngineKey(masterKey))
         return true
     } catch (error) {
-        logger.error('[vault] re-sealing the legacy keystore material failed', {
-            reason: error instanceof Error ? error.name : 'unknown',
-        })
+        logKeystoreFailure('reseal', error)
         return false
     }
 }

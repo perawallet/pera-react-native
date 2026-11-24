@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
     unlockVault: vi.fn(),
     sealLegacyKvRecords: vi.fn(),
     resealLegacyMaterial: vi.fn(),
+    discardLegacyKey: vi.fn(),
     unlockWithPasskey: vi.fn(),
     isPasskeyUnlockSupported: vi.fn().mockResolvedValue(false),
     isPasskeyUnlockEnabled: vi.fn().mockResolvedValue(false),
@@ -61,6 +62,7 @@ vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     resealLegacyMaterial: mocks.resealLegacyMaterial,
+    discardLegacyKey: mocks.discardLegacyKey,
 }))
 
 import { useUnlockScreen } from '../useUnlockScreen.web'
@@ -99,6 +101,7 @@ describe('useUnlockScreen', () => {
         const expected = {
             migrateLegacyRecords: mocks.sealLegacyKvRecords,
             resealLegacyKeystore: mocks.resealLegacyMaterial,
+            discardLegacyKeystoreKey: mocks.discardLegacyKey,
         }
         expect(mocks.unlockVault).toHaveBeenCalledWith(
             'correctpassword',

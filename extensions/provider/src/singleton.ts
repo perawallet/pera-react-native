@@ -34,6 +34,7 @@ import type { QuantumMaterialRepairResult } from './keystore/repairQuantumMateri
 import { resolveEngineKey } from './keystore/engineKeySource'
 import {
     checkLegacyMaterialWith,
+    discardLegacyKeyWith,
     resealLegacyMaterialWith,
 } from './keystore/resealLegacyMaterial'
 import type { LegacyCheckReport, ResealReport } from './keystore/resealTypes'
@@ -160,6 +161,27 @@ export const resealLegacyMaterial = async (
     if (report.resealed > 0) {
         logger.info('Keystore records re-sealed', {
             resealed: report.resealed,
+        })
+    }
+    return report
+}
+
+/**
+ * Removes a legacy key the vault's unlock has ruled out: its blob already
+ * records a finished re-seal. Logs any record the vault key can't open.
+ */
+export const discardLegacyKey = async (
+    engineKey: CryptoKey,
+): Promise<ResealReport> => {
+    const report = await discardLegacyKeyWith({
+        engineKey,
+        subtle,
+        indexedDB: globalThis.indexedDB,
+        databaseName: 'keystore',
+    })
+    if (report.legacyKeyRemoved) {
+        logger.warn('Keystore legacy key discarded on a re-sealed vault', {
+            ids: report.unrecoverable,
         })
     }
     return report

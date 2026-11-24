@@ -24,13 +24,17 @@ import {
     unlockWithPasskey,
 } from '@perawallet/wallet-extension-vault-chrome'
 import { sealLegacyKvRecords } from '@perawallet/wallet-extension-platform-chrome'
-import { resealLegacyMaterial } from '@perawallet/wallet-extension-provider'
+import {
+    discardLegacyKey,
+    resealLegacyMaterial,
+} from '@perawallet/wallet-extension-provider'
 
 // Each migration moves material that predates the vault key; the vault layer
 // allows each one until it has succeeded once per wallet.
 const UNLOCK_OPTIONS = {
     migrateLegacyRecords: sealLegacyKvRecords,
     resealLegacyKeystore: resealLegacyMaterial,
+    discardLegacyKeystoreKey: discardLegacyKey,
 }
 
 type UseUnlockScreenResult = {

@@ -203,14 +203,14 @@ export const resealLegacyMaterialWith = async (
 }
 
 const reportUnopenable = async (
-    deps: LegacyCheckDeps,
+    subtle: SubtleCrypto,
+    engineKey: CryptoKey,
     records: MaterialRecord[],
-    report: LegacyCheckReport,
+    report: { unrecoverable: string[] },
 ): Promise<void> => {
-    const engineKey = await deps.resolveEngineKey()
     for (const record of records) {
         if (record.kind !== 'bytes') continue
-        const plaintext = await tryOpen(deps.subtle, engineKey, record)
+        const plaintext = await tryOpen(subtle, engineKey, record)
         if (plaintext) {
             plaintext.fill(0)
             continue
@@ -223,10 +223,41 @@ const reportUnopenable = async (
 }
 
 /**
+ * Deletes a legacy key from a profile whose vault already records a finished
+ * re-seal, where it can only be planted or orphaned by a reset that kept the
+ * reserved id. Reports every record the vault key can't open first, so a root
+ * swapped in beside the key is still flagged.
+ */
+export const discardLegacyKeyWith = async (
+    deps: ResealDeps,
+): Promise<ResealReport> => {
+    const report: ResealReport = {
+        resealed: 0,
+        unrecoverable: [],
+        legacyKeyRemoved: false,
+    }
+    const db = await openDatabase(deps.databaseName, deps.indexedDB)
+    try {
+        if (!(await readLegacyKey(db))) return report
+        safeWarn('keystore legacy key found on a re-sealed vault; discarding')
+        const records = await db.getAll<MaterialRecord>(MATERIAL_STORE, [
+            MASTER_KEY_ID,
+        ])
+        await reportUnopenable(deps.subtle, deps.engineKey, records, report)
+        await db.delete(MATERIAL_STORE, MASTER_KEY_ID)
+        report.legacyKeyRemoved = true
+        return report
+    } finally {
+        db.close()
+    }
+}
+
+/**
  * Runs after unlock and never re-seals: only the unlock may, behind the vault's
- * mark. A legacy key found here is not honoured but left in place, so a genuine
- * one survives a failed re-seal for the next unlock to move. Re-minting arms on
- * a leftover `cryptokey` record, so a child that failed once is retried.
+ * mark. A legacy key found here is one the unlock could neither move nor rule
+ * out (a failed re-seal, an unreadable second blob): it is not honoured but left
+ * in place for a later unlock. Re-minting arms on a leftover `cryptokey`
+ * record, so a child that failed once is retried.
  */
 export const checkLegacyMaterialWith = async (
     deps: LegacyCheckDeps,
@@ -246,7 +277,12 @@ export const checkLegacyMaterialWith = async (
 
         if (legacyKey) {
             safeWarn('keystore legacy key present after unlock; not honoured')
-            await reportUnopenable(deps, records, report)
+            await reportUnopenable(
+                deps.subtle,
+                await deps.resolveEngineKey(),
+                records,
+                report,
+            )
         }
         for (const record of records) {
             if (record.kind === 'cryptokey') {
