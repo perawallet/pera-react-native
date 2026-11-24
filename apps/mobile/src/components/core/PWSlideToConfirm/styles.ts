@@ -18,7 +18,6 @@ const TRACK_HEIGHT = 56
 export const THUMB_SIZE = 64
 export const TRACK_INSET = 4
 // The thumb is taller than the track; reserving the overhang stops it painting over whatever sits above or below.
-// lanekeep-ignore-next-line pera/no-numeric-sizes reason: half the thumb's overhang past the track
 const THUMB_OVERHANG = (THUMB_SIZE - TRACK_HEIGHT) / 2
 
 type StyleProps = {
