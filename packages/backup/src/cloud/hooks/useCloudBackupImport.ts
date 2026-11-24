@@ -59,7 +59,6 @@ import {
     backupChainAdapters,
     type BackupChainAdapter,
 } from '../../chain-adapter'
-import { useMarkMnemonicBackupComplete } from '../../mnemonic/hooks'
 import {
     BackupAccountType,
     hdPositionOf,
@@ -99,7 +98,6 @@ type ImportContext = Pick<
     updateAccount: ReturnType<typeof useUpdateAccount>
     appendAccount: (account: WalletAccount) => void
     replaceAccount: (account: WalletAccount) => void
-    markBackedUp: (account: WalletAccount) => void
 }
 
 /** XHD root key (`kL || kR || chainCode`) length expected by `persistHDMasterKey`. */
@@ -819,9 +817,6 @@ const importBatch = async (
     // Progress counts wallet accounts, not backup entries: one account on ten
     // chains is "1 of 1", not "10 of 10".
     const total = groups.filter(createsAccount).length
-    const heldIds = new Set(
-        useAccountsStore.getState().accounts.map(account => account.id),
-    )
     let done = 0
     onProgress?.(0, total)
     const { seedKeyIdByFirstDerivedAddress, failures } = await importSeeds(
@@ -885,11 +880,6 @@ const importBatch = async (
         }
     }
 
-    // The backup holds their recovery phrases, so none needs a manual backup.
-    for (const account of useAccountsStore.getState().accounts) {
-        if (!heldIds.has(account.id)) context.markBackedUp(account)
-    }
-
     // Sequential, and after every group: a probe enables chains on an account
     // the rest of the batch could otherwise still be joining entries to.
     const { discoverChains } = useAccountsStore.getState()
@@ -907,7 +897,6 @@ const useImportContext = (
     const importAccount = useImportAccount(scope)
     const updateAccount = useUpdateAccount()
     const { keys, hasSeedWithEntropy, persistHDMasterKey } = useKMS()
-    const markBackedUp = useMarkMnemonicBackupComplete()
     // Reading the hook-subscribed snapshot would close over a single render's
     // account list, so back-to-back appends in the loop would clobber each
     // other. We always read+write the live store instead.
@@ -921,7 +910,6 @@ const useImportContext = (
             persistHDMasterKey,
             importAccount,
             updateAccount,
-            markBackedUp,
             appendAccount: newAccount =>
                 setAccounts([
                     ...useAccountsStore.getState().accounts,
@@ -943,7 +931,6 @@ const useImportContext = (
             persistHDMasterKey,
             importAccount,
             updateAccount,
-            markBackedUp,
             setAccounts,
         ],
     )
