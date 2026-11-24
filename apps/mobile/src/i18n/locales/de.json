@@ -743,7 +743,7 @@
             "text_with_cloud_backup": "Du musst dieses Konto sichern",
             "cta_passphrase": "Wiederherstellungsphrase sichern",
             "cta_turn_on_cloud_backup": "Cloud-Backup aktivieren",
-            "cta_fix_cloud_backup": "Cloud-Backup reparieren"
+            "cta_fix_cloud_backup": "Cloud-Backup prüfen"
         },
         "status": {
             "cloud_backup": "Gesichert · Cloud-Backup"

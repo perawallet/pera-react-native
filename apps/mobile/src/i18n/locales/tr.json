@@ -752,8 +752,8 @@
             "title": "Hesabın için kurtarma passphrase’i yedeklemesi oluştur",
             "body": "Kurtarma passphrase’i yedeklemesi oluşturmak, hesabını kurtarmanı sağlar. Kurtarma passphrase’i olmadan; cihazını kaybedersen, hesabı kaldırırsan veya uygulamayı silersen, Algorand hesabına erişimini kalıcı olarak kaybedebilirsin!",
             "body_all_networks": "Kurtarma passphrase’i yedeklemesi, hesabını tüm ağlarda kurtarmanı sağlar: {{networks}}. Yedeğin olmadan cihazını kaybedersen, hesabı kaldırırsan veya uygulamayı silersen fonlarına erişimini kalıcı olarak kaybedersin.",
-            "body_with_cloud_backup": "Kurtarma passphrase’i yedeklemesi, Algorand hesabını kurtarmanı sağlar. Bulut yedekleme de hesabı geri yükleyebilir. İki yedekten de yoksunsan, cihazını kaybedersen, hesabı kaldırırsan veya uygulamayı silersen hesabına erişimini kalıcı olarak kaybedebilirsin.",
-            "body_all_networks_with_cloud_backup": "Kurtarma passphrase’i yedeklemesi, hesabını tüm ağlarda kurtarmanı sağlar: {{networks}}. Bulut yedekleme de hesabı geri yükleyebilir. İki yedekten de yoksunsan, cihazını kaybedersen, hesabı kaldırırsan veya uygulamayı silersen fonlarına erişimini kalıcı olarak kaybedersin.",
+            "body_with_cloud_backup": "Kurtarma passphrase’i yedeklemesi, Algorand hesabını kurtarmanı sağlar. Bulut yedekleme de hesabı geri yükleyebilir. İki yedeğin de yoksa, cihazını kaybedersen, hesabı kaldırırsan veya uygulamayı silersen hesabına erişimini kalıcı olarak kaybedebilirsin.",
+            "body_all_networks_with_cloud_backup": "Kurtarma passphrase’i yedeklemesi, hesabını tüm ağlarda kurtarmanı sağlar: {{networks}}. Bulut yedekleme de hesabı geri yükleyebilir. İki yedeğin de yoksa, cihazını kaybedersen, hesabı kaldırırsan veya uygulamayı silersen fonlarına erişimini kalıcı olarak kaybedersin.",
             "cta": "Anladım"
         },
         "write_down": {

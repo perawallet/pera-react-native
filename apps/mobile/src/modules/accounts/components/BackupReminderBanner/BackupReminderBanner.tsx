@@ -85,10 +85,18 @@ const BackupReminderBannerComponent = ({
             style={styles.enterWrapper}
         >
             <PWView
-                style={styles.container}
+                style={[
+                    styles.container,
+                    !cloudBackupCtaLabel && styles.containerInline,
+                ]}
                 testID='backup_reminder_banner'
             >
-                <PWView style={styles.messageRow}>
+                <PWView
+                    style={[
+                        styles.messageRow,
+                        !cloudBackupCtaLabel && styles.messageRowInline,
+                    ]}
+                >
                     <PWIcon
                         name='info'
                         variant='white'

@@ -48,7 +48,4 @@ const CloudBackupStatusComponent = ({ account }: CloudBackupStatusProps) => {
     )
 }
 
-export const CloudBackupStatus = memo(
-    CloudBackupStatusComponent,
-    (prev, next) => prev.account === next.account,
-)
+export const CloudBackupStatus = memo(CloudBackupStatusComponent)

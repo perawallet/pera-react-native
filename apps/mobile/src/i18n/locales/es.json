@@ -746,7 +746,7 @@
             "cta_fix_cloud_backup": "Corregir copia de seguridad en la nube"
         },
         "status": {
-            "cloud_backup": "Con copia · Copia de seguridad en la nube"
+            "cloud_backup": "Con copia de seguridad · Copia de seguridad en la nube"
         },
         "info": {
             "title": "Crea una copia de seguridad de la passphrase de recuperación de tu cuenta",

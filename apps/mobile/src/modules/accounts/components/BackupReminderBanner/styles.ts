@@ -26,10 +26,18 @@ export const useStyles = makeStyles(theme => ({
         borderRadius: theme.borderRadius.sm,
         gap: theme.spacing.md,
     },
+    containerInline: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.sm,
+    },
     messageRow: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.sm,
+    },
+    messageRowInline: {
+        flex: 1,
     },
     actions: {
         flexDirection: 'row',
