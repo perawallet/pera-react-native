@@ -86,7 +86,7 @@ export type UseTransactionRecordsQueryResult = {
     isFetched: boolean
     isFetching: boolean
     isFetchingNextPage: boolean
-    /** Stays true while a failed first page is re-read, unlike TanStack's. */
+    /** Stays true while a failed first page is re-read, offline included, unlike TanStack's. */
     isError: boolean
     /** The failure is a later page's: page one, and the wallet's sends merged into it, stand. */
     isNextPageError: boolean
@@ -126,6 +126,8 @@ const mergedPagesByCursor = new WeakMap<PageRef, RecordsPage>()
 // moment it re-reads, so a failed page one would read as loading and then as
 // empty. The error is kept here, per cache entry, until the re-read settles; a
 // chip tap mounts a new hook on the same entry and must see it from render one.
+// An offline read rethrows it: an empty page would read as an empty history
+// once back online.
 const failedFirstPageErrors = new WeakMap<Query, Error>()
 
 // A record that leaves page one without a replacement stays until a full
@@ -386,6 +388,9 @@ export const useTransactionRecordsQuery = ({
             }
 
             if (!onlineManager.isOnline()) {
+                const offlineQuery = queryClient
+                    .getQueryCache()
+                    .get(hashKey(queryKey))
                 // A refetch rebuilds from page one and stops at the first page
                 // with no cursor, so an offline page here would drop every page
                 // already loaded. Throwing keeps them, and their cursors.
@@ -395,12 +400,12 @@ export const useTransactionRecordsQuery = ({
                 ) {
                     throw new PeraNetworkError('offline')
                 }
-                // A cold start has nothing to lose: an empty page reads as the
-                // offline empty state, and the ledger's sends list beside it.
-                const coldQuery = queryClient
-                    .getQueryCache()
-                    .get(hashKey(queryKey))
-                if (coldQuery) failedFirstPageErrors.delete(coldQuery)
+                const recordedFailure =
+                    offlineQuery && failedFirstPageErrors.get(offlineQuery)
+                if (recordedFailure) throw recordedFailure
+                // Only an entry that never failed starts cold: an empty page
+                // reads as the offline empty state, and the ledger's sends
+                // list beside it.
                 return { records: [], next: null }
             }
 

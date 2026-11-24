@@ -812,6 +812,91 @@ describe('useTransactionRecordsQuery', () => {
             second.unmount()
         })
 
+        test('keeps a failed first page failed through an offline re-read, then re-reads it once back online', async () => {
+            const failure = new PeraNetworkError('server', { status: 503 })
+            mocks.getPendingTransactionRecords.mockResolvedValue([
+                pendingSend('SENT', JAN_10 + DAY_MS),
+            ])
+            mocks.getMinedTransactionHistory.mockRejectedValue(failure)
+            const { result } = mount()
+            await waitFor(() => expect(result.current.isError).toBe(true))
+            mocks.getMinedTransactionHistory.mockClear()
+
+            const [entry] = queryClient.getQueryCache().getAll()
+            const errorsBefore = entry.state.errorUpdateCount
+            act(() => onlineManager.setOnline(false))
+            await act(async () => result.current.refetch())
+            await waitFor(() => expect(result.current.isFetching).toBe(false))
+
+            expect(entry.state.errorUpdateCount).toBe(errorsBefore + 1)
+            expect(result.current.isError).toBe(true)
+            expect(result.current.error).toBe(failure)
+            expect(result.current.records.map(r => r.id)).toEqual(['SENT'])
+            expect(result.current.hasNextPage).toBe(false)
+            expect(mocks.getMinedTransactionHistory).not.toHaveBeenCalled()
+
+            let release: (value: { items: TransactionRecord[] }) => void = () =>
+                undefined
+            mocks.getMinedTransactionHistory.mockReturnValue(
+                new Promise(resolve => {
+                    release = resolve
+                }),
+            )
+            act(() => onlineManager.setOnline(true))
+            act(() => result.current.refetch())
+            await waitFor(() => expect(result.current.isFetching).toBe(true))
+
+            expect(result.current.isError).toBe(true)
+            expect(result.current.error).toBe(failure)
+            expect(result.current.isLoading).toBe(false)
+
+            await act(async () => release({ items: [record('A', JAN_10)] }))
+
+            await waitFor(() => expect(result.current.isError).toBe(false))
+            expect(result.current.records.map(r => r.id)).toEqual(['SENT', 'A'])
+        })
+
+        test('a hook mounted offline on a failed read reports that failure, never an empty page', async () => {
+            const failure = new PeraServiceUnavailableError(SCOPE)
+            mocks.getMinedTransactionHistory.mockRejectedValue(failure)
+            const first = mount()
+            await waitFor(() => expect(first.result.current.isError).toBe(true))
+            first.unmount()
+            mocks.getMinedTransactionHistory.mockClear()
+
+            act(() => onlineManager.setOnline(false))
+            const renders: Array<{
+                isFetched: boolean
+                isError: boolean
+                error: unknown
+            }> = []
+            const second = renderHook(
+                () => {
+                    const { isFetched, isError, error, isFetching } =
+                        useTransactionRecordsQuery({
+                            accountAddress: ADDRESS,
+                            scope: SCOPE,
+                        })
+                    renders.push({ isFetched, isError, error })
+                    return { isFetching }
+                },
+                { wrapper },
+            )
+            await waitFor(() => expect(renders.at(-1)?.isError).toBe(true))
+            await waitFor(() =>
+                expect(second.result.current.isFetching).toBe(false),
+            )
+
+            expect(renders.at(-1)).toMatchObject({
+                isError: true,
+                error: failure,
+            })
+            expect(
+                renders.some(render => render.isFetched && !render.isError),
+            ).toBe(false)
+            expect(mocks.getMinedTransactionHistory).not.toHaveBeenCalled()
+        })
+
         test('a cancelled re-read keeps the original error', async () => {
             const failure = new PeraNetworkError('server', { status: 503 })
             mocks.getMinedTransactionHistory.mockRejectedValue(failure)
