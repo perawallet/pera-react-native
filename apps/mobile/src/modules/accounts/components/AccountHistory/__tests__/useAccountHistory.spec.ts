@@ -1433,19 +1433,75 @@ describe('useAccountHistory', () => {
             expect(result.current.isCsvExportVisible).toBe(true)
         })
 
-        it('hides the export action on an Ethereum account while its CSV export is off', () => {
+        const ETHEREUM_ACCOUNT_ADDRESS = `0x${'c'.repeat(40)}`
+
+        const ethereumRecord = (id: string): TransactionRecord => ({
+            id,
+            scope: { chainId: 'ethereum', networkId: 'mainnet' },
+            status: 'confirmed',
+            timestamp: 1_704_067_200_000,
+            summary: {
+                kind: 'transfer',
+                title: { key: i18nKey('transactions.list_item.receive') },
+                direction: 'in',
+                icon: 'receive',
+            },
+            chainData: { family: 'evm' },
+        })
+
+        const arrangeEthereumHistory = (records: TransactionRecord[]) => {
             registerEthereumChain()
             vi.mocked(useSelectedAccount).mockReturnValue({
                 id: 'eth',
                 custody: { kind: 'watch' },
-                chains: { ethereum: { address: `0x${'c'.repeat(40)}` } },
+                chains: { ethereum: { address: ETHEREUM_ACCOUNT_ADDRESS } },
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } as any)
-            vi.mocked(useTransactionHistoryQuery).mockReturnValue({
-                transactions: [{ id: '1', roundTime: 1_704_067_200 }],
+            vi.mocked(useTransactionRecordsQuery).mockReturnValue({
+                records,
                 isLoading: false,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            } as any)
+                isFetched: true,
+                isFetching: false,
+                isFetchingNextPage: false,
+                isError: false,
+                isNextPageError: false,
+                error: null,
+                hasNextPage: false,
+                isSearchPaused: false,
+                fetchNextPage: mockFetchNextPage,
+                refetch: vi.fn(),
+            })
+        }
+
+        it('shows the export action on an Ethereum account once its History lists a record', () => {
+            arrangeEthereumHistory([ethereumRecord('0xhash')])
+
+            const { result } = renderHook(() => useAccountHistory())
+
+            expect(result.current.isCsvExportVisible).toBe(true)
+            expect(result.current.csvExportTitle).toBe(
+                'asset_details.transaction_list.csv',
+            )
+
+            act(() => result.current.handleExportCsv())
+
+            expect(mockExportCsv).toHaveBeenCalledTimes(1)
+            expect(mockExportCsv).toHaveBeenCalledWith({
+                accountAddress: ETHEREUM_ACCOUNT_ADDRESS,
+            })
+        })
+
+        it('hides the export action on an Ethereum account whose CSV export is switched off, even with records', () => {
+            arrangeEthereumHistory([ethereumRecord('0xhash')])
+            vi.mocked(useChainCapability).mockReturnValue(false)
+
+            const { result } = renderHook(() => useAccountHistory())
+
+            expect(result.current.isCsvExportVisible).toBe(false)
+        })
+
+        it('hides the export action on an Ethereum account until its History lists a record', () => {
+            arrangeEthereumHistory([])
 
             const { result } = renderHook(() => useAccountHistory())
 

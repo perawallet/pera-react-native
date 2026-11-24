@@ -216,16 +216,13 @@ describe('Flow: History on an account with Algorand and Ethereum', () => {
     })
 
     it('Given rows on both networks, when CSV is tapped on All and Ethereum picked, then it shares a file built from the stored Ethereum rows without asking the export route', async () => {
-        let exportHits = 0
-        server.use(
-            http.get(
-                '*/api/v3/evm/:chainId/accounts/:address/export-history/',
-                () => {
-                    exportHits += 1
-                    return new HttpResponse('"Date"\r\n')
-                },
-            ),
-        )
+        const exportRequests: string[] = []
+        const recordExportRequest = ({ request }: { request: Request }) => {
+            if (request.url.includes('export-history')) {
+                exportRequests.push(request.url)
+            }
+        }
+        server.events.on('request:start', recordExportRequest)
         renderWithNavigation(AccountHistory, 'AccountHistory')
         await waitFor(() => expect(rowIds()).toHaveLength(4), {
             timeout: SLOW_WAIT_TIMEOUT_MS,
@@ -249,7 +246,8 @@ describe('Flow: History on an account with Algorand and Ethereum', () => {
         expect(content).toContain(hashOf(3))
         expect(content).toContain(hashOf(1))
         expect(content).not.toContain(ALGO_TX.id)
-        expect(exportHits).toBe(0)
+        server.events.removeListener('request:start', recordExportRequest)
+        expect(exportRequests).toEqual([])
     })
 
     it('Given rows on Ethereum alone, when History opens on All, then the export names Ethereum', async () => {
@@ -315,6 +313,49 @@ describe('Flow: History on an account with Algorand and Ethereum', () => {
             'ethereum',
         )
         expect(screen.queryByTestId('chain_label_ethereum')).toBeNull()
+    })
+
+    it('Given History narrowed to Ethereum, when CSV is tapped, then it shares the stored Ethereum rows without asking the export route', async () => {
+        const exportRequests: string[] = []
+        const recordExportRequest = ({ request }: { request: Request }) => {
+            if (request.url.includes('export-history')) {
+                exportRequests.push(request.url)
+            }
+        }
+        server.events.on('request:start', recordExportRequest)
+        renderWithNavigation(AccountHistory, 'AccountHistory')
+        await waitFor(() => expect(rowIds()).toHaveLength(4), {
+            timeout: SLOW_WAIT_TIMEOUT_MS,
+        })
+
+        fireEvent.click(screen.getByTestId('history_network_filter_ethereum'))
+        await waitFor(
+            () =>
+                expect(rowIds()).toEqual([
+                    `transaction_row_${hashOf(3)}`,
+                    `transaction_row_${hashOf(1)}`,
+                ]),
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+        expect(
+            screen.queryByText('asset_details.transaction_list.csv_on_network'),
+        ).toBeNull()
+        fireEvent.click(screen.getByText('asset_details.transaction_list.csv'))
+
+        await waitFor(() => expect(shared.shareFile).toHaveBeenCalledTimes(1), {
+            timeout: SLOW_WAIT_TIMEOUT_MS,
+        })
+        expect(screen.queryByTestId('chain_selection_ethereum')).toBeNull()
+        const [filename, content] = shared.shareFile.mock.calls[0] as [
+            string,
+            string,
+        ]
+        expect(filename).toBe('Transactions-1-0x5aae--eaed-Pera.csv')
+        expect(content).toContain(hashOf(3))
+        expect(content).toContain(hashOf(1))
+        expect(content).not.toContain(ALGO_TX.id)
+        server.events.removeListener('request:start', recordExportRequest)
+        expect(exportRequests).toEqual([])
     })
 
     describe('when the Algorand address was never funded', () => {
