@@ -128,10 +128,10 @@ vi.mock('@perawallet/wallet-core-swaps', async () => ({
     swapAdapterFor: () => ({
         holdingReserve: () => new Decimal(100_000),
     }),
-    useSwapFeeReservesQuery: () => ({
-        reserves: [mockFeeReserve],
-        isPending: false,
-    }),
+    useSwapFeeReservesQuery: (scopes: unknown[]) => {
+        mockUseSwapFeeReservesQuery(scopes)
+        return { reserves: scopes.map(() => mockFeeReserve), isPending: false }
+    },
     useSwapAccount: () => mockSwapAccount,
 }))
 
@@ -148,6 +148,7 @@ let mockSpendableMax: Nullable<Decimal> = new Decimal('5000000')
 let mockFeeReserve: Decimal | undefined = new Decimal(100_000)
 let mockIsSpendablePending = false
 const mockUseSpendableBalanceQuery = vi.fn()
+const mockUseSwapFeeReservesQuery = vi.fn()
 vi.mock('@perawallet/wallet-core-transactions', () => ({
     useSpendableBalanceQuery: (input: unknown) => {
         mockUseSpendableBalanceQuery(input)
@@ -1120,15 +1121,16 @@ describe('useSwapForm', () => {
         expect(mockUseSpendableBalanceQuery).toHaveBeenLastCalledWith(undefined)
     })
 
-    it("prices a token's MAX without waiting on the native fee reserve", () => {
-        mockFeeReserve = undefined
+    it("prices a token's MAX on its whole balance without reading the native fee reserve", () => {
         mockFromAsset = '123'
 
         renderHook(() => useSwapForm(SCOPE))
 
+        expect(mockUseSwapFeeReservesQuery).toHaveBeenLastCalledWith([])
         expect(mockUseSpendableBalanceQuery).toHaveBeenLastCalledWith(
             expect.objectContaining({
                 asset: { chainId: 'algorand', assetId: '123' },
+                fee: new Decimal(0),
             }),
         )
     })

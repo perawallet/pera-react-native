@@ -200,13 +200,16 @@ export const useSwapForm = (
     // unsettled receive balance reserves too: short of MAX beats failing at
     // confirm. A holding on another chain locks nothing on this one.
     const swapAdapter = swapAdapterFor(scope)
-    const feeReserveScopes = useMemo(() => [scope], [scope])
+    // A token's MAX is its whole balance, so only the native coin reads the fee.
+    const isNativePay = fromAsset === nativeAssetId
+    const feeReserveScopes = useMemo(
+        () => (isNativePay ? [scope] : []),
+        [isNativePay, scope],
+    )
     const {
         reserves: [feeReserve],
     } = useSwapFeeReservesQuery(feeReserveScopes)
-    // A token's MAX is its whole balance, so only the native coin waits on the fee.
-    const maxAmountFeeReserve =
-        feeReserve ?? (fromAsset === nativeAssetId ? undefined : ZERO)
+    const maxAmountFeeReserve = isNativePay ? feeReserve : ZERO
     const { data: spendable, isPending: isSpendablePending } =
         useSpendableBalanceQuery(
             swapAccount && maxAmountFeeReserve
