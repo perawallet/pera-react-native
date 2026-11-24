@@ -635,6 +635,8 @@
         "enable_network_success": "Red {{network}} activada",
         "see_all_networks": "Ver todas las redes",
         "view_passphrase": "Ver passphrase",
+        "write_down_passphrase": "Anota también tu passphrase",
+        "write_down_passphrase_subtitle": "Recomendado, no obligatorio",
         "network_options": "Más opciones"
     },
     "account_info": {
@@ -737,18 +739,29 @@
     "backup": {
         "banner": {
             "text": "Debes hacer una copia de seguridad de la passphrase de recuperación",
-            "cta": "Hacer copia ahora"
+            "cta": "Hacer copia ahora",
+            "text_with_cloud_backup": "Debes hacer una copia de seguridad de esta cuenta",
+            "cta_passphrase": "Respaldar passphrase de recuperación",
+            "cta_turn_on_cloud_backup": "Activar copia de seguridad en la nube",
+            "cta_fix_cloud_backup": "Corregir copia de seguridad en la nube"
+        },
+        "status": {
+            "cloud_backup": "Con copia · Copia de seguridad en la nube"
         },
         "info": {
             "title": "Crea una copia de seguridad de la passphrase de recuperación de tu cuenta",
             "body": "Crear una copia de seguridad de la passphrase de recuperación te permitirá recuperar tu cuenta. Sin la passphrase de recuperación, si pierdes tu dispositivo, eliminas la cuenta o borras la app, ¡puedes perder el acceso a tu cuenta de Algorand de forma permanente!",
-            "body_all_networks": "Tu passphrase de recuperación es la única forma de recuperar tu cuenta en todas las redes: {{networks}}. Si pierdes tu dispositivo, eliminas la cuenta o borras la app sin una copia de seguridad, perderás el acceso a tus fondos de forma permanente.",
+            "body_all_networks": "Una copia de seguridad de la passphrase de recuperación te permite recuperar tu cuenta en todas las redes: {{networks}}. Si pierdes tu dispositivo, eliminas la cuenta o borras la app sin una copia de seguridad, perderás el acceso a tus fondos de forma permanente.",
+            "body_with_cloud_backup": "Una copia de seguridad de la passphrase de recuperación te permite recuperar tu cuenta de Algorand. La copia de seguridad en la nube también puede restaurarla. Sin ninguna de las dos copias, si pierdes tu dispositivo, eliminas la cuenta o borras la app, puedes perder el acceso a tu cuenta de forma permanente.",
+            "body_all_networks_with_cloud_backup": "Una copia de seguridad de la passphrase de recuperación te permite recuperar tu cuenta en todas las redes: {{networks}}. La copia de seguridad en la nube también puede restaurarla. Sin ninguna de las dos copias, si pierdes tu dispositivo, eliminas la cuenta o borras la app, perderás el acceso a tus fondos de forma permanente.",
             "cta": "Lo entiendo"
         },
         "write_down": {
             "title": "Prepárate para anotar tu passphrase de recuperación",
-            "body": "La única forma de recuperar una cuenta de Algorand es con esta passphrase de recuperación.",
-            "body_all_networks": "Esta passphrase de recuperación es la única forma de recuperar tu cuenta y todas sus direcciones en todas las redes.",
+            "body": "Esta passphrase de recuperación recupera tu cuenta de Algorand.",
+            "body_all_networks": "Esta passphrase de recuperación recupera tu cuenta y todas sus direcciones en todas las redes.",
+            "body_with_cloud_backup": "Esta passphrase de recuperación recupera tu cuenta de Algorand. La copia de seguridad en la nube es la otra forma de restaurarla.",
+            "body_all_networks_with_cloud_backup": "Esta passphrase de recuperación recupera tu cuenta y todas sus direcciones en todas las redes. La copia de seguridad en la nube es la otra forma de restaurarla.",
             "warning": "No compartas esta passphrase de recuperación con nadie, ya que otorga acceso total a tu cuenta.",
             "warning_all_networks": "No compartas esta passphrase de recuperación con nadie. Cualquiera que la tenga controla tus fondos en todas las redes.",
             "cta": "Todo listo, empezar"

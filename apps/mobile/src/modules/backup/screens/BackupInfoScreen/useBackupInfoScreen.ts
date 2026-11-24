@@ -17,7 +17,9 @@ import {
     type RouteProp,
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, OnboardingEvent } from '@analytics'
+import { useIsCloudBackupAvailable } from '@hooks/useIsCloudBackupAvailable'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePassphraseReach } from '../../hooks'
 import type { BackupStackParamList } from '../../routes/types'
@@ -40,11 +42,18 @@ export const useBackupInfoScreen = (): UseBackupInfoScreenResult => {
         address: address ?? '',
         accountId,
     })
+    const isCloudBackupAvailable = useIsCloudBackupAvailable()
+    let bodyKey = i18nKey('backup.info.body')
+    if (isMultiNetwork) {
+        bodyKey = isCloudBackupAvailable
+            ? i18nKey('backup.info.body_all_networks_with_cloud_backup')
+            : i18nKey('backup.info.body_all_networks')
+    } else if (isCloudBackupAvailable) {
+        bodyKey = i18nKey('backup.info.body_with_cloud_backup')
+    }
     const body = isMultiNetwork
-        ? t('backup.info.body_all_networks', {
-              networks: networkNames.join(', '),
-          })
-        : t('backup.info.body')
+        ? t(bodyKey, { networks: networkNames.join(', ') })
+        : t(bodyKey)
 
     const onContinue = useCallback(() => {
         if (address) {

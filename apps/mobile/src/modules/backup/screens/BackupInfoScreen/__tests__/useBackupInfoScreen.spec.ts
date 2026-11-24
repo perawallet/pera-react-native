@@ -14,6 +14,11 @@ import { renderHook } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mockReach = vi.hoisted(() => vi.fn())
+const mockIsCloudBackupAvailable = vi.hoisted(() => vi.fn())
+
+vi.mock('@hooks/useIsCloudBackupAvailable', () => ({
+    useIsCloudBackupAvailable: () => mockIsCloudBackupAvailable(),
+}))
 
 vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({ navigate: vi.fn() }),
@@ -41,6 +46,7 @@ import { useBackupInfoScreen } from '../useBackupInfoScreen'
 describe('useBackupInfoScreen', () => {
     beforeEach(() => {
         mockReach.mockReset()
+        mockIsCloudBackupAvailable.mockReset().mockReturnValue(false)
     })
 
     it('names every network the passphrase reaches for a multi-network account', () => {
@@ -63,5 +69,28 @@ describe('useBackupInfoScreen', () => {
         const { result } = renderHook(() => useBackupInfoScreen())
 
         expect(result.current.body).toBe('backup.info.body')
+    })
+
+    it('names Cloud Backup beside the passphrase for a single-network account', () => {
+        mockReach.mockReturnValue({ isMultiNetwork: false, networkNames: [] })
+        mockIsCloudBackupAvailable.mockReturnValue(true)
+
+        const { result } = renderHook(() => useBackupInfoScreen())
+
+        expect(result.current.body).toBe('backup.info.body_with_cloud_backup')
+    })
+
+    it('names Cloud Backup and every network for a multi-network account', () => {
+        mockReach.mockReturnValue({
+            isMultiNetwork: true,
+            networkNames: ['Algorand', 'Ethereum'],
+        })
+        mockIsCloudBackupAvailable.mockReturnValue(true)
+
+        const { result } = renderHook(() => useBackupInfoScreen())
+
+        expect(result.current.body).toBe(
+            'backup.info.body_all_networks_with_cloud_backup {"networks":"Algorand, Ethereum"}',
+        )
     })
 })

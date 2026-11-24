@@ -17,7 +17,9 @@ import {
     type RouteProp,
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, OnboardingEvent } from '@analytics'
+import { useIsCloudBackupAvailable } from '@hooks/useIsCloudBackupAvailable'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePassphraseReach } from '../../hooks'
 import type { BackupStackParamList } from '../../routes/types'
@@ -49,6 +51,18 @@ export const useBackupReminderWriteDownScreen =
             address: address ?? '',
             accountId,
         })
+        const isCloudBackupAvailable = useIsCloudBackupAvailable()
+
+        let bodyKey = i18nKey('backup.write_down.body')
+        if (isMultiNetwork) {
+            bodyKey = isCloudBackupAvailable
+                ? i18nKey(
+                      'backup.write_down.body_all_networks_with_cloud_backup',
+                  )
+                : i18nKey('backup.write_down.body_all_networks')
+        } else if (isCloudBackupAvailable) {
+            bodyKey = i18nKey('backup.write_down.body_with_cloud_backup')
+        }
 
         const onContinue = useCallback(() => {
             if (address) {
@@ -58,9 +72,7 @@ export const useBackupReminderWriteDownScreen =
         }, [navigation, address, accountId])
 
         return {
-            body: isMultiNetwork
-                ? t('backup.write_down.body_all_networks')
-                : t('backup.write_down.body'),
+            body: t(bodyKey),
             warning: isMultiNetwork
                 ? t('backup.write_down.warning_all_networks')
                 : t('backup.write_down.warning'),

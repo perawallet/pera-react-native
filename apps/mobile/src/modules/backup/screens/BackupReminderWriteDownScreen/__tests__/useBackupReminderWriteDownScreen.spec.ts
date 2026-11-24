@@ -14,6 +14,11 @@ import { renderHook } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mockReach = vi.hoisted(() => vi.fn())
+const mockIsCloudBackupAvailable = vi.hoisted(() => vi.fn())
+
+vi.mock('@hooks/useIsCloudBackupAvailable', () => ({
+    useIsCloudBackupAvailable: () => mockIsCloudBackupAvailable(),
+}))
 
 vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({ navigate: vi.fn() }),
@@ -36,6 +41,7 @@ import { useBackupReminderWriteDownScreen } from '../useBackupReminderWriteDownS
 describe('useBackupReminderWriteDownScreen', () => {
     beforeEach(() => {
         mockReach.mockReset()
+        mockIsCloudBackupAvailable.mockReset().mockReturnValue(false)
     })
 
     it('uses the all-networks copy for a multi-network account', () => {
@@ -57,5 +63,28 @@ describe('useBackupReminderWriteDownScreen', () => {
 
         expect(result.current.body).toBe('backup.write_down.body')
         expect(result.current.warning).toBe('backup.write_down.warning')
+    })
+
+    it('names Cloud Backup beside the passphrase for a single-network account', () => {
+        mockReach.mockReturnValue({ isMultiNetwork: false })
+        mockIsCloudBackupAvailable.mockReturnValue(true)
+
+        const { result } = renderHook(() => useBackupReminderWriteDownScreen())
+
+        expect(result.current.body).toBe(
+            'backup.write_down.body_with_cloud_backup',
+        )
+        expect(result.current.warning).toBe('backup.write_down.warning')
+    })
+
+    it('names Cloud Backup for a multi-network account', () => {
+        mockReach.mockReturnValue({ isMultiNetwork: true })
+        mockIsCloudBackupAvailable.mockReturnValue(true)
+
+        const { result } = renderHook(() => useBackupReminderWriteDownScreen())
+
+        expect(result.current.body).toBe(
+            'backup.write_down.body_all_networks_with_cloud_backup',
+        )
     })
 })
