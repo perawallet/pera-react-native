@@ -21,7 +21,7 @@ import type {
 import type { Optional } from '@perawallet/wallet-core-shared'
 import type { AccountSearchResult } from '../models'
 
-export type SearchableChain = Pick<ChainDescriptor, 'id' | 'displayName'>
+export type SearchableChain = Pick<ChainDescriptor, 'id'>
 
 /**
  * `query` is lowercased and `chains` are in registry order, so an address

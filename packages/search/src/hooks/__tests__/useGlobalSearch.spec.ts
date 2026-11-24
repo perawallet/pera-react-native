@@ -31,11 +31,6 @@ const ETH_SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const BASE_SCOPE: ChainScope = { chainId: 'base', networkId: 'mainnet' }
 
 const REGISTERED: ChainId[] = ['algorand', 'ethereum', 'base']
-const DISPLAY_NAMES: Record<string, string> = {
-    algorand: 'Algorand',
-    ethereum: 'Ethereum',
-    base: 'Base',
-}
 const FAMILIES: Record<string, string> = {
     algorand: 'algorand',
     ethereum: 'evm',
@@ -85,7 +80,6 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
 })
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    chainDisplayNameOf: (chainId: string) => DISPLAY_NAMES[chainId],
     getChainDescriptor: (chainId: string) => ({ family: FAMILIES[chainId] }),
 }))
 

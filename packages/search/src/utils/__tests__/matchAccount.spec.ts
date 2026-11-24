@@ -15,13 +15,13 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { matchAccount } from '../matchAccount'
 
 const CHAINS = [
-    { id: 'algorand', displayName: 'Algorand' },
-    { id: 'ethereum', displayName: 'Ethereum' },
-    { id: 'base', displayName: 'Base' },
-    { id: 'bsc', displayName: 'BNB Chain' },
-    { id: 'arbitrum', displayName: 'Arbitrum One' },
-    { id: 'avalanche', displayName: 'Avalanche C-Chain' },
-    { id: 'polygon', displayName: 'Polygon' },
+    { id: 'algorand' },
+    { id: 'ethereum' },
+    { id: 'base' },
+    { id: 'bsc' },
+    { id: 'arbitrum' },
+    { id: 'avalanche' },
+    { id: 'polygon' },
 ] as const
 
 const ETH = CHAINS[1]
