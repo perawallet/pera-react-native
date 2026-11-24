@@ -10,15 +10,4 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    row: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.sm,
-    },
-    label: {
-        flexShrink: 1,
-    },
-}))
+export { AutoHiddenTokensScreen } from './AutoHiddenTokensScreen'

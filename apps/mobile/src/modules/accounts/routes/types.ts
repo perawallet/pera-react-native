@@ -27,6 +27,7 @@ export type AccountStackParamsList = {
     }
     CollectibleDetails?: { assetId: string; chainId: ChainId }
     HideTokens?: undefined
+    AutoHiddenTokens?: undefined
     RemoveAssets?: undefined
     /** `scope` is the network whose approvals the screen lists. */
     TokenApprovals: { accountId: string; scope: ChainScope }

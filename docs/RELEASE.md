@@ -106,6 +106,8 @@ and [ad-hoc tester device registration](https://firebase.google.com/docs/app-dis
 
 Bitrise runs the YAML stored on bitrise.io; `.bitrise/bitrise.yml` mirrors it. The dashboard editor saves Ruby's `YAML.dump` of the config with every key sorted and drops YAML comments, so keep the mirror in that text: `pnpm format:bitrise` writes it, and `pnpm check:bitrise-yml` (pre-push and CI) fails on anything else. A paste into the editor then diffs only real changes. Put rationale inside a step's script, where it survives a save.
 
+Copy the mirror for a paste in a UTF-8 locale, `LANG=en_US.UTF-8 pbcopy < .bitrise/bitrise.yml`: without one, `pbcopy` garbles the emoji and other non-ASCII characters.
+
 `android-staging` builds native code for `arm64-v8a` only (`ORG_GRADLE_PROJECT_reactNativeArchitectures`), a quarter of the native compile. Its APK reaches only Firebase testers and the BrowserStack smoke gate, and every device Crashlytics saw on the last 20 staging builds was a 64-bit ARM phone. It does not install on an x86 emulator or a 32-bit-only phone. Production keeps all four ABIs.
 
 ### Required Bitrise secrets

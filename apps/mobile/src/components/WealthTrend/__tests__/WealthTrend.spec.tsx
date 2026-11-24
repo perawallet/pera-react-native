@@ -85,12 +85,13 @@ const mockHistory = (
 const mockHoldingHistory = (
     values: (number | null)[],
     overrides: Record<string, unknown> = {},
+    amounts?: number[],
 ) =>
     vi.mocked(useAccountsAssetsBalanceHistoryQuery).mockReturnValue({
-        data: values.map(value => ({
-            datetime: new Date(0),
+        data: values.map((value, index) => ({
+            datetime: new Date(index),
             preferredValue: value === null ? null : new Decimal(value),
-            amount: new Decimal(value ?? 0).div(100),
+            amount: new Decimal(amounts?.[index] ?? (value ?? 0) / 100),
         })),
         isPending: false,
         isPaused: false,
@@ -122,7 +123,7 @@ describe('WealthTrend', () => {
         const { getByTestId } = renderTrend()
 
         expect(getByTestId('wealth_trend').textContent).toMatch(
-            /^\+.*20 \(\+20\.00%\)$/,
+            /^\+.*20 \(\+20\.00%\) · /,
         )
     })
 
@@ -132,7 +133,7 @@ describe('WealthTrend', () => {
         const { getByTestId } = renderTrend()
 
         expect(getByTestId('wealth_trend').textContent).toMatch(
-            /^-.*20 \(-20\.00%\)$/,
+            /^-.*20 \(-20\.00%\) · /,
         )
     })
 
@@ -163,7 +164,7 @@ describe('WealthTrend', () => {
         const { getByTestId } = renderTrend()
 
         const text = getByTestId('wealth_trend').textContent
-        expect(text).toMatch(/^\+.*100$/)
+        expect(text).toMatch(/^\+.*100 · /)
         expect(text).not.toContain('%')
     })
 
@@ -173,7 +174,17 @@ describe('WealthTrend', () => {
         const { getByTestId } = renderTrend()
 
         expect(getByTestId('wealth_trend').textContent).toMatch(
-            /^[^+-]*0 \(0\.00%\)$/,
+            /^[^+-]*0 \(0\.00%\) · /,
+        )
+    })
+
+    it('names a summed series as a balance change, since it moves with every receive and send', () => {
+        mockHistory([100, 120])
+
+        const { getByTestId } = renderTrend()
+
+        expect(getByTestId('wealth_trend').textContent).toMatch(
+            / · common\.wealth_chart\.balance_change_label$/,
         )
     })
 
@@ -251,12 +262,12 @@ describe('WealthTrend', () => {
         })
 
         it('trends the holding history and leaves the portfolio query off', () => {
-            mockHoldingHistory([200, 250])
+            mockHoldingHistory([200, 250], {}, [2, 2])
 
             const { getByTestId } = renderHoldingTrend()
 
-            expect(getByTestId('wealth_trend').textContent).toContain(
-                '(+25.00%)',
+            expect(getByTestId('wealth_trend').textContent).toBe(
+                '+USD50 (+25.00%)',
             )
             expect(
                 vi.mocked(useAccountsAssetsBalanceHistoryQuery),
@@ -270,6 +281,14 @@ describe('WealthTrend', () => {
             expect(
                 vi.mocked(usePortfolioHistoryQuery),
             ).toHaveBeenLastCalledWith([], 'one-month', ALGORAND, false)
+        })
+
+        it('reads a receive as no change when the price held still', () => {
+            mockHoldingHistory([100, 300], {}, [1, 3])
+
+            const { getByTestId } = renderHoldingTrend()
+
+            expect(getByTestId('wealth_trend').textContent).toBe('USD0 (0.00%)')
         })
 
         it('shows nothing when every point is unpriced', () => {

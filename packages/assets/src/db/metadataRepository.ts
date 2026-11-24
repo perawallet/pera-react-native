@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { eq, and, inArray, sql } from 'drizzle-orm'
+import { eq, and, inArray, isNull, or, sql } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
 import {
     toScopeKey,
@@ -27,6 +27,7 @@ import {
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import {
     DEFAULT_ASSET_METADATA,
+    PeraAssetVerificationTier,
     type PeraAsset,
     type PeraAssetMetadata,
 } from '../models'
@@ -326,12 +327,15 @@ type GetAssetsByIdsParams = {
     db?: Database
     assetIds: string[]
     scope: ChainScope
+    /** Only rows Pera hasn't judged: tier `unverified`, or no Pera half yet. */
+    isUnvettedOnly?: boolean
 }
 
 export async function getAssetsByIds({
     db = getDatabase(),
     assetIds,
     scope,
+    isUnvettedOnly = false,
 }: GetAssetsByIdsParams): Promise<PeraAsset[]> {
     const scopeKey = toScopeKey(scope)
     if (assetIds.length === 0) return []
@@ -360,6 +364,15 @@ export async function getAssetsByIds({
             and(
                 inArray(AssetsNodeSchema.assetId, assetIds),
                 eq(AssetsNodeSchema.scope, scopeKey),
+                isUnvettedOnly
+                    ? or(
+                          isNull(AssetsPeraSchema.verificationTier),
+                          eq(
+                              AssetsPeraSchema.verificationTier,
+                              PeraAssetVerificationTier.unverified,
+                          ),
+                      )
+                    : undefined,
             ),
         )
         .all()

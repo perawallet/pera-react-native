@@ -15,6 +15,7 @@ import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { AppError, ErrorCategory, ErrorSeverity } from './base'
 
 const INTEGRITY_CODE_PREFIX = 'APP_INTEGRITY_'
+const PLATFORM_NOT_ALLOWED_CODE = 'APP_INTEGRITY_PLATFORM_NOT_ALLOWED'
 
 type IntegrityRefusal = {
     /** The backend's `APP_INTEGRITY_*` code; null when it sent none (a bare 401). */
@@ -82,9 +83,10 @@ const readBearerExpiry = (bearer: string): number | null => {
  * The integrity refusal a Pera backend HTTP error stands for, or null. Only a
  * request that carried no API key can be one: a keyed request is native's, and
  * its guarded routes answer with these codes for their own integrity header.
- * Then a 401 or 403 with an `APP_INTEGRITY_*` code, or any 401, is a refusal;
- * a codeless 403 (geo, permissions) keeps its own meaning. Only for the Pera
- * backend: the backup service answers 401 for its own signed-request checks.
+ * Then a 401 or 403 with an `APP_INTEGRITY_*` code, or any 401, is a refusal,
+ * except `APP_INTEGRITY_PLATFORM_NOT_ALLOWED`; a codeless 403 (geo,
+ * permissions) keeps its own meaning too. Only for the Pera backend: the
+ * backup service answers 401 for its own signed-request checks.
  */
 export const toIntegrityRequiredError = (
     error: unknown,
@@ -99,6 +101,10 @@ export const toIntegrityRequiredError = (
         body.code.startsWith(INTEGRITY_CODE_PREFIX)
             ? body.code
             : null
+    // The guard sends this only once the key check has let the request in, so
+    // the token is sound: the route is closed to this platform, and no other
+    // token would open it.
+    if (code === PLATFORM_NOT_ALLOWED_CODE) return null
     const headers = error.request?.headers
     if (headers?.has('X-API-Key')) return null
     const authorization = headers?.get('Authorization') ?? ''

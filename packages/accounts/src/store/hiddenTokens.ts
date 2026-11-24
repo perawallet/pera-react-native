@@ -11,10 +11,7 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import {
-    toScopeKey,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     guardedPersist,
     registerStore,
@@ -22,13 +19,10 @@ import {
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { assetIdsIn, withAssetIds, type TokenSets } from './tokenSets'
 
-/**
- * Scope key, then account address, then the asset ids hidden there, each list
- * sorted so two devices holding the same set write the same JSON. A scope this
- * build doesn't register is kept as received.
- */
-export type HiddenTokens = Record<string, Record<string, string[]>>
+/** The asset ids each address hid, per scope. */
+export type HiddenTokens = TokenSets
 
 export type SetTokenHiddenParams = {
     address: string
@@ -54,31 +48,18 @@ export const hiddenAssetIdsOf = (
     hiddenTokens: HiddenTokens,
     address: string,
     scope: ChainScope,
-): readonly string[] => hiddenTokens[toScopeKey(scope)]?.[address] ?? []
+): readonly string[] => assetIdsIn(hiddenTokens, address, scope)
 
-// Rebuilt along one path so an unrelated scope or address keeps its reference.
 const withToken = (
     hiddenTokens: HiddenTokens,
     { address, scope, assetId, isHidden }: SetTokenHiddenParams,
-): HiddenTokens => {
-    const scopeKey = toScopeKey(scope)
-    const held = hiddenTokens[scopeKey]?.[address] ?? []
-    if (held.includes(assetId) === isHidden) return hiddenTokens
-
-    const next = isHidden
-        ? [...held, assetId].sort()
-        : held.filter(id => id !== assetId)
-    const { [address]: _previous, ...otherAddresses } =
-        hiddenTokens[scopeKey] ?? {}
-    const addresses =
-        next.length > 0
-            ? { ...otherAddresses, [address]: next }
-            : otherAddresses
-    const { [scopeKey]: _scope, ...otherScopes } = hiddenTokens
-    return Object.keys(addresses).length > 0
-        ? { ...otherScopes, [scopeKey]: addresses }
-        : otherScopes
-}
+): HiddenTokens =>
+    withAssetIds(hiddenTokens, {
+        address,
+        scope,
+        assetIds: [assetId],
+        isIncluded: isHidden,
+    })
 
 export const useHiddenTokensStore: UseBoundStore<
     WithPersist<StoreApi<HiddenTokensState>, unknown>

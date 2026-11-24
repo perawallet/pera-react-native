@@ -287,7 +287,11 @@
         "hidden_toast_body": "Varlıklarında görünmez ve bakiyene dahil edilmez. Varlıkları yönet > Tokenları gizle bölümünden yeniden gösterebilirsin.",
         "hidden_swipe_toast_body": "Geri almak için dokun. Varlıklarında görünmez ve bakiyene dahil edilmez.",
         "shown_toast_title": "{{assetName}} gösterildi",
-        "filtered_note": "Pera bu tokenı şüpheli olarak işaretledi, bu yüzden varlıklarında görünmez. Varlık filtrelerindeki “Şüpheli varlıkları göster” ile listeleyebilirsin."
+        "filtered_note": "Pera bu tokenı şüpheli olarak işaretledi, bu yüzden varlıklarında görünmez. Varlıklarının sonundaki “Gizli tokenlar” bölümünden gösterebilirsin.",
+        "auto_hidden_row_title": "Gizli tokenlar ({{total}})",
+        "auto_hidden_title": "Gizli tokenlar",
+        "auto_hidden_description": "Pera bu tokenları spam veya dolandırıcılık gibi göründükleri için gizledi. İçlerinde adı geçen web sitelerini ziyaret etme. Bir tokenı yeniden listelemek için göster; yine de bakiyene dahil edilmez.",
+        "auto_hidden_empty_title": "Gizli token yok"
     },
     "deeplink": {
         "error": {
@@ -1231,7 +1235,8 @@
             "asset_empty_body": "Bu hesapta bu varlık için bakiye geçmişin olduğunda burada bir grafik göreceksin",
             "excludes_networks": "Bu grafik henüz {{networks}} varlıklarını içermiyor",
             "failed_networks": "{{networks}} geçmişi yüklenemedi, bu yüzden bu grafikte yer almıyor",
-            "currency_unavailable_body": "Bu grafik şu anda {{currency}} para biriminde kullanılamıyor"
+            "currency_unavailable_body": "Bu grafik şu anda {{currency}} para biriminde kullanılamıyor",
+            "balance_change_label": "Bakiye değişimi"
         },
         "webview": {
             "failed_title": "Sayfa yüklenemedi",
@@ -4123,6 +4128,9 @@
             "reuse_body": "Tanıdığın bir adres gibi başlayıp bitiyor ama aynı değil. Kullanmadan önce tam adresleri karşılaştır.",
             "reuse_confirm": "Yine de devam et",
             "reuse_cancel": "İptal"
+        },
+        "suspicious_token": {
+            "marker": "Şüpheli token"
         }
     },
     "tabbar": {
@@ -4336,9 +4344,12 @@
                 "swap": "Swap başarısız"
             },
             "provider_failed_body": "Bu sağlayıcı swap işlemini tamamlayamadı. Başka bir sağlayıcı dene.",
+            "provider_failed_single_body": "Sağlayıcı swap işlemini tamamlayamadı. Daha sonra tekrar dene veya farklı bir tutar dene.",
             "provider_unavailable_body": "Sağlayıcı şu anda kullanılamıyor. Biraz sonra tekrar dene.",
             "quote_mismatch_body": "Sağlayıcının işlemleri bu teklifle eşleşmedi, bu yüzden hiçbir şey imzalanmadı. Tekrar dene veya başka bir sağlayıcı seç.",
+            "quote_mismatch_single_body": "Sağlayıcının işlemleri bu teklifle eşleşmedi, bu yüzden hiçbir şey imzalanmadı. Daha sonra tekrar dene.",
             "unsupported_order_body": "Pera bu sağlayıcının siparişini tamamlayamıyor, bu yüzden hiçbir şey imzalanmadı. Başka bir sağlayıcı seç.",
+            "unsupported_order_single_body": "Pera bu sağlayıcının siparişini tamamlayamıyor, bu yüzden hiçbir şey imzalanmadı. Daha sonra tekrar dene.",
             "signing_failed_body": "İşlem imzalanamadı, bu yüzden gönderilmedi. Tekrar dene.",
             "order_insufficient_balance_body": "Bakiyen bu tutarı ve ağ ücretini karşılamıyor. Daha küçük bir tutar dene veya ücret için bakiye ekle.",
             "insufficient_native_body": "Bu hesapta bu swap işlemini, ücretleri ve minimum bakiyeyi karşılamak için en az {{amount}} {{symbol}} daha gerekiyor. Daha fazla {{symbol}} ekle ve tekrar dene.",

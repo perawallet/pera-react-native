@@ -22,6 +22,9 @@ export const useStyles = makeStyles(theme => ({
     itemFlat: {
         color: theme.colors.textMain,
     },
+    label: {
+        color: theme.colors.textGray,
+    },
     loading: {
         width: '35%',
     },

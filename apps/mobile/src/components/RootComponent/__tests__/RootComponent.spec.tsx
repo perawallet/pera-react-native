@@ -33,6 +33,7 @@ import { useLockScreen } from '@modules/security/components/AutoLockGuard/useLoc
 
 vi.mock('@routes/index', () => ({ MainRoutes: () => null }))
 vi.mock('@modules/webview/shell', () => ({ WebViewOverlay: () => null }))
+vi.mock('@modules/migration/shell', () => ({ useLegacyDataWipe: vi.fn() }))
 vi.mock('@components/OfflineBanner', () => ({ OfflineBanner: () => null }))
 // Marker wrappers, not passthroughs: the mount point is what the second
 // describe block below asserts, so the tree has to say which provider wrapped

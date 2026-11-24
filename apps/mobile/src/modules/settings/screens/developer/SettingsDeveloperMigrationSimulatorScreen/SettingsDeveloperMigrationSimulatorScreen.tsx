@@ -156,20 +156,21 @@ export const SettingsDeveloperMigrationSimulatorScreen = () => {
             )}
 
             <PWView style={styles.qaToggle}>
-                <PWView style={styles.qaToggleRow}>
-                    <PWCheckbox
-                        checked={includeUnroutable}
-                        onPress={() => setIncludeUnroutable(!includeUnroutable)}
-                        disabled={isWorking}
-                        containerStyle={styles.qaCheckboxContainer}
-                    />
-                    <PWText
-                        variant='body'
-                        style={styles.qaToggleLabel}
-                    >
-                        Include unroutable accounts (QA)
-                    </PWText>
-                </PWView>
+                <PWCheckbox
+                    label={
+                        <PWText
+                            variant='body'
+                            style={styles.qaToggleLabel}
+                        >
+                            Include unroutable accounts (QA)
+                        </PWText>
+                    }
+                    isChecked={includeUnroutable}
+                    onPress={() => setIncludeUnroutable(!includeUnroutable)}
+                    isDisabled={isWorking}
+                    style={styles.qaToggleRow}
+                    boxStyle={styles.qaCheckboxContainer}
+                />
                 <PWText
                     variant='caption'
                     style={styles.qaToggleHint}
@@ -179,20 +180,21 @@ export const SettingsDeveloperMigrationSimulatorScreen = () => {
                     complete. Leave off for a clean, fully-routable run.
                 </PWText>
 
-                <PWView style={styles.qaToggleRow}>
-                    <PWCheckbox
-                        checked={includeAuthState}
-                        onPress={() => setIncludeAuthState(!includeAuthState)}
-                        disabled={isWorking}
-                        containerStyle={styles.qaCheckboxContainer}
-                    />
-                    <PWText
-                        variant='body'
-                        style={styles.qaToggleLabel}
-                    >
-                        Include auth — PIN / biometric (QA)
-                    </PWText>
-                </PWView>
+                <PWCheckbox
+                    label={
+                        <PWText
+                            variant='body'
+                            style={styles.qaToggleLabel}
+                        >
+                            Include auth — PIN / biometric (QA)
+                        </PWText>
+                    }
+                    isChecked={includeAuthState}
+                    onPress={() => setIncludeAuthState(!includeAuthState)}
+                    isDisabled={isWorking}
+                    style={styles.qaToggleRow}
+                    boxStyle={styles.qaCheckboxContainer}
+                />
                 <PWText
                     variant='caption'
                     style={styles.qaToggleHint}

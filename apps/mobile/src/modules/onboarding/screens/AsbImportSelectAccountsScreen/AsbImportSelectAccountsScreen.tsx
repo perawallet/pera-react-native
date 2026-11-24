@@ -19,7 +19,6 @@ import {
     PWLoadingOverlay,
     PWScreen,
     PWText,
-    PWTouchableOpacity,
     PWView,
 } from '@components/core'
 import { ScreenHeader } from '@components/ScreenHeader'
@@ -101,24 +100,23 @@ export const AsbImportSelectAccountsScreen = () => {
                                     count: importableCount,
                                 })}
                             </PWText>
-                            <PWTouchableOpacity
+                            <PWCheckbox
+                                label={
+                                    <PWText
+                                        variant='link'
+                                        style={styles.selectAllText}
+                                    >
+                                        {t(
+                                            'onboarding.asb_import.select.select_all',
+                                        )}
+                                    </PWText>
+                                }
+                                boxPosition='trailing'
+                                isChecked={isAllSelected}
                                 onPress={toggleSelectAll}
                                 style={styles.selectAll}
                                 testID='asb_import_select_select_all'
-                            >
-                                <PWText
-                                    variant='link'
-                                    style={styles.selectAllText}
-                                >
-                                    {t(
-                                        'onboarding.asb_import.select.select_all',
-                                    )}
-                                </PWText>
-                                <PWCheckbox
-                                    checked={isAllSelected}
-                                    onPress={toggleSelectAll}
-                                />
-                            </PWTouchableOpacity>
+                            />
                         </PWView>
                     )}
 

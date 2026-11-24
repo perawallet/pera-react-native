@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import { PWView } from '@components/core'
-import { CheckboxRow } from '@components/CheckboxRow'
+import { PWCheckbox, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { CautionCard } from '../CautionCard'
 import { ReviewWarningText } from './ReviewWarningText'
@@ -57,10 +56,10 @@ export const ReviewWarningsBanner = ({ items }: ReviewWarningsBannerProps) => {
                 />
             ))}
             {hasHighRisk && (
-                <CheckboxRow
+                <PWCheckbox
                     label={t('signing.review_warnings.acknowledge')}
                     isChecked={isAcknowledged}
-                    onToggle={toggleAcknowledged}
+                    onPress={toggleAcknowledged}
                     testID='review_warnings_acknowledge'
                 />
             )}

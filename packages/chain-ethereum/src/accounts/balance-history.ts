@@ -22,6 +22,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { buildIntegrityHeadersWhenReady } from '@perawallet/wallet-core-app-integrity'
 import {
+    getAssetPricesByIds,
     getAssetsByIds,
     type PriceHistoryPoint,
 } from '@perawallet/wallet-core-assets'
@@ -53,7 +54,7 @@ import {
     ASSETS_MAX_IDS,
     ASSETS_SERVICE,
     fetchAssetItems,
-    fetchPriceChart,
+    fetchPriceChartOrNotFound,
     PRICES_SERVICE,
 } from '../assets/api/endpoints'
 import {
@@ -441,13 +442,17 @@ export const createEthereumBalanceHistoryOps = (
         const decimals = new Map<string, number>([
             [chain.nativeAsset.assetId, chain.nativeAsset.decimals],
         ])
-        if (tokenIds.length > 0) {
-            for (const asset of await getAssetsByIds({
-                assetIds: tokenIds,
+        const [storedAssets, storedPrices] = await Promise.all([
+            tokenIds.length > 0
+                ? getAssetsByIds({ assetIds: tokenIds, scope })
+                : [],
+            getAssetPricesByIds({
+                assetIds: [...assetIdByCaip19.values()],
                 scope,
-            })) {
-                decimals.set(asset.assetId, asset.decimals)
-            }
+            }),
+        ])
+        for (const asset of storedAssets) {
+            decimals.set(asset.assetId, asset.decimals)
         }
         // A token held only in the past may have no local row (sold before
         // import, fresh install); dropping it would read the history low.
@@ -468,6 +473,17 @@ export const createEthereumBalanceHistoryOps = (
                 })
             }
         }
+        // The chart is [] when no price was stored inside the window (a quiet
+        // token over one day); the backend leaves the current price to us.
+        const spotPrices = new Map(
+            storedPrices.map(({ assetId, usdPrice }) => [assetId, usdPrice]),
+        )
+        const spotOnly = (assetId: string): Nullable<PriceHistoryPoint[]> => {
+            const usdPrice = spotPrices.get(assetId)
+            return usdPrice && !usdPrice.isZero()
+                ? [{ timestamp: points[0]!.timestamp, usdPrice }]
+                : null
+        }
         const priced = await Promise.all(
             [...assetIdByCaip19].map(async ([caip19, assetId]) => {
                 const assetDecimals = decimals.get(assetId)
@@ -475,23 +491,46 @@ export const createEthereumBalanceHistoryOps = (
                 const isSkippable =
                     shouldSkipFailedTokens &&
                     assetId !== chain.nativeAsset.assetId
-                if (isSkippable && isUncharted(caip19)) return null
+                if (isSkippable && isUncharted(caip19)) {
+                    const fallback = spotOnly(assetId)
+                    return fallback
+                        ? ([
+                              caip19,
+                              { decimals: assetDecimals, prices: fallback },
+                          ] as const)
+                        : null
+                }
                 // The native coin can't be skipped: without it the whole chain
                 // would read as worthless.
-                const prices = await limit(() =>
-                    fetchPriceChart(scope, chain, assetId, query, signal),
+                const chart = await limit(() =>
+                    fetchPriceChartOrNotFound(
+                        scope,
+                        chain,
+                        assetId,
+                        query,
+                        signal,
+                    ),
                 ).catch((error: unknown) => {
                     if (isNotFoundError(error)) unchartedAt.set(caip19, now())
                     if (!isSkippable || signal?.aborted) throw error
                     logger.warn('ethereum balance history: price read failed', {
                         error,
                     })
-                    return null
+                    return undefined
                 })
-                if (prices === null) return null
-                // The service's chart_not_found answer arrives as no points.
-                if (prices.length === 0) unchartedAt.set(caip19, now())
-                return [caip19, { decimals: assetDecimals, prices }] as const
+                if (chart === undefined) return null
+                // Only a token with no chart at all is skipped for the hour: an
+                // empty window (a quiet day) says nothing about a longer period.
+                if (chart === null) unchartedAt.set(caip19, now())
+                return [
+                    caip19,
+                    {
+                        decimals: assetDecimals,
+                        prices: chart?.length
+                            ? chart
+                            : (spotOnly(assetId) ?? []),
+                    },
+                ] as const
             }),
         )
         return new Map(priced.filter(entry => entry !== null))

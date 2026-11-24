@@ -287,7 +287,11 @@
         "hidden_toast_body": "Das Token erscheint nicht mehr in deinen Assets und zählt nicht zu deinem Guthaben. Du kannst es unter Assets verwalten > Tokens ausblenden wieder einblenden.",
         "hidden_swipe_toast_body": "Tippe, um es rückgängig zu machen. Das Token erscheint nicht mehr in deinen Assets und zählt nicht zu deinem Guthaben.",
         "shown_toast_title": "{{assetName}} eingeblendet",
-        "filtered_note": "Pera hat dieses Token als verdächtig markiert, daher erscheint es nicht in deinen Assets. Mit „Verdächtige Assets anzeigen“ in den Asset-Filtern kannst du es einblenden."
+        "filtered_note": "Pera hat dieses Token als verdächtig markiert, daher erscheint es nicht in deinen Assets. Unter „Ausgeblendete Tokens“ am Ende deiner Assets kannst du es einblenden.",
+        "auto_hidden_row_title": "Ausgeblendete Tokens ({{total}})",
+        "auto_hidden_title": "Ausgeblendete Tokens",
+        "auto_hidden_description": "Pera hat diese Tokens ausgeblendet, weil sie nach Spam oder Betrug aussehen. Besuche keine Websites, die darin genannt werden. Blende ein Token ein, um es wieder anzuzeigen; zu deinem Guthaben zählt es weiterhin nicht.",
+        "auto_hidden_empty_title": "Keine ausgeblendeten Tokens"
     },
     "deeplink": {
         "error": {
@@ -1223,7 +1227,8 @@
             "asset_empty_body": "Sobald für dieses Asset auf diesem Konto ein Guthabenverlauf vorliegt, wird hier ein Diagramm angezeigt",
             "excludes_networks": "Dieses Diagramm enthält noch keine {{networks}}-Assets",
             "failed_networks": "Der Verlauf von {{networks}} konnte nicht geladen werden und fehlt daher in diesem Diagramm",
-            "currency_unavailable_body": "Dieses Diagramm ist in {{currency}} derzeit nicht verfügbar"
+            "currency_unavailable_body": "Dieses Diagramm ist in {{currency}} derzeit nicht verfügbar",
+            "balance_change_label": "Saldoänderung"
         },
         "webview": {
             "failed_title": "Seite konnte nicht geladen werden",
@@ -4115,6 +4120,9 @@
             "reuse_body": "Sie beginnt und endet wie eine Adresse, die du kennst, ist aber nicht dieselbe. Vergleiche die vollständigen Adressen, bevor du sie verwendest.",
             "reuse_confirm": "Trotzdem fortfahren",
             "reuse_cancel": "Abbrechen"
+        },
+        "suspicious_token": {
+            "marker": "Verdächtiges Token"
         }
     },
     "tabbar": {
@@ -4328,9 +4336,12 @@
                 "swap": "Tausch fehlgeschlagen"
             },
             "provider_failed_body": "Dieser Anbieter konnte den Tausch nicht durchführen. Versuche es mit einem anderen Anbieter.",
+            "provider_failed_single_body": "Der Anbieter konnte den Tausch nicht durchführen. Versuche es später erneut oder mit einem anderen Betrag.",
             "provider_unavailable_body": "Der Anbieter ist gerade nicht verfügbar. Versuche es gleich noch einmal.",
             "quote_mismatch_body": "Die Transaktionen des Anbieters passten nicht zu diesem Angebot, deshalb wurde nichts signiert. Versuche es erneut oder wähle einen anderen Anbieter.",
+            "quote_mismatch_single_body": "Die Transaktionen des Anbieters passten nicht zu diesem Angebot, deshalb wurde nichts signiert. Versuche es später erneut.",
             "unsupported_order_body": "Pera kann die Bestellung dieses Anbieters nicht abschließen, deshalb wurde nichts signiert. Wähle einen anderen Anbieter.",
+            "unsupported_order_single_body": "Pera kann die Bestellung dieses Anbieters nicht abschließen, deshalb wurde nichts signiert. Versuche es später erneut.",
             "signing_failed_body": "Die Transaktion konnte nicht signiert werden, deshalb wurde sie nicht gesendet. Versuche es erneut.",
             "order_insufficient_balance_body": "Dein Guthaben reicht für diesen Betrag und die Netzwerkgebühr nicht aus. Versuche einen kleineren Betrag oder füge Guthaben für die Gebühr hinzu.",
             "insufficient_native_body": "Dieses Konto benötigt mindestens {{amount}} {{symbol}} mehr, um diesen Tausch, die Gebühren und das Mindestguthaben zu decken. Füge mehr {{symbol}} hinzu und versuche es erneut.",

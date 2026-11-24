@@ -13,7 +13,7 @@
 import { PWFlatList, PWScreen, PWText, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { AssetRowSkeleton } from '@modules/assets'
-import { HideTokenRow } from './HideTokenRow'
+import { HideTokenRow } from '../../components/HideTokenRow'
 import { useStyles } from './styles'
 import {
     useHideTokensScreen,

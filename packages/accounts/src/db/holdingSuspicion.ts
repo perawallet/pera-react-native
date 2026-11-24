@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { isNull, ne, or } from 'drizzle-orm'
+import { eq, isNull, ne, or } from 'drizzle-orm'
 import {
     AssetsPeraSchema,
     PeraAssetVerificationTier,
@@ -27,3 +27,6 @@ export const isNotSuspiciousSql = () =>
             PeraAssetVerificationTier.suspicious,
         ),
     )!
+
+export const isSuspiciousSql = () =>
+    eq(AssetsPeraSchema.verificationTier, PeraAssetVerificationTier.suspicious)

@@ -14,11 +14,7 @@ import { useCallback } from 'react'
 import { useTheme } from '@rneui/themed'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import {
-    getIconPixelSize,
-    PWCheckbox,
-    PWTouchableOpacity,
-} from '@components/core'
+import { getIconPixelSize, PWCheckbox } from '@components/core'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { useStyles } from '@components/ConnectionApproval/styles'
 import { ChainIcon } from '@modules/chain-ui/icon'
@@ -45,26 +41,25 @@ export const ConnectionApprovalAccountRow = ({
     )
 
     return (
-        <PWTouchableOpacity
-            style={styles.accountItem}
+        <PWCheckbox
+            label={
+                <AccountDisplay
+                    account={account}
+                    chainId={chainId}
+                    avatarBadge={
+                        <ChainIcon
+                            chainId={chainId}
+                            size={getIconPixelSize(theme, 'sm')}
+                        />
+                    }
+                    showChevron={false}
+                />
+            }
+            boxPosition='trailing'
+            isChecked={isSelected}
             onPress={handlePress}
+            style={styles.accountItem}
             testID={`wc_account_row_${account.id}`}
-        >
-            <AccountDisplay
-                account={account}
-                chainId={chainId}
-                avatarBadge={
-                    <ChainIcon
-                        chainId={chainId}
-                        size={getIconPixelSize(theme, 'sm')}
-                    />
-                }
-                showChevron={false}
-            />
-            <PWCheckbox
-                onPress={handlePress}
-                checked={isSelected}
-            />
-        </PWTouchableOpacity>
+        />
     )
 }
