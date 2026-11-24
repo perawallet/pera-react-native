@@ -19,6 +19,7 @@ import { TransactionIcon } from '@components/TransactionIcon'
 import { useLanguage } from '@hooks/useLanguage'
 import { ChainLabel } from '@modules/chain-ui/icon'
 import { useStyles } from './styles'
+import { rowAmountPrecision } from './amounts'
 import {
     useTransactionListItem,
     type UseTransactionListItemParams,
@@ -99,7 +100,7 @@ const TransactionListItemView = ({
                             value={amount.value}
                             currency={amount.currency}
                             assetId={amount.assetId}
-                            precision='compact'
+                            precision={rowAmountPrecision(amount.decimals)}
                             abbreviateFrom='million'
                             assetDecimals={amount.decimals}
                             prefix={amount.prefix}

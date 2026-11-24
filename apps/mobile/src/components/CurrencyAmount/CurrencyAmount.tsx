@@ -70,7 +70,12 @@ type PrecisionProps =
     | {
           precision: Exclude<
               PrecisionVariant,
-              'assetFull' | 'assetExact' | 'significant' | 'compact' | 'list'
+              | 'assetFull'
+              | 'assetExact'
+              | 'significant'
+              | 'rowSignificant'
+              | 'compact'
+              | 'list'
           >
           assetDecimals?: never
       }
@@ -79,6 +84,7 @@ type PrecisionProps =
               | 'assetFull'
               | 'assetExact'
               | 'significant'
+              | 'rowSignificant'
               | 'compact'
               | 'list'
           assetDecimals?: number

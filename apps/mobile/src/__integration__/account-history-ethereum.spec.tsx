@@ -1454,6 +1454,138 @@ describe('Flow: History on an Ethereum account', () => {
                 ).toEqual([`https://etherscan.io/tx/${SENT_HASH}`])
                 expect(nodeReads).toEqual([])
             })
+
+            it('Given a sent transfer of 0.0000575 ETH, when History lists it and its row is opened, then both read 0.0000575 ETH', async () => {
+                const TINY_HASH = hashOf(22)
+                server.use(
+                    ...peraEvmHistoryHandlers({
+                        history: {
+                            [ETH_ADDRESS]: [
+                                [
+                                    evmHistoryItem({
+                                        hash: TINY_HASH,
+                                        block_number: 19_000_001,
+                                        block_time: '2026-01-09T00:00:00Z',
+                                        from: ETH_ADDRESS,
+                                        to: COUNTERPARTY,
+                                        value: '57500000000000',
+                                        fee: '21000000000000',
+                                    }),
+                                ],
+                            ],
+                        },
+                    }),
+                )
+                renderHistory()
+
+                expect(await rowText(TINY_HASH, /ETH/)).toMatch(
+                    /-\s*0\.0000575(?!\d)/,
+                )
+
+                await openRow(TINY_HASH)
+
+                const amount = await screen.findByTestId(
+                    'transaction_detail_amount',
+                    undefined,
+                    { timeout: SLOW_WAIT_TIMEOUT_MS },
+                )
+                await waitFor(() =>
+                    expect(amount.textContent).toMatch(/0\.0000575(?!\d)/),
+                )
+            })
+
+            it('Given a sent transfer of 0.013499892065126118 ETH, when History lists it and its row is opened, then the row rounds it down to 0.013499 and the detail shows every digit', async () => {
+                const LONG_HASH = hashOf(23)
+                server.use(
+                    ...peraEvmHistoryHandlers({
+                        history: {
+                            [ETH_ADDRESS]: [
+                                [
+                                    evmHistoryItem({
+                                        hash: LONG_HASH,
+                                        block_number: 19_000_002,
+                                        block_time: '2026-01-10T00:00:00Z',
+                                        from: ETH_ADDRESS,
+                                        to: COUNTERPARTY,
+                                        value: '13499892065126118',
+                                        fee: '21000000000000',
+                                    }),
+                                ],
+                            ],
+                        },
+                    }),
+                )
+                renderHistory()
+
+                expect(await rowText(LONG_HASH, /ETH/)).toMatch(
+                    /-\s*0\.013499(?![\d.])/,
+                )
+
+                await openRow(LONG_HASH)
+
+                const amount = await screen.findByTestId(
+                    'transaction_detail_amount',
+                    undefined,
+                    { timeout: SLOW_WAIT_TIMEOUT_MS },
+                )
+                await waitFor(() =>
+                    expect(amount.textContent).toMatch(
+                        /0\.013499892065126118(?!\d)/,
+                    ),
+                )
+            })
+
+            it('Given a sent 18-decimal token transfer of 0.000123456789, when History lists it and its row is opened, then the row rounds it down and the detail shows every digit', async () => {
+                const TOKEN_HASH = hashOf(24)
+                const TINY_TOKEN = '0x7777777777777777777777777777777777777777'
+                server.use(
+                    ...peraEvmHistoryHandlers({
+                        history: {
+                            [ETH_ADDRESS]: [
+                                [
+                                    evmHistoryItem({
+                                        hash: TOKEN_HASH,
+                                        block_number: 19_000_003,
+                                        block_time: '2026-01-11T00:00:00Z',
+                                        from: ETH_ADDRESS,
+                                        to: TINY_TOKEN,
+                                        value: '0',
+                                        method: 'transfer',
+                                        fee: '21000000000000',
+                                        token_transfers: [
+                                            {
+                                                asset_id: `eip155:1/erc20:${TINY_TOKEN}`,
+                                                contract: TINY_TOKEN,
+                                                from: ETH_ADDRESS,
+                                                to: COUNTERPARTY,
+                                                value: '123456789000000',
+                                                token_name: 'Tiny Token',
+                                                token_symbol: 'TNY',
+                                                token_decimals: 18,
+                                            },
+                                        ],
+                                    }),
+                                ],
+                            ],
+                        },
+                    }),
+                )
+                renderHistory()
+
+                expect(await rowText(TOKEN_HASH, /TNY/)).toMatch(
+                    /-\s*0\.00012345(?!\d)/,
+                )
+
+                await openRow(TOKEN_HASH)
+
+                await waitFor(
+                    () =>
+                        expect(document.body.textContent).toMatch(
+                            /0\.000123456789(?!\d)\s*TNY/,
+                        ),
+                    { timeout: SLOW_WAIT_TIMEOUT_MS },
+                )
+            })
         })
 
         describe('a send the chain has not listed yet', () => {
