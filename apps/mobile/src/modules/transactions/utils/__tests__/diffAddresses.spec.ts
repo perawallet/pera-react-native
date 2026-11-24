@@ -108,4 +108,13 @@ describe('groupAddressSegments', () => {
 
         expect(groups.map(group => group[0].text)).toEqual(['AB', 'CDE', 'FGH'])
     })
+
+    it('treats a group size below one as one character per group', () => {
+        const groups = groupAddressSegments(
+            [{ text: 'ABC', isDifferent: false }],
+            0,
+        )
+
+        expect(groups.map(group => group[0].text)).toEqual(['A', 'B', 'C'])
+    })
 })

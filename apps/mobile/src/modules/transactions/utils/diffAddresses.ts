@@ -44,8 +44,9 @@ export const diffAddresses = (
  */
 export const groupAddressSegments = (
     segments: AddressSegment[],
-    groupSize = 4,
+    requestedGroupSize = 4,
 ): AddressSegment[][] => {
+    const groupSize = Math.max(1, Math.floor(requestedGroupSize))
     const total = segments.reduce((sum, { text }) => sum + text.length, 0)
     let room = total % groupSize || groupSize
     const groups: AddressSegment[][] = []

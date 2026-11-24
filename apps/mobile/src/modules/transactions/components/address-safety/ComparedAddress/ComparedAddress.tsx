@@ -41,25 +41,27 @@ export const ComparedAddress = ({
             <PWView
                 style={styles.groups}
                 testID={testID}
+                accessible
+                accessibilityLabel={segments.map(({ text }) => text).join('')}
             >
                 {groupAddressSegments(segments).map((group, groupIndex) => (
                     <PWText
                         key={groupIndex}
                         variant='mono'
                     >
-                        {group.map((segment, index) => (
-                            <PWText
-                                key={index}
-                                variant='mono'
-                                style={
-                                    segment.isDifferent
-                                        ? styles.difference
-                                        : undefined
-                                }
-                            >
-                                {segment.text}
-                            </PWText>
-                        ))}
+                        {group.map((segment, index) =>
+                            segment.isDifferent ? (
+                                <PWText
+                                    key={index}
+                                    variant='mono'
+                                    style={styles.difference}
+                                >
+                                    {segment.text}
+                                </PWText>
+                            ) : (
+                                segment.text
+                            ),
+                        )}
                     </PWText>
                 ))}
             </PWView>
