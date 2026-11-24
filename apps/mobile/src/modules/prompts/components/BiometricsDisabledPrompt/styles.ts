@@ -11,15 +11,24 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import type { EdgeInsets } from 'react-native-safe-area-context'
 
-export const useStyles = makeStyles(theme => ({
+// Full-bleed, so the insets are applied here rather than by the container.
+export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
     container: {
         flex: 1,
+        paddingTop: insets.top,
+        paddingRight: insets.right,
+        paddingBottom: insets.bottom,
+        paddingLeft: insets.left,
         backgroundColor: theme.colors.background,
     },
+    // No bottom inset: PinEditView pads its numpad clear of it.
     pinContainer: {
         flex: 1,
-        paddingTop: theme.spacing.xl,
+        paddingTop: insets.top + theme.spacing.xl,
+        paddingRight: insets.right,
+        paddingLeft: insets.left,
         backgroundColor: theme.colors.background,
     },
     pinToolbar: {

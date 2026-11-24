@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
     PWInfoView,
     PWToolbar,
@@ -36,7 +37,8 @@ export const BIOMETRICS_DISABLED_PROMPT_ID = 'biometrics-disabled-prompt'
  * drop before the next relaunch.
  */
 export const BiometricsDisabledPrompt = () => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles(insets)
     const { t } = useLanguage()
     const {
         reason,
