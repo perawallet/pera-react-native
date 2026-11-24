@@ -522,7 +522,7 @@
             "empty_title": "NFT’ler",
             "empty_body": "NFT galerine hoş geldin! Henüz hiç NFT’n yok. Cüzdanındaki tüm NFT’ler burada görünecek.",
             "empty_body_multichain": "NFT galerine hoş geldin!\nHenüz hiç NFT’n yok. Ethereum gibi ağlarda aldığın NFT’ler burada kendiliğinden görünür. Algorand NFT’leri için önce opt-in olman gerekir.",
-            "empty_body_unsupported": "{{chains}} üzerindeki NFT'ler henüz Pera'da gösterilmiyor.",
+            "empty_body_unsupported": "{{chains}} üzerindeki NFT’ler henüz Pera’da gösterilmiyor.",
             "empty_optin": "NFT ekle",
             "empty_optin_algorand": "Algorand NFT’sine opt-in ol",
             "nomatch_title": "Eşleşen NFT yok",
