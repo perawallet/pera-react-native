@@ -20,6 +20,7 @@ import { generateUniqueId } from '@perawallet/wallet-core-shared'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { ChainChip } from '@modules/chain-ui/icon'
 import { getPreferredDappIcon } from '@modules/walletconnect'
 import { toPeerDisplayText } from '@utils/peerDisplay'
 
@@ -34,6 +35,17 @@ export const useNetworkSwitchPrompt = (): ConfirmNetworkSwitch => {
             const network = getChainDescriptor(scope.chainId).networks.find(
                 ({ id: networkId }) => networkId === scope.networkId,
             )
+            const name = toPeerDisplayText(peer.name)
+            const chain = chainDisplayNameOf(scope.chainId)
+            // "Base Mainnet" reads oddly, so only a non-mainnet network is named.
+            const message =
+                network?.tier === 'mainnet'
+                    ? t('walletconnect.switch_network.body', { name, chain })
+                    : t('walletconnect.switch_network.body_with_network', {
+                          name,
+                          chain,
+                          network: network?.displayName ?? scope.networkId,
+                      })
             const decision = request<boolean>({
                 id,
                 contents: (
@@ -41,14 +53,15 @@ export const useNetworkSwitchPrompt = (): ConfirmNetworkSwitch => {
                         icon='globe'
                         iconUrl={getPreferredDappIcon(peer.icons)}
                         title={t('walletconnect.switch_network.title')}
-                        message={t('walletconnect.switch_network.body', {
-                            name: toPeerDisplayText(peer.name),
-                            chain: chainDisplayNameOf(scope.chainId),
-                            network: network?.displayName ?? scope.networkId,
-                        })}
+                        message={message}
                         confirmLabel={t('walletconnect.switch_network.confirm')}
                         cancelLabel={t('common.cancel.label')}
-                    />
+                    >
+                        <ChainChip
+                            chainId={scope.chainId}
+                            isOutlined
+                        />
+                    </ConfirmActionContent>
                 ),
                 options: {
                     size: 'auto',
