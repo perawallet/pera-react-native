@@ -23,6 +23,7 @@ import { act, render, screen } from '@test-utils/render'
 import { RootComponent } from '../RootComponent'
 import { useAutoLockListener } from '@modules/security/components/AutoLockGuard/useAutoLockListener'
 import { useLockScreen } from '@modules/security/components/AutoLockGuard/useLockScreen'
+import { useDeviceRegistration } from '@perawallet/wallet-core-device'
 
 // PromptContainer (T&C re-acceptance, PIN setup) must render
 // (a) inside RootContentContainer, above the navigator, and (b) inside
@@ -183,10 +184,16 @@ vi.mock('@modules/security/components/AutoLockGuard/useLockScreen', () => ({
     useLockScreen: vi.fn(),
 }))
 
-const setGuardActive = (isChecking: boolean) => {
+const setGuardActive = (
+    isChecking: boolean,
+    isInitialized = true,
+    isWipeRecoveryRequired = false,
+) => {
     ;(useAutoLockListener as Mock).mockReturnValue({
         isLocked: false,
         isChecking,
+        isInitialized,
+        isWipeRecoveryRequired,
         unlock: vi.fn(),
         handleResetData: vi.fn(),
     })
@@ -235,6 +242,24 @@ describe('RootComponent PromptContainer mount point', () => {
         })
 
         expect(screen.queryByTestId('terms-acceptance-prompt')).toBeNull()
+    })
+
+    it('defers device registration until startup wipe recovery has finished', () => {
+        vi.mocked(useDeviceRegistration).mockClear()
+        setGuardActive(true, false)
+        const { rerender } = render(<RootComponent fcmToken={null} />)
+
+        expect(useDeviceRegistration).not.toHaveBeenCalled()
+
+        setGuardActive(false, true, true)
+        rerender(<RootComponent fcmToken={null} />)
+
+        expect(useDeviceRegistration).not.toHaveBeenCalled()
+
+        setGuardActive(false)
+        rerender(<RootComponent fcmToken={null} />)
+
+        expect(useDeviceRegistration).toHaveBeenCalled()
     })
 })
 

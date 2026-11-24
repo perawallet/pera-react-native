@@ -12,7 +12,13 @@
 
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useDeleteAllData, clearAccountsStore } from '@hooks/useDeleteAllData'
+import {
+    useDeleteAllData,
+    clearAccountsStore,
+    clearPendingWipe,
+    readPendingWipe,
+} from '@hooks/useDeleteAllData'
+import { useWipeRecoveryStore } from '@hooks/useWipeRecoveryStore'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { usePinCode } from '@perawallet/wallet-core-security'
 import { useQueryClient } from '@tanstack/react-query'
@@ -28,14 +34,25 @@ vi.mock('@perawallet/wallet-core-security', () => ({
     usePinCode: vi.fn(),
 }))
 
-const mockRemoveItem = vi.fn()
+const kvItems = new Map<string, string>()
+const mockRemoveItem = vi.fn((key: string) => kvItems.delete(key))
+const mockSetItem = vi.fn((key: string, value: string) =>
+    kvItems.set(key, value),
+)
+const mockGetItem = vi.fn((key: string) => kvItems.get(key) ?? null)
+const mockTrim = vi.fn()
 const mockClearKeystore = vi.fn().mockResolvedValue(undefined)
 const mockClearDatabase = vi.fn().mockResolvedValue(undefined)
 const mockResetLegacyData = vi.fn().mockResolvedValue(undefined)
 const mockClearPasskeyCredentials = vi.fn().mockResolvedValue(undefined)
 const mockClearConnections = vi.fn().mockResolvedValue(undefined)
 
-const mockKeyValueStorage = { removeItem: mockRemoveItem }
+const mockKeyValueStorage = {
+    removeItem: mockRemoveItem,
+    setItem: mockSetItem,
+    getItem: mockGetItem,
+    trim: mockTrim,
+}
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     clearDataStores: vi.fn(),
     getProvider: () => ({
@@ -118,6 +135,8 @@ describe('useDeleteAllData', () => {
     const mockSavePin = vi.fn().mockResolvedValue(undefined)
 
     beforeEach(() => {
+        kvItems.clear()
+        useWipeRecoveryStore.setState(false)
         // Call history is cleared between tests but implementations are not,
         // so "no provider mounted" is restored here as this file's default.
         mockUseOptionalConnectionRegistry.mockReturnValue(null)
@@ -184,6 +203,74 @@ describe('useDeleteAllData', () => {
         const removeOrder = mockRemoveQueries.mock.invocationCallOrder[0]
         expect(cancelOrder).toBeLessThan(clearOrder)
         expect(removeOrder).toBeGreaterThan(clearOrder)
+    })
+
+    it('marks the wipe pending before destroying anything and clears the mark once it ends', async () => {
+        const { result } = renderHook(() => useDeleteAllData())
+        let pendingAtKeystoreClear: unknown
+        mockClearKeystore.mockImplementationOnce(async () => {
+            pendingAtKeystoreClear = readPendingWipe()
+        })
+
+        await act(async () => {
+            await result.current.deleteAllData()
+        })
+
+        expect(mockSetItem.mock.invocationCallOrder[0]).toBeLessThan(
+            mockCancelQueries.mock.invocationCallOrder[0],
+        )
+        expect(pendingAtKeystoreClear).toBe('delete-all')
+        expect(readPendingWipe()).toBeNull()
+        expect(mockTrim).toHaveBeenCalled()
+    })
+
+    it('leaves a duress wipe pending for the caller to clear once the decoy exists', async () => {
+        const { result } = renderHook(() => useDeleteAllData())
+
+        await act(async () => {
+            await result.current.wipeAllUserData('duress')
+        })
+
+        expect(readPendingWipe()).toBe('duress')
+        clearPendingWipe()
+        expect(readPendingWipe()).toBeNull()
+    })
+
+    it('clears the visible accounts and still removes local data when clearing the PIN fails', async () => {
+        mockSavePin.mockRejectedValueOnce(new Error('keystore busy'))
+        const { result } = renderHook(() => useDeleteAllData())
+
+        await act(async () => {
+            await expect(result.current.deleteAllData()).rejects.toThrow(
+                'Some wallet data could not be cleared',
+            )
+        })
+
+        expect(mockAccountsResetState).toHaveBeenCalledTimes(1)
+        expect(mockAccountsClearStorage).toHaveBeenCalledTimes(1)
+        expect(mockClearDatabase).toHaveBeenCalledTimes(1)
+        expect(mockDestroyVault).toHaveBeenCalledTimes(1)
+        expect(readPendingWipe()).toBe('delete-all')
+    })
+
+    it('keeps a failed duress wipe pending without raising the recovery screen', async () => {
+        mockSavePin.mockRejectedValueOnce(new Error('keystore busy'))
+        const { result } = renderHook(() => useDeleteAllData())
+
+        await act(async () => {
+            await expect(
+                result.current.wipeAllUserData('duress'),
+            ).rejects.toThrow('Some wallet data could not be cleared')
+        })
+
+        expect(readPendingWipe()).toBe('duress')
+        expect(useWipeRecoveryStore.getState()).toBe(false)
+    })
+
+    it('treats an unrecognised mark as a full wipe', () => {
+        kvItems.set('wipe-in-progress', 'something-else')
+
+        expect(readPendingWipe()).toBe('delete-all')
     })
 
     it('should clear accounts store when clearAccountsStore is called', () => {
@@ -280,7 +367,7 @@ describe('useDeleteAllData', () => {
         expect(mockClearPasskeyCredentials).toHaveBeenCalledTimes(1)
     })
 
-    it('should continue if clearing native passkey autofill state fails', async () => {
+    it('completes the wipe and clears the marker when native passkey clearing fails', async () => {
         mockClearPasskeyCredentials.mockRejectedValueOnce(
             new Error('native passkey clear error'),
         )
@@ -291,7 +378,7 @@ describe('useDeleteAllData', () => {
             await result.current.deleteAllData()
         })
 
-        expect(mockClearPasskeyCredentials).toHaveBeenCalledTimes(1)
+        expect(readPendingWipe()).toBeNull()
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
         expect(clearAllStores).toHaveBeenCalledWith()
         expect(logger.error).toHaveBeenCalledWith(
@@ -325,15 +412,18 @@ describe('useDeleteAllData', () => {
         expect(clearAllStores).toHaveBeenCalledWith()
     })
 
-    it('should continue if clearKeystore fails', async () => {
+    it('finishes the other steps and keeps the marker when the keystore clear fails', async () => {
         mockClearKeystore.mockRejectedValueOnce(new Error('Keystore error'))
 
         const { result } = renderHook(() => useDeleteAllData())
 
         await act(async () => {
-            await result.current.deleteAllData()
+            await expect(result.current.deleteAllData()).rejects.toThrow(
+                'Some wallet data could not be cleared',
+            )
         })
 
+        expect(readPendingWipe()).toBe('delete-all')
         expect(mockClearKeystore).toHaveBeenCalledTimes(1)
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
     })
@@ -467,18 +557,18 @@ describe('useDeleteAllData', () => {
         )
     })
 
-    it('finishes the wipe when clearing the v2 namespace throws', async () => {
+    it('completes the wipe and clears the marker when the WalletConnect v2 namespace cannot be cleared', async () => {
         mockClearWalletConnectV2Storage.mockImplementationOnce(() => {
             throw new Error('mmkv gone')
         })
 
         const { result } = renderHook(() => useDeleteAllData())
 
-        await expect(
-            act(async () => {
-                await result.current.deleteAllData()
-            }),
-        ).resolves.toBeUndefined()
+        await act(async () => {
+            await result.current.deleteAllData()
+        })
+
+        expect(readPendingWipe()).toBeNull()
         expect(logger.error).toHaveBeenCalledWith(
             'Failed to clear the WalletConnect v2 storage',
             { error: expect.any(Error) },
@@ -505,23 +595,24 @@ describe('useDeleteAllData', () => {
         }
     })
 
-    it('logs and resolves when destroying the vault fails', async () => {
+    it('reports failure and keeps the marker when destroying the vault fails', async () => {
         mockDestroyVault.mockRejectedValueOnce(new Error('storage gone'))
 
         const { result } = renderHook(() => useDeleteAllData())
 
-        await expect(
-            act(async () => {
-                await result.current.deleteAllData()
-            }),
-        ).resolves.toBeUndefined()
+        await act(async () => {
+            await expect(result.current.deleteAllData()).rejects.toThrow(
+                'Some wallet data could not be cleared',
+            )
+        })
+        expect(readPendingWipe()).toBe('delete-all')
         expect(logger.error).toHaveBeenCalledWith(
             'Failed to destroy the vault',
             { error: expect.any(Error) },
         )
     })
 
-    it('continues the wipe when clearing the connections store fails', async () => {
+    it('completes the wipe and clears the marker when clearing connections fails', async () => {
         mockClearConnections.mockRejectedValueOnce(new Error('store locked'))
 
         const { result } = renderHook(() => useDeleteAllData())
@@ -530,7 +621,7 @@ describe('useDeleteAllData', () => {
             await result.current.deleteAllData()
         })
 
-        expect(mockClearConnections).toHaveBeenCalledTimes(1)
+        expect(readPendingWipe()).toBeNull()
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
     })
 
@@ -566,7 +657,7 @@ describe('useDeleteAllData', () => {
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
     })
 
-    it('should continue if database clear fails', async () => {
+    it('completes the wipe and clears the marker when the database clear fails', async () => {
         mockClearDatabase.mockRejectedValueOnce(new Error('DB clear error'))
 
         const { result } = renderHook(() => useDeleteAllData())
@@ -575,11 +666,11 @@ describe('useDeleteAllData', () => {
             await result.current.deleteAllData()
         })
 
-        expect(mockClearDatabase).toHaveBeenCalledTimes(1)
+        expect(readPendingWipe()).toBeNull()
         expect(clearAllStores).toHaveBeenCalledWith()
     })
 
-    it('should continue if legacy migration reset fails', async () => {
+    it('completes the wipe and clears the marker when resetting legacy migration data fails', async () => {
         mockResetLegacyData.mockRejectedValueOnce(
             new Error('legacy reset error'),
         )
@@ -590,7 +681,8 @@ describe('useDeleteAllData', () => {
             await result.current.deleteAllData()
         })
 
-        expect(mockResetLegacyData).toHaveBeenCalledTimes(1)
+        expect(readPendingWipe()).toBeNull()
+        expect(useWipeRecoveryStore.getState()).toBe(false)
         expect(clearAllStores).toHaveBeenCalledWith()
     })
 })
