@@ -65,7 +65,10 @@ describe('ChainAddressList', () => {
         fireEvent.contextMenu(screen.getByTestId('list_ethereum'))
 
         await waitFor(() =>
-            expect(mockCopyToClipboard).toHaveBeenCalledWith('0xAbFULLcD'),
+            expect(mockCopyToClipboard).toHaveBeenCalledWith(
+                '0xAbFULLcD',
+                undefined,
+            ),
         )
     })
 })

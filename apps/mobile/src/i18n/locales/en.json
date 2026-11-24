@@ -1211,6 +1211,10 @@
             "title": "Copied to clipboard",
             "body": ""
         },
+        "address_copied": {
+            "algorand": "Algorand address copied",
+            "evm": "EVM address copied"
+        },
         "email_failed": {
             "title": "Couldn't open email app",
             "body": "No email app is set up on this device. You can write to {{email}} directly."

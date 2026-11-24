@@ -1211,6 +1211,10 @@
             "title": "Panoya kopyalandı",
             "body": ""
         },
+        "address_copied": {
+            "algorand": "Algorand adresi kopyalandı",
+            "evm": "EVM adresi kopyalandı"
+        },
         "email_failed": {
             "title": "E-posta uygulaması açılamadı",
             "body": "Bu cihazda kurulu bir e-posta uygulaması yok. Doğrudan {{email}} adresine yazabilirsin."

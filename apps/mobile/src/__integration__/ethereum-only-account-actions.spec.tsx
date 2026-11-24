@@ -39,6 +39,7 @@ import {
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { evmRpcHandlers } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
+import { ETHEREUM_CHAIN_ID } from '@test-utils/chain-fixtures'
 import {
     resetTestDatabase,
     setupTestDatabase,
@@ -192,7 +193,9 @@ describe('Flow: accounts in their options sheet, Settings → Notifications and 
         await longPress(screen.getByTestId('account_selection_button'))
 
         await waitFor(() =>
-            expect(Clipboard.setStringAsync).toHaveBeenCalledWith(ETH_ADDRESS),
+            expect(Clipboard.setStringAsync).toHaveBeenCalledWith(
+                addressCodecs.get(ETHEREUM_CHAIN_ID).normalize(ETH_ADDRESS),
+            ),
         )
     })
 

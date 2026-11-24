@@ -1211,6 +1211,10 @@
             "title": "Copiado para a área de transferência",
             "body": ""
         },
+        "address_copied": {
+            "algorand": "Endereço Algorand copiado",
+            "evm": "Endereço EVM copiado"
+        },
         "email_failed": {
             "title": "Não foi possível abrir o app de e-mail",
             "body": "Não há nenhum app de e-mail configurado neste aparelho. Você pode escrever direto para {{email}}."

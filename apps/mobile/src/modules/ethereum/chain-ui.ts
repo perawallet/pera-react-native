@@ -101,6 +101,7 @@ export const ethereumCollectibleDetailsDisplay: CollectibleDetailsDisplay = {
 // ethereum, which keeps viem out of an Algorand-only bundle.
 export const ethereumChainUi: Optional<ChainUi> = {
     familyLabel: i18nKey('chain_families.evm'),
+    addressCopiedTitle: i18nKey('common.address_copied.evm'),
     passphraseCompatibilityKey: i18nKey('view_passphrase.compatibility.evm'),
     transactionDetails: {
         ReviewBody: EthereumTransactionReviewBody,

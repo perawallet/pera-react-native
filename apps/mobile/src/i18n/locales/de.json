@@ -1203,6 +1203,10 @@
             "title": "In die Zwischenablage kopiert",
             "body": ""
         },
+        "address_copied": {
+            "algorand": "Algorand-Adresse kopiert",
+            "evm": "EVM-Adresse kopiert"
+        },
         "email_failed": {
             "title": "E-Mail-App konnte nicht geöffnet werden",
             "body": "Auf diesem Gerät ist keine E-Mail-App eingerichtet. Du kannst direkt an {{email}} schreiben."

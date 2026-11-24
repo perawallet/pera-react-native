@@ -19,6 +19,8 @@ import type { NotifierRoot } from 'react-native-notifier'
 
 export type CopyToClipboardOptions = {
     notifier?: NotifierRoot
+    /** Replaces the toast's default title. */
+    title?: string
     /** Replaces the toast's default body, e.g. to show what was copied. */
     body?: string
 }
@@ -39,13 +41,13 @@ export const useClipboard = (): UseClipboardResult => {
     const copyToClipboard = useCallback(
         async (
             text: string,
-            { notifier, body }: CopyToClipboardOptions = {},
+            { notifier, title, body }: CopyToClipboardOptions = {},
         ) => {
             await Clipboard.setStringAsync(text)
             haptics.copy()
             showToast(
                 {
-                    title: t('common.copied_to_clipboard.title'),
+                    title: title ?? t('common.copied_to_clipboard.title'),
                     body: body ?? t('common.copied_to_clipboard.body'),
                     type: 'success',
                 },
