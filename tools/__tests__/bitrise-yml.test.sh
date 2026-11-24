@@ -61,4 +61,22 @@ fi
 ruby -ryaml -e 'e = YAML.load_file(ARGV[0])["app"]["envs"]; exit(e[0]["CARD"] == "line one\n\u{1F680} \u2B50 done" && e[1]["LITERAL"] == "\\U0001F680" ? 0 : 1)' "$BITRISE_YML"
 check "the rewrite keeps every value" 0 $?
 
+cat >"$BITRISE_YML" <<'EOF2'
+app:
+  envs:
+  - SCRIPT: |
+      printf '\U0001F680'
+      echo done
+EOF2
+before=$(cat "$BITRISE_YML")
+bash "$SCRIPT" >/dev/null 2>&1
+check "a literal \\U in a block scalar is refused rather than rewritten" 1 $?
+if [ "$(cat "$BITRISE_YML")" = "$before" ]; then
+    echo "  ok    the refused config is left untouched"
+else
+    echo "  FAIL  the refused config was rewritten:"
+    cat "$BITRISE_YML"
+    failures=$((failures + 1))
+fi
+
 [ "$failures" -eq 0 ] || exit 1

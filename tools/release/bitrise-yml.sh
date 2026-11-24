@@ -24,8 +24,11 @@ ruby -ryaml -e '
     else node
     end
   end
-  dumped = YAML.dump(sorted(YAML.load_file(ARGV[0])))
-  print dumped.gsub(/(?<!\\)((?:\\\\)*)\\U(\h{8})/) { $1 + [$2.hex].pack("U") }
+  data = sorted(YAML.load_file(ARGV[0]))
+  out = YAML.dump(data).gsub(/(?<!\\)((?:\\\\)*)\\U(\h{8})/) { $1 + [$2.hex].pack("U") }
+  # In a block scalar the backslash is literal, so the rewrite would change the value.
+  abort "a literal \\U escape in a block scalar would be rewritten; write the character instead" unless YAML.load(out) == data
+  print out
 ' "$FILE" >"$CANONICAL"
 
 if [ "${1:-}" = "--check" ]; then
