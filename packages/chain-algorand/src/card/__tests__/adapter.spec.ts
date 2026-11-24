@@ -159,6 +159,15 @@ describe('algorandCardAdapter chain reads', () => {
     })
 })
 
+describe('algorandCardAdapter.cardOwnerOf', () => {
+    it('reads no owner for a malformed card address without asking the node', async () => {
+        await expect(
+            adapter.cardOwnerOf(TESTNET, 'NOT_AN_ADDRESS'),
+        ).resolves.toBeNull()
+        expect(getAlgorandClient).not.toHaveBeenCalled()
+    })
+})
+
 describe('algorandCardAdapter.buildManualDeposit', () => {
     const suggestedParams = {
         flatFee: false,

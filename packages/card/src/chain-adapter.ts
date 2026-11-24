@@ -171,6 +171,14 @@ export interface CardChainAdapter {
             'address' | 'network'
         >[],
     ): Promise<Nullable<string>>
+    /**
+     * The account that owns `cardAddress` on the chain's card contract. Null
+     * when it is no card, or the scope has no card deployment.
+     */
+    cardOwnerOf(
+        scope: ChainScope,
+        cardAddress: string,
+    ): Promise<Nullable<string>>
     useAutoDraw(): CardAutoDrawOperations
     withdrawal: CardEscrowWithdrawals
 }

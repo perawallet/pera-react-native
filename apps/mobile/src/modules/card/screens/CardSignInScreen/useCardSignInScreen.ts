@@ -14,6 +14,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useForm, type Control, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
+    CardOwnerMismatchError,
     getCardApiError,
     isAccountLockedError,
     getCardOnboardingProgress,
@@ -213,15 +214,32 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
                     // was lost). Without an escrow card, resume the checklist
                     // so the card gets created and bound, unless the backend
                     // already holds one made on another device.
-                    const hasEscrowCard =
-                        isEscrowCardCreated() ||
-                        (await restoreEscrowCardAsync(
-                            accounts.flatMap(
-                                account =>
-                                    chainAccountOf(account, ALGORAND_CHAIN_ID)
-                                        ?.address ?? [],
-                            ),
-                        ).catch(() => null)) !== null
+                    let hasEscrowCard = isEscrowCardCreated()
+                    if (!hasEscrowCard) {
+                        try {
+                            hasEscrowCard =
+                                (await restoreEscrowCardAsync(
+                                    accounts.flatMap(
+                                        account =>
+                                            chainAccountOf(
+                                                account,
+                                                ALGORAND_CHAIN_ID,
+                                            )?.address ?? [],
+                                    ),
+                                )) !== null
+                        } catch (error) {
+                            // A failed lookup learned nothing; sending a
+                            // returning user into card creation could mint a
+                            // second card, so let them retry instead.
+                            if (!(error instanceof CardOwnerMismatchError)) {
+                                errorToast(
+                                    t('peraCard.sign_in.error_title'),
+                                    t('peraCard.sign_in.error_body'),
+                                )
+                                return
+                            }
+                        }
+                    }
                     if (!hasEscrowCard) {
                         navigation.navigate('PeraCard', {
                             screen: 'CardOnboarding',
