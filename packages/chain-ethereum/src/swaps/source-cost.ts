@@ -54,6 +54,11 @@ const MAX_AMOUNT_FEE_RESERVE_MULTIPLE = 2n
 // on the next read.
 const FALLBACK_MAX_AMOUNT_FEE_RESERVE = '0.005'
 
+// The reserve keys the spendable-balance query, and the base fee moves every
+// block; rounding up to two significant digits keeps each minute's refresh from
+// re-keying it (and re-clamping a MAX fill) on drift, and only ever errs high.
+const FEE_RESERVE_SIGNIFICANT_DIGITS = 2
+
 const readEvmSwapFeeReserve = async ({
     client,
     chain,
@@ -79,7 +84,7 @@ const readEvmSwapFeeReserve = async ({
         MAX_AMOUNT_FEE_RESERVE_MULTIPLE *
             (gas * presets.normal.maxFeePerGas +
                 SURCHARGE_HEADROOM * surcharge),
-    )
+    ).toSignificantDigits(FEE_RESERVE_SIGNIFICANT_DIGITS, Decimal.ROUND_UP)
 }
 
 /**

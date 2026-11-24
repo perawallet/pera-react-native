@@ -311,6 +311,11 @@ describe('estimateEvmSwapFeeReserve', () => {
         'function getOperatorFee(uint256 _gasUsed) view returns (uint256)',
     ])
 
+    const roundedUp = (wei: bigint) =>
+        new Decimal(wei.toString())
+            .toSignificantDigits(2, Decimal.ROUND_UP)
+            .toString()
+
     const reserveOn = (
         chain: EvmChain,
         {
@@ -366,11 +371,11 @@ describe('estimateEvmSwapFeeReserve', () => {
         })
 
         expect(reserve.toString()).toBe(
-            (
+            roundedUp(
                 2n *
-                (INTRINSIC_TRANSFER_GAS * (2n * 5_000_000n + 1_000_000n) +
-                    SURCHARGE_HEADROOM * l1Fee)
-            ).toString(),
+                    (INTRINSIC_TRANSFER_GAS * (2n * 5_000_000n + 1_000_000n) +
+                        SURCHARGE_HEADROOM * l1Fee),
+            ),
         )
         // The reported account: 0.0135 ETH used to fill only 0.0085.
         const balance = new Decimal(((135n * ETH) / 10_000n).toString())
@@ -404,10 +409,26 @@ describe('estimateEvmSwapFeeReserve', () => {
         const reserve = await reserveOn(ETHEREUM, { baseFee, tip })
 
         expect(reserve.toString()).toBe(
-            (2n * INTRINSIC_TRANSFER_GAS * (2n * baseFee + tip)).toString(),
+            roundedUp(2n * INTRINSIC_TRANSFER_GAS * (2n * baseFee + tip)),
         )
         // 0.01 ETH at 40 gwei keeps most of its balance spendable.
         expect(reserve.lessThan((ETH / 200n).toString())).toBe(true)
+    })
+
+    it('keeps the same reserve across a small base-fee drift, rounding up', async () => {
+        const raw = 2n * INTRINSIC_TRANSFER_GAS * (2n * 40n * GWEI + GWEI)
+
+        const before = await reserveOn(ETHEREUM, {
+            baseFee: 40n * GWEI,
+            tip: GWEI,
+        })
+        const after = await reserveOn(ETHEREUM, {
+            baseFee: 40n * GWEI + GWEI / 2n,
+            tip: GWEI,
+        })
+
+        expect(after.toString()).toBe(before.toString())
+        expect(before.greaterThanOrEqualTo(raw.toString())).toBe(true)
     })
 
     it('falls back to a flat reserve when the fee read fails', async () => {
