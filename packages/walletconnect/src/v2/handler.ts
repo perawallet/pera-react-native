@@ -324,14 +324,17 @@ const servedIdsNamed = (
 const refusalErrorOf = (
     refusal: ProposalRefusal,
     required: { named: string[]; served: string[] },
+    isSelected: (caip2: string) => boolean,
 ): WalletConnectError => {
     if (refusal !== 'UNSUPPORTED_CHAINS') {
         return new WalletConnectPermissionError(
             'This dApp requires a WalletConnect capability Pera does not support.',
         )
     }
-    // Every required id is one Pera serves, just not on the selected network.
-    return required.served.length === required.named.length
+    // A switch helps only if every required id is served and none is on the
+    // current mode: one that is would just become the unselected one.
+    return required.served.length === required.named.length &&
+        !required.named.some(isSelected)
         ? new WalletConnectUnselectedNetworkError()
         : new WalletConnectUnsupportedChainsError()
 }
@@ -1454,6 +1457,7 @@ export const createWalletConnectV2Handler = (
                 refusalErrorOf(
                     refusal,
                     servedIdsNamed(chains, params.requiredNamespaces),
+                    caip2 => isSelectedNetwork(chains, caip2, getNetworkId),
                 ),
                 pairingScope(pairingId),
             )

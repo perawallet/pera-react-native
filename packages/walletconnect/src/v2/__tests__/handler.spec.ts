@@ -1528,7 +1528,7 @@ describe('session proposals', () => {
             proposal: makeProposal({
                 requiredNamespaces: {
                     algorand: {
-                        chains: [MAINNET_CHAIN_ID, TESTNET_CHAIN_ID],
+                        chains: [TESTNET_CHAIN_ID],
                         methods: ['algo_signTxn'],
                         events: [],
                     },
@@ -1543,6 +1543,27 @@ describe('session proposals', () => {
         })
         expect(errors.at(-1)?.error).toBeInstanceOf(
             WalletConnectUnselectedNetworkError,
+        )
+        await registry.teardown()
+    })
+
+    it('does not suggest a mode switch when the required networks span both modes', async () => {
+        const { proposals, walletKit, errors, registry } = await openProposal({
+            proposal: makeProposal({
+                requiredNamespaces: {
+                    algorand: {
+                        chains: [MAINNET_CHAIN_ID, TESTNET_CHAIN_ID],
+                        methods: ['algo_signTxn'],
+                        events: [],
+                    },
+                },
+            }),
+        })
+
+        expect(proposals).toEqual([])
+        expect(walletKit.rejectSession).toHaveBeenCalledTimes(1)
+        expect(errors.at(-1)?.error).toBeInstanceOf(
+            WalletConnectUnsupportedChainsError,
         )
         await registry.teardown()
     })
