@@ -69,7 +69,11 @@ const useRestoreRunner = (
             if (!(await requirePinVerification())) return
             // The file's Argon2id settings belong to its salt; an edited key
             // is restored like a typed one, on this build's defaults.
-            prepare(salt === importedKey?.salt ? importedKey : { salt })
+            prepare(
+                salt === importedKey?.salt
+                    ? { ...importedKey, credentialsConfirmed: true }
+                    : { salt, credentialsConfirmed: true },
+            )
         } finally {
             isStartingRef.current = false
         }

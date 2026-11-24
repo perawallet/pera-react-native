@@ -857,6 +857,16 @@
             "proceed": "Continuar",
             "error_message": "Seleção incorreta. Tente novamente."
         },
+        "confirm_credentials": {
+            "warning": "Confirme que você guardou a chave do seu backup",
+            "title": "Confirmar chave do backup",
+            "description": "Escolha as palavras corretas da sua chave de 12 palavras e insira sua chave de criptografia para confirmar que você as guardou.",
+            "confirm": "Confirmar",
+            "error_words": "Algumas das palavras selecionadas estão incorretas. Tente novamente.",
+            "error_key": "Esta chave de criptografia não corresponde ao seu backup.",
+            "error_both": "As palavras selecionadas e a chave de criptografia estão incorretas.",
+            "success": "Chave do backup confirmada"
+        },
         "store_encryption_key": {
             "title": "Guarde sua chave de criptografia",
             "description": "Guarde sua chave de criptografia em um lugar seguro. Você precisa dela junto com sua Passphrase para restaurar este backup.",

@@ -128,6 +128,7 @@ describe('useActivateCloudBackupMutation', () => {
             backupId: 'did:pera:abc',
             salt: SALT,
             deviceId: 'device-123',
+            credentialsConfirmed: true,
         })
         expect(clearDraftMock).toHaveBeenCalled()
     })

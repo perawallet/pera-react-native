@@ -31,6 +31,7 @@ export type SettingsOptionItem = {
     url?: string
     action?: 'scanRekeyed'
     value?: string
+    warning?: string
 }
 
 export type SettingsOptionSection = {
@@ -44,6 +45,9 @@ export const useSettingsOptions = () => {
     const isCloudBackupAvailable = useIsCloudBackupAvailable()
     const isCloudBackupConfigured = useCloudBackupStore(state =>
         state.isConfigured(),
+    )
+    const needsCloudBackupConfirmation = useCloudBackupStore(state =>
+        state.needsCredentialsConfirmation(),
     )
     const canRekey = useCapability(rekeyRequirementFor(ALGORAND_CHAIN_ID))
 
@@ -85,6 +89,11 @@ export const useSettingsOptions = () => {
                                           ? 'settings.main.cloud_backup_on'
                                           : 'settings.main.cloud_backup_off',
                                   ),
+                                  warning: needsCloudBackupConfirmation
+                                      ? t(
+                                            'cloud_backup.confirm_credentials.warning',
+                                        )
+                                      : undefined,
                               } satisfies SettingsOptionItem,
                           ]
                         : []),
@@ -211,6 +220,7 @@ export const useSettingsOptions = () => {
         isLanguageSelectionEnabled,
         isCloudBackupAvailable,
         isCloudBackupConfigured,
+        needsCloudBackupConfirmation,
         canRekey,
     ])
 

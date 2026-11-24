@@ -857,6 +857,16 @@
             "proceed": "Continuar",
             "error_message": "Selección incorrecta. Vuelve a intentarlo."
         },
+        "confirm_credentials": {
+            "warning": "Confirma que has guardado la clave de tu copia de seguridad",
+            "title": "Confirmar clave de la copia",
+            "description": "Elige las palabras correctas de tu clave de 12 palabras e introduce tu clave de cifrado para confirmar que las has guardado.",
+            "confirm": "Confirmar",
+            "error_words": "Algunas de las palabras seleccionadas son incorrectas. Vuelve a intentarlo.",
+            "error_key": "Esta clave de cifrado no coincide con tu copia de seguridad.",
+            "error_both": "Las palabras seleccionadas y la clave de cifrado son incorrectas.",
+            "success": "Clave de la copia confirmada"
+        },
         "store_encryption_key": {
             "title": "Guarda tu clave de cifrado",
             "description": "Guarda tu clave de cifrado en un lugar seguro. La necesitas junto con tu Passphrase para restaurar esta copia de seguridad.",

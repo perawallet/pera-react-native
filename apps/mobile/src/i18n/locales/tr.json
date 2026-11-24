@@ -857,6 +857,16 @@
             "proceed": "Devam et",
             "error_message": "Yanlış seçim. Lütfen tekrar dene."
         },
+        "confirm_credentials": {
+            "warning": "Yedekleme anahtarını kaydettiğini onayla",
+            "title": "Yedekleme anahtarını onayla",
+            "description": "12 kelimelik anahtarından doğru kelimeleri seç ve şifreleme anahtarını girerek ikisini de sakladığını onayla.",
+            "confirm": "Onayla",
+            "error_words": "Seçilen kelimelerden bazıları yanlış. Lütfen tekrar dene.",
+            "error_key": "Bu şifreleme anahtarı yedeğinle eşleşmiyor.",
+            "error_both": "Seçilen kelimeler ve şifreleme anahtarı yanlış.",
+            "success": "Yedekleme anahtarı onaylandı"
+        },
         "store_encryption_key": {
             "title": "Şifreleme anahtarını sakla",
             "description": "Şifreleme anahtarını güvenli bir yerde sakla. Bu yedeği geri yüklemek için Passphrase’inle birlikte bu anahtara ihtiyacın var.",

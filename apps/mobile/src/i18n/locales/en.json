@@ -857,6 +857,16 @@
             "proceed": "Proceed",
             "error_message": "Incorrect selection. Please try again."
         },
+        "confirm_credentials": {
+            "warning": "Confirm you’ve saved your backup key",
+            "title": "Confirm Backup Key",
+            "description": "Choose the correct words of your 12-word key and enter your encryption key to confirm you’ve stored them.",
+            "confirm": "Confirm",
+            "error_words": "Some of the selected words are incorrect. Please try again.",
+            "error_key": "This encryption key doesn’t match your backup.",
+            "error_both": "The selected words and the encryption key are both incorrect.",
+            "success": "Backup key confirmed"
+        },
         "store_encryption_key": {
             "title": "Store your Encryption Key",
             "description": "Keep your Encryption Key somewhere safe. You need it together with your Passphrase to restore this backup.",

@@ -14,8 +14,6 @@ import { useCallback, useMemo, useState } from 'react'
 import { useCloudBackupDraftStore } from '@perawallet/wallet-core-backup'
 import {
     MNEMONIC_WORDLIST,
-    mnemonicIndexToWord,
-    pickDistinctIndexes,
     type MnemonicWordAtPosition,
 } from '@perawallet/wallet-core-kms'
 import { trackEvent, CloudBackupEvent } from '@analytics'
@@ -25,20 +23,7 @@ import { useHaptics } from '@hooks/useHaptics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useRegisterCloudBackup } from '../../hooks/useRegisterCloudBackup'
-
-const VERIFICATION_WORD_COUNT = 3
-
-/** Positions are picked first and a word resolved for only those — the rest of
- *  the phrase never leaves the index buffer. */
-const buildVerificationPairs = (
-    mnemonicIndices: Uint16Array,
-): MnemonicWordAtPosition[] =>
-    pickDistinctIndexes(VERIFICATION_WORD_COUNT, mnemonicIndices.length).map(
-        index => ({
-            index,
-            word: mnemonicIndexToWord(mnemonicIndices[index]),
-        }),
-    )
+import { pickVerificationPairs } from '../../utils/verificationPairs'
 
 type VerificationPairs = {
     correctPairs: MnemonicWordAtPosition[]
@@ -55,7 +40,7 @@ const useVerificationPairs = (): VerificationPairs => {
     const correctPairs = useMemo(
         () =>
             mnemonicIndices && mnemonicIndices.length > 0
-                ? buildVerificationPairs(mnemonicIndices)
+                ? pickVerificationPairs(mnemonicIndices)
                 : [],
         // eslint-disable-next-line react-hooks/exhaustive-deps -- `round` is the re-roll trigger
         [mnemonicIndices, round],
