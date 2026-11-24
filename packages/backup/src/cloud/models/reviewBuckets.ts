@@ -13,12 +13,14 @@
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     isAccountKey,
+    isSecretsItemKey,
     isAccountRecordKey,
     isContactRecordKey,
     isPasskeyItemKey,
 } from './itemKeys'
 import {
     cachedRecordOverview,
+    cachedRecordSeedReference,
     isNewerAccountRecord,
     type CachedRecordChain,
 } from './accountRecord'
@@ -258,6 +260,56 @@ export const isAddressBackedUp = (
     syncState: Nullable<SyncState>,
     address: string,
 ): boolean => isAddressLiveUnder(syncState, address, isAccountKey)
+
+/**
+ * Whether the latest sync succeeded and the backup holds a live record naming
+ * every address in `addresses`, plus the live secret that record restores
+ * from. A record with no secret to restore from (watch, hardware) reads false.
+ * Fails closed: an empty list, a missing or unreadable record, or a secret
+ * with no cached address all read false.
+ */
+export const isAccountRestorableFromLatestSync = (
+    syncState: Nullable<SyncState>,
+    addresses: readonly string[],
+): boolean => {
+    if (syncState?.lastSyncResult !== 'SUCCESS' || addresses.length === 0) {
+        return false
+    }
+
+    const items = Object.entries(syncState.items)
+
+    return items.some(([key, item]) => {
+        if (
+            !isAccountRecordKey(key) ||
+            !isLiveInBackup(item) ||
+            item.pendingImport === true
+        ) {
+            return false
+        }
+        const recordAddresses = addressesOfItem(item)
+        if (!addresses.every(address => recordAddresses.includes(address))) {
+            return false
+        }
+        // A record that doesn't parse can't say whether it is an HD one, so
+        // its secret can't be located.
+        if (cachedRecordOverview(item.record).chains.length === 0) {
+            return false
+        }
+        // One seed secret serves every child, filed under the seed's own first
+        // address rather than the child's.
+        const seedReference = cachedRecordSeedReference(item.record)
+        const secretOwners =
+            seedReference === null ? recordAddresses : [seedReference]
+        return items.some(
+            ([secretKey, secret]) =>
+                isSecretsItemKey(secretKey) &&
+                isLiveInBackup(secret) &&
+                secret.address !== undefined &&
+                secret.address !== null &&
+                secretOwners.includes(secret.address),
+        )
+    })
+}
 
 export const isContactBackedUp = (
     syncState: Nullable<SyncState>,

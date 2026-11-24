@@ -12,7 +12,7 @@
 
 import {
     isAccountKey,
-    BACKUP_SECRETS_KEY_PREFIX,
+    isSecretsItemKey,
     BackupItemStatus,
     DeltaOperation,
     isContactKey,
@@ -53,11 +53,8 @@ export type ApplyDeltasDeps = CollectPayloadsDeps & {
     ) => Promise<FetchedItem[]>
 }
 
-const isSecretsKey = (key: BackupItemKey): boolean =>
-    key.startsWith(BACKUP_SECRETS_KEY_PREFIX)
-
 const isAccountFamilyKey = (key: BackupItemKey): boolean =>
-    isAccountKey(key) || isSecretsKey(key)
+    isAccountKey(key) || isSecretsItemKey(key)
 
 const isPasskeyFamilyKey = (key: BackupItemKey): boolean =>
     isPasskeyItemKey(key) || isPasskeySecretsItemKey(key)
@@ -160,7 +157,7 @@ export const applyDeltas = async ({
         // stays untouched until the user adds the account or credential back.
         if (
             pendingImport &&
-            (isSecretsKey(d.key) || isPasskeySecretsItemKey(d.key))
+            (isSecretsItemKey(d.key) || isPasskeySecretsItemKey(d.key))
         )
             continue
         const hashChanged =

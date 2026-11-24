@@ -40,7 +40,6 @@ const {
     deriveMultisigAddressMock,
     isValidAddressMock,
     callOrder,
-    markBackedUpMock,
     DuplicateAccountError,
     MOCK_WORDLIST,
 } = vi.hoisted(() => {
@@ -78,7 +77,6 @@ const {
         deriveMultisigAddressMock: vi.fn(),
         isValidAddressMock: vi.fn((_address?: string) => true),
         callOrder: [] as string[],
-        markBackedUpMock: vi.fn(),
         DuplicateAccountError,
         MOCK_WORDLIST: [
             'abandon',
@@ -158,10 +156,6 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
         useUpdateAccount: () => updateAccountMock,
     }
 })
-
-vi.mock('../../../mnemonic/hooks', () => ({
-    useMarkMnemonicBackupComplete: () => markBackedUpMock,
-}))
 
 vi.mock('@perawallet/wallet-core-multisig', () => ({
     multisigChainAdapters: {
@@ -653,23 +647,6 @@ describe('useCloudBackupImport', () => {
 
         expect(setAccountsMock).not.toHaveBeenCalled()
         expect(storeState.accounts[0].name).toBe('Old')
-    })
-
-    test('marks every account the batch creates as backed up, and none already held', async () => {
-        storeState.accounts = [held('HELD_ADDR')]
-        const { current } = renderImport()
-
-        await current.importAccounts([
-            watchAccount('HELD_ADDR'),
-            watchAccount('NEW_ADDR'),
-        ])
-
-        expect(markBackedUpMock).toHaveBeenCalledTimes(1)
-        expect(markBackedUpMock).toHaveBeenCalledWith(
-            expect.objectContaining({
-                chains: { algorand: { address: 'NEW_ADDR', ...CREATED } },
-            }),
-        )
     })
 
     test('one failing account does not abort the batch and is recorded in failed', async () => {

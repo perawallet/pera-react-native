@@ -210,15 +210,34 @@ describe('useRequiresMnemonicBackup', () => {
         expect(result.current).toBe(true)
     })
 
-    test('requires nothing of accounts without a backup concept (watch)', async () => {
-        const account: WalletAccount = {
-            id: 'account-4',
-            custody: { kind: 'watch' },
-            chains: { algorand: { address: 'ADDR' } },
-        }
+    test.each<[string, WalletAccount['custody']]>([
+        ['watch', { kind: 'watch' }],
+        [
+            'hardware',
+            {
+                kind: 'hardware',
+                device: {
+                    manufacturer: 'ledger',
+                    deviceId: 'device-1',
+                    deviceName: 'Ledger Nano X',
+                    transportType: 'ble',
+                },
+                accountIndex: 0,
+            } as WalletAccount['custody'],
+        ],
+        ['multisig', { kind: 'multisig' }],
+    ])(
+        'requires nothing of accounts without a backup concept (%s)',
+        async (_name, custody) => {
+            const account: WalletAccount = {
+                id: 'account-4',
+                custody,
+                chains: { algorand: { address: 'ADDR' } },
+            }
 
-        expect((await render(account)).result.current).toBe(false)
-    })
+            expect((await render(account)).result.current).toBe(false)
+        },
+    )
 
     test('returns false when account is null/undefined', async () => {
         expect((await render(null)).result.current).toBe(false)
