@@ -1048,6 +1048,36 @@ describe('useTransactionConfirmationScreen', () => {
             expect(mockNavigate).not.toHaveBeenCalled()
         })
 
+        it('asks a token send short of the fee for the native coin on its network, not a lower amount', () => {
+            ;(sendFlowChainAdapters.has as Mock).mockReturnValue(false)
+            ;(useSpendableBalanceQuery as Mock).mockReturnValue({
+                data: { balance: new Decimal(100), max: new Decimal(100) },
+                isPending: false,
+            })
+            ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
+            ;(useSendFunds as Mock).mockReturnValue({
+                ...mockSendFundsState,
+                selectedAssetId: mockSelectedAssetId,
+                amount: new Decimal(10),
+                destination: 'DEST_ADDRESS',
+            })
+            ;(useAssetsQuery as Mock).mockReturnValue({
+                data: new Map([['123', mockAsset]]),
+            })
+            translation.echoParams = true
+
+            const { result } = renderHook(() =>
+                useTransactionConfirmationScreen(),
+            )
+
+            expect(result.current.feeShortfall?.title).toBe(
+                'send_funds.confirmation.fee_shortfall.title {"symbol":"ALGO"}',
+            )
+            expect(result.current.feeShortfall?.body).toBe(
+                'send_funds.confirmation.fee_shortfall.body_non_native {"fee":"10.00 ALGO","network":"Algorand","symbol":"ALGO"}',
+            )
+        })
+
         it('blocks the send without a toast when the fee could not be estimated', () => {
             ;(useSendFeeQuery as Mock).mockReturnValue(
                 failedFee(new Error('fetch failed')),

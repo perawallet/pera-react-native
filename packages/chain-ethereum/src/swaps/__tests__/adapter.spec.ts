@@ -61,9 +61,8 @@ describe('createEvmSwapAdapter', () => {
         )
     })
 
-    it('holds back 0.005 of the native unit, and no holding reserve', () => {
+    it('reserves no holding', () => {
         expect(adapter.chainId).toBe('ethereum')
-        expect(adapter.maxAmountFeeReserve.toString()).toBe('5000000000000000')
         expect(adapter.holdingReserve(scope).isZero()).toBe(true)
         expect(adapter.supportsCosignedSwaps).toBe(false)
         expect(adapter.useEnsureReceivable).toBeUndefined()

@@ -546,4 +546,73 @@ describe('useEthereumRecordLayout', () => {
 
         expect(summary.title).toBe('transactions.list_item.supply')
     })
+
+    describe('a send the account did not sign', () => {
+        const tokenSend = (overrides: Partial<TransactionRecord> = {}) =>
+            recordOf(overrides, {
+                kind: 'token-transfer',
+                amount: { assetRef: USDC_REF, value: new Decimal(1_000_000) },
+                counterparty: PEER,
+            })
+
+        it.each([
+            ['another initiator', { initiator: PEER }],
+            [
+                'a signer the history does not name',
+                { initiator: undefined, isSignedElsewhere: true },
+            ],
+        ])(
+            'Given an outgoing record with %s, then the hero reads not sent by you',
+            (_label, overrides) => {
+                const { summary } = layoutOf(tokenSend(overrides))
+
+                expect(summary.title).toBe(
+                    'transactions.list_item.not_sent_by_you',
+                )
+            },
+        )
+
+        it('Given an own send, then the hero keeps its own title', () => {
+            const { summary } = layoutOf(tokenSend())
+
+            expect(summary.title).toBe('transactions.list_item.send')
+        })
+
+        it('Given a record that names no sender and a read that does, then the read names the sender', () => {
+            const sender = '0x00000000000000000000000000000000000000cc'
+            const presentation = {
+                titleKey: 'transactions.list_item.send',
+                iconName: 'read-icon',
+                standardCall: null,
+                view: { from: sender },
+            } as unknown as EthereumTransactionPresentation
+
+            const { summary } = layoutOf(
+                tokenSend({ initiator: undefined, isSignedElsewhere: true }),
+                presentation,
+            )
+
+            expect(summary.from).toBe(sender)
+        })
+    })
+
+    describe('assetContract', () => {
+        it('Given a token transfer, then the contract is named', () => {
+            const { assetContract } = layoutOf(
+                recordOf(
+                    {},
+                    {
+                        kind: 'token-transfer',
+                        amount: { assetRef: USDC_REF, value: new Decimal(1) },
+                    },
+                ),
+            )
+
+            expect(assetContract).toBe('0xusdc')
+        })
+
+        it('Given a transfer of the native coin, then no contract is named', () => {
+            expect(layoutOf(recordOf()).assetContract).toBeUndefined()
+        })
+    })
 })

@@ -62,7 +62,8 @@ export type EthereumContractActionPresentation =
     | { kind: 'wrap' | 'unwrap'; amount: EthereumActionAmount }
     | {
           kind: 'supply' | 'withdraw' | 'borrow' | 'repay'
-          assetContract: string
+          /** Absent when the native coin moves. */
+          assetContract?: string
           /** Whole balance or debt: `amount` is then the largest uint256, not a figure to show. */
           amount: EthereumActionAmount
           isEntireBalance: boolean
@@ -108,11 +109,7 @@ const tokenSlotsOf = (
         case 'withdraw':
         case 'borrow':
         case 'repay': {
-            return [
-                { assetId: action.asset, baseUnits: action.amount },
-                NO_TOKEN,
-                NO_TOKEN,
-            ]
+            return [tokenOf(action.asset, action.amount), NO_TOKEN, NO_TOKEN]
         }
         case 'add-liquidity': {
             const [first, second] = action.deposits
@@ -215,8 +212,13 @@ const present = (
         case 'repay': {
             return {
                 kind: action.kind,
-                assetContract: action.asset,
-                amount: tokenAmountOf(first, action.amount),
+                ...(action.asset.kind === 'token' && {
+                    assetContract: action.asset.contract,
+                }),
+                amount:
+                    action.asset.kind === 'native'
+                        ? nativeAmountOf(nativeAsset, action.amount)
+                        : tokenAmountOf(first, action.amount),
                 isEntireBalance: action.isEntireBalance,
             }
         }

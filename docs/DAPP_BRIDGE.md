@@ -296,7 +296,8 @@ node (filters, subscriptions) can pass.
 permission whose `restrictReturnedAccounts` caveat lists the accounts it may see.
 `wallet_requestPermissions` accepts only `eth_accounts` and runs the same connect
 flow as `eth_requestAccounts`, but always opens the approval, even for a connected
-site: dApps use it to change which accounts they hold.
+site: dApps use it to change which accounts they hold. A request naming any other
+permission answers 4200; one that is not `[{ <permission>: {} }]` answers -32602.
 
 The transport stamps `isWalletLocked` on every request: the extension's service
 worker reads the vault's `SESSION_UNLOCKED_KEY` flag from session storage, which

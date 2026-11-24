@@ -16,6 +16,7 @@ import { AssetIcon } from '@components/AssetIcon'
 import { AssetAmount } from '@components/AssetAmount'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { useLanguage } from '@hooks/useLanguage'
+import { useAssetUnitLabel } from '@hooks/useAssetUnitLabel'
 import { TransactionDetailAddress } from '@modules/signing'
 import type { EthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
 import { useStyles } from './styles'
@@ -34,6 +35,7 @@ export const EthereumTransferAssetRows = ({
 }: EthereumTransferAssetRowsProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const { unitLabelOf } = useAssetUnitLabel()
     const { view, amount, collectible, standardCall, sender, nftItems } =
         presentation
     const tokenContract =
@@ -73,7 +75,15 @@ export const EthereumTransferAssetRows = ({
                 >
                     <PWView style={styles.asset}>
                         {!!amount?.asset && (
-                            <PWText>{amount.asset.unitName}</PWText>
+                            <PWText>
+                                {unitLabelOf(
+                                    {
+                                        chainId: presentation.scope.chainId,
+                                        assetId: tokenContract,
+                                    },
+                                    amount.asset.unitName ?? '',
+                                )}
+                            </PWText>
                         )}
                         <AddressDisplay
                             address={tokenContract}

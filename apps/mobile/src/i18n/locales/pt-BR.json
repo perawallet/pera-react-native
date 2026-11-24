@@ -391,7 +391,8 @@
         "imitated_currency": {
             "marker": "Não é {{code}} real",
             "title": "Este ativo não é {{code}}",
-            "body": "O nome da unidade dele é {{code}}, mas é um ativo diferente que qualquer pessoa pode ter criado. Recebê-lo não dá a você nenhum {{code}}."
+            "body": "O nome da unidade dele é {{code}}, mas é um ativo diferente que qualquer pessoa pode ter criado. Recebê-lo não dá a você nenhum {{code}}.",
+            "unit_label": "Ativo desconhecido"
         }
     },
     "asset_details": {
@@ -1209,6 +1210,10 @@
         "copied_to_clipboard": {
             "title": "Copiado para a área de transferência",
             "body": ""
+        },
+        "address_copied": {
+            "algorand": "Endereço Algorand copiado",
+            "evm": "Endereço EVM copiado"
         },
         "email_failed": {
             "title": "Não foi possível abrir o app de e-mail",
@@ -3319,7 +3324,8 @@
             },
             "fee_shortfall": {
                 "title": "{{symbol}} insuficiente para a taxa",
-                "body": "Este envio pode custar até {{fee}} em taxas. Diminua o valor ou escolha uma taxa mais lenta."
+                "body": "Este envio pode custar até {{fee}} em taxas. Diminua o valor ou escolha uma taxa mais lenta.",
+                "body_non_native": "Este envio pode custar até {{fee}} em taxas na rede {{network}}. Adicione {{symbol}} ou escolha uma taxa mais lenta."
             },
             "fee_unavailable": {
                 "title": "Não foi possível estimar a taxa",
@@ -3650,6 +3656,31 @@
             "typed_data_warning_title": "Esta assinatura pode movimentar seus tokens",
             "typed_data_warning_body": "Assinar dados estruturados pode autorizar um aplicativo a gastar ou negociar seus tokens sem pedir sua confirmação de novo. Aprove somente se você confia neste aplicativo."
         },
+        "sign_in": {
+            "title": "Entrar em {{domain}}",
+            "domain": "Domínio",
+            "address": "Endereço",
+            "uri": "URI",
+            "chain_id": "ID da rede",
+            "nonce": "Nonce",
+            "issued_at": "Emitido",
+            "expires_at": "Expira",
+            "advanced": "Avançado",
+            "site_mismatch_title": "Este login é para outro site",
+            "site_mismatch_body": "A mensagem faz seu login em {{domain}}, mas a solicitação vem de {{site}}. Aprove somente se você confiar em ambos.",
+            "other_address_note": "A mensagem indica {{address}}, não a conta que está assinando.",
+            "other_chain_note": "A mensagem indica {{chain}}, não a rede desta solicitação. Fazer login não envia nenhuma transação.",
+            "other_chain_id_note": "A mensagem indica o ID de cadeia {{chainId}}, não a rede desta solicitação. Fazer login não envia nenhuma transação.",
+            "statement_label": "Mensagem de {{domain}}",
+            "not_before": "Válido a partir de",
+            "request_id": "ID da solicitação",
+            "resource": "Recurso",
+            "grants_title": "Este login também concede permissões",
+            "grants_body": "Ao assinar, {{domain}} poderá agir por você com as permissões abaixo. Aprove somente se você confiar no site.",
+            "grants_unreadable_body": "Este login concede a {{domain}} permissões que a Pera não consegue ler. Aprove somente se você confiar no site.",
+            "malformed_title": "Esta mensagem de login tem conteúdo inesperado",
+            "malformed_body": "Partes desta mensagem não seguem o formato de login, então {{domain}} pode lê-la de forma diferente da mostrada aqui. Confira a mensagem completa em Avançado e só aprove se confiar no site."
+        },
         "spend_approval": {
             "spend_warning": "Esta assinatura permite que outro endereço movimente tokens da sua conta sem pedir sua confirmação de novo.",
             "spend_warning_transaction": "Esta transação permite que outro endereço movimente tokens da sua conta sem pedir sua confirmação de novo.",
@@ -3944,7 +3975,8 @@
             "nft_subtitle": "{{collection}} #{{tokenId}}",
             "nft_batch_subtitle": "{{collection}} · {{count}} itens",
             "inner_transaction_count": "{{innerCount}} transações internas",
-            "cancel_transaction": "Cancelar transação"
+            "cancel_transaction": "Cancelar transação",
+            "not_sent_by_you": "Não enviado por você"
         },
         "record_detail": {
             "read_failed": "Não foi possível ler da rede os detalhes da chamada desta transação.",
@@ -4327,6 +4359,7 @@
             "quote_error": "Não foi possível obter cotações. Tente novamente.",
             "amount_too_low": "Valor pequeno demais para converter na {{network}}. O mínimo é {{amount}} {{unit}}.",
             "amount_too_low_fiat": "Valor pequeno demais para converter na {{network}}. O mínimo é {{amount}} {{unit}} (~{{fiat}}).",
+            "amount_too_low_above_balance": "Seu saldo disponível está abaixo do mínimo de {{amount}} {{unit}} para converter na {{network}}.",
             "use_minimum": "Usar mínimo",
             "amount_too_low_unknown": "Valor pequeno demais para converter na {{network}}. Tente um valor maior ou uma rede com taxas menores.",
             "amount_too_high": "Valor grande demais para converter. O máximo é {{amount}} {{unit}}.",

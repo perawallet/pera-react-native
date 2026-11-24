@@ -18,6 +18,7 @@ import {
 } from '../history-data'
 import { summarizeAlgorandHistoryItem } from '../summarize'
 import { ALGORAND_HISTORY_SUMMARY_GOLDENS } from '../../test-utils/history-summary-goldens'
+import { algorandXoDepositLeg } from '../../test-utils/swap-leg'
 
 describe('summarizeAlgorandHistoryItem', () => {
     it.each(ALGORAND_HISTORY_SUMMARY_GOLDENS)(
@@ -93,5 +94,32 @@ describe('summarizeAlgorandHistoryItem', () => {
                 payment.account,
             ),
         )
+    })
+
+    it('shows the deposit of a recorded cross-chain swap as the swap, under its order status', () => {
+        const sent = ALGORAND_HISTORY_SUMMARY_GOLDENS.find(
+            golden => golden.name === 'payment sent',
+        )!
+
+        const summary = summarizeAlgorandHistoryItem(
+            {
+                ...sent.item,
+                chainData: {
+                    ...algorandHistoryDataOf(sent.item),
+                    swapLeg: algorandXoDepositLeg(),
+                },
+            },
+            sent.account,
+        )
+
+        expect(summary).toMatchObject({
+            kind: 'swap',
+            icon: 'swap',
+            direction: 'none',
+            subtitle: { params: { title: 'xo' } },
+            notice: {
+                title: { key: 'swap.history.list.item.status.in_progress' },
+            },
+        })
     })
 })

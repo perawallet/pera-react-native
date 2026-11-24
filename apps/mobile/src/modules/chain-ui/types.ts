@@ -35,6 +35,8 @@ export type ChainUi = {
     customNode?: CustomNodeDisplay
     /** The family's name where one address serves every chain in it, as on a contact. */
     familyLabel?: I18nKey
+    /** Toast title when an address of this family is copied; the generic title when unset. */
+    addressCopiedTitle?: I18nKey
     accountOptions?: AccountOptionsDisplay
     /** Used while this family alone can watch accounts; otherwise the watch flow names no chain. */
     watchAccountCopy?: WatchAccountCopy

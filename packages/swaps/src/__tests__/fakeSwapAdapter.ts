@@ -38,7 +38,7 @@ export const fakeSwapAdapter = (
             ? routerAssetId.slice(prefix.length)
             : null
     },
-    maxAmountFeeReserve: new Decimal(1000),
+    maxAmountFeeReserve: async () => new Decimal(1000),
     holdingReserve: () => new Decimal(0),
     estimateSourceCost: async () => null,
     ...overrides,

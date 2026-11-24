@@ -23,6 +23,7 @@ import { SpendApprovalWarning } from '@modules/signing/components/SpendApprovalW
 import { RequestAddressWarning } from '@modules/signing/components/RequestAddressWarning'
 import { ReviewNetworkRow } from '@modules/signing/components/ReviewNetworkRow'
 import { RequestSiteWarning } from '@modules/signing/components/RequestSiteWarning'
+import { SignInMessageDetails } from '@modules/signing/components/SignInMessageDetails'
 import { MessageTreeView } from './MessageTreeView'
 import { useStyles } from './styles'
 import { useMessageSigningScreen } from './useMessageSigningScreen'
@@ -41,6 +42,11 @@ export const MessageSigningScreen = () => {
         isListedAddressBlocking,
         isConfirmBlocked,
         isExpired,
+        signInSiteMismatch,
+        isSignInRiskFlagged,
+        isSignInRiskAcknowledged,
+        toggleSignInRiskAcknowledged,
+        isChainBadgeShown,
         handleApprove,
         handleReject,
     } = useMessageSigningScreen()
@@ -52,6 +58,8 @@ export const MessageSigningScreen = () => {
         scope && summary.spendApproval
             ? { approval: summary.spendApproval, scope }
             : undefined
+    const { signIn } = summary
+    const showsData = !spendReview && !signIn
 
     return (
         <PWScreen
@@ -109,7 +117,23 @@ export const MessageSigningScreen = () => {
                 )}
 
                 <PWView style={styles.section}>
-                    {!spendReview && (
+                    {!!signIn && (
+                        <SignInMessageDetails
+                            signIn={signIn}
+                            rawText={summary.preview ?? ''}
+                            siteMismatch={signInSiteMismatch}
+                            acknowledgement={
+                                isSignInRiskFlagged
+                                    ? {
+                                          isChecked: isSignInRiskAcknowledged,
+                                          onToggle:
+                                              toggleSignInRiskAcknowledged,
+                                      }
+                                    : undefined
+                            }
+                        />
+                    )}
+                    {showsData && (
                         <PWText
                             variant='captionMedium'
                             style={styles.sectionLabel}
@@ -117,7 +141,7 @@ export const MessageSigningScreen = () => {
                             {t('signing.arbitrary_data_view.data_label')}
                         </PWText>
                     )}
-                    {!spendReview && !!summary.preview && (
+                    {showsData && !!summary.preview && (
                         <PWView style={styles.dataBox}>
                             <PWText variant='mono'>{summary.preview}</PWText>
                         </PWView>
@@ -162,6 +186,8 @@ export const MessageSigningScreen = () => {
                         <AccountDisplay
                             account={signerAccount}
                             showChevron={false}
+                            chainId={scope?.chainId}
+                            showChainBadge={isChainBadgeShown}
                         />
                     </PWView>
                 )}

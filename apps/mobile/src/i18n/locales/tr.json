@@ -391,7 +391,8 @@
         "imitated_currency": {
             "marker": "Gerçek {{code}} değil",
             "title": "Bu varlık {{code}} değil",
-            "body": "Birim adı {{code}} olsa da herkesin oluşturabileceği ayrı bir varlıktır. Bunu almak sana hiç {{code}} kazandırmaz."
+            "body": "Birim adı {{code}} olsa da herkesin oluşturabileceği ayrı bir varlıktır. Bunu almak sana hiç {{code}} kazandırmaz.",
+            "unit_label": "Bilinmeyen varlık"
         }
     },
     "asset_details": {
@@ -1209,6 +1210,10 @@
         "copied_to_clipboard": {
             "title": "Panoya kopyalandı",
             "body": ""
+        },
+        "address_copied": {
+            "algorand": "Algorand adresi kopyalandı",
+            "evm": "EVM adresi kopyalandı"
         },
         "email_failed": {
             "title": "E-posta uygulaması açılamadı",
@@ -3303,7 +3308,8 @@
             },
             "fee_shortfall": {
                 "title": "Ücret için yeterli {{symbol}} yok",
-                "body": "Bu gönderim en fazla {{fee}} ücret tutabilir. Miktarı azalt veya daha yavaş bir ücret seç."
+                "body": "Bu gönderim en fazla {{fee}} ücret tutabilir. Miktarı azalt veya daha yavaş bir ücret seç.",
+                "body_non_native": "Bu gönderim {{network}} ağında en fazla {{fee}} ücret tutabilir. {{symbol}} ekle veya daha yavaş bir ücret seç."
             },
             "fee_unavailable": {
                 "title": "Ücret tahmin edilemedi",
@@ -3634,6 +3640,31 @@
             "typed_data_warning_title": "Bu imza token’larını hareket ettirebilir",
             "typed_data_warning_body": "Yapılandırılmış veriyi imzalamak, bir uygulamaya token’larını sana tekrar sormadan harcama veya takas etme yetkisi verebilir. Yalnızca bu uygulamaya güveniyorsan onayla."
         },
+        "sign_in": {
+            "title": "Oturum aç: {{domain}}",
+            "domain": "Alan adı",
+            "address": "Adres",
+            "uri": "URI",
+            "chain_id": "Zincir kimliği",
+            "nonce": "Nonce",
+            "issued_at": "Oluşturulma",
+            "expires_at": "Bitiş",
+            "advanced": "Gelişmiş",
+            "site_mismatch_title": "Bu oturum açma başka bir site için",
+            "site_mismatch_body": "Mesaj şu alan adında oturum açar: {{domain}}. Ancak istek şu siteden geliyor: {{site}}. Yalnızca ikisine de güveniyorsan onayla.",
+            "other_address_note": "Mesajdaki adres imzalayan hesap değil: {{address}}",
+            "other_chain_note": "Mesajdaki ağ bu isteğin ağı değil: {{chain}}. Oturum açmak işlem göndermez.",
+            "other_chain_id_note": "Mesajdaki zincir kimliği bu isteğin ağı değil: {{chainId}}. Oturum açmak işlem göndermez.",
+            "statement_label": "{{domain}} sitesinden mesaj",
+            "not_before": "Geçerlilik başlangıcı",
+            "request_id": "İstek kimliği",
+            "resource": "Kaynak",
+            "grants_title": "Bu oturum açma izin de veriyor",
+            "grants_body": "İmzaladığında bu site aşağıdaki izinlerle senin adına işlem yapabilir: {{domain}}. Yalnızca siteye güveniyorsan onayla.",
+            "grants_unreadable_body": "Bu oturum açma, Pera'nın okuyamadığı izinler veriyor. Site: {{domain}}. Yalnızca siteye güveniyorsan onayla.",
+            "malformed_title": "Bu oturum açma mesajında beklenmeyen içerik var",
+            "malformed_body": "Bu mesajın bazı bölümleri oturum açma biçimine uymuyor, bu yüzden {{domain}} onu burada gösterilenden farklı okuyabilir. Tam mesajı Gelişmiş bölümünde kontrol et ve yalnızca siteye güveniyorsan onayla."
+        },
         "spend_approval": {
             "spend_warning": "Bu imza, başka bir adresin hesabından sana tekrar sormadan token hareket ettirmesine izin verir.",
             "spend_warning_transaction": "Bu işlem, başka bir adresin hesabından sana tekrar sormadan token hareket ettirmesine izin verir.",
@@ -3927,7 +3958,8 @@
             "nft_subtitle": "{{collection}} #{{tokenId}}",
             "nft_batch_subtitle": "{{collection}} · {{count}} öğe",
             "inner_transaction_count": "{{innerCount}} iç işlem",
-            "cancel_transaction": "İşlem iptali"
+            "cancel_transaction": "İşlem iptali",
+            "not_sent_by_you": "Sizin göndermediğiniz"
         },
         "record_detail": {
             "read_failed": "Bu işlemin çağrı ayrıntıları ağdan okunamadı.",
@@ -4305,6 +4337,7 @@
             "quote_error": "Teklifler alınamadı. Lütfen tekrar dene.",
             "amount_too_low": "Tutar, {{network}} ağında swap için çok düşük. Minimum {{amount}} {{unit}}.",
             "amount_too_low_fiat": "Tutar, {{network}} ağında swap için çok düşük. Minimum {{amount}} {{unit}} (~{{fiat}}).",
+            "amount_too_low_above_balance": "Kullanılabilir bakiyen, {{network}} ağında swap için gereken {{amount}} {{unit}} minimumun altında.",
             "use_minimum": "Minimumu kullan",
             "amount_too_low_unknown": "Tutar, {{network}} ağında swap için çok düşük. Daha yüksek bir tutar veya daha düşük ücretli bir ağ dene.",
             "amount_too_high": "Tutar swap için çok yüksek. Maksimum {{amount}} {{unit}}.",

@@ -878,7 +878,7 @@ describe('Ethereum transaction bodies', () => {
             expect(sends).toHaveLength(2)
         })
 
-        it('titles the preview row of an approval as one', () => {
+        it('titles the preview row of an approval as the review does and shows what it allows', () => {
             render(
                 <TransactionPreviewRow
                     scope={ETHEREUM_SCOPE}
@@ -888,7 +888,10 @@ describe('Ethereum transaction bodies', () => {
             )
 
             expect(
-                screen.getByText('transactions.list_item.approval'),
+                screen.getByText('signing.review.title_approve'),
+            ).toBeTruthy()
+            expect(
+                screen.getByTestId('transaction_preview_amount'),
             ).toBeTruthy()
         })
     })

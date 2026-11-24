@@ -14,6 +14,7 @@ import { useCallback, useMemo } from 'react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     spendSigningCutoffOf,
+    isEvmChainId,
     type ChainScope,
     type MessageSummary,
 } from '@perawallet/wallet-core-chain-contract'
@@ -31,6 +32,11 @@ import { useHaptics } from '@hooks/useHaptics'
 import { useHasTimePassed } from '@hooks/useHasTimePassed'
 import { useRequestAddressSafety } from '../../hooks/useRequestAddressSafety'
 import { useRequestSiteSafety } from '../../hooks/useRequestSiteSafety'
+import {
+    useFlagReviewRisk,
+    useReviewRiskGate,
+} from '../../hooks/useReviewRiskGate'
+import { signInSiteMismatchOf } from '../../utils/signInSite'
 
 type UseMessageSigningScreenResult = {
     summary: Nullable<MessageSummary>
@@ -43,10 +49,18 @@ type UseMessageSigningScreenResult = {
     reviewedAddresses: ReviewedAddress[]
     /** A scam-listed address under the hard block: the request can only be rejected. */
     isListedAddressBlocking: boolean
-    /** A flagged address or site still waits on the user's acknowledgement, or the permit has expired. */
+    /** A flagged address or site, or a risky sign-in, still waits on the user's acknowledgement, or the permit has expired. */
     isConfirmBlocked: boolean
     /** The permit's signature deadline has passed, so the contract would refuse it. */
     isExpired: boolean
+    /** The requesting site, when a sign-in message is for another domain. */
+    signInSiteMismatch: Optional<string>
+    /** A sign-in for another site or with unreadable grants holds Confirm until acknowledged. */
+    isSignInRiskFlagged: boolean
+    isSignInRiskAcknowledged: boolean
+    toggleSignInRiskAcknowledged: () => void
+    /** EVM accounts share one address across chains, so the signer row names the chain. */
+    isChainBadgeShown: boolean
     handleApprove: () => void
     handleReject: () => void
 }
@@ -85,8 +99,36 @@ export const useMessageSigningScreen = (): UseMessageSigningScreenResult => {
         : undefined
     const { hasPassed: isExpired, recheck: recheckExpiry } =
         useHasTimePassed(signingCutoff)
+    const signInDomain = summary?.signIn?.message.domain
+    const signInSiteMismatch = useMemo(
+        () =>
+            signInDomain
+                ? signInSiteMismatchOf(
+                      signInDomain,
+                      currentRequest?.sourceMetadata,
+                      currentRequest?.verifiedOrigin,
+                  )
+                : undefined,
+        [
+            signInDomain,
+            currentRequest?.sourceMetadata,
+            currentRequest?.verifiedOrigin,
+        ],
+    )
+
+    const isSignInRiskFlagged =
+        !!signInSiteMismatch || !!summary?.signIn?.hasUnreadableGrants
+    useFlagReviewRisk(isSignInRiskFlagged)
+    const {
+        isAcknowledged: isSignInRiskAcknowledged,
+        toggleAcknowledged: toggleSignInRiskAcknowledged,
+        isConfirmBlocked: isSignInRiskConfirmBlocked,
+    } = useReviewRiskGate()
     const isConfirmBlocked =
-        isAddressConfirmBlocked || isSiteConfirmBlocked || isExpired
+        isAddressConfirmBlocked ||
+        isSiteConfirmBlocked ||
+        isSignInRiskConfirmBlocked ||
+        isExpired
 
     const handleApprove = useCallback(() => {
         // The expiry timer can lag the clock, so a lapsed slide swaps in the expired notice here.
@@ -111,6 +153,11 @@ export const useMessageSigningScreen = (): UseMessageSigningScreenResult => {
         isListedAddressBlocking,
         isConfirmBlocked,
         isExpired,
+        signInSiteMismatch,
+        isSignInRiskFlagged,
+        isSignInRiskAcknowledged,
+        toggleSignInRiskAcknowledged,
+        isChainBadgeShown: isEvmChainId(message?.scope?.chainId),
         handleApprove,
         handleReject,
     }

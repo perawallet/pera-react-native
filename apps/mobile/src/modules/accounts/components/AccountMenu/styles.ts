@@ -37,7 +37,7 @@ export const useAddAccountPillStyles = makeStyles(
             pointerEvents: 'box-none',
         },
         // Lets the last row scroll clear of the pill. The list already ends
-        // xl + the full safe-area inset below this, so subtract that inset.
+        // xl + the list's own safe-area inset below this, so subtract that inset.
         footerSpacer: {
             height:
                 pillHeight +

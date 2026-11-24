@@ -15,6 +15,7 @@ import type {
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { PWText } from '@components/core'
+import { AddressDisplay } from '@components/AddressDisplay'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { useLanguage } from '@hooks/useLanguage'
 import { TransactionDetailCard } from '@modules/signing'
@@ -25,6 +26,8 @@ type EthereumRecordAmountCardProps = {
     scope: ChainScope
     /** Names the asset moved, for a summary the balance legs alone can't say which of. */
     assetLabel?: string
+    /** The token contract of the asset moved, shown beside it so a lookalike name can be checked. */
+    assetContract?: string
 }
 
 /** What the history says happened to the balances, whether or not the call was read. */
@@ -32,10 +35,11 @@ export const EthereumRecordAmountCard = ({
     changes,
     scope,
     assetLabel,
+    assetContract,
 }: EthereumRecordAmountCardProps) => {
     const { t } = useLanguage()
 
-    if (changes.length === 0 && !assetLabel) {
+    if (changes.length === 0 && !assetLabel && !assetContract) {
         return null
     }
 
@@ -47,6 +51,18 @@ export const EthereumRecordAmountCard = ({
                     title={t('transactions.common.asset')}
                 >
                     <PWText>{assetLabel}</PWText>
+                </KeyValueRow>
+            )}
+            {!!assetContract && (
+                <KeyValueRow
+                    testID='ethereum_record_asset_contract'
+                    title={t('transactions.common.asset')}
+                >
+                    <AddressDisplay
+                        address={assetContract}
+                        displayType='address-only'
+                        scope={scope}
+                    />
                 </KeyValueRow>
             )}
             {changes.map((change, index) => (

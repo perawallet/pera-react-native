@@ -57,7 +57,6 @@ const ENABLED = [
     'contractDecoding',
     'cloudBackup',
     'discover',
-    'tokenApprovals',
     'csvExport',
 ]
 

@@ -27,6 +27,7 @@ import { CurrencyAmount, getAlgoSymbolWeight } from '../CurrencyAmount'
 import { PREFERRED_MAX_PRECISION } from '../precision'
 import { Decimal } from 'decimal.js'
 import { useSettings } from '@perawallet/wallet-core-settings'
+import { imitatedNativeTickerOf } from '@perawallet/wallet-core-currencies'
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import type { TypographyVariant } from '@theme/typography'
 import { UNKNOWN_AMOUNT_PLACEHOLDER } from '@constants/ui'
@@ -398,6 +399,44 @@ describe('CurrencyAmount fiat floor', () => {
         )
         expect(container.textContent).toContain('****')
         expect(container.textContent).not.toContain('< ')
+    })
+})
+
+describe('CurrencyAmount unit that imitates the native ticker', () => {
+    it('shows the generic label instead of the unit, for an asset amount', () => {
+        vi.mocked(imitatedNativeTickerOf).mockReturnValueOnce('ETH')
+        const { container } = render(
+            <CurrencyAmount
+                value={new Decimal(1)}
+                currency='ETH'
+                assetId='0xfake'
+                chainId='ethereum'
+                precision='compact'
+            />,
+        )
+
+        // The formatCurrency mock echoes its currency argument, so only the unit run is checked.
+        expect(container.textContent).toMatch(
+            / asset\.imitated_currency\.unit_label$/,
+        )
+    })
+
+    it('leaves a display-currency amount alone', () => {
+        vi.mocked(imitatedNativeTickerOf).mockReturnValue('ETH')
+        const { container } = render(
+            <CurrencyAmount
+                value={new Decimal(1)}
+                currency='USD'
+                assetId={null}
+                chainId={null}
+                precision='compact'
+            />,
+        )
+        vi.mocked(imitatedNativeTickerOf).mockReset()
+
+        expect(container.textContent).not.toContain(
+            'asset.imitated_currency.unit_label',
+        )
     })
 })
 

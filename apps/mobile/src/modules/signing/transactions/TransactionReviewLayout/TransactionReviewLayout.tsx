@@ -65,6 +65,7 @@ export const TransactionReviewLayout = ({
     const {
         scrollRef,
         isMoreBelow,
+        isScrollable,
         handleScroll,
         handleBodyLayout,
         handleContentSizeChange,
@@ -81,6 +82,7 @@ export const TransactionReviewLayout = ({
                 <PWView style={styles.footer}>
                     <ReviewScrollHint
                         isVisible={isMoreBelow}
+                        isReserved={isScrollable}
                         onPress={handleScrollToEnd}
                     />
                     {actions}

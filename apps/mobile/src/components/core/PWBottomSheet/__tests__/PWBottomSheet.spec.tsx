@@ -104,7 +104,11 @@ vi.mock('@gorhom/bottom-sheet', async () => {
         BottomSheetScrollView: ({ children, ...props }: any) =>
             React.createElement('div', { ...props }, children),
         BottomSheetView: ({ children, ...props }: any) =>
-            React.createElement('div', { ...props }, children),
+            React.createElement(
+                'div',
+                { ...props, 'data-testid': 'bottom-sheet-view' },
+                children,
+            ),
         BottomSheetFlatList: ({ data, renderItem, ...props }: any) =>
             React.createElement(
                 'div',
@@ -491,6 +495,36 @@ describe('PWBottomSheet', () => {
 
         expect(screen.getByText('size:auto')).toBeTruthy()
     })
+
+    it('measures auto sheets through the gorhom container', () => {
+        render(
+            <PWBottomSheet
+                isVisible={true}
+                size='auto'
+            >
+                <Text>Sheet Content</Text>
+            </PWBottomSheet>,
+        )
+
+        expect(screen.getByTestId('bottom-sheet-view')).toBeTruthy()
+    })
+
+    it.each<PWBottomSheetSize>(['modal', 'full'])(
+        'skips the content-sized gorhom container for %s sheets',
+        size => {
+            render(
+                <PWBottomSheet
+                    isVisible={true}
+                    size={size}
+                >
+                    <Text>Sheet Content</Text>
+                </PWBottomSheet>,
+            )
+
+            expect(screen.queryByTestId('bottom-sheet-view')).toBeNull()
+            expect(screen.getByText('Sheet Content')).toBeTruthy()
+        },
+    )
 
     it('renders children when autoCreateContainer is false', () => {
         render(

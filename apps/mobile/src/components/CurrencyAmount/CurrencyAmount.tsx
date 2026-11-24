@@ -25,6 +25,7 @@ import {
 import type { Decimal } from 'decimal.js'
 import { useSettings } from '@perawallet/wallet-core-settings'
 import { useLanguage } from '@hooks/useLanguage'
+import { useAssetUnitLabel } from '@hooks/useAssetUnitLabel'
 import type { StyleProp, TextStyle } from 'react-native'
 import {
     getVariantFontWeight,
@@ -87,7 +88,8 @@ type PrecisionProps =
 export type CurrencyAmountProps = {
     /**
      * The displayed unit. With a non-null `assetId` this is the on-chain unit
-     * name — attacker-controlled, rendered as plain text only. With a null
+     * name — attacker-controlled, rendered as plain text only, and replaced
+     * by a generic label when it reads as the chain's native ticker. With a null
      * `assetId` it is a trusted display-currency code from settings or a
      * first-party backend, and may map to a fiat symbol (USD → $).
      */
@@ -226,6 +228,11 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
     // Passed explicitly rather than left to formatCurrency's getActiveLocale()
     // default so a mid-session language switch actually invalidates the memo.
     const { t, currentLanguage } = useLanguage()
+    const { unitLabelOf } = useAssetUnitLabel()
+    const unit =
+        assetId != null && chainId !== null
+            ? unitLabelOf({ chainId, assetId }, currency)
+            : currency
     const { privacyMode: privacyModeSetting } = useSettings()
     const privacyMode = privacyModeSetting && !ignorePrivacyMode
 
@@ -297,8 +304,8 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
         if (!showSymbol || symbolPosition !== 'end' || privacyMode) {
             return null
         }
-        return nativeGlyph === undefined ? ` ${currency}` : ''
-    }, [showSymbol, symbolPosition, privacyMode, nativeGlyph, currency])
+        return nativeGlyph === undefined ? ` ${unit}` : ''
+    }, [showSymbol, symbolPosition, privacyMode, nativeGlyph, unit])
 
     if (isLoading && isInline) {
         return (
@@ -336,7 +343,7 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
                     {`${nativeGlyph.glyph} `}
                 </PWText>
             )}
-            {showUnitSymbolStart && `${currency} `}
+            {showUnitSymbolStart && `${unit} `}
             {prefix ? prefix : ''}
             {sign ? sign : ''}
             {displayValue}
@@ -402,7 +409,7 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
                     ]}
                     numberOfLines={isUnitShrinkable ? 1 : undefined}
                 >
-                    {currency}
+                    {unit}
                 </PWText>
             )}
             <PWView style={themeStyle.textContainer}>

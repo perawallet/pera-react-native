@@ -138,6 +138,11 @@ export const createWebViewDappTransport = (): WebViewDappTransport => {
         code: number,
         message: string,
     ): void => {
+        logger.debug('[eip1193] request rejected', {
+            method: request.method,
+            code,
+            message,
+        })
         page.inject(deliverScript(jsonRpcError(request.id, code, message)))
     }
 

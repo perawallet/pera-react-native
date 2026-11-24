@@ -25,6 +25,11 @@ export type PWBottomSheetProps = {
     enablePanDownToClose?: boolean
     enableContentPanningGesture?: boolean
     size?: PWBottomSheetSize
+    /**
+     * Wraps an `auto` sheet's content in gorhom's measured container. Set false
+     * when the body must scroll within a bound or pin a footer. Fixed-height
+     * sizes always fill the sheet and ignore it.
+     */
     autoCreateContainer?: boolean
     testID?: string
     enableCloseOnBackdropPress?: boolean
