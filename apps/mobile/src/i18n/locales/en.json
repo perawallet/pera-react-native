@@ -2813,6 +2813,14 @@
                 "fetch_failed_title": "Could not load backup",
                 "decrypt_failed_title": "Backup could not be unlocked"
             },
+            "review": {
+                "title": "Review accounts",
+                "body_one": "This code imports {{count}} account. Check it is yours before importing.",
+                "body_other": "This code imports {{count}} accounts. Check they are yours before importing.",
+                "body": "This code imports {{count}} accounts. Check they are yours before importing.",
+                "confirm": "Import accounts",
+                "interrupted": "The import was interrupted. Scan the QR code again to continue."
+            },
             "result": {
                 "success_title": "Accounts imported",
                 "success_body_one": "{{count}} account was added to your wallet.",

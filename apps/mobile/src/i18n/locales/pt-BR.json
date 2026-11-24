@@ -2823,6 +2823,14 @@
                 "fetch_failed_title": "Não foi possível carregar o backup",
                 "decrypt_failed_title": "Não foi possível desbloquear o backup"
             },
+            "review": {
+                "title": "Revise as contas",
+                "body_one": "Este código importa {{count}} conta. Confira se ela é sua antes de importar.",
+                "body_other": "Este código importa {{count}} contas. Confira se elas são suas antes de importar.",
+                "body": "Este código importa {{count}} contas. Confira se elas são suas antes de importar.",
+                "confirm": "Importar contas",
+                "interrupted": "A importação foi interrompida. Escaneie o código QR novamente para continuar."
+            },
             "result": {
                 "success_title": "Contas importadas",
                 "success_body_zero": "{{count}} contas foram adicionadas à sua wallet.",
