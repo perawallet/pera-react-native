@@ -420,7 +420,9 @@ describe('Flow: an EVM dApp on a chain other than Ethereum', () => {
         await pressWhenEnabled('walletconnect.switch_network.confirm')
         expect((await answerOf('switch-base')).result).toBeNull()
 
-        request('switch-eth', 'wallet_switchEthereumChain', [{ chainId: '0x1' }])
+        request('switch-eth', 'wallet_switchEthereumChain', [
+            { chainId: '0x1' },
+        ])
         expect((await answerOf('switch-eth')).result).toBeNull()
         request('switch-back', 'wallet_switchEthereumChain', [
             { chainId: '0x2105' },

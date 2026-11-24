@@ -162,7 +162,9 @@ export const createWebViewDappTransport = (): WebViewDappTransport => {
             ...(message.icons
                 ? {
                       pageIcons: message.icons
-                          .filter(icon => icon.length <= MAX_PAGE_ICON_URL_LENGTH)
+                          .filter(
+                              icon => icon.length <= MAX_PAGE_ICON_URL_LENGTH,
+                          )
                           .slice(0, MAX_PAGE_ICONS),
                   }
                 : {}),

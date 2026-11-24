@@ -57,7 +57,10 @@ export const useNetworkSwitchPrompt = (): ConfirmNetworkSwitch => {
                         confirmLabel={t('walletconnect.switch_network.confirm')}
                         cancelLabel={t('common.cancel.label')}
                     >
-                        <ChainChip chainId={scope.chainId} isOutlined />
+                        <ChainChip
+                            chainId={scope.chainId}
+                            isOutlined
+                        />
                     </ConfirmActionContent>
                 ),
                 options: {

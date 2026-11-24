@@ -15,7 +15,10 @@ import { afterEach, describe, it, expect, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import type WebView from 'react-native-webview'
 import { AppLockedProvider } from '@hooks/useIsAppLocked'
-import { useBottomSheetStore, type InternalRequest } from '@modules/bottom-sheet'
+import {
+    useBottomSheetStore,
+    type InternalRequest,
+} from '@modules/bottom-sheet'
 import {
     BLUR_FOCUSED_ELEMENT_SCRIPT,
     useBlurWebViewWhenCovered,
@@ -39,9 +42,12 @@ const renderBlur = ({
     const wrapper = ({ children }: PropsWithChildren) => (
         <AppLockedProvider value={isAppLocked}>{children}</AppLockedProvider>
     )
-    const view = renderHook(() => useBlurWebViewWhenCovered(webview, ownSheetId), {
-        wrapper,
-    })
+    const view = renderHook(
+        () => useBlurWebViewWhenCovered(webview, ownSheetId),
+        {
+            wrapper,
+        },
+    )
     return { injectJavaScript, ...view }
 }
 

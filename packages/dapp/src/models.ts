@@ -10,10 +10,7 @@
  limitations under the License
  */
 
-import {
-    isChainId,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import { isChainId, type ChainId } from '@perawallet/wallet-core-chain-contract'
 import type {
     Connection,
     ConnectionId,

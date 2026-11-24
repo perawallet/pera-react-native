@@ -111,7 +111,9 @@ describe('useNetworkSwitchPrompt', () => {
         const { request } = openPrompt()
 
         const message = String(request.contents.props.message)
-        expect(message).toContain('walletconnect.switch_network.body_with_network')
+        expect(message).toContain(
+            'walletconnect.switch_network.body_with_network',
+        )
         expect(message).toContain('"name":"Uniswap"')
         expect(message).toContain('"chain":"Ethereum"')
         expect(message).toContain('"network":"Sepolia"')

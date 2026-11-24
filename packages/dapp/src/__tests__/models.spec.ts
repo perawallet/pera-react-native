@@ -92,7 +92,10 @@ describe('eip1193ApprovedChainIdsOf', () => {
     it('ignores a field that is not an array', () => {
         expect(
             eip1193ApprovedChainIdsOf(
-                connectionWith({ chainId: 'base', approvedChainIds: 'ethereum' }),
+                connectionWith({
+                    chainId: 'base',
+                    approvedChainIds: 'ethereum',
+                }),
             ),
         ).toEqual(['base'])
     })
@@ -102,7 +105,13 @@ describe('eip1193ApprovedChainIdsOf', () => {
             eip1193ApprovedChainIdsOf(
                 connectionWith({
                     chainId: 'base',
-                    approvedChainIds: ['ethereum', 'nope', 'base', 'ethereum', 7],
+                    approvedChainIds: [
+                        'ethereum',
+                        'nope',
+                        'base',
+                        'ethereum',
+                        7,
+                    ],
                 }),
             ),
         ).toEqual(['base', 'ethereum'])
