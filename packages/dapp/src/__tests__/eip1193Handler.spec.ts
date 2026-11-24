@@ -426,6 +426,20 @@ describe('createEip1193ConnectionHandler', () => {
                 })
             })
 
+            it('grants an account once however many chains the sheet listed it on', async () => {
+                const { transport, registry, proposals, store } = setup([], {
+                    shouldProposeEveryServedChain: true,
+                })
+                await registry.initialize()
+                const pending = transport.send(ORIGIN, 'eth_requestAccounts')
+                await flush()
+
+                await proposals[0].approve([ADDR_X, ADDR_X])
+
+                expect((await store.get(ID))?.accounts).toEqual([ADDR_X])
+                expect(resultOf(await pending)).toEqual([ADDR_X])
+            })
+
             it('does not record a chain the granted account cannot use', async () => {
                 const { transport, registry, proposals, store, accounts } =
                     setup([], { shouldProposeEveryServedChain: true })

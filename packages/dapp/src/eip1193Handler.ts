@@ -506,7 +506,10 @@ export const createEip1193ConnectionHandler = (
                         .getAccounts(chain.scope.chainId)
                         .map(({ address }) => address),
                 )
-                const granted = accounts.filter(address => held.has(address))
+                // The multi-chain sheet lists an account once per chain it is on.
+                const granted = [
+                    ...new Set(accounts.filter(address => held.has(address))),
+                ]
                 if (granted.length === 0) {
                     releaseSlot()
                     await deliver(
