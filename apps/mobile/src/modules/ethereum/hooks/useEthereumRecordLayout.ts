@@ -22,6 +22,7 @@ import {
     type TransactionRecord,
     type TransactionSummary,
 } from '@perawallet/wallet-core-chain-contract'
+import { toEvmNftAssetId } from '@perawallet/wallet-core-chain-ethereum'
 import {
     baseUnitsToDisplayUnits,
     type Nullable,
@@ -82,6 +83,22 @@ const RECIPIENT_KINDS: readonly TransactionRecord['summary']['kind'][] = [
     ...LEADING_KINDS,
     'nft-transfer',
 ]
+
+// Known from the calldata before the NFT's own record loads, so its leg doesn't flash in meanwhile.
+const readNftAssetIdOf = ({
+    view,
+    standardCall,
+}: EthereumTransactionPresentation): Optional<string> => {
+    if (view.nft) return view.nft.assetId
+    if (standardCall?.kind !== 'nft-transfer') return undefined
+    const [only, ...rest] = standardCall.items
+    if (!only || rest.length > 0) return undefined
+    try {
+        return toEvmNftAssetId(standardCall.contract, only.tokenId)
+    } catch {
+        return undefined
+    }
+}
 
 // The row's title stands unless the node read knows more: a revocation, an
 // NFT grant of token #0 the row took for a revocation, or an action for a call
@@ -165,6 +182,18 @@ export const useEthereumRecordLayout = (
         // Pending only while the store has not answered; a miss is settled and falls back to the raw leg.
         const isAmountLoading = !!leading && !amount && isAssetsPending
 
+        // A read transfer already shows its own asset and amount, so its leg isn't listed again.
+        const readTransferAssetId =
+            presentation?.isTransfer &&
+            (presentation.amount || presentation.isAmountLoading)
+                ? (presentation.amount?.asset?.assetId ??
+                  readNftAssetIdOf(presentation))
+                : undefined
+        const isShownByRead = (leg: BalanceChange) =>
+            !!readTransferAssetId &&
+            leg.assetRef.assetId.toLowerCase() ===
+                readTransferAssetId.toLowerCase()
+
         return {
             summary: {
                 scope,
@@ -206,7 +235,11 @@ export const useEthereumRecordLayout = (
             },
             // Keyed off what the hero resolved, so a leg it couldn't name still shows.
             amountRows:
-                amount || isAmountLoading ? [] : recordAmountsOf(recordSummary),
+                amount || isAmountLoading
+                    ? []
+                    : recordAmountsOf(recordSummary).filter(
+                          leg => !isShownByRead(leg),
+                      ),
             assetLabel:
                 recordSummary.kind === 'nft-transfer' && recordSummary.subtitle
                     ? t(

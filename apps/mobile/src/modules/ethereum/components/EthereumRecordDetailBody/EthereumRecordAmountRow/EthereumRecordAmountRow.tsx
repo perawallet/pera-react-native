@@ -10,11 +10,13 @@
  limitations under the License
  */
 
+import { useMemo } from 'react'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import type {
     BalanceChange,
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
+import { parseEvmNftAssetId } from '@perawallet/wallet-core-chain-ethereum'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
 import { AssetAmount } from '@components/AssetAmount'
 import { KeyValueRow } from '@components/KeyValueRow'
@@ -38,6 +40,8 @@ export const EthereumRecordAmountRow = ({
 }: EthereumRecordAmountRowProps) => {
     const { t } = useLanguage()
     const { assetId } = change.assetRef
+    // An NFT's symbol is its collection's raw ticker, not a unit.
+    const isNft = useMemo(() => parseEvmNftAssetId(assetId) !== null, [assetId])
     const { data, isPending } = useAssetsQuery(scope, [assetId])
     const stored = data.get(assetId)
     const known =
@@ -65,7 +69,7 @@ export const EthereumRecordAmountRow = ({
                         : change.value
                 }
                 isLoading={isPending}
-                showSymbol
+                showSymbol={!isNft}
                 ignorePrivacyMode
             />
         </KeyValueRow>

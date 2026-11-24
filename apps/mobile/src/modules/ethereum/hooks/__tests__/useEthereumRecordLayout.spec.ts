@@ -37,7 +37,10 @@ vi.mock('@modules/signing/hooks/useTransactionHeroTitle', () => ({
     useTransactionHeroTitle: () => heroTitleOf,
 }))
 
-vi.mock('@perawallet/wallet-core-assets', () => ({
+vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-assets')
+    >()),
     useNativeAsset: () => ETHER,
     useAssetsQuery: vi.fn(),
 }))
@@ -374,6 +377,74 @@ describe('useEthereumRecordLayout', () => {
             ).toBe(PEER)
         },
     )
+
+    describe('an NFT send the node read explains', () => {
+        const NFT_ID = '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D/4908'
+        const nftRecord = () =>
+            recordOf(
+                {},
+                {
+                    kind: 'nft-transfer',
+                    amount: {
+                        assetRef: { chainId: SCOPE.chainId, assetId: NFT_ID },
+                        value: new Decimal(1),
+                    },
+                },
+            )
+        const readOf = (
+            fields: Partial<EthereumTransactionPresentation>,
+        ): EthereumTransactionPresentation =>
+            ({
+                titleKey: 'transactions.list_item.send',
+                iconName: 'send',
+                standardCall: null,
+                isTransfer: true,
+                isAmountLoading: false,
+                view: { nft: { assetId: NFT_ID.toLowerCase() } },
+                ...fields,
+            }) as unknown as EthereumTransactionPresentation
+
+        it('Given the read shows the NFT and its amount, then its leg is not listed again', () => {
+            const { amountRows } = layoutOf(
+                nftRecord(),
+                readOf({
+                    amount: {
+                        asset: { assetId: NFT_ID, decimals: 0 },
+                        value: new Decimal(1),
+                    } as EthereumTransactionPresentation['amount'],
+                }),
+            )
+
+            expect(amountRows).toEqual([])
+        })
+
+        it('Given a read from calldata alone whose NFT is still loading, then its leg is already left out', () => {
+            const { amountRows } = layoutOf(
+                nftRecord(),
+                readOf({
+                    view: {} as EthereumTransactionPresentation['view'],
+                    isAmountLoading: true,
+                    standardCall: {
+                        kind: 'nft-transfer',
+                        contract: '0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d',
+                        from: ME,
+                        to: PEER,
+                        items: [{ tokenId: '4908', amount: new Decimal(1) }],
+                        asset: null,
+                    },
+                }),
+            )
+
+            expect(amountRows).toEqual([])
+        })
+
+        it('Given the read has no amount to show, then the leg stays', () => {
+            const { amountRows } = layoutOf(nftRecord(), readOf({}))
+
+            expect(amountRows).toHaveLength(1)
+            expect(amountRows[0]?.value.toString()).toBe('-1')
+        })
+    })
 
     it("Given a token whose asset the store hasn't answered for, then the hero holds its place and no raw leg shows yet", () => {
         vi.mocked(useAssetsQuery).mockReturnValue({
