@@ -43,13 +43,17 @@ const live = {
     lastRemoteHash: 'h',
 }
 
-// The cached `address` is all that ties an item back to an account.
 syncStateMock.current = {
     items: {
-        [accountItemKey(hashAddress('A'))]: { ...live, address: 'A' },
+        [accountItemKey(hashAddress('A'))]: {
+            ...live,
+            address: 'A',
+            accountType: 'watch',
+        },
         [accountItemKey(hashAddress('PENDING'))]: {
             ...live,
             address: 'PENDING',
+            accountType: 'watch',
             pendingImport: true,
         },
     },

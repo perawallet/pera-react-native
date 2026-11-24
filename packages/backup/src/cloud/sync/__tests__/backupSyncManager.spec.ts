@@ -209,6 +209,7 @@ import {
 import {
     BackupItemStatus,
     accountItemKey,
+    accountRecordItemKey,
     passkeyItemKey,
     secretsItemKey,
     type SyncState,
@@ -723,16 +724,40 @@ describe('BackupSyncManager', () => {
     describe('backUpAccount', () => {
         const ADDR = 'BACKED-UP-ADDR'
 
-        const backedUpKey = accountItemKey(hashAddress(ADDR))
+        const backedUpKey = accountRecordItemKey(hashAddress(ADDR))
+        const secretKey = secretsItemKey(hashAddress(ADDR))
 
-        const syncLeaves = (item: Record<string, unknown>) => {
+        const syncLeaves = (
+            item: Record<string, unknown>,
+            secretVersion = 1,
+        ) => {
             mockSetSyncState.mockImplementation((state: unknown) => {
                 storedSyncState.current = state
             })
             mockSyncBackup.mockResolvedValue({
                 backupId: 'backup-123',
                 lastSyncResult: 'SUCCESS',
-                items: { [backedUpKey]: { address: ADDR, ...item } },
+                items: {
+                    [backedUpKey]: {
+                        address: ADDR,
+                        record: {
+                            formatVersion: 2,
+                            chains: [
+                                {
+                                    chain: 'algorand',
+                                    type: 'algo25',
+                                    address: ADDR,
+                                },
+                            ],
+                        },
+                        ...item,
+                    },
+                    [secretKey]: {
+                        address: ADDR,
+                        knownVer: secretVersion,
+                        status: BackupItemStatus.ACTIVE,
+                    },
+                },
             })
         }
 
@@ -782,6 +807,14 @@ describe('BackupSyncManager', () => {
 
         it('reports failure when the account is still unversioned after the sync', async () => {
             syncLeaves({ status: BackupItemStatus.ACTIVE, knownVer: 0 })
+            const mgr = new BackupSyncManager(makeDeps())
+
+            expect(await mgr.backUpAccount(ADDR)).toBe('failed')
+            mgr.stop()
+        })
+
+        it('reports failure when the account record uploaded but the secret did not', async () => {
+            syncLeaves({ status: BackupItemStatus.ACTIVE, knownVer: 1 }, 0)
             const mgr = new BackupSyncManager(makeDeps())
 
             expect(await mgr.backUpAccount(ADDR)).toBe('failed')

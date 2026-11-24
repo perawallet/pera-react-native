@@ -81,6 +81,38 @@ const tracked = (
     ...overrides,
 })
 
+const standaloneRecord = (
+    address: string,
+    overrides: Partial<SyncItemState> = {},
+): SyncItemState =>
+    tracked(address, {
+        addresses: [address],
+        accountType: chainBackupKind('algo25'),
+        record: {
+            formatVersion: 2,
+            updatedAt: 1,
+            chains: [{ chain: 'algorand', type: 'algo25', address }],
+        },
+        ...overrides,
+    })
+
+const expectSecretCoverage = (
+    state: SyncState,
+    address: string,
+    covered: boolean,
+) => {
+    expect(isAddressBackedUp(state, address)).toBe(covered)
+    expect(
+        deriveBackupAccountReview(state, [[address]]).backedUp.has(address),
+    ).toBe(covered)
+    expect(
+        isAccountRestorableFromLatestSync(
+            { ...state, lastSyncResult: 'SUCCESS' },
+            [address],
+        ),
+    ).toBe(covered)
+}
+
 describe('deriveBackupAccountReview', () => {
     it('reports every local account as not backed up without a sync state', () => {
         const review = deriveBackupAccountReview(null, [['A'], ['B']])
@@ -91,7 +123,9 @@ describe('deriveBackupAccountReview', () => {
 
     it('splits local accounts by whether the backup holds them', () => {
         const state = createEmptySyncState('b')
-        state.items[accountKey('A')] = tracked('A')
+        state.items[accountKey('A')] = tracked('A', {
+            accountType: BackupAccountType.watch,
+        })
         state.items[accountKey('B')] = tracked('B', {
             status: BackupItemStatus.IGNORED,
         })
@@ -130,9 +164,31 @@ describe('deriveBackupAccountReview', () => {
                 ...overrides,
             })
 
+        const standaloneOnTwoChains = () =>
+            recordOf({
+                accountType: BackupAccountType.standaloneKey,
+                record: {
+                    formatVersion: 2,
+                    updatedAt: 1,
+                    chains: [
+                        {
+                            chain: 'algorand',
+                            type: 'standaloneKey',
+                            address: 'ALGO',
+                        },
+                        {
+                            chain: 'ethereum',
+                            type: 'standaloneKey',
+                            address: '0xeth',
+                        },
+                    ],
+                },
+            })
+
         it('backs up the account whose primary any chain of a live record covers', () => {
             const state = createEmptySyncState('b')
-            state.items[recordKey('ALGO')] = recordOf()
+            state.items[recordKey('ALGO')] = standaloneOnTwoChains()
+            state.items[secretsKey('ALGO')] = tracked('ALGO')
 
             const review = deriveBackupAccountReview(state, [['0xeth', 'ALGO']])
 
@@ -195,9 +251,14 @@ describe('deriveBackupAccountReview', () => {
 
         it('answers isAddressBackedUp for any of its chains', () => {
             const state = createEmptySyncState('b')
-            state.items[recordKey('ALGO')] = recordOf()
+            state.items[recordKey('ALGO')] = standaloneOnTwoChains()
+            state.items[secretsKey('0xeth')] = tracked('0xeth')
 
-            expect(isAddressBackedUp(state, '0xeth')).toBe(true)
+            expectSecretCoverage(state, 'ALGO', true)
+            expectSecretCoverage(state, '0xeth', true)
+            state.items[secretsKey('0xeth')].status = BackupItemStatus.IGNORED
+            expectSecretCoverage(state, 'ALGO', false)
+            expectSecretCoverage(state, '0xeth', false)
         })
 
         it('marks a held record only a newer client can read as needing an update', () => {
@@ -336,7 +397,7 @@ describe('deriveBackupAccountReview', () => {
 
     it('ignores secrets keys so a secret-bearing account is counted once', () => {
         const state = createEmptySyncState('b')
-        state.items[accountKey('A')] = tracked('A')
+        state.items[recordKey('A')] = standaloneRecord('A')
         state.items[secretsKey('A')] = tracked('A')
 
         expect([...deriveBackupAccountReview(state, [['A']]).backedUp]).toEqual(
@@ -368,7 +429,9 @@ describe('countNewerAccountRecords', () => {
 describe('isAddressBackedUp', () => {
     it('agrees with the backedUp bucket for an account the backup holds', () => {
         const state = createEmptySyncState('b')
-        state.items[accountKey('A')] = tracked('A')
+        state.items[accountKey('A')] = tracked('A', {
+            accountType: BackupAccountType.watch,
+        })
 
         expect(isAddressBackedUp(state, 'A')).toBe(true)
         expect(isAddressBackedUp(state, 'B')).toBe(false)
@@ -391,6 +454,123 @@ describe('isAddressBackedUp', () => {
         })
 
         expect(isAddressBackedUp(state, 'A')).toBe(false)
+    })
+
+    it.each([
+        BackupAccountType.watch,
+        BackupAccountType.hardware,
+        BackupAccountType.multisig,
+    ])('keeps a legacy %s account backed up without a secret', accountType => {
+        const state = createEmptySyncState('b')
+        state.items[accountKey('A')] = tracked('A', { accountType })
+
+        expect(isAddressBackedUp(state, 'A')).toBe(true)
+        expect(
+            deriveBackupAccountReview(state, [['A']]).backedUp.has('A'),
+        ).toBe(true)
+    })
+
+    it('refuses legacy-only coverage when the account can need a secret', () => {
+        const state = createEmptySyncState('b')
+        state.items[accountKey('A')] = tracked('A', {
+            accountType: chainBackupKind('hdWallet'),
+        })
+
+        expectSecretCoverage(state, 'A', false)
+    })
+
+    it('lists a legacy item whose own secret is live as backed up, though only a record restores it', () => {
+        const state = createEmptySyncState('b')
+        state.items[accountKey('A')] = tracked('A', {
+            accountType: chainBackupKind('algo25'),
+        })
+        state.items[secretsKey('A')] = tracked('A')
+
+        expect(isAddressBackedUp(state, 'A')).toBe(true)
+        expect(
+            deriveBackupAccountReview(state, [['A']]).backedUp.has('A'),
+        ).toBe(true)
+        expect(
+            isAccountRestorableFromLatestSync(
+                { ...state, lastSyncResult: 'SUCCESS' },
+                ['A'],
+            ),
+        ).toBe(false)
+    })
+
+    it('lists a record only a newer client can read as backed up, though this build cannot restore it', () => {
+        const state = createEmptySyncState('b')
+        state.items[recordKey('A')] = standaloneRecord('A', {
+            record: {
+                formatVersion: 99,
+                chains: [{ chain: 'algorand', type: 'algo25', address: 'A' }],
+            },
+        })
+
+        expect(isAddressBackedUp(state, 'A')).toBe(true)
+        expect(
+            deriveBackupAccountReview(state, [['A']]).backedUp.has('A'),
+        ).toBe(true)
+        expect(
+            isAccountRestorableFromLatestSync(
+                { ...state, lastSyncResult: 'SUCCESS' },
+                ['A'],
+            ),
+        ).toBe(false)
+    })
+
+    it('refuses coverage when a live record has an unreadable HD entry', () => {
+        const state = createEmptySyncState('b')
+        state.items[recordKey('A')] = standaloneRecord('A', {
+            record: {
+                formatVersion: 2,
+                chains: [
+                    {
+                        chain: 'algorand',
+                        type: 'hdWallet',
+                        address: 'A',
+                        seedFirstDerivedAddress: 'SEED',
+                    },
+                ],
+            },
+        })
+        state.items[secretsKey('A')] = tracked('A')
+
+        expectSecretCoverage(state, 'A', false)
+    })
+
+    it('refuses coverage without a live secret with a known address', () => {
+        const state = createEmptySyncState('b')
+        state.items[recordKey('A')] = standaloneRecord('A')
+        expectSecretCoverage(state, 'A', false)
+
+        state.items[secretsKey('A')] = tracked('A', { address: null })
+        expectSecretCoverage(state, 'A', false)
+
+        state.items[secretsKey('A')] = tracked('A', { knownVer: 0 })
+        expectSecretCoverage(state, 'A', false)
+    })
+
+    it('lists a secret-free record as backed up without treating that record as a key backup', () => {
+        const state = createEmptySyncState('b')
+        state.items[recordKey('A')] = standaloneRecord('A', {
+            accountType: BackupAccountType.watch,
+            record: {
+                formatVersion: 2,
+                chains: [{ chain: 'algorand', type: 'watch', address: 'A' }],
+            },
+        })
+
+        expect(isAddressBackedUp(state, 'A')).toBe(true)
+        expect(
+            deriveBackupAccountReview(state, [['A']]).backedUp.has('A'),
+        ).toBe(true)
+        expect(
+            isAccountRestorableFromLatestSync(
+                { ...state, lastSyncResult: 'SUCCESS' },
+                ['A'],
+            ),
+        ).toBe(false)
     })
 })
 
@@ -437,7 +617,9 @@ describe('isContactBackedUp', () => {
 
     it('reads the contact key rather than the account one', () => {
         const state = createEmptySyncState('b')
-        state.items[accountKey('A')] = tracked('A')
+        state.items[accountKey('A')] = tracked('A', {
+            accountType: BackupAccountType.watch,
+        })
 
         expect(isContactBackedUp(state, 'algorand:A')).toBe(false)
         expect(isAddressBackedUp(state, 'A')).toBe(true)
@@ -625,25 +807,11 @@ describe('isAccountRestorableFromLatestSync', () => {
         items,
     })
 
-    const standaloneRecord = (overrides: Partial<SyncItemState> = {}) =>
-        tracked('ALGO', {
-            addresses: ['ALGO'],
-            accountType: chainBackupKind('algo25'),
-            record: {
-                formatVersion: 2,
-                updatedAt: 1,
-                chains: [
-                    { chain: 'algorand', type: 'algo25', address: 'ALGO' },
-                ],
-            },
-            ...overrides,
-        })
-
     const standalone = (
         record: Partial<SyncItemState> = {},
         secret: Partial<SyncItemState> = {},
     ) => ({
-        [recordKey('ALGO')]: standaloneRecord(record),
+        [recordKey('ALGO')]: standaloneRecord('ALGO', record),
         [secretsKey('ALGO')]: tracked('ALGO', secret),
     })
 
@@ -805,6 +973,8 @@ describe('isAccountRestorableFromLatestSync', () => {
 
             expect(restorable(state, first)).toBe(true)
             expect(restorable(state, second)).toBe(true)
+            expectSecretCoverage(state, 'HD1', true)
+            expectSecretCoverage(state, 'HD2', true)
 
             const seedKey = secretsKey('SEEDFIRST')
             const withoutSeed: SyncState = {
@@ -818,8 +988,8 @@ describe('isAccountRestorableFromLatestSync', () => {
                 },
             }
 
-            expect(restorable(withoutSeed, first)).toBe(false)
-            expect(restorable(withoutSeed, second)).toBe(false)
+            expectSecretCoverage(withoutSeed, 'HD1', false)
+            expectSecretCoverage(withoutSeed, 'HD2', false)
         })
     })
 })
