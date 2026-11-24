@@ -154,8 +154,10 @@ describe('Flow: turning off Cloud Backup lists the accounts that lose their only
 
         await waitFor(() =>
             expect(
-                screen.getByTestId('confirm_turn_off_backup_confirm'),
-            ).toBeTruthy(),
+                screen
+                    .getByTestId('confirm_turn_off_backup_confirm')
+                    .getAttribute('aria-disabled'),
+            ).not.toBe('true'),
         )
         expect(
             screen.queryByTestId('confirm_turn_off_backup_at_risk_summary'),

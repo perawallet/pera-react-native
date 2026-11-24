@@ -40,7 +40,7 @@ type ConfirmCopy = {
     bodyKey: I18nKey
     confirmKey: I18nKey
     confirmVariant: PWButtonProps['variant']
-    /** Set where the consequence is irreversible: the confirm button stays
+    /** Set where the consequence is irreversible: turning off stays
      *  disabled until this is ticked. */
     checkboxKey?: I18nKey
 }
