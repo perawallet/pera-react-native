@@ -10,9 +10,15 @@
  limitations under the License
  */
 
-import { PWInfoView, PWView } from '@components/core'
+import {
+    PWInfoView,
+    PWToolbar,
+    PWTouchableIcon,
+    PWView,
+} from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBiometricsDisabledPrompt } from '@modules/prompts/hooks/useBiometricsDisabledPrompt'
+import { PinEditView } from '@modules/security'
 import { useStyles } from './styles'
 
 export const BIOMETRICS_DISABLED_PROMPT_ID = 'biometrics-disabled-prompt'
@@ -32,12 +38,48 @@ export const BIOMETRICS_DISABLED_PROMPT_ID = 'biometrics-disabled-prompt'
 export const BiometricsDisabledPrompt = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { reason, enable, acknowledge } = useBiometricsDisabledPrompt()
+    const {
+        reason,
+        isVerifyingPin,
+        enable,
+        handlePinVerified,
+        cancelPinVerification,
+        acknowledge,
+    } = useBiometricsDisabledPrompt()
 
     if (!reason) return null
 
     const handleEnable = () => {
         void enable()
+    }
+
+    const handlePinSuccess = () => {
+        void handlePinVerified()
+    }
+
+    if (isVerifyingPin) {
+        return (
+            <PWView
+                style={styles.pinContainer}
+                testID='biometrics_disabled_prompt_pin'
+            >
+                <PWToolbar
+                    left={
+                        <PWTouchableIcon
+                            name='cross'
+                            onPress={cancelPinVerification}
+                            testID='biometrics_disabled_prompt_pin_close'
+                        />
+                    }
+                    paddingStyle='normal'
+                    style={styles.pinToolbar}
+                />
+                <PinEditView
+                    mode='verify'
+                    onSuccess={handlePinSuccess}
+                />
+            </PWView>
+        )
     }
 
     return (

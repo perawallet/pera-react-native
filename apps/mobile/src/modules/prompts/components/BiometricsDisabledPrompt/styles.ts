@@ -17,4 +17,14 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
         backgroundColor: theme.colors.background,
     },
+    pinContainer: {
+        flex: 1,
+        paddingTop: theme.spacing.xl,
+        backgroundColor: theme.colors.background,
+    },
+    pinToolbar: {
+        minHeight: 0,
+        paddingBottom: theme.spacing.xl,
+        paddingTop: 0,
+    },
 }))

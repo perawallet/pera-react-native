@@ -221,6 +221,58 @@ describe('useSettingsSecurityScreen', () => {
     })
 
     describe('handleBiometricToggle', () => {
+        beforeEach(() => {
+            mockRequestBottomSheet.mockResolvedValue(true)
+        })
+
+        it('verifies the PIN before enabling biometrics', async () => {
+            const order: string[] = []
+            mockRequestBottomSheet.mockImplementation(async () => {
+                order.push('pin-sheet')
+                return true
+            })
+            mockEnableBiometrics.mockImplementation(async () => {
+                order.push('enable')
+                return { ok: true }
+            })
+
+            const { result } = renderHook(() => useSettingsSecurityScreen())
+
+            await act(async () => {
+                await result.current.handleBiometricToggle(true)
+            })
+
+            expect(order).toEqual(['pin-sheet', 'enable'])
+            const [{ contents }] = mockRequestBottomSheet.mock.calls[0]
+            expect(contents.props.mode).toBe('verify')
+        })
+
+        it('leaves biometrics off when the PIN sheet is cancelled', async () => {
+            mockRequestBottomSheet.mockResolvedValue(undefined)
+
+            const { result } = renderHook(() => useSettingsSecurityScreen())
+
+            let success: boolean
+            await act(async () => {
+                success = await result.current.handleBiometricToggle(true)
+            })
+
+            expect(success!).toBe(false)
+            expect(mockEnableBiometrics).not.toHaveBeenCalled()
+        })
+
+        it('does not ask for the PIN to turn biometrics off', async () => {
+            mockDisableBiometrics.mockResolvedValue(undefined)
+
+            const { result } = renderHook(() => useSettingsSecurityScreen())
+
+            await act(async () => {
+                await result.current.handleBiometricToggle(false)
+            })
+
+            expect(mockRequestBottomSheet).not.toHaveBeenCalled()
+        })
+
         it('should call enableBiometrics when enabling biometrics', async () => {
             mockEnableBiometrics.mockResolvedValue({ ok: true })
 

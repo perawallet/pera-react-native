@@ -101,8 +101,7 @@ export const usePinEditView = ({
     //
     // Gated on the store flag, not a fresh reconcile: unlockWithBiometrics runs
     // its own, so a second one here only doubles the wait on the shared Expo
-    // queue. The flag also keeps a disabled user out of unlock's pending-rearm
-    // recovery, which this sheet must not start.
+    // queue.
     const lastPromptedModeRef = useRef<Nullable<PinEntryMode>>(null)
 
     // A transient reconcile can clear the flag and the sheet's own mount
