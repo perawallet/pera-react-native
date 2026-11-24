@@ -26,7 +26,7 @@ export type EnsureAssetOptInParams = Parameters<EnsureSwapReceivable>[0] & {
     confirm?: (details: {
         assetId: string
         isSponsored: boolean
-    }) => Promise<boolean>
+    }) => Promise<boolean | bigint>
     sourceMetadata?: { name: string; description: string }
 }
 
@@ -70,12 +70,17 @@ export const useEnsureAssetOptIn = (): ((
                 BigInt(suggestedParams.minFee)
             const isSponsored = accountInfo.amount < balanceNeeded
 
-            if (confirm && !(await confirm({ assetId, isSponsored }))) {
-                return false
-            }
+            const approval = await confirm?.({ assetId, isSponsored })
+            if (approval === false) return false
 
             if (!isSponsored) {
-                await optIn({ sender: address, assetId: asa })
+                await optIn({
+                    sender: address,
+                    assetId: asa,
+                    ...(typeof approval === 'bigint'
+                        ? { maxFee: approval }
+                        : {}),
+                })
                 return true
             }
 

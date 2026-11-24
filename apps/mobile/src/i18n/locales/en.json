@@ -1538,6 +1538,10 @@
             "asset_frozen": {
                 "title": "Asset frozen",
                 "body": "Asset {{assetId}} is frozen, so this transfer can't be completed. The asset's freeze manager must unfreeze it first."
+            },
+            "fee_above_shown": {
+                "title": "Network fee changed",
+                "body": "The network now asks for a higher fee than the one you saw, so nothing was signed. Try again to see the current fee."
             }
         },
         "kms": {

@@ -33,6 +33,7 @@ export type UseSuggestedParametersQueryResult = {
     isError: boolean
     isPaused: boolean
     error: Nullable<Error>
+    refetch: () => void
 }
 
 export const useSuggestedParametersQuery =
@@ -49,6 +50,10 @@ export const useSuggestedParametersQuery =
             // whole Send input screen on a spinner.
             networkMode: 'always',
         })
+        const { refetch } = query
+        const handleRefetch = useCallback(() => {
+            void refetch()
+        }, [refetch])
 
         return {
             data: query.data,
@@ -58,6 +63,7 @@ export const useSuggestedParametersQuery =
             isError: query.isError,
             isPaused: query.isPaused,
             error: query.error,
+            refetch: handleRefetch,
         }
     }
 

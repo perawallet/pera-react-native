@@ -35,6 +35,8 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 type AssetOptInParams = {
     sender: string
     assetId: bigint
+    /** The fee the user approved in native base units. */
+    maxFee?: bigint
 }
 
 type UseAssetOptInMutationResult = {
@@ -61,7 +63,10 @@ export const useAssetOptInMutation = (
         useAssetHoldingMutation<AssetOptInParams>({
             scope,
             source: SOURCE,
-            run: async ({ sender, assetId }, { scope, assignFees, submit }) => {
+            run: async (
+                { sender, assetId, maxFee },
+                { scope, assignFees, submit },
+            ) => {
                 assertOnline()
 
                 const accountState = await fetchOnChainAccountState(
@@ -80,7 +85,14 @@ export const useAssetOptInMutation = (
                     await sendFlowFeatureFor(
                         scope,
                         'assetHolding',
-                    ).buildOptInTxs({ scope, sender, assetId }),
+                    ).buildOptInTxs({
+                        scope,
+                        sender,
+                        assetId,
+                        ...(maxFee === undefined
+                            ? {}
+                            : { allowFeeReview: true }),
+                    }),
                 )
 
                 // Check against the fee actually being submitted: reading it
@@ -104,7 +116,10 @@ export const useAssetOptInMutation = (
                     )
                 }
 
-                const { txIds } = await submit(unsignedTxs)
+                const { txIds } = await submit(
+                    unsignedTxs,
+                    maxFee !== undefined && feeTotal > maxFee,
+                )
 
                 // Persist the holding and the asset's metadata before the
                 // invalidation, so the UI resolves the asset on its next

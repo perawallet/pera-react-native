@@ -1530,6 +1530,10 @@
             "asset_frozen": {
                 "title": "Asset eingefroren",
                 "body": "Das Asset {{assetId}} ist eingefroren, daher kann diese Übertragung nicht abgeschlossen werden. Der Freeze-Manager des Assets muss es zuerst freigeben."
+            },
+            "fee_above_shown": {
+                "title": "Netzwerkgebühr geändert",
+                "body": "Das Netzwerk verlangt jetzt eine höhere Gebühr als die angezeigte, daher wurde nichts signiert. Versuche es erneut, um die aktuelle Gebühr zu sehen."
             }
         },
         "kms": {

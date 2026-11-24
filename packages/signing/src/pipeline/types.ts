@@ -137,6 +137,7 @@ export type SignableData =
 /** Shared by SourceMetadata (pipeline) and SignRequest (models). */
 export type SourceType =
     | 'local'
+    | 'local-fee-review'
     | 'walletconnect'
     | 'webview'
     | 'deeplink'
@@ -154,6 +155,7 @@ export type SourceType =
  * auto-resumes the machine. A new external source generally belongs here too.
  */
 export const INTERACTIVE_SOURCES = [
+    'local-fee-review',
     'walletconnect',
     'webview',
     'deeplink',

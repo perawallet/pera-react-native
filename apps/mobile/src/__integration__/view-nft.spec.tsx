@@ -302,7 +302,7 @@ describe('Flow: View NFT collectible detail', () => {
 
         // Algod stubs sufficient for the build/submit path.
         server.use(
-            mockAlgodTransactionParams({ response: { fee: 1000 } }),
+            mockAlgodTransactionParams({ response: { fee: 0 } }),
             mockAlgodAccountInformation({
                 address: addressOf(holder),
                 response: {

@@ -71,10 +71,19 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
     useIsNativeAssetId: () => (id: unknown) => id != null && String(id) === '0',
     isNativeAssetId: (_chainId: string, id: string) => id === '0',
     useAssetsQuery: vi.fn(() => ({ data: new Map() })),
+    useNativeAsset: () => ({ decimals: 6 }),
 }))
 
 const { mockOptOut } = vi.hoisted(() => ({
     mockOptOut: vi.fn().mockResolvedValue({ txIds: ['tx1'] }),
+}))
+
+vi.mock('@perawallet/wallet-core-signing', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-signing')
+    >()),
+    useFeeConfig: () => ({ minTxnFee: 1000n }),
+    useMinFeeForSender: () => ({ minFee: 3000n }),
 }))
 
 vi.mock('@perawallet/wallet-core-transactions', () => ({
@@ -205,6 +214,7 @@ describe('useRemoveAssetsScreen', () => {
                 sender: 'test-address',
                 assetId: BigInt('123'),
                 creator: undefined,
+                maxFee: 3000n,
             },
         ])
     })
@@ -268,6 +278,7 @@ describe('useRemoveAssetsScreen', () => {
                 sender: 'test-address',
                 assetId: BigInt('123'),
                 creator: 'CREATOR_ADDR',
+                maxFee: 3000n,
             },
         ])
     })

@@ -49,12 +49,11 @@ export type UseSendFeeQueryResult = {
     error: Nullable<Error>
     /** A failed estimate is being re-priced; `isError` holds until it lands. */
     isRetrying: boolean
-    /** Re-prices now; a no-op on a chain with a flat fee. */
+    /** Re-prices now. */
     refresh: () => void
 }
 
 const ZERO = new Decimal(0)
-const NO_REFRESH = () => {}
 
 /**
  * The fee a send will be built with. It picks its path with the same check
@@ -72,10 +71,13 @@ export const useSendFeeQuery = ({
     isLive,
 }: SendFeeQueryInput): UseSendFeeQueryResult => {
     const hasSendFlow = sendFlowChainAdapters.has(scope.chainId)
-    const { minFee, isPending: isMinFeePending } = useMinFeeForSender(
-        senderAddress,
-        scope.chainId,
-    )
+    const {
+        minFee,
+        isPending: isMinFeePending,
+        error: minFeeError,
+        isRetrying: isMinFeeRetrying,
+        refresh: refreshMinFee,
+    } = useMinFeeForSender(senderAddress, scope.chainId)
 
     const estimateInput = useMemo(
         () =>
@@ -113,10 +115,10 @@ export const useSendFeeQuery = ({
                 maxFeeAmount: fee,
                 presets: undefined,
                 isPending: isMinFeePending,
-                isError: false,
-                error: null,
-                isRetrying: false,
-                refresh: NO_REFRESH,
+                isError: minFeeError !== null,
+                error: minFeeError,
+                isRetrying: isMinFeeRetrying,
+                refresh: refreshMinFee,
             }
         }
         const preset = estimate?.presets?.[feePreset]
@@ -134,6 +136,9 @@ export const useSendFeeQuery = ({
         hasSendFlow,
         minFee,
         isMinFeePending,
+        minFeeError,
+        isMinFeeRetrying,
+        refreshMinFee,
         estimate,
         feePreset,
         isEstimatePending,
