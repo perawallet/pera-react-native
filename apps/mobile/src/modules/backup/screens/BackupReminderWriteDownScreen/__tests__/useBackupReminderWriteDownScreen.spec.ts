@@ -17,7 +17,8 @@ const mockReach = vi.hoisted(() => vi.fn())
 const mockIsCloudBackupAvailable = vi.hoisted(() => vi.fn())
 
 vi.mock('@hooks/useIsCloudBackupAvailable', () => ({
-    useIsCloudBackupAvailable: () => mockIsCloudBackupAvailable(),
+    useIsCloudBackupAvailableFor: (account: unknown) =>
+        mockIsCloudBackupAvailable(account),
 }))
 
 vi.mock('@react-navigation/native', () => ({
@@ -32,8 +33,13 @@ vi.mock('@analytics', () => ({
 
 vi.mock('@hooks/useLanguage')
 
+const PASSPHRASE_ACCOUNT = { id: 'passphrase-account' }
+const mockPassphraseAccount = vi.fn((..._args: unknown[]) => PASSPHRASE_ACCOUNT)
+
 vi.mock('../../../hooks', () => ({
     usePassphraseReach: (...args: unknown[]) => mockReach(...args),
+    usePassphraseAccount: (...args: unknown[]) =>
+        mockPassphraseAccount(...args),
 }))
 
 import { useBackupReminderWriteDownScreen } from '../useBackupReminderWriteDownScreen'
@@ -63,6 +69,16 @@ describe('useBackupReminderWriteDownScreen', () => {
 
         expect(result.current.body).toBe('backup.write_down.body')
         expect(result.current.warning).toBe('backup.write_down.warning')
+    })
+
+    it("asks about Cloud Backup for the passphrase's own account", () => {
+        mockReach.mockReturnValue({ isMultiNetwork: false, networkNames: [] })
+
+        renderHook(() => useBackupReminderWriteDownScreen())
+
+        expect(mockIsCloudBackupAvailable).toHaveBeenCalledWith(
+            PASSPHRASE_ACCOUNT,
+        )
     })
 
     it('names Cloud Backup beside the passphrase for a single-network account', () => {

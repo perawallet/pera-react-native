@@ -10,6 +10,9 @@
  limitations under the License
  */
 
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { hasBackupChains } from '@perawallet/wallet-core-backup'
+import type { Maybe } from '@perawallet/wallet-core-shared'
 import { useCapability } from '@hooks/useCapability'
 import { useIsCloudBackupEnabled } from '@hooks/useIsCloudBackupEnabled'
 
@@ -19,4 +22,19 @@ export const useIsCloudBackupAvailable = (): boolean => {
     const canCloudBackup = useCapability({ anyChain: 'cloudBackup' })
 
     return isCloudBackupEnabled && canCloudBackup
+}
+
+// Cloud Backup only carries accounts on a chain it backs up; offering it for
+// any other account sends the user into a Turn on, then Fix loop that never
+// clears the account's warning.
+export const useIsCloudBackupAvailableFor = (
+    account: Maybe<WalletAccount>,
+): boolean => {
+    const isCloudBackupAvailable = useIsCloudBackupAvailable()
+    return (
+        isCloudBackupAvailable &&
+        account !== undefined &&
+        account !== null &&
+        hasBackupChains(account)
+    )
 }

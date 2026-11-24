@@ -29,7 +29,8 @@ vi.mock('@hooks/useAppNavigation', () => ({
 
 const mockIsCloudBackupAvailable = vi.fn()
 vi.mock('@hooks/useIsCloudBackupAvailable', () => ({
-    useIsCloudBackupAvailable: () => mockIsCloudBackupAvailable(),
+    useIsCloudBackupAvailableFor: (account: unknown) =>
+        mockIsCloudBackupAvailable(account),
 }))
 
 const mockInitialRoute = vi.fn()
@@ -100,6 +101,14 @@ describe('useBackupReminderBanner', () => {
         expect(result.current.cloudBackupCtaLabel).toBeUndefined()
         expect(result.current.message).toBe('backup.banner.text')
         expect(result.current.passphraseCtaLabel).toBe('backup.banner.cta')
+    })
+
+    test('asks whether Cloud Backup can cover this account', () => {
+        mockShouldPrompt.mockReturnValue(true)
+
+        renderHook(() => useBackupReminderBanner(accountHD))
+
+        expect(mockIsCloudBackupAvailable).toHaveBeenCalledWith(accountHD)
     })
 
     test('offers turning Cloud Backup on before it is configured', () => {

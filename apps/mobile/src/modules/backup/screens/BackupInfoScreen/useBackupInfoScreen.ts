@@ -19,9 +19,9 @@ import {
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, OnboardingEvent } from '@analytics'
-import { useIsCloudBackupAvailable } from '@hooks/useIsCloudBackupAvailable'
+import { useIsCloudBackupAvailableFor } from '@hooks/useIsCloudBackupAvailable'
 import { useLanguage } from '@hooks/useLanguage'
-import { usePassphraseReach } from '../../hooks'
+import { usePassphraseAccount, usePassphraseReach } from '../../hooks'
 import type { BackupStackParamList } from '../../routes/types'
 
 export type UseBackupInfoScreenResult = {
@@ -42,7 +42,9 @@ export const useBackupInfoScreen = (): UseBackupInfoScreenResult => {
         address: address ?? '',
         accountId,
     })
-    const isCloudBackupAvailable = useIsCloudBackupAvailable()
+    const isCloudBackupAvailable = useIsCloudBackupAvailableFor(
+        usePassphraseAccount(address ?? '', accountId),
+    )
     let bodyKey = i18nKey('backup.info.body')
     if (isMultiNetwork) {
         bodyKey = isCloudBackupAvailable

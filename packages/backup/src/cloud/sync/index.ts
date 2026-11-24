@@ -15,6 +15,7 @@ export {
     accountAddressesOf,
     accountBackupAddresses,
     buildAccountRecord,
+    hasBackupChains,
 } from './serializeAccountItems'
 export { buildLocalItems } from './buildLocalItems'
 export { buildLocalContactItems } from './buildLocalContactItems'

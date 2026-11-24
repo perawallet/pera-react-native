@@ -21,7 +21,7 @@ import {
 import { useShouldPromptMnemonicBackup } from '@perawallet/wallet-core-backup'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useHomeChainScope } from '@hooks/useHomeChainScope'
-import { useIsCloudBackupAvailable } from '@hooks/useIsCloudBackupAvailable'
+import { useIsCloudBackupAvailableFor } from '@hooks/useIsCloudBackupAvailable'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBackupFlowLauncher } from '@modules/backup'
 import { useCloudBackupInitialRoute } from '@modules/cloud-backup'
@@ -48,7 +48,7 @@ export const useBackupReminderBanner = (
     const launch = useBackupFlowLauncher()
     const { t } = useLanguage()
     const navigation = useAppNavigation()
-    const isCloudBackupAvailable = useIsCloudBackupAvailable()
+    const isCloudBackupAvailable = useIsCloudBackupAvailableFor(account)
     const cloudBackupRoute = useCloudBackupInitialRoute()
 
     const onBackUpPassphrase = useCallback(
