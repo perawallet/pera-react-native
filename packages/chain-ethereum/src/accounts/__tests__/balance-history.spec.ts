@@ -872,40 +872,97 @@ describe('the adapter methods', () => {
             expect(points).toEqual([])
         })
 
-        it('counts the token at its spot price in every portfolio point, without asking for its chart again within the hour', async () => {
+        const usdcChartRequests = (requests: Request[]) =>
+            requests.filter(
+                request =>
+                    request.url.includes(CHART_PATH) &&
+                    new URL(request.url).searchParams
+                        .get('id')
+                        ?.toLowerCase() === USDC_CAIP19,
+            )
+
+        it('counts the token at its spot price in every portfolio point', async () => {
             serveQuietToken()
             stored.spotPrices = { [USDC]: '1.5' }
-            const charts = ops()
-            const first = await charts.fetchPortfolioHistory!(
+
+            const points = await ops().fetchPortfolioHistory!(
                 [ALICE],
                 'one-day',
                 SCOPE,
             )
+
+            expect(points?.map(p => p.usdValue.toFixed())).toEqual([
+                '2003',
+                '2003',
+            ])
+        })
+
+        it("reads a longer period's own chart after a quiet day, rather than flattening it at the spot price", async () => {
+            serveQuietToken()
+            stored.spotPrices = { [USDC]: '1.5' }
+            server.use(
+                http.get(`${TEST_PERA_URL}${CHART_PATH}`, ({ request }) => {
+                    const params = new URL(request.url).searchParams
+                    if (params.get('id')?.toLowerCase() !== USDC_CAIP19) {
+                        return undefined
+                    }
+                    return HttpResponse.json(
+                        params.get('interval') === 'hourly'
+                            ? []
+                            : [chartPoint('2026-10-20T00:00:00Z', '1')],
+                    )
+                }),
+            )
+            const charts = ops()
+            await charts.fetchPortfolioHistory!([ALICE], 'one-day', SCOPE)
+            const requests = recordRequests()
+
+            const year = await charts.fetchPortfolioHistory!(
+                [ALICE],
+                'one-year',
+                SCOPE,
+            )
+
+            expect(usdcChartRequests(requests)).toHaveLength(1)
+            expect(year?.map(p => p.usdValue.toFixed())).toEqual([
+                '2002',
+                '2002',
+            ])
+        })
+
+        it('values a token with no chart at all at its spot price without asking again within the hour', async () => {
+            serveQuietToken()
+            stored.spotPrices = { [USDC]: '1.5' }
+            server.use(
+                http.get(`${TEST_PERA_URL}${CHART_PATH}`, ({ request }) =>
+                    new URL(request.url).searchParams
+                        .get('id')
+                        ?.toLowerCase() === USDC_CAIP19
+                        ? HttpResponse.json(
+                              {
+                                  error: 'No price chart for this asset',
+                                  code: 'chart_not_found',
+                              },
+                              { status: 404 },
+                          )
+                        : undefined,
+                ),
+            )
+            const charts = ops()
+            await charts.fetchPortfolioHistory!([ALICE], 'one-day', SCOPE)
             const requests = recordRequests()
 
             const again = await charts.fetchPortfolioHistory!(
                 [ALICE],
-                'one-day',
+                'one-year',
                 SCOPE,
             )
 
-            expect(first?.map(p => p.usdValue.toFixed())).toEqual([
-                '2003',
-                '2003',
-            ])
+            expect(usdcChartRequests(requests)).toHaveLength(0)
             expect(again?.map(p => p.usdValue.toFixed())).toEqual([
                 '2003',
                 '2003',
             ])
-            expect(
-                requests.filter(
-                    request =>
-                        request.url.includes(CHART_PATH) &&
-                        new URL(request.url).searchParams
-                            .get('id')
-                            ?.toLowerCase() === USDC_CAIP19,
-                ),
-            ).toHaveLength(0)
         })
     })
 

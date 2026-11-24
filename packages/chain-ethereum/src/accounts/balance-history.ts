@@ -54,7 +54,7 @@ import {
     ASSETS_MAX_IDS,
     ASSETS_SERVICE,
     fetchAssetItems,
-    fetchPriceChart,
+    fetchPriceChartOrNotFound,
     PRICES_SERVICE,
 } from '../assets/api/endpoints'
 import {
@@ -502,27 +502,33 @@ export const createEthereumBalanceHistoryOps = (
                 }
                 // The native coin can't be skipped: without it the whole chain
                 // would read as worthless.
-                const prices = await limit(() =>
-                    fetchPriceChart(scope, chain, assetId, query, signal),
+                const chart = await limit(() =>
+                    fetchPriceChartOrNotFound(
+                        scope,
+                        chain,
+                        assetId,
+                        query,
+                        signal,
+                    ),
                 ).catch((error: unknown) => {
                     if (isNotFoundError(error)) unchartedAt.set(caip19, now())
                     if (!isSkippable || signal?.aborted) throw error
                     logger.warn('ethereum balance history: price read failed', {
                         error,
                     })
-                    return null
+                    return undefined
                 })
-                if (prices === null) return null
-                // The service's chart_not_found answer arrives as no points.
-                if (prices.length === 0) unchartedAt.set(caip19, now())
+                if (chart === undefined) return null
+                // Only a token with no chart at all is skipped for the hour: an
+                // empty window (a quiet day) says nothing about a longer period.
+                if (chart === null) unchartedAt.set(caip19, now())
                 return [
                     caip19,
                     {
                         decimals: assetDecimals,
-                        prices:
-                            prices.length === 0
-                                ? (spotOnly(assetId) ?? [])
-                                : prices,
+                        prices: chart?.length
+                            ? chart
+                            : (spotOnly(assetId) ?? []),
                     },
                 ] as const
             }),
