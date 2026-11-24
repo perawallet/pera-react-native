@@ -81,7 +81,6 @@ const webviewDataSignRequestBase = (
 
 export const useDataSigningHandler = (
     webview: Nullable<WebView>,
-    sourceUrl: Nullable<string>,
 ): BridgeHandler => {
     const { t } = useLanguage()
     const { showError } = useErrorToast()
@@ -207,7 +206,7 @@ export const useDataSigningHandler = (
                     sourceMetadata: metadata,
                     // Platform-observed origin, not page-asserted — gates the
                     // verification badge.
-                    verifiedOrigin: sourceUrl ?? undefined,
+                    verifiedOrigin: security.sourceUrl ?? undefined,
                     data: parsed.data,
                 })
             } catch (e) {
@@ -229,7 +228,6 @@ export const useDataSigningHandler = (
             addSignRequest,
             allAccounts,
             sendInvalidSigner,
-            sourceUrl,
             showError,
             t,
         ],

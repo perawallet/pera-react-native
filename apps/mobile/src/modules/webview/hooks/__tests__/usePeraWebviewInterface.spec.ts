@@ -135,15 +135,9 @@ describe('usePeraWebviewInterface', () => {
         const { webview } = render(true, TRUSTED_URL)
 
         expect(useDeviceIdHandler).toHaveBeenCalledWith(webview, true)
-        expect(useTransactionSigningHandler).toHaveBeenCalledWith(
-            webview,
-            TRUSTED_URL,
-        )
-        expect(useDataSigningHandler).toHaveBeenCalledWith(webview, TRUSTED_URL)
-        expect(useWalletConnectHandler).toHaveBeenCalledWith(
-            webview,
-            TRUSTED_URL,
-        )
+        expect(useTransactionSigningHandler).toHaveBeenCalledWith(webview)
+        expect(useDataSigningHandler).toHaveBeenCalledWith(webview)
+        expect(useWalletConnectHandler).toHaveBeenCalledWith(webview)
     })
 
     it.each([...PERA_WEBVIEW_BRIDGE_METHODS])(

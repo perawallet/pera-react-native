@@ -62,12 +62,9 @@ export const usePeraWebviewInterface = (
         onBackRequested,
     })
     const logAnalyticsEvent = useLogAnalyticsEventHandler(webview)
-    const requestTransactionSigning = useTransactionSigningHandler(
-        webview,
-        sourceUrl,
-    )
-    const requestDataSigning = useDataSigningHandler(webview, sourceUrl)
-    const walletConnect = useWalletConnectHandler(webview, sourceUrl)
+    const requestTransactionSigning = useTransactionSigningHandler(webview)
+    const requestDataSigning = useDataSigningHandler(webview)
+    const walletConnect = useWalletConnectHandler(webview)
 
     const handleMessage = useCallback(
         (

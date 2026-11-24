@@ -167,16 +167,14 @@ describe('useWalletConnectHandler', () => {
 
     const render = (sourceUrl: string | null = null) => {
         const webview = createMockWebview()
-        const { result } = renderHook(() =>
-            useWalletConnectHandler(webview, sourceUrl),
-        )
+        const { result } = renderHook(() => useWalletConnectHandler(webview))
         return {
             webview,
-            connect: (id: string, uri = WC_URI) =>
-                result.current(
-                    bridgeMessage(id, 'walletConnect', { uri }),
-                    TRUSTED,
-                ),
+            connect: (id: string, uri = WC_URI, from = sourceUrl) =>
+                result.current(bridgeMessage(id, 'walletConnect', { uri }), {
+                    securedConnection: false,
+                    sourceUrl: from,
+                }),
         }
     }
 
@@ -203,9 +201,7 @@ describe('useWalletConnectHandler', () => {
 
     it('answers InvalidParams when the uri is missing', () => {
         const webview = createMockWebview()
-        const { result } = renderHook(() =>
-            useWalletConnectHandler(webview, null),
-        )
+        const { result } = renderHook(() => useWalletConnectHandler(webview))
 
         result.current(bridgeMessage('wc-missing', 'walletConnect'), TRUSTED)
 
@@ -242,6 +238,32 @@ describe('useWalletConnectHandler', () => {
                 origin: {
                     source: 'in-app',
                     requesterOrigin: 'https://dapp.example',
+                },
+            })
+        })
+    })
+
+    // A navigation that is pending or was cancelled must not lend its target's
+    // origin to the document that is still running and sent the message.
+    it('records the posting frame as the requester, not the navigation target', async () => {
+        const webview = createMockWebview()
+        const { result } = renderHook(() => useWalletConnectHandler(webview))
+
+        act(() =>
+            result.current(
+                bridgeMessage('wc-stale', 'walletConnect', { uri: WC_URI }),
+                {
+                    securedConnection: false,
+                    sourceUrl: 'https://evil.example/',
+                },
+            ),
+        )
+
+        await waitFor(() => {
+            expect(mockConnect).toHaveBeenCalledWith(WC_URI, {
+                origin: {
+                    source: 'in-app',
+                    requesterOrigin: 'https://evil.example',
                 },
             })
         })
@@ -399,6 +421,26 @@ describe('useWalletConnectHandler', () => {
             expect(sent).toContain('"id":"wc-spam"')
             expect(sent).toContain('"code":-32600')
             expect(sent).toContain('throttled')
+        } finally {
+            vi.useRealTimers()
+        }
+    })
+
+    it('keys the throttle on the posting frame, so another origin is not blocked', () => {
+        vi.useFakeTimers()
+        try {
+            const { connect } = render('https://first.example/')
+
+            act(() => connect('wc-first'))
+            act(() =>
+                connect(
+                    'wc-second',
+                    'wc:other@2?relay-protocol=irn',
+                    'https://second.example/',
+                ),
+            )
+
+            expect(mockConnect).toHaveBeenCalledTimes(2)
         } finally {
             vi.useRealTimers()
         }
