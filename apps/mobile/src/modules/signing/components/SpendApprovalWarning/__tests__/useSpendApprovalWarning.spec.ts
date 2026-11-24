@@ -125,6 +125,62 @@ describe('useSpendApprovalWarning', () => {
         expect(result.current.deadlineText).toBe('signing.spend_approval.never')
     })
 
+    it('adds no lifetime row for a permit whose allowance lasts until revoked, as an approve does', () => {
+        const { result } = renderHook(() =>
+            useSpendApprovalWarning(
+                approval({
+                    deadline: undefined,
+                    isLongLived: false,
+                    signature: { deadline: DEADLINE, isLongLived: false },
+                }),
+            ),
+        )
+
+        expect(result.current.rows.map(row => row.type)).toEqual(['spend'])
+        expect(result.current.deadlineText).toBe('signing.spend_approval.never')
+        expect(result.current.signatureDeadlineText).toBe(
+            formatDatetime(new Date(DEADLINE)),
+        )
+    })
+
+    it('warns when the signature itself stays valid for more than a year', () => {
+        const { result } = renderHook(() =>
+            useSpendApprovalWarning(
+                approval({
+                    deadline: undefined,
+                    isLongLived: false,
+                    signature: { isLongLived: true },
+                }),
+            ),
+        )
+
+        expect(result.current.rows.map(row => row.type)).toEqual([
+            'spend',
+            'long-lived-signature',
+        ])
+        expect(result.current.signatureDeadlineText).toBe(
+            'signing.spend_approval.never',
+        )
+    })
+
+    it('shows the unlimited warning card for a signature but not for a transaction, whose review card already warns', () => {
+        const value = approval({ allowances: [unlimited('0xusdc')] })
+
+        const signature = renderHook(() => useSpendApprovalWarning(value))
+        const transaction = renderHook(() =>
+            useSpendApprovalWarning(value, TRANSACTION),
+        )
+
+        expect(signature.result.current.showsUnlimitedWarning).toBe(true)
+        expect(transaction.result.current.showsUnlimitedWarning).toBe(false)
+    })
+
+    it('leaves the signature deadline unset when the approval has no separate window', () => {
+        const { result } = renderHook(() => useSpendApprovalWarning(approval()))
+
+        expect(result.current).not.toHaveProperty('signatureDeadlineText')
+    })
+
     it('orders spend, unlimited, then no-expiry', () => {
         expect(
             rowTypes(

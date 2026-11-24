@@ -329,6 +329,15 @@ export const createEip1193ConnectionHandler = (
         return { settle, isSettled: () => settled }
     }
 
+    // A site connected while its page named no icon takes the requesting page's.
+    const peerOf = (
+        peer: ConnectionPeer,
+        ctx: DappRequestContext,
+    ): ConnectionPeer =>
+        peer.icons?.length || !ctx.faviconUrl
+            ? peer
+            : { ...peer, icons: [ctx.faviconUrl] }
+
     const buildPeer = (ctx: DappRequestContext): ConnectionPeer => ({
         name: new URL(ctx.origin).host,
         url: ctx.origin,
@@ -725,7 +734,7 @@ export const createEip1193ConnectionHandler = (
             correlationId,
             sourceType: 'injected',
             authorizedAccounts: connection.accounts,
-            peer: connection.peer,
+            peer: peerOf(connection.peer, ctx),
             verifiedOrigin: ctx.origin,
             rawOperation: {
                 type: 'switch-network',
@@ -824,7 +833,7 @@ export const createEip1193ConnectionHandler = (
             correlationId,
             sourceType: 'injected',
             authorizedAccounts: reportedAccounts(connection),
-            peer: connection.peer,
+            peer: peerOf(connection.peer, ctx),
             verifiedOrigin: ctx.origin,
             rawOperation: operation,
             commit: () => commitQueued(entry),

@@ -127,6 +127,20 @@ export const eip1193ProviderJS = (bridgeToken: string) => webViewScript`
         emit(EVENT.connect, { chainId: result });
     }
 
+    // Native has no tab favicon to read, as the extension does, so the page
+    // names its own icon: the site's claim, like a WalletConnect peer's icons.
+    function pageIcon() {
+        var selectors = ['link[rel~="apple-touch-icon"]', 'link[rel~="icon"]'];
+        for (var s = 0; s < selectors.length; s += 1) {
+            var links = document.querySelectorAll(selectors[s]);
+            for (var i = 0; i < links.length; i += 1) {
+                var href = links[i].href;
+                if (typeof href === 'string' && href.indexOf('https://') === 0) { return href; }
+            }
+        }
+        return undefined;
+    }
+
     function send(method, params) {
         return new Promise(function (resolve, reject) {
             counter += 1;
@@ -141,6 +155,7 @@ export const eip1193ProviderJS = (bridgeToken: string) => webViewScript`
                 provider: 'eip1193',
                 token: TOKEN,
                 hasUserActivation: now() - lastGestureAt < ACTIVATION_MS,
+                icon: pageIcon(),
                 request: { jsonrpc: '2.0', id: id, method: method, params: params },
             }));
             if (!isPosted) {

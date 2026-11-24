@@ -35,10 +35,8 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
 
 vi.mock('@perawallet/wallet-core-chain-contract', async importOriginal => ({
     ...(await importOriginal<object>()),
-    addressCodecs: {
-        has: () => true,
-        get: () => ({ truncate: (address: string) => `short:${address}` }),
-    },
+    truncateAddressOn: (_chainId: string, address: string) =>
+        `short:${address}`,
 }))
 
 vi.mock('@modules/signing', () => ({

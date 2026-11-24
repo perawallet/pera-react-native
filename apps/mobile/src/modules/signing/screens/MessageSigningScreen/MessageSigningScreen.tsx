@@ -21,6 +21,7 @@ import { SourceMetadataView } from '@modules/signing/components/SourceMetadataVi
 import { SpendApprovalTitle } from '@modules/signing/components/SpendApprovalTitle'
 import { SpendApprovalWarning } from '@modules/signing/components/SpendApprovalWarning'
 import { RequestAddressWarning } from '@modules/signing/components/RequestAddressWarning'
+import { ReviewNetworkRow } from '@modules/signing/components/ReviewNetworkRow'
 import { RequestSiteWarning } from '@modules/signing/components/RequestSiteWarning'
 import { MessageTreeView } from './MessageTreeView'
 import { useStyles } from './styles'
@@ -39,6 +40,7 @@ export const MessageSigningScreen = () => {
         reviewedAddresses,
         isListedAddressBlocking,
         isConfirmBlocked,
+        isExpired,
         handleApprove,
         handleReject,
     } = useMessageSigningScreen()
@@ -55,13 +57,21 @@ export const MessageSigningScreen = () => {
         <PWScreen
             footer={
                 <PWView style={[styles.buttonContainer, CONFIRM_ACTION_LAYOUT]}>
-                    {isListedAddressBlocking ? (
+                    {isListedAddressBlocking && (
                         <CannotSignNotice
                             title={t('signing.address_safety.blocked_title')}
                             body={t('signing.address_safety.blocked_body')}
                             testID='message-signing-blocked'
                         />
-                    ) : (
+                    )}
+                    {!isListedAddressBlocking && isExpired && (
+                        <CannotSignNotice
+                            title={t('signing.spend_approval.expired_title')}
+                            body={t('signing.spend_approval.expired_body')}
+                            testID='message-signing-expired'
+                        />
+                    )}
+                    {!isListedAddressBlocking && !isExpired && (
                         <ConfirmAction
                             title={t('common.slide_to_confirm.label')}
                             onConfirm={handleApprove}
@@ -113,6 +123,9 @@ export const MessageSigningScreen = () => {
                         </PWView>
                     )}
                     {summary.kind === 'raw' && <SignedDataWarning />}
+                    {spendReview && (
+                        <ReviewNetworkRow scope={spendReview.scope} />
+                    )}
                     {spendReview && (
                         <SpendApprovalWarning
                             approval={spendReview.approval}

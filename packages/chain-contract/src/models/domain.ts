@@ -502,9 +502,34 @@ export interface SpendApproval {
     allowances: SpendAllowance[]
     /** Unix ms after which the approval can't be used; absent when it never lapses. */
     deadline?: number
+    /**
+     * deadline is absent or more than a year out. False for a signed permit
+     * whose allowance stays until used or revoked by design, as an approve's does.
+     */
+    isLongLived: boolean
+    /**
+     * When the signature itself can be submitted, set only where that differs
+     * from `deadline` (a signed permit that leaves a lasting allowance).
+     */
+    signature?: SpendSignatureWindow
+}
+
+export interface SpendSignatureWindow {
+    /** Unix ms after which the signature can't be submitted; absent when it never lapses. */
+    deadline?: number
     /** deadline is absent or more than a year after the summary was built. */
     isLongLived: boolean
 }
+
+/**
+ * Unix ms after which a signed approval can't be submitted; undefined when it
+ * never lapses. Without a separate signature window (a one-time transfer) the
+ * approval's own deadline bounds the signature.
+ */
+export const spendSubmitDeadlineOf = (
+    approval: SpendApproval,
+): number | undefined =>
+    approval.signature ? approval.signature.deadline : approval.deadline
 
 export interface MessageSummary {
     kind: 'text' | 'typed-data' | 'raw'

@@ -1471,6 +1471,45 @@ describe('createEip1193ConnectionHandler', () => {
             },
         )
 
+        it("gives a site connected without an icon the requesting page's icon", async () => {
+            const { transport, registry, messages } = setup([
+                connectedOn('ethereum'),
+            ])
+            await registry.initialize()
+
+            void transport.send(ORIGIN, 'personal_sign', [{ from: ADDR_X }], {
+                faviconUrl: `${ORIGIN}/icon.png`,
+            })
+            await flush()
+
+            expect(requestOf(messages).peer.icons).toEqual([
+                `${ORIGIN}/icon.png`,
+            ])
+        })
+
+        it('keeps the icon a site was connected with', async () => {
+            const { transport, registry, messages } = setup([
+                {
+                    ...connectedOn('ethereum'),
+                    peer: {
+                        name: 'swap.example',
+                        url: ORIGIN,
+                        icons: [`${ORIGIN}/stored.png`],
+                    },
+                },
+            ])
+            await registry.initialize()
+
+            void transport.send(ORIGIN, 'personal_sign', [{ from: ADDR_X }], {
+                faviconUrl: `${ORIGIN}/icon.png`,
+            })
+            await flush()
+
+            expect(requestOf(messages).peer.icons).toEqual([
+                `${ORIGIN}/stored.png`,
+            ])
+        })
+
         it('answers eth_sendTransaction with the tx hash', async () => {
             const { pending, message } = await raise('eth_sendTransaction')
             await message.respond({ type: 'send-transaction', txId: '0xabc' })

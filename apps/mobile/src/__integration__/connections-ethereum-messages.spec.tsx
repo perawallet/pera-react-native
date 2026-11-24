@@ -55,6 +55,7 @@ import {
     vectorSignature,
     verifyMessage,
     verifyTypedData,
+    pinClockToPermitFixtures,
 } from '@packages/chain-ethereum/src/__tests__/testing'
 import {
     useAccountsStore,
@@ -252,6 +253,7 @@ describe('Flow: an eip155 dApp asks for a message signature', () => {
 
     afterEach(async () => {
         vi.restoreAllMocks()
+        vi.useRealTimers()
         await getProvider().connections.store.clear()
         useAccountsStore.getState().setAccounts([])
         useRemoteConfigStore.getState().resetState()
@@ -345,6 +347,7 @@ describe('Flow: an eip155 dApp asks for a message signature', () => {
     })
 
     it('Given a connected session, when the dApp sends a Permit2 PermitSingle whose declared EIP712Domain leaves out chainId, then it is answered -32602 and no review opens', async () => {
+        pinClockToPermitFixtures()
         const walletKit = await connectSession()
 
         send(walletKit, 'eth_signTypedData_v4', [
@@ -367,7 +370,23 @@ describe('Flow: an eip155 dApp asks for a message signature', () => {
         expect(kmsCore.sign).not.toHaveBeenCalled()
     })
 
-    it('Given a connected session, when the dApp sends a Permit2 PermitSingle for an unlimited amount, then the review shows the spend-approval warning with the spender, an unlimited amount and its deadline, and cancelling answers 4001', async () => {
+    it('Given a connected session, when the dApp sends a Permit2 PermitSingle whose signature deadline has already passed, then it is answered -32602 and no review opens', async () => {
+        const walletKit = await connectSession()
+
+        // On the real clock the fixture's 2026-01-31 deadline has lapsed.
+        send(walletKit, 'eth_signTypedData_v4', [
+            SENDER,
+            JSON.stringify(PERMIT2_SINGLE_TYPED_DATA),
+        ])
+
+        const response = await answerOf(walletKit)
+        expect(response.error).toMatchObject({ code: -32_602 })
+        expect(screen.queryByTestId('sign-request-view')).toBeNull()
+        expect(kmsCore.sign).not.toHaveBeenCalled()
+    })
+
+    it('Given a connected session, when the dApp sends a Permit2 PermitSingle for an unlimited amount, then the review shows the network, the spender, an unlimited amount with its warning and one expiry row for an expiration that matches the signature deadline, and cancelling answers 4001', async () => {
+        pinClockToPermitFixtures()
         const walletKit = await connectSession()
 
         send(walletKit, 'eth_signTypedData_v4', [
@@ -387,6 +406,15 @@ describe('Flow: an eip155 dApp asks for a message signature', () => {
         expect(
             screen.getByTestId('message-signing-spend-approval-deadline'),
         ).toBeTruthy()
+        expect(
+            screen.queryByTestId(
+                'message-signing-spend-approval-signature-deadline',
+            ),
+        ).toBeNull()
+        expect(
+            screen.getByTestId('message-signing-spend-approval-unlimited-0'),
+        ).toBeTruthy()
+        expect(screen.getByTestId('review_network')).toBeTruthy()
         fireEvent.click(screen.getByTestId(REJECT_BUTTON))
 
         const response = await answerOf(walletKit)
@@ -395,6 +423,7 @@ describe('Flow: an eip155 dApp asks for a message signature', () => {
     })
 
     it('Given a connected session, when the dApp sends a Permit2 PermitSingle for a limited amount, then the review shows the spender and the base-unit amount instead of unlimited', async () => {
+        pinClockToPermitFixtures()
         const walletKit = await connectSession()
 
         send(walletKit, 'eth_signTypedData_v4', [
@@ -425,6 +454,7 @@ describe('Flow: an eip155 dApp asks for a message signature', () => {
     })
 
     it('Given a connected session, when the dApp sends an ERC-721 Permit, then the review shows the NFT by collection and token id, with no amount and the NFT spend warning', async () => {
+        pinClockToPermitFixtures()
         const walletKit = await connectSession()
 
         send(walletKit, 'eth_signTypedData_v4', [

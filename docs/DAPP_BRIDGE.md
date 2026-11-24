@@ -399,6 +399,12 @@ nothing holds it, and always an EIP-6963 announcement.
   install when the native bridge already exists, otherwise on first use, but a
   page that runs before then can still forge it, so treat it as best-effort
   against a hostile page.
+- **Site icon:** with no browser tab to read a favicon from, the page script
+  sends the icon the page declares (`apple-touch-icon`, else `icon`). The
+  transport keeps it only if it is `https:` on the page's own host or a subdomain
+  of it, since fetching it tells its host when the review opened. A connection
+  stored without an icon takes the requesting page's on each request; a stored
+  icon is never replaced.
 - **Timeouts:** the page script rejects an unanswered request with 4900 after the
   same backstop the extension uses (`dappPageTimeoutMs`), so a dropped answer
   cannot leave a pending `eth_requestAccounts` blocking later ones.

@@ -65,6 +65,45 @@ describe('webViewDappTransport', () => {
         )
     })
 
+    it("passes the page's https icon on as the request's favicon", () => {
+        const transport = createWebViewDappTransport()
+        const { page } = pageAt(`${ORIGIN}/swap`)
+        const listener = vi.fn()
+        transport.onRequest(listener)
+
+        transport.receive(
+            page,
+            messageOf({ icon: 'https://cdn.app.uniswap.org/favicon.png' }),
+            `${ORIGIN}/swap`,
+        )
+
+        expect(listener).toHaveBeenCalledWith(
+            expect.objectContaining({
+                faviconUrl: 'https://cdn.app.uniswap.org/favicon.png',
+            }),
+            expect.anything(),
+            expect.any(Function),
+        )
+    })
+
+    it.each([
+        ['plain http', 'http://app.uniswap.org/favicon.png'],
+        ['a data URL', 'data:image/png;base64,AAAA'],
+        ['not a URL', 'favicon.png'],
+        ['too long', `https://app.uniswap.org/${'a'.repeat(2048)}`],
+        ['on another site', 'https://tracker.example/pixel.png'],
+        ['on a parent domain', 'https://uniswap.org/favicon.png'],
+    ])('drops a page icon that is %s', (_label, icon) => {
+        const transport = createWebViewDappTransport()
+        const { page } = pageAt(`${ORIGIN}/swap`)
+        const listener = vi.fn()
+        transport.onRequest(listener)
+
+        transport.receive(page, messageOf({ icon }), `${ORIGIN}/swap`)
+
+        expect(listener.mock.calls[0][0]).not.toHaveProperty('faviconUrl')
+    })
+
     it.each([true, false])(
         'reports the app lock (%s) the request arrived under',
         isLocked => {
@@ -222,7 +261,8 @@ describe('isEip1193PageMessage', () => {
         ).toBe(false)
     })
 
-    it('rejects a message without a boolean gesture flag or a JSON-RPC request', () => {
+    it('rejects a message without a boolean gesture flag, a string icon or a JSON-RPC request', () => {
+        expect(isEip1193PageMessage({ ...messageOf(), icon: 42 })).toBe(false)
         expect(
             isEip1193PageMessage({ ...messageOf(), hasUserActivation: 'yes' }),
         ).toBe(false)

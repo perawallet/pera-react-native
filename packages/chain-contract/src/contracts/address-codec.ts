@@ -45,3 +45,9 @@ export interface AddressCodec {
 
 export const addressCodecs =
     createChainAdapterRegistry<AddressCodec>('addressCodec')
+
+/** The chain's short display form, or the address as given on a chain with no codec. */
+export const truncateAddressOn = (chainId: ChainId, address: string): string =>
+    addressCodecs.has(chainId)
+        ? addressCodecs.get(chainId).truncate(address)
+        : address

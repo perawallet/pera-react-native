@@ -12,9 +12,10 @@
 
 import { useCallback, useMemo } from 'react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type {
-    ChainScope,
-    MessageSummary,
+import {
+    spendSubmitDeadlineOf,
+    type ChainScope,
+    type MessageSummary,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     isMessageRequest,
@@ -27,6 +28,7 @@ import {
 } from '@perawallet/wallet-core-signing'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useHaptics } from '@hooks/useHaptics'
+import { useHasTimePassed } from '@hooks/useHasTimePassed'
 import { useRequestAddressSafety } from '../../hooks/useRequestAddressSafety'
 import { useRequestSiteSafety } from '../../hooks/useRequestSiteSafety'
 
@@ -41,8 +43,10 @@ type UseMessageSigningScreenResult = {
     reviewedAddresses: ReviewedAddress[]
     /** A scam-listed address under the hard block: the request can only be rejected. */
     isListedAddressBlocking: boolean
-    /** A flagged address or site still waits on the user's acknowledgement. */
+    /** A flagged address or site still waits on the user's acknowledgement, or the permit has expired. */
     isConfirmBlocked: boolean
+    /** The permit's signature deadline has passed, so the contract would refuse it. */
+    isExpired: boolean
     handleApprove: () => void
     handleReject: () => void
 }
@@ -75,13 +79,22 @@ export const useMessageSigningScreen = (): UseMessageSigningScreenResult => {
         isConfirmBlocked: isAddressConfirmBlocked,
     } = useRequestAddressSafety({ addresses: reviewedAddresses })
     const { isConfirmBlocked: isSiteConfirmBlocked } = useRequestSiteSafety()
-    const isConfirmBlocked = isAddressConfirmBlocked || isSiteConfirmBlocked
+    // The signer refuses an expired permit too; this keeps the slide from offering one.
+    const submitDeadline = summary?.spendApproval
+        ? spendSubmitDeadlineOf(summary.spendApproval)
+        : undefined
+    const isExpired = useHasTimePassed(submitDeadline)
+    const isConfirmBlocked =
+        isAddressConfirmBlocked || isSiteConfirmBlocked || isExpired
 
     const handleApprove = useCallback(() => {
-        if (isConfirmBlocked) return
+        // Re-read the clock: the slide can finish in the instant the deadline passes.
+        const hasLapsed =
+            submitDeadline !== undefined && Date.now() >= submitDeadline
+        if (isConfirmBlocked || hasLapsed) return
         haptics.medium()
         pipeline.next()
-    }, [haptics, pipeline, isConfirmBlocked])
+    }, [haptics, pipeline, isConfirmBlocked, submitDeadline])
 
     const handleReject = useCallback(() => {
         haptics.light()
@@ -98,6 +111,7 @@ export const useMessageSigningScreen = (): UseMessageSigningScreenResult => {
         reviewedAddresses,
         isListedAddressBlocking,
         isConfirmBlocked,
+        isExpired,
         handleApprove,
         handleReject,
     }

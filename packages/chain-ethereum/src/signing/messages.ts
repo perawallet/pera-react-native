@@ -30,6 +30,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     i18nKey,
+    spendSubmitDeadlineOf,
     type ChainScope,
     type MessageRequest,
     type MessageSummary,
@@ -493,6 +494,18 @@ const planMessage = (
     }
 }
 
+// Every signing path plans first, so a permit that lapses during review is never signed.
+const isPastSubmitDeadline = (
+    request: MessageRequest,
+    chain: EvmChain,
+): boolean => {
+    if (request.method !== SIGN_TYPED_DATA_V4) return false
+    const now = Date.now()
+    const approval = spendApprovalOf(readTypedData(request.payload), now, chain)
+    const submitBy = approval && spendSubmitDeadlineOf(approval)
+    return submitBy !== undefined && now >= submitBy
+}
+
 const planWith =
     (chain: EvmChain) =>
     (
@@ -521,6 +534,11 @@ const planWith =
             chain,
             isHardwareWalletAccount(account),
         )
+        // Here rather than in planMessage: assemble re-plans, and must not drop
+        // a signature made just before the deadline.
+        if (isPastSubmitDeadline(request, chain)) {
+            throw refuse("the permit's signature deadline has passed")
+        }
         return [
             {
                 requestIndex: 0,
