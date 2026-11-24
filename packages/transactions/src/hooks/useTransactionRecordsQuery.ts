@@ -43,6 +43,7 @@ import {
     mergePendingRecords,
 } from '../pending-history'
 import { isRecordInAssetHistory } from '../utils/assetHistory'
+import { withoutListedSwapPayouts } from '../utils/swapLegs'
 import {
     historyTypeOf,
     type TransactionHistoryType,
@@ -489,9 +490,11 @@ export const useTransactionRecordsQuery = ({
     )
     const records = useMemo(
         () =>
-            mergePendingRecords(
-                pendingRecords.filter(isInScope).filter(isOfType),
-                minedRecords,
+            withoutListedSwapPayouts(
+                mergePendingRecords(
+                    pendingRecords.filter(isInScope).filter(isOfType),
+                    minedRecords,
+                ),
             ),
         [pendingRecords, minedRecords, isInScope, isOfType],
     )

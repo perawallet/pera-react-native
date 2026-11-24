@@ -14,6 +14,7 @@ import { Decimal } from 'decimal.js'
 import { ALGO_DECIMALS, type Nullable } from '@perawallet/wallet-core-shared'
 import type {
     HistoryChainDataCodec,
+    SwapLegResponse,
     TransactionHistoryChainFields,
 } from '@perawallet/wallet-core-transactions'
 import { resolveAlgorandAssetFacts } from '../history/assetFacts'
@@ -55,6 +56,7 @@ type StoredAlgorandChainData = {
     closeTo: Nullable<string>
     swapGroupDetail: Nullable<StoredSwapGroupDetail>
     groupId: Nullable<string>
+    swapLeg?: Nullable<SwapLegResponse>
     /** Base units, as a decimal string. */
     // lanekeep-ignore-next-line pera/amount-types reason: JSON document stored in the chain_data column; decoded with new Decimal below
     closeAmount: Nullable<string>
@@ -107,6 +109,7 @@ function encode(fields: TransactionHistoryChainFields): string {
             : null,
         groupId: data.groupId,
         closeAmount: data.closeAmount?.toString() ?? null,
+        swapLeg: data.swapLeg,
     }
     return JSON.stringify({ algorand })
 }
@@ -122,6 +125,7 @@ function decode(json: string): TransactionHistoryChainFields {
             ? restoreSwapGroupDetail(algorand.swapGroupDetail)
             : null,
         groupId: algorand?.groupId ?? null,
+        swapLeg: algorand?.swapLeg ?? null,
         closeAmount: algorand?.closeAmount
             ? new Decimal(algorand.closeAmount)
             : null,

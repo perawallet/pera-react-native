@@ -11,8 +11,8 @@
             "asset_id": "eip155:1/erc20:0x6b175474e89094c44da98b954eedeac495271d0f"
         }
     },
-    "recordedFrom": "algorand-backend@be46f1b3c",
-    "recordedAt": "2026-11-19T09:09:10Z",
+    "recordedFrom": "algorand-backend@de2ce67a7",
+    "recordedAt": "2026-11-24T11:01:52Z",
     "response": {
         "next": null,
         "previous": null,
@@ -83,7 +83,60 @@
                         "asset_id": "eip155:1/erc20:0x6b175474e89094c44da98b954eedeac495271d0f",
                         "amount": "-15000000000000000000"
                     }
-                ]
+                ],
+                "swap": {
+                    "role": "deposit",
+                    "order": {
+                        "order_id": "7474740000000000001",
+                        "aggregator": "xo-v4",
+                        "provider": "xo",
+                        "provider_display_name": null,
+                        "provider_icon_url": null,
+                        "status": "completed",
+                        "funding_method": "wallet_transaction",
+                        "source_account": "eip155:1:0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
+                        "destination_account": "eip155:1:0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
+                        "source_asset": {
+                            "asset_id": "eip155:1/erc20:0x6b175474e89094c44da98b954eedeac495271d0f",
+                            "name": "Dai Stablecoin",
+                            "unit_name": "DAI",
+                            "fraction_decimals": 18,
+                            "logo": null,
+                            "verification_tier": "verified",
+                            "cross_chain_asset_group": null
+                        },
+                        "destination_asset": {
+                            "asset_id": "eip155:1/slip44:60",
+                            "name": "Ether",
+                            "unit_name": "ETH",
+                            "fraction_decimals": 18,
+                            "logo": null,
+                            "verification_tier": "verified",
+                            "cross_chain_asset_group": null
+                        },
+                        "source_amount": "15000000000000000000",
+                        "destination_amount_expected": "5612000000000000",
+                        "destination_amount_minimum": "5556000000000000",
+                        "destination_amount_received": null,
+                        "source_amount_usd_value": "15.00",
+                        "destination_amount_usd_value": "14.98",
+                        "transactions": [
+                            {
+                                "chain": "eip155:1",
+                                "tx_hash": "0x4cb3f2185d827e9ebb274080502b100a448b04cdbbade9fee4fb9559e1627a79",
+                                "role": "deposit"
+                            },
+                            {
+                                "chain": "eip155:1",
+                                "tx_hash": "0x5b0c4a0e5e1f2d3c4b5a69788796a5b4c3d2e1f00112233445566778899aabbc",
+                                "role": "payout"
+                            }
+                        ],
+                        "created_at": "2026-09-30T00:18:40Z",
+                        "updated_at": "2026-09-30T00:21:02Z",
+                        "expires_at": "2026-09-30T00:48:40Z"
+                    }
+                }
             },
             {
                 "kind": "transaction",

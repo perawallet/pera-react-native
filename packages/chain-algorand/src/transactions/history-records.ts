@@ -16,7 +16,10 @@ import type {
     PageRef,
     TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
-import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
+import {
+    swapLegOf,
+    type TransactionHistoryItem,
+} from '@perawallet/wallet-core-transactions'
 import { algorandNetworkOf } from '../network-id'
 import { fetchMoreTransactions, fetchTransactionHistory } from './history'
 import { algorandHistoryDataOf } from './history-data'
@@ -28,7 +31,9 @@ const toAlgorandTransactionRecord = (
     scope: ChainScope,
 ): TransactionRecord => {
     const data = algorandHistoryDataOf(item)
+    const swapLeg = data.swapLeg && swapLegOf(data.swapLeg)
     return {
+        ...(swapLeg && { swapLeg }),
         id: item.id,
         scope,
         status: item.status ?? 'confirmed',

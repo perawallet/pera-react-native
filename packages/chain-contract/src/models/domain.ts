@@ -314,6 +314,14 @@ export interface TransactionRecord {
     isSignedElsewhere?: boolean
     summary: TransactionSummary
     chainData: ChainTransactionData
+    swapLeg?: TransactionSwapLeg
+}
+
+/** A history record's transaction as one leg of a Pera swap order, as the backend recorded it. */
+export interface TransactionSwapLeg {
+    orderId: string
+    /** `source` pays the order in; `payout` and `refund` come back from the provider. */
+    role: 'source' | 'payout' | 'refund'
 }
 
 /**

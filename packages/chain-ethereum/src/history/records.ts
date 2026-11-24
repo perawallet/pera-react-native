@@ -16,6 +16,12 @@ import type {
     TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import {
+    readSwapLeg,
+    summarizeSwapLeg,
+    swapLegOf,
+} from '@perawallet/wallet-core-transactions'
+import { evmAssetIdOfRouterId } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
 import type { EvmHistoryItem } from './api/schema'
 import { singleNftOf, summarizeEthereumHistoryItem } from './summarize'
@@ -47,11 +53,14 @@ export const toEvmHistoryRecords = (
         nftApprovals,
     )
     const nft = singleNftOf(item, address, summary)
+    const status = item.status === 'success' ? 'confirmed' : 'failed'
+    const leg = readSwapLeg(item.swap)
+    const swapLeg = leg && swapLegOf(leg)
     return [
         {
             id,
             scope,
-            status: item.status === 'success' ? 'confirmed' : 'failed',
+            status,
             timestamp: Date.parse(item.block_time),
             ...(item.block_number !== undefined && {
                 blockNumber: item.block_number,
@@ -70,8 +79,21 @@ export const toEvmHistoryRecords = (
                 !isAssetView && {
                     isSignedElsewhere: true,
                 }),
-            summary,
+            summary:
+                leg && swapLeg
+                    ? summarizeSwapLeg(leg, summary, status, routerAssetId => {
+                          const assetId = evmAssetIdOfRouterId(
+                              routerAssetId,
+                              scope,
+                              chain,
+                          )
+                          return assetId
+                              ? { chainId: scope.chainId, assetId }
+                              : undefined
+                      })
+                    : summary,
             chainData: { family: 'evm', ...(nft && { nft }) },
+            ...(swapLeg && { swapLeg }),
         },
     ]
 }

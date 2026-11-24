@@ -843,6 +843,30 @@ describe('filtered to one asset', () => {
         ).toEqual([])
     })
 
+    it('reads a recorded swap deposit as the swap', async () => {
+        const { request, response } = readBackendRecording(
+            'evm-account-transactions',
+        )
+        server.use(
+            http.get(
+                `${PERA_URL}/api/v3/evm/:chainId/accounts/:address/transactions/`,
+                () => HttpResponse.json(response as JsonBodyType),
+            ),
+        )
+
+        const { items } = await getEvmTransactionHistory(
+            ETHEREUM,
+            request.pathParams?.address ?? '',
+            MAINNET,
+        )
+
+        const swaps = items.filter(item => item.swapLeg !== undefined)
+        expect(swaps.map(item => [item.swapLeg, item.summary.kind])).toEqual([
+            [{ orderId: '7474740000000000001', role: 'source' }, 'swap'],
+        ])
+        expect(swaps[0]?.summary.subtitle?.params).toEqual({ title: 'xo' })
+    })
+
     it('reads an NFT’s history unfiltered, since the backend filters no NFT view', async () => {
         const params = await readParams(`${getAddress(BAYC)}/1234`)
 
