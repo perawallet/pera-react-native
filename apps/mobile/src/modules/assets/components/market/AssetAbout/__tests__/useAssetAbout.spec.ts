@@ -12,7 +12,7 @@
 
 import { Linking } from 'react-native'
 import { renderHook } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import { logger } from '@perawallet/wallet-core-shared'
 import {
@@ -171,7 +171,9 @@ describe('useAssetAbout', () => {
     })
 
     it('contains a failed open of the project website', async () => {
-        vi.mocked(Linking.openURL).mockRejectedValue(new Error('no handler'))
+        vi.mocked(Linking.openURL).mockRejectedValueOnce(
+            new Error('no handler'),
+        )
         const { result } = renderHook(() =>
             useAssetAbout(
                 makeAsset(undefined, undefined),
@@ -181,6 +183,7 @@ describe('useAssetAbout', () => {
         )
 
         const warn = vi.spyOn(logger, 'warn')
+        onTestFinished(() => warn.mockRestore())
 
         result.current.openInBrowser('https://project.example')
 
