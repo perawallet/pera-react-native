@@ -63,6 +63,7 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
 import { usePinCode } from '../usePinCode'
 import { useBiometrics } from '../useBiometrics'
 import { useSecurityStore } from '../../store'
+import { PinMatchesDuressPinError } from '../../errors'
 import {
     PIN_RECORD_KEY_ID,
     LEGACY_DURESS_PIN_RECORD_KEY_ID,
@@ -230,6 +231,29 @@ describe('usePinCode — duress slot', () => {
         let regular, duress
         await act(async () => {
             regular = await result.current.verifyPin('654321')
+            duress = await result.current.verifyPin('111111')
+        })
+        expect(regular).toEqual({ kind: 'ok' })
+        expect(duress).toEqual({ kind: 'duress' })
+    }, 60_000)
+
+    test('changing the regular PIN to the armed duress PIN is refused and keeps both PINs', async () => {
+        const { result } = renderHook(() => usePinCode())
+        await act(async () => {
+            await result.current.savePin('123456')
+            await result.current.saveDuressPin('111111')
+        })
+        const before = new Uint8Array(kmsMocks.pinBytes!)
+
+        await expect(result.current.savePin('111111')).rejects.toBeInstanceOf(
+            PinMatchesDuressPinError,
+        )
+
+        expect(kmsMocks.pinBytes).toEqual(before)
+        expect(await result.current.checkDuressPinEnabled()).toBe(true)
+        let regular, duress
+        await act(async () => {
+            regular = await result.current.verifyPin('123456')
             duress = await result.current.verifyPin('111111')
         })
         expect(regular).toEqual({ kind: 'ok' })

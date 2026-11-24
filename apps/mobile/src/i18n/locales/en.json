@@ -3190,6 +3190,7 @@
             "verify_title": "Enter your PIN",
             "unlock_title": "Enter your PIN",
             "change_old_title": "Enter your old\n6-digit PIN",
+            "matches_duress_pin": "Your new PIN must be different from your duress PIN.",
             "logging_in": "Logging in"
         },
         "lockout": {

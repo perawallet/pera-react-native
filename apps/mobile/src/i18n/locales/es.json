@@ -3190,6 +3190,7 @@
             "verify_title": "Introduce tu PIN",
             "unlock_title": "Introduce tu PIN",
             "change_old_title": "Introduce tu PIN\nanterior de 6 dígitos",
+            "matches_duress_pin": "Tu nuevo PIN debe ser distinto de tu PIN de emergencia.",
             "logging_in": "Iniciando sesión"
         },
         "lockout": {

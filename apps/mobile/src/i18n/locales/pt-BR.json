@@ -3206,6 +3206,7 @@
             "verify_title": "Digite seu código PIN",
             "unlock_title": "Digite seu código PIN",
             "change_old_title": "Digite seu antigo\ncódigo PIN de 6 dígitos",
+            "matches_duress_pin": "Seu novo PIN precisa ser diferente do seu PIN de emergência.",
             "logging_in": "Entrando"
         },
         "lockout": {

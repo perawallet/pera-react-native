@@ -3182,6 +3182,7 @@
             "verify_title": "Gib deine PIN ein",
             "unlock_title": "Gib deine PIN ein",
             "change_old_title": "Gib deine alte\n6-stellige PIN ein",
+            "matches_duress_pin": "Deine neue PIN muss sich von deiner Notfall-PIN unterscheiden.",
             "logging_in": "Anmeldung läuft"
         },
         "lockout": {
