@@ -58,7 +58,8 @@
             "search_web": "Search on the web",
             "no_results": "No results",
             "assets_unavailable": "Asset search is unavailable right now",
-            "dapps_unavailable": "dApp search is unavailable right now"
+            "dapps_unavailable": "dApp search is unavailable right now",
+            "unverified": "Unverified"
         },
         "news": {
             "title": "News",

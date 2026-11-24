@@ -58,7 +58,8 @@
             "search_web": "Pesquisar na web",
             "no_results": "Nenhum resultado",
             "assets_unavailable": "A pesquisa de ativos está indisponível no momento",
-            "dapps_unavailable": "A pesquisa de dApps está indisponível no momento"
+            "dapps_unavailable": "A pesquisa de dApps está indisponível no momento",
+            "unverified": "Não verificado"
         },
         "news": {
             "title": "Notícias",
