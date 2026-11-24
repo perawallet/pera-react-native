@@ -110,6 +110,9 @@ export const evmHistoryItemSchema = z.object({
                     !isEip7708Mirror(asset_id.split('/erc20:')[1] ?? ''),
             ),
         ),
+    // Only on a recorded leg of a swap order; read by `readSwapLeg` where the
+    // row is summarized, so an unreadable one drops the swap, never the row.
+    swap: z.unknown().optional(),
 })
 
 export type EvmHistoryItem = z.output<typeof evmHistoryItemSchema>

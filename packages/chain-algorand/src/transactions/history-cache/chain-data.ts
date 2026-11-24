@@ -14,6 +14,7 @@ import { Decimal } from 'decimal.js'
 import { ALGO_DECIMALS, type Nullable } from '@perawallet/wallet-core-shared'
 import type {
     HistoryChainDataCodec,
+    SwapLegResponse,
     TransactionHistoryChainFields,
 } from '@perawallet/wallet-core-transactions'
 import { resolveAlgorandAssetFacts } from '../history/assetFacts'
@@ -28,6 +29,8 @@ export const CLOSE_AMOUNT_PATH = '$.algorand.closeAmount'
 /** Set by the close-amount backfill when the indexer has no amount; never read back into the item. */
 export const CLOSE_AMOUNT_SETTLED_PATH = '$.algorand.closeAmountSettled'
 export const SWAP_GROUP_DETAIL_PATH = '$.algorand.swapGroupDetail'
+export const SWAP_LEG_ORDER_ID_PATH = '$.algorand.swapLeg.order.order_id'
+export const SWAP_LEG_STATUS_PATH = '$.algorand.swapLeg.order.status'
 export const SWAP_ASSET_IN_DECIMALS_PATH =
     '$.algorand.swapGroupDetail.assetInDecimals'
 
@@ -55,6 +58,7 @@ type StoredAlgorandChainData = {
     closeTo: Nullable<string>
     swapGroupDetail: Nullable<StoredSwapGroupDetail>
     groupId: Nullable<string>
+    swapLeg?: Nullable<SwapLegResponse>
     /** Base units, as a decimal string. */
     // lanekeep-ignore-next-line pera/amount-types reason: JSON document stored in the chain_data column; decoded with new Decimal below
     closeAmount: Nullable<string>
@@ -107,6 +111,7 @@ function encode(fields: TransactionHistoryChainFields): string {
             : null,
         groupId: data.groupId,
         closeAmount: data.closeAmount?.toString() ?? null,
+        swapLeg: data.swapLeg,
     }
     return JSON.stringify({ algorand })
 }
@@ -122,6 +127,7 @@ function decode(json: string): TransactionHistoryChainFields {
             ? restoreSwapGroupDetail(algorand.swapGroupDetail)
             : null,
         groupId: algorand?.groupId ?? null,
+        swapLeg: algorand?.swapLeg ?? null,
         closeAmount: algorand?.closeAmount
             ? new Decimal(algorand.closeAmount)
             : null,

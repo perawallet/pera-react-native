@@ -437,6 +437,56 @@ describe('exportStoredEvmHistoryCsv', () => {
         expect(hashesOf(result.csvContent)).toEqual([hash(2), hash(1)])
     })
 
+    it("writes a swap's legs as what each moved on chain, never the order's quote", async () => {
+        const order = {
+            order_id: '42',
+            provider: 'xo',
+            status: 'completed',
+            source_asset: {
+                asset_id: `eip155:1/erc20:${USDC}`,
+                unit_name: 'USDC',
+                fraction_decimals: 6,
+            },
+            destination_asset: {
+                asset_id: 'eip155:1/slip44:60',
+                unit_name: 'ETH',
+                fraction_decimals: 18,
+            },
+            source_amount: '4000000',
+            // The quote: the payout moved exactly 1 ETH.
+            destination_amount_expected: '2000000000000000000',
+            destination_amount_received: null,
+        }
+        const payout = item({
+            hash: hash(2),
+            from: PEER,
+            to: ME,
+            value: ETH.toFixed(),
+            block_time: '2026-01-02T00:05:00Z',
+            balance_impacts: [
+                { asset_id: 'eip155:1/slip44:60', amount: ETH.toFixed() },
+            ],
+        })
+        await storeEvmHistoryPage(
+            [
+                { ...payout, swap: { role: 'payout', order } },
+                {
+                    ...usdcSent(1, '2026-01-02T00:00:00Z'),
+                    swap: { role: 'deposit', order },
+                },
+            ],
+            ME,
+            SCOPE,
+        )
+
+        const rows = cellsOf((await exportFor()).csvContent).slice(1)
+
+        expect(rows.map(row => [row[1], row[4], row[6], row[8]])).toEqual([
+            [hash(2), 'swap', 'ETH', '1'],
+            [hash(1), 'swap', 'USDC', '-4'],
+        ])
+    })
+
     it('writes a header-only file when nothing is stored', async () => {
         const result = await exportFor({
             dateRange: { startDate: '2026-01-02' },

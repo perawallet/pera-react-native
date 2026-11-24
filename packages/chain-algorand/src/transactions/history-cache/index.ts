@@ -13,6 +13,7 @@
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { backfillMissingCloseAmounts } from './close-amount-backfill'
 import { backfillSwapAssetFacts } from './swap-asset-facts-backfill'
+import { refreshOpenSwapLegs } from './swap-leg-status-refresh'
 
 export { algorandHistoryChainData } from './chain-data'
 
@@ -24,4 +25,5 @@ export async function healAlgorandCachedRows(params: {
 }): Promise<void> {
     await backfillMissingCloseAmounts(params)
     await backfillSwapAssetFacts(params)
+    await refreshOpenSwapLegs(params)
 }

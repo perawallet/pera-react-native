@@ -36,6 +36,7 @@ import {
     flatHistoryItem,
     type FlatHistoryItem,
 } from '../../../test-utils/history-item'
+import { algorandXoDepositLeg } from '../../../test-utils/swap-leg'
 import { registerAlgorandHistoryCodec } from './register-history-codec'
 
 const ADDRESS = 'ACCT1'
@@ -197,6 +198,11 @@ describe('Algorand history rows in chain_data', () => {
                 closeTo: 'CLOSE_ADDR',
                 closeAmount: new Decimal('50854132929'),
             }),
+            makeTx({
+                id: 'XO_DEPOSIT',
+                roundTime: 1699999999,
+                swapLeg: algorandXoDepositLeg(),
+            }),
         ]
         await write(written)
 
@@ -277,6 +283,7 @@ describe('Algorand history rows in chain_data', () => {
                 swapGroupDetail: swapDetail,
                 groupId: 'GROUP==',
                 closeAmount: new Decimal('50854132929'),
+                swapLeg: null,
             },
         })
     })

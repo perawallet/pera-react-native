@@ -315,6 +315,8 @@ type GetRowsByChainDataParams = {
     present?: readonly string[]
     /** JSON paths into chain_data that must be unset or null. */
     missing?: readonly string[]
+    /** JSON paths into chain_data whose text must be one of `values`. */
+    oneOf?: ReadonlyArray<{ path: string; values: readonly string[] }>
     /** Bounded per pass: survivors keep matching and retry next sync. */
     limit?: number
 }
@@ -335,6 +337,7 @@ export async function getRowsByChainData({
     accountAddress,
     present = [],
     missing = [],
+    oneOf = [],
     limit = 20,
 }: GetRowsByChainDataParams): Promise<
     Array<{ id: string; roundTime: number }>
@@ -378,6 +381,12 @@ export async function getRowsByChainData({
                     ...missing.map(path =>
                         isNull(
                             jsonPathAsText(TransactionsSchema.chainData, path),
+                        ),
+                    ),
+                    ...oneOf.map(({ path, values }) =>
+                        inArray(
+                            jsonPathAsText(TransactionsSchema.chainData, path),
+                            [...values],
                         ),
                     ),
                 ),
