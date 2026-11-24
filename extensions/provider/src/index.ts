@@ -28,7 +28,7 @@ export {
     setEngineKeySource,
     type EngineKeySource,
 } from './keystore/engineKeySource'
-export type { ResealReport } from './keystore/resealTypes'
+export type { LegacyCheckReport, ResealReport } from './keystore/resealTypes'
 /**
  * The `SubtleCrypto` the keystore engine runs on. Packages that seal records
  * for the native keystore take it from here rather than importing

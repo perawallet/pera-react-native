@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { afterEach, describe, test, expect, vi, beforeEach } from 'vitest'
 
 const keystoreMocks = vi.hoisted(() => ({
     clear: vi.fn(),
@@ -19,7 +19,16 @@ const keystoreMocks = vi.hoisted(() => ({
     storageGetString: vi.fn(),
 }))
 
+const resealMocks = vi.hoisted(() => ({
+    resealLegacyMaterialWith: vi.fn(),
+}))
+
 vi.mock('react-native-quick-crypto', () => ({ subtle: {} }))
+
+vi.mock('../keystore/resealLegacyMaterial', () => ({
+    resealLegacyMaterialWith: resealMocks.resealLegacyMaterialWith,
+    checkLegacyMaterialWith: vi.fn(),
+}))
 
 vi.mock('@algorandfoundation/react-native-keystore', () => ({
     WithKeyStore: () => ({ key: { store: {} } }),
@@ -70,7 +79,9 @@ import {
     getKeystoreHooks,
     clearKeystore,
     reconcileKeystore,
+    resealLegacyMaterial,
 } from '../singleton'
+import { logger } from '@perawallet/wallet-core-shared'
 import { PeraProvider } from '../pera-provider'
 
 const resetKeystoreStateForTest = (): void => {
@@ -236,6 +247,54 @@ describe('provider singleton', () => {
             expect(keys).toHaveLength(1)
             expect(keys[0].id).toBe('good')
             expect(result.failedIds).toEqual(['k/bad'])
+        })
+    })
+
+    describe('resealLegacyMaterial', () => {
+        afterEach(() => {
+            vi.restoreAllMocks()
+        })
+
+        test('re-seals under the key the unlock hands over and logs what moved and what did not', async () => {
+            const report = {
+                resealed: 2,
+                unrecoverable: ['pin'],
+                legacyKeyRemoved: true,
+            }
+            resealMocks.resealLegacyMaterialWith.mockResolvedValue(report)
+            const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+            const info = vi.spyOn(logger, 'info').mockImplementation(() => {})
+            const engineKey = {} as CryptoKey
+
+            await expect(resealLegacyMaterial(engineKey)).resolves.toBe(report)
+
+            expect(resealMocks.resealLegacyMaterialWith).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    engineKey,
+                    databaseName: 'keystore',
+                }),
+            )
+            expect(warn).toHaveBeenCalledWith(expect.any(String), {
+                ids: ['pin'],
+            })
+            expect(info).toHaveBeenCalledWith(expect.any(String), {
+                resealed: 2,
+            })
+        })
+
+        test('logs nothing for a profile with nothing to move', async () => {
+            resealMocks.resealLegacyMaterialWith.mockResolvedValue({
+                resealed: 0,
+                unrecoverable: [],
+                legacyKeyRemoved: false,
+            })
+            const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+            const info = vi.spyOn(logger, 'info').mockImplementation(() => {})
+
+            await resealLegacyMaterial({} as CryptoKey)
+
+            expect(warn).not.toHaveBeenCalled()
+            expect(info).not.toHaveBeenCalled()
         })
     })
 })

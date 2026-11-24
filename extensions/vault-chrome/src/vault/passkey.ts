@@ -21,14 +21,16 @@ import {
 } from '../errors'
 import { PRF_BLOB_KEY, PRF_CRED_ID_KEY } from '../storage-keys'
 import { armAutoLock } from './autolock'
-import {
-    isMigrationClosed,
-    readOtherBlobState,
-    runLegacyRecordMigration,
-    type UnlockOptions,
-} from './kv-auth-key'
+import { runLegacyRecordMigration } from './kv-auth-key'
 import { clearFailedAttempts, getLockoutRemainingSeconds } from './lockout'
-import { createMarkedSalt, isMarkedSalt } from './marked-salt'
+import { createMarkedSalt, readSaltMarks, type SaltMarks } from './marked-salt'
+import {
+    isClosedByOtherBlob,
+    nextSaltMarks,
+    readOtherBlobState,
+    runLegacyKeystoreReseal,
+    type UnlockOptions,
+} from './migration-window'
 import { hasRecentPasswordAuth } from './password-auth'
 import { putSessionMasterKey, requireSessionMasterKey } from './session'
 import { unwrapMasterKeyWithPassword } from './vault'
@@ -184,8 +186,9 @@ const wrapWithPrfOutput = async (
     prfOutput: BufferSource,
     masterKey: Uint8Array,
     prfEvalSalt: Uint8Array,
+    marks: SaltMarks,
 ): Promise<WrappedMasterKeyPrfV1> => {
-    const hkdfSalt = createMarkedSalt()
+    const hkdfSalt = createMarkedSalt(marks)
     const iv = crypto.getRandomValues(new Uint8Array(12))
     const kek = await deriveKekFromPrf(prfOutput, hkdfSalt)
     const ciphertext = new Uint8Array(
@@ -283,8 +286,20 @@ const wrapMasterKeyWithPasskey = async (
             throw new PasskeyPrfUnsupportedError()
         }
 
-        // Derive a KEK from the PRF output and wrap the master key.
-        const blob = await wrapWithPrfOutput(prfOutput, masterKey, prfEvalSalt)
+        // The keystore mark follows the password blob: enabling a passkey
+        // must not close a re-seal that has yet to succeed there.
+        const passwordBlob = await readOtherBlobState('passkey')
+        const blob = await wrapWithPrfOutput(
+            prfOutput,
+            masterKey,
+            prfEvalSalt,
+            {
+                isKvSealed: true,
+                isKeystoreResealed:
+                    passwordBlob.status !== 'read' ||
+                    passwordBlob.marks.isKeystoreResealed,
+            },
+        )
 
         // Fix: store rawId bytes (base64-encoded) not the base64url string id —
         // allowCredentials descriptors require the raw binary credential id.
@@ -332,9 +347,28 @@ export const enablePasskeyUnlockWithSession = async (): Promise<void> => {
 
 type UnwrappedPasskeyKey = {
     masterKey: Uint8Array
-    /** Set only when the blob that opened is unmarked; same credential and `prfEvalSalt`. */
-    markedPrfBlob?: string
+    marks: SaltMarks
+    /**
+     * Re-wraps under the same credential and `prfEvalSalt`, keyed by
+     * `marksKey`: one per set of marks that adds to the blob's own. Filled only
+     * when asked for.
+     */
+    markedPrfBlobs: Map<string, string>
 }
+
+const marksKey = (marks: SaltMarks): string =>
+    `${Number(marks.isKvSealed)}${Number(marks.isKeystoreResealed)}`
+
+const MARK_SETS: SaltMarks[] = [
+    { isKvSealed: true, isKeystoreResealed: false },
+    { isKvSealed: false, isKeystoreResealed: true },
+    { isKvSealed: true, isKeystoreResealed: true },
+]
+
+const addsToMarks = (candidate: SaltMarks, marks: SaltMarks): boolean =>
+    (candidate.isKvSealed || !marks.isKvSealed) &&
+    (candidate.isKeystoreResealed || !marks.isKeystoreResealed) &&
+    marksKey(candidate) !== marksKey(marks)
 
 /**
  * Honours the lockout, reads and validates the PRF blob, runs the assertion,
@@ -343,9 +377,9 @@ type UnwrappedPasskeyKey = {
  * assertion. The caller owns zeroing the returned key.
  */
 const unwrapMasterKeyWithPasskey = async ({
-    shouldPrepareMarkedBlob = false,
+    shouldPrepareMarkedBlobs = false,
 }: {
-    shouldPrepareMarkedBlob?: boolean
+    shouldPrepareMarkedBlobs?: boolean
 } = {}): Promise<UnwrappedPasskeyKey> => {
     // Biometric/passkey auth must NOT bypass the password lockout — mirrors
     // useLockScreen.ts, which skips the biometric prompt entirely while
@@ -415,21 +449,28 @@ const unwrapMasterKeyWithPasskey = async ({
             // AES-GCM tag failure — wrong PRF output (tampered or wrong key).
             throw new PasskeyUnlockError()
         }
+        const marks = readSaltMarks(hkdfSaltBytes)
+        const markedPrfBlobs = new Map<string, string>()
+        if (!shouldPrepareMarkedBlobs) {
+            return { masterKey, marks, markedPrfBlobs }
+        }
         // Built here because the PRF output, which can't be had again without
         // another assertion, is zeroed on the way out.
-        if (!shouldPrepareMarkedBlob || isMarkedSalt(hkdfSaltBytes)) {
-            return { masterKey }
-        }
         try {
-            const markedBlob = await wrapWithPrfOutput(
-                prfOutput,
-                masterKey,
-                prfEvalSaltBytes,
-            )
-            return { masterKey, markedPrfBlob: JSON.stringify(markedBlob) }
+            for (const candidate of MARK_SETS) {
+                if (!addsToMarks(candidate, marks)) continue
+                const blob = await wrapWithPrfOutput(
+                    prfOutput,
+                    masterKey,
+                    prfEvalSaltBytes,
+                    candidate,
+                )
+                markedPrfBlobs.set(marksKey(candidate), JSON.stringify(blob))
+            }
+            return { masterKey, marks, markedPrfBlobs }
         } catch {
             // Best-effort: the unlock stands, and the next one retries.
-            return { masterKey }
+            return { masterKey, marks, markedPrfBlobs: new Map() }
         }
     } finally {
         // Zero PRF output bytes after KEK derivation.
@@ -443,24 +484,39 @@ const unwrapMasterKeyWithPasskey = async ({
 export const unlockWithPasskey = async (
     options?: UnlockOptions,
 ): Promise<void> => {
-    const { masterKey, markedPrfBlob } = await unwrapMasterKeyWithPasskey({
-        shouldPrepareMarkedBlob: true,
-    })
+    const { masterKey, marks, markedPrfBlobs } =
+        await unwrapMasterKeyWithPasskey({ shouldPrepareMarkedBlobs: true })
     try {
         // Before the session key lands, so contexts reacting to the unlock
-        // already find sealed records.
+        // already find sealed records and re-sealed keystore material. A
+        // window stays shut when its marked blob could not be prepared: the
+        // migration would rerun on every unlock without one.
+        const canMark = markedPrfBlobs.size > 0
         const other = await readOtherBlobState('passkey')
         const hasMigrated =
-            markedPrfBlob === undefined || isMigrationClosed(other)
+            !canMark ||
+            marks.isKvSealed ||
+            isClosedByOtherBlob(other, 'isKvSealed')
                 ? false
                 : await runLegacyRecordMigration(masterKey, options)
+        const hasResealed =
+            !canMark ||
+            marks.isKeystoreResealed ||
+            isClosedByOtherBlob(other, 'isKeystoreResealed')
+                ? false
+                : await runLegacyKeystoreReseal(masterKey, options)
         await putSessionMasterKey(masterKey)
         await armAutoLock()
         await clearFailedAttempts()
-        if (
-            markedPrfBlob !== undefined &&
-            (hasMigrated || other === 'marked')
-        ) {
+        const markedPrfBlob = markedPrfBlobs.get(
+            marksKey(
+                nextSaltMarks(marks, other, {
+                    isKvSealed: hasMigrated,
+                    isKeystoreResealed: hasResealed,
+                }),
+            ),
+        )
+        if (markedPrfBlob !== undefined) {
             try {
                 await chrome.storage.local.set({
                     [PRF_BLOB_KEY]: markedPrfBlob,

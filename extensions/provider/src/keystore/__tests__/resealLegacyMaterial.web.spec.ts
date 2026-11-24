@@ -24,6 +24,7 @@ import {
     createIndexedDBDriver,
     open,
     openDatabase,
+    seal,
     type MaterialRecord,
 } from '@algorandfoundation/keystore-web'
 
@@ -37,7 +38,10 @@ vi.mock('@algorandfoundation/keystore-core', async importOriginal => {
 
 import { createPeraKeystore } from '../createKeystore.web'
 import { setEngineKeySource } from '../engineKeySource'
-import { resealLegacyMaterialWith } from '../resealLegacyMaterial.web'
+import {
+    checkLegacyMaterialWith,
+    resealLegacyMaterialWith,
+} from '../resealLegacyMaterial.web'
 import { safeWarn } from '../migrations/safeLog'
 
 vi.mock('../migrations/safeLog', () => ({ safeWarn: vi.fn() }))
@@ -158,23 +162,43 @@ const opensUnderEngine = async (
     }
 }
 
-describe('resealLegacyMaterialWith', () => {
+const ATTACKER_SEED = Uint8Array.from({ length: 32 }, () => 0xaa)
+
+describe('legacy keystore material', () => {
     let factory: IDBFactory
     let keystore: ReturnType<typeof createPeraKeystore>
+    let resolveEngineKey: ReturnType<typeof vi.fn<() => Promise<CryptoKey>>>
 
-    const deps = () => ({
-        keystore,
-        resolveEngineKey: engineKey,
+    const resealDeps = async () => ({
+        engineKey: await engineKey(),
         subtle,
         indexedDB: factory,
         databaseName: 'keystore',
     })
+
+    const checkDeps = () => ({
+        keystore,
+        resolveEngineKey,
+        subtle,
+        indexedDB: factory,
+        databaseName: 'keystore',
+    })
+
+    const corrupt = async (id: string): Promise<void> => {
+        const db = await openDatabase('keystore', factory)
+        const record = (await db.get<MaterialRecord>(MATERIAL_STORE, id))!
+        if (record.kind !== 'bytes') throw new Error('fixture')
+        record.ciphertext[0] ^= 0xff
+        await db.put(MATERIAL_STORE, record)
+        db.close()
+    }
 
     beforeEach(async () => {
         vi.mocked(safeWarn).mockClear()
         factory = new IDBFactory()
         globalThis.indexedDB = factory
         setEngineKeySource(async () => Uint8Array.from(SESSION_KEY))
+        resolveEngineKey = vi.fn(engineKey)
         await writeLegacyProfile(factory)
         keystore = createPeraKeystore({
             store: store(),
@@ -183,187 +207,222 @@ describe('resealLegacyMaterialWith', () => {
         await keystore.ready
     })
 
-    it('re-seals bytes, re-mints the child as bytes and deletes the legacy key', async () => {
-        expect(await opensUnderEngine(factory, 'seed-1')).toBe(false)
-        expect((await readMaterial(factory, 'sign-1'))?.kind).toBe('cryptokey')
+    describe('resealLegacyMaterialWith', () => {
+        it('re-seals bytes and deletes the legacy key', async () => {
+            expect(await opensUnderEngine(factory, 'seed-1')).toBe(false)
 
-        const report = await resealLegacyMaterialWith(deps())
+            const report = await resealLegacyMaterialWith(await resealDeps())
 
-        expect(report).toEqual({
-            resealed: 2,
-            reminted: 1,
-            unrecoverable: [],
-            legacyKeyRemoved: true,
+            expect(report).toEqual({
+                resealed: 2,
+                unrecoverable: [],
+                legacyKeyRemoved: true,
+            })
+            expect(await opensUnderEngine(factory, 'seed-1')).toBe(true)
+            expect(await opensUnderEngine(factory, 'pin')).toBe(true)
+            expect(await readMaterial(factory, MASTER_KEY_ID)).toBeUndefined()
         })
-        expect(await opensUnderEngine(factory, 'seed-1')).toBe(true)
-        expect(await opensUnderEngine(factory, 'pin')).toBe(true)
-        expect(await opensUnderEngine(factory, 'sign-1')).toBe(true)
-        expect(await readMaterial(factory, MASTER_KEY_ID)).toBeUndefined()
+
+        it('is a no-op once the legacy key is gone, and does not resurrect it', async () => {
+            await resealLegacyMaterialWith(await resealDeps())
+
+            const report = await resealLegacyMaterialWith(await resealDeps())
+
+            expect(report).toEqual({
+                resealed: 0,
+                unrecoverable: [],
+                legacyKeyRemoved: false,
+            })
+            expect(await readMaterial(factory, MASTER_KEY_ID)).toBeUndefined()
+        })
+
+        it('converges when two sweeps interleave', async () => {
+            const [a, b] = await Promise.all([
+                resealLegacyMaterialWith(await resealDeps()),
+                resealLegacyMaterialWith(await resealDeps()),
+            ])
+            await checkLegacyMaterialWith(checkDeps())
+
+            expect(a.resealed + b.resealed).toBeGreaterThanOrEqual(2)
+            expect(a.unrecoverable).toEqual([])
+            expect(b.unrecoverable).toEqual([])
+            expect(await opensUnderEngine(factory, 'seed-1')).toBe(true)
+            expect(await opensUnderEngine(factory, 'pin')).toBe(true)
+            expect(await readMaterial(factory, MASTER_KEY_ID)).toBeUndefined()
+            await expect(
+                keystore.sign('sign-1', Uint8Array.of(1)),
+            ).resolves.toHaveLength(64)
+        })
+
+        it('logs a record that opens under neither key, leaves it, and still removes the legacy key', async () => {
+            await corrupt('pin')
+
+            const report = await resealLegacyMaterialWith(await resealDeps())
+
+            expect(report.unrecoverable).toEqual(['pin'])
+            expect(report.legacyKeyRemoved).toBe(true)
+            expect(await opensUnderEngine(factory, 'seed-1')).toBe(true)
+            expect(await opensUnderEngine(factory, 'pin')).toBe(false)
+            expect(vi.mocked(safeWarn)).toHaveBeenCalledWith(
+                expect.stringContaining('pin'),
+            )
+            expect(vi.mocked(safeWarn).mock.calls.join(' ')).not.toContain(
+                '1234',
+            )
+        })
+
+        it('removes only the legacy key from a profile whose records are all engine-sealed', async () => {
+            await resealLegacyMaterialWith(await resealDeps())
+            // `driver.clear()` preserves the reserved id, so a wipe between the
+            // upgrade and a completed sweep looks like this: legacy key present,
+            // everything else already engine-sealed.
+            const legacy = createIndexedDBDriver({
+                host: subtle,
+                indexedDB: factory,
+            })
+            await legacy.ready
+            expect((await readMaterial(factory, MASTER_KEY_ID))?.kind).toBe(
+                'cryptokey',
+            )
+
+            const report = await resealLegacyMaterialWith(await resealDeps())
+
+            expect(report).toEqual({
+                resealed: 0,
+                unrecoverable: [],
+                legacyKeyRemoved: true,
+            })
+            expect(await readMaterial(factory, MASTER_KEY_ID)).toBeUndefined()
+            expect(await opensUnderEngine(factory, 'seed-1')).toBe(true)
+        })
     })
 
-    it('the re-minted child still signs for the same public key', async () => {
-        await resealLegacyMaterialWith(deps())
-        const data = Uint8Array.of(4, 5, 6)
+    describe('checkLegacyMaterialWith', () => {
+        it('re-mints the child as bytes once its parent is re-sealed, and it still signs for the same public key', async () => {
+            await resealLegacyMaterialWith(await resealDeps())
+            expect((await readMaterial(factory, 'sign-1'))?.kind).toBe(
+                'cryptokey',
+            )
 
-        const signature = await keystore.sign('sign-1', data)
+            const report = await checkLegacyMaterialWith(checkDeps())
 
-        const publicKey = await subtle.importKey(
-            'raw',
-            await ed25519PublicKey(SEED),
-            { name: 'Ed25519' },
-            true,
-            ['verify'],
-        )
-        expect(
-            await subtle.verify(
+            expect(report).toEqual({ reminted: 1, unrecoverable: [] })
+            expect(await opensUnderEngine(factory, 'sign-1')).toBe(true)
+            const data = Uint8Array.of(4, 5, 6)
+            const signature = await keystore.sign('sign-1', data)
+            const publicKey = await subtle.importKey(
+                'raw',
+                await ed25519PublicKey(SEED),
                 { name: 'Ed25519' },
-                publicKey,
-                signature,
-                data,
-            ),
-        ).toBe(true)
-        expect(await keystore.secrets!.get('pin')).toEqual(
-            new TextEncoder().encode('1234'),
-        )
-    })
-
-    it('is a no-op once the legacy key is gone, and does not resurrect it', async () => {
-        await resealLegacyMaterialWith(deps())
-
-        const report = await resealLegacyMaterialWith(deps())
-
-        expect(report).toEqual({
-            resealed: 0,
-            reminted: 0,
-            unrecoverable: [],
-            legacyKeyRemoved: false,
+                true,
+                ['verify'],
+            )
+            expect(
+                await subtle.verify(
+                    { name: 'Ed25519' },
+                    publicKey,
+                    signature,
+                    data,
+                ),
+            ).toBe(true)
+            expect(await keystore.secrets!.get('pin')).toEqual(
+                new TextEncoder().encode('1234'),
+            )
         })
-        expect(await readMaterial(factory, MASTER_KEY_ID)).toBeUndefined()
-    })
 
-    it('converges when two sweeps interleave', async () => {
-        const [a, b] = await Promise.all([
-            resealLegacyMaterialWith(deps()),
-            resealLegacyMaterialWith(deps()),
-        ])
+        it('costs no engine key on a fully migrated profile', async () => {
+            await resealLegacyMaterialWith(await resealDeps())
+            await checkLegacyMaterialWith(checkDeps())
+            resolveEngineKey.mockClear()
 
-        expect(a.resealed + b.resealed).toBeGreaterThanOrEqual(2)
-        expect(a.unrecoverable).toEqual([])
-        expect(b.unrecoverable).toEqual([])
-        expect(await opensUnderEngine(factory, 'seed-1')).toBe(true)
-        expect(await opensUnderEngine(factory, 'pin')).toBe(true)
-        expect(await opensUnderEngine(factory, 'sign-1')).toBe(true)
-        expect(await readMaterial(factory, MASTER_KEY_ID)).toBeUndefined()
-        await expect(
-            keystore.sign('sign-1', Uint8Array.of(1)),
-        ).resolves.toHaveLength(64)
-    })
+            const report = await checkLegacyMaterialWith(checkDeps())
 
-    it('logs a record that opens under neither key, leaves it, and still removes the legacy key', async () => {
-        const db = await openDatabase('keystore', factory)
-        const pin = (await db.get<MaterialRecord>(MATERIAL_STORE, 'pin'))!
-        if (pin.kind !== 'bytes') throw new Error('fixture')
-        pin.ciphertext[0] ^= 0xff
-        await db.put(MATERIAL_STORE, pin)
-        db.close()
+            expect(report).toEqual({ reminted: 0, unrecoverable: [] })
+            expect(resolveEngineKey).not.toHaveBeenCalled()
+        })
 
-        const report = await resealLegacyMaterialWith(deps())
+        it('reports a child whose parent seed did not re-seal, and leaves it as a CryptoKey', async () => {
+            await corrupt('seed-1')
+            const reseal = await resealLegacyMaterialWith(await resealDeps())
 
-        expect(report.unrecoverable).toEqual(['pin'])
-        expect(report.legacyKeyRemoved).toBe(true)
-        expect(await opensUnderEngine(factory, 'seed-1')).toBe(true)
-        expect(await opensUnderEngine(factory, 'pin')).toBe(false)
-        expect(vi.mocked(safeWarn)).toHaveBeenCalledWith(
-            expect.stringContaining('pin'),
-        )
-        expect(vi.mocked(safeWarn).mock.calls.join(' ')).not.toContain('1234')
-    })
+            const report = await checkLegacyMaterialWith(checkDeps())
 
-    it('keeps the sweep going past an unrecoverable parent seed and still removes the legacy key', async () => {
-        const db = await openDatabase('keystore', factory)
-        const seed = (await db.get<MaterialRecord>(MATERIAL_STORE, 'seed-1'))!
-        if (seed.kind !== 'bytes') throw new Error('fixture')
-        seed.ciphertext[0] ^= 0xff
-        await db.put(MATERIAL_STORE, seed)
-        db.close()
+            expect(reseal.unrecoverable).toEqual(['seed-1'])
+            expect(reseal.legacyKeyRemoved).toBe(true)
+            expect(report).toEqual({ reminted: 0, unrecoverable: ['sign-1'] })
+            expect(await opensUnderEngine(factory, 'pin')).toBe(true)
+            expect((await readMaterial(factory, 'sign-1'))?.kind).toBe(
+                'cryptokey',
+            )
+            expect(vi.mocked(safeWarn).mock.calls.join(' ')).not.toContain(
+                String.fromCharCode(...SEED),
+            )
+        })
 
-        const report = await resealLegacyMaterialWith(deps())
+        it('re-mints a leftover child on a later run after the legacy key is gone', async () => {
+            await corrupt('seed-1')
+            await resealLegacyMaterialWith(await resealDeps())
+            await checkLegacyMaterialWith(checkDeps())
+            await keystore.import(
+                {
+                    id: 'seed-1',
+                    type: 'seed',
+                    algorithm: 'raw',
+                    extractable: true,
+                    keyUsages: ['deriveKey', 'deriveBits'],
+                    privateKey: Uint8Array.from(SEED),
+                    metadata: { scheme: 'algo25' },
+                },
+                'raw',
+            )
 
-        expect(report.unrecoverable).toEqual(['seed-1', 'sign-1'])
-        expect(report.legacyKeyRemoved).toBe(true)
-        expect(await opensUnderEngine(factory, 'pin')).toBe(true)
-        expect((await readMaterial(factory, 'sign-1'))?.kind).toBe('cryptokey')
-        expect(vi.mocked(safeWarn).mock.calls.join(' ')).not.toContain(
-            String.fromCharCode(...SEED),
-        )
-    })
+            const report = await checkLegacyMaterialWith(checkDeps())
 
-    it('re-mints a leftover child on a later run after the legacy key is gone', async () => {
-        const db = await openDatabase('keystore', factory)
-        const seed = (await db.get<MaterialRecord>(MATERIAL_STORE, 'seed-1'))!
-        if (seed.kind !== 'bytes') throw new Error('fixture')
-        seed.ciphertext[0] ^= 0xff
-        await db.put(MATERIAL_STORE, seed)
-        db.close()
+            expect(report).toEqual({ reminted: 1, unrecoverable: [] })
+            expect((await readMaterial(factory, 'sign-1'))?.kind).toBe('bytes')
+            await expect(
+                keystore.sign('sign-1', Uint8Array.of(1)),
+            ).resolves.toHaveLength(64)
+        })
 
-        const firstReport = await resealLegacyMaterialWith(deps())
-
-        expect(firstReport.legacyKeyRemoved).toBe(true)
-        expect(firstReport.unrecoverable).toEqual(['seed-1', 'sign-1'])
-        expect((await readMaterial(factory, 'sign-1'))?.kind).toBe('cryptokey')
-        expect(await readMaterial(factory, MASTER_KEY_ID)).toBeUndefined()
-
-        await keystore.import(
-            {
+        it('does not adopt a root swapped in beside a reappearing legacy key', async () => {
+            await resealLegacyMaterialWith(await resealDeps())
+            await checkLegacyMaterialWith(checkDeps())
+            // A profile writer without the password plants a legacy key and
+            // swaps the root for one sealed under it.
+            const plantedKey = await subtle.generateKey(
+                { name: 'AES-GCM', length: 256 },
+                false,
+                ['encrypt', 'decrypt'],
+            )
+            const sealed = await seal(subtle, plantedKey, ATTACKER_SEED)
+            const db = await openDatabase('keystore', factory)
+            await db.put<MaterialRecord>(MATERIAL_STORE, {
+                id: MASTER_KEY_ID,
+                kind: 'cryptokey',
+                privateKey: plantedKey,
+            })
+            await db.put<MaterialRecord>(MATERIAL_STORE, {
                 id: 'seed-1',
-                type: 'seed',
-                algorithm: 'raw',
-                extractable: true,
-                keyUsages: ['deriveKey', 'deriveBits'],
-                privateKey: Uint8Array.from(SEED),
-                metadata: { scheme: 'algo25' },
-            },
-            'raw',
-        )
+                kind: 'bytes',
+                ...sealed,
+            })
+            db.close()
 
-        const secondReport = await resealLegacyMaterialWith(deps())
+            // The vault's mark keeps the unlock from re-sealing; startup runs.
+            const report = await checkLegacyMaterialWith(checkDeps())
 
-        expect(secondReport).toEqual({
-            resealed: 0,
-            reminted: 1,
-            unrecoverable: [],
-            legacyKeyRemoved: false,
+            expect(report).toEqual({ reminted: 0, unrecoverable: ['seed-1'] })
+            expect(await opensUnderEngine(factory, 'seed-1')).toBe(false)
+            await expect(keystore.export('seed-1')).rejects.toThrow()
+            expect(await opensUnderEngine(factory, 'pin')).toBe(true)
+            expect(await opensUnderEngine(factory, 'sign-1')).toBe(true)
+            expect((await readMaterial(factory, MASTER_KEY_ID))?.kind).toBe(
+                'cryptokey',
+            )
+            expect(vi.mocked(safeWarn)).toHaveBeenCalledWith(
+                expect.stringContaining('seed-1'),
+            )
         })
-        expect((await readMaterial(factory, 'sign-1'))?.kind).toBe('bytes')
-        expect(await readMaterial(factory, MASTER_KEY_ID)).toBeUndefined()
-        await expect(
-            keystore.sign('sign-1', Uint8Array.of(1)),
-        ).resolves.toHaveLength(64)
-    })
-
-    it('removes only the legacy key from a profile whose records are all engine-sealed', async () => {
-        await resealLegacyMaterialWith(deps())
-        // `driver.clear()` preserves the reserved id, so a wipe between the
-        // upgrade and a completed sweep looks like this: legacy key present,
-        // everything else already engine-sealed.
-        const legacy = createIndexedDBDriver({
-            host: subtle,
-            indexedDB: factory,
-        })
-        await legacy.ready
-        expect((await readMaterial(factory, MASTER_KEY_ID))?.kind).toBe(
-            'cryptokey',
-        )
-
-        const report = await resealLegacyMaterialWith(deps())
-
-        expect(report).toEqual({
-            resealed: 0,
-            reminted: 0,
-            unrecoverable: [],
-            legacyKeyRemoved: true,
-        })
-        expect(await readMaterial(factory, MASTER_KEY_ID)).toBeUndefined()
-        expect(await opensUnderEngine(factory, 'seed-1')).toBe(true)
     })
 })

@@ -16,6 +16,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
     unlockVault: vi.fn(),
     sealLegacyKvRecords: vi.fn(),
+    resealLegacyMaterial: vi.fn(),
     unlockWithPasskey: vi.fn(),
     isPasskeyUnlockSupported: vi.fn().mockResolvedValue(false),
     isPasskeyUnlockEnabled: vi.fn().mockResolvedValue(false),
@@ -58,6 +59,10 @@ vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
     sealLegacyKvRecords: mocks.sealLegacyKvRecords,
 }))
 
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    resealLegacyMaterial: mocks.resealLegacyMaterial,
+}))
+
 import { useUnlockScreen } from '../useUnlockScreen.web'
 
 describe('useUnlockScreen', () => {
@@ -85,13 +90,16 @@ describe('useUnlockScreen', () => {
         expect(result.current.password).toBe('')
     })
 
-    it('hands both unlock paths the legacy record migration', async () => {
+    it('hands both unlock paths the same legacy migrations', async () => {
         const { result } = renderHook(() => useUnlockScreen())
         act(() => result.current.setPassword('correctpassword'))
         await act(() => result.current.handleUnlock())
         await act(() => result.current.handlePasskeyUnlock())
 
-        const expected = { migrateLegacyRecords: mocks.sealLegacyKvRecords }
+        const expected = {
+            migrateLegacyRecords: mocks.sealLegacyKvRecords,
+            resealLegacyKeystore: mocks.resealLegacyMaterial,
+        }
         expect(mocks.unlockVault).toHaveBeenCalledWith(
             'correctpassword',
             expected,

@@ -47,7 +47,7 @@ import {
 } from '../password-auth'
 import { InvalidPasswordError } from '../../errors'
 import { deriveKvAuthKey } from '../kv-auth-key'
-import { isMarkedSalt } from '../marked-salt'
+import { isMarkedSalt, readSaltMarks } from '../marked-salt'
 import { getLockoutRemainingSeconds, runThrottledAttempt } from '../lockout'
 
 // Records one wrong-password attempt the way a password check would.
@@ -1044,6 +1044,80 @@ describe('passkey vault', () => {
             await verifyPasskey()
 
             expect(fake.data.get(PRF_BLOB)).toBe(before)
+        })
+
+        describe('keystore re-seal', () => {
+            const prfMarks = () =>
+                readSaltMarks(base64.decode(storedBlob().hkdfSalt))
+            const passwordMarks = () =>
+                readSaltMarks(
+                    base64.decode(
+                        JSON.parse(String(fake.data.get(PASSWORD_BLOB))).salt,
+                    ),
+                )
+
+            it('re-seals before the session key is set, then marks the blob, and never again', async () => {
+                await setUpUnmarked()
+                let sawSessionKey = true
+                const reseal = vi.fn(async () => {
+                    sawSessionKey = fake.sessionData.has('vault:master-key')
+                })
+
+                await unlockWithPasskey({ resealLegacyKeystore: reseal })
+                await lockVault()
+                await unlockWithPasskey({ resealLegacyKeystore: reseal })
+
+                expect(reseal).toHaveBeenCalledTimes(1)
+                expect(sawSessionKey).toBe(false)
+                expect(prfMarks()).toEqual({
+                    isKvSealed: false,
+                    isKeystoreResealed: true,
+                })
+            })
+
+            it('leaves the blob unmarked to retry when the re-seal throws', async () => {
+                await setUpUnmarked()
+                const reseal = vi
+                    .fn<(key: CryptoKey) => Promise<void>>()
+                    .mockRejectedValueOnce(new Error('idb'))
+                    .mockResolvedValue(undefined)
+
+                await unlockWithPasskey({ resealLegacyKeystore: reseal })
+
+                expect(await getSessionMasterKey()).not.toBeNull()
+                expect(prfMarks().isKeystoreResealed).toBe(false)
+                await lockVault()
+                await unlockWithPasskey({ resealLegacyKeystore: reseal })
+                expect(reseal).toHaveBeenCalledTimes(2)
+                expect(prfMarks().isKeystoreResealed).toBe(true)
+            })
+
+            it('does not open a second window for the password after the passkey re-sealed', async () => {
+                await setUpUnmarked()
+                const reseal = vi.fn(async () => {})
+                await unlockWithPasskey({ resealLegacyKeystore: reseal })
+                await lockVault()
+                fake.data.set(PRF_BLOB, 'not json')
+
+                await unlockVault('pw', { resealLegacyKeystore: reseal })
+
+                expect(reseal).toHaveBeenCalledTimes(1)
+            })
+
+            it("carries the password blob's keystore mark when passkey unlock is enabled", async () => {
+                await createVault('pw')
+                await enablePasskeyUnlock('pw')
+                const masterKey = (await getSessionMasterKey()) as Uint8Array
+                await downgradeToUnmarkedPasswordBlob('pw', masterKey)
+
+                await enablePasskeyUnlock('pw')
+
+                expect(prfMarks()).toEqual({
+                    isKvSealed: true,
+                    isKeystoreResealed: false,
+                })
+                expect(passwordMarks().isKeystoreResealed).toBe(false)
+            })
         })
     })
 })

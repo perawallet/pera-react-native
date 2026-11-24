@@ -12,15 +12,30 @@
 
 import type { ReactNativeKeyStore } from '@algorandfoundation/react-native-keystore'
 
+/** Unlock side: what moved off the pre-vault key. */
 export type ResealReport = {
     resealed: number
-    reminted: number
     /** Ids the sweep could not move — never their contents. */
     unrecoverable: string[]
     legacyKeyRemoved: boolean
 }
 
 export type ResealDeps = {
+    /** The vault master key, from the unlock that is re-sealing. */
+    engineKey: CryptoKey
+    subtle: SubtleCrypto
+    indexedDB: IDBFactory
+    databaseName: string
+}
+
+/** Startup side: what was re-minted, and what no longer opens. */
+export type LegacyCheckReport = {
+    reminted: number
+    /** Ids that cannot be used — never their contents. */
+    unrecoverable: string[]
+}
+
+export type LegacyCheckDeps = {
     keystore: Pick<ReactNativeKeyStore, 'export' | 'import'>
     resolveEngineKey: () => Promise<CryptoKey>
     subtle: SubtleCrypto

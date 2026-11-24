@@ -23,7 +23,12 @@ import {
 } from '@algorandfoundation/keystore-web'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { safeWarn } from './migrations/safeLog'
-import type { ResealDeps, ResealReport } from './resealTypes'
+import type {
+    LegacyCheckDeps,
+    LegacyCheckReport,
+    ResealDeps,
+    ResealReport,
+} from './resealTypes'
 
 const bytesEqual = (a: Uint8Array, b: Uint8Array): boolean =>
     a.length === b.length && a.every((value, i) => value === b[i])
@@ -42,14 +47,16 @@ const tryOpen = async (
     }
 }
 
+type BytesRecord = Extract<MaterialRecord, { kind: 'bytes' }>
+
 const resealBytes = async (
     deps: ResealDeps,
     db: KeyStoreDatabase,
-    engineKey: CryptoKey,
     legacyKey: CryptoKey,
-    record: Extract<MaterialRecord, { kind: 'bytes' }>,
+    record: BytesRecord,
     report: ResealReport,
 ): Promise<void> => {
+    const { engineKey } = deps
     const alreadyMigrated = await tryOpen(deps.subtle, engineKey, record)
     if (alreadyMigrated) {
         alreadyMigrated.fill(0)
@@ -83,10 +90,10 @@ const resealBytes = async (
 }
 
 const remintChild = async (
-    deps: ResealDeps,
+    deps: LegacyCheckDeps,
     db: KeyStoreDatabase,
     record: Extract<MaterialRecord, { kind: 'cryptokey' }>,
-    report: ResealReport,
+    report: LegacyCheckReport,
 ): Promise<void> => {
     const key = await db.get<Key>(METADATA_STORE, record.id)
     const parentKeyId = key?.metadata?.parentKeyId
@@ -145,40 +152,89 @@ const remintChild = async (
     }
 }
 
+// Raw read on purpose: keystore-web's exported `getMasterKey` creates the
+// record when absent, which would plant the very key this module looks for.
+const readLegacyKey = async (
+    db: KeyStoreDatabase,
+): Promise<Nullable<CryptoKey>> => {
+    const legacy = await db.get<MaterialRecord>(MATERIAL_STORE, MASTER_KEY_ID)
+    return legacy?.kind === 'cryptokey' ? legacy.privateKey : null
+}
+
 /**
  * Moves a profile written under the driver's auto-generated master key onto
- * the vault-derived engine key. Runs after unlock, before any other material
- * operation in the context. Idempotent: the AES-GCM tag tells the two keys
- * apart, so every write is a valid engine-sealed copy and concurrent runs
- * from two surfaces commute.
+ * the vault-derived engine key, then deletes that key. Only the vault calls it,
+ * from an unlock whose blob has not yet recorded a finished re-seal: on any
+ * other profile a `__keystore.master__` record is something a profile writer
+ * planted, and whatever it opens must not become the user's material.
  *
- * `bytes` records go first — re-minting a child reads its parent seed through
- * the engine, which opens under the engine key.
- *
- * Phase two arms on its own evidence (a leftover `cryptokey` record), not on
- * the legacy record's presence: a child whose re-mint fails on one run (a
- * corrupt parent seed, a lock mid-sweep) must still be reachable on the next
- * one, even after the legacy record — which phase two never reads — is gone.
+ * Idempotent: the AES-GCM tag tells the two keys apart, so every write is a
+ * valid engine-sealed copy and concurrent runs from two surfaces commute.
+ * Rejecting leaves the vault's window open for the next unlock.
  */
 export const resealLegacyMaterialWith = async (
     deps: ResealDeps,
 ): Promise<ResealReport> => {
     const report: ResealReport = {
         resealed: 0,
-        reminted: 0,
         unrecoverable: [],
         legacyKeyRemoved: false,
     }
     const db = await openDatabase(deps.databaseName, deps.indexedDB)
     try {
-        // Raw read on purpose: keystore-web's exported `getMasterKey` creates
-        // the record when absent, which would re-arm this sweep forever.
-        const legacy = await db.get<MaterialRecord>(
-            MATERIAL_STORE,
+        const legacyKey = await readLegacyKey(db)
+        if (!legacyKey) return report
+        const records = await db.getAll<MaterialRecord>(MATERIAL_STORE, [
             MASTER_KEY_ID,
+        ])
+        for (const record of records) {
+            if (record.kind === 'bytes') {
+                await resealBytes(deps, db, legacyKey, record, report)
+            }
+        }
+        // Everything it could open has been re-sealed; an unrecoverable
+        // record is no reason to keep a key that cannot open it either.
+        await db.delete(MATERIAL_STORE, MASTER_KEY_ID)
+        report.legacyKeyRemoved = true
+        return report
+    } finally {
+        db.close()
+    }
+}
+
+const reportUnopenable = async (
+    deps: LegacyCheckDeps,
+    records: MaterialRecord[],
+    report: LegacyCheckReport,
+): Promise<void> => {
+    const engineKey = await deps.resolveEngineKey()
+    for (const record of records) {
+        if (record.kind !== 'bytes') continue
+        const plaintext = await tryOpen(deps.subtle, engineKey, record)
+        if (plaintext) {
+            plaintext.fill(0)
+            continue
+        }
+        report.unrecoverable.push(record.id)
+        safeWarn(
+            `keystore record ${record.id} does not open under the vault key`,
         )
-        const legacyKey =
-            legacy?.kind === 'cryptokey' ? legacy.privateKey : null
+    }
+}
+
+/**
+ * Runs after unlock and never re-seals: only the unlock may, behind the vault's
+ * mark. A legacy key found here is not honoured but left in place, so a genuine
+ * one survives a failed re-seal for the next unlock to move. Re-minting arms on
+ * a leftover `cryptokey` record, so a child that failed once is retried.
+ */
+export const checkLegacyMaterialWith = async (
+    deps: LegacyCheckDeps,
+): Promise<LegacyCheckReport> => {
+    const report: LegacyCheckReport = { reminted: 0, unrecoverable: [] }
+    const db = await openDatabase(deps.databaseName, deps.indexedDB)
+    try {
+        const legacyKey = await readLegacyKey(db)
         const records = await db.getAll<MaterialRecord>(MATERIAL_STORE, [
             MASTER_KEY_ID,
         ])
@@ -188,31 +244,14 @@ export const resealLegacyMaterialWith = async (
         // A fully migrated profile costs one get and one getAll per unlock.
         if (!legacyKey && !hasCryptoKeyChild) return report
 
-        const engineKey = await deps.resolveEngineKey()
         if (legacyKey) {
-            for (const record of records) {
-                if (record.kind === 'bytes') {
-                    await resealBytes(
-                        deps,
-                        db,
-                        engineKey,
-                        legacyKey,
-                        record,
-                        report,
-                    )
-                }
-            }
+            safeWarn('keystore legacy key present after unlock; not honoured')
+            await reportUnopenable(deps, records, report)
         }
         for (const record of records) {
             if (record.kind === 'cryptokey') {
                 await remintChild(deps, db, record, report)
             }
-        }
-        if (legacyKey) {
-            // Everything it could open has been re-sealed; an unrecoverable
-            // record is no reason to keep a key that cannot open it either.
-            await db.delete(MATERIAL_STORE, MASTER_KEY_ID)
-            report.legacyKeyRemoved = true
         }
         return report
     } finally {
