@@ -98,6 +98,8 @@ export type AssetInboxSendSummary = {
     quote: AssetInboxQuote
     /** What the signed funding payment carries, in native base units. */
     fundingAmount: bigint
+    /** Every fee the sender's group pays, in native base units; the build refuses a group paying more. */
+    networkFee: bigint
 }
 
 /**
@@ -111,8 +113,11 @@ export interface AssetInboxSendFlow {
     }): Promise<AssetInboxRequest[]>
     fetchSendSummary(params: {
         scope: ChainScope
+        sender: string
         receiver: string
         assetId: string
+        /** Base units of the asset being sent. */
+        amount: bigint
     }): Promise<AssetInboxSendSummary>
     buildSendTxs(params: InboxSendTxsParams): Promise<UnsignedTransaction[]>
     buildClaimTxs(params: InboxClaimTxsParams): Promise<UnsignedTransaction[]>

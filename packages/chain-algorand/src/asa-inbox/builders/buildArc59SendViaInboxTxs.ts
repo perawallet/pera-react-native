@@ -12,7 +12,13 @@
 
 import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import { decodeAddress } from 'algosdk'
-import { getArc59SignedFundingAmount } from '../getArc59SignedFundingAmount'
+import { FeeAboveShownError } from '@perawallet/wallet-core-transactions'
+import { ReviewRequiredError } from '@perawallet/wallet-core-signing'
+import { maxReasonableGroupFee } from '../../signing/fees'
+import {
+    getArc59MinimumNetworkFee,
+    getArc59SignedFundingAmount,
+} from '../getArc59SignedFundingAmount'
 import { ARC59Client } from '../clients'
 import { requireArc59Config } from './requireArc59Config'
 import { buildGroup } from '../utils'
@@ -33,6 +39,8 @@ export type Arc59SendViaInboxParams = {
      * always pool at the network base fee.
      */
     senderMinFee: bigint
+    /** The network fee from the quote the user approved, in µAlgo. */
+    maxFee?: bigint
 }
 
 export type Arc59BuildContext = {
@@ -43,13 +51,24 @@ export type Arc59BuildContext = {
 export const buildArc59SendViaInboxTxs = async (
     { algokit, network }: Arc59BuildContext,
     params: Arc59SendViaInboxParams,
-): Promise<PeraTransaction[]> => {
-    const { sender, receiver, assetId, amount, summary, senderMinFee } = params
+): Promise<{ transactions: PeraTransaction[]; networkFee: bigint }> => {
+    const { sender, receiver, assetId, amount, summary, senderMinFee, maxFee } =
+        params
     const arc59Config = requireArc59Config(network)
 
     const suggestedParams = await algokit.getSuggestedParams()
     const minFee = BigInt(suggestedParams.minFee)
     const senderFee = senderMinFee > minFee ? senderMinFee : minFee
+    // An inbox send has no key registration, so it gets the base budget.
+    const budget = maxReasonableGroupFee([], new Set())
+    const assertFee = (fee: bigint) => {
+        if (maxFee !== undefined && fee > maxFee) {
+            throw new FeeAboveShownError(fee, maxFee)
+        }
+        if (fee > budget) throw new ReviewRequiredError(['high-fee'])
+    }
+    assertFee(getArc59MinimumNetworkFee(summary, { minFee, senderFee }))
+
     // Only override AlgoKit's auto-sizing when the sender's rate is
     // raised (PQ signer), so a classical sender's group is unchanged.
     const outerFeeOverride =
@@ -154,5 +173,11 @@ export const buildArc59SendViaInboxTxs = async (
         }),
     )
 
-    return buildGroup(composer)
+    const transactions = await buildGroup(composer)
+    const networkFee = transactions.reduce(
+        (sum, txn) => sum + (txn.fee ?? 0n),
+        0n,
+    )
+    assertFee(networkFee)
+    return { transactions, networkFee }
 }

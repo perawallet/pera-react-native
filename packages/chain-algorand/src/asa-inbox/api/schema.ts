@@ -46,11 +46,16 @@ const safeBaseUnitInteger = z
 // remotely tunable ceiling could be raised by whoever is sending the hostile
 // value. Raising it should require a release.
 export const MAX_ARC59_FUNDING_MICRO_ALGO = 10_000_000 // 10 ALGO
+// The router call pools a min fee per inner transaction, so the count prices
+// the fee. The backend relays the router's own count unbounded, so cap it at
+// the protocol's inner transaction budget for a group (16 per app call x 16);
+// a build-time ceiling for the same reason as the funding one.
+export const MAX_ARC59_INNER_TX_COUNT = 256
 export const arc59SendSummaryResponseSchema = z
     .object({
         is_arc59_opted_in: z.boolean(),
         minimum_balance_requirement: safeBaseUnitInteger,
-        inner_tx_count: safeBaseUnitInteger,
+        inner_tx_count: safeBaseUnitInteger.max(MAX_ARC59_INNER_TX_COUNT),
         total_protocol_and_mbr_fee: safeBaseUnitInteger,
         inbox_address: z.string().nullable(),
         algo_fund_amount: safeBaseUnitInteger,
