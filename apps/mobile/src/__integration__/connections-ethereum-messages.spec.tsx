@@ -34,7 +34,12 @@ import { server, setSuiteUnhandledRequestMode } from '@test-utils/msw-server'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { walletKitStub, type FakeWalletKit } from '@test-utils/walletkit-stub'
-import { getAllPressables, isElementDisabled } from '@test-utils/rnw'
+import {
+    findEnabledByTestId,
+    getAllPressables,
+    isElementDisabled,
+} from '@test-utils/rnw'
+import { measureScrollBody, scrollBodyTo } from '@test-utils/review-scroll'
 import {
     makeProposal,
     makeRequest,
@@ -98,6 +103,8 @@ const NOT_A_SESSION_ACCOUNT = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
 const HELLO_WORLD_HEX = '0x68656c6c6f20776f726c64'
 const CONFIRM_SLIDE = 'message-signing-confirm-slide'
 const REJECT_BUTTON = 'message-signing-reject-button'
+const REVIEW_BODY = 'message-signing-review-body'
+const SCROLL_HINT = 'review_scroll_hint'
 const TYPED_DATA_WARNING = 'message-signing-typed-data-warning'
 const SPEND_APPROVAL_WARNING = 'message-signing-spend-approval-warning'
 const SPEND_APPROVAL_SPENDER = 'message-signing-spend-approval-spender'
@@ -327,6 +334,44 @@ describe('Flow: an eip155 dApp asks for a message signature', () => {
             }),
         ).resolves.toBe(true)
     })
+
+    it.each([
+        {
+            kind: 'personal_sign',
+            method: 'personal_sign',
+            params: [HELLO_WORLD_HEX, SENDER],
+            signature: VIEM_HELLO_WORLD,
+        },
+        {
+            kind: 'typed data',
+            method: 'eth_signTypedData_v4',
+            params: [SENDER, JSON.stringify(MAIL_TYPED_DATA)],
+            signature: VIEM_MAIL,
+        },
+    ])(
+        'Given a connected session, when the dApp sends $kind taller than the review, then Confirm waits behind the scroll hint until the review is scrolled to its end, and the dApp then receives a signature',
+        async ({ method, params, signature }) => {
+            const walletKit = await connectSession()
+
+            send(walletKit, method, params)
+            await waitFor(
+                () => expect(screen.getByTestId(CONFIRM_SLIDE)).toBeTruthy(),
+                { timeout: 15_000 },
+            )
+            measureScrollBody(REVIEW_BODY, 400, 2000)
+
+            expect(isElementDisabled(screen.getByTestId(CONFIRM_SLIDE))).toBe(
+                true,
+            )
+            expect(screen.getByTestId(SCROLL_HINT)).toBeTruthy()
+
+            scrollBodyTo(REVIEW_BODY, 1600)
+            fireEvent.click(await findEnabledByTestId(CONFIRM_SLIDE))
+
+            expect(screen.queryByTestId(SCROLL_HINT)).toBeNull()
+            expect((await answerOf(walletKit)).result).toBe(signature)
+        },
+    )
 
     it('Given an account on Algorand and Ethereum, when the dApp sends personal_sign, then the review names the account by its 0x address, never its Algorand address', async () => {
         useAccountsStore.getState().setAccounts([MULTICHAIN_ACCOUNT])

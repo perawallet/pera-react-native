@@ -42,15 +42,26 @@ export const KeyboardAwareScrollView = ({
     style,
     contentContainerStyle,
     ...rest
-}: KeyboardAwareScrollViewProps) => (
-    <ScrollView
-        style={style}
-        contentContainerStyle={contentContainerStyle}
-        {...rest}
-    >
-        {children}
-    </ScrollView>
-)
+}: KeyboardAwareScrollViewProps) => {
+    const { onLayout, onContentSizeChange } = rest
+    // jsdom lays nothing out; report a body whose content fits, as a short
+    // screen would on device. Tests needing overflow re-measure.
+    React.useLayoutEffect(() => {
+        onLayout?.({
+            nativeEvent: { layout: { x: 0, y: 0, width: 0, height: 400 } },
+        } as Parameters<NonNullable<typeof onLayout>>[0])
+        onContentSizeChange?.(0, 200)
+    }, [])
+    return (
+        <ScrollView
+            style={style}
+            contentContainerStyle={contentContainerStyle}
+            {...rest}
+        >
+            {children}
+        </ScrollView>
+    )
+}
 
 export type KeyboardStickyViewProps = ViewProps & {
     offset?: { closed?: number; opened?: number }
