@@ -26,7 +26,10 @@ import {
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { useAccountFundedNetworksQuery } from '../useAccountFundedNetworksQuery'
+import {
+    useAccountFundedNetworksQuery,
+    useFundedAccountIdsQuery,
+} from '../useAccountFundedNetworksQuery'
 
 import type { WalletAccount } from '../../models'
 
@@ -168,6 +171,98 @@ describe('useAccountFundedNetworksQuery', () => {
 
         expect(result.current.isFunded).toBe(false)
         expect(result.current.isPending).toBe(false)
+        expect(mockGetAccountFundedNetworks).not.toHaveBeenCalled()
+    })
+})
+
+describe('useFundedAccountIdsQuery', () => {
+    const accountWith = (
+        id: string,
+        chains: WalletAccount['chains'],
+    ): WalletAccount => ({ ...accountOn(chains), id })
+
+    const first = accountWith('first', {
+        algorand: { address: 'ADDR1', keyPairId: 'kp' },
+    })
+    const second = accountWith('second', {
+        algorand: { address: 'ADDR2', keyPairId: 'kp' },
+    })
+    const third = accountWith('third', {
+        algorand: { address: 'ADDR3', keyPairId: 'kp' },
+        ethereum: { address: '0xabc', keyPairId: 'kp' },
+    })
+
+    beforeEach(() => {
+        vi.clearAllMocks()
+        registerChains('algorand', 'ethereum')
+    })
+
+    afterEach(() => {
+        getProvider().chains.reset()
+    })
+
+    it('returns only the funded accounts, in input order', async () => {
+        mockGetAccountFundedNetworks.mockImplementation(
+            ({ accountAddress }: { accountAddress: string }) =>
+                Promise.resolve(
+                    accountAddress === 'ADDR1' || accountAddress === 'ADDR3'
+                        ? ['algorand/mainnet']
+                        : [],
+                ),
+        )
+
+        const { result } = renderHook(
+            () => useFundedAccountIdsQuery([third, second, first], SCOPE),
+            { wrapper: wrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+        expect(result.current.fundedAccountIds).toEqual(['third', 'first'])
+    })
+
+    it('counts an account funded only on another chain', async () => {
+        mockGetAccountFundedNetworks.mockImplementation(
+            ({ chainId }: { chainId: string }) =>
+                Promise.resolve(chainId === 'ethereum' ? ['ethereum/mainnet'] : []),
+        )
+
+        const { result } = renderHook(
+            () => useFundedAccountIdsQuery([first, third], SCOPE),
+            { wrapper: wrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+        expect(result.current.fundedAccountIds).toEqual(['third'])
+    })
+
+    it('stays pending until the reads settle', async () => {
+        let release: (networks: string[]) => void = () => {}
+        mockGetAccountFundedNetworks.mockReturnValue(
+            new Promise<string[]>(resolve => {
+                release = resolve
+            }),
+        )
+
+        const { result } = renderHook(
+            () => useFundedAccountIdsQuery([first], SCOPE),
+            { wrapper: wrapper() },
+        )
+
+        expect(result.current.isPending).toBe(true)
+        expect(result.current.fundedAccountIds).toEqual([])
+
+        release(['algorand/mainnet'])
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+        expect(result.current.fundedAccountIds).toEqual(['first'])
+    })
+
+    it('is empty and not pending without accounts', () => {
+        const { result } = renderHook(
+            () => useFundedAccountIdsQuery([], SCOPE),
+            { wrapper: wrapper() },
+        )
+
+        expect(result.current).toEqual({ fundedAccountIds: [], isPending: false })
         expect(mockGetAccountFundedNetworks).not.toHaveBeenCalled()
     })
 })
