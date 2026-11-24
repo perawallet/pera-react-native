@@ -31,13 +31,14 @@ export const imitatedNativeTickerOf = (
     ref: AssetRef,
     unitName: Optional<string>,
 ): Nullable<string> => {
-    const skeleton = unitName ? toTickerSkeleton(unitName) : ''
-    if (!skeleton) return null
-
     const native = findNativeAsset(ref.chainId)
-    if (!native?.unitName || native.assetId === ref.assetId) return null
+    if (!unitName || !native?.unitName || native.assetId === ref.assetId) {
+        return null
+    }
 
-    return native.unitName.toUpperCase() === skeleton ? native.unitName : null
+    return native.unitName.toUpperCase() === toTickerSkeleton(unitName)
+        ? native.unitName
+        : null
 }
 
 /**
@@ -48,11 +49,13 @@ export const imitatedCurrencyOf = (
     ref: AssetRef,
     unitName: Optional<string>,
 ): Nullable<string> => {
+    if (!unitName || findNativeAsset(ref.chainId)?.assetId === ref.assetId) {
+        return null
+    }
+
     const native = imitatedNativeTickerOf(ref, unitName)
     if (native !== null) return native
 
-    const skeleton = unitName ? toTickerSkeleton(unitName) : ''
-    if (findNativeAsset(ref.chainId)?.assetId === ref.assetId) return null
-
+    const skeleton = toTickerSkeleton(unitName)
     return FIAT_CURRENCY_CODES.has(skeleton) ? skeleton : null
 }

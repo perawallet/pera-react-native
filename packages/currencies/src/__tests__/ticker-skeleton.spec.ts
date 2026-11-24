@@ -28,9 +28,24 @@ describe('toTickerSkeleton', () => {
         ['a zero-width space inside', `E${text(0x200b)}TH`],
         ['a Hangul filler inside', `ET${text(0x3164)}H`],
         ['lower case', 'eth'],
+        ['Lisu letters', text(0xa4f0, 0xa4d4, 0xa4e7)],
+        ['Canadian Syllabics H', `ET${text(0x157c)}`],
+        ['a Cyrillic shha', `ET${text(0x04bb)}`],
     ])('reads %s as ETH', (_label, unitName) => {
         expect(toTickerSkeleton(unitName)).toBe('ETH')
     })
+
+    it.each([
+        ['Lisu letters', text(0xa4ee, 0xa4e1, 0xa4d6, 0xa4f3), 'ALGO'],
+        ['a script-g and an alpha', text(0x0251, 0x4c, 0x0261, 0x4f), 'ALGO'],
+        ['small capital R', text(0x0280, 0x41, 0x1d1b), 'RAT'],
+        ['small capital I', text(0x026a, 0x1d0f), 'IO'],
+    ])(
+        'reads %s as the Latin letters they imitate',
+        (_label, unitName, expected) => {
+            expect(toTickerSkeleton(unitName)).toBe(expected)
+        },
+    )
 
     it.each(['WETH', '3TH', 'ETH2'])(
         'leaves %j distinct from ETH',

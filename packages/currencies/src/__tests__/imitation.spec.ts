@@ -77,6 +77,13 @@ describe('imitatedCurrencyOf', () => {
         expect(imitatedNativeTickerOf(erc20, fake)).toBe('ETH')
     })
 
+    it('sees through Lisu capitals that read as the native ticker', () => {
+        const erc20 = { chainId: 'ethereum', assetId: '0xabc' }
+        const fake = String.fromCodePoint(0xa4f0, 0xa4d4, 0xa4e7)
+
+        expect(imitatedNativeTickerOf(erc20, fake)).toBe('ETH')
+    })
+
     it('treats a homoglyph fiat code as a currency, not as the native ticker', () => {
         const erc20 = { chainId: 'ethereum', assetId: '0xabc' }
         const fake = `U${String.fromCodePoint(0x0405)}D`
