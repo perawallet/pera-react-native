@@ -51,6 +51,8 @@ export type RequireSecureContext = {
 export type WebviewMessageSecurity = {
     securedConnection: boolean
     sourceUrl: Nullable<string>
+    /** The web host authenticated the iframe's message port and origin. */
+    isAuthenticatedFrame?: boolean
 }
 
 type SendError = (
