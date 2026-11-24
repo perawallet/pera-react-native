@@ -20,7 +20,6 @@ import {
     vi,
 } from 'vitest'
 import React from 'react'
-import { Decimal } from 'decimal.js'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 
@@ -30,13 +29,10 @@ import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
     resetTestDatabase,
     seedAlgoAsset,
-    seedAlgorandAccountState,
     setupTestDatabase,
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    insertAssetHolding,
-    refreshAccountHoldings,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -60,32 +56,11 @@ import {
     BACKUP_MNEMONIC,
     BACKUP_SALT,
     configureBackup,
+    fundOnAlgorandMainnet,
     seedAlgo25Account,
     startRealSyncManager,
 } from './__fixtures__/cloudBackup'
 import { addressOf } from './__fixtures__/accounts'
-
-const SCOPE = { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' } as const
-
-const fundOnMainnet = async (address: string) => {
-    await seedAlgorandAccountState({
-        accountAddress: address,
-        scope: SCOPE,
-        nativeBalance: new Decimal(0),
-        minBalance: new Decimal(100_000),
-    })
-    await insertAssetHolding({
-        accountAddress: address,
-        assetId: '0',
-        scope: SCOPE,
-        amount: new Decimal(0),
-    })
-    await refreshAccountHoldings({
-        accountAddress: address,
-        scope: SCOPE,
-        holdings: [{ assetId: '0', amount: new Decimal(5_000_000) }],
-    })
-}
 
 const queryClient = createTestQueryClient()
 const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -136,7 +111,7 @@ describe('Flow: the backup warning follows Cloud Backup coverage', () => {
 
         account = await seedAlgo25Account()
         useAccountsStore.getState().setAccounts([account])
-        await fundOnMainnet(addressOf(account))
+        await fundOnAlgorandMainnet(addressOf(account))
     })
 
     it('Given a funded account never backed up, then the prompt is true', async () => {

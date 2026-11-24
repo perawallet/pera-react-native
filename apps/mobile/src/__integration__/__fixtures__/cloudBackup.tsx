@@ -11,16 +11,20 @@
  */
 
 import React from 'react'
+import { Decimal } from 'decimal.js'
 import { expect } from 'vitest'
 import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
 import { type QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
+import { seedAlgorandAccountState } from '@test-utils/database-setup'
 import { createTestQueryClient } from '@test-utils/render'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
     buildAccount,
     deriveHdAccount,
+    insertAssetHolding,
+    refreshAccountHoldings,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -258,6 +262,32 @@ export const wipeDevice = async () => {
     useCloudBackupStore.getState().resetState()
     useBackupSyncStateStore.getState().resetState()
     await deleteBackupKeys().catch(() => undefined)
+}
+
+const MAINNET_SCOPE = {
+    chainId: ALGORAND_CHAIN_ID,
+    networkId: 'mainnet',
+} as const
+
+/** Gives the account 5 ALGO on MainNet, which is what makes it count as funded. */
+export const fundOnAlgorandMainnet = async (address: string): Promise<void> => {
+    await seedAlgorandAccountState({
+        accountAddress: address,
+        scope: MAINNET_SCOPE,
+        nativeBalance: new Decimal(0),
+        minBalance: new Decimal(100_000),
+    })
+    await insertAssetHolding({
+        accountAddress: address,
+        assetId: '0',
+        scope: MAINNET_SCOPE,
+        amount: new Decimal(0),
+    })
+    await refreshAccountHoldings({
+        accountAddress: address,
+        scope: MAINNET_SCOPE,
+        holdings: [{ assetId: '0', amount: new Decimal(5_000_000) }],
+    })
 }
 
 /** A real keystore key rather than a stub: the sync engine reveals it back out
