@@ -21,7 +21,7 @@ import {
     addressCodecs,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { useLanguage } from '@hooks/useLanguage'
 import {
@@ -135,9 +135,26 @@ export const useEthereumTransactionReview = ({
     const tokenAsset = approvedContract
         ? (tokenAssets.get(approvedContract) ?? null)
         : null
-    const wrappedNative = wrappedNativeContract
+    const wrappedNativeRecord = wrappedNativeContract
         ? (tokenAssets.get(wrappedNativeContract) ?? null)
         : null
+    const nativeAsset =
+        contractAction?.kind === 'wrap' || contractAction?.kind === 'unwrap'
+            ? contractAction.amount.asset
+            : null
+    const wrappedNative = useMemo((): Nullable<DisplayableAsset> => {
+        if (wrappedNativeRecord || !wrappedNativeContract || !nativeAsset) {
+            return wrappedNativeRecord
+        }
+        // Without its record, the 1:1 pair still shares the native decimals.
+        const label = shortAddressOf(scope, wrappedNativeContract)
+        return {
+            assetId: wrappedNativeContract,
+            name: label,
+            unitName: label,
+            decimals: nativeAsset.decimals,
+        }
+    }, [wrappedNativeRecord, wrappedNativeContract, nativeAsset, scope])
     const actionAssetIds = ethereumActionAssetIdsOf(
         contractAction,
         wrappedNative,
@@ -148,15 +165,23 @@ export const useEthereumTransactionReview = ({
         actionAssetIds.length > 0,
         { fetchMissing: true },
     )
+    const isReverted = simulation.status === 'reverted'
     const actionChanges = useMemo(
         () =>
             ethereumActionChangesOf(
-                contractAction,
+                // A call predicted to fail moves nothing but gas.
+                isReverted ? null : contractAction,
                 wrappedNative,
                 scope.chainId,
                 assetId => actionPrices.get(assetId)?.usdPrice,
             ),
-        [contractAction, wrappedNative, scope.chainId, actionPrices],
+        [
+            isReverted,
+            contractAction,
+            wrappedNative,
+            scope.chainId,
+            actionPrices,
+        ],
     )
 
     const warningItems = useMemo(

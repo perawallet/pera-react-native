@@ -169,6 +169,60 @@ describe('useEthereumTransactionReview', () => {
         ])
     })
 
+    it('hands the changes card nothing for a call predicted to revert', () => {
+        vi.mocked(useEthereumSimulationSection).mockReturnValue({
+            status: 'reverted',
+            reason: null,
+        })
+
+        const { actionChanges } = review(undefined, {
+            contractAction: {
+                kind: 'borrow',
+                amount: {
+                    asset: { assetId: 'eth', decimals: 18 } as PeraAsset,
+                    value: new Decimal('1'),
+                    isBaseUnits: false,
+                },
+                isEntireBalance: false,
+            },
+        })
+
+        expect(actionChanges).toEqual({
+            spend: [],
+            receive: [],
+            isReceiveUnknown: false,
+        })
+    })
+
+    it('names a wrap target without a stored record by its short address, in native decimals', () => {
+        vi.mocked(useEthereumSimulationSection).mockReturnValue({
+            status: 'unavailable',
+        })
+
+        const { actionChanges } = review(undefined, {
+            contractAction: {
+                kind: 'wrap',
+                amount: {
+                    asset: {
+                        assetId: 'eth',
+                        unitName: 'ETH',
+                        decimals: 18,
+                    } as PeraAsset,
+                    value: new Decimal('2'),
+                    isBaseUnits: false,
+                },
+            },
+        })
+
+        expect(actionChanges.receive).toMatchObject([
+            {
+                assetId: '0xcontract',
+                asset: { unitName: 'short:0xcontract', decimals: 18 },
+                amount: new Decimal('2'),
+            },
+        ])
+    })
+
     it('leaves an unavailable simulation to the changes card, not the cautions', () => {
         vi.mocked(useEthereumSimulationSection).mockReturnValue({
             status: 'unavailable',

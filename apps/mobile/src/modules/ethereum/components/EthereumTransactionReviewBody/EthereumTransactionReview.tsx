@@ -85,6 +85,7 @@ const changesOf = ({
             <WalletChangesCard
                 spend={actionChanges.spend}
                 receive={actionChanges.receive}
+                isReceiveUnknown={actionChanges.isReceiveUnknown}
             />
         ) : null
 

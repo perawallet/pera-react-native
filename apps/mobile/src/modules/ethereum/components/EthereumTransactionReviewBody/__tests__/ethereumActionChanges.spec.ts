@@ -23,6 +23,7 @@ const ETH = { assetId: 'eth', unitName: 'ETH', decimals: 18 } as PeraAsset
 const WETH = { assetId: '0xweth', unitName: 'WETH', decimals: 18 } as PeraAsset
 const USDC = { assetId: '0xusdc', unitName: 'USDC', decimals: 6 } as PeraAsset
 const PRICES: Record<string, Decimal> = { eth: new Decimal(3000) }
+const NO_CHANGES = { spend: [], receive: [], isReceiveUnknown: false }
 
 const amount = (asset: PeraAsset | null, value: string) => ({
     asset,
@@ -45,8 +46,8 @@ const summary = (items: { asset: { unitName?: string }; amount: Decimal }[]) =>
     items.map(item => `${item.amount.toString()} ${item.asset.unitName}`)
 
 describe('ethereumActionChangesOf', () => {
-    it('shows a gateway supply as the native coin sent, priced', () => {
-        const { spend, receive } = changesOf({
+    it('shows a gateway supply as the native coin sent, priced, with the aTokens received unknown', () => {
+        const { spend, receive, isReceiveUnknown } = changesOf({
             kind: 'supply',
             amount: amount(ETH, '0.005'),
             isEntireBalance: false,
@@ -55,25 +56,34 @@ describe('ethereumActionChangesOf', () => {
         expect(summary(spend)).toEqual(['0.005 ETH'])
         expect(spend[0]?.usdPrice).toEqual(new Decimal(3000))
         expect(receive).toEqual([])
+        expect(isReceiveUnknown).toBe(true)
     })
 
-    it('shows a withdrawal as received, and nothing for the whole balance', () => {
-        expect(
-            summary(
-                changesOf({
-                    kind: 'withdraw',
-                    amount: amount(ETH, '1'),
-                    isEntireBalance: false,
-                }).receive,
-            ),
-        ).toEqual(['1 ETH'])
-        expect(
-            changesOf({
-                kind: 'withdraw',
-                amount: amount(ETH, '1'),
-                isEntireBalance: true,
-            }),
-        ).toEqual({ spend: [], receive: [] })
+    it.each([
+        ['withdraw', { kind: 'withdraw', isEntireBalance: false }],
+        ['repay up to the debt', { kind: 'repay', isEntireBalance: false }],
+        ['whole-balance supply', { kind: 'supply', isEntireBalance: true }],
+    ] as const)(
+        'shows no changes for a %s, whose spend the calldata does not fix',
+        (_, action) => {
+            expect(changesOf({ ...action, amount: amount(ETH, '1') })).toEqual(
+                NO_CHANGES,
+            )
+        },
+    )
+
+    it('shows a borrow as received with nothing sent', () => {
+        const changes = changesOf({
+            kind: 'borrow',
+            amount: amount(ETH, '1'),
+            isEntireBalance: false,
+        })
+
+        expect([summary(changes.spend), summary(changes.receive)]).toEqual([
+            [],
+            ['1 ETH'],
+        ])
+        expect(changes.isReceiveUnknown).toBe(false)
     })
 
     it('shows both sides of a wrap and an unwrap', () => {
@@ -93,8 +103,8 @@ describe('ethereumActionChangesOf', () => {
         ])
     })
 
-    it('shows only a swap leg the calldata fixes, never a limit', () => {
-        const { spend, receive } = changesOf({
+    it('shows only a swap leg the calldata fixes, with the bounded receive unknown', () => {
+        const { spend, receive, isReceiveUnknown } = changesOf({
             kind: 'swap',
             input: { ...amount(USDC, '10'), bound: 'exact' },
             output: { ...amount(ETH, '0.003'), bound: 'at-least' },
@@ -103,6 +113,25 @@ describe('ethereumActionChangesOf', () => {
 
         expect(summary(spend)).toEqual(['10 USDC'])
         expect(receive).toEqual([])
+        expect(isReceiveUnknown).toBe(true)
+    })
+
+    it('shows no changes for an exact-output swap, whose spend is only a limit', () => {
+        expect(
+            changesOf({
+                kind: 'swap',
+                input: { ...amount(USDC, '10'), bound: 'at-most' },
+                output: { ...amount(ETH, '0.003'), bound: 'exact' },
+                fees: [],
+            }),
+        ).toEqual(NO_CHANGES)
+    })
+
+    it('marks the wrapped leg unknown, never nothing, when its asset is missing', () => {
+        const changes = changesOf({ kind: 'wrap', amount: amount(ETH, '2') })
+
+        expect(changes.receive).toEqual([])
+        expect(changes.isReceiveUnknown).toBe(true)
     })
 
     it('skips an amount still in base units for want of its record', () => {
@@ -113,7 +142,7 @@ describe('ethereumActionChangesOf', () => {
                 amount: amount(null, '3000000'),
                 isEntireBalance: false,
             }),
-        ).toEqual({ spend: [], receive: [] })
+        ).toEqual(NO_CHANGES)
     })
 
     it('lists the asset ids to price', () => {
