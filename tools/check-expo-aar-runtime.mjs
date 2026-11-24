@@ -21,7 +21,10 @@
  * field reference into `io/github/expo/modules/v2/` must resolve in the runtime
  * AAR of the version expo-modules-core pins. Projects matched by
  * `expo.autolinking.android.buildFromSource` are skipped, since they compile
- * against the bundled runtime.
+ * against the bundled runtime. A module's `shouldUsePublicationScriptPath`
+ * (expo-module.config.json) can also switch it to a source build, e.g.
+ * expo-sqlite once an `expo.sqlite.*` Gradle property is set; that Groovy script
+ * is not evaluated here, so such a module still gets its unused AAR checked.
  *
  *   node tools/check-expo-aar-runtime.mjs
  */
@@ -38,6 +41,8 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const APP = join(ROOT, 'apps/mobile')
 const V2_PACKAGE = 'io/github/expo/modules/v2/'
 const RUNTIME_ARTIFACT = 'expo-modules-v2-react'
+const DOWNLOAD_ATTEMPTS = 3
+const DOWNLOAD_TIMEOUT_MS = 10_000
 
 function fail(message) {
     console.error(`FAIL: ${message}`)
@@ -158,20 +163,24 @@ function parseClass(bytes) {
     }
 }
 
-function classesInAar(buffer) {
+function classesInAar(buffer, source) {
     const classes = []
-    for (const [name, read] of readZip(buffer)) {
-        if (name !== 'classes.jar' && !/^libs\/[^/]+\.jar$/.test(name)) continue
-        for (const [entry, readEntry] of readZip(read())) {
-            if (entry.endsWith('.class')) classes.push(parseClass(readEntry()))
+    try {
+        for (const [name, read] of readZip(buffer)) {
+            if (name !== 'classes.jar' && !/^libs\/[^/]+\.jar$/.test(name)) continue
+            for (const [entry, readEntry] of readZip(read())) {
+                if (entry.endsWith('.class')) classes.push(parseClass(readEntry()))
+            }
         }
+    } catch (error) {
+        throw new Error(`could not read ${source}: ${error.message}`)
     }
     return classes
 }
 
 // A member inherited from a non-v2 ancestor other than Object (an
 // Enum, a kotlin or kolibri base class) is taken on trust; checking it needs
-// those artifacts too.
+// those artifacts too. A missing v2 ancestor is the runtime mismatch itself.
 function resolves(runtime, owner, member) {
     const queue = [owner]
     const seen = new Set()
@@ -183,7 +192,7 @@ function resolves(runtime, owner, member) {
         const cls = runtime.get(name)
         if (!cls) {
             if (name === owner) return false
-            if (name !== 'java/lang/Object') leftV2 = true
+            if (name !== 'java/lang/Object' && !name.startsWith(V2_PACKAGE)) leftV2 = true
             continue
         }
         if (!member || cls.members.has(member)) return true
@@ -238,9 +247,24 @@ async function readRuntimeAar(version) {
         }
     }
     const url = `https://repo1.maven.org/maven2/io/github/expo/${RUNTIME_ARTIFACT}/${version}/${file}`
-    const response = await fetch(url)
-    if (!response.ok) fail(`could not download ${url}: HTTP ${response.status}`)
-    return Buffer.from(await response.arrayBuffer())
+    let failure
+    for (let attempt = 1; attempt <= DOWNLOAD_ATTEMPTS; attempt++) {
+        try {
+            const response = await fetch(url, {
+                signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
+            })
+            if (!response.ok) throw new Error(`HTTP ${response.status}`)
+            return Buffer.from(await response.arrayBuffer())
+        } catch (error) {
+            failure = error
+            if (attempt < DOWNLOAD_ATTEMPTS) {
+                await new Promise(resolve => setTimeout(resolve, 1_000))
+            }
+        }
+    }
+    fail(
+        `could not download the v2 runtime AAR ${url} after ${DOWNLOAD_ATTEMPTS} attempts: ${failure.message}`,
+    )
 }
 
 async function main() {
@@ -264,7 +288,10 @@ async function main() {
     // text from a dependency's build file reaches the request.
     const runtimeVersion = pin.slice(1, 4).map(Number).join('.')
     const runtime = new Map(
-        classesInAar(await readRuntimeAar(runtimeVersion)).map(cls => [cls.name, cls]),
+        classesInAar(
+            await readRuntimeAar(runtimeVersion),
+            `${RUNTIME_ARTIFACT} ${runtimeVersion}`,
+        ).map(cls => [cls.name, cls]),
     )
 
     const buildFromSource = (config.configuration?.buildFromSource ?? []).map(
@@ -278,24 +305,34 @@ async function main() {
     }
 
     const broken = []
+    let candidates = 0
     let checked = 0
     for (const project of prebuilt) {
         if (buildFromSource.some(pattern => pattern.test(project.name))) continue
+        candidates++
         const { repository, groupId, artifactId, version } = project.publication
+        const repositoryDir =
+            repository === 'mavenLocal'
+                ? join(homedir(), '.m2/repository')
+                : join(project.sourceDir, '..', repository)
+        // Gradle falls back to building from source only when a local repository
+        // directory is absent; otherwise it uses the publication, so the AAR must be there.
+        if (repository !== 'mavenLocal' && !existsSync(repositoryDir)) continue
         const aar = join(
-            project.sourceDir,
-            '..',
-            repository,
+            repositoryDir,
             ...groupId.split('.'),
             artifactId,
             version,
             `${artifactId}-${version}.aar`,
         )
-        // Gradle falls back to building from source when the repository is absent.
-        if (!existsSync(aar)) continue
+        if (!existsSync(aar)) {
+            fail(
+                `${project.name} publishes from ${repositoryDir}, but no AAR is at ${aar}. The publication layout probably changed; teach this check the new one.`,
+            )
+        }
         checked++
 
-        const classes = classesInAar(readFileSync(aar))
+        const classes = classesInAar(readFileSync(aar), aar)
         const own = new Set(classes.map(cls => cls.name))
         const missing = new Set()
         for (const cls of classes) {
@@ -309,6 +346,12 @@ async function main() {
             }
         }
         if (missing.size > 0) broken.push({ project, missing })
+    }
+
+    if (candidates > 0 && checked === 0) {
+        fail(
+            `${candidates} prebuilt modules resolved but no AAR was inspected; the publication layout probably changed. Refusing to pass vacuously.`,
+        )
     }
 
     if (broken.length > 0) {
@@ -329,4 +372,8 @@ async function main() {
     )
 }
 
-await main()
+try {
+    await main()
+} catch (error) {
+    fail(error.message)
+}

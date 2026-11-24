@@ -55,6 +55,12 @@ for version in 0.2.5 0.2.7; do
     jar --create --file "$GRADLE_CACHE/$version/0000/expo-modules-v2-react-$version.aar" \
         -C "$WORK/runtime-${version//./}.aar" classes.jar || exit 1
 done
+# 0.2.6: the 0.2.5 runtime without SharedObjectRegistry's v2 superclass.
+mkdir -p "$WORK/runtime-026.aar" "$GRADLE_CACHE/0.2.6/0000"
+jar --create --file "$WORK/runtime-026.aar/classes.jar" \
+    -C "$WORK/runtime-025.out" "$V2/sharedobjects/SharedObjectRegistry.class" || exit 1
+jar --create --file "$GRADLE_CACHE/0.2.6/0000/expo-modules-v2-react-0.2.6.aar" \
+    -C "$WORK/runtime-026.aar" classes.jar || exit 1
 
 # $1 module name  $2 java body of the static initializer
 make_module() {
@@ -73,6 +79,9 @@ EOF
 
 make_module sqlite 'SharedObjectRegistry.register("db", NativeDatabase.class, null, true);'
 make_module haptics 'SharedObjectRegistry.register("h", NativeDatabase.class, null); new SharedObjectRegistry().inherited();'
+mkdir -p "$WORK/pkgs/unpublished/android" "$WORK/pkgs/moved/android" "$WORK/pkgs/moved/local-maven-repo"
+mkdir -p "$WORK/pkgs/corrupt/android" "$WORK/pkgs/corrupt/local-maven-repo/host/exp/exponent/expo.modules.corrupt/1.0.0"
+echo 'not a zip' > "$WORK/pkgs/corrupt/local-maven-repo/host/exp/exponent/expo.modules.corrupt/1.0.0/expo.modules.corrupt-1.0.0.aar"
 
 mkdir -p "$WORK/pkgs/expo-modules-core/android"
 APP="$WORK/repo/apps/mobile"
@@ -91,6 +100,7 @@ project() {
 
 failures=0
 PIN_025='def expoModulesV2Version = "0.2.5"'
+PIN_026='def expoModulesV2Version = "0.2.6"'
 PIN_027='def expoModulesV2Version = "0.2.7"'
 
 # $1 label  $2 expected exit  $3 expo-modules-core build.gradle line  $4 buildFromSource JSON array
@@ -127,9 +137,20 @@ run_case "the AAR passes once the bundled runtime catches up" 0 "$PIN_027" '[]' 
 
 echo "── resolution"
 run_case "members inherited from a runtime superclass resolve" 0 "$PIN_025" '[]' "haptics"
+run_case "a member whose v2 superclass the runtime lacks fails" 1 "$PIN_026" '[]' "haptics" \
+    "SharedObjectRegistry.inherited()V"
+run_case "a module without its repository directory is left to its source build" 0 "$PIN_025" '[]' \
+    "unpublished haptics"
+run_case "an unreadable AAR fails with a verdict naming it" 1 "$PIN_025" '[]' "corrupt" \
+    "expo.modules.corrupt-1.0.0.aar: not a zip archive"
 
 echo "── no vacuous pass"
 run_case "no prebuilt module at all fails" 1 "$PIN_025" '[]' ""
+run_case "a repository directory with no AAR where expected fails" 1 "$PIN_025" '[]' "moved haptics" \
+    "expo-moved publishes from"
+run_case "prebuilt modules with none inspected fail" 1 "$PIN_025" '[]' "unpublished" \
+    "no AAR was inspected"
+run_case "an all-buildFromSource configuration passes" 0 "$PIN_025" '["expo-.*"]' "haptics"
 run_case "an unreadable runtime pin fails" 1 'def expoModulesV2Version = libs.versions.v2' '[]' "haptics"
 run_case "a runtime pin that isn't a plain version fails before any download" 1 \
     'def expoModulesV2Version = "0.2.5/../../evil"' '[]' "haptics" "could not find expoModulesV2Version"
