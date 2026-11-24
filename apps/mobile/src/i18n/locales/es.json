@@ -4189,7 +4189,8 @@
         },
         "switch_network": {
             "title": "¿Permitir acceso a la red?",
-            "body": "{{name}} quiere usar tus cuentas de {{chain}} en {{network}}.",
+            "body": "{{name}} quiere cambiar a {{chain}}.",
+            "body_with_network": "{{name}} quiere cambiar a {{chain}} {{network}}.",
             "confirm": "Permitir"
         },
         "settings": {

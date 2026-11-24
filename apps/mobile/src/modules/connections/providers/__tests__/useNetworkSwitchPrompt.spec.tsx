@@ -14,6 +14,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import type { ReactElement } from 'react'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
+import { ChainChip } from '@modules/chain-ui/icon'
 import { useNetworkSwitchPrompt } from '../useNetworkSwitchPrompt'
 
 type SheetRequest = {
@@ -44,32 +45,42 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
         chainId === 'ethereum' ? 'Ethereum' : undefined,
     getChainDescriptor: () => ({
         networks: [
-            { id: 'mainnet', displayName: 'Mainnet' },
-            { id: 'sepolia', displayName: 'Sepolia' },
+            { id: 'mainnet', displayName: 'Mainnet', tier: 'mainnet' },
+            { id: 'sepolia', displayName: 'Sepolia', tier: 'testnet' },
         ],
     }),
 }))
+
+vi.mock('@modules/chain-ui/icon', () => ({ ChainChip: () => null }))
 
 vi.mock('@components/ConfirmActionContent', () => ({
     ConfirmActionContent: () => null,
 }))
 
+const peer = {
+    name: 'Uniswap‮',
+    icons: ['https://app.example/icon.png'],
+}
 const REQUEST = {
     scope: { chainId: 'ethereum', networkId: 'sepolia' },
-    peer: {
-        name: 'Uniswap‮',
-        icons: ['https://app.example/icon.png'],
-    },
+    peer,
+}
+const MAINNET_REQUEST = {
+    scope: { chainId: 'ethereum', networkId: 'mainnet' },
+    peer,
 }
 
 type Settle = (resolve: (value: unknown) => void) => void
 
-const openPrompt = (settle: Settle = () => {}) => {
+const openPrompt = (
+    settle: Settle = () => {},
+    switchRequest: unknown = REQUEST,
+) => {
     mocks.request.mockImplementation(
         () => new Promise<unknown>(resolve => settle(resolve)),
     )
     const { result } = renderHook(() => useNetworkSwitchPrompt())
-    const prompt = result.current(REQUEST as never)
+    const prompt = result.current(switchRequest as never)
     const [request] = mocks.request.mock.calls[0] as [SheetRequest]
     return { prompt, request }
 }
@@ -80,7 +91,7 @@ describe('useNetworkSwitchPrompt', () => {
         mocks.dismiss.mockReset()
     })
 
-    it('opens a sheet naming the dApp, the chain and the network, with no way out but its two buttons', () => {
+    it('opens a sheet naming the dApp and the target network, with no way out but its two buttons', () => {
         const { request } = openPrompt()
 
         expect(request.contents.type).toBe(ConfirmActionContent)
@@ -90,14 +101,38 @@ describe('useNetworkSwitchPrompt', () => {
             confirmLabel: 'walletconnect.switch_network.confirm',
             cancelLabel: 'common.cancel.label',
         })
-        const message = String(request.contents.props.message)
-        expect(message).toContain('"name":"Uniswap"')
-        expect(message).toContain('"chain":"Ethereum"')
-        expect(message).toContain('"network":"Sepolia"')
         expect(request.options).toMatchObject({
             enablePanDownToClose: false,
             enableCloseOnBackdropPress: false,
         })
+    })
+
+    it('names the network on a non-mainnet target', () => {
+        const { request } = openPrompt()
+
+        const message = String(request.contents.props.message)
+        expect(message).toContain('walletconnect.switch_network.body_with_network')
+        expect(message).toContain('"name":"Uniswap"')
+        expect(message).toContain('"chain":"Ethereum"')
+        expect(message).toContain('"network":"Sepolia"')
+    })
+
+    it('leaves the environment out on a mainnet target', () => {
+        const { request } = openPrompt(() => {}, MAINNET_REQUEST)
+
+        const message = String(request.contents.props.message)
+        expect(message).toContain('walletconnect.switch_network.body ')
+        expect(message).not.toContain('network":')
+    })
+
+    it('shows the target chain beneath the message', () => {
+        const { request } = openPrompt()
+
+        const children = request.contents.props.children as ReactElement<
+            Record<string, unknown>
+        >
+        expect(children.type).toBe(ChainChip)
+        expect(children.props.chainId).toBe('ethereum')
     })
 
     it('decides true when the sheet resolves true', async () => {

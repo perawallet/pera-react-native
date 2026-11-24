@@ -4189,7 +4189,8 @@
         },
         "switch_network": {
             "title": "Allow network access?",
-            "body": "{{name}} wants to use your {{chain}} accounts on {{network}}.",
+            "body": "{{name}} wants to switch to {{chain}}.",
+            "body_with_network": "{{name}} wants to switch to {{chain}} {{network}}.",
             "confirm": "Allow"
         },
         "settings": {

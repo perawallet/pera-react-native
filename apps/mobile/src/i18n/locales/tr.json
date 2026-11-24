@@ -4189,7 +4189,8 @@
         },
         "switch_network": {
             "title": "Ağ erişimine izin verilsin mi?",
-            "body": "{{name}}, {{network}} ağında {{chain}} hesaplarını kullanmak istiyor.",
+            "body": "{{name}} şu ağa geçmek istiyor: {{chain}}.",
+            "body_with_network": "{{name}} şu ağa geçmek istiyor: {{chain}} {{network}}.",
             "confirm": "İzin ver"
         },
         "settings": {
