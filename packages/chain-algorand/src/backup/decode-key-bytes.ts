@@ -10,7 +10,10 @@
  limitations under the License
  */
 
+import nacl from 'tweetnacl'
 import { decodeFromBase64, type Nullable } from '@perawallet/wallet-core-shared'
+import { ALGO25_SEED_LENGTH, zeroBytes } from '@perawallet/wallet-core-kms'
+import { encodeAlgorandAddress } from '../blockchain/utils/addresses'
 
 // Algorand Ed25519 secret-key sizes accepted from backup payloads:
 //   - 32: the raw seed (Pera Web exports this)
@@ -68,4 +71,21 @@ export const decodePrivateKeyBytes = (
     }
 
     return null
+}
+
+/**
+ * The address a backup key signs for, derived from its 32-byte seed prefix. A
+ * backup row's `address` is the author's claim; this is the account its key
+ * actually imports as.
+ */
+export const algo25AddressOfKey = (privateKey: Uint8Array): string => {
+    // `subarray`, not a copy: the caller owns and wipes `privateKey`.
+    const keyPair = nacl.sign.keyPair.fromSeed(
+        privateKey.subarray(0, ALGO25_SEED_LENGTH),
+    )
+    try {
+        return encodeAlgorandAddress(keyPair.publicKey)
+    } finally {
+        zeroBytes(keyPair.secretKey)
+    }
 }

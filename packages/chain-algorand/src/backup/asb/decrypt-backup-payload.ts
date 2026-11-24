@@ -15,7 +15,7 @@ import {
     decodeBoundedBase64,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { decodePrivateKeyBytes } from '../decode-key-bytes'
+import { algo25AddressOfKey, decodePrivateKeyBytes } from '../decode-key-bytes'
 import { backupIndicesToKey, generateBackupCipherKey } from './asb-crypto'
 import {
     SecureBackupAccountKind,
@@ -67,8 +67,16 @@ const parseAccount = (raw: unknown): Nullable<SecureBackupAccount> => {
         // ARC-35 always emits base64; we don't pass
         // `allowCommaSeparated: true` since that legacy format was
         // Pera-Web-specific.
-        privateKey = decodePrivateKeyBytes(private_key)
-        if (!privateKey) return null
+        const decoded = decodePrivateKeyBytes(private_key)
+        if (!decoded) return null
+        // The selection screen shows `address`, so a row whose key imports
+        // as some other account never reaches it.
+        try {
+            if (algo25AddressOfKey(decoded) !== address) return null
+            privateKey = decoded.slice()
+        } finally {
+            zeroBytes(decoded)
+        }
     }
 
     return {
