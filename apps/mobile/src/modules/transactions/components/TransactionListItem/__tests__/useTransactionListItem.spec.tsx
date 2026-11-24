@@ -168,6 +168,7 @@ describe('useTransactionListItem', () => {
                     currency: 'ALGO',
                     decimals: 6,
                     prefix: '-',
+                    isSuspicious: false,
                 },
             ])
         })
@@ -317,6 +318,30 @@ describe('useTransactionListItem', () => {
             const row = renderRow(golden('asset transfer received'))
 
             expect(row.isSuspiciousToken).toBe(true)
+        })
+
+        it('marks only the suspicious leg of a swap, not the real coin beside it', () => {
+            mockCanHideHolding.current = true
+            const swap = golden('swap')
+            const [first] = renderRow(swap).amounts
+            stored([
+                {
+                    assetId: first!.assetId,
+                    decimals: first!.decimals,
+                    peraMetadata: {
+                        isDeleted: false,
+                        verificationTier: 'suspicious',
+                    },
+                },
+            ])
+
+            const row = renderRow(swap)
+
+            expect(row.isSuspiciousToken).toBe(true)
+            expect(row.amounts.map(amount => amount.isSuspicious)).toEqual([
+                true,
+                false,
+            ])
         })
 
         it('leaves a receive of a verified token unmarked', () => {

@@ -69,12 +69,15 @@ export type UseTransactionListItemParams = (
     | { record: TransactionRecord }
 ) & { suspectedPoisoning?: SuspectedPoisoning }
 
+/** A visible amount, flagged when its token is one Pera calls suspicious on a chain that receives tokens unasked. */
+export type RowAmount = AmountDisplay & { isSuspicious: boolean }
+
 export type UseTransactionListItemResult = {
     iconName: IconName
     title: string
     subtitle: Nullable<string>
     subtitleEllipsizeMode: 'middle' | 'tail'
-    amounts: AmountDisplay[]
+    amounts: RowAmount[]
     /** Number of impacts hidden beyond {@link MAX_VISIBLE_AMOUNTS}, for "+N more". */
     amountsOverflowCount: number
     /** The network fee in the native asset, only for a row the account paid for that shows no other amount. */
@@ -154,26 +157,21 @@ export const useTransactionListItem = (
     )
     const amounts = useMemo(
         () =>
-            visibleAmounts.map(amount =>
-                toAmountDisplay(
-                    amount,
-                    storedAssets.get(amount.assetRef.assetId),
-                ),
-            ),
+            visibleAmounts.map((amount): RowAmount => {
+                const { assetId, chainId } = amount.assetRef
+                const stored = storedAssets.get(assetId)
+                return {
+                    ...toAmountDisplay(amount, stored),
+                    isSuspicious:
+                        stored?.peraMetadata?.verificationTier ===
+                            PeraAssetVerificationTier.suspicious &&
+                        canHideHolding(chainId, assetId),
+                }
+            }),
         [visibleAmounts, storedAssets],
     )
 
-    const isSuspiciousToken = useMemo(
-        () =>
-            visibleAmounts.some(
-                ({ assetRef }) =>
-                    storedAssets.get(assetRef.assetId)?.peraMetadata
-                        ?.verificationTier ===
-                        PeraAssetVerificationTier.suspicious &&
-                    canHideHolding(assetRef.chainId, assetRef.assetId),
-            ),
-        [visibleAmounts, storedAssets],
-    )
+    const isSuspiciousToken = amounts.some(amount => amount.isSuspicious)
 
     const imitatedCurrency = useMemo<Nullable<string>>(() => {
         for (const a of amounts) {

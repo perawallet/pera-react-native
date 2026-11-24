@@ -22,8 +22,8 @@ import { useStyles } from './styles'
 import {
     useTransactionListItem,
     type UseTransactionListItemParams,
+    type RowAmount,
 } from './useTransactionListItem'
-import type { AmountDisplay } from './amounts'
 
 // A token's own unit has no length cap, so the amount column is capped and cuts off rather than squeezing the title.
 const AMOUNT_MAX_WIDTH_RATIO = 0.5
@@ -58,8 +58,9 @@ const TransactionListItemView = ({
     } = useTransactionListItem(props)
 
     // A scam airdrop isn't a credit: no green amount to make it look like one.
-    const getAmountStyle = (amount: AmountDisplay) => {
-        if (isSuspiciousToken) return styles.amountMuted
+    // Only its own leg: the real coin beside it in a swap keeps its colour.
+    const getAmountStyle = (amount: RowAmount) => {
+        if (amount.isSuspicious) return styles.amountMuted
         if (amount.prefix === '+') return styles.amountPositive
         if (amount.prefix === '-') return styles.amountNegative
         return styles.amount
