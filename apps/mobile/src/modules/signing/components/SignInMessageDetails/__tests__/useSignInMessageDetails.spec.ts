@@ -264,10 +264,18 @@ describe('shortenUri', () => {
         expect(shortenUri(uri)).toBe(uri)
     })
 
-    it('elides the payload of a long URN', () => {
-        const short = shortenUri(`urn:recap:${'e'.repeat(200)}`)
-
-        expect(short.startsWith('urn:recap:')).toBe(true)
-        expect(short.length).toBeLessThan(60)
+    it.each([
+        ['a URN', `urn:recap:${'e'.repeat(200)}`],
+        ['text that is not a URI', `not a uri ${'x'.repeat(60)}`],
+        [
+            'a host hidden behind userinfo',
+            `https://opensea.io@evil.example/${'p'.repeat(60)}/end-tail`,
+        ],
+        [
+            'a host followed by a backslash',
+            `https://opensea.io\\@evil.example/${'p'.repeat(60)}/end-tail`,
+        ],
+    ])('keeps %s whole', (_label, uri) => {
+        expect(shortenUri(uri)).toBe(uri)
     })
 })

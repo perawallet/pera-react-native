@@ -44,13 +44,31 @@ export type UseSignInMessageDetailsResult = {
 
 const MAX_URI_LENGTH = 40
 const URI_TAIL_LENGTH = 8
-const AUTHORITY = /^[a-z][a-z0-9+.-]*:(?:\/\/[^/?#]*)?/i
+const PATH_START = /^(?:$|[/?#])/
 
-// The scheme and host stay whole, since they say where the resource lives;
-// only the path or payload after them is elided.
+// The host as a WHATWG parser reads it, or undefined when the text could show
+// another one: userinfo, backslashes or anything else between it and the path.
+const authorityOf = (uri: string): Optional<string> => {
+    let url: URL
+    try {
+        url = new URL(uri)
+    } catch {
+        return undefined
+    }
+    if (!url.host || url.username || url.password) return undefined
+    const head = `${url.protocol}//${url.host}`
+    const isVerbatim =
+        uri.slice(0, head.length).toLowerCase() === head &&
+        PATH_START.test(uri.slice(head.length))
+    return isVerbatim ? uri.slice(0, head.length) : undefined
+}
+
+// Only the path, query or fragment is elided; a URI whose host can't be read
+// unambiguously is shown whole.
 export const shortenUri = (uri: string): string => {
     if (uri.length <= MAX_URI_LENGTH) return uri
-    const head = AUTHORITY.exec(uri)?.[0] ?? ''
+    const head = authorityOf(uri)
+    if (head === undefined) return uri
     const kept = Math.max(head.length, MAX_URI_LENGTH - URI_TAIL_LENGTH)
     if (kept >= uri.length - URI_TAIL_LENGTH) return uri
     return `${uri.slice(0, kept)}…${uri.slice(-URI_TAIL_LENGTH)}`
