@@ -484,6 +484,115 @@ describe('swaps/useSwapHistoryInfiniteQuery', () => {
             await waitFor(() => expect(result.current.swaps).toHaveLength(1))
             expect(result.current.isError).toBe(false)
             expect(result.current.isAccountNotOnDevice).toBe(false)
+            expect(result.current.hasFailedBatch).toBe(false)
+        })
+
+        test("keeps the other batch's rows when one batch fails for another reason", async () => {
+            vi.mocked(fetchSwapHistory).mockImplementation(async params => {
+                if (idsOf(params) === 5) throw new Error('offline')
+                return {
+                    results: [makeSwapHistoryItem({ orderId: 'kept' })],
+                    next: null,
+                }
+            })
+
+            const { result } = renderHook(
+                () => useSwapHistoryInfiniteQuery(MANY),
+                { wrapper: createWrapper() },
+            )
+
+            await waitFor(() => expect(result.current.swaps).toHaveLength(1))
+            expect(result.current.isError).toBe(false)
+            expect(result.current.hasFailedBatch).toBe(true)
+        })
+
+        test('flags a failed batch when the batches that loaded have no rows', async () => {
+            vi.mocked(fetchSwapHistory).mockImplementation(async params => {
+                if (idsOf(params) === 5) throw new Error('offline')
+                return { results: [], next: null }
+            })
+
+            const { result } = renderHook(
+                () => useSwapHistoryInfiniteQuery(MANY),
+                { wrapper: createWrapper() },
+            )
+
+            await waitFor(() => expect(result.current.isLoading).toBe(false))
+            expect(result.current.swaps).toEqual([])
+            expect(result.current.hasFailedBatch).toBe(true)
+        })
+
+        test('fails the read when every batch fails, a real failure outranking a refusal', async () => {
+            vi.mocked(fetchSwapHistory).mockImplementation(async params => {
+                if (idsOf(params) === 5) throw new Error('offline')
+                throw new PeraNetworkError('client', {
+                    status: 422,
+                    backendCode: 'account_not_on_device',
+                })
+            })
+
+            const { result } = renderHook(
+                () => useSwapHistoryInfiniteQuery(MANY),
+                { wrapper: createWrapper() },
+            )
+
+            await waitFor(() => expect(result.current.isError).toBe(true))
+            expect(result.current.isAccountNotOnDevice).toBe(false)
+        })
+
+        test('reports loading, not empty, while no deployment has a device id yet', () => {
+            mockDeviceId.byDeployment = { live: null, developer: null }
+
+            const { result } = renderHook(
+                () => useSwapHistoryInfiniteQuery(MANY),
+                { wrapper: createWrapper() },
+            )
+
+            expect(fetchSwapHistory).not.toHaveBeenCalled()
+            expect(result.current.isLoading).toBe(true)
+            expect(result.current.isError).toBe(false)
+        })
+
+        test('reports an error instead of loading forever when no device id registers', () => {
+            vi.useFakeTimers()
+            try {
+                mockDeviceId.byDeployment = { live: null, developer: null }
+
+                const { result } = renderHook(
+                    () => useSwapHistoryInfiniteQuery(MANY),
+                    { wrapper: createWrapper() },
+                )
+                expect(result.current.isLoading).toBe(true)
+
+                act(() => {
+                    vi.advanceTimersByTime(10_000)
+                })
+
+                expect(result.current.isLoading).toBe(false)
+                expect(result.current.isError).toBe(true)
+            } finally {
+                vi.useRealTimers()
+            }
+        })
+
+        test('names the accounts read, changing once a device id registers', async () => {
+            mockDeviceId.byDeployment = { live: null, developer: null }
+            vi.mocked(fetchSwapHistory).mockResolvedValue({
+                results: [],
+                next: null,
+            })
+
+            const { result, rerender } = renderHook(
+                () => useSwapHistoryInfiniteQuery(MANY),
+                { wrapper: createWrapper() },
+            )
+            expect(result.current.readKey).toBe('')
+
+            mockDeviceId.byDeployment = { live: 'device-1', developer: null }
+            rerender()
+
+            await waitFor(() => expect(result.current.isLoading).toBe(false))
+            expect(result.current.readKey).toContain('ADDRESS0')
         })
 
         test('flags the refusal when every batch is refused', async () => {

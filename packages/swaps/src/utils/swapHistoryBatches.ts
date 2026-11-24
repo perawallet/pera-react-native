@@ -39,6 +39,8 @@ export type SwapHistoryBatchPage = {
     next: Nullable<string>
     /** `createdAt` of the last row the router returned, before any filtering; null for an empty page. */
     oldestCreatedAt: Nullable<string>
+    /** Set when the read of this batch failed, so its empty page doesn't pass for "no swaps". */
+    failed?: boolean
 }
 
 export type SwapHistoryCursor = {

@@ -10,8 +10,9 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useInfiniteQuery } from '@tanstack/react-query'
+import { toScopeKey } from '@perawallet/wallet-core-chain-contract'
 import { useDeviceIdLookup } from '@perawallet/wallet-core-device'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import {
@@ -40,6 +41,9 @@ const PAGE_SIZE = 20
 // Bounds the read-ahead over pages the status filter empties, so a history of
 // only hidden rows can't loop the query forever.
 const MAX_SKIPPED_PAGES = 10
+// Device registration retries only on reconnect and foreground, so its id can
+// stay missing; past this the read reports an error rather than loading forever.
+const DEVICE_ID_WAIT_MS = 10_000
 
 export type UseSwapHistoryInfiniteQueryResult = {
     swaps: SwapHistoryItem[]
@@ -48,6 +52,10 @@ export type UseSwapHistoryInfiniteQueryResult = {
     isError: boolean
     /** None of the accounts is on this device, so the router has no history to give. */
     isAccountNotOnDevice: boolean
+    /** A batch failed to load, so rows may be missing even when the rest loaded. */
+    hasFailedBatch: boolean
+    /** Names the accounts actually read; changes when that set does, e.g. once a device id registers. */
+    readKey: string
     error: Nullable<Error>
     hasNextPage: boolean
     fetchNextPage: () => void
@@ -58,11 +66,15 @@ type PageCursor = { cursor: string; accounts: string[] }
 
 type RawPage = SwapHistoryPage & { accounts: string[] }
 
-const exhaustedPage = (accounts: string[]): SwapHistoryBatchPage => ({
+const exhaustedPage = (
+    accounts: string[],
+    failed = false,
+): SwapHistoryBatchPage => ({
     accounts,
     results: [],
     next: null,
     oldestCreatedAt: null,
+    ...(failed ? { failed: true } : {}),
 })
 
 const visibleOf = (
@@ -100,7 +112,8 @@ const fetchVisiblePage = async (
  * cursor, and the pages are merged newest first. An order whose legs sit on
  * two accounts of one batch shows once. An account the device doesn't hold is
  * left out rather than failing the others: up front when registration doesn't
- * send it, and after the router refuses it otherwise.
+ * send it, and after the router refuses it otherwise. A batch that fails any
+ * other way is left out the same way.
  */
 export const useSwapHistoryInfiniteQuery = (
     accounts: SwapAccountAddressOnDevice[],
@@ -115,14 +128,42 @@ export const useSwapHistoryInfiniteQuery = (
         [accounts],
     )
     const deviceIdOf = useDeviceIdLookup()
+    const allBatches = useMemo(() => swapHistoryBatchesOf(onDevice), [onDevice])
     // A deployment the device isn't registered on has no history to read. Keying
     // on the readable batches re-reads once its id registers.
-    const batches = swapHistoryBatchesOf(onDevice).filter(
-        batch => !!deviceIdOf(batch.deployment),
+    const batches = useMemo(
+        () => allBatches.filter(batch => !!deviceIdOf(batch.deployment)),
+        [allBatches, deviceIdOf],
     )
-    const readable = batches.flatMap(batch =>
-        batch.accounts.map(({ scope, address }) => ({ scope, address })),
+    const readable = useMemo(
+        () =>
+            batches.flatMap(batch =>
+                batch.accounts.map(({ scope, address }) => ({
+                    scope,
+                    address,
+                })),
+            ),
+        [batches],
     )
+    const readKey = useMemo(
+        () =>
+            readable
+                .map(({ scope, address }) => `${toScopeKey(scope)}|${address}`)
+                .join(','),
+        [readable],
+    )
+    // Accounts the router could hold history for, but no device id yet to ask with.
+    const isWaitingForDeviceId =
+        isEnabled && allBatches.length > 0 && batches.length === 0
+    const [hasWaitedOut, setHasWaitedOut] = useState(false)
+    useEffect(() => {
+        if (!isWaitingForDeviceId) {
+            setHasWaitedOut(false)
+            return
+        }
+        const timer = setTimeout(() => setHasWaitedOut(true), DEVICE_ID_WAIT_MS)
+        return () => clearTimeout(timer)
+    }, [isWaitingForDeviceId])
 
     const query = useInfiniteQuery({
         queryKey: swapQueryKeys.historyInfinite(readable, statuses),
@@ -177,20 +218,29 @@ export const useSwapHistoryInfiniteQuery = (
             const settled = await Promise.allSettled(
                 batches.map(batch => fetchBatch(batch, undefined)),
             )
-            const refusals = settled.filter(
+            const failures = settled.filter(
                 (result): result is PromiseRejectedResult =>
                     result.status === 'rejected',
             )
-            // A batch the device holds none of is left out; anything else fails the read.
-            const failure = refusals.find(
-                refusal => !isAccountNotOnDeviceError(refusal.reason),
-            )
-            if (failure) throw failure.reason
-            if (refusals.length === settled.length) throw refusals[0].reason
+            // A failed batch is left out and the others' rows still show, like
+            // the chips, but is marked so the list can't call it empty; a
+            // refetch retries it. Only when every batch failed does the read
+            // fail, with a real failure outranking a refusal. A batch the
+            // device holds none of is simply empty.
+            if (failures.length === settled.length) {
+                throw (
+                    failures.find(
+                        failure => !isAccountNotOnDeviceError(failure.reason),
+                    ) ?? failures[0]
+                ).reason
+            }
             return settled.map(result =>
                 result.status === 'fulfilled'
                     ? result.value
-                    : exhaustedPage([]),
+                    : exhaustedPage(
+                          [],
+                          !isAccountNotOnDeviceError(result.reason),
+                      ),
             )
         },
         initialPageParam: undefined as Optional<SwapHistoryCursor[]>,
@@ -199,22 +249,34 @@ export const useSwapHistoryInfiniteQuery = (
         enabled: isEnabled && batches.length > 0,
     })
 
+    const { fetchNextPage: loadNextPage } = query
+    const fetchNextPage = useCallback(() => void loadNextPage(), [loadNextPage])
+
     const swaps = useMemo(
         () => (query.data ? mergeSwapHistoryPages(query.data.pages) : []),
         [query.data],
     )
 
+    const hasFailedBatch = useMemo(
+        () =>
+            query.data?.pages.some(page => page.some(batch => batch.failed)) ??
+            false,
+        [query.data],
+    )
+
     return {
         swaps,
-        isLoading: query.isLoading,
+        isLoading: query.isLoading || (isWaitingForDeviceId && !hasWaitedOut),
         isFetchingNextPage: query.isFetchingNextPage,
-        isError: query.isError,
+        isError: query.isError || (isWaitingForDeviceId && hasWaitedOut),
+        hasFailedBatch,
+        readKey,
         isAccountNotOnDevice:
             (accounts.length > 0 && onDevice.length === 0) ||
             isAccountNotOnDeviceError(query.error),
         error: query.error,
         hasNextPage: query.hasNextPage,
-        fetchNextPage: () => void query.fetchNextPage(),
+        fetchNextPage,
         refetch: () => void query.refetch(),
     }
 }
