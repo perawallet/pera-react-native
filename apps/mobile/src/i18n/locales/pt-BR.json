@@ -1083,6 +1083,12 @@
             "confirm_button": "Excluir backup",
             "confirm_checkbox_label": "Entendo que meu backup será excluído permanentemente do servidor e que essa ação não pode ser desfeita."
         },
+        "turn_off_at_risk": {
+            "summary_one": "Esta conta com <0/> deixará de ter backup.",
+            "summary_other": "Estas {{count}} contas com <0/> deixarão de ter backup.",
+            "back_up_first": "Fazer backup das passphrases primeiro",
+            "turn_off_anyway": "Desativar mesmo assim"
+        },
         "restore": {
             "sheet_title": "Restaurar/recuperar um backup",
             "sheet_description": "Restaure seu backup escaneando um código QR ou digitando suas credenciais manualmente.",

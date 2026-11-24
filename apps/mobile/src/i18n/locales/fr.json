@@ -1083,6 +1083,12 @@
             "confirm_button": "Supprimer la sauvegarde",
             "confirm_checkbox_label": "Je comprends que ma sauvegarde sera définitivement supprimée du serveur et que cette action est irréversible."
         },
+        "turn_off_at_risk": {
+            "summary_one": "Ce compte, qui détient <0/>, ne sera plus sauvegardé.",
+            "summary_other": "Ces {{count}} comptes, qui détiennent <0/> au total, ne seront plus sauvegardés.",
+            "back_up_first": "Sauvegarder d’abord les passphrases",
+            "turn_off_anyway": "Désactiver quand même"
+        },
         "restore": {
             "sheet_title": "Restaurer/récupérer une sauvegarde",
             "sheet_description": "Restaurez votre sauvegarde en scannant un QR code ou en saisissant vos identifiants manuellement.",

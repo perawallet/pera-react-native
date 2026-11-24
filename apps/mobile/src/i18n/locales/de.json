@@ -1075,6 +1075,12 @@
             "confirm_button": "Backup löschen",
             "confirm_checkbox_label": "Ich verstehe, dass mein Backup endgültig vom Server gelöscht wird und das nicht rückgängig gemacht werden kann."
         },
+        "turn_off_at_risk": {
+            "summary_one": "Dieses Konto mit <0/> wird nicht mehr gesichert.",
+            "summary_other": "Diese {{count}} Konten mit <0/> werden nicht mehr gesichert.",
+            "back_up_first": "Zuerst Wiederherstellungsphrasen sichern",
+            "turn_off_anyway": "Trotzdem deaktivieren"
+        },
         "restore": {
             "sheet_title": "Backup wiederherstellen/abrufen",
             "sheet_description": "Stelle dein Backup wieder her, indem du einen QR-Code scannst oder deine Zugangsdaten manuell eingibst.",

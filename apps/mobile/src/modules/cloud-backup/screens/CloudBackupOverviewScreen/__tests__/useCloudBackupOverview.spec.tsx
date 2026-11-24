@@ -83,6 +83,9 @@ vi.mock('@perawallet/wallet-core-shared', async () => ({
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: vi.fn(),
 }))
+vi.mock('@modules/backup', () => ({
+    useBackupFlowLauncher: () => launchBackupFlowMock,
+}))
 vi.mock('@modules/security', () => ({
     useRequirePinVerification: () => ({
         requirePinVerification: requirePinVerificationMock,
@@ -99,6 +102,7 @@ vi.mock('../../../components/ConfirmTurnOffBackupSheet', () => ({
 }))
 
 const {
+    launchBackupFlowMock,
     disableBackupMock,
     removeBackupMock,
     syncNowMock,
@@ -110,6 +114,7 @@ const {
     provenPasskeysMock,
     navigationMock,
 } = vi.hoisted(() => ({
+    launchBackupFlowMock: vi.fn(),
     disableBackupMock: vi.fn(),
     removeBackupMock: vi.fn(),
     syncNowMock: vi.fn(),
@@ -548,7 +553,7 @@ describe('useCloudBackupOverview', () => {
         })
         mockRequestBottomSheet
             .mockResolvedValueOnce('turnOff')
-            .mockResolvedValueOnce(true)
+            .mockResolvedValueOnce({ kind: 'turnOff' })
 
         const { result } = renderHook(() => useCloudBackupOverview())
         await result.current.onPressTurnOff()
@@ -571,7 +576,7 @@ describe('useCloudBackupOverview', () => {
         })
         mockRequestBottomSheet
             .mockResolvedValueOnce('turnOffAndRemove')
-            .mockResolvedValueOnce(true)
+            .mockResolvedValueOnce({ kind: 'turnOff' })
 
         const { result } = renderHook(() => useCloudBackupOverview())
         await result.current.onPressTurnOff()
@@ -604,6 +609,44 @@ describe('useCloudBackupOverview', () => {
             expect(removeBackupMock).not.toHaveBeenCalled()
         },
     )
+
+    test('starts the passphrase backup for that account, and turns nothing off, when the user backs up first', async () => {
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState: null,
+            accounts: [],
+            contacts: [],
+        })
+        const account = { id: 'at-risk' }
+        mockRequestBottomSheet
+            .mockResolvedValueOnce('turnOff')
+            .mockResolvedValueOnce({ kind: 'backUpFirst', account })
+
+        const { result } = renderHook(() => useCloudBackupOverview())
+        await result.current.onPressTurnOff()
+
+        expect(launchBackupFlowMock).toHaveBeenCalledWith(account)
+        expect(requirePinVerificationMock).not.toHaveBeenCalled()
+        expect(disableBackupMock).not.toHaveBeenCalled()
+        expect(removeBackupMock).not.toHaveBeenCalled()
+    })
+
+    test('does not start the passphrase backup when turning off is confirmed', async () => {
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState: null,
+            accounts: [],
+            contacts: [],
+        })
+        mockRequestBottomSheet
+            .mockResolvedValueOnce('turnOff')
+            .mockResolvedValueOnce({ kind: 'turnOff' })
+
+        const { result } = renderHook(() => useCloudBackupOverview())
+        await result.current.onPressTurnOff()
+
+        expect(launchBackupFlowMock).not.toHaveBeenCalled()
+    })
 
     test('does not ask for the PIN when the turn off sheet is dismissed', async () => {
         mockStores({

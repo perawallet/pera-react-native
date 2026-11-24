@@ -27,13 +27,17 @@ import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useContactsStore } from '@perawallet/wallet-core-contacts'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { trackEvent, CloudBackupEvent } from '@analytics'
+import { useBackupFlowLauncher } from '@modules/backup'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useRequirePinVerification } from '@modules/security'
 import {
     BackupCredentialsSheet,
     type BackupCredentialsSheetResult,
 } from '../../components/BackupCredentialsSheet'
-import { ConfirmTurnOffBackupSheet } from '../../components/ConfirmTurnOffBackupSheet'
+import {
+    ConfirmTurnOffBackupSheet,
+    type ConfirmTurnOffBackupResult,
+} from '../../components/ConfirmTurnOffBackupSheet'
 import {
     TurnOffBackupSheet,
     type TurnOffBackupChoice,
@@ -75,6 +79,7 @@ type UseCloudBackupOverviewResult = {
 export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
     const { requirePinVerification } = useRequirePinVerification()
     const { request: requestBottomSheet } = useBottomSheet()
+    const launchBackupFlow = useBackupFlowLauncher()
     const navigation =
         useNavigation<NativeStackNavigationProp<CloudBackupStackParamList>>()
     const { disableBackup } = useDisableCloudBackup()
@@ -186,11 +191,15 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
         })
         if (!choice) return
 
-        const isConfirmed = await requestBottomSheet<boolean>({
+        const confirmation = await requestBottomSheet<ConfirmTurnOffBackupResult>({
             contents: <ConfirmTurnOffBackupSheet choice={choice} />,
             options: { size: 'auto', enablePanDownToClose: true },
         })
-        if (isConfirmed !== true) return
+        if (confirmation?.kind === 'backUpFirst') {
+            launchBackupFlow(confirmation.account)
+            return
+        }
+        if (confirmation?.kind !== 'turnOff') return
         if (!(await requirePinVerification())) return
 
         switch (choice) {
@@ -209,6 +218,7 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
         }
     }, [
         requestBottomSheet,
+        launchBackupFlow,
         requirePinVerification,
         disableBackup,
         removeBackup,

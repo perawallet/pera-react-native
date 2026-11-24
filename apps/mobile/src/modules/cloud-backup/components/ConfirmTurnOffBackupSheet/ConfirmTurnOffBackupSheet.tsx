@@ -10,13 +10,20 @@
  limitations under the License
  */
 
+import { Trans } from 'react-i18next'
 import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
+import { AccountWithBalance } from '@components/AccountWithBalance'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
-import type { IconName, PWButtonProps } from '@components/core'
+import { PWText, PWView, type IconName, type PWButtonProps } from '@components/core'
+import { PreferredAmount } from '@components/PreferredAmount'
 import { useLanguage } from '@hooks/useLanguage'
 import { ConfirmationCheckbox } from '../ConfirmationCheckbox'
 import type { TurnOffBackupChoice } from '../TurnOffBackupSheet'
-import { useConfirmTurnOffBackupSheet } from './useConfirmTurnOffBackupSheet'
+import { useStyles } from './styles'
+import {
+    useConfirmTurnOffBackupSheet,
+    type ConfirmTurnOffBackupResult,
+} from './useConfirmTurnOffBackupSheet'
 
 type ConfirmTurnOffBackupSheetProps = {
     choice: TurnOffBackupChoice
@@ -57,33 +64,102 @@ export const ConfirmTurnOffBackupSheet = ({
     choice,
 }: ConfirmTurnOffBackupSheetProps) => {
     const { t } = useLanguage()
+    const styles = useStyles()
     const copy = COPY[choice]
-    const { isAcknowledged, isConfirmDisabled, toggleAcknowledged } =
-        useConfirmTurnOffBackupSheet(copy.checkboxKey != null)
+    const {
+        isAcknowledged,
+        toggleAcknowledged,
+        isTurnOffDisabled,
+        accountsAtRisk,
+        accountsAtRiskPreferredValue,
+        handleTurnOff,
+        handleBackUpFirst,
+        handleCancel,
+    } = useConfirmTurnOffBackupSheet(copy.checkboxKey != null)
+    const isAtRisk = accountsAtRisk.length > 0
+
+    const checkbox = !!copy.checkboxKey && (
+        <ConfirmationCheckbox
+            label={t(copy.checkboxKey)}
+            isConfirmed={isAcknowledged}
+            onToggle={toggleAcknowledged}
+            testID='confirm_turn_off_backup_checkbox'
+        />
+    )
+
+    if (!isAtRisk) {
+        return (
+            <ConfirmActionContent<ConfirmTurnOffBackupResult>
+                icon={copy.icon}
+                iconVariant='error'
+                title={t(copy.titleKey)}
+                message={t(copy.bodyKey)}
+                isMessageCentered
+                confirmLabel={t(copy.confirmKey)}
+                confirmVariant={copy.confirmVariant}
+                onConfirm={handleTurnOff}
+                isConfirmDisabled={isTurnOffDisabled}
+                cancelLabel={t('common.cancel.label')}
+                onCancel={handleCancel}
+                testID='confirm_turn_off_backup_sheet'
+                confirmTestID='confirm_turn_off_backup_confirm'
+                cancelTestID='confirm_turn_off_backup_cancel'
+            >
+                {checkbox}
+            </ConfirmActionContent>
+        )
+    }
 
     return (
-        <ConfirmActionContent
+        <ConfirmActionContent<ConfirmTurnOffBackupResult>
             icon={copy.icon}
             iconVariant='error'
             title={t(copy.titleKey)}
             message={t(copy.bodyKey)}
             isMessageCentered
-            confirmLabel={t(copy.confirmKey)}
-            confirmVariant={copy.confirmVariant}
-            isConfirmDisabled={isConfirmDisabled}
-            cancelLabel={t('common.cancel.label')}
+            confirmLabel={t('cloud_backup.turn_off_at_risk.back_up_first')}
+            confirmVariant='primary'
+            onConfirm={handleBackUpFirst}
+            cancelLabel={t('cloud_backup.turn_off_at_risk.turn_off_anyway')}
+            cancelVariant={copy.confirmVariant}
+            onCancel={handleTurnOff}
+            isCancelDisabled={isTurnOffDisabled}
+            tertiaryLabel={t('common.cancel.label')}
+            tertiaryVariant='linkNeutral'
+            onTertiary={handleCancel}
             testID='confirm_turn_off_backup_sheet'
-            confirmTestID='confirm_turn_off_backup_confirm'
-            cancelTestID='confirm_turn_off_backup_cancel'
+            confirmTestID='confirm_turn_off_backup_back_up_first'
+            cancelTestID='confirm_turn_off_backup_turn_off_anyway'
+            tertiaryTestID='confirm_turn_off_backup_cancel'
         >
-            {!!copy.checkboxKey && (
-                <ConfirmationCheckbox
-                    label={t(copy.checkboxKey)}
-                    isConfirmed={isAcknowledged}
-                    onToggle={toggleAcknowledged}
-                    testID='confirm_turn_off_backup_checkbox'
+            <PWText
+                variant='body'
+                style={styles.summary}
+                testID='confirm_turn_off_backup_at_risk_summary'
+            >
+                <Trans
+                    i18nKey='cloud_backup.turn_off_at_risk.summary'
+                    count={accountsAtRisk.length}
+                    components={[
+                        <PreferredAmount
+                            key='total'
+                            value={accountsAtRiskPreferredValue}
+                            variant='body'
+                            isInline
+                        />,
+                    ]}
                 />
-            )}
+            </PWText>
+            <PWView style={styles.accounts}>
+                {accountsAtRisk.map(account => (
+                    <AccountWithBalance
+                        key={account.id}
+                        account={account}
+                        testID={`confirm_turn_off_backup_at_risk_account_${account.id}`}
+                    />
+                ))}
+            </PWView>
+            {checkbox}
         </ConfirmActionContent>
     )
 }
