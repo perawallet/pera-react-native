@@ -450,7 +450,7 @@
             "empty_filtered_body": "No transactions match this filter",
             "empty_on_network_body": "No transactions yet on {{network}}",
             "network_failed": "Couldn't load transactions on {{networks}}",
-            "network_unavailable": "Transactions aren't available on {{networks}}",
+            "network_unavailable": "Full history isn't available on {{networks}}",
             "offline_empty_title": "You're offline",
             "offline_empty_body": "No transactions are saved on this device yet. They'll appear once you're back online.",
             "search_paused_body": "No transactions found in recent history.",

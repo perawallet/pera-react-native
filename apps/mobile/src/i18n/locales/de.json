@@ -450,7 +450,7 @@
             "empty_filtered_body": "Keine Transaktionen entsprechen diesem Filter",
             "empty_on_network_body": "Noch keine Transaktionen auf {{network}}",
             "network_failed": "Transaktionen auf {{networks}} konnten nicht geladen werden",
-            "network_unavailable": "Transaktionen sind auf {{networks}} nicht verfügbar",
+            "network_unavailable": "Der vollständige Verlauf ist auf {{networks}} nicht verfügbar",
             "offline_empty_title": "Du bist offline",
             "offline_empty_body": "Auf diesem Gerät sind noch keine Transaktionen gespeichert. Sie erscheinen, sobald du wieder online bist.",
             "search_paused_body": "Keine Transaktionen im jüngsten Verlauf gefunden.",
