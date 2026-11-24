@@ -11,7 +11,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { diffAddresses } from '../diffAddresses'
+import { diffAddresses, groupAddressSegments } from '../diffAddresses'
 
 describe('diffAddresses', () => {
     it('marks the middle run that differs on both sides', () => {
@@ -43,5 +43,69 @@ describe('diffAddresses', () => {
             ],
             b: [{ text: 'ABCD', isDifferent: false }],
         })
+    })
+})
+
+describe('groupAddressSegments', () => {
+    it('groups from the end, splitting runs across a boundary and keeping their marker', () => {
+        const groups = groupAddressSegments([
+            { text: '0x08', isDifferent: false },
+            { text: '95ZZ', isDifferent: true },
+            { text: 'ZZEE5c', isDifferent: false },
+        ])
+
+        expect(groups).toEqual([
+            [{ text: '0x', isDifferent: false }],
+            [
+                { text: '08', isDifferent: false },
+                { text: '95', isDifferent: true },
+            ],
+            [
+                { text: 'ZZ', isDifferent: true },
+                { text: 'ZZ', isDifferent: false },
+            ],
+            [{ text: 'EE5c', isDifferent: false }],
+        ])
+    })
+
+    it('makes full groups when the length divides evenly', () => {
+        const groups = groupAddressSegments([
+            { text: 'ABCDEFGHIJKL', isDifferent: false },
+        ])
+
+        expect(groups).toEqual([
+            [{ text: 'ABCD', isDifferent: false }],
+            [{ text: 'EFGH', isDifferent: false }],
+            [{ text: 'IJKL', isDifferent: false }],
+        ])
+    })
+
+    it('returns no groups for no segments', () => {
+        expect(groupAddressSegments([])).toEqual([])
+    })
+
+    it('gives back the input text when the groups are joined', () => {
+        const segments = [
+            { text: 'ABC', isDifferent: false },
+            { text: 'DEFGH', isDifferent: true },
+            { text: 'IJ', isDifferent: false },
+            { text: 'KLMNOPQ', isDifferent: true },
+        ]
+
+        const joined = groupAddressSegments(segments)
+            .flat()
+            .map(segment => segment.text)
+            .join('')
+
+        expect(joined).toBe('ABCDEFGHIJKLMNOPQ')
+    })
+
+    it('honours a custom group size', () => {
+        const groups = groupAddressSegments(
+            [{ text: 'ABCDEFGH', isDifferent: false }],
+            3,
+        )
+
+        expect(groups.map(group => group[0].text)).toEqual(['AB', 'CDE', 'FGH'])
     })
 })

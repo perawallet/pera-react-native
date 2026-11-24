@@ -11,7 +11,10 @@
  */
 
 import { PWText, PWView } from '@components/core'
-import type { AddressSegment } from '@modules/transactions/utils/diffAddresses'
+import {
+    groupAddressSegments,
+    type AddressSegment,
+} from '@modules/transactions/utils/diffAddresses'
 import { useStyles } from './styles'
 
 export type ComparedAddressProps = {
@@ -35,24 +38,31 @@ export const ComparedAddress = ({
             >
                 {label}
             </PWText>
-            <PWText
-                style={styles.address}
+            <PWView
+                style={styles.groups}
                 testID={testID}
             >
-                {segments.map((segment, index) => (
+                {groupAddressSegments(segments).map((group, groupIndex) => (
                     <PWText
-                        key={index}
-                        weight={segment.isDifferent ? 700 : undefined}
-                        style={
-                            segment.isDifferent
-                                ? styles.difference
-                                : styles.address
-                        }
+                        key={groupIndex}
+                        variant='mono'
                     >
-                        {segment.text}
+                        {group.map((segment, index) => (
+                            <PWText
+                                key={index}
+                                variant='mono'
+                                style={
+                                    segment.isDifferent
+                                        ? styles.difference
+                                        : undefined
+                                }
+                            >
+                                {segment.text}
+                            </PWText>
+                        ))}
                     </PWText>
                 ))}
-            </PWText>
+            </PWView>
         </PWView>
     )
 }

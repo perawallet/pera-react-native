@@ -36,3 +36,36 @@ export const diffAddresses = (
     a: segmentsOf(a, b),
     b: segmentsOf(b, a),
 })
+
+/**
+ * Cuts one address's runs into display groups of `groupSize` characters,
+ * counted from the end so only the first group can be shorter. Both addresses
+ * of a pair are the same length, so they break at the same places.
+ */
+export const groupAddressSegments = (
+    segments: AddressSegment[],
+    groupSize = 4,
+): AddressSegment[][] => {
+    const total = segments.reduce((sum, { text }) => sum + text.length, 0)
+    let room = total % groupSize || groupSize
+    const groups: AddressSegment[][] = []
+    let current: AddressSegment[] = []
+
+    for (const { text, isDifferent } of segments) {
+        let rest = text
+        while (rest.length > 0) {
+            const taken = rest.slice(0, room)
+            current.push({ text: taken, isDifferent })
+            rest = rest.slice(taken.length)
+            room -= taken.length
+            if (room === 0) {
+                groups.push(current)
+                current = []
+                room = groupSize
+            }
+        }
+    }
+    if (current.length > 0) groups.push(current)
+
+    return groups
+}
