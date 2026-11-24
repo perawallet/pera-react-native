@@ -50,6 +50,10 @@ import {
 import { filterDappsByQuery } from '../../utils/filterDappsByQuery'
 import { looksLikeUrl } from '../../utils/looksLikeUrl'
 import { normalizeDappUrl } from '../../utils/normalizeDappUrl'
+import {
+    isCollectibleResult,
+    rankSearchAssets,
+} from '../../utils/rankSearchAssets'
 import { dappFromUrl } from '../../utils/toDiscoverDapp'
 
 const WEB_SEARCH_URL_PREFIX = 'https://duckduckgo.com/?q='
@@ -157,10 +161,18 @@ export const useDiscoverSearchScreen = (): UseDiscoverSearchScreenResult => {
     const assetSearch = useAssetSearchAcrossScopesQuery(debounced, scopes, {
         enabled: debounced.trim().length > 0,
     })
-    const assetResults = useMemo(
-        () => (filter === 'dapps' ? [] : assetSearch.results),
-        [filter, assetSearch.results],
+    // Ranked once for both chips; Markets then drops what is not a token.
+    const rankedAssets = useMemo(
+        () => rankSearchAssets(assetSearch.results, debounced),
+        [assetSearch.results, debounced],
     )
+    const assetResults = useMemo(() => {
+        if (filter === 'dapps') return []
+        if (filter === 'markets') {
+            return rankedAssets.filter(result => !isCollectibleResult(result))
+        }
+        return rankedAssets
+    }, [filter, rankedAssets])
 
     const typedUrl = useMemo(
         () =>

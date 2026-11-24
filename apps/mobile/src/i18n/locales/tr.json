@@ -58,7 +58,8 @@
             "search_web": "Web’de ara",
             "no_results": "Sonuç yok",
             "assets_unavailable": "Varlık araması şu anda kullanılamıyor",
-            "dapps_unavailable": "dApp araması şu anda kullanılamıyor"
+            "dapps_unavailable": "dApp araması şu anda kullanılamıyor",
+            "unverified": "Doğrulanmamış"
         },
         "news": {
             "title": "Haberler",
