@@ -1279,7 +1279,8 @@ describe('useSwapForm', () => {
             })
             let confirming: Promise<void> = Promise.resolve()
             await act(async () => {
-                confirming = result.current.handleOpenConfirm()
+                // Typed void, but async: the sheet's promise is still open here.
+                confirming = Promise.resolve(result.current.handleOpenConfirm())
             })
             return { result, rerender, confirming }
         }
