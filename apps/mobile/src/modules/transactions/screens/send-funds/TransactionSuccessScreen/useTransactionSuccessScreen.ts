@@ -14,7 +14,7 @@ import { useCallback, useEffect } from 'react'
 import { BackHandler } from 'react-native'
 
 import { useTransactionOutcomeHaptics } from '@hooks/useTransactionOutcomeHaptics'
-import { useWebView } from '@modules/webview'
+import { openExplorerUrl } from '@modules/webview'
 import {
     useSendFunds,
     useClaimAssets,
@@ -22,7 +22,7 @@ import {
 } from '@modules/transactions/hooks'
 import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import { useRoute } from '@react-navigation/native'
-import { generateUniqueId, type Optional } from '@perawallet/wallet-core-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 type SuccessVariant =
     | 'payment'
@@ -72,7 +72,6 @@ export const useTransactionSuccessScreen =
             scope.networkId,
             transactionId,
         )
-        const { pushWebView } = useWebView()
         const { playSuccess } = useTransactionOutcomeHaptics()
 
         const isClaimFlow =
@@ -90,9 +89,8 @@ export const useTransactionSuccessScreen =
 
         const viewInExplorer = useCallback(() => {
             if (!explorerUrl) return
-            // oxlint-disable-next-line pera/no-unvalidated-open-url -- chain descriptor explorer URL
-            pushWebView({ url: explorerUrl, id: generateUniqueId() })
-        }, [explorerUrl, pushWebView])
+            openExplorerUrl(explorerUrl)
+        }, [explorerUrl])
 
         const handleViewInExplorer = explorerUrl ? viewInExplorer : undefined
 

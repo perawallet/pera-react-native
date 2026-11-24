@@ -52,6 +52,7 @@ export const EthereumTransactionDetailSection = ({
         isAmountLoading,
         maxFee,
         sender,
+        collectible,
     } = presentation
     const isMined = 'isMined' in view
     const isAssetElsewhere = isTransfer && isAssetInCard
@@ -103,7 +104,8 @@ export const EthereumTransactionDetailSection = ({
                             asset={amount?.asset}
                             value={amount?.value}
                             isLoading={isAmountLoading}
-                            showSymbol
+                            // The Asset row already names the collection.
+                            showSymbol={!collectible}
                             ignorePrivacyMode
                         />
                     </KeyValueRow>

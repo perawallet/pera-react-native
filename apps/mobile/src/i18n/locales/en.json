@@ -435,8 +435,6 @@
             "social_media": "Social Media",
             "chart_empty_body": "You will see a chart here once you have some balance history",
             "total_supply_info_body": "The total supply of an asset is set at creation time and it corresponds to the asset's total created units.",
-            "circulating_supply": "Circulating Supply",
-            "circulating_supply_info_body": "The circulating supply is the number of coins in public circulation right now. A network's native coin has no fixed total, so this figure changes as coins are issued or burned.",
             "token_total_supply_info_body": "The total supply is the number of tokens the contract has issued, minus any burned. It changes when the issuer mints or burns tokens."
         },
         "action_buttons": {
@@ -530,6 +528,7 @@
             "empty_title": "NFTs",
             "empty_body": "Welcome to your NFT Gallery! You don't have any NFTs yet. All the NFTs available in your wallet will be visible here.",
             "empty_body_multichain": "Welcome to your NFT Gallery!\nYou don't have any NFTs yet. NFTs you receive on networks like Ethereum show up here on their own. Algorand NFTs need an opt-in first.",
+            "empty_body_unsupported": "NFTs on {{chains}} aren't shown in Pera yet.",
             "empty_optin": "Opt-in to NFT",
             "empty_optin_algorand": "Opt in to Algorand NFT",
             "nomatch_title": "No Matching NFTs",
@@ -1559,7 +1558,8 @@
             "request_expired_body": "This signing request expired before it was answered. Ask the app to send it again.",
             "unsupported_method_body": "{{dappName}} asked for {{method}}, which Pera doesn't support, so the request was declined.",
             "unsupported_network_body": "{{dappName}} asked to use the network with chain ID {{chainId}}, which Pera doesn't support, so the request was declined.",
-            "unsupported_chains_body": "This app asked to use a network Pera doesn't support, so the connection was declined."
+            "unsupported_chains_body": "This app asked to use a network Pera doesn't support, so the connection was declined.",
+            "unselected_network_body": "This app only offers networks Pera isn't on right now, so the connection was declined. Turn developer mode on or off to match the app, then try again."
         },
         "signing": {
             "title": "An error occurred processing the signing request",
@@ -3692,7 +3692,11 @@
             "no_deadline_warning": "This permission never expires.",
             "spender_label": "Spender",
             "unlimited": "Unlimited",
-            "deadline_label": "Deadline",
+            "expiry_label": "Permit expires",
+            "signature_deadline_label": "Signature valid until",
+            "signature_long_deadline_warning": "This signature stays valid for more than a year, so it can be used long after you sign it.",
+            "expired_title": "This request has expired",
+            "expired_body": "Its signing deadline has passed, so it would be refused. Cancel and start again in the app.",
             "never": "Never",
             "known_title": "About this approval",
             "known_description": "{{name}} is a well-known contract",
@@ -4209,7 +4213,8 @@
         },
         "switch_network": {
             "title": "Allow network access?",
-            "body": "{{name}} wants to use your {{chain}} accounts on {{network}}.",
+            "body": "{{name}} wants to use your accounts on {{chain}}.",
+            "body_with_network": "{{name}} wants to use your accounts on {{chain}} {{network}}.",
             "confirm": "Allow"
         },
         "settings": {

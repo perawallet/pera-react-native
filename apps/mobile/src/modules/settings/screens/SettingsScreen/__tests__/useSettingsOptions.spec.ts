@@ -444,7 +444,7 @@ describe('useSettingsOptions', () => {
         )
     })
 
-    it('turns the cloud backup row into a confirm action with a warning while the credentials are unconfirmed', () => {
+    it('keeps the cloud backup row on the overview and adds a warning while the credentials are unconfirmed', () => {
         ;(useIsCloudBackupEnabled as Mock).mockReturnValue(true)
         mockCloudBackupState.isConfigured = () => true
         mockCloudBackupState.needsCredentialsConfirmation = () => true
@@ -452,8 +452,8 @@ describe('useSettingsOptions', () => {
         const { result } = renderHook(() => useSettingsOptions())
 
         const row = result.current.settingsOptions[0].items[0]
-        expect(row.action).toBe('confirmCloudBackupCredentials')
-        expect(row.route).toBeUndefined()
+        expect(row.route).toBe('CloudBackupSettings')
+        expect(row.action).toBeUndefined()
         expect(row.warning).toBe('cloud_backup.confirm_credentials.warning')
         expect(row.value).toBe('settings.main.cloud_backup_on')
     })

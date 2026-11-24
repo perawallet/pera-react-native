@@ -14,12 +14,9 @@ import { useMemo } from 'react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { Maybe } from '@perawallet/wallet-core-shared'
 import { isAccountRestorableFromLatestSync } from '../models'
-import { useCloudBackupStore } from '../store/store'
-import { useBackupSyncStateStore } from '../store/syncStateStore'
-import { accountBackupAddresses } from '../sync/serializeAccountItems'
+import { useBackupSyncStateStore, useCloudBackupStore } from '../store'
+import { accountBackupAddresses } from '../sync'
 
-// Imports stores and sync files by path, not the barrels: the mnemonic hooks
-// import this file, and `useCloudBackupImport` imports the mnemonic hooks.
 export const useIsAccountCoveredByCloudBackup = (
     account: Maybe<WalletAccount>,
 ): boolean => {

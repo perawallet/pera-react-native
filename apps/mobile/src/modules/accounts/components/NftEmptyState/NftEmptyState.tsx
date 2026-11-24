@@ -18,6 +18,8 @@ import { useLanguage } from '@hooks/useLanguage'
 type NftEmptyStateProps = {
     /** Says opt-in is Algorand-only and other networks' NFTs arrive on their own. */
     isMultiChain?: boolean
+    /** Set when none of the account's networks shows NFTs: says so instead of "no NFTs yet". */
+    unsupportedNetworkNames?: string
     /**
      * Hides the opt-in CTA when omitted. Unsignable accounts can't sign
      * opt-in transactions, so the button would be a dead-end.
@@ -27,9 +29,22 @@ type NftEmptyStateProps = {
 
 export const NftEmptyState = ({
     isMultiChain = false,
+    unsupportedNetworkNames,
     onOptInPress,
 }: NftEmptyStateProps) => {
     const { t } = useLanguage()
+
+    if (unsupportedNetworkNames !== undefined) {
+        return (
+            <EmptyView
+                icon='grid-view'
+                title={t('account_details.nfts.empty_title')}
+                body={t('account_details.nfts.empty_body_unsupported', {
+                    chains: unsupportedNetworkNames,
+                })}
+            />
+        )
+    }
 
     return (
         <EmptyView

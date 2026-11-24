@@ -107,6 +107,12 @@ const YEAR_MS = 365 * 24 * 60 * 60 * 1000
 // The largest time a JS Date holds; a later deadline is one that never lapses.
 const MAX_DATE_MS = 8_640_000_000_000_000n
 
+// Unix seconds to Unix ms; undefined past what a Date holds, a deadline that never lapses.
+const toDeadlineMs = (seconds: bigint): Optional<number> => {
+    const ms = seconds * 1000n
+    return ms > MAX_DATE_MS ? undefined : Number(ms)
+}
+
 type Types = Record<string, readonly TypedDataParameter[]>
 
 const matches = (
@@ -164,9 +170,18 @@ const toNftAllowance = (
 type Parsed = {
     spender: unknown
     allowances: Optional<TokenAllowance>[]
-    /** Unix seconds; undefined when a deadline can't be read. */
+    /** Unix seconds the allowance lapses; undefined when it can't be read. */
     expiry: Optional<bigint>
+    /**
+     * Set for a permit whose allowance outlives its signature: Unix seconds the
+     * signature can be submitted until, undefined when it can't be read.
+     */
+    signature?: { deadline: Optional<bigint> }
+    /** The allowance stays until it is used or revoked, like an on-chain approve's. */
+    isLasting?: true
 }
+
+const LASTING = { expiry: maxUint256, isLasting: true } as const
 
 const parsePermit = (
     message: Record<string, unknown>,
@@ -174,11 +189,12 @@ const parsePermit = (
 ): Parsed => ({
     spender: message.spender,
     allowances: [toAllowance(token, message.value)],
-    expiry: toUint(message.deadline),
+    ...LASTING,
+    signature: { deadline: toUint(message.deadline) },
 })
 
 // DAI grants its whole balance when `allowed` is true and nothing otherwise;
-// an expiry of 0 means it never lapses.
+// an expiry of 0 means the signature never lapses.
 const parseDaiPermit = (
     message: Record<string, unknown>,
     token: unknown,
@@ -188,7 +204,8 @@ const parseDaiPermit = (
         spender: message.spender,
         allowances:
             message.allowed === true ? [toAllowance(token, maxUint256)] : [],
-        expiry: expiry === 0n ? maxUint256 : expiry,
+        ...LASTING,
+        signature: { deadline: expiry === 0n ? maxUint256 : expiry },
     }
 }
 
@@ -198,7 +215,8 @@ const parseErc721Permit = (
 ): Parsed => ({
     spender: message.spender,
     allowances: [toNftAllowance(contract, message.tokenId)],
-    expiry: toUint(message.deadline),
+    ...LASTING,
+    signature: { deadline: toUint(message.deadline) },
 })
 
 type PermitShape = {
@@ -245,6 +263,9 @@ const parsePermit2 = (
             }
             return expiry > latest ? expiry : latest
         }, 0n),
+        // A signature transfer is spent once, by its deadline; an allowance
+        // permit leaves an allowance that runs to its own expiration.
+        ...(key === 'details' && { signature: { deadline } }),
     }
 }
 
@@ -316,12 +337,23 @@ export const spendApprovalOf = (
             spender === undefined ||
             parsed.allowances.length === 0 ||
             parsed.expiry === undefined ||
+            (parsed.signature && parsed.signature.deadline === undefined) ||
             parsed.allowances.some(allowance => !allowance)
         ) {
             return undefined
         }
-        const ms = parsed.expiry * 1000n
-        const deadline = ms > MAX_DATE_MS ? undefined : Number(ms)
+        const deadline = toDeadlineMs(parsed.expiry)
+        const signatureDeadline =
+            parsed.signature?.deadline !== undefined
+                ? toDeadlineMs(parsed.signature.deadline)
+                : undefined
+        const isLongLasting = (ms: Optional<number>) =>
+            ms === undefined || ms - now > YEAR_MS
+        // A Permit2 expiration of 0 falls back to the signature's deadline, so a
+        // second row would repeat the date.
+        const hasOwnWindow =
+            !!parsed.signature &&
+            (parsed.isLasting || signatureDeadline !== deadline)
         const knownSpender = knownSpenderOf(eip155ChainId, spender)
         return {
             spender,
@@ -333,7 +365,15 @@ export const spendApprovalOf = (
                 }),
             ),
             ...(deadline !== undefined && { deadline }),
-            isLongLived: deadline === undefined || deadline - now > YEAR_MS,
+            isLongLived: isLongLasting(deadline),
+            ...(hasOwnWindow && {
+                signature: {
+                    ...(signatureDeadline !== undefined && {
+                        deadline: signatureDeadline,
+                    }),
+                    isLongLived: isLongLasting(signatureDeadline),
+                },
+            }),
         }
     } catch {
         return undefined

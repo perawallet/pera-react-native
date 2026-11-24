@@ -124,7 +124,21 @@ describe('spend approval recognition', () => {
             copy.message.sigDeadline = '1767312000'
         })
 
-        expect(describeTyped(typed).spendApproval?.deadline).toBe(1767312000000)
+        const approval = describeTyped(typed).spendApproval
+
+        expect(approval?.deadline).toBe(1767312000000)
+        expect(approval).not.toHaveProperty('signature')
+    })
+
+    it('keeps a PermitSingle signature deadline apart from its expiration', () => {
+        const typed = edit(PERMIT2_SINGLE_TYPED_DATA, copy => {
+            copy.message.sigDeadline = String(PERMIT_NOW_MS / 1000 + 1800)
+        })
+
+        expect(describeTyped(typed).spendApproval).toMatchObject({
+            deadline: 1769817600000,
+            signature: { deadline: PERMIT_NOW_MS + 1_800_000 },
+        })
     })
 
     it('lists a PermitBatch in message order, ending at the latest expiration', () => {
@@ -221,6 +235,12 @@ describe('spend approval recognition', () => {
         },
     )
 
+    it('gives a signature transfer no separate signature window: it is spent once, by its deadline', () => {
+        expect(
+            describeTyped(PERMIT2_TRANSFER_FROM_TYPED_DATA).spendApproval,
+        ).not.toHaveProperty('signature')
+    })
+
     it('reads an EIP-2612 Permit from the token that verifies it', () => {
         const asNumber = edit(EIP2612_PERMIT_TYPED_DATA, copy => {
             copy.message.value = 1000000
@@ -232,8 +252,8 @@ describe('spend approval recognition', () => {
         expect(describeTyped(EIP2612_PERMIT_TYPED_DATA).spendApproval).toEqual({
             spender: getAddress(PERMIT_SPENDER),
             allowances: [asset(USDC, '1000000')],
-            deadline: 1769817600000,
-            isLongLived: false,
+            isLongLived: true,
+            signature: { deadline: 1769817600000, isLongLived: false },
         })
         expect(describeTyped(asNumber).spendApproval?.allowances).toEqual([
             asset(USDC, '1000000'),
@@ -243,7 +263,7 @@ describe('spend approval recognition', () => {
         ])
     })
 
-    it('reads a DAI-style Permit with allowed true as an unlimited allowance to the spender, its expiry the deadline', () => {
+    it('reads a DAI-style Permit with allowed true as a lasting unlimited allowance, its expiry the signature deadline', () => {
         expect(describeTyped(DAI_PERMIT_TYPED_DATA).spendApproval).toEqual({
             spender: getAddress(PERMIT_SPENDER),
             allowances: [
@@ -251,12 +271,12 @@ describe('spend approval recognition', () => {
                     getAddress(DAI_PERMIT_TYPED_DATA.domain.verifyingContract),
                 ),
             ],
-            deadline: 1769817600000,
-            isLongLived: false,
+            isLongLived: true,
+            signature: { deadline: 1769817600000, isLongLived: false },
         })
     })
 
-    it('reads a DAI-style Permit with expiry 0 as never expiring', () => {
+    it('reads a DAI-style Permit with expiry 0 as a signature that never lapses', () => {
         const typed = edit(DAI_PERMIT_TYPED_DATA, copy => {
             copy.message.expiry = '0'
         })
@@ -266,6 +286,7 @@ describe('spend approval recognition', () => {
         expect(approval).toBeDefined()
         expect(approval).not.toHaveProperty('deadline')
         expect(approval?.isLongLived).toBe(true)
+        expect(approval?.signature).toEqual({ isLongLived: true })
     })
 
     it.each([false, 'true'])(
@@ -295,8 +316,8 @@ describe('spend approval recognition', () => {
                     },
                 },
             ],
-            deadline: 1769817600000,
-            isLongLived: false,
+            isLongLived: true,
+            signature: { deadline: 1769817600000, isLongLived: false },
         })
     })
 
@@ -310,18 +331,35 @@ describe('spend approval recognition', () => {
         ])
     })
 
-    it('flags a deadline more than a year out as long-lived', () => {
+    it('flags a signature deadline more than a year out as long-lived', () => {
         const typed = edit(EIP2612_PERMIT_TYPED_DATA, copy => {
             copy.message.deadline = String(PERMIT_NOW_MS / 1000 + 400 * 86400)
         })
 
         expect(describeTyped(typed).spendApproval).toMatchObject({
-            deadline: PERMIT_NOW_MS + 400 * DAY_MS,
             isLongLived: true,
+            signature: {
+                deadline: PERMIT_NOW_MS + 400 * DAY_MS,
+                isLongLived: true,
+            },
         })
     })
 
-    it('reads a max uint256 deadline as no deadline', () => {
+    it('flags a Permit2 expiration more than a year out as long-lived', () => {
+        const typed = edit(PERMIT2_SINGLE_TYPED_DATA, copy => {
+            copy.message.details.expiration = String(
+                PERMIT_NOW_MS / 1000 + 400 * 86400,
+            )
+        })
+
+        expect(describeTyped(typed).spendApproval).toMatchObject({
+            deadline: PERMIT_NOW_MS + 400 * DAY_MS,
+            isLongLived: true,
+            signature: { isLongLived: false },
+        })
+    })
+
+    it('reads a max uint256 signature deadline as one that never lapses', () => {
         const typed = edit(EIP2612_PERMIT_TYPED_DATA, copy => {
             copy.message.deadline = maxUint256.toString()
         })
@@ -329,8 +367,7 @@ describe('spend approval recognition', () => {
         const approval = describeTyped(typed).spendApproval
 
         expect(approval).toBeDefined()
-        expect(approval).not.toHaveProperty('deadline')
-        expect(approval?.isLongLived).toBe(true)
+        expect(approval?.signature).toEqual({ isLongLived: true })
     })
 
     it('reads a max uint48 expiration as no deadline', () => {

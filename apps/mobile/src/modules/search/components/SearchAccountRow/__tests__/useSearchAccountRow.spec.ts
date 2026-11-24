@@ -37,7 +37,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
     chainDisplayNameOf: (chainId: string) =>
-        chainId === 'ethereum' ? 'Ethereum' : 'Algorand',
+        ({ ethereum: 'Ethereum', base: 'Base' })[chainId] ?? 'Algorand',
 }))
 
 const ETH_ADDRESS = '0xC3D7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa5300'
@@ -82,9 +82,29 @@ describe('useSearchAccountRow', () => {
         })
     })
 
-    it('shows the address unmarked when only the network name matched', () => {
+    it('shows the address unmarked when the query matched the name, not the address', () => {
         expect(render('ethereum', 'ethereum').segments).toEqual([
             { text: '0xC3D7...5300', isMatch: false },
         ])
+    })
+
+    it('names every network the matched EVM address is on', () => {
+        const onTwoEvmChains: WalletAccount = {
+            ...ACCOUNT,
+            chains: {
+                ...ACCOUNT.chains,
+                base: { address: ETH_ADDRESS },
+            },
+        }
+
+        const { chainName } = renderHook(() =>
+            useSearchAccountRow({
+                account: onTwoEvmChains,
+                chainId: 'ethereum',
+                query: '0xc3',
+            }),
+        ).result.current
+
+        expect(chainName).toBe('Ethereum, Base')
     })
 })

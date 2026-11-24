@@ -29,7 +29,7 @@ export type SettingsOptionItem = {
     title: string
     route?: keyof SettingsStackParamsList
     url?: string
-    action?: 'scanRekeyed' | 'confirmCloudBackupCredentials'
+    action?: 'scanRekeyed'
     value?: string
     warning?: string
 }
@@ -80,32 +80,21 @@ export const useSettingsOptions = () => {
                 items: [
                     ...(isCloudBackupAvailable
                         ? [
-                              needsCloudBackupConfirmation
-                                  ? ({
-                                        action: 'confirmCloudBackupCredentials',
-                                        icon: 'cloud-check',
-                                        title: t(
-                                            'settings.main.cloud_backup_title',
-                                        ),
-                                        value: t(
-                                            'settings.main.cloud_backup_on',
-                                        ),
-                                        warning: t(
+                              {
+                                  route: 'CloudBackupSettings',
+                                  icon: 'cloud-check',
+                                  title: t('settings.main.cloud_backup_title'),
+                                  value: t(
+                                      isCloudBackupConfigured
+                                          ? 'settings.main.cloud_backup_on'
+                                          : 'settings.main.cloud_backup_off',
+                                  ),
+                                  warning: needsCloudBackupConfirmation
+                                      ? t(
                                             'cloud_backup.confirm_credentials.warning',
-                                        ),
-                                    } satisfies SettingsOptionItem)
-                                  : ({
-                                        route: 'CloudBackupSettings',
-                                        icon: 'cloud-check',
-                                        title: t(
-                                            'settings.main.cloud_backup_title',
-                                        ),
-                                        value: t(
-                                            isCloudBackupConfigured
-                                                ? 'settings.main.cloud_backup_on'
-                                                : 'settings.main.cloud_backup_off',
-                                        ),
-                                    } satisfies SettingsOptionItem),
+                                        )
+                                      : undefined,
+                              } satisfies SettingsOptionItem,
                           ]
                         : []),
                     {

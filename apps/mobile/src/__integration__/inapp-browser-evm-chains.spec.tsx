@@ -124,6 +124,7 @@ const { useRemoteConfigStore } =
 const { resetConnectionPairingStateForTesting } =
     await import('@perawallet/wallet-core-connections')
 const { kmsCore } = await import('@perawallet/wallet-core-kms')
+const { useSecurityStore } = await import('@perawallet/wallet-core-security')
 const { getProvider } = await import('@perawallet/wallet-extension-provider')
 const {
     DEFAULT_EVM_RPC_RESPONSES,
@@ -152,6 +153,7 @@ const { getAllPressables, isElementDisabled } = await import('@test-utils/rnw')
 const { ConnectionsProvider } = await import('@modules/connections/shell')
 const { SigningOverlays } = await import('@modules/signing/shell')
 const { webViewDappTransport } = await import('@modules/webview')
+const { eip1193ConnectionIdOf } = await import('@perawallet/wallet-core-dapp')
 
 const ORIGIN = 'https://app.uniswap.org'
 const ROUTER = '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'
@@ -225,6 +227,7 @@ const request = (
     method: string,
     params: unknown[] = [],
     hasUserActivation = true,
+    icons?: string[],
 ) =>
     act(() => {
         webViewDappTransport.receive(
@@ -234,10 +237,14 @@ const request = (
                 token: 'unused',
                 hasUserActivation,
                 request: { jsonrpc: '2.0', id, method, params },
+                ...(icons ? { icons } : {}),
             },
             `${ORIGIN}/swap`,
         )
     })
+
+const storedSite = () =>
+    getProvider().connections.store.get(eip1193ConnectionIdOf(ORIGIN))
 
 const pressWhenEnabled = async (label: string) => {
     await waitFor(
@@ -294,6 +301,9 @@ describe('Flow: an EVM dApp on a chain other than Ethereum', () => {
         simulationPaths.length = 0
         broadcasts.length = 0
         useAccountsStore.getState().setAccounts([ACCOUNT])
+        // No AutoLockGuard is mounted here, so the store fails closed and a
+        // locked wallet would take every switch through the prompt.
+        useSecurityStore.getState().setAppLockActive(false)
         await getProvider().connections.store.clear()
         resetConnectionPairingStateForTesting()
         vi.clearAllMocks()
@@ -335,15 +345,22 @@ describe('Flow: an EVM dApp on a chain other than Ethereum', () => {
         'Given a site switched to $name, when it sends a transaction and the user confirms, then it is reviewed, simulated, signed and broadcast on $name',
         async ({ chainId, name, symbol, eip155 }) => {
             const hexChainId = `0x${eip155.toString(16)}`
-            request('connect', 'eth_requestAccounts')
+            request('connect', 'eth_requestAccounts', [], true, [
+                `${ORIGIN}/favicon.png`,
+            ])
             await pressWhenEnabled('common.connect.label')
             expect((await answerOf('connect')).result).toEqual([SENDER])
+            const connected = await storedSite()
+            expect(connected?.metadata?.approvedChainIds).toContain(chainId)
+            expect(connected?.peer.icons).toEqual([`${ORIGIN}/favicon.png`])
 
             request('switch', 'wallet_switchEthereumChain', [
                 { chainId: hexChainId },
             ])
-            await pressWhenEnabled('walletconnect.switch_network.confirm')
             expect((await answerOf('switch')).result).toBeNull()
+            expect(
+                findButton('walletconnect.switch_network.confirm'),
+            ).toBeUndefined()
 
             request('chain', 'eth_chainId')
             expect((await answerOf('chain')).result).toBe(hexChainId)
@@ -384,4 +401,39 @@ describe('Flow: an EVM dApp on a chain other than Ethereum', () => {
             expect(answer.result).toBeDefined()
         },
     )
+
+    it('Given an account without Base at connect, when Base is added later, then the first switch asks once and later ones do not', async () => {
+        const withoutBase = {
+            ...ACCOUNT,
+            chains: Object.fromEntries(
+                Object.entries(ACCOUNT.chains).filter(([id]) => id !== 'base'),
+            ),
+        }
+        useAccountsStore.getState().setAccounts([withoutBase])
+        request('connect', 'eth_requestAccounts')
+        await pressWhenEnabled('common.connect.label')
+        expect((await answerOf('connect')).result).toEqual([SENDER])
+        expect((await storedSite())?.metadata?.approvedChainIds).not.toContain(
+            'base',
+        )
+
+        useAccountsStore.getState().setAccounts([ACCOUNT])
+        request('switch-base', 'wallet_switchEthereumChain', [
+            { chainId: '0x2105' },
+        ])
+        await pressWhenEnabled('walletconnect.switch_network.confirm')
+        expect((await answerOf('switch-base')).result).toBeNull()
+
+        request('switch-eth', 'wallet_switchEthereumChain', [
+            { chainId: '0x1' },
+        ])
+        expect((await answerOf('switch-eth')).result).toBeNull()
+        request('switch-back', 'wallet_switchEthereumChain', [
+            { chainId: '0x2105' },
+        ])
+        expect((await answerOf('switch-back')).result).toBeNull()
+        expect(
+            findButton('walletconnect.switch_network.confirm'),
+        ).toBeUndefined()
+    })
 })

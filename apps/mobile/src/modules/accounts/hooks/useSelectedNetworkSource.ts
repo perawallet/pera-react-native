@@ -16,8 +16,7 @@ import { useAssetListViewStore } from './useAssetListViewStore'
 
 /**
  * The source the network chip narrows to; null on All. Derived, never written
- * back: an account without the stored chain shows All, and the next account
- * that has it shows it again.
+ * back: an account without the stored chain shows All.
  */
 export const useSelectedNetworkSource = (
     sources: readonly AccountHoldingSource[],

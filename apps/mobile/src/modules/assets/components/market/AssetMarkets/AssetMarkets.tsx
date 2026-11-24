@@ -55,7 +55,7 @@ export type AssetMarketsProps = {
     scope: ChainScope
     assetDetailsDisplay: AssetDetailsDisplay
     about: AssetAboutDisplay
-    supply: AssetSupplyDisplay
+    supply: Nullable<AssetSupplyDisplay>
     isNetworkLineVisible?: boolean
 }
 
@@ -71,8 +71,11 @@ export const AssetMarkets = ({
     const styles = useStyles()
     const currencyScope = useHomeChainScope()
     const { usdToPreferred } = useCurrency(currencyScope)
+    // A price chart, not a balance one: the portfolio's period doesn't carry here.
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
-        useChartInteraction<AssetPriceHistoryItem>()
+        useChartInteraction<AssetPriceHistoryItem>('one-week', {
+            isPeriodShared: false,
+        })
 
     const { getPreference } = usePreferences()
     const { t } = useLanguage()

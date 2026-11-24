@@ -197,6 +197,7 @@ type SetupOptions = {
     siteWarningOf?: (origin: string) => Promise<SiteWarningLevel>
     isWalletLocked?: () => boolean
     now?: () => number
+    shouldProposeEveryServedChain?: boolean
 }
 
 const setup = (seed: Connection[] = [], options: SetupOptions = {}) => {
@@ -227,6 +228,7 @@ const setup = (seed: Connection[] = [], options: SetupOptions = {}) => {
             })),
         siteWarningOf: options.siteWarningOf,
         isWalletLocked: options.isWalletLocked ?? (() => false),
+        shouldProposeEveryServedChain: options.shouldProposeEveryServedChain,
         now: options.now ?? (() => 1_000_000),
         proposalTtlMs: 1_000,
         requestTtlMs: 1_000,
@@ -394,6 +396,7 @@ describe('createEip1193ConnectionHandler', () => {
             expect(connection.id).toBe(ID)
             expect(connection.metadata).toEqual({
                 chainId: 'ethereum',
+                approvedChainIds: ['ethereum'],
                 acknowledgedSiteWarning: 'clear',
             })
             expect((await store.get(ID))?.accounts).toEqual([ADDR_Y])
@@ -401,6 +404,116 @@ describe('createEip1193ConnectionHandler', () => {
             expect(notificationsOf(transport, 'accountsChanged')).toEqual([
                 { origin: ORIGIN, params: [ADDR_Y] },
             ])
+        })
+
+        describe('offering every served chain', () => {
+            it('proposes every served chain, requires only the first, and records the chains the account can use', async () => {
+                const { transport, registry, proposals, store } = setup([], {
+                    shouldProposeEveryServedChain: true,
+                })
+                await registry.initialize()
+                void transport.send(ORIGIN, 'eth_requestAccounts')
+                await flush()
+
+                const [proposal] = proposals
+                expect(proposal.requested).toMatchObject({
+                    chains: ['ethereum', 'base'],
+                    requiredChains: ['ethereum'],
+                    networks: ['mainnet'],
+                })
+                await proposal.approve([ADDR_X])
+                expect((await store.get(ID))?.metadata).toMatchObject({
+                    chainId: 'ethereum',
+                    approvedChainIds: ['ethereum', 'base'],
+                })
+            })
+
+            it('grants an account once however many chains the sheet listed it on', async () => {
+                const { transport, registry, proposals, store } = setup([], {
+                    shouldProposeEveryServedChain: true,
+                })
+                await registry.initialize()
+                const pending = transport.send(ORIGIN, 'eth_requestAccounts')
+                await flush()
+
+                await proposals[0].approve([ADDR_X, ADDR_X])
+
+                expect((await store.get(ID))?.accounts).toEqual([ADDR_X])
+                expect(resultOf(await pending)).toEqual([ADDR_X])
+            })
+
+            it('does not record a chain the granted account cannot use', async () => {
+                const { transport, registry, proposals, store, accounts } =
+                    setup([], { shouldProposeEveryServedChain: true })
+                accounts.base = []
+                await registry.initialize()
+                void transport.send(ORIGIN, 'eth_requestAccounts')
+                await flush()
+
+                await proposals[0].approve([ADDR_X])
+
+                expect(
+                    (await store.get(ID))?.metadata.approvedChainIds,
+                ).toEqual(['ethereum'])
+            })
+
+            it('offers the site’s current chain first and requires it', async () => {
+                const { transport, registry, proposals } = setup(
+                    [connectedOn('base')],
+                    { shouldProposeEveryServedChain: true },
+                )
+                await registry.initialize()
+                void transport.send(ORIGIN, 'wallet_requestPermissions', [
+                    { eth_accounts: {} },
+                ])
+                await flush()
+
+                expect(proposals[0].requested).toMatchObject({
+                    chains: ['base', 'ethereum'],
+                    requiredChains: ['base'],
+                })
+            })
+
+            it('keeps the proposal to one chain without the flag', async () => {
+                const { transport, registry, proposals } = setup()
+                await registry.initialize()
+                void transport.send(ORIGIN, 'eth_requestAccounts')
+                await flush()
+
+                expect(proposals[0].requested.chains).toEqual(['ethereum'])
+                expect(proposals[0].requested.requiredChains).toBeUndefined()
+            })
+        })
+
+        describe('the dApp icon', () => {
+            it('keeps only same-origin https icons the page lists', async () => {
+                const { transport, registry, proposals } = setup()
+                await registry.initialize()
+                void transport.send(ORIGIN, 'eth_requestAccounts', undefined, {
+                    pageIcons: [
+                        `${ORIGIN}/favicon.png`,
+                        'https://cdn.other/x.png',
+                    ],
+                })
+                await flush()
+
+                expect(proposals[0].peer.icons).toEqual([
+                    `${ORIGIN}/favicon.png`,
+                ])
+            })
+
+            it('falls back to the browser favicon when the page lists none', async () => {
+                const { transport, registry, proposals } = setup()
+                await registry.initialize()
+                void transport.send(ORIGIN, 'eth_requestAccounts', undefined, {
+                    faviconUrl: 'https://cdn.example/fav.png',
+                })
+                await flush()
+
+                expect(proposals[0].peer.icons).toEqual([
+                    'https://cdn.example/fav.png',
+                ])
+            })
         })
 
         it('returns the user-rejected error when the user declines', async () => {
@@ -727,6 +840,7 @@ describe('createEip1193ConnectionHandler', () => {
             expect(resultOf(await pending)).toBeNull()
             expect((await store.get(ID))?.metadata).toEqual({
                 chainId: 'base',
+                approvedChainIds: ['ethereum', 'base'],
             })
             expect(notificationsOf(transport, 'chainChanged')).toEqual([
                 { origin: ORIGIN, params: '0x2105' },
@@ -796,10 +910,184 @@ describe('createEip1193ConnectionHandler', () => {
 
             expect((await store.get(ID))?.metadata).toEqual({
                 chainId: 'base',
+                approvedChainIds: ['ethereum', 'base'],
             })
             expect(messages.map(({ kind }) => kind)).not.toContain(
                 'request-expired',
             )
+        })
+
+        describe('a chain the user already approved for the site', () => {
+            const approvedOn = (
+                chainId: ChainId,
+                approvedChainIds: ChainId[],
+                accounts: string[] = [ADDR_X],
+            ): Eip1193Connection => {
+                const connection = connectedOn(chainId, accounts)
+                return {
+                    ...connection,
+                    metadata: { ...connection.metadata, approvedChainIds },
+                }
+            }
+            const MOBILE = { shouldProposeEveryServedChain: true }
+
+            it('switches at once without raising a prompt', async () => {
+                const { transport, registry, messages, store } = setup(
+                    [approvedOn('ethereum', ['ethereum', 'base'])],
+                    MOBILE,
+                )
+                await registry.initialize()
+
+                expect(resultOf(await switchTo(transport, '0x2105'))).toBeNull()
+
+                expect(messages).toHaveLength(0)
+                expect((await store.get(ID))?.metadata).toMatchObject({
+                    chainId: 'base',
+                    approvedChainIds: ['ethereum', 'base'],
+                })
+                expect(notificationsOf(transport, 'chainChanged')).toEqual([
+                    { origin: ORIGIN, params: '0x2105' },
+                ])
+            })
+
+            it('switches at once through wallet_addEthereumChain too', async () => {
+                const { transport, registry, messages } = setup(
+                    [approvedOn('ethereum', ['ethereum', 'base'])],
+                    MOBILE,
+                )
+                await registry.initialize()
+
+                const response = await transport.send(
+                    ORIGIN,
+                    'wallet_addEthereumChain',
+                    [{ chainId: '0x2105' }],
+                )
+
+                expect(resultOf(response)).toBeNull()
+                expect(messages).toHaveLength(0)
+            })
+
+            it('still asks when no granted account signs on it any more', async () => {
+                const { transport, registry, messages, accounts } = setup(
+                    [approvedOn('ethereum', ['ethereum', 'base'])],
+                    MOBILE,
+                )
+                accounts.base = [ADDR_Y]
+                await registry.initialize()
+
+                void switchTo(transport, '0x2105')
+                await flush()
+
+                expect(messages).toHaveLength(1)
+            })
+
+            it('still asks while the wallet is locked, so no accounts are pushed unprompted', async () => {
+                const { transport, registry, messages, store } = setup(
+                    [approvedOn('ethereum', ['ethereum', 'base'])],
+                    { ...MOBILE, isWalletLocked: () => true },
+                )
+                await registry.initialize()
+
+                void switchTo(transport, '0x2105')
+                await flush()
+
+                expect(messages).toHaveLength(1)
+                expect((await store.get(ID))?.metadata.chainId).toBe('ethereum')
+                expect(notificationsOf(transport, 'accountsChanged')).toEqual(
+                    [],
+                )
+            })
+
+            it('still asks when the site warning has worsened since it connected', async () => {
+                const { transport, registry, messages } = setup(
+                    [approvedOn('ethereum', ['ethereum', 'base'])],
+                    { ...MOBILE, siteWarningOf: async () => 'blocked' },
+                )
+                await registry.initialize()
+
+                void switchTo(transport, '0x2105')
+                await flush()
+
+                expect(messages).toHaveLength(1)
+            })
+
+            it('asks for a chain the site was never approved for, then remembers it', async () => {
+                const { transport, registry, messages, store } = setup(
+                    [approvedOn('ethereum', ['ethereum'])],
+                    MOBILE,
+                )
+                await registry.initialize()
+                const pending = switchTo(transport, '0x2105')
+                await flush()
+                const message = messages[0]
+                if (message.kind !== 'request') throw new Error('not a request')
+                await message.respond({ type: 'switch-network' })
+                await pending
+
+                expect(
+                    (await store.get(ID))?.metadata.approvedChainIds,
+                ).toEqual(['ethereum', 'base'])
+                expect(resultOf(await switchTo(transport, '0x1'))).toBeNull()
+                expect(resultOf(await switchTo(transport, '0x2105'))).toBeNull()
+                expect(messages).toHaveLength(1)
+            })
+
+            it('keeps approvedChainIds when the user declines the prompt', async () => {
+                const { transport, registry, messages, store } = setup(
+                    [approvedOn('ethereum', ['ethereum'])],
+                    MOBILE,
+                )
+                await registry.initialize()
+                const pending = switchTo(transport, '0x2105')
+                await flush()
+                const message = messages[0]
+                if (message.kind !== 'request') throw new Error('not a request')
+                await message.reject(new DappRequestRejectedError())
+                await pending
+
+                expect(
+                    (await store.get(ID))?.metadata.approvedChainIds,
+                ).toEqual(['ethereum'])
+            })
+
+            it('still asks on a surface that does not offer every chain, but records the approval', async () => {
+                const { transport, registry, messages, store } = setup([
+                    approvedOn('ethereum', ['ethereum', 'base']),
+                ])
+                await registry.initialize()
+
+                for (const hexChainId of ['0x2105', '0x1']) {
+                    const pending = switchTo(transport, hexChainId)
+                    await flush()
+                    const message = messages[messages.length - 1]
+                    if (message.kind !== 'request') {
+                        throw new Error('not a request')
+                    }
+                    await message.respond({ type: 'switch-network' })
+                    await pending
+                }
+
+                expect(messages).toHaveLength(2)
+                expect(
+                    [
+                        ...((await store.get(ID))?.metadata.approvedChainIds ??
+                            []),
+                    ].sort(),
+                ).toEqual(['base', 'ethereum'])
+            })
+
+            it('treats a record without approvedChainIds as approved for its own chain only', async () => {
+                const { transport, registry, messages } = setup(
+                    [connectedOn('ethereum')],
+                    MOBILE,
+                )
+                await registry.initialize()
+
+                void switchTo(transport, '0x2105')
+                await flush()
+
+                expect(messages).toHaveLength(1)
+            })
         })
 
         it('allows a chain no shared account can use, leaving the site with no accounts', async () => {
@@ -916,6 +1204,7 @@ describe('createEip1193ConnectionHandler', () => {
                 expect(resultOf(await pending)).toBeNull()
                 expect((await store.get(ID))?.metadata).toEqual({
                     chainId: 'base',
+                    approvedChainIds: ['ethereum', 'base'],
                 })
                 expect(notificationsOf(transport, 'chainChanged')).toEqual([
                     { origin: ORIGIN, params: '0x2105' },
@@ -2675,6 +2964,24 @@ describe('createEip1193ConnectionHandler', () => {
             expect(handler.methodsFor(connection)).toEqual([
                 ...EIP1193_PERMISSION_METHODS,
             ])
+        })
+
+        it('matches only the selected network of the site’s chain', () => {
+            const { handler, networks } = setup()
+            const base = connectedOn('base')
+            const sepolia = { chainId: 'base', networkId: 'sepolia' } as const
+
+            expect(handler.matchesChainScope(base, sepolia)).toBe(false)
+
+            networks.base = 'sepolia'
+
+            expect(handler.matchesChainScope(base, sepolia)).toBe(true)
+            expect(
+                handler.matchesChainScope(base, {
+                    chainId: 'base',
+                    networkId: 'mainnet',
+                }),
+            ).toBe(false)
         })
 
         it('restores only its own records', async () => {

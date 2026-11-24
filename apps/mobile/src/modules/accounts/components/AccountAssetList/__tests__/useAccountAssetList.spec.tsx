@@ -1212,6 +1212,21 @@ describe('useAccountAssetList', () => {
             expect(scrollToOffset).toHaveBeenCalledTimes(1)
         })
 
+        it('keeps the scroll position when a network chip is picked', async () => {
+            registerEthereum()
+            const { result, rerender } = renderHook(() =>
+                useAccountAssetList({ account: twoChainAccount, t: mockT }),
+            )
+            const scrollToOffset = attachListRef(result)
+
+            act(() => result.current.setSelectedChainId('algorand'))
+            mockAssetsQuery.holdings = [makeHolding('456')]
+            rerender({})
+            await flushFrame()
+
+            expect(scrollToOffset).not.toHaveBeenCalled()
+        })
+
         it('starts a switched-to account at the top without animating', async () => {
             const { result, rerender } = renderHook(
                 ({ account }: { account: WalletAccount }) =>

@@ -95,10 +95,19 @@ vi.mock('@modules/backup', () => ({
     })),
 }))
 
-vi.mock('@modules/security', () => ({
+// The real gate runs against a stubbed prompt, so declining still navigates back.
+vi.mock('@modules/security/hooks/useRequirePinVerification', () => ({
     useRequirePinVerification: () => ({
         requirePinVerification: requirePinMock,
     }),
+}))
+
+vi.mock('@modules/security', async () => ({
+    usePinGatedScreen: (
+        await vi.importActual<
+            typeof import('@modules/security/hooks/usePinGatedScreen')
+        >('@modules/security/hooks/usePinGatedScreen')
+    ).usePinGatedScreen,
 }))
 
 vi.mock('@hooks/useToast', () => ({
@@ -255,6 +264,38 @@ describe('useCloudBackupConfirmCredentialsScreen', () => {
         )
         expect(confirmCredentialsMock).not.toHaveBeenCalled()
         await waitFor(() => expect(quizCall()[0]).not.toEqual(before))
+    })
+
+    test('hides the quiz and blocks confirm until the re-sampled positions land', async () => {
+        ;(useBackupQuiz as Mock).mockReturnValue({
+            items: [],
+            onSelect: vi.fn(),
+            onSubmit: vi.fn(),
+            isFilled: true,
+            hasError: false,
+        })
+        const { result } = await renderReady()
+        act(() => result.current.handleKeyChange(SALT))
+        let finishReread: () => void = () => {}
+        withIndicesMock.mockImplementationOnce(
+            (handler: (indices: Uint16Array) => void) =>
+                new Promise(resolve => {
+                    finishReread = () => {
+                        handler(MNEMONIC_INDICES)
+                        resolve(true)
+                    }
+                }),
+        )
+
+        act(() => quizCall()[3]())
+
+        expect(result.current.passphraseStatus).toBe('loading')
+        expect(result.current.canConfirm).toBe(false)
+
+        await act(async () => finishReread())
+
+        expect(result.current.passphraseStatus).toBe('ready')
+        expect(result.current.canConfirm).toBe(true)
     })
 
     test('reports both when the words and the key are wrong', async () => {

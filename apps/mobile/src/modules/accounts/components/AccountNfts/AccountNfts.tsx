@@ -60,6 +60,7 @@ export const AccountNfts = ({ offset, pageIndex }: AccountNftsProps) => {
         isRefreshing,
         hasAccount,
         canOptIn,
+        unsupportedNetworkNames,
         isMultiChain,
         showEmptyState,
         showRefreshNotice,
@@ -117,6 +118,7 @@ export const AccountNfts = ({ offset, pageIndex }: AccountNftsProps) => {
                 {showEmptyState ? (
                     <NftEmptyState
                         isMultiChain={isMultiChain}
+                        unsupportedNetworkNames={unsupportedNetworkNames}
                         onOptInPress={canOptIn ? openAddNftSheet : undefined}
                     />
                 ) : (

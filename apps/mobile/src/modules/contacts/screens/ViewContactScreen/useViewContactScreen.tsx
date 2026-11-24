@@ -30,7 +30,7 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { ContactNetworkContent } from '@modules/contacts/components/ContactNetworkContent'
 import { ContactQRContent } from '@modules/contacts/components/ContactQRContent'
-import { useWebView } from '@modules/webview'
+import { openExplorerUrl } from '@modules/webview'
 import { shareText } from '@utils/shareText'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCapableChainIds } from '@hooks/useCapableChainIds'
@@ -73,7 +73,6 @@ export const useViewContactScreen = (): UseViewContactScreenResult => {
     const navigation = useAppNavigation()
     const { request: requestBottomSheet } = useBottomSheet()
     const { copyToClipboard } = useClipboard()
-    const { pushWebView } = useWebView()
     const mode = useWalletDeployment()
     const selectedNetworkByChain = useNetworkStore(
         state => state.selectedNetworkByChain,
@@ -168,10 +167,9 @@ export const useViewContactScreen = (): UseViewContactScreenResult => {
                       })
                     : chainIds[0]
             const url = chainId ? links.get(chainId) : undefined
-            // oxlint-disable-next-line pera/no-unvalidated-open-url -- chain descriptor explorer links
-            if (url) pushWebView({ url })
+            if (url) openExplorerUrl(url)
         },
-        [explorerLinks, requestBottomSheet, pushWebView],
+        [explorerLinks, requestBottomSheet],
     )
 
     const goToEdit = useCallback(() => {

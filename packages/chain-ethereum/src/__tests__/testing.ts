@@ -13,11 +13,13 @@
 // The planner, the reviewer and the known-answer vectors, for suites outside
 // this package that run Ethereum signing end to end; aliased as
 // `@perawallet/wallet-core-chain-ethereum/testing` by consumers, never built.
+import { vi } from 'vitest'
 import { createEvmAddressCodec } from '../accounts/address-codec'
 import { evmChainOf } from '../chains/table'
 import { createEvmPlannerAdapter } from '../signing/adapter'
 import { createEvmMessageSignerAdapter } from '../signing/messages'
 import { createEthereumReviewer } from '../signing/review'
+import { PERMIT_NOW_MS } from '../signing/__tests__/fixtures'
 
 const ethereum = evmChainOf('ethereum')
 
@@ -47,6 +49,7 @@ export {
     PERMIT2_SINGLE_NO_DEADLINE_TYPED_DATA,
     PERMIT2_SINGLE_TYPED_DATA,
     PERMIT2_SINGLE_UNLIMITED_TYPED_DATA,
+    PERMIT_NOW_MS,
     ERC20_TRANSFER,
     SENDER,
     SIGNER_KEY_PAIR_ID,
@@ -58,6 +61,13 @@ export {
     createVectorKeyStore,
     vectorSignature,
 } from '../signing/__tests__/fixtures'
+// The fixture permits are dated from PERMIT_NOW_MS; on the real clock their
+// signature deadlines have passed, and the signer refuses an expired permit.
+export const pinClockToPermitFixtures = () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(PERMIT_NOW_MS)
+}
+
 // Re-exported so a suite outside this package verifies with viem itself
 // without declaring it.
 export { recoverTransactionAddress, verifyMessage, verifyTypedData } from 'viem'

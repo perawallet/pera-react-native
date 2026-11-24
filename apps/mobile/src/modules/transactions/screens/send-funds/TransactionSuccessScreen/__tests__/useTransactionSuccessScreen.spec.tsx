@@ -15,10 +15,9 @@ import { renderHook, act } from '@testing-library/react'
 import { useTransactionSuccessScreen } from '../useTransactionSuccessScreen'
 import { useSendFunds, useClaimAssets } from '@modules/transactions/hooks'
 import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
-import { useWebView } from '@modules/webview'
 
 const mockOnFinished = vi.fn()
-const mockPushWebView = vi.fn()
+const mockOpenExplorerUrl = vi.fn()
 const mockRemove = vi.fn()
 const mockInvalidateQueries = vi.fn()
 const mockPlaySuccess = vi.fn()
@@ -58,12 +57,8 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     getChainDescriptor: vi.fn(),
 }))
 
-vi.mock('@modules/webview/hooks/useWebViewStore', () => ({
-    useWebView: vi.fn(),
-}))
-
-vi.mock('uuid', () => ({
-    v4: () => 'mock-uuid',
+vi.mock('@modules/webview', () => ({
+    openExplorerUrl: (url: string) => mockOpenExplorerUrl(url),
 }))
 
 describe('useTransactionSuccessScreen', () => {
@@ -87,9 +82,6 @@ describe('useTransactionSuccessScreen', () => {
                         ? `https://explorer.perawallet.app/tx/${txId}`
                         : undefined,
             },
-        })
-        ;(useWebView as Mock).mockReturnValue({
-            pushWebView: mockPushWebView,
         })
     })
 
@@ -120,10 +112,9 @@ describe('useTransactionSuccessScreen', () => {
             result.current.handleViewInExplorer?.()
         })
 
-        expect(mockPushWebView).toHaveBeenCalledWith({
-            url: 'https://explorer.perawallet.app/tx/TX_ID_123',
-            id: 'mock-uuid',
-        })
+        expect(mockOpenExplorerUrl).toHaveBeenCalledWith(
+            'https://explorer.perawallet.app/tx/TX_ID_123',
+        )
     })
 
     it('reports an Algorand send as final, with Pera Explorer', () => {
@@ -157,10 +148,9 @@ describe('useTransactionSuccessScreen', () => {
         act(() => {
             result.current.handleViewInExplorer?.()
         })
-        expect(mockPushWebView).toHaveBeenCalledWith({
-            url: 'https://basescan.org/tx/TX_ID_123',
-            id: 'mock-uuid',
-        })
+        expect(mockOpenExplorerUrl).toHaveBeenCalledWith(
+            'https://basescan.org/tx/TX_ID_123',
+        )
     })
 
     it('offers no explorer action on a network with no explorer', () => {

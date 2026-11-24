@@ -11,7 +11,7 @@
  */
 
 import {
-    addressCodecs,
+    truncateAddressOn,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { PWIcon, PWText, PWView } from '@components/core'
@@ -47,9 +47,7 @@ export const EthereumPermissionCard = ({
     const styles = useStyles()
     const { t } = useLanguage()
     const shortAddress = (address: string) =>
-        addressCodecs.has(scope.chainId)
-            ? addressCodecs.get(scope.chainId).truncate(address)
-            : address
+        truncateAddressOn(scope.chainId, address)
 
     return (
         <PWView
