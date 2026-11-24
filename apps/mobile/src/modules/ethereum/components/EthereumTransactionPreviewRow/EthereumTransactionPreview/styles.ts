@@ -34,4 +34,16 @@ export const useStyles = makeStyles(theme => ({
     counterparty: {
         color: theme.colors.textGray,
     },
+    detail: {
+        color: theme.colors.textMain,
+    },
+    labelRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
+    },
+    warningDetail: {
+        flexShrink: 1,
+        color: theme.colors.warningText,
+    },
 }))

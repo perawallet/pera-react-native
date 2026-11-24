@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import type { TFunction } from 'i18next'
 import {
     addressCodecs,
     type ChainScope,
@@ -19,7 +18,11 @@ import { PWIcon, PWText, PWView } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
 import { AssetIcon } from '@components/AssetIcon'
 import { useLanguage } from '@hooks/useLanguage'
-import type { EthereumPermission } from '../ethereumPermissions'
+import {
+    grantLabelOf,
+    permissionSymbolOf,
+    type EthereumPermission,
+} from '../ethereumPermissions'
 import { useStyles } from './styles'
 
 const spenderKeyOf = (grant: EthereumPermission['grant']) => {
@@ -27,25 +30,6 @@ const spenderKeyOf = (grant: EthereumPermission['grant']) => {
     return grant.kind === 'amount' && grant.isIncrease
         ? 'signing.review.permission_increase'
         : 'signing.review.permission_spender'
-}
-
-// What a permission covers, when it is not a plain amount.
-const grantLabelOf = (
-    permission: EthereumPermission,
-    symbol: string,
-    t: TFunction,
-): string => {
-    const { grant } = permission
-    if (grant.kind === 'token') {
-        return t('signing.review.permission_token', {
-            collection: symbol,
-            tokenId: grant.tokenId,
-        })
-    }
-    if (grant.kind !== 'unlimited') return symbol
-    return permission.isCollectionWide
-        ? t('signing.review.permission_collection', { collection: symbol })
-        : t('signing.review.permission_unlimited', { symbol })
 }
 
 export type EthereumPermissionCardProps = {
@@ -81,10 +65,7 @@ export const EthereumPermissionCard = ({
             {permissions.map(permission => {
                 const spender =
                     permission.spenderName ?? shortAddress(permission.spender)
-                const symbol =
-                    permission.asset?.unitName ??
-                    permission.collectionName ??
-                    shortAddress(permission.contract)
+                const symbol = permissionSymbolOf(permission, shortAddress)
                 const { grant } = permission
                 const isUnlimited = grant.kind === 'unlimited'
                 const isIncrease = grant.kind === 'amount' && !!grant.isIncrease

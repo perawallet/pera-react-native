@@ -30,15 +30,14 @@ import {
     type ReviewWarningItem,
 } from '@modules/signing'
 import type { EthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
-import { useEthereumVerifiedCall } from '../../hooks/useEthereumVerifiedCall'
-import { humaniseFunctionName } from '../../utils/humaniseFunctionName'
-import { CONTRACT_CALL_TITLE_KEY } from '../../utils/recordTitleKeys'
+import { useEthereumReviewTitle } from '../../hooks/useEthereumReviewTitle'
 import { requesterHostOf } from '../../utils/contractCallNotice'
 import {
     useEthereumSimulationSection,
     type EthereumSimulationSectionState,
 } from '../EthereumSimulationSection'
 import {
+    approvedContractOf,
     ethereumPermissionsOf,
     type EthereumPermission,
 } from './ethereumPermissions'
@@ -76,27 +75,10 @@ export type UseEthereumTransactionReviewResult = {
     requesterHost: Optional<string>
 }
 
-// History lists a call by what it was; the review asks the user to do it.
-const REVIEW_TITLE_KEYS: Partial<Record<string, string>> = {
-    'transactions.list_item.approval': 'signing.review.title_approve',
-    [CONTRACT_CALL_TITLE_KEY]: 'signing.review.title_contract_interaction',
-}
-
 const shortAddressOf = (scope: ChainScope, address: string): string =>
     addressCodecs.has(scope.chainId)
         ? addressCodecs.get(scope.chainId).truncate(address)
         : address
-
-const approvedContractOf = (
-    presentation: EthereumTransactionPresentation,
-): Optional<string> => {
-    const { standardCall } = presentation
-    return standardCall?.kind === 'token-approval' ||
-        standardCall?.kind === 'nft-approval' ||
-        standardCall?.kind === 'collection-approval'
-        ? standardCall.contract
-        : undefined
-}
 
 export const useEthereumTransactionReview = ({
     presentation,
@@ -108,7 +90,6 @@ export const useEthereumTransactionReview = ({
     const {
         scope,
         view,
-        titleKey,
         standardCall,
         contractAction,
         knownContract,
@@ -119,13 +100,13 @@ export const useEthereumTransactionReview = ({
         nftItems,
     } = presentation
     const approvedContract = approvedContractOf(presentation)
+    const title = useEthereumReviewTitle(presentation)
     const wrappedNativeContract =
         (contractAction?.kind === 'wrap' ||
             contractAction?.kind === 'unwrap') &&
         view.to
             ? view.to
             : undefined
-    const verifiedCall = useEthereumVerifiedCall(view, scope, true)
     const recordIds = [approvedContract, wrappedNativeContract].filter(
         (id): id is string => !!id,
     )
@@ -194,18 +175,6 @@ export const useEthereumTransactionReview = ({
             }).map(warning => ethereumReviewWarningItemOf(warning, scope, t)),
         [presentation, simulation, source, verifiedOrigin, scope, t],
     )
-
-    const title = useMemo(() => {
-        if (
-            verifiedCall.status === 'decoded' &&
-            !standardCall &&
-            !contractAction &&
-            !isTransfer
-        ) {
-            return humaniseFunctionName(verifiedCall.call.functionName)
-        }
-        return t(REVIEW_TITLE_KEYS[titleKey] ?? titleKey)
-    }, [titleKey, verifiedCall, standardCall, contractAction, isTransfer, t])
 
     const target = useMemo((): Optional<EthereumReviewTarget> => {
         if (isTransfer) {
