@@ -21,7 +21,7 @@ import {
 // The dApp's claimed `source.url` is whatever a phishing page says it is, so
 // only an origin the platform observed, or one WalletConnect Verify vouched
 // for, counts. An observed origin wins over Verify's.
-const attestedOriginOf = (
+export const attestedOriginOf = (
     source?: SignRequestSource,
     verifiedOrigin?: string,
 ): Optional<string> =>

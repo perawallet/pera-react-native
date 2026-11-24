@@ -58,7 +58,8 @@
             "search_web": "Search on the web",
             "no_results": "No results",
             "assets_unavailable": "Asset search is unavailable right now",
-            "dapps_unavailable": "dApp search is unavailable right now"
+            "dapps_unavailable": "dApp search is unavailable right now",
+            "unverified": "Unverified"
         },
         "news": {
             "title": "News",
@@ -450,7 +451,7 @@
             "empty_filtered_body": "No transactions match this filter",
             "empty_on_network_body": "No transactions yet on {{network}}",
             "network_failed": "Couldn't load transactions on {{networks}}",
-            "network_unavailable": "Transactions aren't available on {{networks}}",
+            "network_unavailable": "Full history isn't available on {{networks}}",
             "offline_empty_title": "You're offline",
             "offline_empty_body": "No transactions are saved on this device yet. They'll appear once you're back online.",
             "search_paused_body": "No transactions found in recent history.",
@@ -3633,6 +3634,31 @@
             "typed_data_warning_title": "This signature can move your tokens",
             "typed_data_warning_body": "Signing structured data can authorize an app to spend or trade your tokens without asking you again. Only approve if you trust this application."
         },
+        "sign_in": {
+            "title": "Sign in to {{domain}}",
+            "domain": "Domain",
+            "address": "Address",
+            "uri": "URI",
+            "chain_id": "Chain ID",
+            "nonce": "Nonce",
+            "issued_at": "Issued",
+            "expires_at": "Expires",
+            "advanced": "Advanced",
+            "site_mismatch_title": "This sign-in is for another site",
+            "site_mismatch_body": "The message signs you in to {{domain}}, but the request comes from {{site}}. Only approve if you trust both.",
+            "other_address_note": "The message names {{address}}, not the account signing it.",
+            "other_chain_note": "The message names {{chain}}, not the network this request is for. Signing in sends no transaction.",
+            "other_chain_id_note": "The message names chain ID {{chainId}}, not the network this request is for. Signing in sends no transaction.",
+            "statement_label": "Message from {{domain}}",
+            "not_before": "Valid from",
+            "request_id": "Request ID",
+            "resource": "Resource",
+            "grants_title": "This sign-in also grants permissions",
+            "grants_body": "Signing lets {{domain}} act for you with the permissions below. Only approve if you trust it.",
+            "grants_unreadable_body": "This sign-in grants {{domain}} permissions Pera can't read. Only approve if you trust it.",
+            "malformed_title": "This sign-in message has unexpected content",
+            "malformed_body": "Parts of this message don't follow the sign-in format, so {{domain}} may read it differently than shown here. Check the full message under Advanced, and only approve if you trust the site."
+        },
         "spend_approval": {
             "spend_warning": "This signature lets another address move tokens out of your account without asking you again.",
             "spend_warning_transaction": "This transaction lets another address move tokens out of your account without asking you again.",
@@ -4300,6 +4326,7 @@
             "quote_error": "Unable to get quotes. Please try again.",
             "amount_too_low": "Amount too small to swap on {{network}}. The minimum is {{amount}} {{unit}}.",
             "amount_too_low_fiat": "Amount too small to swap on {{network}}. The minimum is {{amount}} {{unit}} (~{{fiat}}).",
+            "amount_too_low_above_balance": "Your available balance is below the {{amount}} {{unit}} minimum to swap on {{network}}.",
             "use_minimum": "Use minimum",
             "amount_too_low_unknown": "Amount too small to swap on {{network}}. Try a larger amount or a lower-fee network.",
             "amount_too_high": "Amount too large to swap. The maximum is {{amount}} {{unit}}.",
@@ -4371,6 +4398,8 @@
                         "refunded": "Refunded"
                     }
                 },
+                "account_filter_all": "All accounts",
+                "load_more": "Load more",
                 "empty": {
                     "title": "No swaps yet",
                     "body": "Your swap history will appear here."

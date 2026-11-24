@@ -76,8 +76,12 @@ export const swapContractTests = (
             }
         })
 
-        it('holds back a non-negative native fee reserve', () => {
-            expect(makeAdapter().maxAmountFeeReserve.isNegative()).toBe(false)
+        it('holds back a non-negative native fee reserve', async () => {
+            const { scope } = fixtures.makeContext()
+
+            const reserve = await makeAdapter().maxAmountFeeReserve(scope)
+
+            expect(reserve.isNegative()).toBe(false)
         })
 
         it('reports a non-negative holding reserve', () => {

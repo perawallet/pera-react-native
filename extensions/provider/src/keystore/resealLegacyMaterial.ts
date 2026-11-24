@@ -10,18 +10,36 @@
  limitations under the License
  */
 
-import type { ResealDeps, ResealReport } from './resealTypes'
+import type {
+    LegacyCheckDeps,
+    LegacyCheckReport,
+    LegacyDiscardReport,
+    ResealDeps,
+    ResealReport,
+} from './resealTypes'
 
-/**
- * Native twin of the web sweep: the React Native driver has never held an
- * auto-generated engine key, so there is nothing to move. Zeroed rather than
- * throwing, matching the other web/native maintenance twins.
- */
+// Native twins of the web sweep: the React Native driver has never held an
+// auto-generated engine key, so there is nothing to move. Zeroed rather than
+// throwing, matching the other web/native maintenance twins.
+
 export const resealLegacyMaterialWith = async (
     _deps: ResealDeps,
 ): Promise<ResealReport> => ({
     resealed: 0,
-    reminted: 0,
     unrecoverable: [],
     legacyKeyRemoved: false,
+})
+
+export const discardLegacyKeyWith = async (
+    _deps: ResealDeps,
+): Promise<LegacyDiscardReport> => ({
+    unrecoverable: [],
+    legacyKeyRemoved: false,
+})
+
+export const checkLegacyMaterialWith = async (
+    _deps: LegacyCheckDeps,
+): Promise<LegacyCheckReport> => ({
+    reminted: 0,
+    unrecoverable: [],
 })

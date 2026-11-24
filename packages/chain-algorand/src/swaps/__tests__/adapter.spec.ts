@@ -149,10 +149,10 @@ describe('algorandSwapAdapter', () => {
         ).toBeNull()
     })
 
-    it('holds back 0.1 ALGO from a percentage amount', () => {
-        expect(algorandSwapAdapter.maxAmountFeeReserve).toEqual(
-            new Decimal(100_000),
-        )
+    it('holds back 0.1 ALGO from a percentage amount', async () => {
+        await expect(
+            algorandSwapAdapter.maxAmountFeeReserve(scope),
+        ).resolves.toEqual(new Decimal(100_000))
     })
 
     it('reserves the configured asset minimum balance for a first holding', () => {

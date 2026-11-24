@@ -26,7 +26,7 @@ import {
     vi,
 } from 'vitest'
 import { http, HttpResponse } from 'msw'
-import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { EvmHistoryItemResponse } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
 import { server } from '@test-utils/msw-server'
@@ -81,6 +81,8 @@ const { AccountHistory } =
     await import('@modules/accounts/components/AccountHistory/AccountHistory')
 const { useAssetListViewStore } =
     await import('@modules/accounts/hooks/useAssetListViewStore')
+const { onlineManager } = await import('@tanstack/react-query')
+const { useNetworkStatusStore } = await import('@modules/network')
 
 const ADDRESS = '0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed'
 const COUNTERPARTY = '0x1111111111111111111111111111111111111111'
@@ -158,6 +160,11 @@ const holdRead = () => {
     return { gate, release }
 }
 
+const setConnectivity = (isOnline: boolean) => {
+    onlineManager.setOnline(isOnline)
+    useNetworkStatusStore.getState().setHasInternet(isOnline)
+}
+
 const rowIds = () =>
     screen
         .queryAllByTestId(/^transaction_row_0x[0-9a-f]+$/)
@@ -182,6 +189,7 @@ describe('Flow: History on an account with every EVM network', () => {
     })
 
     afterEach(() => {
+        setConnectivity(true)
         server.resetHandlers()
         resetPeraScopeRefusals()
         useAccountsStore.getState().setAccounts([])
@@ -345,5 +353,79 @@ describe('Flow: History on an account with every EVM network', () => {
         )
         expect(screen.queryByTestId('history_network_failed')).toBeNull()
         expect(screen.getByTestId('history_network_unavailable')).toBeTruthy()
+    })
+
+    it("Given BNB Chain's history fails, when the device goes offline and its chip is tapped, then it shows the offline state, and once back online the error with Retry, never an empty history", async () => {
+        server.use(serveChain('bsc', failing))
+        renderWithNavigation(AccountHistory, 'AccountHistory')
+        await screen.findByTestId('history_network_failed', undefined, {
+            timeout: SLOW_WAIT_TIMEOUT_MS,
+        })
+
+        act(() => setConnectivity(false))
+        fireEvent.click(screen.getByTestId('history_network_filter_bsc'))
+
+        expect(
+            await screen.findByText('common.offline_mode', undefined, {
+                timeout: SLOW_WAIT_TIMEOUT_MS,
+            }),
+        ).toBeTruthy()
+        expect(
+            screen.queryByText(
+                'asset_details.transaction_list.offline_empty_title',
+            ),
+        ).toBeNull()
+        expect(
+            screen.queryByText(
+                'asset_details.transaction_list.empty_on_network_body',
+            ),
+        ).toBeNull()
+
+        act(() => setConnectivity(true))
+
+        expect(
+            await screen.findByText('common.error.title', undefined, {
+                timeout: SLOW_WAIT_TIMEOUT_MS,
+            }),
+        ).toBeTruthy()
+        expect(
+            screen.queryByText(
+                'asset_details.transaction_list.empty_on_network_body',
+            ),
+        ).toBeNull()
+
+        const { gate, release } = holdRead()
+        let heldReads = 0
+        server.use(
+            serveChain('bsc', async () => {
+                heldReads += 1
+                await gate
+                return failing()
+            }),
+        )
+        fireEvent.click(screen.getByText('common.retry.label'))
+        await waitFor(() => expect(heldReads).toBeGreaterThan(0), {
+            timeout: SLOW_WAIT_TIMEOUT_MS,
+        })
+
+        expect(screen.getByText('common.error.title')).toBeTruthy()
+        expect(
+            screen.queryByText(
+                'asset_details.transaction_list.empty_on_network_body',
+            ),
+        ).toBeNull()
+
+        release()
+
+        expect(
+            await screen.findByText('common.retry.label', undefined, {
+                timeout: SLOW_WAIT_TIMEOUT_MS,
+            }),
+        ).toBeTruthy()
+        expect(
+            screen.queryByText(
+                'asset_details.transaction_list.empty_on_network_body',
+            ),
+        ).toBeNull()
     })
 })

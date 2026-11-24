@@ -152,11 +152,13 @@ export const ActionRows = ({ action, presentation }: ActionRowsProps) => {
                             {!!action.amount.asset && (
                                 <PWText>{action.amount.asset.unitName}</PWText>
                             )}
-                            <AddressDisplay
-                                address={action.assetContract}
-                                displayType='address-only'
-                                scope={scope}
-                            />
+                            {!!action.assetContract && (
+                                <AddressDisplay
+                                    address={action.assetContract}
+                                    displayType='address-only'
+                                    scope={scope}
+                                />
+                            )}
                         </PWView>
                     </KeyValueRow>
                     <KeyValueRow

@@ -15,7 +15,6 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     listContainer: {
         flexGrow: 1,
-        paddingTop: theme.spacing.xl,
     },
     emptyView: {
         flex: 1,

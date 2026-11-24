@@ -11,11 +11,12 @@
  */
 
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
 
 const acknowledgeMock = vi.fn()
 const enableMock = vi.fn()
 const errorToastMock = vi.fn()
+const checkPinEnabledMock = vi.fn()
 const biometricsState = {
     disabledReason: null as string | null,
 }
@@ -26,6 +27,7 @@ vi.mock('@perawallet/wallet-core-security', () => ({
         acknowledgeBiometricsDisabled: acknowledgeMock,
         enableBiometrics: enableMock,
     }),
+    usePinCode: () => ({ checkPinEnabled: checkPinEnabledMock }),
 }))
 
 vi.mock('@hooks/useToast', () => ({
@@ -39,6 +41,7 @@ describe('useBiometricsDisabledPrompt', () => {
         vi.clearAllMocks()
         biometricsState.disabledReason = 'enrollment-changed'
         enableMock.mockResolvedValue({ ok: true })
+        checkPinEnabledMock.mockResolvedValue(false)
     })
 
     it('is not due while nothing has disabled biometrics', () => {
@@ -64,6 +67,42 @@ describe('useBiometricsDisabledPrompt', () => {
 
         expect(result.current.isDue).toBe(true)
         expect(result.current.reason).toBe('rebind-required')
+    })
+
+    describe('with a PIN set', () => {
+        beforeEach(() => {
+            checkPinEnabledMock.mockResolvedValue(true)
+        })
+
+        it('asks for the PIN instead of enabling', async () => {
+            const { result } = renderHook(() => useBiometricsDisabledPrompt())
+
+            await act(() => result.current.enable())
+
+            expect(result.current.isVerifyingPin).toBe(true)
+            expect(enableMock).not.toHaveBeenCalled()
+        })
+
+        it('enables once the PIN is verified', async () => {
+            const { result } = renderHook(() => useBiometricsDisabledPrompt())
+            await act(() => result.current.enable())
+
+            await act(() => result.current.handlePinVerified())
+
+            expect(result.current.isVerifyingPin).toBe(false)
+            expect(enableMock).toHaveBeenCalledTimes(1)
+        })
+
+        it('keeps the offer and stays off when the PIN step is closed', async () => {
+            const { result } = renderHook(() => useBiometricsDisabledPrompt())
+            await act(() => result.current.enable())
+
+            act(() => result.current.cancelPinVerification())
+
+            expect(result.current.isVerifyingPin).toBe(false)
+            expect(enableMock).not.toHaveBeenCalled()
+            expect(acknowledgeMock).not.toHaveBeenCalled()
+        })
     })
 
     it('re-enables biometrics with an OS prompt', async () => {

@@ -10,22 +10,13 @@
  limitations under the License
  */
 
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { PWView } from '@components/core'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { SwapHistoryList } from '@modules/swap/components/SwapHistoryList'
 import { useStyles } from './styles'
 
-export type SwapHistoryContentProps = {
-    scope: ChainScope
-    address: string
-}
-
-export const SwapHistoryContent = ({
-    scope,
-    address,
-}: SwapHistoryContentProps) => {
+export const SwapHistoryContent = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const { dismiss } = useBottomSheetResult<void>()
@@ -35,8 +26,6 @@ export const SwapHistoryContent = ({
             <SheetHeader title={t('swap.history.title')} />
             <PWView style={styles.listWrapper}>
                 <SwapHistoryList
-                    scope={scope}
-                    address={address}
                     onClose={dismiss}
                     inBottomSheet
                 />

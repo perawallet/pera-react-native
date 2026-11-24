@@ -13,6 +13,7 @@
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import {
+    useAssetPricesQuery,
     useAssetsQuery,
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
@@ -20,7 +21,7 @@ import {
     addressCodecs,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { useLanguage } from '@hooks/useLanguage'
 import {
@@ -40,6 +41,11 @@ import {
     ethereumPermissionsOf,
     type EthereumPermission,
 } from './ethereumPermissions'
+import {
+    ethereumActionAssetIdsOf,
+    ethereumActionChangesOf,
+    type EthereumActionChanges,
+} from './ethereumActionChanges'
 import { ethereumReviewWarningsOf } from './ethereumReviewWarnings'
 import { ethereumReviewWarningItemOf } from './ethereumReviewWarningItemOf'
 
@@ -63,6 +69,8 @@ export type UseEthereumTransactionReviewResult = {
     permissions: EthereumPermission[]
     /** What a transfer sends, for a review the simulation doesn't cover. */
     transferSpend: BalanceImpactItem[]
+    /** What a decoded call's calldata fixes it moves, for a review the simulation doesn't cover. */
+    actionChanges: EthereumActionChanges
     /** The site the request came from, as the platform observed it. */
     requesterHost: Optional<string>
 }
@@ -83,6 +91,7 @@ export const useEthereumTransactionReview = ({
         scope,
         view,
         standardCall,
+        contractAction,
         knownContract,
         isTransfer,
         counterparty,
@@ -92,14 +101,69 @@ export const useEthereumTransactionReview = ({
     } = presentation
     const approvedContract = approvedContractOf(presentation)
     const title = useEthereumReviewTitle(presentation)
-    const { data: tokenAssets } = useAssetsQuery(
-        scope,
-        approvedContract ? [approvedContract] : [],
-        { fetchMissing: true },
+    const wrappedNativeContract =
+        (contractAction?.kind === 'wrap' ||
+            contractAction?.kind === 'unwrap') &&
+        view.to
+            ? view.to
+            : undefined
+    const recordIds = [approvedContract, wrappedNativeContract].filter(
+        (id): id is string => !!id,
     )
+    const { data: tokenAssets } = useAssetsQuery(scope, recordIds, {
+        fetchMissing: true,
+    })
     const tokenAsset = approvedContract
         ? (tokenAssets.get(approvedContract) ?? null)
         : null
+    const wrappedNativeRecord = wrappedNativeContract
+        ? (tokenAssets.get(wrappedNativeContract) ?? null)
+        : null
+    const nativeAsset =
+        contractAction?.kind === 'wrap' || contractAction?.kind === 'unwrap'
+            ? contractAction.amount.asset
+            : null
+    const wrappedNative = useMemo((): Nullable<DisplayableAsset> => {
+        if (wrappedNativeRecord || !wrappedNativeContract || !nativeAsset) {
+            return wrappedNativeRecord
+        }
+        // Without its record, the 1:1 pair still shares the native decimals.
+        const label = shortAddressOf(scope, wrappedNativeContract)
+        return {
+            assetId: wrappedNativeContract,
+            name: label,
+            unitName: label,
+            decimals: nativeAsset.decimals,
+        }
+    }, [wrappedNativeRecord, wrappedNativeContract, nativeAsset, scope])
+    const actionAssetIds = ethereumActionAssetIdsOf(
+        contractAction,
+        wrappedNative,
+    )
+    const { data: actionPrices } = useAssetPricesQuery(
+        scope,
+        actionAssetIds,
+        actionAssetIds.length > 0,
+        { fetchMissing: true },
+    )
+    const isReverted = simulation.status === 'reverted'
+    const actionChanges = useMemo(
+        () =>
+            ethereumActionChangesOf(
+                // A call predicted to fail moves nothing but gas.
+                isReverted ? null : contractAction,
+                wrappedNative,
+                scope.chainId,
+                assetId => actionPrices.get(assetId)?.usdPrice,
+            ),
+        [
+            isReverted,
+            contractAction,
+            wrappedNative,
+            scope.chainId,
+            actionPrices,
+        ],
+    )
 
     const warningItems = useMemo(
         () =>
@@ -234,6 +298,7 @@ export const useEthereumTransactionReview = ({
         target,
         permissions,
         transferSpend,
+        actionChanges,
         requesterHost: requesterHostOf(source, verifiedOrigin),
     }
 }

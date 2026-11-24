@@ -58,7 +58,8 @@
             "search_web": "Buscar en la web",
             "no_results": "Sin resultados",
             "assets_unavailable": "La búsqueda de activos no está disponible en este momento",
-            "dapps_unavailable": "La búsqueda de dApps no está disponible en este momento"
+            "dapps_unavailable": "La búsqueda de dApps no está disponible en este momento",
+            "unverified": "No verificado"
         },
         "news": {
             "title": "Noticias",
@@ -450,7 +451,7 @@
             "empty_filtered_body": "Ninguna transacción coincide con este filtro",
             "empty_on_network_body": "Aún no hay transacciones en {{network}}",
             "network_failed": "No se pudieron cargar las transacciones en {{networks}}",
-            "network_unavailable": "Las transacciones no están disponibles en {{networks}}",
+            "network_unavailable": "El historial completo no está disponible en {{networks}}",
             "offline_empty_title": "Estás sin conexión",
             "offline_empty_body": "Todavía no hay transacciones guardadas en este dispositivo. Aparecerán cuando vuelvas a estar en línea.",
             "search_paused_body": "No se encontraron transacciones en el historial reciente.",
@@ -3633,6 +3634,31 @@
             "typed_data_warning_title": "Esta firma puede mover tus tokens",
             "typed_data_warning_body": "Firmar datos estructurados puede autorizar a una aplicación a gastar o intercambiar tus tokens sin volver a preguntarte. Aprueba solo si confías en esta aplicación."
         },
+        "sign_in": {
+            "title": "Iniciar sesión en {{domain}}",
+            "domain": "Dominio",
+            "address": "Dirección",
+            "uri": "URI",
+            "chain_id": "ID de cadena",
+            "nonce": "Nonce",
+            "issued_at": "Emitido",
+            "expires_at": "Caduca",
+            "advanced": "Avanzado",
+            "site_mismatch_title": "Este inicio de sesión es para otro sitio",
+            "site_mismatch_body": "El mensaje inicia tu sesión en {{domain}}, pero la solicitud viene de {{site}}. Aprueba solo si confías en ambos.",
+            "other_address_note": "El mensaje indica {{address}}, no la cuenta que firma.",
+            "other_chain_note": "El mensaje indica {{chain}}, no la red de esta solicitud. Iniciar sesión no envía ninguna transacción.",
+            "other_chain_id_note": "El mensaje indica el ID de cadena {{chainId}}, no la red de esta solicitud. Iniciar sesión no envía ninguna transacción.",
+            "statement_label": "Mensaje de {{domain}}",
+            "not_before": "Válido desde",
+            "request_id": "ID de solicitud",
+            "resource": "Recurso",
+            "grants_title": "Este inicio de sesión también concede permisos",
+            "grants_body": "Al firmar, {{domain}} podrá actuar en tu nombre con los permisos de abajo. Aprueba solo si confías en el sitio.",
+            "grants_unreadable_body": "Este inicio de sesión concede a {{domain}} permisos que Pera no puede leer. Aprueba solo si confías en el sitio.",
+            "malformed_title": "Este mensaje de inicio de sesión tiene contenido inesperado",
+            "malformed_body": "Partes de este mensaje no siguen el formato de inicio de sesión, así que {{domain}} podría leerlo de forma distinta a como se muestra aquí. Revisa el mensaje completo en Avanzado y apruébalo solo si confías en el sitio."
+        },
         "spend_approval": {
             "spend_warning": "Esta firma permite que otra dirección mueva tokens de tu cuenta sin volver a preguntarte.",
             "spend_warning_transaction": "Esta transacción permite que otra dirección mueva tokens de tu cuenta sin volver a preguntarte.",
@@ -4300,6 +4326,7 @@
             "quote_error": "No se pudieron obtener cotizaciones. Vuelve a intentarlo.",
             "amount_too_low": "El importe es demasiado pequeño para un swap en {{network}}. El mínimo es {{amount}} {{unit}}.",
             "amount_too_low_fiat": "El importe es demasiado pequeño para un swap en {{network}}. El mínimo es {{amount}} {{unit}} (~{{fiat}}).",
+            "amount_too_low_above_balance": "Tu saldo disponible es inferior al mínimo de {{amount}} {{unit}} para un swap en {{network}}.",
             "use_minimum": "Usar mínimo",
             "amount_too_low_unknown": "El importe es demasiado pequeño para un swap en {{network}}. Prueba con un importe mayor o una red con comisiones más bajas.",
             "amount_too_high": "El importe es demasiado grande para un swap. El máximo es {{amount}} {{unit}}.",
@@ -4371,6 +4398,8 @@
                         "refunded": "Reembolsado"
                     }
                 },
+                "account_filter_all": "Todas las cuentas",
+                "load_more": "Cargar más",
                 "empty": {
                     "title": "Aún no hay swaps",
                     "body": "Tu historial de swaps aparecerá aquí."

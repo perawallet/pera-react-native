@@ -71,7 +71,8 @@ export type EvmContractAction =
       }
     | {
           kind: 'supply' | 'withdraw' | 'borrow' | 'repay'
-          asset: Address
+          /** What leaves or enters the signer's account: native through Aave's gateway, which wraps and unwraps it. */
+          asset: EvmActionAsset
           /** Base units of `asset`; the largest uint256 when `isEntireBalance`. */
           amount: Decimal
           /** Set when the call asks for the whole balance or debt. */

@@ -10,14 +10,17 @@
  limitations under the License
  */
 
-import { encodeFunctionData, erc20Abi, getAddress } from 'viem'
+import { encodeFunctionData, erc20Abi, getAddress, zeroAddress } from 'viem'
 import type { PublicClient } from 'viem'
 import { Decimal } from 'decimal.js'
 import {
     isNativeAsset,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { toBigInt } from '@perawallet/wallet-core-shared'
+import {
+    displayUnitsToBaseUnits,
+    toBigInt,
+} from '@perawallet/wallet-core-shared'
 import type { SwapQuote, SwapSourceCost } from '@perawallet/wallet-core-swaps'
 import { eip155ChainIdOf } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
@@ -41,6 +44,67 @@ export const evmShortfallOf = (
     required: bigint,
 ): SwapSourceCost['shortfall'] =>
     required > balance ? toDecimal(required - balance) : null
+
+// Twice the native deposit's maximum fee, itself priced at twice the base fee:
+// room for the fee to climb between MAX and the order.
+const MAX_AMOUNT_FEE_RESERVE_MULTIPLE = 2n
+
+// Of the native unit: held back when the fee can't be read, so MAX still works
+// offline or on a failing node. Generous on purpose; the live price replaces it
+// on the next read.
+const FALLBACK_MAX_AMOUNT_FEE_RESERVE = '0.005'
+
+// The reserve keys the spendable-balance query, and the base fee moves every
+// block; rounding up to two significant digits keeps each minute's refresh from
+// re-keying it (and re-clamping a MAX fill) on drift, and only ever errs high.
+const FEE_RESERVE_SIGNIFICANT_DIGITS = 2
+
+const readEvmSwapFeeReserve = async ({
+    client,
+    chain,
+    scope,
+}: {
+    client: PublicClient
+    chain: EvmChain
+    scope: ChainScope
+}): Promise<Decimal> => {
+    const { presets } = await readEvmFeePresets(client, chain, scope.networkId)
+    const gas = INTRINSIC_TRANSFER_GAS
+    const surcharge = await readEvmSurcharge(client, chain, {
+        type: 'eip1559',
+        chainId: eip155ChainIdOf(scope, chain),
+        nonce: 0,
+        gas,
+        ...presets.normal,
+        to: zeroAddress,
+        value: 0n,
+        data: '0x',
+    })
+    return toDecimal(
+        MAX_AMOUNT_FEE_RESERVE_MULTIPLE *
+            (gas * presets.normal.maxFeePerGas +
+                SURCHARGE_HEADROOM * surcharge),
+    ).toSignificantDigits(FEE_RESERVE_SIGNIFICANT_DIGITS, Decimal.ROUND_UP)
+}
+
+/**
+ * Wei held back from a MAX native swap: a multiple of what its one deposit can
+ * be charged now, or a flat fallback when the fee can't be read.
+ */
+export const estimateEvmSwapFeeReserve = async (params: {
+    client: PublicClient
+    chain: EvmChain
+    scope: ChainScope
+}): Promise<Decimal> => {
+    try {
+        return await readEvmSwapFeeReserve(params)
+    } catch {
+        return displayUnitsToBaseUnits(
+            FALLBACK_MAX_AMOUNT_FEE_RESERVE,
+            params.chain.row.nativeAsset.decimals,
+        )
+    }
+}
 
 export const estimateEvmSwapSourceCost = async ({
     client,

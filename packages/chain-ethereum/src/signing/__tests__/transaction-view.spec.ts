@@ -151,7 +151,7 @@ const ACTIONS: EvmContractAction[] = [
     { kind: 'unwrap', amount: new Decimal(10) },
     {
         kind: 'supply',
-        asset: TOKEN,
+        asset: { kind: 'token', contract: TOKEN },
         amount: new Decimal(10),
         isEntireBalance: false,
     },

@@ -58,7 +58,8 @@
             "search_web": "Rechercher sur le web",
             "no_results": "Aucun résultat",
             "assets_unavailable": "La recherche d’actifs est indisponible pour le moment",
-            "dapps_unavailable": "La recherche de dApps est indisponible pour le moment"
+            "dapps_unavailable": "La recherche de dApps est indisponible pour le moment",
+            "unverified": "Non vérifié"
         },
         "news": {
             "title": "Actualités",
@@ -450,7 +451,7 @@
             "empty_filtered_body": "Aucune transaction ne correspond à ce filtre",
             "empty_on_network_body": "Aucune transaction pour le moment sur {{network}}",
             "network_failed": "Impossible de charger les transactions sur {{networks}}",
-            "network_unavailable": "Les transactions ne sont pas disponibles sur {{networks}}",
+            "network_unavailable": "L’historique complet n’est pas disponible sur {{networks}}",
             "offline_empty_title": "Vous êtes hors ligne",
             "offline_empty_body": "Aucune transaction n’est encore enregistrée sur cet appareil. Elles apparaîtront dès que vous serez de retour en ligne.",
             "search_paused_body": "Aucune transaction trouvée dans l’historique récent.",
@@ -3633,6 +3634,31 @@
             "typed_data_warning_title": "Cette signature peut déplacer vos tokens",
             "typed_data_warning_body": "Signer des données structurées peut autoriser une application à dépenser ou échanger vos tokens sans vous redemander votre accord. N’approuvez que si vous faites confiance à cette application."
         },
+        "sign_in": {
+            "title": "Se connecter à {{domain}}",
+            "domain": "Domaine",
+            "address": "Adresse",
+            "uri": "URI",
+            "chain_id": "ID de chaîne",
+            "nonce": "Nonce",
+            "issued_at": "Émis",
+            "expires_at": "Expire",
+            "advanced": "Avancé",
+            "site_mismatch_title": "Cette connexion concerne un autre site",
+            "site_mismatch_body": "Le message vous connecte à {{domain}}, mais la demande provient de {{site}}. N’approuvez que si vous faites confiance aux deux.",
+            "other_address_note": "Le message indique {{address}}, et non le compte qui signe.",
+            "other_chain_note": "Le message indique {{chain}}, et non le réseau de cette demande. La connexion n’envoie aucune transaction.",
+            "other_chain_id_note": "Le message indique l’ID de chaîne {{chainId}}, et non le réseau de cette demande. La connexion n’envoie aucune transaction.",
+            "statement_label": "Message de {{domain}}",
+            "not_before": "Valide à partir du",
+            "request_id": "ID de la demande",
+            "resource": "Ressource",
+            "grants_title": "Cette connexion accorde aussi des autorisations",
+            "grants_body": "En signant, vous permettez à {{domain}} d’agir pour vous avec les autorisations ci-dessous. N’approuvez que si vous faites confiance à ce site.",
+            "grants_unreadable_body": "Cette connexion accorde à {{domain}} des autorisations que Pera ne peut pas lire. N’approuvez que si vous faites confiance à ce site.",
+            "malformed_title": "Ce message de connexion contient un contenu inattendu",
+            "malformed_body": "Certaines parties de ce message ne suivent pas le format de connexion, donc {{domain}} pourrait le lire autrement qu'affiché ici. Vérifiez le message complet dans Avancé et n'approuvez que si vous faites confiance au site."
+        },
         "spend_approval": {
             "spend_warning": "Cette signature permet à une autre adresse de déplacer des tokens depuis votre compte sans vous redemander votre accord.",
             "spend_warning_transaction": "Cette transaction permet à une autre adresse de déplacer des tokens depuis votre compte sans vous redemander votre accord.",
@@ -4300,6 +4326,7 @@
             "quote_error": "Impossible d’obtenir des cotations. Veuillez réessayer.",
             "amount_too_low": "Montant trop faible pour un swap sur {{network}}. Le minimum est de {{amount}} {{unit}}.",
             "amount_too_low_fiat": "Montant trop faible pour un swap sur {{network}}. Le minimum est de {{amount}} {{unit}} (~{{fiat}}).",
+            "amount_too_low_above_balance": "Votre solde disponible est inférieur au minimum de {{amount}} {{unit}} pour un swap sur {{network}}.",
             "use_minimum": "Utiliser le minimum",
             "amount_too_low_unknown": "Montant trop faible pour un swap sur {{network}}. Essayez un montant plus élevé ou un réseau aux frais plus bas.",
             "amount_too_high": "Montant trop élevé pour un swap. Le maximum est de {{amount}} {{unit}}.",
@@ -4371,6 +4398,8 @@
                         "refunded": "Remboursé"
                     }
                 },
+                "account_filter_all": "Tous les comptes",
+                "load_more": "Charger plus",
                 "empty": {
                     "title": "Aucun swap pour le moment",
                     "body": "Votre historique de swaps apparaîtra ici."

@@ -28,6 +28,8 @@ const state = vi.hoisted(() => ({
     /** Spendable max in base units per pay chain; absent is still loading. */
     spendableMax: {} as Record<string, number>,
     isSpendablePending: false,
+    /** Pay chains whose fee reserve couldn't be read. */
+    unpricedChainIds: [] as string[],
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -51,7 +53,14 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
     const { Decimal } = await import('decimal.js')
     return {
         isSwapChain: () => true,
-        swapAdapterFor: () => ({ maxAmountFeeReserve: new Decimal(1000) }),
+        useSwapFeeReservesQuery: (scopes: { chainId: string }[]) => ({
+            reserves: scopes.map(({ chainId }) =>
+                state.unpricedChainIds.includes(chainId)
+                    ? undefined
+                    : new Decimal(1000),
+            ),
+            isPending: false,
+        }),
         useSwapScope: (_account: unknown, chainId: string) =>
             state.hasReceiveScope ? { chainId, networkId: 'mainnet' } : null,
     }
@@ -111,6 +120,7 @@ describe('useSwapForNativeRoute', () => {
         state.balances = [algoHolding]
         state.spendableMax = { algorand: 4_899_000, bsc: 1 }
         state.isSpendablePending = false
+        state.unpricedChainIds = []
     })
 
     it("opens a swap into the network's native coin, paid from another network's", () => {
@@ -207,6 +217,38 @@ describe('useSwapForNativeRoute', () => {
             chainId: 'bsc',
             assetId: 'native',
         })
+    })
+
+    it("pays with the next coin when the first one's fee reserve is unknown", () => {
+        const bnbHolding = {
+            ...algoHolding,
+            assetId: 'native',
+            fiatValue: new Decimal(0.5),
+            scope: { chainId: 'bsc', networkId: 'mainnet' },
+        }
+        state.balances = [algoHolding, bnbHolding]
+        state.spendableMax = { algorand: 4_899_000, bsc: 1 }
+        state.signChainIds = ['algorand', 'base', 'bsc']
+        state.unpricedChainIds = ['algorand']
+
+        const { result } = renderHook(() =>
+            useSwapForNativeRoute(account, 'base'),
+        )
+
+        expect(result.current.params?.assetIn).toEqual({
+            chainId: 'bsc',
+            assetId: 'native',
+        })
+    })
+
+    it("offers nothing when the only coin's fee reserve is unknown", () => {
+        state.unpricedChainIds = ['algorand']
+
+        const { result } = renderHook(() =>
+            useSwapForNativeRoute(account, 'base'),
+        )
+
+        expect(result.current.params).toBeNull()
     })
 
     it('reports pending while spendable balances are still being read', () => {
