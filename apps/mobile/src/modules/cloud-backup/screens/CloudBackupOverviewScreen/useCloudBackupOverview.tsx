@@ -191,10 +191,11 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
         })
         if (!choice) return
 
-        const confirmation = await requestBottomSheet<ConfirmTurnOffBackupResult>({
-            contents: <ConfirmTurnOffBackupSheet choice={choice} />,
-            options: { size: 'auto', enablePanDownToClose: true },
-        })
+        const confirmation =
+            await requestBottomSheet<ConfirmTurnOffBackupResult>({
+                contents: <ConfirmTurnOffBackupSheet choice={choice} />,
+                options: { size: 'auto', enablePanDownToClose: true },
+            })
         if (confirmation?.kind === 'backUpFirst') {
             launchBackupFlow(confirmation.account)
             return

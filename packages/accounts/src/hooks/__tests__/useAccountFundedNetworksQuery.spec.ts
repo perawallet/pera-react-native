@@ -223,7 +223,9 @@ describe('useFundedAccountIdsQuery', () => {
     it('counts an account funded only on another chain', async () => {
         mockGetAccountFundedNetworks.mockImplementation(
             ({ chainId }: { chainId: string }) =>
-                Promise.resolve(chainId === 'ethereum' ? ['ethereum/mainnet'] : []),
+                Promise.resolve(
+                    chainId === 'ethereum' ? ['ethereum/mainnet'] : [],
+                ),
         )
 
         const { result } = renderHook(
@@ -262,7 +264,10 @@ describe('useFundedAccountIdsQuery', () => {
             { wrapper: wrapper() },
         )
 
-        expect(result.current).toEqual({ fundedAccountIds: [], isPending: false })
+        expect(result.current).toEqual({
+            fundedAccountIds: [],
+            isPending: false,
+        })
         expect(mockGetAccountFundedNetworks).not.toHaveBeenCalled()
     })
 })

@@ -14,7 +14,12 @@ import { Trans } from 'react-i18next'
 import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { AccountWithBalance } from '@components/AccountWithBalance'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
-import { PWText, PWView, type IconName, type PWButtonProps } from '@components/core'
+import {
+    PWText,
+    PWView,
+    type IconName,
+    type PWButtonProps,
+} from '@components/core'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { useLanguage } from '@hooks/useLanguage'
 import { ConfirmationCheckbox } from '../ConfirmationCheckbox'

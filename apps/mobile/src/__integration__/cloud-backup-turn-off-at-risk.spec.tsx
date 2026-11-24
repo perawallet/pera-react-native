@@ -53,7 +53,9 @@ type BackupWalletStubProps = {
 }
 
 const BackupWalletStub = ({ route }: BackupWalletStubProps) => (
-    <PWText testID='backup_wallet_stub'>{route.params?.params?.accountId}</PWText>
+    <PWText testID='backup_wallet_stub'>
+        {route.params?.params?.accountId}
+    </PWText>
 )
 
 const renderOverview = () =>
@@ -64,7 +66,9 @@ const renderOverview = () =>
     })
 
 const openTurnOffSheet = async (
-    choiceTestID: 'turn_off_backup_turn_off' | 'turn_off_backup_turn_off_and_remove',
+    choiceTestID:
+        | 'turn_off_backup_turn_off'
+        | 'turn_off_backup_turn_off_and_remove',
 ) => {
     fireEvent.click(await screen.findByTestId('cloud_backup_overview_turn_off'))
     fireEvent.click(await screen.findByTestId(choiceTestID))
@@ -131,9 +135,9 @@ describe('Flow: turning off Cloud Backup lists the accounts that lose their only
             screen.getByTestId('confirm_turn_off_backup_back_up_first'),
         )
 
-        expect((await screen.findByTestId('backup_wallet_stub')).textContent).toBe(
-            account.id,
-        )
+        expect(
+            (await screen.findByTestId('backup_wallet_stub')).textContent,
+        ).toBe(account.id)
         expect(useCloudBackupStore.getState().backupId).toBe(
             'did:pera:AT-RISK-TEST',
         )
