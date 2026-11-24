@@ -90,6 +90,15 @@ const { mockToggleAccountNotification, mockIsTogglePending } = vi.hoisted(
 const { mockIsBackedUp } = vi.hoisted(() => ({
     mockIsBackedUp: vi.fn((_address: string) => true),
 }))
+const { mockIsCoveredByCloudBackup, mockRequiresMnemonicBackup } = vi.hoisted(
+    () => ({
+        mockIsCoveredByCloudBackup: vi.fn(() => false),
+        mockRequiresMnemonicBackup: vi.fn(() => true),
+    }),
+)
+const { mockLaunchBackupFlow } = vi.hoisted(() => ({
+    mockLaunchBackupFlow: vi.fn(),
+}))
 const { mockIsCloudBackupEnabled } = vi.hoisted(() => ({
     mockIsCloudBackupEnabled: vi.fn(() => true),
 }))
@@ -183,6 +192,12 @@ vi.mock('@hooks/useIsCloudBackupEnabled', () => ({
 
 vi.mock('@perawallet/wallet-core-backup', () => ({
     getBackupSyncManager: mockGetBackupSyncManager,
+    useIsAccountCoveredByCloudBackup: () => mockIsCoveredByCloudBackup(),
+    useRequiresMnemonicBackup: () => mockRequiresMnemonicBackup(),
+}))
+
+vi.mock('@modules/backup', () => ({
+    useBackupFlowLauncher: () => mockLaunchBackupFlow,
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
@@ -314,6 +329,8 @@ describe('useAccountOptions', () => {
         mockIsAccountEnabled.mockReturnValue(true)
         mockIsBackedUp.mockReturnValue(false)
         mockIsCloudBackupEnabled.mockReturnValue(true)
+        mockIsCoveredByCloudBackup.mockReturnValue(false)
+        mockRequiresMnemonicBackup.mockReturnValue(true)
         mockDeleteAccountFromBackup.mockResolvedValue('settled')
         mockKeepAccountInBackup.mockResolvedValue(true)
         mockToggleAccountNotification.mockResolvedValue(true)
@@ -1939,6 +1956,56 @@ describe('useAccountOptions', () => {
             })
 
             expect(mockOnClose).toHaveBeenCalledTimes(1)
+        })
+    })
+
+    describe('write-down-passphrase option', () => {
+        const optionFor = (account: WalletAccount) => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+            return result.current.writeDownPassphraseOption
+        }
+
+        it('is offered on a covered account whose phrase is not written down, and starts the backup flow', () => {
+            mockIsCoveredByCloudBackup.mockReturnValue(true)
+
+            const option = optionFor(algo25Account)
+
+            expect(option?.id).toBe('write-down-passphrase')
+            expect(option?.title).toBe('account_options.write_down_passphrase')
+            expect(option?.subtitle).toBe(
+                'account_options.write_down_passphrase_subtitle',
+            )
+
+            act(() => option?.onPress())
+
+            expect(mockOnClose).toHaveBeenCalledTimes(1)
+            expect(mockLaunchBackupFlow).toHaveBeenCalledWith(algo25Account)
+            expect(mockOnClose.mock.invocationCallOrder[0]).toBeLessThan(
+                mockLaunchBackupFlow.mock.invocationCallOrder[0],
+            )
+        })
+
+        it('is not offered when Cloud Backup does not cover the account', () => {
+            expect(optionFor(algo25Account)).toBeUndefined()
+        })
+
+        it('is not offered once the phrase is already written down', () => {
+            mockIsCoveredByCloudBackup.mockReturnValue(true)
+            mockRequiresMnemonicBackup.mockReturnValue(false)
+
+            expect(optionFor(algo25Account)).toBeUndefined()
+        })
+
+        it('is not offered on an account that has no passphrase', () => {
+            mockIsCoveredByCloudBackup.mockReturnValue(true)
+
+            expect(optionFor(watchAccount)).toBeUndefined()
         })
     })
 })

@@ -634,6 +634,8 @@
         "enable_network_success": "{{network}} aktiviert",
         "see_all_networks": "Alle Netzwerke anzeigen",
         "view_passphrase": "Wiederherstellungsphrase anzeigen",
+        "write_down_passphrase": "Schreibe auch deine Wiederherstellungsphrase auf",
+        "write_down_passphrase_subtitle": "Empfohlen, nicht erforderlich",
         "network_options": "Weitere Optionen"
     },
     "account_info": {
@@ -736,18 +738,29 @@
     "backup": {
         "banner": {
             "text": "Du musst die Wiederherstellungsphrase sichern",
-            "cta": "Jetzt sichern"
+            "cta": "Jetzt sichern",
+            "text_with_cloud_backup": "Du musst dieses Konto sichern",
+            "cta_passphrase": "Wiederherstellungsphrase sichern",
+            "cta_turn_on_cloud_backup": "Cloud-Backup aktivieren",
+            "cta_fix_cloud_backup": "Cloud-Backup prüfen"
+        },
+        "status": {
+            "cloud_backup": "Gesichert · Cloud-Backup"
         },
         "info": {
             "title": "Backup der Wiederherstellungsphrase für dein Konto erstellen",
             "body": "Ein Backup der Wiederherstellungsphrase ermöglicht es dir, dein Konto wiederherzustellen. Ohne die Wiederherstellungsphrase kannst du den Zugriff auf dein Algorand-Konto unwiderruflich verlieren, wenn du dein Gerät verlierst, das Konto entfernst oder die App löschst!",
-            "body_all_networks": "Deine Wiederherstellungsphrase ist die einzige Möglichkeit, dein Konto in allen Netzwerken wiederherzustellen: {{networks}}. Wenn du ohne Backup dein Gerät verlierst, das Konto entfernst oder die App löschst, verlierst du den Zugriff auf dein Guthaben unwiderruflich.",
+            "body_all_networks": "Mit einem Backup der Wiederherstellungsphrase kannst du dein Konto in allen Netzwerken wiederherstellen: {{networks}}. Wenn du ohne Backup dein Gerät verlierst, das Konto entfernst oder die App löschst, verlierst du den Zugriff auf dein Guthaben unwiderruflich.",
+            "body_with_cloud_backup": "Mit einem Backup der Wiederherstellungsphrase kannst du dein Algorand-Konto wiederherstellen. Ein Cloud-Backup kann es ebenfalls wiederherstellen. Ohne eines der beiden Backups kannst du den Zugriff auf dein Konto unwiderruflich verlieren, wenn du dein Gerät verlierst, das Konto entfernst oder die App löschst.",
+            "body_all_networks_with_cloud_backup": "Mit einem Backup der Wiederherstellungsphrase kannst du dein Konto in allen Netzwerken wiederherstellen: {{networks}}. Ein Cloud-Backup kann es ebenfalls wiederherstellen. Ohne eines der beiden Backups verlierst du den Zugriff auf dein Guthaben unwiderruflich, wenn du dein Gerät verlierst, das Konto entfernst oder die App löschst.",
             "cta": "Ich verstehe"
         },
         "write_down": {
             "title": "Bereite dich darauf vor, deine Wiederherstellungsphrase aufzuschreiben",
-            "body": "Die einzige Möglichkeit, ein Algorand-Konto wiederherzustellen, ist diese Wiederherstellungsphrase.",
-            "body_all_networks": "Diese Wiederherstellungsphrase ist die einzige Möglichkeit, dein Konto und alle seine Adressen in allen Netzwerken wiederherzustellen.",
+            "body": "Mit dieser Wiederherstellungsphrase kannst du dein Algorand-Konto wiederherstellen.",
+            "body_all_networks": "Mit dieser Wiederherstellungsphrase kannst du dein Konto und alle seine Adressen in allen Netzwerken wiederherstellen.",
+            "body_with_cloud_backup": "Mit dieser Wiederherstellungsphrase kannst du dein Algorand-Konto wiederherstellen. Das Cloud-Backup ist der andere Weg, es wiederherzustellen.",
+            "body_all_networks_with_cloud_backup": "Mit dieser Wiederherstellungsphrase kannst du dein Konto und alle seine Adressen in allen Netzwerken wiederherstellen. Das Cloud-Backup ist der andere Weg, es wiederherzustellen.",
             "warning": "Teile diese Wiederherstellungsphrase mit niemandem, da sie vollen Zugriff auf dein Konto gewährt.",
             "warning_all_networks": "Teile diese Wiederherstellungsphrase mit niemandem. Wer sie hat, kontrolliert dein Guthaben in allen Netzwerken.",
             "cta": "Ich bin bereit zu beginnen"

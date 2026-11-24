@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     type WalletAccount,
     useAccountCapabilityScope,
@@ -18,12 +19,20 @@ import {
 } from '@perawallet/wallet-core-accounts'
 
 import { useShouldPromptMnemonicBackup } from '@perawallet/wallet-core-backup'
+import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useHomeChainScope } from '@hooks/useHomeChainScope'
+import { useIsCloudBackupAvailableFor } from '@hooks/useIsCloudBackupAvailable'
+import { useLanguage } from '@hooks/useLanguage'
 import { useBackupFlowLauncher } from '@modules/backup'
+import { useCloudBackupInitialRoute } from '@modules/cloud-backup'
 
 export type UseBackupReminderBannerResult = {
     isVisible: boolean
-    onPress: () => void
+    message: string
+    passphraseCtaLabel: string
+    cloudBackupCtaLabel: Optional<string>
+    onBackUpPassphrase: () => void
+    onOpenCloudBackup: () => void
 }
 
 export const useBackupReminderBanner = (
@@ -37,8 +46,45 @@ export const useBackupReminderBanner = (
         backupScope ?? ownScope,
     )
     const launch = useBackupFlowLauncher()
+    const { t } = useLanguage()
+    const navigation = useAppNavigation()
+    const isCloudBackupAvailable = useIsCloudBackupAvailableFor(account)
+    const cloudBackupRoute = useCloudBackupInitialRoute()
 
-    const onPress = useCallback(() => launch(account), [launch, account])
+    const onBackUpPassphrase = useCallback(
+        () => launch(account),
+        [launch, account],
+    )
 
-    return { isVisible, onPress }
+    const onOpenCloudBackup = useCallback(
+        () =>
+            navigation.navigate('Settings', {
+                screen: 'CloudBackupSettings',
+                params: { screen: cloudBackupRoute },
+            }),
+        [navigation, cloudBackupRoute],
+    )
+
+    // A configured backup that doesn't cover this account has something to fix
+    // (unconfirmed credentials, a failed sync); otherwise Cloud Backup is not on yet.
+    let cloudBackupCtaLabel: Optional<string>
+    if (isCloudBackupAvailable) {
+        cloudBackupCtaLabel =
+            cloudBackupRoute === 'CloudBackupOverview'
+                ? t('backup.banner.cta_fix_cloud_backup')
+                : t('backup.banner.cta_turn_on_cloud_backup')
+    }
+
+    return {
+        isVisible,
+        message: isCloudBackupAvailable
+            ? t('backup.banner.text_with_cloud_backup')
+            : t('backup.banner.text'),
+        passphraseCtaLabel: isCloudBackupAvailable
+            ? t('backup.banner.cta_passphrase')
+            : t('backup.banner.cta'),
+        cloudBackupCtaLabel,
+        onBackUpPassphrase,
+        onOpenCloudBackup,
+    }
 }

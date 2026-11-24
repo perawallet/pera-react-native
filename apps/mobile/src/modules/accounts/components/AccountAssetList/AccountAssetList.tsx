@@ -32,6 +32,7 @@ import {
 import { SwipeableAssetItem } from './SwipeableAssetItem'
 import { AutoHiddenTokensRow } from '../AutoHiddenTokensRow'
 import { BackupReminderBanner } from '../BackupReminderBanner'
+import { CloudBackupStatus } from '../CloudBackupStatus'
 import { LegacyQuantumNotice } from '../LegacyQuantumNotice'
 import { NetworkFundingState } from './NetworkFundingState'
 import {
@@ -144,6 +145,7 @@ export const AccountAssetList = ({
                 account={account}
                 isLoading={isLoading}
             />
+            <CloudBackupStatus account={account} />
             <LegacyQuantumNotice account={account} />
             {headerState.isOpen && (
                 <>

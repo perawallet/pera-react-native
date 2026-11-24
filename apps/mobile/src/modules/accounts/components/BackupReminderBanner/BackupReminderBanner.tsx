@@ -17,7 +17,6 @@ import Animated, {
 } from 'react-native-reanimated'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
-import { useLanguage } from '@hooks/useLanguage'
 import {
     BACKUP_REMINDER_BANNER_REVEAL_DELAY,
     BACKUP_REMINDER_BANNER_REVEAL_DURATION,
@@ -56,8 +55,14 @@ const BackupReminderBannerComponent = ({
     isLoading = false,
 }: BackupReminderBannerProps) => {
     const styles = useStyles()
-    const { t } = useLanguage()
-    const { isVisible, onPress } = useBackupReminderBanner(account)
+    const {
+        isVisible,
+        message,
+        passphraseCtaLabel,
+        cloudBackupCtaLabel,
+        onBackUpPassphrase,
+        onOpenCloudBackup,
+    } = useBackupReminderBanner(account)
     // The reveal-delay timer starts only after the parent finishes its initial
     // load, so the banner animates in as a second beat instead of riding the
     // skeleton-to-content swap.
@@ -80,24 +85,47 @@ const BackupReminderBannerComponent = ({
             style={styles.enterWrapper}
         >
             <PWView
-                style={styles.container}
+                style={[
+                    styles.container,
+                    !cloudBackupCtaLabel && styles.containerInline,
+                ]}
                 testID='backup_reminder_banner'
             >
-                <PWIcon
-                    name='info'
-                    variant='white'
-                    size='sm'
-                />
-                <PWText style={styles.text}>{t('backup.banner.text')}</PWText>
-                <PWTouchableOpacity
-                    style={styles.ctaButton}
-                    onPress={onPress}
-                    testID='backup_reminder_banner_cta'
+                <PWView
+                    style={[
+                        styles.messageRow,
+                        !cloudBackupCtaLabel && styles.messageRowInline,
+                    ]}
                 >
-                    <PWText style={styles.ctaText}>
-                        {t('backup.banner.cta')}
-                    </PWText>
-                </PWTouchableOpacity>
+                    <PWIcon
+                        name='info'
+                        variant='white'
+                        size='sm'
+                    />
+                    <PWText style={styles.text}>{message}</PWText>
+                </PWView>
+                <PWView style={styles.actions}>
+                    {cloudBackupCtaLabel ? (
+                        <PWTouchableOpacity
+                            style={styles.ctaButton}
+                            onPress={onOpenCloudBackup}
+                            testID='backup_reminder_banner_cloud_backup_cta'
+                        >
+                            <PWText style={styles.ctaText}>
+                                {cloudBackupCtaLabel}
+                            </PWText>
+                        </PWTouchableOpacity>
+                    ) : null}
+                    <PWTouchableOpacity
+                        style={styles.ctaButton}
+                        onPress={onBackUpPassphrase}
+                        testID='backup_reminder_banner_cta'
+                    >
+                        <PWText style={styles.ctaText}>
+                            {passphraseCtaLabel}
+                        </PWText>
+                    </PWTouchableOpacity>
+                </PWView>
             </PWView>
         </Animated.View>
     )

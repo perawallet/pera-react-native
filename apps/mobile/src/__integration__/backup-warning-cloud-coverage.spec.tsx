@@ -10,8 +10,10 @@
  limitations under the License
  */
 
+import '../i18n'
 import {
     afterAll,
+    afterEach,
     beforeAll,
     beforeEach,
     describe,
@@ -20,11 +22,18 @@ import {
     vi,
 } from 'vitest'
 import React from 'react'
-import { act, renderHook, waitFor } from '@testing-library/react'
+import {
+    act,
+    fireEvent,
+    renderHook,
+    screen,
+    waitFor,
+} from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 
 import { server } from '@test-utils/msw-server'
 import { createTestQueryClient } from '@test-utils/render'
+import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
     resetTestDatabase,
@@ -46,11 +55,14 @@ import {
 } from '@perawallet/wallet-core-backup'
 import { buildSyncHandlers } from '@perawallet/wallet-core-backup/test-handlers'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import {
     useNetworkStore,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
+import { BackupReminderBanner } from '@modules/accounts/components/BackupReminderBanner'
+import { CloudBackupStatus } from '@modules/accounts/components/CloudBackupStatus'
 
 import {
     BACKUP_MNEMONIC,
@@ -95,6 +107,10 @@ describe('Flow: the backup warning follows Cloud Backup coverage', () => {
     })
     afterAll(async () => {
         await teardownTestDatabase()
+    })
+
+    afterEach(() => {
+        useRemoteConfigStore.getState().resetState()
     })
 
     beforeEach(async () => {
@@ -156,5 +172,73 @@ describe('Flow: the backup warning follows Cloud Backup coverage', () => {
 
         await backUpAndSync()
         await waitFor(() => expect(result.current).toBe(false))
+    })
+
+    describe('the banner and the status', () => {
+        const renderHost = () =>
+            renderWithNavigation(
+                () => (
+                    <>
+                        <BackupReminderBanner account={account} />
+                        <CloudBackupStatus account={account} />
+                    </>
+                ),
+                'Host',
+                {
+                    additionalScreens: [
+                        {
+                            name: 'Settings',
+                            component: () => (
+                                <div data-testid='settings_stub' />
+                            ),
+                        },
+                    ],
+                },
+            )
+
+        beforeEach(() => {
+            useRemoteConfigStore
+                .getState()
+                .setConfigOverride('enable_cloud_backup', true)
+        })
+
+        it('Given a funded account never backed up, then the banner offers both fixes and the cloud one opens Cloud Backup', async () => {
+            renderHost()
+
+            await screen.findByTestId('backup_reminder_banner', undefined, {
+                timeout: 3000,
+            })
+            expect(screen.getByText('Back Up Passphrase')).toBeTruthy()
+            expect(screen.getByText('Turn On Cloud Backup')).toBeTruthy()
+            expect(screen.queryByTestId('cloud_backup_status')).toBeNull()
+
+            fireEvent.click(
+                screen.getByTestId('backup_reminder_banner_cloud_backup_cta'),
+            )
+
+            expect(await screen.findByTestId('settings_stub')).toBeTruthy()
+        })
+
+        it('Given a synced, confirmed backup, then the account reads as backed up by Cloud Backup and the banner is gone, until the credentials are unconfirmed', async () => {
+            await backUpAndSync()
+
+            renderHost()
+
+            expect(
+                await screen.findByText('Backed up · Cloud Backup'),
+            ).toBeTruthy()
+            expect(screen.queryByTestId('backup_reminder_banner')).toBeNull()
+
+            await act(async () => {
+                useCloudBackupStore.setState({ credentialsConfirmed: false })
+            })
+
+            await waitFor(() =>
+                expect(screen.queryByTestId('cloud_backup_status')).toBeNull(),
+            )
+            await screen.findByText('Fix Cloud Backup', undefined, {
+                timeout: 3000,
+            })
+        })
     })
 })

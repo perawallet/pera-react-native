@@ -634,6 +634,8 @@
         "enable_network_success": "Rede {{network}} ativada",
         "see_all_networks": "Ver todas as redes",
         "view_passphrase": "Ver passphrase",
+        "write_down_passphrase": "Anote também sua passphrase",
+        "write_down_passphrase_subtitle": "Recomendado, não obrigatório",
         "network_options": "Mais opções"
     },
     "account_info": {
@@ -736,18 +738,29 @@
     "backup": {
         "banner": {
             "text": "Você precisa fazer o backup da passphrase de recuperação",
-            "cta": "Fazer backup agora"
+            "cta": "Fazer backup agora",
+            "text_with_cloud_backup": "Você precisa fazer backup desta conta",
+            "cta_passphrase": "Fazer backup da passphrase de recuperação",
+            "cta_turn_on_cloud_backup": "Ativar backup na nuvem",
+            "cta_fix_cloud_backup": "Corrigir backup na nuvem"
+        },
+        "status": {
+            "cloud_backup": "Backup feito · Backup na nuvem"
         },
         "info": {
             "title": "Crie um backup da passphrase de recuperação da sua conta",
             "body": "Criar um backup da passphrase de recuperação permitirá que você recupere sua conta. Sem a passphrase de recuperação, se você perder seu dispositivo, remover a conta ou excluir o app, você pode perder permanentemente o acesso à sua conta Algorand!",
-            "body_all_networks": "Sua passphrase de recuperação é a única forma de recuperar sua conta em todas as redes: {{networks}}. Se você perder seu dispositivo, remover a conta ou excluir o app sem um backup, perderá permanentemente o acesso aos seus fundos.",
+            "body_all_networks": "Um backup da passphrase de recuperação permite recuperar sua conta em todas as redes: {{networks}}. Se você perder seu dispositivo, remover a conta ou excluir o app sem um backup, perderá permanentemente o acesso aos seus fundos.",
+            "body_with_cloud_backup": "Um backup da passphrase de recuperação permite recuperar sua conta Algorand. O backup na nuvem também pode restaurá-la. Sem nenhum dos dois backups, se você perder seu dispositivo, remover a conta ou excluir o app, pode perder permanentemente o acesso à sua conta.",
+            "body_all_networks_with_cloud_backup": "Um backup da passphrase de recuperação permite recuperar sua conta em todas as redes: {{networks}}. O backup na nuvem também pode restaurá-la. Sem nenhum dos dois backups, se você perder seu dispositivo, remover a conta ou excluir o app, perderá permanentemente o acesso aos seus fundos.",
             "cta": "Entendi"
         },
         "write_down": {
             "title": "Prepare-se para anotar sua passphrase de recuperação",
-            "body": "A única forma de recuperar uma conta Algorand é com esta passphrase de recuperação.",
-            "body_all_networks": "Esta passphrase de recuperação é a única forma de recuperar sua conta e todos os seus endereços em todas as redes.",
+            "body": "Esta passphrase de recuperação recupera sua conta Algorand.",
+            "body_all_networks": "Esta passphrase de recuperação recupera sua conta e todos os seus endereços em todas as redes.",
+            "body_with_cloud_backup": "Esta passphrase de recuperação recupera sua conta Algorand. O backup na nuvem é a outra forma de restaurá-la.",
+            "body_all_networks_with_cloud_backup": "Esta passphrase de recuperação recupera sua conta e todos os seus endereços em todas as redes. O backup na nuvem é a outra forma de restaurá-la.",
             "warning": "Não compartilhe esta passphrase de recuperação com ninguém, pois ela concede acesso total à sua conta.",
             "warning_all_networks": "Não compartilhe esta passphrase de recuperação com ninguém. Qualquer pessoa que a tenha controla seus fundos em todas as redes.",
             "cta": "Tudo pronto, começar"
