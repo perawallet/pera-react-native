@@ -86,7 +86,7 @@ export type UseTransactionRecordsQueryResult = {
     isFetched: boolean
     isFetching: boolean
     isFetchingNextPage: boolean
-    /** Stays true while a failed first page is re-read, unlike TanStack's. */
+    /** Stays true while a failed first page is re-read, offline included, unlike TanStack's. */
     isError: boolean
     /** The failure is a later page's: page one, and the wallet's sends merged into it, stand. */
     isNextPageError: boolean
@@ -126,6 +126,9 @@ const mergedPagesByCursor = new WeakMap<PageRef, RecordsPage>()
 // moment it re-reads, so a failed page one would read as loading and then as
 // empty. The error is kept here, per cache entry, until the re-read settles; a
 // chip tap mounts a new hook on the same entry and must see it from render one.
+// An offline read rethrows it, since nothing re-reads on reconnect. A cold entry
+// (never failed, or its record lost to a cold start or gc) still settles empty
+// offline and reads as "no transactions" until the next sync tick or Retry.
 const failedFirstPageErrors = new WeakMap<Query, Error>()
 
 // A record that leaves page one without a replacement stays until a full
@@ -385,6 +388,10 @@ export const useTransactionRecordsQuery = ({
                 return merged
             }
 
+            const cachedQuery = queryClient
+                .getQueryCache()
+                .get(hashKey(queryKey))
+
             if (!onlineManager.isOnline()) {
                 // A refetch rebuilds from page one and stops at the first page
                 // with no cursor, so an offline page here would drop every page
@@ -395,12 +402,12 @@ export const useTransactionRecordsQuery = ({
                 ) {
                     throw new PeraNetworkError('offline')
                 }
-                // A cold start has nothing to lose: an empty page reads as the
-                // offline empty state, and the ledger's sends list beside it.
-                const coldQuery = queryClient
-                    .getQueryCache()
-                    .get(hashKey(queryKey))
-                if (coldQuery) failedFirstPageErrors.delete(coldQuery)
+                const recordedFailure =
+                    cachedQuery && failedFirstPageErrors.get(cachedQuery)
+                if (recordedFailure) throw recordedFailure
+                // Only an entry that never failed starts cold: an empty page
+                // reads as the offline empty state, and the ledger's sends
+                // list beside it.
                 return { records: [], next: null }
             }
 
@@ -408,9 +415,6 @@ export const useTransactionRecordsQuery = ({
                 return (await readPage(pageParam, signal)).page
             }
 
-            const cachedQuery = queryClient
-                .getQueryCache()
-                .get(hashKey(queryKey))
             const isFullRefetch =
                 cachedQuery !== undefined &&
                 consumeFullRefetchRequest(cachedQuery)
