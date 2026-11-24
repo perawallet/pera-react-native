@@ -3634,6 +3634,8 @@
             "site_mismatch_body": "Die Nachricht meldet dich bei {{domain}} an, die Anfrage kommt aber von {{site}}. Bestätige nur, wenn du beiden vertraust.",
             "other_address_note": "Die Nachricht nennt {{address}}, nicht das signierende Konto.",
             "other_chain_note": "Die Nachricht nennt {{chain}}, nicht das Netzwerk dieser Anfrage. Bei der Anmeldung wird keine Transaktion gesendet.",
+            "other_chain_id_note": "Die Nachricht nennt die Chain-ID {{chainId}}, nicht das Netzwerk dieser Anfrage. Bei der Anmeldung wird keine Transaktion gesendet.",
+            "statement_label": "Nachricht von {{domain}}",
             "not_before": "Gültig ab",
             "request_id": "Anfrage-ID",
             "resource": "Ressource",

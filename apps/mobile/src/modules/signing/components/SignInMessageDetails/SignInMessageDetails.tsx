@@ -25,6 +25,9 @@ import {
     type SignInDetailRow,
 } from './useSignInMessageDetails'
 
+// The full statement stays under Advanced; capped so it can't push the fields off screen.
+const STATEMENT_MAX_LINES = 4
+
 export type SignInMessageDetailsProps = {
     signIn: SignInSummary
     /** The message text exactly as signed. */
@@ -47,6 +50,7 @@ export const SignInMessageDetails = ({
         resourceRows,
         grantsWarning,
         malformedWarning,
+        statement,
         otherAddressNote,
         otherChainNote,
     } = useSignInMessageDetails(signIn)
@@ -103,8 +107,16 @@ export const SignInMessageDetails = ({
                     {grantsWarning.rows.map(renderGrant)}
                 </WarningBanner>
             )}
-            {!!signIn.message.statement && (
-                <PWText>{signIn.message.statement}</PWText>
+            {!!statement && (
+                <PWView
+                    style={styles.dataBox}
+                    testID='sign_in_statement'
+                >
+                    <PWText variant='captionMedium'>{statement.label}</PWText>
+                    <PWText numberOfLines={STATEMENT_MAX_LINES}>
+                        {statement.text}
+                    </PWText>
+                </PWView>
             )}
             <PWView>
                 {leadingRows.map(renderRow)}

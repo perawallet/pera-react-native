@@ -3642,6 +3642,8 @@
             "site_mismatch_body": "Le message vous connecte à {{domain}}, mais la demande provient de {{site}}. N’approuvez que si vous faites confiance aux deux.",
             "other_address_note": "Le message indique {{address}}, et non le compte qui signe.",
             "other_chain_note": "Le message indique {{chain}}, et non le réseau de cette demande. La connexion n’envoie aucune transaction.",
+            "other_chain_id_note": "Le message indique l’ID de chaîne {{chainId}}, et non le réseau de cette demande. La connexion n’envoie aucune transaction.",
+            "statement_label": "Message de {{domain}}",
             "not_before": "Valide à partir du",
             "request_id": "ID de la demande",
             "resource": "Ressource",

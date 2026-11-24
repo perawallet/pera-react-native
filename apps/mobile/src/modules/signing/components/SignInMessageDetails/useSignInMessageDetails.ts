@@ -38,6 +38,8 @@ export type UseSignInMessageDetailsResult = {
     grantsWarning: Optional<{ body: string; rows: SignInDetailRow[] }>
     /** Set when the message strays from the sign-in format, so the site may read it differently. */
     malformedWarning: Optional<string>
+    /** The dApp's own text, labelled so it can't pass for Pera's. */
+    statement: Optional<{ label: string; text: string }>
     otherAddressNote: Optional<string>
     otherChainNote: Optional<string>
 }
@@ -113,9 +115,6 @@ export const useSignInMessageDetails = (
                   },
         ]
         const hasGrants = signIn.grants.length > 0 || signIn.hasUnreadableGrants
-        const chainName = messageScope
-            ? chainNameOf(messageScope)
-            : `${t('signing.sign_in.chain_id')} ${message.chainId}`
 
         return {
             leadingRows: [
@@ -185,14 +184,28 @@ export const useSignInMessageDetails = (
                       value: message.chainId,
                       testID: 'sign_in_chain_id',
                   },
+            statement: message.statement
+                ? {
+                      label: t('signing.sign_in.statement_label', {
+                          domain: message.domain,
+                      }),
+                      text: message.statement,
+                  }
+                : undefined,
             otherAddressNote: isOtherAddress
                 ? t('signing.sign_in.other_address_note', {
                       address: message.address,
                   })
                 : undefined,
-            otherChainNote: isOtherChain
-                ? t('signing.sign_in.other_chain_note', { chain: chainName })
-                : undefined,
+            otherChainNote: !isOtherChain
+                ? undefined
+                : messageScope
+                  ? t('signing.sign_in.other_chain_note', {
+                        chain: chainNameOf(messageScope),
+                    })
+                  : t('signing.sign_in.other_chain_id_note', {
+                        chainId: message.chainId,
+                    }),
         }
     }, [signIn, t])
 }

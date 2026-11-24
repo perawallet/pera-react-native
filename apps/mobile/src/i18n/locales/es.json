@@ -3642,6 +3642,8 @@
             "site_mismatch_body": "El mensaje inicia tu sesión en {{domain}}, pero la solicitud viene de {{site}}. Aprueba solo si confías en ambos.",
             "other_address_note": "El mensaje indica {{address}}, no la cuenta que firma.",
             "other_chain_note": "El mensaje indica {{chain}}, no la red de esta solicitud. Iniciar sesión no envía ninguna transacción.",
+            "other_chain_id_note": "El mensaje indica el ID de cadena {{chainId}}, no la red de esta solicitud. Iniciar sesión no envía ninguna transacción.",
+            "statement_label": "Mensaje de {{domain}}",
             "not_before": "Válido desde",
             "request_id": "ID de solicitud",
             "resource": "Recurso",

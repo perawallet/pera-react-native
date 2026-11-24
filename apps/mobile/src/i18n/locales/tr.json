@@ -3642,6 +3642,8 @@
             "site_mismatch_body": "Mesaj şu alan adında oturum açar: {{domain}}. Ancak istek şu siteden geliyor: {{site}}. Yalnızca ikisine de güveniyorsan onayla.",
             "other_address_note": "Mesajdaki adres imzalayan hesap değil: {{address}}",
             "other_chain_note": "Mesajdaki ağ bu isteğin ağı değil: {{chain}}. Oturum açmak işlem göndermez.",
+            "other_chain_id_note": "Mesajdaki zincir kimliği bu isteğin ağı değil: {{chainId}}. Oturum açmak işlem göndermez.",
+            "statement_label": "{{domain}} sitesinden mesaj",
             "not_before": "Geçerlilik başlangıcı",
             "request_id": "İstek kimliği",
             "resource": "Kaynak",

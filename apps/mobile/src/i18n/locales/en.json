@@ -3642,6 +3642,8 @@
             "site_mismatch_body": "The message signs you in to {{domain}}, but the request comes from {{site}}. Only approve if you trust both.",
             "other_address_note": "The message names {{address}}, not the account signing it.",
             "other_chain_note": "The message names {{chain}}, not the network this request is for. Signing in sends no transaction.",
+            "other_chain_id_note": "The message names chain ID {{chainId}}, not the network this request is for. Signing in sends no transaction.",
+            "statement_label": "Message from {{domain}}",
             "not_before": "Valid from",
             "request_id": "Request ID",
             "resource": "Resource",

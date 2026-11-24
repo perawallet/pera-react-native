@@ -192,6 +192,23 @@ describe('useSignInMessageDetails', () => {
         )
     })
 
+    it("labels the statement as the site's own text", () => {
+        expect(render(signIn()).statement).toBeUndefined()
+        expect(
+            render(
+                signIn({
+                    message: {
+                        ...signIn().message,
+                        statement: 'Verified by Pera',
+                    },
+                }),
+            ).statement,
+        ).toEqual({
+            label: `signing.sign_in.statement_label ${JSON.stringify({ domain: 'opensea.io' })}`,
+            text: 'Verified by Pera',
+        })
+    })
+
     it('shows no notes for a message that matches the request', () => {
         const { otherAddressNote, otherChainNote } = render(signIn())
 
@@ -239,7 +256,9 @@ describe('useSignInMessageDetails', () => {
         const { unknownChainRow, otherChainNote } = render(value)
 
         expect(unknownChainRow?.value).toBe('987654321')
-        expect(otherChainNote).toContain('signing.sign_in.chain_id 987654321')
+        expect(otherChainNote).toBe(
+            `signing.sign_in.other_chain_id_note ${JSON.stringify({ chainId: '987654321' })}`,
+        )
     })
 })
 

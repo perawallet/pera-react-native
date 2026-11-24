@@ -3658,6 +3658,8 @@
             "site_mismatch_body": "A mensagem faz seu login em {{domain}}, mas a solicitação vem de {{site}}. Aprove somente se você confiar em ambos.",
             "other_address_note": "A mensagem indica {{address}}, não a conta que está assinando.",
             "other_chain_note": "A mensagem indica {{chain}}, não a rede desta solicitação. Fazer login não envia nenhuma transação.",
+            "other_chain_id_note": "A mensagem indica o ID de cadeia {{chainId}}, não a rede desta solicitação. Fazer login não envia nenhuma transação.",
+            "statement_label": "Mensagem de {{domain}}",
             "not_before": "Válido a partir de",
             "request_id": "ID da solicitação",
             "resource": "Recurso",

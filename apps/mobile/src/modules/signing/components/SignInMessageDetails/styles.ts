@@ -23,5 +23,6 @@ export const useStyles = makeStyles(theme => ({
         backgroundColor: theme.colors.layerGrayLighter,
         borderRadius: theme.borderRadius.md,
         padding: theme.spacing.md,
+        gap: theme.spacing.xs,
     },
 }))
