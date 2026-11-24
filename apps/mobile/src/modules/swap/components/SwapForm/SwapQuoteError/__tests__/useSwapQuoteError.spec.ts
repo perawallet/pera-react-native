@@ -94,14 +94,14 @@ describe('useSwapQuoteError', () => {
         )
     })
 
-    it('says the balance after fees is short of a minimum the account cannot reach', () => {
+    it('says the available balance is short of a minimum the account cannot reach', () => {
         const { message } = render(
             { kind: 'amount-too-low', minimum: new Decimal(1_000_001) },
             true,
         )
 
         expect(message).toBe(
-            `swap.quote.amount_too_low_after_fees|${JSON.stringify({
+            `swap.quote.amount_too_low_above_balance|${JSON.stringify({
                 network: 'Ethereum',
                 amount: '1.000001',
                 unit: 'USDC',

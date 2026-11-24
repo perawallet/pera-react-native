@@ -105,7 +105,7 @@ type UseSwapFormResult = {
     isLocalCurrencyInput: boolean
     /** The router refused the amount as too small, named a minimum, and the account can spend at least that. */
     canUseMinimum: boolean
-    /** The router's minimum is more than the account can spend after fees. */
+    /** The router's minimum is more than the account can spend. */
     isMinimumAboveSpendable: boolean
     handleRetryQuote: () => void
     handleUseMinimum: () => void

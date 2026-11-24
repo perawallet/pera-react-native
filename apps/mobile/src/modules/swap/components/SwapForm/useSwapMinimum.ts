@@ -38,7 +38,7 @@ type UseSwapMinimumResult = {
     liftToMinimum: (amount: Decimal) => Decimal
     /** The router refused the amount as too small, named a minimum, and the account can spend at least that. */
     canUseMinimum: boolean
-    /** The router refused the amount as too small, and what the account can spend after fees falls short of its minimum. */
+    /** The router refused the amount as too small, and what the account can spend falls short of its minimum. */
     isMinimumAboveSpendable: boolean
     handleUseMinimum: () => void
 }

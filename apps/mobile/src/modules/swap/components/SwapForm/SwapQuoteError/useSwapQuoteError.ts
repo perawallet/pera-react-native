@@ -34,7 +34,7 @@ export type UseSwapQuoteErrorParams = {
     payAssetId: string
     receiveScope: ChainScope
     receiveAssetId: string
-    /** The account can't reach the minimum even with everything it can spend after fees. */
+    /** The account can't reach the minimum even with everything it can spend. */
     isMinimumAboveSpendable?: boolean
 }
 
@@ -110,7 +110,7 @@ export const useSwapQuoteError = ({
                     return t('swap.quote.amount_too_low_unknown', { network })
                 }
                 if (isMinimumAboveSpendable) {
-                    return t('swap.quote.amount_too_low_after_fees', {
+                    return t('swap.quote.amount_too_low_above_balance', {
                         network,
                         amount: limit.limit,
                         unit: limit.unit,

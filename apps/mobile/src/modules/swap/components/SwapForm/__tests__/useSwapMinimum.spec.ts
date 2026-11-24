@@ -112,7 +112,7 @@ describe('useSwapMinimum', () => {
     })
 
     describe('isMinimumAboveSpendable', () => {
-        it('flags a refused minimum above what the account can spend after fees', () => {
+        it('flags a refused minimum above what the account can spend', () => {
             expect(
                 render({ spendableMax: new Decimal(8_999_999) })
                     .isMinimumAboveSpendable,
