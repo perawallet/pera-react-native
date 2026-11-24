@@ -927,11 +927,13 @@ describe('createEip1193ConnectionHandler', () => {
                     metadata: { ...connection.metadata, approvedChainIds },
                 }
             }
+            const MOBILE = { shouldProposeEveryServedChain: true }
 
             it('switches at once without raising a prompt', async () => {
-                const { transport, registry, messages, store } = setup([
-                    approvedOn('ethereum', ['ethereum', 'base']),
-                ])
+                const { transport, registry, messages, store } = setup(
+                    [approvedOn('ethereum', ['ethereum', 'base'])],
+                    MOBILE,
+                )
                 await registry.initialize()
 
                 expect(resultOf(await switchTo(transport, '0x2105'))).toBeNull()
@@ -947,9 +949,10 @@ describe('createEip1193ConnectionHandler', () => {
             })
 
             it('switches at once through wallet_addEthereumChain too', async () => {
-                const { transport, registry, messages } = setup([
-                    approvedOn('ethereum', ['ethereum', 'base']),
-                ])
+                const { transport, registry, messages } = setup(
+                    [approvedOn('ethereum', ['ethereum', 'base'])],
+                    MOBILE,
+                )
                 await registry.initialize()
 
                 const response = await transport.send(
@@ -963,9 +966,10 @@ describe('createEip1193ConnectionHandler', () => {
             })
 
             it('still asks when no granted account signs on it any more', async () => {
-                const { transport, registry, messages, accounts } = setup([
-                    approvedOn('ethereum', ['ethereum', 'base']),
-                ])
+                const { transport, registry, messages, accounts } = setup(
+                    [approvedOn('ethereum', ['ethereum', 'base'])],
+                    MOBILE,
+                )
                 accounts.base = [ADDR_Y]
                 await registry.initialize()
 
@@ -978,7 +982,7 @@ describe('createEip1193ConnectionHandler', () => {
             it('still asks while the wallet is locked, so no accounts are pushed unprompted', async () => {
                 const { transport, registry, messages, store } = setup(
                     [approvedOn('ethereum', ['ethereum', 'base'])],
-                    { isWalletLocked: () => true },
+                    { ...MOBILE, isWalletLocked: () => true },
                 )
                 await registry.initialize()
 
@@ -995,7 +999,7 @@ describe('createEip1193ConnectionHandler', () => {
             it('still asks when the site warning has worsened since it connected', async () => {
                 const { transport, registry, messages } = setup(
                     [approvedOn('ethereum', ['ethereum', 'base'])],
-                    { siteWarningOf: async () => 'blocked' },
+                    { ...MOBILE, siteWarningOf: async () => 'blocked' },
                 )
                 await registry.initialize()
 
@@ -1006,9 +1010,10 @@ describe('createEip1193ConnectionHandler', () => {
             })
 
             it('asks for a chain the site was never approved for, then remembers it', async () => {
-                const { transport, registry, messages, store } = setup([
-                    approvedOn('ethereum', ['ethereum']),
-                ])
+                const { transport, registry, messages, store } = setup(
+                    [approvedOn('ethereum', ['ethereum'])],
+                    MOBILE,
+                )
                 await registry.initialize()
                 const pending = switchTo(transport, '0x2105')
                 await flush()
@@ -1026,9 +1031,10 @@ describe('createEip1193ConnectionHandler', () => {
             })
 
             it('keeps approvedChainIds when the user declines the prompt', async () => {
-                const { transport, registry, messages, store } = setup([
-                    approvedOn('ethereum', ['ethereum']),
-                ])
+                const { transport, registry, messages, store } = setup(
+                    [approvedOn('ethereum', ['ethereum'])],
+                    MOBILE,
+                )
                 await registry.initialize()
                 const pending = switchTo(transport, '0x2105')
                 await flush()
@@ -1042,10 +1048,37 @@ describe('createEip1193ConnectionHandler', () => {
                 ).toEqual(['ethereum'])
             })
 
-            it('treats a record without approvedChainIds as approved for its own chain only', async () => {
-                const { transport, registry, messages } = setup([
-                    connectedOn('ethereum'),
+            it('still asks on a surface that does not offer every chain, but records the approval', async () => {
+                const { transport, registry, messages, store } = setup([
+                    approvedOn('ethereum', ['ethereum', 'base']),
                 ])
+                await registry.initialize()
+
+                for (const hexChainId of ['0x2105', '0x1']) {
+                    const pending = switchTo(transport, hexChainId)
+                    await flush()
+                    const message = messages[messages.length - 1]
+                    if (message.kind !== 'request') {
+                        throw new Error('not a request')
+                    }
+                    await message.respond({ type: 'switch-network' })
+                    await pending
+                }
+
+                expect(messages).toHaveLength(2)
+                expect(
+                    [
+                        ...((await store.get(ID))?.metadata.approvedChainIds ??
+                            []),
+                    ].sort(),
+                ).toEqual(['base', 'ethereum'])
+            })
+
+            it('treats a record without approvedChainIds as approved for its own chain only', async () => {
+                const { transport, registry, messages } = setup(
+                    [connectedOn('ethereum')],
+                    MOBILE,
+                )
                 await registry.initialize()
 
                 void switchTo(transport, '0x2105')

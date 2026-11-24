@@ -129,14 +129,19 @@ export const eip1193ProviderJS = (bridgeToken: string) => webViewScript`
 
     // A WebView has no tab favicon for native to read (the extension's script
     // never sends icons), so connect requests carry the page's own links.
+    // /favicon.ico always goes last: native keeps only same-origin entries, and
+    // pages often list only CDN-hosted icons. Seven links plus it stays within
+    // the transport's cap of eight, which would otherwise cut it.
     function pageIcons() {
         try {
             var links = document.querySelectorAll('link[rel~="icon"], link[rel~="apple-touch-icon"]');
+            var fallback = location.origin + '/favicon.ico';
             var hrefs = [];
-            for (var i = 0; i < links.length && hrefs.length < 8; i += 1) {
-                if (links[i].href) { hrefs.push(links[i].href); }
+            for (var i = 0; i < links.length && hrefs.length < 7; i += 1) {
+                if (links[i].href && links[i].href !== fallback) { hrefs.push(links[i].href); }
             }
-            return hrefs.length > 0 ? hrefs : [location.origin + '/favicon.ico'];
+            hrefs.push(fallback);
+            return hrefs;
         } catch (_) {
             return [];
         }

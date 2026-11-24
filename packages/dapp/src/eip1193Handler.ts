@@ -106,7 +106,9 @@ export type Eip1193HandlerDeps = {
     /**
      * Set by a surface whose connect sheet lists every requested chain. A
      * connect proposal then offers every served chain and requires only the
-     * site's current one. Default false.
+     * site's current one, and a switch to an approved chain answers without a
+     * prompt. Default false: every switch prompts, because that surface shows
+     * no list of approved chains to review or revoke.
      */
     shouldProposeEveryServedChain?: boolean
     now?: () => number
@@ -806,6 +808,7 @@ export const createEip1193ConnectionHandler = (
         // site warning still prompts: switchSite pushes accounts, which the
         // prompt's unlock would otherwise gate.
         const isPreApproved =
+            deps.shouldProposeEveryServedChain === true &&
             eip1193ApprovedChainIdsOf(connection).includes(
                 target.scope.chainId,
             ) &&

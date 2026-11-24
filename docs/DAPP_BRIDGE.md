@@ -260,8 +260,10 @@ signs; anything else asks, as for a WalletConnect v2 session that does not hold
 the chain (see CONNECTIONS.md). The approved chains live on the record
 (`metadata.approvedChainIds`); a record without the field counts as approved for
 its current chain only. Only the mobile handler offers every served chain at
-connect (`shouldProposeEveryServedChain`), because the extension's approval
-window shows one chain.
+connect and skips the prompt for approved chains
+(`shouldProposeEveryServedChain`), because the extension's approval window
+shows one chain and has no list of approved chains to review or revoke; the
+extension still records approved switches but prompts for every one.
 
 ### Routing
 

@@ -4181,8 +4181,8 @@
         },
         "switch_network": {
             "title": "Netzwerkzugriff erlauben?",
-            "body": "{{name}} möchte zu {{chain}} wechseln.",
-            "body_with_network": "{{name}} möchte zu {{chain}} {{network}} wechseln.",
+            "body": "{{name}} möchte deine Konten auf {{chain}} verwenden.",
+            "body_with_network": "{{name}} möchte deine Konten auf {{chain}} {{network}} verwenden.",
             "confirm": "Erlauben"
         },
         "settings": {

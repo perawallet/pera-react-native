@@ -4189,8 +4189,8 @@
         },
         "switch_network": {
             "title": "Autoriser l’accès au réseau ?",
-            "body": "{{name}} souhaite passer à {{chain}}.",
-            "body_with_network": "{{name}} souhaite passer à {{chain}} {{network}}.",
+            "body": "{{name}} souhaite utiliser vos comptes sur {{chain}}.",
+            "body_with_network": "{{name}} souhaite utiliser vos comptes sur {{chain}} {{network}}.",
             "confirm": "Autoriser"
         },
         "settings": {
