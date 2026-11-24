@@ -15,7 +15,7 @@ import type {
     ChainScope,
     TokenApproval,
 } from '@perawallet/wallet-core-chain-contract'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { transferChainAdapters } from '../transfer-adapter'
 import { getTokenApprovalsQueryKey } from './querykeys'
 
@@ -28,6 +28,7 @@ export type UseTokenApprovalsQueryResult = {
     data: TokenApproval[]
     isPending: boolean
     isError: boolean
+    error: Nullable<Error>
     refetch: () => void
 }
 
@@ -61,6 +62,7 @@ export const useTokenApprovalsQuery = ({
         // A disabled query reports pending too.
         isPending: isEnabled && query.isPending,
         isError: query.isError,
+        error: query.error ?? null,
         refetch: () => void query.refetch(),
     }
 }
