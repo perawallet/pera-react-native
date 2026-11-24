@@ -10,6 +10,10 @@
  limitations under the License
  */
 
+import {
+    unionTokenSets,
+    type KeptTokens,
+} from '@perawallet/wallet-core-accounts'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     BACKUP_SETTINGS_FIELDS,
@@ -59,7 +63,17 @@ export const observeLocalSettings = (
             setField(next, field, { value, updatedAt: 0, observed })
             hasChanged = true
         } else if (current.observed === null) {
-            setField(next, field, { ...current, observed })
+            // The kept set only grows, so anything past the applied union was
+            // kept while the sync ran and still has to be pushed.
+            if (
+                field === 'keptTokens' &&
+                observed !== canonicalJson(current.value)
+            ) {
+                setField(next, field, { value, updatedAt: now, observed })
+                hasChanged = true
+            } else {
+                setField(next, field, { ...current, observed })
+            }
         } else if (current.observed !== observed) {
             setField(next, field, { value, updatedAt: now, observed })
             hasChanged = true
@@ -101,6 +115,14 @@ export const mergeRemoteSettings = (
             return
         }
 
+        if (field === 'keptTokens' && mine !== undefined) {
+            mergeKept(
+                mine as FieldState<'keptTokens'>,
+                theirs as { value: KeptTokens; updatedAt: number },
+            )
+            return
+        }
+
         if (mine !== undefined && mine.updatedAt > theirs.updatedAt) {
             setField(next, field, mine)
             isRemoteBehind = true
@@ -118,6 +140,26 @@ export const mergeRemoteSettings = (
             observed: isNewValue ? null : mine.observed,
         })
         if (isNewValue) toApply[field] = theirs.value
+    }
+
+    // Kept tokens only ever grow, so both sides' keeps are united whichever is
+    // newer; a pick would drop the other device's. Pushed back until the
+    // server holds the union, then settled.
+    const mergeKept = (
+        mine: FieldState<'keptTokens'>,
+        theirs: { value: KeptTokens; updatedAt: number },
+    ): void => {
+        const union = unionTokenSets(mine.value, theirs.value)
+        const isNewToMine = canonicalJson(union) !== canonicalJson(mine.value)
+        setField(next, 'keptTokens', {
+            value: union,
+            updatedAt: Math.max(mine.updatedAt, theirs.updatedAt),
+            observed: isNewToMine ? null : mine.observed,
+        })
+        if (isNewToMine) toApply.keptTokens = union
+        if (canonicalJson(union) !== canonicalJson(theirs.value)) {
+            isRemoteBehind = true
+        }
     }
 
     BACKUP_SETTINGS_FIELDS.forEach(merge)

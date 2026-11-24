@@ -27,6 +27,7 @@ import {
 import { registerFakeAssetsAdapter } from '../../__tests__/fakeAssetsChain'
 import {
     upsertAssets,
+    upsertNodeAssets,
     getAssetsByIds,
     updateAssetPeraMetadata,
     deleteAssets,
@@ -124,6 +125,43 @@ describe('asset metadata repository', () => {
             expect(result[0].decimals).toBe(6)
             expect(result[0].totalSupply.toString()).toBe('10000000000')
             expect(result[0].creator.address).toBe('ABC123')
+        })
+
+        it('reads only unverified and untiered rows when asked for unvetted ones', async () => {
+            const tiered = (
+                assetId: string,
+                verificationTier: 'verified' | 'unverified' | 'suspicious',
+            ) =>
+                makeAsset({
+                    assetId,
+                    peraMetadata: { isDeleted: false, verificationTier },
+                })
+            await upsertAssets({
+                db,
+                items: [
+                    tiered('1', 'verified'),
+                    tiered('2', 'unverified'),
+                    tiered('3', 'suspicious'),
+                ],
+                scope: MAINNET_SCOPE,
+            })
+            await upsertNodeAssets({
+                db,
+                items: [makeAsset({ assetId: '4', peraMetadata: undefined })],
+                scope: MAINNET_SCOPE,
+            })
+
+            const result = await getAssetsByIds({
+                db,
+                assetIds: ['1', '2', '3', '4'],
+                scope: MAINNET_SCOPE,
+                isUnvettedOnly: true,
+            })
+
+            expect(result.map(asset => asset.assetId).sort()).toEqual([
+                '2',
+                '4',
+            ])
         })
 
         it('stores no chain data and reads an empty creator when the chain keeps none', async () => {

@@ -12,10 +12,15 @@
 
 import { useCallback, useMemo } from 'react'
 import {
+    canHideHolding,
     chainAccountOf,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useAssetsQuery, useNativeAsset } from '@perawallet/wallet-core-assets'
+import {
+    PeraAssetVerificationTier,
+    useAssetsQuery,
+    useNativeAsset,
+} from '@perawallet/wallet-core-assets'
 import { imitatedCurrencyOf } from '@perawallet/wallet-core-currencies'
 import {
     i18nKey,
@@ -64,12 +69,15 @@ export type UseTransactionListItemParams = (
     | { record: TransactionRecord }
 ) & { suspectedPoisoning?: SuspectedPoisoning }
 
+/** A visible amount, flagged when its token is one Pera calls suspicious on a chain that receives tokens unasked. */
+export type RowAmount = AmountDisplay & { isSuspicious: boolean }
+
 export type UseTransactionListItemResult = {
     iconName: IconName
     title: string
     subtitle: Nullable<string>
     subtitleEllipsizeMode: 'middle' | 'tail'
-    amounts: AmountDisplay[]
+    amounts: RowAmount[]
     /** Number of impacts hidden beyond {@link MAX_VISIBLE_AMOUNTS}, for "+N more". */
     amountsOverflowCount: number
     /** The network fee in the native asset, only for a row the account paid for that shows no other amount. */
@@ -82,6 +90,8 @@ export type UseTransactionListItemResult = {
     /** Long-press copies the transaction id (with the shared copied toast). */
     handleLongPress: () => void
     isSuspectedPoisoning: boolean
+    /** A visible amount moves a token Pera flags suspicious on a chain that receives tokens unasked. */
+    isSuspiciousToken: boolean
     /** Code imitated by the first visible amount whose unit name passes itself off as a currency (its chain's native ticker or a fiat code), or null. */
     imitatedCurrency: Nullable<string>
 }
@@ -147,14 +157,21 @@ export const useTransactionListItem = (
     )
     const amounts = useMemo(
         () =>
-            visibleAmounts.map(amount =>
-                toAmountDisplay(
-                    amount,
-                    storedAssets.get(amount.assetRef.assetId),
-                ),
-            ),
+            visibleAmounts.map((amount): RowAmount => {
+                const { assetId, chainId } = amount.assetRef
+                const stored = storedAssets.get(assetId)
+                return {
+                    ...toAmountDisplay(amount, stored),
+                    isSuspicious:
+                        stored?.peraMetadata?.verificationTier ===
+                            PeraAssetVerificationTier.suspicious &&
+                        canHideHolding(chainId, assetId),
+                }
+            }),
         [visibleAmounts, storedAssets],
     )
+
+    const isSuspiciousToken = amounts.some(amount => amount.isSuspicious)
 
     const imitatedCurrency = useMemo<Nullable<string>>(() => {
         for (const a of amounts) {
@@ -225,6 +242,7 @@ export const useTransactionListItem = (
         handlePress: record ? recordPress : handleTransactionPress,
         handleLongPress,
         isSuspectedPoisoning: !!suspectedPoisoning,
+        isSuspiciousToken,
         imitatedCurrency,
     }
 }

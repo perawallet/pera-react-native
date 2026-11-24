@@ -30,6 +30,9 @@ export const useStyles = makeStyles(theme => {
         title: {
             color: theme.colors.textMain,
         },
+        titleMuted: {
+            color: theme.colors.textGray,
+        },
         subtitle: {
             color: theme.colors.textGray,
             marginTop: theme.spacing.xxs,
@@ -41,6 +44,10 @@ export const useStyles = makeStyles(theme => {
             marginTop: theme.spacing.xxs,
         },
         amount,
+        amountMuted: {
+            ...amount,
+            color: theme.colors.textGray,
+        },
         amountPositive: {
             color: theme.colors.positive,
         },

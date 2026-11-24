@@ -12,10 +12,12 @@
 
 import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { useHiddenTokensStore, type HiddenTokens } from '../store/hiddenTokens'
+import { useHiddenTokensStore } from '../store/hiddenTokens'
+import { useKeptTokensStore } from '../store/keptTokens'
+import type { TokenSets } from '../store/tokenSets'
 import { invalidateAccountQueriesForAddresses } from './querykeys'
 
-const addressesOf = (hiddenTokens: HiddenTokens): Set<string> =>
+const addressesOf = (hiddenTokens: TokenSets): Set<string> =>
     new Set(
         Object.values(hiddenTokens).flatMap(byAddress =>
             Object.keys(byAddress),
@@ -23,7 +25,7 @@ const addressesOf = (hiddenTokens: HiddenTokens): Set<string> =>
     )
 
 const listsOf = (
-    hiddenTokens: HiddenTokens,
+    hiddenTokens: TokenSets,
     address: string,
 ): Record<string, string> =>
     Object.fromEntries(
@@ -35,8 +37,8 @@ const listsOf = (
 
 /** Addresses whose hidden ids differ under any scope. */
 export const changedHiddenTokenAddresses = (
-    previous: HiddenTokens,
-    next: HiddenTokens,
+    previous: TokenSets,
+    next: TokenSets,
 ): string[] =>
     [...new Set([...addressesOf(previous), ...addressesOf(next)])].filter(
         address => {
@@ -52,23 +54,30 @@ export const changedHiddenTokenAddresses = (
     )
 
 /**
- * The holdings reads and totals are cached and read the hidden set when they
- * run, so a change to it, from this device or from a backup import, has to
- * reach them.
+ * The holdings reads and totals are cached and read the hidden and kept sets
+ * when they run, so a change to either, from this device or from a backup
+ * import, has to reach them.
  */
 export const useHiddenTokensInvalidation = (): void => {
     const queryClient = useQueryClient()
-    useEffect(
-        () =>
-            useHiddenTokensStore.subscribe((state, previous) => {
-                const changed = changedHiddenTokenAddresses(
-                    previous.hiddenTokens,
-                    state.hiddenTokens,
-                )
-                invalidateAccountQueriesForAddresses(queryClient, changed, {
-                    includeMultiAccountKeys: true,
-                })
-            }),
-        [queryClient],
-    )
+    useEffect(() => {
+        const invalidate = (previous: TokenSets, next: TokenSets) =>
+            invalidateAccountQueriesForAddresses(
+                queryClient,
+                changedHiddenTokenAddresses(previous, next),
+                { includeMultiAccountKeys: true },
+            )
+        const unsubscribeHidden = useHiddenTokensStore.subscribe(
+            (state, previous) =>
+                invalidate(previous.hiddenTokens, state.hiddenTokens),
+        )
+        const unsubscribeKept = useKeptTokensStore.subscribe(
+            (state, previous) =>
+                invalidate(previous.keptTokens, state.keptTokens),
+        )
+        return () => {
+            unsubscribeHidden()
+            unsubscribeKept()
+        }
+    }, [queryClient])
 }

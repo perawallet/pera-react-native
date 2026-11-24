@@ -19,10 +19,12 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import {
     getAssetById,
+    getAssetsByIds,
     getStaleOrMissingAssetIds,
     PeraAssetVerificationTier,
     upsertAssets,
     upsertNodeAssets,
+    upsertPeraAssets,
     type AssetGroup,
     type AssetSearchPage,
     type AssetsChainAdapter,
@@ -63,6 +65,7 @@ import {
     fetchTokenSearchPage,
 } from './api/endpoints'
 import { cachedWhitelist, type ListedTokens } from './api/whitelist-cache'
+import { spamCheckFor, type SpamCheck } from './spam-names'
 import {
     isDescribedNftItem,
     toAssetMetadata,
@@ -110,6 +113,15 @@ const asSuspicious = (asset: PeraAsset): PeraAsset => ({
     },
 })
 
+const asUnflagged = (asset: PeraAsset): PeraAsset => ({
+    ...asset,
+    peraMetadata: {
+        isDeleted: false,
+        ...asset.peraMetadata,
+        verificationTier: PeraAssetVerificationTier.unverified,
+    },
+})
+
 // The backend rejects the whole batch for an erc20 id at the zero address,
 // its native coin's contract.
 const isTokenAddress = (address: string): boolean => address !== zeroAddress
@@ -150,14 +162,84 @@ const readOnChain = async (
     )
 }
 
+const spamCheck = (
+    chain: EvmChain,
+    listedTokens: ListedTokens,
+    scope: ChainScope,
+): SpamCheck =>
+    spamCheckFor(listedTokens, chain.nativeAsset.unitName ?? '', scope)
+
+const flagSpam = async (
+    assets: PeraAsset[],
+    isSpam: SpamCheck,
+    hasBackendRecord: boolean,
+): Promise<PeraAsset[]> =>
+    Promise.all(
+        assets.map(async asset =>
+            (await isSpam(asset, hasBackendRecord))
+                ? asSuspicious(asset)
+                : asset,
+        ),
+    )
+
+const isFlagged = (asset: PeraAsset): boolean =>
+    asset.peraMetadata?.verificationTier ===
+    PeraAssetVerificationTier.suspicious
+
+// After the backend's "no record" (`hasBackendAnswered`), a stored suspicious
+// tier can only be an old name flag; otherwise it may be the backend's verdict.
 const persistOnChain = async (
     ctx: ChainContext,
     chain: EvmChain,
     assetIds: string[],
     scope: ChainScope,
+    isSpam: SpamCheck,
+    hasBackendAnswered: boolean,
 ): Promise<void> => {
-    const items = await readOnChain(ctx, chain, assetIds, scope)
-    if (items.length > 0) await upsertNodeAssets({ items, scope })
+    const items = await flagSpam(
+        await readOnChain(ctx, chain, assetIds, scope),
+        isSpam,
+        false,
+    )
+    const plain = items.filter(asset => !isFlagged(asset))
+    const wasFlagged = new Set(
+        hasBackendAnswered
+            ? (
+                  await getAssetsByIds({
+                      assetIds: plain.map(asset => asset.assetId),
+                      scope,
+                  })
+              )
+                  .filter(isFlagged)
+                  .map(asset => asset.assetId)
+            : [],
+    )
+    const full = items.flatMap(asset => {
+        if (isFlagged(asset)) return [asset]
+        return wasFlagged.has(asset.assetId) ? [asUnflagged(asset)] : []
+    })
+    const nodeOnly = plain.filter(asset => !wasFlagged.has(asset.assetId))
+    if (full.length > 0) await upsertAssets({ items: full, scope })
+    if (nodeOnly.length > 0) await upsertNodeAssets({ items: nodeOnly, scope })
+}
+
+// A token cached before its name was checked stays fresh for the TTL; its
+// stored name is enough to flag it now, without a request. Whether the backend
+// knew it isn't stored, so the symbol rule waits for the token's next sync.
+const reflagStored = async (
+    tokenIds: string[],
+    scope: ChainScope,
+    isSpam: SpamCheck,
+): Promise<void> => {
+    if (tokenIds.length === 0) return
+    const stored = await getAssetsByIds({
+        assetIds: tokenIds,
+        scope,
+        isUnvettedOnly: true,
+    })
+    const items = (await flagSpam(stored, isSpam, true)).filter(isFlagged)
+    // Pera's half alone, so the chain half keeps its own freshness.
+    if (items.length > 0) await upsertPeraAssets({ items, scope })
 }
 
 // Both halves, so the suspicious tier is persisted, not just the intrinsics.
@@ -252,6 +334,7 @@ const syncTokens = async (
     chain: EvmChain,
     tokenIds: string[],
     scope: ChainScope,
+    isSpam: SpamCheck,
 ): Promise<void> => {
     if (tokenIds.length === 0) return
     const stale = await getStaleOrMissingAssetIds({
@@ -263,10 +346,15 @@ const syncTokens = async (
         // out the metadata TTL once the backend adds one.
         recheckMissingLogo: true,
     })
+    await reflagStored(
+        tokenIds.filter(id => !stale.includes(id)),
+        scope,
+        isSpam,
+    )
     if (stale.length === 0) return
 
     if (!hasServices(ctx, scope, ASSETS_SERVICE)) {
-        await persistOnChain(ctx, chain, stale, scope)
+        await persistOnChain(ctx, chain, stale, scope, isSpam, false)
         return
     }
 
@@ -292,15 +380,26 @@ const syncTokens = async (
         })
         known.push(...batchKnown)
     }
-    await persistWithChainDecimals(ctx, chain, known, scope)
-    if (unknown.length > 0) await persistOnChain(ctx, chain, unknown, scope)
+    await persistWithChainDecimals(
+        ctx,
+        chain,
+        await flagSpam(known, isSpam, true),
+        scope,
+    )
+    if (unknown.length > 0) {
+        await persistOnChain(ctx, chain, unknown, scope, isSpam, true)
+    }
     if (quarantined.length > 0) {
         await persistQuarantined(ctx, chain, quarantined, scope)
     }
 }
 
 const syncAssets =
-    (ctx: ChainContext, chain: EvmChain): AssetsChainAdapter['syncAssets'] =>
+    (
+        ctx: ChainContext,
+        chain: EvmChain,
+        listedTokens: ListedTokens,
+    ): AssetsChainAdapter['syncAssets'] =>
     async (refs, scope) => {
         eip155ChainIdOf(scope, chain)
         const assetIds = refs.map(ref => evmAssetIdOf(chain, ref))
@@ -308,7 +407,13 @@ const syncAssets =
             assetIds.includes(NATIVE_ASSET_ID)
                 ? syncNativeAsset(ctx, chain, scope)
                 : undefined,
-            syncTokens(ctx, chain, toTokenIds(assetIds), scope),
+            syncTokens(
+                ctx,
+                chain,
+                toTokenIds(assetIds),
+                scope,
+                spamCheck(chain, listedTokens, scope),
+            ),
         ])
     }
 
@@ -370,6 +475,8 @@ type TokenRead = {
     asset: PeraAsset
     /** Which halves a caller that caches may store. */
     cache: 'both' | 'node' | 'none'
+    /** False only on a blank item or no assets service, as syncTokens reads "no record"; a failed request or an unreadable row isn't one. */
+    hasBackendRecord: boolean
 }
 
 // Pera's opinion (tier, quarantine) beside the chain's intrinsics; writes
@@ -391,16 +498,25 @@ const readToken = async (
             ? toAssetMetadata(tokenId, pera.value[0])
             : undefined
     const fromPera = item?.asset ?? null
+    const hasNoRecord =
+        pera.status === 'fulfilled' &&
+        (pera.value.length === 0 ||
+            (!!item && !fromPera && !item.isQuarantined))
+    const hasBackendRecord = !hasNoRecord
     if (fromNode.status === 'rejected') {
         // A quarantined token has no backend record to fall back on.
         if (!fromPera) throw fromNode.reason
         // Unverified decimals: caching them would keep them for the TTL.
-        return { asset: fromPera, cache: 'none' }
+        return { asset: fromPera, cache: 'none', hasBackendRecord }
     }
     if (item?.isQuarantined) {
         // Both halves, as in syncAssets: a node row alone would read as
         // fresh and render without the tier.
-        return { asset: asSuspicious(fromNode.value), cache: 'both' }
+        return {
+            asset: asSuspicious(fromNode.value),
+            cache: 'both',
+            hasBackendRecord,
+        }
     }
     return {
         asset: fromPera
@@ -409,6 +525,24 @@ const readToken = async (
         // Without Pera's half the row reads as fresh for the TTL, so the
         // token's logo and tier would stay out of the store.
         cache: fromPera ? 'both' : 'node',
+        hasBackendRecord,
+    }
+}
+
+// Even a token the chain answers alone: its name is all the check needs.
+const readCheckedToken = async (
+    ctx: ChainContext,
+    chain: EvmChain,
+    tokenId: string,
+    scope: ChainScope,
+    isSpam: SpamCheck,
+): Promise<TokenRead> => {
+    const read = await readToken(ctx, chain, tokenId, scope)
+    if (!(await isSpam(read.asset, read.hasBackendRecord))) return read
+    return {
+        ...read,
+        asset: asSuspicious(read.asset),
+        cache: read.cache === 'none' ? 'none' : 'both',
     }
 }
 
@@ -416,6 +550,7 @@ const getAssetMetadata =
     (
         ctx: ChainContext,
         chain: EvmChain,
+        listedTokens: ListedTokens,
     ): AssetsChainAdapter['getAssetMetadata'] =>
     async (ref, scope) => {
         eip155ChainIdOf(scope, chain)
@@ -428,7 +563,13 @@ const getAssetMetadata =
         if (!isTokenAddress(tokenId)) {
             throw new InvalidAddressError({ address: assetId })
         }
-        const { asset, cache } = await readToken(ctx, chain, tokenId, scope)
+        const { asset, cache } = await readCheckedToken(
+            ctx,
+            chain,
+            tokenId,
+            scope,
+            spamCheck(chain, listedTokens, scope),
+        )
         // A failed cache write must not fail the read.
         if (cache === 'both') {
             await upsertAssets({ items: [asset], scope }).catch(() => undefined)
@@ -507,6 +648,7 @@ const matchesQuery =
 const unlistedToken = async (
     ctx: ChainContext,
     chain: EvmChain,
+    listedTokens: ListedTokens,
     query: string,
     scope: ChainScope,
 ): Promise<DisplayableAsset[]> => {
@@ -514,7 +656,10 @@ const unlistedToken = async (
     const tokenId = getAddress(query)
     if (!isTokenAddress(tokenId)) return []
     try {
-        return [(await readToken(ctx, chain, tokenId, scope)).asset]
+        const isSpam = spamCheck(chain, listedTokens, scope)
+        return [
+            (await readCheckedToken(ctx, chain, tokenId, scope, isSpam)).asset,
+        ]
     } catch {
         return []
     }
@@ -560,7 +705,7 @@ const searchListedTokens = async (
         results:
             matches.length > 0
                 ? matches
-                : await unlistedToken(ctx, chain, query, scope),
+                : await unlistedToken(ctx, chain, listedTokens, query, scope),
         nextCursor: undefined,
     }
 }
@@ -615,8 +760,8 @@ export const createEthereumAssetsAdapter = (
         priceProvider: 'pera',
         maxPriceIdsPerRequest: ASSETS_MAX_IDS,
         getNativeAsset: () => chain.nativeAsset,
-        syncAssets: syncAssets(ctx, chain),
-        getAssetMetadata: getAssetMetadata(ctx, chain),
+        syncAssets: syncAssets(ctx, chain, listedTokens),
+        getAssetMetadata: getAssetMetadata(ctx, chain, listedTokens),
         findCollectibleMetadata: async (ref, scope) => {
             eip155ChainIdOf(scope, chain)
             const assetId = evmAssetIdOf(chain, ref)

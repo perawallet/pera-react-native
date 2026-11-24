@@ -48,6 +48,7 @@ import {
     hiddenAssetIdsOf,
     useHiddenTokensStore,
 } from '../../store/hiddenTokens'
+import { keptAssetIdsOf, useKeptTokensStore } from '../../store/keptTokens'
 
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
@@ -69,6 +70,7 @@ const setup = () => {
 beforeEach(() => {
     vi.clearAllMocks()
     useHiddenTokensStore.getState().resetState()
+    useKeptTokensStore.getState().resetState()
     mocks.fetchAndPersistAssets.mockResolvedValue(undefined)
     mocks.getAssetById.mockResolvedValue({ assetId: USDC })
     mocks.fetchAndPersistAccount.mockResolvedValue({
@@ -100,6 +102,35 @@ describe('useAddTokenMutation', () => {
                 SCOPE,
             ),
         ).toEqual([])
+    })
+
+    it('keeps a token the user adds listed even if Pera flags it', async () => {
+        const { wrapper } = setup()
+        const { result } = renderHook(() => useAddTokenMutation(), { wrapper })
+
+        await act(async () => {
+            await result.current.addToken(VARIABLES)
+        })
+
+        expect(
+            keptAssetIdsOf(
+                useKeptTokensStore.getState().keptTokens,
+                VARIABLES.accountAddress,
+                SCOPE,
+            ),
+        ).toEqual([USDC])
+    })
+
+    it('keeps nothing when the token cannot be read', async () => {
+        mocks.getAssetById.mockResolvedValue(null)
+        const { wrapper } = setup()
+        const { result } = renderHook(() => useAddTokenMutation(), { wrapper })
+
+        await act(async () => {
+            await result.current.addToken(VARIABLES).catch(() => undefined)
+        })
+
+        expect(useKeptTokensStore.getState().keptTokens).toEqual({})
     })
 
     it('stores the metadata through the bulk sync before recording the token and its holding', async () => {
