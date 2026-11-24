@@ -11,10 +11,22 @@
  */
 
 import { create } from 'zustand'
-import { guardedPersist, registerStore } from '@perawallet/wallet-core-shared'
+import {
+    guardedPersist,
+    registerStore,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
+import type { MigrationStepVersions } from '@perawallet/wallet-extension-platform'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
 const STORE_NAME = 'migration-gate-store'
+
+/** A refused legacy wipe: it is re-checked once a step version moves or none of `addresses` blocks any more. */
+export type LegacyWipeBlock = {
+    versions: MigrationStepVersions
+    /** Migrated addresses whose key was held only as watch or was missing from the keystore. */
+    addresses: string[]
+}
 
 type MigrationGateState = {
     isChecking: boolean
@@ -22,9 +34,11 @@ type MigrationGateState = {
     dismissed: boolean
     hasStarted: boolean
     skipped: boolean
+    legacyWipeBlock: Nullable<LegacyWipeBlock>
 }
 
 type MigrationGateActions = {
+    setLegacyWipeBlock: (block: Nullable<LegacyWipeBlock>) => void
     markStarted: () => void
     setStatus: (input: { needsMigration: boolean }) => void
     dismiss: () => void
@@ -41,6 +55,7 @@ const initialState: MigrationGateState = {
     dismissed: false,
     hasStarted: false,
     skipped: false,
+    legacyWipeBlock: null,
 }
 
 export const useMigrationGateStore = create<MigrationGateStore>()(
@@ -53,15 +68,19 @@ export const useMigrationGateStore = create<MigrationGateStore>()(
             dismiss: () => set({ dismissed: true }),
             setSkipped: () => set({ skipped: true }),
             clearSkipped: () => set({ skipped: false }),
+            setLegacyWipeBlock: block => set({ legacyWipeBlock: block }),
             resetState: () => set(initialState),
         }),
         {
             name: STORE_NAME,
             storage: () => getProvider().keyValueStorage,
-            // Only `skipped` survives cold launches. Session-local fields
-            // (isChecking, needsMigration, dismissed, hasStarted) re-evaluate
-            // on every launch.
-            partialize: state => ({ skipped: state.skipped }),
+            // Only `skipped` and the wipe verdict survive cold launches.
+            // Session-local fields (isChecking, needsMigration, dismissed,
+            // hasStarted) re-evaluate on every launch.
+            partialize: state => ({
+                skipped: state.skipped,
+                legacyWipeBlock: state.legacyWipeBlock,
+            }),
         },
     ),
 )
