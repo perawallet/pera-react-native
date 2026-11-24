@@ -161,7 +161,6 @@ export const MessageSigningScreen = () => {
                             account={signerAccount}
                             showChevron={false}
                             chainId={scope?.chainId}
-                            showChainBadge={!!scope}
                         />
                     </PWView>
                 )}
