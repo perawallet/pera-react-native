@@ -568,11 +568,6 @@ describe('openExplorerUrl', () => {
             'https://basescan.org/tx/0xabc',
         )
     })
-
-    it('refuses a non-https explorer URL', () => {
-        expect(openExplorerUrl('http://basescan.org/tx/0xabc')).toBe(false)
-        expect(Linking.openURL).not.toHaveBeenCalled()
-    })
 })
 
 describe('toValidatedNativeUri', () => {

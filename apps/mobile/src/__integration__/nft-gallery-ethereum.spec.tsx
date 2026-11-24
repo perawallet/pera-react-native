@@ -23,6 +23,7 @@ import {
     describe,
     expect,
     it,
+    onTestFinished,
     vi,
 } from 'vitest'
 import { Linking } from 'react-native'
@@ -253,6 +254,7 @@ describe('Flow: an Ethereum account with NFTs', () => {
         expect(screen.getByText('Epic')).toBeTruthy()
 
         const openURL = vi.spyOn(Linking, 'openURL').mockResolvedValue(true)
+        onTestFinished(() => openURL.mockRestore())
         fireEvent.click(screen.getByText('etherscan.io'))
 
         expect(openURL).toHaveBeenCalledWith(

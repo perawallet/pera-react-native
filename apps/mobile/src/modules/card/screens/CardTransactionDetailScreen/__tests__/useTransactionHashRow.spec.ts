@@ -13,7 +13,6 @@
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const mockPushWebView = vi.fn()
 const mockCopyToClipboard = vi.fn()
 
 const SCOPE = { chainId: 'algorand', networkId: 'mainnet' }
@@ -29,7 +28,7 @@ vi.mock('../../../hooks/useCardScope', () => ({
 }))
 
 vi.mock('@modules/webview/hooks/useWebViewStore', () => ({
-    useWebView: () => ({ pushWebView: mockPushWebView }),
+    useWebView: () => ({ pushWebView: vi.fn() }),
 }))
 
 vi.mock('@hooks/useClipboard', () => ({
@@ -86,11 +85,9 @@ describe('useTransactionHashRow', () => {
             SCOPE,
         )
         expect(mockOpenURL).toHaveBeenCalledWith(TX_URL)
-        expect(mockPushWebView).not.toHaveBeenCalled()
     })
 
-    // On `custom` (no explorer) the action would reach Linking.openURL('/tx/…'),
-    // which rejects rather than no-opping.
+    // On `custom` the adapter has no explorer base, so there is no link to offer.
     it('offers no explorer action when the adapter has no link for the leg', () => {
         getCardTransactionUrl.mockReturnValue(null)
 

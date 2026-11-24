@@ -42,7 +42,7 @@ vi.mock(
     }),
 )
 
-// Mutable so a network with no explorer (a custom one) needs to be reachable per-test.
+// Mutable so a network with no explorer (a custom one) is reachable per-test.
 const { mockExplorer, mockChainUi } = vi.hoisted(() => ({
     mockExplorer: { base: 'https://explorer.perawallet.app' },
     mockChainUi: { collectibleDetails: undefined as unknown },
