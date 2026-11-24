@@ -3319,7 +3319,7 @@
             "fee_shortfall": {
                 "title": "{{symbol}} insuficiente para a taxa",
                 "body": "Este envio pode custar até {{fee}} em taxas. Diminua o valor ou escolha uma taxa mais lenta.",
-                "body_non_native": "Você precisa de pelo menos {{fee}} na rede {{network}} para pagar a taxa de rede. Adicione {{symbol}} ou escolha uma taxa mais lenta."
+                "body_non_native": "Este envio pode custar até {{fee}} em taxas na rede {{network}}. Adicione {{symbol}} ou escolha uma taxa mais lenta."
             },
             "fee_unavailable": {
                 "title": "Não foi possível estimar a taxa",
