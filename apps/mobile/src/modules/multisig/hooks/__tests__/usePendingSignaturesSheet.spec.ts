@@ -13,17 +13,25 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 
-const { sheetStateMock, openSheetMock } = vi.hoisted(() => ({
+const { sheetStateMock, openSheetMock, enqueueSheetMock } = vi.hoisted(() => ({
     sheetStateMock: { current: { signRequestId: null as string | null } },
     openSheetMock: vi.fn(),
+    enqueueSheetMock: vi.fn(),
 }))
 vi.mock('../../stores/usePendingSignaturesSheetStore', () => {
     openSheetMock.mockImplementation((id: string) => {
         sheetStateMock.current.signRequestId = id
     })
     const stub = ((
-        selector: (state: { openSheet: typeof openSheetMock }) => unknown,
-    ) => selector({ openSheet: openSheetMock })) as unknown as {
+        selector: (state: {
+            openSheet: typeof openSheetMock
+            enqueueSheet: typeof enqueueSheetMock
+        }) => unknown,
+    ) =>
+        selector({
+            openSheet: openSheetMock,
+            enqueueSheet: enqueueSheetMock,
+        })) as unknown as {
         getState: () => { signRequestId: string | null }
     }
     stub.getState = () => ({
@@ -47,6 +55,7 @@ describe('usePendingSignaturesSheet', () => {
     beforeEach(() => {
         sheetStateMock.current.signRequestId = null
         openSheetMock.mockClear()
+        enqueueSheetMock.mockClear()
         deleteDraftMock.mockClear()
     })
 
@@ -67,34 +76,70 @@ describe('usePendingSignaturesSheet', () => {
         expect(openSheetMock).toHaveBeenCalledWith('sr-1', 'ethereum')
     })
 
-    it('drops the superseded draft and swaps to the real id when the open sheet shows a draft', () => {
+    it('keeps an open draft rather than replacing it with another sign request', () => {
         sheetStateMock.current.signRequestId = 'draft-abc'
         const { result } = renderHook(() => usePendingSignaturesSheet())
 
-        act(() => result.current.showSignRequest('sr-real'))
+        let isShown = true
+        act(() => {
+            isShown = result.current.showSignRequest('sr-real')
+        })
 
-        expect(deleteDraftMock).toHaveBeenCalledTimes(1)
-        expect(deleteDraftMock).toHaveBeenCalledWith('draft-abc')
-        expect(openSheetMock).toHaveBeenCalledWith('sr-real', undefined)
+        expect(isShown).toBe(false)
+        expect(deleteDraftMock).not.toHaveBeenCalled()
+        expect(openSheetMock).not.toHaveBeenCalled()
     })
 
-    it('does not delete a draft when the open sheet id is already real', () => {
+    it('keeps the current request when a link opens a different real request', () => {
         sheetStateMock.current.signRequestId = 'sr-existing'
         const { result } = renderHook(() => usePendingSignaturesSheet())
 
-        act(() => result.current.showSignRequest('sr-real'))
+        let isShown = true
+        act(() => {
+            isShown = result.current.showSignRequest('sr-real')
+        })
 
+        expect(isShown).toBe(false)
         expect(deleteDraftMock).not.toHaveBeenCalled()
-        expect(openSheetMock).toHaveBeenCalledWith('sr-real', undefined)
+        expect(openSheetMock).not.toHaveBeenCalled()
     })
 
-    it('does not delete the draft when the incoming id is also a draft', () => {
+    it('accepts the link if the sheet already shows that draft', () => {
         sheetStateMock.current.signRequestId = 'draft-abc'
         const { result } = renderHook(() => usePendingSignaturesSheet())
 
-        act(() => result.current.showSignRequest('draft-abc'))
+        let isShown = false
+        act(() => {
+            isShown = result.current.showSignRequest('draft-abc')
+        })
 
+        expect(isShown).toBe(true)
         expect(deleteDraftMock).not.toHaveBeenCalled()
-        expect(openSheetMock).toHaveBeenCalledWith('draft-abc', undefined)
+        expect(openSheetMock).not.toHaveBeenCalled()
+    })
+
+    describe('replaceDraft', () => {
+        it('drops the proposed draft and swaps the sheet to its sign request', () => {
+            sheetStateMock.current.signRequestId = 'draft-abc'
+            const { result } = renderHook(() => usePendingSignaturesSheet())
+
+            act(() =>
+                result.current.replaceDraft('draft-abc', 'sr-real', 'algorand'),
+            )
+
+            expect(deleteDraftMock).toHaveBeenCalledWith('draft-abc')
+            expect(openSheetMock).toHaveBeenCalledWith('sr-real', 'algorand')
+        })
+
+        it('keeps a different draft the sheet now shows', () => {
+            sheetStateMock.current.signRequestId = 'draft-other'
+            const { result } = renderHook(() => usePendingSignaturesSheet())
+
+            act(() => result.current.replaceDraft('draft-abc', 'sr-real'))
+
+            expect(deleteDraftMock).not.toHaveBeenCalledWith('draft-other')
+            expect(openSheetMock).not.toHaveBeenCalled()
+            expect(enqueueSheetMock).toHaveBeenCalledWith('sr-real', undefined)
+        })
     })
 })

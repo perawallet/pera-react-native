@@ -11,15 +11,20 @@
  */
 
 import { useCallback } from 'react'
-import {
-    deleteDraftSignRequest,
-    isDraftSignRequestId,
-} from '@perawallet/wallet-core-multisig'
+import { deleteDraftSignRequest } from '@perawallet/wallet-core-multisig'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { usePendingSignaturesSheetStore } from '../stores/usePendingSignaturesSheetStore'
 
 export type UsePendingSignaturesSheetResult = {
-    showSignRequest: (signRequestId: string, chainId?: ChainId) => void
+    /** False while a different request is already visible. */
+    showSignRequest: (signRequestId: string, chainId?: ChainId) => boolean
+    enqueueSignRequest: (signRequestId: string, chainId?: ChainId) => void
+    /** Drops a draft its first signature just proposed and shows the real request in its place. */
+    replaceDraft: (
+        draftId: string,
+        signRequestId: string,
+        chainId?: ChainId,
+    ) => void
 }
 
 /**
@@ -32,25 +37,35 @@ export const usePendingSignaturesSheet =
         const openSheet = usePendingSignaturesSheetStore(
             state => state.openSheet,
         )
+        const enqueueSignRequest = usePendingSignaturesSheetStore(
+            state => state.enqueueSheet,
+        )
 
         const showSignRequest = useCallback(
             (signRequestId: string, chainId?: ChainId) => {
-                // Reads the live id at call time (not a render-captured value)
-                // so a draft the propose just superseded is detected and its
-                // orphaned draft dropped before pointing the sheet at the real id.
-                const currentId =
+                const current =
                     usePendingSignaturesSheetStore.getState().signRequestId
-                if (
-                    currentId &&
-                    isDraftSignRequestId(currentId) &&
-                    !isDraftSignRequestId(signRequestId)
-                ) {
-                    deleteDraftSignRequest(currentId)
-                }
+                if (current) return current === signRequestId
                 openSheet(signRequestId, chainId)
+                return true
             },
             [openSheet],
         )
 
-        return { showSignRequest }
+        const replaceDraft = useCallback(
+            (draftId: string, signRequestId: string, chainId?: ChainId) => {
+                deleteDraftSignRequest(draftId)
+                if (
+                    usePendingSignaturesSheetStore.getState().signRequestId ===
+                    draftId
+                ) {
+                    openSheet(signRequestId, chainId)
+                } else {
+                    enqueueSignRequest(signRequestId, chainId)
+                }
+            },
+            [openSheet, enqueueSignRequest],
+        )
+
+        return { showSignRequest, enqueueSignRequest, replaceDraft }
     }
