@@ -1520,8 +1520,11 @@ export const createEip1193ConnectionHandler = (
             await Promise.all(all.map(connection => disconnect(connection.id)))
         },
         restore,
+        // A site follows the wallet's selected network, so that one is all it
+        // is usable on.
         matchesChainScope: (connection, scope) =>
-            isOnChain(connection, scope.chainId),
+            isOnChain(connection, scope.chainId) &&
+            scope.networkId === deps.getNetworkId(scope.chainId),
         methodsFor: () => [...EIP1193_PERMISSION_METHODS],
         async notify(id, notice: WalletNotice) {
             const connection = await getConnectionById(id)

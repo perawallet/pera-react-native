@@ -11,6 +11,8 @@
  */
 
 import { useCallback, useMemo } from 'react'
+import { useRegisteredChainIds } from '@perawallet/wallet-core-accounts'
+import { useSelectedScopes } from '@perawallet/wallet-core-chain-shared'
 import {
     sortConnectionSettingsRows,
     toConnectionSettingsRow,
@@ -47,6 +49,7 @@ export const useConnectionSettingsList =
         )
         const isHydrated = useConnectionsStore(state => state.isHydrated)
         const registry = useConnectionRegistry()
+        const selectedScopes = useSelectedScopes(useRegisteredChainIds())
         const { showError } = useErrorToast()
         const { t } = useLanguage()
 
@@ -61,7 +64,10 @@ export const useConnectionSettingsList =
                         ),
                     ),
                 ),
-            [storedConnections, registry],
+            // `scopesFor` reads the live selected network, so a switch must
+            // recompute even though the body never names it.
+            // eslint-disable-next-line react-hooks/exhaustive-deps
+            [storedConnections, registry, selectedScopes],
         )
 
         const revoke = useCallback(

@@ -123,6 +123,16 @@ export class WalletConnectUnsupportedChainsError extends WalletConnectError {
     }
 }
 
+/** A connection request that names networks Pera serves, but none it is on: the user can fix this by switching modes. */
+export class WalletConnectUnselectedNetworkError extends WalletConnectError {
+    constructor() {
+        super('The connection request names no network Pera is on', undefined, {
+            messageKey: i18nKey('errors.walletconnect.unselected_network_body'),
+            expected: true,
+        })
+    }
+}
+
 /** `chainId` is the CAIP-2 reference (the decimal id on EIP-155): a switch request carries nothing a name could come from. */
 export class WalletConnectUnsupportedNetworkError extends WalletConnectError {
     constructor(dappName: string, chainId: string) {

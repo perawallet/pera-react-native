@@ -1543,7 +1543,8 @@
             "request_expired_body": "Esta solicitação de assinatura expirou antes de ser respondida. Peça ao app para enviá-la novamente.",
             "unsupported_method_body": "{{dappName}} solicitou {{method}}, que o Pera não suporta. A solicitação foi recusada.",
             "unsupported_network_body": "{{dappName}} tentou usar a rede com ID de cadeia {{chainId}}, que o Pera não suporta. A solicitação foi recusada.",
-            "unsupported_chains_body": "Este app tentou usar uma rede que o Pera não suporta. A conexão foi recusada."
+            "unsupported_chains_body": "Este app tentou usar uma rede que o Pera não suporta. A conexão foi recusada.",
+            "unselected_network_body": "Este app só oferece redes em que o Pera não está agora. A conexão foi recusada. Ative ou desative o modo desenvolvedor para corresponder ao app e tente novamente."
         },
         "signing": {
             "title": "Ocorreu um erro ao processar a solicitação de assinatura",

@@ -1543,7 +1543,8 @@
             "request_expired_body": "Esta solicitud de firma caducó antes de recibir respuesta. Pide a la app que la envíe de nuevo.",
             "unsupported_method_body": "{{dappName}} solicitó {{method}}, que Pera no admite, por lo que se rechazó la solicitud.",
             "unsupported_network_body": "{{dappName}} quiso usar la red con ID de cadena {{chainId}}, que Pera no admite, por lo que se rechazó la solicitud.",
-            "unsupported_chains_body": "Esta app quiso usar una red que Pera no admite, por lo que se rechazó la conexión."
+            "unsupported_chains_body": "Esta app quiso usar una red que Pera no admite, por lo que se rechazó la conexión.",
+            "unselected_network_body": "Esta app solo ofrece redes en las que Pera no está ahora, por lo que se rechazó la conexión. Activa o desactiva el modo desarrollador para que coincida con la app y vuelve a intentarlo."
         },
         "signing": {
             "title": "Error al procesar la solicitud de firma",
