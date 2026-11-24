@@ -11,6 +11,7 @@
  */
 
 import { Decimal } from 'decimal.js'
+import { isDebug, isStaging } from '@perawallet/wallet-core-config'
 import type { ChainRemoteConfigValue } from '@perawallet/wallet-core-chain-contract'
 import type { AddressPoisoningRules } from '@perawallet/wallet-core-transactions'
 import type { RemoteConfigService } from '@perawallet/wallet-extension-platform'
@@ -50,9 +51,10 @@ export const algorandRemoteConfigDefaults: Readonly<
     // Rollout gate and kill switch for swapping FROM quantum accounts. The
     // backend must price the pqsig fee surcharge into prepared swap groups
     // (the app cannot raise fees there — a re-group would invalidate the
-    // backend's pre-signed slots), so this stays off until Firebase turns it
-    // on, and flipping it off restores the pre-rollout guard.
-    enable_quantum_swap: false,
+    // backend's pre-signed slots), so it is on in debug and staging builds for
+    // testing; production stays off until Firebase turns it on, and flipping it
+    // off restores the pre-rollout guard.
+    enable_quantum_swap: isDebug || isStaging,
     enable_quantum_dapp_warning: true,
     // Same contract as enable_ssl_pinning_pera_api, but for the Algorand node/indexer
     // (Nodely) hosts — a separate kill switch so a node-side CA surprise can be

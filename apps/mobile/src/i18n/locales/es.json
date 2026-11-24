@@ -58,7 +58,8 @@
             "search_web": "Buscar en la web",
             "no_results": "Sin resultados",
             "assets_unavailable": "La búsqueda de activos no está disponible en este momento",
-            "dapps_unavailable": "La búsqueda de dApps no está disponible en este momento"
+            "dapps_unavailable": "La búsqueda de dApps no está disponible en este momento",
+            "unverified": "No verificado"
         },
         "news": {
             "title": "Noticias",
@@ -287,7 +288,11 @@
         "hidden_toast_body": "Ya no aparecerá en tus activos ni se contará en tu saldo. Vuelve a mostrarlo desde Gestionar activos > Ocultar tokens.",
         "hidden_swipe_toast_body": "Toca para deshacer. Ya no aparecerá en tus activos ni se contará en tu saldo.",
         "shown_toast_title": "Se mostró {{assetName}}",
-        "filtered_note": "Pera marcó este token como sospechoso, por eso no aparece en tus activos. Puedes mostrarlo con «Mostrar activos sospechosos» en los filtros de activos."
+        "filtered_note": "Pera marcó este token como sospechoso, por eso no aparece en tus activos. Puedes mostrarlo desde «Tokens ocultos», al final de tus activos.",
+        "auto_hidden_row_title": "Tokens ocultos ({{total}})",
+        "auto_hidden_title": "Tokens ocultos",
+        "auto_hidden_description": "Pera ocultó estos tokens porque parecen spam o estafas. No visites los sitios web que mencionan. Muestra un token para volver a verlo en la lista; seguirá sin contarse en tu saldo.",
+        "auto_hidden_empty_title": "No hay tokens ocultos"
     },
     "deeplink": {
         "error": {
@@ -386,7 +391,8 @@
         "imitated_currency": {
             "marker": "No es {{code}} real",
             "title": "Este activo no es {{code}}",
-            "body": "Su nombre de unidad es {{code}}, pero es un activo distinto que cualquiera podría haber creado. Recibirlo no te da ningún {{code}}."
+            "body": "Su nombre de unidad es {{code}}, pero es un activo distinto que cualquiera podría haber creado. Recibirlo no te da ningún {{code}}.",
+            "unit_label": "Activo desconocido"
         }
     },
     "asset_details": {
@@ -446,7 +452,7 @@
             "empty_filtered_body": "Ninguna transacción coincide con este filtro",
             "empty_on_network_body": "Aún no hay transacciones en {{network}}",
             "network_failed": "No se pudieron cargar las transacciones en {{networks}}",
-            "network_unavailable": "Las transacciones no están disponibles en {{networks}}",
+            "network_unavailable": "El historial completo no está disponible en {{networks}}",
             "offline_empty_title": "Estás sin conexión",
             "offline_empty_body": "Todavía no hay transacciones guardadas en este dispositivo. Aparecerán cuando vuelvas a estar en línea.",
             "search_paused_body": "No se encontraron transacciones en el historial reciente.",
@@ -1205,6 +1211,10 @@
             "title": "Copiado al portapapeles",
             "body": ""
         },
+        "address_copied": {
+            "algorand": "Dirección de Algorand copiada",
+            "evm": "Dirección EVM copiada"
+        },
         "email_failed": {
             "title": "No se pudo abrir la app de correo",
             "body": "No hay ninguna app de correo configurada en este dispositivo. Puedes escribir directamente a {{email}}."
@@ -1231,7 +1241,8 @@
             "asset_empty_body": "Aquí verás un gráfico cuando tengas historial de saldo de este activo en esta cuenta",
             "excludes_networks": "Este gráfico aún no incluye los activos de {{networks}}",
             "failed_networks": "No se pudo cargar el historial de {{networks}}, así que este gráfico no lo incluye",
-            "currency_unavailable_body": "Este gráfico no está disponible en {{currency}} por ahora"
+            "currency_unavailable_body": "Este gráfico no está disponible en {{currency}} por ahora",
+            "balance_change_label": "Cambio de saldo"
         },
         "webview": {
             "failed_title": "No se pudo cargar la página",
@@ -3298,7 +3309,8 @@
             },
             "fee_shortfall": {
                 "title": "No tienes suficiente {{symbol}} para la comisión",
-                "body": "Este envío puede costar hasta {{fee}} en comisiones. Reduce la cantidad o elige una comisión más lenta."
+                "body": "Este envío puede costar hasta {{fee}} en comisiones. Reduce la cantidad o elige una comisión más lenta.",
+                "body_non_native": "Este envío puede costar hasta {{fee}} en comisiones en {{network}}. Añade {{symbol}} o elige una comisión más lenta."
             },
             "fee_unavailable": {
                 "title": "No se pudo estimar la comisión",
@@ -3629,6 +3641,31 @@
             "typed_data_warning_title": "Esta firma puede mover tus tokens",
             "typed_data_warning_body": "Firmar datos estructurados puede autorizar a una aplicación a gastar o intercambiar tus tokens sin volver a preguntarte. Aprueba solo si confías en esta aplicación."
         },
+        "sign_in": {
+            "title": "Iniciar sesión en {{domain}}",
+            "domain": "Dominio",
+            "address": "Dirección",
+            "uri": "URI",
+            "chain_id": "ID de cadena",
+            "nonce": "Nonce",
+            "issued_at": "Emitido",
+            "expires_at": "Caduca",
+            "advanced": "Avanzado",
+            "site_mismatch_title": "Este inicio de sesión es para otro sitio",
+            "site_mismatch_body": "El mensaje inicia tu sesión en {{domain}}, pero la solicitud viene de {{site}}. Aprueba solo si confías en ambos.",
+            "other_address_note": "El mensaje indica {{address}}, no la cuenta que firma.",
+            "other_chain_note": "El mensaje indica {{chain}}, no la red de esta solicitud. Iniciar sesión no envía ninguna transacción.",
+            "other_chain_id_note": "El mensaje indica el ID de cadena {{chainId}}, no la red de esta solicitud. Iniciar sesión no envía ninguna transacción.",
+            "statement_label": "Mensaje de {{domain}}",
+            "not_before": "Válido desde",
+            "request_id": "ID de solicitud",
+            "resource": "Recurso",
+            "grants_title": "Este inicio de sesión también concede permisos",
+            "grants_body": "Al firmar, {{domain}} podrá actuar en tu nombre con los permisos de abajo. Aprueba solo si confías en el sitio.",
+            "grants_unreadable_body": "Este inicio de sesión concede a {{domain}} permisos que Pera no puede leer. Aprueba solo si confías en el sitio.",
+            "malformed_title": "Este mensaje de inicio de sesión tiene contenido inesperado",
+            "malformed_body": "Partes de este mensaje no siguen el formato de inicio de sesión, así que {{domain}} podría leerlo de forma distinta a como se muestra aquí. Revisa el mensaje completo en Avanzado y apruébalo solo si confías en el sitio."
+        },
         "spend_approval": {
             "spend_warning": "Esta firma permite que otra dirección mueva tokens de tu cuenta sin volver a preguntarte.",
             "spend_warning_transaction": "Esta transacción permite que otra dirección mueva tokens de tu cuenta sin volver a preguntarte.",
@@ -3918,7 +3955,8 @@
             "nft_subtitle": "{{collection}} #{{tokenId}}",
             "nft_batch_subtitle": "{{collection}} · {{count}} elementos",
             "inner_transaction_count": "{{innerCount}} transacciones internas",
-            "cancel_transaction": "Cancelar transacción"
+            "cancel_transaction": "Cancelar transacción",
+            "not_sent_by_you": "No enviado por ti"
         },
         "record_detail": {
             "read_failed": "No se pudieron leer de la red los detalles de la llamada de esta transacción.",
@@ -4099,6 +4137,9 @@
             "reuse_body": "Empieza y termina como una dirección que conoces, pero no es la misma. Compara las direcciones completas antes de usarla.",
             "reuse_confirm": "Continuar de todos modos",
             "reuse_cancel": "Cancelar"
+        },
+        "suspicious_token": {
+            "marker": "Token sospechoso"
         }
     },
     "tabbar": {
@@ -4293,6 +4334,7 @@
             "quote_error": "No se pudieron obtener cotizaciones. Vuelve a intentarlo.",
             "amount_too_low": "El importe es demasiado pequeño para un swap en {{network}}. El mínimo es {{amount}} {{unit}}.",
             "amount_too_low_fiat": "El importe es demasiado pequeño para un swap en {{network}}. El mínimo es {{amount}} {{unit}} (~{{fiat}}).",
+            "amount_too_low_above_balance": "Tu saldo disponible es inferior al mínimo de {{amount}} {{unit}} para un swap en {{network}}.",
             "use_minimum": "Usar mínimo",
             "amount_too_low_unknown": "El importe es demasiado pequeño para un swap en {{network}}. Prueba con un importe mayor o una red con comisiones más bajas.",
             "amount_too_high": "El importe es demasiado grande para un swap. El máximo es {{amount}} {{unit}}.",
@@ -4312,9 +4354,12 @@
                 "swap": "Swap fallido"
             },
             "provider_failed_body": "Este proveedor no pudo completar el swap. Prueba con otro proveedor.",
+            "provider_failed_single_body": "El proveedor no pudo completar el swap. Inténtalo más tarde o prueba con otro importe.",
             "provider_unavailable_body": "El proveedor no está disponible en este momento. Inténtalo de nuevo en unos instantes.",
             "quote_mismatch_body": "Las transacciones del proveedor no coincidían con esta cotización, así que no se firmó nada. Inténtalo de nuevo o elige otro proveedor.",
+            "quote_mismatch_single_body": "Las transacciones del proveedor no coincidían con esta cotización, así que no se firmó nada. Inténtalo más tarde.",
             "unsupported_order_body": "Pera no puede completar la orden de este proveedor, así que no se firmó nada. Elige otro proveedor.",
+            "unsupported_order_single_body": "Pera no puede completar la orden de este proveedor, así que no se firmó nada. Inténtalo más tarde.",
             "signing_failed_body": "No se pudo firmar la transacción, así que no se envió. Inténtalo de nuevo.",
             "order_insufficient_balance_body": "Tu saldo no cubre esta cantidad y la comisión de red. Prueba con una cantidad menor o añade fondos para la comisión.",
             "insufficient_native_body": "Esta cuenta necesita al menos {{amount}} {{symbol}} más para cubrir este swap, sus comisiones y el saldo mínimo. Añade más {{symbol}} y vuelve a intentarlo.",
@@ -4361,6 +4406,8 @@
                         "refunded": "Reembolsado"
                     }
                 },
+                "account_filter_all": "Todas las cuentas",
+                "load_more": "Cargar más",
                 "empty": {
                     "title": "Aún no hay swaps",
                     "body": "Tu historial de swaps aparecerá aquí."

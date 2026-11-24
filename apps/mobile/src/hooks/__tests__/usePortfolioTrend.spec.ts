@@ -18,7 +18,11 @@ import {
     type AccountHoldingSource,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { useHistoryTrend, usePortfolioTrend } from '../usePortfolioTrend'
+import {
+    holdingPriceChange,
+    useHistoryTrend,
+    usePortfolioTrend,
+} from '../usePortfolioTrend'
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     ...(await importOriginal<
@@ -193,6 +197,7 @@ describe('usePortfolioTrend', () => {
 
 describe('useHistoryTrend for an amount', () => {
     const amountPoint = (amount: string) => ({
+        datetime: new Date(0),
         preferredValue: null,
         amount: new Decimal(amount),
     })
@@ -231,5 +236,128 @@ describe('useHistoryTrend for an amount', () => {
 
         expect(result.current.trendAbsolute.toFixed()).toBe('-1')
         expect(result.current.trendDirection).toBe('down')
+    })
+})
+
+describe('holdingPriceChange', () => {
+    const held = (amount: string, preferredValue: string) => ({
+        amount: new Decimal(amount),
+        preferredValue: new Decimal(preferredValue),
+    })
+
+    it('measures the price move of an amount held throughout', () => {
+        const { change, percentage } = holdingPriceChange([
+            held('2', '200'),
+            held('2', '250'),
+        ])
+
+        expect(change.toFixed()).toBe('50')
+        expect(percentage.toFixed()).toBe('25')
+    })
+
+    it('leaves a receive out, earning only on what was held before each step', () => {
+        const { change, percentage } = holdingPriceChange([
+            held('1', '100'),
+            held('3', '330'),
+            held('3', '360'),
+        ])
+
+        // 1 × (110 − 100) + 3 × (120 − 110)
+        expect(change.toFixed()).toBe('40')
+        expect(percentage.toFixed()).toBe('20')
+    })
+
+    it('reads a holding received at the last point as no change', () => {
+        const { change, percentage } = holdingPriceChange([
+            held('0', '0'),
+            held('0', '0'),
+            held('0.0153', '2.15'),
+        ])
+
+        expect(change.isZero()).toBe(true)
+        expect(percentage.isZero()).toBe(true)
+    })
+
+    it('keeps the previous price for a step that ends with nothing held', () => {
+        const { change } = holdingPriceChange([
+            held('2', '200'),
+            held('2', '220'),
+            held('0', '0'),
+        ])
+
+        expect(change.toFixed()).toBe('20')
+    })
+
+    it('reads a held point with a zero value as an unknown price, not a total loss', () => {
+        const { change, percentage } = holdingPriceChange([
+            held('1', '100'),
+            held('1', '0'),
+            held('1', '120'),
+        ])
+
+        expect(change.toFixed()).toBe('20')
+        expect(percentage.toFixed()).toBe('20')
+    })
+
+    it('compounds only the steps something was held through', () => {
+        const { percentage } = holdingPriceChange([
+            held('1', '100'),
+            held('1', '110'),
+            held('0', '0'),
+            held('1', '200'),
+            held('1', '220'),
+        ])
+
+        // 1.1 × 1.1: the gap from 110 to 200 held nothing.
+        expect(percentage.toFixed()).toBe('21')
+    })
+})
+
+describe('useHistoryTrend for a holding value', () => {
+    const at = (minute: number) => new Date(minute * 60_000)
+    const history = {
+        data: [
+            {
+                datetime: at(0),
+                amount: new Decimal(1),
+                preferredValue: new Decimal(100),
+            },
+            {
+                datetime: at(1),
+                amount: new Decimal(1),
+                preferredValue: new Decimal(150),
+            },
+            {
+                datetime: at(2),
+                amount: new Decimal(1),
+                preferredValue: new Decimal(120),
+            },
+        ],
+        isPending: false,
+        isPaused: false,
+        isError: false,
+    }
+
+    it('runs to the scrubbed point by its time', () => {
+        const { result } = renderHook(() =>
+            useHistoryTrend(
+                history,
+                false,
+                new Decimal(150),
+                'holding-value',
+                at(1),
+            ),
+        )
+
+        expect(result.current.trendAbsolute.toFixed()).toBe('50')
+        expect(result.current.trendDirection).toBe('up')
+    })
+
+    it('runs to the last point with nothing scrubbed', () => {
+        const { result } = renderHook(() =>
+            useHistoryTrend(history, false, undefined, 'holding-value'),
+        )
+
+        expect(result.current.trendAbsolute.toFixed()).toBe('20')
     })
 })

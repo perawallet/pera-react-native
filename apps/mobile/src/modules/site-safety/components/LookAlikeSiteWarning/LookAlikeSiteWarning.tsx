@@ -17,7 +17,6 @@ import {
     PWCheckbox,
     PWRoundIcon,
     PWText,
-    PWTouchableOpacity,
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
@@ -83,21 +82,19 @@ export const LookAlikeSiteWarning = ({
                 </PWText>
             </PWView>
             <PWView style={styles.actions}>
-                <PWTouchableOpacity
-                    style={styles.acknowledge}
+                <PWCheckbox
+                    label={
+                        <PWText style={styles.acknowledgeLabel}>
+                            {t('site_safety.look_alike.acknowledge', {
+                                name: imitates.name,
+                            })}
+                        </PWText>
+                    }
+                    isChecked={isAcknowledged}
                     onPress={handleToggleAcknowledged}
+                    style={styles.acknowledge}
                     testID='site_look_alike_acknowledge'
-                >
-                    <PWCheckbox
-                        checked={isAcknowledged}
-                        onPress={handleToggleAcknowledged}
-                    />
-                    <PWText style={styles.acknowledgeLabel}>
-                        {t('site_safety.look_alike.acknowledge', {
-                            name: imitates.name,
-                        })}
-                    </PWText>
-                </PWTouchableOpacity>
+                />
                 <PWButton
                     title={t('site_safety.look_alike.continue')}
                     variant='secondary'

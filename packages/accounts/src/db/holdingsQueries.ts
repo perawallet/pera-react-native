@@ -50,8 +50,8 @@ import {
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { AccountAssetHoldingsSchema } from './schema'
 import { holdingJoin } from './holdingJoin'
-import { isNotSuspiciousSql } from './holdingSuspicion'
-import { hiddenHoldingSql } from './holdingVisibility'
+import { isNotSuspiciousSql, isSuspiciousSql } from './holdingSuspicion'
+import { hiddenHoldingSql, keptHoldingSql } from './holdingVisibility'
 import type { AccountHoldingsFilters } from './holdingsRepository'
 
 export type AccountHoldingsPageRow = {
@@ -172,6 +172,7 @@ async function queryHoldingRows<ExtraColumns extends SelectedFields>(
         excludeAssetTypes,
         hideSuspicious,
         excludeHidden,
+        onlyAutoHidden,
         limit,
         offset,
     }: GetAccountHoldingsLiteParams,
@@ -223,10 +224,17 @@ async function queryHoldingRows<ExtraColumns extends SelectedFields>(
         )
     }
     if (hideSuspicious) {
-        conditions.push(isNotSuspiciousSql())
+        conditions.push(or(isNotSuspiciousSql(), keptHoldingSql(sources))!)
     }
     if (excludeHidden) {
         conditions.push(not(hiddenHoldingSql(sources)))
+    }
+    if (onlyAutoHidden) {
+        conditions.push(
+            isSuspiciousSql(),
+            not(keptHoldingSql(sources)),
+            not(hiddenHoldingSql(sources)),
+        )
     }
     const term = search?.trim()
     if (term) {

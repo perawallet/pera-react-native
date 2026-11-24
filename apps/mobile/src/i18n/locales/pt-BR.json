@@ -58,7 +58,8 @@
             "search_web": "Pesquisar na web",
             "no_results": "Nenhum resultado",
             "assets_unavailable": "A pesquisa de ativos está indisponível no momento",
-            "dapps_unavailable": "A pesquisa de dApps está indisponível no momento"
+            "dapps_unavailable": "A pesquisa de dApps está indisponível no momento",
+            "unverified": "Não verificado"
         },
         "news": {
             "title": "Notícias",
@@ -287,7 +288,11 @@
         "hidden_toast_body": "Ele não aparecerá mais nos seus ativos nem contará no seu saldo. Mostre-o de novo em Gerenciar ativos > Ocultar tokens.",
         "hidden_swipe_toast_body": "Toque para desfazer. Ele não aparecerá mais nos seus ativos nem contará no seu saldo.",
         "shown_toast_title": "{{assetName}} exibido",
-        "filtered_note": "A Pera sinalizou este token como suspeito, então ele fica fora dos seus ativos. Mostre-o com “Exibir ativos suspeitos” nos filtros de ativos."
+        "filtered_note": "A Pera sinalizou este token como suspeito, então ele fica fora dos seus ativos. Mostre-o em “Tokens ocultos”, no fim dos seus ativos.",
+        "auto_hidden_row_title": "Tokens ocultos ({{total}})",
+        "auto_hidden_title": "Tokens ocultos",
+        "auto_hidden_description": "A Pera ocultou estes tokens porque parecem spam ou golpes. Não visite os sites mencionados neles. Mostre um token para vê-lo de novo na lista; ele continuará fora do seu saldo.",
+        "auto_hidden_empty_title": "Nenhum token oculto"
     },
     "deeplink": {
         "error": {
@@ -386,7 +391,8 @@
         "imitated_currency": {
             "marker": "Não é {{code}} real",
             "title": "Este ativo não é {{code}}",
-            "body": "O nome da unidade dele é {{code}}, mas é um ativo diferente que qualquer pessoa pode ter criado. Recebê-lo não dá a você nenhum {{code}}."
+            "body": "O nome da unidade dele é {{code}}, mas é um ativo diferente que qualquer pessoa pode ter criado. Recebê-lo não dá a você nenhum {{code}}.",
+            "unit_label": "Ativo desconhecido"
         }
     },
     "asset_details": {
@@ -446,7 +452,7 @@
             "empty_filtered_body": "Nenhuma transação corresponde a este filtro",
             "empty_on_network_body": "Ainda não há transações em {{network}}",
             "network_failed": "Não foi possível carregar as transações em {{networks}}",
-            "network_unavailable": "As transações não estão disponíveis em {{networks}}",
+            "network_unavailable": "O histórico completo não está disponível em {{networks}}",
             "offline_empty_title": "Você está offline",
             "offline_empty_body": "Ainda não há transações salvas neste dispositivo. Elas aparecerão quando você voltar a ficar online.",
             "search_paused_body": "Nenhuma transação encontrada no histórico recente.",
@@ -1205,6 +1211,10 @@
             "title": "Copiado para a área de transferência",
             "body": ""
         },
+        "address_copied": {
+            "algorand": "Endereço Algorand copiado",
+            "evm": "Endereço EVM copiado"
+        },
         "email_failed": {
             "title": "Não foi possível abrir o app de e-mail",
             "body": "Não há nenhum app de e-mail configurado neste aparelho. Você pode escrever direto para {{email}}."
@@ -1231,7 +1241,8 @@
             "asset_empty_body": "Você verá um gráfico aqui quando tiver histórico de saldo deste ativo nesta conta",
             "excludes_networks": "Este gráfico ainda não inclui os ativos de {{networks}}",
             "failed_networks": "Não foi possível carregar o histórico de {{networks}}, então este gráfico não o inclui",
-            "currency_unavailable_body": "Este gráfico não está disponível em {{currency}} no momento"
+            "currency_unavailable_body": "Este gráfico não está disponível em {{currency}} no momento",
+            "balance_change_label": "Variação do saldo"
         },
         "webview": {
             "failed_title": "Falha ao carregar a página",
@@ -3314,7 +3325,8 @@
             },
             "fee_shortfall": {
                 "title": "{{symbol}} insuficiente para a taxa",
-                "body": "Este envio pode custar até {{fee}} em taxas. Diminua o valor ou escolha uma taxa mais lenta."
+                "body": "Este envio pode custar até {{fee}} em taxas. Diminua o valor ou escolha uma taxa mais lenta.",
+                "body_non_native": "Este envio pode custar até {{fee}} em taxas na rede {{network}}. Adicione {{symbol}} ou escolha uma taxa mais lenta."
             },
             "fee_unavailable": {
                 "title": "Não foi possível estimar a taxa",
@@ -3645,6 +3657,31 @@
             "typed_data_warning_title": "Esta assinatura pode movimentar seus tokens",
             "typed_data_warning_body": "Assinar dados estruturados pode autorizar um aplicativo a gastar ou negociar seus tokens sem pedir sua confirmação de novo. Aprove somente se você confia neste aplicativo."
         },
+        "sign_in": {
+            "title": "Entrar em {{domain}}",
+            "domain": "Domínio",
+            "address": "Endereço",
+            "uri": "URI",
+            "chain_id": "ID da rede",
+            "nonce": "Nonce",
+            "issued_at": "Emitido",
+            "expires_at": "Expira",
+            "advanced": "Avançado",
+            "site_mismatch_title": "Este login é para outro site",
+            "site_mismatch_body": "A mensagem faz seu login em {{domain}}, mas a solicitação vem de {{site}}. Aprove somente se você confiar em ambos.",
+            "other_address_note": "A mensagem indica {{address}}, não a conta que está assinando.",
+            "other_chain_note": "A mensagem indica {{chain}}, não a rede desta solicitação. Fazer login não envia nenhuma transação.",
+            "other_chain_id_note": "A mensagem indica o ID de cadeia {{chainId}}, não a rede desta solicitação. Fazer login não envia nenhuma transação.",
+            "statement_label": "Mensagem de {{domain}}",
+            "not_before": "Válido a partir de",
+            "request_id": "ID da solicitação",
+            "resource": "Recurso",
+            "grants_title": "Este login também concede permissões",
+            "grants_body": "Ao assinar, {{domain}} poderá agir por você com as permissões abaixo. Aprove somente se você confiar no site.",
+            "grants_unreadable_body": "Este login concede a {{domain}} permissões que a Pera não consegue ler. Aprove somente se você confiar no site.",
+            "malformed_title": "Esta mensagem de login tem conteúdo inesperado",
+            "malformed_body": "Partes desta mensagem não seguem o formato de login, então {{domain}} pode lê-la de forma diferente da mostrada aqui. Confira a mensagem completa em Avançado e só aprove se confiar no site."
+        },
         "spend_approval": {
             "spend_warning": "Esta assinatura permite que outro endereço movimente tokens da sua conta sem pedir sua confirmação de novo.",
             "spend_warning_transaction": "Esta transação permite que outro endereço movimente tokens da sua conta sem pedir sua confirmação de novo.",
@@ -3935,7 +3972,8 @@
             "nft_subtitle": "{{collection}} #{{tokenId}}",
             "nft_batch_subtitle": "{{collection}} · {{count}} itens",
             "inner_transaction_count": "{{innerCount}} transações internas",
-            "cancel_transaction": "Cancelar transação"
+            "cancel_transaction": "Cancelar transação",
+            "not_sent_by_you": "Não enviado por você"
         },
         "record_detail": {
             "read_failed": "Não foi possível ler da rede os detalhes da chamada desta transação.",
@@ -4121,6 +4159,9 @@
             "reuse_body": "Ele começa e termina como um endereço que você conhece, mas não é o mesmo. Compare os endereços completos antes de usá-lo.",
             "reuse_confirm": "Continuar mesmo assim",
             "reuse_cancel": "Cancelar"
+        },
+        "suspicious_token": {
+            "marker": "Token suspeito"
         }
     },
     "tabbar": {
@@ -4315,6 +4356,7 @@
             "quote_error": "Não foi possível obter cotações. Tente novamente.",
             "amount_too_low": "Valor pequeno demais para converter na {{network}}. O mínimo é {{amount}} {{unit}}.",
             "amount_too_low_fiat": "Valor pequeno demais para converter na {{network}}. O mínimo é {{amount}} {{unit}} (~{{fiat}}).",
+            "amount_too_low_above_balance": "Seu saldo disponível está abaixo do mínimo de {{amount}} {{unit}} para converter na {{network}}.",
             "use_minimum": "Usar mínimo",
             "amount_too_low_unknown": "Valor pequeno demais para converter na {{network}}. Tente um valor maior ou uma rede com taxas menores.",
             "amount_too_high": "Valor grande demais para converter. O máximo é {{amount}} {{unit}}.",
@@ -4334,9 +4376,12 @@
                 "swap": "Falha na conversão"
             },
             "provider_failed_body": "Este provedor não conseguiu concluir a conversão. Tente outro provedor.",
+            "provider_failed_single_body": "O provedor não conseguiu concluir a conversão. Tente novamente mais tarde ou tente outro valor.",
             "provider_unavailable_body": "O provedor está indisponível no momento. Tente novamente em instantes.",
             "quote_mismatch_body": "As transações do provedor não correspondiam a esta cotação, então nada foi assinado. Tente novamente ou escolha outro provedor.",
+            "quote_mismatch_single_body": "As transações do provedor não correspondiam a esta cotação, então nada foi assinado. Tente novamente mais tarde.",
             "unsupported_order_body": "A Pera não consegue concluir o pedido deste provedor, então nada foi assinado. Escolha outro provedor.",
+            "unsupported_order_single_body": "A Pera não consegue concluir o pedido deste provedor, então nada foi assinado. Tente novamente mais tarde.",
             "signing_failed_body": "Não foi possível assinar a transação, então ela não foi enviada. Tente novamente.",
             "order_insufficient_balance_body": "Seu saldo não cobre este valor e a taxa de rede. Tente um valor menor ou adicione fundos para a taxa.",
             "insufficient_native_body": "Esta conta precisa de pelo menos {{amount}} {{symbol}} a mais para cobrir esta conversão, as taxas e o saldo mínimo. Adicione mais {{symbol}} e tente novamente.",
@@ -4383,6 +4428,8 @@
                         "refunded": "Reembolsada"
                     }
                 },
+                "account_filter_all": "Todas as contas",
+                "load_more": "Carregar mais",
                 "empty": {
                     "title": "Nenhuma conversão ainda",
                     "body": "Seu histórico de conversões aparecerá aqui."

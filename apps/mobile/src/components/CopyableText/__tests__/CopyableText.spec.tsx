@@ -23,11 +23,12 @@ vi.mock('@hooks/useClipboard', () => ({
 }))
 
 describe('CopyableText', () => {
-    it('copies the value on a long press and still calls onLongPress', async () => {
+    it('copies the value with its toast options on a long press and still calls onLongPress', async () => {
         const onLongPress = vi.fn()
         render(
             <CopyableText
                 copyValue='12345'
+                copyOptions={{ title: 'Asset ID copied' }}
                 onLongPress={onLongPress}
                 testID='copyable'
             >
@@ -38,7 +39,9 @@ describe('CopyableText', () => {
         fireEvent.contextMenu(screen.getByTestId('copyable'))
 
         await waitFor(() =>
-            expect(mockCopyToClipboard).toHaveBeenCalledWith('12345'),
+            expect(mockCopyToClipboard).toHaveBeenCalledWith('12345', {
+                title: 'Asset ID copied',
+            }),
         )
         expect(onLongPress).toHaveBeenCalledOnce()
     })

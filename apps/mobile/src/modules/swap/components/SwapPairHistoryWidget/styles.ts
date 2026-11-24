@@ -51,6 +51,12 @@ export const useStyles = makeStyles(theme => ({
         borderRadius: theme.spacing.lg,
         backgroundColor: theme.colors.layerGrayLightest,
     },
+    chipLabels: {
+        gap: theme.spacing.xxs,
+    },
+    chipAccount: {
+        color: theme.colors.textGray,
+    },
     skeleton: {
         height: theme.spacing['3xl'],
         width: theme.spacing['5xl'],

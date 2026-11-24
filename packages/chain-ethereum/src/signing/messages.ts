@@ -29,11 +29,13 @@ import {
     signingKeyOn,
 } from '@perawallet/wallet-core-accounts'
 import {
+    addressCodecs,
     i18nKey,
     type ChainScope,
     type MessageRequest,
     type MessageSummary,
     type MessageTreeNode,
+    type SignInSummary,
     type Signature,
     type SignedMessage,
     type SigningRequest,
@@ -55,6 +57,7 @@ import {
     eip155ChainIdOf,
     eip155ChainIdOfNetwork,
 } from '../blockchain/utils/caip19'
+import { evmChainOfEip155Id } from '../chains/table'
 import type { EvmChain } from '../chains/types'
 import { ETHEREUM_WC_V2_METHOD } from '../connect/walletConnect'
 import {
@@ -70,6 +73,8 @@ import {
 } from './digests'
 import { isPermitTypedData, spendApprovalOf } from './permits'
 import { toViemSignature } from './sign'
+import { decodeRecap, isRecapUri } from './recap'
+import { parseSiweMessage } from './siwe'
 import { hasUnreadableTypedDataValue } from './typedDataValues'
 
 /** The `MessageRequest.payload` for `personal_sign`. */
@@ -87,6 +92,7 @@ export type EthereumTypedDataPayload = {
 const PERSONAL_SIGN = ETHEREUM_WC_V2_METHOD.personalSign
 const SIGN_TYPED_DATA_V4 = ETHEREUM_WC_V2_METHOD.signTypedDataV4
 const TITLE_KEY = i18nKey('signing.arbitrary_data_view.body')
+const SIGN_IN_TITLE_KEY = i18nKey('signing.sign_in.title')
 
 export const personalSignMessageRequest = (
     scope: ChainScope,
@@ -371,17 +377,70 @@ const typedDataAddresses = (payload: unknown): ReviewedAddress[] => {
     ]
 }
 
-const describePersonalSign = (payload: unknown): MessageSummary => {
+const signInSummaryOf = (
+    text: string,
+    request: MessageRequest,
+    chain: EvmChain,
+): Optional<SignInSummary> => {
+    const parsed = parseSiweMessage(text)
+    if (!parsed) return undefined
+    const { message, isMalformed } = parsed
+    const messageChainId = /^\d+$/.test(message.chainId)
+        ? BigInt(message.chainId)
+        : undefined
+    const named =
+        messageChainId === undefined
+            ? undefined
+            : evmChainOfEip155Id(Number(messageChainId))
+    const decoded = (message.resources ?? [])
+        .filter(isRecapUri)
+        .map(decodeRecap)
+    // Only a registered chain can be shown by name; the review falls back to the bare id.
+    const messageScope: Optional<ChainScope> =
+        named && addressCodecs.has(named.chain.row.id)
+            ? { chainId: named.chain.row.id, networkId: named.networkId }
+            : undefined
+    const requestChainId = eip155ChainIdOfNetwork(
+        chain,
+        request.scope.networkId,
+    )
+    return {
+        message,
+        ...(messageScope && { messageScope }),
+        isOtherAddress: !areEvmAddressesEqual(message.address, request.signer),
+        isOtherChain:
+            requestChainId === undefined ||
+            messageChainId !== BigInt(requestChainId),
+        grants: decoded.flatMap(grants => grants ?? []),
+        hasUnreadableGrants: decoded.includes(undefined),
+        isMalformed,
+    }
+}
+
+const describePersonalSign = (
+    request: MessageRequest,
+    chain: EvmChain,
+): MessageSummary => {
     const title = { key: TITLE_KEY }
     let message: Hex
     try {
-        ;({ message } = readPersonalSign(payload))
+        ;({ message } = readPersonalSign(request.payload))
     } catch {
         return { kind: 'raw', title }
     }
     const text = decodePrintableUtf8(hexToBytes(message))
-    return text === undefined
-        ? { kind: 'raw', title, preview: message }
+    if (text === undefined) return { kind: 'raw', title, preview: message }
+    const signIn = signInSummaryOf(text, request, chain)
+    return signIn
+        ? {
+              kind: 'text',
+              title: {
+                  key: SIGN_IN_TITLE_KEY,
+                  params: { domain: signIn.message.domain },
+              },
+              preview: text,
+              signIn,
+          }
         : { kind: 'text', title, preview: text }
 }
 
@@ -418,7 +477,7 @@ const describeWith =
     (chain: EvmChain) =>
     (request: MessageRequest): MessageSummary => {
         if (request.method === PERSONAL_SIGN) {
-            return describePersonalSign(request.payload)
+            return describePersonalSign(request, chain)
         }
         if (request.method === SIGN_TYPED_DATA_V4) {
             return describeTypedData(

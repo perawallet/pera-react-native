@@ -419,6 +419,35 @@ describe('aggregateTransactionWarnings', () => {
             expect(warnings).toEqual([])
         })
 
+        test('flags a rekey when the named authorizer is held but rekeyed out of the wallet', () => {
+            // O's key is in the wallet but O is itself rekeyed elsewhere, so O
+            // is held yet not signable. An authAddr signs with O's own key
+            // regardless, so the rekey of E is still the wallet's signature.
+            const txs = [
+                makeTx({
+                    sender: 'FOREIGN_E',
+                    rekeyTo: {
+                        publicKey: new TextEncoder().encode('ATTACKER'),
+                    } as any,
+                }),
+            ]
+
+            const warnings = aggregateTransactionWarnings(
+                txs,
+                new Set(['ADDR_O']),
+                new Set(),
+                new Map([[0, 'ADDR_O']]),
+            )
+
+            expect(warnings).toEqual([
+                {
+                    type: 'delegation',
+                    senderAddress: 'FOREIGN_E',
+                    targetAddress: 'ENCODED_ATTACKER',
+                },
+            ])
+        })
+
         test('falls back to sender when no override is present for an index', () => {
             const txs = [
                 makeTx({

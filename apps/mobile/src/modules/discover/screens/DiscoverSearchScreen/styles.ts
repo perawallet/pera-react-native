@@ -45,6 +45,10 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'space-between',
         paddingVertical: theme.spacing.md,
     },
+    // The asset row has no padding of its own; this matches the dApp rows around it.
+    assetRow: {
+        paddingVertical: theme.spacing.sm,
+    },
     linkRow: {
         flexDirection: 'row',
         alignItems: 'center',

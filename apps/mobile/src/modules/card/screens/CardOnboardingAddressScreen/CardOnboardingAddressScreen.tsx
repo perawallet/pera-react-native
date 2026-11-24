@@ -46,6 +46,8 @@ export const CardOnboardingAddressScreen = () => {
         handleToggleCardTerms,
         handleTogglePlatformTerms,
         handleOpenCardTerms,
+        cardTermsAccessibilityLabel,
+        platformTermsAccessibilityLabel,
         handleOpenPlatformTerms,
         handleConfirm,
     } = useCardOnboardingAddressScreen()
@@ -235,6 +237,8 @@ export const CardOnboardingAddressScreen = () => {
                         checked={cardTermsAccepted}
                         onPress={handleToggleCardTerms}
                         testID='card-onboarding-address-card-terms-checkbox'
+                        isLabelInteractive
+                        accessibilityLabel={cardTermsAccessibilityLabel}
                     >
                         <Trans
                             i18nKey='peraCard.address.card_terms'
@@ -242,6 +246,7 @@ export const CardOnboardingAddressScreen = () => {
                                 <PWText
                                     key='link'
                                     variant='linkPositive'
+                                    accessibilityRole='link'
                                     onPress={handleOpenCardTerms}
                                     testID='card-onboarding-address-card-terms-link'
                                 />,
@@ -253,6 +258,8 @@ export const CardOnboardingAddressScreen = () => {
                         checked={platformTermsAccepted}
                         onPress={handleTogglePlatformTerms}
                         testID='card-onboarding-address-platform-terms-checkbox'
+                        isLabelInteractive
+                        accessibilityLabel={platformTermsAccessibilityLabel}
                     >
                         <Trans
                             i18nKey='peraCard.address.platform_terms'
@@ -260,6 +267,7 @@ export const CardOnboardingAddressScreen = () => {
                                 <PWText
                                     key='link'
                                     variant='linkPositive'
+                                    accessibilityRole='link'
                                     onPress={handleOpenPlatformTerms}
                                     testID='card-onboarding-address-platform-terms-link'
                                 />,

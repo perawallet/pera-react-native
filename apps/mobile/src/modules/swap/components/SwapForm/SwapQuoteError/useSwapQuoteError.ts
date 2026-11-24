@@ -34,6 +34,8 @@ export type UseSwapQuoteErrorParams = {
     payAssetId: string
     receiveScope: ChainScope
     receiveAssetId: string
+    /** The account can't reach the minimum even with everything it can spend. */
+    isMinimumAboveSpendable?: boolean
 }
 
 type UseSwapQuoteErrorResult = {
@@ -52,6 +54,7 @@ export const useSwapQuoteError = ({
     payAssetId,
     receiveScope,
     receiveAssetId,
+    isMinimumAboveSpendable = false,
 }: UseSwapQuoteErrorParams): UseSwapQuoteErrorResult => {
     const { t, currentLanguage } = useLanguage()
     const { data: payAssets } = useAssetsQuery(scope, [payAssetId], {
@@ -105,6 +108,13 @@ export const useSwapQuoteError = ({
                 const limit = limitParams(failure.minimum, Decimal.ROUND_UP)
                 if (!limit || !failure.minimum) {
                     return t('swap.quote.amount_too_low_unknown', { network })
+                }
+                if (isMinimumAboveSpendable) {
+                    return t('swap.quote.amount_too_low_above_balance', {
+                        network,
+                        amount: limit.limit,
+                        unit: limit.unit,
+                    })
                 }
                 const fiat = minimumFiat(failure.minimum)
                 return fiat

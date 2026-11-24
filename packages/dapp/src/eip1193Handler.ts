@@ -194,17 +194,16 @@ const grantOf = (
               },
           ]
 
-// EIP-2255 carries the requested permissions as `[{ <method>: {} }]`; Pera
-// grants nothing but `eth_accounts`, so anything beyond that one is refused
-// rather than quietly narrowed.
-const isAccountsPermissionRequest = (params: unknown): boolean => {
-    if (!Array.isArray(params) || params.length !== 1) return false
+// EIP-2255 carries the requested permissions as `[{ <method>: {} }]`; null for
+// any other shape.
+const requestedPermissionsOf = (params: unknown): Nullable<string[]> => {
+    if (!Array.isArray(params) || params.length !== 1) return null
     const requested: unknown = params[0]
-    return (
-        isRecord(requested) &&
-        Object.keys(requested).join() === EIP1193_METHOD.accounts &&
-        isRecord(requested[EIP1193_METHOD.accounts])
-    )
+    if (!isRecord(requested)) return null
+    const entries = Object.entries(requested)
+    return entries.length > 0 && entries.every(([, value]) => isRecord(value))
+        ? entries.map(([name]) => name)
+        : null
 }
 
 export const createEip1193ConnectionHandler = (
@@ -1039,6 +1038,14 @@ export const createEip1193ConnectionHandler = (
                 request.method,
                 request.params,
             )
+            if (!answer.ok) {
+                logger.debug('[eip1193] node refused read', {
+                    method: request.method,
+                    code: answer.error.code,
+                    message: answer.error.message,
+                    data: answer.error.data,
+                })
+            }
             return deliver(
                 respond,
                 answer.ok
@@ -1281,12 +1288,25 @@ export const createEip1193ConnectionHandler = (
                 )
             }
             case EIP1193_METHOD.requestPermissions: {
-                if (!isAccountsPermissionRequest(request.params)) {
+                const requested = requestedPermissionsOf(request.params)
+                if (!requested) {
                     return deliver(
                         respond,
                         jsonRpcError(
                             request.id,
                             EIP1193_ERROR_CODE.invalidParams,
+                            'Expected [{ eth_accounts: {} }]',
+                        ),
+                    )
+                }
+                // Anything beyond eth_accounts is refused rather than quietly
+                // narrowed to it.
+                if (requested.join() !== EIP1193_METHOD.accounts) {
+                    return deliver(
+                        respond,
+                        jsonRpcError(
+                            request.id,
+                            EIP1193_ERROR_CODE.unsupportedMethod,
                             'Pera grants only eth_accounts',
                         ),
                     )
@@ -1336,8 +1356,20 @@ export const createEip1193ConnectionHandler = (
     const onRequest = (
         ctx: DappRequestContext,
         request: JsonRpcRequest,
-        respond: DappRespond,
+        pageRespond: DappRespond,
     ): void => {
+        // Params stay out: they carry addresses, calldata and messages to sign.
+        // A relayed node's message is its own text and can echo an argument.
+        const respond: DappRespond = response => {
+            if ('error' in response) {
+                logger.debug('[eip1193] request rejected', {
+                    method: request.method,
+                    code: response.error.code,
+                    message: response.error.message,
+                })
+            }
+            return pageRespond(response)
+        }
         void dispatch(ctx, request, respond).catch((error: unknown) => {
             // A request that threw between claiming the site's slot and handing
             // over the proposal would otherwise hold it forever.

@@ -80,12 +80,8 @@ export const toSearchRows = (input: RowsInput): SearchRow[] => {
     // A typed URL is itself the result: its row opens the page in the browser.
     const hasTypedUrlRow =
         input.isWebSearchRowVisible && input.typedUrl !== null
-    if (input.isWebSearchRowVisible) {
-        rows.push(
-            input.typedUrl === null
-                ? { key: 'web-search', kind: 'webSearch' }
-                : { key: 'typed-url', kind: 'typedUrl', url: input.typedUrl },
-        )
+    if (hasTypedUrlRow && input.typedUrl !== null) {
+        rows.push({ key: 'typed-url', kind: 'typedUrl', url: input.typedUrl })
     }
     // dApps are not searched under Markets.
     const isDappsUnavailable =
@@ -123,6 +119,10 @@ export const toSearchRows = (input: RowsInput): SearchRow[] => {
         input.assetResults.length === 0
     ) {
         rows.push({ key: 'no-results', kind: 'noResults' })
+    }
+    // The web search is the way out when nothing in the app fits, so it comes after what does.
+    if (input.isWebSearchRowVisible && !hasTypedUrlRow) {
+        rows.push({ key: 'web-search', kind: 'webSearch' })
     }
     return rows
 }

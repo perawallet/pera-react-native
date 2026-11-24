@@ -12,6 +12,7 @@
 
 import type { ReactElement } from 'react'
 import {
+    PWBadge,
     PWButton,
     PWFlatList,
     PWIcon,
@@ -26,7 +27,10 @@ import { LoadingView } from '@components/LoadingView'
 import { SearchInput } from '@components/SearchInput'
 import { useLanguage } from '@hooks/useLanguage'
 import { AssetItemView } from '@modules/assets'
-import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
+import {
+    PeraAssetVerificationTier,
+    type DisplayableAsset,
+} from '@perawallet/wallet-core-assets'
 import { DappRow } from '../../components/DappRow'
 import type { RecentSearch } from '../../store/useDiscoverRecentSearchesStore'
 import { dappHostOf } from '../../utils/normalizeDappUrl'
@@ -217,7 +221,18 @@ export const DiscoverSearchScreen = () => {
                         asset={item.result.asset}
                         chainId={item.result.scope.chainId}
                         showChainBadge={search.showChains}
+                        // An unvetted asset can carry a known project's name, so it says what it is.
+                        titleAccessory={
+                            item.result.asset.peraMetadata?.verificationTier ===
+                            PeraAssetVerificationTier.unverified ? (
+                                <PWBadge
+                                    variant='secondary'
+                                    value={t('discover.search.unverified')}
+                                />
+                            ) : undefined
+                        }
                         onPress={() => search.openAsset(item.result)}
+                        style={styles.assetRow}
                     />
                 )
             }

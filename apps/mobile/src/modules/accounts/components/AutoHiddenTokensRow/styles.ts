@@ -13,25 +13,7 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.md,
-        padding: theme.spacing.lg,
-        backgroundColor: theme.colors.layerGrayLighter,
-        borderRadius: theme.spacing.lg,
-        borderWidth: theme.borders.sm,
-        borderColor: theme.colors.layerGray,
-    },
-    content: {
-        flexGrow: 1,
-        flexShrink: 1,
-        minWidth: 0,
-    },
-    title: {
-        color: theme.colors.textMain,
-    },
-    counterparty: {
-        color: theme.colors.textGray,
+    row: {
+        marginTop: theme.spacing.lg,
     },
 }))

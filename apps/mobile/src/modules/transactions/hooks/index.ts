@@ -52,7 +52,3 @@ export {
     useSuspectedAddressReuseGuard,
     type UseSuspectedAddressReuseGuardParams,
 } from './address-safety/useSuspectedAddressReuseGuard'
-export {
-    useSuspectedPoisoningSheet,
-    type UseSuspectedPoisoningSheetResult,
-} from './address-safety/useSuspectedPoisoningSheet'

@@ -181,6 +181,16 @@ export class RNMigrationService implements MigrationService {
         this.keyValueStorage.removeItem(MIGRATION_STEPS_KEY)
     }
 
+    async wipeLegacyData(): Promise<void> {
+        const module = getNativeModule()
+        if (!module || typeof module.wipeMigratedLegacyData !== 'function') {
+            throw new Error(
+                'Native LegacyMigration module cannot wipe migrated data',
+            )
+        }
+        await module.wipeMigratedLegacyData()
+    }
+
     async getCompletedStepVersions(): Promise<Nullable<MigrationStepVersions>> {
         const raw = this.keyValueStorage.getItem(MIGRATION_STEPS_KEY)
         if (!raw) return null
@@ -276,6 +286,8 @@ interface NativeLegacyMigrationModule {
     simulatePreSixxAccounts?(): Promise<void>
 
     resetLegacyData?(): Promise<void>
+
+    wipeMigratedLegacyData?(): Promise<void>
 }
 
 const getNativeModule = (): Nullable<NativeLegacyMigrationModule> =>

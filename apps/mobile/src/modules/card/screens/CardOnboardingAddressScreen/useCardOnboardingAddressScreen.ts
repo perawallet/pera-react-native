@@ -49,6 +49,7 @@ import { routeCapabilities } from '@routes/capabilities'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
+import { stripRichTextTags } from '@i18n/stripRichTextTags'
 
 import { logger, type Optional } from '@perawallet/wallet-core-shared'
 import { useCardScope } from '../../hooks/useCardScope'
@@ -85,6 +86,9 @@ export type UseCardOnboardingAddressScreenResult = {
     handleTogglePlatformTerms: () => void
     handleOpenCardTerms: () => void
     handleOpenPlatformTerms: () => void
+    /** The terms sentences without their link markup, to name each checkbox. */
+    cardTermsAccessibilityLabel: string
+    platformTermsAccessibilityLabel: string
     handleConfirm: () => void
 }
 
@@ -422,6 +426,12 @@ export const useCardOnboardingAddressScreen =
             handleTogglePlatformTerms,
             handleOpenCardTerms,
             handleOpenPlatformTerms,
+            cardTermsAccessibilityLabel: stripRichTextTags(
+                t('peraCard.address.card_terms'),
+            ),
+            platformTermsAccessibilityLabel: stripRichTextTags(
+                t('peraCard.address.platform_terms'),
+            ),
             handleConfirm,
         }
     }

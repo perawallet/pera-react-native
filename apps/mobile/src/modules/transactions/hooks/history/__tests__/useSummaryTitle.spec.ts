@@ -13,6 +13,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
+import { imitatedNativeTickerOf } from '@perawallet/wallet-core-currencies'
 import {
     i18nKey,
     type TransactionSummary,
@@ -128,6 +129,17 @@ describe('useSummaryTitle', () => {
         expect(t).toHaveBeenCalledWith('transactions.list_item.swap_pair', {
             from: 'Tether',
             to: 'USDC',
+        })
+    })
+
+    it('Given a title asset whose unit name reads as the native ticker, then the title shows the generic label', () => {
+        stored([{ assetId: TOKEN, unitName: 'ETH' }])
+        vi.mocked(imitatedNativeTickerOf).mockReturnValueOnce('ETH')
+
+        renderHook(() => useSummaryTitle(approval(), SCOPE))
+
+        expect(t).toHaveBeenCalledWith('transactions.list_item.approve_asset', {
+            asset: 'asset.imitated_currency.unit_label',
         })
     })
 })

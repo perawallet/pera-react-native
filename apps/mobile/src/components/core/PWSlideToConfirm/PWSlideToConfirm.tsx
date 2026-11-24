@@ -123,6 +123,7 @@ export const PWSlideToConfirm = ({
                             name='chevron-right'
                             variant='buttonPrimary'
                             size='md'
+                            disabled={isDisabled}
                         />
                     </Animated.View>
                 </GestureDetector>

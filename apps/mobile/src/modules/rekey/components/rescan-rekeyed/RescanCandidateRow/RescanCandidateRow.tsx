@@ -12,7 +12,7 @@
 
 import { memo, useCallback } from 'react'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import { PWCheckbox, PWText, PWTouchableOpacity } from '@components/core'
+import { PWCheckbox, PWText } from '@components/core'
 import { useStyles } from './styles'
 
 export type RescanCandidateRowProps = {
@@ -33,20 +33,20 @@ const RescanCandidateRowComponent = ({
     }, [address, onToggle])
 
     return (
-        <PWTouchableOpacity
-            style={[styles.row, isSelected && styles.rowSelected]}
+        <PWCheckbox
+            label={
+                <PWText variant='bodyLarge'>
+                    {truncateAlgorandAddress(address)}
+                </PWText>
+            }
+            boxPosition='trailing'
+            isChecked={isSelected}
             onPress={handlePress}
+            style={[styles.row, isSelected && styles.rowSelected]}
+            boxStyle={styles.checkboxContainer}
             testID={`rescan-rekeyed-row-${address}`}
-        >
-            <PWText variant='bodyLarge'>
-                {truncateAlgorandAddress(address)}
-            </PWText>
-            <PWCheckbox
-                checked={isSelected}
-                containerStyle={styles.checkboxContainer}
-                testID={`rescan-rekeyed-row-checkbox-${address}`}
-            />
-        </PWTouchableOpacity>
+            boxTestID={`rescan-rekeyed-row-checkbox-${address}`}
+        />
     )
 }
 

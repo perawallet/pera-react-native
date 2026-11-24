@@ -17,7 +17,6 @@ import {
     PWCheckbox,
     PWScreen,
     PWText,
-    PWTouchableOpacity,
     PWView,
 } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
@@ -168,22 +167,22 @@ export const DelegatedSweepSelectScreen = () => {
                             >
                                 {t('rekey.rescan.candidates_section')}
                             </PWText>
-                            <PWTouchableOpacity
+                            <PWCheckbox
+                                label={
+                                    <PWText
+                                        variant='link'
+                                        style={styles.selectAllText}
+                                    >
+                                        {t('rekey.rescan.select_all')}
+                                    </PWText>
+                                }
+                                boxPosition='trailing'
+                                isChecked={isAllSelected}
                                 onPress={toggleSelectAll}
                                 style={styles.selectAllRow}
-                            >
-                                <PWText
-                                    variant='link'
-                                    style={styles.selectAllText}
-                                >
-                                    {t('rekey.rescan.select_all')}
-                                </PWText>
-                                <PWCheckbox
-                                    checked={isAllSelected}
-                                    containerStyle={styles.checkboxContainer}
-                                    testID='rescan-rekeyed-select-all-checkbox'
-                                />
-                            </PWTouchableOpacity>
+                                boxStyle={styles.checkboxContainer}
+                                testID='rescan-rekeyed-select-all-checkbox'
+                            />
                         </PWView>
 
                         {candidateAddresses.map(address => (

@@ -14,12 +14,7 @@ import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { Trans } from 'react-i18next'
 import { useLanguage } from '@hooks/useLanguage'
 import { SwapAssetPairIcon } from '@modules/swap/components/SwapAssetPairIcon'
-import {
-    DEFAULT_PRECISION,
-    formatDatetime,
-    formatNumber,
-    baseUnitsToDisplayUnits,
-} from '@perawallet/wallet-core-shared'
+import { formatDatetime } from '@perawallet/wallet-core-shared'
 import { useTheme } from '@rneui/themed'
 import { swapHistoryStatusKey } from '../../utils/swapHistoryStatusKey'
 import type { ListedSwapHistoryItem } from './useSwapHistoryList'
@@ -30,21 +25,6 @@ export type SwapHistoryListItemProps = {
     onPress: (item: ListedSwapHistoryItem) => void
 }
 
-const formatAmount = (
-    amountBaseUnits: ListedSwapHistoryItem['amountIn'],
-    decimals: number,
-): string => {
-    if (!amountBaseUnits) return '-'
-    const display = baseUnitsToDisplayUnits(amountBaseUnits, decimals)
-    const { sign, integer, fraction } = formatNumber(
-        display,
-        decimals,
-        undefined,
-        DEFAULT_PRECISION,
-    )
-    return `${sign}${integer}${fraction}`
-}
-
 export const SwapHistoryListItem = ({
     item,
     onPress,
@@ -53,13 +33,6 @@ export const SwapHistoryListItem = ({
     const { theme } = useTheme()
     const { t } = useLanguage()
 
-    const inDecimals = item.assetIn.decimals ?? 0
-    const outDecimals = item.assetOut.decimals ?? 0
-    const inUnit = item.assetIn.unitName ?? ''
-    const outUnit = item.assetOut.unitName ?? ''
-
-    const amountInLabel = `${formatAmount(item.amountIn, inDecimals)} ${inUnit}`
-    const amountOutLabel = `${formatAmount(item.amountOut, outDecimals)} ${outUnit}`
     const isCompleted = item.status === 'completed'
     const statusKey = swapHistoryStatusKey(item.status)
     const statusLabel = statusKey ? t(statusKey) : ''
@@ -67,6 +40,9 @@ export const SwapHistoryListItem = ({
     const trailingLabel = isCompleted
         ? formatDatetime(item.updatedAt, undefined, 'medium')
         : statusLabel
+    const secondaryLabel = [trailingLabel, item.accountName]
+        .filter(Boolean)
+        .join(' · ')
 
     return (
         <PWTouchableOpacity
@@ -93,24 +69,27 @@ export const SwapHistoryListItem = ({
                                 : 'swap.history.list.item.description_unsettled'
                         }
                         components={[
-                            <PWText key='amount-in'>{amountInLabel}</PWText>,
+                            <PWText key='amount-in'>
+                                {item.amountInLabel}
+                            </PWText>,
                             <PWText
                                 key='amount-out'
                                 variant='bodySemibold'
                             >
-                                {amountOutLabel}
+                                {item.amountOutLabel}
                             </PWText>,
                         ]}
                     />
-                    {!!trailingLabel && (
-                        <PWText
-                            variant='body'
-                            style={styles.itemDate}
-                        >
-                            {` · ${trailingLabel}`}
-                        </PWText>
-                    )}
                 </PWText>
+                {!!secondaryLabel && (
+                    <PWText
+                        variant='body'
+                        style={styles.itemDate}
+                        truncate
+                    >
+                        {secondaryLabel}
+                    </PWText>
+                )}
             </PWView>
             {!!item.explorerUrl && (
                 <PWIcon

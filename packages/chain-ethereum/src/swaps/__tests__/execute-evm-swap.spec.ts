@@ -26,7 +26,11 @@ import {
     encodeFunctionResult,
     erc20Abi,
     getAddress,
+    hexToBytes,
+    isAddressEqual,
+    keccak256,
     numberToHex,
+    parseTransaction,
     serializeTransaction,
 } from 'viem'
 import type { Address, Hex } from 'viem'
@@ -58,8 +62,15 @@ import {
     TOKEN,
 } from '../../connect/callBatch/__tests__/harness'
 import { testChainContext } from '../../__tests__/context'
-import { ETHEREUM, evmScopeOf } from '../../__tests__/evm-chains'
+import {
+    BASE,
+    eip155IdOf,
+    ETHEREUM,
+    evmScopeOf,
+} from '../../__tests__/evm-chains'
 import { readEvmTransaction } from '../../signing/adapter'
+import { OP_STACK_ORACLE_ADDRESS } from '../../transfer/__tests__/op-stack-oracle'
+import { VIEM_TRANSFER_NONCE_0 } from '../../signing/__tests__/fixtures'
 import {
     submitAndRecordEthereumTransactions,
     waitForEvmReceipt,
@@ -731,5 +742,97 @@ describe('executeEvmSwap', () => {
         expect(context.onOrderSubmitting).toHaveBeenCalledWith('order-1', {
             isPaidOutLater: true,
         })
+    })
+    it('runs the same approval then swap on Base, signed and sent for Base', async () => {
+        const baseScope = evmScopeOf(BASE)
+        const baseId = eip155IdOf(BASE)
+        const baseUsdc = getAddress(
+            '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+        )
+        const baseCall = (to: Address, data: Hex) =>
+            serializeTransaction({
+                type: 'eip1559',
+                chainId: baseId,
+                to,
+                data,
+                nonce: ROUTER_NONCE,
+                gas: 1n,
+                maxFeePerGas: 1n,
+                maxPriorityFeePerGas: 1n,
+            })
+        const approve = baseCall(
+            baseUsdc,
+            encodeFunctionData({
+                abi: erc20Abi,
+                functionName: 'approve',
+                args: [ROUTER, AMOUNT],
+            }),
+        )
+        const { r, s: sValue } = parseTransaction(VIEM_TRANSFER_NONCE_0)
+        const node = fakeNode({
+            balance: RICH,
+            callResult: params => {
+                const { to } = params[0] as { to: Address }
+                return isAddressEqual(to, OP_STACK_ORACLE_ADDRESS)
+                    ? numberToHex(1_000n, { size: 32 })
+                    : '0x'
+            },
+        })
+        const context = contextOf(
+            {
+                ...orderOf([approve, baseCall(ROUTER, '0x3593564c')]),
+                steps: [
+                    {
+                        kind: 'sign-transactions',
+                        scope: baseScope,
+                        purpose: 'swap',
+                        transactions: [approve, baseCall(ROUTER, '0x3593564c')],
+                        presignedTransactions: null,
+                    },
+                ],
+            },
+            async request => {
+                const [unsigned] = request.txs as UnsignedTransaction[]
+                const { transaction } = readEvmTransaction(unsigned, BASE)
+                const bytes = serializeTransaction(
+                    { ...transaction, type: 'eip1559' },
+                    { r: r as Hex, s: sValue as Hex, yParity: 0 },
+                )
+                await request.approve?.([
+                    {
+                        scope: unsigned.scope,
+                        id: keccak256(bytes),
+                        bytes: hexToBytes(bytes),
+                    },
+                ])
+            },
+        )
+        const quote = {
+            ...quoteOf(baseUsdc),
+            request: {
+                ...quoteOf(baseUsdc).request,
+                sourceAsset: { ...baseScope, assetId: baseUsdc },
+                destinationAsset: {
+                    ...baseScope,
+                    assetId: BASE.nativeAsset.assetId,
+                },
+            },
+        } as SwapQuote
+
+        const result = await executeEvmSwap({
+            ctx: testChainContext({ chain: BASE }),
+            chain: BASE,
+            input: inputOf({ quote }),
+            context: { ...context, scope: baseScope },
+        })
+
+        expect(result.kind).toBe('success')
+        expect(
+            [...node.sent.values()].map(raw => parseTransaction(raw).chainId),
+        ).toEqual([baseId, baseId])
+        expect(context.signed.map(tx => tx.scope)).toEqual([
+            baseScope,
+            baseScope,
+        ])
     })
 })

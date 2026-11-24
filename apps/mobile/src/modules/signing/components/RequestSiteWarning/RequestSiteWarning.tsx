@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import { PWText } from '@components/core'
-import { CheckboxRow } from '@components/CheckboxRow'
+import { PWCheckbox, PWText } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useRequestSiteSafety } from '../../hooks/useRequestSiteSafety'
 import { WarningBanner, WarningBannerBody } from '../WarningBanner'
@@ -44,10 +43,10 @@ export const RequestSiteWarning = () => {
                     ? t('site_safety.blocked.body_verify')
                     : t('site_safety.blocked.body')}
             </WarningBannerBody>
-            <CheckboxRow
+            <PWCheckbox
                 label={t('site_safety.blocked.acknowledge')}
                 isChecked={isAcknowledged}
-                onToggle={toggleAcknowledged}
+                onPress={toggleAcknowledged}
                 testID='request_site_acknowledge'
             />
         </WarningBanner>

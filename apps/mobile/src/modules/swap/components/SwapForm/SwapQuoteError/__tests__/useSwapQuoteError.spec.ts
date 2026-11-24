@@ -57,7 +57,7 @@ const asset = (unitName: string, decimals: number) => ({
     decimals,
 })
 
-const render = (failure: SwapQuoteFailure) =>
+const render = (failure: SwapQuoteFailure, isMinimumAboveSpendable = false) =>
     renderHook(() =>
         useSwapQuoteError({
             failure,
@@ -65,6 +65,7 @@ const render = (failure: SwapQuoteFailure) =>
             payAssetId: 'pay',
             receiveScope: SCOPE,
             receiveAssetId: 'receive',
+            isMinimumAboveSpendable,
         }),
     ).result.current
 
@@ -86,6 +87,21 @@ describe('useSwapQuoteError', () => {
 
         expect(message).toBe(
             `swap.quote.amount_too_low|${JSON.stringify({
+                network: 'Ethereum',
+                amount: '1.000001',
+                unit: 'USDC',
+            })}`,
+        )
+    })
+
+    it('says the available balance is short of a minimum the account cannot reach', () => {
+        const { message } = render(
+            { kind: 'amount-too-low', minimum: new Decimal(1_000_001) },
+            true,
+        )
+
+        expect(message).toBe(
+            `swap.quote.amount_too_low_above_balance|${JSON.stringify({
                 network: 'Ethereum',
                 amount: '1.000001',
                 unit: 'USDC',

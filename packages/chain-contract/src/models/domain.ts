@@ -310,6 +310,8 @@ export interface TransactionRecord {
      * say. A `direction: 'out'` summary alone doesn't prove the account sent it.
      */
     initiator?: string
+    /** Another address signed it, though the history names none; only ever set without `initiator`. */
+    isSignedElsewhere?: boolean
     summary: TransactionSummary
     chainData: ChainTransactionData
 }
@@ -506,6 +508,53 @@ export interface SpendApproval {
     isLongLived: boolean
 }
 
+/**
+ * The CAIP-122 data model shared by SIWE, SIWS and Algorand's sign-in. Each
+ * chain owns the serialisation and the signature `type`, so neither is here.
+ */
+export type SiwxMessage = {
+    /** The scheme the message names before its domain, when it names one. */
+    scheme?: string
+    domain: string
+    address: string
+    uri: string
+    version: string
+    chainId: string
+    statement?: string
+    nonce?: string
+    issuedAt?: string
+    expirationTime?: string
+    notBefore?: string
+    requestId?: string
+    resources?: string[]
+}
+
+/** A capability a sign-in delegates to the site; requester text, never translated. */
+export interface SignInGrant {
+    /** The resource the abilities apply to, e.g. a URL or a DID. */
+    target: string
+    /** Namespaced ability names, e.g. `crud/update`. */
+    abilities: string[]
+}
+
+/** A sign-in message, checked against the request it arrived in. */
+export interface SignInSummary {
+    /** Requester text, never translated. */
+    message: SiwxMessage
+    /** The network `message.chainId` names; absent when the wallet knows no such network. */
+    messageScope?: ChainScope
+    /** The message names an address other than the request's signer. */
+    isOtherAddress: boolean
+    /** The message names a chain other than the network the request is signed on. */
+    isOtherChain: boolean
+    /** What the message's capability resources grant the site, in message order. */
+    grants: SignInGrant[]
+    /** A capability resource could not be read, so it grants something unknown. */
+    hasUnreadableGrants: boolean
+    /** The message strays from the sign-in format, so the site may read it differently than shown. */
+    isMalformed: boolean
+}
+
 export interface MessageSummary {
     kind: 'text' | 'typed-data' | 'raw'
     title: LocalizedText
@@ -514,6 +563,8 @@ export interface MessageSummary {
     tree?: MessageTreeNode[]
     /** Set on kind `'typed-data'` when signing lets someone else move the signer's assets. */
     spendApproval?: SpendApproval
+    /** Set on kind `'text'` when the text is a sign-in message. */
+    signIn?: SignInSummary
 }
 
 export interface MessageRequest {

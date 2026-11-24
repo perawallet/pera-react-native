@@ -38,6 +38,7 @@ import { createEvmHistoryAdapter, getEvmTransactionHistory } from '../adapter'
 import { ETHEREUM, POLYGON } from '../../__tests__/evm-chains'
 import { fetchHistoryPage } from '../api/endpoints'
 import { storeEvmHistoryPage } from '../history-cache'
+import { keepTokensTheAccountSent } from '../kept-tokens'
 import { evmHistoryItem, evmNftTransferLeg } from '../api/msw-handlers'
 import {
     createHistoryPageBudget,
@@ -54,6 +55,10 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal =>
         importOriginal,
     ),
 )
+
+vi.mock('../kept-tokens', () => ({
+    keepTokensTheAccountSent: vi.fn(),
+}))
 
 vi.mock('../history-cache', async importOriginal => ({
     ...(await importOriginal<typeof import('../history-cache')>()),
@@ -232,6 +237,62 @@ describe('getEvmTransactionHistory', () => {
         expect(items[0]?.initiator).toBeUndefined()
         expect(items[1]?.fee).toEqual(new Decimal(21000))
         expect(items[1]?.initiator).toBe(PEER)
+    })
+
+    it('marks a row known only from a transfer log as signed elsewhere, but not one that names its sender', async () => {
+        serve([
+            [
+                evmHistoryItem({
+                    hash: hash(1),
+                    nft_transfers: [evmNftTransferLeg({ from: ME, to: PEER })],
+                }),
+                evmHistoryItem({ hash: hash(2), from: PEER, to: ME }),
+            ],
+        ])
+
+        const { items } = await getEvmTransactionHistory(ETHEREUM, ME, MAINNET)
+
+        expect(items[0]?.isSignedElsewhere).toBe(true)
+        expect(items[1]?.isSignedElsewhere).toBeUndefined()
+    })
+
+    it('never marks a withdrawal as signed elsewhere', async () => {
+        serve([
+            [
+                evmHistoryItem({
+                    kind: 'withdrawal',
+                    hash: null,
+                    withdrawals: [
+                        { index: 42, validator_index: 1, amount: '9' },
+                    ],
+                    balance_impacts: [
+                        { asset_id: 'eip155:1/slip44:60', amount: '9' },
+                    ],
+                }),
+            ],
+        ])
+
+        const { items } = await getEvmTransactionHistory(ETHEREUM, ME, MAINNET)
+
+        expect(items[0]?.isSignedElsewhere).toBeUndefined()
+    })
+
+    it('leaves rows of an ERC-20 view unmarked, since that view names no sender on any row', async () => {
+        serve([[evmHistoryItem({ hash: hash(1) })]])
+
+        const { items } = await getEvmTransactionHistory(
+            ETHEREUM,
+            ME,
+            MAINNET,
+            undefined,
+            {
+                assetId: getAddress(
+                    '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
+                ),
+            },
+        )
+
+        expect(items[0]?.isSignedElsewhere).toBeUndefined()
     })
 
     it("reads a plain POL transfer as a native receive, not as a token leg of Polygon's 0x…1010 mirror", async () => {
@@ -641,6 +702,31 @@ describe('storing the pages it reads', () => {
             capabilities: evmCapabilityDefaults,
             assetId,
         })
+
+    it('keeps the tokens the account moved on every page it reads', async () => {
+        vi.mocked(keepTokensTheAccountSent).mockClear()
+        serve([[send]])
+
+        await read(getAddress(USDC))
+
+        expect(keepTokensTheAccountSent).toHaveBeenCalledWith(
+            [expect.objectContaining({ hash: hash(1) })],
+            ME,
+            MAINNET,
+            ETHEREUM,
+        )
+    })
+
+    it('still returns the page when keeping tokens throws', async () => {
+        vi.mocked(keepTokensTheAccountSent).mockImplementationOnce(() => {
+            throw new Error('store unavailable')
+        })
+        serve([[send]])
+
+        await expect(read()).resolves.toMatchObject({
+            items: [expect.anything()],
+        })
+    })
 
     it('stores an unfiltered page for the account', async () => {
         serve([[send]])

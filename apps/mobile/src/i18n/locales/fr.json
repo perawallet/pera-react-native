@@ -58,7 +58,8 @@
             "search_web": "Rechercher sur le web",
             "no_results": "Aucun résultat",
             "assets_unavailable": "La recherche d’actifs est indisponible pour le moment",
-            "dapps_unavailable": "La recherche de dApps est indisponible pour le moment"
+            "dapps_unavailable": "La recherche de dApps est indisponible pour le moment",
+            "unverified": "Non vérifié"
         },
         "news": {
             "title": "Actualités",
@@ -287,7 +288,11 @@
         "hidden_toast_body": "Il n’apparaîtra plus dans vos actifs et ne comptera plus dans votre solde. Affichez-le de nouveau depuis Gérer les actifs > Masquer des jetons.",
         "hidden_swipe_toast_body": "Touchez pour annuler. Il n’apparaîtra plus dans vos actifs et ne comptera plus dans votre solde.",
         "shown_toast_title": "{{assetName}} affiché",
-        "filtered_note": "Pera a signalé ce jeton comme suspect, il reste donc hors de vos actifs. Affichez-le avec « Afficher les actifs suspects » dans les filtres d’actifs."
+        "filtered_note": "Pera a signalé ce jeton comme suspect, il reste donc hors de vos actifs. Affichez-le depuis « Jetons masqués », à la fin de vos actifs.",
+        "auto_hidden_row_title": "Jetons masqués ({{total}})",
+        "auto_hidden_title": "Jetons masqués",
+        "auto_hidden_description": "Pera a masqué ces jetons, car ils ressemblent à du spam ou à des arnaques. Ne visitez pas les sites web qu’ils mentionnent. Affichez un jeton pour le voir de nouveau dans la liste ; il ne comptera toujours pas dans votre solde.",
+        "auto_hidden_empty_title": "Aucun jeton masqué"
     },
     "deeplink": {
         "error": {
@@ -386,7 +391,8 @@
         "imitated_currency": {
             "marker": "Imite {{code}}",
             "title": "Cet actif n’est pas {{code}}",
-            "body": "Son nom d’unité est {{code}}, mais il s’agit d’un actif distinct que n’importe qui a pu créer. Le recevoir ne vous donne aucun {{code}}."
+            "body": "Son nom d’unité est {{code}}, mais il s’agit d’un actif distinct que n’importe qui a pu créer. Le recevoir ne vous donne aucun {{code}}.",
+            "unit_label": "Actif inconnu"
         }
     },
     "asset_details": {
@@ -446,7 +452,7 @@
             "empty_filtered_body": "Aucune transaction ne correspond à ce filtre",
             "empty_on_network_body": "Aucune transaction pour le moment sur {{network}}",
             "network_failed": "Impossible de charger les transactions sur {{networks}}",
-            "network_unavailable": "Les transactions ne sont pas disponibles sur {{networks}}",
+            "network_unavailable": "L’historique complet n’est pas disponible sur {{networks}}",
             "offline_empty_title": "Vous êtes hors ligne",
             "offline_empty_body": "Aucune transaction n’est encore enregistrée sur cet appareil. Elles apparaîtront dès que vous serez de retour en ligne.",
             "search_paused_body": "Aucune transaction trouvée dans l’historique récent.",
@@ -1205,6 +1211,10 @@
             "title": "Copié dans le presse-papiers",
             "body": ""
         },
+        "address_copied": {
+            "algorand": "Adresse Algorand copiée",
+            "evm": "Adresse EVM copiée"
+        },
         "email_failed": {
             "title": "Impossible d’ouvrir l’app e-mail",
             "body": "Aucune app e-mail n’est configurée sur cet appareil. Vous pouvez écrire directement à {{email}}."
@@ -1231,7 +1241,8 @@
             "asset_empty_body": "Un graphique apparaîtra ici dès que vous aurez un historique de solde pour cet actif sur ce compte",
             "excludes_networks": "Ce graphique n'inclut pas encore les actifs {{networks}}",
             "failed_networks": "Impossible de charger l'historique {{networks}}, ce graphique ne l'inclut donc pas",
-            "currency_unavailable_body": "Ce graphique n'est pas disponible en {{currency}} pour le moment"
+            "currency_unavailable_body": "Ce graphique n'est pas disponible en {{currency}} pour le moment",
+            "balance_change_label": "Variation du solde"
         },
         "webview": {
             "failed_title": "Échec du chargement de la page",
@@ -3298,7 +3309,8 @@
             },
             "fee_shortfall": {
                 "title": "Pas assez de {{symbol}} pour les frais",
-                "body": "Cet envoi peut coûter jusqu’à {{fee}} de frais. Réduisez le montant ou choisissez des frais plus lents."
+                "body": "Cet envoi peut coûter jusqu’à {{fee}} de frais. Réduisez le montant ou choisissez des frais plus lents.",
+                "body_non_native": "Cet envoi peut coûter jusqu’à {{fee}} de frais sur {{network}}. Ajoutez des {{symbol}} ou choisissez des frais plus lents."
             },
             "fee_unavailable": {
                 "title": "Impossible d’estimer les frais",
@@ -3629,6 +3641,31 @@
             "typed_data_warning_title": "Cette signature peut déplacer vos tokens",
             "typed_data_warning_body": "Signer des données structurées peut autoriser une application à dépenser ou échanger vos tokens sans vous redemander votre accord. N’approuvez que si vous faites confiance à cette application."
         },
+        "sign_in": {
+            "title": "Se connecter à {{domain}}",
+            "domain": "Domaine",
+            "address": "Adresse",
+            "uri": "URI",
+            "chain_id": "ID de chaîne",
+            "nonce": "Nonce",
+            "issued_at": "Émis",
+            "expires_at": "Expire",
+            "advanced": "Avancé",
+            "site_mismatch_title": "Cette connexion concerne un autre site",
+            "site_mismatch_body": "Le message vous connecte à {{domain}}, mais la demande provient de {{site}}. N’approuvez que si vous faites confiance aux deux.",
+            "other_address_note": "Le message indique {{address}}, et non le compte qui signe.",
+            "other_chain_note": "Le message indique {{chain}}, et non le réseau de cette demande. La connexion n’envoie aucune transaction.",
+            "other_chain_id_note": "Le message indique l’ID de chaîne {{chainId}}, et non le réseau de cette demande. La connexion n’envoie aucune transaction.",
+            "statement_label": "Message de {{domain}}",
+            "not_before": "Valide à partir du",
+            "request_id": "ID de la demande",
+            "resource": "Ressource",
+            "grants_title": "Cette connexion accorde aussi des autorisations",
+            "grants_body": "En signant, vous permettez à {{domain}} d’agir pour vous avec les autorisations ci-dessous. N’approuvez que si vous faites confiance à ce site.",
+            "grants_unreadable_body": "Cette connexion accorde à {{domain}} des autorisations que Pera ne peut pas lire. N’approuvez que si vous faites confiance à ce site.",
+            "malformed_title": "Ce message de connexion contient un contenu inattendu",
+            "malformed_body": "Certaines parties de ce message ne suivent pas le format de connexion, donc {{domain}} pourrait le lire autrement qu'affiché ici. Vérifiez le message complet dans Avancé et n'approuvez que si vous faites confiance au site."
+        },
         "spend_approval": {
             "spend_warning": "Cette signature permet à une autre adresse de déplacer des tokens depuis votre compte sans vous redemander votre accord.",
             "spend_warning_transaction": "Cette transaction permet à une autre adresse de déplacer des tokens depuis votre compte sans vous redemander votre accord.",
@@ -3918,7 +3955,8 @@
             "nft_subtitle": "{{collection}} #{{tokenId}}",
             "nft_batch_subtitle": "{{collection}} · {{count}} éléments",
             "inner_transaction_count": "{{innerCount}} transactions internes",
-            "cancel_transaction": "Annulation"
+            "cancel_transaction": "Annulation",
+            "not_sent_by_you": "Non envoyé par vous"
         },
         "record_detail": {
             "read_failed": "Impossible de lire depuis le réseau les détails de l’appel de cette transaction.",
@@ -4099,6 +4137,9 @@
             "reuse_body": "Elle commence et se termine comme une adresse que vous connaissez, mais ce n’est pas la même. Comparez les adresses complètes avant de l’utiliser.",
             "reuse_confirm": "Continuer quand même",
             "reuse_cancel": "Annuler"
+        },
+        "suspicious_token": {
+            "marker": "Jeton suspect"
         }
     },
     "tabbar": {
@@ -4293,6 +4334,7 @@
             "quote_error": "Impossible d’obtenir des cotations. Veuillez réessayer.",
             "amount_too_low": "Montant trop faible pour un swap sur {{network}}. Le minimum est de {{amount}} {{unit}}.",
             "amount_too_low_fiat": "Montant trop faible pour un swap sur {{network}}. Le minimum est de {{amount}} {{unit}} (~{{fiat}}).",
+            "amount_too_low_above_balance": "Votre solde disponible est inférieur au minimum de {{amount}} {{unit}} pour un swap sur {{network}}.",
             "use_minimum": "Utiliser le minimum",
             "amount_too_low_unknown": "Montant trop faible pour un swap sur {{network}}. Essayez un montant plus élevé ou un réseau aux frais plus bas.",
             "amount_too_high": "Montant trop élevé pour un swap. Le maximum est de {{amount}} {{unit}}.",
@@ -4312,9 +4354,12 @@
                 "swap": "Échec du swap"
             },
             "provider_failed_body": "Ce fournisseur n’a pas pu effectuer le swap. Veuillez essayer un autre fournisseur.",
+            "provider_failed_single_body": "Le fournisseur n’a pas pu effectuer le swap. Veuillez réessayer plus tard ou essayer un autre montant.",
             "provider_unavailable_body": "Le fournisseur est indisponible pour le moment. Veuillez réessayer dans un instant.",
             "quote_mismatch_body": "Les transactions du fournisseur ne correspondaient pas à cette cotation, rien n’a donc été signé. Veuillez réessayer ou choisir un autre fournisseur.",
+            "quote_mismatch_single_body": "Les transactions du fournisseur ne correspondaient pas à cette cotation, rien n’a donc été signé. Veuillez réessayer plus tard.",
             "unsupported_order_body": "Pera ne peut pas finaliser l’ordre de ce fournisseur, rien n’a donc été signé. Choisissez un autre fournisseur.",
+            "unsupported_order_single_body": "Pera ne peut pas finaliser l’ordre de ce fournisseur, rien n’a donc été signé. Veuillez réessayer plus tard.",
             "signing_failed_body": "La transaction n’a pas pu être signée, elle n’a donc pas été envoyée. Veuillez réessayer.",
             "order_insufficient_balance_body": "Votre solde ne couvre pas ce montant et les frais de réseau. Essayez un montant plus faible ou ajoutez des fonds pour les frais.",
             "insufficient_native_body": "Ce compte a besoin d’au moins {{amount}} {{symbol}} supplémentaires pour couvrir ce swap, ses frais et le solde minimum. Ajoutez des fonds en {{symbol}}, puis réessayez.",
@@ -4361,6 +4406,8 @@
                         "refunded": "Remboursé"
                     }
                 },
+                "account_filter_all": "Tous les comptes",
+                "load_more": "Charger plus",
                 "empty": {
                     "title": "Aucun swap pour le moment",
                     "body": "Votre historique de swaps apparaîtra ici."

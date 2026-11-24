@@ -11,13 +11,7 @@
  */
 
 import React from 'react'
-import {
-    PWButton,
-    PWCheckbox,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
+import { PWButton, PWCheckbox, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from '../styles'
 import { useForgotPasswordView } from './useForgotPasswordView'
@@ -67,25 +61,22 @@ export const ForgotPasswordView = ({
             >
                 {t('vault.reset.hardware_note')}
             </PWText>
-            <PWTouchableOpacity
-                style={styles.acknowledgeRow}
+            <PWCheckbox
+                label={
+                    <PWText
+                        variant='body'
+                        style={styles.acknowledgeText}
+                    >
+                        {t('vault.reset.acknowledge')}
+                    </PWText>
+                }
+                isChecked={isAcknowledged}
                 onPress={toggleAcknowledged}
-                disabled={isResetting}
-            >
-                <PWCheckbox
-                    testID='forgot-password-acknowledge'
-                    checked={isAcknowledged}
-                    onPress={toggleAcknowledged}
-                    disabled={isResetting}
-                    containerStyle={styles.checkboxContainer}
-                />
-                <PWText
-                    variant='body'
-                    style={styles.acknowledgeText}
-                >
-                    {t('vault.reset.acknowledge')}
-                </PWText>
-            </PWTouchableOpacity>
+                isDisabled={isResetting}
+                style={styles.acknowledgeRow}
+                boxStyle={styles.checkboxContainer}
+                testID='forgot-password-acknowledge'
+            />
             {hasError && (
                 <PWText
                     testID='forgot-password-error'

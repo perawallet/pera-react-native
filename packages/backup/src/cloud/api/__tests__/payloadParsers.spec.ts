@@ -509,6 +509,17 @@ describe('parseSettingsPayload', () => {
         ).toEqual(hiddenTokens)
     })
 
+    it('keeps a well-formed kept token map', () => {
+        const keptTokens = {
+            value: { 'ethereum/mainnet': { '0xabc': ['0x1'] } },
+            updatedAt: 4,
+        }
+
+        expect(
+            parseSettingsPayload(JSON.stringify({ keptTokens })).keptTokens,
+        ).toEqual(keptTokens)
+    })
+
     it('drops a malformed hidden token map without losing the other settings', () => {
         const language = { value: 'tr', updatedAt: 2 }
 

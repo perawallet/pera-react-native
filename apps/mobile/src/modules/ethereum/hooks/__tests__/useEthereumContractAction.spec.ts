@@ -318,7 +318,7 @@ describe('useEthereumContractAction', () => {
             viewWith(
                 {
                     kind: 'supply',
-                    asset: USDC,
+                    asset: { kind: 'token', contract: USDC },
                     amount: new Decimal(3_000_000),
                     isEntireBalance: false,
                 },
@@ -338,12 +338,38 @@ describe('useEthereumContractAction', () => {
         })
     })
 
+    it('presents a gateway supply in the native coin it sends, with no token contract', () => {
+        mockRecords({ [WETH]: WETH_RECORD })
+
+        const { contractAction } = render(
+            viewWith(
+                {
+                    kind: 'supply',
+                    asset: { kind: 'native' },
+                    amount: new Decimal(5n * 10n ** 15n),
+                    isEntireBalance: false,
+                },
+                { to: POOL },
+            ),
+        )
+
+        expect(contractAction).toEqual({
+            kind: 'supply',
+            amount: {
+                asset: expect.objectContaining({ unitName: 'ETH' }),
+                value: new Decimal('0.005'),
+                isBaseUnits: false,
+            },
+            isEntireBalance: false,
+        })
+    })
+
     it('flags a lending amount as base units when the asset has no record', () => {
         const { contractAction } = render(
             viewWith(
                 {
                     kind: 'repay',
-                    asset: USDC,
+                    asset: { kind: 'token', contract: USDC },
                     amount: new Decimal(3_000_000),
                     isEntireBalance: false,
                 },
@@ -493,7 +519,7 @@ describe('useEthereumContractAction', () => {
             viewWith(
                 {
                     kind: 'withdraw',
-                    asset: USDC,
+                    asset: { kind: 'token', contract: USDC },
                     amount: new Decimal(2).pow(256).minus(1),
                     isEntireBalance: true,
                 },

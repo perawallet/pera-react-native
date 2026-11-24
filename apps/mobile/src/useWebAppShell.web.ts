@@ -15,9 +15,9 @@ import { getSurface } from '@perawallet/wallet-extension-platform-chrome'
 import { getCurrentApproval } from '@perawallet/wallet-core-browser-runtime'
 import { requireSessionMasterKey } from '@perawallet/wallet-extension-vault-chrome'
 import {
+    checkLegacyMaterial,
     getKeystore,
     getProvider,
-    resealLegacyMaterial,
     setEngineKeySource,
 } from '@perawallet/wallet-extension-provider'
 import {
@@ -134,22 +134,21 @@ export const useWebAppShell = (): UseWebAppShellResult => {
         const bootstrap = async (): Promise<void> => {
             // Mirrors native App.tsx:126-156 minus native-only branches
             // (push token, passkey autofill, splash): keystore first (needs
-            // the unlocked master key), then the legacy re-seal, then DB
+            // the unlocked master key), then the legacy check, then DB
             // through the offscreen proxy, then the sync service.
             await getKeystore().ready
-            // Profiles written before the vault sealed material hold records
-            // under the driver's old auto-generated key; nothing may open
-            // material before they move.
-            const resealReport = await resealLegacyMaterial()
-            if (resealReport.unrecoverable.length > 0) {
-                logger.warn('Keystore records unrecoverable after re-seal', {
-                    ids: resealReport.unrecoverable,
+            // The unlock re-sealed what the vault allowed; leftover
+            // native-CryptoKey children re-mint here, before anything opens
+            // material.
+            const checkReport = await checkLegacyMaterial()
+            if (checkReport.unrecoverable.length > 0) {
+                logger.warn('Keystore records unrecoverable after unlock', {
+                    ids: checkReport.unrecoverable,
                 })
             }
-            if (resealReport.resealed > 0 || resealReport.reminted > 0) {
-                logger.info('Keystore records re-sealed', {
-                    resealed: resealReport.resealed,
-                    reminted: resealReport.reminted,
+            if (checkReport.reminted > 0) {
+                logger.info('Keystore children re-minted', {
+                    reminted: checkReport.reminted,
                 })
             }
             // The offscreen document can't open the keystore, so it reads what

@@ -152,6 +152,11 @@ export const useSettingsSecurityScreen =
         const handleBiometricToggle = useCallback(
             async (value: boolean): Promise<boolean> => {
                 if (value) {
+                    // Every PIN sheet takes a biometric pass once this is on,
+                    // so whoever turns it on has to prove the PIN first.
+                    const verified = await openPinSheet('verify')
+                    if (!verified) return false
+
                     const result = await enableBiometrics({
                         title: t('security.biometric.enable_prompt_title'),
                         cancelLabel: t('security.biometric.cancel_label'),
@@ -207,7 +212,7 @@ export const useSettingsSecurityScreen =
                     return true
                 }
             },
-            [enableBiometrics, disableBiometrics, errorToast, t],
+            [openPinSheet, enableBiometrics, disableBiometrics, errorToast, t],
         )
 
         const handleChangePinPress = useCallback(async () => {
