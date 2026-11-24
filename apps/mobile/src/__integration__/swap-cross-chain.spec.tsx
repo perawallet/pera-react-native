@@ -394,7 +394,7 @@ describe('Flow: Cross-chain swap (Algorand into an own Ethereum address)', () =>
 
         expect(outcome).toMatchObject({
             kind: 'error',
-            message: 'swap.execution.quote_mismatch_body',
+            message: 'swap.execution.quote_mismatch_single_body',
         })
         expect(algodBodies).toHaveLength(0)
         expect(useSwapTrackingStore.getState().orders).toEqual({})
@@ -415,7 +415,7 @@ describe('Flow: Cross-chain swap (Algorand into an own Ethereum address)', () =>
 
         expect(outcome).toMatchObject({
             kind: 'error',
-            message: 'swap.execution.quote_mismatch_body',
+            message: 'swap.execution.quote_mismatch_single_body',
         })
         expect(algodBodies).toHaveLength(0)
         expect(useSwapTrackingStore.getState().orders).toEqual({})

@@ -1056,7 +1056,7 @@ describe('Flow: Swap from an Ethereum account', () => {
             kind: 'error',
             phase: 'prepare',
             title: 'swap.execution.failed_title.prepare',
-            message: 'swap.execution.quote_mismatch_body',
+            message: 'swap.execution.quote_mismatch_single_body',
         })
         expect(sent).toEqual([])
         expect(kmsCore.sign).not.toHaveBeenCalled()
@@ -1110,6 +1110,7 @@ describe('Flow: Swap from an Ethereum account', () => {
                     <SwapConfirmationContent
                         scope={ETH_SCOPE}
                         quote={quote}
+                        canChooseProvider={false}
                     />
                 </BottomSheetIdContext.Provider>
             ),

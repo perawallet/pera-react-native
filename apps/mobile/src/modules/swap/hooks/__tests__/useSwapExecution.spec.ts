@@ -667,23 +667,28 @@ describe('useSwapExecution', () => {
                 backendCode: 'order_rejected',
             }),
         ],
-    ])('points %s at another provider', async (_label, error) => {
-        failWith({ phase: 'prepare', reason: 'prepare-failed', error })
-        const { result } = renderHook(() => useSwapExecution())
+    ])(
+        'points %s at another provider when there is one',
+        async (_label, error) => {
+            failWith({ phase: 'prepare', reason: 'prepare-failed', error })
+            const { result } = renderHook(() =>
+                useSwapExecution({ canChooseProvider: true }),
+            )
 
-        const outcome = await executeOnce(result.current.execute)
+            const outcome = await executeOnce(result.current.execute)
 
-        expect(outcome).toEqual({
-            kind: 'error',
-            phase: 'prepare',
-            message: 'swap.execution.provider_failed_body',
-            title: 'swap.execution.failed_title.prepare',
-        })
-        expect(result.current.error).toEqual({
-            phase: 'prepare',
-            message: 'swap.execution.provider_failed_body',
-        })
-    })
+            expect(outcome).toEqual({
+                kind: 'error',
+                phase: 'prepare',
+                message: 'swap.execution.provider_failed_body',
+                title: 'swap.execution.failed_title.prepare',
+            })
+            expect(result.current.error).toEqual({
+                phase: 'prepare',
+                message: 'swap.execution.provider_failed_body',
+            })
+        },
+    )
 
     it.each([
         [
@@ -890,33 +895,68 @@ describe('useSwapExecution', () => {
         })
     })
 
+    it('never points a declined order at another provider when the quote had only one', async () => {
+        failWith({
+            phase: 'prepare',
+            reason: 'prepare-failed',
+            error: new PeraNetworkError('client', { status: 400 }),
+        })
+        const { result } = renderHook(() =>
+            useSwapExecution({ canChooseProvider: false }),
+        )
+
+        const outcome = await executeOnce(result.current.execute)
+
+        expect(outcome).toMatchObject({
+            message: 'swap.execution.provider_failed_single_body',
+        })
+    })
+
     it.each([
         [
             { phase: 'prepare', reason: 'no-signable-steps' } as const,
+            true,
             'swap.execution.unsupported_order_body',
         ],
         [
             { phase: 'prepare', reason: 'unsupported-steps' } as const,
+            true,
             'swap.execution.unsupported_order_body',
         ],
         [
             { phase: 'prepare', reason: 'quote-mismatch' } as const,
+            true,
             'swap.execution.quote_mismatch_body',
         ],
-    ])('maps %o to its message', async (failure, message) => {
-        failWith(failure)
-        const { result } = renderHook(() => useSwapExecution())
+        [
+            { phase: 'prepare', reason: 'unsupported-steps' } as const,
+            false,
+            'swap.execution.unsupported_order_single_body',
+        ],
+        [
+            { phase: 'prepare', reason: 'quote-mismatch' } as const,
+            false,
+            'swap.execution.quote_mismatch_single_body',
+        ],
+    ])(
+        'maps %o (provider choice: %s) to its message',
+        async (failure, canChooseProvider, message) => {
+            failWith(failure)
+            const { result } = renderHook(() =>
+                useSwapExecution({ canChooseProvider }),
+            )
 
-        const outcome = await executeOnce(result.current.execute)
+            const outcome = await executeOnce(result.current.execute)
 
-        expect(outcome).toEqual({
-            kind: 'error',
-            phase: 'prepare',
-            message,
-            title: 'swap.execution.failed_title.prepare',
-        })
-        expect(result.current.error).toEqual({ phase: 'prepare', message })
-    })
+            expect(outcome).toEqual({
+                kind: 'error',
+                phase: 'prepare',
+                message,
+                title: 'swap.execution.failed_title.prepare',
+            })
+            expect(result.current.error).toEqual({ phase: 'prepare', message })
+        },
+    )
 
     describe('re-pricing a quote that is about to lapse', () => {
         const nearlyExpired = () =>
