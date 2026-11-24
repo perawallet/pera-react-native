@@ -48,6 +48,7 @@ import {
     REVIEW_RECEIVER_ADDRESS,
 } from '@test-utils/signing-review'
 import { LedgerUserRejectedError } from '@perawallet/wallet-core-ledger'
+import { useSettingsStore } from '@perawallet/wallet-core-settings'
 import {
     useAccountChainStateStore,
     useAccountsStore,
@@ -64,6 +65,7 @@ import {
     withAlgorandAuthorizer,
 } from '@perawallet/wallet-core-chain-algorand/signing'
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
+import { UserPreferences } from '@constants/user-preferences'
 import { registerFakeLedgerProvider } from './__fixtures__/ledger'
 import { QUANTUM_TEST_ADDRESS } from './__fixtures__/quantum'
 
@@ -270,10 +272,14 @@ describe('Flow: interactive signing with a rekeyed sender / WC device reject', (
     describe('a dApp naming a rekeyed account as the signer', () => {
         const ESCROW_ADDRESS = generateAccount().addr.toString()
 
-        const buildNamedSignerRequest = (namedSigner: string) => {
+        const buildNamedSignerRequest = (
+            namedSigner: string,
+            rekeyTo?: string,
+        ) => {
             const transaction = buildPaymentTransaction({
                 sender: ESCROW_ADDRESS,
                 receiver: namedSigner,
+                rekeyTo,
             })
             return buildTransactionSignRequest({
                 txs: [transaction],
@@ -357,6 +363,45 @@ describe('Flow: interactive signing with a rekeyed sender / WC device reject', (
 
             expect(signed.sgnr?.toString()).toBe(AUTH_ADDRESS)
             expect(signed.sig?.length).toBe(64)
+        })
+
+        it('Given the named signer is rekeyed to an address outside the wallet, when a rekey is confirmed with rekey support off, then the rekey warning shows and the guard blocks signing', async () => {
+            await seedAlgo25Signer()
+            seedAuthority(AUTH_ADDRESS, generateAccount().addr.toString())
+            useSettingsStore
+                .getState()
+                .setPreference(UserPreferences.rekeySupportEnabled, false)
+
+            const built = buildNamedSignerRequest(
+                AUTH_ADDRESS,
+                generateAccount().addr.toString(),
+            )
+            const { confirm } = renderSignReview(built.request)
+
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByText('transactions.warning.title'),
+                    ).toBeTruthy()
+                    expect(
+                        screen.getByTestId('signing-confirm-slide'),
+                    ).toBeTruthy()
+                },
+                { timeout: 10_000 },
+            )
+            confirm()
+
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByText(
+                            'transactions.warning.rekey_confirm_title',
+                        ),
+                    ).toBeTruthy()
+                },
+                { timeout: 10_000 },
+            )
+            expect(built.approve).not.toHaveBeenCalled()
         })
 
         it("Given the named signer's own key isn't in the wallet, then the review explains that and shows no confirm control", async () => {
