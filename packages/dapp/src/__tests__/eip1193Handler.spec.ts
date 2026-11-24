@@ -975,6 +975,36 @@ describe('createEip1193ConnectionHandler', () => {
                 expect(messages).toHaveLength(1)
             })
 
+            it('still asks while the wallet is locked, so no accounts are pushed unprompted', async () => {
+                const { transport, registry, messages, store } = setup(
+                    [approvedOn('ethereum', ['ethereum', 'base'])],
+                    { isWalletLocked: () => true },
+                )
+                await registry.initialize()
+
+                void switchTo(transport, '0x2105')
+                await flush()
+
+                expect(messages).toHaveLength(1)
+                expect((await store.get(ID))?.metadata.chainId).toBe('ethereum')
+                expect(notificationsOf(transport, 'accountsChanged')).toEqual(
+                    [],
+                )
+            })
+
+            it('still asks when the site warning has worsened since it connected', async () => {
+                const { transport, registry, messages } = setup(
+                    [approvedOn('ethereum', ['ethereum', 'base'])],
+                    { siteWarningOf: async () => 'blocked' },
+                )
+                await registry.initialize()
+
+                void switchTo(transport, '0x2105')
+                await flush()
+
+                expect(messages).toHaveLength(1)
+            })
+
             it('asks for a chain the site was never approved for, then remembers it', async () => {
                 const { transport, registry, messages, store } = setup([
                     approvedOn('ethereum', ['ethereum']),

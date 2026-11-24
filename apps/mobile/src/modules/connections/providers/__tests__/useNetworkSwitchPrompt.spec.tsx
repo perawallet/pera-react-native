@@ -123,7 +123,7 @@ describe('useNetworkSwitchPrompt', () => {
         const { request } = openPrompt(() => {}, MAINNET_REQUEST)
 
         const message = String(request.contents.props.message)
-        expect(message).toContain('walletconnect.switch_network.body ')
+        expect(message).toMatch(/^walletconnect\.switch_network\.body \{/)
         expect(message).not.toContain('network":')
     })
 

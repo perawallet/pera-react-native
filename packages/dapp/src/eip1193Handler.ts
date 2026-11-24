@@ -60,6 +60,7 @@ import {
     EIP1193_PERMISSION_METHODS,
     EIP1193_SIGNING_METHODS,
 } from './eip1193Protocol'
+import { sanitizeDappIcons } from './icons'
 import {
     acknowledgedSiteWarningOf,
     canSiteSeeAccounts,
@@ -80,7 +81,6 @@ import {
     DAPP_PROPOSAL_TTL_MS,
     DAPP_REQUEST_TTL_MS,
 } from './protocol'
-import { sanitizeDappIcons } from './icons'
 
 export type Eip1193HandlerDeps = {
     transport: DappTransport
@@ -794,18 +794,32 @@ export const createEip1193ConnectionHandler = (
             return
         }
 
+        const assertLive = (): void => {
+            if (entry.isAnswered) {
+                throw new Error('The request has expired')
+            }
+        }
+
         // A chain the user approved for this site, and on which a granted
         // account still signs, needs no prompt; a dApp's own timeout would
-        // otherwise fire while the sheet waits.
+        // otherwise fire while the sheet waits. A locked wallet or a worsened
+        // site warning still prompts: switchSite pushes accounts, which the
+        // prompt's unlock would otherwise gate.
         const isPreApproved =
             eip1193ApprovedChainIdsOf(connection).includes(
                 target.scope.chainId,
             ) &&
             deps
                 .getAccounts(target.scope.chainId)
-                .some(({ address }) => connection.accounts.includes(address))
+                .some(({ address }) => connection.accounts.includes(address)) &&
+            (await canSiteSeeAccounts(
+                await deps.isWalletLocked(),
+                connection,
+                ctx.origin,
+                deps.siteWarningOf,
+            ))
         if (isPreApproved) {
-            await switchSite(entry, target, () => {})
+            await switchSite(entry, target, assertLive)
             kit.recordActivity(connection.id)
             return
         }
@@ -828,11 +842,6 @@ export const createEip1193ConnectionHandler = (
             // A throw here declines the request, so the page is answered
             // through `reject` rather than told of a chain it can't use.
             respond: async () => {
-                const assertLive = (): void => {
-                    if (entry.isAnswered) {
-                        throw new Error('The request has expired')
-                    }
-                }
                 assertLive()
                 await switchSite(entry, target, assertLive)
             },
