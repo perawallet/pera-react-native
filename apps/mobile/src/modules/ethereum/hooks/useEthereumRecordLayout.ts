@@ -157,6 +157,11 @@ export const useEthereumRecordLayout = (
             chainId: scope.chainId,
         })
 
+        const title =
+            presentation && isReadTitleBetter(recordSummary, presentation)
+                ? { key: presentation.titleKey }
+                : summaryTitle
+
         // Pending only while the store has not answered; a miss is settled and falls back to the raw leg.
         const isAmountLoading = !!leading && !amount && isAssetsPending
 
@@ -167,12 +172,7 @@ export const useEthereumRecordLayout = (
                     presentation?.iconName ??
                     transactionIconName(recordSummary.icon),
                 title: heroTitle(
-                    isNotSentByYou
-                        ? { key: NOT_SENT_BY_YOU }
-                        : presentation &&
-                            isReadTitleBetter(recordSummary, presentation)
-                          ? { key: presentation.titleKey }
-                          : summaryTitle,
+                    isNotSentByYou ? { key: NOT_SENT_BY_YOU } : title,
                 ),
                 status: STATUS[record.status],
                 amount,

@@ -288,13 +288,9 @@ describe('Flow: suspected address poisoning in Ethereum history', () => {
 
 // The fake pays nothing: its contract writes a Transfer log "from" the account
 // under a symbol dressed as the native coin, and a third address signs it.
-const FAKE_NATIVE_SYMBOL = String.fromCodePoint(
-    0x13ac,
-    0x200d,
-    0x13a2,
-    0x200d,
-    0x041d,
-)
+const FAKE_NATIVE_SYMBOL = ['13ac', '200d', '13a2', '200d', '041d']
+    .map(hex => String.fromCodePoint(Number.parseInt(hex, 16)))
+    .join('')
 const THIRD_PARTY = '0x90F79bf6EB2c4f870365E785982E1f101E93b906'
 const FAKE_TOKEN = '0x0000000000000000000000000000000000000fa0'
 const SENT_WEI = '1000000000000000'
