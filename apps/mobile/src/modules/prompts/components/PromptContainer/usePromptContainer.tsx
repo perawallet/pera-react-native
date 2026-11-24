@@ -196,6 +196,8 @@ export const usePromptContainer = (): UsePromptContainerResult => {
                 id: BIOMETRICS_DISABLED_PROMPT_ID,
                 priority: PromptPriority.biometricsDisabled,
                 isGate: false,
+                // Its PIN step's numpad clears the bottom inset itself.
+                isFullBleed: true,
                 component: BiometricsDisabledPrompt,
                 isDue: biometricsDisabledPrompt.isDue,
             },
