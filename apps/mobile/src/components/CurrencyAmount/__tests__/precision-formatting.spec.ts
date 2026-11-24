@@ -105,6 +105,27 @@ describe('resolvePrecision + real formatNumber', () => {
         expect(format('1.001', 'assetExact', 6)).toBe('1.001')
     })
 
+    it('shows a sent amount with every digit that moves, where assetFull rounds it down', () => {
+        expect(format('0.0000575', 'assetExact', 18)).toBe('0.0000575')
+        expect(format('0.0000575', 'assetFull', 18)).toBe('0.000057')
+        expect(format('0.013499892065126118', 'assetExact', 18)).toBe(
+            '0.013499892065126118',
+        )
+    })
+
+    it('rowSignificant rounds a long 18-decimal amount down to a few significant digits, keeping a small one whole', () => {
+        expect(format('0.013499892065126118', 'rowSignificant', 18)).toBe(
+            '0.013499',
+        )
+        expect(format('0.0000575', 'rowSignificant', 18)).toBe('0.0000575')
+        expect(format('0.000123456789', 'rowSignificant', 18)).toBe(
+            '0.00012345',
+        )
+        expect(format('1234.567891234', 'rowSignificant', 18)).toBe('1,234.56')
+        expect(format('0.5', 'rowSignificant', 18)).toBe('0.50')
+        expect(format('0', 'rowSignificant', 18)).toBe('0.00')
+    })
+
     it('compact reads like assetFull for an 18-decimal asset', () => {
         expect(format('0.001344293173', 'compact', 18)).toBe('0.001344')
     })

@@ -103,10 +103,12 @@ export const EthereumTransactionDetailSection = ({
                             chainId={scope.chainId}
                             asset={amount?.asset}
                             value={amount?.value}
+                            density='exact'
                             isLoading={isAmountLoading}
                             // The Asset row already names the collection.
                             showSymbol={!collectible}
                             ignorePrivacyMode
+                            truncate={false}
                         />
                     </KeyValueRow>
                 )}

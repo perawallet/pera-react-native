@@ -18,6 +18,7 @@ import type {
     TransactionSummary,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    ASSET_MAX_PRECISION,
     baseUnitsToDisplayUnits,
     type Optional,
 } from '@perawallet/wallet-core-shared'
@@ -27,6 +28,15 @@ import type { MinimalAsset } from '@perawallet/wallet-core-assets'
 export const MAX_VISIBLE_AMOUNTS = 2
 
 type AmountPrefix = '+' | '-'
+
+/**
+ * An asset past ALGO's precision (ETH, ERC-20s) keeps enough significant
+ * digits that 0.0000575 ETH no longer reads 0.000057; its detail shows it exact.
+ */
+export const rowAmountPrecision = (
+    decimals: number,
+): 'compact' | 'rowSignificant' =>
+    decimals > ASSET_MAX_PRECISION ? 'rowSignificant' : 'compact'
 
 export type AmountDisplay = {
     /** Display units, unsigned. */
