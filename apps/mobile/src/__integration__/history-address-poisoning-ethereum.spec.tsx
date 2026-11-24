@@ -263,6 +263,17 @@ describe('Flow: suspected address poisoning in Ethereum history', () => {
         expect(notice.textContent).toContain(
             'transactions.suspected_poisoning.do_not_reuse',
         )
+    })
+
+    it('Given the explanation on a marked row, when the user presses Got it, then the details close', async () => {
+        renderHistory()
+        await screen.findByTestId(
+            markerOf(DUST_FROM_PAYEE_LOOK_ALIKE),
+            undefined,
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+        openRow(DUST_FROM_PAYEE_LOOK_ALIKE)
+        await screen.findByTestId('suspected_poisoning_notice')
 
         fireEvent.click(screen.getByTestId('suspected_poisoning_dismiss'))
 
