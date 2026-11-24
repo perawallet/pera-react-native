@@ -1231,7 +1231,8 @@
             "asset_empty_body": "Aquí verás un gráfico cuando tengas historial de saldo de este activo en esta cuenta",
             "excludes_networks": "Este gráfico aún no incluye los activos de {{networks}}",
             "failed_networks": "No se pudo cargar el historial de {{networks}}, así que este gráfico no lo incluye",
-            "currency_unavailable_body": "Este gráfico no está disponible en {{currency}} por ahora"
+            "currency_unavailable_body": "Este gráfico no está disponible en {{currency}} por ahora",
+            "balance_change_label": "Cambio de saldo"
         },
         "webview": {
             "failed_title": "No se pudo cargar la página",

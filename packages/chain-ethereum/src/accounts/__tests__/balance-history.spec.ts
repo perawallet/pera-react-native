@@ -49,6 +49,7 @@ import { TEST_PERA_URL, testChainContext } from '../../__tests__/context'
 const stored = vi.hoisted(() => ({
     holdings: {} as Record<string, { assetId: string; amount: string }[]>,
     decimals: {} as Record<string, number>,
+    spotPrices: {} as Record<string, string>,
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
@@ -69,6 +70,14 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
         assetIds
             .filter(id => stored.decimals[id] !== undefined)
             .map(id => ({ assetId: id, decimals: stored.decimals[id] })),
+    ),
+    getAssetPricesByIds: vi.fn(async ({ assetIds }: { assetIds: string[] }) =>
+        assetIds
+            .filter(id => stored.spotPrices[id] !== undefined)
+            .map(id => ({
+                assetId: id,
+                usdPrice: new Decimal(stored.spotPrices[id]!),
+            })),
     ),
 }))
 
@@ -114,6 +123,7 @@ beforeEach(() => {
     useHiddenTokensStore.getState().resetState()
     stored.holdings = {}
     stored.decimals = { [USDC]: 6 }
+    stored.spotPrices = {}
 })
 afterEach(() => {
     server.resetHandlers()
@@ -787,6 +797,116 @@ describe('the adapter methods', () => {
                 excludeHidden: true,
             }),
         )
+    })
+
+    describe('when the prices service stored no price inside the window', () => {
+        const serveQuietToken = () => {
+            stored.holdings[ALICE] = [
+                { assetId: ETH_ID, amount: '1000000000000000000' },
+                { assetId: USDC, amount: '2000000' },
+            ]
+            server.use(
+                ...peraEvmHandlers({
+                    baseUrl: TEST_PERA_URL,
+                    balanceHistory: {
+                        results: [
+                            answered('2026-10-20T15:00:00Z', {
+                                [ALICE.toLowerCase()]: {
+                                    [ETH]: '1000000000000000000',
+                                    [USDC_CAIP19]: '2000000',
+                                },
+                            }),
+                        ],
+                    } as BalanceHistoryResponse,
+                    charts: {
+                        [ETH]: [chartPoint('2026-10-20T15:00:00Z', '2000')],
+                        [USDC_CAIP19]: [],
+                    },
+                }),
+            )
+        }
+
+        it("values a token's own chart at its stored spot price over the whole window", async () => {
+            serveQuietToken()
+            stored.spotPrices = { [USDC]: '1.5' }
+
+            const points = await ops().fetchHoldingBalanceHistory!(
+                ALICE,
+                USDC,
+                'one-day',
+                SCOPE,
+            )
+
+            expect(
+                points.map(p => [p.timestamp, p.usdValue.toFixed()]),
+            ).toEqual([
+                [Date.parse('2026-10-20T15:00:00Z'), '3'],
+                [NOW, '3'],
+            ])
+        })
+
+        it("leaves a token's own chart empty when the token has no price now either", async () => {
+            serveQuietToken()
+
+            const points = await ops().fetchHoldingBalanceHistory!(
+                ALICE,
+                USDC,
+                'one-day',
+                SCOPE,
+            )
+
+            expect(points).toEqual([])
+        })
+
+        it("leaves a token's own chart empty when its stored price is 0", async () => {
+            serveQuietToken()
+            stored.spotPrices = { [USDC]: '0' }
+
+            const points = await ops().fetchHoldingBalanceHistory!(
+                ALICE,
+                USDC,
+                'one-day',
+                SCOPE,
+            )
+
+            expect(points).toEqual([])
+        })
+
+        it('counts the token at its spot price in every portfolio point, without asking for its chart again within the hour', async () => {
+            serveQuietToken()
+            stored.spotPrices = { [USDC]: '1.5' }
+            const charts = ops()
+            const first = await charts.fetchPortfolioHistory!(
+                [ALICE],
+                'one-day',
+                SCOPE,
+            )
+            const requests = recordRequests()
+
+            const again = await charts.fetchPortfolioHistory!(
+                [ALICE],
+                'one-day',
+                SCOPE,
+            )
+
+            expect(first?.map(p => p.usdValue.toFixed())).toEqual([
+                '2003',
+                '2003',
+            ])
+            expect(again?.map(p => p.usdValue.toFixed())).toEqual([
+                '2003',
+                '2003',
+            ])
+            expect(
+                requests.filter(
+                    request =>
+                        request.url.includes(CHART_PATH) &&
+                        new URL(request.url).searchParams
+                            .get('id')
+                            ?.toLowerCase() === USDC_CAIP19,
+                ),
+            ).toHaveLength(0)
+        })
     })
 
     describe('when a price chart fails', () => {
