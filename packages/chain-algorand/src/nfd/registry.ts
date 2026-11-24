@@ -11,58 +11,159 @@
  */
 
 import { z } from 'zod'
-import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
-import { logger, type Nullable } from '@perawallet/wallet-core-shared'
+import { LogicSigAccount } from 'algosdk'
+import { sha256 } from '@noble/hashes/sha2.js'
+import type {
+    ChainScope,
+    NetworkId,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    decodeFromBase64,
+    encodeToBase64,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
+import { fetchNodeJson } from '../blockchain/utils/nodeHttp'
+import { isAlgodNotFoundError } from '../blockchain/utils/algodErrors'
 
-/** NFD's registry, per network. Consulted only for a name's application id. */
-export const NFD_REGISTRY_URLS: Partial<Record<NetworkId, string>> = {
-    mainnet: 'https://api.nf.domains',
-    testnet: 'https://api.testnet.nf.domains',
+/**
+ * NFD's registry application, per network, as published at
+ * https://api-docs.nf.domains/reference/on-chain-reference/registry-application-ids
+ */
+export const NFD_REGISTRY_APP_IDS: Partial<Record<NetworkId, number>> = {
+    mainnet: 760_937_186,
+    testnet: 84_366_825,
 }
 
-const nfdRegistryRecordSchema = z.object({
-    appID: z.number().int().positive(),
+// Registry box value: the NFD's ASA id then its application id, each a
+// big-endian uint64.
+const REGISTRY_BOX_LENGTH = 16
+const registryBoxSchema = z.object({ value: z.string() })
+const legacyRegistrySchema = z.object({
+    'app-local-state': z
+        .object({
+            id: z.number(),
+            'key-value': z
+                .array(
+                    z.object({
+                        key: z.string(),
+                        value: z.object({
+                            type: z.number(),
+                            bytes: z.string().optional(),
+                        }),
+                    }),
+                )
+                .optional(),
+        })
+        .optional(),
 })
 
-export type FetchNfdAppIdParams = {
+type RegistryLookup = {
     name: string
-    networkId: NetworkId
+    scope: ChainScope
     signal?: AbortSignal
 }
 
-/**
- * Asks the registry only which application holds `name`; everything a verdict
- * rests on is then read from that application on chain. `null` when the
- * registry knows no such name.
- */
-export const fetchNfdAppId = async ({
-    name,
-    networkId,
-    signal,
-}: FetchNfdAppIdParams): Promise<Nullable<number>> => {
-    const baseUrl = NFD_REGISTRY_URLS[networkId]
-    if (!baseUrl) {
-        throw new Error(`NFD registry not configured for ${networkId}`)
-    }
+type RegistryRecord = { appId: bigint; storage: 'global' | 'boxes' }
 
-    // oxlint-disable-next-line no-restricted-globals -- asks NFD's registry directly so Pera's backend cannot vouch for what a name resolves to
-    const response = await fetch(
-        `${baseUrl}/nfd/${encodeURIComponent(name)}?view=brief`,
-        { signal },
+// TxnLab's V1 name lookup program has a reserved uint64 for the registry at
+// byte 6 and ends in a byte constant block holding the UTF-8 lookup name.
+// https://github.com/TxnLab/nfd-cli-examples/blob/main/main.go
+const V1_NAME_LOOKUP_PROGRAM =
+    'BSABAYAIAQIDBAUGBwgXNQAxGDQAEjEQgQYSEDEZIhIxGYEAEhEQQAABACJDJgE='
+const REGISTRY_ID_OFFSET = 6
+
+const legacyLookupAddress = (registryAppId: number, name: string): string => {
+    const template = decodeFromBase64(V1_NAME_LOOKUP_PROGRAM)
+    new DataView(template.buffer, template.byteOffset).setBigUint64(
+        REGISTRY_ID_OFFSET,
+        BigInt(registryAppId),
     )
-    // 404 is a well-formed name nobody holds; 400 is one the registry will
-    // not even parse (too long, malformed). Neither maps to an application.
-    if (response.status === 404 || response.status === 400) return null
-    if (!response.ok) {
-        throw new Error(`NFD registry responded ${response.status}`)
+    const nameBytes = new TextEncoder().encode(`name/${name}`)
+    const lengthBytes: number[] = []
+    let length = nameBytes.length
+    while (length >= 128) {
+        lengthBytes.push((length % 128) + 128)
+        length = Math.floor(length / 128)
+    }
+    lengthBytes.push(length)
+    const program = new Uint8Array(
+        template.length + lengthBytes.length + nameBytes.length,
+    )
+    program.set(template)
+    program.set(lengthBytes, template.length)
+    program.set(nameBytes, template.length + lengthBytes.length)
+    return new LogicSigAccount(program).address().toString()
+}
+
+const fetchLegacyRegistryRecord = async (
+    registryAppId: number,
+    { name, scope, signal }: RegistryLookup,
+): Promise<Nullable<RegistryRecord>> => {
+    const address = legacyLookupAddress(registryAppId, name)
+    let response: unknown
+    try {
+        response = await fetchNodeJson(
+            scope,
+            'algod',
+            `/v2/accounts/${address}/applications/${registryAppId}`,
+            { signal },
+        )
+    } catch (error) {
+        if (isAlgodNotFoundError(error)) return null
+        throw error
     }
 
-    const result = nfdRegistryRecordSchema.safeParse(await response.json())
-    if (!result.success) {
-        logger.warn('NFD registry record failed schema validation', {
-            error: result.error,
-        })
-        throw new Error('NFD registry record failed schema validation')
+    const state = legacyRegistrySchema.parse(response)['app-local-state']
+    if (state?.id !== registryAppId) return null
+    const appIdEntry = state['key-value']?.find(
+        ({ key }) =>
+            new TextDecoder().decode(decodeFromBase64(key)) === 'i.appid',
+    )
+    if (appIdEntry?.value.type !== 1 || !appIdEntry.value.bytes) return null
+    const value = decodeFromBase64(appIdEntry.value.bytes)
+    if (value.length !== 8) throw new Error('Invalid NFD registry app ID')
+    const appId = new DataView(value.buffer, value.byteOffset).getBigUint64(0)
+    return appId === 0n ? null : { appId, storage: 'global' }
+}
+
+/**
+ * The V1 lookup account holds the registry's name mapping for domains
+ * registered before box storage that have not migrated.
+ */
+export const fetchNfdRegistryRecord = async ({
+    name,
+    scope,
+    signal,
+}: RegistryLookup): Promise<Nullable<RegistryRecord>> => {
+    const registryAppId = NFD_REGISTRY_APP_IDS[scope.networkId]
+    if (!registryAppId) {
+        throw new Error(`NFD registry not configured for ${scope.networkId}`)
     }
-    return result.data.appID
+
+    const boxName = sha256(new TextEncoder().encode(`name/${name}`))
+    let response: unknown
+    try {
+        response = await fetchNodeJson(
+            scope,
+            'algod',
+            `/v2/applications/${registryAppId}/box`,
+            { params: { name: `b64:${encodeToBase64(boxName)}` }, signal },
+        )
+    } catch (error) {
+        if (isAlgodNotFoundError(error)) {
+            return fetchLegacyRegistryRecord(registryAppId, {
+                name,
+                scope,
+                signal,
+            })
+        }
+        throw error
+    }
+
+    const value = decodeFromBase64(registryBoxSchema.parse(response).value)
+    if (value.length !== REGISTRY_BOX_LENGTH) {
+        throw new Error('NFD registry box has an unexpected length')
+    }
+    const appId = new DataView(value.buffer, value.byteOffset).getBigUint64(8)
+    return appId === 0n ? null : { appId, storage: 'boxes' }
 }

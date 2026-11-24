@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-// A missing box is algod's HTTP 404 ("box not found"). Both the wallet's
+// A missing box, account or application is algod's HTTP 404. Both the wallet's
 // TimeoutHttpClient and algosdk's own client implement BaseHTTPClientError
 // (`.response.status`); tolerate a bare `.status` too for robustness.
 export const isAlgodNotFoundError = (error: unknown): boolean => {

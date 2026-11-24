@@ -15,7 +15,7 @@ import type { Arc56Contract } from '@algorandfoundation/algokit-utils/types/app-
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { cardAlgorandClient } from '../client'
 import { algorandCardConfig } from '../config'
-import { isAlgodNotFoundError } from './algod'
+import { isAlgodNotFoundError } from '../../blockchain/utils/algodErrors'
 import mainArc56 from './main-arc56.json'
 import { type AlgorandNetworkId } from '../../network-id'
 
