@@ -17,6 +17,9 @@ const TRACK_HEIGHT = 56
 // lanekeep-ignore-next-line pera/no-numeric-sizes reason: slide-to-confirm thumb diameter
 export const THUMB_SIZE = 64
 export const TRACK_INSET = 4
+// The thumb is taller than the track; reserving the overhang stops it painting over whatever sits above or below.
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: half the thumb's overhang past the track
+const THUMB_OVERHANG = (THUMB_SIZE - TRACK_HEIGHT) / 2
 
 type StyleProps = {
     isDisabled: boolean
@@ -28,7 +31,7 @@ export const useStyles = makeStyles((theme, { isDisabled }: StyleProps) => ({
         borderRadius: theme.borderRadius.full,
         justifyContent: 'center',
         paddingHorizontal: TRACK_INSET,
-        opacity: isDisabled ? 0.6 : 1,
+        marginVertical: THUMB_OVERHANG,
     },
     background: {
         position: 'absolute',
@@ -74,7 +77,9 @@ export const useStyles = makeStyles((theme, { isDisabled }: StyleProps) => ({
         justifyContent: 'center',
     },
     labelTextBase: {
-        color: theme.colors.textMain,
+        color: isDisabled
+            ? theme.colors.buttonPrimaryDisabledText
+            : theme.colors.textMain,
         width: '100%',
         textAlign: 'center',
     },
@@ -99,7 +104,9 @@ export const useStyles = makeStyles((theme, { isDisabled }: StyleProps) => ({
         width: THUMB_SIZE,
         height: THUMB_SIZE,
         borderRadius: theme.borderRadius.full,
-        backgroundColor: theme.colors.buttonPrimaryBg,
+        backgroundColor: isDisabled
+            ? theme.colors.layerGray
+            : theme.colors.buttonPrimaryBg,
         alignItems: 'center',
         justifyContent: 'center',
     },
