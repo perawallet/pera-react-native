@@ -80,4 +80,16 @@ describe('swaps/useSwapTrackedOrders', () => {
 
         expect(result.current.map(item => item.orderId)).toEqual(['fresh'])
     })
+
+    test('returns the same array across renders while no order lapses', () => {
+        useSwapTrackingStore.getState().trackOrder(order('a', 'MINE', NOW - 1))
+
+        const { result, rerender } = renderHook(() =>
+            useSwapTrackedOrders(['MINE']),
+        )
+        const first = result.current
+        rerender()
+
+        expect(result.current).toBe(first)
+    })
 })

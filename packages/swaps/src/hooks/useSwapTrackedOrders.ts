@@ -28,5 +28,7 @@ export const useSwapTrackedOrders = (
     }, [orders, addressesKey])
     // Read per render so a settled order drops out once its window passes, without waiting for a store change.
     const now = Date.now()
-    return owned.filter(order => isSwapOrderListed(order, now))
+    const listed = owned.filter(order => isSwapOrderListed(order, now))
+    // Keep the memoised array while nothing lapsed, so consumers' memos hold.
+    return listed.length === owned.length ? owned : listed
 }
