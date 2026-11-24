@@ -827,6 +827,7 @@ describe('createEip1193ConnectionHandler', () => {
                 error: {
                     code: -32_602,
                     message: 'Archive requests require a personal token',
+                    data: 'archive-only',
                 },
             })
             const { transport, registry } = setup([connectedOn('ethereum')])
@@ -839,7 +840,32 @@ describe('createEip1193ConnectionHandler', () => {
                 code: -32_602,
                 message: 'Archive requests require a personal token',
             })
+            expect(debug).toHaveBeenCalledWith('[eip1193] node refused read', {
+                method: 'eth_call',
+                code: -32_602,
+                message: 'Archive requests require a personal token',
+                data: 'archive-only',
+            })
             expect(JSON.stringify(debug.mock.calls)).not.toContain(ADDR_X)
+        })
+
+        it('tags only a relayed refusal as the node read', async () => {
+            const debug = vi.spyOn(logger, 'debug')
+            const { transport, registry } = setup()
+            await registry.initialize()
+
+            await transport.send(ORIGIN, 'wallet_requestPermissions', [
+                { eth_signTypedData: {} },
+            ])
+
+            expect(debug).toHaveBeenCalledWith(
+                '[eip1193] request rejected',
+                expect.anything(),
+            )
+            expect(debug).not.toHaveBeenCalledWith(
+                '[eip1193] node refused read',
+                expect.anything(),
+            )
         })
 
         it('logs nothing for an answered request', async () => {

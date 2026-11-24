@@ -1038,6 +1038,14 @@ export const createEip1193ConnectionHandler = (
                 request.method,
                 request.params,
             )
+            if (!answer.ok) {
+                logger.debug('[eip1193] node refused read', {
+                    method: request.method,
+                    code: answer.error.code,
+                    message: answer.error.message,
+                    data: answer.error.data,
+                })
+            }
             return deliver(
                 respond,
                 answer.ok
@@ -1351,6 +1359,7 @@ export const createEip1193ConnectionHandler = (
         pageRespond: DappRespond,
     ): void => {
         // Params stay out: they carry addresses, calldata and messages to sign.
+        // A relayed node's message is its own text and can echo an argument.
         const respond: DappRespond = response => {
             if ('error' in response) {
                 logger.debug('[eip1193] request rejected', {
