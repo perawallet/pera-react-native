@@ -20,6 +20,7 @@ import {
 import { useClipboard } from '@hooks/useClipboard'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import {
+    openExplorerUrl,
     openValidatedBrowserUrl,
     toValidatedBrowserUrl,
     useWebView,
@@ -38,6 +39,7 @@ type UseAssetAboutResult = {
     projectUrl: Nullable<string>
     copyToClipboard: (text: string) => Promise<void>
     openLink: (url: string) => void
+    openExplorer: () => void
     /** Opens the system browser, for the rows labelled as opening one. */
     openInBrowser: (url: string) => void
 }
@@ -84,6 +86,10 @@ export const useAssetAbout = (
         [pushWebView],
     )
 
+    const openExplorer = useCallback(() => {
+        if (explorerUrl) openExplorerUrl(explorerUrl)
+    }, [explorerUrl])
+
     return {
         creatorDisplayName,
         assetLink,
@@ -91,6 +97,7 @@ export const useAssetAbout = (
         projectUrl,
         copyToClipboard,
         openLink,
+        openExplorer,
         openInBrowser: openValidatedBrowserUrl,
     }
 }

@@ -22,7 +22,10 @@ import {
 import type { AssetAboutDisplay } from '@modules/assets/types/asset-details-display'
 import { useAssetAbout } from '../useAssetAbout'
 
-const { mockPushWebView } = vi.hoisted(() => ({ mockPushWebView: vi.fn() }))
+const { mockPushWebView, mockOpenExplorerUrl } = vi.hoisted(() => ({
+    mockPushWebView: vi.fn(),
+    mockOpenExplorerUrl: vi.fn(),
+}))
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 vi.mock('@modules/webview', async () => ({
@@ -30,6 +33,7 @@ vi.mock('@modules/webview', async () => ({
         typeof import('@modules/webview/hooks/handlers-shared')
     >('@modules/webview/hooks/handlers-shared')),
     useWebView: () => ({ pushWebView: mockPushWebView }),
+    openExplorerUrl: mockOpenExplorerUrl,
 }))
 
 vi.mock('@hooks/useClipboard', () => ({
@@ -102,6 +106,23 @@ describe('useAssetAbout', () => {
         expect(mockPushWebView).toHaveBeenCalledWith(
             expect.objectContaining({ url: 'https://project.example' }),
         )
+    })
+
+    it('opens the explorer link in the system browser, not the in-app webview', () => {
+        const { result } = renderHook(() =>
+            useAssetAbout(
+                makeAsset(undefined, undefined),
+                makeAbout('https://basescan.org/token/0xabc'),
+                SCOPE,
+            ),
+        )
+
+        result.current.openExplorer()
+
+        expect(mockOpenExplorerUrl).toHaveBeenCalledWith(
+            'https://basescan.org/token/0xabc',
+        )
+        expect(mockPushWebView).not.toHaveBeenCalled()
     })
 
     it("falls back to the display's website when the asset has no project URL", () => {
