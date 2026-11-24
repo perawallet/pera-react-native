@@ -18,6 +18,7 @@ import type {
     TransactionSummary,
 } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
+import { useAssetUnitLabel } from '@hooks/useAssetUnitLabel'
 
 /**
  * The summary's title with each param it has an asset for swapped for that
@@ -36,12 +37,15 @@ export const useResolvedSummaryTitle = (
         [titleAssets],
     )
     const { data: storedAssets } = useAssetsQuery(scope, assetIds)
+    const { unitLabelOf } = useAssetUnitLabel()
 
     return useMemo(() => {
         const unitNames = Object.entries(titleAssets ?? {}).flatMap(
             ([param, ref]) => {
-                const unitName = ref && storedAssets.get(ref.assetId)?.unitName
-                return unitName ? [[param, unitName] as const] : []
+                if (!ref) return []
+                const unitName =
+                    storedAssets.get(ref.assetId)?.unitName ?? title.params?.[param]
+                return unitName ? [[param, unitLabelOf(ref, unitName)] as const] : []
             },
         )
         return unitNames.length > 0
@@ -50,7 +54,7 @@ export const useResolvedSummaryTitle = (
                   params: { ...title.params, ...Object.fromEntries(unitNames) },
               }
             : title
-    }, [title, titleAssets, storedAssets])
+    }, [title, titleAssets, storedAssets, unitLabelOf])
 }
 
 export const useSummaryTitle = (

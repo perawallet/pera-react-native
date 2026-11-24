@@ -15,9 +15,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { createQueryClientWrapper } from '@test-utils/render'
-import type {
-    LocalizedText,
-    TransactionIconKind,
+import {
+    i18nKey,
+    type LocalizedText,
+    type TransactionIconKind,
 } from '@perawallet/wallet-core-chain-contract'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import {
@@ -48,6 +49,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
     chainAccountOf: (account: WalletAccount, chainId: 'algorand') =>
         account.chains[chainId],
+    isSameAddress: (_chainId: string, a: string, b: string) => a === b,
 }))
 
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
@@ -216,7 +218,17 @@ describe('useTransactionListItem against the history summary goldens', () => {
                     algorandTransactionIconName,
                 ),
             ).toContain(row.iconName)
-            expect(row.title).toBe(render(summary.title))
+            // A clawback debits the account but is signed by the asset's clawback address.
+            const isSignedByOther =
+                summary.direction === 'out' &&
+                golden.item.sender !== golden.account
+            expect(row.title).toBe(
+                isSignedByOther
+                    ? render({
+                          key: i18nKey('transactions.list_item.not_sent_by_you'),
+                      })
+                    : render(summary.title),
+            )
             expect(row.subtitle).toBe(
                 summary.subtitle
                     ? render(summary.subtitle)
