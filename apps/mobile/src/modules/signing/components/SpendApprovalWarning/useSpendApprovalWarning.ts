@@ -157,7 +157,6 @@ export const useSpendApprovalWarning = (
         if (isUnlimited) {
             types.push('unlimited')
         }
-        // A permit's allowance that lasts until revoked, as an approve's does, gets no lifetime row.
         if (isLongLived) {
             types.push(deadline === undefined ? 'no-expiry' : 'long-lived')
         }

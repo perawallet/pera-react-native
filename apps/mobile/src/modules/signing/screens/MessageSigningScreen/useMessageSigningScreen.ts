@@ -13,7 +13,7 @@
 import { useCallback, useMemo } from 'react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
-    spendSubmitDeadlineOf,
+    spendSigningCutoffOf,
     type ChainScope,
     type MessageSummary,
 } from '@perawallet/wallet-core-chain-contract'
@@ -80,21 +80,20 @@ export const useMessageSigningScreen = (): UseMessageSigningScreenResult => {
     } = useRequestAddressSafety({ addresses: reviewedAddresses })
     const { isConfirmBlocked: isSiteConfirmBlocked } = useRequestSiteSafety()
     // The signer refuses an expired permit too; this keeps the slide from offering one.
-    const submitDeadline = summary?.spendApproval
-        ? spendSubmitDeadlineOf(summary.spendApproval)
+    const signingCutoff = summary?.spendApproval
+        ? spendSigningCutoffOf(summary.spendApproval)
         : undefined
-    const isExpired = useHasTimePassed(submitDeadline)
+    const { hasPassed: isExpired, recheck: recheckExpiry } =
+        useHasTimePassed(signingCutoff)
     const isConfirmBlocked =
         isAddressConfirmBlocked || isSiteConfirmBlocked || isExpired
 
     const handleApprove = useCallback(() => {
-        // Re-read the clock: the slide can finish in the instant the deadline passes.
-        const hasLapsed =
-            submitDeadline !== undefined && Date.now() >= submitDeadline
-        if (isConfirmBlocked || hasLapsed) return
+        // The expiry timer can lag the clock, so a lapsed slide swaps in the expired notice here.
+        if (isConfirmBlocked || recheckExpiry()) return
         haptics.medium()
         pipeline.next()
-    }, [haptics, pipeline, isConfirmBlocked, submitDeadline])
+    }, [haptics, pipeline, isConfirmBlocked, recheckExpiry])
 
     const handleReject = useCallback(() => {
         haptics.light()

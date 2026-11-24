@@ -502,10 +502,7 @@ export interface SpendApproval {
     allowances: SpendAllowance[]
     /** Unix ms after which the approval can't be used; absent when it never lapses. */
     deadline?: number
-    /**
-     * deadline is absent or more than a year out. False for a signed permit
-     * whose allowance stays until used or revoked by design, as an approve's does.
-     */
+    /** deadline is absent or more than a year out. */
     isLongLived: boolean
     /**
      * When the signature itself can be submitted, set only where that differs
@@ -530,6 +527,20 @@ export const spendSubmitDeadlineOf = (
     approval: SpendApproval,
 ): number | undefined =>
     approval.signature ? approval.signature.deadline : approval.deadline
+
+// A device clock running ahead would refuse a permit the contract still accepts;
+// the contract enforces the real deadline, so a late signature only fails there.
+const SUBMIT_DEADLINE_GRACE_MS = 60_000
+
+/** Unix ms from which the wallet refuses to sign: the submit deadline plus a clock-skew grace. */
+export const spendSigningCutoffOf = (
+    approval: SpendApproval,
+): number | undefined => {
+    const submitBy = spendSubmitDeadlineOf(approval)
+    return submitBy === undefined
+        ? undefined
+        : submitBy + SUBMIT_DEADLINE_GRACE_MS
+}
 
 export interface MessageSummary {
     kind: 'text' | 'typed-data' | 'raw'

@@ -273,7 +273,7 @@ describe('useMessageSigningScreen', () => {
             expect(result.current.isExpired).toBe(false)
 
             act(() => {
-                vi.advanceTimersByTime(60_000)
+                vi.advanceTimersByTime(120_000)
             })
             act(() => result.current.handleApprove())
 
@@ -286,13 +286,46 @@ describe('useMessageSigningScreen', () => {
             resolveWith({
                 spender: '0xSPENDER',
                 allowances: [],
-                deadline: NOW - 1,
+                deadline: NOW - 60_000,
                 isLongLived: false,
             })
 
             const { result } = renderHook(() => useMessageSigningScreen())
 
             expect(result.current.isExpired).toBe(true)
+        })
+
+        it('allows a minute past the deadline for a device clock running ahead', () => {
+            resolveWith({
+                spender: '0xSPENDER',
+                allowances: [],
+                deadline: NOW - 59_999,
+                isLongLived: false,
+            })
+
+            const { result } = renderHook(() => useMessageSigningScreen())
+            act(() => result.current.handleApprove())
+
+            expect(result.current.isExpired).toBe(false)
+            expect(mockPipeline.next).toHaveBeenCalled()
+        })
+
+        it('shows the expired notice when the slide lands before the expiry timer fires', () => {
+            resolveWith({
+                spender: '0xSPENDER',
+                allowances: [],
+                deadline: NOW - 59_000,
+                isLongLived: false,
+            })
+            const { result } = renderHook(() => useMessageSigningScreen())
+            expect(result.current.isExpired).toBe(false)
+
+            // Moves the clock without running timers, as after the app sleeps.
+            vi.setSystemTime(NOW + 1000)
+            act(() => result.current.handleApprove())
+
+            expect(result.current.isExpired).toBe(true)
+            expect(mockPipeline.next).not.toHaveBeenCalled()
         })
 
         it('ignores an allowance expiry that passed while the signature is still valid', () => {

@@ -125,18 +125,21 @@ describe('useSpendApprovalWarning', () => {
         expect(result.current.deadlineText).toBe('signing.spend_approval.never')
     })
 
-    it('adds no lifetime row for a permit whose allowance lasts until revoked, as an approve does', () => {
+    it('warns that a permit allowance lasting until revoked never expires, as an approve does', () => {
         const { result } = renderHook(() =>
             useSpendApprovalWarning(
                 approval({
                     deadline: undefined,
-                    isLongLived: false,
+                    isLongLived: true,
                     signature: { deadline: DEADLINE, isLongLived: false },
                 }),
             ),
         )
 
-        expect(result.current.rows.map(row => row.type)).toEqual(['spend'])
+        expect(result.current.rows.map(row => row.type)).toEqual([
+            'spend',
+            'no-expiry',
+        ])
         expect(result.current.deadlineText).toBe('signing.spend_approval.never')
         expect(result.current.signatureDeadlineText).toBe(
             formatDatetime(new Date(DEADLINE)),

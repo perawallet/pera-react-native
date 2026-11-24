@@ -10,17 +10,32 @@
  limitations under the License
  */
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { AppState } from 'react-native'
 import type { Optional } from '@perawallet/wallet-core-shared'
 
 // setTimeout fires at once for any delay above 2^31 - 1 ms (about 24.8 days).
 const MAX_TIMEOUT_MS = 2_147_483_647
 
+type UseHasTimePassedResult = {
+    hasPassed: boolean
+    /** Re-reads the clock now, updating `hasPassed`, and returns it. */
+    recheck: () => boolean
+}
+
 /** Whether the clock is past `atMs` (Unix ms), flipping while mounted; always false without a time. */
-export const useHasTimePassed = (atMs: Optional<number>): boolean => {
+export const useHasTimePassed = (
+    atMs: Optional<number>,
+): UseHasTimePassedResult => {
     const [hasPassed, setHasPassed] = useState(
         () => atMs !== undefined && Date.now() >= atMs,
     )
+
+    const recheck = useCallback(() => {
+        const passed = atMs !== undefined && Date.now() >= atMs
+        setHasPassed(passed)
+        return passed
+    }, [atMs])
 
     useEffect(() => {
         if (atMs === undefined) {
@@ -29,6 +44,7 @@ export const useHasTimePassed = (atMs: Optional<number>): boolean => {
         }
         let timer: Optional<ReturnType<typeof setTimeout>>
         const check = () => {
+            clearTimeout(timer)
             const remaining = atMs - Date.now()
             setHasPassed(remaining <= 0)
             if (remaining > 0) {
@@ -36,8 +52,15 @@ export const useHasTimePassed = (atMs: Optional<number>): boolean => {
             }
         }
         check()
-        return () => clearTimeout(timer)
+        // Timers can fire late after the app is backgrounded or the device sleeps.
+        const subscription = AppState.addEventListener('change', state => {
+            if (state === 'active') check()
+        })
+        return () => {
+            clearTimeout(timer)
+            subscription.remove()
+        }
     }, [atMs])
 
-    return hasPassed
+    return { hasPassed, recheck }
 }

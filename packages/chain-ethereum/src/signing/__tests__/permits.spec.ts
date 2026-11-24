@@ -252,7 +252,7 @@ describe('spend approval recognition', () => {
         expect(describeTyped(EIP2612_PERMIT_TYPED_DATA).spendApproval).toEqual({
             spender: getAddress(PERMIT_SPENDER),
             allowances: [asset(USDC, '1000000')],
-            isLongLived: false,
+            isLongLived: true,
             signature: { deadline: 1769817600000, isLongLived: false },
         })
         expect(describeTyped(asNumber).spendApproval?.allowances).toEqual([
@@ -271,7 +271,7 @@ describe('spend approval recognition', () => {
                     getAddress(DAI_PERMIT_TYPED_DATA.domain.verifyingContract),
                 ),
             ],
-            isLongLived: false,
+            isLongLived: true,
             signature: { deadline: 1769817600000, isLongLived: false },
         })
     })
@@ -285,7 +285,7 @@ describe('spend approval recognition', () => {
 
         expect(approval).toBeDefined()
         expect(approval).not.toHaveProperty('deadline')
-        expect(approval?.isLongLived).toBe(false)
+        expect(approval?.isLongLived).toBe(true)
         expect(approval?.signature).toEqual({ isLongLived: true })
     })
 
@@ -316,7 +316,7 @@ describe('spend approval recognition', () => {
                     },
                 },
             ],
-            isLongLived: false,
+            isLongLived: true,
             signature: { deadline: 1769817600000, isLongLived: false },
         })
     })
@@ -337,7 +337,7 @@ describe('spend approval recognition', () => {
         })
 
         expect(describeTyped(typed).spendApproval).toMatchObject({
-            isLongLived: false,
+            isLongLived: true,
             signature: {
                 deadline: PERMIT_NOW_MS + 400 * DAY_MS,
                 isLongLived: true,

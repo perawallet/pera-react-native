@@ -490,12 +490,20 @@ describe('ethereumMessageSignerAdapter.plan with a permit signature deadline', (
     it.each([
         ...PERMITS,
         ['Permit2 transfer', PERMIT2_TRANSFER_FROM_TYPED_DATA] as const,
-    ])('refuses a %s permit once its deadline passes', (_name, permit) => {
-        vi.setSystemTime(SIGNATURE_DEADLINE_MS)
+    ])('refuses a %s permit a minute after its deadline', (_name, permit) => {
+        vi.setSystemTime(SIGNATURE_DEADLINE_MS + 60_000)
 
         expect(() => adapter.plan(request(permit), context)).toThrow(
             "the permit's signature deadline has passed",
         )
+    })
+
+    it('plans a permit just past its deadline, as the device clock may run ahead of the chain', () => {
+        vi.setSystemTime(SIGNATURE_DEADLINE_MS + 59_999)
+
+        expect(
+            adapter.plan(request(PERMIT2_SINGLE_TYPED_DATA), context),
+        ).toHaveLength(1)
     })
 
     it('plans a Permit2 permit whose allowance expiration passed while its signature is still valid', () => {
@@ -506,7 +514,7 @@ describe('ethereumMessageSignerAdapter.plan with a permit signature deadline', (
     })
 
     it('still describes an expired permit, so the review can say why it cannot be signed', () => {
-        vi.setSystemTime(SIGNATURE_DEADLINE_MS + 1)
+        vi.setSystemTime(SIGNATURE_DEADLINE_MS + 60_000)
 
         expect(
             adapter.describe(request(PERMIT2_SINGLE_TYPED_DATA)).spendApproval,
@@ -514,7 +522,7 @@ describe('ethereumMessageSignerAdapter.plan with a permit signature deadline', (
     })
 
     it('refuses nothing that is not a permit', () => {
-        vi.setSystemTime(SIGNATURE_DEADLINE_MS + 1)
+        vi.setSystemTime(SIGNATURE_DEADLINE_MS + 60_000)
 
         expect(adapter.plan(mailWithChainId(1), context)).toHaveLength(1)
     })

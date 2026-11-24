@@ -30,7 +30,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     i18nKey,
-    spendSubmitDeadlineOf,
+    spendSigningCutoffOf,
     type ChainScope,
     type MessageRequest,
     type MessageSummary,
@@ -502,8 +502,8 @@ const isPastSubmitDeadline = (
     if (request.method !== SIGN_TYPED_DATA_V4) return false
     const now = Date.now()
     const approval = spendApprovalOf(readTypedData(request.payload), now, chain)
-    const submitBy = approval && spendSubmitDeadlineOf(approval)
-    return submitBy !== undefined && now >= submitBy
+    const cutoff = approval && spendSigningCutoffOf(approval)
+    return cutoff !== undefined && now >= cutoff
 }
 
 const planWith =

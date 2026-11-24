@@ -365,7 +365,7 @@ export const spendApprovalOf = (
                 }),
             ),
             ...(deadline !== undefined && { deadline }),
-            isLongLived: !parsed.isLasting && isLongLasting(deadline),
+            isLongLived: isLongLasting(deadline),
             ...(hasOwnWindow && {
                 signature: {
                     ...(signatureDeadline !== undefined && {
