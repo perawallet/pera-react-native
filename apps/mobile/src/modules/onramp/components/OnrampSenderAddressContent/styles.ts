@@ -21,7 +21,6 @@ export const useStyles = makeStyles(theme => ({
     // Gray rounded field matching the design.
     inputContainer: {
         backgroundColor: theme.colors.layerGrayLighter,
-        borderRadius: theme.borderRadius.sm,
         paddingVertical: theme.spacing.sm,
     },
     errorText: {

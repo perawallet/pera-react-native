@@ -129,7 +129,6 @@ export const ContactQRContent = ({
                     variant='primary'
                     icon='copy'
                     onPress={handleCopy}
-                    style={styles.actionButton}
                     testID='contact_qr_copy_button'
                 />
                 <PWButton
@@ -137,7 +136,6 @@ export const ContactQRContent = ({
                     variant='secondary'
                     icon='share'
                     onPress={() => void handleShare()}
-                    style={styles.actionButton}
                     testID='contact_qr_share_button'
                 />
             </PWView>

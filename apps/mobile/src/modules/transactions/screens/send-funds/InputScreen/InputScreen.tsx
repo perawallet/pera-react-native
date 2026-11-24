@@ -156,6 +156,7 @@ export const InputScreen = () => {
                                         : t('send_funds.add_note.button')
                                 }
                                 variant='secondary'
+                                paddingStyle='dense'
                                 style={styles.secondaryButton}
                                 onPress={openNote}
                                 testID='send_input_note_button'
@@ -164,6 +165,7 @@ export const InputScreen = () => {
                         <PWButton
                             title={t('send_funds.input.max')}
                             variant='secondary'
+                            paddingStyle='dense'
                             style={styles.secondaryButton}
                             onPress={setMax}
                             isDisabled={isMaxDisabled}

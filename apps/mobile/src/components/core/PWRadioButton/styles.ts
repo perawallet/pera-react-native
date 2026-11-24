@@ -29,7 +29,7 @@ export const useStyles = makeStyles(theme => {
         radioContainer: {
             borderWidth: theme.borders.md,
             borderRadius: theme.borderRadius.full,
-            borderColor: theme.colors.textGrayLighter,
+            borderColor: theme.colors.textGray,
             width: theme.spacing.xl,
             height: theme.spacing.xl,
             justifyContent: 'center',

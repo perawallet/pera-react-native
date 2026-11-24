@@ -116,6 +116,12 @@ describe('contrast', () => {
                 contrastRatio(tokens.tabBarIconNonActive, tokens.background),
             ).toBeGreaterThanOrEqual(WCAG_AA_NON_TEXT)
         })
+
+        it('the checkbox and radio outline (textGray) on background meets AA for controls', () => {
+            expect(
+                contrastRatio(tokens.textGray, tokens.background),
+            ).toBeGreaterThanOrEqual(WCAG_AA_NON_TEXT)
+        })
     })
 
     it('positive on positiveLighter meets AA for text in light mode', () => {
