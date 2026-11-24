@@ -13,6 +13,7 @@
 import type { SignInSummary } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { PWText, PWView } from '@components/core'
+import { CheckboxRow } from '@components/CheckboxRow'
 import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
 import { useLanguage } from '@hooks/useLanguage'
 import { CautionCard } from '../CautionCard'
@@ -34,12 +35,15 @@ export type SignInMessageDetailsProps = {
     rawText: string
     /** The requesting site, when the message is for another domain. */
     siteMismatch?: Optional<string>
+    /** Shown when the site mismatch or unreadable grants hold Confirm. */
+    acknowledgement?: { isChecked: boolean; onToggle: () => void }
 }
 
 export const SignInMessageDetails = ({
     signIn,
     rawText,
     siteMismatch,
+    acknowledgement,
 }: SignInMessageDetailsProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -106,6 +110,14 @@ export const SignInMessageDetails = ({
                     <WarningBannerBody>{grantsWarning.body}</WarningBannerBody>
                     {grantsWarning.rows.map(renderGrant)}
                 </WarningBanner>
+            )}
+            {!!acknowledgement && (
+                <CheckboxRow
+                    label={t('signing.review_warnings.acknowledge')}
+                    isChecked={acknowledgement.isChecked}
+                    onToggle={acknowledgement.onToggle}
+                    testID='sign_in_acknowledge'
+                />
             )}
             {!!statement && (
                 <PWView

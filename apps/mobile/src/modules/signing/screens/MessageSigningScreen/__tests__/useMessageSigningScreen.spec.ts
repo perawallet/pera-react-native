@@ -51,6 +51,22 @@ vi.mock('../../../hooks/useRequestAddressSafety', () => ({
     },
 }))
 
+const mockRiskGate = vi.hoisted(() => ({
+    flagged: undefined as unknown,
+    isConfirmBlocked: false,
+}))
+
+vi.mock('../../../hooks/useReviewRiskGate', () => ({
+    useFlagReviewRisk: (isFlagged: boolean) => {
+        mockRiskGate.flagged = isFlagged
+    },
+    useReviewRiskGate: () => ({
+        isAcknowledged: false,
+        toggleAcknowledged: vi.fn(),
+        isConfirmBlocked: mockRiskGate.isConfirmBlocked,
+    }),
+}))
+
 vi.mock('../../../hooks/useRequestSiteSafety', () => ({
     useRequestSiteSafety: () => mockSiteSafety,
 }))
@@ -89,6 +105,8 @@ describe('useMessageSigningScreen', () => {
         mockAddressSafety.isListedAddressBlocking = false
         mockAddressSafety.addresses = undefined
         mockSiteSafety.isConfirmBlocked = false
+        mockRiskGate.flagged = undefined
+        mockRiskGate.isConfirmBlocked = false
         mockReviewedMessageAddressesOf.mockReturnValue([])
         mockPipeline.isLoading = false
         mockPipeline.currentRequest = {
@@ -268,6 +286,41 @@ describe('useMessageSigningScreen', () => {
         const { result } = renderHook(() => useMessageSigningScreen())
 
         expect(result.current.signInSiteMismatch).toBeUndefined()
+    })
+
+    it.each([
+        ['a sign-in for another site', { domain: 'opensea.io' }, false, true],
+        ['unreadable grants', { domain: 'dapp.example' }, true, true],
+        ['a clean sign-in', { domain: 'dapp.example' }, false, false],
+    ])(
+        'flags %s for acknowledgement',
+        (_label, message, hasUnreadableGrants, expected) => {
+            mockPipeline.resolved = {
+                signerAccount: SIGNER_ACCOUNT,
+                kind: {
+                    type: 'message',
+                    summary: {
+                        ...SUMMARY,
+                        signIn: { message, hasUnreadableGrants },
+                    },
+                },
+            }
+
+            const { result } = renderHook(() => useMessageSigningScreen())
+
+            expect(mockRiskGate.flagged).toBe(expected)
+            expect(result.current.isSignInRiskFlagged).toBe(expected)
+        },
+    )
+
+    it('blocks approval while the sign-in risk is unacknowledged', () => {
+        mockRiskGate.isConfirmBlocked = true
+
+        const { result } = renderHook(() => useMessageSigningScreen())
+        act(() => result.current.handleApprove())
+
+        expect(result.current.isConfirmBlocked).toBe(true)
+        expect(mockPipeline.next).not.toHaveBeenCalled()
     })
 
     it('shows the chain badge for an EVM request only', () => {

@@ -30,6 +30,10 @@ import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useHaptics } from '@hooks/useHaptics'
 import { useRequestAddressSafety } from '../../hooks/useRequestAddressSafety'
 import { useRequestSiteSafety } from '../../hooks/useRequestSiteSafety'
+import {
+    useFlagReviewRisk,
+    useReviewRiskGate,
+} from '../../hooks/useReviewRiskGate'
 import { signInSiteMismatchOf } from '../../utils/signInSite'
 
 type UseMessageSigningScreenResult = {
@@ -43,10 +47,14 @@ type UseMessageSigningScreenResult = {
     reviewedAddresses: ReviewedAddress[]
     /** A scam-listed address under the hard block: the request can only be rejected. */
     isListedAddressBlocking: boolean
-    /** A flagged address or site still waits on the user's acknowledgement. */
+    /** A flagged address or site, or a risky sign-in, still waits on the user's acknowledgement. */
     isConfirmBlocked: boolean
     /** The requesting site, when a sign-in message is for another domain. */
     signInSiteMismatch: Optional<string>
+    /** A sign-in for another site or with unreadable grants holds Confirm until acknowledged. */
+    isSignInRiskFlagged: boolean
+    isSignInRiskAcknowledged: boolean
+    toggleSignInRiskAcknowledged: () => void
     /** EVM accounts share one address across chains, so the signer row names the chain. */
     isChainBadgeShown: boolean
     handleApprove: () => void
@@ -81,7 +89,6 @@ export const useMessageSigningScreen = (): UseMessageSigningScreenResult => {
         isConfirmBlocked: isAddressConfirmBlocked,
     } = useRequestAddressSafety({ addresses: reviewedAddresses })
     const { isConfirmBlocked: isSiteConfirmBlocked } = useRequestSiteSafety()
-    const isConfirmBlocked = isAddressConfirmBlocked || isSiteConfirmBlocked
     const signInDomain = summary?.signIn?.message.domain
     const signInSiteMismatch = useMemo(
         () =>
@@ -98,6 +105,19 @@ export const useMessageSigningScreen = (): UseMessageSigningScreenResult => {
             currentRequest?.verifiedOrigin,
         ],
     )
+
+    const isSignInRiskFlagged =
+        !!signInSiteMismatch || !!summary?.signIn?.hasUnreadableGrants
+    useFlagReviewRisk(isSignInRiskFlagged)
+    const {
+        isAcknowledged: isSignInRiskAcknowledged,
+        toggleAcknowledged: toggleSignInRiskAcknowledged,
+        isConfirmBlocked: isSignInRiskConfirmBlocked,
+    } = useReviewRiskGate()
+    const isConfirmBlocked =
+        isAddressConfirmBlocked ||
+        isSiteConfirmBlocked ||
+        isSignInRiskConfirmBlocked
 
     const handleApprove = useCallback(() => {
         if (isConfirmBlocked) return
@@ -121,6 +141,9 @@ export const useMessageSigningScreen = (): UseMessageSigningScreenResult => {
         isListedAddressBlocking,
         isConfirmBlocked,
         signInSiteMismatch,
+        isSignInRiskFlagged,
+        isSignInRiskAcknowledged,
+        toggleSignInRiskAcknowledged,
         isChainBadgeShown: isEvmChainId(message?.scope?.chainId),
         handleApprove,
         handleReject,

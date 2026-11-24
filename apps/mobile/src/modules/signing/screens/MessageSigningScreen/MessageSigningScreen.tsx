@@ -41,6 +41,9 @@ export const MessageSigningScreen = () => {
         isListedAddressBlocking,
         isConfirmBlocked,
         signInSiteMismatch,
+        isSignInRiskFlagged,
+        isSignInRiskAcknowledged,
+        toggleSignInRiskAcknowledged,
         isChainBadgeShown,
         handleApprove,
         handleReject,
@@ -109,6 +112,15 @@ export const MessageSigningScreen = () => {
                             signIn={signIn}
                             rawText={summary.preview ?? ''}
                             siteMismatch={signInSiteMismatch}
+                            acknowledgement={
+                                isSignInRiskFlagged
+                                    ? {
+                                          isChecked: isSignInRiskAcknowledged,
+                                          onToggle:
+                                              toggleSignInRiskAcknowledged,
+                                      }
+                                    : undefined
+                            }
                         />
                     )}
                     {showsData && (
