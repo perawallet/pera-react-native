@@ -136,6 +136,7 @@ export const PWScreen = ({
     // so rows scroll down to the bar instead of clipping a gap short of it.
     const leavesEndGapToScroller =
         scroll !== 'auto' &&
+        bottomGap === 'xl' &&
         footer == null &&
         isBottomHandledOutside &&
         !isNested &&

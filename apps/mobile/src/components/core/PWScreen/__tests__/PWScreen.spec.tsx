@@ -100,18 +100,50 @@ describe('PWScreen', () => {
         expect(screen.getByText('nested:0')).toBeTruthy()
     })
 
-    it('leaves the end gap to the scroller of a fixed body above the tab bar', () => {
+    describe('a fixed body above the tab bar', () => {
         const GapProbe = () => <Text>{`gap:${useScrollEndGap()}`}</Text>
+        const renderInTabs = (screenElement: React.ReactElement) =>
+            render(
+                <BottomTabBarHeightContext.Provider value={49}>
+                    {screenElement}
+                </BottomTabBarHeightContext.Provider>,
+            )
 
-        render(
-            <BottomTabBarHeightContext.Provider value={49}>
+        it('leaves the end gap to the scroller it hosts', () => {
+            renderInTabs(
                 <PWScreen scroll='never'>
                     <GapProbe />
-                </PWScreen>
-            </BottomTabBarHeightContext.Provider>,
-        )
+                </PWScreen>,
+            )
 
-        expect(screen.queryByText('gap:0')).toBeNull()
+            expect(screen.getByText('gap:32')).toBeTruthy()
+        })
+
+        it('keeps the gap itself when it has a footer', () => {
+            renderInTabs(
+                <PWScreen
+                    scroll='never'
+                    footer={<Text>Continue</Text>}
+                >
+                    <GapProbe />
+                </PWScreen>,
+            )
+
+            expect(screen.getByText('gap:0')).toBeTruthy()
+        })
+
+        it("gives the scroller no gap when it opts out with bottomGap='none'", () => {
+            renderInTabs(
+                <PWScreen
+                    scroll='never'
+                    bottomGap='none'
+                >
+                    <GapProbe />
+                </PWScreen>,
+            )
+
+            expect(screen.getByText('gap:0')).toBeTruthy()
+        })
     })
 
     it('renders inside a tab navigator without crashing', () => {
