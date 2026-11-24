@@ -20,7 +20,9 @@ import { signingAccountAddressesOn } from '@perawallet/wallet-core-accounts'
 import { config } from '@perawallet/wallet-core-config'
 import {
     createConnectionRegistry,
+    isConnectionRevokedForAccountRemoval,
     useConnectionSigningAdapter,
+    waitForAccountsHydration,
     watchLockNotices,
     watchWalletNotices,
     type ConnectionRegistry,
@@ -77,6 +79,8 @@ export const useConnectionsProvider = (): ConnectionRegistry => {
         const v1Handler = createWalletConnectV1Handler({
             chainId: ALGORAND_CHAIN_ID,
             getNetworkId,
+            restoreWhen: waitForAccountsHydration,
+            shouldRevokeForAccountRemoval: isConnectionRevokedForAccountRemoval,
         })
         registry.register(v1Handler)
         v1HandlerRef.current = v1Handler
@@ -91,7 +95,12 @@ export const useConnectionsProvider = (): ConnectionRegistry => {
                 keyValueStorage: getProvider().keyValueStorage,
                 // Loading the v2 SDK holds the JS thread for seconds; at boot
                 // that delayed the PIN pad and the biometric prompt.
-                startWhen: whenAppUnlocked,
+                startWhen: async () => {
+                    await whenAppUnlocked()
+                    await waitForAccountsHydration()
+                },
+                shouldRevokeForAccountRemoval:
+                    isConnectionRevokedForAccountRemoval,
                 // The handler passes its codec's normalized form (EVM
                 // checksum case), which the store need not share.
                 canSignWith: (chainId, address) =>

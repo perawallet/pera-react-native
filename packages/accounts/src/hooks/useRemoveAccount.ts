@@ -71,22 +71,28 @@ export const useRemoveAccount = () => {
             }
         }
 
-        setAccounts([...remaining])
-
         const addresses = account
             ? Object.values(account.chains).flatMap(
                   entry => entry?.address ?? [],
               )
             : []
+        setAccounts([...remaining], addresses)
         // Async, non-blocking: drop the account's holdings + balance and prune
         // any now-orphaned assets/prices, then refresh caches so search stops
         // showing the removed account's assets. Failures must not surface to
         // the removal flow.
         const cleanup = async () => {
-            // One at a time: every cleanup writes through the one database connection.
+            // One at a time: every cleanup writes through the one database
+            // connection. One address failing must not skip the next one's.
+            let failure: unknown = null
             for (const accountAddress of addresses) {
-                await cleanupRemovedAccountData({ accountAddress })
+                await cleanupRemovedAccountData({ accountAddress }).catch(
+                    (error: unknown) => {
+                        failure = error
+                    },
+                )
             }
+            if (failure !== null) throw failure
         }
         void cleanup()
             .then(() => {

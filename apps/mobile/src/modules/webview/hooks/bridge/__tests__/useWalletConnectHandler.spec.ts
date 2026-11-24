@@ -57,6 +57,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => ({
     // The `@modules/network` barrel transitively pulls store modules that
     // self-register for reset-on-logout, and persist through this gate.
     registerStore: vi.fn(),
+    registerAccountCleanup: vi.fn(),
     gateWritesOnHydration: (
         await vi.importActual<
             typeof import('../../../../../../../../packages/shared/src/utils/hydration-gate')

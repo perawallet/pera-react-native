@@ -564,7 +564,11 @@ describe('walletconnect v1 handler behaviour', () => {
         seed: Connection[] = [],
         {
             answeredRequests,
-        }: { answeredRequests?: WalletConnectV1AnsweredRequests } = {},
+            shouldRevokeForAccountRemoval,
+        }: {
+            answeredRequests?: WalletConnectV1AnsweredRequests
+            shouldRevokeForAccountRemoval?: (connection: Connection) => boolean
+        } = {},
     ) => {
         const store = memoryStore(seed)
         const onProposal = vi.fn<(proposal: ConnectionProposal) => void>()
@@ -586,6 +590,7 @@ describe('walletconnect v1 handler behaviour', () => {
             getNetworkId: testGetNetworkId,
             sessionKeys,
             answeredRequests,
+            shouldRevokeForAccountRemoval,
         })
         await handler.initialize(context)
         return {
@@ -1151,6 +1156,27 @@ describe('walletconnect v1 handler behaviour', () => {
             bridge: 'https://b.example',
             peerId: 'peer-1',
         })
+    })
+
+    it('restores only grants issued after an account was removed and re-added', async () => {
+        keys.set('c1', 'old-key')
+        keys.set('c2', 'new-key')
+        const fresh = {
+            ...SEEDED,
+            id: 'c2',
+            secretRef: 'wc1-session-key:c2',
+            createdAt: 11,
+        }
+        const { handler } = await setup([SEEDED, fresh], {
+            shouldRevokeForAccountRemoval: ({ createdAt }) => createdAt <= 10,
+        })
+
+        const restored = await handler.restore()
+
+        expect(restored.map(({ id }) => id)).toEqual(['c2'])
+        expect(getConnector('c1')).toBeUndefined()
+        expect(keys.has('c1')).toBe(false)
+        expect(getConnector('c2')).toBeDefined()
     })
 
     it('rebinds a surviving connector when the handler is re-initialised', async () => {

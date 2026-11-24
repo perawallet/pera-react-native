@@ -53,6 +53,8 @@ import type {
 import {
     bootConnections,
     createConnectionRegistry,
+    isConnectionRevokedForAccountRemoval,
+    waitForAccountsHydration,
     watchLockNotices,
     watchWalletNotices,
 } from '@perawallet/wallet-core-connections'
@@ -189,6 +191,8 @@ export const runOffscreenApp = async ({
             chainId: ALGORAND_CHAIN_ID,
             getNetworkId,
             sessionKeys,
+            restoreWhen: waitForAccountsHydration,
+            shouldRevokeForAccountRemoval: isConnectionRevokedForAccountRemoval,
         }),
     )
     registry.register(

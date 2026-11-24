@@ -11,9 +11,11 @@
  */
 
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { ConnectionStoreAPI } from '@perawallet/wallet-extension-connections'
 import type { ConnectionRegistryClient } from './registry'
 
 let activeRegistry: Nullable<ConnectionRegistryClient> = null
+let activeStore: Nullable<Pick<ConnectionStoreAPI, 'list'>> = null
 
 /**
  * For the duress wipe, which runs above the provider: without a registry to
@@ -22,9 +24,15 @@ let activeRegistry: Nullable<ConnectionRegistryClient> = null
  */
 export const setActiveConnectionRegistry = (
     registry: Nullable<ConnectionRegistryClient>,
+    store: Nullable<Pick<ConnectionStoreAPI, 'list'>> = null,
 ): void => {
     activeRegistry = registry
+    activeStore = registry ? store : null
 }
 
 export const getActiveConnectionRegistry =
     (): Nullable<ConnectionRegistryClient> => activeRegistry
+
+export const getActiveConnectionStore = (): Nullable<
+    Pick<ConnectionStoreAPI, 'list'>
+> => activeStore

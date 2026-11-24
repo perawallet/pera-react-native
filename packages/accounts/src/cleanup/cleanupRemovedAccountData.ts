@@ -53,6 +53,19 @@ export async function cleanupRemovedAccountData({
     db = getDatabase(),
     accountAddress,
 }: CleanupRemovedAccountDataParams): Promise<CleanupRemovedAccountDataResult> {
+    try {
+        return await deleteAccountRows(db, accountAddress)
+    } finally {
+        // In a `finally`: a handler may revoke the account's dApp sessions,
+        // which a failed row delete must not skip.
+        await runAccountCleanups({ db, accountAddress })
+    }
+}
+
+async function deleteAccountRows(
+    db: Database,
+    accountAddress: string,
+): Promise<CleanupRemovedAccountDataResult> {
     // Read holdings before deleting so we know which assets might be orphaned.
     const held = await getHeldAssetIdsByAccount({ db, accountAddress })
 
@@ -105,12 +118,6 @@ export async function cleanupRemovedAccountData({
         await deleteAssetPrices({ db, assetIds: orphans, scope })
         prunedAssetIdsByNetwork[network] = orphans
     }
-
-    // Run cleanups other packages registered for this account (e.g. pruning
-    // transaction rows), which cannot be called directly from here without a
-    // package cycle. Best-effort — the registry logs and swallows handler
-    // failures so they never block the removal flow.
-    await runAccountCleanups({ db, accountAddress })
 
     const networksAffected = [...hadByNetwork.keys()]
 

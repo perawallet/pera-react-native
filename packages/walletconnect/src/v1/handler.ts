@@ -39,6 +39,7 @@ import {
     isWalletConnectV1Connection,
     WALLET_CONNECT_V1_KIND,
     type WalletConnectV1Handler,
+    type WalletConnectV1Connection,
 } from './connection'
 import {
     createStorageAnsweredRequests,
@@ -65,13 +66,22 @@ export type CreateWalletConnectV1HandlerOptions = {
     sessionKeys?: WalletConnectV1SessionKeyStore
     /** Defaults to the provider's key-value storage. */
     answeredRequests?: WalletConnectV1AnsweredRequests
+    restoreWhen?: () => Promise<void>
+    shouldRevokeForAccountRemoval?: (
+        connection: WalletConnectV1Connection,
+    ) => boolean
 }
 
 // v1 is one bridge WebSocket per session, so this handler owns N connectors rather than one relay.
 export const createWalletConnectV1Handler = (
     options: CreateWalletConnectV1HandlerOptions,
 ): WalletConnectV1Handler => {
-    const { chainId, getNetworkId } = options
+    const {
+        chainId,
+        getNetworkId,
+        restoreWhen,
+        shouldRevokeForAccountRemoval,
+    } = options
     const getScope = (): ChainScope => ({
         chainId,
         networkId: getNetworkId(chainId),
@@ -105,6 +115,7 @@ export const createWalletConnectV1Handler = (
         connectors,
         getScope,
         answeredRequests,
+        shouldRevokeForAccountRemoval,
     })
     const proposals = createV1ProposalHandlers({
         kit,
@@ -129,6 +140,8 @@ export const createWalletConnectV1Handler = (
         sessionKeys,
         answeredRequests,
         bindHandlers,
+        forgetSession,
+        shouldRevokeForAccountRemoval,
     })
 
     const disconnect = async (id: ConnectionId): Promise<void> => {
@@ -155,6 +168,7 @@ export const createWalletConnectV1Handler = (
     // only encrypts and queues the frame today; the bound keeps a client that
     // waits for an ack from hanging the boot, at the cost of a lingering key.
     const restore = async () => {
+        await restoreWhen?.()
         const sessions = await restoreSessions()
         const now = Date.now()
         const idle = sessions.filter(session => isIdleSession(session, now))

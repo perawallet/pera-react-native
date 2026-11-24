@@ -1006,6 +1006,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         ),
         useWalletHoldingSources: vi.fn(() => []),
         rehydrateAccountsStore: vi.fn(async () => {}),
+        whenAccountsHydrationSettled: vi.fn(async () => {}),
         // Subclassed at module load by chain packages' own account errors.
         AccountError: class AccountError extends Error {},
         AuthorityTargetCategories: {

@@ -148,6 +148,9 @@ const makeHandler = (
         startWhen?: () => Promise<void>
         getNetworkId?: () => string
         keyValueStorage?: MemoryKeyValueStorage
+        shouldRevokeForAccountRemoval?: (
+            connection: Pick<Connection, 'accounts' | 'createdAt'>,
+        ) => boolean
     } = {},
 ) => {
     const walletKit = overrides.walletKit ?? createFakeWalletKit()
@@ -163,6 +166,7 @@ const makeHandler = (
         keyValueStorage,
         createWalletKit,
         startWhen: overrides.startWhen,
+        shouldRevokeForAccountRemoval: overrides.shouldRevokeForAccountRemoval,
     })
     return { handler, walletKit, createWalletKit, keyValueStorage }
 }
@@ -362,6 +366,104 @@ describe('deferred start', () => {
         ).toBeNull()
         await handler.teardown()
     })
+
+    it.each([true, false])(
+        'does not restore a session for a removed account (locally cached: %s)',
+        async isLocallyCached => {
+            const kept = makeSession({
+                topic: OTHER_TOPIC,
+                namespaces: {
+                    algorand: {
+                        accounts: [`${MAINNET_CHAIN_ID}:${OTHER_ADDRESS}`],
+                        methods: ['algo_signTxn'],
+                        events: [],
+                    },
+                },
+            })
+            const walletKit = createFakeWalletKit({
+                [TOPIC]: makeSession(),
+                [OTHER_TOPIC]: kept,
+            })
+            walletKit.disconnectSession.mockRejectedValue(new Error('offline'))
+            const { startWhen, open } = gate()
+            const { handler, createWalletKit } = makeHandler({
+                walletKit,
+                startWhen,
+                shouldRevokeForAccountRemoval: ({ accounts }) =>
+                    accounts.includes(ADDRESS),
+            })
+            const keptRecord = storedV2Record({
+                id: OTHER_TOPIC,
+                accounts: [OTHER_ADDRESS],
+            })
+            const store = memoryStore(
+                isLocallyCached ? [storedV2Record(), keptRecord] : [keptRecord],
+            )
+            const registry = createConnectionRegistry({ store })
+            registry.register(handler)
+
+            await registry.initialize()
+
+            expect(createWalletKit).not.toHaveBeenCalled()
+            expect((await store.list()).map(({ id }) => id)).toEqual([
+                OTHER_TOPIC,
+            ])
+
+            open()
+            await flush()
+
+            expect(walletKit.disconnectSession).toHaveBeenCalledWith(
+                expect.objectContaining({ topic: TOPIC }),
+            )
+            expect((await store.list()).map(({ id }) => id)).toEqual([
+                OTHER_TOPIC,
+            ])
+
+            expect((await handler.restore()).map(({ id }) => id)).toEqual([
+                OTHER_TOPIC,
+            ])
+            await registry.teardown()
+        },
+    )
+
+    it.each([true, false])(
+        'revokes old sessions after re-adding the account (locally cached: %s)',
+        async isLocallyCached => {
+            const walletKit = createFakeWalletKit({
+                [TOPIC]: makeSession(),
+                [OTHER_TOPIC]: makeSession({ topic: OTHER_TOPIC }),
+            })
+            const { startWhen, open } = gate()
+            const { handler, createWalletKit } = makeHandler({
+                walletKit,
+                startWhen,
+                shouldRevokeForAccountRemoval: ({ createdAt }) =>
+                    createdAt <= 10,
+            })
+            const old = storedV2Record({ createdAt: 1 })
+            const fresh = storedV2Record({ id: OTHER_TOPIC, createdAt: 11 })
+            const store = memoryStore(isLocallyCached ? [old, fresh] : [fresh])
+            const registry = createConnectionRegistry({ store })
+            registry.register(handler)
+
+            await registry.initialize()
+            expect((await store.list()).map(({ id }) => id)).toEqual([
+                OTHER_TOPIC,
+            ])
+            expect(createWalletKit).not.toHaveBeenCalled()
+
+            open()
+            await flush()
+
+            expect(walletKit.disconnectSession).toHaveBeenCalledWith(
+                expect.objectContaining({ topic: TOPIC }),
+            )
+            expect((await store.list()).map(({ id }) => id)).toEqual([
+                OTHER_TOPIC,
+            ])
+            await registry.teardown()
+        },
+    )
 
     it('honors disconnects completed while the boot retry is pending', async () => {
         const walletKit = createFakeWalletKit({

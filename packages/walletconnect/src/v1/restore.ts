@@ -19,6 +19,7 @@ import {
 } from '@perawallet/wallet-core-connections/handlerKit'
 import {
     createWalletConnectConnector,
+    teardownConnector,
     type WalletConnectConnectorRegistry,
 } from '../connection'
 import { PERA_CLIENT_META } from '../shared/constants'
@@ -40,9 +41,20 @@ export const createV1SessionRestorer = (deps: {
     sessionKeys: WalletConnectV1SessionKeyStore
     answeredRequests: WalletConnectV1AnsweredRequests
     bindHandlers: V1ConnectorBinding['bindHandlers']
+    forgetSession: V1ConnectorBinding['forgetSession']
+    shouldRevokeForAccountRemoval?: (
+        connection: WalletConnectV1Connection,
+    ) => boolean
 }): { restore: () => Promise<WalletConnectV1Connection[]> } => {
-    const { kit, connectors, sessionKeys, answeredRequests, bindHandlers } =
-        deps
+    const {
+        kit,
+        connectors,
+        sessionKeys,
+        answeredRequests,
+        bindHandlers,
+        forgetSession,
+        shouldRevokeForAccountRemoval,
+    } = deps
     const { reportError, store } = kit
 
     const asStatus = async (
@@ -168,6 +180,12 @@ export const createV1SessionRestorer = (deps: {
         }
         const restored: WalletConnectV1Connection[] = []
         for (const connection of own) {
+            if (shouldRevokeForAccountRemoval?.(connection)) {
+                const live = connectors.get(connection.id)
+                if (live) teardownConnector(live)
+                await forgetSession(connection.id)
+                continue
+            }
             try {
                 restored.push(await revive(connection))
             } catch (error) {

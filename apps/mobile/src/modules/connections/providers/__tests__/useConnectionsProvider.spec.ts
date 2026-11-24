@@ -176,6 +176,7 @@ const {
     mockUnwatchWalletNotices,
     mockWatchWalletNotices,
     mockUseSigningAdapter,
+    mockWaitForAccountsHydration,
 } = vi.hoisted(() => {
     const mockUnwatchWalletNotices = vi.fn()
     return {
@@ -184,6 +185,7 @@ const {
             return mockUnwatchWalletNotices
         }),
         mockUseSigningAdapter: vi.fn(),
+        mockWaitForAccountsHydration: vi.fn(async () => {}),
     }
 })
 const mockNotify = vi.fn(async (_notice: object) => {})
@@ -237,6 +239,7 @@ vi.mock('@perawallet/wallet-core-connections', async importOriginal => ({
         },
     }),
     useConnectionSigningAdapter: mockUseSigningAdapter,
+    waitForAccountsHydration: mockWaitForAccountsHydration,
     // The real one subscribes to the account and network stores, which the
     // unit environment does not provide.
     watchWalletNotices: mockWatchWalletNotices,
@@ -339,6 +342,7 @@ describe('useConnectionsProvider', () => {
         mockWatchWalletNotices.mockClear()
         mockUnwatchWalletNotices.mockClear()
         mockUseSigningAdapter.mockClear()
+        mockWaitForAccountsHydration.mockClear()
         mockNotify.mockClear()
         proposalSubscription.listener = null
         errorSubscription.listener = null
@@ -613,20 +617,32 @@ describe('useConnectionsProvider', () => {
         })
     })
 
-    it('holds the v2 start until the lock screen is gone', async () => {
+    it('holds the v2 start until the wallet is unlocked and accounts are hydrated', async () => {
         useSecurityStore.getState().setAppLockActive(true)
+        let finishHydration: () => void = () => {}
+        const hydrated = new Promise<void>(resolve => {
+            finishHydration = resolve
+        })
+        mockWaitForAccountsHydration.mockReturnValueOnce(hydrated)
         renderHook(() => useConnectionsProvider())
         const { startWhen } = mockCreateV2.mock.calls[0][0]
         let isStarted = false
-        void startWhen().then(() => {
+        const start = startWhen().then(() => {
             isStarted = true
         })
         await Promise.resolve()
         expect(isStarted).toBe(false)
+        expect(mockWaitForAccountsHydration).not.toHaveBeenCalled()
 
         useSecurityStore.getState().setAppLockActive(false)
+        await waitFor(() =>
+            expect(mockWaitForAccountsHydration).toHaveBeenCalledOnce(),
+        )
+        expect(isStarted).toBe(false)
 
-        await waitFor(() => expect(isStarted).toBe(true))
+        finishHydration()
+        await start
+        expect(isStarted).toBe(true)
     })
 
     describe('proposal subscription', () => {

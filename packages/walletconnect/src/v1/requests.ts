@@ -105,8 +105,17 @@ export const createV1RequestHandlers = (deps: {
     connectors: Pick<WalletConnectConnectorRegistry, 'ensureReady'>
     getScope: () => ChainScope
     answeredRequests: WalletConnectV1AnsweredRequests
+    shouldRevokeForAccountRemoval?: (
+        connection: WalletConnectV1Connection,
+    ) => boolean
 }): V1RequestHandlers => {
-    const { kit, connectors, getScope, answeredRequests } = deps
+    const {
+        kit,
+        connectors,
+        getScope,
+        answeredRequests,
+        shouldRevokeForAccountRemoval,
+    } = deps
     const { reportError, store, recordActivity, requireContext } = kit
 
     // Requests surfaced and not yet answered. Memory only: one lost to an app
@@ -180,8 +189,14 @@ export const createV1RequestHandlers = (deps: {
         clientId: string,
     ): Promise<Nullable<WalletConnectV1Connection>> => {
         const record = await store().get(clientId)
-        if (!record) return null
-        return isWalletConnectV1Connection(record) ? record : null
+        if (
+            !record ||
+            !isWalletConnectV1Connection(record) ||
+            shouldRevokeForAccountRemoval?.(record)
+        ) {
+            return null
+        }
+        return record
     }
 
     // Fire-and-forget: never throws back into a socket listener. A failed

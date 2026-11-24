@@ -12,6 +12,7 @@
 
 import { logger } from '@perawallet/wallet-core-shared'
 import type { ConnectionStoreAPI } from '@perawallet/wallet-extension-connections'
+import { disconnectConnectionsOfRemovedAccounts } from './register-account-cleanup'
 import type { ConnectionRegistry } from './registry'
 import { hydrateConnectionsStore } from './store'
 
@@ -21,6 +22,8 @@ export type BootConnectionsOptions = {
     keystoreReady: Promise<unknown>
     /** Legacy record import to run before the handlers restore. */
     importLegacy?: () => Promise<unknown>
+    /** Delay relay cleanup when the host defers connection work until unlock. */
+    beforeAccountCleanup?: () => Promise<void>
     /** Checked between steps; once true the rest of the sequence is skipped. */
     isCancelled?: () => boolean
 }
@@ -37,6 +40,7 @@ export const bootConnections = async ({
     store,
     keystoreReady,
     importLegacy,
+    beforeAccountCleanup,
     isCancelled = () => false,
 }: BootConnectionsOptions): Promise<() => void> => {
     await keystoreReady
@@ -58,6 +62,17 @@ export const bootConnections = async ({
 
     await registry.initialize()
     if (isCancelled()) return noop
+
+    const cleanUpConnections = async (): Promise<void> => {
+        await beforeAccountCleanup?.()
+        if (isCancelled()) return
+        await disconnectConnectionsOfRemovedAccounts(registry, store)
+    }
+    void cleanUpConnections().catch((error: unknown) => {
+        logger.error("Disconnecting removed accounts' connections failed", {
+            error,
+        })
+    })
 
     return hydrateConnectionsStore(store)
 }
