@@ -325,6 +325,8 @@ export const useTransactionConfirmationScreen =
             scope,
         })
 
+        const networkName = chainDisplayNameOf(scope.chainId) ?? scope.chainId
+
         // A node refuses a send its native balance can't cover at the selected
         // preset's worst-case fee, so check that before signing. Algorand's
         // amount step already sizes the send against its reserve and close-out.
@@ -338,7 +340,8 @@ export const useTransactionConfirmationScreen =
             ) {
                 return undefined
             }
-            const nativeNeeded = isNativeAssetId(selectedAssetId)
+            const isNativeSend = isNativeAssetId(selectedAssetId)
+            const nativeNeeded = isNativeSend
                 ? baseUnitAmount.plus(maxFeeAmount)
                 : maxFeeAmount
             // A MAX that re-sizes to nothing leaves the whole balance for the fee, which
@@ -366,9 +369,18 @@ export const useTransactionConfirmationScreen =
                 title: t('send_funds.confirmation.fee_shortfall.title', {
                     symbol: unitName,
                 }),
-                body: t('send_funds.confirmation.fee_shortfall.body', {
-                    fee: maxFeeLabel,
-                }),
+                body: isNativeSend
+                    ? t('send_funds.confirmation.fee_shortfall.body', {
+                          fee: maxFeeLabel,
+                      })
+                    : t(
+                          'send_funds.confirmation.fee_shortfall.body_non_native',
+                          {
+                              fee: maxFeeLabel,
+                              network: networkName,
+                              symbol: unitName,
+                          },
+                      ),
             }
         }, [
             isFeeCoverageChecked,
@@ -379,6 +391,7 @@ export const useTransactionConfirmationScreen =
             selectedAssetId,
             isNativeAssetId,
             nativeAsset,
+            networkName,
             t,
             currentLanguage,
         ])
@@ -493,7 +506,7 @@ export const useTransactionConfirmationScreen =
         const title = assetLabel
             ? t('send_funds.confirmation.send_on_network', {
                   asset: assetLabel,
-                  network: chainDisplayNameOf(scope.chainId) ?? scope.chainId,
+                  network: networkName,
               })
             : undefined
 

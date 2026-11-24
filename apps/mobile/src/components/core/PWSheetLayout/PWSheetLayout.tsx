@@ -53,10 +53,11 @@ export type PWSheetLayoutProps = {
 /**
  * Bottom-sheet layout with three stacked zones: an optional sticky `header`, a
  * scrollable `body`, and an optional sticky `footer` pinned below it. Mirrors
- * `PWScreen`'s `header`/`body`/`footer` slots for full screens. Open the sheet
- * with `autoCreateContainer: false` so the footer pins and the body scrolls. In
- * an `auto` sheet the footer is pinned over the bottom and the body is padded
- * by its height, so the content-sized sheet counts the footer too.
+ * `PWScreen`'s `header`/`body`/`footer` slots for full screens. Open an `auto`
+ * sheet with `autoCreateContainer: false` so the footer pins and the body
+ * scrolls; `modal` and `full` sheets always do. In an `auto` sheet the footer
+ * is pinned over the bottom and the body is padded by its height, so the
+ * content-sized sheet counts the footer too.
  */
 export const PWSheetLayout = ({
     header,

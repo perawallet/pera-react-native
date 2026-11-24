@@ -102,6 +102,7 @@ describe('Flow: Cloud backup → real-time manager', () => {
             backupId,
             salt: BACKUP_SALT,
             deviceId: 'test-device-id',
+            credentialsConfirmed: true,
         })
 
         const { handlers, getItem, pushFromOtherDevice } = buildSyncHandlers({

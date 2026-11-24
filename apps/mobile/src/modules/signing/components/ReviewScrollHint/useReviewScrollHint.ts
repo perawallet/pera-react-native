@@ -26,6 +26,8 @@ export type UseReviewScrollHintResult = {
     scrollRef: RefObject<Nullable<PWScreenScrollHandle>>
     /** More of the review sits below the fold. */
     isMoreBelow: boolean
+    /** The review overflows its body at all, so the hint keeps a slot of its own. */
+    isScrollable: boolean
     handleScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void
     handleBodyLayout: (event: LayoutChangeEvent) => void
     handleContentSizeChange: (width: number, height: number) => void
@@ -37,11 +39,16 @@ export const useReviewScrollHint = (): UseReviewScrollHintResult => {
     const scrollRef = useRef<PWScreenScrollHandle>(null)
     const metrics = useRef({ viewport: 0, content: 0, offset: 0 })
     const [isMoreBelow, setIsMoreBelow] = useState(false)
+    const [isScrollable, setIsScrollable] = useState(false)
 
     const update = useCallback(() => {
         const { viewport, content, offset } = metrics.current
+        const overflow = viewport > 0 ? content - viewport : 0
+        const isOverflowing = overflow > END_THRESHOLD
+        setIsScrollable(isOverflowing)
+        // iOS rubber-banding reports a negative offset on a review that fits; clamp it or the strip appears and makes the body overflow.
         setIsMoreBelow(
-            viewport > 0 && content - viewport - offset > END_THRESHOLD,
+            isOverflowing && overflow - Math.max(offset, 0) > END_THRESHOLD,
         )
     }, [])
 
@@ -76,6 +83,7 @@ export const useReviewScrollHint = (): UseReviewScrollHintResult => {
     return {
         scrollRef,
         isMoreBelow,
+        isScrollable,
         handleScroll,
         handleBodyLayout,
         handleContentSizeChange,

@@ -245,6 +245,7 @@ export const configureBackup = async (keys: {
         backupId: keys.backupId,
         salt: BACKUP_SALT,
         deviceId: DEVICE_ID,
+        credentialsConfirmed: true,
     })
     return createItemKeyHasher(keys.itemKey)
 }

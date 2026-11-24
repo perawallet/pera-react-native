@@ -15,7 +15,7 @@ import {
     i18nKey,
     type TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
-import { recordSignerOf } from '../signer'
+import { isSentByOtherSigner, recordSignerOf } from '../signer'
 
 const ME = '0xabc'
 const OTHER = '0xdef'
@@ -68,5 +68,50 @@ describe('recordSignerOf', () => {
         expect(
             recordSignerOf(recordOf({ status: 'pending' }), ''),
         ).toBeUndefined()
+    })
+})
+
+describe('isSentByOtherSigner', () => {
+    const outgoing = recordOf().summary
+    const incoming = { ...outgoing, direction: 'in' as const }
+    const input = {
+        summary: outgoing,
+        signer: undefined,
+        accountAddress: ME,
+        chainId: 'ethereum' as const,
+    }
+
+    it('Given an outgoing entry another address signed, then it was sent by another signer', () => {
+        expect(isSentByOtherSigner({ ...input, signer: OTHER })).toBe(true)
+    })
+
+    it('Given an outgoing entry known to be signed elsewhere, then it was sent by another signer', () => {
+        expect(isSentByOtherSigner({ ...input, isSignedElsewhere: true })).toBe(
+            true,
+        )
+    })
+
+    it('Given an outgoing entry with no signer, then it counts as the own', () => {
+        expect(isSentByOtherSigner(input)).toBe(false)
+    })
+
+    it('Given the account as signer, then it is not another signer', () => {
+        expect(isSentByOtherSigner({ ...input, signer: ME })).toBe(false)
+    })
+
+    it('Given an incoming entry signed by another address, then it is not a send', () => {
+        expect(
+            isSentByOtherSigner({ ...input, summary: incoming, signer: OTHER }),
+        ).toBe(false)
+    })
+
+    it('Given no account address, then it is not another signer', () => {
+        expect(
+            isSentByOtherSigner({
+                ...input,
+                signer: OTHER,
+                accountAddress: '',
+            }),
+        ).toBe(false)
     })
 })

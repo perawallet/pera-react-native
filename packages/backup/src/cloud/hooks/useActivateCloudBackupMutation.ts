@@ -58,7 +58,13 @@ export const useActivateCloudBackupMutation = (
                 itemKey,
                 mnemonic,
             })
-            setConfigured({ backupId, salt, deviceId })
+            // Setup's quiz and key check already confirmed both credentials.
+            setConfigured({
+                backupId,
+                salt,
+                deviceId,
+                credentialsConfirmed: true,
+            })
             clearDraft()
         },
         ...options,

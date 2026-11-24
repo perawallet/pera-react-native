@@ -288,6 +288,7 @@ describe('cloud backup verification and enable', () => {
             { timeout: SLOW_WAIT_TIMEOUT_MS },
         )
         expect(useCloudBackupStore.getState().salt).toBe(SALT)
+        expect(useCloudBackupStore.getState().credentialsConfirmed).toBe(true)
         // The backup id is derived from the phrase, not handed back by the
         // server.
         const backupId = useCloudBackupStore.getState().backupId!

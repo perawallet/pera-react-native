@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { logger } from '@perawallet/wallet-core-shared'
 import {
     EIP1193_DELIVER_GLOBAL,
     createWebViewDappTransport,
@@ -42,6 +43,10 @@ const injectedOf = (inject: ReturnType<typeof vi.fn>): string =>
     inject.mock.calls.map(call => String(call[0])).join('\n')
 
 describe('webViewDappTransport', () => {
+    afterEach(() => {
+        vi.restoreAllMocks()
+    })
+
     it('hands the listener the origin the posting frame reported, not one the payload claims', () => {
         const transport = createWebViewDappTransport()
         const { page } = pageAt(`${ORIGIN}/swap`)
@@ -63,6 +68,49 @@ describe('webViewDappTransport', () => {
             expect.objectContaining({ method: 'eth_chainId' }),
             expect.any(Function),
         )
+    })
+
+    describe('page icons', () => {
+        const receiveIcons = (icons?: string[]) => {
+            const transport = createWebViewDappTransport()
+            const { page } = pageAt(`${ORIGIN}/swap`)
+            const listener = vi.fn()
+            transport.onRequest(listener)
+            transport.receive(
+                page,
+                messageOf(icons ? { icons } : {}),
+                `${ORIGIN}/swap`,
+            )
+            return listener.mock.calls[0][0] as { pageIcons?: string[] }
+        }
+
+        it('passes the icons on as the context’s pageIcons', () => {
+            expect(receiveIcons([`${ORIGIN}/favicon.png`]).pageIcons).toEqual([
+                `${ORIGIN}/favicon.png`,
+            ])
+        })
+
+        it('keeps the first eight and drops over-long entries', () => {
+            const many = Array.from(
+                { length: 12 },
+                (_, index) => `${ORIGIN}/i${index}.png`,
+            )
+            const tooLong = `${ORIGIN}/${'x'.repeat(2048)}`
+
+            expect(receiveIcons([tooLong, ...many]).pageIcons).toEqual(
+                many.slice(0, 8),
+            )
+        })
+
+        it('leaves pageIcons unset when the page sent none', () => {
+            expect(receiveIcons()).not.toHaveProperty('pageIcons')
+        })
+
+        it.each([['x'], [[1]]])('rejects icons %j as a page message', icons => {
+            expect(
+                isEip1193PageMessage({ ...messageOf(), icons } as unknown),
+            ).toBe(false)
+        })
     })
 
     it.each([true, false])(
@@ -117,6 +165,31 @@ describe('webViewDappTransport', () => {
 
         expect(listener).not.toHaveBeenCalled()
         expect(injectedOf(inject)).toContain('-32602')
+    })
+
+    it('logs the method and code of a request it refuses, never its params', () => {
+        const debug = vi.spyOn(logger, 'debug')
+        const transport = createWebViewDappTransport()
+        const { page } = pageAt(ORIGIN)
+
+        transport.receive(
+            page,
+            messageOf({
+                request: {
+                    jsonrpc: '2.0',
+                    id: 'r1',
+                    method: 'eth_sendTransaction',
+                    params: ['x'.repeat(1_100_000)],
+                },
+            }),
+            ORIGIN,
+        )
+
+        expect(debug).toHaveBeenCalledWith('[eip1193] request rejected', {
+            method: 'eth_sendTransaction',
+            code: -32_602,
+            message: 'The request is too large',
+        })
     })
 
     it('answers 4900 when no handler is listening', () => {

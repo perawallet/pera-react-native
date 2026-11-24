@@ -79,17 +79,12 @@ vi.mock('../../../hooks/history/useReplaceTransaction', () => ({
 }))
 
 const mockOpenRecordDetails = vi.hoisted(() => vi.fn())
+const mockOpenRecordDetailsArgs = vi.hoisted(() => vi.fn())
 vi.mock('../../../hooks/history/useOpenRecordDetails', () => ({
-    useOpenRecordDetails: (record?: unknown) => ({
-        handleOpenDetails: record ? mockOpenRecordDetails : undefined,
-    }),
-}))
-
-const mockOpenSuspectedPoisoningSheet = vi.hoisted(() => vi.fn())
-vi.mock('../../../hooks/address-safety/useSuspectedPoisoningSheet', () => ({
-    useSuspectedPoisoningSheet: () => ({
-        openSuspectedPoisoningSheet: mockOpenSuspectedPoisoningSheet,
-    }),
+    useOpenRecordDetails: (record?: unknown, suspectedPoisoning?: unknown) => {
+        mockOpenRecordDetailsArgs(record, suspectedPoisoning)
+        return { handleOpenDetails: record ? mockOpenRecordDetails : undefined }
+    },
 }))
 
 vi.mock('../../../hooks/history/useCounterpartyName', () => ({
@@ -169,6 +164,7 @@ describe('useTransactionListItem', () => {
                     decimals: 6,
                     prefix: '-',
                     isSuspicious: false,
+                    isMuted: false,
                 },
             ])
         })
@@ -699,18 +695,76 @@ describe('useTransactionListItem with a record', () => {
         expect(renderRecord().isSuspectedPoisoning).toBe(false)
     })
 
-    it('explains a suspected record on press instead of opening anything else', () => {
+    it('opens the details of a suspected record with its poisoning on press, even where a replace is offered', () => {
         mockReplace.canReplace = true
         const row = renderRecord({ suspectedPoisoning })
 
         row.handlePress?.()
 
         expect(row.isSuspectedPoisoning).toBe(true)
-        expect(mockOpenSuspectedPoisoningSheet).toHaveBeenCalledWith(
+        expect(mockOpenRecordDetailsArgs).toHaveBeenCalledWith(
+            record,
             suspectedPoisoning,
-            record.scope,
         )
+        expect(mockOpenRecordDetails).toHaveBeenCalled()
         expect(mockReplace.handleReplace).not.toHaveBeenCalled()
-        expect(mockOpenRecordDetails).not.toHaveBeenCalled()
+    })
+
+    describe('amounts of a suspected record', () => {
+        it('Given a flagged outgoing record, then its amount is unsigned, muted and titled as not sent by you', () => {
+            const row = renderRecord({ suspectedPoisoning })
+
+            expect(row.amounts[0]).toMatchObject({
+                prefix: undefined,
+                isMuted: true,
+                isSuspicious: false,
+            })
+            expect(row.title).toBe('transactions.list_item.not_sent_by_you')
+        })
+
+        it('Given a flagged incoming record, then its amount is unsigned and muted, and the title stays a receive', () => {
+            const incoming: TransactionRecord = {
+                ...record,
+                summary: {
+                    ...record.summary,
+                    title: { key: i18nKey('transactions.list_item.receive') },
+                    direction: 'in',
+                },
+            }
+
+            const row = renderRecord({ suspectedPoisoning }, incoming)
+
+            expect(row.amounts[0]).toMatchObject({
+                prefix: undefined,
+                isMuted: true,
+            })
+            expect(row.title).toBe('transactions.list_item.receive')
+        })
+    })
+
+    describe('sends the account did not sign', () => {
+        it.each([
+            ['another initiator', { initiator: '0xmallory' }],
+            ['a signer the history does not name', { isSignedElsewhere: true }],
+        ])(
+            'Given an outgoing record with %s, then it reads as not sent by you',
+            (_label, extra) => {
+                const row = renderRecord({}, { ...record, ...extra })
+
+                expect(row.title).toBe('transactions.list_item.not_sent_by_you')
+                expect(row.amounts[0]?.prefix).toBe('-')
+                expect(row.amounts[0]?.isMuted).toBe(false)
+            },
+        )
+
+        it('Given an own send, then it reads as a send with a signed amount', () => {
+            const row = renderRecord({}, { ...record, initiator: '0xALICE' })
+
+            expect(row.title).toBe('transactions.list_item.send')
+            expect(row.amounts[0]).toMatchObject({
+                prefix: '-',
+                isMuted: false,
+            })
+        })
     })
 })

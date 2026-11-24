@@ -113,6 +113,9 @@ vi.mock('@perawallet/wallet-core-security', () => ({
         enableBiometrics: vi.fn(),
     })),
 }))
+vi.mock('@modules/accounts/shell', () => ({
+    useNetworkChipFollowsSelection: vi.fn(),
+}))
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(() => [{ address: 'ACCOUNT_1' }]),
     useHasAccounts: vi.fn(() => true),

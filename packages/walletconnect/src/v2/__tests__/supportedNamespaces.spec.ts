@@ -103,7 +103,7 @@ const fixtureAdapter = (
         namespace: 'fx',
         caip2ChainIdFor: () => FIXTURE_CHAIN_ID,
         networkForCaip2ChainId: caip2 =>
-            caip2 === FIXTURE_CHAIN_ID ? 'fx-main' : null,
+            caip2 === FIXTURE_CHAIN_ID ? 'mainnet' : null,
         toWireResult: () => null,
         ...(v2 ? { v2 } : {}),
     },

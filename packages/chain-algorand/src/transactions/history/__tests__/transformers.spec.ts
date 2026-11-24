@@ -24,6 +24,7 @@ import {
     parseTransactionHistoryResponse,
     type TransactionHistoryItemApiResponse,
 } from '../schema'
+import { algorandXoDepositLeg } from '../../../test-utils/swap-leg'
 
 const makeApiItem = (
     overrides: Partial<TransactionHistoryItemApiResponse> = {},
@@ -372,6 +373,27 @@ describe('transformTransactionItem', () => {
             title: '',
             description: '',
         })
+    })
+
+    it('keeps a recorded swap leg, and drops an unreadable one but not its row', () => {
+        const leg = algorandXoDepositLeg()
+        const page = (swap: unknown) =>
+            parseTransactionHistoryResponse({
+                next: null,
+                previous: null,
+                results: [{ ...makeApiItem(), swap }],
+            })
+
+        const [kept] = transformTransactionHistoryResponse(
+            page(leg),
+        ).transactions
+        const [dropped] = transformTransactionHistoryResponse(
+            page({ role: 'swap', order: { order_id: 1 } }),
+        ).transactions
+
+        expect(algorandHistoryDataOf(kept).swapLeg).toEqual(leg)
+        expect(dropped?.id).toBe('TX123')
+        expect(algorandHistoryDataOf(dropped).swapLeg).toBeNull()
     })
 
     it('passes the application_id string through when present', () => {

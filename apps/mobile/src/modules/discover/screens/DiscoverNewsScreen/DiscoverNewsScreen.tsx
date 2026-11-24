@@ -98,7 +98,6 @@ export const DiscoverNewsScreen = () => {
                 renderItem={renderCard}
                 keyExtractor={item => item.id}
                 cardLayout
-                contentContainerStyle={styles.list}
                 ListEmptyComponent={renderEmpty()}
                 refreshControl={
                     <PWRefreshControl

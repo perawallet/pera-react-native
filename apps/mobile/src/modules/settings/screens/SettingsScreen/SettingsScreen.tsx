@@ -47,6 +47,7 @@ export const SettingsScreen = () => {
                                 icon={page.icon}
                                 title={page.title}
                                 value={page.value}
+                                warning={page.warning}
                                 style={styles.sectionRow}
                                 testID={`settings_item_${page.title.toLowerCase().replace(/\s+/g, '_')}`}
                             />

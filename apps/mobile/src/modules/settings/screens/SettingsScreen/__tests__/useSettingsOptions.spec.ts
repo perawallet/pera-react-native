@@ -33,7 +33,10 @@ vi.mock('@hooks/useIsCloudBackupEnabled', () => ({
 // The hook reads the store through a selector, so the mock has to run the
 // selector rather than return a value.
 const { mockCloudBackupState } = vi.hoisted(() => ({
-    mockCloudBackupState: { isConfigured: (): boolean => false },
+    mockCloudBackupState: {
+        isConfigured: (): boolean => false,
+        needsCredentialsConfirmation: (): boolean => false,
+    },
 }))
 
 vi.mock('@perawallet/wallet-core-backup', () => ({
@@ -94,6 +97,7 @@ describe('useSettingsOptions', () => {
         ;(useIsLanguageSelectionEnabled as Mock).mockReturnValue(false)
         ;(useIsCloudBackupEnabled as Mock).mockReturnValue(false)
         mockCloudBackupState.isConfigured = () => false
+        mockCloudBackupState.needsCredentialsConfirmation = () => false
         Object.assign(mockCapabilities, {
             discoverTab: true,
             swapTab: true,
@@ -438,5 +442,30 @@ describe('useSettingsOptions', () => {
         expect(result.current.settingsOptions[0].items[0].value).toBe(
             'settings.main.cloud_backup_on',
         )
+    })
+
+    it('keeps the cloud backup row on the overview and adds a warning while the credentials are unconfirmed', () => {
+        ;(useIsCloudBackupEnabled as Mock).mockReturnValue(true)
+        mockCloudBackupState.isConfigured = () => true
+        mockCloudBackupState.needsCredentialsConfirmation = () => true
+
+        const { result } = renderHook(() => useSettingsOptions())
+
+        const row = result.current.settingsOptions[0].items[0]
+        expect(row.route).toBe('CloudBackupSettings')
+        expect(row.action).toBeUndefined()
+        expect(row.warning).toBe('cloud_backup.confirm_credentials.warning')
+        expect(row.value).toBe('settings.main.cloud_backup_on')
+    })
+
+    it('opens the cloud backup overview with no warning once the credentials are confirmed', () => {
+        ;(useIsCloudBackupEnabled as Mock).mockReturnValue(true)
+        mockCloudBackupState.isConfigured = () => true
+
+        const { result } = renderHook(() => useSettingsOptions())
+
+        const row = result.current.settingsOptions[0].items[0]
+        expect(row.route).toBe('CloudBackupSettings')
+        expect(row.warning).toBeUndefined()
     })
 })

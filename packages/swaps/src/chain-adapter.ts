@@ -66,8 +66,8 @@ export interface SwapChainAdapter {
         routerAssetId: string,
         scope: ChainScope,
     ): Nullable<string>
-    /** Base units of the native asset held back when the user swaps a share of it. */
-    maxAmountFeeReserve: Decimal
+    /** Base units of the native asset held back when the user swaps a share of it, priced on `scope`'s current fees. */
+    maxAmountFeeReserve(scope: ChainScope): Promise<Decimal>
     /** Base units of the native asset a first holding of an asset locks; zero where holdings lock nothing. */
     holdingReserve(scope: ChainScope): Decimal
     /** Undefined when the item has nothing to link to or the network has no explorer. */

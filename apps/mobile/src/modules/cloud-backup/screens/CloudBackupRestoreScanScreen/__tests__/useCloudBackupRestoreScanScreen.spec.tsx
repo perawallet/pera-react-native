@@ -210,6 +210,7 @@ describe('useCloudBackupRestoreScanScreen', () => {
         expect(restoreMock).toHaveBeenCalledWith({
             salt: 'SALT',
             argon2id: ARGON2ID,
+            credentialsConfirmed: false,
         })
         expect(setMnemonicMock.mock.invocationCallOrder[0]).toBeLessThan(
             restoreMock.mock.invocationCallOrder[0]!,

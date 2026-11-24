@@ -30,6 +30,8 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import {
     isFeePaidByAccount,
+    isSentByOtherSigner,
+    recordSignerOf,
     summarizeHistoryItem,
     type SuspectedPoisoning,
     type TransactionHistoryItem,
@@ -40,7 +42,6 @@ import { chainNoticeOf, type ChainNoticeContent } from '@components/ChainNotice'
 import { transactionIconName } from '@components/TransactionIcon'
 import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'
-import { useSuspectedPoisoningSheet } from '../../hooks/address-safety/useSuspectedPoisoningSheet'
 import { useCounterpartyName } from '../../hooks/history/useCounterpartyName'
 import { useOpenRecordDetails } from '../../hooks/history/useOpenRecordDetails'
 import { useReplaceTransaction } from '../../hooks/history/useReplaceTransaction'
@@ -55,6 +56,7 @@ import {
 const WAITING_ON_EARLIER = {
     key: i18nKey('transactions.notice.waiting_on_earlier'),
 }
+const NOT_SENT_BY_YOU = i18nKey('transactions.list_item.not_sent_by_you')
 const FEE_LABEL = i18nKey('transactions.common.fee')
 const MAX_FEE_LABEL = i18nKey('send_funds.fee.max_fee')
 
@@ -70,7 +72,11 @@ export type UseTransactionListItemParams = (
 ) & { suspectedPoisoning?: SuspectedPoisoning }
 
 /** A visible amount, flagged when its token is one Pera calls suspicious on a chain that receives tokens unasked. */
-export type RowAmount = AmountDisplay & { isSuspicious: boolean }
+export type RowAmount = AmountDisplay & {
+    isSuspicious: boolean
+    /** Drawn grey and unsigned: a scam token, or an entry of a suspected-poisoning row, is no real movement of value. */
+    isMuted: boolean
+}
 
 export type UseTransactionListItemResult = {
     iconName: IconName
@@ -110,6 +116,7 @@ export const useTransactionListItem = (
         ? (chainAccountOf(account, scope.chainId)?.address ?? '')
         : ''
     const id = (record ?? transaction)?.id ?? ''
+    const { suspectedPoisoning } = params
 
     const summary = useMemo(
         () =>
@@ -129,7 +136,20 @@ export const useTransactionListItem = (
         [t],
     )
 
-    const title = useSummaryTitle(summary, scope)
+    const summaryTitle = useSummaryTitle(summary, scope)
+    // Detection flags an outgoing entry only when the history never shows the account signing it.
+    const isNotSentByYou =
+        (!!suspectedPoisoning && summary.direction === 'out') ||
+        isSentByOtherSigner({
+            summary,
+            signer: record
+                ? recordSignerOf(record, address)
+                : transaction?.sender,
+            isSignedElsewhere: record?.isSignedElsewhere,
+            accountAddress: address,
+            chainId: scope.chainId,
+        })
+    const title = isNotSentByYou ? t(NOT_SENT_BY_YOU) : summaryTitle
 
     const subtitle = useMemo(() => {
         if (summary.subtitle) return render(summary.subtitle)
@@ -160,15 +180,19 @@ export const useTransactionListItem = (
             visibleAmounts.map((amount): RowAmount => {
                 const { assetId, chainId } = amount.assetRef
                 const stored = storedAssets.get(assetId)
+                const isSuspicious =
+                    stored?.peraMetadata?.verificationTier ===
+                        PeraAssetVerificationTier.suspicious &&
+                    canHideHolding(chainId, assetId)
+                const display = toAmountDisplay(amount, stored)
                 return {
-                    ...toAmountDisplay(amount, stored),
-                    isSuspicious:
-                        stored?.peraMetadata?.verificationTier ===
-                            PeraAssetVerificationTier.suspicious &&
-                        canHideHolding(chainId, assetId),
+                    ...display,
+                    prefix: suspectedPoisoning ? undefined : display.prefix,
+                    isSuspicious,
+                    isMuted: isSuspicious || !!suspectedPoisoning,
                 }
             }),
-        [visibleAmounts, storedAssets],
+        [visibleAmounts, storedAssets, suspectedPoisoning],
     )
 
     const isSuspiciousToken = amounts.some(amount => amount.isSuspicious)
@@ -204,21 +228,16 @@ export const useTransactionListItem = (
         if (transaction) onPress?.(transaction)
     }, [onPress, transaction])
 
-    const { suspectedPoisoning } = params
-    const { openSuspectedPoisoningSheet } = useSuspectedPoisoningSheet()
-    const handleSuspectedRecordPress = useCallback(() => {
-        if (suspectedPoisoning) {
-            openSuspectedPoisoningSheet(suspectedPoisoning, scope)
-        }
-    }, [openSuspectedPoisoningSheet, suspectedPoisoning, scope])
-
     const handleRecordPress = useCallback(() => {
         void handleReplace()
     }, [handleReplace])
     const replacePress = canReplace ? handleRecordPress : undefined
-    const { handleOpenDetails } = useOpenRecordDetails(record)
+    const { handleOpenDetails } = useOpenRecordDetails(
+        record,
+        suspectedPoisoning,
+    )
     const recordPress = suspectedPoisoning
-        ? handleSuspectedRecordPress
+        ? handleOpenDetails
         : (replacePress ?? handleOpenDetails)
 
     const handleLongPress = useCallback(

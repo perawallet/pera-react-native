@@ -36,6 +36,15 @@ export const algorandRouterAssetId = (
     return `${caip2}/asa:${assetId}`
 }
 
+/** The ASA id of an Algorand router asset id on any network; null for another chain's id, or one that isn't an ASA. */
+export const algorandAssetIdOfAnyNetwork = (
+    routerAssetId: string,
+): Nullable<string> => {
+    const [caip2, reference = ''] = routerAssetId.split('/')
+    if (!caip2.startsWith('algorand:')) return null
+    return ROUTER_ASSET_REFERENCE.exec(reference)?.[1] ?? null
+}
+
 /** The ASA id of a router asset id; null for another network's or chain's id, or one that isn't an ASA. */
 export const algorandAssetIdOfRouterId = (
     routerAssetId: string,

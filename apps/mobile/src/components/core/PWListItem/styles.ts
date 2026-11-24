@@ -18,6 +18,19 @@ export const useStyles = makeStyles(theme => {
             color: theme.colors.textMain,
             flexShrink: 1,
         },
+        textColumn: {
+            flexShrink: 1,
+            gap: theme.spacing.xs,
+        },
+        warningRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: theme.spacing.xs,
+        },
+        warningText: {
+            color: theme.colors.negative,
+            flexShrink: 1,
+        },
         row: {
             flexDirection: 'row',
             paddingVertical: theme.spacing.lg,

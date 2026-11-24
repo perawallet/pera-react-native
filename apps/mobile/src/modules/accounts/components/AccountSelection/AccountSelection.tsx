@@ -12,7 +12,6 @@
 
 import { useCallback, type ReactNode } from 'react'
 import {
-    ownAddressOf,
     useAccountHoldingSources,
     useSelectedAccount,
     type WalletAccount,
@@ -38,6 +37,7 @@ import {
 } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
 import { useUniqueAccountName } from '@hooks/useUniqueAccountName'
+import { useAccountSelectionCopy } from './useAccountSelectionCopy'
 
 export type AccountSelectionProps = {
     onSelected?: (account: WalletAccount) => void
@@ -75,6 +75,7 @@ export const AccountSelection = ({
     const styles = useStyles()
     const account = useSelectedAccount()
     const isMultiChain = useAccountHoldingSources(account).length > 1
+    const copy = useAccountSelectionCopy(account)
     const { hasDuplicateName } = useUniqueAccountName()
     const isNameShared = !!account && hasDuplicateName(account)
     const { request: requestBottomSheet } = useBottomSheet()
@@ -188,7 +189,7 @@ export const AccountSelection = ({
 
     // The Pera Card identity has no address behind it, so only the account
     // presentation gets the long-press-to-copy affordance.
-    if (card || !account) {
+    if (card || !copy) {
         return (
             <PWTouchableOpacity {...triggerProps}>{display}</PWTouchableOpacity>
         )
@@ -197,7 +198,8 @@ export const AccountSelection = ({
     return (
         <CopyableText
             {...triggerProps}
-            copyValue={ownAddressOf(account) ?? ''}
+            copyValue={copy.copyValue}
+            copyOptions={copy.copyOptions}
         >
             {display}
         </CopyableText>

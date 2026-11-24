@@ -254,6 +254,17 @@ selection. The chains on offer are the `eip155` chain adapters with
 approved like `wallet_switchEthereumChain`); for any other chain it answers 4200,
 because Pera supports only the chains it ships.
 
+A switch is answered at once for a chain the user approved for that site (at
+connect, or through the switch prompt) and on which a granted account still
+signs; anything else asks, as for a WalletConnect v2 session that does not hold
+the chain (see CONNECTIONS.md). The approved chains live on the record
+(`metadata.approvedChainIds`); a record without the field counts as approved for
+its current chain only. Only the mobile handler offers every served chain at
+connect and skips the prompt for approved chains
+(`shouldProposeEveryServedChain`), because the extension's approval window
+shows one chain and has no list of approved chains to review or revoke; the
+extension still records approved switches but prompts for every one.
+
 ### Routing
 
 Any other method goes through the site's chain's WalletConnect v2 route table
@@ -292,7 +303,8 @@ node (filters, subscriptions) can pass.
 permission whose `restrictReturnedAccounts` caveat lists the accounts it may see.
 `wallet_requestPermissions` accepts only `eth_accounts` and runs the same connect
 flow as `eth_requestAccounts`, but always opens the approval, even for a connected
-site: dApps use it to change which accounts they hold.
+site: dApps use it to change which accounts they hold. A request naming any other
+permission answers 4200; one that is not `[{ <permission>: {} }]` answers -32602.
 
 The transport stamps `isWalletLocked` on every request: the extension's service
 worker reads the vault's `SESSION_UNLOCKED_KEY` flag from session storage, which
@@ -383,6 +395,8 @@ nothing holds it, and always an EIP-6963 announcement.
   and only when some EVM chain has `dappConnect` on. It mirrors
   `apps/browser/src/content/eip1193-main.ts` by hand, because Hermes cannot
   stringify a compiled function into the page; keep the two in step.
+  Connect requests also carry the page's own icon links, since a WebView has no
+  tab favicon for native to read.
 - **Transport:** `apps/mobile/src/modules/webview/utils/webViewDappTransport.ts`
   is the `DappTransport`. Requests arrive through `ReactNativeWebView.postMessage`
   stamped with the per-load bridge token, so the existing main-frame gate drops

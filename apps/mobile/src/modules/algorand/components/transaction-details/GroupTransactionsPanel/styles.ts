@@ -13,6 +13,9 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
+    panel: {
+        marginTop: theme.spacing.lg,
+    },
     container: {
         marginTop: theme.spacing.md,
         gap: theme.spacing.sm,

@@ -22,6 +22,7 @@ import {
     WalletConnectSessionRequestExpiredError,
     WalletConnectSignRequestError,
     WalletConnectUnsupportedChainsError,
+    WalletConnectUnselectedNetworkError,
     WalletConnectUnsupportedMethodError,
     WalletConnectUnsupportedNetworkError,
 } from '../errors'
@@ -133,6 +134,12 @@ describe('declined-request errors', () => {
         expect(isExpectedError(new WalletConnectUnsupportedChainsError())).toBe(
             true,
         )
+        expect(
+            new WalletConnectUnselectedNetworkError().metadata,
+        ).toMatchObject({
+            messageKey: 'errors.walletconnect.unselected_network_body',
+            expected: true,
+        })
         expect(isExpectedError(method)).toBe(true)
         expect(isExpectedError(network)).toBe(true)
     })

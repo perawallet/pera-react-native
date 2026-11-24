@@ -87,6 +87,7 @@ export const AccountDrawerContent = ({
                 hideDefaultHeader={hideDefaultHeader}
                 accountFilter={accountFilter}
                 showPeraCardActivation={showPeraCardActivation}
+                hasBottomInset={ownsInsets && !isAndroid()}
             />
         </PWView>
     )

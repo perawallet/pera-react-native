@@ -391,7 +391,8 @@
         "imitated_currency": {
             "marker": "Imite {{code}}",
             "title": "Cet actif n’est pas {{code}}",
-            "body": "Son nom d’unité est {{code}}, mais il s’agit d’un actif distinct que n’importe qui a pu créer. Le recevoir ne vous donne aucun {{code}}."
+            "body": "Son nom d’unité est {{code}}, mais il s’agit d’un actif distinct que n’importe qui a pu créer. Le recevoir ne vous donne aucun {{code}}.",
+            "unit_label": "Actif inconnu"
         }
     },
     "asset_details": {
@@ -434,8 +435,6 @@
             "social_media": "Réseaux sociaux",
             "chart_empty_body": "Un graphique apparaîtra ici dès que vous aurez un historique de solde",
             "total_supply_info_body": "L’offre totale d’un actif est définie lors de sa création et correspond au nombre total d’unités créées.",
-            "circulating_supply": "Offre en circulation",
-            "circulating_supply_info_body": "L’offre en circulation est le nombre de pièces actuellement en circulation. La monnaie native d’un réseau n’a pas de total fixe : ce chiffre évolue à mesure que des pièces sont émises ou brûlées.",
             "token_total_supply_info_body": "L’offre totale est le nombre de jetons émis par le contrat, moins ceux qui ont été brûlés. Elle change lorsque l’émetteur crée ou brûle des jetons."
         },
         "action_buttons": {
@@ -529,6 +528,7 @@
             "empty_title": "NFT",
             "empty_body": "Bienvenue dans votre galerie NFT ! Vous n’avez pas encore de NFT. Tous les NFT disponibles dans votre wallet apparaîtront ici.",
             "empty_body_multichain": "Bienvenue dans votre galerie NFT !\nVous n’avez pas encore de NFT. Les NFT que vous recevez sur des réseaux comme Ethereum apparaissent ici automatiquement. Les NFT Algorand nécessitent d’abord un opt-in.",
+            "empty_body_unsupported": "Les NFT sur {{chains}} ne sont pas encore affichés dans Pera.",
             "empty_optin": "Opt-in à un NFT",
             "empty_optin_algorand": "Opt-in à un NFT Algorand",
             "nomatch_title": "Aucun NFT correspondant",
@@ -855,6 +855,16 @@
             "description": "Choisissez les bons mots pour confirmer que vous avez conservé votre clé de 12 mots en lieu sûr.",
             "proceed": "Continuer",
             "error_message": "Sélection incorrecte. Veuillez réessayer."
+        },
+        "confirm_credentials": {
+            "warning": "Confirmez que vous avez enregistré votre clé de sauvegarde",
+            "title": "Confirmer la clé de sauvegarde",
+            "description": "Choisissez les bons mots de votre clé de 12 mots et saisissez votre clé de chiffrement pour confirmer que vous les avez conservées.",
+            "confirm": "Confirmer",
+            "error_words": "Certains des mots sélectionnés sont incorrects. Veuillez réessayer.",
+            "error_key": "Cette clé de chiffrement ne correspond pas à votre sauvegarde.",
+            "error_both": "Les mots sélectionnés et la clé de chiffrement sont tous deux incorrects.",
+            "success": "Clé de sauvegarde confirmée"
         },
         "store_encryption_key": {
             "title": "Conservez votre clé de chiffrement",
@@ -1210,6 +1220,10 @@
             "title": "Copié dans le presse-papiers",
             "body": ""
         },
+        "address_copied": {
+            "algorand": "Adresse Algorand copiée",
+            "evm": "Adresse EVM copiée"
+        },
         "email_failed": {
             "title": "Impossible d’ouvrir l’app e-mail",
             "body": "Aucune app e-mail n’est configurée sur cet appareil. Vous pouvez écrire directement à {{email}}."
@@ -1538,7 +1552,8 @@
             "request_expired_body": "Cette demande de signature a expiré avant d’être traitée. Demandez à l’application de la renvoyer.",
             "unsupported_method_body": "{{dappName}} a demandé {{method}}, que Pera ne prend pas en charge. La demande a été refusée.",
             "unsupported_network_body": "{{dappName}} a voulu utiliser le réseau dont l’ID de chaîne est {{chainId}}, que Pera ne prend pas en charge. La demande a été refusée.",
-            "unsupported_chains_body": "Cette application a voulu utiliser un réseau que Pera ne prend pas en charge. La connexion a été refusée."
+            "unsupported_chains_body": "Cette application a voulu utiliser un réseau que Pera ne prend pas en charge. La connexion a été refusée.",
+            "unselected_network_body": "Cette application ne propose que des réseaux sur lesquels Pera n’est pas actuellement. La connexion a été refusée. Activez ou désactivez le mode développeur pour correspondre à l’application, puis réessayez."
         },
         "signing": {
             "title": "Une erreur est survenue lors du traitement de la demande de signature",
@@ -3303,7 +3318,8 @@
             },
             "fee_shortfall": {
                 "title": "Pas assez de {{symbol}} pour les frais",
-                "body": "Cet envoi peut coûter jusqu’à {{fee}} de frais. Réduisez le montant ou choisissez des frais plus lents."
+                "body": "Cet envoi peut coûter jusqu’à {{fee}} de frais. Réduisez le montant ou choisissez des frais plus lents.",
+                "body_non_native": "Cet envoi peut coûter jusqu’à {{fee}} de frais sur {{network}}. Ajoutez des {{symbol}} ou choisissez des frais plus lents."
             },
             "fee_unavailable": {
                 "title": "Impossible d’estimer les frais",
@@ -3634,6 +3650,31 @@
             "typed_data_warning_title": "Cette signature peut déplacer vos tokens",
             "typed_data_warning_body": "Signer des données structurées peut autoriser une application à dépenser ou échanger vos tokens sans vous redemander votre accord. N’approuvez que si vous faites confiance à cette application."
         },
+        "sign_in": {
+            "title": "Se connecter à {{domain}}",
+            "domain": "Domaine",
+            "address": "Adresse",
+            "uri": "URI",
+            "chain_id": "ID de chaîne",
+            "nonce": "Nonce",
+            "issued_at": "Émis",
+            "expires_at": "Expire",
+            "advanced": "Avancé",
+            "site_mismatch_title": "Cette connexion concerne un autre site",
+            "site_mismatch_body": "Le message vous connecte à {{domain}}, mais la demande provient de {{site}}. N’approuvez que si vous faites confiance aux deux.",
+            "other_address_note": "Le message indique {{address}}, et non le compte qui signe.",
+            "other_chain_note": "Le message indique {{chain}}, et non le réseau de cette demande. La connexion n’envoie aucune transaction.",
+            "other_chain_id_note": "Le message indique l’ID de chaîne {{chainId}}, et non le réseau de cette demande. La connexion n’envoie aucune transaction.",
+            "statement_label": "Message de {{domain}}",
+            "not_before": "Valide à partir du",
+            "request_id": "ID de la demande",
+            "resource": "Ressource",
+            "grants_title": "Cette connexion accorde aussi des autorisations",
+            "grants_body": "En signant, vous permettez à {{domain}} d’agir pour vous avec les autorisations ci-dessous. N’approuvez que si vous faites confiance à ce site.",
+            "grants_unreadable_body": "Cette connexion accorde à {{domain}} des autorisations que Pera ne peut pas lire. N’approuvez que si vous faites confiance à ce site.",
+            "malformed_title": "Ce message de connexion contient un contenu inattendu",
+            "malformed_body": "Certaines parties de ce message ne suivent pas le format de connexion, donc {{domain}} pourrait le lire autrement qu'affiché ici. Vérifiez le message complet dans Avancé et n'approuvez que si vous faites confiance au site."
+        },
         "spend_approval": {
             "spend_warning": "Cette signature permet à une autre adresse de déplacer des tokens depuis votre compte sans vous redemander votre accord.",
             "spend_warning_transaction": "Cette transaction permet à une autre adresse de déplacer des tokens depuis votre compte sans vous redemander votre accord.",
@@ -3923,7 +3964,8 @@
             "nft_subtitle": "{{collection}} #{{tokenId}}",
             "nft_batch_subtitle": "{{collection}} · {{count}} éléments",
             "inner_transaction_count": "{{innerCount}} transactions internes",
-            "cancel_transaction": "Annulation"
+            "cancel_transaction": "Annulation",
+            "not_sent_by_you": "Non envoyé par vous"
         },
         "record_detail": {
             "read_failed": "Impossible de lire depuis le réseau les détails de l’appel de cette transaction.",
@@ -4161,7 +4203,8 @@
         },
         "switch_network": {
             "title": "Autoriser l’accès au réseau ?",
-            "body": "{{name}} souhaite utiliser vos comptes {{chain}} sur {{network}}.",
+            "body": "{{name}} souhaite utiliser vos comptes sur {{chain}}.",
+            "body_with_network": "{{name}} souhaite utiliser vos comptes sur {{chain}} {{network}}.",
             "confirm": "Autoriser"
         },
         "settings": {
@@ -4301,6 +4344,7 @@
             "quote_error": "Impossible d’obtenir des cotations. Veuillez réessayer.",
             "amount_too_low": "Montant trop faible pour un swap sur {{network}}. Le minimum est de {{amount}} {{unit}}.",
             "amount_too_low_fiat": "Montant trop faible pour un swap sur {{network}}. Le minimum est de {{amount}} {{unit}} (~{{fiat}}).",
+            "amount_too_low_above_balance": "Votre solde disponible est inférieur au minimum de {{amount}} {{unit}} pour un swap sur {{network}}.",
             "use_minimum": "Utiliser le minimum",
             "amount_too_low_unknown": "Montant trop faible pour un swap sur {{network}}. Essayez un montant plus élevé ou un réseau aux frais plus bas.",
             "amount_too_high": "Montant trop élevé pour un swap. Le maximum est de {{amount}} {{unit}}.",

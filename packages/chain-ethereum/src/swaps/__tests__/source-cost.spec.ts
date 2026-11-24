@@ -36,10 +36,14 @@ import {
     BASE,
     ETHEREUM,
     OPTIMISM,
+    POLYGON,
     evmChainOf,
     evmScopeOf,
 } from '../../__tests__/evm-chains'
-import { evmRpcHandlers } from '../../blockchain/msw-handlers'
+import {
+    EvmRpcErrorFixture,
+    evmRpcHandlers,
+} from '../../blockchain/msw-handlers'
 import type { EvmChain } from '../../chains/types'
 import {
     INTRINSIC_TRANSFER_GAS,
@@ -48,6 +52,7 @@ import {
 } from '../../transfer/fees'
 import { OP_STACK_ORACLE_ADDRESS } from '../../transfer/__tests__/op-stack-oracle'
 import {
+    estimateEvmSwapFeeReserve,
     estimateEvmSwapSourceCost,
     evmShortfallOf,
     SWAP_TOKEN_DEPOSIT_GAS_CEILING,
@@ -296,6 +301,154 @@ describe('estimateEvmSwapSourceCost surcharge', () => {
             expect(encodings).toEqual([])
         },
     )
+})
+
+describe('estimateEvmSwapFeeReserve', () => {
+    const GWEI = 10n ** 9n
+    const ETH = 10n ** 18n
+    const oracleAbi = parseAbi([
+        'function getL1Fee(bytes _data) view returns (uint256)',
+        'function getOperatorFee(uint256 _gasUsed) view returns (uint256)',
+    ])
+
+    const roundedUp = (wei: bigint) =>
+        new Decimal(wei.toString())
+            .toSignificantDigits(2, Decimal.ROUND_UP)
+            .toString()
+
+    const reserveOn = (
+        chain: EvmChain,
+        {
+            baseFee,
+            tip,
+            l1Fee = 0n,
+        }: { baseFee: bigint; tip: bigint; l1Fee?: bigint },
+    ) => {
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: TEST_RPC_URL,
+                responses: {
+                    eth_feeHistory: () => ({
+                        oldestBlock: '0x1',
+                        baseFeePerGas: [toHex(baseFee), toHex(baseFee)],
+                        gasUsedRatio: [0.5],
+                        reward: [[toHex(tip), toHex(tip), toHex(tip)]],
+                    }),
+                    eth_call: params => {
+                        const { data } = params[0] as { data: Hex }
+                        const call = decodeFunctionData({
+                            abi: oracleAbi,
+                            data,
+                        })
+                        return encodeFunctionResult({
+                            abi: oracleAbi,
+                            functionName: call.functionName,
+                            result:
+                                call.functionName === 'getL1Fee' ? l1Fee : 0n,
+                        })
+                    },
+                },
+            }),
+        )
+        const chainScope = evmScopeOf(chain)
+        return estimateEvmSwapFeeReserve({
+            client: createEvmClient(
+                chainScope,
+                testChainContext({ chain }),
+                chain,
+            ),
+            chain,
+            scope: chainScope,
+        })
+    }
+
+    it('holds back cents, not dollars, on Base, L1 data fee included', async () => {
+        const l1Fee = 300_000_000_000n
+        const reserve = await reserveOn(BASE, {
+            baseFee: 5_000_000n,
+            tip: 1_000_000n,
+            l1Fee,
+        })
+
+        expect(reserve.toString()).toBe(
+            roundedUp(
+                2n *
+                    (INTRINSIC_TRANSFER_GAS * (2n * 5_000_000n + 1_000_000n) +
+                        SURCHARGE_HEADROOM * l1Fee),
+            ),
+        )
+        // The reported account: 0.0135 ETH used to fill only 0.0085.
+        const balance = new Decimal(((135n * ETH) / 10_000n).toString())
+        expect(
+            balance
+                .sub(reserve)
+                .greaterThan(((134n * ETH) / 10_000n).toString()),
+        ).toBe(true)
+    })
+
+    // Polygon's fee is in POL and its tip is floored at 25 gwei.
+    it.each([
+        ['Optimism', OPTIMISM, ETH / 10_000n],
+        ['Arbitrum', evmChainOf('arbitrum'), ETH / 10_000n],
+        ['Polygon', POLYGON, ETH / 100n],
+    ])('stays a small fraction of the coin on %s', async (_, chain, bound) => {
+        const reserve = await reserveOn(chain, {
+            baseFee: 10_000_000n,
+            tip: 1_000_000n,
+            l1Fee: 100_000_000_000n,
+        })
+
+        expect(reserve.greaterThan(0)).toBe(true)
+        expect(reserve.lessThan(bound.toString())).toBe(true)
+    })
+
+    it('holds back twice a native deposit at twice the base fee on Ethereum', async () => {
+        const baseFee = 40n * GWEI
+        const tip = GWEI
+
+        const reserve = await reserveOn(ETHEREUM, { baseFee, tip })
+
+        expect(reserve.toString()).toBe(
+            roundedUp(2n * INTRINSIC_TRANSFER_GAS * (2n * baseFee + tip)),
+        )
+        // 0.01 ETH at 40 gwei keeps most of its balance spendable.
+        expect(reserve.lessThan((ETH / 200n).toString())).toBe(true)
+    })
+
+    it('keeps the same reserve across a small base-fee drift, rounding up', async () => {
+        const raw = 2n * INTRINSIC_TRANSFER_GAS * (2n * 40n * GWEI + GWEI)
+
+        const before = await reserveOn(ETHEREUM, {
+            baseFee: 40n * GWEI,
+            tip: GWEI,
+        })
+        const after = await reserveOn(ETHEREUM, {
+            baseFee: 40n * GWEI + GWEI / 2n,
+            tip: GWEI,
+        })
+
+        expect(after.toString()).toBe(before.toString())
+        expect(before.greaterThanOrEqualTo(raw.toString())).toBe(true)
+    })
+
+    it('falls back to a flat reserve when the fee read fails', async () => {
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: TEST_RPC_URL,
+                responses: {
+                    eth_feeHistory: new EvmRpcErrorFixture(-32_603, 'down'),
+                },
+            }),
+        )
+
+        const reserve = await estimateEvmSwapFeeReserve({
+            client: createEvmClient(scope, ctx, ETHEREUM),
+            chain: ETHEREUM,
+            scope,
+        })
+
+        expect(reserve.toString()).toBe((ETH / 200n).toString())
+    })
 })
 
 describe('evmShortfallOf', () => {

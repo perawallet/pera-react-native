@@ -11,11 +11,11 @@
  */
 
 import { create } from 'zustand'
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { registerStore, type Nullable } from '@perawallet/wallet-core-shared'
 
-// Not persisted: the selection lasts for the app session and a cold start
-// comes back on All with every group collapsed.
+// Not persisted: a cold start comes back on All with every group collapsed.
 type AssetListViewState = {
     /** `null` is All. */
     selectedChainId: Nullable<ChainId>
@@ -44,6 +44,16 @@ export const useAssetListViewStore = create<AssetListViewStore>()(set => ({
                 : [...state.expandedGroupIds, groupId],
         })),
 }))
+
+/**
+ * The network chip belongs to the account it was picked on: switching to (or
+ * adding) another account starts it on All.
+ */
+export const watchSelectedAccount = (): (() => void) =>
+    useAccountsStore.subscribe((state, previous) => {
+        if (state.selectedAccountId === previous.selectedAccountId) return
+        useAssetListViewStore.getState().setSelectedChainId(null)
+    })
 
 registerStore({
     name: 'asset-list-view-store',

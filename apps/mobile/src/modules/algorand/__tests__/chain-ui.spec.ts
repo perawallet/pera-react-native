@@ -86,6 +86,6 @@ describe('algorandChainUi.assetDetails.resolveSupply', () => {
     })
 
     it('has no figure for an asset whose supply never loaded', () => {
-        expect(supplyOf(new Decimal(0)).amount).toBeNull()
+        expect(supplyOf(new Decimal(0))?.amount).toBeNull()
     })
 })

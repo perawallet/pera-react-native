@@ -22,6 +22,7 @@ import type {
     TransactionInterpretedMeaning,
     TransactionBalanceImpact,
 } from '@perawallet/wallet-core-transactions'
+import { readSwapLeg } from '@perawallet/wallet-core-transactions'
 import { resolveAlgorandAssetFacts } from './assetFacts'
 import type {
     AlgorandHistoryData,
@@ -222,6 +223,7 @@ export const transformTransactionItem = (
                 ? Number(item.inner_transaction_count)
                 : null,
         swapGroupDetail: transformSwapGroupDetail(item.swap_group_detail),
+        swapLeg: readSwapLeg(item.swap) ?? null,
     } satisfies AlgorandHistoryData,
 })
 

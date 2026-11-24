@@ -13,25 +13,20 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        flexDirection: 'row',
+    // flexShrink: 0 so a long name beside it wraps instead of squeezing the image.
+    image: {
+        width: theme.spacing['3xl'],
+        height: theme.spacing['3xl'],
+        flexShrink: 0,
+        borderRadius: theme.borderRadius.sm,
+    },
+    placeholder: {
+        width: theme.spacing['3xl'],
+        height: theme.spacing['3xl'],
+        flexShrink: 0,
         alignItems: 'center',
-        gap: theme.spacing.md,
-        padding: theme.spacing.lg,
+        justifyContent: 'center',
         backgroundColor: theme.colors.layerGrayLighter,
-        borderRadius: theme.spacing.lg,
-        borderWidth: theme.borders.sm,
-        borderColor: theme.colors.layerGray,
-    },
-    content: {
-        flexGrow: 1,
-        flexShrink: 1,
-        minWidth: 0,
-    },
-    title: {
-        color: theme.colors.textMain,
-    },
-    counterparty: {
-        color: theme.colors.textGray,
+        borderRadius: theme.borderRadius.sm,
     },
 }))

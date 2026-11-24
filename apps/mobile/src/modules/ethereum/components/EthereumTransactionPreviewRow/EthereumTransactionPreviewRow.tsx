@@ -10,63 +10,21 @@
  limitations under the License
  */
 
-import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
-import { AddressDisplay } from '@components/AddressDisplay'
-import { TransactionIcon } from '@components/TransactionIcon'
-import { useLanguage } from '@hooks/useLanguage'
 import type { PreviewRowProps } from '@modules/signing'
 import { useEthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
-import { useStyles } from './styles'
+import { EthereumTransactionPreview } from './EthereumTransactionPreview'
 
 export const EthereumTransactionPreviewRow = ({
     transaction,
     scope,
     onPress,
 }: PreviewRowProps) => {
-    const styles = useStyles()
-    const { t } = useLanguage()
     const presentation = useEthereumTransactionPresentation(transaction, scope)
 
-    if (!presentation) {
-        return null
-    }
-
-    const { titleKey, iconName, counterparty } = presentation
-
-    return (
-        <PWTouchableOpacity
-            testID='transaction_preview_row'
-            style={styles.container}
+    return presentation ? (
+        <EthereumTransactionPreview
+            presentation={presentation}
             onPress={onPress}
-        >
-            <TransactionIcon
-                name={iconName}
-                size='sm'
-            />
-            <PWView style={styles.content}>
-                <PWText
-                    truncate
-                    style={styles.title}
-                >
-                    {t(titleKey)}
-                </PWText>
-                {!!counterparty && (
-                    <AddressDisplay
-                        address={counterparty}
-                        displayType='address-only'
-                        scope={presentation.scope}
-                        showCopy={false}
-                        textProps={{
-                            variant: 'caption',
-                            style: styles.counterparty,
-                        }}
-                    />
-                )}
-            </PWView>
-            <PWIcon
-                name='chevron-right'
-                size='sm'
-            />
-        </PWTouchableOpacity>
-    )
+        />
+    ) : null
 }

@@ -18,19 +18,6 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         gap: theme.spacing.md,
     },
-    image: {
-        width: theme.spacing['3xl'],
-        height: theme.spacing['3xl'],
-        borderRadius: theme.borderRadius.sm,
-    },
-    placeholder: {
-        width: theme.spacing['3xl'],
-        height: theme.spacing['3xl'],
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: theme.colors.layerGrayLighter,
-        borderRadius: theme.borderRadius.sm,
-    },
     names: {
         flex: 1,
         gap: theme.spacing.xxs,

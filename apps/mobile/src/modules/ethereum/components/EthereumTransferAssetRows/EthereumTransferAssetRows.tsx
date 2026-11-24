@@ -12,12 +12,14 @@
 
 import { PWText, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
-import { AssetIcon } from '@components/AssetIcon'
 import { AssetAmount } from '@components/AssetAmount'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { useLanguage } from '@hooks/useLanguage'
+import { useAssetUnitLabel } from '@hooks/useAssetUnitLabel'
 import { TransactionDetailAddress } from '@modules/signing'
 import type { EthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
+import { nftThumbnailUrlOf } from '../../utils/nftThumbnailUrlOf'
+import { EthereumNftThumbnail } from '../EthereumNftThumbnail'
 import { useStyles } from './styles'
 
 type EthereumTransferAssetRowsProps = {
@@ -34,6 +36,7 @@ export const EthereumTransferAssetRows = ({
 }: EthereumTransferAssetRowsProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const { unitLabelOf } = useAssetUnitLabel()
     const { view, amount, collectible, standardCall, sender, nftItems } =
         presentation
     const tokenContract =
@@ -73,7 +76,15 @@ export const EthereumTransferAssetRows = ({
                 >
                     <PWView style={styles.asset}>
                         {!!amount?.asset && (
-                            <PWText>{amount.asset.unitName}</PWText>
+                            <PWText>
+                                {unitLabelOf(
+                                    {
+                                        chainId: presentation.scope.chainId,
+                                        assetId: tokenContract,
+                                    },
+                                    amount.asset.unitName ?? '',
+                                )}
+                            </PWText>
                         )}
                         <AddressDisplay
                             address={tokenContract}
@@ -95,30 +106,27 @@ export const EthereumTransferAssetRows = ({
                     title={t('transactions.common.asset')}
                 >
                     <PWView style={styles.nft}>
-                        {!!amount?.asset && (
-                            <AssetIcon
-                                chainId={presentation.scope.chainId}
-                                asset={amount.asset}
-                                shape='square'
-                                size='xl'
-                            />
-                        )}
-                        <PWView style={styles.asset}>
-                            <PWText>
-                                {t('transactions.list_item.nft_subtitle', {
-                                    collection:
-                                        collectible.collectionName ??
-                                        nftContract,
-                                    tokenId: collectible.tokenId,
-                                })}
-                            </PWText>
-                            <AddressDisplay
-                                address={nftContract}
-                                displayType='address-only'
-                                scope={presentation.scope}
-                            />
-                        </PWView>
+                        <EthereumNftThumbnail
+                            thumbnailUrl={nftThumbnailUrlOf(amount?.asset)}
+                        />
+                        <PWText style={styles.nftName}>
+                            {t('transactions.list_item.nft_subtitle', {
+                                collection:
+                                    collectible.collectionName ?? nftContract,
+                                tokenId: collectible.tokenId,
+                            })}
+                        </PWText>
                     </PWView>
+                </KeyValueRow>
+                <KeyValueRow
+                    testID={`${testIDPrefix}_nft_contract`}
+                    title={t('asset_details.collectible.contract')}
+                >
+                    <AddressDisplay
+                        address={nftContract}
+                        displayType='address-only'
+                        scope={presentation.scope}
+                    />
                 </KeyValueRow>
             </>
         )

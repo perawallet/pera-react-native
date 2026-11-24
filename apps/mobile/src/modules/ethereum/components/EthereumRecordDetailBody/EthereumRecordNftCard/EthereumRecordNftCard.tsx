@@ -15,13 +15,10 @@ import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { useLanguage } from '@hooks/useLanguage'
-import { CollectibleThumbnail } from '@modules/assets'
 import { TransactionDetailCard } from '@modules/signing'
 import type { EthereumRecordNft } from '@modules/ethereum/hooks/useEthereumRecordNft'
+import { EthereumNftThumbnail } from '../../EthereumNftThumbnail'
 import { useStyles } from './styles'
-
-// Physical pixels for the Prism resize: a 48pt thumbnail on a 3x display.
-const THUMBNAIL_WIDTH = 144
 
 type EthereumRecordNftCardProps = {
     nft: EthereumRecordNft
@@ -47,13 +44,7 @@ export const EthereumRecordNftCard = ({
                 disabled={!onPress}
                 accessibilityRole={onPress ? 'button' : undefined}
             >
-                <CollectibleThumbnail
-                    thumbnailUrl={nft.thumbnailUrl}
-                    imageStyle={styles.image}
-                    placeholderStyle={styles.placeholder}
-                    iconSize='md'
-                    imageWidth={THUMBNAIL_WIDTH}
-                />
+                <EthereumNftThumbnail thumbnailUrl={nft.thumbnailUrl} />
                 <PWView style={styles.names}>
                     <PWText
                         variant='bodyLarge'

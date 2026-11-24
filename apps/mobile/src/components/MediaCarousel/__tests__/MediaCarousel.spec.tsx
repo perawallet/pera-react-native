@@ -56,4 +56,30 @@ describe('MediaCarousel', () => {
         expect(screen.getByTestId('icon-image-off')).toBeTruthy()
         expect(screen.queryByTestId('expo-image')).toBeNull()
     })
+
+    it('labels each page with its position out of the total', () => {
+        render(
+            <MediaCarousel
+                media={[
+                    { type: 'image', previewUrl: 'https://example.test/a.png' },
+                    { type: 'image', previewUrl: 'https://example.test/b.png' },
+                ]}
+            />,
+        )
+
+        expect(screen.getByText('1 / 2')).toBeTruthy()
+        expect(screen.getByText('2 / 2')).toBeTruthy()
+    })
+
+    it('shows no counter for a single media item', () => {
+        render(
+            <MediaCarousel
+                media={[
+                    { type: 'image', previewUrl: 'https://example.test/a.png' },
+                ]}
+            />,
+        )
+
+        expect(screen.queryByTestId('media-carousel-counter')).toBeNull()
+    })
 })

@@ -117,6 +117,7 @@ export const useCompleteCloudBackupRestoreMutation = (
                 backupId: result.backupId,
                 salt: session.salt,
                 deviceId: session.prepared.deviceId,
+                credentialsConfirmed: session.credentialsConfirmed,
             })
             setSyncState(result.syncState)
             return result
