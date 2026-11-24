@@ -3294,7 +3294,8 @@
             },
             "fee_shortfall": {
                 "title": "Nicht genug {{symbol}} für die Gebühr",
-                "body": "Diese Überweisung kann bis zu {{fee}} an Gebühren kosten. Verringere den Betrag oder wähle eine langsamere Gebühr."
+                "body": "Diese Überweisung kann bis zu {{fee}} an Gebühren kosten. Verringere den Betrag oder wähle eine langsamere Gebühr.",
+                "body_non_native": "Du brauchst mindestens {{fee}} auf {{network}}, um die Netzwerkgebühr zu bezahlen. Füge {{symbol}} hinzu oder wähle eine langsamere Gebühr."
             },
             "fee_unavailable": {
                 "title": "Gebühr konnte nicht geschätzt werden",

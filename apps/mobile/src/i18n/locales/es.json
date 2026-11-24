@@ -3302,7 +3302,8 @@
             },
             "fee_shortfall": {
                 "title": "No tienes suficiente {{symbol}} para la comisión",
-                "body": "Este envío puede costar hasta {{fee}} en comisiones. Reduce la cantidad o elige una comisión más lenta."
+                "body": "Este envío puede costar hasta {{fee}} en comisiones. Reduce la cantidad o elige una comisión más lenta.",
+                "body_non_native": "Necesitas al menos {{fee}} en {{network}} para pagar la comisión de red. Añade {{symbol}} o elige una comisión más lenta."
             },
             "fee_unavailable": {
                 "title": "No se pudo estimar la comisión",
