@@ -61,6 +61,16 @@ export const SignInMessageDetails = ({
         </ReviewDetailRow>
     )
 
+    const renderGrant = (row: SignInDetailRow) => (
+        <PWView
+            key={row.testID}
+            testID={row.testID}
+        >
+            <PWText variant='bodySemibold'>{row.label}</PWText>
+            <PWText>{row.value}</PWText>
+        </PWView>
+    )
+
     return (
         <PWView style={styles.container}>
             {!!malformedWarning && (
@@ -90,7 +100,7 @@ export const SignInMessageDetails = ({
                     testID='sign_in_grants_warning'
                 >
                     <WarningBannerBody>{grantsWarning.body}</WarningBannerBody>
-                    {grantsWarning.rows.map(renderRow)}
+                    {grantsWarning.rows.map(renderGrant)}
                 </WarningBanner>
             )}
             {!!signIn.message.statement && (

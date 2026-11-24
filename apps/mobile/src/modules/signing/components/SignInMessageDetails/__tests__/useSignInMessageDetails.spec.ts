@@ -150,6 +150,27 @@ describe('useSignInMessageDetails', () => {
         ])
     })
 
+    it('shows a long grant target whole', () => {
+        const target = `https://opensea.io/vault/alice/${'p'.repeat(60)}/end`
+
+        const { grantsWarning } = render(
+            signIn({ grants: [{ target, abilities: ['crud/read'] }] }),
+        )
+
+        expect(grantsWarning?.rows[0]?.label).toBe(target)
+    })
+
+    it('shortens a long URI', () => {
+        const uri = `https://opensea.io/${'p'.repeat(60)}/end-tail`
+
+        const { leadingRows } = render(
+            signIn({ message: { ...signIn().message, uri } }),
+        )
+
+        expect(leadingRows[2]?.value).toBe(shortenUri(uri))
+        expect(leadingRows[2]?.value).not.toBe(uri)
+    })
+
     it('warns of permissions it cannot read', () => {
         expect(
             render(signIn({ hasUnreadableGrants: true })).grantsWarning?.body,
@@ -227,6 +248,12 @@ describe('shortenUri', () => {
         expect(shortenUri(uri)).toBe(
             'https://a-very-long-subdomain.opensea.io…end-tail',
         )
+    })
+
+    it('keeps a long host with a short path whole', () => {
+        const uri = 'https://this-is-a-fairly-long-host.example.com/'
+
+        expect(shortenUri(uri)).toBe(uri)
     })
 
     it('elides the payload of a long URN', () => {

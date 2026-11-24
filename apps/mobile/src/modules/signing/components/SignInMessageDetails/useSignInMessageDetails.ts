@@ -52,6 +52,7 @@ export const shortenUri = (uri: string): string => {
     if (uri.length <= MAX_URI_LENGTH) return uri
     const head = AUTHORITY.exec(uri)?.[0] ?? ''
     const kept = Math.max(head.length, MAX_URI_LENGTH - URI_TAIL_LENGTH)
+    if (kept >= uri.length - URI_TAIL_LENGTH) return uri
     return `${uri.slice(0, kept)}…${uri.slice(-URI_TAIL_LENGTH)}`
 }
 
@@ -112,7 +113,7 @@ export const useSignInMessageDetails = (
                 },
                 {
                     label: t('signing.sign_in.uri'),
-                    value: message.uri,
+                    value: shortenUri(message.uri),
                     testID: 'sign_in_uri',
                 },
             ],
@@ -144,7 +145,8 @@ export const useSignInMessageDetails = (
                                 domain: message.domain,
                             }),
                       rows: signIn.grants.map((grant, index) => ({
-                          label: shortenUri(grant.target),
+                          // Whole, since Advanced shows the ReCap only as base64.
+                          label: grant.target,
                           value: grant.abilities.join(', '),
                           testID: `sign_in_grant_${index}`,
                       })),
