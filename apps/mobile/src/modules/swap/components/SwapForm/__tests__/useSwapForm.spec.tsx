@@ -1234,6 +1234,110 @@ describe('useSwapForm', () => {
         })
     })
 
+    describe('a MAX fill once the user confirms', () => {
+        beforeEach(() => {
+            mockCreateQuotes.mockImplementation(
+                async (request: { sourceAmount: Decimal }) => [
+                    {
+                        provider: 'tinyman',
+                        amountOut: new Decimal('7000000'),
+                        assetIn: {
+                            assetId: '0',
+                            unitName: 'ALGO',
+                            decimals: 6,
+                        },
+                        assetOut: {
+                            assetId: '31566704',
+                            unitName: 'USDC',
+                            decimals: 6,
+                        },
+                        request: {
+                            sourceAsset: { chainId: 'algorand', assetId: '0' },
+                            sourceAmount: request.sourceAmount,
+                        },
+                        fees: [],
+                    },
+                ],
+            )
+        })
+
+        afterEach(() => {
+            mockCreateQuotes.mockResolvedValue([])
+        })
+
+        const fillMaxAndConfirm = async (
+            sheet: Promise<unknown>,
+        ): Promise<{
+            result: { current: ReturnType<typeof useSwapForm> }
+            rerender: () => void
+            confirming: Promise<void>
+        }> => {
+            mockRequestBottomSheet.mockReturnValueOnce(sheet)
+            const { result, rerender } = renderHook(() => useSwapForm(SCOPE))
+            await act(async () => {
+                result.current.handleMaxPress()
+            })
+            let confirming: Promise<void> = Promise.resolve()
+            await act(async () => {
+                confirming = result.current.handleOpenConfirm()
+            })
+            return { result, rerender, confirming }
+        }
+
+        it('keeps the amount while the swap it sends takes the spendable balance', async () => {
+            let closeSheet: (result: unknown) => void = () => {}
+            const { result, rerender, confirming } = await fillMaxAndConfirm(
+                new Promise(resolve => {
+                    closeSheet = resolve
+                }),
+            )
+
+            mockSpendableMax = new Decimal(0)
+            rerender()
+
+            expect(result.current.payAmount).toEqual(new Decimal(5))
+            expect(mockInfoToast).not.toHaveBeenCalled()
+
+            await act(async () => {
+                closeSheet({ kind: 'confirm', isPaidOutLater: false })
+                await confirming
+            })
+
+            expect(mockSuccessToast).toHaveBeenCalled()
+            expect(mockInfoToast).not.toHaveBeenCalled()
+        })
+
+        it('keeps the amount after a failed swap whose reserve is still in flight', async () => {
+            const { result, rerender, confirming } = await fillMaxAndConfirm(
+                Promise.resolve({ kind: 'error', message: 'reverted' }),
+            )
+            await act(async () => {
+                await confirming
+            })
+
+            mockSpendableMax = new Decimal(0)
+            rerender()
+
+            expect(result.current.payAmount).toEqual(new Decimal(5))
+            expect(mockInfoToast).not.toHaveBeenCalled()
+        })
+
+        it('follows the balance again once the confirmation closes unsent', async () => {
+            const { result, rerender, confirming } = await fillMaxAndConfirm(
+                Promise.resolve({ kind: 'cancelled' }),
+            )
+            await act(async () => {
+                await confirming
+            })
+
+            mockSpendableMax = new Decimal(0)
+            rerender()
+
+            expect(result.current.payAmount).toBeNull()
+            expect(mockInfoToast).toHaveBeenCalled()
+        })
+    })
+
     it('clears the amounts and the asset pair when the swap account changes', async () => {
         const { result, rerender } = renderHook(() => useSwapForm(SCOPE))
 
