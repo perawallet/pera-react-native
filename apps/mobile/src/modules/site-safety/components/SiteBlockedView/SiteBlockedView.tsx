@@ -89,19 +89,17 @@ export const SiteBlockedView = ({
                 />
                 {isContinueAnywayRevealed ? (
                     <>
-                        <PWTouchableOpacity
-                            style={styles.acknowledge}
+                        <PWCheckbox
+                            label={
+                                <PWText style={styles.acknowledgeLabel}>
+                                    {t('site_safety.blocked.acknowledge')}
+                                </PWText>
+                            }
+                            isChecked={isRiskAcknowledged}
                             onPress={onToggleRiskAcknowledged}
+                            style={styles.acknowledge}
                             testID='site_blocked_acknowledge'
-                        >
-                            <PWCheckbox
-                                checked={isRiskAcknowledged}
-                                onPress={onToggleRiskAcknowledged}
-                            />
-                            <PWText style={styles.acknowledgeLabel}>
-                                {t('site_safety.blocked.acknowledge')}
-                            </PWText>
-                        </PWTouchableOpacity>
+                        />
                         <PWButton
                             title={t('site_safety.blocked.continue')}
                             variant='destructive'

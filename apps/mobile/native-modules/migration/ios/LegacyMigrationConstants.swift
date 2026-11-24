@@ -92,6 +92,52 @@ enum LegacyMigrationConstants {
 
         static let passcodeDontAskAgain = "com.algorand.algorand.passcode.dont.ask.again"
         static let passcodeAppCount = "com.algorand.algorand.passcode.app.count.key"
+
+        static let all: [String] = [
+            theme,
+            currency,
+            termsAcceptedV2,
+            appReviewStartCount,
+            lastVersionReviewed,
+            storeAppIsOnboarding,
+            localAuthenticationStatus,
+            announcementState,
+            termsServicesV1,
+            secureBackups,
+            watchedJointAccountInvitations,
+            watchedSignRequestMessage,
+            lockAttemptCount,
+            lockPenaltyRemainingSec,
+            notificationRefreshTimestampSec,
+            copyAddressCount,
+            lastSeenNotificationId,
+            privacyMode,
+            assetFilterZeroBalance,
+            assetFilterDisplayNFT,
+            assetFilterDisplayOptedInNFT,
+            nftFilterDisplayWatchAccountNFTs,
+            collectibleFilterNotOwned,
+            nftListingViewType,
+            accountSort,
+            assetSort,
+            collectibleSort,
+            swapTermsAccepted,
+            swapLastUsedAddress,
+            swapUseLocalCurrency,
+            tooltipQr,
+            tooltipCopyAddress,
+            tooltipCopyAddressPromo,
+            tooltipTransactionTutorial,
+            tooltipPrivacyMode,
+            tooltipJointAccountDisclaimer,
+            tooltipWalletConnectWarning,
+            tooltipSwapIntro,
+            tooltipGiftCardsIntro,
+            tooltipLedgerPairingWarning,
+            tooltipTransactionInfoDismissed,
+            passcodeDontAskAgain,
+            passcodeAppCount,
+        ]
     }
 
     enum ErrorCode {

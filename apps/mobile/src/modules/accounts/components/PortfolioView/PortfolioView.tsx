@@ -168,6 +168,9 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
                             absolute={changeAbsolute}
                             percentage={changePercentage}
                             currency={preferredCurrency}
+                            label={t(
+                                'common.wealth_chart.balance_change_label',
+                            )}
                         />
                     )}
                 </PWView>

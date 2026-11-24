@@ -330,16 +330,17 @@ export type ChartQuery =
     | { from: string; to: string; interval: 'hourly' | 'daily' }
 
 /**
- * Oldest first; `[]` for a token the backend has no chart for. Rejects with a
+ * Oldest first; `null` for a token the backend has no chart for, while `[]` is a
+ * charted token with no stored price inside the window. Rejects with a
  * `PeraNetworkError` on any other failed request.
  */
-export const fetchPriceChart = async (
+export const fetchPriceChartOrNotFound = async (
     scope: ChainScope,
     chain: EvmChain,
     assetId: string,
     query: ChartQuery,
     signal?: AbortSignal,
-): Promise<PriceHistoryPoint[]> => {
+): Promise<Nullable<PriceHistoryPoint[]>> => {
     try {
         const { data } = await queryClient<unknown>({
             backend: 'pera',
@@ -361,8 +362,19 @@ export const fetchPriceChart = async (
             isPeraNetworkError(error) &&
             error.backendCode === 'chart_not_found'
         ) {
-            return []
+            return null
         }
         throw error
     }
 }
+
+/** Oldest first; `[]` for a token the backend has no chart for. */
+export const fetchPriceChart = async (
+    scope: ChainScope,
+    chain: EvmChain,
+    assetId: string,
+    query: ChartQuery,
+    signal?: AbortSignal,
+): Promise<PriceHistoryPoint[]> =>
+    (await fetchPriceChartOrNotFound(scope, chain, assetId, query, signal)) ??
+    []

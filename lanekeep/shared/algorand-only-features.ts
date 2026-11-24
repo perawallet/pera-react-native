@@ -146,6 +146,7 @@ export const ALGORAND_ONLY_FEATURES: readonly AlgorandOnlyFeature[] = [
         'apps/mobile/src/modules/walletconnect/components/ConnectionApprovalView/ConnectionApprovalViewHeader.tsx',
     ]),
     ...entries(LEGACY_APP, [
+        'apps/mobile/src/modules/migration/hooks/useLegacyDataWipe.ts',
         'apps/mobile/src/modules/migration/screens/MigrationSplashScreen/useMigrationSplashScreen.ts',
         'apps/mobile/src/modules/settings/screens/developer/SettingsDeveloperMigrationViewerScreen/sections/AccountCard/AccountCard.tsx',
         'apps/mobile/src/modules/settings/screens/developer/SettingsDeveloperMigrationViewerScreen/useRNMigrationSnapshot.ts',

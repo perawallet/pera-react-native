@@ -42,6 +42,8 @@ export type PWTextProps = {
     minimumFontScale?: TextProps['minimumFontScale']
     selectable?: TextProps['selectable']
     accessibilityLabel?: TextProps['accessibilityLabel']
+    /** `link` on a pressable nested in a sentence makes it its own screen-reader stop. */
+    accessibilityRole?: TextProps['accessibilityRole']
     testID?: string
     onPress?: () => void
 }

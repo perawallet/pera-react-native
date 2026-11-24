@@ -384,6 +384,7 @@ enum LegacyMigrationError: Error, LocalizedError {
     case decode(String)
     case keychain(OSStatus, String)
     case simulator(String)
+    case wipe(String)
 
     var errorDescription: String? {
         switch self {
@@ -392,6 +393,7 @@ enum LegacyMigrationError: Error, LocalizedError {
         case .keychain(let status, let msg):
             return "[Migration:keychain] OSStatus=\(status) \(msg)"
         case .simulator(let msg):    return "[Migration:simulator] \(msg)"
+        case .wipe(let msg):         return "[Migration:wipe] \(msg)"
         }
     }
 }

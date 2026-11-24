@@ -20,6 +20,7 @@ import {
     it,
     vi,
 } from 'vitest'
+import { Decimal } from 'decimal.js'
 import { getAddress, isAddressEqual } from 'viem'
 import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
@@ -39,6 +40,7 @@ import {
     PeraServiceUnavailableError,
 } from '@perawallet/wallet-core-shared'
 import { createEthereumAssetsAdapter } from '../adapter'
+import type { WhitelistRow } from '../api/transformers'
 import {
     eip155IdOf,
     ETHEREUM,
@@ -74,11 +76,33 @@ const repository = vi.hoisted(() => ({
     node: [] as PeraAsset[],
     full: [] as PeraAsset[],
     cached: null as PeraAsset | null,
+    stored: [] as PeraAsset[],
+    pera: [] as PeraAsset[],
 }))
 
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
     ...(await importOriginal<object>()),
     getAssetById: vi.fn(async () => repository.cached),
+    getAssetsByIds: vi.fn(
+        async ({
+            assetIds,
+            isUnvettedOnly,
+        }: {
+            assetIds: string[]
+            isUnvettedOnly?: boolean
+        }) =>
+            repository.stored.filter(
+                asset =>
+                    assetIds.includes(asset.assetId) &&
+                    (!isUnvettedOnly ||
+                        [undefined, 'unverified'].includes(
+                            asset.peraMetadata?.verificationTier,
+                        )),
+            ),
+    ),
+    upsertPeraAssets: vi.fn(async ({ items }: { items: PeraAsset[] }) => {
+        repository.pera.push(...items)
+    }),
     getStaleOrMissingAssetIds: vi.fn(
         async ({ assetIds }: { assetIds: string[] }) =>
             repository.stale(assetIds),
@@ -192,6 +216,8 @@ beforeEach(() => {
     repository.node.length = 0
     repository.full.length = 0
     repository.cached = null
+    repository.stored = []
+    repository.pera = []
     vi.mocked(getStaleOrMissingAssetIds).mockClear()
     vi.mocked(upsertAssets).mockClear()
     vi.mocked(upsertNodeAssets).mockClear()
@@ -887,6 +913,335 @@ describe('syncAssets', () => {
         )
 
         await expect(ops.syncAssets([USDC].map(ref), SCOPE)).rejects.toThrow()
+    })
+})
+
+describe('spam names', () => {
+    const PAWS = '✅$PAWS Token Distribution'
+    const listedUsdc: WhitelistRow = {
+        assetId: USDC,
+        type: 'erc20',
+        asset: { assetId: USDC, name: 'USD Coin', unitName: 'USDC' },
+    }
+    const listedTokens = async () => [listedUsdc]
+    const daiNamed = (
+        name: string,
+        unitName: string,
+        tier: 'unverified' | 'verified' = 'unverified',
+    ): AssetItemResponse => ({
+        ...unknownAssetItem(DAI_CAIP19),
+        type: 'erc20',
+        name,
+        unit_name: unitName,
+        fraction_decimals: 18,
+        verification_tier: tier,
+    })
+    const adapter = (services: string[] = ['assets']) =>
+        createEthereumAssetsAdapter(
+            testChainContext({ services }),
+            ETHEREUM,
+            listedTokens,
+        )
+
+    it('flags a backend-unverified token whose name advertises a claim', async () => {
+        server.use(
+            ...rpc({ [DAI]: daiOnChain }),
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                assets: { [DAI_CAIP19]: daiNamed(PAWS, 'PAWS') },
+            }),
+        )
+        const { full } = memoryPersistence()
+
+        await adapter().syncAssets([ref(DAI)], SCOPE)
+
+        expect(full).toEqual([
+            expect.objectContaining({
+                assetId: DAI,
+                peraMetadata: expect.objectContaining({
+                    verificationTier: 'suspicious',
+                }),
+            }),
+        ])
+    })
+
+    it('never flags a backend-verified token', async () => {
+        server.use(
+            ...rpc({ [DAI]: daiOnChain }),
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                assets: {
+                    [DAI_CAIP19]: daiNamed('Claim DAI', 'DAI', 'verified'),
+                },
+            }),
+        )
+        const { full } = memoryPersistence()
+
+        await adapter().syncAssets([ref(DAI)], SCOPE)
+
+        expect(full[0]?.peraMetadata?.verificationTier).toBe('verified')
+    })
+
+    it('flags a look-alike of a listed symbol the backend has no record of', async () => {
+        server.use(
+            ...rpc({
+                [DAI]: { ...daiOnChain, name: 'USD Coin', symbol: 'USDC' },
+            }),
+            ...peraEvmAssetHandlers({ baseUrl: TEST_PERA_URL, assets: {} }),
+        )
+        const { full } = memoryPersistence()
+
+        await adapter().syncAssets([ref(DAI)], SCOPE)
+
+        expect(full[0]?.peraMetadata?.verificationTier).toBe('suspicious')
+    })
+
+    it('leaves a token the backend knows alone for sharing a listed symbol, as a bridged USDC does', async () => {
+        server.use(
+            ...rpc({ [DAI]: daiOnChain }),
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                assets: { [DAI_CAIP19]: daiNamed('USD Coin (Arb1)', 'USDC') },
+            }),
+        )
+        const { full } = memoryPersistence()
+
+        await adapter().syncAssets([ref(DAI)], SCOPE)
+
+        expect(full[0]?.peraMetadata?.verificationTier).toBe('unverified')
+    })
+
+    it('leaves the listed contract itself unflagged', async () => {
+        server.use(
+            ...rpc({ [USDC]: usdcOnChain }),
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                assets: {
+                    [USDC_CAIP19]: {
+                        ...unknownAssetItem(USDC_CAIP19),
+                        type: 'erc20',
+                        name: 'USD Coin',
+                        unit_name: 'USDC',
+                        fraction_decimals: 6,
+                    },
+                },
+            }),
+        )
+        const { full } = memoryPersistence()
+
+        await adapter().syncAssets([ref(USDC)], SCOPE)
+
+        expect(full[0]?.peraMetadata?.verificationTier).toBe('unverified')
+    })
+
+    it('stores a spam-named token as suspicious without the assets service', async () => {
+        server.use(
+            ...rpc({ [DAI]: { ...daiOnChain, name: 'Visit t.me/s/NFT_PAWS' } }),
+        )
+        const { node, full } = memoryPersistence()
+
+        await adapter([]).syncAssets([ref(DAI)], SCOPE)
+
+        expect(node).toEqual([])
+        expect(full).toEqual([
+            expect.objectContaining({
+                assetId: DAI,
+                name: 'Visit t.me/s/NFT_PAWS',
+                peraMetadata: expect.objectContaining({
+                    verificationTier: 'suspicious',
+                }),
+            }),
+        ])
+    })
+
+    it('stores an ordinary token the backend lacks as a node row only', async () => {
+        server.use(
+            ...rpc({ [DAI]: daiOnChain }),
+            ...peraEvmAssetHandlers({ baseUrl: TEST_PERA_URL, assets: {} }),
+        )
+        const { node, full } = memoryPersistence()
+
+        await adapter().syncAssets([ref(DAI)], SCOPE)
+
+        expect(full).toEqual([])
+        expect(node.map(asset => asset.assetId)).toEqual([DAI])
+    })
+
+    it('clears a stored name flag once a token the backend lacks no longer matches', async () => {
+        repository.stored = [
+            {
+                assetId: DAI,
+                name: 'Old claim name',
+                unitName: 'DAI',
+                decimals: 18,
+                creator: { address: '' },
+                totalSupply: new Decimal(0),
+                peraMetadata: {
+                    isDeleted: false,
+                    verificationTier: 'suspicious',
+                    type: 'standard_asset',
+                },
+            } as PeraAsset,
+        ]
+        server.use(
+            ...rpc({ [DAI]: daiOnChain }),
+            ...peraEvmAssetHandlers({ baseUrl: TEST_PERA_URL, assets: {} }),
+        )
+        const { full } = memoryPersistence()
+
+        await adapter().syncAssets([ref(DAI)], SCOPE)
+
+        expect(full).toEqual([
+            expect.objectContaining({
+                assetId: DAI,
+                name: daiOnChain.name,
+                peraMetadata: expect.objectContaining({
+                    verificationTier: 'unverified',
+                }),
+            }),
+        ])
+    })
+
+    it('keeps a stored suspicious tier when the backend is out of reach, as it may be its own verdict', async () => {
+        repository.stored = [
+            {
+                assetId: DAI,
+                name: 'Dai',
+                unitName: 'DAI',
+                decimals: 18,
+                creator: { address: '' },
+                totalSupply: new Decimal(0),
+                peraMetadata: {
+                    isDeleted: false,
+                    verificationTier: 'suspicious',
+                    type: 'standard_asset',
+                },
+            } as PeraAsset,
+        ]
+        server.use(...rpc({ [DAI]: daiOnChain }))
+        const { node, full } = memoryPersistence()
+
+        await adapter([]).syncAssets([ref(DAI)], SCOPE)
+
+        expect(full).toEqual([])
+        expect(node.map(asset => asset.assetId)).toEqual([DAI])
+    })
+
+    it('judges a single token read by its symbol only when the backend has no record', async () => {
+        server.use(
+            ...rpc({
+                [DAI]: { ...daiOnChain, name: 'USD Coin', symbol: 'USDC' },
+            }),
+            ...peraEvmAssetHandlers({ baseUrl: TEST_PERA_URL, assets: {} }),
+        )
+        memoryPersistence()
+
+        const asset = await adapter().getAssetMetadata(ref(DAI), SCOPE)
+
+        expect(asset.peraMetadata?.verificationTier).toBe('suspicious')
+    })
+
+    it('leaves a single token the backend knows alone for sharing a listed symbol', async () => {
+        server.use(
+            ...rpc({
+                [DAI]: { ...daiOnChain, name: 'USD Coin', symbol: 'USDC' },
+            }),
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                assets: { [DAI_CAIP19]: daiNamed('USD Coin (Arb1)', 'USDC') },
+            }),
+        )
+        memoryPersistence()
+
+        const asset = await adapter().getAssetMetadata(ref(DAI), SCOPE)
+
+        expect(asset.peraMetadata?.verificationTier).not.toBe('suspicious')
+    })
+
+    it('leaves a single token alone for its symbol when the backend row cannot be read', async () => {
+        server.use(
+            ...rpc({
+                [DAI]: { ...daiOnChain, name: 'USD Coin', symbol: 'USDC' },
+            }),
+            http.post(`${TEST_PERA_URL}${ASSETS_PATH}`, () =>
+                HttpResponse.json({
+                    results: [{ asset_id: DAI_CAIP19, type: 'erc20' }],
+                }),
+            ),
+        )
+        const { full } = memoryPersistence()
+
+        const asset = await adapter().getAssetMetadata(ref(DAI), SCOPE)
+
+        expect(asset.peraMetadata?.verificationTier).not.toBe('suspicious')
+        expect(full).toEqual([])
+    })
+
+    it('leaves a single token alone for its symbol when the backend request fails', async () => {
+        server.use(
+            ...rpc({
+                [DAI]: { ...daiOnChain, name: 'USD Coin', symbol: 'USDC' },
+            }),
+            http.post(`${TEST_PERA_URL}${ASSETS_PATH}`, () =>
+                HttpResponse.json({}, { status: 503 }),
+            ),
+        )
+        const { full } = memoryPersistence()
+
+        const asset = await adapter().getAssetMetadata(ref(DAI), SCOPE)
+
+        expect(asset.peraMetadata?.verificationTier).not.toBe('suspicious')
+        expect(full).toEqual([])
+    })
+
+    it('re-flags a fresh cached unverified token without a network read', async () => {
+        repository.stored = [
+            {
+                assetId: DAI,
+                name: PAWS,
+                unitName: 'PAWS',
+                decimals: 18,
+                creator: { address: '' },
+                totalSupply: new Decimal(0),
+                peraMetadata: {
+                    isDeleted: false,
+                    verificationTier: 'unverified',
+                    type: 'standard_asset',
+                },
+            } as PeraAsset,
+        ]
+        const urls = recordRequests()
+        const { node, full } = memoryPersistence(() => [])
+
+        await adapter().syncAssets([ref(DAI)], SCOPE)
+
+        expect(urls).toEqual([])
+        // Only Pera's half: the chain half and its freshness stay as stored.
+        expect(full).toEqual([])
+        expect(node).toEqual([])
+        expect(repository.pera).toEqual([
+            expect.objectContaining({
+                assetId: DAI,
+                peraMetadata: expect.objectContaining({
+                    verificationTier: 'suspicious',
+                }),
+            }),
+        ])
+    })
+
+    it('returns a spam-named token from getAssetMetadata as suspicious', async () => {
+        server.use(
+            ...rpc({ [DAI]: { ...daiOnChain, name: PAWS } }),
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                assets: { [DAI_CAIP19]: daiNamed(PAWS, 'PAWS') },
+            }),
+        )
+        memoryPersistence()
+
+        const asset = await adapter().getAssetMetadata(ref(DAI), SCOPE)
+
+        expect(asset.peraMetadata?.verificationTier).toBe('suspicious')
     })
 })
 

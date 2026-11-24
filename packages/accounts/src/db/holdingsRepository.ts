@@ -327,17 +327,22 @@ export type AccountHoldingsFilters = {
     hideZeroBalanceNfts?: boolean
     /** Asset types to exclude regardless of holding amount. */
     excludeAssetTypes?: string[]
-    /** When true, rows whose asset Pera flags suspicious are excluded; rows with no metadata yet stay. */
+    /**
+     * When true, rows whose asset Pera flags suspicious are excluded; rows with no metadata yet stay.
+     * The list read keeps the ones their address kept; the single-account read, which feeds totals, doesn't.
+     */
     hideSuspicious?: boolean
     /** Leaves out holdings the user hid, whatever the other filters keep. */
     excludeHidden?: boolean
+    /** Only the holdings `hideSuspicious` drops: suspicious, neither kept nor hidden. Read by the multi-source holdings query only. */
+    onlyAutoHidden?: boolean
 }
 
 type GetAccountHoldingsParams = {
     db?: Database
     accountAddress: string
     scope: ChainScope
-} & AccountHoldingsFilters
+} & Omit<AccountHoldingsFilters, 'onlyAutoHidden' | 'keepZeroNative'>
 
 export async function getAccountHoldings({
     db = getDatabase(),

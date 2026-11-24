@@ -130,12 +130,38 @@ const ERROR_PHASE_BY_PROGRESS: Record<
     'updating-status': 'status-update',
 }
 
-const BODY_KEY_BY_REFUSAL: Record<SwapOrderRefusal, I18nKey> = {
-    'insufficient-balance': i18nKey(
-        'swap.execution.order_insufficient_balance_body',
-    ),
-    'provider-unavailable': i18nKey('swap.execution.provider_unavailable_body'),
-    'provider-declined': i18nKey('swap.execution.provider_failed_body'),
+// `singleProviderBody` replaces copy that sends the user to another provider,
+// which only reads true when the quote set offered one.
+type FailureBody = { body: I18nKey; singleProviderBody?: I18nKey }
+
+const BODY_BY_REFUSAL: Record<SwapOrderRefusal, FailureBody> = {
+    'insufficient-balance': {
+        body: i18nKey('swap.execution.order_insufficient_balance_body'),
+    },
+    'provider-unavailable': {
+        body: i18nKey('swap.execution.provider_unavailable_body'),
+    },
+    'provider-declined': {
+        body: i18nKey('swap.execution.provider_failed_body'),
+        singleProviderBody: i18nKey(
+            'swap.execution.provider_failed_single_body',
+        ),
+    },
+}
+
+const QUOTE_MISMATCH_BODY: FailureBody = {
+    body: i18nKey('swap.execution.quote_mismatch_body'),
+    singleProviderBody: i18nKey('swap.execution.quote_mismatch_single_body'),
+}
+
+const UNSUPPORTED_ORDER_BODY: FailureBody = {
+    body: i18nKey('swap.execution.unsupported_order_body'),
+    singleProviderBody: i18nKey('swap.execution.unsupported_order_single_body'),
+}
+
+type UseSwapExecutionOptions = {
+    /** True only when the quote set had more than one provider to pick from. */
+    canChooseProvider?: boolean
 }
 
 // Status is set synchronously with the returned outcome rather than derived
@@ -152,7 +178,9 @@ const STATUS_BY_RESULT: Record<ExecuteSwapResult['kind'], SwapExecutionStatus> =
         failed: 'error',
     }
 
-export const useSwapExecution = (): UseSwapExecutionResult => {
+export const useSwapExecution = ({
+    canChooseProvider = false,
+}: UseSwapExecutionOptions = {}): UseSwapExecutionResult => {
     const [status, setRenderedStatus] = useState<SwapExecutionStatus>('idle')
     const statusRef = useRef<SwapExecutionStatus>('idle')
     const [error, setError] = useState<Nullable<SwapExecutionError>>(null)
@@ -178,6 +206,8 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             )
             const copyOf = (error: unknown) =>
                 resolveErrorCopy(error, t, stepTitle, getMessage)
+            const bodyOf = ({ body, singleProviderBody }: FailureBody) =>
+                t(canChooseProvider ? body : (singleProviderBody ?? body))
             switch (failure.reason) {
                 case 'asset-frozen': {
                     const copy = copyOf(new AssetFrozenError(failure.assetId))
@@ -209,21 +239,21 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                     const refusal = swapOrderRefusalOf(failure.error)
                     return {
                         message: refusal
-                            ? t(BODY_KEY_BY_REFUSAL[refusal])
+                            ? bodyOf(BODY_BY_REFUSAL[refusal])
                             : copyOf(failure.error).body,
                         title: stepTitle,
                     }
                 }
                 case 'quote-mismatch': {
                     return {
-                        message: t('swap.execution.quote_mismatch_body'),
+                        message: bodyOf(QUOTE_MISMATCH_BODY),
                         title: stepTitle,
                     }
                 }
                 case 'no-signable-steps':
                 case 'unsupported-steps': {
                     return {
-                        message: t('swap.execution.unsupported_order_body'),
+                        message: bodyOf(UNSUPPORTED_ORDER_BODY),
                         title: stepTitle,
                     }
                 }
@@ -256,7 +286,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                 }
             }
         },
-        [t, getMessage],
+        [t, getMessage, canChooseProvider],
     )
 
     const execute = useCallback(

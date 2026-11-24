@@ -58,7 +58,8 @@
             "search_web": "Search on the web",
             "no_results": "No results",
             "assets_unavailable": "Asset search is unavailable right now",
-            "dapps_unavailable": "dApp search is unavailable right now"
+            "dapps_unavailable": "dApp search is unavailable right now",
+            "unverified": "Unverified"
         },
         "news": {
             "title": "News",
@@ -287,7 +288,11 @@
         "hidden_toast_body": "It won't show in your assets or count toward your balance. Unhide it from Manage Assets > Hide Tokens.",
         "hidden_swipe_toast_body": "Tap to undo. It won't show in your assets or count toward your balance.",
         "shown_toast_title": "{{assetName}} shown",
-        "filtered_note": "Pera flagged this token as suspicious, so it stays out of your assets. List it with Show suspicious assets in the asset filters."
+        "filtered_note": "Pera flagged this token as suspicious, so it stays out of your assets. Unhide it from Hidden tokens at the end of your assets.",
+        "auto_hidden_row_title": "Hidden tokens ({{total}})",
+        "auto_hidden_title": "Hidden tokens",
+        "auto_hidden_description": "Pera hid these tokens because they look like spam or scams. Don't visit websites named in them. Unhide a token to list it again; it still won't count toward your balance.",
+        "auto_hidden_empty_title": "No hidden tokens"
     },
     "deeplink": {
         "error": {
@@ -446,7 +451,7 @@
             "empty_filtered_body": "No transactions match this filter",
             "empty_on_network_body": "No transactions yet on {{network}}",
             "network_failed": "Couldn't load transactions on {{networks}}",
-            "network_unavailable": "Transactions aren't available on {{networks}}",
+            "network_unavailable": "Full history isn't available on {{networks}}",
             "offline_empty_title": "You're offline",
             "offline_empty_body": "No transactions are saved on this device yet. They'll appear once you're back online.",
             "search_paused_body": "No transactions found in recent history.",
@@ -1231,7 +1236,8 @@
             "asset_empty_body": "You will see a chart here once you have some balance history for this asset on this account",
             "excludes_networks": "This chart doesn't include {{networks}} assets yet",
             "failed_networks": "Couldn't load {{networks}} history, so this chart leaves it out",
-            "currency_unavailable_body": "This chart isn't available in {{currency}} right now"
+            "currency_unavailable_body": "This chart isn't available in {{currency}} right now",
+            "balance_change_label": "Balance change"
         },
         "webview": {
             "failed_title": "Failed to load page",
@@ -4098,6 +4104,9 @@
             "reuse_body": "It starts and ends like an address you know, but it isn't the same. Compare the full addresses before you use it.",
             "reuse_confirm": "Continue anyway",
             "reuse_cancel": "Cancel"
+        },
+        "suspicious_token": {
+            "marker": "Suspicious token"
         }
     },
     "tabbar": {
@@ -4311,9 +4320,12 @@
                 "swap": "Swap failed"
             },
             "provider_failed_body": "This provider couldn't complete the swap. Try another provider.",
+            "provider_failed_single_body": "The provider couldn't complete the swap. Try again later or try a different amount.",
             "provider_unavailable_body": "The provider is unavailable right now. Try again in a moment.",
             "quote_mismatch_body": "The provider's transactions didn't match this quote, so nothing was signed. Try again or choose another provider.",
+            "quote_mismatch_single_body": "The provider's transactions didn't match this quote, so nothing was signed. Try again later.",
             "unsupported_order_body": "Pera can't complete this provider's order, so nothing was signed. Choose another provider.",
+            "unsupported_order_single_body": "Pera can't complete this provider's order, so nothing was signed. Try again later.",
             "signing_failed_body": "The transaction couldn't be signed, so it wasn't sent. Try again.",
             "order_insufficient_balance_body": "Your balance can't cover this amount and the network fee. Try a smaller amount or add funds for the fee.",
             "insufficient_native_body": "This account needs at least {{amount}} more {{symbol}} to cover this swap, its fees, and the minimum balance. Add more {{symbol}} and try again.",
@@ -4360,6 +4372,8 @@
                         "refunded": "Refunded"
                     }
                 },
+                "account_filter_all": "All accounts",
+                "load_more": "Load more",
                 "empty": {
                     "title": "No swaps yet",
                     "body": "Your swap history will appear here."

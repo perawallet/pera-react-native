@@ -37,6 +37,7 @@ const remoteOf = (updatedAt: number): SettingsBackupPayload => ({
     launchAccount: { value: TEST_SETTINGS.launchAccount, updatedAt },
     accountOrder: { value: TEST_SETTINGS.accountOrder, updatedAt },
     hiddenTokens: { value: TEST_SETTINGS.hiddenTokens, updatedAt },
+    keptTokens: { value: TEST_SETTINGS.keptTokens, updatedAt },
 })
 
 describe('observeLocalSettings', () => {
@@ -119,6 +120,107 @@ describe('observeLocalSettings', () => {
 })
 
 describe('mergeRemoteSettings', () => {
+    describe('kept tokens', () => {
+        const keptOn = (...assetIds: string[]) => ({
+            'ethereum/mainnet': { '0xabc': assetIds },
+        })
+        const localKeeping = (assetIds: string[], at: number) =>
+            observeLocalSettings(
+                synced(5),
+                { ...TEST_SETTINGS, keptTokens: keptOn(...assetIds) },
+                at,
+            ).doc
+
+        it('unites a newer remote map with this device’s keeps and pushes the union back', () => {
+            const { doc, toApply, isRemoteBehind } = mergeRemoteSettings(
+                localKeeping(['0x1'], 100),
+                {
+                    ...remoteOf(5),
+                    keptTokens: { value: keptOn('0x2'), updatedAt: 200 },
+                },
+            )
+
+            expect(doc.keptTokens?.value).toEqual(keptOn('0x1', '0x2'))
+            expect(toApply.keptTokens).toEqual(keptOn('0x1', '0x2'))
+            expect(isRemoteBehind).toBe(true)
+        })
+
+        it('takes an older remote map’s keeps too, rather than ignoring it', () => {
+            const { toApply, isRemoteBehind } = mergeRemoteSettings(
+                localKeeping(['0x1'], 300),
+                {
+                    ...remoteOf(5),
+                    keptTokens: { value: keptOn('0x2'), updatedAt: 200 },
+                },
+            )
+
+            expect(toApply.keptTokens).toEqual(keptOn('0x1', '0x2'))
+            expect(isRemoteBehind).toBe(true)
+        })
+
+        it('pushes a token kept while a sync was running, rather than only re-observing it', () => {
+            const { doc } = mergeRemoteSettings(localKeeping(['0x1'], 100), {
+                ...remoteOf(5),
+                keptTokens: { value: keptOn('0x2'), updatedAt: 200 },
+            })
+
+            const reobserved = observeLocalSettings(
+                doc,
+                { ...TEST_SETTINGS, keptTokens: keptOn('0x1', '0x2', '0x3') },
+                500,
+            )
+
+            expect(reobserved.hasChanged).toBe(true)
+            expect(reobserved.doc.keptTokens).toEqual({
+                value: keptOn('0x1', '0x2', '0x3'),
+                updatedAt: 500,
+                observed: observed(keptOn('0x1', '0x2', '0x3')),
+            })
+        })
+
+        it('only re-observes the applied union when nothing was kept meanwhile', () => {
+            const { doc } = mergeRemoteSettings(localKeeping(['0x1'], 100), {
+                ...remoteOf(5),
+                keptTokens: { value: keptOn('0x2'), updatedAt: 200 },
+            })
+
+            const reobserved = observeLocalSettings(
+                doc,
+                { ...TEST_SETTINGS, keptTokens: keptOn('0x1', '0x2') },
+                500,
+            )
+
+            expect(reobserved.hasChanged).toBe(false)
+            expect(reobserved.doc.keptTokens?.updatedAt).toBe(200)
+        })
+
+        it('applies a remote map that holds more without pushing back', () => {
+            const { toApply, isRemoteBehind } = mergeRemoteSettings(
+                localKeeping(['0x1'], 100),
+                {
+                    ...remoteOf(5),
+                    keptTokens: { value: keptOn('0x1', '0x2'), updatedAt: 200 },
+                },
+            )
+
+            expect(toApply.keptTokens).toEqual(keptOn('0x1', '0x2'))
+            expect(isRemoteBehind).toBe(false)
+        })
+
+        it('settles once both sides hold the union', () => {
+            const { toApply, isRemoteBehind } = mergeRemoteSettings(
+                localKeeping(['0x1', '0x2'], 100),
+                {
+                    ...remoteOf(5),
+                    keptTokens: { value: keptOn('0x1', '0x2'), updatedAt: 100 },
+                },
+            )
+
+            expect(toApply.keptTokens).toBeUndefined()
+            expect(isRemoteBehind).toBe(false)
+        })
+    })
+
     describe('hidden tokens', () => {
         const hiddenOn = (assetId: string) => ({
             'ethereum/mainnet': { '0xabc': [assetId] },

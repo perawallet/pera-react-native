@@ -68,14 +68,14 @@ export const RemoteConfigDefaults: Readonly<
     // built-in onramp defaults. Empty string = no overrides.
     onramp_currency_decimals: '',
     enable_pera_card: false,
-    // Off in prod (the hook keeps it on in dev/staging). Gates the auto-funding
-    // UI only; prod is stopped from signing an unpinned program by
-    // verifyDelegationProgram, not by this flag.
+    // Off in prod; `readBooleanFlagBuildDefault` keeps it on in dev/staging.
+    // Gates the auto-funding UI only; prod is stopped from signing an unpinned
+    // program by verifyDelegationProgram, not by this flag.
     enable_card_auto_funding: false,
     // Native Add to Apple/Google Wallet push provisioning. Kill switch only —
     // the OS-level gates (Apple entitlement, Google TapAndPay allowlisting)
     // keep the flow dormant regardless until Pera is accredited, so the flag
-    // can stay on in dev/staging via the hook fallback.
+    // can stay on in dev/staging via `readBooleanFlagBuildDefault`.
     enable_card_push_provisioning: false,
     // SSL public-key pinning for perawallet.app API hosts. getBooleanValue only
     // trusts genuinely fetched values, so pinning stays OFF until Firebase has
@@ -111,9 +111,9 @@ export const RemoteConfigDefaults: Readonly<
     network_reachability_url: 'https://clients3.google.com/generate_204',
     // Registers through the devices API's v4 route, which carries every chain.
     // While off, registration stays on v3, which takes only the accounts of
-    // chains a v3 registration carried. Non-production variants default on in
-    // the reader; the production variant, debug bundles included, stays off
-    // until Remote Config turns it on.
+    // chains a v3 registration carried. Non-production variants default on via
+    // `readBooleanFlagBuildDefault`; the production variant, debug bundles
+    // included, stays off until Remote Config turns it on.
     enable_device_registration_v4: false,
     // Kill switch for the hard block on a scam-listed address in a dApp request.
     // The lists come from external sources, so turning it off falls back to

@@ -24,6 +24,10 @@ export type {
 } from './types'
 export { addKeylessAccountToStore } from './accountStoreOps'
 export {
+    wipeMigratedLegacyData,
+    type LegacyWipeOutcome,
+} from './wipeMigratedLegacyData'
+export {
     ALL_MIGRATION_STEPS,
     MIGRATION_STEP_TARGET_VERSIONS,
     getPendingSteps,

@@ -31,6 +31,7 @@ import {
     MultisigOverlays,
 } from '@modules/multisig/shell'
 import { SwapOverlays } from '@modules/swap/shell'
+import { useLegacyDataWipe } from '@modules/migration/shell'
 import { useBackupSyncLifecycle } from '@modules/cloud-backup'
 import { RootContentContainer } from './RootContentContainer'
 import { useRootComponent } from './useRootComponent'
@@ -56,6 +57,7 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     // picks up an account whose activity predates its checkpoint. Gated on
     // migration because syncing before the migrated device id lands caches favorites as false.
     useSyncNewAccounts({ isEnabled: !migrationInProgress })
+    useLegacyDataWipe({ isEnabled: !migrationInProgress })
 
     useNetworkSwitchInvalidation()
     useImageMemoryRelease()

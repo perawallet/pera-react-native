@@ -179,6 +179,37 @@ describe('Flow: Rescan rekeyed accounts (indexer discovery + import)', () => {
         })
     })
 
+    it('Given two default-selected candidates, when the user presses one candidate checkbox, then only the other candidate is imported', async () => {
+        server.use(
+            mockIndexerSearchForAccounts({
+                response: {
+                    accounts: [
+                        { address: HD_TEST_ADDRESS },
+                        { address: REKEY_TARGET_ADDRESS },
+                    ],
+                },
+            }),
+        )
+
+        renderRescan()
+
+        fireEvent.click(
+            await screen.findByTestId(
+                `rescan-rekeyed-row-checkbox-${REKEY_TARGET_ADDRESS}`,
+            ),
+        )
+        fireEvent.click(screen.getByTestId('rescan-rekeyed-add'))
+
+        await waitFor(() => {
+            expect(
+                useAccountsStore.getState().accounts.map(a => addressOf(a)),
+            ).toContain(HD_TEST_ADDRESS)
+        })
+        expect(
+            useAccountsStore.getState().accounts.map(a => addressOf(a)),
+        ).not.toContain(REKEY_TARGET_ADDRESS)
+    })
+
     it('Given the account options sheet, when the user taps Scan for Rekeyed Accounts, then the rescan flow opens, scans, and imports the candidate', async () => {
         server.use(
             mockIndexerSearchForAccounts({

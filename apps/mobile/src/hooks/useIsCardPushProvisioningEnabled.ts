@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { config } from '@perawallet/wallet-core-config'
 import {
+    readBooleanFlagBuildDefault,
     RemoteConfigKeys,
     useRemoteConfig,
 } from '@perawallet/wallet-core-remote-config'
@@ -26,9 +26,10 @@ import {
  */
 export const useIsCardPushProvisioningEnabled = (): boolean => {
     const remoteConfig = useRemoteConfig()
-    const fallback = __DEV__ || config.appEnvironment === 'staging'
     return remoteConfig.getBooleanValue(
         RemoteConfigKeys.enable_card_push_provisioning,
-        fallback,
+        readBooleanFlagBuildDefault(
+            RemoteConfigKeys.enable_card_push_provisioning,
+        ),
     )
 }

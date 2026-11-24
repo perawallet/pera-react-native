@@ -136,6 +136,10 @@ export class StubMigrationService implements MigrationService {
         this.stepVersions = null
     }
 
+    async wipeLegacyData() {
+        this.hasData = false
+    }
+
     async getCompletedStepVersions(): Promise<MigrationStepVersions | null> {
         return this.stepVersions
     }

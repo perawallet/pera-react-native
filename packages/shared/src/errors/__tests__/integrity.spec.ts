@@ -76,16 +76,30 @@ describe('toIntegrityRequiredError', () => {
             refusal(403, {
                 data: {
                     error: 'x',
-                    code: 'APP_INTEGRITY_PLATFORM_NOT_ALLOWED',
+                    code: 'APP_INTEGRITY_TOKEN_INVALID',
                 },
             }),
         )
 
         expect(error).toMatchObject({
-            code: 'APP_INTEGRITY_PLATFORM_NOT_ALLOWED',
+            code: 'APP_INTEGRITY_TOKEN_INVALID',
             status: 403,
             hadToken: false,
         })
+    })
+
+    it('leaves a route closed to this platform its own meaning: the token itself was accepted', () => {
+        expect(
+            toIntegrityRequiredError(
+                refusal(403, {
+                    data: {
+                        error: 'x',
+                        code: 'APP_INTEGRITY_PLATFORM_NOT_ALLOWED',
+                    },
+                    headers: { Authorization: 'Bearer jwt' },
+                }),
+            ),
+        ).toBeNull()
     })
 
     it('reads a 401 that carried a bearer as a refused token', () => {

@@ -46,11 +46,42 @@ describe('toSearchRows', () => {
         ).toEqual(['typedUrl'])
     })
 
-    it('keeps No results under the web search row for a word nothing matches', () => {
+    it('offers the web search under No results for a word nothing matches', () => {
         expect(kinds(typing({ isWebSearchRowVisible: true }))).toEqual([
-            'webSearch',
             'noResults',
+            'webSearch',
         ])
+    })
+
+    it('lists the web search after the dApps and assets found in the app', () => {
+        const dapp = {
+            url: 'https://uniswap.example',
+            name: 'Uniswap',
+            logo: null,
+            categories: [],
+            chains: [],
+        }
+        const asset = {
+            scope: { chainId: 'ethereum', networkId: 'mainnet' },
+            asset: { assetId: 'uni', name: 'Uniswap' },
+        }
+        expect(
+            kinds(
+                typing({
+                    isWebSearchRowVisible: true,
+                    dappResults: [dapp],
+                    assetResults: [asset] as never,
+                }),
+            ),
+        ).toEqual(['dapp', 'asset', 'webSearch'])
+    })
+
+    it('keeps the web search last while the results load', () => {
+        expect(
+            kinds(
+                typing({ isWebSearchRowVisible: true, isLoadingAssets: true }),
+            ),
+        ).toEqual(['loading', 'webSearch'])
     })
 
     it('shows No results under the dApps tab, which has no typed-url row', () => {

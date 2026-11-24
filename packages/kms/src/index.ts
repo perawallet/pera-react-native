@@ -88,6 +88,7 @@ export {
 } from './hooks/usePasskeyMainKey'
 export {
     commitSecret,
+    getSecretMetadata,
     hasSecret,
     removeSecret,
     withSecret,

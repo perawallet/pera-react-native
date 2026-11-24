@@ -13,10 +13,48 @@
 import { describe, it, expect, vi } from 'vitest'
 import React, { useEffect } from 'react'
 import { render, fireEvent, screen } from '@test-utils/render'
-import { Text } from 'react-native'
+import { Text, type GestureResponderEvent } from 'react-native'
 import { PWTouchableOpacity } from '../PWTouchableOpacity'
 
+const mocks = vi.hoisted(() => ({
+    receivedOnPress: [] as Array<
+        ((event: GestureResponderEvent) => void) | undefined
+    >,
+}))
+
+vi.mock('react-native', async importOriginal => {
+    const actual = await importOriginal<typeof import('react-native')>()
+    const TouchableOpacity = (
+        props: React.ComponentProps<typeof actual.TouchableOpacity>,
+    ) => {
+        mocks.receivedOnPress.push(props.onPress ?? undefined)
+        return <actual.TouchableOpacity {...props} />
+    }
+    return { ...actual, TouchableOpacity }
+})
+
 describe('PWTouchableOpacity', () => {
+    it('runs the current onPress through a handler the touchable received on an earlier render', () => {
+        mocks.receivedOnPress.length = 0
+        const first = vi.fn()
+        const current = vi.fn()
+        const { rerender } = render(
+            <PWTouchableOpacity onPress={first}>
+                <Text>Flip</Text>
+            </PWTouchableOpacity>,
+        )
+        rerender(
+            <PWTouchableOpacity onPress={current}>
+                <Text>Flip</Text>
+            </PWTouchableOpacity>,
+        )
+
+        mocks.receivedOnPress[0]?.({} as GestureResponderEvent)
+
+        expect(current).toHaveBeenCalledTimes(1)
+        expect(first).not.toHaveBeenCalled()
+    })
+
     it('calls onPress when clicked', () => {
         const onPress = vi.fn()
         render(

@@ -11,6 +11,10 @@
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import {
+    resolveCapability,
+    type CapabilityLayers,
+} from '@perawallet/wallet-core-chain-contract'
 
 const loadWith = async (appEnvironment: string, chainId = 'ethereum') => {
     vi.resetModules()
@@ -34,6 +38,21 @@ const loadWith = async (appEnvironment: string, chainId = 'ethereum') => {
         supported: evmSupportedCapabilitiesOf(row),
         defaults: evmCapabilityDefaultsOf(row),
     }
+}
+
+const ENVIRONMENTS = ['development', 'staging', 'production']
+
+const expectRemoteCanSwitchSwapOff = async (chainId: string) => {
+    const { defaults } = await loadWith('production', chainId)
+    const build = { [chainId]: defaults } as CapabilityLayers['build']
+
+    expect(resolveCapability(chainId, 'swap', { build })).toBe(true)
+    expect(
+        resolveCapability(chainId, 'swap', {
+            build,
+            remote: { [chainId]: { swap: false } },
+        }),
+    ).toBe(false)
 }
 
 describe('the onramp capability', () => {
@@ -62,17 +81,14 @@ describe('the swap capability', () => {
         vi.resetModules()
     })
 
-    it.each(['development', 'staging'])('defaults on in %s', async env => {
+    it.each(ENVIRONMENTS)('defaults on in %s', async env => {
         const { row } = await loadWith(env)
 
         expect(row.capabilities?.swap).toBe(true)
     })
 
-    it('defaults off in production, where remote config can still switch it', async () => {
-        const { row, supported } = await loadWith('production')
-
-        expect(row.capabilities?.swap).toBe(false)
-        expect(supported).toContain('swap')
+    it('lets remote config switch it off in production', async () => {
+        await expectRemoteCanSwitchSwapOff('ethereum')
     })
 })
 
@@ -85,17 +101,14 @@ describe.each([
         vi.resetModules()
     })
 
-    it.each(['development', 'staging'])('turn swap on in %s', async env => {
+    it.each(ENVIRONMENTS)('turn swap on in %s', async env => {
         const { row } = await loadWith(env, chainId)
 
         expect(row.capabilities?.swap).toBe(true)
     })
 
-    it('turn swap off in production, where remote config can still switch it', async () => {
-        const { row, supported } = await loadWith('production', chainId)
-
-        expect(row.capabilities?.swap).toBe(false)
-        expect(supported).toContain('swap')
+    it('let remote config switch swap off in production', async () => {
+        await expectRemoteCanSwitchSwapOff(chainId)
     })
 
     it('receive native USDC by default', async () => {
@@ -111,7 +124,7 @@ describe('the optimism capabilities', () => {
         vi.resetModules()
     })
 
-    it.each(['development', 'staging', 'production'])(
+    it.each(ENVIRONMENTS)(
         'leave swap and onramp off in %s, where remote config can still switch them',
         async env => {
             const { row, supported, defaults } = await loadWith(env, 'optimism')

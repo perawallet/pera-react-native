@@ -27,6 +27,65 @@ internal class LegacyDataWiper(private val context: Context) {
         SchemaMigrationReplay.cleanupAll(context)
     }
 
+    // Post-migration wipe on a live wallet. The databases and settings prefs are what
+    // hasLegacyData checks, and the settings prefs go last among them, so a failed or interrupted
+    // wipe is still detected and retried while its data can still be decrypted. The decryption
+    // keys go only after the ciphertext they protect: left over on their own they expose nothing.
+    fun wipeMigrated() {
+        val failures = mutableListOf<String>()
+        deleteCacheFile(LegacyMigrationConstants.WC_SESSION_STORE_FILE_NAME)
+        SchemaMigrationReplay.cleanupAll(context)
+        for (dbName in LegacyMigrationConstants.LEGACY_DATABASE_FILES) {
+            failures += deleteDatabaseReporting(dbName)
+        }
+        if (failures.isEmpty()) {
+            failures += clearSharedPrefsReporting(LegacyMigrationConstants.SETTINGS_PREFS_FILE)
+        }
+        if (failures.isEmpty()) {
+            failures += clearSharedPrefsReporting(LegacyMigrationConstants.TINK_KEYSET_PREFS_FILE)
+            failures += deleteKeystoreAliasesReporting(LegacyMigrationConstants.LEGACY_KEYSTORE_ALIASES)
+        }
+        check(failures.isEmpty()) { "[Migration:wipe] ${failures.joinToString("; ")}" }
+    }
+
+    private fun clearSharedPrefsReporting(name: String): List<String> =
+        try {
+            val committed = context.getSharedPreferences(name, Context.MODE_PRIVATE)
+                .edit()
+                .clear()
+                .commit()
+            if (committed) emptyList() else listOf("clear prefs $name")
+        } catch (t: Throwable) {
+            Log.w(LegacyMigrationConstants.LOG_TAG, "Failed to clear SharedPreferences '$name'", t)
+            listOf("clear prefs $name")
+        }
+
+    private fun deleteDatabaseReporting(dbName: String): List<String> =
+        try {
+            context.deleteDatabase(dbName)
+            if (context.getDatabasePath(dbName).exists()) listOf("delete database $dbName") else emptyList()
+        } catch (t: Throwable) {
+            Log.w(LegacyMigrationConstants.LOG_TAG, "Failed to delete database '$dbName'", t)
+            listOf("delete database $dbName")
+        }
+
+    private fun deleteKeystoreAliasesReporting(aliases: List<String>): List<String> =
+        try {
+            val keystore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+            aliases.mapNotNull { alias ->
+                try {
+                    if (keystore.containsAlias(alias)) keystore.deleteEntry(alias)
+                    null
+                } catch (t: Throwable) {
+                    Log.w(LegacyMigrationConstants.LOG_TAG, "Failed to delete Keystore alias '$alias'", t)
+                    "delete keystore alias $alias"
+                }
+            }
+        } catch (t: Throwable) {
+            Log.w(LegacyMigrationConstants.LOG_TAG, "Failed to open AndroidKeyStore for cleanup", t)
+            listOf("open AndroidKeyStore")
+        }
+
     private fun wipeEverything() {
         clearSharedPrefs(LegacyMigrationConstants.SETTINGS_PREFS_FILE)
         clearSharedPrefs(LegacyMigrationConstants.TINK_KEYSET_PREFS_FILE)

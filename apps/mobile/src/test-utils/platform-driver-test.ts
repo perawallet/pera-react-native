@@ -191,6 +191,7 @@ const buildServices = (): PlatformServices => {
         clearMigrationComplete: async () => {},
         getMigrationPlans: async () => [],
         resetLegacyData: async () => {},
+        wipeLegacyData: async () => {},
         getCompletedStepVersions: async () => null,
         setCompletedStepVersions: async () => {},
     }

@@ -13,28 +13,41 @@
 import Foundation
 import Security
 
-/// DESTRUCTIVE: removes every legacy artifact (Core Data store + WAL/SHM, App Group UserDefaults, all legacy-service Keychain entries).
+/// DESTRUCTIVE: removes legacy artifacts (Core Data store + WAL/SHM, App Group UserDefaults, legacy-service Keychain entries).
 final class LegacyDataWiper {
 
-    /// Destructive wipe. Runs the full wipe unconditionally.
+    /// Destructive wipe for Delete all data and the simulator: every artifact, the whole App Group defaults suite included, failures only logged.
     func forceClear() {
-        performClear()
-    }
-
-    private func performClear() {
         let log = LegacyMigrationConstants.logTag
         NSLog("[%@] clear() begin", log)
-        wipeAppGroupContainer()
+        _ = wipeAppGroupContainer()
         wipeUserDefaults()
-        wipeKeychain()
+        _ = wipeKeychain()
         AppGroupResolver.shared.invalidateCache()
         NSLog("[%@] clear() complete", log)
     }
 
-    private func wipeAppGroupContainer() {
-        guard let resolved = AppGroupResolver.shared.resolve() else {
-            return
+    /// Post-migration wipe on a live wallet. The Core Data store goes last because it is what `hasLegacyData` checks, so a
+    /// failed or interrupted wipe is still detected and retried. The App Group suite also holds the passkey AutoFill
+    /// extension's records, so only Pera 6's own defaults keys are removed from it.
+    func wipeMigrated() throws {
+        let keychainFailures = wipeKeychain()
+        guard keychainFailures.isEmpty else {
+            throw LegacyMigrationError.wipe(keychainFailures.joined(separator: "; "))
         }
+        wipeMigratedDefaults()
+        let storeFailures = wipeAppGroupContainer()
+        AppGroupResolver.shared.invalidateCache()
+        guard storeFailures.isEmpty else {
+            throw LegacyMigrationError.wipe(storeFailures.joined(separator: "; "))
+        }
+    }
+
+    private func wipeAppGroupContainer() -> [String] {
+        guard let resolved = AppGroupResolver.shared.resolve() else {
+            return []
+        }
+        var failures: [String] = []
         let fm = FileManager.default
         let storeBase = resolved.containerURL.appendingPathComponent(
             LegacyMigrationConstants.coreDataStoreFilename
@@ -52,8 +65,10 @@ final class LegacyDataWiper {
                     url.lastPathComponent,
                     error.localizedDescription
                 )
+                failures.append("delete \(url.lastPathComponent)")
             }
         }
+        return failures
     }
 
     private func wipeUserDefaults() {
@@ -66,9 +81,23 @@ final class LegacyDataWiper {
         defaults.removePersistentDomain(forName: resolved.appGroupId)
     }
 
-    private func wipeKeychain() {
+    private func wipeMigratedDefaults() {
+        guard let resolved = AppGroupResolver.shared.resolve() else {
+            return
+        }
+        guard let defaults = UserDefaults(suiteName: resolved.appGroupId) else {
+            return
+        }
+        for key in LegacyMigrationConstants.DefaultsKey.all {
+            defaults.removeObject(forKey: key)
+        }
+    }
+
+    private func wipeKeychain() -> [String] {
         // Security gate: only wipe Keychain groups whose suffix matches this build's bundle id, or it would nuke other variants' (prod/beta) legacy Keychain items.
-        guard let bundleId = Bundle.main.bundleIdentifier else { return }
+        guard let bundleId = Bundle.main.bundleIdentifier else {
+            return ["no bundle identifier"]
+        }
         let variantSuffix = "." + bundleId
 
         let services = [
@@ -76,12 +105,10 @@ final class LegacyDataWiper {
             LegacyMigrationConstants.KeychainService.hdwallet,
             LegacyMigrationConstants.KeychainService.biometricStorage,
         ]
-        for service in services {
-            wipeKeychainService(service, variantSuffix: variantSuffix)
-        }
+        return services.flatMap { wipeKeychainService($0, variantSuffix: variantSuffix) }
     }
 
-    private func wipeKeychainService(_ service: String, variantSuffix: String) {
+    private func wipeKeychainService(_ service: String, variantSuffix: String) -> [String] {
         let findQuery: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -91,7 +118,7 @@ final class LegacyDataWiper {
         var result: AnyObject?
         let status = SecItemCopyMatching(findQuery as CFDictionary, &result)
         if status == errSecItemNotFound {
-            return
+            return []
         }
         guard status == errSecSuccess, let items = result as? [[String: Any]] else {
             NSLog(
@@ -100,8 +127,9 @@ final class LegacyDataWiper {
                 service,
                 status
             )
-            return
+            return ["list \(service) status=\(status)"]
         }
+        var failures: [String] = []
         for item in items {
             guard
                 let account = item[kSecAttrAccount as String] as? String,
@@ -124,7 +152,9 @@ final class LegacyDataWiper {
                     accessGroup,
                     deleteStatus
                 )
+                failures.append("delete \(service) status=\(deleteStatus)")
             }
         }
+        return failures
     }
 }
