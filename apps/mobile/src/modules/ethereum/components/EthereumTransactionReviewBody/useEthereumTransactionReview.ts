@@ -17,10 +17,7 @@ import {
     useAssetsQuery,
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
-import {
-    addressCodecs,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import { truncateAddressOn } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { useLanguage } from '@hooks/useLanguage'
@@ -75,11 +72,6 @@ export type UseEthereumTransactionReviewResult = {
     requesterHost: Optional<string>
 }
 
-const shortAddressOf = (scope: ChainScope, address: string): string =>
-    addressCodecs.has(scope.chainId)
-        ? addressCodecs.get(scope.chainId).truncate(address)
-        : address
-
 export const useEthereumTransactionReview = ({
     presentation,
     source,
@@ -128,7 +120,7 @@ export const useEthereumTransactionReview = ({
             return wrappedNativeRecord
         }
         // Without its record, the 1:1 pair still shares the native decimals.
-        const label = shortAddressOf(scope, wrappedNativeContract)
+        const label = truncateAddressOn(scope.chainId, wrappedNativeContract)
         return {
             assetId: wrappedNativeContract,
             name: label,
@@ -179,7 +171,7 @@ export const useEthereumTransactionReview = ({
     const target = useMemo((): Optional<EthereumReviewTarget> => {
         if (isTransfer) {
             return counterparty
-                ? { label: shortAddressOf(scope, counterparty) }
+                ? { label: truncateAddressOn(scope.chainId, counterparty) }
                 : undefined
         }
         if (approvedContract) {
@@ -188,14 +180,17 @@ export const useEthereumTransactionReview = ({
                     ? t('signing.review.token_contract', {
                           symbol: tokenAsset.unitName,
                       })
-                    : shortAddressOf(scope, approvedContract),
+                    : truncateAddressOn(scope.chainId, approvedContract),
             }
         }
         if (knownContract) {
             return { label: knownContract.name, status: 'verified' }
         }
         return view.to
-            ? { label: shortAddressOf(scope, view.to), status: 'unverified' }
+            ? {
+                  label: truncateAddressOn(scope.chainId, view.to),
+                  status: 'unverified',
+              }
             : undefined
     }, [
         isTransfer,
@@ -232,7 +227,7 @@ export const useEthereumTransactionReview = ({
                     ? standardCall.collectionName
                     : undefined) ??
                 record?.unitName ??
-                shortAddressOf(scope, nftContract)
+                truncateAddressOn(scope.chainId, nftContract)
             const asset: DisplayableAsset = record ?? {
                 assetId: nftContract,
                 name: collection,

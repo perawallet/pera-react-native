@@ -71,6 +71,7 @@ import {
     SENDER,
     SIGNER_KEY_PAIR_ID,
     vectorSignature,
+    pinClockToPermitFixtures,
 } from '@packages/chain-ethereum/src/__tests__/testing'
 import {
     makeProposal,
@@ -425,6 +426,7 @@ describe('Flow: a dApp request names a scam address or a look-alike of a known o
     afterEach(async () => {
         vi.restoreAllMocks()
         onlineManager.setOnline(true)
+        vi.useRealTimers()
         useSigningStore.getState().resetState()
         useContactsStore.setState({ contacts: [] })
         await getProvider().connections.store.clear()
@@ -641,6 +643,7 @@ describe('Flow: a dApp request names a scam address or a look-alike of a known o
         ])(
             'Given a listed drainer, when a dApp asks for %s naming it as the spender, then the review blocks it the same way',
             async (_label, typedData) => {
+                pinClockToPermitFixtures()
                 const walletKit = await connectEthereum()
 
                 send(walletKit, 'eth_signTypedData_v4', [
@@ -722,6 +725,7 @@ describe('Flow: a dApp request names a scam address or a look-alike of a known o
         })
 
         it('Given WalletConnect Verify flags the dApp, when it asks to sign a permit to an unlisted spender and the user continues past the blocked view, then the review names the site again and holds the slide until acknowledged', async () => {
+            pinClockToPermitFixtures()
             const walletKit = await connectEthereum()
 
             send(

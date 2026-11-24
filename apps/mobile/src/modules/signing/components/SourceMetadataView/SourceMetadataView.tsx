@@ -39,10 +39,13 @@ export const SourceMetadataView = ({
     return (
         <PWView style={styles.container}>
             {displayIcon ? (
-                <PWImage
-                    source={{ uri: displayIcon }}
-                    style={styles.icon}
-                />
+                // Clipped by a round frame, as in SourceMetadataBadge: the image's own radius doesn't always clip.
+                <PWView style={styles.iconFrame}>
+                    <PWImage
+                        source={{ uri: displayIcon }}
+                        style={styles.icon}
+                    />
+                </PWView>
             ) : (
                 <PWView style={styles.iconContainer}>
                     <PWIcon

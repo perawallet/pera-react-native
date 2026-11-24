@@ -13,6 +13,7 @@
 import { useCallback, useMemo } from 'react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
+    spendSigningCutoffOf,
     isEvmChainId,
     type ChainScope,
     type MessageSummary,
@@ -28,6 +29,7 @@ import {
 } from '@perawallet/wallet-core-signing'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useHaptics } from '@hooks/useHaptics'
+import { useHasTimePassed } from '@hooks/useHasTimePassed'
 import { useRequestAddressSafety } from '../../hooks/useRequestAddressSafety'
 import { useRequestSiteSafety } from '../../hooks/useRequestSiteSafety'
 import {
@@ -47,8 +49,10 @@ type UseMessageSigningScreenResult = {
     reviewedAddresses: ReviewedAddress[]
     /** A scam-listed address under the hard block: the request can only be rejected. */
     isListedAddressBlocking: boolean
-    /** A flagged address or site, or a risky sign-in, still waits on the user's acknowledgement. */
+    /** A flagged address or site, or a risky sign-in, still waits on the user's acknowledgement, or the permit has expired. */
     isConfirmBlocked: boolean
+    /** The permit's signature deadline has passed, so the contract would refuse it. */
+    isExpired: boolean
     /** The requesting site, when a sign-in message is for another domain. */
     signInSiteMismatch: Optional<string>
     /** A sign-in for another site or with unreadable grants holds Confirm until acknowledged. */
@@ -89,6 +93,12 @@ export const useMessageSigningScreen = (): UseMessageSigningScreenResult => {
         isConfirmBlocked: isAddressConfirmBlocked,
     } = useRequestAddressSafety({ addresses: reviewedAddresses })
     const { isConfirmBlocked: isSiteConfirmBlocked } = useRequestSiteSafety()
+    // The signer refuses an expired permit too; this keeps the slide from offering one.
+    const signingCutoff = summary?.spendApproval
+        ? spendSigningCutoffOf(summary.spendApproval)
+        : undefined
+    const { hasPassed: isExpired, recheck: recheckExpiry } =
+        useHasTimePassed(signingCutoff)
     const signInDomain = summary?.signIn?.message.domain
     const signInSiteMismatch = useMemo(
         () =>
@@ -117,13 +127,15 @@ export const useMessageSigningScreen = (): UseMessageSigningScreenResult => {
     const isConfirmBlocked =
         isAddressConfirmBlocked ||
         isSiteConfirmBlocked ||
-        isSignInRiskConfirmBlocked
+        isSignInRiskConfirmBlocked ||
+        isExpired
 
     const handleApprove = useCallback(() => {
-        if (isConfirmBlocked) return
+        // The expiry timer can lag the clock, so a lapsed slide swaps in the expired notice here.
+        if (isConfirmBlocked || recheckExpiry()) return
         haptics.medium()
         pipeline.next()
-    }, [haptics, pipeline, isConfirmBlocked])
+    }, [haptics, pipeline, isConfirmBlocked, recheckExpiry])
 
     const handleReject = useCallback(() => {
         haptics.light()
@@ -140,6 +152,7 @@ export const useMessageSigningScreen = (): UseMessageSigningScreenResult => {
         reviewedAddresses,
         isListedAddressBlocking,
         isConfirmBlocked,
+        isExpired,
         signInSiteMismatch,
         isSignInRiskFlagged,
         isSignInRiskAcknowledged,
