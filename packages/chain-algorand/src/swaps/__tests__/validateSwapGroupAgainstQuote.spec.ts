@@ -229,6 +229,140 @@ describe('validateSwapGroupAgainstQuote', () => {
         ).not.toThrow()
     })
 
+    it('rejects fees on the swapper slots beyond the network-fee allowance', () => {
+        expect(() =>
+            validateSwapGroupAgainstQuote(
+                [axfer({ fee: 60_000n }), payment({ fee: 40_001n })],
+                baseQuote,
+            ),
+        ).toThrow(SwapQuoteMismatchError)
+    })
+
+    it('allows a pooled fee within the network-fee allowance', () => {
+        expect(() =>
+            validateSwapGroupAgainstQuote([axfer({ fee: 70_000n })], baseQuote),
+        ).not.toThrow()
+    })
+
+    it('counts fees and ALGO payments against the same allowance', () => {
+        expect(() =>
+            validateSwapGroupAgainstQuote(
+                [axfer({ fee: 60_000n }), payment({ amount: 40_000n })],
+                baseQuote,
+            ),
+        ).toThrow(SwapQuoteMismatchError)
+    })
+
+    const networkFee = (assetId: string, amount: number): SwapFee => ({
+        kind: 'network',
+        asset: { ...SCOPE, assetId },
+        amount: new Decimal(amount),
+        usdValue: null,
+    })
+
+    it('raises the allowance to the quoted ALGO network fee plus a margin', () => {
+        const quote = quoteWith({ fees: [networkFee('0', 300_000)] })
+
+        expect(() =>
+            validateSwapGroupAgainstQuote([axfer({ fee: 330_000n })], quote),
+        ).not.toThrow()
+        expect(() =>
+            validateSwapGroupAgainstQuote([axfer({ fee: 330_001n })], quote),
+        ).toThrow(SwapQuoteMismatchError)
+    })
+
+    it('does not let an inflated quoted fee carry a larger ALGO payment', () => {
+        const quote = quoteWith({ fees: [networkFee('0', 300_000)] })
+
+        expect(() =>
+            validateSwapGroupAgainstQuote(
+                [axfer(), payment({ amount: 200_000n })],
+                quote,
+            ),
+        ).toThrow(SwapQuoteMismatchError)
+    })
+
+    it('caps a quoted fee lift at the group fee ceiling', () => {
+        const quote = quoteWith({ fees: [networkFee('0', 5_000_000)] })
+
+        expect(() =>
+            validateSwapGroupAgainstQuote([axfer({ fee: 500_000n })], quote),
+        ).not.toThrow()
+        expect(() =>
+            validateSwapGroupAgainstQuote([axfer({ fee: 500_001n })], quote),
+        ).toThrow(SwapQuoteMismatchError)
+    })
+
+    it('keeps the flat allowance when the quoted network fee is lower or not in ALGO', () => {
+        for (const fee of [
+            networkFee('0', 10_000),
+            networkFee('999', 500_000),
+        ]) {
+            expect(() =>
+                validateSwapGroupAgainstQuote(
+                    [axfer({ fee: 100_001n })],
+                    quoteWith({ fees: [fee] }),
+                ),
+            ).toThrow(SwapQuoteMismatchError)
+        }
+    })
+
+    const appCall = (
+        onCompletion?: string,
+        applicationId = 1n,
+    ): PeraDisplayableTransaction =>
+        ({
+            txType: 'appl',
+            fee: 1_000n,
+            sender: SWAPPER,
+            applicationTransaction: { applicationId, onCompletion },
+        }) as unknown as PeraDisplayableTransaction
+
+    it('rejects an app call that creates an app', () => {
+        expect(() =>
+            validateSwapGroupAgainstQuote(
+                [axfer(), appCall('noop', 0n)],
+                baseQuote,
+            ),
+        ).toThrow(SwapQuoteMismatchError)
+    })
+
+    it.each(['noop', 'optin'])('allows a %s router call', onCompletion => {
+        expect(() =>
+            validateSwapGroupAgainstQuote(
+                [axfer(), appCall(onCompletion)],
+                baseQuote,
+            ),
+        ).not.toThrow()
+    })
+
+    it.each(['update', 'delete', 'closeout', 'clear', undefined])(
+        'rejects an app call completing with %s',
+        onCompletion => {
+            expect(() =>
+                validateSwapGroupAgainstQuote(
+                    [axfer(), appCall(onCompletion)],
+                    baseQuote,
+                ),
+            ).toThrow(SwapQuoteMismatchError)
+        },
+    )
+
+    it.each(['acfg', 'afrz', 'keyreg', 'stpf', 'hb', undefined])(
+        'rejects a swapper slot of type %s',
+        txType => {
+            const slot = {
+                txType,
+                fee: 1_000n,
+                sender: SWAPPER,
+            } as unknown as PeraDisplayableTransaction
+
+            expect(() =>
+                validateSwapGroupAgainstQuote([axfer(), slot], baseQuote),
+            ).toThrow(SwapQuoteMismatchError)
+        },
+    )
+
     it('allows the Pera fee in its own asset up to the quoted amount', () => {
         expect(() =>
             validateSwapGroupAgainstQuote(
@@ -262,6 +396,7 @@ describe('validateSwapGroupAgainstQuote', () => {
         // Some provider payloads surface amounts as JS numbers rather than
         // bigints; they must be coerced and bounded identically.
         const numericAxfer = {
+            txType: 'axfer',
             sender: SWAPPER,
             assetTransferTransaction: {
                 assetId: 31_566_704n,
@@ -277,6 +412,7 @@ describe('validateSwapGroupAgainstQuote', () => {
 
     it('truncates a fractional numeric amount within the bound', () => {
         const numericAxfer = {
+            txType: 'axfer',
             sender: SWAPPER,
             assetTransferTransaction: {
                 assetId: 31_566_704n,
