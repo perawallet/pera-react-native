@@ -160,21 +160,25 @@ export const PWBottomSheet = ({
         ? [styles.background, containerStyle]
         : styles.background
 
-    const sheetContent = autoCreateContainer ? (
-        <BottomSheetView
-            style={[styles.innerContainer, innerContainerStyle]}
-            testID={testID}
-        >
-            {children}
-        </BottomSheetView>
-    ) : (
-        <PWView
-            style={[styles.innerContainer, innerContainerStyle]}
-            testID={testID}
-        >
-            {children}
-        </PWView>
-    )
+    // BottomSheetView is absolute and content-sized: it only serves `auto`'s
+    // measurement. In a fixed-height sheet it lets a scroll body overrun the
+    // sheet's bottom edge, clipping the last rows.
+    const sheetContent =
+        autoCreateContainer && size === 'auto' ? (
+            <BottomSheetView
+                style={[styles.innerContainer, innerContainerStyle]}
+                testID={testID}
+            >
+                {children}
+            </BottomSheetView>
+        ) : (
+            <PWView
+                style={[styles.innerContainer, innerContainerStyle]}
+                testID={testID}
+            >
+                {children}
+            </PWView>
+        )
 
     return (
         <BottomSheetModal
