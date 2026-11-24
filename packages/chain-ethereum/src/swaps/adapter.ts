@@ -12,16 +12,15 @@
 
 import { Decimal } from 'decimal.js'
 import type { ChainContext } from '@perawallet/wallet-core-chain-contract'
-import { displayUnitsToBaseUnits } from '@perawallet/wallet-core-shared'
 import type { SwapChainAdapter } from '@perawallet/wallet-core-swaps'
 import { evmAssetIdOfRouterId, toCaip19 } from '../blockchain/utils/caip19'
 import { createEvmClient } from '../blockchain/utils/createEvmClient'
 import type { EvmChain } from '../chains/types'
 import { executeEvmSwap } from './execute-evm-swap'
-import { estimateEvmSwapSourceCost } from './source-cost'
-
-// Of the native unit: held back from a percentage amount for a swap's gas.
-const MAX_AMOUNT_FEE_RESERVE = '0.005'
+import {
+    estimateEvmSwapFeeReserve,
+    estimateEvmSwapSourceCost,
+} from './source-cost'
 
 export const createEvmSwapAdapter = (
     ctx: ChainContext,
@@ -34,10 +33,12 @@ export const createEvmSwapAdapter = (
     toRouterAssetId: (assetId, scope) => toCaip19(assetId, scope, chain),
     fromRouterAssetId: (routerAssetId, scope) =>
         evmAssetIdOfRouterId(routerAssetId, scope, chain),
-    maxAmountFeeReserve: displayUnitsToBaseUnits(
-        MAX_AMOUNT_FEE_RESERVE,
-        chain.row.nativeAsset.decimals,
-    ),
+    maxAmountFeeReserve: scope =>
+        estimateEvmSwapFeeReserve({
+            client: createEvmClient(scope, ctx, chain),
+            chain,
+            scope,
+        }),
     holdingReserve: () => new Decimal(0),
     swapExplorerUrl: (scope, item) => {
         const swapTransaction = item.transactions.find(

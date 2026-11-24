@@ -11,4 +11,3 @@
  */
 
 export { SwapHistoryContent } from './SwapHistoryContent'
-export type { SwapHistoryContentProps } from './SwapHistoryContent'

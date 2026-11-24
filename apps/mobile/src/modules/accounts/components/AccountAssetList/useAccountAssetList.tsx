@@ -313,7 +313,8 @@ export const useAccountAssetList = ({
     // the FlashList re-population that follows (with the sticky search bar at
     // index 0) pushes the list past the header; keying off the sort alone missed
     // the reset entirely whenever the rows hadn't arrived yet.
-    const viewRequestKey = `${account.id}|${selectedChainId ?? ''}|${assetSortMode}`
+    // A network chip is left out: picking one keeps the chips where they are.
+    const viewRequestKey = `${account.id}|${assetSortMode}`
     const appliedViewRequestKeyRef = useRef(viewRequestKey)
     const hasRowsForRequest = holdings.length > 0 && !isPlaceholderData
 

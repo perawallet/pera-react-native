@@ -605,14 +605,7 @@ export const getSheetSections = (): GallerySection[] => [
                     request: () => ({
                         contents: (
                             <GallerySheetBoundary>
-                                <SwapScopePreview>
-                                    {scope => (
-                                        <SwapHistoryContent
-                                            scope={scope}
-                                            address={A}
-                                        />
-                                    )}
-                                </SwapScopePreview>
+                                <SwapHistoryContent />
                             </GallerySheetBoundary>
                         ),
                         options: {

@@ -18,6 +18,7 @@ import type {
     Signature,
     SignedMessage,
     SigningRequest,
+    SiwxMessage,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     chainAccountOf,
@@ -36,24 +37,7 @@ import type {
     AuthDataPayload,
 } from './pipeline/types'
 
-/**
- * The CAIP-122 data model shared by SIWE, SIWS and Algorand's sign-in. Each
- * chain owns the serialisation and the signature `type`, so neither is here.
- */
-export type SiwxMessage = {
-    domain: string
-    address: string
-    uri: string
-    version: string
-    chainId: string
-    statement?: string
-    nonce?: string
-    issuedAt?: string
-    expirationTime?: string
-    notBefore?: string
-    requestId?: string
-    resources?: string[]
-}
+export type { SiwxMessage }
 
 export type ParsedAuthData =
     | { type: 'siwx'; siwx: SiwxMessage }

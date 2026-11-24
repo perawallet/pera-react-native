@@ -16,7 +16,6 @@ export const useStyles = makeStyles(theme => {
     return {
         listContainer: {
             flexGrow: 1,
-            paddingTop: theme.spacing.xl,
         },
         emptyView: {
             flex: 1,

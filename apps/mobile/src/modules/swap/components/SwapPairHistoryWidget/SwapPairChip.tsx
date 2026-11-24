@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWText, PWTouchableOpacity } from '@components/core'
+import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import type { SwapAsset } from '@perawallet/wallet-core-swaps'
 import { SwapAssetPairIcon } from '@modules/swap/components/SwapAssetPairIcon'
 import { useTheme } from '@rneui/themed'
@@ -19,12 +19,14 @@ import { useStyles } from './styles'
 export type SwapPairChipProps = {
     assetIn: SwapAsset
     assetOut: SwapAsset
+    accountName?: string
     onPress: () => void
 }
 
 export const SwapPairChip = ({
     assetIn,
     assetOut,
+    accountName,
     onPress,
 }: SwapPairChipProps) => {
     const styles = useStyles()
@@ -42,7 +44,18 @@ export const SwapPairChip = ({
                 assetOut={assetOut}
                 surfaceColor={theme.colors.layerGrayLightest}
             />
-            <PWText variant='body'>{label}</PWText>
+            <PWView style={styles.chipLabels}>
+                <PWText variant='body'>{label}</PWText>
+                {!!accountName && (
+                    <PWText
+                        variant='caption'
+                        style={styles.chipAccount}
+                        truncate
+                    >
+                        {accountName}
+                    </PWText>
+                )}
+            </PWView>
         </PWTouchableOpacity>
     )
 }

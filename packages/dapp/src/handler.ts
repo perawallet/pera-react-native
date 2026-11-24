@@ -772,7 +772,9 @@ export const createDappConnectionHandler = (
             await Promise.all(all.map(connection => disconnect(connection.id)))
         },
         restore,
-        matchesChainScope: (_, scope) => scope.chainId === deps.chainId,
+        matchesChainScope: (_, scope) =>
+            scope.chainId === deps.chainId &&
+            scope.networkId === deps.getNetworkId(deps.chainId),
         methodsFor: () => [...PERMISSION_METHODS],
         async notify(id, notice: WalletNotice) {
             // The protocol carries one chain, fixed per handler.

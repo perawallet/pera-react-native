@@ -13,9 +13,21 @@
 export { getDebitedAddress, isOutgoingFor } from './direction'
 export { isFeePaidByAccount } from './fee'
 export { isRecordInAssetHistory } from './assetHistory'
-export { recordSignerOf } from './signer'
+export {
+    isSentByOtherSigner,
+    recordSignerOf,
+    type IsSentByOtherSignerInput,
+} from './signer'
 export { historyTypeOf, type TransactionHistoryType } from './historyType'
 export {
     replacementNotNeededNotice,
     transactionStatusNotice,
 } from './statusNotice'
+export {
+    readSwapLeg,
+    summarizeSwapLeg,
+    swapLegOf,
+    withoutListedSwapPayouts,
+    type ResolveSwapAssetRef,
+    type SwapLegResponse,
+} from './swapLegs'

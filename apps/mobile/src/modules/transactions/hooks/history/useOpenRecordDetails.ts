@@ -14,6 +14,7 @@ import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { TransactionRecord } from '@perawallet/wallet-core-chain-contract'
+import type { SuspectedPoisoning } from '@perawallet/wallet-core-transactions'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import type { AppStackParamList } from '@routes/types'
 
@@ -24,6 +25,7 @@ export type UseOpenRecordDetailsResult = {
 
 export const useOpenRecordDetails = (
     record?: TransactionRecord,
+    suspectedPoisoning?: SuspectedPoisoning,
 ): UseOpenRecordDetailsResult => {
     const navigation =
         useNavigation<NativeStackNavigationProp<AppStackParamList>>()
@@ -34,8 +36,9 @@ export const useOpenRecordDetails = (
             scope: record.scope,
             transactionId: record.id,
             historyRecord: record,
+            ...(suspectedPoisoning && { suspectedPoisoning }),
         })
-    }, [navigation, record])
+    }, [navigation, record, suspectedPoisoning])
 
     return { handleOpenDetails: record ? handleOpenDetails : undefined }
 }

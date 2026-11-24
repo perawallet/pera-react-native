@@ -144,9 +144,14 @@ describe('decodeEvmContractAction', () => {
             kind: 'supply' | 'withdraw' | 'borrow' | 'repay',
             amount: bigint,
             isEntireBalance = false,
-        ) => ({ kind, asset: WETH, amount: dec(amount), isEntireBalance })
+        ) => ({
+            kind,
+            asset: { kind: 'native' },
+            amount: dec(amount),
+            isEntireBalance,
+        })
 
-        it('reads each native-coin call as the action on the wrapped reserve', () => {
+        it('reads each call as moving the native coin, not the reserve the gateway wraps it into', () => {
             expect(
                 decode(
                     GATEWAY,
@@ -189,7 +194,7 @@ describe('decodeEvmContractAction', () => {
         it('reads supply, with its permit form', () => {
             const expected: EvmContractAction = {
                 kind: 'supply',
-                asset: USDC,
+                asset: { kind: 'token', contract: USDC },
                 amount: dec(1_000_000n),
                 isEntireBalance: false,
             }
@@ -217,7 +222,7 @@ describe('decodeEvmContractAction', () => {
         it('reads withdraw of an amount, and of the whole balance', () => {
             expect(decode(POOL, aave('withdraw', [USDC, 5n, SENDER]))).toEqual({
                 kind: 'withdraw',
-                asset: USDC,
+                asset: { kind: 'token', contract: USDC },
                 amount: dec(5n),
                 isEntireBalance: false,
             })
@@ -225,7 +230,7 @@ describe('decodeEvmContractAction', () => {
                 decode(POOL, aave('withdraw', [USDC, maxUint256, SENDER])),
             ).toEqual({
                 kind: 'withdraw',
-                asset: USDC,
+                asset: { kind: 'token', contract: USDC },
                 amount: dec(maxUint256),
                 isEntireBalance: true,
             })
@@ -236,7 +241,7 @@ describe('decodeEvmContractAction', () => {
                 decode(POOL, aave('borrow', [USDC, 7n, 2n, 0, SENDER])),
             ).toEqual({
                 kind: 'borrow',
-                asset: USDC,
+                asset: { kind: 'token', contract: USDC },
                 amount: dec(7n),
                 isEntireBalance: false,
             })

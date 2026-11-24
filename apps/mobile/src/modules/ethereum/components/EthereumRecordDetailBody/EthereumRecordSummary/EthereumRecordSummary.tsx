@@ -28,7 +28,8 @@ export const EthereumRecordSummary = ({
     record,
     warnings,
 }: EthereumRecordSummaryProps) => {
-    const { summary, amountRows, assetLabel } = useEthereumRecordLayout(record)
+    const { summary, amountRows, assetLabel, assetContract } =
+        useEthereumRecordLayout(record)
     const { nft, handleOpen } = useEthereumRecordNft(record)
 
     return (
@@ -47,6 +48,7 @@ export const EthereumRecordSummary = ({
                         changes={amountRows}
                         scope={record.scope}
                         assetLabel={assetLabel}
+                        assetContract={assetContract}
                     />
                 )
             }

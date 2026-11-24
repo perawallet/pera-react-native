@@ -61,7 +61,7 @@ const TransactionListItemView = ({
     // A scam airdrop isn't a credit: no green amount to make it look like one.
     // Only its own leg: the real coin beside it in a swap keeps its colour.
     const getAmountStyle = (amount: RowAmount) => {
-        if (amount.isSuspicious) return styles.amountMuted
+        if (amount.isMuted) return styles.amountMuted
         if (amount.prefix === '+') return styles.amountPositive
         if (amount.prefix === '-') return styles.amountNegative
         return styles.amount
@@ -140,7 +140,11 @@ const TransactionListItemView = ({
                 {/* The amounts never shrink, so a long swap pair needs a third line to keep the received token in view. */}
                 <PWText
                     variant='h4'
-                    style={isSuspiciousToken ? styles.titleMuted : styles.title}
+                    style={
+                        isSuspiciousToken || isSuspectedPoisoning
+                            ? styles.titleMuted
+                            : styles.title
+                    }
                     truncate
                     numberOfLines={3}
                 >

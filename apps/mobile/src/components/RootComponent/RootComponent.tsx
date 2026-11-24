@@ -23,6 +23,7 @@ import { useNeedsMigration } from '@perawallet/wallet-core-migrate'
 import { DeviceRegistrar } from '@components/DeviceRegistrar'
 import { useNetworkSwitchInvalidation } from '@hooks/useNetworkSwitchInvalidation'
 import { useImageMemoryRelease } from '@hooks/useImageMemoryRelease'
+import { useNetworkChipFollowsSelection } from '@modules/accounts/shell'
 import { ConnectionsProvider } from '@modules/connections/shell'
 import { AutoLockGuard } from '@modules/security/shell'
 import { SigningOverlays } from '@modules/signing/shell'
@@ -64,6 +65,7 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
 
     useBackupSyncLifecycle()
     useHiddenTokensInvalidation()
+    useNetworkChipFollowsSelection()
 
     // Called where the sync start/stop effect used to sit, after the other
     // lifecycle hooks, so this refactor doesn't change the startup order.

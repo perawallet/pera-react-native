@@ -391,7 +391,8 @@
         "imitated_currency": {
             "marker": "Not real {{code}}",
             "title": "This asset is not {{code}}",
-            "body": "Its unit name is {{code}}, but it is a separate asset that anyone could have created. Receiving it does not give you any {{code}}."
+            "body": "Its unit name is {{code}}, but it is a separate asset that anyone could have created. Receiving it does not give you any {{code}}.",
+            "unit_label": "Unknown asset"
         }
     },
     "asset_details": {
@@ -434,8 +435,6 @@
             "social_media": "Social Media",
             "chart_empty_body": "You will see a chart here once you have some balance history",
             "total_supply_info_body": "The total supply of an asset is set at creation time and it corresponds to the asset's total created units.",
-            "circulating_supply": "Circulating Supply",
-            "circulating_supply_info_body": "The circulating supply is the number of coins in public circulation right now. A network's native coin has no fixed total, so this figure changes as coins are issued or burned.",
             "token_total_supply_info_body": "The total supply is the number of tokens the contract has issued, minus any burned. It changes when the issuer mints or burns tokens."
         },
         "action_buttons": {
@@ -451,7 +450,7 @@
             "empty_filtered_body": "No transactions match this filter",
             "empty_on_network_body": "No transactions yet on {{network}}",
             "network_failed": "Couldn't load transactions on {{networks}}",
-            "network_unavailable": "Transactions aren't available on {{networks}}",
+            "network_unavailable": "Full history isn't available on {{networks}}",
             "offline_empty_title": "You're offline",
             "offline_empty_body": "No transactions are saved on this device yet. They'll appear once you're back online.",
             "search_paused_body": "No transactions found in recent history.",
@@ -529,6 +528,7 @@
             "empty_title": "NFTs",
             "empty_body": "Welcome to your NFT Gallery! You don't have any NFTs yet. All the NFTs available in your wallet will be visible here.",
             "empty_body_multichain": "Welcome to your NFT Gallery!\nYou don't have any NFTs yet. NFTs you receive on networks like Ethereum show up here on their own. Algorand NFTs need an opt-in first.",
+            "empty_body_unsupported": "NFTs on {{chains}} aren't shown in Pera yet.",
             "empty_optin": "Opt-in to NFT",
             "empty_optin_algorand": "Opt in to Algorand NFT",
             "nomatch_title": "No Matching NFTs",
@@ -855,6 +855,16 @@
             "description": "Choose the correct words to confirm you’ve stored your 12-word key securely.",
             "proceed": "Proceed",
             "error_message": "Incorrect selection. Please try again."
+        },
+        "confirm_credentials": {
+            "warning": "Confirm you’ve saved your backup key",
+            "title": "Confirm Backup Key",
+            "description": "Choose the correct words of your 12-word key and enter your encryption key to confirm you’ve stored them.",
+            "confirm": "Confirm",
+            "error_words": "Some of the selected words are incorrect. Please try again.",
+            "error_key": "This encryption key doesn’t match your backup.",
+            "error_both": "The selected words and the encryption key are both incorrect.",
+            "success": "Backup key confirmed"
         },
         "store_encryption_key": {
             "title": "Store your Encryption Key",
@@ -1210,6 +1220,10 @@
             "title": "Copied to clipboard",
             "body": ""
         },
+        "address_copied": {
+            "algorand": "Algorand address copied",
+            "evm": "EVM address copied"
+        },
         "email_failed": {
             "title": "Couldn't open email app",
             "body": "No email app is set up on this device. You can write to {{email}} directly."
@@ -1538,7 +1552,8 @@
             "request_expired_body": "This signing request expired before it was answered. Ask the app to send it again.",
             "unsupported_method_body": "{{dappName}} asked for {{method}}, which Pera doesn't support, so the request was declined.",
             "unsupported_network_body": "{{dappName}} asked to use the network with chain ID {{chainId}}, which Pera doesn't support, so the request was declined.",
-            "unsupported_chains_body": "This app asked to use a network Pera doesn't support, so the connection was declined."
+            "unsupported_chains_body": "This app asked to use a network Pera doesn't support, so the connection was declined.",
+            "unselected_network_body": "This app only offers networks Pera isn't on right now, so the connection was declined. Turn developer mode on or off to match the app, then try again."
         },
         "signing": {
             "title": "An error occurred processing the signing request",
@@ -3303,7 +3318,8 @@
             },
             "fee_shortfall": {
                 "title": "Not enough {{symbol}} for the fee",
-                "body": "This send can be charged up to {{fee}} in fees. Lower the amount or pick a slower fee."
+                "body": "This send can be charged up to {{fee}} in fees. Lower the amount or pick a slower fee.",
+                "body_non_native": "This send can be charged up to {{fee}} in fees on {{network}}. Add {{symbol}} or pick a slower fee."
             },
             "fee_unavailable": {
                 "title": "Couldn't estimate the fee",
@@ -3634,6 +3650,31 @@
             "typed_data_warning_title": "This signature can move your tokens",
             "typed_data_warning_body": "Signing structured data can authorize an app to spend or trade your tokens without asking you again. Only approve if you trust this application."
         },
+        "sign_in": {
+            "title": "Sign in to {{domain}}",
+            "domain": "Domain",
+            "address": "Address",
+            "uri": "URI",
+            "chain_id": "Chain ID",
+            "nonce": "Nonce",
+            "issued_at": "Issued",
+            "expires_at": "Expires",
+            "advanced": "Advanced",
+            "site_mismatch_title": "This sign-in is for another site",
+            "site_mismatch_body": "The message signs you in to {{domain}}, but the request comes from {{site}}. Only approve if you trust both.",
+            "other_address_note": "The message names {{address}}, not the account signing it.",
+            "other_chain_note": "The message names {{chain}}, not the network this request is for. Signing in sends no transaction.",
+            "other_chain_id_note": "The message names chain ID {{chainId}}, not the network this request is for. Signing in sends no transaction.",
+            "statement_label": "Message from {{domain}}",
+            "not_before": "Valid from",
+            "request_id": "Request ID",
+            "resource": "Resource",
+            "grants_title": "This sign-in also grants permissions",
+            "grants_body": "Signing lets {{domain}} act for you with the permissions below. Only approve if you trust it.",
+            "grants_unreadable_body": "This sign-in grants {{domain}} permissions Pera can't read. Only approve if you trust it.",
+            "malformed_title": "This sign-in message has unexpected content",
+            "malformed_body": "Parts of this message don't follow the sign-in format, so {{domain}} may read it differently than shown here. Check the full message under Advanced, and only approve if you trust the site."
+        },
         "spend_approval": {
             "spend_warning": "This signature lets another address move tokens out of your account without asking you again.",
             "spend_warning_transaction": "This transaction lets another address move tokens out of your account without asking you again.",
@@ -3645,7 +3686,11 @@
             "no_deadline_warning": "This permission never expires.",
             "spender_label": "Spender",
             "unlimited": "Unlimited",
-            "deadline_label": "Deadline",
+            "expiry_label": "Permit expires",
+            "signature_deadline_label": "Signature valid until",
+            "signature_long_deadline_warning": "This signature stays valid for more than a year, so it can be used long after you sign it.",
+            "expired_title": "This request has expired",
+            "expired_body": "Its signing deadline has passed, so it would be refused. Cancel and start again in the app.",
             "never": "Never",
             "known_title": "About this approval",
             "known_description": "{{name}} is a well-known contract",
@@ -3923,7 +3968,8 @@
             "nft_subtitle": "{{collection}} #{{tokenId}}",
             "nft_batch_subtitle": "{{collection}} · {{count}} items",
             "inner_transaction_count": "{{innerCount}} inner txns",
-            "cancel_transaction": "Cancel transaction"
+            "cancel_transaction": "Cancel transaction",
+            "not_sent_by_you": "Not sent by you"
         },
         "record_detail": {
             "read_failed": "Couldn't read this transaction's call details from the network.",
@@ -4161,7 +4207,8 @@
         },
         "switch_network": {
             "title": "Allow network access?",
-            "body": "{{name}} wants to use your {{chain}} accounts on {{network}}.",
+            "body": "{{name}} wants to use your accounts on {{chain}}.",
+            "body_with_network": "{{name}} wants to use your accounts on {{chain}} {{network}}.",
             "confirm": "Allow"
         },
         "settings": {
@@ -4301,6 +4348,7 @@
             "quote_error": "Unable to get quotes. Please try again.",
             "amount_too_low": "Amount too small to swap on {{network}}. The minimum is {{amount}} {{unit}}.",
             "amount_too_low_fiat": "Amount too small to swap on {{network}}. The minimum is {{amount}} {{unit}} (~{{fiat}}).",
+            "amount_too_low_above_balance": "Your available balance is below the {{amount}} {{unit}} minimum to swap on {{network}}.",
             "use_minimum": "Use minimum",
             "amount_too_low_unknown": "Amount too small to swap on {{network}}. Try a larger amount or a lower-fee network.",
             "amount_too_high": "Amount too large to swap. The maximum is {{amount}} {{unit}}.",
@@ -4372,6 +4420,8 @@
                         "refunded": "Refunded"
                     }
                 },
+                "account_filter_all": "All accounts",
+                "load_more": "Load more",
                 "empty": {
                     "title": "No swaps yet",
                     "body": "Your swap history will appear here."

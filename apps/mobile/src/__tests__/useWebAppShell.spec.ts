@@ -45,11 +45,9 @@ const mocks = vi.hoisted(() => ({
     platformInitialize: vi
         .fn<() => Promise<{ token: string | undefined }>>()
         .mockResolvedValue({ token: undefined }),
-    resealLegacyMaterial: vi.fn<() => Promise<unknown>>().mockResolvedValue({
-        resealed: 0,
+    checkLegacyMaterial: vi.fn<() => Promise<unknown>>().mockResolvedValue({
         reminted: 0,
         unrecoverable: [],
-        legacyKeyRemoved: false,
     }),
     setEngineKeySource: vi.fn(),
     requireSessionMasterKey: vi.fn(),
@@ -108,7 +106,7 @@ vi.mock('@perawallet/wallet-extension-provider', async importOriginal => {
             database: {},
             initialize: mocks.platformInitialize,
         }),
-        resealLegacyMaterial: () => mocks.resealLegacyMaterial(),
+        checkLegacyMaterial: () => mocks.checkLegacyMaterial(),
         setEngineKeySource: (source: unknown) =>
             mocks.setEngineKeySource(source),
     }
@@ -224,11 +222,9 @@ describe('useWebAppShell', () => {
         mocks.getCurrentApproval.mockResolvedValue(null)
         mocks.hydratePasskeySetup.mockResolvedValue(undefined)
         mocks.platformInitialize.mockResolvedValue({ token: undefined })
-        mocks.resealLegacyMaterial.mockResolvedValue({
-            resealed: 0,
+        mocks.checkLegacyMaterial.mockResolvedValue({
             reminted: 0,
             unrecoverable: [],
-            legacyKeyRemoved: false,
         })
     })
 
@@ -604,13 +600,11 @@ describe('useWebAppShell', () => {
         mocks.keystoreReady.mockImplementation(async () => {
             callOrder.push('keystoreReady')
         })
-        mocks.resealLegacyMaterial.mockImplementation(async () => {
-            callOrder.push('resealLegacyMaterial')
+        mocks.checkLegacyMaterial.mockImplementation(async () => {
+            callOrder.push('checkLegacyMaterial')
             return {
-                resealed: 0,
                 reminted: 0,
                 unrecoverable: [],
-                legacyKeyRemoved: false,
             }
         })
         mocks.initializeDatabase.mockImplementation(async () => {
@@ -623,20 +617,18 @@ describe('useWebAppShell', () => {
         expect(result.current.shellState).toBe('main')
         expect(callOrder).toEqual([
             'keystoreReady',
-            'resealLegacyMaterial',
+            'checkLegacyMaterial',
             'initializeDatabase',
         ])
     })
 
-    it('logs unrecoverable ids from the re-seal report through logger.warn', async () => {
+    it('logs unrecoverable ids from the legacy check through logger.warn', async () => {
         mocks.surface = 'popup'
         mocks.isInitialized = true
         mocks.isUnlocked = true
-        mocks.resealLegacyMaterial.mockResolvedValue({
-            resealed: 1,
+        mocks.checkLegacyMaterial.mockResolvedValue({
             reminted: 1,
             unrecoverable: ['k1'],
-            legacyKeyRemoved: true,
         })
         const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 

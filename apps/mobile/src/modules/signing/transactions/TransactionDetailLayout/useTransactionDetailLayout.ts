@@ -15,7 +15,7 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
-import { useWebView } from '@modules/webview'
+import { openExplorerUrl } from '@modules/webview'
 
 export type UseTransactionDetailLayoutResult = {
     /** Names the transaction's own chain's explorer, never one shared across chains. */
@@ -29,7 +29,6 @@ export const useTransactionDetailLayout = (
     transactionId: Optional<string>,
 ): UseTransactionDetailLayoutResult => {
     const { t } = useLanguage()
-    const { pushWebView } = useWebView()
     const { explorer } = getChainDescriptor(scope.chainId)
     // Read per render, never memoised on `scope`: a saved custom node keeps the same scope.
     const url = transactionId
@@ -37,9 +36,8 @@ export const useTransactionDetailLayout = (
         : undefined
 
     const handleOpenExplorer = useCallback(() => {
-        // oxlint-disable-next-line pera/no-unvalidated-open-url -- chain explorer config origin; the transaction id only fills the path
-        if (url) pushWebView({ url })
-    }, [pushWebView, url])
+        if (url) openExplorerUrl(url)
+    }, [url])
 
     return {
         explorerLabel: t('transactions.common.view_in_explorer', {

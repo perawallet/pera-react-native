@@ -183,6 +183,7 @@ const configureBackup = async (keys: Keys) => {
         backupId: keys.backupId,
         salt: BACKUP_SALT,
         deviceId: 'test-device-id',
+        credentialsConfirmed: true,
     })
 }
 

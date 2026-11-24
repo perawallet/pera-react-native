@@ -681,13 +681,13 @@ describe('Flow: a dApp asks to sign a call whose outcome the backend predicts', 
         await expectSlideEnabled()
     })
 
-    it("Given a call Pera can name and a backend that can't simulate it, when it is reviewed, then it says it couldn't simulate and the user can still confirm", async () => {
+    it("Given a call Pera can name and a backend that can't simulate it, when it is reviewed, then it shows what the calldata moves, says it couldn't simulate the rest and the user can still confirm", async () => {
         await review(WETH, WRAP_DATA, 503, ONE_MILLI_ETH)
 
         await waitFor(() => screen.getByTestId(UNAVAILABLE), {
             timeout: 15_000,
         })
-        expect(screen.queryByTestId(CHANGES)).toBeNull()
+        expect(screen.getByTestId(CHANGES)).toBeTruthy()
         expect(screen.queryByTestId(UNCHECKED_NOTICE)).toBeNull()
         await expectSlideEnabled()
     })

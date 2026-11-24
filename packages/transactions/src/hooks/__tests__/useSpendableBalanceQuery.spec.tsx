@@ -145,6 +145,42 @@ describe('useSpendableBalanceQuery', () => {
         )
     })
 
+    it('drops the earlier answer once the input is withdrawn', async () => {
+        const { result, rerender } = renderHook(
+            ({ input }: { input: SpendableBalanceInput | undefined }) =>
+                useSpendableBalanceQuery(input),
+            {
+                wrapper: wrapper(queryClient),
+                initialProps: {
+                    input: inputWith(1_000) as
+                        | SpendableBalanceInput
+                        | undefined,
+                },
+            },
+        )
+        await waitFor(() => expect(result.current.data).toEqual(SPENDABLE))
+
+        rerender({ input: undefined })
+
+        expect(result.current).toEqual({ data: undefined, isPending: false })
+    })
+
+    it('drops the earlier answer for an account with no address on the new scope', async () => {
+        const { result, rerender } = renderHook(
+            ({ account }: { account: WalletAccount }) =>
+                useSpendableBalanceQuery({ ...inputWith(0), account }),
+            {
+                wrapper: wrapper(queryClient),
+                initialProps: { account: ACCOUNT },
+            },
+        )
+        await waitFor(() => expect(result.current.data).toEqual(SPENDABLE))
+
+        rerender({ account: { ...ACCOUNT, chains: {} } })
+
+        expect(result.current).toEqual({ data: undefined, isPending: false })
+    })
+
     it('re-reads for a second account', async () => {
         const second: WalletAccount = {
             ...ACCOUNT,

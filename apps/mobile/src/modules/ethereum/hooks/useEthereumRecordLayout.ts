@@ -22,12 +22,17 @@ import {
     type TransactionRecord,
     type TransactionSummary,
 } from '@perawallet/wallet-core-chain-contract'
+import { toEvmNftAssetId } from '@perawallet/wallet-core-chain-ethereum'
 import {
     baseUnitsToDisplayUnits,
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
-import { isFeePaidByAccount } from '@perawallet/wallet-core-transactions'
+import {
+    isFeePaidByAccount,
+    isSentByOtherSigner,
+    recordSignerOf,
+} from '@perawallet/wallet-core-transactions'
 import { transactionIconName } from '@components/TransactionIcon'
 import { useLanguage } from '@hooks/useLanguage'
 import {
@@ -52,6 +57,8 @@ export type UseEthereumRecordLayoutResult = {
     amountRows: BalanceChange[]
     /** What the history names the asset moved, such as an NFT's collection and token id; the call's own read says it itself. */
     assetLabel?: string
+    /** The token contract of a single non-native transfer, so a lookalike symbol can be told from the asset itself. */
+    assetContract?: string
 }
 
 const STATUS: Record<TransactionRecord['status'], TransactionDetailStatus> = {
@@ -60,6 +67,8 @@ const STATUS: Record<TransactionRecord['status'], TransactionDetailStatus> = {
     failed: 'failed',
     replaced: 'failed',
 }
+
+const NOT_SENT_BY_YOU = i18nKey('transactions.list_item.not_sent_by_you')
 
 // A call's own amount (an approval's allowance, a contract call's value) is
 // one leg among its effects, so only a plain transfer leads with it.
@@ -74,6 +83,22 @@ const RECIPIENT_KINDS: readonly TransactionRecord['summary']['kind'][] = [
     ...LEADING_KINDS,
     'nft-transfer',
 ]
+
+// Known from the calldata before the NFT's own record loads, so its leg doesn't flash in meanwhile.
+const readNftAssetIdOf = ({
+    view,
+    standardCall,
+}: EthereumTransactionPresentation): Optional<string> => {
+    if (view.nft) return view.nft.assetId
+    if (standardCall?.kind !== 'nft-transfer') return undefined
+    const [only, ...rest] = standardCall.items
+    if (!only || rest.length > 0) return undefined
+    try {
+        return toEvmNftAssetId(standardCall.contract, only.tokenId)
+    } catch {
+        return undefined
+    }
+}
 
 // The row's title stands unless the node read knows more: a revocation, an
 // NFT grant of token #0 the row took for a revocation, or an action for a call
@@ -141,8 +166,32 @@ export const useEthereumRecordLayout = (
             }
         }
 
+        const isNotSentByYou = isSentByOtherSigner({
+            summary: recordSummary,
+            signer: recordSignerOf(record, ownAddress),
+            isSignedElsewhere: record.isSignedElsewhere,
+            accountAddress: ownAddress,
+            chainId: scope.chainId,
+        })
+
+        const title =
+            presentation && isReadTitleBetter(recordSummary, presentation)
+                ? { key: presentation.titleKey }
+                : summaryTitle
+
         // Pending only while the store has not answered; a miss is settled and falls back to the raw leg.
         const isAmountLoading = !!leading && !amount && isAssetsPending
+
+        // A read NFT transfer already shows the NFT and its amount, so its leg isn't listed again.
+        // Only NFTs: a token's leg is the balance actually moved, which a fee-taking token can make differ from the call.
+        const readNftAssetId =
+            presentation?.isTransfer &&
+            (presentation.amount || presentation.isAmountLoading)
+                ? readNftAssetIdOf(presentation)
+                : undefined
+        const isShownByRead = (leg: BalanceChange) =>
+            !!readNftAssetId &&
+            leg.assetRef.assetId.toLowerCase() === readNftAssetId.toLowerCase()
 
         return {
             summary: {
@@ -151,10 +200,7 @@ export const useEthereumRecordLayout = (
                     presentation?.iconName ??
                     transactionIconName(recordSummary.icon),
                 title: heroTitle(
-                    presentation &&
-                        isReadTitleBetter(recordSummary, presentation)
-                        ? { key: presentation.titleKey }
-                        : summaryTitle,
+                    isNotSentByYou ? { key: NOT_SENT_BY_YOU } : title,
                 ),
                 status: STATUS[record.status],
                 amount,
@@ -170,7 +216,7 @@ export const useEthereumRecordLayout = (
                               labelKey: i18nKey('transactions.common.block'),
                               number: record.blockNumber.toString(),
                           },
-                from: parties.from,
+                from: parties.from ?? presentation?.view.from,
                 to: RECIPIENT_KINDS.includes(recordSummary.kind)
                     ? parties.to
                     : undefined,
@@ -188,13 +234,23 @@ export const useEthereumRecordLayout = (
             },
             // Keyed off what the hero resolved, so a leg it couldn't name still shows.
             amountRows:
-                amount || isAmountLoading ? [] : recordAmountsOf(recordSummary),
+                amount || isAmountLoading
+                    ? []
+                    : recordAmountsOf(recordSummary).filter(
+                          leg => !isShownByRead(leg),
+                      ),
             assetLabel:
                 recordSummary.kind === 'nft-transfer' && recordSummary.subtitle
                     ? t(
                           recordSummary.subtitle.key,
                           recordSummary.subtitle.params,
                       )
+                    : undefined,
+            assetContract:
+                recordSummary.kind === 'token-transfer' &&
+                leading &&
+                leading.assetRef.assetId !== nativeAsset.assetId
+                    ? leading.assetRef.assetId
                     : undefined,
         }
     }, [

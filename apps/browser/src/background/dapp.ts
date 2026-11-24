@@ -106,6 +106,12 @@ export const installDappPageRequestRoute = ({
             if (!isDappPageRequestMessage(message)) return false
             const { provider, request, hasUserActivation } = message
             const refuse = (code: number, text: string): boolean => {
+                logger.debug('[pera] dapp request rejected', {
+                    provider,
+                    method: request.method,
+                    code,
+                    message: text,
+                })
                 sendResponse({
                     ok: false,
                     response: jsonRpcError(request.id, code, text),

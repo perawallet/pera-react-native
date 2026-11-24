@@ -132,6 +132,8 @@ export const useCloudBackupRestoreScanScreen =
                 prepare({
                     salt: contents.backupSalt,
                     argon2id: contents.argon2id,
+                    // The phrase came from the QR, not from the user.
+                    credentialsConfirmed: false,
                 })
             },
             [

@@ -40,6 +40,8 @@ export const AssetAbout = ({
         projectUrl,
         copyToClipboard,
         openLink,
+        openExplorer,
+        openInBrowser,
     } = useAssetAbout(assetDetails, about, assetScope)
     const { isVisible, hasIdRow, hasCreatorRow } = getAssetAboutVisibility(
         assetDetails,
@@ -116,7 +118,7 @@ export const AssetAbout = ({
                     verticalAlignment='center'
                 >
                     <PWButton
-                        onPress={() => openLink(explorerLink.url)}
+                        onPress={openExplorer}
                         title={explorerLink.label}
                         variant='link'
                         paddingStyle='none'
@@ -131,7 +133,7 @@ export const AssetAbout = ({
                 >
                     <PWButton
                         title={t('asset_details.about.open_browser')}
-                        onPress={() => openLink(projectUrl)}
+                        onPress={() => openInBrowser(projectUrl)}
                         variant='link'
                     />
                 </KeyValueRow>

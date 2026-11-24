@@ -12,8 +12,10 @@
 
 import { describe, expect, test } from 'vitest'
 import {
+    isSwapOrderListed,
     isSwapOrderSettled,
     SWAP_ORDER_TRACKING_LIMIT_MS,
+    SWAP_SETTLED_ORDER_LISTED_MS,
     SWAP_STATUS_REVERSIBLE_MS,
 } from '../swapOrderSettlement'
 
@@ -74,5 +76,60 @@ describe('isSwapOrderSettled', () => {
 
     test('spans seven days', () => {
         expect(SWAP_STATUS_REVERSIBLE_MS).toBe(7 * 24 * 60 * 60 * 1000)
+    })
+})
+
+describe('isSwapOrderListed', () => {
+    const HOUR = 60 * 60 * 1000
+    const NOW = CREATED_AT + 40 * 24 * HOUR
+
+    test('lists an order still open', () => {
+        const order = {
+            status: 'pending' as const,
+            createdAt: NOW - HOUR,
+            checkedAt: NOW - HOUR,
+        }
+
+        expect(isSwapOrderListed(order, NOW)).toBe(true)
+    })
+
+    test('lists a settled order within a day of its last status change', () => {
+        const order = {
+            status: 'completed' as const,
+            createdAt: NOW - 30 * HOUR,
+            checkedAt: NOW - 23 * HOUR,
+        }
+
+        expect(isSwapOrderListed(order, NOW)).toBe(true)
+    })
+
+    test('drops a settled order a day after its last status change', () => {
+        const order = {
+            status: 'completed' as const,
+            createdAt: NOW - 30 * HOUR,
+            checkedAt: NOW - SWAP_SETTLED_ORDER_LISTED_MS,
+        }
+
+        expect(isSwapOrderListed(order, NOW)).toBe(false)
+    })
+
+    test('drops an order the router never finished once the tracking limit passes', () => {
+        const order = {
+            status: 'pending' as const,
+            createdAt: NOW - SWAP_ORDER_TRACKING_LIMIT_MS,
+            checkedAt: NOW - SWAP_ORDER_TRACKING_LIMIT_MS,
+        }
+
+        expect(isSwapOrderListed(order, NOW)).toBe(false)
+    })
+
+    test('lists an expired order the provider can still overturn', () => {
+        const order = {
+            status: 'expired' as const,
+            createdAt: NOW - 3 * 24 * HOUR,
+            checkedAt: NOW - 3 * 24 * HOUR,
+        }
+
+        expect(isSwapOrderListed(order, NOW)).toBe(true)
     })
 })

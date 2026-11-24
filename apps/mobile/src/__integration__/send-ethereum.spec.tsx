@@ -438,15 +438,42 @@ describe('Flow: send from an Ethereum account', () => {
 
         renderSendConfirmationStack()
 
-        expect(
-            await screen.findByTestId('send_fee_shortfall', undefined, {
-                timeout: 5000,
-            }),
-        ).toBeTruthy()
+        const shortfall = await screen.findByTestId(
+            'send_fee_shortfall',
+            undefined,
+            { timeout: 5000 },
+        )
+        expect(shortfall.textContent).toContain('Lower the amount')
         const confirm = screen.getByTestId('send_confirm_button')
         expect(isElementDisabled(confirm)).toBe(true)
         fireEvent.click(confirm)
         expect(screen.queryByTestId('send_success')).toBeNull()
+        expect(sentRawTransactions).toHaveLength(0)
+    })
+
+    it("Given an ERC-20 send whose ether can't pay the worst-case fee, when the user reviews it, then the review asks for ETH on Ethereum instead of a lower amount and Confirm stays off", async () => {
+        await seedSenderEther('1000')
+        selectSender(ETHEREUM_SENDER)
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'ethereum', assetId: TOKEN })
+        useSendFundsStore.getState().setAmount(new Decimal('12.5'))
+        useSendFundsStore.getState().setDestination(RECEIVER)
+        useSendFundsStore.getState().setSendMode('normal')
+
+        renderSendConfirmationStack()
+
+        const shortfall = await screen.findByTestId(
+            'send_fee_shortfall',
+            undefined,
+            { timeout: 5000 },
+        )
+        expect(shortfall.textContent).toContain('on Ethereum')
+        expect(shortfall.textContent).toContain('Add ETH')
+        expect(shortfall.textContent).not.toContain('Lower the amount')
+        const confirm = screen.getByTestId('send_confirm_button')
+        expect(isElementDisabled(confirm)).toBe(true)
+        fireEvent.click(confirm)
         expect(sentRawTransactions).toHaveLength(0)
     })
 

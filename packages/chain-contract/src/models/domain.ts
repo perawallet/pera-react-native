@@ -310,8 +310,18 @@ export interface TransactionRecord {
      * say. A `direction: 'out'` summary alone doesn't prove the account sent it.
      */
     initiator?: string
+    /** Another address signed it, though the history names none; only ever set without `initiator`. */
+    isSignedElsewhere?: boolean
     summary: TransactionSummary
     chainData: ChainTransactionData
+    swapLeg?: TransactionSwapLeg
+}
+
+/** A history record's transaction as one leg of a Pera swap order, as the backend recorded it. */
+export interface TransactionSwapLeg {
+    orderId: string
+    /** `source` pays the order in; `payout` and `refund` come back from the provider. */
+    role: 'source' | 'payout' | 'refund'
 }
 
 /**
@@ -502,8 +512,91 @@ export interface SpendApproval {
     allowances: SpendAllowance[]
     /** Unix ms after which the approval can't be used; absent when it never lapses. */
     deadline?: number
+    /** deadline is absent or more than a year out. */
+    isLongLived: boolean
+    /**
+     * When the signature itself can be submitted, set only where that differs
+     * from `deadline` (a signed permit that leaves a lasting allowance).
+     */
+    signature?: SpendSignatureWindow
+}
+
+export interface SpendSignatureWindow {
+    /** Unix ms after which the signature can't be submitted; absent when it never lapses. */
+    deadline?: number
     /** deadline is absent or more than a year after the summary was built. */
     isLongLived: boolean
+}
+
+/**
+ * Unix ms after which a signed approval can't be submitted; undefined when it
+ * never lapses. Without a separate signature window (a one-time transfer) the
+ * approval's own deadline bounds the signature.
+ */
+export const spendSubmitDeadlineOf = (
+    approval: SpendApproval,
+): number | undefined =>
+    approval.signature ? approval.signature.deadline : approval.deadline
+
+// A device clock running ahead would refuse a permit the contract still accepts;
+// the contract enforces the real deadline, so a late signature only fails there.
+const SUBMIT_DEADLINE_GRACE_MS = 60_000
+
+/** Unix ms from which the wallet refuses to sign: the submit deadline plus a clock-skew grace. */
+export const spendSigningCutoffOf = (
+    approval: SpendApproval,
+): number | undefined => {
+    const submitBy = spendSubmitDeadlineOf(approval)
+    return submitBy === undefined
+        ? undefined
+        : submitBy + SUBMIT_DEADLINE_GRACE_MS
+}
+
+/**
+ * The CAIP-122 data model shared by SIWE, SIWS and Algorand's sign-in. Each
+ * chain owns the serialisation and the signature `type`, so neither is here.
+ */
+export type SiwxMessage = {
+    /** The scheme the message names before its domain, when it names one. */
+    scheme?: string
+    domain: string
+    address: string
+    uri: string
+    version: string
+    chainId: string
+    statement?: string
+    nonce?: string
+    issuedAt?: string
+    expirationTime?: string
+    notBefore?: string
+    requestId?: string
+    resources?: string[]
+}
+
+/** A capability a sign-in delegates to the site; requester text, never translated. */
+export interface SignInGrant {
+    /** The resource the abilities apply to, e.g. a URL or a DID. */
+    target: string
+    /** Namespaced ability names, e.g. `crud/update`. */
+    abilities: string[]
+}
+
+/** A sign-in message, checked against the request it arrived in. */
+export interface SignInSummary {
+    /** Requester text, never translated. */
+    message: SiwxMessage
+    /** The network `message.chainId` names; absent when the wallet knows no such network. */
+    messageScope?: ChainScope
+    /** The message names an address other than the request's signer. */
+    isOtherAddress: boolean
+    /** The message names a chain other than the network the request is signed on. */
+    isOtherChain: boolean
+    /** What the message's capability resources grant the site, in message order. */
+    grants: SignInGrant[]
+    /** A capability resource could not be read, so it grants something unknown. */
+    hasUnreadableGrants: boolean
+    /** The message strays from the sign-in format, so the site may read it differently than shown. */
+    isMalformed: boolean
 }
 
 export interface MessageSummary {
@@ -514,6 +607,8 @@ export interface MessageSummary {
     tree?: MessageTreeNode[]
     /** Set on kind `'typed-data'` when signing lets someone else move the signer's assets. */
     spendApproval?: SpendApproval
+    /** Set on kind `'text'` when the text is a sign-in message. */
+    signIn?: SignInSummary
 }
 
 export interface MessageRequest {

@@ -1143,6 +1143,7 @@ vi.mock('@perawallet/wallet-core-currencies', async () => {
             isPending: false,
         })),
         imitatedCurrencyOf: vi.fn(() => null),
+        imitatedNativeTickerOf: vi.fn(() => null),
     }
 })
 

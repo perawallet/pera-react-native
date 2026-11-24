@@ -296,7 +296,7 @@ const isContractAction = (value: unknown): boolean => {
         case 'borrow':
         case 'repay': {
             return (
-                isAddressValue(value.asset) &&
+                isActionAsset(value.asset) &&
                 Decimal.isDecimal(value.amount) &&
                 typeof value.isEntireBalance === 'boolean'
             )

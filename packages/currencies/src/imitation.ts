@@ -13,6 +13,7 @@
 import { findNativeAsset } from '@perawallet/wallet-core-assets'
 import type { AssetRef } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import { toTickerSkeleton } from './ticker-skeleton'
 
 // ISO 4217 codes people read as money; fund, precious-metal, bond, SDR, test and no-currency codes are left out.
 const FIAT_CURRENCY_CODES: ReadonlySet<string> = new Set(
@@ -22,20 +23,39 @@ const FIAT_CURRENCY_CODES: ReadonlySet<string> = new Set(
 )
 
 /**
- * Unit names are free-form and set by whoever creates the asset, so this only
- * ever feeds a warning, never identity. Returns the native ticker as the chain
- * spells it, or an upper-cased ISO 4217 code.
+ * The native ticker as the chain spells it, when a non-native asset's unit name reads as it.
+ * Unit names are free-form and set by whoever creates the asset, so identity is the asset id and
+ * this only decides what may be shown as a unit.
+ */
+export const imitatedNativeTickerOf = (
+    ref: AssetRef,
+    unitName: Optional<string>,
+): Nullable<string> => {
+    const native = findNativeAsset(ref.chainId)
+    if (!unitName || !native?.unitName || native.assetId === ref.assetId) {
+        return null
+    }
+
+    return native.unitName.toUpperCase() === toTickerSkeleton(unitName)
+        ? native.unitName
+        : null
+}
+
+/**
+ * Returns the native ticker as the chain spells it, or an upper-cased ISO 4217 code. Only ever
+ * feeds a warning.
  */
 export const imitatedCurrencyOf = (
     ref: AssetRef,
     unitName: Optional<string>,
 ): Nullable<string> => {
-    const normalised = unitName?.trim().toUpperCase()
-    if (!normalised) return null
+    if (!unitName || findNativeAsset(ref.chainId)?.assetId === ref.assetId) {
+        return null
+    }
 
-    const native = findNativeAsset(ref.chainId)
-    if (native?.assetId === ref.assetId) return null
-    if (native?.unitName?.toUpperCase() === normalised) return native.unitName
+    const native = imitatedNativeTickerOf(ref, unitName)
+    if (native !== null) return native
 
-    return FIAT_CURRENCY_CODES.has(normalised) ? normalised : null
+    const skeleton = toTickerSkeleton(unitName)
+    return FIAT_CURRENCY_CODES.has(skeleton) ? skeleton : null
 }

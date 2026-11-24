@@ -109,6 +109,7 @@ export const getEvmTransactionHistory = async (
                 chain,
                 isDecoding,
                 nftApprovals,
+                caip19AssetId !== undefined,
             ),
         ),
         ...(next !== null && { next: { cursor: next } }),

@@ -22,7 +22,10 @@ import type {
 } from '../models'
 
 // EVM addresses compare case-insensitively, and the router may not keep the checksum casing.
-const accountKey = ({ scope, address }: SwapAccountAddress): string =>
+export const swapAccountKey = ({
+    scope,
+    address,
+}: SwapAccountAddress): string =>
     `${toScopeKey(scope)}|${address.toLowerCase()}`
 
 /**
@@ -35,10 +38,10 @@ export const pairsPaidBy = (
     payers: readonly SwapAccountAddressWithId[],
     canPayOn: (accountId: string, chainId: ChainId) => boolean,
 ): SwapHistoryPair[] => {
-    const byKey = new Map(payers.map(payer => [accountKey(payer), payer]))
+    const byKey = new Map(payers.map(payer => [swapAccountKey(payer), payer]))
     return pairs.flatMap(pair => {
         const payer = pair.sourceAccount
-            ? byKey.get(accountKey(pair.sourceAccount))
+            ? byKey.get(swapAccountKey(pair.sourceAccount))
             : undefined
         if (!payer) return []
         const payKey = toScopeKey(payer.scope)

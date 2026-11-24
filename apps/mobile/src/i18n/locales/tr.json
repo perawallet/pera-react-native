@@ -391,7 +391,8 @@
         "imitated_currency": {
             "marker": "Gerçek {{code}} değil",
             "title": "Bu varlık {{code}} değil",
-            "body": "Birim adı {{code}} olsa da herkesin oluşturabileceği ayrı bir varlıktır. Bunu almak sana hiç {{code}} kazandırmaz."
+            "body": "Birim adı {{code}} olsa da herkesin oluşturabileceği ayrı bir varlıktır. Bunu almak sana hiç {{code}} kazandırmaz.",
+            "unit_label": "Bilinmeyen varlık"
         }
     },
     "asset_details": {
@@ -434,8 +435,6 @@
             "social_media": "Sosyal medya",
             "chart_empty_body": "Bir bakiye geçmişin oluştuğunda burada bir grafik göreceksin",
             "total_supply_info_body": "Bir varlığın toplam arzı oluşturulma anında belirlenir ve varlığın oluşturulan toplam birim sayısına karşılık gelir.",
-            "circulating_supply": "Dolaşımdaki arz",
-            "circulating_supply_info_body": "Dolaşımdaki arz, şu anda dolaşımda olan coin sayısıdır. Bir ağın yerel coin’inin sabit bir toplamı yoktur; bu rakam coin’ler basıldıkça veya yakıldıkça değişir.",
             "token_total_supply_info_body": "Toplam arz, sözleşmenin ihraç ettiği token sayısından yakılanların çıkarılmasıyla bulunur. İhraççı token bastığında veya yaktığında değişir."
         },
         "action_buttons": {
@@ -451,7 +450,7 @@
             "empty_filtered_body": "Bu filtreyle eşleşen işlem yok",
             "empty_on_network_body": "{{network}} ağında henüz işlem yok",
             "network_failed": "{{networks}} ağındaki işlemler yüklenemedi",
-            "network_unavailable": "{{networks}} ağında işlemler kullanılamıyor",
+            "network_unavailable": "{{networks}} ağında geçmişin tamamı kullanılamıyor",
             "offline_empty_title": "Çevrimdışısın",
             "offline_empty_body": "Bu cihazda henüz kayıtlı işlem yok. Yeniden çevrimiçi olduğunda görünecekler.",
             "search_paused_body": "Yakın geçmişte işlem bulunamadı.",
@@ -529,6 +528,7 @@
             "empty_title": "NFT’ler",
             "empty_body": "NFT galerine hoş geldin! Henüz hiç NFT’n yok. Cüzdanındaki tüm NFT’ler burada görünecek.",
             "empty_body_multichain": "NFT galerine hoş geldin!\nHenüz hiç NFT’n yok. Ethereum gibi ağlarda aldığın NFT’ler burada kendiliğinden görünür. Algorand NFT’leri için önce opt-in olman gerekir.",
+            "empty_body_unsupported": "{{chains}} üzerindeki NFT’ler henüz Pera’da gösterilmiyor.",
             "empty_optin": "NFT ekle",
             "empty_optin_algorand": "Algorand NFT’sine opt-in ol",
             "nomatch_title": "Eşleşen NFT yok",
@@ -855,6 +855,16 @@
             "description": "12 kelimelik anahtarını güvenle sakladığını onaylamak için doğru kelimeleri seç.",
             "proceed": "Devam et",
             "error_message": "Yanlış seçim. Lütfen tekrar dene."
+        },
+        "confirm_credentials": {
+            "warning": "Yedekleme anahtarını kaydettiğini onayla",
+            "title": "Yedekleme anahtarını onayla",
+            "description": "12 kelimelik anahtarından doğru kelimeleri seç ve şifreleme anahtarını girerek ikisini de sakladığını onayla.",
+            "confirm": "Onayla",
+            "error_words": "Seçilen kelimelerden bazıları yanlış. Lütfen tekrar dene.",
+            "error_key": "Bu şifreleme anahtarı yedeğinle eşleşmiyor.",
+            "error_both": "Seçilen kelimeler ve şifreleme anahtarı yanlış.",
+            "success": "Yedekleme anahtarı onaylandı"
         },
         "store_encryption_key": {
             "title": "Şifreleme anahtarını sakla",
@@ -1210,6 +1220,10 @@
             "title": "Panoya kopyalandı",
             "body": ""
         },
+        "address_copied": {
+            "algorand": "Algorand adresi kopyalandı",
+            "evm": "EVM adresi kopyalandı"
+        },
         "email_failed": {
             "title": "E-posta uygulaması açılamadı",
             "body": "Bu cihazda kurulu bir e-posta uygulaması yok. Doğrudan {{email}} adresine yazabilirsin."
@@ -1538,7 +1552,8 @@
             "request_expired_body": "Bu imza isteğinin süresi yanıtlanmadan önce doldu. Uygulamadan isteği tekrar göndermesini iste.",
             "unsupported_method_body": "{{dappName}} uygulaması Pera’nın desteklemediği bir yöntem istedi ({{method}}). İstek reddedildi.",
             "unsupported_network_body": "{{dappName}} uygulaması, Pera’nın desteklemediği zincir kimliği {{chainId}} olan ağı kullanmak istedi. İstek reddedildi.",
-            "unsupported_chains_body": "Bu uygulama Pera’nın desteklemediği bir ağ kullanmak istedi. Bağlantı reddedildi."
+            "unsupported_chains_body": "Bu uygulama Pera’nın desteklemediği bir ağ kullanmak istedi. Bağlantı reddedildi.",
+            "unselected_network_body": "Bu uygulama yalnızca Pera’nın şu anda kullanmadığı ağları sunuyor. Bağlantı reddedildi. Uygulamaya uyması için geliştirici modunu aç ya da kapat, sonra tekrar dene."
         },
         "signing": {
             "title": "İmzalama isteği işlenirken bir hata oluştu",
@@ -3303,7 +3318,8 @@
             },
             "fee_shortfall": {
                 "title": "Ücret için yeterli {{symbol}} yok",
-                "body": "Bu gönderim en fazla {{fee}} ücret tutabilir. Miktarı azalt veya daha yavaş bir ücret seç."
+                "body": "Bu gönderim en fazla {{fee}} ücret tutabilir. Miktarı azalt veya daha yavaş bir ücret seç.",
+                "body_non_native": "Bu gönderim {{network}} ağında en fazla {{fee}} ücret tutabilir. {{symbol}} ekle veya daha yavaş bir ücret seç."
             },
             "fee_unavailable": {
                 "title": "Ücret tahmin edilemedi",
@@ -3634,6 +3650,31 @@
             "typed_data_warning_title": "Bu imza token’larını hareket ettirebilir",
             "typed_data_warning_body": "Yapılandırılmış veriyi imzalamak, bir uygulamaya token’larını sana tekrar sormadan harcama veya takas etme yetkisi verebilir. Yalnızca bu uygulamaya güveniyorsan onayla."
         },
+        "sign_in": {
+            "title": "Oturum aç: {{domain}}",
+            "domain": "Alan adı",
+            "address": "Adres",
+            "uri": "URI",
+            "chain_id": "Zincir kimliği",
+            "nonce": "Nonce",
+            "issued_at": "Oluşturulma",
+            "expires_at": "Bitiş",
+            "advanced": "Gelişmiş",
+            "site_mismatch_title": "Bu oturum açma başka bir site için",
+            "site_mismatch_body": "Mesaj şu alan adında oturum açar: {{domain}}. Ancak istek şu siteden geliyor: {{site}}. Yalnızca ikisine de güveniyorsan onayla.",
+            "other_address_note": "Mesajdaki adres imzalayan hesap değil: {{address}}",
+            "other_chain_note": "Mesajdaki ağ bu isteğin ağı değil: {{chain}}. Oturum açmak işlem göndermez.",
+            "other_chain_id_note": "Mesajdaki zincir kimliği bu isteğin ağı değil: {{chainId}}. Oturum açmak işlem göndermez.",
+            "statement_label": "{{domain}} sitesinden mesaj",
+            "not_before": "Geçerlilik başlangıcı",
+            "request_id": "İstek kimliği",
+            "resource": "Kaynak",
+            "grants_title": "Bu oturum açma izin de veriyor",
+            "grants_body": "İmzaladığında bu site aşağıdaki izinlerle senin adına işlem yapabilir: {{domain}}. Yalnızca siteye güveniyorsan onayla.",
+            "grants_unreadable_body": "Bu oturum açma, Pera'nın okuyamadığı izinler veriyor. Site: {{domain}}. Yalnızca siteye güveniyorsan onayla.",
+            "malformed_title": "Bu oturum açma mesajında beklenmeyen içerik var",
+            "malformed_body": "Bu mesajın bazı bölümleri oturum açma biçimine uymuyor, bu yüzden {{domain}} onu burada gösterilenden farklı okuyabilir. Tam mesajı Gelişmiş bölümünde kontrol et ve yalnızca siteye güveniyorsan onayla."
+        },
         "spend_approval": {
             "spend_warning": "Bu imza, başka bir adresin hesabından sana tekrar sormadan token hareket ettirmesine izin verir.",
             "spend_warning_transaction": "Bu işlem, başka bir adresin hesabından sana tekrar sormadan token hareket ettirmesine izin verir.",
@@ -3645,7 +3686,11 @@
             "no_deadline_warning": "Bu izin hiçbir zaman sona ermez.",
             "spender_label": "Yetkili adres",
             "unlimited": "Sınırsız",
-            "deadline_label": "Son tarih",
+            "expiry_label": "İznin sona ereceği tarih",
+            "signature_deadline_label": "İmzanın geçerli olduğu son tarih",
+            "signature_long_deadline_warning": "Bu imza bir yıldan uzun süre geçerli kalır, bu yüzden imzaladıktan çok sonra da kullanılabilir.",
+            "expired_title": "Bu isteğin süresi doldu",
+            "expired_body": "İmzalama süresi geçti, bu yüzden reddedilir. İptal et ve uygulamada yeniden başla.",
             "never": "Hiçbir zaman",
             "known_title": "Bu onay hakkında",
             "known_description": "{{name}} bilinen bir sözleşme",
@@ -3923,7 +3968,8 @@
             "nft_subtitle": "{{collection}} #{{tokenId}}",
             "nft_batch_subtitle": "{{collection}} · {{count}} öğe",
             "inner_transaction_count": "{{innerCount}} iç işlem",
-            "cancel_transaction": "İşlem iptali"
+            "cancel_transaction": "İşlem iptali",
+            "not_sent_by_you": "Sizin göndermediğiniz"
         },
         "record_detail": {
             "read_failed": "Bu işlemin çağrı ayrıntıları ağdan okunamadı.",
@@ -4161,7 +4207,8 @@
         },
         "switch_network": {
             "title": "Ağ erişimine izin verilsin mi?",
-            "body": "{{name}}, {{network}} ağında {{chain}} hesaplarını kullanmak istiyor.",
+            "body": "{{name}}, {{chain}} ağındaki hesaplarını kullanmak istiyor.",
+            "body_with_network": "{{name}}, {{chain}} {{network}} ağındaki hesaplarını kullanmak istiyor.",
             "confirm": "İzin ver"
         },
         "settings": {
@@ -4301,6 +4348,7 @@
             "quote_error": "Teklifler alınamadı. Lütfen tekrar dene.",
             "amount_too_low": "Tutar, {{network}} ağında swap için çok düşük. Minimum {{amount}} {{unit}}.",
             "amount_too_low_fiat": "Tutar, {{network}} ağında swap için çok düşük. Minimum {{amount}} {{unit}} (~{{fiat}}).",
+            "amount_too_low_above_balance": "Kullanılabilir bakiyen, {{network}} ağında swap için gereken {{amount}} {{unit}} minimumun altında.",
             "use_minimum": "Minimumu kullan",
             "amount_too_low_unknown": "Tutar, {{network}} ağında swap için çok düşük. Daha yüksek bir tutar veya daha düşük ücretli bir ağ dene.",
             "amount_too_high": "Tutar swap için çok yüksek. Maksimum {{amount}} {{unit}}.",
@@ -4372,6 +4420,8 @@
                         "refunded": "İade edildi"
                     }
                 },
+                "account_filter_all": "Tüm hesaplar",
+                "load_more": "Daha fazla yükle",
                 "empty": {
                     "title": "Henüz swap yok",
                     "body": "Swap geçmişin burada görünecek."

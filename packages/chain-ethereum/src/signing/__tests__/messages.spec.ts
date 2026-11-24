@@ -10,7 +10,16 @@
  limitations under the License
  */
 
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import {
+    afterAll,
+    afterEach,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+} from 'vitest'
 import {
     bytesToHex,
     concat,
@@ -21,16 +30,18 @@ import {
 } from 'viem'
 import type { Hex } from 'viem'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type {
-    ChainScope,
-    MessageRequest,
-    Signature,
+import {
+    addressCodecs,
+    type ChainScope,
+    type MessageRequest,
+    type Signature,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     CannotSignError,
     messageSignerChainAdapters,
     signMessages,
 } from '@perawallet/wallet-core-signing'
+import { createEvmAddressCodec } from '../../accounts/address-codec'
 import { UnknownEvmNetworkError } from '../../blockchain'
 import { decodeEthereumLedgerMessage } from '../../ledger/messagePayload'
 import {
@@ -48,6 +59,8 @@ import {
     PERMIT2_ADDRESS,
     PERMIT2_SINGLE_NO_DEADLINE_TYPED_DATA,
     PERMIT2_SINGLE_TYPED_DATA,
+    PERMIT2_TRANSFER_FROM_TYPED_DATA,
+    PERMIT_NOW_MS,
     PERMIT_SPENDER,
     PERMIT_USDC,
     SENDER,
@@ -57,7 +70,7 @@ import {
     VIEM_PERA,
     vectorSignature,
 } from './fixtures'
-import { ETHEREUM } from '../../__tests__/evm-chains'
+import { BASE, ETHEREUM } from '../../__tests__/evm-chains'
 
 const MAINNET: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const OTHER = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
@@ -464,6 +477,68 @@ describe('ethereumMessageSignerAdapter.plan with a chain the domain type leaves 
     })
 })
 
+describe('ethereumMessageSignerAdapter.plan with a permit signature deadline', () => {
+    // Every fixture permit's signature deadline is 30 days after PERMIT_NOW_MS.
+    const SIGNATURE_DEADLINE_MS = PERMIT_NOW_MS + 30 * 86_400_000
+    const request = (typedData: unknown) =>
+        typedDataMessageRequest(MAINNET, SENDER, typedData)
+
+    beforeEach(() => {
+        vi.useFakeTimers()
+        vi.setSystemTime(PERMIT_NOW_MS)
+    })
+    afterEach(() => {
+        vi.useRealTimers()
+    })
+
+    it.each([
+        ...PERMITS,
+        ['Permit2 transfer', PERMIT2_TRANSFER_FROM_TYPED_DATA] as const,
+    ])('plans a %s permit before its deadline', (_name, permit) => {
+        expect(adapter.plan(request(permit), context)).toHaveLength(1)
+    })
+
+    it.each([
+        ...PERMITS,
+        ['Permit2 transfer', PERMIT2_TRANSFER_FROM_TYPED_DATA] as const,
+    ])('refuses a %s permit a minute after its deadline', (_name, permit) => {
+        vi.setSystemTime(SIGNATURE_DEADLINE_MS + 60_000)
+
+        expect(() => adapter.plan(request(permit), context)).toThrow(
+            "the permit's signature deadline has passed",
+        )
+    })
+
+    it('plans a permit just past its deadline, as the device clock may run ahead of the chain', () => {
+        vi.setSystemTime(SIGNATURE_DEADLINE_MS + 59_999)
+
+        expect(
+            adapter.plan(request(PERMIT2_SINGLE_TYPED_DATA), context),
+        ).toHaveLength(1)
+    })
+
+    it('plans a Permit2 permit whose allowance expiration passed while its signature is still valid', () => {
+        const typed = structuredClone(PERMIT2_SINGLE_TYPED_DATA) as any
+        typed.message.details.expiration = String(PERMIT_NOW_MS / 1000 - 1)
+
+        expect(adapter.plan(request(typed), context)).toHaveLength(1)
+    })
+
+    it('still describes an expired permit, so the review can say why it cannot be signed', () => {
+        vi.setSystemTime(SIGNATURE_DEADLINE_MS + 60_000)
+
+        expect(
+            adapter.describe(request(PERMIT2_SINGLE_TYPED_DATA)).spendApproval,
+        ).toBeDefined()
+    })
+
+    it('refuses nothing that is not a permit', () => {
+        vi.setSystemTime(SIGNATURE_DEADLINE_MS + 60_000)
+
+        expect(adapter.plan(mailWithChainId(1), context)).toHaveLength(1)
+    })
+})
+
 describe('ethereumMessageSignerAdapter.plan device payload', () => {
     const ledger: WalletAccount = {
         id: 'ledger',
@@ -709,6 +784,153 @@ describe('ethereumMessageSignerAdapter.reviewedAddresses', () => {
                 payload: { typedData: 'not typed data' },
             }),
         ).toEqual([])
+    })
+})
+
+const signInText = (
+    address: string,
+    chainId: number,
+    resources: string[] = [],
+    trailing: string[] = [],
+) =>
+    toHex(
+        [
+            'opensea.io wants you to sign in with your Ethereum account:',
+            address,
+            '',
+            'Click to sign in.',
+            '',
+            'URI: https://opensea.io/',
+            'Version: 1',
+            `Chain ID: ${chainId}`,
+            'Nonce: 3fp8w2kd',
+            'Issued At: 2026-11-20T10:00:00.000Z',
+            ...(resources.length > 0
+                ? ['Resources:', ...resources.map(uri => `- ${uri}`)]
+                : []),
+            ...trailing,
+        ].join('\n'),
+    )
+
+const RECAP = `urn:recap:${Buffer.from(
+    JSON.stringify({ att: { 'https://opensea.io/': { 'crud/update': [{}] } } }),
+).toString('base64url')}`
+
+describe('ethereumMessageSignerAdapter.describe for a sign-in message', () => {
+    beforeAll(() => {
+        addressCodecs.reset()
+        addressCodecs.register(createEvmAddressCodec(ETHEREUM))
+        addressCodecs.register(createEvmAddressCodec(BASE))
+    })
+    afterAll(() => addressCodecs.reset())
+
+    it('titles it by its domain and reads its fields', () => {
+        const summary = adapter.describe(personal(signInText(SENDER, 1)))
+
+        expect(summary).toMatchObject({
+            kind: 'text',
+            title: {
+                key: 'signing.sign_in.title',
+                params: { domain: 'opensea.io' },
+            },
+            signIn: {
+                message: {
+                    domain: 'opensea.io',
+                    address: SENDER,
+                    chainId: '1',
+                },
+                messageScope: MAINNET,
+                isOtherAddress: false,
+                isOtherChain: false,
+                grants: [],
+                hasUnreadableGrants: false,
+                isMalformed: false,
+            },
+        })
+        expect(summary.preview).toContain('opensea.io wants you to sign in')
+    })
+
+    it('keeps the sign-in review and its grants when a line is appended', () => {
+        const summary = adapter.describe(
+            personal(signInText(SENDER, 1, [RECAP], ['Note: ignore me'])),
+        )
+
+        expect(summary.title).toEqual({
+            key: 'signing.sign_in.title',
+            params: { domain: 'opensea.io' },
+        })
+        expect(summary.signIn).toMatchObject({
+            message: { domain: 'opensea.io' },
+            grants: [
+                { target: 'https://opensea.io/', abilities: ['crud/update'] },
+            ],
+            isMalformed: true,
+        })
+    })
+
+    it('flags a chain it cannot read as another chain', () => {
+        const text = [
+            'opensea.io wants you to sign in with your Ethereum account:',
+            SENDER,
+            '',
+            'URI: https://opensea.io/',
+            'Version: 1',
+            'Chain ID: base',
+        ].join('\n')
+
+        expect(adapter.describe(personal(toHex(text))).signIn).toMatchObject({
+            isOtherChain: true,
+            isMalformed: true,
+        })
+    })
+
+    it('reads what its ReCap resources grant, alongside its other resources', () => {
+        const signIn = adapter.describe(
+            personal(signInText(SENDER, 1, ['ipfs://bafy', RECAP])),
+        ).signIn
+
+        expect(signIn?.message.resources).toEqual(['ipfs://bafy', RECAP])
+        expect(signIn?.grants).toEqual([
+            { target: 'https://opensea.io/', abilities: ['crud/update'] },
+        ])
+        expect(signIn?.hasUnreadableGrants).toBe(false)
+    })
+
+    it('flags a ReCap it cannot read', () => {
+        const signIn = adapter.describe(
+            personal(signInText(SENDER, 1, [RECAP, 'urn:recap:%%%'])),
+        ).signIn
+
+        expect(signIn?.grants).toHaveLength(1)
+        expect(signIn?.hasUnreadableGrants).toBe(true)
+    })
+
+    it('flags an address other than the signer', () => {
+        expect(
+            adapter.describe(personal(signInText(OTHER, 1))).signIn
+                ?.isOtherAddress,
+        ).toBe(true)
+    })
+
+    it('flags a chain other than the network signed on, naming it', () => {
+        const summary = adapter.describe(personal(signInText(SENDER, 8453)))
+
+        expect(summary.signIn).toMatchObject({
+            messageScope: { chainId: 'base', networkId: 'mainnet' },
+            isOtherChain: true,
+        })
+    })
+
+    it.each([
+        ['an id in no chain table', 987654321],
+        ['a chain this build does not register', 10],
+    ])('flags %s, with no scope to name it', (_label, chainId) => {
+        const signIn = adapter.describe(
+            personal(signInText(SENDER, chainId)),
+        ).signIn
+
+        expect(signIn?.isOtherChain).toBe(true)
+        expect(signIn).not.toHaveProperty('messageScope')
     })
 })
 

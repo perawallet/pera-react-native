@@ -102,6 +102,7 @@ const setupBackup = async () => {
         backupId,
         salt: BACKUP_SALT,
         deviceId: 'test-device-id',
+        credentialsConfirmed: true,
     })
 
     const { handlers, getItem, seenDeviceIds } = buildSyncHandlers({ backupId })

@@ -31,6 +31,8 @@ export const CloudBackupOverviewScreen = () => {
         passkeysInSync,
         passkeysNotBackedUp,
         arePasskeysResolved,
+        needsCredentialsConfirmation,
+        onPressConfirmCredentials,
         onPressAccounts,
         onPressContacts,
         onPressPasskeys,
@@ -57,6 +59,21 @@ export const CloudBackupOverviewScreen = () => {
             <PWScreen testID='cloud_backup_overview_screen'>
                 <PWView style={styles.container}>
                     <BackupSyncStatusRow />
+
+                    {needsCredentialsConfirmation && (
+                        <OverviewRow
+                            variant='bordered'
+                            tone='negative'
+                            icon='shield-warning'
+                            iconVariant='error'
+                            title={t(
+                                'cloud_backup.confirm_credentials.warning',
+                            )}
+                            showChevron
+                            onPress={onPressConfirmCredentials}
+                            testID='cloud_backup_overview_confirm_credentials'
+                        />
+                    )}
 
                     {accountsNeedingUpdate > 0 && (
                         <InfoCallout

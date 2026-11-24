@@ -33,6 +33,9 @@ export type RestoreCloudBackupVariables = {
     /** Omitted for a manually entered salt: the phrase carries no parameters,
      *  so the backup is assumed to be on this build's defaults. */
     argon2id?: Argon2idConfig
+    /** True when the user entered the phrase and encryption key themselves;
+     *  false for a sync QR. */
+    credentialsConfirmed: boolean
 }
 
 // TanStack swaps a pending mutation's options on every render, so the device ID travels in the variables.
@@ -76,6 +79,7 @@ export const usePrepareCloudBackupRestoreMutation = (
         mutationFn: async ({
             salt,
             argon2id,
+            credentialsConfirmed,
             deviceId,
         }: PrepareCloudBackupRestoreMutationVariables): Promise<PreparedCloudBackupRestore> => {
             if (!deviceId) {
@@ -99,7 +103,7 @@ export const usePrepareCloudBackupRestoreMutation = (
             } finally {
                 setProgress(null)
             }
-            setSession({ prepared, salt })
+            setSession({ prepared, salt, credentialsConfirmed })
             return prepared
         },
         ...options,

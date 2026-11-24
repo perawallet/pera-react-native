@@ -109,6 +109,7 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
                 const account = await importWatchAccount(
                     watchChainId,
                     resolvedAddress,
+                    isNameResolved ? resolvedName : undefined,
                 )
                 trackEvent(OnboardingEvent.WatchAccountComplete, {
                     [AnalyticsMetadataKey.ChainId]: watchChainId,
@@ -127,6 +128,8 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
     }, [
         watchChainId,
         resolvedAddress,
+        isNameResolved,
+        resolvedName,
         isDuplicateAddress,
         importWatchAccount,
         isMounted,

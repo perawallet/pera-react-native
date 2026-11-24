@@ -22,6 +22,10 @@ export type CloudBackupState = BaseStoreState & {
      *  from the device store at call time, so every signed request uses the id
      *  the server knows. Null for backups configured before it was stored. */
     deviceId: Nullable<string>
+    /** True once the user has shown they hold the backup's 12-word key and
+     *  encryption key (setup, a typed restore, or the confirm screen). False
+     *  for a sync-QR join and for backups stored before this field existed. */
+    credentialsConfirmed: boolean
 }
 
 export type CloudBackupActions = {
@@ -30,8 +34,12 @@ export type CloudBackupActions = {
         backupId: BackupId
         salt: string
         deviceId: string
+        credentialsConfirmed: boolean
     }) => void
+    confirmCredentials: () => void
     isConfigured: () => boolean
+    /** True while a backup is configured but its credentials are unconfirmed. */
+    needsCredentialsConfirmation: () => boolean
 }
 
 export type CloudBackupStore = CloudBackupState & CloudBackupActions

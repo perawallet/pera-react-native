@@ -26,6 +26,8 @@ import {
     generateFilename,
     isFeePaidByAccount,
     isRecordInAssetHistory,
+    readSwapLeg,
+    swapLegOf,
     type CsvExportResult,
     type FetchCsvParams,
 } from '@perawallet/wallet-core-transactions'
@@ -177,16 +179,33 @@ export const exportStoredEvmHistoryCsv = async (
             scope,
         )
         const records = items
-            .flatMap(item =>
-                toEvmHistoryRecords(
-                    item,
+            .flatMap(item => {
+                // A swap leg exports what it moved on chain, not the order's
+                // view: the deposit's row would otherwise also write the
+                // quoted payout, which the payout's own row then writes again.
+                const leg = readSwapLeg(item.swap)
+                const isSwapLeg =
+                    leg !== undefined && swapLegOf(leg) !== undefined
+                return toEvmHistoryRecords(
+                    { ...item, swap: undefined },
                     accountAddress,
                     scope,
                     chain,
                     isDecoding,
                     nftApprovals,
-                ),
-            )
+                    false,
+                ).map(record =>
+                    isSwapLeg
+                        ? {
+                              ...record,
+                              summary: {
+                                  ...record.summary,
+                                  kind: 'swap' as const,
+                              },
+                          }
+                        : record,
+                )
+            })
             .filter(
                 record =>
                     assetId === undefined ||

@@ -21,7 +21,9 @@ import { SourceMetadataView } from '@modules/signing/components/SourceMetadataVi
 import { SpendApprovalTitle } from '@modules/signing/components/SpendApprovalTitle'
 import { SpendApprovalWarning } from '@modules/signing/components/SpendApprovalWarning'
 import { RequestAddressWarning } from '@modules/signing/components/RequestAddressWarning'
+import { ReviewNetworkRow } from '@modules/signing/components/ReviewNetworkRow'
 import { RequestSiteWarning } from '@modules/signing/components/RequestSiteWarning'
+import { SignInMessageDetails } from '@modules/signing/components/SignInMessageDetails'
 import { MessageTreeView } from './MessageTreeView'
 import { useStyles } from './styles'
 import { useMessageSigningScreen } from './useMessageSigningScreen'
@@ -39,6 +41,12 @@ export const MessageSigningScreen = () => {
         reviewedAddresses,
         isListedAddressBlocking,
         isConfirmBlocked,
+        isExpired,
+        signInSiteMismatch,
+        isSignInRiskFlagged,
+        isSignInRiskAcknowledged,
+        toggleSignInRiskAcknowledged,
+        isChainBadgeShown,
         handleApprove,
         handleReject,
     } = useMessageSigningScreen()
@@ -50,18 +58,28 @@ export const MessageSigningScreen = () => {
         scope && summary.spendApproval
             ? { approval: summary.spendApproval, scope }
             : undefined
+    const { signIn } = summary
+    const showsData = !spendReview && !signIn
 
     return (
         <PWScreen
             footer={
                 <PWView style={[styles.buttonContainer, CONFIRM_ACTION_LAYOUT]}>
-                    {isListedAddressBlocking ? (
+                    {isListedAddressBlocking && (
                         <CannotSignNotice
                             title={t('signing.address_safety.blocked_title')}
                             body={t('signing.address_safety.blocked_body')}
                             testID='message-signing-blocked'
                         />
-                    ) : (
+                    )}
+                    {!isListedAddressBlocking && isExpired && (
+                        <CannotSignNotice
+                            title={t('signing.spend_approval.expired_title')}
+                            body={t('signing.spend_approval.expired_body')}
+                            testID='message-signing-expired'
+                        />
+                    )}
+                    {!isListedAddressBlocking && !isExpired && (
                         <ConfirmAction
                             title={t('common.slide_to_confirm.label')}
                             onConfirm={handleApprove}
@@ -99,7 +117,23 @@ export const MessageSigningScreen = () => {
                 )}
 
                 <PWView style={styles.section}>
-                    {!spendReview && (
+                    {!!signIn && (
+                        <SignInMessageDetails
+                            signIn={signIn}
+                            rawText={summary.preview ?? ''}
+                            siteMismatch={signInSiteMismatch}
+                            acknowledgement={
+                                isSignInRiskFlagged
+                                    ? {
+                                          isChecked: isSignInRiskAcknowledged,
+                                          onToggle:
+                                              toggleSignInRiskAcknowledged,
+                                      }
+                                    : undefined
+                            }
+                        />
+                    )}
+                    {showsData && (
                         <PWText
                             variant='captionMedium'
                             style={styles.sectionLabel}
@@ -107,12 +141,15 @@ export const MessageSigningScreen = () => {
                             {t('signing.arbitrary_data_view.data_label')}
                         </PWText>
                     )}
-                    {!spendReview && !!summary.preview && (
+                    {showsData && !!summary.preview && (
                         <PWView style={styles.dataBox}>
                             <PWText variant='mono'>{summary.preview}</PWText>
                         </PWView>
                     )}
                     {summary.kind === 'raw' && <SignedDataWarning />}
+                    {spendReview && (
+                        <ReviewNetworkRow scope={spendReview.scope} />
+                    )}
                     {spendReview && (
                         <SpendApprovalWarning
                             approval={spendReview.approval}
@@ -149,6 +186,8 @@ export const MessageSigningScreen = () => {
                         <AccountDisplay
                             account={signerAccount}
                             showChevron={false}
+                            chainId={scope?.chainId}
+                            showChainBadge={isChainBadgeShown}
                         />
                     </PWView>
                 )}

@@ -17,15 +17,17 @@ import {
     type PWTouchableOpacityProps,
 } from '@components/core'
 import { useAddressReuseGuard } from '@components/AddressReuseGuard'
-import { useClipboard } from '@hooks/useClipboard'
+import { useClipboard, type CopyToClipboardOptions } from '@hooks/useClipboard'
 
 export type CopyableTextProps = {
     copyValue: string
+    copyOptions?: CopyToClipboardOptions
     children: React.ReactNode
 } & Omit<PWTouchableOpacityProps, 'children'>
 
 export const CopyableText = ({
     copyValue,
+    copyOptions,
     children,
     onLongPress,
     activeOpacity = 1,
@@ -39,12 +41,12 @@ export const CopyableText = ({
         (event: GestureResponderEvent) => {
             void (async () => {
                 if (await confirmReuse(copyValue)) {
-                    await copyToClipboard(copyValue)
+                    await copyToClipboard(copyValue, copyOptions)
                 }
             })()
             onLongPress?.(event)
         },
-        [copyValue, copyToClipboard, confirmReuse, onLongPress],
+        [copyValue, copyOptions, copyToClipboard, confirmReuse, onLongPress],
     )
 
     return (

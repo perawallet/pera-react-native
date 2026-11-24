@@ -126,6 +126,9 @@ export const transactionHistoryItemResponseSchema = z.object({
         .array(transactionBalanceImpactSchema)
         .nullable()
         .optional(),
+    // Only on a recorded leg of a swap order; read by `readSwapLeg` in the
+    // transformer, so an unreadable one drops the swap, never the row.
+    swap: z.unknown().optional(),
 })
 
 /**

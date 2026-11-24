@@ -66,10 +66,18 @@ describe('usePrepareCloudBackupRestore', () => {
         const { result } = renderHook(() => usePrepareCloudBackupRestore())
         expect(lockMock).toHaveBeenLastCalledWith(false)
 
-        act(() => result.current.prepare({ salt: 'c2FsdA==' }))
+        act(() =>
+            result.current.prepare({
+                salt: 'c2FsdA==',
+                credentialsConfirmed: true,
+            }),
+        )
 
         expect(lockMock).toHaveBeenLastCalledWith(true)
-        expect(mutateMock).toHaveBeenCalledWith({ salt: 'c2FsdA==' })
+        expect(mutateMock).toHaveBeenCalledWith({
+            salt: 'c2FsdA==',
+            credentialsConfirmed: true,
+        })
 
         act(() => state.options?.onSettled())
 

@@ -25,10 +25,10 @@ import {
 } from '@packages/chain-ethereum/src/__tests__/evm-chains'
 import { useTransactionDetailLayout } from '../useTransactionDetailLayout'
 
-const mockPushWebView = vi.fn()
+const mockOpenExplorerUrl = vi.fn()
 
 vi.mock('@modules/webview', () => ({
-    useWebView: () => ({ pushWebView: mockPushWebView }),
+    openExplorerUrl: (url: string) => mockOpenExplorerUrl(url),
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -63,7 +63,7 @@ const peraExplorerDescriptor = {
 
 describe('useTransactionDetailLayout', () => {
     beforeEach(() => {
-        mockPushWebView.mockReset()
+        mockOpenExplorerUrl.mockReset()
         vi.mocked(getChainDescriptor).mockImplementation(chainId => {
             if (chainId === 'algorand') return peraExplorerDescriptor
             const chain = [ETHEREUM, BASE, POLYGON].find(
@@ -84,9 +84,9 @@ describe('useTransactionDetailLayout', () => {
         expect(result.current.explorerLabel).toBe(
             'transactions.common.view_in_explorer:Pera Explorer',
         )
-        expect(mockPushWebView).toHaveBeenCalledWith({
-            url: 'https://explorer.perawallet.app/tx/ALGOTX',
-        })
+        expect(mockOpenExplorerUrl).toHaveBeenCalledWith(
+            'https://explorer.perawallet.app/tx/ALGOTX',
+        )
     })
 
     it.each([
@@ -105,7 +105,7 @@ describe('useTransactionDetailLayout', () => {
             expect(result.current.explorerLabel).toBe(
                 `transactions.common.view_in_explorer:${explorerName}`,
             )
-            expect(mockPushWebView).toHaveBeenCalledWith({ url })
+            expect(mockOpenExplorerUrl).toHaveBeenCalledWith(url)
         },
     )
 
@@ -116,9 +116,9 @@ describe('useTransactionDetailLayout', () => {
 
         result.current.handleOpenExplorer?.()
 
-        expect(mockPushWebView).toHaveBeenCalledWith({
-            url: 'https://sepolia.basescan.org/tx/0xabc',
-        })
+        expect(mockOpenExplorerUrl).toHaveBeenCalledWith(
+            'https://sepolia.basescan.org/tx/0xabc',
+        )
     })
 
     it('Given a network with no explorer, then there is nothing to open', () => {
@@ -138,6 +138,6 @@ describe('useTransactionDetailLayout', () => {
         )
 
         expect(result.current.handleOpenExplorer).toBeUndefined()
-        expect(mockPushWebView).not.toHaveBeenCalled()
+        expect(mockOpenExplorerUrl).not.toHaveBeenCalled()
     })
 })

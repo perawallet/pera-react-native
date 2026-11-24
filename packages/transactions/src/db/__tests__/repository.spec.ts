@@ -1175,6 +1175,35 @@ describe('transaction repository', () => {
             expect(rows.map(row => row.id)).toEqual(['STALE'])
         })
 
+        it('lists only rows whose path holds one of the given values', async () => {
+            const scope = { chainId: 'algorand', networkId: 'mainnet' } as const
+            await upsertTransactions({
+                db,
+                items: [
+                    makeTx({ id: 'OPEN', closeTo: 'pending' }),
+                    makeTx({ id: 'RUNNING', closeTo: 'in_progress' }),
+                    makeTx({ id: 'DONE', closeTo: 'completed' }),
+                    makeTx({ id: 'NONE', closeTo: null }),
+                ],
+                accountAddress: 'ACCT1',
+                scope,
+            })
+
+            const rows = await getRowsByChainData({
+                db,
+                scope,
+                accountAddress: 'ACCT1',
+                oneOf: [
+                    {
+                        path: FIXTURE_PATHS.closeTo,
+                        values: ['pending', 'in_progress'],
+                    },
+                ],
+            })
+
+            expect(rows.map(row => row.id).sort()).toEqual(['OPEN', 'RUNNING'])
+        })
+
         it('stops listing a row once the missing path is set', async () => {
             await upsertTransactions({
                 db,
