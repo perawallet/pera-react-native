@@ -10,5 +10,9 @@
  limitations under the License
  */
 
-export { CheckboxRow } from './CheckboxRow'
-export type { CheckboxRowProps } from './CheckboxRow'
+/**
+ * The plain sentence behind a `<Trans>` string, for an accessible name. Only
+ * the numbered tags `<Trans components={[...]}>` fills are removed.
+ */
+export const stripRichTextTags = (text: string): string =>
+    text.replace(/<\/?\d+\s*\/?>/g, '')

@@ -232,9 +232,7 @@ export const tapToConfirm = async (
 /**
  * Arms Connect, then selects the first account unless one is already selected.
  * Connect stays disabled until the arming delay passes and input lands inside
- * the approval window, so only then does its state report the selection. The
- * checkboxes can't be read instead: react-native-web renders no aria-checked
- * for them.
+ * the approval window, so only then does its state report the selection.
  */
 export const selectAccountAndArmConnect = async (
     approvalPage: Page,

@@ -16,7 +16,6 @@ import {
     PWCheckbox,
     PWSheetLayout,
     PWText,
-    PWTouchableOpacity,
     PWView,
 } from '@components/core'
 import { ListItemDivider } from '@components/ListItemDivider'
@@ -91,22 +90,20 @@ export const ReportTransactionsSheet = () => {
                 transactions.map((transaction, index) => (
                     <Fragment key={transaction.id}>
                         {index > 0 ? <ListItemDivider /> : null}
-                        <PWTouchableOpacity
-                            style={styles.row}
+                        <PWCheckbox
+                            label={
+                                <PWView style={styles.rowItem}>
+                                    <CardTransactionListItem
+                                        transaction={transaction}
+                                    />
+                                </PWView>
+                            }
+                            isChecked={isSelected(transaction.id)}
                             onPress={() => onToggle(transaction.id)}
+                            style={styles.row}
                             testID={`card_report_tx_${transaction.id}`}
-                        >
-                            <PWCheckbox
-                                checked={isSelected(transaction.id)}
-                                onPress={() => onToggle(transaction.id)}
-                                testID={`card_report_tx_checkbox_${transaction.id}`}
-                            />
-                            <PWView style={styles.rowItem}>
-                                <CardTransactionListItem
-                                    transaction={transaction}
-                                />
-                            </PWView>
-                        </PWTouchableOpacity>
+                            boxTestID={`card_report_tx_checkbox_${transaction.id}`}
+                        />
                     </Fragment>
                 ))
             )}
