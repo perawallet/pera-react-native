@@ -1235,7 +1235,8 @@
             "asset_empty_body": "Bu hesapta bu varlık için bakiye geçmişin olduğunda burada bir grafik göreceksin",
             "excludes_networks": "Bu grafik henüz {{networks}} varlıklarını içermiyor",
             "failed_networks": "{{networks}} geçmişi yüklenemedi, bu yüzden bu grafikte yer almıyor",
-            "currency_unavailable_body": "Bu grafik şu anda {{currency}} para biriminde kullanılamıyor"
+            "currency_unavailable_body": "Bu grafik şu anda {{currency}} para biriminde kullanılamıyor",
+            "balance_change_label": "Bakiye değişimi"
         },
         "webview": {
             "failed_title": "Sayfa yüklenemedi",

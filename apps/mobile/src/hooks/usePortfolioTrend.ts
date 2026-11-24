@@ -27,13 +27,18 @@ import { LIST_MAX_PRECISION } from '@components/CurrencyAmount'
 
 export type PortfolioTrendDirection = 'up' | 'down' | 'flat'
 
-/** `amount` trends a holding's display-unit amount rather than its preferred-currency value. */
-export type TrendMeasure = 'value' | 'amount'
+/**
+ * `amount` trends a holding's display-unit amount rather than its preferred-currency value.
+ * `holding-value` trends a holding's value from price moves alone, so a receive or send
+ * never reads as a gain or loss.
+ */
+export type TrendMeasure = 'value' | 'amount' | 'holding-value'
 
 // The places each measure renders at: the trend's fiat, and an asset list row's amount.
 const PLACES_BY_MEASURE: Record<TrendMeasure, number> = {
     value: 2,
     amount: LIST_MAX_PRECISION,
+    'holding-value': 2,
 }
 
 export type UsePortfolioTrendResult = {
@@ -55,24 +60,65 @@ const directionOf = (
     return change.isPositive() ? 'up' : 'down'
 }
 
+type TrendPoint = {
+    datetime: Date
+    preferredValue: Nullable<Decimal>
+    amount?: Decimal
+}
+
 type TrendHistory = {
-    data: { preferredValue: Nullable<Decimal>; amount?: Decimal }[]
+    data: TrendPoint[]
     isPending: boolean
     isPaused: boolean
     isError: boolean
 }
 
 /**
+ * Each step earns the amount held going into it times its unit-price move, so
+ * receives and sends add nothing. A point with nothing held or a zero value has
+ * no unit price of its own and keeps the previous one.
+ */
+export const holdingPriceChange = (
+    points: { amount: Decimal; preferredValue: Decimal }[],
+): {
+    change: Decimal
+    /** The price moves of every step something was held through, compounded. */
+    percentage: Decimal
+} => {
+    let change = new Decimal(0)
+    let growth = new Decimal(1)
+    // Widened with `as`: an annotation alone narrows it to null, and the loop
+    // then reads `previous.price` as `never`.
+    let previous = null as Nullable<{ amount: Decimal; price: Decimal }>
+    for (const { amount, preferredValue } of points) {
+        const price: Nullable<Decimal> =
+            amount.isZero() || preferredValue.isZero()
+                ? (previous?.price ?? null)
+                : preferredValue.div(amount)
+        if (previous && price) {
+            change = change.plus(
+                previous.amount.times(price.minus(previous.price)),
+            )
+            growth = growth.times(price.div(previous.price))
+        }
+        previous = price && !amount.isZero() ? { amount, price } : null
+    }
+    return { change, percentage: growth.minus(1).times(100) }
+}
+
+/**
  * `isIncomplete` withholds a change the history can't fully back.
  * `selectedValue` is a scrubbed point's value: the change then runs from the
  * chart's start to it, and `null` (an unpriced point) has none. In `amount`
- * mode it is the scrubbed point's amount.
+ * mode it is the scrubbed point's amount. `holding-value` mode reads the
+ * scrubbed point by `selectedAt` instead, as it needs the steps up to it.
  */
 export const useHistoryTrend = (
     { data, isPending, isPaused, isError }: TrendHistory,
     isIncomplete: boolean,
     selectedValue?: Maybe<Decimal>,
     measure: TrendMeasure = 'value',
+    selectedAt?: Maybe<Date>,
 ): UsePortfolioTrendResult => {
     const isSettling = isPending && !isPaused
 
@@ -90,10 +136,22 @@ export const useHistoryTrend = (
     )
 
     const [trendAbsolute, trendPercentage] = useMemo(() => {
+        if (measure === 'holding-value') {
+            const { change, percentage } = holdingPriceChange(
+                data.flatMap(({ datetime, amount, preferredValue }) =>
+                    amount &&
+                    preferredValue &&
+                    (!selectedAt || datetime <= selectedAt)
+                        ? [{ amount, preferredValue }]
+                        : [],
+                ),
+            )
+            return [change, percentage]
+        }
         const first = pricedValues.at(0) ?? new Decimal(0)
         const last = selectedValue ?? pricedValues.at(-1) ?? new Decimal(0)
         return [last.minus(first), percentChange(first, last)]
-    }, [pricedValues, selectedValue])
+    }, [data, measure, pricedValues, selectedAt, selectedValue])
 
     const trendDirection = directionOf(
         trendAbsolute,
