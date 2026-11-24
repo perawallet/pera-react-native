@@ -10,37 +10,21 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@test-utils/render'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
+import { registerAlgorandAddressCodec } from '@test-utils/algorandAccountsAdapter'
 import {
-    useRegisteredChainIds,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+    registerEvmChain,
+    restoreAlgorandOnlyChains,
+} from '@test-utils/chain-fixtures'
 import { useAssetListViewStore } from '../../../hooks/useAssetListViewStore'
 import { useAccountSelectionCopy } from '../useAccountSelectionCopy'
 
-vi.mock('@perawallet/wallet-extension-provider', () => ({
-    getProvider: () => ({
-        chains: {
-            get: (id: string) => ({
-                descriptor: { family: id === 'algorand' ? 'algorand' : 'evm' },
-            }),
-        },
-    }),
-}))
-
-vi.mock('@perawallet/wallet-core-chain-contract', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-chain-contract')
-    >()),
-    addressCodecs: {
-        get: () => ({
-            isValid: () => true,
-            normalize: (address: string) => `normalized:${address}`,
-            truncate: (address: string) => `short:${address}`,
-        }),
-    },
-}))
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal =>
+    importOriginal<typeof import('@perawallet/wallet-core-accounts')>(),
+)
 
 vi.mock('@modules/chain-ui', () => ({
     chainUiFor: (family: string) => ({
@@ -50,8 +34,9 @@ vi.mock('@modules/chain-ui', () => ({
 
 vi.mock('@hooks/useLanguage')
 
-const ALGO = 'JUELDALGOADDRESSIV2QA'
-const EVM = '0x4b7f00000000000000000000000000000000cb15'
+const ALGO = 'CBLWUBRWCWNKZ2Y2Q5HFKN7XISNBVAN47422MZOKH5OGCZ3H5JYLTDPLOA'
+const EVM = '0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed'
+const EVM_CHECKSUMMED = '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed'
 
 const accountWith = (chains: Record<string, object>): WalletAccount =>
     ({ id: 'fred', chains }) as unknown as WalletAccount
@@ -61,16 +46,24 @@ const multichain = accountWith({
     ethereum: { address: EVM, enabledBy: 'created' },
 })
 
+const short = (chainId: string, address: string) =>
+    addressCodecs.get(chainId).truncate(address)
+
 describe('useAccountSelectionCopy', () => {
     beforeEach(() => {
-        vi.mocked(useRegisteredChainIds).mockReturnValue([
-            'algorand',
-            'ethereum',
-        ])
+        restoreAlgorandOnlyChains()
+        addressCodecs.reset()
+        registerAlgorandAddressCodec()
+        registerEvmChain('ethereum')
         useAssetListViewStore.setState({
             selectedChainId: null,
             expandedGroupIds: [],
         })
+    })
+
+    afterAll(() => {
+        restoreAlgorandOnlyChains()
+        addressCodecs.reset()
     })
 
     it('copies the 0x address of an EVM-first account and names it in the toast', () => {
@@ -82,10 +75,10 @@ describe('useAccountSelectionCopy', () => {
         const { result } = renderHook(() => useAccountSelectionCopy(account))
 
         expect(result.current).toEqual({
-            copyValue: `normalized:${EVM}`,
+            copyValue: EVM_CHECKSUMMED,
             copyOptions: {
                 title: 'common.address_copied.evm',
-                body: `short:${EVM}`,
+                body: short('ethereum', EVM),
             },
         })
     })
@@ -95,7 +88,7 @@ describe('useAccountSelectionCopy', () => {
 
         const { result } = renderHook(() => useAccountSelectionCopy(multichain))
 
-        expect(result.current?.copyValue).toBe(`normalized:${EVM}`)
+        expect(result.current?.copyValue).toBe(EVM_CHECKSUMMED)
         expect(result.current?.copyOptions.title).toBe(
             'common.address_copied.evm',
         )
@@ -111,10 +104,10 @@ describe('useAccountSelectionCopy', () => {
         const { result } = renderHook(() => useAccountSelectionCopy(account))
 
         expect(result.current).toEqual({
-            copyValue: `normalized:${ALGO}`,
+            copyValue: ALGO,
             copyOptions: {
                 title: 'common.address_copied.algorand',
-                body: `short:${ALGO}`,
+                body: short('algorand', ALGO),
             },
         })
     })
@@ -122,7 +115,7 @@ describe('useAccountSelectionCopy', () => {
     it('copies the Algorand address of a default multichain account', () => {
         const { result } = renderHook(() => useAccountSelectionCopy(multichain))
 
-        expect(result.current?.copyValue).toBe(`normalized:${ALGO}`)
+        expect(result.current?.copyValue).toBe(ALGO)
         expect(result.current?.copyOptions.title).toBe(
             'common.address_copied.algorand',
         )
@@ -137,17 +130,18 @@ describe('useAccountSelectionCopy', () => {
         const { result } = renderHook(() => useAccountSelectionCopy(account))
 
         expect(result.current).toEqual({
-            copyValue: `normalized:${ALGO}`,
+            copyValue: ALGO,
             copyOptions: {
                 title: 'common.address_copied.algorand',
-                body: `short:${ALGO}`,
+                body: short('algorand', ALGO),
             },
         })
     })
 
-    it('copies the raw address of an account held only on an unregistered chain', () => {
+    it('copies the raw address of an account held only on a chain this build does not register', () => {
+        restoreAlgorandOnlyChains()
         const account = accountWith({
-            avalanche: { address: EVM, enabledBy: 'created' },
+            ethereum: { address: EVM, enabledBy: 'created' },
         })
 
         const { result } = renderHook(() => useAccountSelectionCopy(account))

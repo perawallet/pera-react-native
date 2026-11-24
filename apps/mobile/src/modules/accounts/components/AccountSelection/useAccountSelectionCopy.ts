@@ -12,16 +12,16 @@
 
 import { useMemo } from 'react'
 import {
-    accountChainIdOf,
     chainAccountOf,
+    useAccountChainId,
     useAccountHoldingSources,
-    useRegisteredChainIds,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 import type { Maybe, Optional } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { CopyToClipboardOptions } from '@hooks/useClipboard'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import { useLanguage } from '@hooks/useLanguage'
 import { chainUiFor } from '@modules/chain-ui'
 import { chainAddressCopyValue } from '@utils/chainOptionDisplay'
@@ -42,21 +42,22 @@ export const useAccountSelectionCopy = (
     account: Maybe<WalletAccount>,
 ): Optional<AccountSelectionCopy> => {
     const { t } = useLanguage()
-    const registeredChainIds = useRegisteredChainIds()
+    const accountChainId = useAccountChainId(
+        account,
+        useHomeChainScope().chainId,
+    )
     const filteredSource = useSelectedNetworkSource(
         useAccountHoldingSources(account),
     )
 
     return useMemo(() => {
         if (!account) return undefined
-        const chainId =
-            filteredSource?.scope.chainId ??
-            accountChainIdOf(account, registeredChainIds)
+        const chainId = filteredSource?.scope.chainId ?? accountChainId
         const address =
             filteredSource?.address ?? chainAccountOf(account, chainId)?.address
         if (!address) return undefined
         // A stored chain this build doesn't register has no adapter or codec to ask.
-        if (!registeredChainIds.includes(chainId)) {
+        if (!getProvider().chains.has(chainId)) {
             return { copyValue: address, copyOptions: {} }
         }
         const { addressCopiedTitle } = chainUiFor(
@@ -70,5 +71,5 @@ export const useAccountSelectionCopy = (
                 body: addressCodecs.get(chainId).truncate(address),
             },
         }
-    }, [account, filteredSource, registeredChainIds, t])
+    }, [account, accountChainId, filteredSource, t])
 }
