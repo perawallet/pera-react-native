@@ -79,20 +79,60 @@ describe('PWCheckbox', () => {
                     isChecked={isChecked}
                     isDisabled={isDisabled}
                     onPress={vi.fn()}
+                    testID='acknowledge'
                 />,
             )
 
-            expect(
-                vi.mocked(TouchableOpacity).mock.lastCall?.[0],
-            ).toMatchObject({
-                accessibilityRole: 'checkbox',
-                accessibilityState: {
-                    checked: isChecked,
-                    disabled: isDisabled,
-                },
-            })
+            const row = screen.getByTestId('acknowledge')
+            const rowProps = vi
+                .mocked(TouchableOpacity)
+                .mock.calls.map(([props]) => props)
+                .filter(props => props.testID === 'acknowledge')
+                .pop()
+
+            expect(rowProps?.accessibilityRole).toBe('checkbox')
+            expect(row.getAttribute('aria-checked')).toBe(String(isChecked))
+            expect(row.getAttribute('aria-disabled')).toBe(String(isDisabled))
         },
     )
+
+    it('takes an untick straight after a tick', () => {
+        const onPress = vi.fn()
+        render(
+            <PWCheckbox
+                label='I have saved my passphrase'
+                isChecked={false}
+                onPress={onPress}
+                testID='acknowledge'
+            />,
+        )
+
+        fireEvent.click(screen.getByTestId('acknowledge'))
+        fireEvent.click(screen.getByTestId('acknowledge'))
+
+        expect(onPress).toHaveBeenCalledTimes(2)
+    })
+
+    it('puts the checkbox state on the box when the label holds a link', () => {
+        render(
+            <PWCheckbox
+                label='I accept the Terms & Conditions.'
+                isChecked
+                onPress={vi.fn()}
+                testID='terms'
+                boxTestID='terms_box'
+                isLabelInteractive
+                accessibilityLabel='I accept the Terms & Conditions.'
+            />,
+        )
+
+        expect(
+            screen.getByTestId('terms').getAttribute('aria-checked'),
+        ).toBeNull()
+        expect(
+            screen.getByTestId('terms_box').getAttribute('aria-checked'),
+        ).toBe('true')
+    })
 
     it('renders the label after the box when the box trails', () => {
         render(

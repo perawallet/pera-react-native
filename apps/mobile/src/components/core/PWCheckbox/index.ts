@@ -11,4 +11,7 @@
  */
 
 export { PWCheckbox } from './PWCheckbox'
-export type { PWCheckboxProps } from './PWCheckbox'
+export type {
+    PWCheckboxLabelAccessibilityProps,
+    PWCheckboxProps,
+} from './PWCheckbox'

@@ -138,4 +138,32 @@ describe('Flow: Card onboarding address, terms checkboxes with inline links', ()
         // Only the platform terms are ticked, so Continue stays gated.
         expect(isElementDisabled(confirmButton())).toBe(true)
     })
+
+    it('Given the terms rows, then each box is a checkbox named by its sentence and each inline link is its own link', async () => {
+        renderWithNavigation(
+            CardOnboardingAddressScreen,
+            'CardOnboardingAddress',
+        )
+        const cardTermsCheckbox = () =>
+            screen.getByRole('checkbox', {
+                name: `${CARD_TERMS_TEXT}Terms & Conditions.`,
+            })
+
+        expect(
+            (
+                await screen.findAllByRole('link', {
+                    name: 'Terms & Conditions',
+                })
+            ).length,
+        ).toBe(2)
+        expect(cardTermsCheckbox().getAttribute('aria-checked')).toBe('false')
+
+        fireEvent.click(labelText(CARD_TERMS_TEXT))
+
+        await waitFor(() =>
+            expect(cardTermsCheckbox().getAttribute('aria-checked')).toBe(
+                'true',
+            ),
+        )
+    })
 })

@@ -14,20 +14,32 @@ import type { ReactNode } from 'react'
 import type { StyleProp, ViewStyle } from 'react-native'
 import { CheckBox } from '@rneui/themed'
 
-import { getCheckboxAccessibilityProps } from '@utils/test-id-helper'
 import { PWIcon } from '../PWIcon'
 import { PWText } from '../PWText'
 import { PWTouchableOpacity } from '../PWTouchableOpacity'
 import { PWView } from '../PWView'
 import { useStyles } from './styles'
+import { usePWCheckbox } from './usePWCheckbox'
+
+export type PWCheckboxLabelAccessibilityProps =
+    | { isLabelInteractive?: false; accessibilityLabel?: never }
+    | {
+          /**
+           * The label holds its own pressable (an inline link). The row then
+           * stays a plain container so screen readers can reach the link, and
+           * the box carries the checkbox, named by `accessibilityLabel`.
+           */
+          isLabelInteractive: true
+          accessibilityLabel: string
+      }
 
 export type PWCheckboxProps = {
     isChecked: boolean
     onPress: () => void
     /**
      * A string, or a node for a custom row. The box and label are one press
-     * target and one accessible checkbox; a pressable nested in the label (an
-     * inline link) still takes its own press.
+     * target; a pressable nested in the label (an inline link) still takes its
+     * own press.
      */
     label?: ReactNode
     boxPosition?: 'leading' | 'trailing'
@@ -37,7 +49,7 @@ export type PWCheckboxProps = {
     boxTestID?: string
     style?: StyleProp<ViewStyle>
     boxStyle?: StyleProp<ViewStyle>
-}
+} & PWCheckboxLabelAccessibilityProps
 
 export const PWCheckbox = ({
     isChecked,
@@ -49,8 +61,17 @@ export const PWCheckbox = ({
     boxTestID,
     style,
     boxStyle,
+    isLabelInteractive = false,
+    accessibilityLabel,
 }: PWCheckboxProps) => {
     const styles = useStyles()
+    const { rowAccessibilityProps, boxAccessibilityProps } = usePWCheckbox({
+        isChecked,
+        isDisabled,
+        isLabelInteractive,
+        accessibilityLabel,
+        onPress,
+    })
 
     // RNE's CheckBox is a Pressable with its own checkbox role. Left live, it
     // would take presses on the box and be a second screen-reader and tab stop.
@@ -58,6 +79,7 @@ export const PWCheckbox = ({
         <PWView
             pointerEvents='none'
             testID={boxTestID}
+            {...boxAccessibilityProps}
         >
             <CheckBox
                 checked={isChecked}
@@ -90,9 +112,12 @@ export const PWCheckbox = ({
         <PWTouchableOpacity
             onPress={onPress}
             disabled={isDisabled}
+            // A tick straight after an untick is a correction, not the
+            // accidental double tap the guard exists to drop.
+            allowRapidPress
             style={[styles.row, isTextLabel && styles.textRow, style]}
             testID={testID}
-            {...getCheckboxAccessibilityProps(isChecked, isDisabled)}
+            {...rowAccessibilityProps}
         >
             {boxPosition === 'trailing' && labelNode}
             {box}
