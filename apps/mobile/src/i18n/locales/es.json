@@ -435,8 +435,6 @@
             "social_media": "Redes sociales",
             "chart_empty_body": "Verás un gráfico aquí cuando tengas algo de historial de saldo",
             "total_supply_info_body": "El suministro total de un activo se fija en el momento de su creación y corresponde al total de unidades creadas del activo.",
-            "circulating_supply": "Suministro circulante",
-            "circulating_supply_info_body": "El suministro circulante es el número de monedas que están actualmente en circulación. La moneda nativa de una red no tiene un total fijo, por lo que esta cifra cambia a medida que se emiten o se queman monedas.",
             "token_total_supply_info_body": "El suministro total es el número de tokens que ha emitido el contrato, menos los quemados. Cambia cuando el emisor acuña o quema tokens."
         },
         "action_buttons": {
@@ -530,6 +528,7 @@
             "empty_title": "NFT",
             "empty_body": "¡Bienvenido a tu galería de NFT! Todavía no tienes ningún NFT. Todos los NFT disponibles en tu wallet aparecerán aquí.",
             "empty_body_multichain": "¡Bienvenido a tu galería de NFT!\nTodavía no tienes ningún NFT. Los NFT que recibas en redes como Ethereum aparecerán aquí automáticamente. Los NFT de Algorand necesitan un opt-in primero.",
+            "empty_body_unsupported": "Los NFT en {{chains}} aún no se muestran en Pera.",
             "empty_optin": "Añadir NFT",
             "empty_optin_algorand": "Añadir NFT de Algorand",
             "nomatch_title": "Sin NFT coincidentes",
@@ -1553,7 +1552,8 @@
             "request_expired_body": "Esta solicitud de firma caducó antes de recibir respuesta. Pide a la app que la envíe de nuevo.",
             "unsupported_method_body": "{{dappName}} solicitó {{method}}, que Pera no admite, por lo que se rechazó la solicitud.",
             "unsupported_network_body": "{{dappName}} quiso usar la red con ID de cadena {{chainId}}, que Pera no admite, por lo que se rechazó la solicitud.",
-            "unsupported_chains_body": "Esta app quiso usar una red que Pera no admite, por lo que se rechazó la conexión."
+            "unsupported_chains_body": "Esta app quiso usar una red que Pera no admite, por lo que se rechazó la conexión.",
+            "unselected_network_body": "Esta app solo ofrece redes en las que Pera no está ahora, por lo que se rechazó la conexión. Activa o desactiva el modo desarrollador para que coincida con la app y vuelve a intentarlo."
         },
         "signing": {
             "title": "Error al procesar la solicitud de firma",
@@ -3686,7 +3686,11 @@
             "no_deadline_warning": "Este permiso nunca caduca.",
             "spender_label": "Dirección autorizada",
             "unlimited": "Ilimitada",
-            "deadline_label": "Fecha límite",
+            "expiry_label": "El permiso vence",
+            "signature_deadline_label": "Firma válida hasta",
+            "signature_long_deadline_warning": "Esta firma sigue siendo válida durante más de un año, así que puede usarse mucho después de que la firmes.",
+            "expired_title": "Esta solicitud ha vencido",
+            "expired_body": "Su plazo de firma ya pasó, así que sería rechazada. Cancela y vuelve a empezar en la app.",
             "never": "Nunca",
             "known_title": "Sobre esta autorización",
             "known_description": "{{name}} es un contrato conocido",
@@ -4203,7 +4207,8 @@
         },
         "switch_network": {
             "title": "¿Permitir acceso a la red?",
-            "body": "{{name}} quiere usar tus cuentas de {{chain}} en {{network}}.",
+            "body": "{{name}} quiere usar tus cuentas en {{chain}}.",
+            "body_with_network": "{{name}} quiere usar tus cuentas en {{chain}} {{network}}.",
             "confirm": "Permitir"
         },
         "settings": {

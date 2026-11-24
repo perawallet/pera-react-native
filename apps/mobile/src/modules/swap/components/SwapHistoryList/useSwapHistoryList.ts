@@ -12,11 +12,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { formatAssetAmount } from '@perawallet/wallet-core-assets'
-import {
-    generateUniqueId,
-    type Nullable,
-    type Optional,
-} from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import {
     swapAccountKey,
     swapExplorerUrlFor,
@@ -30,7 +26,7 @@ import {
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 import type { FilterOption } from '@components/FilterSelection'
 import { useLanguage } from '@hooks/useLanguage'
-import { useWebView } from '@modules/webview'
+import { openExplorerUrl } from '@modules/webview'
 
 import { VISIBLE_SWAP_STATUSES } from '../../constants'
 
@@ -87,7 +83,6 @@ export const useSwapHistoryList = ({
     onClose,
 }: UseSwapHistoryListParams): UseSwapHistoryListResult => {
     const { t } = useLanguage()
-    const { pushWebView } = useWebView()
     const signingAccounts = useSwapSigningAccounts()
     const addresses = useSwapAccountsAddresses(signingAccounts)
     const [pickedAccountId, setPickedAccountId] =
@@ -195,10 +190,9 @@ export const useSwapHistoryList = ({
                 [AnalyticsMetadataKey.SwapPairing]: `${item.assetIn.unitName}/${item.assetOut.unitName}`,
             })
             onClose()
-            // oxlint-disable-next-line pera/no-unvalidated-open-url -- swap adapter builds it from the chain's explorer config
-            pushWebView({ url, id: generateUniqueId() })
+            openExplorerUrl(url)
         },
-        [onClose, pushWebView],
+        [onClose],
     )
 
     const handleEndReached = useCallback(() => {

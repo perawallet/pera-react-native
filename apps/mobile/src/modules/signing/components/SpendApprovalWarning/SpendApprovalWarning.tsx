@@ -51,9 +51,11 @@ export const SpendApprovalWarning = ({
     const {
         rows,
         deadlineText,
+        signatureDeadlineText,
         knownSpenderName,
         isTrusted,
         showsDeadline,
+        showsUnlimitedWarning,
         isUnlimited,
     } = useSpendApprovalWarning(approval, {
         requestKind,
@@ -137,6 +139,7 @@ export const SpendApprovalWarning = ({
                     allowance={allowance}
                     scope={scope}
                     index={index}
+                    shouldWarnUnlimited={showsUnlimitedWarning}
                 />
             ))}
             {isUnlimited && (
@@ -151,9 +154,17 @@ export const SpendApprovalWarning = ({
             {showsDeadline && (
                 <KeyValueRow
                     testID='message-signing-spend-approval-deadline'
-                    title={t('signing.spend_approval.deadline_label')}
+                    title={t('signing.spend_approval.expiry_label')}
                 >
                     <PWText>{deadlineText}</PWText>
+                </KeyValueRow>
+            )}
+            {showsDeadline && !!signatureDeadlineText && (
+                <KeyValueRow
+                    testID='message-signing-spend-approval-signature-deadline'
+                    title={t('signing.spend_approval.signature_deadline_label')}
+                >
+                    <PWText>{signatureDeadlineText}</PWText>
                 </KeyValueRow>
             )}
         </PWView>

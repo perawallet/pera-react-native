@@ -11,7 +11,6 @@
  */
 
 import { useCallback } from 'react'
-import { Linking } from 'react-native'
 import { type PeraAsset, toWholeUnits } from '@perawallet/wallet-core-assets'
 import {
     addressCodecs,
@@ -29,8 +28,7 @@ import {
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useClipboard } from '@hooks/useClipboard'
 import { chainUiFor } from '@modules/chain-ui'
-import { useWebView } from '@modules/webview'
-import { routeCapabilities } from '@routes/capabilities'
+import { openExplorerUrl } from '@modules/webview'
 import { extractDomain } from '../../utils/extractDomain'
 import { neutralCollectibleDetailsDisplay } from './neutralCollectibleDetailsDisplay'
 
@@ -60,7 +58,6 @@ export const useCollectibleInfo = (
     asset: PeraAsset,
     scope: ChainScope,
 ): UseCollectibleInfoResult => {
-    const { pushWebView } = useWebView()
     const { navigate } = useAppNavigation()
     const { copyToClipboard } = useClipboard()
     const descriptor = getChainDescriptor(scope.chainId)
@@ -81,29 +78,9 @@ export const useCollectibleInfo = (
         asset.assetId,
     )
 
-    // Same gate every other external link in the app uses (e.g.
-    // useSettingsScreen's help-center links): the in-app webview bottom
-    // sheet renders an iframe on web, which isn't a real webview and can't
-    // load arbitrary external sites reliably (no bridge, and most sites'
-    // frame-ancestors/X-Frame-Options block being embedded at all). Off ⇒
-    // Linking.openURL, which react-native-web maps to a real window.open in
-    // a new tab.
-    const openExternalLink = useCallback(
-        (url: string) => {
-            if (!routeCapabilities.inAppWebView) {
-                // oxlint-disable-next-line pera/no-unvalidated-open-url -- callers build on the chain descriptor's explorer
-                void Linking.openURL(url)
-                return
-            }
-            // oxlint-disable-next-line pera/no-unvalidated-open-url -- callers build on the chain descriptor's explorer
-            pushWebView({ url })
-        },
-        [pushWebView],
-    )
-
     const creatorPressed = useCallback(() => {
-        if (creatorUrl) openExternalLink(creatorUrl)
-    }, [creatorUrl, openExternalLink])
+        if (creatorUrl) openExplorerUrl(creatorUrl)
+    }, [creatorUrl])
 
     const onAssetIdPressed = useCallback(() => {
         navigate('AssetDetails', {
@@ -114,8 +91,8 @@ export const useCollectibleInfo = (
     }, [asset.assetId, navigate, scope.chainId])
 
     const openExplorer = useCallback(() => {
-        if (explorerUrl) openExternalLink(explorerUrl)
-    }, [explorerUrl, openExternalLink])
+        if (explorerUrl) openExplorerUrl(explorerUrl)
+    }, [explorerUrl])
 
     // Copies the full address — the row shows it truncated.
     const onCreatorLongPressed = useCallback(

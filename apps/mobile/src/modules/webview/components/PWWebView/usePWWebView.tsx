@@ -50,7 +50,7 @@ import {
 import { useWebViewNavigationGuard } from './useWebViewNavigationGuard'
 import { useWebViewMessageSecurity } from './useWebViewMessageSecurity'
 import { usePWWebViewLoadState } from './usePWWebViewLoadState'
-import { useBlurWebViewOnLock } from './useBlurWebViewOnLock'
+import { useBlurWebViewWhenCovered } from './useBlurWebViewWhenCovered'
 import { PWView } from '@components/core'
 import { LoadingView } from '@components/LoadingView'
 import {
@@ -179,7 +179,7 @@ export const usePWWebView = (props: PWWebViewProps): UsePWWebViewResult => {
     const { trackNavigation, resolveMessageSecurity } =
         useWebViewMessageSecurity(loadableUrl)
 
-    useBlurWebViewOnLock(webview)
+    useBlurWebViewWhenCovered(webview, requestId)
 
     useNotifyWebViewOnContextChange(
         webview,

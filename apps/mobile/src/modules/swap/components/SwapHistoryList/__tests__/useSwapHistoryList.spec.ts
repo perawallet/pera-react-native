@@ -24,14 +24,14 @@ const { SCOPE, ETH_SCOPE } = vi.hoisted(() => ({
 
 const {
     mockExplorerUrlFor,
-    mockPushWebView,
+    mockOpenExplorerUrl,
     mockTrackEvent,
     mockHistory,
     mockFormatAssetAmount,
     wallet,
 } = vi.hoisted(() => ({
     mockExplorerUrlFor: vi.fn(),
-    mockPushWebView: vi.fn(),
+    mockOpenExplorerUrl: vi.fn(),
     mockTrackEvent: vi.fn(),
     mockHistory: vi.fn(),
     mockFormatAssetAmount: vi.fn(),
@@ -70,7 +70,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 }))
 
 vi.mock('@modules/webview', () => ({
-    useWebView: () => ({ pushWebView: mockPushWebView }),
+    openExplorerUrl: mockOpenExplorerUrl,
 }))
 
 vi.mock('@analytics', async importOriginal => ({
@@ -527,8 +527,8 @@ describe('useSwapHistoryList', () => {
         result.current.handleItemPress(listed)
 
         expect(onClose).toHaveBeenCalled()
-        expect(mockPushWebView).toHaveBeenCalledWith(
-            expect.objectContaining({ url: 'https://explorer.test/tx/0x1' }),
+        expect(mockOpenExplorerUrl).toHaveBeenCalledWith(
+            'https://explorer.test/tx/0x1',
         )
         expect(mockTrackEvent).toHaveBeenCalledWith(
             'swapscr_swap_history_see_all_select',
@@ -546,7 +546,7 @@ describe('useSwapHistoryList', () => {
         result.current.handleItemPress(listed)
 
         expect(onClose).not.toHaveBeenCalled()
-        expect(mockPushWebView).not.toHaveBeenCalled()
+        expect(mockOpenExplorerUrl).not.toHaveBeenCalled()
         expect(mockTrackEvent).not.toHaveBeenCalled()
     })
 })

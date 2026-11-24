@@ -16,11 +16,11 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import { useShowDappTransaction } from '../useShowDappTransaction'
 
-const mockPushWebView = vi.fn()
+const mockOpenExplorerUrl = vi.fn()
 const mockTransactionUrl = vi.fn()
 
 vi.mock('@modules/webview', () => ({
-    useWebView: () => ({ pushWebView: mockPushWebView }),
+    openExplorerUrl: (url: string) => mockOpenExplorerUrl(url),
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
@@ -34,7 +34,7 @@ const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 
 describe('useShowDappTransaction', () => {
     beforeEach(() => {
-        mockPushWebView.mockReset()
+        mockOpenExplorerUrl.mockReset()
         mockTransactionUrl.mockReset()
         vi.mocked(getChainDescriptor).mockReturnValue({
             explorer: { transactionUrl: mockTransactionUrl },
@@ -48,9 +48,9 @@ describe('useShowDappTransaction', () => {
         result.current({ scope: SCOPE, txId: '0xabc' })
 
         expect(mockTransactionUrl).toHaveBeenCalledWith('mainnet', '0xabc')
-        expect(mockPushWebView).toHaveBeenCalledWith({
-            url: 'https://etherscan.io/tx/0xabc',
-        })
+        expect(mockOpenExplorerUrl).toHaveBeenCalledWith(
+            'https://etherscan.io/tx/0xabc',
+        )
     })
 
     it('Given a network with no explorer, when a dApp asks to show a transaction, then nothing opens', () => {
@@ -59,6 +59,6 @@ describe('useShowDappTransaction', () => {
 
         result.current({ scope: SCOPE, txId: '0xabc' })
 
-        expect(mockPushWebView).not.toHaveBeenCalled()
+        expect(mockOpenExplorerUrl).not.toHaveBeenCalled()
     })
 })

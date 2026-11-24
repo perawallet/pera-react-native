@@ -13,7 +13,7 @@
 import { useCallback } from 'react'
 import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import type { ShowTransaction } from '@perawallet/wallet-core-connections'
-import { useWebView } from '@modules/webview'
+import { openExplorerUrl } from '@modules/webview'
 
 /**
  * Opens a transaction a dApp asked about on the chain's explorer. The app has
@@ -21,16 +21,11 @@ import { useWebView } from '@modules/webview'
  * explorer shows nothing.
  */
 export const useShowDappTransaction = (): ShowTransaction => {
-    const { pushWebView } = useWebView()
-
-    return useCallback(
-        ({ scope, txId }) => {
-            const url = getChainDescriptor(
-                scope.chainId,
-            ).explorer.transactionUrl(scope.networkId, txId)
-            // oxlint-disable-next-line pera/no-unvalidated-open-url -- chain explorer config origin; the dApp's txId only fills the path
-            if (url) pushWebView({ url })
-        },
-        [pushWebView],
-    )
+    return useCallback(({ scope, txId }) => {
+        const url = getChainDescriptor(scope.chainId).explorer.transactionUrl(
+            scope.networkId,
+            txId,
+        )
+        if (url) openExplorerUrl(url)
+    }, [])
 }

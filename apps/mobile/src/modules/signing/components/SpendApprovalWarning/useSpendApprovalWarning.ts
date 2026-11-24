@@ -17,7 +17,7 @@ import {
     type SpendApproval,
 } from '@perawallet/wallet-core-chain-contract'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
-import { formatDatetime } from '@perawallet/wallet-core-shared'
+import { formatDatetime, type Optional } from '@perawallet/wallet-core-shared'
 import type { IconName } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import {
@@ -32,6 +32,7 @@ export type SpendApprovalWarningRow = {
         | 'unlimited'
         | 'no-expiry'
         | 'long-lived'
+        | 'long-lived-signature'
         | 'collection'
     icon: IconName
     message: string
@@ -50,13 +51,18 @@ export type SpendApprovalContext = {
 
 export type UseSpendApprovalWarningResult = {
     rows: SpendApprovalWarningRow[]
+    /** When the allowance lapses, or "Never". */
     deadlineText: string
+    /** Set for a permit whose signature has its own deadline apart from the allowance's. */
+    signatureDeadlineText?: string
     /** Set when the spender is a well-known contract, even one asked for from another site. */
     knownSpenderName?: string
     /** A well-known spender, no attested other site and no Verify flag: the panel reads as information, not danger. */
     isTrusted: boolean
     /** A signed permit carries a deadline; an on-chain `approve` has none to show. */
     showsDeadline: boolean
+    /** An on-chain approve's review already warns about an unlimited amount in its permission card. */
+    showsUnlimitedWarning: boolean
     isUnlimited: boolean
 }
 
@@ -90,6 +96,12 @@ const ROW_COPY: Record<SpendRowType, RowCopy> = {
         icon: 'pending',
         message: i18nKey('signing.spend_approval.long_deadline_warning'),
     },
+    'long-lived-signature': {
+        icon: 'pending',
+        message: i18nKey(
+            'signing.spend_approval.signature_long_deadline_warning',
+        ),
+    },
 }
 
 const NFT_SPEND_MESSAGE = i18nKey('signing.spend_approval.nft_spend_warning')
@@ -120,8 +132,14 @@ export const useSpendApprovalWarning = (
     const { t } = useLanguage()
 
     return useMemo(() => {
-        const { spender, knownSpender, allowances, deadline, isLongLived } =
-            approval
+        const {
+            spender,
+            knownSpender,
+            allowances,
+            deadline,
+            isLongLived,
+            signature,
+        } = approval
         const mismatchedSite = knownSpender
             ? spenderSiteMismatchOf(
                   knownSpender.projectDomain,
@@ -139,10 +157,11 @@ export const useSpendApprovalWarning = (
         if (isUnlimited) {
             types.push('unlimited')
         }
-        if (deadline === undefined) {
-            types.push('no-expiry')
-        } else if (isLongLived) {
-            types.push('long-lived')
+        if (isLongLived) {
+            types.push(deadline === undefined ? 'no-expiry' : 'long-lived')
+        }
+        if (signature?.isLongLived) {
+            types.push('long-lived-signature')
         }
 
         const spendMessage = (defaultMessage: I18nKey): I18nKey => {
@@ -201,14 +220,20 @@ export const useSpendApprovalWarning = (
                   ]
                 : spendRows
 
+        const dateText = (ms: Optional<number>) =>
+            ms === undefined
+                ? t('signing.spend_approval.never')
+                : formatDatetime(new Date(ms))
+
         return {
             rows,
-            deadlineText:
-                deadline === undefined
-                    ? t('signing.spend_approval.never')
-                    : formatDatetime(new Date(deadline)),
+            deadlineText: dateText(deadline),
+            ...(signature && {
+                signatureDeadlineText: dateText(signature.deadline),
+            }),
             isTrusted,
             showsDeadline: requestKind === 'signature',
+            showsUnlimitedWarning: requestKind === 'signature',
             isUnlimited,
             ...(knownSpender && { knownSpenderName: knownSpender.name }),
         }

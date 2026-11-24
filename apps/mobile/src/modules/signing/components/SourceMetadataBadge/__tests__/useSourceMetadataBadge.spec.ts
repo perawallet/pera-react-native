@@ -125,6 +125,42 @@ describe('useSourceMetadataBadge — name that repeats the site', () => {
     })
 })
 
+describe('useSourceMetadataBadge — icon', () => {
+    const LOGO = 'https://cdn.example/tinyman.png'
+
+    beforeEach(() => {
+        stubProjectQuery({ ...verifiedTinyman, logoPng: LOGO })
+    })
+
+    it('prefers a raster https icon the dApp sends', () => {
+        const { result } = renderHook(() =>
+            useSourceMetadataBadge({
+                url: 'https://tinyman.org',
+                icons: [
+                    'https://tinyman.org/logo.svg',
+                    'https://tinyman.org/logo.png',
+                ],
+            }),
+        )
+
+        expect(result.current.displayIcon).toBe('https://tinyman.org/logo.png')
+    })
+
+    it('skips icons that are not https and falls back to the project logo', () => {
+        const { result } = renderHook(() =>
+            useSourceMetadataBadge({
+                url: 'https://tinyman.org',
+                icons: [
+                    'http://tinyman.org/logo.png',
+                    'data:image/png;base64,AA',
+                ],
+            }),
+        )
+
+        expect(result.current.displayIcon).toBe(LOGO)
+    })
+})
+
 describe('useSourceMetadataBadge — request chain', () => {
     afterEach(() => {
         vi.mocked(useSigningRequest).mockReturnValue({

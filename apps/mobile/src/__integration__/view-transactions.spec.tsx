@@ -17,9 +17,11 @@ import {
     describe,
     expect,
     it,
+    onTestFinished,
     vi,
 } from 'vitest'
 import React from 'react'
+import { Linking } from 'react-native'
 import { Decimal } from 'decimal.js'
 import {
     act,
@@ -486,13 +488,17 @@ describe('Flow: View transactions → tap into details', () => {
 
         // The explorer link is Pera Explorer's page for this transaction.
         useWebViewStore.getState().clearWebViews()
+        const openURL = vi.spyOn(Linking, 'openURL').mockResolvedValue(true)
+        onTestFinished(() => openURL.mockRestore())
         fireEvent.click(
             closestPressable(
                 screen.getByTestId('transaction_detail_explorer'),
             ) ?? screen.getByTestId('transaction_detail_explorer'),
         )
-        const [explorerView] = useWebViewStore.getState().openWebViews
-        expect(explorerView?.url).toMatch(new RegExp(`/tx/${TX_PAYMENT.id}$`))
+        expect(openURL).toHaveBeenCalledWith(
+            expect.stringMatching(new RegExp(`/tx/${TX_PAYMENT.id}$`)),
+        )
+        expect(useWebViewStore.getState().openWebViews).toEqual([])
     })
 
     it('Given an application call with inner transactions, when the user taps its row, then the details screen shows them and its application details, with no note link', async () => {

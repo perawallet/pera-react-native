@@ -178,18 +178,15 @@ describe('Flow: Asset details on its own network', () => {
         ).toBeNull()
     })
 
-    it('Given ETH, when its Markets tab renders, then it shows a circulating supply with no figure and an explorer link', async () => {
+    it('Given ETH, when its Markets tab renders, then it shows no supply row and an explorer link', async () => {
         selectAccount(TWO_CHAIN_ACCOUNT)
         renderDetails({ assetId: 'native', chainId: 'ethereum' })
 
-        expect(
-            await screen.findByText('asset_details.markets.circulating_supply'),
-        ).toBeTruthy()
-        expect(screen.getByText('---')).toBeTruthy()
+        expect(await screen.findByText('etherscan.io')).toBeTruthy()
         expect(
             screen.queryByText('asset_details.markets.total_supply'),
         ).toBeNull()
-        expect(screen.getByText('etherscan.io')).toBeTruthy()
+        expect(screen.queryByText('---')).toBeNull()
     })
 
     it('Given ETH, when its Markets tab renders, then it describes the coin and offers its website', async () => {
@@ -247,9 +244,6 @@ describe('Flow: Asset details on its own network', () => {
         expect(
             screen.getByText('asset_details.collectible.contract'),
         ).toBeTruthy()
-        expect(
-            screen.queryByText('asset_details.markets.circulating_supply'),
-        ).toBeNull()
     })
 
     it('Given an ERC-20 whose contract cannot be read, when its Markets tab renders, then the supply reads ---', async () => {
