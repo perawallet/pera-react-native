@@ -34,6 +34,7 @@ export const toEvmHistoryRecords = (
     chain: EvmChain,
     isDecoding: boolean,
     nftApprovals: ReadonlySet<string>,
+    isAssetView: boolean,
 ): TransactionRecord[] => {
     const id = evmHistoryRecordId(item)
     if (id === undefined) return []
@@ -64,6 +65,11 @@ export const toEvmHistoryRecords = (
                     ? undefined
                     : new Decimal(item.fee),
             ...(item.from !== null && { initiator: item.from }),
+            ...(item.kind === 'transaction' &&
+                item.from === null &&
+                !isAssetView && {
+                    isSignedElsewhere: true,
+                }),
             summary,
             chainData: { family: 'evm', ...(nft && { nft }) },
         },

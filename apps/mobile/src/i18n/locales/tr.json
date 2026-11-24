@@ -391,7 +391,8 @@
         "imitated_currency": {
             "marker": "Gerçek {{code}} değil",
             "title": "Bu varlık {{code}} değil",
-            "body": "Birim adı {{code}} olsa da herkesin oluşturabileceği ayrı bir varlıktır. Bunu almak sana hiç {{code}} kazandırmaz."
+            "body": "Birim adı {{code}} olsa da herkesin oluşturabileceği ayrı bir varlıktır. Bunu almak sana hiç {{code}} kazandırmaz.",
+            "unit_label": "Bilinmeyen varlık"
         }
     },
     "asset_details": {
@@ -3949,7 +3950,8 @@
             "nft_subtitle": "{{collection}} #{{tokenId}}",
             "nft_batch_subtitle": "{{collection}} · {{count}} öğe",
             "inner_transaction_count": "{{innerCount}} iç işlem",
-            "cancel_transaction": "İşlem iptali"
+            "cancel_transaction": "İşlem iptali",
+            "not_sent_by_you": "Sizin göndermediğiniz"
         },
         "record_detail": {
             "read_failed": "Bu işlemin çağrı ayrıntıları ağdan okunamadı.",

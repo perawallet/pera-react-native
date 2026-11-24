@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { imitatedCurrencyOf } from '../imitation'
+import { imitatedCurrencyOf, imitatedNativeTickerOf } from '../imitation'
 
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
     ...(await importOriginal<
@@ -62,6 +62,56 @@ describe('imitatedCurrencyOf', () => {
         expect(imitatedCurrencyOf(erc20, 'eth')).toBe('ETH')
         expect(imitatedCurrencyOf(erc20, 'ALGO')).toBeNull()
     })
+
+    it('sees through homoglyphs and zero-width characters in the native ticker', () => {
+        const erc20 = { chainId: 'ethereum', assetId: '0xabc' }
+        const fake = String.fromCodePoint(
+            0x13ac,
+            0x200d,
+            0x13a2,
+            0x200d,
+            0x041d,
+        )
+
+        expect(imitatedCurrencyOf(erc20, fake)).toBe('ETH')
+        expect(imitatedNativeTickerOf(erc20, fake)).toBe('ETH')
+    })
+
+    it('sees through Lisu capitals that read as the native ticker', () => {
+        const erc20 = { chainId: 'ethereum', assetId: '0xabc' }
+        const fake = String.fromCodePoint(0xa4f0, 0xa4d4, 0xa4e7)
+
+        expect(imitatedNativeTickerOf(erc20, fake)).toBe('ETH')
+    })
+
+    it('treats a homoglyph fiat code as a currency, not as the native ticker', () => {
+        const erc20 = { chainId: 'ethereum', assetId: '0xabc' }
+        const fake = `U${String.fromCodePoint(0x0405)}D`
+
+        expect(imitatedCurrencyOf(erc20, fake)).toBe('USD')
+        expect(imitatedNativeTickerOf(erc20, fake)).toBeNull()
+    })
+
+    it('never reports the native asset as imitating itself', () => {
+        expect(
+            imitatedNativeTickerOf(
+                { chainId: 'ethereum', assetId: 'native' },
+                'ETH',
+            ),
+        ).toBeNull()
+    })
+
+    it.each(['WETH', 'xALGO', 'USDC'])(
+        'does not relabel %j as the native ticker',
+        unitName => {
+            expect(
+                imitatedNativeTickerOf(
+                    { chainId: 'ethereum', assetId: '0xabc' },
+                    unitName,
+                ),
+            ).toBeNull()
+        },
+    )
 
     it('still checks fiat codes on a chain with no assets adapter', () => {
         const unknown = { chainId: 'solana', assetId: 'x' }

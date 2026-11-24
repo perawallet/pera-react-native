@@ -391,7 +391,8 @@
         "imitated_currency": {
             "marker": "No es {{code}} real",
             "title": "Este activo no es {{code}}",
-            "body": "Su nombre de unidad es {{code}}, pero es un activo distinto que cualquiera podría haber creado. Recibirlo no te da ningún {{code}}."
+            "body": "Su nombre de unidad es {{code}}, pero es un activo distinto que cualquiera podría haber creado. Recibirlo no te da ningún {{code}}.",
+            "unit_label": "Activo desconocido"
         }
     },
     "asset_details": {
@@ -3949,7 +3950,8 @@
             "nft_subtitle": "{{collection}} #{{tokenId}}",
             "nft_batch_subtitle": "{{collection}} · {{count}} elementos",
             "inner_transaction_count": "{{innerCount}} transacciones internas",
-            "cancel_transaction": "Cancelar transacción"
+            "cancel_transaction": "Cancelar transacción",
+            "not_sent_by_you": "No enviado por ti"
         },
         "record_detail": {
             "read_failed": "No se pudieron leer de la red los detalles de la llamada de esta transacción.",
