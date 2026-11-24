@@ -24,6 +24,7 @@ import {
 } from '../chain-adapter'
 import { findAddressHolder, seedOf } from '../credentials'
 import { localKeyKindOf } from '../import-formats'
+import { getPasskeyAnchorSeedIds } from '../import-session/provisionalImportSeeds'
 
 /** An HD import waits for the user to pick which discovered accounts to keep. */
 export type ImportHDPendingResult = {
@@ -37,7 +38,7 @@ export type ImportAccountResult =
     | ImportHDPendingResult
 
 export const useImportAccount = (scope: ChainScope) => {
-    const { removeKeyAndChildren } = useKMS()
+    const { removeKeyAndChildren } = useKMS({ getPasskeyAnchorSeedIds })
     const { saveAccount } = useCreateAccount(scope)
     const { prepareImport } = useHDImportSession(scope)
 
