@@ -124,6 +124,7 @@ const { useRemoteConfigStore } =
 const { resetConnectionPairingStateForTesting } =
     await import('@perawallet/wallet-core-connections')
 const { kmsCore } = await import('@perawallet/wallet-core-kms')
+const { useSecurityStore } = await import('@perawallet/wallet-core-security')
 const { getProvider } = await import('@perawallet/wallet-extension-provider')
 const {
     DEFAULT_EVM_RPC_RESPONSES,
@@ -300,6 +301,9 @@ describe('Flow: an EVM dApp on a chain other than Ethereum', () => {
         simulationPaths.length = 0
         broadcasts.length = 0
         useAccountsStore.getState().setAccounts([ACCOUNT])
+        // No AutoLockGuard is mounted here, so the store fails closed and a
+        // locked wallet would take every switch through the prompt.
+        useSecurityStore.getState().setAppLockActive(false)
         await getProvider().connections.store.clear()
         resetConnectionPairingStateForTesting()
         vi.clearAllMocks()
