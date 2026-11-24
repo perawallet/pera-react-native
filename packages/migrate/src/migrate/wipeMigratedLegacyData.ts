@@ -42,6 +42,7 @@ import {
 export type LegacyWipeOutcome =
     | 'wiped'
     | 'no-legacy-data'
+    | 'accounts-not-hydrated'
     | 'steps-pending'
     | 'still-blocked'
     | 'undecodable-accounts'
@@ -148,23 +149,34 @@ export const wipeMigratedLegacyData = async (
     chainId: ChainId,
 ): Promise<LegacyWipeOutcome> => {
     const outcome = await resolveAndWipe(migration, chainId)
-    if (outcome !== 'no-legacy-data') {
+    if (outcome === 'accounts-not-hydrated') {
+        logger.warn('[Migration] legacy data wipe', { outcome })
+    } else if (outcome !== 'no-legacy-data') {
         logger.info('[Migration] legacy data wipe', { outcome })
     }
     return outcome
 }
 
+// zustand never notifies onFinishHydration when rehydration throws, so the wait
+// is bounded and the wipe skips the session instead of hanging silently.
+const ACCOUNTS_HYDRATION_TIMEOUT_MS = 30_000
+
 // Before rehydration the account list is empty, which would hide a watch-held
-// key and wipe it.
-const accountsHydrated = (): Promise<void> =>
+// key and wipe it. Resolves false when the store never finished rehydrating.
+const accountsHydrated = (): Promise<boolean> =>
     new Promise(resolve => {
         if (useAccountsStore.persist.hasHydrated()) {
-            resolve()
+            resolve(true)
             return
         }
-        const unsubscribe = useAccountsStore.persist.onFinishHydration(() => {
+        const timeout = setTimeout(() => {
             unsubscribe()
-            resolve()
+            resolve(false)
+        }, ACCOUNTS_HYDRATION_TIMEOUT_MS)
+        const unsubscribe = useAccountsStore.persist.onFinishHydration(() => {
+            clearTimeout(timeout)
+            unsubscribe()
+            resolve(true)
         })
     })
 
@@ -174,7 +186,7 @@ const resolveAndWipe = async (
 ): Promise<LegacyWipeOutcome> => {
     try {
         if (!(await migration.hasLegacyData())) return 'no-legacy-data'
-        await accountsHydrated()
+        if (!(await accountsHydrated())) return 'accounts-not-hydrated'
         // Until its metadata loads, every key would read as missing.
         await getKeystore().ready
         const completed = await resolveCompletedStepVersions(migration)

@@ -207,6 +207,28 @@ describe('wipeMigratedLegacyData', () => {
         expect(await pending).toBe('wiped')
     })
 
+    it('skips the session when the accounts store never finishes rehydrating', async () => {
+        vi.useFakeTimers()
+        try {
+            hydrationMock.hasHydrated.mockReturnValue(false)
+            hydrationMock.finishListeners = []
+            hydrationMock.onFinishHydration.mockClear()
+            const { service } = buildService()
+
+            const pending = wipeMigratedLegacyData(service, 'algorand')
+            await vi.advanceTimersByTimeAsync(30_000)
+
+            expect(await pending).toBe('accounts-not-hydrated')
+            expect(service.getLegacyData).not.toHaveBeenCalled()
+            expect(service.wipeLegacyData).not.toHaveBeenCalled()
+            const unsubscribe =
+                hydrationMock.onFinishHydration.mock.results[0]?.value
+            expect(unsubscribe).toHaveBeenCalledOnce()
+        } finally {
+            vi.useRealTimers()
+        }
+    })
+
     it('keeps the store while a step is below its target version', async () => {
         const { service } = buildService({
             stepVersions: { ...MIGRATION_STEP_TARGET_VERSIONS, accounts: 1 },
