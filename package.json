@@ -54,6 +54,7 @@
     "check:kms-pq-dist": "node tools/check-kms-pq-dist.mjs",
     "check:dts-emit": "node tools/check-dts-emit.mjs",
     "check:layer-tiers": "node tools/check-layer-tiers.mjs",
+    "check:expo-aar-runtime": "node tools/check-expo-aar-runtime.mjs",
     "fallow": "fallow --skip health"
   },
   "devDependencies": {
