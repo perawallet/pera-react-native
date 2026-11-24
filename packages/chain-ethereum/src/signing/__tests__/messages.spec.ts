@@ -108,6 +108,24 @@ const declaringDomain = <T extends { domain: object; types: object }>(
     }
 }
 
+// The permit's own domain, with verifyingContract dropped from the declared
+// type, or re-declared under `type`.
+const unbindingContract = <T extends { domain: object; types: object }>(
+    typedData: T,
+    type?: string,
+) => ({
+    ...typedData,
+    types: {
+        EIP712Domain: [
+            ...getTypesForEIP712Domain({ domain: typedData.domain }).filter(
+                field => field.name !== 'verifyingContract',
+            ),
+            ...(type ? [{ name: 'verifyingContract', type }] : []),
+        ],
+        ...typedData.types,
+    },
+})
+
 const PERMITS = [
     ['EIP-2612', EIP2612_PERMIT_TYPED_DATA],
     ['DAI-style', DAI_PERMIT_TYPED_DATA],
@@ -474,6 +492,35 @@ describe('ethereumMessageSignerAdapter.plan with a chain the domain type leaves 
         const [item] = plan(typedData)
 
         expect(bytesToHex(item.payload)).toBe(hashTypedData(typedData as never))
+    })
+})
+
+describe('ethereumMessageSignerAdapter.plan with a verifyingContract the domain type leaves out', () => {
+    const plan = (typedData: unknown) =>
+        adapter.plan(
+            typedDataMessageRequest(MAINNET, SENDER, typedData),
+            context,
+        )
+
+    it.each(PERMITS)(
+        'refuses a %s permit whose signed domain binds no verifyingContract',
+        (_name, permit) => {
+            expect(() => plan(unbindingContract(permit))).toThrow(
+                "The permit's domain binds no verifyingContract, so its signature names no token",
+            )
+            expect(() => plan(unbindingContract(permit, 'string'))).toThrow(
+                /binds no verifyingContract/,
+            )
+        },
+    )
+
+    it('refuses a permit that names no verifyingContract and declares no domain', () => {
+        const { verifyingContract: _contract, ...domain } =
+            EIP2612_PERMIT_TYPED_DATA.domain
+
+        expect(() => plan({ ...EIP2612_PERMIT_TYPED_DATA, domain })).toThrow(
+            /binds no verifyingContract/,
+        )
     })
 })
 

@@ -72,7 +72,11 @@ import {
     typedDataDigest,
     type EvmDigestKind,
 } from './digests'
-import { isPermitTypedData, spendApprovalOf } from './permits'
+import {
+    isPermitTypedData,
+    isUnboundPermitTypedData,
+    spendApprovalOf,
+} from './permits'
 import { toViemSignature } from './sign'
 import { decodeRecap, isRecapUri } from './recap'
 import { parseSiweMessage } from './siwe'
@@ -524,6 +528,13 @@ const planTypedData = (
     if (binding.kind === 'none' && isPermitTypedData(typedData)) {
         throw new Error(
             "The permit's domain binds no chain, so its signature would be valid on every chain",
+        )
+    }
+    // Valid on every token whose domain has no verifyingContract, so the
+    // review could name none of them.
+    if (isUnboundPermitTypedData(typedData)) {
+        throw new Error(
+            "The permit's domain binds no verifyingContract, so its signature names no token",
         )
     }
     try {
