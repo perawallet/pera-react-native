@@ -797,6 +797,34 @@ describe('useAccountNfts', () => {
             })
         })
 
+        it('names only registered networks, in registry order, when none shows NFTs', () => {
+            setCapabilityOverrides({ nft: false })
+            setCapabilityOverrides({ nft: false }, 'ethereum')
+            mockUseSelectedAccount.mockReturnValue({
+                ...mockAccount,
+                chains: {
+                    unregistered: { address: ETH_ADDRESS },
+                    ethereum: { address: ETH_ADDRESS },
+                    algorand: { address: ACCOUNT_ADDRESS },
+                },
+            })
+            const { result } = renderHook(() => useAccountNfts())
+
+            expect(result.current.unsupportedNetworkNames).toBe(
+                'Algorand, Ethereum',
+            )
+        })
+
+        it('names no networks for an account on none', () => {
+            mockUseSelectedAccount.mockReturnValue({
+                ...mockAccount,
+                chains: {},
+            })
+            const { result } = renderHook(() => useAccountNfts())
+
+            expect(result.current.unsupportedNetworkNames).toBeUndefined()
+        })
+
         it('refreshes every network the gallery shows in one pull', async () => {
             const { result } = renderHook(() => useAccountNfts())
 

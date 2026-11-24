@@ -17,6 +17,7 @@ import type { PWFlatList } from '@components/core'
 import {
     addressOn,
     useAccountCapabilityScope,
+    useAccountHoldingSources,
     useAccountScope,
     useSelectedAccount,
     useAccountCollectiblesQuery,
@@ -111,10 +112,14 @@ export const useAccountNfts = (): UseAccountNftsResult => {
     })
     const canOptIn = canSign && manageScope !== null && hasNftsOnManageChain
     const isMultiChain = sources.length > 1
+    const allSources = useAccountHoldingSources(account)
     const unsupportedNetworkNames =
-        account && sources.length === 0
-            ? (Object.keys(account.chains) as ChainId[])
-                  .map(chainId => chainDisplayNameOf(chainId) ?? chainId)
+        sources.length === 0 && allSources.length > 0
+            ? allSources
+                  .map(
+                      ({ scope }) =>
+                          chainDisplayNameOf(scope.chainId) ?? scope.chainId,
+                  )
                   .join(', ')
             : undefined
     // Shared with Overview and History, so a chip picked there carries here;
