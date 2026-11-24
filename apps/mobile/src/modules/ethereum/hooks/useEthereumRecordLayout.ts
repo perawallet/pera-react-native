@@ -182,17 +182,16 @@ export const useEthereumRecordLayout = (
         // Pending only while the store has not answered; a miss is settled and falls back to the raw leg.
         const isAmountLoading = !!leading && !amount && isAssetsPending
 
-        // A read transfer already shows its own asset and amount, so its leg isn't listed again.
-        const readTransferAssetId =
+        // A read NFT transfer already shows the NFT and its amount, so its leg isn't listed again.
+        // Only NFTs: a token's leg is the balance actually moved, which a fee-taking token can make differ from the call.
+        const readNftAssetId =
             presentation?.isTransfer &&
             (presentation.amount || presentation.isAmountLoading)
-                ? (presentation.amount?.asset?.assetId ??
-                  readNftAssetIdOf(presentation))
+                ? readNftAssetIdOf(presentation)
                 : undefined
         const isShownByRead = (leg: BalanceChange) =>
-            !!readTransferAssetId &&
-            leg.assetRef.assetId.toLowerCase() ===
-                readTransferAssetId.toLowerCase()
+            !!readNftAssetId &&
+            leg.assetRef.assetId.toLowerCase() === readNftAssetId.toLowerCase()
 
         return {
             summary: {

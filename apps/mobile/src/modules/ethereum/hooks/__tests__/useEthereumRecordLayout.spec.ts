@@ -446,6 +446,36 @@ describe('useEthereumRecordLayout', () => {
         })
     })
 
+    it("Given a read token transfer, then the history's leg stays, since a fee-taking token can move a different balance than the call says", () => {
+        const leg = {
+            assetRef: USDC_REF,
+            value: new Decimal(-5),
+        }
+        const { amountRows } = layoutOf(
+            recordOf(
+                {},
+                {
+                    kind: 'token-transfer',
+                    balanceChanges: [leg],
+                },
+            ),
+            {
+                titleKey: 'transactions.list_item.send',
+                iconName: 'send',
+                standardCall: null,
+                isTransfer: true,
+                isAmountLoading: false,
+                view: {},
+                amount: {
+                    asset: { assetId: USDC_REF.assetId, decimals: 6 },
+                    value: new Decimal(5),
+                },
+            } as unknown as EthereumTransactionPresentation,
+        )
+
+        expect(amountRows).toEqual([leg])
+    })
+
     it("Given a token whose asset the store hasn't answered for, then the hero holds its place and no raw leg shows yet", () => {
         vi.mocked(useAssetsQuery).mockReturnValue({
             data: new Map(),
