@@ -12,8 +12,7 @@
 
 import type { SignInSummary } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import { PWText, PWView } from '@components/core'
-import { CheckboxRow } from '@components/CheckboxRow'
+import { PWCheckbox, PWText, PWView } from '@components/core'
 import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
 import { useLanguage } from '@hooks/useLanguage'
 import { CautionCard } from '../CautionCard'
@@ -112,10 +111,10 @@ export const SignInMessageDetails = ({
                 </WarningBanner>
             )}
             {!!acknowledgement && (
-                <CheckboxRow
+                <PWCheckbox
                     label={t('signing.review_warnings.acknowledge')}
                     isChecked={acknowledgement.isChecked}
-                    onToggle={acknowledgement.onToggle}
+                    onPress={acknowledgement.onToggle}
                     testID='sign_in_acknowledge'
                 />
             )}
