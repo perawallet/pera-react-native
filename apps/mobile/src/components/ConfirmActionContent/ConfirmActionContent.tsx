@@ -40,6 +40,7 @@ export type ConfirmActionContentProps<TResult = boolean> = {
     tertiaryVariant?: PWButtonProps['variant']
     buttonPaddingStyle?: PWButtonProps['paddingStyle']
     isConfirmDisabled?: boolean
+    isCancelDisabled?: boolean
     pendingAction?: ConfirmActionPending
     children?: ReactNode
     testID?: string
@@ -68,6 +69,7 @@ export const ConfirmActionContent = <TResult = boolean,>({
     tertiaryVariant = 'errorLink',
     buttonPaddingStyle,
     isConfirmDisabled,
+    isCancelDisabled,
     pendingAction,
     children,
     testID,
@@ -99,6 +101,7 @@ export const ConfirmActionContent = <TResult = boolean,>({
             tertiaryVariant={tertiaryVariant}
             buttonPaddingStyle={buttonPaddingStyle}
             isConfirmDisabled={isConfirmDisabled}
+            isCancelDisabled={isCancelDisabled}
             pendingAction={pendingAction}
             testID={testID}
             confirmTestID={confirmTestID}

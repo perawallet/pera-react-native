@@ -12,10 +12,11 @@
 
 import { useMemo } from 'react'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import type { Maybe } from '@perawallet/wallet-core-shared'
+import { useStableIdList, type Maybe } from '@perawallet/wallet-core-shared'
 import { accountsChainAdapters } from '../chain-adapter'
 import { useAccountChainStateStore, useAccountsStore } from '../store'
 import type { WalletAccount } from '../models'
+import { chainAccountOf } from '../credentials/accessors'
 
 /**
  * Locally held accounts that `address` is the authority of. Store-only, so it
@@ -36,4 +37,32 @@ export const useAccountsDelegatedTo = (
         return authority ? authority.accountsDelegatedTo(address, accounts) : []
         // eslint-disable-next-line react-hooks/exhaustive-deps -- chainStates re-runs the memo: accountsDelegatedTo reads the chain-state store, not its arguments
     }, [address, accounts, chainId, chainStates])
+}
+
+/**
+ * The list form of `useAccountsDelegatedTo`: the ids of `candidates` that at
+ * least one locally held account delegates its signing to, in input order.
+ */
+export const useAuthorityAccountIds = (
+    candidates: WalletAccount[],
+    chainId: ChainId,
+): string[] => {
+    const accounts = useAccountsStore(state => state.accounts)
+    const chainStates = useAccountChainStateStore(state => state.states)
+    const authorityIds = useMemo(() => {
+        if (!accountsChainAdapters.has(chainId)) return []
+        const authority = accountsChainAdapters.get(chainId).authority
+        if (!authority) return []
+        return candidates
+            .filter(candidate => {
+                const address = chainAccountOf(candidate, chainId)?.address
+                return (
+                    address !== undefined &&
+                    authority.accountsDelegatedTo(address, accounts).length > 0
+                )
+            })
+            .map(({ id }) => id)
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- chainStates re-runs the memo: accountsDelegatedTo reads the chain-state store, not its arguments
+    }, [candidates, accounts, chainId, chainStates])
+    return useStableIdList(authorityIds)
 }
