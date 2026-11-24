@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
@@ -150,6 +150,7 @@ export const useCloudBackupConfirmCredentialsScreen =
         const { correctPairs, passphraseStatus, reroll } =
             useStoredPairs(isPinGateResolved)
         const [encryptionKey, setEncryptionKey] = useState('')
+        const hasConfirmedRef = useRef(false)
 
         const isKeyCorrect = salt != null && encryptionKey === salt
 
@@ -166,6 +167,11 @@ export const useCloudBackupConfirmCredentialsScreen =
                 showWrong('key')
                 return
             }
+            // Confirm stays tappable while the screen pops; a second tap must not toast or pop again.
+            if (hasConfirmedRef.current) {
+                return
+            }
+            hasConfirmedRef.current = true
             confirmCredentials()
             successToast(t('cloud_backup.confirm_credentials.success'), '')
             navigation.goBack()

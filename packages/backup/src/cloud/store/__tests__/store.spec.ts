@@ -114,13 +114,33 @@ describe('useCloudBackupStore', () => {
         expect(useCloudBackupStore.getState().credentialsConfirmed).toBe(false)
     })
 
-    test('the confirmation survives a rehydrate', async () => {
+    test('the confirmation is written to the stored blob', () => {
         useCloudBackupStore.getState().setConfigured({
             backupId: 'did:pera:abc',
             salt: 'c2FsdA==',
             deviceId: 'device-123',
             credentialsConfirmed: true,
         })
+
+        const stored = JSON.parse(
+            getProvider().keyValueStorage.getItem('cloud-backup-store') ?? '{}',
+        )
+        expect(stored.state.credentialsConfirmed).toBe(true)
+    })
+
+    test('a stored confirmation loads confirmed after a restart', async () => {
+        getProvider().keyValueStorage.setItem(
+            'cloud-backup-store',
+            JSON.stringify({
+                state: {
+                    backupId: 'did:pera:abc',
+                    salt: 'c2FsdA==',
+                    deviceId: 'device-123',
+                    credentialsConfirmed: true,
+                },
+                version: 1,
+            }),
+        )
 
         await useCloudBackupStore.persist.rehydrate()
 

@@ -203,6 +203,18 @@ describe('useCloudBackupConfirmCredentialsScreen', () => {
         expect(goBackMock).toHaveBeenCalledTimes(1)
     })
 
+    test('a second confirm tap after success does nothing more', async () => {
+        const { result } = await renderReady()
+        act(() => result.current.handleKeyChange(SALT))
+
+        act(() => quizCall()[2]())
+        act(() => quizCall()[2]())
+
+        expect(confirmCredentialsMock).toHaveBeenCalledTimes(1)
+        expect(successToastMock).toHaveBeenCalledTimes(1)
+        expect(goBackMock).toHaveBeenCalledTimes(1)
+    })
+
     test('accepts a key pasted with surrounding spaces', async () => {
         const { result } = await renderReady()
         act(() => result.current.handleKeyChange(`  ${SALT} `))
