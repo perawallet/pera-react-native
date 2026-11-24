@@ -13,7 +13,7 @@
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     isAccountKey,
-    BACKUP_SECRETS_KEY_PREFIX,
+    isSecretsItemKey,
     isAccountRecordKey,
     isContactRecordKey,
     isPasskeyItemKey,
@@ -277,15 +277,6 @@ export const isAccountRestorableFromLatestSync = (
     }
 
     const items = Object.entries(syncState.items)
-    const liveSecretAddresses = new Set(
-        items.flatMap(([key, item]) =>
-            key.startsWith(BACKUP_SECRETS_KEY_PREFIX) &&
-            isLiveInBackup(item) &&
-            item.address != null
-                ? [item.address]
-                : [],
-        ),
-    )
 
     return items.some(([key, item]) => {
         if (
@@ -299,12 +290,24 @@ export const isAccountRestorableFromLatestSync = (
         if (!addresses.every(address => recordAddresses.includes(address))) {
             return false
         }
+        // A record that doesn't parse can't say whether it is an HD one, so
+        // its secret can't be located.
+        if (cachedRecordOverview(item.record).chains.length === 0) {
+            return false
+        }
         // One seed secret serves every child, filed under the seed's own first
         // address rather than the child's.
         const seedReference = cachedRecordSeedReference(item.record)
         const secretOwners =
-            seedReference == null ? recordAddresses : [seedReference]
-        return secretOwners.some(owner => liveSecretAddresses.has(owner))
+            seedReference === null ? recordAddresses : [seedReference]
+        return items.some(
+            ([secretKey, secret]) =>
+                isSecretsItemKey(secretKey) &&
+                isLiveInBackup(secret) &&
+                secret.address !== undefined &&
+                secret.address !== null &&
+                secretOwners.includes(secret.address),
+        )
     })
 }
 

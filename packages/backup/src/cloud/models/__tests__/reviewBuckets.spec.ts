@@ -629,6 +629,13 @@ describe('isAccountRestorableFromLatestSync', () => {
         tracked('ALGO', {
             addresses: ['ALGO'],
             accountType: chainBackupKind('algo25'),
+            record: {
+                formatVersion: 2,
+                updatedAt: 1,
+                chains: [
+                    { chain: 'algorand', type: 'algo25', address: 'ALGO' },
+                ],
+            },
             ...overrides,
         })
 
@@ -705,6 +712,15 @@ describe('isAccountRestorableFromLatestSync', () => {
             [accountKey('ALGO')]: tracked('ALGO'),
             [secretsKey('ALGO')]: tracked('ALGO'),
         })
+
+        expect(isAccountRestorableFromLatestSync(state, ['ALGO'])).toBe(false)
+    })
+
+    it.each<[string, Partial<SyncItemState>]>([
+        ['missing', { record: null }],
+        ['unparseable', { record: { chains: 'broken' } }],
+    ])('is false when the cached record content is %s', (_name, record) => {
+        const state = stateOf(standalone(record))
 
         expect(isAccountRestorableFromLatestSync(state, ['ALGO'])).toBe(false)
     })
