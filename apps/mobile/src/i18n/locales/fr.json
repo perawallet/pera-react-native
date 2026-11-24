@@ -3303,7 +3303,8 @@
             },
             "fee_shortfall": {
                 "title": "Pas assez de {{symbol}} pour les frais",
-                "body": "Cet envoi peut coûter jusqu’à {{fee}} de frais. Réduisez le montant ou choisissez des frais plus lents."
+                "body": "Cet envoi peut coûter jusqu’à {{fee}} de frais. Réduisez le montant ou choisissez des frais plus lents.",
+                "body_non_native": "Cet envoi peut coûter jusqu’à {{fee}} de frais sur {{network}}. Ajoutez des {{symbol}} ou choisissez des frais plus lents."
             },
             "fee_unavailable": {
                 "title": "Impossible d’estimer les frais",

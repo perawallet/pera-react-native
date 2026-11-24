@@ -3303,7 +3303,8 @@
             },
             "fee_shortfall": {
                 "title": "Not enough {{symbol}} for the fee",
-                "body": "This send can be charged up to {{fee}} in fees. Lower the amount or pick a slower fee."
+                "body": "This send can be charged up to {{fee}} in fees. Lower the amount or pick a slower fee.",
+                "body_non_native": "This send can be charged up to {{fee}} in fees on {{network}}. Add {{symbol}} or pick a slower fee."
             },
             "fee_unavailable": {
                 "title": "Couldn't estimate the fee",

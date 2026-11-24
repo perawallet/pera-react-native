@@ -116,6 +116,7 @@ export const TransactionConfirmationScreen = () => {
                             body={feeShortfall.body}
                             icon='error-circle'
                             iconVariant='error'
+                            style={styles.footerNotice}
                             testID='send_fee_shortfall'
                         />
                     )}
@@ -125,6 +126,7 @@ export const TransactionConfirmationScreen = () => {
                             body={feeError.body}
                             icon='error-circle'
                             iconVariant='error'
+                            style={styles.footerNotice}
                             testID='send_fee_error'
                         />
                     )}
@@ -134,6 +136,7 @@ export const TransactionConfirmationScreen = () => {
                             title={t('common.retry.label')}
                             onPress={retryFee}
                             isLoading={feeError.isRetrying}
+                            style={styles.footerNotice}
                             testID='send_fee_retry_button'
                         />
                     )}

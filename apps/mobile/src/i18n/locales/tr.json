@@ -3303,7 +3303,8 @@
             },
             "fee_shortfall": {
                 "title": "Ücret için yeterli {{symbol}} yok",
-                "body": "Bu gönderim en fazla {{fee}} ücret tutabilir. Miktarı azalt veya daha yavaş bir ücret seç."
+                "body": "Bu gönderim en fazla {{fee}} ücret tutabilir. Miktarı azalt veya daha yavaş bir ücret seç.",
+                "body_non_native": "Bu gönderim {{network}} ağında en fazla {{fee}} ücret tutabilir. {{symbol}} ekle veya daha yavaş bir ücret seç."
             },
             "fee_unavailable": {
                 "title": "Ücret tahmin edilemedi",

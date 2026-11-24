@@ -35,6 +35,9 @@ export const useStyles = makeStyles(theme => {
             alignSelf: 'flex-start',
             marginTop: theme.spacing.xs,
         },
+        footerNotice: {
+            marginBottom: theme.spacing.xl,
+        },
         scrollContent: {
             gap: theme.spacing.xl,
             paddingTop: theme.spacing.lg,
