@@ -23,9 +23,11 @@ import {
     describe,
     expect,
     it,
+    onTestFinished,
     vi,
 } from 'vitest'
 import React from 'react'
+import { Linking } from 'react-native'
 import { Decimal } from 'decimal.js'
 import {
     act,
@@ -1131,6 +1133,57 @@ describe('Flow: History on an Ethereum account', () => {
                 expect(nodeReads).toEqual([])
             })
 
+            it('Given two NFTs received in one transaction, when its row is opened, then each amount reads as a bare quantity without the collection ticker', async () => {
+                const RECEIVE_HASH = hashOf(18)
+                server.use(
+                    ...peraEvmHistoryHandlers({
+                        history: {
+                            [ETH_ADDRESS]: [
+                                [
+                                    evmHistoryItem({
+                                        hash: RECEIVE_HASH,
+                                        block_time: '2026-01-07T00:00:00Z',
+                                        nft_transfers: [
+                                            evmNftTransferLeg({
+                                                from: COUNTERPARTY,
+                                                to: ETH_ADDRESS,
+                                            }),
+                                            evmNftTransferLeg({
+                                                token_id: '5678',
+                                                from: COUNTERPARTY,
+                                                to: ETH_ADDRESS,
+                                            }),
+                                        ],
+                                    }),
+                                ],
+                            ],
+                        },
+                    }),
+                    ...evmRpcHandlers({
+                        responses: { eth_getTransactionByHash: () => null },
+                    }),
+                )
+                renderHistory()
+
+                await openRow(RECEIVE_HASH)
+
+                // An amount ending in its figure has no unit after it; waiting on
+                // both rows keeps one still loading from passing.
+                await waitFor(
+                    () => {
+                        for (const testID of [
+                            'ethereum_record_amount_0',
+                            'ethereum_record_amount_1',
+                        ]) {
+                            expect(
+                                screen.getByTestId(testID).textContent,
+                            ).toMatch(/1$/)
+                        }
+                    },
+                    { timeout: SLOW_WAIT_TIMEOUT_MS },
+                )
+            })
+
             it('Given a revocation whose calldata the history carries, when it lists, then the row says revoke without asking the node, and its page says the same', async () => {
                 nodeReads.length = 0
                 server.use(
@@ -1444,14 +1497,19 @@ describe('Flow: History on an Ethereum account', () => {
                     ).toBeTruthy()
                 })
 
+                const openURL = vi
+                    .spyOn(Linking, 'openURL')
+                    .mockResolvedValue(true)
+                onTestFinished(() => openURL.mockRestore())
                 fireEvent.click(
                     closestPressable(
                         screen.getByTestId('transaction_detail_explorer'),
                     ) ?? screen.getByTestId('transaction_detail_explorer'),
                 )
-                expect(
-                    useWebViewStore.getState().openWebViews.map(v => v.url),
-                ).toEqual([`https://etherscan.io/tx/${SENT_HASH}`])
+                expect(openURL).toHaveBeenCalledWith(
+                    `https://etherscan.io/tx/${SENT_HASH}`,
+                )
+                expect(useWebViewStore.getState().openWebViews).toEqual([])
                 expect(nodeReads).toEqual([])
             })
         })

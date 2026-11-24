@@ -31,11 +31,6 @@ const ETH_SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const BASE_SCOPE: ChainScope = { chainId: 'base', networkId: 'mainnet' }
 
 const REGISTERED: ChainId[] = ['algorand', 'ethereum', 'base']
-const DISPLAY_NAMES: Record<string, string> = {
-    algorand: 'Algorand',
-    ethereum: 'Ethereum',
-    base: 'Base',
-}
 const FAMILIES: Record<string, string> = {
     algorand: 'algorand',
     ethereum: 'evm',
@@ -85,7 +80,6 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
 })
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    chainDisplayNameOf: (chainId: string) => DISPLAY_NAMES[chainId],
     getChainDescriptor: (chainId: string) => ({ family: FAMILIES[chainId] }),
 }))
 
@@ -248,20 +242,16 @@ describe('useGlobalSearch', () => {
         expect(result.current.query).toBe('0xc3')
     })
 
-    test('a network name lists only the accounts with an address on it', async () => {
+    test('a network name lists no account', async () => {
         const universal = makeAccount('UNI_ADDR', 'Universal', {
             ethereum: { address: '0xAAAA' },
         })
-        const algorandOnly = makeAccount('SOLO_ADDR', 'Solo')
-        mockAllAccounts.mockReturnValue([universal, algorandOnly])
+        mockAllAccounts.mockReturnValue([universal])
 
         const { result } = await search({}, 'ethereum')
 
-        await waitFor(() =>
-            expect(result.current.results.accounts).toEqual([
-                { account: universal, chainId: 'ethereum' },
-            ]),
-        )
+        await waitFor(() => expect(result.current.query).toBe('ethereum'))
+        expect(result.current.results.accounts).toEqual([])
     })
 
     test('lists the chains any account is on, in registry order', () => {

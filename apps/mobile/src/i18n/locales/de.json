@@ -435,8 +435,6 @@
             "social_media": "Soziale Medien",
             "chart_empty_body": "Sobald ein Guthabenverlauf vorliegt, wird hier ein Diagramm angezeigt",
             "total_supply_info_body": "Das Gesamtangebot eines Assets wird bei der Erstellung festgelegt und entspricht der Gesamtzahl der erstellten Einheiten des Assets.",
-            "circulating_supply": "Umlaufendes Angebot",
-            "circulating_supply_info_body": "Das umlaufende Angebot ist die Anzahl der Coins, die derzeit im Umlauf sind. Die native Währung eines Netzwerks hat kein festes Gesamtangebot, daher ändert sich diese Zahl, wenn Coins ausgegeben oder verbrannt werden.",
             "token_total_supply_info_body": "Das Gesamtangebot ist die Anzahl der Token, die der Vertrag ausgegeben hat, abzüglich der verbrannten. Es ändert sich, wenn der Emittent Token prägt oder verbrennt."
         },
         "action_buttons": {
@@ -530,6 +528,7 @@
             "empty_title": "NFTs",
             "empty_body": "Willkommen in deiner NFT-Galerie! Du hast noch keine NFTs. Alle NFTs in deinem Wallet werden hier angezeigt.",
             "empty_body_multichain": "Willkommen in deiner NFT-Galerie!\nDu hast noch keine NFTs. NFTs, die du in Netzwerken wie Ethereum erhältst, erscheinen hier automatisch. Für Algorand-NFTs musst du dich zuerst anmelden.",
+            "empty_body_unsupported": "NFTs auf {{chains}} werden in Pera noch nicht angezeigt.",
             "empty_optin": "Für NFT anmelden",
             "empty_optin_algorand": "Für Algorand-NFT anmelden",
             "nomatch_title": "Keine passenden NFTs",
@@ -1558,7 +1557,8 @@
             "request_expired_body": "Diese Signaturanfrage ist abgelaufen, bevor sie beantwortet wurde. Lass die App sie erneut senden.",
             "unsupported_method_body": "{{dappName}} hat {{method}} angefragt, was Pera nicht unterstützt. Die Anfrage wurde abgelehnt.",
             "unsupported_network_body": "{{dappName}} wollte das Netzwerk mit der Chain-ID {{chainId}} verwenden, das Pera nicht unterstützt. Die Anfrage wurde abgelehnt.",
-            "unsupported_chains_body": "Diese App wollte ein Netzwerk verwenden, das Pera nicht unterstützt. Die Verbindung wurde abgelehnt."
+            "unsupported_chains_body": "Diese App wollte ein Netzwerk verwenden, das Pera nicht unterstützt. Die Verbindung wurde abgelehnt.",
+            "unselected_network_body": "Diese App bietet nur Netzwerke an, auf denen Pera gerade nicht ist. Die Verbindung wurde abgelehnt. Schalte den Entwicklermodus ein oder aus, damit er zur App passt, und versuche es erneut."
         },
         "signing": {
             "title": "Bei der Verarbeitung der Signaturanfrage ist ein Fehler aufgetreten",
@@ -3691,7 +3691,11 @@
             "no_deadline_warning": "Diese Berechtigung läuft nie ab.",
             "spender_label": "Berechtigte Adresse",
             "unlimited": "Unbegrenzt",
-            "deadline_label": "Frist",
+            "expiry_label": "Berechtigung läuft ab",
+            "signature_deadline_label": "Signatur gültig bis",
+            "signature_long_deadline_warning": "Diese Signatur bleibt länger als ein Jahr gültig und kann daher noch lange nach dem Signieren verwendet werden.",
+            "expired_title": "Diese Anfrage ist abgelaufen",
+            "expired_body": "Die Frist zum Signieren ist vorbei, daher würde sie abgelehnt. Brich ab und starte in der App neu.",
             "never": "Nie",
             "known_title": "Über diese Freigabe",
             "known_description": "{{name}} ist ein bekannter Smart Contract",
@@ -4208,7 +4212,8 @@
         },
         "switch_network": {
             "title": "Netzwerkzugriff erlauben?",
-            "body": "{{name}} möchte deine {{chain}}-Konten im Netzwerk {{network}} verwenden.",
+            "body": "{{name}} möchte deine Konten auf {{chain}} verwenden.",
+            "body_with_network": "{{name}} möchte deine Konten auf {{chain}} {{network}} verwenden.",
             "confirm": "Erlauben"
         },
         "settings": {

@@ -56,6 +56,7 @@ import {
     WalletConnectPermissionError,
     WalletConnectRequestExpiredError,
     WalletConnectUnsupportedChainsError,
+    WalletConnectUnselectedNetworkError,
     WalletConnectUnsupportedMethodError,
     WalletConnectUnsupportedNetworkError,
 } from '../shared/errors'
@@ -160,10 +161,14 @@ type ProposalRefusal =
  * to be covered, and failing it under Connect throws a raw library error that
  * no retry can fix while the dApp hangs to its own expiry. Only the REQUIRED
  * set matters — optional namespaces are filtered down silently.
+ *
+ * The chain check is stricter than the library's, and Pera policy: a required
+ * id must be its chain's selected network, since only that one is granted.
  */
 const screenRequiredNamespaces = (
     chains: readonly WalletConnectV2Chain[],
     namespaces: ProposalNamespaces,
+    getNetworkId: (chainId: ChainId) => NetworkId,
 ): Nullable<ProposalRefusal> => {
     if (
         !Object.keys(namespaces).every(key =>
@@ -176,8 +181,8 @@ const screenRequiredNamespaces = (
     // each know only their own.
     if (
         !chains.every(({ support }) =>
-            requestedChains(support, namespaces).every(
-                chainId => chainServing(chains, chainId) !== null,
+            requestedChains(support, namespaces).every(chainId =>
+                isSelectedNetwork(chains, chainId, getNetworkId),
             ),
         )
     ) {
@@ -243,20 +248,24 @@ export type CreateWalletConnectV2HandlerOptions = {
 const dedupe = (values: string[]): string[] => [...new Set(values)]
 
 /**
- * The networks a proposal asks for on one chain. Network ids are chain-local,
- * so each chain's are resolved through its own adapter and never compared
- * across chains.
+ * The networks a proposal asks for on one chain, narrowed to the chain's
+ * selected one. Network ids are chain-local, so each chain's are resolved
+ * through its own adapter and never compared across chains.
  */
 const requestedNetworks = (
-    support: WalletConnectSupport,
+    { chainId, support }: WalletConnectV2Chain,
     proposal: WalletKitSessionProposal['params'],
+    getNetworkId: (chainId: ChainId) => NetworkId,
 ): NetworkId[] =>
     dedupe([
         ...requestedChains(support, proposal.requiredNamespaces),
         ...requestedChains(support, proposal.optionalNamespaces),
-    ]).flatMap(chainId => {
-        const network = support.networkForCaip2ChainId(chainId)
-        return network === null ? [] : [network]
+    ]).flatMap(caip2 => {
+        const network = support.networkForCaip2ChainId(caip2)
+        // Only the selected network is ever served, and the connect sheet
+        // badges the chain by what is listed here: granting the rest would
+        // hand the dApp networks (a mainnet's testnet) the user never saw.
+        return network === getNetworkId(chainId) ? [network] : []
     })
 
 type SupportedNamespace = {
@@ -296,6 +305,53 @@ const chainServing = (
 const v2ChainForCaip2 = (caip2: string): Nullable<WalletConnectV2Chain> =>
     chainServing(v2Chains(), caip2)
 
+/** The ids a proposal names that Pera serves on some network, selected or not. */
+const servedIdsNamed = (
+    chains: readonly WalletConnectV2Chain[],
+    ...namespaces: ProposalNamespaces[]
+): { named: string[]; served: string[] } => {
+    const named = dedupe(
+        chains.flatMap(({ support }) =>
+            namespaces.flatMap(each => requestedChains(support, each)),
+        ),
+    )
+    return {
+        named,
+        served: named.filter(caip2 => chainServing(chains, caip2) !== null),
+    }
+}
+
+const refusalErrorOf = (
+    refusal: ProposalRefusal,
+    required: { named: string[]; served: string[] },
+    isSelected: (caip2: string) => boolean,
+): WalletConnectError => {
+    if (refusal !== 'UNSUPPORTED_CHAINS') {
+        return new WalletConnectPermissionError(
+            'This dApp requires a WalletConnect capability Pera does not support.',
+        )
+    }
+    // A switch helps only if every required id is served and none is on the
+    // current mode: one that is would just become the unselected one.
+    return required.served.length === required.named.length &&
+        !required.named.some(isSelected)
+        ? new WalletConnectUnselectedNetworkError()
+        : new WalletConnectUnsupportedChainsError()
+}
+
+const isSelectedNetwork = (
+    chains: readonly WalletConnectV2Chain[],
+    caip2: string,
+    getNetworkId: (chainId: ChainId) => NetworkId,
+): boolean => {
+    const chain = chainServing(chains, caip2)
+    return (
+        chain !== null &&
+        chain.support.networkForCaip2ChainId(caip2) ===
+            getNetworkId(chain.chainId)
+    )
+}
+
 // No codec means no addresses: an address nobody can validate must not be
 // offered to, or signed for, a chain.
 const addressesOnChain = (
@@ -322,16 +378,20 @@ const supportedNamespacesFor = (
     chains: readonly WalletConnectV2Chain[],
     proposal: WalletKitSessionProposal['params'],
     addresses: readonly string[],
+    getNetworkId: (chainId: ChainId) => NetworkId,
     canSignWith?: (chainId: ChainId, address: string) => boolean,
 ): Record<string, SupportedNamespace> => {
     const namespaces = new Map<string, SupportedNamespace>()
-    for (const { chainId, support, v2 } of chains) {
-        const caip2Ids = requestedNetworks(support, proposal).flatMap(
-            network => {
-                const caip2 = support.caip2ChainIdFor(network)
-                return caip2 === null ? [] : [caip2]
-            },
-        )
+    for (const chain of chains) {
+        const { chainId, support, v2 } = chain
+        const caip2Ids = requestedNetworks(
+            chain,
+            proposal,
+            getNetworkId,
+        ).flatMap(network => {
+            const caip2 = support.caip2ChainIdFor(network)
+            return caip2 === null ? [] : [caip2]
+        })
         const own = addressesOnChain(chainId, addresses).filter(
             address => !canSignWith || canSignWith(chainId, address),
         )
@@ -417,9 +477,13 @@ export const createWalletConnectV2Handler = (
     // Bumped by teardown, so a start that lands afterwards drops its client.
     let generation = 0
     let unbinders: (() => void)[] = []
-    // Proposal id to pairing topic, and the once-only ledger: a proposal
-    // missing from here has been approved, rejected or expired.
-    const pendingProposals = new Map<number, string>()
+    // Proposal id to its pairing topic and the networks its sheet showed, and
+    // the once-only ledger: a proposal missing from here has been approved,
+    // rejected or expired.
+    const pendingProposals = new Map<
+        number,
+        { pairingId: string; networks: Map<ChainId, NetworkId[]> }
+    >()
     // Request id to session topic: `session_request_expire` carries only the
     // id, and the registry addresses requests by connection. The namespace
     // lets an account switch withdraw only its own family's requests.
@@ -476,7 +540,7 @@ export const createWalletConnectV2Handler = (
         // WalletKit has already dropped the proposal; releasing ours is what
         // stops a sheet from outliving the answer window it had.
         bind(walletKit, 'proposal_expire', ({ id }) => {
-            const pairingId = pendingProposals.get(id)
+            const pairingId = pendingProposals.get(id)?.pairingId
             if (pairingId === undefined) return
             pendingProposals.delete(id)
             releasePairing(pairingId)
@@ -1100,15 +1164,15 @@ export const createWalletConnectV2Handler = (
      * a failed approval hands it back, since the user must be able to retry
      * Connect.
      */
-    const claimProposal = (id: number): string => {
-        const pairingId = pendingProposals.get(id)
-        if (pairingId === undefined) {
+    const claimProposal = (id: number) => {
+        const pending = pendingProposals.get(id)
+        if (pending === undefined) {
             throw new WalletConnectInvalidSessionError(
                 'This connection request has already been answered',
             )
         }
         pendingProposals.delete(id)
-        return pairingId
+        return pending
     }
 
     const approveProposal = async (input: {
@@ -1123,15 +1187,15 @@ export const createWalletConnectV2Handler = (
                 'Approving a WalletConnect session needs at least one account',
             )
         }
-        const pairingId = claimProposal(input.id)
+        const pending = claimProposal(input.id)
         try {
-            return await settleProposal(input, pairingId)
+            return await settleProposal(input, pending)
         } catch (error) {
             // Everything from here to the record write can throw — the
             // namespace build, the relay, a session naming no usable account.
             // The proposal goes back so a second Connect works.
-            pendingProposals.set(input.id, pairingId)
-            reportError(error, pairingScope(pairingId))
+            pendingProposals.set(input.id, pending)
+            reportError(error, pairingScope(pending.pairingId))
             throw error
         }
     }
@@ -1142,7 +1206,13 @@ export const createWalletConnectV2Handler = (
             proposal: WalletKitSessionProposal['params']
             accounts: string[]
         },
-        pairingId: string,
+        {
+            pairingId,
+            networks: shown,
+        }: {
+            pairingId: string
+            networks: ReadonlyMap<ChainId, readonly NetworkId[]>
+        },
     ): Promise<Connection> => {
         const walletKit = requireClient()
         // Re-read: the capability may have flipped since the sheet opened.
@@ -1153,11 +1223,29 @@ export const createWalletConnectV2Handler = (
             )
         }
 
+        // The selection moved under the open sheet: granting now would hand
+        // the dApp networks the user never saw. A chain that flipped off is
+        // simply left out below.
+        const isMoved = chains.some(chain => {
+            const seen = shown.get(chain.chainId) ?? []
+            const granted = requestedNetworks(
+                chain,
+                input.proposal,
+                getNetworkId,
+            )
+            return (
+                granted.length !== seen.length ||
+                granted.some((network, index) => network !== seen[index])
+            )
+        })
+        if (isMoved) throw new WalletConnectInvalidNetworkError()
+
         // A required chain whose capability flipped off while the sheet was
         // open is no longer in `chains`, so it never reaches `uncovered` below.
         const refusal = screenRequiredNamespaces(
             chains,
             input.proposal.requiredNamespaces,
+            getNetworkId,
         )
         if (refusal) {
             throw new WalletConnectError(
@@ -1169,6 +1257,7 @@ export const createWalletConnectV2Handler = (
             chains,
             input.proposal,
             input.accounts,
+            getNetworkId,
             canSignWith,
         )
         // Typed and terminal: the library's own refusal is a plain Error the
@@ -1249,7 +1338,7 @@ export const createWalletConnectV2Handler = (
         id: number,
         reason?: string,
     ): Promise<void> => {
-        const pairingId = claimProposal(id)
+        const { pairingId } = claimProposal(id)
         await deliverRejection(id, 'USER_REJECTED', reason, pairingId)
         releasePairing(pairingId)
     }
@@ -1359,23 +1448,24 @@ export const createWalletConnectV2Handler = (
         const refusal = screenRequiredNamespaces(
             chains,
             params.requiredNamespaces,
+            getNetworkId,
         )
         if (refusal) {
             await deliverRejection(id, refusal, undefined, pairingId)
             releasePairing(pairingId)
             reportError(
-                refusal === 'UNSUPPORTED_CHAINS'
-                    ? new WalletConnectUnsupportedChainsError()
-                    : new WalletConnectPermissionError(
-                          'This dApp requires a WalletConnect capability Pera does not support.',
-                      ),
+                refusalErrorOf(
+                    refusal,
+                    servedIdsNamed(chains, params.requiredNamespaces),
+                    caip2 => isSelectedNetwork(chains, caip2, getNetworkId),
+                ),
                 pairingScope(pairingId),
             )
             return
         }
 
         const offered = chains.flatMap(chain => {
-            const chainNetworks = requestedNetworks(chain.support, params)
+            const chainNetworks = requestedNetworks(chain, params, getNetworkId)
             return chainNetworks.length === 0
                 ? []
                 : [{ chain, networks: chainNetworks }]
@@ -1383,7 +1473,8 @@ export const createWalletConnectV2Handler = (
         const networks = offered.flatMap(({ networks: own }) => own)
         if (networks.length === 0) {
             // Surfacing it would offer the user a session that cannot be
-            // built: every chain the dApp named is one Pera has no network for.
+            // built: no chain the dApp named is a selected network. Naming one
+            // Pera serves on the other mode is something the user can fix.
             await deliverRejection(
                 id,
                 'UNSUPPORTED_CHAINS',
@@ -1391,8 +1482,15 @@ export const createWalletConnectV2Handler = (
                 pairingId,
             )
             releasePairing(pairingId)
+            const { served } = servedIdsNamed(
+                chains,
+                params.requiredNamespaces,
+                params.optionalNamespaces,
+            )
             reportError(
-                new WalletConnectUnsupportedChainsError(),
+                served.length > 0
+                    ? new WalletConnectUnselectedNetworkError()
+                    : new WalletConnectUnsupportedChainsError(),
                 pairingScope(pairingId),
             )
             return
@@ -1421,7 +1519,12 @@ export const createWalletConnectV2Handler = (
         // Before the proposal is tracked: a torn-down handler has nobody to
         // answer it, and a tracked one would then never be released.
         const { onProposal } = requireContext()
-        pendingProposals.set(id, pairingId)
+        pendingProposals.set(id, {
+            pairingId,
+            networks: new Map(
+                offered.map(({ chain, networks: own }) => [chain.chainId, own]),
+            ),
+        })
         const requesterOrigin = pendingOrigins.get(pairingId)?.requesterOrigin
         const proposal: ConnectionProposal = {
             kind: WALLET_CONNECT_V2_KIND,
@@ -1751,10 +1854,12 @@ export const createWalletConnectV2Handler = (
                 )
                 const { support } = inNamespace[0]
                 const held = session.namespaces[namespace]?.chains ?? []
+                // The dApp's first chain may be one the session was not
+                // granted, an unselected network, and it still starts there.
                 const named = dedupe([
                     ...requestedChains(support, proposal.requiredNamespaces),
                     ...requestedChains(support, proposal.optionalNamespaces),
-                ]).filter(caip2 => held.includes(caip2))
+                ]).filter(caip2 => chainServing(inNamespace, caip2) !== null)
                 const selectedOn = (caip2: string) => {
                     const chain = chainServing(inNamespace, caip2)
                     if (!chain) return null
@@ -1764,7 +1869,7 @@ export const createWalletConnectV2Handler = (
                         : null
                 }
                 if (named.length === 0 || selectedOn(named[0])) return []
-                for (const caip2 of named) {
+                for (const caip2 of named.filter(id => held.includes(id))) {
                     const target = selectedOn(caip2)
                     if (target) return [target]
                 }

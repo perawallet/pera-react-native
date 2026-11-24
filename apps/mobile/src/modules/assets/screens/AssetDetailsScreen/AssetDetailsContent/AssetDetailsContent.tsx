@@ -95,7 +95,7 @@ export const AssetDetailsContent = ({
         )
     }
 
-    if (isLoading || !asset || !account || !about || !supply) {
+    if (isLoading || !asset || !account || !about) {
         return (
             <LoadingView
                 variant='skeleton'

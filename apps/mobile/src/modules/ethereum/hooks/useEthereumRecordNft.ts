@@ -26,6 +26,7 @@ import {
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCapability } from '@hooks/useCapability'
 import { useLanguage } from '@hooks/useLanguage'
+import { nftThumbnailUrlOf } from '../utils/nftThumbnailUrlOf'
 
 export type EthereumRecordNft = {
     assetId: string
@@ -105,10 +106,7 @@ export const useEthereumRecordNft = (
                 collection,
                 standard: EVM_NFT_STANDARD_LABELS[facts.standard],
             }),
-            thumbnailUrl:
-                collectible?.primaryImage ??
-                asset?.peraMetadata?.logo ??
-                undefined,
+            thumbnailUrl: nftThumbnailUrlOf(asset),
         }
     }, [facts, assetId, parsed, summary.amount, asset, t])
 

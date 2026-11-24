@@ -13,6 +13,7 @@
 import { useMemo } from 'react'
 import {
     chainAccountOf,
+    isSameAddress,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -37,6 +38,7 @@ export type UseSearchAccountRowResult = {
     /** The chain the row names; undefined for the home chain, whose row reads as a plain account. */
     searchedChainId: Optional<ChainId>
     segments: AddressSegment[]
+    /** Every network the matched address is on, the matched one first. */
     chainName: string
 }
 
@@ -57,10 +59,20 @@ export const useSearchAccountRow = ({
         const truncated = addressCodecs.has(searchedChainId)
             ? addressCodecs.get(searchedChainId).truncate(address)
             : address
+        // An EVM address is the same on every EVM chain the account is on, so
+        // the hit is named on all of them rather than the first that matched.
+        const sharingChainIds = (Object.keys(account.chains) as ChainId[])
+            .filter(id => id !== searchedChainId)
+            .filter(id => {
+                const other = chainAccountOf(account, id)?.address
+                return other !== undefined && isSameAddress(id, other, address)
+            })
         return {
             searchedChainId,
             segments: addressMatchSegments(address, truncated, query),
-            chainName: chainDisplayNameOf(searchedChainId) ?? searchedChainId,
+            chainName: [searchedChainId, ...sharingChainIds]
+                .map(id => chainDisplayNameOf(id) ?? id)
+                .join(', '),
         }
     }, [account, searchedChainId, query])
 }

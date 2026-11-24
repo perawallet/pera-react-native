@@ -11,16 +11,13 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { Linking } from 'react-native'
 import { getCardTransactionUrl } from '@perawallet/wallet-core-card'
 import {
-    generateUniqueId,
     truncateAlgorandAddress,
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
-import { useWebView } from '@modules/webview'
-import { routeCapabilities } from '@routes/capabilities'
+import { openExplorerUrl } from '@modules/webview'
 import { useClipboard } from '@hooks/useClipboard'
 import { useCardScope } from '../../hooks/useCardScope'
 
@@ -43,7 +40,6 @@ export const useTransactionHashRow = (
     network: string,
 ): UseTransactionHashRowResult => {
     const scope = useCardScope()
-    const { pushWebView } = useWebView()
     const { copyToClipboard } = useClipboard()
 
     const explorerUrl = useMemo(
@@ -59,14 +55,8 @@ export const useTransactionHashRow = (
     const openExplorer = useCallback(() => {
         if (explorerUrl === null) return
         trackEvent(CardEvent.TransactionsViewExplorer)
-        if (!routeCapabilities.inAppWebView) {
-            // oxlint-disable-next-line pera/no-unvalidated-open-url -- built by the card adapter from the network's explorer config
-            void Linking.openURL(explorerUrl)
-            return
-        }
-        // oxlint-disable-next-line pera/no-unvalidated-open-url -- built by the card adapter from the network's explorer config
-        pushWebView({ url: explorerUrl, id: generateUniqueId() })
-    }, [explorerUrl, pushWebView])
+        openExplorerUrl(explorerUrl)
+    }, [explorerUrl])
 
     return {
         truncatedHash: truncateAlgorandAddress(txHash, HASH_DISPLAY_LENGTH),

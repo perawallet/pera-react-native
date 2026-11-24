@@ -18,10 +18,15 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.xl,
         marginVertical: theme.spacing.xl,
     },
+    iconFrame: {
+        width: theme.spacing['4xl'],
+        height: theme.spacing['4xl'],
+        borderRadius: theme.borderRadius.full,
+        overflow: 'hidden',
+    },
     icon: {
         width: theme.spacing['4xl'],
         height: theme.spacing['4xl'],
-        borderRadius: theme.spacing['4xl'],
     },
     iconContainer: {
         width: theme.spacing['4xl'],

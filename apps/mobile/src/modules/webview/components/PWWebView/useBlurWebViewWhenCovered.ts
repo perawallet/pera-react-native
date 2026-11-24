@@ -12,22 +12,37 @@
 
 import { type RefObject, useEffect } from 'react'
 import type WebView from 'react-native-webview'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useIsAppLocked } from '@hooks/useIsAppLocked'
+import { useBottomSheetStore } from '@modules/bottom-sheet'
 
 // Keyboard.dismiss() only reaches React Native inputs; a focused field inside
 // the page keeps the keyboard, and iOS restores it over the PIN pad.
 export const BLUR_FOCUSED_ELEMENT_SCRIPT =
     "(function(){var e=document.activeElement;if(e&&typeof e.blur==='function'){e.blur();}})();true;"
 
-export const useBlurWebViewOnLock = (
+/**
+ * Drops the page's keyboard when the app locks or another sheet opens above
+ * this WebView; the web keyboard's accessory bar would otherwise cover the
+ * sheet. `ownSheetId` is the sheet the WebView itself lives in, if any.
+ */
+export const useBlurWebViewWhenCovered = (
     webview: RefObject<Nullable<WebView>>,
+    ownSheetId: Optional<string>,
 ): void => {
     const isAppLocked = useIsAppLocked()
+    const isCoveredBySheet = useBottomSheetStore(state => {
+        const ownIndex = ownSheetId
+            ? state.requests.findIndex(({ id }) => id === ownSheetId)
+            : -1
+        return state.requests.some(
+            ({ isVisible }, index) => isVisible && index > ownIndex,
+        )
+    })
 
     useEffect(() => {
-        if (isAppLocked) {
+        if (isAppLocked || isCoveredBySheet) {
             webview.current?.injectJavaScript(BLUR_FOCUSED_ELEMENT_SCRIPT)
         }
-    }, [isAppLocked, webview])
+    }, [isAppLocked, isCoveredBySheet, webview])
 }

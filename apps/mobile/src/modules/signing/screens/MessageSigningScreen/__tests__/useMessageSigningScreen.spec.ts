@@ -11,7 +11,7 @@
  */
 
 import { renderHook, act } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { afterEach, describe, it, expect, vi, beforeEach } from 'vitest'
 import { useMessageSigningScreen } from '../useMessageSigningScreen'
 
 type MockPipeline = {
@@ -344,5 +344,114 @@ describe('useMessageSigningScreen', () => {
         const { result } = renderHook(() => useMessageSigningScreen())
 
         expect(result.current.isPending).toBe(false)
+    })
+
+    describe('a permit past its signature deadline', () => {
+        const NOW = Date.UTC(2026, 0, 1)
+        const permitSummary = (spendApproval: unknown) => ({
+            kind: 'typed-data',
+            title: { key: 'signing.arbitrary_data_view.body' },
+            spendApproval,
+        })
+        const resolveWith = (spendApproval: unknown) => {
+            mockPipeline.resolved = {
+                signerAccount: SIGNER_ACCOUNT,
+                kind: {
+                    type: 'message',
+                    summary: permitSummary(spendApproval),
+                },
+            }
+        }
+
+        beforeEach(() => {
+            vi.useFakeTimers()
+            vi.setSystemTime(NOW)
+        })
+        afterEach(() => {
+            vi.useRealTimers()
+        })
+
+        it('blocks approval once the signature deadline passes while the review is open', () => {
+            resolveWith({
+                spender: '0xSPENDER',
+                allowances: [],
+                deadline: NOW + 30 * 86_400_000,
+                isLongLived: false,
+                signature: { deadline: NOW + 60_000, isLongLived: false },
+            })
+            const { result } = renderHook(() => useMessageSigningScreen())
+            expect(result.current.isExpired).toBe(false)
+
+            act(() => {
+                vi.advanceTimersByTime(120_000)
+            })
+            act(() => result.current.handleApprove())
+
+            expect(result.current.isExpired).toBe(true)
+            expect(result.current.isConfirmBlocked).toBe(true)
+            expect(mockPipeline.next).not.toHaveBeenCalled()
+        })
+
+        it("reads a signature transfer's own deadline as its signature deadline", () => {
+            resolveWith({
+                spender: '0xSPENDER',
+                allowances: [],
+                deadline: NOW - 60_000,
+                isLongLived: false,
+            })
+
+            const { result } = renderHook(() => useMessageSigningScreen())
+
+            expect(result.current.isExpired).toBe(true)
+        })
+
+        it('allows a minute past the deadline for a device clock running ahead', () => {
+            resolveWith({
+                spender: '0xSPENDER',
+                allowances: [],
+                deadline: NOW - 59_999,
+                isLongLived: false,
+            })
+
+            const { result } = renderHook(() => useMessageSigningScreen())
+            act(() => result.current.handleApprove())
+
+            expect(result.current.isExpired).toBe(false)
+            expect(mockPipeline.next).toHaveBeenCalled()
+        })
+
+        it('shows the expired notice when the slide lands before the expiry timer fires', () => {
+            resolveWith({
+                spender: '0xSPENDER',
+                allowances: [],
+                deadline: NOW - 59_000,
+                isLongLived: false,
+            })
+            const { result } = renderHook(() => useMessageSigningScreen())
+            expect(result.current.isExpired).toBe(false)
+
+            // Moves the clock without running timers, as after the app sleeps.
+            vi.setSystemTime(NOW + 1000)
+            act(() => result.current.handleApprove())
+
+            expect(result.current.isExpired).toBe(true)
+            expect(mockPipeline.next).not.toHaveBeenCalled()
+        })
+
+        it('ignores an allowance expiry that passed while the signature is still valid', () => {
+            resolveWith({
+                spender: '0xSPENDER',
+                allowances: [],
+                deadline: NOW - 1,
+                isLongLived: false,
+                signature: { deadline: NOW + 60_000, isLongLived: false },
+            })
+
+            const { result } = renderHook(() => useMessageSigningScreen())
+            act(() => result.current.handleApprove())
+
+            expect(result.current.isExpired).toBe(false)
+            expect(mockPipeline.next).toHaveBeenCalled()
+        })
     })
 })

@@ -14,6 +14,7 @@ import {
     afterAll,
     afterEach,
     beforeAll,
+    beforeEach,
     describe,
     expect,
     it,
@@ -58,6 +59,8 @@ import {
     PERMIT2_ADDRESS,
     PERMIT2_SINGLE_NO_DEADLINE_TYPED_DATA,
     PERMIT2_SINGLE_TYPED_DATA,
+    PERMIT2_TRANSFER_FROM_TYPED_DATA,
+    PERMIT_NOW_MS,
     PERMIT_SPENDER,
     PERMIT_USDC,
     SENDER,
@@ -471,6 +474,68 @@ describe('ethereumMessageSignerAdapter.plan with a chain the domain type leaves 
         const [item] = plan(typedData)
 
         expect(bytesToHex(item.payload)).toBe(hashTypedData(typedData as never))
+    })
+})
+
+describe('ethereumMessageSignerAdapter.plan with a permit signature deadline', () => {
+    // Every fixture permit's signature deadline is 30 days after PERMIT_NOW_MS.
+    const SIGNATURE_DEADLINE_MS = PERMIT_NOW_MS + 30 * 86_400_000
+    const request = (typedData: unknown) =>
+        typedDataMessageRequest(MAINNET, SENDER, typedData)
+
+    beforeEach(() => {
+        vi.useFakeTimers()
+        vi.setSystemTime(PERMIT_NOW_MS)
+    })
+    afterEach(() => {
+        vi.useRealTimers()
+    })
+
+    it.each([
+        ...PERMITS,
+        ['Permit2 transfer', PERMIT2_TRANSFER_FROM_TYPED_DATA] as const,
+    ])('plans a %s permit before its deadline', (_name, permit) => {
+        expect(adapter.plan(request(permit), context)).toHaveLength(1)
+    })
+
+    it.each([
+        ...PERMITS,
+        ['Permit2 transfer', PERMIT2_TRANSFER_FROM_TYPED_DATA] as const,
+    ])('refuses a %s permit a minute after its deadline', (_name, permit) => {
+        vi.setSystemTime(SIGNATURE_DEADLINE_MS + 60_000)
+
+        expect(() => adapter.plan(request(permit), context)).toThrow(
+            "the permit's signature deadline has passed",
+        )
+    })
+
+    it('plans a permit just past its deadline, as the device clock may run ahead of the chain', () => {
+        vi.setSystemTime(SIGNATURE_DEADLINE_MS + 59_999)
+
+        expect(
+            adapter.plan(request(PERMIT2_SINGLE_TYPED_DATA), context),
+        ).toHaveLength(1)
+    })
+
+    it('plans a Permit2 permit whose allowance expiration passed while its signature is still valid', () => {
+        const typed = structuredClone(PERMIT2_SINGLE_TYPED_DATA) as any
+        typed.message.details.expiration = String(PERMIT_NOW_MS / 1000 - 1)
+
+        expect(adapter.plan(request(typed), context)).toHaveLength(1)
+    })
+
+    it('still describes an expired permit, so the review can say why it cannot be signed', () => {
+        vi.setSystemTime(SIGNATURE_DEADLINE_MS + 60_000)
+
+        expect(
+            adapter.describe(request(PERMIT2_SINGLE_TYPED_DATA)).spendApproval,
+        ).toBeDefined()
+    })
+
+    it('refuses nothing that is not a permit', () => {
+        vi.setSystemTime(SIGNATURE_DEADLINE_MS + 60_000)
+
+        expect(adapter.plan(mailWithChainId(1), context)).toHaveLength(1)
     })
 })
 

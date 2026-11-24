@@ -49,8 +49,19 @@ const requirePinVerification = vi.hoisted(() =>
     vi.fn(() => Promise.resolve(true)),
 )
 
-vi.mock('@modules/security', () => ({
-    useRequirePinVerification: () => ({ requirePinVerification }),
+// The real gate runs against a stubbed prompt, so declining still navigates back.
+vi.mock('@modules/security/hooks/useRequirePinVerification', () => ({
+    useRequirePinVerification: () => ({
+        requirePinVerification: requirePinVerification,
+    }),
+}))
+
+vi.mock('@modules/security', async () => ({
+    usePinGatedScreen: (
+        await vi.importActual<
+            typeof import('@modules/security/hooks/usePinGatedScreen')
+        >('@modules/security/hooks/usePinGatedScreen')
+    ).usePinGatedScreen,
 }))
 
 vi.mock('@react-navigation/native', () => ({

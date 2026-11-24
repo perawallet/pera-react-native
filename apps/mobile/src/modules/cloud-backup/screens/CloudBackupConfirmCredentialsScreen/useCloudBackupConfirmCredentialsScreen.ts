@@ -28,7 +28,7 @@ import { useBackupQuiz, type BackupQuizQuestion } from '@modules/backup'
 import { useHaptics } from '@hooks/useHaptics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-import { useRequirePinVerification } from '@modules/security'
+import { usePinGatedScreen } from '@modules/security'
 import type { PassphraseStatus } from '../../components/BackupCredentialsSheet'
 import type { CloudBackupStackParamList } from '../../routes/types'
 import { pickVerificationPairs } from '../../utils/verificationPairs'
@@ -51,37 +51,6 @@ type UseCloudBackupConfirmCredentialsScreenResult = {
     passphraseStatus: PassphraseStatus
     canConfirm: boolean
     handleConfirm: () => void
-}
-
-// Without the gate, repeated wrong answers re-sample positions and distractors,
-// which would let anyone holding an unlocked phone piece the phrase together.
-const usePinGate = (): boolean => {
-    const navigation =
-        useNavigation<
-            NativeStackNavigationProp<
-                CloudBackupStackParamList,
-                'CloudBackupConfirmCredentials'
-            >
-        >()
-    const { requirePinVerification } = useRequirePinVerification()
-    const [isPinGateResolved, setIsPinGateResolved] = useState(false)
-
-    useEffect(() => {
-        let cancelled = false
-        void requirePinVerification().then(isVerified => {
-            if (cancelled) return
-            if (isVerified) {
-                setIsPinGateResolved(true)
-            } else {
-                navigation.goBack()
-            }
-        })
-        return () => {
-            cancelled = true
-        }
-    }, [requirePinVerification, navigation])
-
-    return isPinGateResolved
 }
 
 type StoredPairs = {
@@ -126,7 +95,13 @@ const useStoredPairs = (isPinGateResolved: boolean): StoredPairs => {
     return {
         correctPairs,
         passphraseStatus,
-        reroll: useCallback(() => setRound(value => value + 1), []),
+        // Back to loading so the quiz is hidden while the keystore is re-read:
+        // until the new positions land, useBackupQuiz still shows the old ones
+        // and would wipe any answer tapped there.
+        reroll: useCallback(() => {
+            setPassphraseStatus('loading')
+            setRound(value => value + 1)
+        }, []),
     }
 }
 
@@ -146,7 +121,10 @@ export const useCloudBackupConfirmCredentialsScreen =
         const confirmCredentials = useCloudBackupStore(
             state => state.confirmCredentials,
         )
-        const isPinGateResolved = usePinGate()
+        // Without the gate, repeated wrong answers re-sample positions and
+        // distractors, which would let anyone holding an unlocked phone piece
+        // the phrase together.
+        const isPinGateResolved = usePinGatedScreen()
         const { correctPairs, passphraseStatus, reroll } =
             useStoredPairs(isPinGateResolved)
         const [encryptionKey, setEncryptionKey] = useState('')

@@ -187,8 +187,11 @@ describe('evm permit signing conformance', () => {
                     },
                 },
             ],
-            deadline: Number(deadline) * 1000,
-            isLongLived: false,
+            isLongLived: true,
+            signature: {
+                deadline: Number(deadline) * 1000,
+                isLongLived: false,
+            },
         })
     })
 

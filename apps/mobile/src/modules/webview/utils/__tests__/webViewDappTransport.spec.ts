@@ -70,6 +70,49 @@ describe('webViewDappTransport', () => {
         )
     })
 
+    describe('page icons', () => {
+        const receiveIcons = (icons?: string[]) => {
+            const transport = createWebViewDappTransport()
+            const { page } = pageAt(`${ORIGIN}/swap`)
+            const listener = vi.fn()
+            transport.onRequest(listener)
+            transport.receive(
+                page,
+                messageOf(icons ? { icons } : {}),
+                `${ORIGIN}/swap`,
+            )
+            return listener.mock.calls[0][0] as { pageIcons?: string[] }
+        }
+
+        it('passes the icons on as the context’s pageIcons', () => {
+            expect(receiveIcons([`${ORIGIN}/favicon.png`]).pageIcons).toEqual([
+                `${ORIGIN}/favicon.png`,
+            ])
+        })
+
+        it('keeps the first eight and drops over-long entries', () => {
+            const many = Array.from(
+                { length: 12 },
+                (_, index) => `${ORIGIN}/i${index}.png`,
+            )
+            const tooLong = `${ORIGIN}/${'x'.repeat(2048)}`
+
+            expect(receiveIcons([tooLong, ...many]).pageIcons).toEqual(
+                many.slice(0, 8),
+            )
+        })
+
+        it('leaves pageIcons unset when the page sent none', () => {
+            expect(receiveIcons()).not.toHaveProperty('pageIcons')
+        })
+
+        it.each([['x'], [[1]]])('rejects icons %j as a page message', icons => {
+            expect(
+                isEip1193PageMessage({ ...messageOf(), icons } as unknown),
+            ).toBe(false)
+        })
+    })
+
     it.each([true, false])(
         'reports the app lock (%s) the request arrived under',
         isLocked => {
