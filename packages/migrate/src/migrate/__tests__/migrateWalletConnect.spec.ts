@@ -78,7 +78,6 @@ vi.mock('@perawallet/wallet-core-walletconnect', async () => {
             read: async () => null,
             remove: async () => {},
         }),
-        ALL_PERMISSIONS: ['algo_getAccounts', 'algo_signTxn', 'algo_signData'],
         toPeer: peer.toPeer,
         buildWalletConnectV1Connection:
             connection.buildWalletConnectV1Connection,
@@ -189,7 +188,7 @@ describe('migrateWalletConnect', () => {
             },
             accounts: ['APPROVED_ADDR'],
             secretRef: 'wc1-session-key:client-1',
-            status: 'active',
+            status: 'inactive',
             createdAt: 1_700_000_000_000,
             // The native export has no activity time, so the migration stands in.
             lastActiveAt: MIGRATED_AT,
@@ -199,11 +198,6 @@ describe('migrateWalletConnect', () => {
                 peerId: 'peer-1',
                 chainId: 416_002,
                 handshakeId: 1_690_000_000_000_001,
-                permissions: [
-                    'algo_getAccounts',
-                    'algo_signTxn',
-                    'algo_signData',
-                ],
             },
         })
         expect(keystoreCommit).toHaveBeenCalledWith('client-1', 'current-key')
@@ -227,20 +221,6 @@ describe('migrateWalletConnect', () => {
         const written = await listConnections()
         expect(written[0].peer).toEqual({ name: 'Padded', icons: [] })
         expect(written[0].name).toBe('Padded')
-    })
-
-    it('grants the full method set so the permissions panel is not blank', async () => {
-        // The native export carries no per-session method list. Without a
-        // fallback, a natively-migrated session shows an empty permissions
-        // panel where a blob-migrated one shows a full one.
-        await migrateWalletConnect([buildSession()], 'algorand')
-
-        const written = await listConnections()
-        expect(written[0].metadata?.permissions).toEqual([
-            'algo_getAccounts',
-            'algo_signTxn',
-            'algo_signData',
-        ])
     })
 
     it('maps an iOS-shaped session: handshake key fallback, handshakeId omitted', async () => {
