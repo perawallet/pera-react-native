@@ -46,7 +46,10 @@ const render = ({
 describe('useSwapMinimum', () => {
     describe('liftToMinimum', () => {
         it('leaves a fill with no known minimum alone', () => {
-            const { liftToMinimum } = render({ pairMinimum: null })
+            const { liftToMinimum } = render({
+                pairMinimum: null,
+                quoteFailure: null,
+            })
 
             expect(liftToMinimum(new Decimal(1))).toEqual(new Decimal(1))
         })
@@ -125,6 +128,39 @@ describe('useSwapMinimum', () => {
                 false,
             )
         })
+    })
+
+    describe('with a stored minimum lower than the refusal names', () => {
+        const stale = {
+            pairMinimum: new Decimal(5_000_000),
+            spendableMax: new Decimal(7_000_000),
+        }
+
+        it('flags the refused minimum as out of reach without offering it', () => {
+            const { isMinimumAboveSpendable, canUseMinimum } = render(stale)
+
+            expect(isMinimumAboveSpendable).toBe(true)
+            expect(canUseMinimum).toBe(false)
+        })
+
+        it('does not lift a fill to the stale minimum', () => {
+            const { liftToMinimum } = render(stale)
+
+            expect(liftToMinimum(new Decimal(1_000_000))).toEqual(
+                new Decimal(1_000_000),
+            )
+        })
+    })
+
+    it('fills the refused minimum over a stale stored one', () => {
+        const onFillMinimum = vi.fn()
+
+        render({
+            pairMinimum: new Decimal(5_000_000),
+            onFillMinimum,
+        }).handleUseMinimum()
+
+        expect(onFillMinimum).toHaveBeenCalledWith(new Decimal(9))
     })
 
     it('fills the minimum in display units', () => {

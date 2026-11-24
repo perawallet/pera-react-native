@@ -50,38 +50,33 @@ export const useSwapMinimum = ({
     payDecimals,
     onFillMinimum,
 }: UseSwapMinimumParams): UseSwapMinimumResult => {
+    const refusedMinimum =
+        quoteFailure?.kind === 'amount-too-low' ? quoteFailure.minimum : null
+    // This refusal's floor is fresher than the stored one, which may be stale.
+    const minimum = refusedMinimum ?? pairMinimum
     const isAffordable =
-        pairMinimum !== null &&
-        (spendableMax === null ||
-            spendableMax.greaterThanOrEqualTo(pairMinimum))
+        minimum !== null &&
+        (spendableMax === null || spendableMax.greaterThanOrEqualTo(minimum))
 
     const liftToMinimum = useCallback(
         (amount: Decimal): Decimal =>
-            pairMinimum && isAffordable && amount.lessThan(pairMinimum)
-                ? pairMinimum
+            minimum && isAffordable && amount.lessThan(minimum)
+                ? minimum
                 : amount,
-        [pairMinimum, isAffordable],
+        [minimum, isAffordable],
     )
 
     const handleUseMinimum = useCallback(() => {
-        if (!pairMinimum) return
-        onFillMinimum(baseUnitsToDisplayUnits(pairMinimum, payDecimals))
-    }, [pairMinimum, payDecimals, onFillMinimum])
-
-    const minimum =
-        quoteFailure?.kind === 'amount-too-low' ? quoteFailure.minimum : null
+        if (!minimum) return
+        onFillMinimum(baseUnitsToDisplayUnits(minimum, payDecimals))
+    }, [minimum, payDecimals, onFillMinimum])
 
     return {
         liftToMinimum,
         isMinimumAboveSpendable:
-            minimum !== null &&
-            spendableMax !== null &&
-            spendableMax.lessThan(minimum),
+            refusedMinimum !== null && spendableMax !== null && !isAffordable,
         // A refusal that names no floor shows the no-minimum copy, so it gets no button either.
-        canUseMinimum:
-            quoteFailure?.kind === 'amount-too-low' &&
-            quoteFailure.minimum !== null &&
-            isAffordable,
+        canUseMinimum: refusedMinimum !== null && isAffordable,
         handleUseMinimum,
     }
 }
