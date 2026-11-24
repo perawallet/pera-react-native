@@ -11,10 +11,6 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import {
-    getAccountDisplayName,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
 import { formatAssetAmount } from '@perawallet/wallet-core-assets'
 import {
     generateUniqueId,
@@ -24,6 +20,7 @@ import {
 import {
     swapAccountKey,
     swapExplorerUrlFor,
+    useSwapAccountNames,
     useSwapAccountsAddresses,
     useSwapHistoryInfiniteQuery,
     useSwapSigningAccounts,
@@ -57,6 +54,10 @@ const hasAssets = (
 
 const NO_AMOUNT = '-'
 
+// Bounds the automatic reading past pages with nothing visible, so a history of
+// only hidden rows can't be walked end to end without the user asking.
+const MAX_AUTO_PAGES = 5
+
 export type UseSwapHistoryListParams = {
     onClose: () => void
 }
@@ -78,6 +79,8 @@ export type UseSwapHistoryListResult = {
     shouldShowNotOnDeviceState: boolean
     shouldShowErrorState: boolean
     shouldShowEmptyState: boolean
+    /** Nothing is visible yet but older pages remain, after the automatic reading stopped. */
+    shouldShowLoadMore: boolean
 }
 
 export const useSwapHistoryList = ({
@@ -90,44 +93,32 @@ export const useSwapHistoryList = ({
     const [pickedAccountId, setPickedAccountId] =
         useState<Nullable<string>>(null)
 
-    const filterableAccounts = useMemo(
-        () =>
-            signingAccounts.filter(account =>
-                addresses.some(entry => entry.accountId === account.id),
-            ),
-        [signingAccounts, addresses],
-    )
-    const canFilter = filterableAccounts.length > 1
+    const { names: namedAccounts, isMultiAccount: canFilter } =
+        useSwapAccountNames(signingAccounts)
     const selectedAccountId =
         canFilter &&
-        filterableAccounts.some(account => account.id === pickedAccountId)
+        namedAccounts.some(({ accountId }) => accountId === pickedAccountId)
             ? pickedAccountId
             : null
 
-    const accountOptions = useMemo(() => {
-        if (!canFilter) return []
-        const nameOf = (account: WalletAccount) => {
-            const first = addresses.find(
-                entry => entry.accountId === account.id,
-            )
-            return getAccountDisplayName(
-                account,
-                first?.scope.chainId ?? 'algorand',
-            )
-        }
-        return [
-            {
-                value: null,
-                label: t('swap.history.list.account_filter_all'),
-                testID: 'swap_history_account_filter_all',
-            },
-            ...filterableAccounts.map(account => ({
-                value: account.id,
-                label: nameOf(account),
-                testID: `swap_history_account_filter_${account.id}`,
-            })),
-        ]
-    }, [canFilter, filterableAccounts, addresses, t])
+    const accountOptions = useMemo(
+        () =>
+            canFilter
+                ? [
+                      {
+                          value: null,
+                          label: t('swap.history.list.account_filter_all'),
+                          testID: 'swap_history_account_filter_all',
+                      },
+                      ...namedAccounts.map(({ accountId, name }) => ({
+                          value: accountId,
+                          label: name,
+                          testID: `swap_history_account_filter_${accountId}`,
+                      })),
+                  ]
+                : [],
+        [canFilter, namedAccounts, t],
+    )
 
     const accounts = useMemo(
         () =>
@@ -152,6 +143,8 @@ export const useSwapHistoryList = ({
         isAccountNotOnDevice,
         isFetchingNextPage,
         hasNextPage,
+        hasFailedBatch,
+        readKey,
         fetchNextPage,
     } = useSwapHistoryInfiniteQuery(accounts, VISIBLE_SWAP_STATUSES)
 
@@ -159,14 +152,13 @@ export const useSwapHistoryList = ({
         const accountIdByKey = new Map(
             addresses.map(entry => [swapAccountKey(entry), entry.accountId]),
         )
-        const accountById = new Map(
-            signingAccounts.map(account => [account.id, account]),
+        const nameById = new Map(
+            namedAccounts.map(({ accountId, name }) => [accountId, name]),
         )
         return loaded.filter(hasAssets).map(item => {
             const payerId = item.sourceAccount
                 ? accountIdByKey.get(swapAccountKey(item.sourceAccount))
                 : undefined
-            const payer = payerId ? accountById.get(payerId) : undefined
             const { chainId, networkId } = item.assetIn.ref
             return {
                 ...item,
@@ -176,17 +168,13 @@ export const useSwapHistoryList = ({
                 amountOutLabel: item.amountOut
                     ? formatAssetAmount(item.amountOut, item.assetOut)
                     : NO_AMOUNT,
+                // A wallet with one account has nothing to tell apart.
                 accountName:
-                    payer && item.sourceAccount
-                        ? getAccountDisplayName(
-                              payer,
-                              item.sourceAccount.scope.chainId,
-                          )
-                        : undefined,
+                    canFilter && payerId ? nameById.get(payerId) : undefined,
                 explorerUrl: swapExplorerUrlFor({ chainId, networkId }, item),
             }
         })
-    }, [loaded, addresses, signingAccounts])
+    }, [loaded, addresses, namedAccounts, canFilter])
 
     const keyExtractor = useCallback(
         (item: ListedSwapHistoryItem) => item.orderId,
@@ -220,27 +208,48 @@ export const useSwapHistoryList = ({
     }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
     // Older pages may hold the first visible row, e.g. when another account's
-    // newest history is all hidden, so read on until something shows or the
-    // history ends.
+    // newest history is all hidden, so read on, a few pages at most, until
+    // something shows or the history ends.
+    // Keyed on what is read, so a new account set (or a device id registering)
+    // starts a fresh budget in the same render.
+    const [budget, setBudget] = useState({ key: readKey, count: 0 })
+    const autoPages = budget.key === readKey ? budget.count : 0
+    const isReadingOn =
+        swaps.length === 0 && hasNextPage && autoPages < MAX_AUTO_PAGES
     const shouldReadOn =
-        swaps.length === 0 &&
-        hasNextPage &&
-        !isLoading &&
-        !isFetchingNextPage &&
-        !isError
+        isReadingOn && !isLoading && !isFetchingNextPage && !isError
     useEffect(() => {
-        if (shouldReadOn) fetchNextPage()
-    }, [shouldReadOn, fetchNextPage])
+        if (!shouldReadOn) return
+        setBudget(previous => ({
+            key: readKey,
+            count: (previous.key === readKey ? previous.count : 0) + 1,
+        }))
+        fetchNextPage()
+    }, [shouldReadOn, fetchNextPage, readKey])
 
     const shouldShowNotOnDeviceState =
         isAccountNotOnDevice && swaps.length === 0
+    // A failed batch may hold the swaps, so it reads as an error, never as empty.
     const shouldShowErrorState =
-        !shouldShowNotOnDeviceState && isError && swaps.length === 0
+        !shouldShowNotOnDeviceState &&
+        (isError || hasFailedBatch) &&
+        swaps.length === 0
     const shouldShowEmptyState =
         !shouldShowNotOnDeviceState &&
+        !shouldShowErrorState &&
         !isLoading &&
         !hasNextPage &&
         swaps.length === 0
+    // Past the reading budget older pages may still hold a swap: offer them
+    // rather than claiming the history is empty.
+    const shouldShowLoadMore =
+        !shouldShowNotOnDeviceState &&
+        !shouldShowErrorState &&
+        swaps.length === 0 &&
+        hasNextPage &&
+        !isReadingOn &&
+        !isLoading &&
+        !isFetchingNextPage
 
     return {
         swaps,
@@ -256,5 +265,6 @@ export const useSwapHistoryList = ({
         shouldShowNotOnDeviceState,
         shouldShowErrorState,
         shouldShowEmptyState,
+        shouldShowLoadMore,
     }
 }

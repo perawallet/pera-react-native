@@ -4383,6 +4383,7 @@
                     }
                 },
                 "account_filter_all": "Todas as contas",
+                "load_more": "Carregar mais",
                 "empty": {
                     "title": "Nenhuma conversão ainda",
                     "body": "Seu histórico de conversões aparecerá aqui."

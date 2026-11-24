@@ -4361,6 +4361,7 @@
                     }
                 },
                 "account_filter_all": "Tüm hesaplar",
+                "load_more": "Daha fazla yükle",
                 "empty": {
                     "title": "Henüz swap yok",
                     "body": "Swap geçmişin burada görünecek."

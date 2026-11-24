@@ -45,6 +45,16 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
     swapExplorerUrlFor: mockExplorerUrlFor,
     useSwapHistoryInfiniteQuery: mockHistory,
     useSwapSigningAccounts: () => wallet.accounts,
+    useSwapAccountNames: (accounts: { id: string; name: string }[]) => {
+        const names = accounts
+            .filter(account =>
+                (wallet.addresses as { accountId: string }[]).some(
+                    entry => entry.accountId === account.id,
+                ),
+            )
+            .map(account => ({ accountId: account.id, name: account.name }))
+        return { names, isMultiAccount: names.length > 1 }
+    },
     useSwapAccountsAddresses: () => wallet.addresses,
     swapAccountKey: ({
         scope,
@@ -53,11 +63,6 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
         scope: { chainId: string }
         address: string
     }) => `${scope.chainId}|${address.toLowerCase()}`,
-}))
-
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    getAccountDisplayName: (account: { name: string } | null) =>
-        account?.name ?? 'No Account',
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
@@ -100,6 +105,8 @@ const historyOf = (swaps: SwapHistoryItem[]) => ({
     isLoading: false,
     isError: false,
     isAccountNotOnDevice: false,
+    hasFailedBatch: false,
+    readKey: 'read',
     isFetchingNextPage: false,
     hasNextPage: false,
     fetchNextPage: vi.fn(),
@@ -358,6 +365,127 @@ describe('useSwapHistoryList', () => {
         render()
 
         expect(fetchNextPage).not.toHaveBeenCalled()
+    })
+
+    it('names no account on the rows of a wallet with one account', () => {
+        wallet.accounts = [{ id: 'one', name: 'First' }]
+        wallet.addresses = [
+            {
+                scope: SCOPE,
+                address: 'ADDR1',
+                accountId: 'one',
+                isOnDevice: true,
+            },
+        ]
+        const paid = {
+            ...item,
+            sourceAccount: { scope: SCOPE, address: 'ADDR1' },
+        } as unknown as SwapHistoryItem
+        mockHistory.mockReturnValue(historyOf([paid]))
+
+        const { result } = render()
+
+        expect(result.current.swaps[0].accountName).toBeUndefined()
+    })
+
+    it('stops reading on after a few pages, offering to load more instead of claiming the history is empty', () => {
+        const fetchNextPage = vi.fn()
+        const state = (isFetchingNextPage: boolean) => ({
+            ...historyOf([]),
+            hasNextPage: true,
+            isFetchingNextPage,
+            fetchNextPage,
+        })
+        mockHistory.mockReturnValue(state(false))
+        const { result, rerender } = render()
+
+        for (let page = 0; page < 8; page++) {
+            mockHistory.mockReturnValue(state(true))
+            rerender()
+            mockHistory.mockReturnValue(state(false))
+            rerender()
+        }
+
+        expect(fetchNextPage).toHaveBeenCalledTimes(5)
+        expect(result.current.shouldShowEmptyState).toBe(false)
+        expect(result.current.shouldShowLoadMore).toBe(true)
+
+        result.current.handleEndReached()
+        expect(fetchNextPage).toHaveBeenCalledTimes(6)
+    })
+
+    it('starts the reading budget over when the accounts read change', () => {
+        const fetchNextPage = vi.fn()
+        const state = (isFetchingNextPage: boolean, readKey: string) => ({
+            ...historyOf([]),
+            hasNextPage: true,
+            isFetchingNextPage,
+            readKey,
+            fetchNextPage,
+        })
+        mockHistory.mockReturnValue(state(false, 'a'))
+        const { rerender } = render()
+        const cycle = (readKey: string) => {
+            mockHistory.mockReturnValue(state(true, readKey))
+            rerender()
+            mockHistory.mockReturnValue(state(false, readKey))
+            rerender()
+        }
+        for (let page = 0; page < 8; page++) cycle('a')
+        expect(fetchNextPage).toHaveBeenCalledTimes(5)
+
+        for (let page = 0; page < 8; page++) cycle('b')
+
+        expect(fetchNextPage).toHaveBeenCalledTimes(10)
+    })
+
+    it('shows the load more offer in the first render after the read set changes only when its budget is spent', () => {
+        const fetchNextPage = vi.fn()
+        const state = (isFetchingNextPage: boolean, readKey: string) => ({
+            ...historyOf([]),
+            hasNextPage: true,
+            isFetchingNextPage,
+            readKey,
+            fetchNextPage,
+        })
+        mockHistory.mockReturnValue(state(false, 'a'))
+        const { result, rerender } = render()
+        for (let page = 0; page < 8; page++) {
+            mockHistory.mockReturnValue(state(true, 'a'))
+            rerender()
+            mockHistory.mockReturnValue(state(false, 'a'))
+            rerender()
+        }
+        expect(result.current.shouldShowLoadMore).toBe(true)
+
+        mockHistory.mockReturnValue(state(false, 'b'))
+        rerender()
+
+        expect(result.current.shouldShowLoadMore).toBe(false)
+    })
+
+    it('shows the error state, not the empty state, when a batch failed and nothing is visible', () => {
+        mockHistory.mockReturnValue({
+            ...historyOf([]),
+            hasFailedBatch: true,
+        })
+
+        const { result } = render()
+
+        expect(result.current.shouldShowErrorState).toBe(true)
+        expect(result.current.shouldShowEmptyState).toBe(false)
+    })
+
+    it('keeps the rows that loaded when a batch failed', () => {
+        mockHistory.mockReturnValue({
+            ...historyOf([item]),
+            hasFailedBatch: true,
+        })
+
+        const { result } = render()
+
+        expect(result.current.swaps).toHaveLength(1)
+        expect(result.current.shouldShowErrorState).toBe(false)
     })
 
     it('hides rows naming an asset this wallet cannot resolve', () => {

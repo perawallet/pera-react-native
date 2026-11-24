@@ -11,7 +11,12 @@
  */
 
 import { useCallback } from 'react'
-import { PWFlatList, PWLoadingIndicator, PWView } from '@components/core'
+import {
+    PWButton,
+    PWFlatList,
+    PWLoadingIndicator,
+    PWView,
+} from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -48,6 +53,7 @@ export const SwapHistoryList = ({
         shouldShowNotOnDeviceState,
         shouldShowErrorState,
         shouldShowEmptyState,
+        shouldShowLoadMore,
     } = useSwapHistoryList({ onClose })
 
     const renderItem = useCallback(
@@ -132,11 +138,23 @@ export const SwapHistoryList = ({
                 onEndReachedThreshold={0.3}
                 inBottomSheet={inBottomSheet}
                 ListEmptyComponent={
-                    <EmptyView
-                        isLoading={isLoading || isFetchingNextPage}
-                        loadingStyle={styles.listContent}
-                        body=''
-                    />
+                    shouldShowLoadMore ? (
+                        <PWView style={styles.loadMore}>
+                            <PWButton
+                                variant='linkPositive'
+                                paddingStyle='none'
+                                title={t('swap.history.list.load_more')}
+                                onPress={handleEndReached}
+                                testID='swap_history_load_more'
+                            />
+                        </PWView>
+                    ) : (
+                        <EmptyView
+                            isLoading={isLoading || isFetchingNextPage}
+                            loadingStyle={styles.listContent}
+                            body=''
+                        />
+                    )
                 }
                 ListFooterComponent={
                     isFetchingNextPage ? (

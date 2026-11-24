@@ -20,8 +20,6 @@ import { useSwapPairHistoryWidget } from '../useSwapPairHistoryWidget'
 
 const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 
-type Account = { id: string; name: string }
-
 const {
     mockTrackEvent,
     mockSetAccountPair,
@@ -34,7 +32,10 @@ const {
     mockSetSelectedAccountId: vi.fn(),
     mockRequestBottomSheet: vi.fn(),
     state: {
-        accounts: [] as Account[],
+        names: {
+            names: [] as { accountId: string; name: string }[],
+            isMultiAccount: false,
+        },
         recent: {
             pairs: [] as SwapHistoryPair[],
             isLoading: false,
@@ -53,12 +54,11 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
     useSwapsStore: (select: (store: unknown) => unknown) =>
         select({ setAccountPair: mockSetAccountPair }),
     useRecentSwapPairsQuery: () => state.recent,
+    useSwapSigningAccounts: () => [],
+    useSwapAccountNames: () => state.names,
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    getAccountDisplayName: (account: Account | null) =>
-        account?.name ?? 'No Account',
-    useAllAccounts: () => state.accounts,
     useSelectedAccountId: () => ({
         setSelectedAccountId: mockSetSelectedAccountId,
     }),
@@ -73,8 +73,6 @@ vi.mock('@modules/swap/components/SwapHistoryContent', () => ({
 }))
 
 const ADDRESS = 'TESTADDRESS123'
-const MAIN: Account = { id: 'main', name: 'Main' }
-const OTHER: Account = { id: 'other', name: 'Savings' }
 
 const assetOn = (assetId: string, unitName: string) => ({
     assetId,
@@ -95,7 +93,13 @@ const pairPaidBy = (accountId: string) =>
 describe('useSwapPairHistoryWidget', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        state.accounts = [MAIN, OTHER]
+        state.names = {
+            names: [
+                { accountId: 'main', name: 'Main' },
+                { accountId: 'other', name: 'Savings' },
+            ],
+            isMultiAccount: true,
+        }
         state.recent = {
             pairs: [],
             isLoading: false,
@@ -169,5 +173,19 @@ describe('useSwapPairHistoryWidget', () => {
         }) as ReactElement<{ accountName: string }>
 
         expect(chip.props.accountName).toBe('Savings')
+    })
+
+    it('leaves the account name off the chips of a wallet with one swap account', () => {
+        state.names = {
+            names: [{ accountId: 'main', name: 'Main' }],
+            isMultiAccount: false,
+        }
+        const { result } = renderHook(() => useSwapPairHistoryWidget(SCOPE))
+
+        const chip = result.current.renderPair({
+            item: pairPaidBy('main'),
+        }) as ReactElement<{ accountName?: string }>
+
+        expect(chip.props.accountName).toBeUndefined()
     })
 })

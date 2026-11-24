@@ -10,16 +10,14 @@
  limitations under the License
  */
 
-import { useCallback, type ReactElement } from 'react'
+import { useCallback, useMemo, type ReactElement } from 'react'
 import {
     useRecentSwapPairsQuery,
+    useSwapAccountNames,
+    useSwapSigningAccounts,
     useSwapsStore,
     type SwapHistoryPair,
 } from '@perawallet/wallet-core-swaps'
-import {
-    getAccountDisplayName,
-    useAllAccounts,
-} from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { PWView } from '@components/core'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -45,7 +43,14 @@ export const useSwapPairHistoryWidget = (
     scope: ChainScope,
 ): UseSwapPairHistoryWidgetResult => {
     const setAccountPair = useSwapsStore(state => state.setAccountPair)
-    const accounts = useAllAccounts()
+    // The same names and the same more-than-one rule as See all.
+    const { names, isMultiAccount } = useSwapAccountNames(
+        useSwapSigningAccounts(),
+    )
+    const nameById = useMemo(
+        () => new Map(names.map(({ accountId, name }) => [accountId, name])),
+        [names],
+    )
     const { request: requestBottomSheet } = useBottomSheet()
     const styles = useStyles()
 
@@ -86,15 +91,13 @@ export const useSwapPairHistoryWidget = (
             <SwapPairChip
                 assetIn={item.assetIn}
                 assetOut={item.assetOut}
-                accountName={getAccountDisplayName(
-                    accounts.find(account => account.id === item.accountId) ??
-                        null,
-                    item.assetIn.ref.chainId,
-                )}
+                accountName={
+                    isMultiAccount ? nameById.get(item.accountId) : undefined
+                }
                 onPress={() => handlePairPress(item)}
             />
         ),
-        [handlePairPress, accounts],
+        [handlePairPress, nameById, isMultiAccount],
     )
 
     const keyExtractor = useCallback(

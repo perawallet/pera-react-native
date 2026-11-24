@@ -19,7 +19,7 @@ import { useStyles } from './styles'
 export type SwapPairChipProps = {
     assetIn: SwapAsset
     assetOut: SwapAsset
-    accountName: string
+    accountName?: string
     onPress: () => void
 }
 
@@ -46,13 +46,15 @@ export const SwapPairChip = ({
             />
             <PWView style={styles.chipLabels}>
                 <PWText variant='body'>{label}</PWText>
-                <PWText
-                    variant='caption'
-                    style={styles.chipAccount}
-                    truncate
-                >
-                    {accountName}
-                </PWText>
+                {!!accountName && (
+                    <PWText
+                        variant='caption'
+                        style={styles.chipAccount}
+                        truncate
+                    >
+                        {accountName}
+                    </PWText>
+                )}
             </PWView>
         </PWTouchableOpacity>
     )
