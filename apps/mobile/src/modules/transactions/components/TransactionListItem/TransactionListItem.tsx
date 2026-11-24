@@ -22,8 +22,8 @@ import { useStyles } from './styles'
 import {
     useTransactionListItem,
     type UseTransactionListItemParams,
+    type RowAmount,
 } from './useTransactionListItem'
-import type { AmountDisplay } from './amounts'
 
 // A token's own unit has no length cap, so the amount column is capped and cuts off rather than squeezing the title.
 const AMOUNT_MAX_WIDTH_RATIO = 0.5
@@ -53,10 +53,14 @@ const TransactionListItemView = ({
         handlePress,
         handleLongPress,
         isSuspectedPoisoning,
+        isSuspiciousToken,
         imitatedCurrency,
     } = useTransactionListItem(props)
 
-    const getAmountStyle = (amount: AmountDisplay) => {
+    // A scam airdrop isn't a credit: no green amount to make it look like one.
+    // Only its own leg: the real coin beside it in a swap keeps its colour.
+    const getAmountStyle = (amount: RowAmount) => {
+        if (amount.isSuspicious) return styles.amountMuted
         if (amount.prefix === '+') return styles.amountPositive
         if (amount.prefix === '-') return styles.amountNegative
         return styles.amount
@@ -72,6 +76,7 @@ const TransactionListItemView = ({
                 networkChainId ||
                 notice ||
                 isSuspectedPoisoning ||
+                isSuspiciousToken ||
                 imitatedCurrency !== null
                     ? 'top'
                     : 'center'
@@ -134,7 +139,7 @@ const TransactionListItemView = ({
                 {/* The amounts never shrink, so a long swap pair needs a third line to keep the received token in view. */}
                 <PWText
                     variant='h4'
-                    style={styles.title}
+                    style={isSuspiciousToken ? styles.titleMuted : styles.title}
                     truncate
                     numberOfLines={3}
                 >
@@ -168,6 +173,14 @@ const TransactionListItemView = ({
                         titleKey='transactions.suspected_poisoning.marker'
                         style={styles.notice}
                         testID={`transaction_row_suspected_poisoning_${id}`}
+                    />
+                )}
+                {isSuspiciousToken && (
+                    <ChainNotice
+                        kind='warning'
+                        titleKey='transactions.suspicious_token.marker'
+                        style={styles.notice}
+                        testID={`transaction_row_suspicious_token_${id}`}
                     />
                 )}
                 {imitatedCurrency !== null && (

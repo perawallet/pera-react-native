@@ -10,4 +10,7 @@
  limitations under the License
  */
 
-export { useMigrationGateStore } from './migrationGateStore'
+export {
+    useMigrationGateStore,
+    type LegacyWipeBlock,
+} from './migrationGateStore'

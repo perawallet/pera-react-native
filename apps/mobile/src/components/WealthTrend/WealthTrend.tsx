@@ -31,9 +31,11 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { AssetAmount } from '@components/AssetAmount'
 import { LIST_MAX_PRECISION } from '@components/CurrencyAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
+import { useLanguage } from '@hooks/useLanguage'
 import {
     useHistoryTrend,
     type PortfolioTrendDirection,
+    type TrendMeasure,
 } from '@hooks/usePortfolioTrend'
 
 /** One asset held by one account on one chain. */
@@ -54,17 +56,27 @@ export type WealthTrendProps = {
           currencyScope: ChainScope
           holding?: never
           amountOf?: never
+          selectedAt?: never
       }
     | {
           holding: WealthTrendHolding
           /** Set: trends the amount held, in this asset's units, rather than its value. */
           amountOf?: MinimalAsset
+          /** The scrubbed chart point's time: a holding's value trend runs to it. */
+          selectedAt?: Maybe<Date>
           sources?: never
           currencyScope?: never
       }
 )
 
 const NO_SOURCES: AccountHoldingSource[] = []
+
+// A holding's value moves with what it receives and sends; its trend is the
+// price move alone, so a deposit never reads as a gain.
+const measureOf = (isHolding: boolean, isAmount: boolean): TrendMeasure => {
+    if (isAmount) return 'amount'
+    return isHolding ? 'holding-value' : 'value'
+}
 
 const SIGN_BY_DIRECTION: Record<PortfolioTrendDirection, string> = {
     up: '+',
@@ -82,8 +94,9 @@ const percentageTextOf = (
 }
 
 export const WealthTrend = (props: WealthTrendProps) => {
-    const { period, holding, amountOf, selectedValue } = props
+    const { period, holding, amountOf, selectedValue, selectedAt } = props
     const styles = useStyles()
+    const { t } = useLanguage()
     const { privacyMode } = useSettings()
 
     // Both queries are called every render; the mode that isn't in use is gated off.
@@ -113,7 +126,8 @@ export const WealthTrend = (props: WealthTrendProps) => {
             : portfolioHistory.isPartial ||
                   portfolioHistory.isUnavailableOnNetwork,
         selectedValue,
-        amountOf ? 'amount' : 'value',
+        measureOf(!!holding, !!amountOf),
+        selectedAt,
     )
 
     if (privacyMode) return null
@@ -175,6 +189,12 @@ export const WealthTrend = (props: WealthTrendProps) => {
                 />
             )}
             {percentageText && ` (${sign}${percentageText})`}
+            {/* A summed series moves with every receive and send, which the label owns up to. */}
+            {!holding && (
+                <PWText style={styles.label}>
+                    {` · ${t('common.wealth_chart.balance_change_label')}`}
+                </PWText>
+            )}
         </PWText>
     )
 }

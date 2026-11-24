@@ -34,6 +34,7 @@ import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { registerFakeNativeAsset } from '../../__tests__/fakeAccountsChain'
 import { refreshAccountHoldings } from '../holdingsRepository'
 import { useHiddenTokensStore } from '../../store/hiddenTokens'
+import { useKeptTokensStore } from '../../store/keptTokens'
 import {
     getAccountPortfolioTotals,
     getAccountFundedNetworks,
@@ -179,6 +180,39 @@ describe('account portfolio queries', () => {
             // Only '200' counts now: 1 * $3.
             expect(totals.nonNativeUsdValue.toNumber()).toBeCloseTo(3, 6)
             expect(totals.holdingsCount).toBe(4)
+        })
+
+        it('leaves a suspicious token the user kept out of the USD value', async () => {
+            await upsertAssets({
+                db,
+                scope: MAINNET_SCOPE,
+                items: [
+                    {
+                        ...richAsset('100', 'Banana'),
+                        peraMetadata: {
+                            ...richAsset('100', 'Banana').peraMetadata!,
+                            verificationTier: 'suspicious',
+                        },
+                    },
+                ],
+            })
+            useKeptTokensStore.getState().keepTokens({
+                address: 'ADDR1',
+                scope: MAINNET_SCOPE,
+                assetIds: ['100'],
+            })
+
+            try {
+                const totals = await getAccountPortfolioTotals({
+                    db,
+                    accountAddress: 'ADDR1',
+                    scope: MAINNET_SCOPE,
+                })
+
+                expect(totals.nonNativeUsdValue.toNumber()).toBeCloseTo(3, 6)
+            } finally {
+                useKeptTokensStore.getState().resetState()
+            }
         })
 
         it('leaves a token the user hid out of the USD value', async () => {

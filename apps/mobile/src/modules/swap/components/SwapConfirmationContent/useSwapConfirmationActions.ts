@@ -66,6 +66,7 @@ const SUCCESS_DISPLAY_MS = 3000
 type UseSwapConfirmationActionsParams = {
     scope: ChainScope
     quote: SwapQuote
+    canChooseProvider: boolean
 }
 
 type UseSwapConfirmationActionsResult = {
@@ -77,10 +78,11 @@ type UseSwapConfirmationActionsResult = {
 export const useSwapConfirmationActions = ({
     scope,
     quote,
+    canChooseProvider,
 }: UseSwapConfirmationActionsParams): UseSwapConfirmationActionsResult => {
     const { resolve, dismiss } = useBottomSheetResult<SwapConfirmationResult>()
     const { invalidate: invalidateSwapHistory } = useSwapHistoryInvalidator()
-    const swapExecution = useSwapExecution()
+    const swapExecution = useSwapExecution({ canChooseProvider })
     const successCloseTimer = useRunAfterDelay()
     const inFlightRef = useRef(false)
     const hasFinishedRef = useRef(false)

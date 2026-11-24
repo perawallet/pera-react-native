@@ -15,7 +15,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { SwapPayHolding } from '@perawallet/wallet-core-swaps'
-import { useSwapFromAssetSelectionList } from '../useSwapFromAssetSelectionList'
+import {
+    useSwapFromAssetSelectionList,
+    type UseSwapFromAssetSelectionListResult,
+} from '../useSwapFromAssetSelectionList'
 
 const mocks = vi.hoisted(() => ({
     holdings: [] as unknown[],
@@ -48,16 +51,24 @@ vi.mock('@modules/chain-ui', () => ({
     }),
 }))
 
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-shared')
+    >()),
+    useDebouncedValue: (value: unknown) => value,
+}))
+
 const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 
 const holding = (
     assetId: string,
     chainId: ChainId = 'algorand',
     name = `Asset ${assetId}`,
+    unitName = `A${assetId}`,
 ): SwapPayHolding =>
     ({
         assetId,
-        asset: { name, unitName: `A${assetId}` },
+        asset: { name, unitName },
         scope: { chainId, networkId: 'mainnet' },
         amount: new Decimal(1),
         holders: [],
@@ -161,5 +172,71 @@ describe('useSwapFromAssetSelectionList', () => {
         )
 
         expect(result.current.holdings.map(h => h.assetId)).toEqual(['0', '1'])
+    })
+
+    describe('searching across networks', () => {
+        const ETHEREUM_USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+
+        const holdingsOnEveryNetwork = () => [
+            holding('native', 'ethereum', 'Ether', 'ETH'),
+            holding('native', 'base', 'Ether', 'ETH'),
+            holding(ETHEREUM_USDC, 'ethereum', 'USD Coin', 'USDC'),
+            holding('386195940', 'algorand', 'goETH', 'goETH'),
+            holding('31566704', 'algorand', 'USDC', 'USDC'),
+        ]
+
+        const foundBy = (
+            result: { current: UseSwapFromAssetSelectionListResult },
+            term: string,
+        ) => {
+            act(() => result.current.setSearchFilter(term))
+            return result.current.holdings
+                .map(h => `${h.scope.chainId}:${h.asset?.unitName}`)
+                .sort()
+        }
+
+        beforeEach(() => {
+            mocks.holdings = holdingsOnEveryNetwork()
+            mocks.sourceChainIds = ['algorand', 'ethereum', 'base']
+        })
+
+        it('finds EVM assets by symbol on every network', () => {
+            const { result } = renderHook(() =>
+                useSwapFromAssetSelectionList(SCOPE),
+            )
+
+            expect(foundBy(result, 'eth')).toEqual([
+                'algorand:goETH',
+                'base:ETH',
+                'ethereum:ETH',
+            ])
+            expect(foundBy(result, ' ETH ')).toEqual([
+                'algorand:goETH',
+                'base:ETH',
+                'ethereum:ETH',
+            ])
+        })
+
+        it('finds EVM assets by name', () => {
+            const { result } = renderHook(() =>
+                useSwapFromAssetSelectionList(SCOPE),
+            )
+
+            expect(foundBy(result, 'usd coin')).toEqual(['ethereum:USDC'])
+            expect(foundBy(result, 'ether')).toEqual([
+                'base:ETH',
+                'ethereum:ETH',
+            ])
+        })
+
+        it('searches only the picked network', () => {
+            const { result } = renderHook(() =>
+                useSwapFromAssetSelectionList(SCOPE),
+            )
+
+            act(() => result.current.handleSelectChain('base'))
+
+            expect(foundBy(result, 'eth')).toEqual(['base:ETH'])
+        })
     })
 })

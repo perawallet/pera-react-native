@@ -46,27 +46,18 @@ export function getContainerTestProps(id?: string) {
     }
 }
 
-/** Shared checkbox semantics for VoiceOver / TalkBack / Appium. */
+/**
+ * Shared checkbox semantics for VoiceOver / TalkBack / Appium. The state goes
+ * out as `aria-*` rather than `accessibilityState`, which react-native-web
+ * drops, so the extension announces it too.
+ */
 export function getCheckboxAccessibilityProps(
     checked: boolean,
     disabled?: boolean,
 ) {
     return {
         accessibilityRole: 'checkbox' as const,
-        accessibilityState: { checked, disabled: !!disabled },
-    }
-}
-
-/**
- * Checkbox automation props for Appium on iOS and Android.
- */
-export function getCheckboxTestProps(
-    id: string,
-    checked: boolean,
-    disabled?: boolean,
-) {
-    return {
-        ...getTestProps(id),
-        ...getCheckboxAccessibilityProps(checked, disabled),
+        'aria-checked': checked,
+        'aria-disabled': !!disabled,
     }
 }

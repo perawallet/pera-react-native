@@ -37,6 +37,7 @@ import {
     useAccountsStore,
     useHiddenTokensInvalidation,
     useHiddenTokensStore,
+    useKeptTokensStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -56,6 +57,7 @@ import {
 import { AccountOverviewModalContext } from '@modules/accounts/components/AccountOverview/AccountOverviewModalContext'
 import { AccountAssetList } from '@modules/accounts/components/AccountAssetList'
 import { HideTokensScreen } from '@modules/accounts/screens/HideTokensScreen'
+import { AutoHiddenTokensScreen } from '@modules/accounts/screens/AutoHiddenTokensScreen'
 import { useAssetListViewStore } from '@modules/accounts/hooks/useAssetListViewStore'
 import { ETH_ADDRESS, ETH_SCOPE } from './__fixtures__/multichainHoldings'
 
@@ -171,6 +173,14 @@ const ListHost = () => {
 
 const renderList = () => renderWithNavigation(ListHost, 'AccountAssetListHost')
 
+const AutoHiddenHost = () => {
+    useHiddenTokensInvalidation()
+    return <AutoHiddenTokensScreen />
+}
+
+const renderAutoHidden = () =>
+    renderWithNavigation(AutoHiddenHost, 'AutoHiddenTokensHost')
+
 const setHidden = (assetId: string, isHidden: boolean): void => {
     act(() => {
         useHiddenTokensStore.getState().setTokenHidden({
@@ -204,6 +214,7 @@ describe('Flow: hiding a token an Ethereum account holds', () => {
         useRemoteConfigStore.getState().resetState()
         useAssetPreferencesStore.getState().resetState()
         useHiddenTokensStore.getState().resetState()
+        useKeptTokensStore.getState().resetState()
         useAssetListViewStore.setState({
             selectedChainId: null,
             expandedGroupIds: [],
@@ -217,6 +228,7 @@ describe('Flow: hiding a token an Ethereum account holds', () => {
         useAccountsStore.getState().setAccounts([])
         useAssetPreferencesStore.getState().resetState()
         useHiddenTokensStore.getState().resetState()
+        useKeptTokensStore.getState().resetState()
     })
 
     it('Given an unvetted token with a balance, when the user hides it on the Hide Tokens screen, then it moves under Hidden Tokens and the asset list stops showing it', async () => {
@@ -332,5 +344,43 @@ describe('Flow: hiding a token an Ethereum account holds', () => {
         renderList()
         await screen.findByTestId(`asset_row_${TSLAX}`)
         expect(screen.queryByTestId(`asset_row_${PVC}`)).toBeNull()
+    })
+
+    it('Given a token Pera flags suspicious, when the asset list opens, then a Hidden tokens row counts it in place of its row', async () => {
+        renderList()
+
+        const row = await screen.findByTestId('auto_hidden_tokens_row')
+
+        expect(row.textContent).toContain(
+            'token_visibility.auto_hidden_row_title',
+        )
+        expect(screen.queryByTestId(`asset_row_${SPAM}`)).toBeNull()
+    })
+
+    it('Given the Hidden tokens screen, when the user unhides the flagged token, then the list shows it for good, the row goes, and the total still leaves it out', async () => {
+        const before = await nonNativeUsd()
+        renderAutoHidden()
+
+        fireEvent.click(await screen.findByTestId(`hide_tokens_toggle_${SPAM}`))
+
+        await waitFor(() =>
+            expect(
+                screen.queryByTestId(`hide_tokens_toggle_${SPAM}`),
+            ).toBeNull(),
+        )
+        cleanup()
+        renderList()
+        expect(await screen.findByTestId(`asset_row_${SPAM}`)).toBeTruthy()
+        expect(screen.queryByTestId('auto_hidden_tokens_row')).toBeNull()
+        expect(await nonNativeUsd()).toBe(before)
+    })
+
+    it('Given suspicious assets are switched on, when the asset list opens, then it lists the flagged token and shows no Hidden tokens row', async () => {
+        act(() => useAssetPreferencesStore.getState().setShowSuspicious(true))
+
+        renderList()
+
+        expect(await screen.findByTestId(`asset_row_${SPAM}`)).toBeTruthy()
+        expect(screen.queryByTestId('auto_hidden_tokens_row')).toBeNull()
     })
 })

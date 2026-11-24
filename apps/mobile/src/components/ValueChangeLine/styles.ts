@@ -22,4 +22,7 @@ export const useStyles = makeStyles(theme => ({
     flat: {
         color: theme.colors.textMain,
     },
+    label: {
+        color: theme.colors.textGray,
+    },
 }))

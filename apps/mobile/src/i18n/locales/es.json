@@ -287,7 +287,11 @@
         "hidden_toast_body": "Ya no aparecerá en tus activos ni se contará en tu saldo. Vuelve a mostrarlo desde Gestionar activos > Ocultar tokens.",
         "hidden_swipe_toast_body": "Toca para deshacer. Ya no aparecerá en tus activos ni se contará en tu saldo.",
         "shown_toast_title": "Se mostró {{assetName}}",
-        "filtered_note": "Pera marcó este token como sospechoso, por eso no aparece en tus activos. Puedes mostrarlo con «Mostrar activos sospechosos» en los filtros de activos."
+        "filtered_note": "Pera marcó este token como sospechoso, por eso no aparece en tus activos. Puedes mostrarlo desde «Tokens ocultos», al final de tus activos.",
+        "auto_hidden_row_title": "Tokens ocultos ({{total}})",
+        "auto_hidden_title": "Tokens ocultos",
+        "auto_hidden_description": "Pera ocultó estos tokens porque parecen spam o estafas. No visites los sitios web que mencionan. Muestra un token para volver a verlo en la lista; seguirá sin contarse en tu saldo.",
+        "auto_hidden_empty_title": "No hay tokens ocultos"
     },
     "deeplink": {
         "error": {
@@ -1235,7 +1239,8 @@
             "asset_empty_body": "Aquí verás un gráfico cuando tengas historial de saldo de este activo en esta cuenta",
             "excludes_networks": "Este gráfico aún no incluye los activos de {{networks}}",
             "failed_networks": "No se pudo cargar el historial de {{networks}}, así que este gráfico no lo incluye",
-            "currency_unavailable_body": "Este gráfico no está disponible en {{currency}} por ahora"
+            "currency_unavailable_body": "Este gráfico no está disponible en {{currency}} por ahora",
+            "balance_change_label": "Cambio de saldo"
         },
         "webview": {
             "failed_title": "No se pudo cargar la página",
@@ -4102,6 +4107,9 @@
             "reuse_body": "Empieza y termina como una dirección que conoces, pero no es la misma. Compara las direcciones completas antes de usarla.",
             "reuse_confirm": "Continuar de todos modos",
             "reuse_cancel": "Cancelar"
+        },
+        "suspicious_token": {
+            "marker": "Token sospechoso"
         }
     },
     "tabbar": {
@@ -4315,9 +4323,12 @@
                 "swap": "Swap fallido"
             },
             "provider_failed_body": "Este proveedor no pudo completar el swap. Prueba con otro proveedor.",
+            "provider_failed_single_body": "El proveedor no pudo completar el swap. Inténtalo más tarde o prueba con otro importe.",
             "provider_unavailable_body": "El proveedor no está disponible en este momento. Inténtalo de nuevo en unos instantes.",
             "quote_mismatch_body": "Las transacciones del proveedor no coincidían con esta cotización, así que no se firmó nada. Inténtalo de nuevo o elige otro proveedor.",
+            "quote_mismatch_single_body": "Las transacciones del proveedor no coincidían con esta cotización, así que no se firmó nada. Inténtalo más tarde.",
             "unsupported_order_body": "Pera no puede completar la orden de este proveedor, así que no se firmó nada. Elige otro proveedor.",
+            "unsupported_order_single_body": "Pera no puede completar la orden de este proveedor, así que no se firmó nada. Inténtalo más tarde.",
             "signing_failed_body": "No se pudo firmar la transacción, así que no se envió. Inténtalo de nuevo.",
             "order_insufficient_balance_body": "Tu saldo no cubre esta cantidad y la comisión de red. Prueba con una cantidad menor o añade fondos para la comisión.",
             "insufficient_native_body": "Esta cuenta necesita al menos {{amount}} {{symbol}} más para cubrir este swap, sus comisiones y el saldo mínimo. Añade más {{symbol}} y vuelve a intentarlo.",

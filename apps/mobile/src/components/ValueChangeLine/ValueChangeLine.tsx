@@ -24,6 +24,8 @@ export type ValueChangeLineProps = {
     absolute: Decimal
     percentage: Decimal
     currency: string
+    /** Muted text after the change, naming what it measures. */
+    label?: string
     testID?: string
 }
 
@@ -38,6 +40,7 @@ export const ValueChangeLine = ({
     absolute,
     percentage,
     currency,
+    label,
     testID,
 }: ValueChangeLineProps) => {
     const styles = useStyles()
@@ -61,6 +64,7 @@ export const ValueChangeLine = ({
             {sign}
             {formatCurrency(absolute.abs(), 2, currency, undefined, true)}
             {hasPercentage && ` (${sign}${formatPercentage(percentage.abs())})`}
+            {label && <PWText style={styles.label}>{` · ${label}`}</PWText>}
         </PWText>
     )
 }

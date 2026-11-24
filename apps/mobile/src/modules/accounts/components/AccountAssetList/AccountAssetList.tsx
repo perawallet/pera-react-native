@@ -30,6 +30,7 @@ import {
     type AssetGroupMemberIdentity,
 } from './ExpandableAssetGroup'
 import { SwipeableAssetItem } from './SwipeableAssetItem'
+import { AutoHiddenTokensRow } from '../AutoHiddenTokensRow'
 import { BackupReminderBanner } from '../BackupReminderBanner'
 import { LegacyQuantumNotice } from '../LegacyQuantumNotice'
 import { NetworkFundingState } from './NetworkFundingState'
@@ -212,12 +213,15 @@ export const AccountAssetList = ({
                 contentContainerStyle={styles.rootContainer}
                 ListHeaderComponent={listHeader}
                 ListFooterComponent={
-                    fundingChainId === null ? undefined : (
-                        <NetworkFundingState
-                            account={account}
-                            chainId={fundingChainId}
-                        />
-                    )
+                    <>
+                        <AutoHiddenTokensRow account={account} />
+                        {fundingChainId !== null && (
+                            <NetworkFundingState
+                                account={account}
+                                chainId={fundingChainId}
+                            />
+                        )}
+                    </>
                 }
                 searchPlaceholder={t(
                     'account_details.assets.search_placeholder',

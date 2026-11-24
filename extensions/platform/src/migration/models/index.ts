@@ -55,6 +55,13 @@ export interface MigrationService {
     readonly devTools?: MigrationDevTools
     /** Removes all legacy (v6) migration data and clears the migration sentinel. */
     resetLegacyData(): Promise<void>
+    /**
+     * Removes the legacy (v6) secrets and store but keeps the sentinel and step
+     * versions, so a migrated install still reads as migrated afterwards. Unlike
+     * `resetLegacyData`, it leaves data the app shares with the legacy store (the
+     * iOS App Group defaults) and throws when anything could not be deleted.
+     */
+    wipeLegacyData(): Promise<void>
     /** Returns the per-step version record, or `null` when no record has ever been written. */
     getCompletedStepVersions(): Promise<Nullable<MigrationStepVersions>>
     /** Persists the per-step version record. */

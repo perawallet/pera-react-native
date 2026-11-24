@@ -100,21 +100,43 @@ vi.mock('@hooks/useTransactionOutcomeHaptics', () => ({
 
 vi.mock('@hooks/useLanguage')
 
+const mockUseSwapExecution = vi.fn()
+
 vi.mock('../../../hooks/useSwapExecution', () => ({
-    useSwapExecution: () => ({
-        execute: mockExecute,
-        cancel: mockExecutionCancel,
-        reset: mockReset,
-        status: 'idle',
-        error: null,
-        txIds: [],
-    }),
+    useSwapExecution: (options: unknown) => {
+        mockUseSwapExecution(options)
+        return {
+            execute: mockExecute,
+            cancel: mockExecutionCancel,
+            reset: mockReset,
+            status: 'idle',
+            error: null,
+            txIds: [],
+        }
+    },
 }))
 
 describe('useSwapConfirmationActions', () => {
     beforeEach(() => {
         vi.clearAllMocks()
     })
+
+    it.each([true, false])(
+        'passes whether another provider exists (%s) to the execution copy',
+        canChooseProvider => {
+            renderHook(() =>
+                useSwapConfirmationActions({
+                    scope: SCOPE,
+                    quote: makeQuote(),
+                    canChooseProvider,
+                }),
+            )
+
+            expect(mockUseSwapExecution).toHaveBeenCalledWith({
+                canChooseProvider,
+            })
+        },
+    )
 
     it('readies nothing for a same-chain swap', async () => {
         mockExecute.mockResolvedValueOnce({
@@ -124,7 +146,11 @@ describe('useSwapConfirmationActions', () => {
         const quote = makeQuote()
 
         const { result } = renderHook(() =>
-            useSwapConfirmationActions({ scope: SCOPE, quote }),
+            useSwapConfirmationActions({
+                scope: SCOPE,
+                quote,
+                canChooseProvider: false,
+            }),
         )
         await act(async () => {
             await result.current.handleSlideConfirm()
@@ -148,7 +174,11 @@ describe('useSwapConfirmationActions', () => {
         } as SwapQuote
 
         const { result } = renderHook(() =>
-            useSwapConfirmationActions({ scope: SCOPE, quote }),
+            useSwapConfirmationActions({
+                scope: SCOPE,
+                quote,
+                canChooseProvider: false,
+            }),
         )
         await act(async () => {
             await result.current.handleSlideConfirm()
@@ -173,6 +203,7 @@ describe('useSwapConfirmationActions', () => {
             useSwapConfirmationActions({
                 scope: SCOPE,
                 quote: makeQuote('quote-done'),
+                canChooseProvider: false,
             }),
         )
 
@@ -201,6 +232,7 @@ describe('useSwapConfirmationActions', () => {
             useSwapConfirmationActions({
                 scope: SCOPE,
                 quote: makeQuote('quote-failed'),
+                canChooseProvider: false,
             }),
         )
 
@@ -228,6 +260,7 @@ describe('useSwapConfirmationActions', () => {
             useSwapConfirmationActions({
                 scope: SCOPE,
                 quote: makeQuote('quote-1'),
+                canChooseProvider: false,
             }),
         )
 
@@ -253,6 +286,7 @@ describe('useSwapConfirmationActions', () => {
             useSwapConfirmationActions({
                 scope: SCOPE,
                 quote: makeQuote('quote-2'),
+                canChooseProvider: false,
             }),
         )
 
@@ -275,6 +309,7 @@ describe('useSwapConfirmationActions', () => {
             useSwapConfirmationActions({
                 scope: SCOPE,
                 quote: makeQuote('quote-3'),
+                canChooseProvider: false,
             }),
         )
 
@@ -305,6 +340,7 @@ describe('useSwapConfirmationActions', () => {
             useSwapConfirmationActions({
                 scope: SCOPE,
                 quote: makeQuote('quote-3b'),
+                canChooseProvider: false,
             }),
         )
 
@@ -337,6 +373,7 @@ describe('useSwapConfirmationActions', () => {
             useSwapConfirmationActions({
                 scope: SCOPE,
                 quote: makeQuote('quote-4'),
+                canChooseProvider: false,
             }),
         )
 
@@ -366,6 +403,7 @@ describe('useSwapConfirmationActions', () => {
             useSwapConfirmationActions({
                 scope: SCOPE,
                 quote: makeQuote('quote-8'),
+                canChooseProvider: false,
             }),
         )
 
@@ -384,6 +422,7 @@ describe('useSwapConfirmationActions', () => {
             useSwapConfirmationActions({
                 scope: SCOPE,
                 quote: makeQuote('quote-9'),
+                canChooseProvider: false,
             }),
         )
 
@@ -406,6 +445,7 @@ describe('useSwapConfirmationActions', () => {
             useSwapConfirmationActions({
                 scope: SCOPE,
                 quote: makeQuote('quote-5'),
+                canChooseProvider: false,
             }),
         )
 
@@ -430,6 +470,7 @@ describe('useSwapConfirmationActions', () => {
             useSwapConfirmationActions({
                 scope: SCOPE,
                 quote: makeQuote('quote-6'),
+                canChooseProvider: false,
             }),
         )
 
@@ -464,6 +505,7 @@ describe('useSwapConfirmationActions', () => {
             useSwapConfirmationActions({
                 scope: SCOPE,
                 quote: makeQuote('quote-7'),
+                canChooseProvider: false,
             }),
         )
 
@@ -497,6 +539,7 @@ describe('useSwapConfirmationActions', () => {
             useSwapConfirmationActions({
                 scope: SCOPE,
                 quote: makeQuote('quote-6'),
+                canChooseProvider: false,
             }),
         )
 
@@ -522,6 +565,7 @@ describe('useSwapConfirmationActions', () => {
             useSwapConfirmationActions({
                 scope: SCOPE,
                 quote: makeQuote('quote-7'),
+                canChooseProvider: false,
             }),
         )
 

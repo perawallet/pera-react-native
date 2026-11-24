@@ -76,6 +76,22 @@ describe('ValueChangeLine', () => {
         )
     })
 
+    it('names what the change measures after it', () => {
+        render(
+            <ValueChangeLine
+                absolute={new Decimal('23.48')}
+                percentage={new Decimal('12.5')}
+                currency='USD'
+                label='Balance change'
+                testID='change'
+            />,
+        )
+
+        expect(screen.getByTestId('change').textContent).toMatch(
+            /^\+\D*23\.48 \(\+12\.50%\) · Balance change$/,
+        )
+    })
+
     it('renders nothing in privacy mode', () => {
         setPrivacyMode(true)
 

@@ -11,6 +11,7 @@
  */
 
 import {
+    readBooleanFlagWithoutOverride,
     remoteConfigDefaultsRegistry,
     useRemoteConfigOverrides,
 } from '@perawallet/wallet-core-remote-config'
@@ -28,6 +29,19 @@ export const useFeatureFlagOverrides = () => {
             key => typeof defaults[key] === 'boolean',
         )
     }, [])
+
+    // Mirrors readRemoteConfigWithOverrides: only a boolean override applies.
+    const booleanFlagValues = useMemo(() => {
+        const values: Record<string, boolean> = {}
+        for (const key of booleanFlagKeys) {
+            const override = configOverrides[key]
+            values[key] =
+                typeof override === 'boolean'
+                    ? override
+                    : readBooleanFlagWithoutOverride(key)
+        }
+        return values
+    }, [booleanFlagKeys, configOverrides])
 
     const stringFlagKeys = useMemo(() => {
         const defaults = remoteConfigDefaultsRegistry.all()
@@ -52,7 +66,7 @@ export const useFeatureFlagOverrides = () => {
         if (expanded.includes(key)) {
             setConfigOverride(key, null)
         } else {
-            setConfigOverride(key, false)
+            setConfigOverride(key, readBooleanFlagWithoutOverride(key))
         }
     }
 
@@ -73,6 +87,7 @@ export const useFeatureFlagOverrides = () => {
         configOverrides,
         setConfigOverride,
         booleanFlagKeys,
+        booleanFlagValues,
         stringFlagKeys,
         setStringOverride,
         expanded,

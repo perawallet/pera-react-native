@@ -790,10 +790,10 @@ workflows:
             \"Zip\" \"Web production\" \"Bitrise artifact\")\"\n  CHECKS=(\"${TEST_STATUS:-}\"
             \"${IOS_PRODUCTION_STATUS:-}\" \"${ANDROID_PRODUCTION_STATUS:-}\" \"${WEB_PRODUCTION_STATUS:-}\")\nfi\n\n#
             Header icon per channel on success (any failed build flips it\n# to ❌
-            + red below): \U0001F680 stable Release, ⭐ RC, \U0001F319 Nightly, \U0001F4E6
-            Manual.\ncase \"$CHANNEL\" in\n  Release) OVERALL=\"\U0001F680\" ;;\n
-            \ RC)      OVERALL=\"⭐\" ;;\n  Nightly) OVERALL=\"\U0001F319\" ;;\n  *)
-            \      OVERALL=\"\U0001F4E6\" ;;\nesac\nCOLOR=\"#36a64f\"\n# Anything
+            + red below): 🚀 stable Release, ⭐ RC, 🌙 Nightly, 📦
+            Manual.\ncase \"$CHANNEL\" in\n  Release) OVERALL=\"🚀\" ;;\n
+            \ RC)      OVERALL=\"⭐\" ;;\n  Nightly) OVERALL=\"🌙\" ;;\n  *)
+            \      OVERALL=\"📦\" ;;\nesac\nCOLOR=\"#36a64f\"\n# Anything
             that is not an explicit `ok` turns the card red.\n# Matching only on `fail`
             used to let a failed `test` through as\n# green, because gated builds
             publish no status at all and the\n# empty string fell into the benign

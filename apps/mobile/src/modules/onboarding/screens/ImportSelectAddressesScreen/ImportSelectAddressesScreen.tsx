@@ -15,7 +15,6 @@ import type { LocalAccount } from '@perawallet/wallet-core-accounts'
 import {
     PWView,
     PWText,
-    PWTouchableOpacity,
     PWButton,
     PWCheckbox,
     PWFlatList,
@@ -152,22 +151,21 @@ export const ImportSelectAddressesScreen = () => {
                 )}
             </PWText>
 
-            <PWTouchableOpacity
+            <PWCheckbox
+                label={
+                    <PWText
+                        variant='link'
+                        style={styles.selectAllText}
+                    >
+                        {t('onboarding.import_select_addresses.select_all')}
+                    </PWText>
+                }
+                boxPosition='trailing'
+                isChecked={isAllSelected}
                 onPress={toggleSelectAll}
                 style={styles.selectAllContainer}
-            >
-                <PWText
-                    variant='link'
-                    style={styles.selectAllText}
-                >
-                    {t('onboarding.import_select_addresses.select_all')}
-                </PWText>
-                <PWCheckbox
-                    checked={isAllSelected}
-                    onPress={toggleSelectAll}
-                    testID='import_select_addresses_select_all_checkbox'
-                />
-            </PWTouchableOpacity>
+                testID='import_select_addresses_select_all_checkbox'
+            />
         </PWView>
     )
 

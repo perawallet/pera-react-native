@@ -18,14 +18,19 @@ import {
     useAccountChainId,
     useAccountHoldingsAcrossChainsQuery,
     useHiddenTokensStore,
+    useKeptTokensStore,
     useSelectedAccount,
     canHideHolding,
     chainAccountOf,
     hiddenAssetIdsOf,
+    isAutoHiddenHolding,
 } from '@perawallet/wallet-core-accounts'
 
 import { useDebouncedValue } from '@perawallet/wallet-core-shared'
-import { nativeAssetFor } from '@perawallet/wallet-core-assets'
+import {
+    nativeAssetFor,
+    useAssetPreferencesStore,
+} from '@perawallet/wallet-core-assets'
 import {
     assetRefKey,
     type AssetRef,
@@ -83,18 +88,31 @@ export const useAccountAssetSelectionList = ({
     const { isPending, isError } = chainIds ? acrossChains : singleChain
 
     const hiddenTokens = useHiddenTokensStore(state => state.hiddenTokens)
+    const keptTokens = useKeptTokensStore(state => state.keptTokens)
+    const showSuspicious = useAssetPreferencesStore(
+        state => state.showSuspicious,
+    )
 
-    // A token the user hid is out of every list of what the account holds,
-    // this picker's search included; unhiding it is what brings it back.
+    // A token the user hid, or one the asset list leaves out as suspicious, is
+    // out of this picker too, its search included.
     const balanceData = useMemo<ChainAssetBalance[]>(() => {
-        const isHidden = ({ scope: held, assetId }: ChainAssetBalance) =>
-            canHideHolding(held.chainId, assetId) &&
-            !!selectedAccount &&
-            hiddenAssetIdsOf(
-                hiddenTokens,
-                chainAccountOf(selectedAccount, held.chainId)?.address ?? '',
-                held,
-            ).includes(assetId)
+        const isHidden = (balance: ChainAssetBalance) => {
+            const { scope: held, assetId } = balance
+            if (!selectedAccount) return false
+            const address =
+                chainAccountOf(selectedAccount, held.chainId)?.address ?? ''
+            return (
+                (canHideHolding(held.chainId, assetId) &&
+                    hiddenAssetIdsOf(hiddenTokens, address, held).includes(
+                        assetId,
+                    )) ||
+                (!showSuspicious &&
+                    isAutoHiddenHolding(
+                        { ...balance, address, scope: held },
+                        keptTokens,
+                    ))
+            )
+        }
         if (chainIds) {
             return heldAcrossChains.filter(
                 balance =>
@@ -115,6 +133,8 @@ export const useAccountAssetSelectionList = ({
         selectedAddress,
         selectedAccount,
         hiddenTokens,
+        keptTokens,
+        showSuspicious,
         scope,
     ])
 

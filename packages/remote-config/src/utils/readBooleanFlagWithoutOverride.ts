@@ -10,15 +10,16 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+import { readBooleanFlagBuildDefault } from './readBooleanFlagBuildDefault'
 
-export const useStyles = makeStyles(theme => ({
-    row: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.sm,
-    },
-    label: {
-        flexShrink: 1,
-    },
-}))
+/**
+ * The value the app reads for a boolean flag with no developer override. Goes
+ * through the raw service, as a reader does, because the Firebase and Chrome
+ * services differ on when the fetched value beats the fallback.
+ */
+export const readBooleanFlagWithoutOverride = (key: string): boolean =>
+    getProvider().remoteConfig.getBooleanValue(
+        key,
+        readBooleanFlagBuildDefault(key),
+    )

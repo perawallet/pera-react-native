@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWCheckbox, PWText, PWTouchableOpacity } from '@components/core'
+import { PWCheckbox, PWText } from '@components/core'
 
 import { useStyles } from './styles'
 
@@ -30,21 +30,19 @@ export const ConfirmationCheckbox = ({
     const styles = useStyles()
 
     return (
-        <PWTouchableOpacity
-            style={styles.row}
+        <PWCheckbox
+            label={
+                <PWText
+                    variant='bodyLarge'
+                    style={styles.label}
+                >
+                    {label}
+                </PWText>
+            }
+            isChecked={isConfirmed}
             onPress={onToggle}
+            style={styles.row}
             testID={testID}
-        >
-            <PWCheckbox
-                checked={isConfirmed}
-                onPress={onToggle}
-            />
-            <PWText
-                variant='bodyLarge'
-                style={styles.label}
-            >
-                {label}
-            </PWText>
-        </PWTouchableOpacity>
+        />
     )
 }

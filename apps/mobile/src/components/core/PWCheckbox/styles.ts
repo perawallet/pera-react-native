@@ -13,6 +13,16 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
+    row: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    textRow: {
+        gap: theme.spacing.sm,
+    },
+    label: {
+        flexShrink: 1,
+    },
     uncheckedIcon: {
         width: theme.spacing.xl,
         height: theme.spacing.xl,

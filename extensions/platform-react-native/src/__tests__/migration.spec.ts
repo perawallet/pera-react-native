@@ -60,6 +60,7 @@ type NativeModule = {
     simulateLegacyDatabase?: ReturnType<typeof vi.fn>
     simulatePreSixxAccounts?: ReturnType<typeof vi.fn>
     resetLegacyData?: ReturnType<typeof vi.fn>
+    wipeMigratedLegacyData?: ReturnType<typeof vi.fn>
 }
 
 const createNativeModule = (
@@ -71,6 +72,7 @@ const createNativeModule = (
     simulateLegacyDatabase: vi.fn().mockResolvedValue(undefined),
     simulatePreSixxAccounts: vi.fn().mockResolvedValue(undefined),
     resetLegacyData: vi.fn().mockResolvedValue(undefined),
+    wipeMigratedLegacyData: vi.fn().mockResolvedValue(undefined),
     ...overrides,
 })
 
@@ -932,6 +934,44 @@ describe('RNMigrationService', () => {
 
             await expect(service.resetLegacyData()).rejects.toThrow('boom')
             expect(storage.getItem(MIGRATION_SENTINEL_KEY)).toBe('x')
+        })
+    })
+
+    describe('wipeLegacyData', () => {
+        test('throws when the native module is missing, so nothing reads as wiped', async () => {
+            await expect(service.wipeLegacyData()).rejects.toThrow()
+        })
+
+        test('throws when the native module predates the migrated wipe', async () => {
+            nativeModulesMock.LegacyMigration = createNativeModule({
+                wipeMigratedLegacyData: undefined,
+            })
+
+            await expect(service.wipeLegacyData()).rejects.toThrow()
+        })
+
+        test('wipes natively but keeps the sentinel and step versions', async () => {
+            storage.setItem(MIGRATION_SENTINEL_KEY, 'x')
+            storage.setItem(MIGRATION_STEPS_KEY, '{"accounts":2}')
+            const module = createNativeModule()
+            nativeModulesMock.LegacyMigration = module
+
+            await service.wipeLegacyData()
+
+            expect(module.wipeMigratedLegacyData).toHaveBeenCalledOnce()
+            expect(module.resetLegacyData).not.toHaveBeenCalled()
+            expect(storage.getItem(MIGRATION_SENTINEL_KEY)).toBe('x')
+            expect(storage.getItem(MIGRATION_STEPS_KEY)).toBe('{"accounts":2}')
+        })
+
+        test('propagates a native wipe failure', async () => {
+            nativeModulesMock.LegacyMigration = createNativeModule({
+                wipeMigratedLegacyData: vi
+                    .fn()
+                    .mockRejectedValue(new Error('[Migration:wipe] keychain')),
+            })
+
+            await expect(service.wipeLegacyData()).rejects.toThrow('keychain')
         })
     })
 

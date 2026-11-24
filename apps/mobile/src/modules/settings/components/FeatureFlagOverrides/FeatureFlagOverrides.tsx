@@ -21,6 +21,7 @@ export const FeatureFlagOverrides = () => {
     const {
         configOverrides,
         booleanFlagKeys,
+        booleanFlagValues,
         stringFlagKeys,
         setStringOverride,
         expanded,
@@ -48,7 +49,7 @@ export const FeatureFlagOverrides = () => {
                                 variant='caption'
                                 style={styles.flagCaption}
                             >
-                                {configOverrides[key]
+                                {booleanFlagValues[key]
                                     ? t('settings.developer.enabled')
                                     : t('settings.developer.disabled')}
                                 : {key}

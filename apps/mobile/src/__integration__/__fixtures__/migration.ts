@@ -123,6 +123,7 @@ export const installStubMigrationService = (
         clearMigrationComplete: () => stub.clearMigrationComplete(),
         getMigrationPlans: () => stub.getMigrationPlans(),
         resetLegacyData: () => stub.resetLegacyData(),
+        wipeLegacyData: () => stub.wipeLegacyData(),
         getCompletedStepVersions: () => stub.getCompletedStepVersions(),
         setCompletedStepVersions: versions =>
             stub.setCompletedStepVersions(versions),

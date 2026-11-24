@@ -36,8 +36,11 @@ import {
 import { useCounterpartyName } from '../../../hooks/history/useCounterpartyName'
 import { useTransactionListItem } from '../useTransactionListItem'
 
+const mockCanHideHolding = vi.hoisted(() => ({ current: false }))
+
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
+    canHideHolding: () => mockCanHideHolding.current,
     chainAccountOf: (account: WalletAccount, chainId: 'algorand') =>
         account.chains[chainId],
     isSameAddress: (_chainId: string, a: string, b: string) =>
@@ -165,6 +168,7 @@ describe('useTransactionListItem', () => {
                     currency: 'ALGO',
                     decimals: 6,
                     prefix: '-',
+                    isSuspicious: false,
                 },
             ])
         })
@@ -290,6 +294,89 @@ describe('useTransactionListItem', () => {
                 renderRow(golden('payment confirmed with an explicit status'))
                     .notice,
             ).toBeNull()
+        })
+    })
+
+    describe('suspicious token', () => {
+        afterEach(() => {
+            mockCanHideHolding.current = false
+        })
+
+        it('marks a receive of a token Pera flags suspicious', () => {
+            mockCanHideHolding.current = true
+            stored([
+                {
+                    assetId: '31566704',
+                    decimals: 6,
+                    peraMetadata: {
+                        isDeleted: false,
+                        verificationTier: 'suspicious',
+                    },
+                },
+            ])
+
+            const row = renderRow(golden('asset transfer received'))
+
+            expect(row.isSuspiciousToken).toBe(true)
+        })
+
+        it('marks only the suspicious leg of a swap, not the real coin beside it', () => {
+            mockCanHideHolding.current = true
+            const swap = golden('swap')
+            const [first] = renderRow(swap).amounts
+            stored([
+                {
+                    assetId: first!.assetId,
+                    decimals: first!.decimals,
+                    peraMetadata: {
+                        isDeleted: false,
+                        verificationTier: 'suspicious',
+                    },
+                },
+            ])
+
+            const row = renderRow(swap)
+
+            expect(row.isSuspiciousToken).toBe(true)
+            expect(row.amounts.map(amount => amount.isSuspicious)).toEqual([
+                true,
+                false,
+            ])
+        })
+
+        it('leaves a receive of a verified token unmarked', () => {
+            mockCanHideHolding.current = true
+            stored([
+                {
+                    assetId: '31566704',
+                    decimals: 6,
+                    peraMetadata: {
+                        isDeleted: false,
+                        verificationTier: 'verified',
+                    },
+                },
+            ])
+
+            expect(
+                renderRow(golden('asset transfer received')).isSuspiciousToken,
+            ).toBe(false)
+        })
+
+        it('leaves a flagged asset unmarked on a chain where the user opts in to each asset', () => {
+            stored([
+                {
+                    assetId: '31566704',
+                    decimals: 6,
+                    peraMetadata: {
+                        isDeleted: false,
+                        verificationTier: 'suspicious',
+                    },
+                },
+            ])
+
+            expect(
+                renderRow(golden('asset transfer received')).isSuspiciousToken,
+            ).toBe(false)
         })
     })
 

@@ -18,13 +18,14 @@ import type {
     TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
 import type { HistoryChainAdapter } from '@perawallet/wallet-core-transactions'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import { logger, type Optional } from '@perawallet/wallet-core-shared'
 import { isEvmNftAssetId, toCaip19 } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
 import { fetchHistoryPage } from './api/endpoints'
 import { exportStoredEvmHistoryCsv } from './csv-export'
 import { readEvmTransactionDetail } from './detail'
 import { evmHistoryChainData, storeEvmHistoryPage } from './history-cache'
+import { keepTokensTheAccountSent } from './kept-tokens'
 import { readNftApprovals } from './nft-approvals'
 import { toEvmHistoryRecords } from './records'
 
@@ -83,6 +84,14 @@ export const getEvmTransactionHistory = async (
         page,
         { caip19AssetId, signal, isSupplementary },
     )
+    try {
+        keepTokensTheAccountSent(items, address, scope, chain)
+    } catch (error) {
+        logger.warn('evm history: keeping moved tokens failed', {
+            error,
+            chainId: scope.chainId,
+        })
+    }
     // An ERC-20 view lists that token's transfers alone, and storing one would
     // replace the full row History read from the unfiltered view.
     const [nftApprovals] = await Promise.all([
