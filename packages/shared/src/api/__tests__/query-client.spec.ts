@@ -1269,6 +1269,35 @@ describe('queryClient', () => {
             expect(handler).toHaveBeenCalledWith(error)
         })
 
+        it('keeps a route closed to this platform a network error, and tells the realm nothing', async () => {
+            const {
+                queryClient,
+                setOnIntegrityRefused,
+                isIntegrityRequiredError,
+                isPeraNetworkError,
+                scopedConfig,
+            } = await load()
+            vi.mocked(scopedConfig).webIntegrityBearerEnabled = true
+            const handler = vi.fn()
+            const unsubscribe = setOnIntegrityRefused(handler)
+            mockKy.mockRejectedValueOnce(
+                refusal(
+                    403,
+                    { code: 'APP_INTEGRITY_PLATFORM_NOT_ALLOWED' },
+                    { Authorization: 'Bearer jwt' },
+                ),
+            )
+
+            const error = await queryClient(peraRequest()).catch(
+                (thrown: unknown) => thrown,
+            )
+            unsubscribe()
+
+            expect(isIntegrityRequiredError(error)).toBe(false)
+            expect(isPeraNetworkError(error)).toBe(true)
+            expect(handler).not.toHaveBeenCalled()
+        })
+
         it('never classifies in a build that sends no bearer: native keeps its errors', async () => {
             const {
                 queryClient,
