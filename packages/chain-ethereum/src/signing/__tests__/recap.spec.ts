@@ -57,6 +57,17 @@ describe('decodeRecap', () => {
         expect(decodeRecap(uri)).toHaveLength(1)
     })
 
+    it('decodes padded, standard-alphabet base64', () => {
+        const target = 'https://a.b/?>~'
+        const encoded = Buffer.from(
+            JSON.stringify({ att: { [target]: { 'x/y': [{}] } } }),
+        ).toString('base64')
+        expect(encoded).toMatch(/\+.*==$/)
+        expect(decodeRecap(`urn:recap:${encoded}`)).toEqual([
+            { target, abilities: ['x/y'] },
+        ])
+    })
+
     it.each([
         ['a URI that is not a ReCap', 'https://example.com'],
         ['text that is not base64url', 'urn:recap:not base64!'],

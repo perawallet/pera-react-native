@@ -19,15 +19,21 @@ import {
 import { isRecord } from './adapter'
 
 const RECAP_PREFIX = 'urn:recap:'
-const BASE64URL = /^[A-Za-z0-9_-]+$/
+// EIP-5573 says unpadded base64url, but encoders also emit standard base64
+// and padding; rejecting those would flag a harmless ReCap as unreadable.
+const BASE64 = /^[A-Za-z0-9_+/-]+={0,2}$/
 
 /** An EIP-5573 ReCap: a SIWE resource that delegates capabilities to the site. */
 export const isRecapUri = (uri: string): boolean =>
     uri.toLowerCase().startsWith(RECAP_PREFIX)
 
 const decodeBase64Url = (text: string): Optional<Uint8Array> => {
-    if (!BASE64URL.test(text) || text.length % 4 === 1) return undefined
-    const base64 = text.replace(/-/g, '+').replace(/_/g, '/')
+    if (!BASE64.test(text)) return undefined
+    const base64 = text
+        .replace(/={1,2}$/, '')
+        .replace(/-/g, '+')
+        .replace(/_/g, '/')
+    if (base64.length % 4 === 1) return undefined
     try {
         return decodeFromBase64(
             base64.padEnd(Math.ceil(base64.length / 4) * 4, '='),
