@@ -46,8 +46,10 @@ const multichain = accountWith({
     ethereum: { address: EVM, enabledBy: 'created' },
 })
 
-const short = (chainId: string, address: string) =>
-    addressCodecs.get(chainId).truncate(address)
+const short = (
+    chainId: Parameters<typeof addressCodecs.get>[0],
+    address: string,
+) => addressCodecs.get(chainId).truncate(address)
 
 describe('useAccountSelectionCopy', () => {
     beforeEach(() => {
