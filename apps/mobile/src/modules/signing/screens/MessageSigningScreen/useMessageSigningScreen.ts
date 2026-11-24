@@ -12,9 +12,10 @@
 
 import { useCallback, useMemo } from 'react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type {
-    ChainScope,
-    MessageSummary,
+import {
+    isEvmChainId,
+    type ChainScope,
+    type MessageSummary,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     isMessageRequest,
@@ -46,6 +47,8 @@ type UseMessageSigningScreenResult = {
     isConfirmBlocked: boolean
     /** The requesting site, when a sign-in message is for another domain. */
     signInSiteMismatch: Optional<string>
+    /** EVM accounts share one address across chains, so the signer row names the chain. */
+    isChainBadgeShown: boolean
     handleApprove: () => void
     handleReject: () => void
 }
@@ -118,6 +121,7 @@ export const useMessageSigningScreen = (): UseMessageSigningScreenResult => {
         isListedAddressBlocking,
         isConfirmBlocked,
         signInSiteMismatch,
+        isChainBadgeShown: isEvmChainId(message?.scope?.chainId),
         handleApprove,
         handleReject,
     }

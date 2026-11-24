@@ -270,6 +270,23 @@ describe('useMessageSigningScreen', () => {
         expect(result.current.signInSiteMismatch).toBeUndefined()
     })
 
+    it('shows the chain badge for an EVM request only', () => {
+        expect(
+            renderHook(() => useMessageSigningScreen()).result.current
+                .isChainBadgeShown,
+        ).toBe(true)
+
+        mockPipeline.currentRequest = {
+            id: 'req-1',
+            type: 'message',
+            message: { scope: { chainId: 'algorand', networkId: 'mainnet' } },
+        }
+        expect(
+            renderHook(() => useMessageSigningScreen()).result.current
+                .isChainBadgeShown,
+        ).toBe(false)
+    })
+
     it('is idle otherwise', () => {
         const { result } = renderHook(() => useMessageSigningScreen())
 

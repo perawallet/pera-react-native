@@ -41,6 +41,7 @@ export const MessageSigningScreen = () => {
         isListedAddressBlocking,
         isConfirmBlocked,
         signInSiteMismatch,
+        isChainBadgeShown,
         handleApprove,
         handleReject,
     } = useMessageSigningScreen()
@@ -161,6 +162,7 @@ export const MessageSigningScreen = () => {
                             account={signerAccount}
                             showChevron={false}
                             chainId={scope?.chainId}
+                            showChainBadge={isChainBadgeShown}
                         />
                     </PWView>
                 )}
