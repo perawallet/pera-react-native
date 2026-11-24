@@ -53,7 +53,9 @@ export const TransactionDetailFactsCard = ({
                         chainId={scope.chainId}
                         asset={amount.asset}
                         value={amount.value}
+                        density='exact'
                         ignorePrivacyMode
+                        truncate={false}
                     />
                 </KeyValueRow>
             )}

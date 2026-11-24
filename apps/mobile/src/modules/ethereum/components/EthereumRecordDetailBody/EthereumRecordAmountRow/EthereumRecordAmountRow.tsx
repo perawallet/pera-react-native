@@ -41,9 +41,11 @@ export const EthereumRecordAmountRow = ({
                 chainId={scope.chainId}
                 asset={asset}
                 value={value}
+                density='exact'
                 isLoading={isLoading}
                 showSymbol={showSymbol}
                 ignorePrivacyMode
+                truncate={false}
             />
         </KeyValueRow>
     )

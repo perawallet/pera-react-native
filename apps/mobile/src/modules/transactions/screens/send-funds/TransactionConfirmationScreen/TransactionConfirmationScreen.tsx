@@ -173,8 +173,10 @@ export const TransactionConfirmationScreen = () => {
                                 chainId={scope.chainId}
                                 variant='h3'
                                 asset={asset}
+                                density='exact'
                                 showSymbol
                                 ignorePrivacyMode
+                                truncate={false}
                                 value={amount ?? new Decimal(0)}
                                 testID='send_confirm_amount'
                             />
