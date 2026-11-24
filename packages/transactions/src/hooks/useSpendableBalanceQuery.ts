@@ -38,7 +38,9 @@ export const useSpendableBalanceQuery = (
     })
 
     return {
-        data: query.data,
+        // A skipped query still carries the last input's answer as placeholder
+        // (TanStack applies it to disabled queries); with no input there is none.
+        data: isEnabled ? query.data : undefined,
         // TanStack reports a skipped query as pending. Placeholder data is the
         // answer for an earlier input, so it still counts as pending.
         isPending: isEnabled && (query.isPending || query.isPlaceholderData),

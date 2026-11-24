@@ -46,7 +46,10 @@ const render = ({
 describe('useSwapMinimum', () => {
     describe('liftToMinimum', () => {
         it('leaves a fill with no known minimum alone', () => {
-            const { liftToMinimum } = render({ pairMinimum: null })
+            const { liftToMinimum } = render({
+                pairMinimum: null,
+                quoteFailure: null,
+            })
 
             expect(liftToMinimum(new Decimal(1))).toEqual(new Decimal(1))
         })
@@ -106,6 +109,58 @@ describe('useSwapMinimum', () => {
                 render({ quoteFailure: { kind: 'no-route' } }).canUseMinimum,
             ).toBe(false)
         })
+    })
+
+    describe('isMinimumAboveSpendable', () => {
+        it('flags a refused minimum above what the account can spend', () => {
+            expect(
+                render({ spendableMax: new Decimal(8_999_999) })
+                    .isMinimumAboveSpendable,
+            ).toBe(true)
+        })
+
+        it('is clear when the account can spend the minimum', () => {
+            expect(render().isMinimumAboveSpendable).toBe(false)
+        })
+
+        it('is clear while the spendable amount is still unknown', () => {
+            expect(render({ spendableMax: null }).isMinimumAboveSpendable).toBe(
+                false,
+            )
+        })
+    })
+
+    describe('with a stored minimum lower than the refusal names', () => {
+        const stale = {
+            pairMinimum: new Decimal(5_000_000),
+            spendableMax: new Decimal(7_000_000),
+        }
+
+        it('flags the refused minimum as out of reach without offering it', () => {
+            const { isMinimumAboveSpendable, canUseMinimum } = render(stale)
+
+            expect(isMinimumAboveSpendable).toBe(true)
+            expect(canUseMinimum).toBe(false)
+        })
+
+        it('does not lift a fill to the stale minimum', () => {
+            const { liftToMinimum } = render(stale)
+
+            expect(liftToMinimum(new Decimal(1_000_000))).toEqual(
+                new Decimal(1_000_000),
+            )
+        })
+    })
+
+    it('fills the refused minimum over a stale stored one', () => {
+        const onFillMinimum = vi.fn()
+
+        render({
+            pairMinimum: new Decimal(5_000_000),
+            onFillMinimum,
+        }).handleUseMinimum()
+
+        expect(onFillMinimum).toHaveBeenCalledWith(new Decimal(9))
     })
 
     it('fills the minimum in display units', () => {

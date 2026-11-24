@@ -34,6 +34,7 @@ import {
     pickBestByAmountOut,
     swapAdapterFor,
     useSwapAccount,
+    useSwapFeeReservesQuery,
     useSwaps,
     type SwapQuote,
     type SwapQuoteFailure,
@@ -76,6 +77,8 @@ import {
 } from '../SwapProviderContent'
 import { useSwapMinimum } from './useSwapMinimum'
 
+const ZERO = new Decimal(0)
+
 type UseSwapFormResult = {
     swapAccount: Nullable<WalletAccount>
     payAssetId: string
@@ -102,6 +105,8 @@ type UseSwapFormResult = {
     isLocalCurrencyInput: boolean
     /** The router refused the amount as too small, named a minimum, and the account can spend at least that. */
     canUseMinimum: boolean
+    /** The router's minimum is more than the account can spend. */
+    isMinimumAboveSpendable: boolean
     handleRetryQuote: () => void
     handleUseMinimum: () => void
     handlePayAmountChange: (amount: Nullable<Decimal>) => void
@@ -199,17 +204,27 @@ export const useSwapForm = (
     // unsettled receive balance reserves too: short of MAX beats failing at
     // confirm. A holding on another chain locks nothing on this one.
     const swapAdapter = swapAdapterFor(scope)
+    // A token's MAX is its whole balance, so only the native coin reads the fee.
+    const isNativePay = fromAsset === nativeAssetId
+    const feeReserveScopes = useMemo(
+        () => (isNativePay ? [scope] : []),
+        [isNativePay, scope],
+    )
+    const {
+        reserves: [feeReserve],
+    } = useSwapFeeReservesQuery(feeReserveScopes)
+    const maxAmountFeeReserve = isNativePay ? feeReserve : ZERO
     const { data: spendable, isPending: isSpendablePending } =
         useSpendableBalanceQuery(
-            swapAccount
+            swapAccount && maxAmountFeeReserve
                 ? {
                       account: swapAccount,
                       asset: { chainId: scope.chainId, assetId: fromAsset },
                       scope,
                       fee:
                           isCrossChain || receiveAssetBalance
-                              ? swapAdapter.maxAmountFeeReserve
-                              : swapAdapter.maxAmountFeeReserve.add(
+                              ? maxAmountFeeReserve
+                              : maxAmountFeeReserve.add(
                                     swapAdapter.holdingReserve(scope),
                                 ),
                   }
@@ -494,7 +509,12 @@ export const useSwapForm = (
         isPercentageFillRef.current = false
         setPayAmount(amount)
     }, [])
-    const { liftToMinimum, canUseMinimum, handleUseMinimum } = useSwapMinimum({
+    const {
+        liftToMinimum,
+        canUseMinimum,
+        isMinimumAboveSpendable,
+        handleUseMinimum,
+    } = useSwapMinimum({
         pairMinimum,
         quoteFailure,
         spendableMax: spendable?.max ?? null,
@@ -975,6 +995,7 @@ export const useSwapForm = (
         handleSwapDirection,
         handleMaxPress,
         canUseMinimum,
+        isMinimumAboveSpendable,
         handleUseMinimum,
         handleOpenPayAssetSelection: () => void handleOpenPayAssetSelection(),
         handleOpenReceiveAssetSelection: () =>

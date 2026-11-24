@@ -4348,6 +4348,7 @@
             "quote_error": "Não foi possível obter cotações. Tente novamente.",
             "amount_too_low": "Valor pequeno demais para converter na {{network}}. O mínimo é {{amount}} {{unit}}.",
             "amount_too_low_fiat": "Valor pequeno demais para converter na {{network}}. O mínimo é {{amount}} {{unit}} (~{{fiat}}).",
+            "amount_too_low_above_balance": "Seu saldo disponível está abaixo do mínimo de {{amount}} {{unit}} para converter na {{network}}.",
             "use_minimum": "Usar mínimo",
             "amount_too_low_unknown": "Valor pequeno demais para converter na {{network}}. Tente um valor maior ou uma rede com taxas menores.",
             "amount_too_high": "Valor grande demais para converter. O máximo é {{amount}} {{unit}}.",

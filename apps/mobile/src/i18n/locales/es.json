@@ -4326,6 +4326,7 @@
             "quote_error": "No se pudieron obtener cotizaciones. Vuelve a intentarlo.",
             "amount_too_low": "El importe es demasiado pequeño para un swap en {{network}}. El mínimo es {{amount}} {{unit}}.",
             "amount_too_low_fiat": "El importe es demasiado pequeño para un swap en {{network}}. El mínimo es {{amount}} {{unit}} (~{{fiat}}).",
+            "amount_too_low_above_balance": "Tu saldo disponible es inferior al mínimo de {{amount}} {{unit}} para un swap en {{network}}.",
             "use_minimum": "Usar mínimo",
             "amount_too_low_unknown": "El importe es demasiado pequeño para un swap en {{network}}. Prueba con un importe mayor o una red con comisiones más bajas.",
             "amount_too_high": "El importe es demasiado grande para un swap. El máximo es {{amount}} {{unit}}.",

@@ -4326,6 +4326,7 @@
             "quote_error": "Teklifler alınamadı. Lütfen tekrar dene.",
             "amount_too_low": "Tutar, {{network}} ağında swap için çok düşük. Minimum {{amount}} {{unit}}.",
             "amount_too_low_fiat": "Tutar, {{network}} ağında swap için çok düşük. Minimum {{amount}} {{unit}} (~{{fiat}}).",
+            "amount_too_low_above_balance": "Kullanılabilir bakiyen, {{network}} ağında swap için gereken {{amount}} {{unit}} minimumun altında.",
             "use_minimum": "Minimumu kullan",
             "amount_too_low_unknown": "Tutar, {{network}} ağında swap için çok düşük. Daha yüksek bir tutar veya daha düşük ücretli bir ağ dene.",
             "amount_too_high": "Tutar swap için çok yüksek. Maksimum {{amount}} {{unit}}.",
