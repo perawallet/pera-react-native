@@ -310,6 +310,8 @@ export interface TransactionRecord {
      * say. A `direction: 'out'` summary alone doesn't prove the account sent it.
      */
     initiator?: string
+    /** Another address signed it, though the history names none; only ever set without `initiator`. */
+    isSignedElsewhere?: boolean
     summary: TransactionSummary
     chainData: ChainTransactionData
 }

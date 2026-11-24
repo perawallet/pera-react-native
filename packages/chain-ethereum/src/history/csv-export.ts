@@ -185,6 +185,7 @@ export const exportStoredEvmHistoryCsv = async (
                     chain,
                     isDecoding,
                     nftApprovals,
+                    false,
                 ),
             )
             .filter(

@@ -239,6 +239,58 @@ describe('getEvmTransactionHistory', () => {
         expect(items[1]?.initiator).toBe(PEER)
     })
 
+    it('marks a row known only from a transfer log as signed elsewhere, but not one that names its sender', async () => {
+        serve([
+            [
+                evmHistoryItem({
+                    hash: hash(1),
+                    nft_transfers: [evmNftTransferLeg({ from: ME, to: PEER })],
+                }),
+                evmHistoryItem({ hash: hash(2), from: PEER, to: ME }),
+            ],
+        ])
+
+        const { items } = await getEvmTransactionHistory(ETHEREUM, ME, MAINNET)
+
+        expect(items[0]?.isSignedElsewhere).toBe(true)
+        expect(items[1]?.isSignedElsewhere).toBeUndefined()
+    })
+
+    it('never marks a withdrawal as signed elsewhere', async () => {
+        serve([
+            [
+                evmHistoryItem({
+                    kind: 'withdrawal',
+                    hash: null,
+                    withdrawals: [
+                        { index: 42, validator_index: 1, amount: '9' },
+                    ],
+                    balance_impacts: [
+                        { asset_id: 'eip155:1/slip44:60', amount: '9' },
+                    ],
+                }),
+            ],
+        ])
+
+        const { items } = await getEvmTransactionHistory(ETHEREUM, ME, MAINNET)
+
+        expect(items[0]?.isSignedElsewhere).toBeUndefined()
+    })
+
+    it('leaves rows of an ERC-20 view unmarked, since that view names no sender on any row', async () => {
+        serve([[evmHistoryItem({ hash: hash(1) })]])
+
+        const { items } = await getEvmTransactionHistory(
+            ETHEREUM,
+            ME,
+            MAINNET,
+            undefined,
+            { assetId: getAddress('0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48') },
+        )
+
+        expect(items[0]?.isSignedElsewhere).toBeUndefined()
+    })
+
     it("reads a plain POL transfer as a native receive, not as a token leg of Polygon's 0x…1010 mirror", async () => {
         const mirror = '0x0000000000000000000000000000000000001010'
         const scope: ChainScope = { chainId: 'polygon', networkId: 'mainnet' }
