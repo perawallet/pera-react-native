@@ -60,6 +60,7 @@ export class FakeDappTransport implements DappTransport {
             hasUserActivation?: boolean
             isWalletLocked?: boolean
             faviconUrl?: string
+            pageIcons?: string[]
             id?: string
         } = {},
     ): Promise<JsonRpcResponse> {
@@ -87,6 +88,7 @@ export class FakeDappTransport implements DappTransport {
                     hasUserActivation: opts.hasUserActivation ?? true,
                     isWalletLocked: opts.isWalletLocked ?? false,
                     ...(opts.faviconUrl ? { faviconUrl: opts.faviconUrl } : {}),
+                    ...(opts.pageIcons ? { pageIcons: opts.pageIcons } : {}),
                 },
                 request,
                 respond,

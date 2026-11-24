@@ -70,43 +70,47 @@ describe('webViewDappTransport', () => {
         )
     })
 
-    it("passes the page's https icon on as the request's favicon", () => {
-        const transport = createWebViewDappTransport()
-        const { page } = pageAt(`${ORIGIN}/swap`)
-        const listener = vi.fn()
-        transport.onRequest(listener)
+    describe('page icons', () => {
+        const receiveIcons = (icons?: string[]) => {
+            const transport = createWebViewDappTransport()
+            const { page } = pageAt(`${ORIGIN}/swap`)
+            const listener = vi.fn()
+            transport.onRequest(listener)
+            transport.receive(
+                page,
+                messageOf(icons ? { icons } : {}),
+                `${ORIGIN}/swap`,
+            )
+            return listener.mock.calls[0][0] as { pageIcons?: string[] }
+        }
 
-        transport.receive(
-            page,
-            messageOf({ icon: 'https://cdn.app.uniswap.org/favicon.png' }),
-            `${ORIGIN}/swap`,
-        )
+        it('passes the icons on as the context’s pageIcons', () => {
+            expect(receiveIcons([`${ORIGIN}/favicon.png`]).pageIcons).toEqual([
+                `${ORIGIN}/favicon.png`,
+            ])
+        })
 
-        expect(listener).toHaveBeenCalledWith(
-            expect.objectContaining({
-                faviconUrl: 'https://cdn.app.uniswap.org/favicon.png',
-            }),
-            expect.anything(),
-            expect.any(Function),
-        )
-    })
+        it('keeps the first eight and drops over-long entries', () => {
+            const many = Array.from(
+                { length: 12 },
+                (_, index) => `${ORIGIN}/i${index}.png`,
+            )
+            const tooLong = `${ORIGIN}/${'x'.repeat(2048)}`
 
-    it.each([
-        ['plain http', 'http://app.uniswap.org/favicon.png'],
-        ['a data URL', 'data:image/png;base64,AAAA'],
-        ['not a URL', 'favicon.png'],
-        ['too long', `https://app.uniswap.org/${'a'.repeat(2048)}`],
-        ['on another site', 'https://tracker.example/pixel.png'],
-        ['on a parent domain', 'https://uniswap.org/favicon.png'],
-    ])('drops a page icon that is %s', (_label, icon) => {
-        const transport = createWebViewDappTransport()
-        const { page } = pageAt(`${ORIGIN}/swap`)
-        const listener = vi.fn()
-        transport.onRequest(listener)
+            expect(receiveIcons([tooLong, ...many]).pageIcons).toEqual(
+                many.slice(0, 8),
+            )
+        })
 
-        transport.receive(page, messageOf({ icon }), `${ORIGIN}/swap`)
+        it('leaves pageIcons unset when the page sent none', () => {
+            expect(receiveIcons()).not.toHaveProperty('pageIcons')
+        })
 
-        expect(listener.mock.calls[0][0]).not.toHaveProperty('faviconUrl')
+        it.each([['x'], [[1]]])('rejects icons %j as a page message', icons => {
+            expect(
+                isEip1193PageMessage({ ...messageOf(), icons } as unknown),
+            ).toBe(false)
+        })
     })
 
     it.each([true, false])(
@@ -291,8 +295,7 @@ describe('isEip1193PageMessage', () => {
         ).toBe(false)
     })
 
-    it('rejects a message without a boolean gesture flag, a string icon or a JSON-RPC request', () => {
-        expect(isEip1193PageMessage({ ...messageOf(), icon: 42 })).toBe(false)
+    it('rejects a message without a boolean gesture flag or a JSON-RPC request', () => {
         expect(
             isEip1193PageMessage({ ...messageOf(), hasUserActivation: 'yes' }),
         ).toBe(false)

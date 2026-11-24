@@ -60,9 +60,11 @@ import {
     EIP1193_PERMISSION_METHODS,
     EIP1193_SIGNING_METHODS,
 } from './eip1193Protocol'
+import { sanitizeDappIcons } from './icons'
 import {
     acknowledgedSiteWarningOf,
     canSiteSeeAccounts,
+    eip1193ApprovedChainIdsOf,
     eip1193ConnectionIdOf,
     isEip1193Connection,
     isWorseSiteWarning,
@@ -101,6 +103,14 @@ export type Eip1193HandlerDeps = {
      * reading on its context. A realm that never pushes passes `() => true`.
      */
     isWalletLocked: () => boolean | Promise<boolean>
+    /**
+     * Set by a surface whose connect sheet lists every requested chain. A
+     * connect proposal then offers every served chain and requires only the
+     * site's current one, and a switch to an approved chain answers without a
+     * prompt. Default false: every switch prompts, because that surface shows
+     * no list of approved chains to review or revoke.
+     */
+    shouldProposeEveryServedChain?: boolean
     now?: () => number
     proposalTtlMs?: number
     requestTtlMs?: number
@@ -328,20 +338,16 @@ export const createEip1193ConnectionHandler = (
         return { settle, isSettled: () => settled }
     }
 
-    // A site connected while its page named no icon takes the requesting page's.
-    const peerOf = (
-        peer: ConnectionPeer,
-        ctx: DappRequestContext,
-    ): ConnectionPeer =>
-        peer.icons?.length || !ctx.faviconUrl
-            ? peer
-            : { ...peer, icons: [ctx.faviconUrl] }
-
-    const buildPeer = (ctx: DappRequestContext): ConnectionPeer => ({
-        name: new URL(ctx.origin).host,
-        url: ctx.origin,
-        ...(ctx.faviconUrl ? { icons: [ctx.faviconUrl] } : {}),
-    })
+    const buildPeer = (ctx: DappRequestContext): ConnectionPeer => {
+        const peerIcons =
+            sanitizeDappIcons(ctx.pageIcons, ctx.origin) ??
+            (ctx.faviconUrl ? [ctx.faviconUrl] : undefined)
+        return {
+            name: new URL(ctx.origin).host,
+            url: ctx.origin,
+            ...(peerIcons ? { icons: peerIcons } : {}),
+        }
+    }
 
     const handleChainId = async (
         ctx: DappRequestContext,
@@ -457,6 +463,12 @@ export const createEip1193ConnectionHandler = (
         }
 
         const peer = buildPeer(ctx)
+        const offered = deps.shouldProposeEveryServedChain
+            ? [chain, ...served.filter(other => other !== chain)]
+            : [chain]
+        const offeredNetworkIds = [
+            ...new Set(offered.map(({ scope }) => scope.networkId)),
+        ]
         const { settle, isSettled } = timedSettle(() => {
             releaseSlot()
             void deliver(
@@ -475,8 +487,11 @@ export const createEip1193ConnectionHandler = (
             peer,
             requesterOrigin: origin,
             requested: {
-                networks: [chain.scope.networkId],
-                chains: [chain.scope.chainId],
+                networks: offeredNetworkIds,
+                chains: offered.map(({ scope }) => scope.chainId),
+                ...(deps.shouldProposeEveryServedChain
+                    ? { requiredChains: [chain.scope.chainId] }
+                    : {}),
                 methods: [...EIP1193_PERMISSION_METHODS],
             },
             expiresAt: now() + proposalTtlMs,
@@ -492,7 +507,10 @@ export const createEip1193ConnectionHandler = (
                         .getAccounts(chain.scope.chainId)
                         .map(({ address }) => address),
                 )
-                const granted = accounts.filter(address => held.has(address))
+                // The multi-chain sheet lists an account once per chain it is on.
+                const granted = [
+                    ...new Set(accounts.filter(address => held.has(address))),
+                ]
                 if (granted.length === 0) {
                     releaseSlot()
                     await deliver(
@@ -516,6 +534,17 @@ export const createEip1193ConnectionHandler = (
                     lastActiveAt: now(),
                     metadata: {
                         chainId: chain.scope.chainId,
+                        // Read now, not at proposal time: a network added from
+                        // the sheet counts.
+                        approvedChainIds: offered
+                            .map(({ scope }) => scope.chainId)
+                            .filter(chainId =>
+                                deps
+                                    .getAccounts(chainId)
+                                    .some(({ address }) =>
+                                        granted.includes(address),
+                                    ),
+                            ),
                         acknowledgedSiteWarning: siteWarning,
                     },
                     origin: { requesterOrigin: origin },
@@ -697,6 +726,48 @@ export const createEip1193ConnectionHandler = (
         pendingTimers.add(entry.timer)
     }
 
+    const switchSite = async (
+        entry: QueuedRequest,
+        target: ServedChain,
+        assertLive: () => void,
+    ): Promise<void> => {
+        const { ctx, request } = entry
+        const stored = await getConnection(ctx.origin)
+        // The timer stays armed until the answer: a throw below may never be
+        // followed by a `reject`, and only it frees the queue.
+        assertLive()
+        const current = chainOn(target.scope.chainId)
+        if (!stored || current?.hexChainId !== target.hexChainId) {
+            throw new Error('The chain is no longer available')
+        }
+        const switched: Eip1193Connection = {
+            ...stored,
+            metadata: {
+                ...stored.metadata,
+                chainId: target.scope.chainId,
+                approvedChainIds: [
+                    ...new Set([
+                        ...eip1193ApprovedChainIdsOf(stored),
+                        target.scope.chainId,
+                    ]),
+                ],
+            },
+            lastActiveAt: now(),
+        }
+        await store().upsert(switched)
+        await notifyOrigin(
+            ctx.origin,
+            EIP1193_EVENT.chainChanged,
+            target.hexChainId,
+        )
+        const before = reportedAccounts(stored)
+        const after = reportedAccounts(switched)
+        if (!isSameList(before, after)) {
+            await notifyOrigin(ctx.origin, EIP1193_EVENT.accountsChanged, after)
+        }
+        await finishQueued(entry, jsonRpcResult(request.id, null))
+    }
+
     const raiseSwitchRequest = async (
         entry: QueuedRequest,
         connection: Eip1193Connection,
@@ -724,6 +795,37 @@ export const createEip1193ConnectionHandler = (
             return
         }
 
+        const assertLive = (): void => {
+            if (entry.isAnswered) {
+                throw new Error('The request has expired')
+            }
+        }
+
+        // A chain the user approved for this site, and on which a granted
+        // account still signs, needs no prompt; a dApp's own timeout would
+        // otherwise fire while the sheet waits. A locked wallet or a worsened
+        // site warning still prompts: switchSite pushes accounts, which the
+        // prompt's unlock would otherwise gate.
+        const isPreApproved =
+            deps.shouldProposeEveryServedChain === true &&
+            eip1193ApprovedChainIdsOf(connection).includes(
+                target.scope.chainId,
+            ) &&
+            deps
+                .getAccounts(target.scope.chainId)
+                .some(({ address }) => connection.accounts.includes(address)) &&
+            (await canSiteSeeAccounts(
+                await deps.isWalletLocked(),
+                connection,
+                ctx.origin,
+                deps.siteWarningOf,
+            ))
+        if (isPreApproved) {
+            await switchSite(entry, target, assertLive)
+            kit.recordActivity(connection.id)
+            return
+        }
+
         const correlationId = generateOrderedUniqueId()
         armOnScreen(entry, connection.id, correlationId, requestTtlMs)
         requireContext().onMessage({
@@ -733,7 +835,7 @@ export const createEip1193ConnectionHandler = (
             correlationId,
             sourceType: 'injected',
             authorizedAccounts: connection.accounts,
-            peer: peerOf(connection.peer, ctx),
+            peer: connection.peer,
             verifiedOrigin: ctx.origin,
             rawOperation: {
                 type: 'switch-network',
@@ -742,39 +844,8 @@ export const createEip1193ConnectionHandler = (
             // A throw here declines the request, so the page is answered
             // through `reject` rather than told of a chain it can't use.
             respond: async () => {
-                if (entry.isAnswered) throw new Error('The request has expired')
-                const stored = await getConnection(ctx.origin)
-                // The timer stays armed until the answer: a throw below may
-                // never be followed by a `reject`, and only it frees the queue.
-                if (entry.isAnswered) throw new Error('The request has expired')
-                const current = chainOn(target.scope.chainId)
-                if (!stored || current?.hexChainId !== target.hexChainId) {
-                    throw new Error('The chain is no longer available')
-                }
-                const switched: Eip1193Connection = {
-                    ...stored,
-                    metadata: {
-                        ...stored.metadata,
-                        chainId: target.scope.chainId,
-                    },
-                    lastActiveAt: now(),
-                }
-                await store().upsert(switched)
-                await notifyOrigin(
-                    ctx.origin,
-                    EIP1193_EVENT.chainChanged,
-                    target.hexChainId,
-                )
-                const before = reportedAccounts(stored)
-                const after = reportedAccounts(switched)
-                if (!isSameList(before, after)) {
-                    await notifyOrigin(
-                        ctx.origin,
-                        EIP1193_EVENT.accountsChanged,
-                        after,
-                    )
-                }
-                await finishQueued(entry, jsonRpcResult(request.id, null))
+                assertLive()
+                await switchSite(entry, target, assertLive)
             },
             reject: async error => {
                 if (isDappUserRejection(error)) {
@@ -832,7 +903,7 @@ export const createEip1193ConnectionHandler = (
             correlationId,
             sourceType: 'injected',
             authorizedAccounts: reportedAccounts(connection),
-            peer: peerOf(connection.peer, ctx),
+            peer: connection.peer,
             verifiedOrigin: ctx.origin,
             rawOperation: operation,
             commit: () => commitQueued(entry),
@@ -1449,8 +1520,11 @@ export const createEip1193ConnectionHandler = (
             await Promise.all(all.map(connection => disconnect(connection.id)))
         },
         restore,
+        // A site follows the wallet's selected network, so that one is all it
+        // is usable on.
         matchesChainScope: (connection, scope) =>
-            isOnChain(connection, scope.chainId),
+            isOnChain(connection, scope.chainId) &&
+            scope.networkId === deps.getNetworkId(scope.chainId),
         methodsFor: () => [...EIP1193_PERMISSION_METHODS],
         async notify(id, notice: WalletNotice) {
             const connection = await getConnectionById(id)

@@ -24,12 +24,14 @@ export type PWListItemProps = PWTouchableOpacityProps & {
     icon: IconName
     title: string
     value?: string
+    warning?: string
 }
 
 export const PWListItem = ({
     icon,
     title,
     value,
+    warning,
     style,
     testID,
     ...props
@@ -44,12 +46,37 @@ export const PWListItem = ({
         >
             <PWView style={styles.labelContainer}>
                 <PWIcon name={icon} />
-                <PWText
-                    style={styles.title}
-                    numberOfLines={2}
-                >
-                    {title}
-                </PWText>
+                {warning ? (
+                    <PWView style={styles.textColumn}>
+                        <PWText
+                            style={styles.title}
+                            numberOfLines={2}
+                        >
+                            {title}
+                        </PWText>
+                        <PWView style={styles.warningRow}>
+                            <PWIcon
+                                name='warning'
+                                size='sm'
+                                variant='error'
+                            />
+                            <PWText
+                                variant='caption'
+                                style={styles.warningText}
+                                numberOfLines={2}
+                            >
+                                {warning}
+                            </PWText>
+                        </PWView>
+                    </PWView>
+                ) : (
+                    <PWText
+                        style={styles.title}
+                        numberOfLines={2}
+                    >
+                        {title}
+                    </PWText>
+                )}
             </PWView>
             <PWView style={styles.trailingContainer}>
                 {value ? (

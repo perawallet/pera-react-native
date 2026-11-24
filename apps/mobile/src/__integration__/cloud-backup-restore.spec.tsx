@@ -183,6 +183,8 @@ describe('Flow: Cloud backup → Restore', () => {
         await waitFor(() => {
             expect(useCloudBackupStore.getState().isConfigured()).toBe(true)
         })
+        // Typed by the user, so both credentials count as held.
+        expect(useCloudBackupStore.getState().credentialsConfirmed).toBe(true)
 
         const restored = useAccountsStore
             .getState()
@@ -224,6 +226,7 @@ describe('Flow: Cloud backup → Restore', () => {
             backupId,
             salt: BACKUP_SALT,
             deviceId: 'test-device-id',
+            credentialsConfirmed: true,
         })
 
         const { handlers, getItem } = buildSyncHandlers({ backupId })

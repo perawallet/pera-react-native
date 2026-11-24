@@ -127,27 +127,24 @@ export const eip1193ProviderJS = (bridgeToken: string) => webViewScript`
         emit(EVENT.connect, { chainId: result });
     }
 
-    // Native has no tab favicon to read, as the extension does, so the page
-    // names its own icon: the site's claim, like a WalletConnect peer's icons.
-    function pageIcon() {
-        var selectors = ['link[rel~="apple-touch-icon"]', 'link[rel~="icon"]'];
-        for (var s = 0; s < selectors.length; s += 1) {
-            var links = document.querySelectorAll(selectors[s]);
-            for (var i = 0; i < links.length; i += 1) {
-                var href = links[i].href;
-                if (typeof href === 'string' && href.indexOf('https://') === 0) { return href; }
+    // A WebView has no tab favicon for native to read (the extension's script
+    // never sends icons), so connect requests carry the page's own links.
+    // /favicon.ico always goes last: native keeps only same-origin entries, and
+    // pages often list only CDN-hosted icons. Seven links plus it stays within
+    // the transport's cap of eight, which would otherwise cut it.
+    function pageIcons() {
+        try {
+            var links = document.querySelectorAll('link[rel~="icon"], link[rel~="apple-touch-icon"]');
+            var fallback = location.origin + '/favicon.ico';
+            var hrefs = [];
+            for (var i = 0; i < links.length && hrefs.length < 7; i += 1) {
+                if (links[i].href && links[i].href !== fallback) { hrefs.push(links[i].href); }
             }
+            hrefs.push(fallback);
+            return hrefs;
+        } catch (_) {
+            return [];
         }
-        return undefined;
-    }
-
-    // Only a connect or a queued request opens a sheet that shows the icon;
-    // reads a dApp polls skip the DOM query.
-    function iconFor(method) {
-        var isPrompt = method === METHOD.requestAccounts ||
-            method === METHOD.requestPermissions ||
-            TIMEOUT.queuedMethods.indexOf(method) !== -1;
-        return isPrompt ? pageIcon() : undefined;
     }
 
     function send(method, params) {
@@ -160,13 +157,16 @@ export const eip1193ProviderJS = (bridgeToken: string) => webViewScript`
                 reject(providerError(ERROR_CODE.disconnected, 'No response from wallet'));
             }, timeoutMs);
             pending[id] = { resolve: resolve, reject: reject, timer: timer };
-            var isPosted = post(stringify({
+            var envelope = {
                 provider: 'eip1193',
                 token: TOKEN,
                 hasUserActivation: now() - lastGestureAt < ACTIVATION_MS,
-                icon: iconFor(method),
                 request: { jsonrpc: '2.0', id: id, method: method, params: params },
-            }));
+            };
+            if (method === METHOD.requestAccounts || method === METHOD.requestPermissions) {
+                envelope.icons = pageIcons();
+            }
+            var isPosted = post(stringify(envelope));
             if (!isPosted) {
                 clearTimeout(timer);
                 delete pending[id];

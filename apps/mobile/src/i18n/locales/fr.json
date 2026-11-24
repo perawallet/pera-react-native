@@ -435,8 +435,6 @@
             "social_media": "Réseaux sociaux",
             "chart_empty_body": "Un graphique apparaîtra ici dès que vous aurez un historique de solde",
             "total_supply_info_body": "L’offre totale d’un actif est définie lors de sa création et correspond au nombre total d’unités créées.",
-            "circulating_supply": "Offre en circulation",
-            "circulating_supply_info_body": "L’offre en circulation est le nombre de pièces actuellement en circulation. La monnaie native d’un réseau n’a pas de total fixe : ce chiffre évolue à mesure que des pièces sont émises ou brûlées.",
             "token_total_supply_info_body": "L’offre totale est le nombre de jetons émis par le contrat, moins ceux qui ont été brûlés. Elle change lorsque l’émetteur crée ou brûle des jetons."
         },
         "action_buttons": {
@@ -530,6 +528,7 @@
             "empty_title": "NFT",
             "empty_body": "Bienvenue dans votre galerie NFT ! Vous n’avez pas encore de NFT. Tous les NFT disponibles dans votre wallet apparaîtront ici.",
             "empty_body_multichain": "Bienvenue dans votre galerie NFT !\nVous n’avez pas encore de NFT. Les NFT que vous recevez sur des réseaux comme Ethereum apparaissent ici automatiquement. Les NFT Algorand nécessitent d’abord un opt-in.",
+            "empty_body_unsupported": "Les NFT sur {{chains}} ne sont pas encore affichés dans Pera.",
             "empty_optin": "Opt-in à un NFT",
             "empty_optin_algorand": "Opt-in à un NFT Algorand",
             "nomatch_title": "Aucun NFT correspondant",
@@ -856,6 +855,16 @@
             "description": "Choisissez les bons mots pour confirmer que vous avez conservé votre clé de 12 mots en lieu sûr.",
             "proceed": "Continuer",
             "error_message": "Sélection incorrecte. Veuillez réessayer."
+        },
+        "confirm_credentials": {
+            "warning": "Confirmez que vous avez enregistré votre clé de sauvegarde",
+            "title": "Confirmer la clé de sauvegarde",
+            "description": "Choisissez les bons mots de votre clé de 12 mots et saisissez votre clé de chiffrement pour confirmer que vous les avez conservées.",
+            "confirm": "Confirmer",
+            "error_words": "Certains des mots sélectionnés sont incorrects. Veuillez réessayer.",
+            "error_key": "Cette clé de chiffrement ne correspond pas à votre sauvegarde.",
+            "error_both": "Les mots sélectionnés et la clé de chiffrement sont tous deux incorrects.",
+            "success": "Clé de sauvegarde confirmée"
         },
         "store_encryption_key": {
             "title": "Conservez votre clé de chiffrement",
@@ -1543,7 +1552,8 @@
             "request_expired_body": "Cette demande de signature a expiré avant d’être traitée. Demandez à l’application de la renvoyer.",
             "unsupported_method_body": "{{dappName}} a demandé {{method}}, que Pera ne prend pas en charge. La demande a été refusée.",
             "unsupported_network_body": "{{dappName}} a voulu utiliser le réseau dont l’ID de chaîne est {{chainId}}, que Pera ne prend pas en charge. La demande a été refusée.",
-            "unsupported_chains_body": "Cette application a voulu utiliser un réseau que Pera ne prend pas en charge. La connexion a été refusée."
+            "unsupported_chains_body": "Cette application a voulu utiliser un réseau que Pera ne prend pas en charge. La connexion a été refusée.",
+            "unselected_network_body": "Cette application ne propose que des réseaux sur lesquels Pera n’est pas actuellement. La connexion a été refusée. Activez ou désactivez le mode développeur pour correspondre à l’application, puis réessayez."
         },
         "signing": {
             "title": "Une erreur est survenue lors du traitement de la demande de signature",
@@ -4197,7 +4207,8 @@
         },
         "switch_network": {
             "title": "Autoriser l’accès au réseau ?",
-            "body": "{{name}} souhaite utiliser vos comptes {{chain}} sur {{network}}.",
+            "body": "{{name}} souhaite utiliser vos comptes sur {{chain}}.",
+            "body_with_network": "{{name}} souhaite utiliser vos comptes sur {{chain}} {{network}}.",
             "confirm": "Autoriser"
         },
         "settings": {

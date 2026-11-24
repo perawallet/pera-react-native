@@ -50,7 +50,7 @@ const page = window as PageWindow
 type Posted = {
     token: string
     hasUserActivation: boolean
-    icon?: string
+    icons?: string[]
     request: { id: string; method: string; params?: unknown }
 }
 
@@ -130,67 +130,6 @@ describe('eip1193ProviderJS', () => {
         )
     })
 
-    describe('the page icon', () => {
-        const addLink = (rel: string, href: string): void => {
-            const link = document.createElement('link')
-            link.rel = rel
-            link.href = href
-            document.head.appendChild(link)
-        }
-
-        afterEach(() => {
-            document.head
-                .querySelectorAll('link')
-                .forEach(link => link.remove())
-        })
-
-        it('sends the apple-touch-icon ahead of the icon on a request that opens a sheet', () => {
-            addLink('icon', 'https://cdn.app.uniswap.org/favicon.png')
-            addLink(
-                'apple-touch-icon',
-                'https://cdn.app.uniswap.org/images/192x192_App_Icon.png',
-            )
-            install()
-
-            void page.ethereum?.request({ method: 'personal_sign' })
-
-            const message = posted(postMessage)
-            expect(message.icon).toBe(
-                'https://cdn.app.uniswap.org/images/192x192_App_Icon.png',
-            )
-            expect(isEip1193PageMessage(message)).toBe(true)
-        })
-
-        it('skips an icon that is not https', () => {
-            addLink('apple-touch-icon', 'http://app.uniswap.org/touch.png')
-            addLink('icon', 'https://app.uniswap.org/favicon.png')
-            install()
-
-            void page.ethereum?.request({ method: 'eth_sendTransaction' })
-
-            expect(posted(postMessage).icon).toBe(
-                'https://app.uniswap.org/favicon.png',
-            )
-        })
-
-        it('leaves the icon out when the page declares none', () => {
-            install()
-
-            void page.ethereum?.request({ method: 'personal_sign' })
-
-            expect(posted(postMessage)).not.toHaveProperty('icon')
-        })
-
-        it('leaves the icon out of a read that opens no sheet', () => {
-            addLink('icon', 'https://app.uniswap.org/favicon.png')
-            install()
-
-            void page.ethereum?.request({ method: 'eth_chainId' })
-
-            expect(posted(postMessage)).not.toHaveProperty('icon')
-        })
-    })
-
     it('posts a token-stamped request that the native validator accepts', () => {
         install()
 
@@ -264,6 +203,67 @@ describe('eip1193ProviderJS', () => {
 
         expect(second).toBe(first)
         expect(postMessage).toHaveBeenCalledTimes(1)
+    })
+
+    describe('page icons on a connect request', () => {
+        afterEach(() => {
+            document.head.innerHTML = ''
+        })
+
+        it('posts the icon links the page lists as absolute urls', () => {
+            document.head.innerHTML =
+                '<link rel="icon" href="/favicon.png"><link rel="apple-touch-icon" href="/touch.png">'
+            install()
+
+            void page.ethereum?.request({ method: 'eth_requestAccounts' })
+
+            expect(posted(postMessage).icons).toEqual([
+                'https://app.uniswap.org/favicon.png',
+                'https://app.uniswap.org/touch.png',
+                'https://app.uniswap.org/favicon.ico',
+            ])
+            expect(isEip1193PageMessage(posted(postMessage))).toBe(true)
+        })
+
+        it('keeps /favicon.ico last, once, when the page lists only CDN icons or many links', () => {
+            document.head.innerHTML =
+                '<link rel="icon" href="/favicon.ico">' +
+                Array.from(
+                    { length: 9 },
+                    (_, i) =>
+                        `<link rel="icon" href="https://cdn.example.com/${i}.png">`,
+                ).join('')
+            install()
+
+            void page.ethereum?.request({ method: 'eth_requestAccounts' })
+
+            const { icons } = posted(postMessage)
+            expect(icons).toHaveLength(8)
+            expect(icons?.at(-1)).toBe('https://app.uniswap.org/favicon.ico')
+            expect(
+                icons?.filter(
+                    icon => icon === 'https://app.uniswap.org/favicon.ico',
+                ),
+            ).toHaveLength(1)
+        })
+
+        it('falls back to /favicon.ico when the page lists none', () => {
+            install()
+
+            void page.ethereum?.request({ method: 'wallet_requestPermissions' })
+
+            expect(posted(postMessage).icons).toEqual([
+                'https://app.uniswap.org/favicon.ico',
+            ])
+        })
+
+        it('sends no icons with any other request', () => {
+            install()
+
+            void page.ethereum?.request({ method: 'eth_chainId' })
+
+            expect(posted(postMessage)).not.toHaveProperty('icons')
+        })
     })
 
     it('reports no user activation for a scripted click', () => {

@@ -26,6 +26,7 @@ const initialState = {
     backupId: null as Nullable<string>,
     salt: null as Nullable<string>,
     deviceId: null as Nullable<string>,
+    credentialsConfirmed: false,
 }
 
 type SetState = (partial: Partial<CloudBackupStore>) => void
@@ -35,9 +36,12 @@ const createActions = (
     set: SetState,
     get: GetState,
 ): CloudBackupActions & BaseStoreState => ({
-    setConfigured: ({ backupId, salt, deviceId }) =>
-        set({ backupId, salt, deviceId }),
+    setConfigured: ({ backupId, salt, deviceId, credentialsConfirmed }) =>
+        set({ backupId, salt, deviceId, credentialsConfirmed }),
+    confirmCredentials: () => set({ credentialsConfirmed: true }),
     isConfigured: () => get().backupId != null,
+    needsCredentialsConfirmation: () =>
+        get().backupId != null && !get().credentialsConfirmed,
     resetState: () => set(initialState),
 })
 
@@ -45,6 +49,7 @@ const persistedState = (state: CloudBackupStore) => ({
     backupId: state.backupId,
     salt: state.salt,
     deviceId: state.deviceId,
+    credentialsConfirmed: state.credentialsConfirmed,
 })
 
 export const useCloudBackupStore = create<CloudBackupStore>()(

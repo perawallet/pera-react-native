@@ -254,9 +254,16 @@ selection. The chains on offer are the `eip155` chain adapters with
 approved like `wallet_switchEthereumChain`); for any other chain it answers 4200,
 because Pera supports only the chains it ships.
 
-The record's peer is fixed at connect, with one exception: a record stored
-without an icon shows the requesting page's icon on each request it raises. A
-stored icon is never replaced.
+A switch is answered at once for a chain the user approved for that site (at
+connect, or through the switch prompt) and on which a granted account still
+signs; anything else asks, as for a WalletConnect v2 session that does not hold
+the chain (see CONNECTIONS.md). The approved chains live on the record
+(`metadata.approvedChainIds`); a record without the field counts as approved for
+its current chain only. Only the mobile handler offers every served chain at
+connect and skips the prompt for approved chains
+(`shouldProposeEveryServedChain`), because the extension's approval window
+shows one chain and has no list of approved chains to review or revoke; the
+extension still records approved switches but prompts for every one.
 
 ### Routing
 
@@ -388,6 +395,8 @@ nothing holds it, and always an EIP-6963 announcement.
   and only when some EVM chain has `dappConnect` on. It mirrors
   `apps/browser/src/content/eip1193-main.ts` by hand, because Hermes cannot
   stringify a compiled function into the page; keep the two in step.
+  Connect requests also carry the page's own icon links, since a WebView has no
+  tab favicon for native to read.
 - **Transport:** `apps/mobile/src/modules/webview/utils/webViewDappTransport.ts`
   is the `DappTransport`. Requests arrive through `ReactNativeWebView.postMessage`
   stamped with the per-load bridge token, so the existing main-frame gate drops
@@ -404,11 +413,6 @@ nothing holds it, and always an EIP-6963 announcement.
   install when the native bridge already exists, otherwise on first use, but a
   page that runs before then can still forge it, so treat it as best-effort
   against a hostile page.
-- **Site icon:** with no browser tab to read a favicon from, the page script
-  sends the icon the page declares (`apple-touch-icon`, else `icon`). The
-  transport keeps it only if it is `https:` on the page's own host or a subdomain
-  of it, since fetching it tells its host when the review opened. Only a connect
-  or a queued request carries it.
 - **Timeouts:** the page script rejects an unanswered request with 4900 after the
   same backstop the extension uses (`dappPageTimeoutMs`), so a dropped answer
   cannot leave a pending `eth_requestAccounts` blocking later ones.

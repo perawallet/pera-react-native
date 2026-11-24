@@ -96,6 +96,7 @@ describe('Flow: cloud backup intro', () => {
             backupId: 'test-backup-id',
             salt: 'test-salt',
             deviceId: 'test-device-id',
+            credentialsConfirmed: true,
         })
 
         renderCloudBackup()

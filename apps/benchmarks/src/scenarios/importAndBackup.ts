@@ -151,6 +151,7 @@ const prepareBackup = async (
         backupId,
         salt: BACKUP_SALT,
         deviceId: DEVICE_ID,
+        credentialsConfirmed: true,
     })
     const manager = initializeBackupSyncManager({
         chainId: ALGORAND_CHAIN_ID,
@@ -195,7 +196,12 @@ const restore: Scenario<RestoreState> = {
         return { ctx }
     },
     run: ({ ctx }) =>
-        ctx.restoreCloudBackup({ salt: BACKUP_SALT }).then(() => {}),
+        ctx
+            .restoreCloudBackup({
+                salt: BACKUP_SALT,
+                credentialsConfirmed: true,
+            })
+            .then(() => {}),
     // The next run restores into a wallet with nothing in it.
     afterEach: async () => {
         await discardAccountKeys(useAccountsStore.getState().accounts)

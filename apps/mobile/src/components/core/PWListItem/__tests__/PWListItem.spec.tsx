@@ -45,4 +45,25 @@ describe('PWListItem', () => {
                 .getAttribute('numberoflines'),
         ).toBe('2')
     })
+
+    it('shows the warning under the title only when one is given', () => {
+        const { rerender } = render(
+            <PWListItem
+                icon='wallet'
+                title='Cloud Backup'
+                warning='Confirm you saved your key'
+            />,
+        )
+
+        expect(screen.getByText('Confirm you saved your key')).toBeTruthy()
+
+        rerender(
+            <PWListItem
+                icon='wallet'
+                title='Cloud Backup'
+            />,
+        )
+
+        expect(screen.queryByText('Confirm you saved your key')).toBeNull()
+    })
 })

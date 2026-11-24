@@ -19,7 +19,11 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { useClipboard } from '@hooks/useClipboard'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
-import { toValidatedBrowserUrl, useWebView } from '@modules/webview'
+import {
+    openValidatedBrowserUrl,
+    toValidatedBrowserUrl,
+    useWebView,
+} from '@modules/webview'
 import type {
     AssetAboutDisplay,
     AssetExplorerLink,
@@ -34,6 +38,8 @@ type UseAssetAboutResult = {
     projectUrl: Nullable<string>
     copyToClipboard: (text: string) => Promise<void>
     openLink: (url: string) => void
+    /** Opens the system browser, for the rows labelled as opening one. */
+    openInBrowser: (url: string) => void
 }
 
 export const useAssetAbout = (
@@ -85,5 +91,6 @@ export const useAssetAbout = (
         projectUrl,
         copyToClipboard,
         openLink,
+        openInBrowser: openValidatedBrowserUrl,
     }
 }

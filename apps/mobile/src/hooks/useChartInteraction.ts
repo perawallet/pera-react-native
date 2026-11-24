@@ -22,11 +22,18 @@ import { UserPreferences } from '@constants/user-preferences'
 const isHistoryPeriod = (value: unknown): value is HistoryPeriod =>
     HISTORY_PERIODS.includes(value as HistoryPeriod)
 
+/**
+ * `isPeriodShared`: the period is the one the balance charts share and remember;
+ * off, the chart starts on `initialPeriod` and keeps its pick to itself.
+ */
 export function useChartInteraction<TDataPoint = unknown>(
     initialPeriod: HistoryPeriod = 'one-week',
+    { isPeriodShared = true }: { isPeriodShared?: boolean } = {},
 ) {
     const { getPreference, setPreference } = usePreferences()
-    const storedPeriod = getPreference(UserPreferences.chartPeriod)
+    const storedPeriod = isPeriodShared
+        ? getPreference(UserPreferences.chartPeriod)
+        : null
     const [period, setPeriodState] = useState<HistoryPeriod>(
         isHistoryPeriod(storedPeriod) ? storedPeriod : initialPeriod,
     )
@@ -34,9 +41,11 @@ export function useChartInteraction<TDataPoint = unknown>(
     const setPeriod = useCallback(
         (value: HistoryPeriod) => {
             setPeriodState(value)
-            setPreference(UserPreferences.chartPeriod, value)
+            if (isPeriodShared) {
+                setPreference(UserPreferences.chartPeriod, value)
+            }
         },
-        [setPreference],
+        [setPreference, isPeriodShared],
     )
     const [selectedPoint, setSelectedPoint] =
         useState<Nullable<TDataPoint>>(null)
