@@ -11,7 +11,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { createMarkedSalt, isMarkedSalt } from '../marked-salt'
+import { createMarkedSalt, isMarkedSalt, readSaltMarks } from '../marked-salt'
 
 describe('marked salt', () => {
     it('creates a 16-byte salt that carries the mark', () => {
@@ -21,9 +21,23 @@ describe('marked salt', () => {
         expect(isMarkedSalt(salt)).toBe(true)
     })
 
-    it('randomises everything after the mark', () => {
-        expect(createMarkedSalt().slice(4)).not.toEqual(
-            createMarkedSalt().slice(4),
+    it('carries both marks by default and randomises everything after them', () => {
+        const salt = createMarkedSalt()
+
+        expect(readSaltMarks(salt)).toEqual({
+            isKvSealed: true,
+            isKeystoreResealed: true,
+        })
+        expect(salt.slice(8)).not.toEqual(createMarkedSalt().slice(8))
+    })
+
+    it('carries each mark on its own', () => {
+        const kvOnly = { isKvSealed: true, isKeystoreResealed: false }
+        const keystoreOnly = { isKvSealed: false, isKeystoreResealed: true }
+
+        expect(readSaltMarks(createMarkedSalt(kvOnly))).toEqual(kvOnly)
+        expect(readSaltMarks(createMarkedSalt(keystoreOnly))).toEqual(
+            keystoreOnly,
         )
     })
 

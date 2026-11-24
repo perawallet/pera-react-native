@@ -29,14 +29,21 @@ import {
 } from '../storage-keys'
 import { deriveArgon2id, type Argon2Params } from './argon2'
 import { armAutoLock, disarmAutoLock } from './autolock'
-import {
-    isMigrationClosed,
-    readOtherBlobState,
-    runLegacyRecordMigration,
-    type UnlockOptions,
-} from './kv-auth-key'
+import { runLegacyRecordMigration } from './kv-auth-key'
 import { runThrottledAttempt } from './lockout'
-import { createMarkedSalt, isMarkedSalt } from './marked-salt'
+import {
+    ALL_SALT_MARKS,
+    createMarkedSalt,
+    readSaltMarks,
+    type SaltMarks,
+} from './marked-salt'
+import {
+    isClosedByOtherBlob,
+    nextSaltMarks,
+    readOtherBlobState,
+    runLegacyKeystoreStep,
+    type UnlockOptions,
+} from './migration-window'
 import { clearPasswordAuth, stampPasswordAuth } from './password-auth'
 import {
     clearSessionMasterKey,
@@ -236,16 +243,14 @@ const readWrappedMasterKey = async (): Promise<WrappedMasterKey> => {
     return parsed
 }
 
-// An unmarked blob stays unmarked until its records are sealed: marking it
-// first would close the migration window with the records still unsealed.
+// A mark goes on only once its migration has run: marking first would close
+// the window with the material still unmoved.
 const writeWrappedMasterKey = async (
     password: string,
     masterKey: Uint8Array,
-    { isMarked = true }: { isMarked?: boolean } = {},
+    marks: SaltMarks = ALL_SALT_MARKS,
 ): Promise<void> => {
-    const salt = isMarked
-        ? createMarkedSalt()
-        : crypto.getRandomValues(new Uint8Array(16))
+    const salt = createMarkedSalt(marks)
     const iv = crypto.getRandomValues(new Uint8Array(12))
     // Always v2 at the current cost: older blobs are read-only, re-wrapped on
     // the next successful unlock (see rewrapIfWeaker).
@@ -338,8 +343,8 @@ export const verifyVaultPassword = async (
 
 type UnwrappedMasterKey = {
     masterKey: Uint8Array
-    /** Whether the blob that opened carries the migration mark in its salt. */
-    isMarked: boolean
+    /** The migration marks the salt of the blob that opened carries. */
+    marks: SaltMarks
 }
 
 const unwrapMasterKey = async (
@@ -375,7 +380,7 @@ const unwrapMasterKey = async (
                     ciphertextBytes as BufferSource,
                 ),
             ),
-            isMarked: isMarkedSalt(saltBytes),
+            marks: readSaltMarks(saltBytes),
         }
     } catch {
         // AES-GCM auth failure — the only way to distinguish a wrong password.
@@ -421,7 +426,7 @@ export const createVault = async (password: string): Promise<void> => {
 const rewrapIfWeaker = async (
     password: string,
     masterKey: Uint8Array,
-    { isMarked, shouldMark }: { isMarked: boolean; shouldMark: boolean },
+    { marks, nextMarks }: { marks: SaltMarks; nextMarks: SaltMarks },
 ): Promise<void> => {
     try {
         const blob = await readWrappedMasterKey()
@@ -429,10 +434,11 @@ const rewrapIfWeaker = async (
             blob.version === 2 &&
             blob.m >= ARGON2_MEMORY_KIB &&
             blob.t >= ARGON2_ITERATIONS
-        if (isCurrentCost && shouldMark === isMarked) return
-        await writeWrappedMasterKey(password, masterKey, {
-            isMarked: shouldMark,
-        })
+        const isSameMarks =
+            marks.isKvSealed === nextMarks.isKvSealed &&
+            marks.isKeystoreResealed === nextMarks.isKeystoreResealed
+        if (isCurrentCost && isSameMarks) return
+        await writeWrappedMasterKey(password, masterKey, nextMarks)
     } catch {
         // Intentionally swallowed — see the doc comment.
     }
@@ -442,22 +448,31 @@ export const unlockVault = async (
     password: string,
     options?: UnlockOptions,
 ): Promise<void> => {
-    const { masterKey, isMarked } =
+    const { masterKey, marks } =
         await unwrapMasterKeyThrottledDetailed(password)
     try {
         // Before the session key lands, so contexts reacting to the unlock
-        // already find sealed records.
+        // already find sealed records and re-sealed keystore material.
         const other = await readOtherBlobState('password')
         const hasMigrated =
-            isMarked || isMigrationClosed(other)
+            marks.isKvSealed || isClosedByOtherBlob(other, 'isKvSealed')
                 ? false
                 : await runLegacyRecordMigration(masterKey, options)
+        const hasResealed = await runLegacyKeystoreStep({
+            masterKey,
+            marks,
+            other,
+            options,
+        })
         await putSessionMasterKey(masterKey)
         await armAutoLock()
         await stampPasswordAuth()
         await rewrapIfWeaker(password, masterKey, {
-            isMarked,
-            shouldMark: isMarked || hasMigrated || other === 'marked',
+            marks,
+            nextMarks: nextSaltMarks(marks, other, {
+                isKvSealed: hasMigrated,
+                isKeystoreResealed: hasResealed,
+            }),
         })
     } finally {
         masterKey.fill(0)
@@ -504,13 +519,16 @@ export const changePassword = async (
     // Throttled like every other password check — this is reachable from an
     // unlocked session, where the value at stake is the password itself
     // (reused elsewhere, or needed for persistence), not the master key.
-    const masterKey = await unwrapMasterKeyThrottled(currentPassword)
+    const { masterKey, marks } =
+        await unwrapMasterKeyThrottledDetailed(currentPassword)
     try {
-        await writeWrappedMasterKey(nextPassword, masterKey)
+        // Marks are carried, not granted: a password change must not close a
+        // migration that has yet to succeed.
+        await writeWrappedMasterKey(nextPassword, masterKey, marks)
     } finally {
         masterKey.fill(0)
     }
 }
 
-export type { UnlockOptions } from './kv-auth-key'
+export type { UnlockOptions } from './migration-window'
 export { onLockStateChanged } from './session'
