@@ -19,7 +19,7 @@ import {
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { logger, toError, type Nullable } from '@perawallet/wallet-core-shared'
-import { useRequirePinVerification } from '@modules/security'
+import { usePinGatedScreen } from '@modules/security'
 import { useMnemonicForAddress, usePassphraseAccount } from '../../hooks'
 import type { BackupStackParamList } from '../../routes/types'
 
@@ -45,8 +45,6 @@ export const useBackupReminderMnemonicScreen =
         const address = route.params?.address
         const accountId = route.params?.accountId
         const account = usePassphraseAccount(address ?? '', accountId)
-        const { requirePinVerification } = useRequirePinVerification()
-        const [isPinGateResolved, setIsPinGateResolved] = useState(false)
         const { executeWithMnemonic } = useMnemonicForAddress(address, account)
         // The buffer is held in a ref as well as state because the unmount wipe
         // has to happen outside React's update queue: a `setState` updater is
@@ -60,22 +58,8 @@ export const useBackupReminderMnemonicScreen =
 
         // Defense-in-depth: if any caller reaches this screen without going
         // through BackupReminderWriteDownScreen (e.g. future deep link, new
-        // navigation entry), re-check the PIN (the vault password on web)
-        // before exposing the mnemonic.
-        useEffect(() => {
-            let cancelled = false
-            void requirePinVerification().then(isVerified => {
-                if (cancelled) return
-                if (isVerified) {
-                    setIsPinGateResolved(true)
-                } else {
-                    navigation.goBack()
-                }
-            })
-            return () => {
-                cancelled = true
-            }
-        }, [requirePinVerification, navigation])
+        // navigation entry), re-check the PIN before exposing the mnemonic.
+        const isPinGateResolved = usePinGatedScreen()
 
         // Zero the retained index buffer before dropping it so the phrase
         // doesn't linger in memory waiting on GC. State and ref share one
