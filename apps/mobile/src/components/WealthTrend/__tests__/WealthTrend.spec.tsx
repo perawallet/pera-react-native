@@ -42,6 +42,7 @@ vi.mock('@perawallet/wallet-core-currencies', () => ({
         data: null,
         isPending: false,
     })),
+    imitatedNativeTickerOf: vi.fn(() => null),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
