@@ -35,6 +35,7 @@ import {
     useRemoveAccount,
     useUpdateAccount,
 } from '@perawallet/wallet-core-accounts'
+import { useMigrationGateStore } from '@perawallet/wallet-core-migrate'
 import {
     i18nKey,
     type ChainId,
@@ -136,6 +137,9 @@ export const useAccountOptions = ({
         useAccountNotificationToggle()
     const accounts = useAllAccounts()
     const removeAccount = useRemoveAccount()
+    const recordRemovedAccount = useMigrationGateStore(
+        state => state.recordRemovedAccount,
+    )
     const updateAccount = useUpdateAccount()
     const navigation = useAppNavigation()
     const { request: requestBottomSheet } = useBottomSheet()
@@ -359,6 +363,7 @@ export const useAccountOptions = ({
 
     const performRemoveAccount = useCallback(() => {
         const hasOtherAccounts = accounts.length > 1
+        recordRemovedAccount(account)
         void removeAccount(account.id)
         showToast(
             {
@@ -372,7 +377,15 @@ export const useAccountOptions = ({
         if (hasOtherAccounts) {
             navigation.navigate('TabBar', { screen: 'Home' })
         }
-    }, [accounts, account.id, removeAccount, navigation, showToast, t])
+    }, [
+        accounts,
+        account,
+        recordRemovedAccount,
+        removeAccount,
+        navigation,
+        showToast,
+        t,
+    ])
 
     const [removeConfirmView, setRemoveConfirmView] =
         useState<RemoveConfirmView>('none')

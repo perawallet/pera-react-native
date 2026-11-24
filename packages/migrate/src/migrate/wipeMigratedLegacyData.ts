@@ -17,7 +17,6 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { getSecretMetadata, hasSecret } from '@perawallet/wallet-core-kms'
 import {
     logger,
     toError,
@@ -32,6 +31,7 @@ import type {
 } from '@perawallet/wallet-extension-platform'
 import { getKeystore } from '@perawallet/wallet-extension-provider'
 import { useMigrationGateStore, type LegacyWipeBlock } from '../store'
+import { holdsLegacyAccountKey } from './legacyAccountKey'
 import { scrubLegacyPayloadSecrets } from './scrubLegacyPayload'
 import {
     ALL_MIGRATION_STEPS,
@@ -65,13 +65,6 @@ const hasSigningMaterial = (account: LegacyAccount): boolean =>
     (account.secretKey !== null && account.secretKey.length > 0) ||
     account.hdSeedId !== null
 
-// An HD child is only usable while the seed it derives from is still held.
-const holdsKey = (keyPairId: Optional<string>): boolean => {
-    if (!keyPairId || !hasSecret(keyPairId)) return false
-    const parentKeyId = getSecretMetadata(keyPairId)?.parentKeyId
-    return typeof parentKeyId !== 'string' || hasSecret(parentKeyId)
-}
-
 const migratedAccountsByAddress = (
     chainId: ChainId,
 ): Map<string, WalletAccount> => {
@@ -84,15 +77,19 @@ const migratedAccountsByAddress = (
 }
 
 const accountBlockReason = (
+    address: string,
     migrated: Optional<WalletAccount>,
     chainId: ChainId,
 ): Nullable<BlockingReason> => {
-    // It may have been removed while it showed as watch-only, so the legacy
-    // store can still hold the only copy of its key.
-    if (!migrated) return 'keyed-account-removed'
-    // A later accounts-step bump re-imports these from the legacy keys.
-    if (isWatchAccount(migrated)) return 'keys-held-as-watch'
-    return holdsKey(chainAccountOf(migrated, chainId)?.keyPairId)
+    if (!migrated || isWatchAccount(migrated)) {
+        const { removedKeyAddresses } = useMigrationGateStore.getState()
+        if (removedKeyAddresses.includes(address)) return null
+        return migrated ? 'keys-held-as-watch' : 'keyed-account-removed'
+    }
+    return holdsLegacyAccountKey(
+        chainAccountOf(migrated, chainId)?.keyPairId,
+        migrated.custody.kind === 'local' && migrated.custody.seed === 'bip39',
+    )
         ? null
         : 'keys-missing-from-keystore'
 }
@@ -111,6 +108,7 @@ const findBlock = (
     for (const legacy of data.accounts) {
         if (!hasSigningMaterial(legacy)) continue
         const accountReason = accountBlockReason(
+            legacy.address,
             byAddress.get(legacy.address),
             chainId,
         )
@@ -135,7 +133,9 @@ const isStillBlocked = (
     if (block.addresses.length === 0) return true
     const byAddress = migratedAccountsByAddress(chainId)
     return block.addresses.some(
-        address => accountBlockReason(byAddress.get(address), chainId) !== null,
+        address =>
+            accountBlockReason(address, byAddress.get(address), chainId) !==
+            null,
     )
 }
 
