@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-// On Ethereum, which has no transaction detail screen, a worthless transfer
-// from a look-alike of a known address is marked in History and pressing it
-// explains the marker. Copy is asserted by key: this project renders i18n keys.
+// A worthless transfer from a look-alike of a known address is marked in
+// History, and pressing it opens the transaction's details under the same
+// explanation. Copy is asserted by key: this project renders i18n keys.
 
 import {
     afterAll,
@@ -37,7 +37,10 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
         ...withBackend,
         config: {
             ...withBackend.config,
-            chains: { enabled: ['algorand', 'ethereum'], capabilities: {} },
+            chains: {
+                enabled: ['algorand', 'ethereum', 'base'],
+                capabilities: {},
+            },
         },
     }
 })
@@ -46,6 +49,16 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
 // mock exists, and the client reads its deployments once, so everything under
 // test is loaded afresh, the test theme the setup installed included.
 vi.resetModules()
+// The setup's navigator mocks were first evaluated before the reset, so left
+// alone a screen's `navigate` reaches nothing.
+vi.doMock(
+    '@react-navigation/native',
+    () => import('@test-utils/test-navigator'),
+)
+vi.doMock('@react-navigation/native-stack', async () => ({
+    createNativeStackNavigator: (await import('@test-utils/test-navigator'))
+        .createNativeStackNavigator,
+}))
 const { setTestTheme } = await import('@test-utils/test-theme')
 const { getTheme } = await import('@theme/theme')
 setTestTheme(getTheme('light'))
@@ -68,6 +81,7 @@ const { resetTestDatabase, setupTestDatabase, teardownTestDatabase } =
     await import('@test-utils/database-setup')
 const { AccountHistory } =
     await import('@modules/accounts/components/AccountHistory/AccountHistory')
+const { TransactionDetailsScreen } = await import('@modules/signing/routes')
 
 const ETH_SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
 
@@ -147,6 +161,21 @@ const UNSIGNED_UNKNOWN_TOKEN_TO_CONTACT_LOOK_ALIKE = (() => {
 const markerOf = (item: EvmHistoryItemResponse) =>
     `transaction_row_suspected_poisoning_${item.hash}`
 
+const renderHistory = () =>
+    renderWithNavigation(AccountHistory, 'AccountHistory', {
+        additionalScreens: [
+            { name: 'TransactionDetails', component: TransactionDetailsScreen },
+        ],
+    })
+
+const openRow = (item: EvmHistoryItemResponse) => {
+    const row = closestPressable(
+        screen.getByTestId(`transaction_row_${item.hash}`),
+    )
+    if (!row) throw new Error('Row is not pressable')
+    fireEvent.click(row)
+}
+
 describe('Flow: suspected address poisoning in Ethereum history', () => {
     beforeAll(async () => {
         await setupTestDatabase()
@@ -194,7 +223,7 @@ describe('Flow: suspected address poisoning in Ethereum history', () => {
     })
 
     it('Given worthless transfers from look-alikes of a contact and of a payee, then both are marked and real value is not', async () => {
-        renderWithNavigation(AccountHistory, 'AccountHistory')
+        renderHistory()
 
         await screen.findByTestId(
             markerOf(DUST_FROM_PAYEE_LOOK_ALIKE),
@@ -210,33 +239,29 @@ describe('Flow: suspected address poisoning in Ethereum history', () => {
         expect(screen.queryByTestId(markerOf(SENT_TO_PAYEE))).toBeNull()
     })
 
-    it('Given a marked row, when the user presses it, then a sheet explains it and names the address it imitates', async () => {
-        renderWithNavigation(AccountHistory, 'AccountHistory')
+    it('Given a marked row, when the user presses it, then its details open under an explanation naming the address it imitates', async () => {
+        renderHistory()
         await screen.findByTestId(
             markerOf(DUST_FROM_PAYEE_LOOK_ALIKE),
             undefined,
             { timeout: SLOW_WAIT_TIMEOUT_MS },
         )
 
-        const row = closestPressable(
-            screen.getByTestId(
-                `transaction_row_${DUST_FROM_PAYEE_LOOK_ALIKE.hash}`,
-            ),
-        )
-        if (!row) throw new Error('Marked row is not pressable')
-        fireEvent.click(row)
+        openRow(DUST_FROM_PAYEE_LOOK_ALIKE)
 
+        await screen.findByTestId('transaction_details_screen')
         const notice = await screen.findByTestId('suspected_poisoning_notice')
         expect(
             within(notice).getByTestId('suspected_poisoning_imitated_address')
                 .textContent,
         ).toBe(addressCodecs.get('ethereum').normalize(PAYEE))
+        expect(screen.getByTestId('transaction_detail_explorer')).toBeTruthy()
         expect(notice.textContent).toContain(
             'send_funds.recipient_safety.look_alike_known_label_history',
         )
     })
 
-    it('Given a token send the history names no signer for, to a look-alike of a contact, then it is marked and its sheet names the contact', async () => {
+    it('Given a token send the history names no signer for, to a look-alike of a contact, then it is marked and its details name the contact', async () => {
         server.use(
             ...peraEvmHistoryHandlers({
                 history: {
@@ -244,20 +269,14 @@ describe('Flow: suspected address poisoning in Ethereum history', () => {
                 },
             }),
         )
-        renderWithNavigation(AccountHistory, 'AccountHistory')
+        renderHistory()
         await screen.findByTestId(
             markerOf(UNSIGNED_UNKNOWN_TOKEN_TO_CONTACT_LOOK_ALIKE),
             undefined,
             { timeout: SLOW_WAIT_TIMEOUT_MS },
         )
 
-        const row = closestPressable(
-            screen.getByTestId(
-                `transaction_row_${UNSIGNED_UNKNOWN_TOKEN_TO_CONTACT_LOOK_ALIKE.hash}`,
-            ),
-        )
-        if (!row) throw new Error('Marked row is not pressable')
-        fireEvent.click(row)
+        openRow(UNSIGNED_UNKNOWN_TOKEN_TO_CONTACT_LOOK_ALIKE)
 
         const notice = await screen.findByTestId('suspected_poisoning_notice')
         expect(
@@ -266,3 +285,144 @@ describe('Flow: suspected address poisoning in Ethereum history', () => {
         ).toBe(addressCodecs.get('ethereum').normalize(CONTACT))
     })
 })
+
+// The fake pays nothing: its contract writes a Transfer log "from" the account
+// under a symbol dressed as the native coin, and a third address signs it.
+const FAKE_NATIVE_SYMBOL = String.fromCodePoint(
+    0x13ac,
+    0x200d,
+    0x13a2,
+    0x200d,
+    0x041d,
+)
+const THIRD_PARTY = '0x90F79bf6EB2c4f870365E785982E1f101E93b906'
+const FAKE_TOKEN = '0x0000000000000000000000000000000000000fa0'
+const SENT_WEI = '1000000000000000'
+
+describe.each([
+    { chainId: 'ethereum', eip155: 1 },
+    { chainId: 'base', eip155: 8453 },
+] as const)(
+    'Flow: a fake native-coin send in $chainId history',
+    ({ chainId, eip155 }) => {
+        const scope = { chainId, networkId: 'mainnet' } as const
+        const account: WalletAccount = {
+            id: `${chainId}-account`,
+            custody: {
+                kind: 'local',
+                seed: SeedScheme.Bip39,
+                hd: { account: 0, keyIndex: 0 },
+            },
+            chains: {
+                [chainId]: { address: ACCOUNT_ADDRESS, keyPairId: 'key' },
+            },
+            name: 'Account',
+        }
+
+        const realSend = evmHistoryItem({
+            hash: hashOf(6),
+            block_time: '2026-01-06T00:00:00Z',
+            from: ME,
+            to: CONTACT.toLowerCase(),
+            value: SENT_WEI,
+        })
+        const fakeSend = evmHistoryItem({
+            hash: hashOf(7),
+            block_time: '2026-01-07T00:00:00Z',
+            from: THIRD_PARTY.toLowerCase(),
+            to: FAKE_TOKEN,
+            token_transfers: [
+                {
+                    asset_id: `eip155:${eip155}/erc20:${FAKE_TOKEN}`,
+                    contract: FAKE_TOKEN,
+                    from: ME,
+                    to: lookAlikeOf(CONTACT, '9'),
+                    value: SENT_WEI,
+                    token_name: 'Fake',
+                    token_symbol: FAKE_NATIVE_SYMBOL,
+                    token_decimals: 18,
+                },
+            ],
+        })
+
+        const rowText = (item: EvmHistoryItemResponse) =>
+            screen.getByTestId(`transaction_row_${item.hash}`).textContent
+
+        beforeAll(async () => {
+            await setupTestDatabase()
+        })
+
+        afterAll(async () => {
+            await teardownTestDatabase()
+        })
+
+        beforeEach(async () => {
+            await resetTestDatabase()
+            const native = nativeAssetFor(chainId)
+            await upsertAssets({ items: [native], scope })
+            await upsertAssetPrices({
+                prices: [
+                    { assetId: native.assetId, usdPrice: new Decimal(3000) },
+                ],
+                scope,
+            })
+            useAccountsStore.getState().setAccounts([account])
+            useAccountsStore.getState().setSelectedAccountId(account.id)
+            useContactsStore.setState({
+                contacts: [
+                    { id: 'alice', name: 'Alice', addresses: { evm: CONTACT } },
+                ],
+            })
+            server.use(
+                ...peraEvmHistoryHandlers({
+                    history: { [ME]: [[fakeSend, realSend]] },
+                }),
+            )
+        })
+
+        afterEach(() => {
+            server.resetHandlers()
+            useAccountsStore.getState().setAccounts([])
+            useContactsStore.setState({ contacts: [] })
+        })
+
+        it('Given a real send and a fake one of the same amount, then the list tells them apart without opening either', async () => {
+            renderHistory()
+            await screen.findByTestId(markerOf(fakeSend), undefined, {
+                timeout: SLOW_WAIT_TIMEOUT_MS,
+            })
+            const unit = nativeAssetFor(chainId).unitName
+
+            const fake = rowText(fakeSend)
+            expect(fake).toContain('transactions.list_item.not_sent_by_you')
+            expect(fake).toContain('asset.imitated_currency.unit_label')
+            expect(fake).not.toContain('-')
+            expect(fake).not.toContain(`0.001 ${unit}`)
+
+            expect(screen.queryByTestId(markerOf(realSend))).toBeNull()
+            const real = rowText(realSend)
+            expect(real).toContain('transactions.list_item.send')
+            expect(real).toContain(`-0.001 ${unit}`)
+        })
+
+        it('Given the fake send, when the user presses it, then its details name the token contract beside the explanation and an explorer link', async () => {
+            renderHistory()
+            await screen.findByTestId(markerOf(fakeSend), undefined, {
+                timeout: SLOW_WAIT_TIMEOUT_MS,
+            })
+
+            openRow(fakeSend)
+
+            await screen.findByTestId('transaction_details_screen')
+            expect(
+                screen.getByTestId('suspected_poisoning_notice'),
+            ).toBeTruthy()
+            expect(
+                screen.getByTestId('transaction_detail_explorer'),
+            ).toBeTruthy()
+            expect(
+                screen.getByTestId('ethereum_record_asset_contract'),
+            ).toBeTruthy()
+        })
+    },
+)

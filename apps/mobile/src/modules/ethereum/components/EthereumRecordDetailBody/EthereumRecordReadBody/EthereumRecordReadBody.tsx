@@ -37,7 +37,7 @@ export const EthereumRecordReadBody = ({
         transaction,
         record.scope,
     )
-    const { summary, amountRows } = useEthereumRecordLayout(
+    const { summary, amountRows, assetContract } = useEthereumRecordLayout(
         record,
         presentation,
     )
@@ -54,7 +54,7 @@ export const EthereumRecordReadBody = ({
                             isAmountInHero={
                                 !!summary.amount || !!summary.isAmountLoading
                             }
-                            isAssetInCard={!!nft}
+                            isAssetInCard={!!nft || !!assetContract}
                         />
                     )}
                     {nft ? (
@@ -67,6 +67,7 @@ export const EthereumRecordReadBody = ({
                         <EthereumRecordAmountCard
                             changes={amountRows}
                             scope={record.scope}
+                            assetContract={assetContract}
                         />
                     )}
                 </>
