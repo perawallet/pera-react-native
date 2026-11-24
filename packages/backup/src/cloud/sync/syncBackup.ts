@@ -11,15 +11,10 @@
  */
 
 import { zeroBytes } from '@perawallet/wallet-core-kms'
-import {
-    isNotFoundError,
-    logger,
-    toError,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
-import { batchUpsertItems, deleteItem, fetchManifest, readItems } from '../api'
+import { logger, toError } from '@perawallet/wallet-core-shared'
+import { batchUpsertItems, deleteItem, readItems } from '../api'
 import { decryptItemPayload } from '../crypto/itemPayload'
-import { isLegacyItemKey, type Manifest, type SyncState } from '../models'
+import { isLegacyItemKey, type SyncState } from '../models'
 import { applyDeltas } from './applyDeltas'
 import { buildLocalContactItems } from './buildLocalContactItems'
 import {
@@ -33,6 +28,7 @@ import { readableBackupChains } from './backupChains'
 import { isImportRetryDue } from './importRetry'
 import {
     fetchDeltaOrRebuild,
+    fetchManifestOrNull,
     unreadAccountDeltas,
     withAccountRecordsUnread,
 } from './rebuildFromManifest'
@@ -54,24 +50,6 @@ const sameChains = (
 
 const hasPendingWork = (state: SyncState): boolean =>
     Object.values(state.items).some(i => i.isDirty || i.pendingDelete)
-
-/** A registered backup has no manifest until its first item lands, so the very
- *  first sync of a new backup 404s. Destroying a backup drops its auth key, so
- *  a wiped backup fails with 401 instead — a 404 can only mean "still empty".
- *  Warns because that is only true once: a 404 that keeps coming back leaves
- *  `lastKnownBackupHash` pinned, which silently disables the short-circuit
- *  below and makes every sync a full delta + read + push. */
-const fetchManifestOrNull = async (
-    deps: SyncEngineDeps,
-): Promise<Nullable<Manifest>> => {
-    try {
-        return await fetchManifest(deps.backupId, deps.deviceId)
-    } catch (error) {
-        if (!isNotFoundError(error)) throw error
-        logger.warn('syncBackup: no manifest, treating backup as empty')
-        return null
-    }
-}
 
 /** Full pull + push. `now` is injected for deterministic tests. Throws on a hard
  *  network/transport failure (caller records FAILED + backs off); on success the
@@ -154,6 +132,7 @@ export const syncBackup = async (
     if (
         manifest !== null &&
         manifest.backupGlobalHash === next.lastKnownBackupHash &&
+        next.lastSyncedSeq <= manifest.lastSeq &&
         !hasPendingWork(next) &&
         unread.length === 0
     ) {
@@ -161,15 +140,20 @@ export const syncBackup = async (
     }
 
     // 3-4. Fetch + apply remote deltas.
-    const { deltas: fetchedDeltas } = await fetchDeltaOrRebuild(
-        deps,
-        next,
-        async () => manifest,
-    )
+    const {
+        deltas: fetchedDeltas,
+        state: fetchedState,
+        rebuiltThroughSeq,
+    } = await fetchDeltaOrRebuild(deps, next, manifest)
     abortIfStopped(deps)
     next = await applyDeltas({
-        state: next,
-        deltas: [...unread, ...fetchedDeltas],
+        state: fetchedState,
+        // A replay re-reads every unread item already, and `unread` sits at
+        // the old cursor, which may be the one being repaired.
+        deltas:
+            rebuiltThroughSeq === null
+                ? [...unread, ...fetchedDeltas]
+                : fetchedDeltas,
         deps: {
             backupId: deps.backupId,
             deviceId: deps.deviceId,

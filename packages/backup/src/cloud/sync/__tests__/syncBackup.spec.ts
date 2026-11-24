@@ -211,6 +211,112 @@ describe('syncBackup', () => {
         expect(batchUpsertItems).not.toHaveBeenCalled()
     })
 
+    describe('with a seq past the manifest', () => {
+        const synced = (lastSyncedSeq: number): SyncState => {
+            const state = createEmptySyncState('b')
+            state.lastSyncedSeq = lastSyncedSeq
+            state.lastKnownBackupHash = 'g'
+            state.items[recordKey('W')] = {
+                type: BackupItemType.ACCOUNT,
+                knownVer: 1,
+                baseVer: 1,
+                isDirty: false,
+                status: BackupItemStatus.ACTIVE,
+                lastRemoteHash: 'r',
+                localContentHash: watchRecordHash(),
+                localUpdatedAt: 1,
+                address: 'W',
+            }
+            return withSyncedSettings(state)
+        }
+        const manifestWith = (items = {}) => ({
+            backupGlobalHash: 'g',
+            lastSeq: 100,
+            items: {
+                [recordKey('W')]: {
+                    type: BackupItemType.ACCOUNT,
+                    ver: 1,
+                    status: BackupItemStatus.ACTIVE,
+                    hash: 'r',
+                    lastSeq: 90,
+                },
+                [settingsKey]: {
+                    type: BackupItemType.SETTINGS,
+                    ver: 1,
+                    status: BackupItemStatus.ACTIVE,
+                    hash: 's',
+                    lastSeq: 91,
+                },
+                ...items,
+            },
+        })
+
+        it('does not store it as the cursor', async () => {
+            fetchManifest.mockResolvedValue({
+                ...manifestWith(),
+                backupGlobalHash: 'g2',
+            })
+            fetchDelta.mockResolvedValue([
+                {
+                    seq: Number.MAX_SAFE_INTEGER,
+                    key: recordKey('Y'),
+                    type: BackupItemType.ACCOUNT,
+                    ver: 1,
+                    status: BackupItemStatus.ACTIVE,
+                    op: DeltaOperation.UPSERT,
+                    hash: 'y',
+                },
+            ])
+            readItems.mockResolvedValue([])
+
+            const next = await syncBackup(deps(), synced(50))
+
+            expect(next.lastSyncedSeq).toBe(100)
+        })
+
+        it('rebuilds an ahead cursor without replaying unread records at the old sequence', async () => {
+            const unreadKey = recordKey('Y')
+            const state = synced(Number.MAX_SAFE_INTEGER)
+            state.items[unreadKey] = {
+                type: BackupItemType.ACCOUNT,
+                knownVer: 1,
+                baseVer: 1,
+                isDirty: false,
+                status: BackupItemStatus.ACTIVE,
+                lastRemoteHash: 'previous-y',
+                localContentHash: null,
+                localUpdatedAt: null,
+                address: 'Y',
+                importFailures: 1,
+            }
+            fetchManifest.mockResolvedValue(
+                manifestWith({
+                    [unreadKey]: {
+                        type: BackupItemType.ACCOUNT,
+                        ver: 2,
+                        status: BackupItemStatus.ACTIVE,
+                        hash: 'y',
+                        lastSeq: 95,
+                    },
+                }),
+            )
+            readItems.mockResolvedValue([])
+
+            const next = await syncBackup(deps(), state)
+
+            expect(fetchDelta).not.toHaveBeenCalled()
+            expect(readItems).toHaveBeenCalledExactlyOnceWith('b', 'dev', [
+                unreadKey,
+            ])
+            expect(next.items[unreadKey]).toMatchObject({
+                knownVer: 2,
+                lastRemoteHash: 'y',
+            })
+            expect(next.lastSyncedSeq).toBe(100)
+            expect(next.lastSyncResult).toBe('SUCCESS')
+        })
+    })
+
     it('pulls deltas and pushes the new local account on a first sync', async () => {
         fetchManifest.mockResolvedValue({
             backupGlobalHash: 'g2',
@@ -265,7 +371,7 @@ describe('syncBackup', () => {
         // Reporting SUCCESS on a missing manifest is only correct once; a 404
         // that keeps repeating disables the short-circuit and must be visible.
         expect(warn).toHaveBeenCalledWith(
-            'syncBackup: no manifest, treating backup as empty',
+            'backup sync: no manifest, treating backup as empty',
         )
     })
 

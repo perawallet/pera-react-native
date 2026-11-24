@@ -10,8 +10,12 @@
  limitations under the License
  */
 
-import { logger, type Nullable } from '@perawallet/wallet-core-shared'
-import { fetchDelta, isFromSeqTooOldError } from '../api'
+import {
+    isNotFoundError,
+    logger,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
+import { fetchDelta, fetchManifest, isFromSeqTooOldError } from '../api'
 import {
     BACKUP_SECRETS_KEY_PREFIX,
     isAccountKey,
@@ -36,13 +40,18 @@ import type { SyncEngineDeps } from './types'
  * enough that its DELETE entry is pruned too. `knownVer > 0` is what separates
  * that from a local item still waiting for its first push: the server has never
  * seen that one, and marking it deleted would drop it from the backup silently.
+ *
+ * With `missing: 'unconfirmed'` no DELETE is emitted: a manifest behind the
+ * cursor is a stale read or a rolled-back server, where a missing item was lost
+ * or is not visible yet rather than deleted.
  */
 export const rebuildDeltasFromManifest = (
     manifest: Manifest,
     state: SyncState,
+    missing: 'deleted' | 'unconfirmed' = 'deleted',
 ): DeltaEntry[] => [
     ...Object.entries(manifest.items).map(([key, item]) => ({
-        seq: item.lastSeq,
+        seq: Math.min(item.lastSeq, manifest.lastSeq),
         key,
         type: item.type,
         ver: item.ver,
@@ -53,7 +62,9 @@ export const rebuildDeltasFromManifest = (
     ...Object.entries(state.items)
         .filter(
             ([key, item]) =>
-                !Object.hasOwn(manifest.items, key) && item.knownVer > 0,
+                missing === 'deleted' &&
+                !Object.hasOwn(manifest.items, key) &&
+                item.knownVer > 0,
         )
         .map(([key, item]) => ({
             seq: manifest.lastSeq,
@@ -103,40 +114,116 @@ export const unreadAccountDeltas = (
             hash: item.lastRemoteHash,
         }))
 
+/** Tracked items a manifest behind the cursor does not list, set back to a
+ *  first push: marking them deleted would drop them from the backup, and
+ *  leaving them settled would never push them again. A create the server
+ *  already holds conflicts and settles on the next push. */
+const requeueUnconfirmed = (
+    manifest: Manifest,
+    state: SyncState,
+): SyncState => ({
+    ...state,
+    items: Object.fromEntries(
+        Object.entries(state.items).map(([key, item]) => [
+            key,
+            !Object.hasOwn(manifest.items, key) &&
+            item.knownVer > 0 &&
+            item.status === BackupItemStatus.ACTIVE &&
+            item.pendingDelete !== true
+                ? {
+                      ...item,
+                      knownVer: 0,
+                      baseVer: 0,
+                      isDirty: true,
+                      lastRemoteHash: null,
+                  }
+                : item,
+        ]),
+    ),
+})
+
+/** A registered backup has no manifest until its first item lands, so the very
+ *  first sync of a new backup 404s. Destroying a backup drops its auth key, so
+ *  a wiped backup fails with 401 instead — a 404 can only mean "still empty".
+ *  Warns because that is only true once: a 404 that keeps coming back leaves
+ *  `lastKnownBackupHash` pinned, which silently disables the sync short-circuit
+ *  and makes every sync a full delta + read + push. */
+export const fetchManifestOrNull = async (
+    deps: Pick<SyncEngineDeps, 'backupId' | 'deviceId'>,
+): Promise<Nullable<Manifest>> => {
+    try {
+        return await fetchManifest(deps.backupId, deps.deviceId)
+    } catch (error) {
+        if (!isNotFoundError(error)) throw error
+        logger.warn('backup sync: no manifest, treating backup as empty')
+        return null
+    }
+}
+
 /**
- * Deltas from the cursor, or — when retention has pruned past that cursor — the
- * manifest replayed as deltas, together with the seq it is current through.
- * That seq is the only thing that can move the cursor over the pruned gap; it
- * is 0 on the ordinary path, where `applyDeltas` advances the cursor itself.
- *
- * `getManifest` is a callback so the caller decides where the manifest comes
- * from: `syncBackup` already holds one, and null there means the backup is
- * empty rather than unfetched, which is not something to rebuild from.
+ * Deltas from the cursor, or the manifest replayed as deltas when the changelog
+ * was pruned past the cursor or the cursor is past the manifest: a cursor ahead
+ * of the backup asks for changes that never come. `state` is what to apply
+ * the deltas to: on a replay its cursor is the manifest's and `rebuiltThroughSeq`
+ * says so, null on the ordinary path. A delta past the
+ * manifest's `lastSeq` is still applied, but at that seq: a write that landed
+ * after the manifest was read is fetched again next pull, and a bad seq never
+ * becomes the cursor. A null manifest is an empty backup, with nothing to bound
+ * by or rebuild from.
  */
 export const fetchDeltaOrRebuild = async (
     deps: Pick<SyncEngineDeps, 'backupId' | 'deviceId'>,
     state: SyncState,
-    getManifest: () => Promise<Nullable<Manifest>>,
-): Promise<{ deltas: DeltaEntry[]; rebuiltThroughSeq: number }> => {
+    manifest: Nullable<Manifest>,
+): Promise<{
+    deltas: DeltaEntry[]
+    state: SyncState
+    rebuiltThroughSeq: Nullable<number>
+}> => {
+    const rebuild = (from: Manifest, reason: 'ahead' | 'pruned') => {
+        logger.warn('backup sync: rebuilding from manifest', {
+            reason,
+            fromSeq: state.lastSyncedSeq,
+            manifestSeq: from.lastSeq,
+        })
+        const isAhead = reason === 'ahead'
+        return {
+            deltas: rebuildDeltasFromManifest(
+                from,
+                state,
+                isAhead ? 'unconfirmed' : 'deleted',
+            ),
+            state: {
+                ...(isAhead ? requeueUnconfirmed(from, state) : state),
+                lastSyncedSeq: from.lastSeq,
+            },
+            rebuiltThroughSeq: from.lastSeq,
+        }
+    }
+    if (manifest !== null && state.lastSyncedSeq > manifest.lastSeq) {
+        return rebuild(manifest, 'ahead')
+    }
     try {
         const deltas = await fetchDelta(
             deps.backupId,
             deps.deviceId,
             state.lastSyncedSeq,
         )
-        return { deltas, rebuiltThroughSeq: 0 }
-    } catch (error) {
-        if (!isFromSeqTooOldError(error)) throw error
-        const manifest = await getManifest()
-        if (manifest === null) throw error
-        logger.warn('backup sync: changelog pruned, rebuilding from manifest', {
-            fromSeq: state.lastSyncedSeq,
-            manifestSeq: manifest.lastSeq,
-        })
         return {
-            deltas: rebuildDeltasFromManifest(manifest, state),
-            rebuiltThroughSeq: manifest.lastSeq,
+            deltas:
+                manifest === null
+                    ? deltas
+                    : deltas.map(d =>
+                          d.seq > manifest.lastSeq
+                              ? { ...d, seq: manifest.lastSeq }
+                              : d,
+                      ),
+            state,
+            rebuiltThroughSeq: null,
         }
+    } catch (error) {
+        if (!isFromSeqTooOldError(error) || manifest === null) throw error
+        return rebuild(manifest, 'pruned')
     }
 }
 
