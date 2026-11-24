@@ -11,6 +11,7 @@
  */
 
 import type { Decimal } from 'decimal.js'
+import type { TFunction } from 'i18next'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import {
     baseUnitsToDisplayUnits,
@@ -36,6 +37,45 @@ export type EthereumPermission = {
     collectionName?: string
     isCollectionWide: boolean
     grant: EthereumApprovalGrant
+}
+
+/** The token or collection a standard approval call is made on. */
+export const approvedContractOf = (
+    presentation: Pick<EthereumTransactionPresentation, 'standardCall'>,
+): Optional<string> => {
+    const { standardCall } = presentation
+    return standardCall?.kind === 'token-approval' ||
+        standardCall?.kind === 'nft-approval' ||
+        standardCall?.kind === 'collection-approval'
+        ? standardCall.contract
+        : undefined
+}
+
+export const permissionSymbolOf = (
+    permission: EthereumPermission,
+    shortAddress: (address: string) => string,
+): string =>
+    permission.asset?.unitName ??
+    permission.collectionName ??
+    shortAddress(permission.contract)
+
+// What a permission covers, when it is not a plain amount.
+export const grantLabelOf = (
+    permission: EthereumPermission,
+    symbol: string,
+    t: TFunction,
+): string => {
+    const { grant } = permission
+    if (grant.kind === 'token') {
+        return t('signing.review.permission_token', {
+            collection: symbol,
+            tokenId: grant.tokenId,
+        })
+    }
+    if (grant.kind !== 'unlimited') return symbol
+    return permission.isCollectionWide
+        ? t('signing.review.permission_collection', { collection: symbol })
+        : t('signing.review.permission_unlimited', { symbol })
 }
 
 const amountGrantOf = (

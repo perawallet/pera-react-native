@@ -2358,6 +2358,45 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                 ).toBeNull()
             })
 
+            it('Given a batch sending 1 wei and 1 ETH to one address and an unlimited approval, when it is queued, then each row shows its own amount and the approval is flagged unlimited', async () => {
+                const RECIPIENT = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
+                const MAX_UINT = 'f'.repeat(64)
+                const walletKit = await settle()
+                renderSignReview()
+
+                sendCalls(walletKit, {
+                    calls: [
+                        { to: RECIPIENT, value: '0x1' },
+                        { to: RECIPIENT, value: '0xde0b6b3a7640000' },
+                        {
+                            to: TOKEN,
+                            data: `0x095ea7b3${ROUTER.slice(2).toLowerCase().padStart(64, '0')}${MAX_UINT}`,
+                        },
+                    ],
+                })
+
+                await waitFor(
+                    () => {
+                        expect(
+                            screen.getAllByTestId(
+                                'transaction_preview_warning',
+                            ),
+                        ).not.toHaveLength(0)
+                    },
+                    { timeout: 5000 },
+                )
+                const details = screen
+                    .getAllByTestId('transaction_preview_amount')
+                    .map(node => node.textContent)
+                expect(details).toContain('signing.review.permission_unlimited')
+                const amounts = new Set(
+                    details.filter(
+                        text => text !== 'signing.review.permission_unlimited',
+                    ),
+                )
+                expect(amounts.size).toBe(2)
+            })
+
             it('Given a batch of one call, when it is reviewed and approved, then it lands and its status is 200 with one receipt', async () => {
                 const walletKit = await settle()
 
