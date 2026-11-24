@@ -13,6 +13,7 @@
 // @vitest-environment jsdom
 import { describe, test, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { readCloudBackupCredentials, useCloudBackupStore } from '../store'
 
 beforeEach(() => {
@@ -33,11 +34,97 @@ describe('useCloudBackupStore', () => {
                 backupId: 'did:pera:abc',
                 salt: 'c2FsdA==',
                 deviceId: 'device-123',
+                credentialsConfirmed: true,
             }),
         )
         expect(result.current.backupId).toBe('did:pera:abc')
         expect(result.current.salt).toBe('c2FsdA==')
         expect(result.current.isConfigured()).toBe(true)
+    })
+
+    test('starts unconfirmed and needs no confirmation while unconfigured', () => {
+        const { result } = renderHook(() => useCloudBackupStore())
+        expect(result.current.credentialsConfirmed).toBe(false)
+        expect(result.current.needsCredentialsConfirmation()).toBe(false)
+    })
+
+    test('an unconfirmed backup needs confirmation until confirmCredentials runs', () => {
+        const { result } = renderHook(() => useCloudBackupStore())
+        act(() =>
+            result.current.setConfigured({
+                backupId: 'did:pera:abc',
+                salt: 'c2FsdA==',
+                deviceId: 'device-123',
+                credentialsConfirmed: false,
+            }),
+        )
+        expect(result.current.needsCredentialsConfirmation()).toBe(true)
+
+        act(() => result.current.confirmCredentials())
+
+        expect(result.current.credentialsConfirmed).toBe(true)
+        expect(result.current.needsCredentialsConfirmation()).toBe(false)
+    })
+
+    test('a confirmed backup needs no confirmation', () => {
+        const { result } = renderHook(() => useCloudBackupStore())
+        act(() =>
+            result.current.setConfigured({
+                backupId: 'did:pera:abc',
+                salt: 'c2FsdA==',
+                deviceId: 'device-123',
+                credentialsConfirmed: true,
+            }),
+        )
+        expect(result.current.needsCredentialsConfirmation()).toBe(false)
+    })
+
+    test('resetState clears the confirmation', () => {
+        const { result } = renderHook(() => useCloudBackupStore())
+        act(() =>
+            result.current.setConfigured({
+                backupId: 'did:pera:abc',
+                salt: 'c2FsdA==',
+                deviceId: 'device-123',
+                credentialsConfirmed: true,
+            }),
+        )
+        act(() => result.current.resetState())
+        expect(result.current.credentialsConfirmed).toBe(false)
+    })
+
+    // Persisted `version` stays 1: bumping it without a `migrate` would
+    // quarantine the store and silently turn the backup off.
+    test('a stored blob without the flag loads configured and unconfirmed', async () => {
+        getProvider().keyValueStorage.setItem(
+            'cloud-backup-store',
+            JSON.stringify({
+                state: {
+                    backupId: 'did:pera:abc',
+                    salt: 'c2FsdA==',
+                    deviceId: 'device-123',
+                },
+                version: 1,
+            }),
+        )
+
+        await useCloudBackupStore.persist.rehydrate()
+
+        expect(useCloudBackupStore.getState().isConfigured()).toBe(true)
+        expect(useCloudBackupStore.getState().credentialsConfirmed).toBe(false)
+    })
+
+    test('the confirmation survives a rehydrate', async () => {
+        useCloudBackupStore.getState().setConfigured({
+            backupId: 'did:pera:abc',
+            salt: 'c2FsdA==',
+            deviceId: 'device-123',
+            credentialsConfirmed: true,
+        })
+
+        await useCloudBackupStore.persist.rehydrate()
+
+        expect(useCloudBackupStore.getState().credentialsConfirmed).toBe(true)
     })
 
     test('resetState clears identity', () => {
@@ -47,6 +134,7 @@ describe('useCloudBackupStore', () => {
                 backupId: 'did:pera:abc',
                 salt: 'c2FsdA==',
                 deviceId: 'device-123',
+                credentialsConfirmed: true,
             }),
         )
         act(() => result.current.resetState())
@@ -63,6 +151,7 @@ describe('useCloudBackupStore', () => {
             backupId: 'did:pera:abc',
             salt: 'c2FsdA==',
             deviceId: 'device-123',
+            credentialsConfirmed: true,
         })
 
         expect(readCloudBackupCredentials()).toEqual({

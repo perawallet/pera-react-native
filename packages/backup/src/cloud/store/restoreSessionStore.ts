@@ -21,6 +21,7 @@ export type CloudBackupRestoreSession = {
     prepared: PreparedCloudBackupRestore
     /** Base64 salt the backup is configured under once the restore lands. */
     salt: string
+    credentialsConfirmed: boolean
 }
 
 type CloudBackupRestoreSessionState = BaseStoreState & {
