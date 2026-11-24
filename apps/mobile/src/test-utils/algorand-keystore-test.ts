@@ -158,7 +158,14 @@ export const storage = {
     clearAll: (): void => {
         keyData.clear()
     },
+    trim: (): void => {},
 }
+
+let masterKeyDestroyCount = 0
+export const destroyMasterKey = async (): Promise<void> => {
+    masterKeyDestroyCount += 1
+}
+export const getMasterKeyDestroyCount = (): number => masterKeyDestroyCount
 
 // Master key plumbing — returned for compatibility with `hydrateKeystore`,
 // which decrypts MMKV entries with it. Our storage is plaintext, so the key

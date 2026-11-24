@@ -154,7 +154,12 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
     }, [clearAutoLockTimer])
 
     const handleResetData = useCallback(async () => {
-        await deleteAllData()
+        try {
+            await deleteAllData()
+        } catch (error) {
+            // Staying locked would strand the user on a wallet with no PIN.
+            logger.error('Lock-screen reset did not complete', { error })
+        }
         // deleteAllData skips the accounts store so the settings-flow success
         // modal can render before the route tree switches to Onboarding.
         // On the lock screen there is no success modal — clearing it here is

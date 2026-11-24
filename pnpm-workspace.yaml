@@ -292,8 +292,10 @@ patchedDependencies:
   # Some StrongBox chips take about a second per AES operation, and every
   # master-key read costs two, so a slow read gets a TEE-held copy of the same
   # master key that later reads prefer; the StrongBox copy is never removed.
-  # Needs the react-native-keychain patch's TEE storage. Drop once upstream can
-  # keep a key out of StrongBox.
+  # Needs the react-native-keychain patch's TEE storage. `destroyMasterKey`
+  # deletes both copies for a wipe; deleting only `app-secret` would leave reads
+  # serving the old key from the TEE. Drop once upstream can keep a key out of
+  # StrongBox.
   "@algorandfoundation/react-native-keystore@1.0.0-canary.21": patches/@algorandfoundation__react-native-keystore@1.0.0-canary.21.patch
   # Six unrelated reasons, none configurable through plugin options:
   # - The Android credential provider keeps the legacy native app's service

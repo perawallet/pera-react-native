@@ -47,6 +47,7 @@ import {
     PQ_DERIVATION_CANONICAL,
 } from './keystore/pqDerivation'
 import { createPeraMigrationLedger } from './keystore/migrationsLedger'
+import { wipeKeystoreStorage } from './keystore/wipeKeystoreStorage'
 import { safeErrorMessage, safeWarn } from './keystore/migrations/safeLog'
 import { PeraProvider } from './pera-provider'
 
@@ -135,11 +136,16 @@ export const getKeystore = (): ReactNativeKeyStore => keystore
 export const getKeystoreHooks = (): HookCollection<any> => keystoreHooks
 
 /**
- * Clears all keys from the keystore's persistent storage and reactive store.
- * Used during "delete all data" flows as a safety net after individual key deletion.
+ * Clears all keys from the keystore's persistent storage and reactive store,
+ * then the storage's leftovers and master key. Used during "delete all data"
+ * flows as a safety net after individual key deletion.
  */
 export const clearKeystore = async (): Promise<void> => {
-    await keystore.clear?.()
+    try {
+        await keystore.clear?.()
+    } finally {
+        await wipeKeystoreStorage()
+    }
 }
 
 /**

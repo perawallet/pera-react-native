@@ -291,6 +291,21 @@ describe('useAutoLockListener', () => {
         expect(mockClearAutoLockTimer).toHaveBeenCalledOnce()
     })
 
+    it('still leaves the lock screen when the reset wipe reports a failure', async () => {
+        mockDeleteAllData.mockRejectedValue(new Error('keystore busy'))
+        mockCheckPinEnabled.mockResolvedValue(true)
+
+        const { result } = renderHook(() => useAutoLockListener())
+        await act(async () => {})
+
+        await act(async () => {
+            result.current.handleResetData()
+        })
+
+        expect(clearAccountsStore).toHaveBeenCalled()
+        expect(result.current.isLocked).toBe(false)
+    })
+
     it('should register AppState listener on mount', () => {
         renderHook(() => useAutoLockListener())
 

@@ -139,7 +139,13 @@ export const useSettingsScreen = () => {
             options: { size: 'auto', enablePanDownToClose: true },
         })
         if (!confirmed) return
-        await deleteAllData()
+        try {
+            await deleteAllData()
+        } catch (error) {
+            logger.error('Delete all data did not complete', { error })
+            clearAccountsStore()
+            return
+        }
         if (routeCapabilities.deleteAllDataSuccessSheet) {
             await showDeleteSuccess()
         } else {

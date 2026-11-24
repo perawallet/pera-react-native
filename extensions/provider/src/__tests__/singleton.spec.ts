@@ -26,6 +26,9 @@ const resealMocks = vi.hoisted(() => ({
 
 vi.mock('react-native-quick-crypto', () => ({ subtle: {} }))
 
+const wipeKeystoreStorage = vi.hoisted(() => vi.fn())
+vi.mock('../keystore/wipeKeystoreStorage', () => ({ wipeKeystoreStorage }))
+
 vi.mock('../keystore/resealLegacyMaterial', () => ({
     resealLegacyMaterialWith: resealMocks.resealLegacyMaterialWith,
     checkLegacyMaterialWith: vi.fn(),
@@ -100,6 +103,7 @@ const resetKeystoreStateForTest = (): void => {
 describe('provider singleton', () => {
     beforeEach(() => {
         keystoreMocks.clear.mockReset()
+        wipeKeystoreStorage.mockReset()
         keystoreMocks.decode.mockReset()
         keystoreMocks.storageGetAllKeys.mockReset()
         keystoreMocks.storageGetString.mockReset()
@@ -119,6 +123,25 @@ describe('provider singleton', () => {
         await clearKeystore()
 
         expect(keystoreMocks.clear).toHaveBeenCalled()
+    })
+
+    test('clearKeystore then empties the keystore storage and drops its master key', async () => {
+        keystoreMocks.clear.mockResolvedValue(undefined)
+
+        await clearKeystore()
+
+        expect(wipeKeystoreStorage).toHaveBeenCalledTimes(1)
+        expect(keystoreMocks.clear.mock.invocationCallOrder[0]).toBeLessThan(
+            wipeKeystoreStorage.mock.invocationCallOrder[0],
+        )
+    })
+
+    test('clearKeystore still empties the keystore storage when the engine clear fails', async () => {
+        keystoreMocks.clear.mockRejectedValue(new Error('engine clear failed'))
+
+        await expect(clearKeystore()).rejects.toThrow('engine clear failed')
+
+        expect(wipeKeystoreStorage).toHaveBeenCalledTimes(1)
     })
 
     // Bootstrap awaits this rather than a hand-rolled hydrate: the engine loads

@@ -18,7 +18,10 @@ import {
 import { clearDatabase } from '@perawallet/wallet-core-database'
 import { useDeleteDeviceMutation } from '@perawallet/wallet-core-device'
 import { useKMS } from '@perawallet/wallet-core-kms'
-import { isStoreDisabledError } from '@perawallet/wallet-core-passkeys'
+import {
+    isStoreDisabledError,
+    withPasskeyAutofillPaused,
+} from '@perawallet/wallet-core-passkeys'
 import { usePinCode } from '@perawallet/wallet-core-security'
 import { clearAllStores, logger } from '@perawallet/wallet-core-shared'
 import {
@@ -35,6 +38,18 @@ import { useCallback } from 'react'
 import { destroyVault } from './destroyVault'
 
 const REACT_QUERY_PERSIST_KEY = 'reactQuery'
+
+/**
+ * Raised once every wipe step has run, when the keystore or the credential
+ * provider's native copy could not be cleared. The rest of the wallet is gone,
+ * so callers finish their post-wipe routing rather than stop on it.
+ */
+export class KeyWipeIncompleteError extends AggregateError {
+    constructor(errors: unknown[]) {
+        super(errors, 'Failed to clear wallet keys')
+        this.name = 'KeyWipeIncompleteError'
+    }
+}
 
 export const clearAccountsStore = () => {
     useAccountsStore.persist.clearStorage()
@@ -67,44 +82,41 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
             await queryClient.cancelQueries()
         }
 
-        // 2. Delete every keystore key; the regular and duress PIN records are
-        // both canonical secret-key entries.
-        if (keys) {
-            await Promise.allSettled(
-                Array.from(keys.values()).map(async k => {
-                    if (k.id) {
-                        await deleteKey(k.id)
-                    }
-                }),
-            )
-        }
-
-        // 3. Bulk-clear keystore MMKV as safety net for any orphaned keys
-        try {
-            await clearKeystore()
-        } catch (e) {
-            logger.error('Failed to clear keystore', { error: e })
-        }
-
-        // 4. Clear the native passkey-autofill mirror: the credential providers
-        // keep their own copy of the master key and credentials, which does not
-        // die with the keystore.
-        try {
-            await getProvider().passkeyAutofill.clearCredentials()
-        } catch (e) {
-            // iOS ends the clear with an identity-store sync that rejects
-            // with `storeDisabled` when Pera isn't the enabled provider; the
-            // state clearing itself has completed by then.
-            if (isStoreDisabledError(e)) {
-                logger.warn(
-                    'AutoFill identity store disabled; native passkey state cleared without identity sync',
+        const keyWipeFailures: unknown[] = []
+        await withPasskeyAutofillPaused(async () => {
+            // 2. Keystore mutations publish updates that otherwise re-bootstrap
+            // the native credential provider while its wallet is being wiped.
+            if (keys) {
+                await Promise.allSettled(
+                    Array.from(keys.values()).map(async k => {
+                        if (k.id) {
+                            await deleteKey(k.id)
+                        }
+                    }),
                 )
-            } else {
-                logger.error('Failed to clear native passkey autofill state', {
-                    error: e,
-                })
             }
-        }
+
+            // 3. Bulk-clear the keystore, including orphaned records.
+            try {
+                await clearKeystore()
+            } catch (error) {
+                keyWipeFailures.push(error)
+            }
+
+            // 4. The credential provider's native copy has independent storage.
+            try {
+                await getProvider().passkeyAutofill.clearCredentials()
+            } catch (error) {
+                // On iOS the final identity-store sync may reject after cleanup.
+                if (isStoreDisabledError(error)) {
+                    logger.warn(
+                        'AutoFill identity store disabled; native passkey state cleared without identity sync',
+                    )
+                } else {
+                    keyWipeFailures.push(error)
+                }
+            }
+        })
 
         // 5. Notify peers, then drop their records. Read at wipe time: the provider
         // may not have mounted when `AutoLockGuard` first rendered. `clear()` is
@@ -194,6 +206,10 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
             await destroyVault()
         } catch (e) {
             logger.error('Failed to destroy the vault', { error: e })
+        }
+
+        if (keyWipeFailures.length > 0) {
+            throw new KeyWipeIncompleteError(keyWipeFailures)
         }
     }, [queryClient, keys, deleteKey, savePin, deleteDevices, contextRegistry])
 

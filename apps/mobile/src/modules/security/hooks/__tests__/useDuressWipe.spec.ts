@@ -26,6 +26,7 @@ vi.mock('@hooks/useDeleteAllData', () => ({
         deleteAllData: mocks.wipeAllUserData,
     }),
     clearAccountsStore: mocks.clearAccountsStore,
+    KeyWipeIncompleteError: class extends AggregateError {},
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -38,6 +39,7 @@ vi.mock('@perawallet/wallet-core-settings', () => ({
     usePreferences: () => ({ setPreference: mocks.setPreference }),
 }))
 
+import { KeyWipeIncompleteError } from '@hooks/useDeleteAllData'
 import { useDuressWipe } from '../useDuressWipe'
 import { UserPreferences } from '@constants/user-preferences'
 
@@ -79,6 +81,20 @@ describe('useDuressWipe', () => {
         expect(mocks.clearAccountsStore).toHaveBeenCalled()
         expect(mocks.createHdWalletAccount).not.toHaveBeenCalled()
         expect(mocks.setPreference).not.toHaveBeenCalled()
+    })
+
+    test('still provisions the decoy when only the key wipe failed', async () => {
+        mocks.wipeAllUserData.mockRejectedValueOnce(
+            new KeyWipeIncompleteError([new Error('keystore busy')]),
+        )
+
+        const { result } = renderHook(() => useDuressWipe())
+        await act(async () => {
+            await result.current.performDuressWipe()
+        })
+
+        expect(mocks.clearAccountsStore).not.toHaveBeenCalled()
+        expect(mocks.createHdWalletAccount).toHaveBeenCalledTimes(1)
     })
 
     test('on decoy creation failure, falls through cleanly without rethrowing', async () => {

@@ -13,7 +13,11 @@
 import { useCallback } from 'react'
 import { useCreateAccount } from '@perawallet/wallet-core-accounts'
 import { usePreferences } from '@perawallet/wallet-core-settings'
-import { clearAccountsStore, useDeleteAllData } from '@hooks/useDeleteAllData'
+import {
+    clearAccountsStore,
+    KeyWipeIncompleteError,
+    useDeleteAllData,
+} from '@hooks/useDeleteAllData'
 import { UserPreferences } from '@constants/user-preferences'
 import { useHomeChainScope } from '@hooks/useHomeChainScope'
 
@@ -44,12 +48,16 @@ export const useDuressWipe = (): UseDuressWipeResult => {
     const performDuressWipe = useCallback(async () => {
         try {
             await wipeAllUserData()
-        } catch {
+        } catch (error) {
             // If the wipe itself partially failed, the safer outcome is
             // "no accounts at all" — drop the user to onboarding instead of
-            // letting them re-enter a half-wiped wallet.
-            clearAccountsStore()
-            return
+            // letting them re-enter a half-wiped wallet. A key-wipe failure
+            // is raised only after every other step ran, so the decoy still
+            // goes ahead.
+            if (!(error instanceof KeyWipeIncompleteError)) {
+                clearAccountsStore()
+                return
+            }
         }
 
         // Suppress the PIN-setup prompt BEFORE provisioning the decoy. The wipe

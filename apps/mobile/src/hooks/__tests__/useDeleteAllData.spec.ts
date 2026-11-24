@@ -280,7 +280,7 @@ describe('useDeleteAllData', () => {
         expect(mockClearPasskeyCredentials).toHaveBeenCalledTimes(1)
     })
 
-    it('should continue if clearing native passkey autofill state fails', async () => {
+    it('completes other cleanup and reports native credential cleanup failure', async () => {
         mockClearPasskeyCredentials.mockRejectedValueOnce(
             new Error('native passkey clear error'),
         )
@@ -288,16 +288,14 @@ describe('useDeleteAllData', () => {
         const { result } = renderHook(() => useDeleteAllData())
 
         await act(async () => {
-            await result.current.deleteAllData()
+            await expect(result.current.deleteAllData()).rejects.toThrow(
+                'Failed to clear wallet keys',
+            )
         })
 
         expect(mockClearPasskeyCredentials).toHaveBeenCalledTimes(1)
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
         expect(clearAllStores).toHaveBeenCalledWith()
-        expect(logger.error).toHaveBeenCalledWith(
-            'Failed to clear native passkey autofill state',
-            expect.anything(),
-        )
     })
 
     // iOS `clearCredentials` ends with an identity-store sync that rejects
@@ -325,16 +323,19 @@ describe('useDeleteAllData', () => {
         expect(clearAllStores).toHaveBeenCalledWith()
     })
 
-    it('should continue if clearKeystore fails', async () => {
+    it('attempts native credential cleanup even if clearing the keystore fails', async () => {
         mockClearKeystore.mockRejectedValueOnce(new Error('Keystore error'))
 
         const { result } = renderHook(() => useDeleteAllData())
 
         await act(async () => {
-            await result.current.deleteAllData()
+            await expect(result.current.deleteAllData()).rejects.toThrow(
+                'Failed to clear wallet keys',
+            )
         })
 
         expect(mockClearKeystore).toHaveBeenCalledTimes(1)
+        expect(mockClearPasskeyCredentials).toHaveBeenCalledTimes(1)
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
     })
 
