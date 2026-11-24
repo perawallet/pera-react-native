@@ -16,12 +16,10 @@ import { makeStyles } from '@rneui/themed'
 const CHIP_SIZE = 32
 
 export const useStyles = makeStyles(theme => ({
-    // Overlays the bottom of the body, so showing and hiding it never moves the review.
+    // Its own slot above the actions: overlaid on the body it covered the last visible row.
     container: {
-        position: 'absolute',
-        bottom: '100%',
-        alignSelf: 'center',
-        paddingBottom: theme.spacing.sm,
+        height: CHIP_SIZE,
+        alignItems: 'center',
     },
     chip: {
         width: CHIP_SIZE,

@@ -52,7 +52,11 @@ type EthereumTransactionReviewProps = {
 
 type ChangesProps = Pick<
     UseEthereumTransactionReviewResult,
-    'simulation' | 'permissions' | 'transferSpend' | 'requesterHost'
+    | 'simulation'
+    | 'permissions'
+    | 'transferSpend'
+    | 'actionChanges'
+    | 'requesterHost'
 > & {
     presentation: EthereumTransactionPresentation
     isDappRequest: boolean
@@ -62,6 +66,7 @@ const changesOf = ({
     simulation,
     permissions,
     transferSpend,
+    actionChanges,
     requesterHost,
     presentation,
     isDappRequest,
@@ -73,6 +78,14 @@ const changesOf = ({
                 scope={scope}
                 permissions={permissions}
                 isOnlyPermission={isOnlyPermission}
+            />
+        ) : null
+    const actionChangesCard =
+        actionChanges.spend.length > 0 || actionChanges.receive.length > 0 ? (
+            <WalletChangesCard
+                spend={actionChanges.spend}
+                receive={actionChanges.receive}
+                isReceiveUnknown={actionChanges.isReceiveUnknown}
             />
         ) : null
 
@@ -104,6 +117,7 @@ const changesOf = ({
         case 'unavailable': {
             return (
                 <>
+                    {actionChangesCard}
                     <PreviewUnavailableCard host={requesterHost} />
                     {permissionCard(false)}
                 </>
@@ -120,9 +134,14 @@ const changesOf = ({
                 )
             }
             // A dApp's call the simulator didn't cover can't be previewed either.
-            return isDappRequest && !isTransfer ? (
-                <PreviewUnavailableCard host={requesterHost} />
-            ) : null
+            return (
+                <>
+                    {actionChangesCard}
+                    {isDappRequest && !isTransfer && (
+                        <PreviewUnavailableCard host={requesterHost} />
+                    )}
+                </>
+            )
         }
     }
 }

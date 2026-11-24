@@ -13,6 +13,7 @@
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import { describe, expect, it, vi } from 'vitest'
+import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type { EthereumTransactionPresentation } from '../../../hooks/useEthereumTransactionPresentation'
 import { useEthereumSimulationSection } from '../../EthereumSimulationSection'
 import { useEthereumTransactionReview } from '../useEthereumTransactionReview'
@@ -28,10 +29,16 @@ vi.mock('../../../hooks/useEthereumVerifiedCall', () => ({
     useEthereumVerifiedCall: () => mockVerifiedCall.current,
 }))
 
-vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
-    ...(await importOriginal<object>()),
-    useAssetsQuery: () => ({ data: new Map() }),
-}))
+vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
+    const { Decimal: PriceDecimal } = await import('decimal.js')
+    return {
+        ...(await importOriginal<object>()),
+        useAssetsQuery: () => ({ data: new Map() }),
+        useAssetPricesQuery: () => ({
+            data: new Map([['eth', { usdPrice: new PriceDecimal(3000) }]]),
+        }),
+    }
+})
 
 vi.mock('@perawallet/wallet-core-chain-contract', async importOriginal => ({
     ...(await importOriginal<object>()),
@@ -128,6 +135,92 @@ describe('useEthereumTransactionReview', () => {
                 item => item.id === 'ethereum_contract_call_warning',
             )?.message,
         ).toBe('transactions.contract_call.unchecked_warning_no_source')
+    })
+
+    it('hands the changes card the native coin a gateway supply sends, priced', () => {
+        vi.mocked(useEthereumSimulationSection).mockReturnValue({
+            status: 'unavailable',
+        })
+
+        const { actionChanges } = review(undefined, {
+            contractAction: {
+                kind: 'supply',
+                amount: {
+                    asset: {
+                        assetId: 'eth',
+                        unitName: 'ETH',
+                        decimals: 18,
+                    } as PeraAsset,
+                    value: new Decimal('0.005'),
+                    isBaseUnits: false,
+                },
+                isEntireBalance: false,
+            },
+        })
+
+        expect(actionChanges.receive).toEqual([])
+        expect(actionChanges.spend).toMatchObject([
+            {
+                assetId: 'eth',
+                direction: 'spend',
+                amount: new Decimal('0.005'),
+                usdPrice: new Decimal(3000),
+            },
+        ])
+    })
+
+    it('hands the changes card nothing for a call predicted to revert', () => {
+        vi.mocked(useEthereumSimulationSection).mockReturnValue({
+            status: 'reverted',
+            reason: null,
+        })
+
+        const { actionChanges } = review(undefined, {
+            contractAction: {
+                kind: 'borrow',
+                amount: {
+                    asset: { assetId: 'eth', decimals: 18 } as PeraAsset,
+                    value: new Decimal('1'),
+                    isBaseUnits: false,
+                },
+                isEntireBalance: false,
+            },
+        })
+
+        expect(actionChanges).toEqual({
+            spend: [],
+            receive: [],
+            isReceiveUnknown: false,
+        })
+    })
+
+    it('names a wrap target without a stored record by its short address, in native decimals', () => {
+        vi.mocked(useEthereumSimulationSection).mockReturnValue({
+            status: 'unavailable',
+        })
+
+        const { actionChanges } = review(undefined, {
+            contractAction: {
+                kind: 'wrap',
+                amount: {
+                    asset: {
+                        assetId: 'eth',
+                        unitName: 'ETH',
+                        decimals: 18,
+                    } as PeraAsset,
+                    value: new Decimal('2'),
+                    isBaseUnits: false,
+                },
+            },
+        })
+
+        expect(actionChanges.receive).toMatchObject([
+            {
+                assetId: '0xcontract',
+                asset: { unitName: 'short:0xcontract', decimals: 18 },
+                amount: new Decimal('2'),
+            },
+        ])
     })
 
     it('leaves an unavailable simulation to the changes card, not the cautions', () => {
