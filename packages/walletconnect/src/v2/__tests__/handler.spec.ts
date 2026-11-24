@@ -53,7 +53,10 @@ import {
 } from '../../shared/idleSession'
 import {
     WalletConnectError,
+    WalletConnectInvalidNetworkError,
     WalletConnectRequestExpiredError,
+    WalletConnectUnselectedNetworkError,
+    WalletConnectUnsupportedChainsError,
 } from '../../shared/errors'
 import { createWalletConnectV2Handler } from '../handler'
 import {
@@ -143,6 +146,7 @@ const makeHandler = (
         walletKit?: FakeWalletKit
         createWalletKit?: Mock<WalletKitFactory>
         startWhen?: () => Promise<void>
+        getNetworkId?: () => string
     } = {},
 ) => {
     const walletKit = overrides.walletKit ?? createFakeWalletKit()
@@ -151,7 +155,7 @@ const makeHandler = (
         vi.fn<WalletKitFactory>(async () => walletKit)
     const keyValueStorage = new MemoryKeyValueStorage()
     const handler = createWalletConnectV2Handler({
-        getNetworkId: () => 'mainnet',
+        getNetworkId: overrides.getNetworkId ?? (() => 'mainnet'),
         isDappConnectEnabled: () => true,
         projectId: overrides.projectId ?? PROJECT_ID,
         keyValueStorage,
@@ -1334,6 +1338,7 @@ type OpenProposalOptions = {
     seed?: Connection[]
     origin?: ConnectionOrigin
     proposal?: WalletKitSessionProposal
+    getNetworkId?: () => string
 }
 
 /**
@@ -1343,7 +1348,10 @@ type OpenProposalOptions = {
  */
 const openPairing = async (options: OpenProposalOptions = {}) => {
     const walletKit = options.walletKit ?? createFakeWalletKit()
-    const { handler } = makeHandler({ walletKit })
+    const { handler } = makeHandler({
+        walletKit,
+        getNetworkId: options.getNetworkId,
+    })
     const store = memoryStore(options.seed ?? [])
     const registry = createConnectionRegistry({ store })
     registry.register(handler)
@@ -1516,7 +1524,7 @@ describe('session proposals', () => {
     })
 
     it('rejects a proposal requiring a network that is not the selected one, and never surfaces it', async () => {
-        const { proposals, walletKit, registry } = await openProposal({
+        const { proposals, walletKit, errors, registry } = await openProposal({
             proposal: makeProposal({
                 requiredNamespaces: {
                     algorand: {
@@ -1533,6 +1541,53 @@ describe('session proposals', () => {
             id: PROPOSAL_ID,
             reason: expect.objectContaining({ code: expect.any(Number) }),
         })
+        expect(errors.at(-1)?.error).toBeInstanceOf(
+            WalletConnectUnselectedNetworkError,
+        )
+        await registry.teardown()
+    })
+
+    it('tells the user to switch modes when an optional-only proposal names only the network Pera is not on', async () => {
+        const { proposals, walletKit, errors, registry } = await openProposal({
+            getNetworkId: () => 'testnet',
+            proposal: makeProposal({
+                requiredNamespaces: {},
+                optionalNamespaces: {
+                    algorand: {
+                        chains: [MAINNET_CHAIN_ID],
+                        methods: ['algo_signTxn'],
+                        events: [],
+                    },
+                },
+            }),
+        })
+
+        expect(proposals).toEqual([])
+        expect(walletKit.rejectSession).toHaveBeenCalledTimes(1)
+        expect(errors.at(-1)?.error).toBeInstanceOf(
+            WalletConnectUnselectedNetworkError,
+        )
+        await registry.teardown()
+    })
+
+    it('keeps the unsupported-network refusal for a proposal naming only chains Pera never serves', async () => {
+        const { proposals, errors, registry } = await openProposal({
+            proposal: makeProposal({
+                requiredNamespaces: {},
+                optionalNamespaces: {
+                    algorand: {
+                        chains: ['algorand:not-a-real-genesis-hash'],
+                        methods: ['algo_signTxn'],
+                        events: [],
+                    },
+                },
+            }),
+        })
+
+        expect(proposals).toEqual([])
+        expect(errors.at(-1)?.error).toBeInstanceOf(
+            WalletConnectUnsupportedChainsError,
+        )
         await registry.teardown()
     })
 
@@ -1781,6 +1836,32 @@ describe('approving a proposal', () => {
                 },
             },
         })
+        await registry.teardown()
+    })
+
+    it('refuses to grant a network the sheet never showed when the selection moves while it is open', async () => {
+        let networkId = 'mainnet'
+        const { walletKit, requireProposal, registry } = await openProposal({
+            getNetworkId: () => networkId,
+            proposal: makeProposal({
+                requiredNamespaces: {},
+                optionalNamespaces: {
+                    algorand: {
+                        chains: [MAINNET_CHAIN_ID, TESTNET_CHAIN_ID],
+                        methods: ['algo_signTxn'],
+                        events: [],
+                    },
+                },
+            }),
+        })
+        expect(requireProposal().requested.networks).toEqual(['mainnet'])
+
+        networkId = 'testnet'
+
+        await expect(requireProposal().approve([ADDRESS])).rejects.toThrow(
+            WalletConnectInvalidNetworkError,
+        )
+        expect(walletKit.approveSession).not.toHaveBeenCalled()
         await registry.teardown()
     })
 

@@ -88,6 +88,7 @@ import {
 import {
     resetConnectionPairingStateForTesting,
     useConnectionRegistry,
+    type ConnectionRegistry,
     type ConnectionRegistryClient,
 } from '@perawallet/wallet-core-connections'
 import type { ConnectionOrigin } from '@perawallet/wallet-extension-connections'
@@ -2785,11 +2786,25 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     expect(approvedNamespaces(walletKit).eip155.chains).toEqual(
                         [ETH_MAINNET],
                     )
+                    const notify = vi.spyOn(
+                        captured.registry as ConnectionRegistry,
+                        'notify',
+                    )
 
                     await act(async () => {
                         useNetworkStore.getState().setMode('developer')
                     })
+                    // The emit would land only once each notice settles, so
+                    // an absence asserted earlier proves nothing.
+                    await act(async () => {
+                        await Promise.all(
+                            notify.mock.results.map(({ value }) => value),
+                        )
+                    })
 
+                    expect(notify).toHaveBeenCalledWith(
+                        expect.objectContaining({ type: 'network-changed' }),
+                    )
                     expect(emitted(walletKit)).toEqual([])
                     expect(walletKit.updateSession).not.toHaveBeenCalled()
                 })

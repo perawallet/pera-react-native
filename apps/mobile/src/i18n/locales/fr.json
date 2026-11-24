@@ -1532,7 +1532,8 @@
             "request_expired_body": "Cette demande de signature a expiré avant d’être traitée. Demandez à l’application de la renvoyer.",
             "unsupported_method_body": "{{dappName}} a demandé {{method}}, que Pera ne prend pas en charge. La demande a été refusée.",
             "unsupported_network_body": "{{dappName}} a voulu utiliser le réseau dont l’ID de chaîne est {{chainId}}, que Pera ne prend pas en charge. La demande a été refusée.",
-            "unsupported_chains_body": "Cette application a voulu utiliser un réseau que Pera ne prend pas en charge. La connexion a été refusée."
+            "unsupported_chains_body": "Cette application a voulu utiliser un réseau que Pera ne prend pas en charge. La connexion a été refusée.",
+            "unselected_network_body": "Cette application ne propose que des réseaux sur lesquels Pera n’est pas actuellement. La connexion a été refusée. Activez ou désactivez le mode développeur pour correspondre à l’application, puis réessayez."
         },
         "signing": {
             "title": "Une erreur est survenue lors du traitement de la demande de signature",

@@ -1532,7 +1532,8 @@
             "request_expired_body": "This signing request expired before it was answered. Ask the app to send it again.",
             "unsupported_method_body": "{{dappName}} asked for {{method}}, which Pera doesn't support, so the request was declined.",
             "unsupported_network_body": "{{dappName}} asked to use the network with chain ID {{chainId}}, which Pera doesn't support, so the request was declined.",
-            "unsupported_chains_body": "This app asked to use a network Pera doesn't support, so the connection was declined."
+            "unsupported_chains_body": "This app asked to use a network Pera doesn't support, so the connection was declined.",
+            "unselected_network_body": "This app only offers networks Pera isn't on right now, so the connection was declined. Turn developer mode on or off to match the app, then try again."
         },
         "signing": {
             "title": "An error occurred processing the signing request",

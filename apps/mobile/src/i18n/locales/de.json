@@ -1524,7 +1524,8 @@
             "request_expired_body": "Diese Signaturanfrage ist abgelaufen, bevor sie beantwortet wurde. Lass die App sie erneut senden.",
             "unsupported_method_body": "{{dappName}} hat {{method}} angefragt, was Pera nicht unterstützt. Die Anfrage wurde abgelehnt.",
             "unsupported_network_body": "{{dappName}} wollte das Netzwerk mit der Chain-ID {{chainId}} verwenden, das Pera nicht unterstützt. Die Anfrage wurde abgelehnt.",
-            "unsupported_chains_body": "Diese App wollte ein Netzwerk verwenden, das Pera nicht unterstützt. Die Verbindung wurde abgelehnt."
+            "unsupported_chains_body": "Diese App wollte ein Netzwerk verwenden, das Pera nicht unterstützt. Die Verbindung wurde abgelehnt.",
+            "unselected_network_body": "Diese App bietet nur Netzwerke an, auf denen Pera gerade nicht ist. Die Verbindung wurde abgelehnt. Schalte den Entwicklermodus ein oder aus, damit er zur App passt, und versuche es erneut."
         },
         "signing": {
             "title": "Bei der Verarbeitung der Signaturanfrage ist ein Fehler aufgetreten",
