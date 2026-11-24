@@ -557,12 +557,20 @@ describe('useEthereumRecordLayout', () => {
 
         it.each([
             ['another initiator', { initiator: PEER }],
-            ['a signer the history does not name', { initiator: undefined, isSignedElsewhere: true }],
-        ])('Given an outgoing record with %s, then the hero reads not sent by you', (_label, overrides) => {
-            const { summary } = layoutOf(tokenSend(overrides))
+            [
+                'a signer the history does not name',
+                { initiator: undefined, isSignedElsewhere: true },
+            ],
+        ])(
+            'Given an outgoing record with %s, then the hero reads not sent by you',
+            (_label, overrides) => {
+                const { summary } = layoutOf(tokenSend(overrides))
 
-            expect(summary.title).toBe('transactions.list_item.not_sent_by_you')
-        })
+                expect(summary.title).toBe(
+                    'transactions.list_item.not_sent_by_you',
+                )
+            },
+        )
 
         it('Given an own send, then the hero keeps its own title', () => {
             const { summary } = layoutOf(tokenSend())

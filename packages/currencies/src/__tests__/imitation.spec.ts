@@ -65,7 +65,13 @@ describe('imitatedCurrencyOf', () => {
 
     it('sees through homoglyphs and zero-width characters in the native ticker', () => {
         const erc20 = { chainId: 'ethereum', assetId: '0xabc' }
-        const fake = String.fromCodePoint(0x13ac, 0x200d, 0x13a2, 0x200d, 0x041d)
+        const fake = String.fromCodePoint(
+            0x13ac,
+            0x200d,
+            0x13a2,
+            0x200d,
+            0x041d,
+        )
 
         expect(imitatedCurrencyOf(erc20, fake)).toBe('ETH')
         expect(imitatedNativeTickerOf(erc20, fake)).toBe('ETH')
@@ -81,7 +87,10 @@ describe('imitatedCurrencyOf', () => {
 
     it('never reports the native asset as imitating itself', () => {
         expect(
-            imitatedNativeTickerOf({ chainId: 'ethereum', assetId: 'native' }, 'ETH'),
+            imitatedNativeTickerOf(
+                { chainId: 'ethereum', assetId: 'native' },
+                'ETH',
+            ),
         ).toBeNull()
     })
 

@@ -44,8 +44,11 @@ export const useResolvedSummaryTitle = (
             ([param, ref]) => {
                 if (!ref) return []
                 const unitName =
-                    storedAssets.get(ref.assetId)?.unitName ?? title.params?.[param]
-                return unitName ? [[param, unitLabelOf(ref, unitName)] as const] : []
+                    storedAssets.get(ref.assetId)?.unitName ??
+                    title.params?.[param]
+                return unitName
+                    ? [[param, unitLabelOf(ref, unitName)] as const]
+                    : []
             },
         )
         return unitNames.length > 0

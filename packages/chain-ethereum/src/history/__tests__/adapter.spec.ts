@@ -285,7 +285,11 @@ describe('getEvmTransactionHistory', () => {
             ME,
             MAINNET,
             undefined,
-            { assetId: getAddress('0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48') },
+            {
+                assetId: getAddress(
+                    '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
+                ),
+            },
         )
 
         expect(items[0]?.isSignedElsewhere).toBeUndefined()

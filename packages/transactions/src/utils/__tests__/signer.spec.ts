@@ -107,7 +107,11 @@ describe('isSentByOtherSigner', () => {
 
     it('Given no account address, then it is not another signer', () => {
         expect(
-            isSentByOtherSigner({ ...input, signer: OTHER, accountAddress: '' }),
+            isSentByOtherSigner({
+                ...input,
+                signer: OTHER,
+                accountAddress: '',
+            }),
         ).toBe(false)
     })
 })

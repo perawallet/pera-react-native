@@ -65,9 +65,11 @@ export const toEvmHistoryRecords = (
                     ? undefined
                     : new Decimal(item.fee),
             ...(item.from !== null && { initiator: item.from }),
-            ...(item.kind === 'transaction' && item.from === null && !isAssetView && {
-                isSignedElsewhere: true,
-            }),
+            ...(item.kind === 'transaction' &&
+                item.from === null &&
+                !isAssetView && {
+                    isSignedElsewhere: true,
+                }),
             summary,
             chainData: { family: 'evm', ...(nft && { nft }) },
         },

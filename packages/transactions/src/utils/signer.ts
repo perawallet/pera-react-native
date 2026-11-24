@@ -51,5 +51,7 @@ export const isSentByOtherSigner = ({
 }: IsSentByOtherSignerInput): boolean => {
     if (accountAddress === '' || summary.direction !== 'out') return false
     if (isSignedElsewhere === true) return true
-    return signer !== undefined && !isSameAddress(chainId, signer, accountAddress)
+    return (
+        signer !== undefined && !isSameAddress(chainId, signer, accountAddress)
+    )
 }

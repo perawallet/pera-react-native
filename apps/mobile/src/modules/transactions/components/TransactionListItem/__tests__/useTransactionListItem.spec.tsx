@@ -746,13 +746,16 @@ describe('useTransactionListItem with a record', () => {
         it.each([
             ['another initiator', { initiator: '0xmallory' }],
             ['a signer the history does not name', { isSignedElsewhere: true }],
-        ])('Given an outgoing record with %s, then it reads as not sent by you', (_label, extra) => {
-            const row = renderRecord({}, { ...record, ...extra })
+        ])(
+            'Given an outgoing record with %s, then it reads as not sent by you',
+            (_label, extra) => {
+                const row = renderRecord({}, { ...record, ...extra })
 
-            expect(row.title).toBe('transactions.list_item.not_sent_by_you')
-            expect(row.amounts[0]?.prefix).toBe('-')
-            expect(row.amounts[0]?.isMuted).toBe(false)
-        })
+                expect(row.title).toBe('transactions.list_item.not_sent_by_you')
+                expect(row.amounts[0]?.prefix).toBe('-')
+                expect(row.amounts[0]?.isMuted).toBe(false)
+            },
+        )
 
         it('Given an own send, then it reads as a send with a signed amount', () => {
             const row = renderRecord({}, { ...record, initiator: '0xALICE' })

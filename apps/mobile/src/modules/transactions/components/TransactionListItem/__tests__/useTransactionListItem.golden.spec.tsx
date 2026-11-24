@@ -225,7 +225,9 @@ describe('useTransactionListItem against the history summary goldens', () => {
             expect(row.title).toBe(
                 isSignedByOther
                     ? render({
-                          key: i18nKey('transactions.list_item.not_sent_by_you'),
+                          key: i18nKey(
+                              'transactions.list_item.not_sent_by_you',
+                          ),
                       })
                     : render(summary.title),
             )

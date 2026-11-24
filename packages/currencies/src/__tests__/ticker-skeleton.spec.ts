@@ -32,7 +32,10 @@ describe('toTickerSkeleton', () => {
         expect(toTickerSkeleton(unitName)).toBe('ETH')
     })
 
-    it.each(['WETH', '3TH', 'ETH2'])('leaves %j distinct from ETH', unitName => {
-        expect(toTickerSkeleton(unitName)).toBe(unitName)
-    })
+    it.each(['WETH', '3TH', 'ETH2'])(
+        'leaves %j distinct from ETH',
+        unitName => {
+            expect(toTickerSkeleton(unitName)).toBe(unitName)
+        },
+    )
 })
