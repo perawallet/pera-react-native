@@ -50,6 +50,7 @@ const page = window as PageWindow
 type Posted = {
     token: string
     hasUserActivation: boolean
+    icon?: string
     request: { id: string; method: string; params?: unknown }
 }
 
@@ -127,6 +128,67 @@ describe('eip1193ProviderJS', () => {
         expect(announced[0].info.icon.startsWith('data:image/svg+xml')).toBe(
             true,
         )
+    })
+
+    describe('the page icon', () => {
+        const addLink = (rel: string, href: string): void => {
+            const link = document.createElement('link')
+            link.rel = rel
+            link.href = href
+            document.head.appendChild(link)
+        }
+
+        afterEach(() => {
+            document.head
+                .querySelectorAll('link')
+                .forEach(link => link.remove())
+        })
+
+        it('sends the apple-touch-icon ahead of the icon on a request that opens a sheet', () => {
+            addLink('icon', 'https://cdn.app.uniswap.org/favicon.png')
+            addLink(
+                'apple-touch-icon',
+                'https://cdn.app.uniswap.org/images/192x192_App_Icon.png',
+            )
+            install()
+
+            void page.ethereum?.request({ method: 'personal_sign' })
+
+            const message = posted(postMessage)
+            expect(message.icon).toBe(
+                'https://cdn.app.uniswap.org/images/192x192_App_Icon.png',
+            )
+            expect(isEip1193PageMessage(message)).toBe(true)
+        })
+
+        it('skips an icon that is not https', () => {
+            addLink('apple-touch-icon', 'http://app.uniswap.org/touch.png')
+            addLink('icon', 'https://app.uniswap.org/favicon.png')
+            install()
+
+            void page.ethereum?.request({ method: 'eth_sendTransaction' })
+
+            expect(posted(postMessage).icon).toBe(
+                'https://app.uniswap.org/favicon.png',
+            )
+        })
+
+        it('leaves the icon out when the page declares none', () => {
+            install()
+
+            void page.ethereum?.request({ method: 'personal_sign' })
+
+            expect(posted(postMessage)).not.toHaveProperty('icon')
+        })
+
+        it('leaves the icon out of a read that opens no sheet', () => {
+            addLink('icon', 'https://app.uniswap.org/favicon.png')
+            install()
+
+            void page.ethereum?.request({ method: 'eth_chainId' })
+
+            expect(posted(postMessage)).not.toHaveProperty('icon')
+        })
     })
 
     it('posts a token-stamped request that the native validator accepts', () => {

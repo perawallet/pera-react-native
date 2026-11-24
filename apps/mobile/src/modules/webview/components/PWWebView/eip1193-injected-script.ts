@@ -141,6 +141,15 @@ export const eip1193ProviderJS = (bridgeToken: string) => webViewScript`
         return undefined;
     }
 
+    // Only a connect or a queued request opens a sheet that shows the icon;
+    // reads a dApp polls skip the DOM query.
+    function iconFor(method) {
+        var isPrompt = method === METHOD.requestAccounts ||
+            method === METHOD.requestPermissions ||
+            TIMEOUT.queuedMethods.indexOf(method) !== -1;
+        return isPrompt ? pageIcon() : undefined;
+    }
+
     function send(method, params) {
         return new Promise(function (resolve, reject) {
             counter += 1;
@@ -155,7 +164,7 @@ export const eip1193ProviderJS = (bridgeToken: string) => webViewScript`
                 provider: 'eip1193',
                 token: TOKEN,
                 hasUserActivation: now() - lastGestureAt < ACTIVATION_MS,
-                icon: pageIcon(),
+                icon: iconFor(method),
                 request: { jsonrpc: '2.0', id: id, method: method, params: params },
             }));
             if (!isPosted) {

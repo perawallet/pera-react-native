@@ -254,6 +254,10 @@ selection. The chains on offer are the `eip155` chain adapters with
 approved like `wallet_switchEthereumChain`); for any other chain it answers 4200,
 because Pera supports only the chains it ships.
 
+The record's peer is fixed at connect, with one exception: a record stored
+without an icon shows the requesting page's icon on each request it raises. A
+stored icon is never replaced.
+
 ### Routing
 
 Any other method goes through the site's chain's WalletConnect v2 route table
@@ -402,9 +406,8 @@ nothing holds it, and always an EIP-6963 announcement.
 - **Site icon:** with no browser tab to read a favicon from, the page script
   sends the icon the page declares (`apple-touch-icon`, else `icon`). The
   transport keeps it only if it is `https:` on the page's own host or a subdomain
-  of it, since fetching it tells its host when the review opened. A connection
-  stored without an icon takes the requesting page's on each request; a stored
-  icon is never replaced.
+  of it, since fetching it tells its host when the review opened. Only a connect
+  or a queued request carries it.
 - **Timeouts:** the page script rejects an unanswered request with 4900 after the
   same backstop the extension uses (`dappPageTimeoutMs`), so a dropped answer
   cannot leave a pending `eth_requestAccounts` blocking later ones.
