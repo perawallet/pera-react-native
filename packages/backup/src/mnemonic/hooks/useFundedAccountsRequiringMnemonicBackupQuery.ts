@@ -14,6 +14,7 @@ import { useMemo } from 'react'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useAnyEnabledChainHasCapability } from '@perawallet/wallet-core-chain-shared'
 import {
+    useAuthorityAccountIds,
     useFundedAccountIdsQuery,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -28,8 +29,9 @@ export type UseFundedAccountsRequiringMnemonicBackupQueryResult = {
 }
 
 // Same rule as the backup warning (`useShouldPromptMnemonicBackup`) without
-// its Cloud Backup and delegation terms: it asks which accounts have only
-// Pera's copy of their secret, for the moment that copy is about to go.
+// its Cloud Backup term: it asks which accounts have only Pera's copy of their
+// secret, for the moment that copy is about to go. A failed balance lookup
+// lists the account, since a missed warning here can't be taken back.
 export const useFundedAccountsRequiringMnemonicBackupQuery = (
     accounts: WalletAccount[],
     scope: ChainScope,
@@ -42,16 +44,28 @@ export const useFundedAccountsRequiringMnemonicBackupQuery = (
             canBackUpMnemonic ? accounts.filter(requiresBackup) : NO_ACCOUNTS,
         [canBackUpMnemonic, accounts, requiresBackup],
     )
-    const { fundedAccountIds, isPending } = useFundedAccountIdsQuery(
+    const { fundedAccountIds, failedAccountIds, isPending } =
+        useFundedAccountIdsQuery(candidates, scope)
+    const authorityAccountIds = useAuthorityAccountIds(
         candidates,
-        scope,
+        scope.chainId,
     )
 
     return useMemo(() => {
-        const funded = new Set(fundedAccountIds)
+        const atRisk = new Set([
+            ...fundedAccountIds,
+            ...failedAccountIds,
+            ...authorityAccountIds,
+        ])
         return {
-            accounts: candidates.filter(({ id }) => funded.has(id)),
+            accounts: candidates.filter(({ id }) => atRisk.has(id)),
             isPending,
         }
-    }, [candidates, fundedAccountIds, isPending])
+    }, [
+        candidates,
+        fundedAccountIds,
+        failedAccountIds,
+        authorityAccountIds,
+        isPending,
+    ])
 }

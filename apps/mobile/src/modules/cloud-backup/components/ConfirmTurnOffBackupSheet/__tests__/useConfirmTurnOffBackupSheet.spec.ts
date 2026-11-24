@@ -110,6 +110,13 @@ describe('useConfirmTurnOffBackupSheet', () => {
         const { result } = renderHook(() => useConfirmTurnOffBackupSheet(false))
 
         expect(result.current.isTurnOffDisabled).toBe(true)
+        expect(result.current.isCheckingAccounts).toBe(true)
+    })
+
+    test('stops checking once the at-risk lookup settles', () => {
+        const { result } = renderHook(() => useConfirmTurnOffBackupSheet(false))
+
+        expect(result.current.isCheckingAccounts).toBe(false)
     })
 
     test('looks for at-risk accounts among the stored accounts on the home scope', () => {

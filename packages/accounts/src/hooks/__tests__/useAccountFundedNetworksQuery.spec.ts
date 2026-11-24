@@ -237,6 +237,24 @@ describe('useFundedAccountIdsQuery', () => {
         expect(result.current.fundedAccountIds).toEqual(['third'])
     })
 
+    it('reports the accounts whose read failed apart from the funded ones', async () => {
+        mockGetAccountFundedNetworks.mockImplementation(
+            ({ accountAddress }: { accountAddress: string }) =>
+                accountAddress === 'ADDR2'
+                    ? Promise.reject(new Error('read failed'))
+                    : Promise.resolve(['algorand/mainnet']),
+        )
+
+        const { result } = renderHook(
+            () => useFundedAccountIdsQuery([first, second], SCOPE),
+            { wrapper: wrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+        expect(result.current.fundedAccountIds).toEqual(['first'])
+        expect(result.current.failedAccountIds).toEqual(['second'])
+    })
+
     it('stays pending until the reads settle', async () => {
         let release: (networks: string[]) => void = () => {}
         mockGetAccountFundedNetworks.mockReturnValue(
@@ -266,6 +284,7 @@ describe('useFundedAccountIdsQuery', () => {
 
         expect(result.current).toEqual({
             fundedAccountIds: [],
+            failedAccountIds: [],
             isPending: false,
         })
         expect(mockGetAccountFundedNetworks).not.toHaveBeenCalled()

@@ -31,6 +31,9 @@ type UseConfirmTurnOffBackupSheetResult = {
     isAcknowledged: boolean
     toggleAcknowledged: () => void
     isTurnOffDisabled: boolean
+    /** True until the at-risk lookup settles, so the sheet never shows the
+     *  plain confirmation and then swaps to the at-risk one. */
+    isCheckingAccounts: boolean
     accountsAtRisk: WalletAccount[]
     /** In the preferred currency's display units; `null` while unknown. */
     accountsAtRiskPreferredValue: Nullable<Decimal>
@@ -79,6 +82,7 @@ export const useConfirmTurnOffBackupSheet = (
         toggleAcknowledged,
         isTurnOffDisabled:
             (isAcknowledgementRequired && !isAcknowledged) || isPending,
+        isCheckingAccounts: isPending,
         accountsAtRisk,
         accountsAtRiskPreferredValue,
         handleTurnOff,

@@ -14,7 +14,10 @@
 import { act, renderHook } from '@testing-library/react'
 import { authorityOf } from '../../credentials/accessors'
 import { describe, expect, it, beforeEach, vi } from 'vitest'
-import { useAccountsDelegatedTo } from '../useAccountsDelegatedTo'
+import {
+    useAccountsDelegatedTo,
+    useAuthorityAccountIds,
+} from '../useAccountsDelegatedTo'
 import { useAccountChainStateStore, useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
 import {
@@ -109,5 +112,56 @@ describe('useAccountsDelegatedTo', () => {
         expect(result.current).toEqual([])
         expect(noAddress.current).toEqual([])
         expect(authority!.accountsDelegatedTo).not.toHaveBeenCalled()
+    })
+})
+
+describe('useAuthorityAccountIds', () => {
+    beforeEach(() => {
+        useAccountsStore.getState().resetState()
+        useAccountChainStateStore.getState().resetState()
+        registerFakeAccountsChain()
+        vi.mocked(
+            fakeAccountsChain().adapter.authority!.accountsDelegatedTo,
+        ).mockImplementation((address, accounts) =>
+            accounts.filter(a => authorityOf(a, MAINNET_SCOPE) === address),
+        )
+    })
+
+    it('returns the candidates a held account delegates to, in input order', () => {
+        const authorities = [held('PQ'), held('B'), held('RS')]
+        setAccounts([held('A'), held('C'), ...authorities])
+        seedAuthority('A', 'PQ')
+        seedAuthority('C', 'RS')
+
+        const { result } = renderHook(() =>
+            useAuthorityAccountIds(authorities, 'algorand'),
+        )
+
+        expect(result.current).toEqual(['PQ', 'RS'])
+    })
+
+    it('picks up an authority recorded after mount', () => {
+        const authorities = [held('PQ')]
+        setAccounts([held('A'), ...authorities])
+        const { result } = renderHook(() =>
+            useAuthorityAccountIds(authorities, 'algorand'),
+        )
+        expect(result.current).toEqual([])
+
+        act(() => seedAuthority('A', 'PQ'))
+
+        expect(result.current).toEqual(['PQ'])
+    })
+
+    it('returns nothing on a chain with no accounts adapter', () => {
+        const authorities = [held('PQ')]
+        setAccounts([held('A'), ...authorities])
+        seedAuthority('A', 'PQ')
+
+        const { result } = renderHook(() =>
+            useAuthorityAccountIds(authorities, 'ethereum'),
+        )
+
+        expect(result.current).toEqual([])
     })
 })

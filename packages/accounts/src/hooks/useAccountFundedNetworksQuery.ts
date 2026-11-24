@@ -35,6 +35,8 @@ export type UseAccountFundedNetworksResult = {
 export type UseFundedAccountIdsQueryResult = {
     /** Ids of the accounts with a non-zero balance on any synced chain and network, in input order. */
     fundedAccountIds: string[]
+    /** Ids of the accounts whose lookup failed on some chain, so whether they are funded is unknown. In input order. */
+    failedAccountIds: string[]
     isPending: boolean
 }
 
@@ -124,12 +126,23 @@ export const useFundedAccountIdsQuery = (
                 (lookup.data ?? []).length > 0 ? [owners[index]] : [],
             ),
         ),
+        failedIds: new Set(
+            lookups.flatMap((lookup, index) =>
+                lookup.isError ? [owners[index]] : [],
+            ),
+        ),
         isPending: lookups.some(lookup => lookup.isPending),
     })
 
-    const { fundedIds, isPending } = useQueries({ queries, combine })
+    const { fundedIds, failedIds, isPending } = useQueries({
+        queries,
+        combine,
+    })
     const fundedAccountIds = useStableIdList(
         accounts.filter(({ id }) => fundedIds.has(id)).map(({ id }) => id),
     )
-    return { fundedAccountIds, isPending }
+    const failedAccountIds = useStableIdList(
+        accounts.filter(({ id }) => failedIds.has(id)).map(({ id }) => id),
+    )
+    return { fundedAccountIds, failedAccountIds, isPending }
 }

@@ -13,6 +13,11 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
+    loading: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: theme.spacing.xl,
+    },
     summary: {
         textAlign: 'center',
         marginBottom: theme.spacing.lg,

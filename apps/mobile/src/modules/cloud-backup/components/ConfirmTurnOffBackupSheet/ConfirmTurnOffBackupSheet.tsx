@@ -15,6 +15,7 @@ import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { AccountWithBalance } from '@components/AccountWithBalance'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import {
+    PWLoadingIndicator,
     PWText,
     PWView,
     type IconName,
@@ -75,6 +76,7 @@ export const ConfirmTurnOffBackupSheet = ({
         isAcknowledged,
         toggleAcknowledged,
         isTurnOffDisabled,
+        isCheckingAccounts,
         accountsAtRisk,
         accountsAtRiskPreferredValue,
         handleTurnOff,
@@ -82,6 +84,20 @@ export const ConfirmTurnOffBackupSheet = ({
         handleCancel,
     } = useConfirmTurnOffBackupSheet(copy.checkboxKey != null)
     const isAtRisk = accountsAtRisk.length > 0
+
+    if (isCheckingAccounts) {
+        return (
+            <PWView
+                style={styles.loading}
+                testID='confirm_turn_off_backup_sheet'
+            >
+                <PWLoadingIndicator
+                    size='lg'
+                    testID='confirm_turn_off_backup_checking'
+                />
+            </PWView>
+        )
+    }
 
     const checkbox = !!copy.checkboxKey && (
         <ConfirmationCheckbox

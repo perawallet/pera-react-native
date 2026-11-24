@@ -55,6 +55,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 }))
 
 const mockFundedAccountIds = vi.fn()
+const mockAuthorityAccountIds = vi.fn()
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const original =
         await importOriginal<
@@ -64,6 +65,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         ...original,
         useFundedAccountIdsQuery: (...args: unknown[]) =>
             mockFundedAccountIds(...args),
+        useAuthorityAccountIds: (...args: unknown[]) =>
+            mockAuthorityAccountIds(...args),
     }
 })
 
@@ -112,9 +115,12 @@ describe('useFundedAccountsRequiringMnemonicBackupQuery', () => {
         mockFundedAccountIds.mockImplementation(
             (candidates: WalletAccount[]) => ({
                 fundedAccountIds: candidates.map(({ id }) => id),
+                failedAccountIds: [],
                 isPending: false,
             }),
         )
+        mockAuthorityAccountIds.mockReset()
+        mockAuthorityAccountIds.mockReturnValue([])
         const { registerFakeBackupAdapter } =
             await import('../../../__tests__/fakeBackupAdapter')
         registerFakeBackupAdapter()
@@ -185,6 +191,42 @@ describe('useFundedAccountsRequiringMnemonicBackupQuery', () => {
     test('leaves out accounts that hold nothing', async () => {
         mockFundedAccountIds.mockReturnValue({
             fundedAccountIds: ['b'],
+            failedAccountIds: [],
+            isPending: false,
+        })
+
+        const { result } = await render([
+            hd('hd-0', 'a-child-0', 0),
+            hd('b', 'b-child-0', 0),
+        ])
+
+        expect(ids(result.current.accounts)).toEqual(['b'])
+    })
+
+    test('lists an unfunded account that a held account delegates its signing to', async () => {
+        mockFundedAccountIds.mockReturnValue({
+            fundedAccountIds: [],
+            failedAccountIds: [],
+            isPending: false,
+        })
+        mockAuthorityAccountIds.mockReturnValue(['hd-0'])
+
+        const { result } = await render([
+            hd('hd-0', 'a-child-0', 0),
+            hd('b', 'b-child-0', 0),
+        ])
+
+        expect(ids(result.current.accounts)).toEqual(['hd-0'])
+        expect(mockAuthorityAccountIds).toHaveBeenCalledWith(
+            expect.any(Array),
+            SCOPE.chainId,
+        )
+    })
+
+    test('lists an account whose balance lookup failed', async () => {
+        mockFundedAccountIds.mockReturnValue({
+            fundedAccountIds: [],
+            failedAccountIds: ['b'],
             isPending: false,
         })
 
@@ -222,6 +264,7 @@ describe('useFundedAccountsRequiringMnemonicBackupQuery', () => {
     test('passes the lookup pending state through', async () => {
         mockFundedAccountIds.mockReturnValue({
             fundedAccountIds: [],
+            failedAccountIds: [],
             isPending: true,
         })
 
