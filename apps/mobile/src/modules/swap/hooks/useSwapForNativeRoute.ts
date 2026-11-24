@@ -11,7 +11,6 @@
  */
 
 import { useMemo } from 'react'
-import { Decimal } from 'decimal.js'
 import {
     useAccountChainStateStore,
     useAccountHoldingsAcrossChainsQuery,
@@ -25,7 +24,6 @@ import { useChainCapabilityCheck } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     isSwapChain,
-    swapAdapterFor,
     useSwapFeeReservesQuery,
     useSwapScope,
 } from '@perawallet/wallet-core-swaps'
@@ -39,8 +37,6 @@ import {
     canSwapCrossChain,
 } from '../utils/crossChainEligibility'
 import { rankSwapPayAssets } from '../utils/rankSwapPayAssets'
-
-const ZERO = new Decimal(0)
 
 export type UseSwapForNativeRouteResult = {
     /** Opens a cross-chain swap into `chainId`'s native coin; null when none can. */
@@ -99,8 +95,8 @@ export const useSwapForNativeRoute = (
     )
 
     // Held is not spendable: Algorand's minimum balance can lock all of it, and
-    // a few wei can't cover gas. Same reserve as the Swap form's MAX; a native
-    // coin whose fee is unknown isn't offered.
+    // a few wei can't cover gas. Same reserve as the Swap form's MAX; every
+    // candidate is a native coin, so one whose fee is unknown isn't offered.
     const reserveScopes = useMemo(
         () => candidates.map(candidate => candidate.scope),
         [candidates],
@@ -110,12 +106,7 @@ export const useSwapForNativeRoute = (
     const pricedCandidates = useMemo(
         () =>
             candidates.flatMap((candidate, index) => {
-                const fee =
-                    reserves[index] ??
-                    (candidate.assetId ===
-                    swapAdapterFor(candidate.scope).nativeAssetId
-                        ? undefined
-                        : ZERO)
+                const fee = reserves[index]
                 return fee ? [{ candidate, fee }] : []
             }),
         [candidates, reserves],
