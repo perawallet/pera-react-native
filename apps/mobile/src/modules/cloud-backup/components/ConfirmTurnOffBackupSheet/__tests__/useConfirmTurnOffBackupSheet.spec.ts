@@ -30,11 +30,13 @@ const { resolveMock, dismissMock, atRiskMock, totalsMock, usdToPreferredMock } =
 const storeAccounts: WalletAccount[] = [
     {
         id: 'a',
+        name: 'Account A',
         custody: { kind: 'local', seed: null },
         chains: { algorand: { address: 'A', keyPairId: 'kp-a' } },
     },
     {
         id: 'b',
+        name: 'Account B',
         custody: { kind: 'local', seed: null },
         chains: { algorand: { address: 'B', keyPairId: 'kp-b' } },
     },

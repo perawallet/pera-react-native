@@ -24,6 +24,7 @@ import {
 } from '@test-utils/database-setup'
 import { PWText } from '@components/core'
 import {
+    signingKeyOn,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -146,7 +147,7 @@ describe('Flow: turning off Cloud Backup lists the accounts that lose their only
     it('Given its passphrase is backed up, then the confirmation looks as it always did', async () => {
         useMnemonicBackupStore
             .getState()
-            .markBackedUp(account.chains[ALGORAND_CHAIN_ID]!.keyPairId)
+            .markBackedUp(signingKeyOn(account, ALGORAND_CHAIN_ID)!)
         renderOverview()
 
         await openTurnOffSheet('turn_off_backup_turn_off')
