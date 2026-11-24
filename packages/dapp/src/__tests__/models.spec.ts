@@ -12,7 +12,12 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import type { Connection } from '@perawallet/wallet-extension-connections'
-import { canSiteSeeAccounts, type SiteWarningLevel } from '../models'
+import {
+    canSiteSeeAccounts,
+    eip1193ApprovedChainIdsOf,
+    type Eip1193Connection,
+    type SiteWarningLevel,
+} from '../models'
 
 const ORIGIN = 'https://app.example'
 
@@ -67,5 +72,39 @@ describe('canSiteSeeAccounts', () => {
             ),
         ).toBe(false)
         expect(siteWarningOf).not.toHaveBeenCalled()
+    })
+})
+
+describe('eip1193ApprovedChainIdsOf', () => {
+    const connectionWith = (metadata: Record<string, unknown>) =>
+        ({
+            ...approvedWith(),
+            kind: 'dapp-eip1193',
+            metadata,
+        }) as unknown as Eip1193Connection
+
+    it('reads a record without the field as approved for its current chain only', () => {
+        expect(
+            eip1193ApprovedChainIdsOf(connectionWith({ chainId: 'ethereum' })),
+        ).toEqual(['ethereum'])
+    })
+
+    it('ignores a field that is not an array', () => {
+        expect(
+            eip1193ApprovedChainIdsOf(
+                connectionWith({ chainId: 'base', approvedChainIds: 'ethereum' }),
+            ),
+        ).toEqual(['base'])
+    })
+
+    it('drops unknown chains, removes duplicates and puts the current chain first', () => {
+        expect(
+            eip1193ApprovedChainIdsOf(
+                connectionWith({
+                    chainId: 'base',
+                    approvedChainIds: ['ethereum', 'nope', 'base', 'ethereum', 7],
+                }),
+            ),
+        ).toEqual(['base', 'ethereum'])
     })
 })

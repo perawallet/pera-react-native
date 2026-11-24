@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import {
+    isChainId,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import type {
     Connection,
     ConnectionId,
@@ -87,6 +90,11 @@ export type DappConnection = Connection & { kind: typeof DAPP_KIND }
 /** The site's own chain; its network is whichever one the wallet has selected for it. */
 export type Eip1193ConnectionMetadata = SiteWarningMetadata & {
     chainId: ChainId
+    /**
+     * Chains the site may switch to without a prompt. Written at connect and on
+     * every approved switch; absent on records written before it existed.
+     */
+    approvedChainIds?: ChainId[]
 }
 
 export type Eip1193Connection = Connection & {
@@ -102,6 +110,17 @@ export const isEip1193Connection = (
     typeof connection.metadata?.chainId === 'string' &&
     typeof connection.origin?.requesterOrigin === 'string'
 
+/** The site's current chain first, then every other chain it was approved for. */
+export const eip1193ApprovedChainIdsOf = (
+    connection: Eip1193Connection,
+): ChainId[] => {
+    const { chainId, approvedChainIds } = connection.metadata
+    const approved = Array.isArray(approvedChainIds)
+        ? approvedChainIds.filter(isChainId)
+        : []
+    return [...new Set([chainId, ...approved])]
+}
+
 // Prefixed: the store is keyed by id across kinds, and the same site's
 // `window.pera` record already holds the bare origin.
 export const eip1193ConnectionIdOf = (origin: string): ConnectionId =>
@@ -115,6 +134,12 @@ export type DappRequestContext = {
     isWalletLocked: boolean
     /** Browser-supplied tab favicon; only a fallback when the page sends no usable icon. */
     faviconUrl?: string
+    /**
+     * Icon URLs the page lists for itself, unvalidated: a handler keeps only
+     * what `sanitizeDappIcons` passes. Fills the role `faviconUrl` plays in the
+     * extension, where the browser knows the tab's icon.
+     */
+    pageIcons?: string[]
 }
 
 /** Rejects when the page could not be reached, so the request stays answerable. */

@@ -113,6 +113,7 @@ export const useConnectionsProvider = (): ConnectionRegistry => {
                 siteWarningOf: async origin =>
                     (await assessSiteSafety({ urls: [origin] })).kind,
                 isWalletLocked: isAppLocked,
+                shouldProposeEveryServedChain: true,
             }),
         )
         registryRef.current = registry
