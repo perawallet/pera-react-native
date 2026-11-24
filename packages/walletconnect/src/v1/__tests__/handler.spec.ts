@@ -28,6 +28,7 @@ import {
     type InboundMessage,
     type RawInboundMessage,
 } from '@perawallet/wallet-core-connections'
+import { DappRequestRejectedError } from '@perawallet/wallet-core-connections/dappRequest'
 import { ONE_DAY } from '@perawallet/wallet-core-config'
 import { logger } from '@perawallet/wallet-core-shared'
 import {
@@ -1242,8 +1243,37 @@ describe('walletconnect v1 handler behaviour', () => {
         })
         expect(connector.rejectRequest).toHaveBeenCalledWith({
             id: 10,
-            error: declined,
+            error: { message: 'An error occurred during signing' },
         })
+    })
+
+    it('sanitizes live signing errors and preserves the user rejection message', async () => {
+        keys.set('c1', 'restored-key')
+        const { onMessage } = await setupRestored([SEEDED])
+        const connector = lastConnector()
+
+        connector.emit('algo_signTxn', null, {
+            id: 9,
+            params: [[{ txn: 'dHhu' }]],
+        })
+        await flush()
+        await asRequest(onMessage.mock.calls[0][0]).reject(
+            new Error('RPC unavailable'),
+        )
+
+        connector.emit('algo_signTxn', null, {
+            id: 10,
+            params: [[{ txn: 'dHhu' }]],
+        })
+        await flush()
+        await asRequest(onMessage.mock.calls[1][0]).reject(
+            new DappRequestRejectedError(),
+        )
+
+        expect(connector.rejectRequest.mock.calls).toEqual([
+            [{ id: 9, error: { message: 'An error occurred during signing' } }],
+            [{ id: 10, error: { message: 'User rejected' } }],
+        ])
     })
 
     it('answers algo_getEmptySignatures for the session accounts without prompting', async () => {

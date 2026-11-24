@@ -711,8 +711,8 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
             expect(connector.rejectRequestCalls).toHaveLength(1)
         })
         expect(connector.rejectRequestCalls[0].id).toBe(requestId)
-        expect(connector.rejectRequestCalls[0].error?.name).toBe(
-            'WalletConnectSignRequestError',
+        expect(connector.rejectRequestCalls[0].error?.message).toBe(
+            'An error occurred during signing',
         )
         expect(connector.approveRequestCalls).toHaveLength(0)
     })
@@ -1158,10 +1158,10 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
                 { timeout: 15_000 },
             )
             expect(connector.rejectRequestCalls[0].id).toBe(requestId)
-            // Pinned to the cause so an unrelated rejection cannot pass
-            // vacuously.
-            expect(connector.rejectRequestCalls[0].error?.name).toBe(
-                'GenesisHashMismatchError',
+            // The mismatch names the wallet's network, so the peer gets the
+            // generic copy.
+            expect(connector.rejectRequestCalls[0].error?.message).toBe(
+                'An error occurred during signing',
             )
             expect(connector.approveRequestCalls).toHaveLength(0)
         })

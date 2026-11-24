@@ -98,7 +98,11 @@ export const createWalletConnectV1Handler = (
     const connectors = createConnectorRegistry({
         bindHandlers: connector => bindHandlers(connector),
     })
-    const delivery = createWalletConnectV1Delivery(connectors, answeredRequests)
+    const delivery = createWalletConnectV1Delivery(
+        connectors,
+        answeredRequests,
+        chainId,
+    )
 
     const requests = createV1RequestHandlers({
         kit,
