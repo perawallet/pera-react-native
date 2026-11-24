@@ -10,9 +10,12 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { useAssetListViewStore } from '../useAssetListViewStore'
+import {
+    useAssetListViewStore,
+    watchSelectedAccount,
+} from '../useAssetListViewStore'
 
 vi.unmock('@perawallet/wallet-core-accounts')
 
@@ -54,21 +57,39 @@ describe('useAssetListViewStore', () => {
         ])
     })
 
-    it('starts the network chip on All when another account is selected', () => {
-        useAccountsStore.setState({ selectedAccountId: 'first' })
-        useAssetListViewStore.getState().setSelectedChainId('base')
+    describe('watchSelectedAccount', () => {
+        let unwatch: () => void
 
-        useAccountsStore.setState({ selectedAccountId: 'second' })
+        beforeEach(() => {
+            useAccountsStore.setState({ selectedAccountId: 'first' })
+            useAssetListViewStore.getState().setSelectedChainId('base')
+            unwatch = watchSelectedAccount()
+        })
 
-        expect(useAssetListViewStore.getState().selectedChainId).toBeNull()
-    })
+        afterEach(() => unwatch())
 
-    it('keeps the network chip while the same account stays selected', () => {
-        useAccountsStore.setState({ selectedAccountId: 'first' })
-        useAssetListViewStore.getState().setSelectedChainId('base')
+        it('starts the network chip on All when another account is selected', () => {
+            useAccountsStore.setState({ selectedAccountId: 'second' })
 
-        useAccountsStore.setState({ selectedAccountId: 'first' })
+            expect(useAssetListViewStore.getState().selectedChainId).toBeNull()
+        })
 
-        expect(useAssetListViewStore.getState().selectedChainId).toBe('base')
+        it('keeps the network chip while the same account stays selected', () => {
+            useAccountsStore.setState({ selectedAccountId: 'first' })
+
+            expect(useAssetListViewStore.getState().selectedChainId).toBe(
+                'base',
+            )
+        })
+
+        it('stops following the selection once unwatched', () => {
+            unwatch()
+
+            useAccountsStore.setState({ selectedAccountId: 'second' })
+
+            expect(useAssetListViewStore.getState().selectedChainId).toBe(
+                'base',
+            )
+        })
     })
 })

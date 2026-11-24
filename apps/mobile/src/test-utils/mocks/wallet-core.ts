@@ -910,16 +910,13 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         useAccountValueTotalsQuery: vi.fn(() => ({
             accountValueTotals: new Map(),
         })),
-        useAccountsStore: Object.assign(
-            vi.fn((selector: (s: any) => any) =>
-                selector({
-                    accounts: [],
-                    addAccount: vi.fn(),
-                    removeAccount: vi.fn(),
-                    resetState: vi.fn(),
-                }),
-            ),
-            { subscribe: vi.fn(() => () => {}) },
+        useAccountsStore: vi.fn((selector: (s: any) => any) =>
+            selector({
+                accounts: [],
+                addAccount: vi.fn(),
+                removeAccount: vi.fn(),
+                resetState: vi.fn(),
+            }),
         ),
         useWalletHoldingSources: vi.fn(() => []),
         rehydrateAccountsStore: vi.fn(async () => {}),

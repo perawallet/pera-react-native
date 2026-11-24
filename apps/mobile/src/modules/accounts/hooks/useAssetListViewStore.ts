@@ -45,13 +45,15 @@ export const useAssetListViewStore = create<AssetListViewStore>()(set => ({
         })),
 }))
 
-// The network chip belongs to the account it was picked on: switching to (or
-// adding) another account starts it on All.
-useAccountsStore.subscribe((state, previous) => {
-    if (state.selectedAccountId !== previous.selectedAccountId) {
+/**
+ * The network chip belongs to the account it was picked on: switching to (or
+ * adding) another account starts it on All.
+ */
+export const watchSelectedAccount = (): (() => void) =>
+    useAccountsStore.subscribe((state, previous) => {
+        if (state.selectedAccountId === previous.selectedAccountId) return
         useAssetListViewStore.getState().setSelectedChainId(null)
-    }
-})
+    })
 
 registerStore({
     name: 'asset-list-view-store',
