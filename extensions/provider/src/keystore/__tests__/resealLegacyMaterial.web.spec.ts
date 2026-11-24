@@ -328,7 +328,6 @@ describe('legacy keystore material', () => {
             const report = await discardLegacyKeyWith(await resealDeps())
 
             expect(report).toEqual({
-                resealed: 0,
                 unrecoverable: ['seed-1'],
                 legacyKeyRemoved: true,
             })
@@ -352,7 +351,6 @@ describe('legacy keystore material', () => {
             const report = await discardLegacyKeyWith(await resealDeps())
 
             expect(report).toEqual({
-                resealed: 0,
                 unrecoverable: [],
                 legacyKeyRemoved: true,
             })
@@ -365,7 +363,6 @@ describe('legacy keystore material', () => {
             const report = await discardLegacyKeyWith(await resealDeps())
 
             expect(report).toEqual({
-                resealed: 0,
                 unrecoverable: [],
                 legacyKeyRemoved: false,
             })

@@ -26,6 +26,7 @@ import { safeWarn } from './migrations/safeLog'
 import type {
     LegacyCheckDeps,
     LegacyCheckReport,
+    LegacyDiscardReport,
     ResealDeps,
     ResealReport,
 } from './resealTypes'
@@ -230,9 +231,8 @@ const reportUnopenable = async (
  */
 export const discardLegacyKeyWith = async (
     deps: ResealDeps,
-): Promise<ResealReport> => {
-    const report: ResealReport = {
-        resealed: 0,
+): Promise<LegacyDiscardReport> => {
+    const report: LegacyDiscardReport = {
         unrecoverable: [],
         legacyKeyRemoved: false,
     }

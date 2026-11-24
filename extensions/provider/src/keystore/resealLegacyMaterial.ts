@@ -13,6 +13,7 @@
 import type {
     LegacyCheckDeps,
     LegacyCheckReport,
+    LegacyDiscardReport,
     ResealDeps,
     ResealReport,
 } from './resealTypes'
@@ -31,8 +32,7 @@ export const resealLegacyMaterialWith = async (
 
 export const discardLegacyKeyWith = async (
     _deps: ResealDeps,
-): Promise<ResealReport> => ({
-    resealed: 0,
+): Promise<LegacyDiscardReport> => ({
     unrecoverable: [],
     legacyKeyRemoved: false,
 })

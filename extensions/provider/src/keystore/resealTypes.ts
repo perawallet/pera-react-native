@@ -20,6 +20,13 @@ export type ResealReport = {
     legacyKeyRemoved: boolean
 }
 
+/** Unlock side, once the re-seal is recorded: whether a pre-vault key was removed. */
+export type LegacyDiscardReport = {
+    /** Ids the vault key can't open — never their contents. */
+    unrecoverable: string[]
+    legacyKeyRemoved: boolean
+}
+
 export type ResealDeps = {
     /** The vault master key, from the unlock that is re-sealing. */
     engineKey: CryptoKey

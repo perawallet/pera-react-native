@@ -308,7 +308,6 @@ describe('provider singleton', () => {
 
         test('warns with the records the vault key cannot open when a key is discarded', async () => {
             resealMocks.discardLegacyKeyWith.mockResolvedValue({
-                resealed: 0,
                 unrecoverable: ['seed-1'],
                 legacyKeyRemoved: true,
             })
@@ -330,7 +329,6 @@ describe('provider singleton', () => {
 
         test('logs nothing when there was no key to discard', async () => {
             resealMocks.discardLegacyKeyWith.mockResolvedValue({
-                resealed: 0,
                 unrecoverable: [],
                 legacyKeyRemoved: false,
             })

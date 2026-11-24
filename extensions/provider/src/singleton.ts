@@ -37,7 +37,11 @@ import {
     discardLegacyKeyWith,
     resealLegacyMaterialWith,
 } from './keystore/resealLegacyMaterial'
-import type { LegacyCheckReport, ResealReport } from './keystore/resealTypes'
+import type {
+    LegacyCheckReport,
+    LegacyDiscardReport,
+    ResealReport,
+} from './keystore/resealTypes'
 import {
     PQ_DERIVATION_LEGACY,
     PQ_DERIVATION_CANONICAL,
@@ -172,7 +176,7 @@ export const resealLegacyMaterial = async (
  */
 export const discardLegacyKey = async (
     engineKey: CryptoKey,
-): Promise<ResealReport> => {
+): Promise<LegacyDiscardReport> => {
     const report = await discardLegacyKeyWith({
         engineKey,
         subtle,
