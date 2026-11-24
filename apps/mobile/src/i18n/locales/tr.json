@@ -435,8 +435,6 @@
             "social_media": "Sosyal medya",
             "chart_empty_body": "Bir bakiye geçmişin oluştuğunda burada bir grafik göreceksin",
             "total_supply_info_body": "Bir varlığın toplam arzı oluşturulma anında belirlenir ve varlığın oluşturulan toplam birim sayısına karşılık gelir.",
-            "circulating_supply": "Dolaşımdaki arz",
-            "circulating_supply_info_body": "Dolaşımdaki arz, şu anda dolaşımda olan coin sayısıdır. Bir ağın yerel coin’inin sabit bir toplamı yoktur; bu rakam coin’ler basıldıkça veya yakıldıkça değişir.",
             "token_total_supply_info_body": "Toplam arz, sözleşmenin ihraç ettiği token sayısından yakılanların çıkarılmasıyla bulunur. İhraççı token bastığında veya yaktığında değişir."
         },
         "action_buttons": {
@@ -530,6 +528,7 @@
             "empty_title": "NFT’ler",
             "empty_body": "NFT galerine hoş geldin! Henüz hiç NFT’n yok. Cüzdanındaki tüm NFT’ler burada görünecek.",
             "empty_body_multichain": "NFT galerine hoş geldin!\nHenüz hiç NFT’n yok. Ethereum gibi ağlarda aldığın NFT’ler burada kendiliğinden görünür. Algorand NFT’leri için önce opt-in olman gerekir.",
+            "empty_body_unsupported": "{{chains}} üzerindeki NFT’ler henüz Pera’da gösterilmiyor.",
             "empty_optin": "NFT ekle",
             "empty_optin_algorand": "Algorand NFT’sine opt-in ol",
             "nomatch_title": "Eşleşen NFT yok",

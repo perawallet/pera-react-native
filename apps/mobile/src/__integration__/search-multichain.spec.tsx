@@ -127,15 +127,15 @@ describe('Flow: Global search across networks', () => {
         expect(screen.queryByTestId(soloRowId)).toBeNull()
     })
 
-    it('Given accounts on different networks, when the user types a network name, then only the accounts with an address on it are listed, each with that address', async () => {
+    it('Given accounts on different networks, when the user types a network name, then no account is listed for it', async () => {
         renderWithNavigation(SearchScreen, 'Search')
 
-        typeQuery('ethereum')
+        typeQuery('eth')
 
-        await screen.findByTestId(accountRowId)
-        expect(
-            screen.getByTestId('search_matched_address').textContent,
-        ).toMatch(/^0x/)
+        await screen.findByTestId(
+            `search_result_asset_ethereum_${nativeAssetFor('ethereum').assetId}`,
+        )
+        expect(screen.queryByTestId(accountRowId)).toBeNull()
         expect(screen.queryByTestId(soloRowId)).toBeNull()
     })
 

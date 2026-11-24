@@ -10,8 +10,14 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it } from 'vitest'
-import { useAssetListViewStore } from '../useAssetListViewStore'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import {
+    useAssetListViewStore,
+    watchSelectedAccount,
+} from '../useAssetListViewStore'
+
+vi.unmock('@perawallet/wallet-core-accounts')
 
 describe('useAssetListViewStore', () => {
     beforeEach(() => {
@@ -49,5 +55,41 @@ describe('useAssetListViewStore', () => {
         expect(useAssetListViewStore.getState().expandedGroupIds).toEqual([
             'usdt',
         ])
+    })
+
+    describe('watchSelectedAccount', () => {
+        let unwatch: () => void
+
+        beforeEach(() => {
+            useAccountsStore.setState({ selectedAccountId: 'first' })
+            useAssetListViewStore.getState().setSelectedChainId('base')
+            unwatch = watchSelectedAccount()
+        })
+
+        afterEach(() => unwatch())
+
+        it('starts the network chip on All when another account is selected', () => {
+            useAccountsStore.setState({ selectedAccountId: 'second' })
+
+            expect(useAssetListViewStore.getState().selectedChainId).toBeNull()
+        })
+
+        it('keeps the network chip while the same account stays selected', () => {
+            useAccountsStore.setState({ selectedAccountId: 'first' })
+
+            expect(useAssetListViewStore.getState().selectedChainId).toBe(
+                'base',
+            )
+        })
+
+        it('stops following the selection once unwatched', () => {
+            unwatch()
+
+            useAccountsStore.setState({ selectedAccountId: 'second' })
+
+            expect(useAssetListViewStore.getState().selectedChainId).toBe(
+                'base',
+            )
+        })
     })
 })
