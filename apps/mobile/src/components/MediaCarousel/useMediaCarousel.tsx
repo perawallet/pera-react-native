@@ -91,7 +91,8 @@ export const useMediaCarousel = ({
     // No model file means nothing to open as 3D.
     const hasModel = modelItem?.downloadUrl !== undefined
     const pages = carouselPagesOf(visualMedia, modelItem)
-    const hasMultiple = pages.length > 1
+    const pageCount = pages.length
+    const hasMultiple = pageCount > 1
 
     const handlePageSelected = useCallback((position: number) => {
         setActiveIndex(position)
@@ -151,6 +152,19 @@ export const useMediaCarousel = ({
                     key={`media-${index}`}
                 >
                     {renderMedia()}
+                    {hasMultiple && (
+                        <PWView
+                            style={styles.counter}
+                            testID='media-carousel-counter'
+                        >
+                            <PWText
+                                variant='footnoteMedium'
+                                style={styles.counterText}
+                            >
+                                {index + 1} / {pageCount}
+                            </PWText>
+                        </PWView>
+                    )}
                     {hasModel && index >= 0 && (
                         <PWTouchableOpacity
                             style={styles.modelBadge}
@@ -184,6 +198,8 @@ export const useMediaCarousel = ({
             styles,
             placeholderIconSize,
             hasModel,
+            hasMultiple,
+            pageCount,
             onModelPress,
             onFullScreenPress,
             fallbackImageUrl,
