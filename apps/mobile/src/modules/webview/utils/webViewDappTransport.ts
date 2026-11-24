@@ -32,11 +32,16 @@ import { webViewScript, type WebViewScript } from './webViewScript'
 /** The page-side function native calls with a JSON-RPC response or notification. */
 export const EIP1193_DELIVER_GLOBAL = '__peraEip1193Deliver'
 
+const MAX_PAGE_ICONS = 8
+const MAX_PAGE_ICON_URL_LENGTH = 2048
+
 export type Eip1193PageMessage = {
     provider: 'eip1193'
     token: string
     hasUserActivation: boolean
     request: JsonRpcRequest
+    /** Icon links the page lists for itself; sent on connect requests only. */
+    icons?: string[]
 }
 
 export const isEip1193PageMessage = (
@@ -48,7 +53,10 @@ export const isEip1193PageMessage = (
         message.provider === 'eip1193' &&
         typeof message.token === 'string' &&
         typeof message.hasUserActivation === 'boolean' &&
-        isJsonRpcRequest(message.request)
+        isJsonRpcRequest(message.request) &&
+        (message.icons === undefined ||
+            (Array.isArray(message.icons) &&
+                message.icons.every(icon => typeof icon === 'string')))
     )
 }
 
@@ -151,6 +159,13 @@ export const createWebViewDappTransport = (): WebViewDappTransport => {
             origin,
             hasUserActivation: message.hasUserActivation,
             isWalletLocked: isLocked(),
+            ...(message.icons
+                ? {
+                      pageIcons: message.icons
+                          .filter(icon => icon.length <= MAX_PAGE_ICON_URL_LENGTH)
+                          .slice(0, MAX_PAGE_ICONS),
+                  }
+                : {}),
         }
         // The handler logs a rejection; an answer for a page that has
         // navigated away is dropped here rather than injected.
