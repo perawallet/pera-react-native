@@ -104,7 +104,10 @@ describe('useCloudBackupRestoreEncryptionKeyScreen', () => {
             CloudBackupEvent.RestoreEncryptionKeyProceed,
         )
         expect(requirePinVerification).toHaveBeenCalledTimes(1)
-        expect(prepare).toHaveBeenCalledWith({ salt: 'c2FsdA==' })
+        expect(prepare).toHaveBeenCalledWith({
+            salt: 'c2FsdA==',
+            credentialsConfirmed: true,
+        })
     })
 
     it('does not restore when the PIN is not verified', async () => {
@@ -150,7 +153,10 @@ describe('useCloudBackupRestoreEncryptionKeyScreen', () => {
 
         await pressRestore(result)
 
-        expect(prepare).toHaveBeenCalledWith(IMPORTED_KEY)
+        expect(prepare).toHaveBeenCalledWith({
+            ...IMPORTED_KEY,
+            credentialsConfirmed: true,
+        })
     })
 
     it('restores an edited imported key on the default Argon2id settings', async () => {
@@ -160,7 +166,10 @@ describe('useCloudBackupRestoreEncryptionKeyScreen', () => {
         act(() => result.current.handleKeyChange('c2FsdA=='))
         await pressRestore(result)
 
-        expect(prepare).toHaveBeenCalledWith({ salt: 'c2FsdA==' })
+        expect(prepare).toHaveBeenCalledWith({
+            salt: 'c2FsdA==',
+            credentialsConfirmed: true,
+        })
     })
 
     it('does not run restore without a retained phrase', async () => {

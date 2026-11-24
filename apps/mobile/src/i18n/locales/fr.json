@@ -857,6 +857,16 @@
             "proceed": "Continuer",
             "error_message": "Sélection incorrecte. Veuillez réessayer."
         },
+        "confirm_credentials": {
+            "warning": "Confirmez que vous avez enregistré votre clé de sauvegarde",
+            "title": "Confirmer la clé de sauvegarde",
+            "description": "Choisissez les bons mots de votre clé de 12 mots et saisissez votre clé de chiffrement pour confirmer que vous les avez conservées.",
+            "confirm": "Confirmer",
+            "error_words": "Certains des mots sélectionnés sont incorrects. Veuillez réessayer.",
+            "error_key": "Cette clé de chiffrement ne correspond pas à votre sauvegarde.",
+            "error_both": "Les mots sélectionnés et la clé de chiffrement sont tous deux incorrects.",
+            "success": "Clé de sauvegarde confirmée"
+        },
         "store_encryption_key": {
             "title": "Conservez votre clé de chiffrement",
             "description": "Conservez votre clé de chiffrement en lieu sûr. Vous en avez besoin avec votre Passphrase pour restaurer cette sauvegarde.",

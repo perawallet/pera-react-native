@@ -141,6 +141,24 @@ describe('useSettingsScreen', () => {
         expect(mockPushWebView).not.toHaveBeenCalled()
     })
 
+    it('opens the confirm screen over the cloud backup overview for the confirm action', () => {
+        const { result } = renderHook(() => useSettingsScreen())
+
+        act(() => {
+            result.current.handleTapEvent({
+                title: 'Cloud Backup',
+                icon: 'cloud-check',
+                action: 'confirmCloudBackupCredentials',
+            })
+        })
+
+        expect(trackEvent).toHaveBeenCalledWith(SettingsEvent.CloudBackup)
+        expect(mockPush).toHaveBeenCalledWith('CloudBackupSettings', {
+            screen: 'CloudBackupConfirmCredentials',
+            initial: false,
+        })
+    })
+
     it('tracks the tap when opening cloud backup', () => {
         const { result } = renderHook(() => useSettingsScreen())
 

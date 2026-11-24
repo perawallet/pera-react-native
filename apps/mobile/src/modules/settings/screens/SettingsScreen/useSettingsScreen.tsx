@@ -87,6 +87,16 @@ export const useSettingsScreen = () => {
             })
             return
         }
+        if (page.action === 'confirmCloudBackupCredentials') {
+            trackEvent(SettingsEvent.CloudBackup)
+            // `initial: false` keeps the overview underneath, so back or a
+            // declined PIN lands there.
+            navigation.push('CloudBackupSettings', {
+                screen: 'CloudBackupConfirmCredentials',
+                initial: false,
+            })
+            return
+        }
         if (page.route) {
             if (page.route === 'PasskeysSettings') {
                 trackEvent(SettingsEvent.PassKey)

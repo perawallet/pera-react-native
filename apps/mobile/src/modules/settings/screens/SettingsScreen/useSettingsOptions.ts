@@ -29,8 +29,9 @@ export type SettingsOptionItem = {
     title: string
     route?: keyof SettingsStackParamsList
     url?: string
-    action?: 'scanRekeyed'
+    action?: 'scanRekeyed' | 'confirmCloudBackupCredentials'
     value?: string
+    warning?: string
 }
 
 export type SettingsOptionSection = {
@@ -44,6 +45,9 @@ export const useSettingsOptions = () => {
     const isCloudBackupAvailable = useIsCloudBackupAvailable()
     const isCloudBackupConfigured = useCloudBackupStore(state =>
         state.isConfigured(),
+    )
+    const needsCloudBackupConfirmation = useCloudBackupStore(state =>
+        state.needsCredentialsConfirmation(),
     )
     const canRekey = useCapability(rekeyRequirementFor(ALGORAND_CHAIN_ID))
 
@@ -76,16 +80,32 @@ export const useSettingsOptions = () => {
                 items: [
                     ...(isCloudBackupAvailable
                         ? [
-                              {
-                                  route: 'CloudBackupSettings',
-                                  icon: 'cloud-check',
-                                  title: t('settings.main.cloud_backup_title'),
-                                  value: t(
-                                      isCloudBackupConfigured
-                                          ? 'settings.main.cloud_backup_on'
-                                          : 'settings.main.cloud_backup_off',
-                                  ),
-                              } satisfies SettingsOptionItem,
+                              needsCloudBackupConfirmation
+                                  ? ({
+                                        action: 'confirmCloudBackupCredentials',
+                                        icon: 'cloud-check',
+                                        title: t(
+                                            'settings.main.cloud_backup_title',
+                                        ),
+                                        value: t(
+                                            'settings.main.cloud_backup_on',
+                                        ),
+                                        warning: t(
+                                            'cloud_backup.confirm_credentials.warning',
+                                        ),
+                                    } satisfies SettingsOptionItem)
+                                  : ({
+                                        route: 'CloudBackupSettings',
+                                        icon: 'cloud-check',
+                                        title: t(
+                                            'settings.main.cloud_backup_title',
+                                        ),
+                                        value: t(
+                                            isCloudBackupConfigured
+                                                ? 'settings.main.cloud_backup_on'
+                                                : 'settings.main.cloud_backup_off',
+                                        ),
+                                    } satisfies SettingsOptionItem),
                           ]
                         : []),
                     {
@@ -211,6 +231,7 @@ export const useSettingsOptions = () => {
         isLanguageSelectionEnabled,
         isCloudBackupAvailable,
         isCloudBackupConfigured,
+        needsCloudBackupConfirmation,
         canRekey,
     ])
 

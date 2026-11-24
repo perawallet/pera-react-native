@@ -849,6 +849,16 @@
             "proceed": "Fortfahren",
             "error_message": "Falsche Auswahl. Bitte versuche es erneut."
         },
+        "confirm_credentials": {
+            "warning": "Bestätige, dass du deine Backup-Zugangsdaten gespeichert hast",
+            "title": "Backup-Zugangsdaten bestätigen",
+            "description": "Wähle die richtigen Wörter deiner 12-Wort-Passphrase aus und gib deinen Backup-Schlüssel ein, um zu bestätigen, dass du beides aufbewahrt hast.",
+            "confirm": "Bestätigen",
+            "error_words": "Einige der ausgewählten Wörter sind falsch. Bitte versuche es erneut.",
+            "error_key": "Dieser Backup-Schlüssel passt nicht zu deinem Backup.",
+            "error_both": "Die ausgewählten Wörter und der Backup-Schlüssel sind beide falsch.",
+            "success": "Backup-Zugangsdaten bestätigt"
+        },
         "store_encryption_key": {
             "title": "Backup-Schlüssel speichern",
             "description": "Bewahre deinen Backup-Schlüssel sicher auf. Zusammen mit deiner Passphrase brauchst du ihn, um dieses Backup wiederherzustellen.",

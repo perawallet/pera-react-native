@@ -217,10 +217,20 @@ const mockStores = (opts: {
     syncState: SyncStateFixture | null
     accounts: (string | { chains: Record<string, { address: string }> })[]
     contacts: (string | { evm: string })[]
+    needsCredentialsConfirmation?: boolean
 }) => {
     ;(useCloudBackupStore as unknown as Mock).mockImplementation(
-        (s: (st: { backupId: string | null }) => unknown) =>
-            s({ backupId: opts.backupId }),
+        (
+            s: (st: {
+                backupId: string | null
+                needsCredentialsConfirmation: () => boolean
+            }) => unknown,
+        ) =>
+            s({
+                backupId: opts.backupId,
+                needsCredentialsConfirmation: () =>
+                    opts.needsCredentialsConfirmation ?? false,
+            }),
     )
     ;(useBackupSyncStateStore as unknown as Mock).mockImplementation(
         (s: (st: { syncState: unknown }) => unknown) =>
@@ -747,5 +757,37 @@ describe('useCloudBackupOverview', () => {
         renderHook(() => useCloudBackupOverview())
 
         expect(markIntroductionSeenMock).not.toHaveBeenCalled()
+    })
+
+    test('flags the credentials confirmation while the store asks for it', () => {
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState: emptySync(),
+            accounts: [],
+            contacts: [],
+            needsCredentialsConfirmation: true,
+        })
+
+        const { result } = renderHook(() => useCloudBackupOverview())
+
+        expect(result.current.needsCredentialsConfirmation).toBe(true)
+    })
+
+    test('opens the confirm screen without a PIN of its own', () => {
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState: emptySync(),
+            accounts: [],
+            contacts: [],
+            needsCredentialsConfirmation: true,
+        })
+        const { result } = renderHook(() => useCloudBackupOverview())
+
+        result.current.onPressConfirmCredentials()
+
+        expect(navigationMock.navigate).toHaveBeenCalledWith(
+            'CloudBackupConfirmCredentials',
+        )
+        expect(requirePinVerificationMock).not.toHaveBeenCalled()
     })
 })

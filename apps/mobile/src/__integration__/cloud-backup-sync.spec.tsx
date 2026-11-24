@@ -87,6 +87,7 @@ const setupSyncedBackup = async ({
         backupId,
         salt: BACKUP_SALT,
         deviceId,
+        credentialsConfirmed: true,
     })
 
     const { handlers, getItem, seenDeviceIds, pushFromOtherDevice } =

@@ -92,6 +92,7 @@ beforeEach(async () => {
         backupId: 'did:pera:CREDENTIALADDRESS',
         salt: SALT,
         deviceId: 'device-integration',
+        credentialsConfirmed: true,
     })
 })
 
