@@ -30,6 +30,11 @@ export const useStyles = makeStyles(theme => ({
     },
     itemBody: {
         flex: 1,
+        gap: theme.spacing.xs,
+    },
+    filterContent: {
+        paddingHorizontal: theme.spacing.xl,
+        paddingBottom: theme.spacing.sm,
     },
     itemDescription: {
         color: theme.colors.textMain,

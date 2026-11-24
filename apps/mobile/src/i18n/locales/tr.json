@@ -4360,6 +4360,7 @@
                         "refunded": "İade edildi"
                     }
                 },
+                "account_filter_all": "Tüm hesaplar",
                 "empty": {
                     "title": "Henüz swap yok",
                     "body": "Swap geçmişin burada görünecek."

@@ -4360,6 +4360,7 @@
                         "refunded": "Remboursé"
                     }
                 },
+                "account_filter_all": "Tous les comptes",
                 "empty": {
                     "title": "Aucun swap pour le moment",
                     "body": "Votre historique de swaps apparaîtra ici."

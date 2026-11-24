@@ -13,11 +13,13 @@
 import { useCallback, type ReactElement } from 'react'
 import {
     useRecentSwapPairsQuery,
-    useSwapAccount,
     useSwapsStore,
     type SwapHistoryPair,
 } from '@perawallet/wallet-core-swaps'
-import { addressOn } from '@perawallet/wallet-core-accounts'
+import {
+    getAccountDisplayName,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { PWView } from '@components/core'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -32,7 +34,6 @@ export type UseSwapPairHistoryWidgetResult = {
     isLoading: boolean
     isError: boolean
     isEnabled: boolean
-    address: string
     handlePairPress: (pair: SwapHistoryPair) => void
     handleSeeAllPress: () => void
     renderPair: (params: { item: SwapHistoryPair }) => ReactElement
@@ -43,9 +44,8 @@ export type UseSwapPairHistoryWidgetResult = {
 export const useSwapPairHistoryWidget = (
     scope: ChainScope,
 ): UseSwapPairHistoryWidgetResult => {
-    const swapAccount = useSwapAccount()
     const setAccountPair = useSwapsStore(state => state.setAccountPair)
-    const address = swapAccount ? (addressOn(swapAccount, scope) ?? '') : ''
+    const accounts = useAllAccounts()
     const { request: requestBottomSheet } = useBottomSheet()
     const styles = useStyles()
 
@@ -68,34 +68,33 @@ export const useSwapPairHistoryWidget = (
     )
 
     const handleSeeAllPress = useCallback(() => {
-        if (!address) return
         trackEvent(SwapEvent.HistorySeeAll, {
             [AnalyticsMetadataKey.ChainId]: scope.chainId,
         })
         void requestBottomSheet<void>({
-            contents: (
-                <SwapHistoryContent
-                    scope={scope}
-                    address={address}
-                />
-            ),
+            contents: <SwapHistoryContent />,
             options: {
                 size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },
         })
-    }, [address, scope, requestBottomSheet])
+    }, [scope.chainId, requestBottomSheet])
 
     const renderPair = useCallback(
         ({ item }: { item: SwapHistoryPair }) => (
             <SwapPairChip
                 assetIn={item.assetIn}
                 assetOut={item.assetOut}
+                accountName={getAccountDisplayName(
+                    accounts.find(account => account.id === item.accountId) ??
+                        null,
+                    item.assetIn.ref.chainId,
+                )}
                 onPress={() => handlePairPress(item)}
             />
         ),
-        [handlePairPress],
+        [handlePairPress, accounts],
     )
 
     const keyExtractor = useCallback(
@@ -113,7 +112,6 @@ export const useSwapPairHistoryWidget = (
         isLoading,
         isError,
         isEnabled,
-        address,
         handlePairPress,
         handleSeeAllPress,
         renderPair,

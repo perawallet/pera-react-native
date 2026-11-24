@@ -20,7 +20,7 @@ import { useSwapPairHistoryWidget } from '../useSwapPairHistoryWidget'
 
 const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 
-type Account = { id: string; chains: { algorand?: { address: string } } }
+type Account = { id: string; name: string }
 
 const {
     mockTrackEvent,
@@ -34,7 +34,7 @@ const {
     mockSetSelectedAccountId: vi.fn(),
     mockRequestBottomSheet: vi.fn(),
     state: {
-        selected: null as Account | null,
+        accounts: [] as Account[],
         recent: {
             pairs: [] as SwapHistoryPair[],
             isLoading: false,
@@ -53,11 +53,12 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
     useSwapsStore: (select: (store: unknown) => unknown) =>
         select({ setAccountPair: mockSetAccountPair }),
     useRecentSwapPairsQuery: () => state.recent,
-    useSwapAccount: () => state.selected,
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    addressOn: (account: Account) => account.chains.algorand?.address,
+    getAccountDisplayName: (account: Account | null) =>
+        account?.name ?? 'No Account',
+    useAllAccounts: () => state.accounts,
     useSelectedAccountId: () => ({
         setSelectedAccountId: mockSetSelectedAccountId,
     }),
@@ -72,7 +73,8 @@ vi.mock('@modules/swap/components/SwapHistoryContent', () => ({
 }))
 
 const ADDRESS = 'TESTADDRESS123'
-const MAIN: Account = { id: 'main', chains: { algorand: { address: ADDRESS } } }
+const MAIN: Account = { id: 'main', name: 'Main' }
+const OTHER: Account = { id: 'other', name: 'Savings' }
 
 const assetOn = (assetId: string, unitName: string) => ({
     assetId,
@@ -93,7 +95,7 @@ const pairPaidBy = (accountId: string) =>
 describe('useSwapPairHistoryWidget', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        state.selected = MAIN
+        state.accounts = [MAIN, OTHER]
         state.recent = {
             pairs: [],
             isLoading: false,
@@ -139,7 +141,7 @@ describe('useSwapPairHistoryWidget', () => {
         })
     })
 
-    it('opens the full history sheet for the swap account on see all', () => {
+    it('opens the full history sheet on see all', () => {
         const { result } = renderHook(() => useSwapPairHistoryWidget(SCOPE))
 
         act(() => result.current.handleSeeAllPress())
@@ -151,10 +153,7 @@ describe('useSwapPairHistoryWidget', () => {
             { contents: ReactElement; options: unknown },
         ]
         expect(request.contents.type).toBe(SwapHistoryContent)
-        expect(request.contents.props).toEqual({
-            scope: SCOPE,
-            address: ADDRESS,
-        })
+        expect(request.contents.props).toEqual({})
         expect(request.options).toEqual({
             size: 'modal',
             enablePanDownToClose: true,
@@ -162,13 +161,13 @@ describe('useSwapPairHistoryWidget', () => {
         })
     })
 
-    it('does nothing on see all without an address', () => {
-        state.selected = null
+    it('names the account that paid on each chip', () => {
         const { result } = renderHook(() => useSwapPairHistoryWidget(SCOPE))
 
-        act(() => result.current.handleSeeAllPress())
+        const chip = result.current.renderPair({
+            item: pairPaidBy('other'),
+        }) as ReactElement<{ accountName: string }>
 
-        expect(mockRequestBottomSheet).not.toHaveBeenCalled()
-        expect(mockTrackEvent).not.toHaveBeenCalled()
+        expect(chip.props.accountName).toBe('Savings')
     })
 })

@@ -4360,6 +4360,7 @@
                         "refunded": "Refunded"
                     }
                 },
+                "account_filter_all": "All accounts",
                 "empty": {
                     "title": "No swaps yet",
                     "body": "Your swap history will appear here."

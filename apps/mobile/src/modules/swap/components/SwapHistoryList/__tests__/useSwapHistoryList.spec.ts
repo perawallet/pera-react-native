@@ -10,14 +10,12 @@
  limitations under the License
  */
 
-import { renderHook } from '@testing-library/react'
+import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { Decimal } from 'decimal.js'
 import type { SwapHistoryItem } from '@perawallet/wallet-core-swaps'
 import { VISIBLE_SWAP_STATUSES } from '../../../constants'
-import {
-    useSwapHistoryList,
-    type ListedSwapHistoryItem,
-} from '../useSwapHistoryList'
+import { useSwapHistoryList } from '../useSwapHistoryList'
 
 const { SCOPE, ETH_SCOPE } = vi.hoisted(() => ({
     SCOPE: { chainId: 'algorand', networkId: 'mainnet' } as const,
@@ -29,23 +27,41 @@ const {
     mockPushWebView,
     mockTrackEvent,
     mockHistory,
-    mockAddresses,
+    mockFormatAssetAmount,
+    wallet,
 } = vi.hoisted(() => ({
     mockExplorerUrlFor: vi.fn(),
     mockPushWebView: vi.fn(),
     mockTrackEvent: vi.fn(),
     mockHistory: vi.fn(),
-    mockAddresses: { current: [] as unknown[] },
+    mockFormatAssetAmount: vi.fn(),
+    wallet: {
+        accounts: [] as { id: string; name: string }[],
+        addresses: [] as unknown[],
+    },
 }))
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
     swapExplorerUrlFor: mockExplorerUrlFor,
     useSwapHistoryInfiniteQuery: mockHistory,
-    useSwapAccount: () => null,
+    useSwapSigningAccounts: () => wallet.accounts,
+    useSwapAccountsAddresses: () => wallet.addresses,
+    swapAccountKey: ({
+        scope,
+        address,
+    }: {
+        scope: { chainId: string }
+        address: string
+    }) => `${scope.chainId}|${address.toLowerCase()}`,
 }))
 
-vi.mock('../../../hooks/useSwapAccountAddresses', () => ({
-    useSwapAccountAddresses: () => mockAddresses.current,
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    getAccountDisplayName: (account: { name: string } | null) =>
+        account?.name ?? 'No Account',
+}))
+
+vi.mock('@perawallet/wallet-core-assets', () => ({
+    formatAssetAmount: mockFormatAssetAmount,
 }))
 
 vi.mock('@modules/webview', () => ({
@@ -57,11 +73,27 @@ vi.mock('@analytics', async importOriginal => ({
     trackEvent: mockTrackEvent,
 }))
 
+const ALGO = {
+    assetId: '0',
+    ref: { ...SCOPE, assetId: '0' },
+    unitName: 'ALGO',
+    decimals: 6,
+}
+const USDC = {
+    assetId: '31566704',
+    ref: { ...SCOPE, assetId: '31566704' },
+    unitName: 'USDC',
+    decimals: 6,
+}
+
 const item = {
     orderId: 'order-1',
-    assetIn: { unitName: 'ALGO' },
-    assetOut: { unitName: 'USDC' },
-} as unknown as ListedSwapHistoryItem
+    assetIn: ALGO,
+    assetOut: USDC,
+    amountIn: new Decimal('1000000'),
+    amountOut: new Decimal('2000000'),
+    sourceAccount: null,
+} as unknown as SwapHistoryItem
 
 const historyOf = (swaps: SwapHistoryItem[]) => ({
     swaps,
@@ -73,55 +105,203 @@ const historyOf = (swaps: SwapHistoryItem[]) => ({
     fetchNextPage: vi.fn(),
 })
 
+const render = (onClose = vi.fn()) =>
+    renderHook(() => useSwapHistoryList({ onClose }))
+
 describe('useSwapHistoryList', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockHistory.mockReturnValue(historyOf([]))
-        mockAddresses.current = [
-            { scope: SCOPE, address: 'ADDR', isOnDevice: true },
-            { scope: ETH_SCOPE, address: '0xETH', isOnDevice: true },
+        mockExplorerUrlFor.mockReturnValue(undefined)
+        mockFormatAssetAmount.mockImplementation(
+            (amount: Decimal, asset: { unitName: string }) =>
+                `${amount.toString()} ${asset.unitName}`,
+        )
+        wallet.accounts = [
+            { id: 'one', name: 'First' },
+            { id: 'two', name: 'Second' },
+        ]
+        wallet.addresses = [
+            {
+                scope: SCOPE,
+                address: 'ADDR1',
+                accountId: 'one',
+                isOnDevice: true,
+            },
+            {
+                scope: SCOPE,
+                address: 'ADDR2',
+                accountId: 'two',
+                isOnDevice: true,
+            },
+            {
+                scope: ETH_SCOPE,
+                address: '0xETH2',
+                accountId: 'two',
+                isOnDevice: true,
+            },
         ]
     })
 
-    it('reads every swap-chain address of the account, the swap scope first', () => {
-        renderHook(() =>
-            useSwapHistoryList({
-                scope: ETH_SCOPE,
-                address: '0xETH',
-                onClose: vi.fn(),
-            }),
-        )
+    it('reads every signing account address, not one account', () => {
+        render()
 
         expect(mockHistory).toHaveBeenCalledWith(
             [
-                { scope: ETH_SCOPE, address: '0xETH', isOnDevice: true },
-                { scope: SCOPE, address: 'ADDR', isOnDevice: true },
+                { scope: SCOPE, address: 'ADDR1', isOnDevice: true },
+                { scope: SCOPE, address: 'ADDR2', isOnDevice: true },
+                { scope: ETH_SCOPE, address: '0xETH2', isOnDevice: true },
             ],
             VISIBLE_SWAP_STATUSES,
         )
     })
 
     it('carries whether device registration sends each address', () => {
-        mockAddresses.current = [
-            { scope: SCOPE, address: 'ADDR', isOnDevice: true },
-            { scope: ETH_SCOPE, address: '0xETH', isOnDevice: false },
+        wallet.addresses = [
+            {
+                scope: SCOPE,
+                address: 'ADDR1',
+                accountId: 'one',
+                isOnDevice: true,
+            },
+            {
+                scope: ETH_SCOPE,
+                address: '0xETH1',
+                accountId: 'one',
+                isOnDevice: false,
+            },
         ]
 
-        renderHook(() =>
-            useSwapHistoryList({
-                scope: ETH_SCOPE,
-                address: '0xETH',
-                onClose: vi.fn(),
-            }),
-        )
+        render()
 
         expect(mockHistory).toHaveBeenCalledWith(
             [
-                { scope: ETH_SCOPE, address: '0xETH', isOnDevice: false },
-                { scope: SCOPE, address: 'ADDR', isOnDevice: true },
+                { scope: SCOPE, address: 'ADDR1', isOnDevice: true },
+                { scope: ETH_SCOPE, address: '0xETH1', isOnDevice: false },
             ],
             VISIBLE_SWAP_STATUSES,
         )
+    })
+
+    it('offers All accounts and one option per account with a swap address', () => {
+        const { result } = render()
+
+        expect(
+            result.current.accountOptions.map(option => option.value),
+        ).toEqual([null, 'one', 'two'])
+        expect(
+            result.current.accountOptions.map(option => option.label),
+        ).toEqual(['swap.history.list.account_filter_all', 'First', 'Second'])
+        expect(result.current.selectedAccountId).toBeNull()
+    })
+
+    it('offers no filter for a single account', () => {
+        wallet.accounts = [{ id: 'one', name: 'First' }]
+        wallet.addresses = [
+            {
+                scope: SCOPE,
+                address: 'ADDR1',
+                accountId: 'one',
+                isOnDevice: true,
+            },
+        ]
+
+        const { result } = render()
+
+        expect(result.current.accountOptions).toEqual([])
+    })
+
+    it('narrows the read to the picked account and restores all on All', () => {
+        const { result } = render()
+
+        act(() => result.current.handleSelectAccount('two'))
+
+        expect(result.current.selectedAccountId).toBe('two')
+        expect(mockHistory).toHaveBeenLastCalledWith(
+            [
+                { scope: SCOPE, address: 'ADDR2', isOnDevice: true },
+                { scope: ETH_SCOPE, address: '0xETH2', isOnDevice: true },
+            ],
+            VISIBLE_SWAP_STATUSES,
+        )
+
+        act(() => result.current.handleSelectAccount(null))
+
+        expect(result.current.selectedAccountId).toBeNull()
+        expect(mockHistory.mock.lastCall?.[0]).toHaveLength(3)
+    })
+
+    it('falls back to All when the picked account leaves the wallet', () => {
+        const { result, rerender } = render()
+        act(() => result.current.handleSelectAccount('two'))
+
+        wallet.accounts = [
+            { id: 'one', name: 'First' },
+            { id: 'three', name: 'Third' },
+        ]
+        wallet.addresses = [
+            {
+                scope: SCOPE,
+                address: 'ADDR1',
+                accountId: 'one',
+                isOnDevice: true,
+            },
+            {
+                scope: SCOPE,
+                address: 'ADDR3',
+                accountId: 'three',
+                isOnDevice: true,
+            },
+        ]
+        rerender()
+
+        expect(result.current.selectedAccountId).toBeNull()
+        expect(mockHistory.mock.lastCall?.[0]).toHaveLength(2)
+    })
+
+    it('names the account that paid, matching an EVM address ignoring case', () => {
+        const paidByTwo = {
+            ...item,
+            orderId: 'paid',
+            sourceAccount: { scope: ETH_SCOPE, address: '0xeth2' },
+        } as unknown as SwapHistoryItem
+        const stranger = {
+            ...item,
+            orderId: 'stranger',
+            sourceAccount: { scope: SCOPE, address: 'NOBODY' },
+        } as unknown as SwapHistoryItem
+        mockHistory.mockReturnValue(historyOf([paidByTwo, stranger, item]))
+
+        const { result } = render()
+
+        expect(result.current.swaps.map(swap => swap.accountName)).toEqual([
+            'Second',
+            undefined,
+            undefined,
+        ])
+    })
+
+    it('rounds amounts through the shared formatter and shows a dash for a missing one', () => {
+        const noAmount = {
+            ...item,
+            orderId: 'none',
+            amountIn: null,
+        } as unknown as SwapHistoryItem
+        mockHistory.mockReturnValue(historyOf([item, noAmount]))
+
+        const { result } = render()
+
+        expect(mockFormatAssetAmount).toHaveBeenCalledWith(item.amountIn, ALGO)
+        expect(mockFormatAssetAmount).toHaveBeenCalledWith(item.amountOut, USDC)
+        expect(result.current.swaps[0]).toMatchObject({
+            amountInLabel: '1000000 ALGO',
+            amountOutLabel: '2000000 USDC',
+        })
+        expect(result.current.swaps[1]).toMatchObject({
+            amountInLabel: '-',
+            amountOutLabel: '2000000 USDC',
+        })
+        expect(mockFormatAssetAmount).toHaveBeenCalledTimes(3)
     })
 
     it('shows the not-on-device state instead of the error or empty state', () => {
@@ -131,17 +311,53 @@ describe('useSwapHistoryList', () => {
             isAccountNotOnDevice: true,
         })
 
-        const { result } = renderHook(() =>
-            useSwapHistoryList({
-                scope: SCOPE,
-                address: 'ADDR',
-                onClose: vi.fn(),
-            }),
-        )
+        const { result } = render()
 
         expect(result.current.shouldShowNotOnDeviceState).toBe(true)
         expect(result.current.shouldShowErrorState).toBe(false)
         expect(result.current.shouldShowEmptyState).toBe(false)
+    })
+
+    it('keeps the filter options while a picked account has no swaps', () => {
+        const { result } = render()
+        act(() => result.current.handleSelectAccount('one'))
+
+        expect(result.current.shouldShowEmptyState).toBe(true)
+        expect(result.current.accountOptions).toHaveLength(3)
+    })
+
+    it('reads on while nothing is visible and older pages remain, without showing the empty state', () => {
+        const fetchNextPage = vi.fn()
+        mockHistory.mockReturnValue({
+            ...historyOf([]),
+            hasNextPage: true,
+            fetchNextPage,
+        })
+
+        const { result } = render()
+
+        expect(fetchNextPage).toHaveBeenCalledTimes(1)
+        expect(result.current.shouldShowEmptyState).toBe(false)
+    })
+
+    it('does not read on while a page is loading or after an error', () => {
+        const fetchNextPage = vi.fn()
+        mockHistory.mockReturnValue({
+            ...historyOf([]),
+            hasNextPage: true,
+            isFetchingNextPage: true,
+            fetchNextPage,
+        })
+        render()
+        mockHistory.mockReturnValue({
+            ...historyOf([]),
+            hasNextPage: true,
+            isError: true,
+            fetchNextPage,
+        })
+        render()
+
+        expect(fetchNextPage).not.toHaveBeenCalled()
     })
 
     it('hides rows naming an asset this wallet cannot resolve', () => {
@@ -152,56 +368,50 @@ describe('useSwapHistoryList', () => {
         } as unknown as SwapHistoryItem
         mockHistory.mockReturnValue(historyOf([legacy, item]))
 
-        const { result } = renderHook(() =>
-            useSwapHistoryList({
-                scope: SCOPE,
-                address: 'ADDR',
-                onClose: vi.fn(),
-            }),
-        )
+        const { result } = render()
 
-        expect(result.current.swaps).toEqual([
-            { ...item, explorerUrl: undefined },
+        expect(result.current.swaps.map(swap => swap.orderId)).toEqual([
+            'order-1',
         ])
         expect(result.current.keyExtractor(result.current.swaps[0])).toBe(
             'order-1',
         )
     })
 
-    it("opens the swap on its chain's explorer", () => {
-        mockHistory.mockReturnValue(historyOf([item]))
-        mockExplorerUrlFor.mockReturnValue(
-            'https://explorer.test/tx-group/GROUP/',
-        )
+    it("opens the swap on its own chain's explorer", () => {
+        const ethSwap = {
+            ...item,
+            orderId: 'eth',
+            assetIn: {
+                ...ALGO,
+                ref: { ...ETH_SCOPE, assetId: 'native' },
+                unitName: 'ETH',
+            },
+        } as unknown as SwapHistoryItem
+        mockHistory.mockReturnValue(historyOf([ethSwap]))
+        mockExplorerUrlFor.mockReturnValue('https://explorer.test/tx/0x1')
         const onClose = vi.fn()
-        const { result } = renderHook(() =>
-            useSwapHistoryList({ scope: SCOPE, address: 'ADDR', onClose }),
-        )
+        const { result } = render(onClose)
 
         const [listed] = result.current.swaps
-        expect(listed.explorerUrl).toBe('https://explorer.test/tx-group/GROUP/')
+        expect(mockExplorerUrlFor).toHaveBeenCalledWith(ETH_SCOPE, ethSwap)
+        expect(listed.explorerUrl).toBe('https://explorer.test/tx/0x1')
         result.current.handleItemPress(listed)
 
-        expect(mockExplorerUrlFor).toHaveBeenCalledWith(SCOPE, item)
         expect(onClose).toHaveBeenCalled()
         expect(mockPushWebView).toHaveBeenCalledWith(
-            expect.objectContaining({
-                url: 'https://explorer.test/tx-group/GROUP/',
-            }),
+            expect.objectContaining({ url: 'https://explorer.test/tx/0x1' }),
         )
         expect(mockTrackEvent).toHaveBeenCalledWith(
             'swapscr_swap_history_see_all_select',
-            { chain_id: 'algorand', swap_pairing: 'ALGO/USDC' },
+            { chain_id: 'ethereum', swap_pairing: 'ETH/USDC' },
         )
     })
 
     it('does nothing when the swap has nothing to link to', () => {
         mockHistory.mockReturnValue(historyOf([item]))
-        mockExplorerUrlFor.mockReturnValue(undefined)
         const onClose = vi.fn()
-        const { result } = renderHook(() =>
-            useSwapHistoryList({ scope: SCOPE, address: 'ADDR', onClose }),
-        )
+        const { result } = render(onClose)
 
         const [listed] = result.current.swaps
         expect(listed.explorerUrl).toBeUndefined()
