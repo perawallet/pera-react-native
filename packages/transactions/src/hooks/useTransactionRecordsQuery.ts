@@ -387,10 +387,11 @@ export const useTransactionRecordsQuery = ({
                 return merged
             }
 
+            const cachedQuery = queryClient
+                .getQueryCache()
+                .get(hashKey(queryKey))
+
             if (!onlineManager.isOnline()) {
-                const offlineQuery = queryClient
-                    .getQueryCache()
-                    .get(hashKey(queryKey))
                 // A refetch rebuilds from page one and stops at the first page
                 // with no cursor, so an offline page here would drop every page
                 // already loaded. Throwing keeps them, and their cursors.
@@ -401,7 +402,7 @@ export const useTransactionRecordsQuery = ({
                     throw new PeraNetworkError('offline')
                 }
                 const recordedFailure =
-                    offlineQuery && failedFirstPageErrors.get(offlineQuery)
+                    cachedQuery && failedFirstPageErrors.get(cachedQuery)
                 if (recordedFailure) throw recordedFailure
                 // Only an entry that never failed starts cold: an empty page
                 // reads as the offline empty state, and the ledger's sends
@@ -413,9 +414,6 @@ export const useTransactionRecordsQuery = ({
                 return (await readPage(pageParam, signal)).page
             }
 
-            const cachedQuery = queryClient
-                .getQueryCache()
-                .get(hashKey(queryKey))
             const isFullRefetch =
                 cachedQuery !== undefined &&
                 consumeFullRefetchRequest(cachedQuery)

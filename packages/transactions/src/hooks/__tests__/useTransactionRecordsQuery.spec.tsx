@@ -812,7 +812,7 @@ describe('useTransactionRecordsQuery', () => {
             second.unmount()
         })
 
-        test('keeps a failed first page failed through an offline re-read, then re-reads it once back online', async () => {
+        test('keeps a failed first page failed through an offline read, and a read after reconnect keeps the error until it settles', async () => {
             const failure = new PeraNetworkError('server', { status: 503 })
             mocks.getPendingTransactionRecords.mockResolvedValue([
                 pendingSend('SENT', JAN_10 + DAY_MS),
