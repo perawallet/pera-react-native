@@ -64,9 +64,11 @@ export const EthereumRecordAmountRow = ({
                           )
                         : change.value
                 }
+                density='exact'
                 isLoading={isPending}
                 showSymbol
                 ignorePrivacyMode
+                truncate={false}
             />
         </KeyValueRow>
     )

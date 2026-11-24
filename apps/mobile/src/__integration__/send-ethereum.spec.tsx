@@ -574,6 +574,34 @@ describe('Flow: send from an Ethereum account', () => {
                 )
             },
         )
+
+        it('Given MAX ether from a balance with 18 decimals, when the user reviews it, then the amount and the total show every digit and the total is the amount plus the fee', async () => {
+            await seedSenderEther('13499764901052416')
+            selectSender(ETHEREUM_SENDER)
+            useSendFundsStore.getState().setSelectedAsset({
+                chainId: 'ethereum',
+                assetId: 'native',
+            })
+            useSendFundsStore.getState().setAmount(new Decimal('0.01'))
+            useSendFundsStore.getState().setIsMaxAmount(true)
+            useSendFundsStore.getState().setDestination(RECEIVER)
+            useSendFundsStore.getState().setSendMode('normal')
+
+            renderSendConfirmationStack()
+
+            // The balance less Normal's 84000 gwei max fee.
+            await waitFor(() =>
+                expect(
+                    screen.getByTestId('send_confirm_amount').textContent,
+                ).toMatch(/0\.013415764901052416(?!\d)/),
+            )
+            // Plus Normal's 63000 gwei estimated fee.
+            await waitFor(() =>
+                expect(
+                    screen.getByTestId('send_confirm_total').textContent,
+                ).toMatch(/0\.013478764901052416(?!\d)/),
+            )
+        })
     })
 
     it('Given an ether send, when the user reviews it, then the fee shows Normal in one row, opens to each speed with its wait, and picking one closes it', async () => {
@@ -611,6 +639,70 @@ describe('Flow: send from an Ethereum account', () => {
         expect(screen.queryByTestId('fee_preset_fast')).toBeNull()
         expect(screen.getByTestId('fee_preset_toggle').textContent).toContain(
             'Slow',
+        )
+    })
+
+    it('Given an ether send of 0.0000575 ETH, when the user reviews it, then the amount reads 0.0000575 ETH and the total adds the fee to it unrounded', async () => {
+        selectSender(ETHEREUM_SENDER)
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'ethereum', assetId: 'native' })
+        useSendFundsStore.getState().setAmount(new Decimal('0.0000575'))
+        useSendFundsStore.getState().setDestination(RECEIVER)
+        useSendFundsStore.getState().setSendMode('normal')
+
+        renderSendConfirmationStack()
+
+        const amount = await screen.findByTestId('send_confirm_amount')
+        expect(amount.textContent).toMatch(/0\.0000575(?!\d)/)
+        const total = await screen.findByTestId('send_confirm_total')
+        // 21000 gas at the Normal 2 gwei: a 0.000042 ETH fee.
+        await waitFor(() =>
+            expect(total.textContent).toMatch(/0\.0000995(?!\d)/),
+        )
+    })
+
+    it('Given 0.000123456789 of an 18-decimal token, when the user reviews it, then the amount and its total line show every digit', async () => {
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: RPC_URL,
+                responses: {
+                    eth_getBalance: '0x8ac7230489e80000',
+                    eth_call: erc20CallResponder({
+                        [UNLISTED_TOKEN]: {
+                            name: 'Tiny Token',
+                            symbol: 'TNY',
+                            decimals: 18,
+                            totalSupply: 10n ** 24n,
+                            balances: { [SENDER]: 10n ** 18n },
+                        },
+                    }),
+                },
+            }),
+        )
+        await fetchAndPersistAssets([UNLISTED_TOKEN], ETH_SCOPE)
+        await addAccountToken({
+            accountAddress: SENDER,
+            scope: ETH_SCOPE,
+            assetId: UNLISTED_TOKEN,
+        })
+        await fetchAndPersistAccount(SENDER, ETH_SCOPE)
+        selectSender(ETHEREUM_SENDER)
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'ethereum', assetId: UNLISTED_TOKEN })
+        useSendFundsStore.getState().setAmount(new Decimal('0.000123456789'))
+        useSendFundsStore.getState().setDestination(RECEIVER)
+        useSendFundsStore.getState().setSendMode('normal')
+
+        renderSendConfirmationStack()
+
+        const amount = await screen.findByTestId('send_confirm_amount')
+        expect(amount.textContent).toMatch(/0\.000123456789(?!\d)\s*TNY/)
+        await waitFor(() =>
+            expect(
+                screen.getByTestId('send_confirm_total').textContent,
+            ).toMatch(/0\.000123456789(?!\d)\s*TNY/),
         )
     })
 

@@ -36,10 +36,12 @@ export const TransactionDetailHeroAmount = ({
                 chainId={scope.chainId}
                 asset={amount.asset}
                 value={amount.value}
+                density='exact'
                 variant='h1'
                 style={styles.lead}
                 showSymbol
                 ignorePrivacyMode
+                truncate={false}
                 testID='transaction_detail_amount'
             />
         )
@@ -61,9 +63,11 @@ export const TransactionDetailHeroAmount = ({
                 chainId={scope.chainId}
                 asset={amount.asset}
                 value={amount.value}
+                density='exact'
                 style={styles.secondary}
                 showSymbol
                 ignorePrivacyMode
+                truncate={false}
                 testID='transaction_detail_amount'
             />
         </PWView>
