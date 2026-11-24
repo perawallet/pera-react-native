@@ -44,6 +44,7 @@ import {
     deriveBackupAccountReview,
     deriveBackupContactReview,
     deriveBackupPasskeyReview,
+    isAccountRestorableFromLatestSync,
     isAddressBackedUp,
     isContactBackedUp,
     isPasskeyBackedUp,
@@ -552,10 +553,10 @@ const markUploaded = (state: SyncState): SyncState => ({
     ),
 })
 
-const backedUpAfterSync = async (
+const stateAfterSync = async (
     accounts: WalletAccount[],
     { uploaded = true }: { uploaded?: boolean } = {},
-) => {
+): Promise<SyncState> => {
     const local = await buildLocalItems(accounts, account =>
         serializeAccountForBackup(account, {
             chainId: 'algorand',
@@ -571,11 +572,20 @@ const backedUpAfterSync = async (
         }),
     )
     const reconciled = reconcile(createEmptySyncState('did:pera:x'), local, 1)
-    return deriveBackupAccountReview(
-        uploaded ? markUploaded(reconciled) : reconciled,
+    return {
+        ...(uploaded ? markUploaded(reconciled) : reconciled),
+        lastSyncResult: 'SUCCESS',
+    }
+}
+
+const backedUpAfterSync = async (
+    accounts: WalletAccount[],
+    options: { uploaded?: boolean } = {},
+) =>
+    deriveBackupAccountReview(
+        await stateAfterSync(accounts, options),
         accounts.map(accountBackupAddresses),
     ).backedUp
-}
 
 describe('deriveBackupAccountReview over a real reconciled snapshot', () => {
     beforeEach(() => {
@@ -602,6 +612,199 @@ describe('deriveBackupAccountReview over a real reconciled snapshot', () => {
         expect(
             (await backedUpAfterSync([algo25], { uploaded: false })).size,
         ).toBe(0)
+    })
+})
+
+describe('isAccountRestorableFromLatestSync', () => {
+    const stateOf = (
+        items: Record<string, SyncItemState>,
+        lastSyncResult: SyncState['lastSyncResult'] = 'SUCCESS',
+    ): SyncState => ({
+        ...createEmptySyncState('b'),
+        lastSyncResult,
+        items,
+    })
+
+    const standaloneRecord = (overrides: Partial<SyncItemState> = {}) =>
+        tracked('ALGO', {
+            addresses: ['ALGO'],
+            accountType: chainBackupKind('algo25'),
+            ...overrides,
+        })
+
+    const standalone = (
+        record: Partial<SyncItemState> = {},
+        secret: Partial<SyncItemState> = {},
+    ) => ({
+        [recordKey('ALGO')]: standaloneRecord(record),
+        [secretsKey('ALGO')]: tracked('ALGO', secret),
+    })
+
+    it('is false without a sync state or a successful latest sync', () => {
+        const items = standalone()
+
+        expect(isAccountRestorableFromLatestSync(null, ['ALGO'])).toBe(false)
+        expect(
+            isAccountRestorableFromLatestSync(stateOf(items, null), ['ALGO']),
+        ).toBe(false)
+        expect(
+            isAccountRestorableFromLatestSync(stateOf(items, 'FAILED'), [
+                'ALGO',
+            ]),
+        ).toBe(false)
+    })
+
+    it('is false for no addresses', () => {
+        expect(
+            isAccountRestorableFromLatestSync(stateOf(standalone()), []),
+        ).toBe(false)
+    })
+
+    it('is true for a standalone account whose record and secret are live', () => {
+        expect(
+            isAccountRestorableFromLatestSync(stateOf(standalone()), ['ALGO']),
+        ).toBe(true)
+    })
+
+    it.each<[string, Partial<SyncItemState>]>([
+        ['ignored', { status: BackupItemStatus.IGNORED }],
+        ['pending delete', { pendingDelete: true }],
+        ['never uploaded', { knownVer: 0 }],
+    ])('is false when the secret is %s', (_name, secret) => {
+        expect(
+            isAccountRestorableFromLatestSync(stateOf(standalone({}, secret)), [
+                'ALGO',
+            ]),
+        ).toBe(false)
+    })
+
+    it.each<[string, Partial<SyncItemState>]>([
+        ['ignored', { status: BackupItemStatus.IGNORED }],
+        ['pending delete', { pendingDelete: true }],
+        ['never uploaded', { knownVer: 0 }],
+        ['held for import', { pendingImport: true }],
+    ])('is false when the record is %s', (_name, record) => {
+        expect(
+            isAccountRestorableFromLatestSync(stateOf(standalone(record)), [
+                'ALGO',
+            ]),
+        ).toBe(false)
+    })
+
+    it('is false when the record lacks one of the account addresses', () => {
+        expect(
+            isAccountRestorableFromLatestSync(stateOf(standalone()), [
+                'ALGO',
+                '0xeth',
+            ]),
+        ).toBe(false)
+    })
+
+    it('is false when only a legacy item and a secret exist, with no record', () => {
+        const state = stateOf({
+            [accountKey('ALGO')]: tracked('ALGO'),
+            [secretsKey('ALGO')]: tracked('ALGO'),
+        })
+
+        expect(isAccountRestorableFromLatestSync(state, ['ALGO'])).toBe(false)
+    })
+
+    it('is false when a secret has no cached address', () => {
+        const state = stateOf(standalone({}, { address: null }))
+
+        expect(isAccountRestorableFromLatestSync(state, ['ALGO'])).toBe(false)
+    })
+
+    describe('an HD record', () => {
+        const hdRecord = tracked('0xchild', {
+            addresses: ['0xchild'],
+            accountType: chainBackupKind('hdWallet'),
+            record: {
+                formatVersion: 2,
+                updatedAt: 1,
+                chains: [
+                    {
+                        chain: 'ethereum',
+                        type: 'hdChain',
+                        address: '0xchild',
+                        seedFirstDerivedAddress: 'SEED',
+                        account: 0,
+                        keyIndex: 1,
+                    },
+                ],
+            },
+        })
+
+        it('is true when the seed secret is live, though it is filed under the seed address', () => {
+            const state = stateOf({
+                [recordKey('0xchild')]: hdRecord,
+                [secretsKey('SEED')]: tracked('SEED'),
+            })
+
+            expect(isAccountRestorableFromLatestSync(state, ['0xchild'])).toBe(
+                true,
+            )
+        })
+
+        it('is false when only a secret under the account address is live', () => {
+            const state = stateOf({
+                [recordKey('0xchild')]: hdRecord,
+                [secretsKey('0xchild')]: tracked('0xchild'),
+            })
+
+            expect(isAccountRestorableFromLatestSync(state, ['0xchild'])).toBe(
+                false,
+            )
+        })
+    })
+
+    describe('over a real reconciled snapshot', () => {
+        beforeEach(() => {
+            registerFakeBackupAdapter()
+            registerAlgorandAccountsAdapter()
+        })
+
+        const restorable = (state: SyncState, account: WalletAccount) =>
+            isAccountRestorableFromLatestSync(
+                state,
+                accountBackupAddresses(account),
+            )
+
+        it('is true for a standalone account once uploaded, false before', async () => {
+            expect(restorable(await stateAfterSync([algo25]), algo25)).toBe(
+                true,
+            )
+            expect(
+                restorable(
+                    await stateAfterSync([algo25], { uploaded: false }),
+                    algo25,
+                ),
+            ).toBe(false)
+        })
+
+        it('is true for every HD child of one seed, and false for all once the seed secret is ignored', async () => {
+            const first = hdChild('HD1', 0)
+            const second = hdChild('HD2', 1)
+            const state = await stateAfterSync([first, second])
+
+            expect(restorable(state, first)).toBe(true)
+            expect(restorable(state, second)).toBe(true)
+
+            const seedKey = secretsKey('SEEDFIRST')
+            const withoutSeed: SyncState = {
+                ...state,
+                items: {
+                    ...state.items,
+                    [seedKey]: {
+                        ...(state.items[seedKey] as SyncItemState),
+                        status: BackupItemStatus.IGNORED,
+                    },
+                },
+            }
+
+            expect(restorable(withoutSeed, first)).toBe(false)
+            expect(restorable(withoutSeed, second)).toBe(false)
+        })
     })
 })
 

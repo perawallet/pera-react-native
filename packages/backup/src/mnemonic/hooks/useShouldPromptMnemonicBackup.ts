@@ -19,10 +19,12 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { Maybe } from '@perawallet/wallet-core-shared'
+import { useIsAccountCoveredByCloudBackup } from '../../cloud/hooks/useIsAccountCoveredByCloudBackup'
 import { useRequiresMnemonicBackup } from './useRequiresMnemonicBackup'
 
 // The single visibility rule for backup warnings (reminder banner, account
-// badge), so they can never disagree.
+// badge), so they can never disagree. A confirmed Cloud Backup's latest sync
+// counts as a backup.
 export const useShouldPromptMnemonicBackup = (
     account: Maybe<WalletAccount>,
     scope: ChainScope,
@@ -33,6 +35,8 @@ export const useShouldPromptMnemonicBackup = (
     // Hooks can't be skipped, so the capability decides what the lookups see.
     const promptableAccount = canBackUpMnemonic ? account : undefined
     const requiresBackup = useRequiresMnemonicBackup(promptableAccount)
+    const isCoveredByCloudBackup =
+        useIsAccountCoveredByCloudBackup(promptableAccount)
     // A balance on ANY chain or network counts, not just the one currently
     // selected: the passphrase is the same secret whichever chain the balance
     // sits on, and a warning that disappears on a network switch teaches the
@@ -52,6 +56,7 @@ export const useShouldPromptMnemonicBackup = (
     return (
         canBackUpMnemonic &&
         requiresBackup &&
+        !isCoveredByCloudBackup &&
         (isFunded || delegatedToThisAccount.length > 0)
     )
 }

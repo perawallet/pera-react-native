@@ -1,0 +1,43 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { useMemo } from 'react'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { Maybe } from '@perawallet/wallet-core-shared'
+import { isAccountRestorableFromLatestSync } from '../models'
+import { useCloudBackupStore } from '../store/store'
+import { useBackupSyncStateStore } from '../store/syncStateStore'
+import { accountBackupAddresses } from '../sync/serializeAccountItems'
+
+// Imports stores and sync files by path, not the barrels: the mnemonic hooks
+// import this file, and `useCloudBackupImport` imports the mnemonic hooks.
+export const useIsAccountCoveredByCloudBackup = (
+    account: Maybe<WalletAccount>,
+): boolean => {
+    const backupId = useCloudBackupStore(state => state.backupId)
+    const credentialsConfirmed = useCloudBackupStore(
+        state => state.credentialsConfirmed,
+    )
+    const addresses = useMemo(
+        () => (account ? accountBackupAddresses(account) : []),
+        [account],
+    )
+    const isRestorableFromLatestSync = useBackupSyncStateStore(
+        state =>
+            state.syncState?.backupId === backupId &&
+            isAccountRestorableFromLatestSync(state.syncState, addresses),
+    )
+
+    return (
+        backupId !== null && credentialsConfirmed && isRestorableFromLatestSync
+    )
+}

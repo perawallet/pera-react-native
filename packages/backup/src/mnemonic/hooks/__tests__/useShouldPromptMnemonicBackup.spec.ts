@@ -22,6 +22,12 @@ vi.mock('../useRequiresMnemonicBackup', () => ({
         mockRequiresBackup(...args),
 }))
 
+const mockCoveredByCloudBackup = vi.fn()
+vi.mock('../../../cloud/hooks/useIsAccountCoveredByCloudBackup', () => ({
+    useIsAccountCoveredByCloudBackup: (...args: unknown[]) =>
+        mockCoveredByCloudBackup(...args),
+}))
+
 const mockFundedNetworks = vi.fn()
 const mockAccountsDelegatedTo = vi.fn()
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
@@ -87,6 +93,8 @@ describe('useShouldPromptMnemonicBackup', () => {
     beforeEach(() => {
         registerFakeBackupAdapter()
         mockRequiresBackup.mockReset()
+        mockCoveredByCloudBackup.mockReset()
+        mockCoveredByCloudBackup.mockReturnValue(false)
         mockFundedNetworks.mockReset()
         mockAccountsDelegatedTo.mockReset()
         mockAccountsDelegatedTo.mockReturnValue([])
@@ -112,11 +120,42 @@ describe('useShouldPromptMnemonicBackup', () => {
         )
         expect(result.current).toBe(false)
         expect(mockCanBackUpMnemonic).toHaveBeenCalledWith('mnemonicBackup')
+        expect(mockCoveredByCloudBackup).toHaveBeenCalledWith(undefined)
     })
 
     test('false when the account does not require backup', () => {
         mockRequiresBackup.mockReturnValue(false)
         mockFundedNetworks.mockReturnValue(fundedOn('mainnet'))
+
+        const { result } = renderHook(() =>
+            useShouldPromptMnemonicBackup(accountHD, SCOPE),
+        )
+        expect(result.current).toBe(false)
+    })
+
+    test('false for a funded account that a confirmed cloud backup covers', () => {
+        mockRequiresBackup.mockReturnValue(true)
+        mockFundedNetworks.mockReturnValue(fundedOn('mainnet'))
+        mockCoveredByCloudBackup.mockReturnValue(true)
+
+        const { result } = renderHook(() =>
+            useShouldPromptMnemonicBackup(accountHD, SCOPE),
+        )
+        expect(result.current).toBe(false)
+        expect(mockCoveredByCloudBackup).toHaveBeenCalledWith(accountHD)
+    })
+
+    test('false for an unfunded account others delegate to when a cloud backup covers it', () => {
+        mockRequiresBackup.mockReturnValue(true)
+        mockFundedNetworks.mockReturnValue(fundedOn())
+        mockAccountsDelegatedTo.mockReturnValue([
+            {
+                id: 'a',
+                custody: { kind: 'local', seed: null },
+                chains: { algorand: { address: 'A' } },
+            },
+        ])
+        mockCoveredByCloudBackup.mockReturnValue(true)
 
         const { result } = renderHook(() =>
             useShouldPromptMnemonicBackup(accountHD, SCOPE),
