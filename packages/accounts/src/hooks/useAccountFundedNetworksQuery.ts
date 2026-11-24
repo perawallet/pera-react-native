@@ -12,13 +12,14 @@
 
 import { useQueries, type UseQueryResult } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import type { Maybe } from '@perawallet/wallet-core-shared'
+import { useStableIdList, type Maybe } from '@perawallet/wallet-core-shared'
 import { getAccountFundedNetworks } from '../db'
 import type { WalletAccount } from '../models'
 import { ensureAccountFetched } from '../sync/account-syncer'
 import {
     accountChainEntries,
     useOtherRegisteredChainIds,
+    type AccountChainEntry,
 } from './accountChainEntries'
 import { getAccountFundedNetworksQueryKey } from './querykeys'
 
@@ -29,6 +30,35 @@ export type UseAccountFundedNetworksResult = {
     isFunded: boolean
     isPending: boolean
     isError: boolean
+}
+
+export type UseFundedAccountIdsQueryResult = {
+    /** Ids of the accounts with a non-zero balance on any synced chain and network, in input order. */
+    fundedAccountIds: string[]
+    /** Ids of the accounts whose lookup failed on some chain, so whether they are funded is unknown. In input order. */
+    failedAccountIds: string[]
+    isPending: boolean
+}
+
+const fundedNetworksQueryOptions = (
+    entry: AccountChainEntry,
+    scope: ChainScope,
+) => {
+    const { chainId, address, isHome } = entry
+    return {
+        queryKey: getAccountFundedNetworksQueryKey(address, chainId, scope),
+        staleTime: Infinity,
+        // SQLite is the source of truth; run offline rather than pausing
+        // (see useAccountSummaryQuery).
+        networkMode: 'always' as const,
+        queryFn: async () => {
+            if (isHome) await ensureAccountFetched(address, scope)
+            return getAccountFundedNetworks({
+                accountAddress: address,
+                chainId,
+            })
+        },
+    }
 }
 
 const combineLookups = (
@@ -65,20 +95,54 @@ export const useAccountFundedNetworksQuery = (
         : []
 
     return useQueries({
-        queries: entries.map(({ chainId, address, isHome }) => ({
-            queryKey: getAccountFundedNetworksQueryKey(address, chainId, scope),
-            staleTime: Infinity,
-            // SQLite is the source of truth; run offline rather than pausing
-            // (see useAccountSummaryQuery).
-            networkMode: 'always' as const,
-            queryFn: async () => {
-                if (isHome) await ensureAccountFetched(address, scope)
-                return getAccountFundedNetworks({
-                    accountAddress: address,
-                    chainId,
-                })
-            },
-        })),
+        queries: entries.map(entry => fundedNetworksQueryOptions(entry, scope)),
         combine: combineLookups,
     })
+}
+
+/**
+ * The list form of `useAccountFundedNetworksQuery`: which of `accounts` hold
+ * anything on any synced chain and network. Shares its cache entries, so it
+ * costs nothing extra where the single-account hook already ran.
+ */
+export const useFundedAccountIdsQuery = (
+    accounts: WalletAccount[],
+    scope: ChainScope,
+): UseFundedAccountIdsQueryResult => {
+    const otherChainIds = useOtherRegisteredChainIds(scope.chainId)
+    const owners: string[] = []
+    const queries = accounts.flatMap(account =>
+        accountChainEntries(account, scope.chainId, otherChainIds).map(
+            entry => {
+                owners.push(account.id)
+                return fundedNetworksQueryOptions(entry, scope)
+            },
+        ),
+    )
+
+    const combine = (lookups: UseQueryResult<string[]>[]) => ({
+        fundedIds: new Set(
+            lookups.flatMap((lookup, index) =>
+                (lookup.data ?? []).length > 0 ? [owners[index]] : [],
+            ),
+        ),
+        failedIds: new Set(
+            lookups.flatMap((lookup, index) =>
+                lookup.isError ? [owners[index]] : [],
+            ),
+        ),
+        isPending: lookups.some(lookup => lookup.isPending),
+    })
+
+    const { fundedIds, failedIds, isPending } = useQueries({
+        queries,
+        combine,
+    })
+    const fundedAccountIds = useStableIdList(
+        accounts.filter(({ id }) => fundedIds.has(id)).map(({ id }) => id),
+    )
+    const failedAccountIds = useStableIdList(
+        accounts.filter(({ id }) => failedIds.has(id)).map(({ id }) => id),
+    )
+    return { fundedAccountIds, failedAccountIds, isPending }
 }

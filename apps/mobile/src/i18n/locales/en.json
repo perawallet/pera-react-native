@@ -1082,6 +1082,12 @@
             "confirm_button": "Delete Backup",
             "confirm_checkbox_label": "I understand my backup will be permanently deleted from the server and this can’t be undone."
         },
+        "turn_off_at_risk": {
+            "summary_one": "This account holding <0/> will no longer be backed up.",
+            "summary_other": "These {{count}} accounts holding <0/> will no longer be backed up.",
+            "back_up_first": "Back Up Passphrases First",
+            "turn_off_anyway": "Turn Off Anyway"
+        },
         "restore": {
             "sheet_title": "Restore/Retrieve a Backup",
             "sheet_description": "Restore your backup by scanning a QR code or entering your credentials manually.",

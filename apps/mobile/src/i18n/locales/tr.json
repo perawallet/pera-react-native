@@ -1082,6 +1082,12 @@
             "confirm_button": "Yedeklemeyi sil",
             "confirm_checkbox_label": "Yedeklememin sunucudan kalıcı olarak silineceğini ve bu işlemin geri alınamayacağını anlıyorum."
         },
+        "turn_off_at_risk": {
+            "summary_one": "<0/> tutarındaki bu hesap artık yedeklenmeyecek.",
+            "summary_other": "Toplam <0/> tutarındaki bu {{count}} hesap artık yedeklenmeyecek.",
+            "back_up_first": "Önce passphrase’leri yedekle",
+            "turn_off_anyway": "Yine de kapat"
+        },
         "restore": {
             "sheet_title": "Yedeklemeyi geri yükle/al",
             "sheet_description": "QR kodu tarayarak veya kimlik bilgilerini elle girerek yedeklemeni geri yükle.",

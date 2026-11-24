@@ -31,12 +31,15 @@ export const TurnOffBackupSheet = () => {
             confirmLabel={t('cloud_backup.turn_off_sheet.keep_enabled')}
             confirmVariant='primary'
             onConfirm={handleKeep}
+            confirmTestID='turn_off_backup_keep'
             cancelLabel={t('cloud_backup.turn_off_sheet.turn_off')}
             cancelVariant='secondary'
             onCancel={handleTurnOff}
+            cancelTestID='turn_off_backup_turn_off'
             tertiaryLabel={t('cloud_backup.turn_off_sheet.turn_off_and_remove')}
             tertiaryVariant='errorLink'
             onTertiary={handleTurnOffAndRemove}
+            tertiaryTestID='turn_off_backup_turn_off_and_remove'
         />
     )
 }

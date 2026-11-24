@@ -1082,6 +1082,12 @@
             "confirm_button": "Eliminar la copia de seguridad",
             "confirm_checkbox_label": "Entiendo que mi copia de seguridad se eliminará del servidor de forma permanente y que esta acción no se puede deshacer."
         },
+        "turn_off_at_risk": {
+            "summary_one": "Esta cuenta con <0/> dejará de tener copia de seguridad.",
+            "summary_other": "Estas {{count}} cuentas con <0/> dejarán de tener copia de seguridad.",
+            "back_up_first": "Hacer copia de las passphrases primero",
+            "turn_off_anyway": "Desactivar de todos modos"
+        },
         "restore": {
             "sheet_title": "Restaurar una copia de seguridad",
             "sheet_description": "Restaura tu copia de seguridad escaneando un código QR o introduciendo tus credenciales manualmente.",

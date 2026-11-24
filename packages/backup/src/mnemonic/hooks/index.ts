@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+export * from './useFundedAccountsRequiringMnemonicBackupQuery'
 export * from './useRequiresMnemonicBackup'
 export * from './useShouldPromptMnemonicBackup'
 export * from './useMarkMnemonicBackupComplete'

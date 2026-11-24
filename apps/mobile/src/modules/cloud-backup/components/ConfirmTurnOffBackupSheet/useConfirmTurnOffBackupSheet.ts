@@ -10,27 +10,83 @@
  limitations under the License
  */
 
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
+import type { Decimal } from 'decimal.js'
+import {
+    useAccountsStore,
+    useAccountValueTotalsQuery,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { useFundedAccountsRequiringMnemonicBackupQuery } from '@perawallet/wallet-core-backup'
+import { useCurrency } from '@perawallet/wallet-core-currencies'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
+import { useBottomSheetResult } from '@modules/bottom-sheet'
+
+export type ConfirmTurnOffBackupResult =
+    | { kind: 'turnOff' }
+    | { kind: 'backUpFirst'; account: WalletAccount }
 
 type UseConfirmTurnOffBackupSheetResult = {
     isAcknowledged: boolean
-    isConfirmDisabled: boolean
     toggleAcknowledged: () => void
+    isTurnOffDisabled: boolean
+    /** True until the at-risk lookup settles, so the sheet never shows the
+     *  plain confirmation and then swaps to the at-risk one. */
+    isCheckingAccounts: boolean
+    accountsAtRisk: WalletAccount[]
+    /** In the preferred currency's display units; `null` while unknown. */
+    accountsAtRiskPreferredValue: Nullable<Decimal>
+    handleTurnOff: () => void
+    handleBackUpFirst: () => void
+    handleCancel: () => void
 }
 
 export const useConfirmTurnOffBackupSheet = (
     isAcknowledgementRequired: boolean,
 ): UseConfirmTurnOffBackupSheetResult => {
+    const { resolve, dismiss } =
+        useBottomSheetResult<ConfirmTurnOffBackupResult>()
+    const scope = useHomeChainScope()
+    const accounts = useAccountsStore(state => state.accounts)
+    const { accounts: accountsAtRisk, isPending } =
+        useFundedAccountsRequiringMnemonicBackupQuery(accounts, scope)
+    const { portfolioFiatValue } = useAccountValueTotalsQuery(
+        accountsAtRisk,
+        scope,
+        accountsAtRisk.length > 0,
+    )
+    const { usdToPreferred } = useCurrency(scope)
+    const accountsAtRiskPreferredValue = useMemo(
+        () => usdToPreferred(portfolioFiatValue),
+        [portfolioFiatValue, usdToPreferred],
+    )
     const [isAcknowledged, setIsAcknowledged] = useState(false)
 
     const toggleAcknowledged = useCallback(
         () => setIsAcknowledged(value => !value),
         [],
     )
+    const handleTurnOff = useCallback(
+        () => resolve({ kind: 'turnOff' }),
+        [resolve],
+    )
+    const firstAtRisk = accountsAtRisk[0]
+    const handleBackUpFirst = useCallback(() => {
+        if (!firstAtRisk) return
+        resolve({ kind: 'backUpFirst', account: firstAtRisk })
+    }, [resolve, firstAtRisk])
 
     return {
         isAcknowledged,
-        isConfirmDisabled: isAcknowledgementRequired && !isAcknowledged,
         toggleAcknowledged,
+        isTurnOffDisabled:
+            (isAcknowledgementRequired && !isAcknowledged) || isPending,
+        isCheckingAccounts: isPending,
+        accountsAtRisk,
+        accountsAtRiskPreferredValue,
+        handleTurnOff,
+        handleBackUpFirst,
+        handleCancel: dismiss,
     }
 }
