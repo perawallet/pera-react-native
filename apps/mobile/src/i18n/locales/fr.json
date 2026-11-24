@@ -269,7 +269,10 @@
         "empty_title": "Aucune autorisation ouverte",
         "empty_body": "Aucune autorisation ouverte de jeton ou de collection n'a été trouvée pour ce compte.",
         "error_title": "Impossible de charger les autorisations",
-        "error_body": "Vérifiez votre connexion et réessayez.",
+        "error_body": "Un problème est survenu lors du chargement. Réessayez dans un instant.",
+        "offline_body": "Vérifiez votre connexion et réessayez.",
+        "unavailable_title": "Les autorisations ne sont pas encore disponibles sur ce réseau",
+        "unavailable_body": "Pera ne peut pas encore consulter les autorisations de jetons de ce compte sur ce réseau.",
         "revoke_error_title": "Révocation non confirmée",
         "revoke_error_body": "Vérifiez dans la liste l'état de l'autorisation avant de réessayer."
     },

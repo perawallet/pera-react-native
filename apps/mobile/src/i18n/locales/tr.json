@@ -269,7 +269,10 @@
         "empty_title": "Açık onay yok",
         "empty_body": "Bu hesap için açık token veya koleksiyon onayı bulunamadı.",
         "error_title": "Onaylar yüklenemedi",
-        "error_body": "Bağlantını kontrol et ve tekrar dene.",
+        "error_body": "Yüklenirken bir sorun oluştu. Birazdan tekrar dene.",
+        "offline_body": "Bağlantını kontrol et ve tekrar dene.",
+        "unavailable_title": "Onaylar bu ağda henüz kullanılamıyor",
+        "unavailable_body": "Pera bu hesabın token onaylarını bu ağda henüz sorgulayamıyor.",
         "revoke_error_title": "İptal onaylanmadı",
         "revoke_error_body": "Tekrar denemeden önce listede onayın güncel durumuna bak."
     },

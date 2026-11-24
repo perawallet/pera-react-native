@@ -28,7 +28,7 @@ export const TokenApprovalsScreen = () => {
         scope,
         items,
         isPending,
-        isError,
+        loadError,
         canRevoke,
         revokingId,
         handleRevoke,
@@ -48,11 +48,23 @@ export const TokenApprovalsScreen = () => {
 
     const renderEmpty = () => {
         if (isPending) return <AssetRowSkeleton count={SKELETON_ROWS} />
-        if (isError) {
+        if (loadError === 'unavailable') {
+            return (
+                <EmptyView
+                    title={t('token_approvals.unavailable_title')}
+                    body={t('token_approvals.unavailable_body')}
+                />
+            )
+        }
+        if (loadError) {
             return (
                 <EmptyView
                     title={t('token_approvals.error_title')}
-                    body={t('token_approvals.error_body')}
+                    body={t(
+                        loadError === 'offline'
+                            ? 'token_approvals.offline_body'
+                            : 'token_approvals.error_body',
+                    )}
                     button={
                         <PWButton
                             variant='secondary'

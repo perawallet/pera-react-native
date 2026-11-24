@@ -269,7 +269,10 @@
         "empty_title": "No open approvals",
         "empty_body": "No open token or collection approvals were found for this account.",
         "error_title": "Couldn't load approvals",
-        "error_body": "Check your connection and try again.",
+        "error_body": "Something went wrong while loading them. Try again in a moment.",
+        "offline_body": "Check your connection and try again.",
+        "unavailable_title": "Approvals aren't available on this network yet",
+        "unavailable_body": "Pera can't look up this account's token approvals on this network yet.",
         "revoke_error_title": "Revoke not confirmed",
         "revoke_error_body": "Check the list for the approval's current status before trying again."
     },
