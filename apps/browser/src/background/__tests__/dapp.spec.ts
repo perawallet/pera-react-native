@@ -10,7 +10,15 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
+import {
+    afterEach,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+    type Mock,
+} from 'vitest'
 import {
     DAPP_HOST_REQUEST_SCOPE,
     DAPP_HOST_RESPONSE_SCOPE,
@@ -22,6 +30,7 @@ import {
     JsonRpcErrorCode,
     MAX_DAPP_REQUEST_JSON_LENGTH,
 } from '@perawallet/wallet-core-dapp/wire'
+import { logger } from '@perawallet/wallet-core-shared'
 import {
     installDappHostResponseRoute,
     installDappPageRequestRoute,
@@ -85,6 +94,10 @@ const swSender = {
 }
 
 describe('installDappPageRequestRoute', () => {
+    afterEach(() => {
+        vi.restoreAllMocks()
+    })
+
     let chromeMock: ReturnType<typeof makeChromeMock>
     let ensureOffscreenDocumentLike: Mock<() => Promise<void>>
     let isVaultUnlocked: Mock<() => Promise<boolean>>
@@ -154,6 +167,26 @@ describe('installDappPageRequestRoute', () => {
         expect(ack.ok).toBe(false)
         expect(ack.response.error.code).toBe(JsonRpcErrorCode.Unauthorized)
         expect(chromeMock.runtimeSendMessage).not.toHaveBeenCalled()
+    })
+
+    it('logs the method, code and message of a refusal, never its params', async () => {
+        const debug = vi.spyOn(logger, 'debug')
+
+        await chromeMock.deliver(
+            {
+                ...pageMessage,
+                request: { ...request, params: ['0xsecret'] },
+            },
+            { ...contentSender, origin: 'http://a.example' },
+        )
+
+        expect(debug).toHaveBeenCalledWith('[pera] dapp request rejected', {
+            provider: 'pera',
+            method: 'connect',
+            code: JsonRpcErrorCode.Unauthorized,
+            message: 'Insecure origin',
+        })
+        expect(JSON.stringify(debug.mock.calls)).not.toContain('0xsecret')
     })
 
     it('refuses a sub-frame and forwards nothing', async () => {
