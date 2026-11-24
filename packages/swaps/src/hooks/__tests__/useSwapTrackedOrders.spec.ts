@@ -19,6 +19,9 @@ import { useSwapTrackedOrders } from '../useSwapTrackedOrders'
 
 const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 
+const NOW = Date.now()
+const HOUR = 60 * 60 * 1000
+
 const order = (
     orderId: string,
     sourceAddress: string,
@@ -46,9 +49,9 @@ describe('swaps/useSwapTrackedOrders', () => {
 
     test('lists the orders the given addresses paid for, newest first', () => {
         const state = useSwapTrackingStore.getState()
-        state.trackOrder(order('old', 'MINE', 1))
-        state.trackOrder(order('other', 'THEIRS', 3))
-        state.trackOrder(order('new', 'MINE', 2))
+        state.trackOrder(order('old', 'MINE', NOW - 3))
+        state.trackOrder(order('other', 'THEIRS', NOW - 1))
+        state.trackOrder(order('new', 'MINE', NOW - 2))
 
         const { result } = renderHook(() => useSwapTrackedOrders(['MINE']))
 
@@ -56,10 +59,25 @@ describe('swaps/useSwapTrackedOrders', () => {
     })
 
     test('lists nothing for no addresses', () => {
-        useSwapTrackingStore.getState().trackOrder(order('a', 'MINE', 1))
+        useSwapTrackingStore.getState().trackOrder(order('a', 'MINE', NOW - 1))
 
         const { result } = renderHook(() => useSwapTrackedOrders([]))
 
         expect(result.current).toEqual([])
+    })
+
+    test('leaves out an order a day after it settled, keeps one settled an hour ago', () => {
+        const state = useSwapTrackingStore.getState()
+        const settled = (orderId: string, checkedAt: number) => ({
+            ...order(orderId, 'MINE', NOW - 48 * HOUR),
+            status: 'completed' as const,
+            checkedAt,
+        })
+        state.trackOrder(settled('stale', NOW - 25 * HOUR))
+        state.trackOrder(settled('fresh', NOW - HOUR))
+
+        const { result } = renderHook(() => useSwapTrackedOrders(['MINE']))
+
+        expect(result.current.map(item => item.orderId)).toEqual(['fresh'])
     })
 })

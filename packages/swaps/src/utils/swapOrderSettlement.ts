@@ -18,6 +18,9 @@ export const SWAP_STATUS_REVERSIBLE_MS = 7 * 24 * 60 * 60 * 1000
 /** Past this, an order the router never finished stops being followed. */
 export const SWAP_ORDER_TRACKING_LIMIT_MS = 30 * 24 * 60 * 60 * 1000
 
+/** How long a settled order is still listed after its last status change, in ms. */
+export const SWAP_SETTLED_ORDER_LISTED_MS = 24 * 60 * 60 * 1000
+
 const FINAL_STATUSES: ReadonlySet<SwapStatus> = new Set([
     'completed',
     'failed',
@@ -40,3 +43,15 @@ export const isSwapOrderSettled = (
         : SWAP_ORDER_TRACKING_LIMIT_MS
     return now - order.createdAt >= limit
 }
+
+/**
+ * Whether a tracked order is still worth showing: one still open, or one that
+ * settled within {@link SWAP_SETTLED_ORDER_LISTED_MS}. `now` and `checkedAt`
+ * are epoch ms.
+ */
+export const isSwapOrderListed = (
+    order: Pick<SwapTrackedOrder, 'status' | 'createdAt' | 'checkedAt'>,
+    now: number,
+): boolean =>
+    !isSwapOrderSettled(order, now) ||
+    now - order.checkedAt < SWAP_SETTLED_ORDER_LISTED_MS

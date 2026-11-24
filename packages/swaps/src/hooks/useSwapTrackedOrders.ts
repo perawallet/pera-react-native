@@ -13,16 +13,20 @@
 import { useMemo } from 'react'
 import type { SwapTrackedOrder } from '../models'
 import { useSwapTrackingStore } from '../store'
+import { isSwapOrderListed } from '../utils/swapOrderSettlement'
 
 export const useSwapTrackedOrders = (
     sourceAddresses: string[],
 ): SwapTrackedOrder[] => {
     const orders = useSwapTrackingStore(s => s.orders)
     const addressesKey = sourceAddresses.join(',')
-    return useMemo(() => {
+    const owned = useMemo(() => {
         const addresses = new Set(addressesKey.split(','))
         return Object.values(orders)
             .filter(order => addresses.has(order.sourceAddress))
             .sort((a, b) => b.createdAt - a.createdAt)
     }, [orders, addressesKey])
+    // Read per render so a settled order drops out once its window passes, without waiting for a store change.
+    const now = Date.now()
+    return owned.filter(order => isSwapOrderListed(order, now))
 }
