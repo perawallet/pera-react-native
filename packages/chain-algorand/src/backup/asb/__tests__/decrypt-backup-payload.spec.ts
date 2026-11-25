@@ -150,7 +150,7 @@ describe('decryptBackupPayload', () => {
         expect(result.accounts[0].kind).toBe(SecureBackupAccountKind.Single)
     })
 
-    it('drops a single row whose address is not the one its key derives', () => {
+    it('lists a single row under the address its key derives, without its declared name', () => {
         const envelope = buildEnvelope(
             {
                 accounts: [
@@ -160,10 +160,35 @@ describe('decryptBackupPayload', () => {
                         account_type: 'single',
                         private_key: encodeToBase64(new Uint8Array(64).fill(7)),
                     },
+                ],
+            },
+            RECOVERY_INDICES,
+        )
+
+        const result = decryptBackupPayload(envelope, RECOVERY_INDICES)
+
+        expect(result.accounts).toHaveLength(1)
+        expect(result.accounts[0]).toMatchObject({
+            address: SEED_7_ADDRESS,
+            name: null,
+        })
+    })
+
+    it('drops a rebound row whose key another row already lists', () => {
+        const envelope = buildEnvelope(
+            {
+                accounts: [
                     {
                         address: SEED_3_ADDRESS,
+                        name: 'Rekeyed',
                         account_type: 'single',
-                        private_key: encodeToBase64(new Uint8Array(32).fill(3)),
+                        private_key: encodeToBase64(new Uint8Array(64).fill(7)),
+                    },
+                    {
+                        address: SEED_7_ADDRESS,
+                        name: 'Auth',
+                        account_type: 'single',
+                        private_key: encodeToBase64(new Uint8Array(32).fill(7)),
                     },
                 ],
             },
@@ -173,8 +198,10 @@ describe('decryptBackupPayload', () => {
         const result = decryptBackupPayload(envelope, RECOVERY_INDICES)
 
         expect(result.accounts).toHaveLength(1)
-        expect(result.accounts[0].address).toBe(SEED_3_ADDRESS)
-        expect(result.accounts[0].name).toBeNull()
+        expect(result.accounts[0]).toMatchObject({
+            address: SEED_7_ADDRESS,
+            name: 'Auth',
+        })
     })
 
     it('reports InvalidRecoveryKey when the recovery key is malformed', () => {
