@@ -20,6 +20,7 @@ import {
 } from './itemKeys'
 import {
     accountRecordEntries,
+    accountRecordSeedReference,
     cachedRecordOverview,
     isNewerAccountRecord,
     type CachedRecordChain,
@@ -28,7 +29,6 @@ import { trackedContactId } from './contactRecord'
 import {
     accountRecordPayloadSchema,
     BackupAccountType,
-    hdPositionOf,
     type BackupItemKind,
 } from './payloads'
 import type { SyncItemState, SyncState } from './syncState'
@@ -144,11 +144,9 @@ const accountRecordCoverage = (
     }
 
     // An HD child's secret is filed under its seed's first derived address.
-    const seedReference = entries
-        .map(({ payload }) => hdPositionOf(payload))
-        .find(position => position !== null)?.seedReference
+    const seedReference = accountRecordSeedReference(parsed.data)
     const owners =
-        seedReference === undefined ? addressesOfItem(item) : [seedReference]
+        seedReference === null ? addressesOfItem(item) : [seedReference]
     return owners.some(address => liveSecretAddresses.has(address))
         ? 'with-secret'
         : 'incomplete'
@@ -172,6 +170,8 @@ const visibleAccountItems = (items: TrackedItems): TrackedItems => {
     )
 }
 
+/** A legacy item doesn't cache an HD child's seed reference, so only the
+ *  child's record can cover it. */
 const isAccountItemBackedUp = (
     key: BackupItemKey,
     item: SyncItemState,
@@ -312,6 +312,18 @@ export const isAddressBackedUp = (
             isAccountItemBackedUp(key, item, liveSecretAddresses),
     )
 }
+
+/** Whether the backup holds any of the address's items, restorable or not, so
+ *  removal still offers to delete a record whose secret is gone. */
+export const isAddressInBackup = (
+    syncState: Nullable<SyncState>,
+    address: string,
+): boolean =>
+    isAddressLiveUnder(
+        syncState,
+        address,
+        key => isAccountKey(key) || isSecretsItemKey(key),
+    )
 
 /**
  * Whether the latest sync succeeded and the backup holds a live record naming

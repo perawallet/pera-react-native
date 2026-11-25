@@ -46,6 +46,7 @@ import {
     deriveBackupPasskeyReview,
     isAccountRestorableFromLatestSync,
     isAddressBackedUp,
+    isAddressInBackup,
     isContactBackedUp,
     isPasskeyBackedUp,
 } from '../reviewBuckets'
@@ -479,6 +480,18 @@ describe('isAddressBackedUp', () => {
         expectSecretCoverage(state, 'A', false)
     })
 
+    it('leaves a legacy HD child uncovered by its live seed secret until its record lands', () => {
+        const state = createEmptySyncState('b')
+        state.items[accountKey('CHILD')] = tracked('CHILD', {
+            accountType: chainBackupKind('hdWallet'),
+        })
+        state.items[secretsKey('SEED')] = tracked('SEED', {
+            accountType: BackupAccountType.hdSeed,
+        })
+
+        expectSecretCoverage(state, 'CHILD', false)
+    })
+
     it('lists a legacy item whose own secret is live as backed up, though only a record restores it', () => {
         const state = createEmptySyncState('b')
         state.items[accountKey('A')] = tracked('A', {
@@ -571,6 +584,36 @@ describe('isAddressBackedUp', () => {
                 ['A'],
             ),
         ).toBe(false)
+    })
+})
+
+describe('isAddressInBackup', () => {
+    it('reports a live record whose secret is gone, which is not backed up', () => {
+        const state = createEmptySyncState('b')
+        state.items[recordKey('A')] = standaloneRecord('A')
+
+        expect(isAddressBackedUp(state, 'A')).toBe(false)
+        expect(isAddressInBackup(state, 'A')).toBe(true)
+    })
+
+    it('reports a live secret with no record', () => {
+        const state = createEmptySyncState('b')
+        state.items[secretsKey('A')] = tracked('A')
+
+        expect(isAddressInBackup(state, 'A')).toBe(true)
+    })
+
+    it('ignores items awaiting review, deleted or never uploaded', () => {
+        const state = createEmptySyncState('b')
+        state.items[recordKey('A')] = standaloneRecord('A', {
+            pendingImport: true,
+        })
+        state.items[secretsKey('A')] = tracked('A', {
+            status: BackupItemStatus.IGNORED,
+        })
+        state.items[accountKey('A')] = tracked('A', { knownVer: 0 })
+
+        expect(isAddressInBackup(state, 'A')).toBe(false)
     })
 })
 

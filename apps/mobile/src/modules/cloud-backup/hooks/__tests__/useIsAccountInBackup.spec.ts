@@ -13,10 +13,11 @@
 import { describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import {
-    accountItemKey,
+    accountRecordItemKey,
     createItemKeyHasher,
+    secretsItemKey,
 } from '@perawallet/wallet-core-backup/test-handlers'
-import { useIsAccountBackedUp } from '../useIsAccountBackedUp'
+import { useIsAccountInBackup } from '../useIsAccountInBackup'
 
 const { syncStateMock } = vi.hoisted(() => ({
     syncStateMock: {
@@ -45,33 +46,46 @@ const live = {
 
 syncStateMock.current = {
     items: {
-        [accountItemKey(hashAddress('A'))]: {
+        [accountRecordItemKey(hashAddress('NO-SECRET'))]: {
             ...live,
-            address: 'A',
-            accountType: 'watch',
+            address: 'NO-SECRET',
+            addresses: ['NO-SECRET'],
         },
-        [accountItemKey(hashAddress('PENDING'))]: {
+        [secretsItemKey(hashAddress('SECRET-ONLY'))]: {
+            ...live,
+            address: 'SECRET-ONLY',
+        },
+        [accountRecordItemKey(hashAddress('PENDING'))]: {
             ...live,
             address: 'PENDING',
-            accountType: 'watch',
+            addresses: ['PENDING'],
             pendingImport: true,
+        },
+        [accountRecordItemKey(hashAddress('DELETED'))]: {
+            ...live,
+            status: 'IGNORED',
+            address: 'DELETED',
+            addresses: ['DELETED'],
         },
     },
 }
 
-describe('useIsAccountBackedUp', () => {
-    it('reports an address the backup holds', () => {
-        const { result } = renderHook(() => useIsAccountBackedUp('A'))
+describe('useIsAccountInBackup', () => {
+    it.each(['NO-SECRET', 'SECRET-ONLY'])(
+        'reports %s as in the backup while any of its items is live',
+        address => {
+            expect(
+                renderHook(() => useIsAccountInBackup(address)).result.current,
+            ).toBe(true)
+        },
+    )
 
-        expect(result.current).toBe(true)
-    })
-
-    it('reports an unknown address and one awaiting review as not backed up', () => {
-        expect(renderHook(() => useIsAccountBackedUp('B')).result.current).toBe(
-            false,
-        )
-        expect(
-            renderHook(() => useIsAccountBackedUp('PENDING')).result.current,
-        ).toBe(false)
-    })
+    it.each(['UNKNOWN', 'PENDING', 'DELETED'])(
+        'reports %s as not in the backup',
+        address => {
+            expect(
+                renderHook(() => useIsAccountInBackup(address)).result.current,
+            ).toBe(false)
+        },
+    )
 })
