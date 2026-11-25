@@ -18,13 +18,10 @@ import {
     useCameraDevice,
     useCameraPermission,
 } from 'react-native-vision-camera'
-import type { ScannedBarcode } from './QRCameraScanner'
+import type { ScannedBarcode } from './types'
 
-// NOTE: this hook intentionally does NOT import
-// `react-native-vision-camera-barcode-scanner`. That package pulls in MLKit at
-// import time, which is excluded from the iOS simulator build. The scanner hook
-// lives in QRCameraScanner, lazily mounted only when a camera device exists.
-// We expose `onBarcodeScanned`/`onError` here and wire them up there.
+// The scanner output lives in the platform-specific QRCameraScanner, lazily
+// mounted only when a camera device exists; this hook supplies its callbacks.
 
 export type UseQRScannerViewProps = {
     isVisible: boolean
@@ -188,7 +185,7 @@ export const useQRScannerView = ({
 
     const onError = useCallback((error: Error) => {
         // Camera permission and hardware failures are the device's, not ours.
-        logger.warn('QRScannerView: barcode scanner failed:', { error })
+        logger.warn('QRScannerView: camera or scanner failed:', { error })
     }, [])
 
     useEffect(() => {

@@ -111,6 +111,20 @@ describe('QRCameraScanner', () => {
         )
     })
 
+    it('routes camera session errors to onError', () => {
+        const onError = vi.fn()
+        render(
+            <QRCameraScanner
+                device={mockDevice}
+                isActive={true}
+                style={undefined}
+                onBarcodeScanned={vi.fn()}
+                onError={onError}
+            />,
+        )
+        expect(cameraProps.current?.onError).toBe(onError)
+    })
+
     it('enables native tap-to-focus so blurry QR codes can be focused on Android', () => {
         renderScanner()
         expect(cameraProps.current?.enableNativeTapToFocusGesture).toBe(true)

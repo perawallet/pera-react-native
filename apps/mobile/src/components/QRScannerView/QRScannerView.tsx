@@ -46,14 +46,12 @@ import { ScannerErrorFallback } from './ScannerErrorFallback'
  */
 export const scannerNotifier = createRef<Nullable<NotifierRoot>>()
 
-// Loaded lazily and only when a camera device exists. QRCameraScanner is the
-// sole importer of `react-native-vision-camera-barcode-scanner`, which pulls in
-// MLKit at import time — MLKit is excluded from the iOS simulator build (no
-// arm64-simulator slice), and there is no camera device on a simulator, so this
-// module is never imported there. The `.then` keeps named exports (repo convention).
+// Loaded lazily and only when a camera device exists. On Android
+// QRCameraScanner creates ML Kit's HybridObject at import time, so keeping it
+// out of the eager graph means an init failure lands in the error boundary.
 //
 // Minted per instance instead of module-level: `lazy` caches a rejected import
-// forever, so one failed chunk fetch / MLKit init would otherwise re-throw on
+// forever, so one failed chunk fetch / scanner init would otherwise re-throw on
 // every scanner open until app restart. Retry mints a fresh one.
 const createQRCameraScanner = () =>
     lazy(() =>
@@ -158,7 +156,7 @@ export const QRScannerView = (props: QRScannerViewProps) => {
                         />
                     ) : (
                         // Catches a failed QRCameraScanner chunk load (Metro
-                        // blip in dev, MLKit init in release), which would
+                        // blip in dev, scanner init in release), which would
                         // otherwise escape to the app root as a crash. The
                         // fallback mirrors the no-camera empty state, with
                         // Retry re-attempting the import.

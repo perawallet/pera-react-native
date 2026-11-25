@@ -215,6 +215,10 @@
                 "name": "react-native",
                 "importNames": ["ActivityIndicator"],
                 "message": "Use PWLoadingIndicator from @components/core."
+              },
+              {
+                "name": "react-native-vision-camera-barcode-scanner",
+                "message": "Only QRScannerView/QRCameraScanner.tsx (Android) may import this. The package is not linked on iOS and creates its native object at import time, so an import that reaches iOS throws on device."
               }
             ],
             "patterns": [
@@ -263,6 +267,10 @@
                 "message": "Use PWLoadingIndicator from @components/core."
               },
               {
+                "name": "react-native-vision-camera-barcode-scanner",
+                "message": "Only QRScannerView/QRCameraScanner.tsx (Android) may import this. The package is not linked on iOS and creates its native object at import time, so an import that reaches iOS throws on device."
+              },
+              {
                 "name": "@tanstack/react-query",
                 "importNames": ["useQuery", "useQueries", "useInfiniteQuery", "useSuspenseQuery", "useSuspenseQueries", "useSuspenseInfiniteQuery", "useMutation"],
                 "message": "Put this query or mutation in its domain package as a named use…Query/use…Mutation hook with a declared result type, and call that hook here. useQueryClient stays allowed."
@@ -304,6 +312,10 @@
                 "name": "react-native",
                 "importNames": ["ActivityIndicator"],
                 "message": "Use PWLoadingIndicator from @components/core."
+              },
+              {
+                "name": "react-native-vision-camera-barcode-scanner",
+                "message": "Only QRScannerView/QRCameraScanner.tsx (Android) may import this. The package is not linked on iOS and creates its native object at import time, so an import that reaches iOS throws on device."
               }
             ]
           }

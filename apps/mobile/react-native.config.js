@@ -19,4 +19,12 @@ module.exports = {
     android: {},
   },
   assets: ['./assets/fonts'],
+  dependencies: {
+    // iOS scans with vision-camera's AVFoundation object output instead. ML Kit's
+    // pods bring CocoaPods copies of GoogleUtilities/GoogleDataTransport that
+    // duplicate Firebase's SPM ones, and have no arm64-simulator slice.
+    'react-native-vision-camera-barcode-scanner': {
+      platforms: { ios: null },
+    },
+  },
 };

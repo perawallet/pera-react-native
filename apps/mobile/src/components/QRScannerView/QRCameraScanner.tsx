@@ -10,38 +10,19 @@
  limitations under the License
  */
 
-import { type StyleProp, type ViewStyle } from 'react-native'
-import { Camera, type CameraDevice } from 'react-native-vision-camera'
+import { Camera } from 'react-native-vision-camera'
+// oxlint-disable-next-line no-restricted-imports -- the one sanctioned ML Kit import; iOS resolves QRCameraScanner.ios.tsx
 import {
     useBarcodeScannerOutput,
     type TargetBarcodeFormat,
 } from 'react-native-vision-camera-barcode-scanner'
 import { useQRCameraScanner } from './useQRCameraScanner'
-
-// IMPORTANT: this is the ONLY module that imports
-// `react-native-vision-camera-barcode-scanner`. That package creates its MLKit
-// HybridObject at import time (factory.ts runs `NitroModules.createHybridObject`
-// at module scope), and MLKit ships no arm64-simulator slice — so it is excluded
-// from the iOS simulator build (see plugins/withMLKitSimulatorExclusion.js).
-// QRScannerView therefore loads this component lazily and only when a camera
-// device exists (never on a simulator), so the MLKit import never runs there.
-
-// Minimal shape consumed from a scanned barcode. Kept loose so callers
-// (useQRScannerView) need not import the scanner package's types.
-export type ScannedBarcode = { rawValue?: string }
+import type { QRCameraScannerProps } from './types'
 
 // Hoisted to a stable reference: useBarcodeScannerOutput memoizes the native
 // output on this array's identity, so an inline literal would recreate the
 // output every render.
 const BARCODE_FORMATS: TargetBarcodeFormat[] = ['qr-code', 'ean-13']
-
-export type QRCameraScannerProps = {
-    device: CameraDevice
-    isActive: boolean
-    style: StyleProp<ViewStyle>
-    onBarcodeScanned: (barcodes: ScannedBarcode[]) => void
-    onError: (error: Error) => void
-}
 
 export const QRCameraScanner = ({
     device,
@@ -54,15 +35,8 @@ export const QRCameraScanner = ({
 
     const scannerOutput = useBarcodeScannerOutput({
         barcodeFormats: BARCODE_FORMATS,
-        // Scan from the full-resolution camera buffer rather than the default
-        // 'preview' buffer. On Android the 'preview' path caps the ML Kit
-        // analysis frame at ~720p (see the package's HybridBarcodeScannerOutput),
-        // which lacks the pixels-per-module to decode dense QR codes (high
-        // version / long WalletConnect URIs) — they silently fail to scan while
-        // sparse codes still work. 'full' selects the highest available buffer,
-        // restoring the v4 `useCodeScanner` reliability. iOS was unaffected
-        // (preview buffers there are preview-layer sized), but the option is
-        // cross-platform.
+        // The default 'preview' buffer caps ML Kit's frame at ~720p, too few
+        // pixels per module for dense codes (long WalletConnect URIs).
         outputResolution: 'full',
         onBarcodeScanned,
         onError,
@@ -77,6 +51,7 @@ export const QRCameraScanner = ({
             isActive={isActive}
             onLayout={handleLayout}
             onPreviewStarted={focusCenter}
+            onError={onError}
             // Manual override so the user can also tap to focus elsewhere.
             enableNativeTapToFocusGesture
         />

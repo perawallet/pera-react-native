@@ -24,8 +24,7 @@ const {
  * `CMakeLists.txt` + `nitrogen/generated/android`) is picked up automatically
  * by React Native / Nitro autolinking during `expo prebuild` — no manual
  * podspec or Gradle wiring is required, which is why there is no Podfile edit
- * here (contrast withMLKitSimulatorExclusion.js, which patches generated
- * xcconfigs).
+ * here.
  *
  * Nitro HybridObjects only work under the React Native New Architecture
  * (Fabric / TurboModules). Expo defaults New Arch ON, and the
