@@ -11,7 +11,12 @@
  */
 
 import type { KeychainStorage } from '@algorandfoundation/react-native-keystore'
+import type { Key } from '@algorandfoundation/keystore-core'
 import type { DeclinedRegister } from './declined'
+
+export type PasskeyAnchorSeedResolver = (
+    keys: readonly Key[],
+) => Promise<ReadonlySet<string>>
 
 /**
  * The context Pera's own keystore revisions run against, mirroring upstream's
@@ -41,6 +46,11 @@ export type PeraMigrationContext = {
      * missing master key is how a fresh install (nothing to migrate) looks.
      */
     masterKeyForRead: () => Promise<Uint8Array>
+    /**
+     * Confirms which seeds the hydrated wallet actually uses. Rejects when the
+     * accounts could not be read; an empty set means no account uses a seed.
+     */
+    getPasskeyAnchorSeedIds?: PasskeyAnchorSeedResolver
     /**
      * Durable note of records a revision deliberately left alone. Backed by the
      * **migrations ledger's** MMKV instance — writing it to the keystore's would

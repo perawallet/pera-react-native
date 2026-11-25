@@ -242,6 +242,8 @@ const entropyChildOf = (
     return key
 }
 
+const noAnchors = { getPasskeyAnchorSeedIds: () => new Set<string>() }
+
 describe('useKMS', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -518,7 +520,7 @@ describe('useKMS', () => {
         seedBip39Root('hd-2')
         childOf('child-c', 'hd-2', 'hd-derived-ed25519')
 
-        const { result } = renderHook(() => useKMS())
+        const { result } = renderHook(() => useKMS(noAnchors))
         await act(async () => {
             await result.current.removeKeyAndChildren('hd-1')
         })
@@ -545,7 +547,7 @@ describe('useKMS', () => {
         const otherEntropy = entropyChildOf('hd-2')
         childOf('hd-2-passkey-main', otherEntropy.id, 'hd-root-key')
 
-        const { result } = renderHook(() => useKMS())
+        const { result } = renderHook(() => useKMS(noAnchors))
         await act(async () => {
             await result.current.removeKeyAndChildren('hd-1')
         })
@@ -569,7 +571,7 @@ describe('useKMS', () => {
         childOf('account-key', 'hd-1', 'hd-derived-ed25519')
         mockMaterialIds = new Set(['native-cred', 'account-key'])
 
-        const { result } = renderHook(() => useKMS())
+        const { result } = renderHook(() => useKMS(noAnchors))
         await act(async () => {
             await result.current.removeKeyAndChildren('hd-1')
         })
@@ -598,7 +600,9 @@ describe('useKMS', () => {
         seedBip39Root('hd-2')
         const survivingEntropy = entropyChildOf('hd-2')
 
-        const { result } = renderHook(() => useKMS())
+        const { result } = renderHook(() =>
+            useKMS({ getPasskeyAnchorSeedIds: () => new Set(['hd-2']) }),
+        )
         await act(async () => {
             await result.current.removeKeyAndChildren('hd-1')
         })
@@ -634,7 +638,11 @@ describe('useKMS', () => {
         seedBip39Root('hd-2')
         const lowestEntropy = entropyChildOf('hd-2')
 
-        const { result } = renderHook(() => useKMS())
+        const { result } = renderHook(() =>
+            useKMS({
+                getPasskeyAnchorSeedIds: () => new Set(['hd-2', 'hd-3']),
+            }),
+        )
         await act(async () => {
             await result.current.removeKeyAndChildren('hd-1')
         })
@@ -642,6 +650,37 @@ describe('useKMS', () => {
         expect(mockKeyStoreGenerate).toHaveBeenCalledTimes(1)
         expect(mockKeyStoreGenerate.mock.calls[0]?.[0]).toMatchObject({
             params: { parentKeyId: lowestEntropy.id, id: 'hd-2-passkey-main' },
+        })
+    })
+
+    it('removeKeyAndChildren skips an unmarked orphan when selecting a passkey anchor', async () => {
+        seedBip39Root('hd-1')
+        const entropy = entropyChildOf('hd-1')
+        mockKeystoreKeys.push({
+            id: 'hd-1-passkey-main',
+            type: 'hd-root-key',
+            algorithm: 'P256',
+            extractable: false,
+            metadata: { parentKeyId: entropy.id, scheme: 'pbkdf2-p256' },
+        } as Key)
+        seedBip39Root('hd-2')
+        entropyChildOf('hd-2')
+        seedBip39Root('hd-3')
+        const confirmedEntropy = entropyChildOf('hd-3')
+
+        const { result } = renderHook(() =>
+            useKMS({ getPasskeyAnchorSeedIds: () => new Set(['hd-3']) }),
+        )
+        await act(async () => {
+            await result.current.removeKeyAndChildren('hd-1')
+        })
+
+        expect(mockKeyStoreGenerate).toHaveBeenCalledTimes(1)
+        expect(mockKeyStoreGenerate.mock.calls[0]?.[0]).toMatchObject({
+            params: {
+                parentKeyId: confirmedEntropy.id,
+                id: 'hd-3-passkey-main',
+            },
         })
     })
 
@@ -656,7 +695,7 @@ describe('useKMS', () => {
             metadata: { parentKeyId: entropy.id, scheme: 'pbkdf2-p256' },
         } as Key)
 
-        const { result } = renderHook(() => useKMS())
+        const { result } = renderHook(() => useKMS(noAnchors))
         await act(async () => {
             await result.current.removeKeyAndChildren('hd-1')
         })
@@ -691,7 +730,7 @@ describe('useKMS', () => {
             metadata: { parentKeyId: otherEntropy.id, scheme: 'pbkdf2-p256' },
         } as Key)
 
-        const { result } = renderHook(() => useKMS())
+        const { result } = renderHook(() => useKMS(noAnchors))
         await act(async () => {
             await result.current.removeKeyAndChildren('hd-1')
         })
@@ -712,7 +751,7 @@ describe('useKMS', () => {
         seedBip39Root('hd-2')
         entropyChildOf('hd-2')
 
-        const { result } = renderHook(() => useKMS())
+        const { result } = renderHook(() => useKMS(noAnchors))
         await act(async () => {
             await result.current.removeKeyAndChildren('hd-1')
         })
@@ -739,7 +778,11 @@ describe('useKMS', () => {
         seedBip39Root('hd-3')
         const eligibleEntropy = entropyChildOf('hd-3')
 
-        const { result } = renderHook(() => useKMS())
+        const { result } = renderHook(() =>
+            useKMS({
+                getPasskeyAnchorSeedIds: () => new Set(['hd-2', 'hd-3']),
+            }),
+        )
         await act(async () => {
             await result.current.removeKeyAndChildren('hd-1')
         })
@@ -773,7 +816,9 @@ describe('useKMS', () => {
             new Error('keychain unavailable'),
         )
 
-        const { result } = renderHook(() => useKMS())
+        const { result } = renderHook(() =>
+            useKMS({ getPasskeyAnchorSeedIds: () => new Set(['hd-2']) }),
+        )
         await act(async () => {
             await expect(
                 result.current.removeKeyAndChildren('hd-1'),

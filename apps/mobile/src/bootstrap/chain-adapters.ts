@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { rehydrateAccountsStore } from '@perawallet/wallet-core-accounts'
+import {
+    getPasskeyAnchorSeedIds,
+    rehydrateAccountsStore,
+    useAccountsStore,
+} from '@perawallet/wallet-core-accounts'
 import {
     ALGORAND_CHAIN_ID,
     chainModule as algorandChainModule,
@@ -49,7 +53,10 @@ import {
     remoteConfigDefaultsRegistry,
 } from '@perawallet/wallet-core-remote-config'
 import { pinnedHostRegistry } from '@perawallet/wallet-extension-platform'
-import { getProvider } from '@perawallet/wallet-extension-provider'
+import {
+    getProvider,
+    setKeystorePasskeyAnchorResolver,
+} from '@perawallet/wallet-extension-provider'
 import { evmChainModules } from './evm-chain-modules'
 
 const chainContextFor = (entry: ChainSetupEntry): ChainContext => ({
@@ -130,7 +137,16 @@ export const registerChainAdapters = (): void => {
     registerChainSetup(setup, chains, chainContextFor)
     declareChainPlatformInputs(setup)
     // Its migration decodes persisted accounts through the adapters just registered.
-    void rehydrateAccountsStore()
+    const accountsHydration = rehydrateAccountsStore()
+    setKeystorePasskeyAnchorResolver(async keys => {
+        await accountsHydration
+        // A failed hydration leaves the store empty, which must not read as
+        // "no account uses a seed".
+        if (!useAccountsStore.persist.hasHydrated()) {
+            throw new Error('Accounts store did not hydrate')
+        }
+        return getPasskeyAnchorSeedIds(keys)
+    })
     // Sign requests persisted before requests named their chain were all
     // Algorand ones.
     void rehydrateSigningStore({ unstampedRequestChainId: ALGORAND_CHAIN_ID })
