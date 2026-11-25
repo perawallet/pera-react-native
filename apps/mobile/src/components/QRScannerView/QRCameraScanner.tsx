@@ -11,16 +11,13 @@
  */
 
 import { Camera } from 'react-native-vision-camera'
+// oxlint-disable-next-line no-restricted-imports -- the one sanctioned ML Kit import; iOS resolves QRCameraScanner.ios.tsx
 import {
     useBarcodeScannerOutput,
     type TargetBarcodeFormat,
 } from 'react-native-vision-camera-barcode-scanner'
 import { useQRCameraScanner } from './useQRCameraScanner'
 import type { QRCameraScannerProps } from './types'
-
-// Android (ML Kit). iOS resolves QRCameraScanner.ios.tsx instead, because the
-// ML Kit package is not linked there and creates its HybridObject at import
-// time. Keep this the only importer of `react-native-vision-camera-barcode-scanner`.
 
 // Hoisted to a stable reference: useBarcodeScannerOutput memoizes the native
 // output on this array's identity, so an inline literal would recreate the
