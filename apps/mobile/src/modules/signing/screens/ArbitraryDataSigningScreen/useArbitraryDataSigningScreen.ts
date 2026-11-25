@@ -25,6 +25,10 @@ import {
 import { useHaptics } from '@hooks/useHaptics'
 import { useIsDataSigningBlocked } from '@hooks/useIsDataSigningBlocked'
 import { useQuantumDappWarning } from '@hooks/useQuantumDappWarning'
+import {
+    useReviewScrollHint,
+    type UseReviewScrollHintResult,
+} from '@modules/signing/components/ReviewScrollHint'
 import type { SigningStackParamList } from '@modules/signing/routes'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
@@ -44,6 +48,9 @@ type UseArbitraryDataSigningScreenResult = {
      * terminal notice instead of the confirm control.
      */
     isSigningBlocked: boolean
+    /** Requests taller than the body have not been scrolled to their end yet. */
+    isConfirmBlocked: boolean
+    scrollHint: UseReviewScrollHintResult
     handleApprove: () => void
     handleReject: () => void
     handleDetailsPress: (message: PeraArbitraryDataMessage) => void
@@ -60,6 +67,8 @@ export const useArbitraryDataSigningScreen =
         const isSigningBlocked = useIsDataSigningBlocked(request)
 
         const isSingleSignRequest = request?.data.length === 1
+        const scrollHint = useReviewScrollHint()
+        const isConfirmBlocked = !scrollHint.hasReachedEnd
 
         // Reflects the bus's `signing-started` event for the current request so
         // the spinner appears the instant the actor enters the signing stage,
@@ -79,7 +88,7 @@ export const useArbitraryDataSigningScreen =
             // Backstop for the blocked terminal state — the confirm control
             // is not rendered when quantum-blocked, so this should be
             // unreachable.
-            if (isSigningBlocked) return
+            if (isSigningBlocked || isConfirmBlocked) return
 
             void (async () => {
                 // This screen drives the pipeline itself, so the sign-time
@@ -105,6 +114,7 @@ export const useArbitraryDataSigningScreen =
             request,
             confirmQuantumDappUsage,
             isSigningBlocked,
+            isConfirmBlocked,
         ])
 
         const handleReject = useCallback(() => {
@@ -124,6 +134,8 @@ export const useArbitraryDataSigningScreen =
             isSingleSignRequest,
             isPending: pipeline.isLoading || isApproving,
             isSigningBlocked,
+            isConfirmBlocked,
+            scrollHint,
             handleApprove,
             handleReject,
             handleDetailsPress,

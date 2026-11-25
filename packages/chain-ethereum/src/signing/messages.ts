@@ -468,7 +468,7 @@ const describeTypedData = (
     return {
         kind: 'typed-data',
         title,
-        preview: typedData.primaryType as string,
+        preview: screened(typedData.primaryType as string),
         tree,
         ...(spendApproval && { spendApproval }),
     }

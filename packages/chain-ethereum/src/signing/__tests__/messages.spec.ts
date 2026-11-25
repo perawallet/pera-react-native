@@ -1064,6 +1064,24 @@ describe('ethereumMessageSignerAdapter.describe', () => {
         })
     })
 
+    it.each([
+        ['a right-to-left override', 0x202e],
+        ['a zero-width space', 0x200b],
+    ])('shows a primaryType that hides content with %s as hex', (_, code) => {
+        const disguised = `Mail${String.fromCharCode(code)}`
+        const { Mail, ...types } = MAIL_TYPED_DATA.types
+        const request = typedDataMessageRequest(MAINNET, SENDER, {
+            ...MAIL_TYPED_DATA,
+            types: { ...types, [disguised]: Mail },
+            primaryType: disguised,
+        })
+
+        const summary = adapter.describe(request)
+
+        expect(summary.kind).toBe('typed-data')
+        expect(summary.preview).toBe(toHex(disguised))
+    })
+
     it('labels array elements by index', () => {
         const request = typedDataMessageRequest(MAINNET, SENDER, {
             domain: { name: 'Group' },

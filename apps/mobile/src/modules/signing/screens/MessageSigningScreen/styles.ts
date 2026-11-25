@@ -39,7 +39,6 @@ export const useStyles = makeStyles(theme => ({
     accountContainer: {
         alignItems: 'center',
         gap: theme.spacing.md,
-        marginTop: theme.spacing.xxl,
     },
     onBehalfOf: {
         textAlign: 'center',
