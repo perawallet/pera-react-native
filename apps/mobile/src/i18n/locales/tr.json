@@ -3207,6 +3207,7 @@
             "verify_title": "PIN kodunu gir",
             "unlock_title": "PIN kodunu gir",
             "change_old_title": "Eski 6 haneli PIN\nkodunu gir",
+            "matches_duress_pin": "Yeni PIN’in zorlama PIN’inden farklı olmalı.",
             "logging_in": "Giriş yapılıyor"
         },
         "lockout": {

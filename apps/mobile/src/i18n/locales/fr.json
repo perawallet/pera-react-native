@@ -3207,6 +3207,7 @@
             "verify_title": "Saisissez votre code PIN",
             "unlock_title": "Saisissez votre code PIN",
             "change_old_title": "Saisissez votre ancien\ncode PIN à 6 chiffres",
+            "matches_duress_pin": "Votre nouveau code PIN doit être différent de votre code PIN de contrainte.",
             "logging_in": "Connexion en cours"
         },
         "lockout": {
