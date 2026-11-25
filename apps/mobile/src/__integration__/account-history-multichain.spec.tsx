@@ -230,7 +230,7 @@ describe('Flow: History on an account with Algorand and Ethereum', () => {
         ).toBeTruthy()
     })
 
-    it('Given rows on both networks, when CSV is tapped on All and Ethereum picked, then it shares a file built from the stored Ethereum rows without asking the export route', async () => {
+    it('Given rows on both networks, when CSV is tapped on All and Ethereum picked, then it shares a file built from the stored Ethereum rows without a network request', async () => {
         renderWithNavigation(AccountHistory, 'AccountHistory')
         await waitFor(() => expect(rowIds()).toHaveLength(4), {
             timeout: SLOW_WAIT_TIMEOUT_MS,
@@ -323,7 +323,7 @@ describe('Flow: History on an account with Algorand and Ethereum', () => {
         expect(screen.queryByTestId('chain_label_ethereum')).toBeNull()
     })
 
-    it('Given History narrowed to Ethereum, when CSV is tapped, then it shares the stored Ethereum rows without asking the export route', async () => {
+    it('Given History narrowed to Ethereum, when CSV is tapped, then it shares the stored Ethereum rows without a network request', async () => {
         renderWithNavigation(AccountHistory, 'AccountHistory')
         await waitFor(() => expect(rowIds()).toHaveLength(4), {
             timeout: SLOW_WAIT_TIMEOUT_MS,
