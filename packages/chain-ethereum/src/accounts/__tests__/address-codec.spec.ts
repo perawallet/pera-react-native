@@ -74,6 +74,8 @@ for (const chain of EVM_TEST_CHAINS) {
         ],
         partial: ['0x1234', '0x5aAeb6053F'],
         notAddressShaped: [
+            '0x',
+            '0x123',
             'vitalik.eth',
             '0xabc.base.eth',
             'My main account',

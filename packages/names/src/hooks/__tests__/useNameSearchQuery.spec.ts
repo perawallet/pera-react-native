@@ -13,7 +13,11 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import {
+    onlineManager,
+    QueryClient,
+    QueryClientProvider,
+} from '@tanstack/react-query'
 import React from 'react'
 import { useNameSearchQuery } from '../useNameSearchQuery'
 
@@ -85,7 +89,20 @@ describe('useNameSearchQuery', () => {
         expect(mockFetchNameSearch).toHaveBeenCalledTimes(1)
     })
 
-    it('reports a failed lookup apart from a name with no match', async () => {
+    it('reports success only once a lookup completes', async () => {
+        mockFetchNameSearch.mockResolvedValue([])
+
+        const { result } = renderHook(
+            () => useNameSearchQuery(ETHEREUM_SEPOLIA, 'vitalik.eth'),
+            { wrapper },
+        )
+
+        expect(result.current.isSuccess).toBe(false)
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        expect(result.current.data).toEqual([])
+    })
+
+    it('does not report success for a failed lookup', async () => {
         mockFetchNameSearch.mockRejectedValue(new Error('503'))
 
         const { result } = renderHook(
@@ -93,8 +110,27 @@ describe('useNameSearchQuery', () => {
             { wrapper },
         )
 
-        await waitFor(() => expect(result.current.isError).toBe(true))
-        expect(result.current.data).toEqual([])
+        await waitFor(() =>
+            expect(mockFetchNameSearch).toHaveBeenCalledTimes(1),
+        )
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+        expect(result.current.isSuccess).toBe(false)
+    })
+
+    it('does not report success while paused offline', async () => {
+        onlineManager.setOnline(false)
+        try {
+            const { result } = renderHook(
+                () => useNameSearchQuery(ETHEREUM_SEPOLIA, 'vitalik.eth'),
+                { wrapper },
+            )
+
+            await waitFor(() => expect(result.current.isLoading).toBe(false))
+            expect(mockFetchNameSearch).not.toHaveBeenCalled()
+            expect(result.current.isSuccess).toBe(false)
+        } finally {
+            onlineManager.setOnline(true)
+        }
     })
 
     it('does not fetch while the nameService capability is off', () => {

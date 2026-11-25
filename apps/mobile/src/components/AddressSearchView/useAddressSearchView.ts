@@ -250,17 +250,18 @@ export const useAddressSearchView = ({
     const {
         data: nameData,
         isLoading: isNameSearchLoading,
-        isError: isNameSearchError,
+        isSuccess: isNameSearchSuccess,
     } = useNameSearchQuery(scope, debouncedValue, {
         enabled: shouldSearchNames,
     })
     const nameResults = useMemo(() => nameData ?? [], [nameData])
+    // Only a completed lookup can say a name has no match: loading, failed
+    // and paused-offline lookups all report no data too.
     const isNameMiss =
         isNameServiceEnabled &&
         shouldSearchNames &&
         debouncedValue === value &&
-        !isNameSearchLoading &&
-        !isNameSearchError &&
+        isNameSearchSuccess &&
         nameResults.length === 0
 
     const matchingAccounts = useMemo(

@@ -18,9 +18,9 @@ export type ParsedPaymentUri = PaymentUriOpts & { address: string }
 
 /**
  * How input reads as a chain's address, valid or not. `partial` starts like
- * one, as a prefix being typed does; `complete` is at or near full length, so a
- * paste or typo gone wrong rather than a search in progress; `none` is a name
- * or any other search term.
+ * one, far enough in to be a deliberate attempt; `complete` is at or near full
+ * length, so a paste or typo gone wrong rather than a search in progress;
+ * `none` is a name or any other search term.
  */
 export type AddressShape = 'none' | 'partial' | 'complete'
 

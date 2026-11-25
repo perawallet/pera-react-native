@@ -19,8 +19,11 @@ import type { NameSearchResult } from '../models'
 export type UseNameSearchQueryResult = {
     data: NameSearchResult[]
     isLoading: boolean
-    /** The lookup failed, so an empty `data` says nothing about the name. */
-    isError: boolean
+    /**
+     * The lookup completed, so an empty `data` means no match. Loading,
+     * failed and paused-offline lookups all leave it false.
+     */
+    isSuccess: boolean
 }
 
 // One stable empty array, so memos that depend on `data` don't re-run every render.
@@ -50,6 +53,6 @@ export const useNameSearchQuery = (
     return {
         data: query.data ?? NO_RESULTS,
         isLoading: query.isLoading,
-        isError: query.isError,
+        isSuccess: query.isSuccess,
     }
 }

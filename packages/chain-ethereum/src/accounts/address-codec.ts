@@ -23,8 +23,9 @@ import { parseEvmPaymentUri, toEip681Uri } from '../deeplinks/adapter'
 const UNCOMPRESSED_KEY_LENGTH = 65
 const UNCOMPRESSED_KEY_PREFIX = 0x04
 
-// A `0x` start is an address attempt; a dot makes it an ENS-style name instead.
-const EVM_ADDRESS_START = /^0x[^\s.]*$/i
+// `0x` and four characters is a deliberate address attempt (a truncated paste
+// like `0x1234`); fewer is someone starting to type. A dot makes it an ENS name.
+const EVM_ADDRESS_START = /^0x[^\s.]{4,}$/i
 // `0x` and 38 of the 40 hex digits: a few short is a paste gone wrong, not a prefix being typed.
 const NEAR_FULL_LENGTH = 40
 

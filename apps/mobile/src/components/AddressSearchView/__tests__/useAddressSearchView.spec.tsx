@@ -1360,6 +1360,12 @@ describe('useAddressSearchView', () => {
         })
 
         it('says a name that resolved to nothing was not found', () => {
+            vi.mocked(useNameSearchQuery).mockReturnValue({
+                data: [],
+                isLoading: false,
+                isSuccess: true,
+            } as unknown as ReturnType<typeof useNameSearchQuery>)
+
             const view = search('vitalik.eth')
 
             expect(view.emptyStateMessage).toEqual({
@@ -1377,11 +1383,12 @@ describe('useAddressSearchView', () => {
             expect(search('vitalik.eth').emptyStateMessage).toBeUndefined()
         })
 
-        it('has no name message when the lookup failed', () => {
+        // A failed lookup and one paused while offline both look like this.
+        it('has no name message when the lookup never completed', () => {
             vi.mocked(useNameSearchQuery).mockReturnValue({
                 data: [],
                 isLoading: false,
-                isError: true,
+                isSuccess: false,
             } as unknown as ReturnType<typeof useNameSearchQuery>)
 
             expect(search('vitalik.eth').emptyStateMessage).toBeUndefined()
@@ -1389,6 +1396,11 @@ describe('useAddressSearchView', () => {
 
         it('has no name message on a chain without a name service', () => {
             vi.mocked(useChainCapability).mockReturnValue(false)
+            vi.mocked(useNameSearchQuery).mockReturnValue({
+                data: [],
+                isLoading: false,
+                isSuccess: true,
+            } as unknown as ReturnType<typeof useNameSearchQuery>)
 
             expect(search('vitalik.eth').emptyStateMessage).toBeUndefined()
         })
