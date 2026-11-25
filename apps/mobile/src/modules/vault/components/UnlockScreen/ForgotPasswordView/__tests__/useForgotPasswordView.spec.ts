@@ -14,15 +14,18 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useForgotPasswordView } from '../useForgotPasswordView'
 
-const { mockWipe, mockClearAccounts, mockVaultReset } = vi.hoisted(() => ({
-    mockWipe: vi.fn(),
-    mockClearAccounts: vi.fn(),
-    mockVaultReset: vi.fn(),
-}))
+const { mockWipe, mockClearAccounts, mockVaultReset, KeyWipeIncompleteError } =
+    vi.hoisted(() => ({
+        mockWipe: vi.fn(),
+        mockClearAccounts: vi.fn(),
+        mockVaultReset: vi.fn(),
+        KeyWipeIncompleteError: class extends AggregateError {},
+    }))
 
 vi.mock('@hooks/useDeleteAllData', () => ({
     useDeleteAllData: () => ({ wipeAllUserData: mockWipe }),
     clearAccountsStore: mockClearAccounts,
+    KeyWipeIncompleteError,
 }))
 
 describe('useForgotPasswordView', () => {
@@ -81,5 +84,25 @@ describe('useForgotPasswordView', () => {
         expect(result.current.isResetting).toBe(false)
         expect(mockClearAccounts).not.toHaveBeenCalled()
         expect(mockVaultReset).not.toHaveBeenCalled()
+    })
+
+    it('finishes the reset when only the key wipe failed', async () => {
+        mockWipe.mockRejectedValue(
+            new KeyWipeIncompleteError([new Error('keystore not ready')]),
+        )
+        const { result } = renderHook(() =>
+            useForgotPasswordView({ onVaultReset: mockVaultReset }),
+        )
+
+        act(() => {
+            result.current.toggleAcknowledged()
+        })
+        await act(async () => {
+            await result.current.handleReset()
+        })
+
+        expect(result.current.hasError).toBe(false)
+        expect(mockClearAccounts).toHaveBeenCalledTimes(1)
+        expect(mockVaultReset).toHaveBeenCalledTimes(1)
     })
 })
