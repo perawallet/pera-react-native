@@ -48,6 +48,7 @@ import { useShowDappTransaction } from '../hooks'
 import { useConnectionsBoot } from './useConnectionsBoot'
 import { useConnectionErrorToasts } from './useConnectionErrorToasts'
 import { useNetworkSwitchPrompt } from './useNetworkSwitchPrompt'
+import { useWatchAssetPrompt } from './useWatchAssetPrompt'
 import { useProposalQueue } from './useProposalQueue'
 
 const getNetworkId = (chainId: ChainId) => getSelectedScope(chainId).networkId
@@ -128,9 +129,11 @@ export const useConnectionsProvider = (): ConnectionRegistry => {
     }, [])
 
     const confirmNetworkSwitch = useNetworkSwitchPrompt()
+    const confirmWatchAsset = useWatchAssetPrompt()
     const showTransaction = useShowDappTransaction()
     useConnectionSigningAdapter(registry, ALGORAND_CHAIN_ID, {
         confirmNetworkSwitch,
+        confirmWatchAsset,
         showTransaction,
     })
     useEffect(() => watchWalletNotices(registry), [registry])

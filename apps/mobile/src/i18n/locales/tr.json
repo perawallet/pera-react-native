@@ -4219,7 +4219,8 @@
             "view_accounts": "Adresini ve bakiyelerini görüntüleme",
             "approve_transactions": "İşlemleri onaylamanı isteme",
             "sign_messages": "Mesajları imzalamanı isteme",
-            "switch_networks": "Ağ değiştirmeyi isteme"
+            "switch_networks": "Ağ değiştirmeyi isteme",
+            "add_tokens": "Hesabına token eklemeyi isteme"
         },
         "connection": {
             "approve_delivery_failed": "Bağlantıyı onaylamak için dApp’e ulaşılamadı. İnternet bağlantını kontrol et ve tekrar dene."
@@ -4229,6 +4230,23 @@
             "body": "{{name}}, {{chain}} ağındaki hesaplarını kullanmak istiyor.",
             "body_with_network": "{{name}}, {{chain}} {{network}} ağındaki hesaplarını kullanmak istiyor.",
             "confirm": "İzin ver"
+        },
+        "watch_asset": {
+            "title": "Token eklensin mi?",
+            "body": "{{name}}, bu token’ı hesabına eklemek istiyor.",
+            "unreadable": "{{chain}} üzerinde bu adresteki token okunamadı.",
+            "confirm": "Token ekle",
+            "token": "Token",
+            "verification": "Doğrulama",
+            "contract": "Kontrat",
+            "decimals": "Ondalık basamak",
+            "network": "Ağ",
+            "account": "Hesap",
+            "tier": {
+                "verified": "Doğrulanmış",
+                "unverified": "Doğrulanmamış",
+                "suspicious": "Şüpheli"
+            }
         },
         "settings": {
             "empty_title": "WalletConnect oturumu yok",

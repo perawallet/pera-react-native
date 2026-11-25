@@ -17,6 +17,7 @@ export type ConnectionPermission =
     | 'approve-transactions'
     | 'sign-messages'
     | 'switch-networks'
+    | 'add-tokens'
 
 export const CONNECTION_PERMISSION_COPY: Readonly<
     Record<ConnectionPermission, I18nKey>
@@ -27,6 +28,7 @@ export const CONNECTION_PERMISSION_COPY: Readonly<
     ),
     'sign-messages': i18nKey('walletconnect.permissions.sign_messages'),
     'switch-networks': i18nKey('walletconnect.permissions.switch_networks'),
+    'add-tokens': i18nKey('walletconnect.permissions.add_tokens'),
 }
 
 // A method no entry names grants nothing beyond reading the address.
@@ -42,6 +44,7 @@ const METHOD_PERMISSIONS: Readonly<Record<string, ConnectionPermission>> = {
     eth_signTypedData: 'sign-messages',
     wallet_switchEthereumChain: 'switch-networks',
     wallet_addEthereumChain: 'switch-networks',
+    wallet_watchAsset: 'add-tokens',
 }
 
 const ORDER: readonly ConnectionPermission[] = [
@@ -49,6 +52,7 @@ const ORDER: readonly ConnectionPermission[] = [
     'approve-transactions',
     'sign-messages',
     'switch-networks',
+    'add-tokens',
 ]
 
 export const toConnectionPermissions = (

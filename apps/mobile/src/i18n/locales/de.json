@@ -4211,7 +4211,8 @@
             "view_accounts": "Deine Adresse und Guthaben sehen",
             "approve_transactions": "Dich bitten, Transaktionen zu genehmigen",
             "sign_messages": "Dich bitten, Nachrichten zu signieren",
-            "switch_networks": "Darum bitten, das Netzwerk zu wechseln"
+            "switch_networks": "Darum bitten, das Netzwerk zu wechseln",
+            "add_tokens": "Darum bitten, Token zu deinem Konto hinzuzufügen"
         },
         "connection": {
             "approve_delivery_failed": "Die dApp konnte nicht erreicht werden, um die Verbindung zu bestätigen. Überprüfe deine Internetverbindung und versuche es erneut."
@@ -4221,6 +4222,23 @@
             "body": "{{name}} möchte deine Konten auf {{chain}} verwenden.",
             "body_with_network": "{{name}} möchte deine Konten auf {{chain}} {{network}} verwenden.",
             "confirm": "Erlauben"
+        },
+        "watch_asset": {
+            "title": "Token hinzufügen?",
+            "body": "{{name}} möchte diesen Token zu deinem Konto hinzufügen.",
+            "unreadable": "Pera konnte unter dieser Adresse auf {{chain}} keinen Token lesen.",
+            "confirm": "Token hinzufügen",
+            "token": "Token",
+            "verification": "Verifizierung",
+            "contract": "Vertrag",
+            "decimals": "Dezimalstellen",
+            "network": "Netzwerk",
+            "account": "Konto",
+            "tier": {
+                "verified": "Verifiziert",
+                "unverified": "Nicht verifiziert",
+                "suspicious": "Verdächtig"
+            }
         },
         "settings": {
             "empty_title": "Keine WalletConnect-Sitzungen",
