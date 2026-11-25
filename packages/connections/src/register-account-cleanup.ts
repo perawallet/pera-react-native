@@ -17,6 +17,7 @@ import {
 import {
     logger,
     registerAccountCleanup,
+    withTimeout,
     type AccountCleanupContext,
 } from '@perawallet/wallet-core-shared'
 import {
@@ -48,6 +49,10 @@ export const isConnectionRevokedForAccountRemoval = (
     })
 }
 
+// Removal waits on this; a v2 disconnect can sit on a relay publish for a
+// minute, and its revoked-topic record already covers a crash meanwhile.
+const REMOVAL_DISCONNECT_TIMEOUT_MS = 3000
+
 const isWalletConnect = ({ kind }: Connection): boolean =>
     kind === 'walletconnect-v1' || kind === 'walletconnect-v2'
 
@@ -77,7 +82,13 @@ export const disconnectConnectionsForAccount = async ({
                     cutoff === undefined ||
                     accountGrantedAt(connection, removed) <= cutoff,
             )
-            .map(({ id }) => registry.disconnect(id)),
+            .map(({ id }) =>
+                withTimeout(
+                    registry.disconnect(id),
+                    REMOVAL_DISCONNECT_TIMEOUT_MS,
+                    "disconnecting a removed account's connection",
+                ),
+            ),
     )
 }
 

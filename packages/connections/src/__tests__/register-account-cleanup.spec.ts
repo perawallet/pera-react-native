@@ -125,6 +125,28 @@ describe('disconnectConnectionsForAccount', () => {
 
         expect(disconnect).toHaveBeenCalledWith('evm')
     })
+
+    it('stops waiting on a disconnect the relay holds up, so removal moves on', async () => {
+        vi.useFakeTimers()
+        try {
+            const disconnect = activateRegistry()
+            disconnect.mockImplementation(() => new Promise(() => {}))
+            persistedConnections.list.mockResolvedValue([
+                connection('stuck', ['AAAA']),
+            ])
+
+            const removal = disconnectConnectionsForAccount({
+                accountAddress: 'AAAA',
+            })
+            const settled = expect(removal).rejects.toThrow('timed out')
+            await vi.advanceTimersByTimeAsync(3000)
+
+            await settled
+            expect(disconnect).toHaveBeenCalledWith('stuck')
+        } finally {
+            vi.useRealTimers()
+        }
+    })
 })
 
 const setAccounts = (accounts: FakeAccount[]): void => {
