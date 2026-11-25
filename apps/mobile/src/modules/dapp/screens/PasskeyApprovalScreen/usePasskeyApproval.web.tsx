@@ -26,6 +26,7 @@ import {
     deserializeCreateOptions,
     deserializeGetOptions,
 } from '@perawallet/wallet-core-passkeys'
+import { getPasskeyAnchorSeedIds } from '@perawallet/wallet-core-accounts'
 import {
     createKeystoreSigner,
     type PasskeyKeyStore,
@@ -188,6 +189,7 @@ export const usePasskeyApproval = (): UsePasskeyApprovalResult => {
             const signer = createKeystoreSigner(
                 getKeystore() as unknown as PasskeyKeyStore,
                 getKeystoreStore(),
+                getPasskeyAnchorSeedIds,
             )
             const credential =
                 current.kind === 'passkey-create'

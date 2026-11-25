@@ -146,40 +146,63 @@ const entropyChildIdOf = (
         )
     })?.id
 
+/** Seed ids an account still uses; an unclaimed import seed is never among them. */
+type PasskeyAnchorSeedResolver = (
+    keys: readonly Key[],
+) => ReadonlySet<string>
+
 /**
  * Finds the persisted `pbkdf2-p256` main key, or derives one from the
- * wallet's BIP39 entropy. Exactly one is ever created: every credential
- * shares it, so losing it would orphan all of them at once.
+ * wallet's BIP39 entropy. Every credential shares it, so losing it would
+ * orphan all of them at once.
  */
 const resolveMainKeyId = async (
     keystore: PasskeyKeyStore,
     store: Store<KeyStoreState>,
+    getPasskeyAnchorSeedIds: PasskeyAnchorSeedResolver,
 ): Promise<string> => {
-    const existing = store.state.keys.find(isPasskeyMainKey)
+    const { keys } = store.state
+    const anchorIds = getPasskeyAnchorSeedIds(keys)
+    const byId = new Map(keys.map(key => [key.id, key]))
+    const isAnchored = (mainKey: Key): boolean => {
+        const entropyId = readMetadataString(mainKey, 'parentKeyId')
+        const entropy =
+            entropyId === undefined ? undefined : byId.get(entropyId)
+        const rootId = entropy && readMetadataString(entropy, 'parentKeyId')
+        return rootId !== undefined && anchorIds.has(rootId)
+    }
+
+    // A main key left on an abandoned import's seed stays usable for the
+    // credentials already on it, but new ones mint on an account-backed root.
+    const existing = keys
+        .filter(isPasskeyMainKey)
+        .sort(compareKeyIds)
+        .find(isAnchored)
     if (existing) return existing.id
 
     // Lowest-sorted root with an entropy child wins, matching `repairs/0003`
-    // (`:156-162`) and `useKMS.removeKeyAndChildren`: the device gets exactly
-    // one main key, so a store-order pick would name a different root here than
-    // mobile does from the same seeds.
-    const roots = store.state.keys
+    // and `useKMS.removeKeyAndChildren`, so a store-order pick never names a
+    // different root here than mobile does from the same seeds.
+    const roots = keys
         .filter(
-            key => WALLET_ROOT_TYPES.has(key.type) && !isPasskeyMainKey(key),
+            key =>
+                WALLET_ROOT_TYPES.has(key.type) &&
+                !isPasskeyMainKey(key) &&
+                anchorIds.has(key.id),
         )
         .sort(compareKeyIds)
     const [firstRoot] = roots
     if (!firstRoot) {
         throw new InvalidKeyDataError(
-            'No wallet root found in the keystore; cannot derive a WebAuthn P-256 credential.',
+            'No account-backed wallet root found in the keystore; cannot derive a WebAuthn P-256 credential.',
         )
     }
     // Falling back to `firstRoot` keeps the "no entropy child" error below for
     // the case where no root has one at all.
     const walletRoot =
-        roots.find(root => entropyChildIdOf(root.id, store.state.keys)) ??
-        firstRoot
+        roots.find(root => entropyChildIdOf(root.id, keys)) ?? firstRoot
 
-    const entropyChildId = entropyChildIdOf(walletRoot.id, store.state.keys)
+    const entropyChildId = entropyChildIdOf(walletRoot.id, keys)
     if (!entropyChildId) {
         throw new InvalidKeyDataError(
             `Wallet root ${walletRoot.id} has no BIP39 entropy child; cannot derive a WebAuthn P-256 credential.`,
@@ -210,6 +233,7 @@ const resolveMainKeyId = async (
 export const createKeystoreSigner = (
     keystore: PasskeyKeyStore,
     store: Store<KeyStoreState>,
+    getPasskeyAnchorSeedIds: PasskeyAnchorSeedResolver,
 ): KeystoreSigner => ({
     async createP256Credential({
         rpId,
@@ -225,7 +249,11 @@ export const createKeystoreSigner = (
             )
         }
 
-        const mainKeyId = await resolveMainKeyId(keystore, store)
+        const mainKeyId = await resolveMainKeyId(
+            keystore,
+            store,
+            getPasskeyAnchorSeedIds,
+        )
 
         // Redundant today (the core already lowercases), but load-bearing if
         // that changes: the engine re-derives the child at sign time from the
