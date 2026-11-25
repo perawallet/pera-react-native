@@ -399,6 +399,37 @@ describe('relay-isolated handshake hardening', () => {
         vi.unstubAllGlobals()
     })
 
+    // A `sandbox` CSP gives the document an opaque origin while its URL still
+    // names the host, so the URL origin alone would let it hear that dApp.
+    it('forwards nothing to a document whose real origin is opaque', async () => {
+        stubChrome(vi.fn<SendMessageMock>())
+        vi.stubGlobal('origin', 'null')
+
+        await import('../relay-isolated')
+        dispatchHandshake('req-sandbox', 'res-sandbox')
+
+        const seen = collect('res-sandbox')
+        const acks = deliver(
+            runtimeListeners[0],
+            {
+                scope: DAPP_PAGE_RESPONSE_SCOPE,
+                provider: 'pera',
+                origin: window.location.origin,
+                payload: {
+                    jsonrpc: '2.0',
+                    method: 'accountsChanged',
+                    params: ['ADDR'],
+                },
+            },
+            { id: 'ext-id' } as chrome.runtime.MessageSender,
+        )
+
+        expect(seen).toEqual([])
+        expect(acks).toEqual([])
+
+        vi.unstubAllGlobals()
+    })
+
     it('acks a response it dispatched, and stays silent for one it rejects', async () => {
         stubChrome(vi.fn<SendMessageMock>())
 
