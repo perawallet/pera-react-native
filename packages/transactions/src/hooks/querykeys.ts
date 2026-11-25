@@ -293,10 +293,16 @@ export const getAssetInboxRequestsQueryKey = (
 ) => [ASSET_INBOX_MODULE_PREFIX, 'requests', { address, scope }]
 
 export const getAssetInboxSendSummaryQueryKey = (
+    sender: string,
     receiver: string,
     assetId: string,
     scope: ChainScope,
-) => [ASSET_INBOX_MODULE_PREFIX, 'send-summary', { receiver, assetId, scope }]
+    amount?: bigint,
+) => [
+    ASSET_INBOX_MODULE_PREFIX,
+    'send-summary',
+    { sender, receiver, assetId, scope, amount: amount?.toString() },
+]
 
 export const isAssetInboxQuery = (query: Query): boolean =>
     query.queryKey.at(0) === ASSET_INBOX_MODULE_PREFIX

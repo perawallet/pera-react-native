@@ -480,14 +480,26 @@ describe('asset inbox query keys', () => {
         ])
     })
 
-    test('send summary key carries the receiver, asset and scope', () => {
-        expect(getAssetInboxSendSummaryQueryKey('RCV', '123', TESTNET)).toEqual(
-            [
-                'asa-inbox',
-                'send-summary',
-                { receiver: 'RCV', assetId: '123', scope: TESTNET },
-            ],
-        )
+    test('send summary key carries the sender, receiver, asset, amount and scope', () => {
+        expect(
+            getAssetInboxSendSummaryQueryKey(
+                'SND',
+                'RCV',
+                '123',
+                TESTNET,
+                250n,
+            ),
+        ).toEqual([
+            'asa-inbox',
+            'send-summary',
+            {
+                sender: 'SND',
+                receiver: 'RCV',
+                assetId: '123',
+                scope: TESTNET,
+                amount: '250',
+            },
+        ])
     })
 
     test('keys differ per scope', () => {

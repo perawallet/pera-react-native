@@ -13,8 +13,8 @@
 /**
  * The µAlgo the sender actually pays into the ARC-59 router: receiver funding
  * plus inbox MBR. This is the amount the payment transaction is built with
- * (buildArc59SendViaInboxTxs), so it is the ONE value the summary screen must
- * display and balance-check against. `total_protocol_and_mbr_fee` is an
+ * (buildArc59SendViaInboxTxs), so it is the payment the summary screen must
+ * display and balance-check against, beside {@link getArc59MinimumNetworkFee}. `total_protocol_and_mbr_fee` is an
  * independent backend field the signature never uses; displaying/checking
  * that while signing this let a malicious backend hide an overpayment of the
  * whole balance.
@@ -29,3 +29,30 @@ export const getArc59SignedFundingAmount = (summary: {
 }): bigint =>
     BigInt(summary.algo_fund_amount) +
     BigInt(summary.minimum_balance_requirement)
+
+/**
+ * The minimum µAlgo fee for the sender's inbox group. Each outer leg
+ * costs at least `senderFee`, and on
+ * the router calls one `minFee` per inner transaction they dispatch (the
+ * router's opt-in, `inner_tx_count`, and the forwarding payment when the
+ * receiver is funded).
+ */
+export const getArc59MinimumNetworkFee = (
+    summary: {
+        is_arc59_opted_in: boolean
+        inner_tx_count: number
+        algo_fund_amount: number
+        minimum_balance_requirement: number
+    },
+    { minFee, senderFee }: { minFee: bigint; senderFee: bigint },
+): bigint => {
+    const outerLegs =
+        2n +
+        (getArc59SignedFundingAmount(summary) > 0n ? 1n : 0n) +
+        (summary.is_arc59_opted_in ? 0n : 1n)
+    const innerTxns =
+        BigInt(summary.inner_tx_count) +
+        (summary.algo_fund_amount > 0 ? 1n : 0n) +
+        (summary.is_arc59_opted_in ? 0n : 1n)
+    return outerLegs * senderFee + innerTxns * minFee
+}

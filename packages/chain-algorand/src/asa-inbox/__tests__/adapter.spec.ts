@@ -19,11 +19,13 @@ import { ALGORAND_CHAIN_ID } from '../../chain-id'
 
 const mocks = vi.hoisted(() => ({
     createWalletAlgorandClient: vi.fn(),
+    getSuggestedParams: vi.fn(),
     buildArc59SendViaInboxTxs: vi.fn(),
     buildArc59ClaimTxs: vi.fn(),
     buildArc59RejectTxs: vi.fn(),
     fetchArc59AssetRequests: vi.fn(),
     fetchArc59SendSummary: vi.fn(),
+    resolveAlgorandSenderFee: vi.fn(),
 }))
 
 vi.mock('../../blockchain', () => ({
@@ -34,13 +36,19 @@ vi.mock('../api', async importOriginal => ({
     fetchArc59AssetRequests: mocks.fetchArc59AssetRequests,
     fetchArc59SendSummary: mocks.fetchArc59SendSummary,
 }))
+vi.mock('../../transactions/transfer-fees', () => ({
+    resolveAlgorandSenderFee: mocks.resolveAlgorandSenderFee,
+}))
 vi.mock('../builders', () => ({
     buildArc59SendViaInboxTxs: mocks.buildArc59SendViaInboxTxs,
     buildArc59ClaimTxs: mocks.buildArc59ClaimTxs,
     buildArc59RejectTxs: mocks.buildArc59RejectTxs,
 }))
 
-const CLIENT = { name: 'wallet-client' }
+const CLIENT = {
+    name: 'wallet-client',
+    getSuggestedParams: mocks.getSuggestedParams,
+}
 const TXNS = [{ txn: 'stub', sender: 'SENDER' }]
 
 const summary = {
@@ -59,7 +67,14 @@ describe('algorandAssetInbox', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.createWalletAlgorandClient.mockReturnValue(CLIENT)
-        mocks.buildArc59SendViaInboxTxs.mockResolvedValue(TXNS)
+        mocks.getSuggestedParams.mockResolvedValue({ minFee: 1000n })
+        mocks.resolveAlgorandSenderFee.mockImplementation(
+            (_sender: string, minFee: bigint) => minFee,
+        )
+        mocks.buildArc59SendViaInboxTxs.mockResolvedValue({
+            transactions: TXNS,
+            networkFee: 5500n,
+        })
         mocks.buildArc59ClaimTxs.mockResolvedValue(TXNS)
         mocks.buildArc59RejectTxs.mockResolvedValue(TXNS)
     })
@@ -95,8 +110,10 @@ describe('algorandAssetInbox', () => {
                 chainId: ALGORAND_CHAIN_ID,
                 networkId: 'mainnet',
             } as const,
+            sender: 'SENDER',
             receiver: 'RECEIVER',
             assetId: '7',
+            amount: 10n,
         })
 
         expect(mocks.fetchArc59SendSummary).toHaveBeenCalledWith(
@@ -105,21 +122,67 @@ describe('algorandAssetInbox', () => {
             '7',
         )
         expect(result.fundingAmount).toBe(300_000n)
-        expect(result.quote).toMatchObject({ algo_fund_amount: 200_000 })
+        expect(result.quote).toMatchObject({
+            summary: { algo_fund_amount: 200_000 },
+            networkFee: result.networkFee,
+        })
     })
 
-    it("builds an inbox send with the scope's wallet client", async () => {
-        const result = await inbox.buildSendTxs({
-            scope: {
-                chainId: ALGORAND_CHAIN_ID,
-                networkId: 'testnet',
-            } as const,
+    it('quotes the assembled fee at the sender’s PQ-aware rate', async () => {
+        const funded = { ...summary, algo_fund_amount: 200_000 }
+        mocks.resolveAlgorandSenderFee.mockReturnValue(3000n)
+        mocks.fetchArc59SendSummary.mockResolvedValue(funded)
+        mocks.buildArc59SendViaInboxTxs.mockResolvedValueOnce({
+            transactions: TXNS,
+            networkFee: 12_500n,
+        })
+
+        const result = await inbox.fetchSendSummary({
+            scope: { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' },
             sender: 'SENDER',
             receiver: 'RECEIVER',
+            assetId: '7',
+            amount: 10n,
+        })
+
+        expect(mocks.resolveAlgorandSenderFee).toHaveBeenCalledWith(
+            'SENDER',
+            1000n,
+        )
+        expect(mocks.buildArc59SendViaInboxTxs).toHaveBeenCalledWith(
+            { algokit: CLIENT, network: 'mainnet' },
+            {
+                sender: 'SENDER',
+                receiver: 'RECEIVER',
+                assetId: 7n,
+                amount: 10n,
+                summary: funded,
+                senderMinFee: 3000n,
+            },
+        )
+        expect(result.networkFee).toBe(12_500n)
+    })
+
+    it("builds with the approved quote's fee after the sender minimum changes", async () => {
+        const scope = {
+            chainId: ALGORAND_CHAIN_ID,
+            networkId: 'testnet',
+        } as const
+        const recipient = { sender: 'SENDER', receiver: 'RECEIVER' }
+        mocks.fetchArc59SendSummary.mockResolvedValue(summary)
+        const { quote } = await inbox.fetchSendSummary({
+            scope,
+            ...recipient,
+            assetId: '7',
+            amount: 10n,
+        })
+        const result = await inbox.buildSendTxs({
+            scope,
+            ...recipient,
             assetId: 7n,
             amount: 10n,
-            quote: toAssetInboxQuote(summary),
-            senderMinFee: 1000n,
+            quote,
+            senderMinFee: 2000n,
         })
 
         expect(result.map(payloadTransactionOf)).toEqual(TXNS)
@@ -136,7 +199,8 @@ describe('algorandAssetInbox', () => {
                 assetId: 7n,
                 amount: 10n,
                 summary,
-                senderMinFee: 1000n,
+                senderMinFee: 2000n,
+                maxFee: 5500n,
             },
         )
     })
@@ -153,14 +217,51 @@ describe('algorandAssetInbox', () => {
                 assetId: 7n,
                 amount: 10n,
                 quote: toAssetInboxQuote({
-                    ...summary,
-                    algo_fund_amount: 50_000_000,
+                    summary: { ...summary, algo_fund_amount: 50_000_000 },
+                    network: 'mainnet',
+                    sender: 'SENDER',
+                    receiver: 'RECEIVER',
+                    assetId: '7',
+                    amount: 10n,
+                    networkFee: 5000n,
                 }),
                 senderMinFee: 1000n,
             }),
         ).rejects.toBeInstanceOf(ZodError)
         expect(mocks.buildArc59SendViaInboxTxs).not.toHaveBeenCalled()
     })
+
+    it.each([
+        { receiver: 'OTHER_RECIPIENT', amount: 10n },
+        { receiver: 'RECEIVER', amount: 11n },
+    ])(
+        'refuses an approved quote for another recipient or amount: %o',
+        async request => {
+            const scope = {
+                chainId: ALGORAND_CHAIN_ID,
+                networkId: 'testnet',
+            } as const
+            mocks.fetchArc59SendSummary.mockResolvedValue(summary)
+            const { quote } = await inbox.fetchSendSummary({
+                scope,
+                sender: 'SENDER',
+                receiver: 'RECEIVER',
+                assetId: '7',
+                amount: 10n,
+            })
+            await expect(
+                inbox.buildSendTxs({
+                    scope,
+                    sender: 'SENDER',
+                    ...request,
+                    assetId: 7n,
+                    quote,
+                    senderMinFee: 1000n,
+                }),
+            ).rejects.toThrow()
+            expect(mocks.buildArc59SendViaInboxTxs).toHaveBeenCalledTimes(1)
+        },
+    )
 
     it('builds claims and rejects on the requested scope', async () => {
         const claim = {
