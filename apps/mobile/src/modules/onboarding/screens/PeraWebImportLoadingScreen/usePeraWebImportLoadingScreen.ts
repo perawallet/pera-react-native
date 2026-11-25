@@ -89,6 +89,7 @@ export const usePeraWebImportLoadingScreen =
         // Shared by the import loop and the AppState handler so a background
         // mid-flight breaks the loop before it reads a now-wiped key.
         const cancelledRef = useRef(false)
+        const unmountedRef = useRef(false)
 
         const cancelImport = useCallback((): boolean => {
             if (cancelledRef.current) return false
@@ -131,8 +132,12 @@ export const usePeraWebImportLoadingScreen =
             let imported = 0
             let skipped = 0
             let failed = 0
-            for (const account of accounts) {
-                if (cancelledRef.current) return
+            for (const [index, account] of accounts.entries()) {
+                // Backgrounded mid-import: the store reset wiped the rest.
+                if (cancelledRef.current) {
+                    failed += accounts.length - index
+                    break
+                }
                 try {
                     await importAccountRef.current(account)
                     imported++
@@ -152,7 +157,7 @@ export const usePeraWebImportLoadingScreen =
                 }
             }
 
-            if (cancelledRef.current) return
+            if (unmountedRef.current) return
             // The result screen only needs the counts (route params), so no
             // decrypted material outlives this point.
             resetRef.current()
@@ -251,10 +256,6 @@ export const usePeraWebImportLoadingScreen =
 
                 if (cancelledRef.current) return
                 setPayloadRef.current(payload)
-                if (payload.accounts.length === 0) {
-                    await importAll()
-                    return
-                }
                 setReviewAccounts(
                     payload.accounts.map(({ address, name }) => ({
                         address,
@@ -276,7 +277,10 @@ export const usePeraWebImportLoadingScreen =
             let didInterrupt = false
             const appStateSub = AppState.addEventListener('change', state => {
                 if (state !== 'active') {
-                    if (cancelImport()) didInterrupt = true
+                    // A started import reports its own outcome.
+                    if (cancelImport() && !importStartedRef.current) {
+                        didInterrupt = true
+                    }
                     return
                 }
                 if (!didInterrupt) return
@@ -291,6 +295,7 @@ export const usePeraWebImportLoadingScreen =
             })
 
             return () => {
+                unmountedRef.current = true
                 cancelledRef.current = true
                 appStateSub.remove()
                 // Cancel-path safety net: if the screen unmounts before the
@@ -300,7 +305,7 @@ export const usePeraWebImportLoadingScreen =
                 // is a no-op since the state is already at `initialState`.
                 resetRef.current()
             }
-        }, [deployment, cancelImport, failPipeline, importAll])
+        }, [deployment, cancelImport, failPipeline])
 
         return { reviewAccounts, isImporting, handleConfirm, handleCancel }
     }

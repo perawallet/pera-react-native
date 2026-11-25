@@ -183,55 +183,85 @@ describe('usePeraWebImportLoadingScreen', () => {
         expect(mockGoBack).toHaveBeenCalledTimes(1)
     })
 
-    it.each([false, true])(
-        'clears the review on backgrounding (import in progress: %s)',
-        async isImporting => {
-            const subscription = vi.spyOn(AppState, 'addEventListener')
-            const first = accountFromBackup('ADDRESS_A')
-            const second = accountFromBackup('ADDRESS_B')
-            const unusedSeed = second.privateKey
-            mockFetchPeraWebBackup.mockResolvedValue({ encryptedContent: 'x' })
-            mockDecryptPeraWebBackupPayload.mockReturnValue({
-                accounts: [first, second],
-            })
-            let finishImport = () => {}
-            mockImportAccount.mockImplementationOnce(
-                () =>
-                    new Promise<void>(resolve => {
-                        finishImport = resolve
-                    }),
-            )
-            const { result } = renderHook(() => usePeraWebImportLoadingScreen())
-            await waitFor(() =>
-                expect(result.current.reviewAccounts).toHaveLength(2),
-            )
-
-            if (isImporting) act(() => result.current.handleConfirm())
+    const captureAppStateChange = () => {
+        const subscription = vi.spyOn(AppState, 'addEventListener')
+        return () => {
             const onChange = subscription.mock.calls.find(
                 ([event]) => event === 'change',
             )?.[1]
             if (!onChange) throw new Error('Missing import AppState listener')
-            act(() => {
-                onChange('background')
-                result.current.handleConfirm()
-            })
-            await act(async () => finishImport())
+            return onChange
+        }
+    }
 
-            expect(result.current.reviewAccounts).toBeNull()
-            expect(result.current.isImporting).toBe(false)
-            expect(unusedSeed).toEqual(new Uint8Array(32))
-            expect(mockImportAccount).toHaveBeenCalledTimes(isImporting ? 1 : 0)
-            expect(mockReplace).not.toHaveBeenCalled()
-            expect(mockGoBack).not.toHaveBeenCalled()
-            expect(mockErrorToast).not.toHaveBeenCalled()
+    it('clears the review on backgrounding before Confirm and goes back once active', async () => {
+        const appStateChange = captureAppStateChange()
+        const account = accountFromBackup('ADDRESS_A')
+        const seed = account.privateKey
+        mockFetchPeraWebBackup.mockResolvedValue({ encryptedContent: 'x' })
+        mockDecryptPeraWebBackupPayload.mockReturnValue({ accounts: [account] })
+        const { result } = renderHook(() => usePeraWebImportLoadingScreen())
+        await waitFor(() =>
+            expect(result.current.reviewAccounts).toHaveLength(1),
+        )
+        const onChange = appStateChange()
 
-            act(() => onChange('active'))
+        act(() => {
+            onChange('background')
+            result.current.handleConfirm()
+        })
 
-            expect(mockGoBack).toHaveBeenCalledTimes(1)
-            expect(mockErrorToast).toHaveBeenCalledWith(
-                'common.error.title',
-                'onboarding.pera_web_import.review.interrupted',
-            )
-        },
-    )
+        expect(result.current.reviewAccounts).toBeNull()
+        expect(seed).toEqual(new Uint8Array(32))
+        expect(mockImportAccount).not.toHaveBeenCalled()
+        expect(mockGoBack).not.toHaveBeenCalled()
+
+        act(() => onChange('active'))
+
+        expect(mockGoBack).toHaveBeenCalledTimes(1)
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'common.error.title',
+            'onboarding.pera_web_import.review.interrupted',
+        )
+    })
+
+    it('reports a partial import when backgrounded after Confirm, counting the wiped rows as failed', async () => {
+        const appStateChange = captureAppStateChange()
+        const first = accountFromBackup('ADDRESS_A')
+        const second = accountFromBackup('ADDRESS_B')
+        const unusedSeed = second.privateKey
+        mockFetchPeraWebBackup.mockResolvedValue({ encryptedContent: 'x' })
+        mockDecryptPeraWebBackupPayload.mockReturnValue({
+            accounts: [first, second],
+        })
+        let finishImport = () => {}
+        mockImportAccount.mockImplementationOnce(
+            () =>
+                new Promise<void>(resolve => {
+                    finishImport = resolve
+                }),
+        )
+        const { result } = renderHook(() => usePeraWebImportLoadingScreen())
+        await waitFor(() =>
+            expect(result.current.reviewAccounts).toHaveLength(2),
+        )
+        act(() => result.current.handleConfirm())
+        const onChange = appStateChange()
+
+        act(() => onChange('background'))
+        await act(async () => finishImport())
+
+        expect(unusedSeed).toEqual(new Uint8Array(32))
+        expect(mockImportAccount).toHaveBeenCalledTimes(1)
+        expect(mockReplace).toHaveBeenCalledWith('PeraWebImportResult', {
+            importedCount: 1,
+            skippedDuplicateCount: 0,
+            failedCount: 1,
+        })
+
+        act(() => onChange('active'))
+
+        expect(mockGoBack).not.toHaveBeenCalled()
+        expect(mockErrorToast).not.toHaveBeenCalled()
+    })
 })
