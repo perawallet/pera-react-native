@@ -30,13 +30,17 @@ import {
     type SubmissionFlow,
 } from '@perawallet/wallet-core-signing'
 import { EvmError, EvmErrorCode, toEvmError } from '../blockchain/errors'
-import { createEvmClient } from '../blockchain/utils/createEvmClient'
+import {
+    createEvmClient,
+    createEvmNodeClients,
+} from '../blockchain/utils/createEvmClient'
 import type { TokenSightings } from '../accounts/token-detection'
 import type { EvmChain } from '../chains/types'
 import {
     makeProbeFailuresDue,
     reconcileEthereumSubmissions,
     type ProbeFailureStreaks,
+    type AbsenceSightings,
     type ProbeRotation,
     type SubmissionSettledHandlers,
 } from './reconcile'
@@ -64,9 +68,12 @@ export const createEvmBroadcasterAdapter = (
     const timeout =
         options.confirmationTimeoutMs ?? ETHEREUM_CONFIRMATION_TIMEOUT_MS
     const clientFor = (scope: ChainScope) => createEvmClient(scope, ctx, chain)
+    const nodeClientsFor = (scope: ChainScope) =>
+        createEvmNodeClients(scope, ctx, chain)
     const settleHandlers: SubmissionSettledHandlers = new Map()
     const probeFailures: ProbeFailureStreaks = new Map()
     const probeRotation: ProbeRotation = new Set()
+    const absences: AbsenceSightings = new Map()
     const nativeSymbol = chain.row.nativeAsset.symbol
 
     // Logs the node's error rather than the SubmissionError wrapper:
@@ -209,7 +216,9 @@ export const createEvmBroadcasterAdapter = (
                 settleHandlers,
                 probeFailures,
                 probeRotation,
+                absences,
                 getClient: clientFor,
+                getNodeClients: nodeClientsFor,
                 tokenSightings: options.tokenSightings,
             })
             void resumeEthereumCallBatches(ctx, chain, {

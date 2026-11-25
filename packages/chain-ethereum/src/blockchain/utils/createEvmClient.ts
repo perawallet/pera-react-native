@@ -220,6 +220,31 @@ const viemChainFor = (
     })
 }
 
+const usableRpcUrls = (
+    scope: ChainScope,
+    ctx: Pick<ChainContext, 'getEndpoints'>,
+): readonly string[] => {
+    const endpoints = ctx.getEndpoints()[scope.networkId] ?? []
+    const rpcUrls = config.backendAPIKey
+        ? endpoints
+        : endpoints.filter(url => !isPeraRpcUrl(url))
+    if (rpcUrls.length === 0) {
+        throw new UnconfiguredEvmRpcError(scope)
+    }
+    return rpcUrls
+}
+
+const clientOver = (
+    scope: ChainScope,
+    rpcUrls: readonly string[],
+    ctx: Pick<ChainContext, 'timeouts'>,
+    chain: EvmChain,
+): PublicClient =>
+    createPublicClient({
+        chain: viemChainFor(scope, rpcUrls, chain),
+        transport: endpointListTransport(rpcUrls, ctx.timeouts),
+    })
+
 /**
  * `ctx.getEndpoints()` lists the network's RPC URLs in preference order.
  * Without an API key the Pera proxy cannot serve the client, so the first
@@ -229,16 +254,12 @@ export const createEvmClient = (
     scope: ChainScope,
     ctx: Pick<ChainContext, 'getEndpoints' | 'timeouts'>,
     chain: EvmChain,
-): PublicClient => {
-    const endpoints = ctx.getEndpoints()[scope.networkId] ?? []
-    const rpcUrls = config.backendAPIKey
-        ? endpoints
-        : endpoints.filter(url => !isPeraRpcUrl(url))
-    if (rpcUrls.length === 0) {
-        throw new UnconfiguredEvmRpcError(scope)
-    }
-    return createPublicClient({
-        chain: viemChainFor(scope, rpcUrls, chain),
-        transport: endpointListTransport(rpcUrls, ctx.timeouts),
-    })
-}
+): PublicClient => clientOver(scope, usableRpcUrls(scope, ctx), ctx, chain)
+
+/** One client per usable RPC URL, each failing rather than failing over, for a read that must hear from every node a broadcast may have reached. */
+export const createEvmNodeClients = (
+    scope: ChainScope,
+    ctx: Pick<ChainContext, 'getEndpoints' | 'timeouts'>,
+    chain: EvmChain,
+): PublicClient[] =>
+    usableRpcUrls(scope, ctx).map(url => clientOver(scope, [url], ctx, chain))
