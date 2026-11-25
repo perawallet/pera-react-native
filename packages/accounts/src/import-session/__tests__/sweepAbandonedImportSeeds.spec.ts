@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WalletAccount } from '../../models'
 
 const state = vi.hoisted(() => ({
@@ -81,6 +81,10 @@ describe('sweepAbandonedImportSeeds', () => {
         state.pending = null
     })
 
+    afterEach(() => {
+        vi.unstubAllGlobals()
+    })
+
     it('preserves roots needed by existing credentials without authorizing a new anchor', async () => {
         state.provisional = ['seed']
         state.keys = [
@@ -118,22 +122,22 @@ describe('sweepAbandonedImportSeeds', () => {
     it('leaves a seed another extension context is still importing', async () => {
         state.provisional = ['in-flight']
         state.keys = [{ id: 'in-flight' }]
-        let release!: () => void
-        let granted!: () => void
-        const held = new Promise<void>(resolve => (granted = resolve))
-        void navigator.locks.request(
-            'kms-provisional-seeds:in-flight',
-            () =>
-                new Promise<void>(resolve => {
-                    release = resolve
-                    granted()
-                }),
+        const request = vi.fn(
+            async (
+                _name: string,
+                _options: unknown,
+                callback: (lock: unknown) => Promise<unknown>,
+            ) => callback(null),
         )
-        await held
+        vi.stubGlobal('navigator', { locks: { request } })
 
         await sweepAbandonedImportSeeds(remove)
-        release()
 
+        expect(request).toHaveBeenCalledWith(
+            'kms-provisional-seeds:in-flight',
+            { ifAvailable: true },
+            expect.any(Function),
+        )
         expect(remove).not.toHaveBeenCalled()
         expect(state.provisional).toEqual(['in-flight'])
     })

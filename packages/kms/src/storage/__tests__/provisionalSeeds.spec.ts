@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { clearAllStores } from '@perawallet/wallet-core-shared'
 
 const items = vi.hoisted(() => new Map<string, unknown>())
@@ -36,6 +36,10 @@ describe('provisional seeds', () => {
         items.clear()
     })
 
+    afterEach(() => {
+        vi.unstubAllGlobals()
+    })
+
     it('remembers each marked seed once until it is cleared', async () => {
         await markSeedProvisional('seed-1')
         await markSeedProvisional('seed-1')
@@ -49,17 +53,27 @@ describe('provisional seeds', () => {
     })
 
     it("holds the seed's lock from the mark until it is cleared", async () => {
-        const isHeld = async () =>
-            (await navigator.locks.query()).held?.some(
-                lock => lock.name === provisionalSeedLockName('seed-held'),
-            )
+        const held = new Set<string>()
+        let released!: Promise<void>
+        vi.stubGlobal('navigator', {
+            locks: {
+                request: (name: string, callback: () => Promise<void>) => {
+                    held.add(name)
+                    released = callback().then(() => {
+                        held.delete(name)
+                    })
+                    return released
+                },
+            },
+        })
+        const lockName = provisionalSeedLockName('seed-held')
 
         await markSeedProvisional('seed-held')
-        expect(await isHeld()).toBe(true)
+        expect(held.has(lockName)).toBe(true)
 
         clearProvisionalSeed('seed-held')
-        await Promise.resolve()
-        expect(await isHeld()).toBe(false)
+        await released
+        expect(held.has(lockName)).toBe(false)
     })
 
     it('reads a malformed record as empty', () => {
