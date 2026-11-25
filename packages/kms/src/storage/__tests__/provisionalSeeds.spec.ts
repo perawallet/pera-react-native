@@ -27,6 +27,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 import {
     clearProvisionalSeed,
     markSeedProvisional,
+    provisionalSeedLockName,
     readProvisionalSeeds,
 } from '../provisionalSeeds'
 
@@ -35,16 +36,30 @@ describe('provisional seeds', () => {
         items.clear()
     })
 
-    it('remembers each marked seed once until it is cleared', () => {
-        markSeedProvisional('seed-1')
-        markSeedProvisional('seed-1')
-        markSeedProvisional('seed-2')
+    it('remembers each marked seed once until it is cleared', async () => {
+        await markSeedProvisional('seed-1')
+        await markSeedProvisional('seed-1')
+        await markSeedProvisional('seed-2')
 
         expect(readProvisionalSeeds()).toEqual(['seed-1', 'seed-2'])
 
         clearProvisionalSeed('seed-1')
 
         expect(readProvisionalSeeds()).toEqual(['seed-2'])
+    })
+
+    it("holds the seed's lock from the mark until it is cleared", async () => {
+        const isHeld = async () =>
+            (await navigator.locks.query()).held?.some(
+                lock => lock.name === provisionalSeedLockName('seed-held'),
+            )
+
+        await markSeedProvisional('seed-held')
+        expect(await isHeld()).toBe(true)
+
+        clearProvisionalSeed('seed-held')
+        await Promise.resolve()
+        expect(await isHeld()).toBe(false)
     })
 
     it('reads a malformed record as empty', () => {
@@ -65,8 +80,8 @@ describe('provisional seeds', () => {
         expect(readProvisionalSeeds()).toEqual(['seed-1', 'seed-2'])
     })
 
-    it('forgets every marked seed when all stores are cleared', () => {
-        markSeedProvisional('seed-1')
+    it('forgets every marked seed when all stores are cleared', async () => {
+        await markSeedProvisional('seed-1')
 
         clearAllStores()
 

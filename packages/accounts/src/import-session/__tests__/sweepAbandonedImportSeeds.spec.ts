@@ -27,6 +27,7 @@ const state = vi.hoisted(() => ({
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     readProvisionalSeeds: () => [...state.provisional],
+    provisionalSeedLockName: (id: string) => `kms-provisional-seeds:${id}`,
     clearProvisionalSeed: (id: string) => {
         state.provisional = state.provisional.filter(seed => seed !== id)
     },
@@ -112,6 +113,29 @@ describe('sweepAbandonedImportSeeds', () => {
 
         expect(remove).toHaveBeenCalledExactlyOnceWith('abandoned')
         expect(state.provisional).toEqual([])
+    })
+
+    it('leaves a seed another extension context is still importing', async () => {
+        state.provisional = ['in-flight']
+        state.keys = [{ id: 'in-flight' }]
+        let release!: () => void
+        let granted!: () => void
+        const held = new Promise<void>(resolve => (granted = resolve))
+        void navigator.locks.request(
+            'kms-provisional-seeds:in-flight',
+            () =>
+                new Promise<void>(resolve => {
+                    release = resolve
+                    granted()
+                }),
+        )
+        await held
+
+        await sweepAbandonedImportSeeds(remove)
+        release()
+
+        expect(remove).not.toHaveBeenCalled()
+        expect(state.provisional).toEqual(['in-flight'])
     })
 
     it('never removes a seed a stored account uses', async () => {

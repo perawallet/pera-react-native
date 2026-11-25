@@ -10,8 +10,11 @@
  limitations under the License
  */
 
-import { readProvisionalSeeds } from '@perawallet/wallet-core-kms'
-import { logger } from '@perawallet/wallet-core-shared'
+import {
+    provisionalSeedLockName,
+    readProvisionalSeeds,
+} from '@perawallet/wallet-core-kms'
+import { logger, withLockIfFree } from '@perawallet/wallet-core-shared'
 import { getKeystore } from '@perawallet/wallet-extension-provider'
 import { useAccountsStore } from '../store'
 import { useHDImportSessionStore } from './store'
@@ -34,7 +37,10 @@ export const sweepAbandonedImportSeeds = async (
         if (seedId === useHDImportSessionStore.getState().pending?.walletKeyId)
             continue
         try {
-            await discardUnclaimedImportSeed(seedId, removeKeyAndChildren)
+            // Taken only when no other extension context is still importing it.
+            await withLockIfFree(provisionalSeedLockName(seedId), () =>
+                discardUnclaimedImportSeed(seedId, removeKeyAndChildren),
+            )
         } catch (error) {
             // The mark stays, so the next launch tries again.
             logger.warn('Removing an abandoned import seed failed', { error })

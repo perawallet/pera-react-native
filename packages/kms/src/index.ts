@@ -30,6 +30,7 @@ export { handOffSecret, zeroBytes } from './crypto/secure-memory'
 export {
     clearProvisionalSeed,
     markSeedProvisional,
+    provisionalSeedLockName,
     readProvisionalSeeds,
 } from './storage/provisionalSeeds'
 export { AesGcmOpenError, openAesGcm, sealAesGcm } from './crypto/aesGcm'

@@ -151,7 +151,7 @@ export const useHDImportSession = (
                     // waits for commit: a seed the user never confirms must
                     // not anchor it, as an app kill here would leave it there.
                     // Marked first, so a kill after the save leaves it found.
-                    markSeedProvisional(pending.walletKeyId)
+                    await markSeedProvisional(pending.walletKeyId)
                     await persistHDMasterKey(
                         {
                             keyId: pending.walletKeyId,
@@ -277,7 +277,7 @@ export const useHDImportSession = (
 
             // Use copies because persisting zeroes the bytes it receives.
             if (!pending.isSeedPersisted) {
-                markSeedProvisional(pending.walletKeyId)
+                await markSeedProvisional(pending.walletKeyId)
                 await persistHDMasterKey(
                     {
                         keyId: pending.walletKeyId,

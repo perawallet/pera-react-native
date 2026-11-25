@@ -43,8 +43,39 @@ const writeProvisionalSeeds = (ids: string[]): void => {
     else storage.setJSON(PROVISIONAL_SEEDS_KEY, ids)
 }
 
-/** Call before the seed is saved, so no interruption leaves it unmarked. */
-export const markSeedProvisional = (seedId: string): void => {
+/** Held while a seed's import is in flight; the sweep skips a seed whose lock is taken. */
+export const provisionalSeedLockName = (seedId: string): string =>
+    `${PROVISIONAL_SEEDS_KEY}:${seedId}`
+
+const lockReleases = new Map<string, () => void>()
+
+// The extension's popup and full-tab page share the mark list but not memory,
+// so a context-local guard cannot tell another context's live import from an
+// abandoned one. A Web Lock can, and is dropped when its context dies. Hermes
+// has no Web Locks and runs one JS context, so this is a no-op there.
+const holdSeedLock = (seedId: string): Promise<void> => {
+    const locks = typeof navigator === 'undefined' ? undefined : navigator.locks
+    if (!locks || lockReleases.has(seedId)) return Promise.resolve()
+    return new Promise(granted => {
+        locks
+            .request(
+                provisionalSeedLockName(seedId),
+                () =>
+                    new Promise<void>(release => {
+                        lockReleases.set(seedId, release)
+                        granted()
+                    }),
+            )
+            .catch(() => granted())
+    })
+}
+
+/**
+ * Call before the seed is saved, so no interruption leaves it unmarked. The
+ * lock is taken before the mark is written, so no sweep sees the mark unlocked.
+ */
+export const markSeedProvisional = async (seedId: string): Promise<void> => {
+    await holdSeedLock(seedId)
     const ids = readProvisionalSeeds()
     if (!ids.includes(seedId)) writeProvisionalSeeds([...ids, seedId])
 }
@@ -52,6 +83,8 @@ export const markSeedProvisional = (seedId: string): void => {
 /** Call once the seed is either referenced by a stored account or removed. */
 export const clearProvisionalSeed = (seedId: string): void => {
     writeProvisionalSeeds(readProvisionalSeeds().filter(id => id !== seedId))
+    lockReleases.get(seedId)?.()
+    lockReleases.delete(seedId)
 }
 
 // Delete-all wipes the seeds these ids name; a surviving list would have the
