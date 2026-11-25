@@ -14,8 +14,8 @@ import { describe, expect, it } from 'vitest'
 import type { SwapAsset, SwapHistoryItem, SwapStatus } from '../../models'
 import { distinctSwapPairs } from '../distinctSwapPairs'
 
-const asset = (assetId: string): SwapAsset => ({
-    ref: { chainId: 'algorand', networkId: 'mainnet', assetId },
+const asset = (assetId: string, chainId = 'algorand'): SwapAsset => ({
+    ref: { chainId, networkId: 'mainnet', assetId } as SwapAsset['ref'],
     assetId,
     verificationTier: 'verified',
     crossChainAssetGroup: null,
@@ -26,12 +26,13 @@ const row = (
     pair: [string, string] | null,
     createdAt: string,
     status: SwapStatus = 'completed',
+    chainId = 'algorand',
 ): SwapHistoryItem => ({
     orderId,
     provider: 'p',
     status,
-    assetIn: pair ? asset(pair[0]) : null,
-    assetOut: pair ? asset(pair[1]) : null,
+    assetIn: pair ? asset(pair[0], chainId) : null,
+    assetOut: pair ? asset(pair[1], chainId) : null,
     amountIn: null,
     amountOut: null,
     amountInUsdValue: null,
@@ -73,5 +74,33 @@ describe('distinctSwapPairs', () => {
 
         expect(pairs).toHaveLength(1)
         expect(pairs[0].assetOut.assetId).toBe('8')
+    })
+
+    it('keeps every pair when no limit is given', () => {
+        const rows = Array.from({ length: 12 }, (_, i) =>
+            row(`${i}`, ['0', `${i + 1}`], `2026-10-01T10:${10 + i}:00Z`),
+        )
+
+        expect(distinctSwapPairs(rows)).toHaveLength(12)
+    })
+
+    it('orders Ethereum and Algorand rows newest first across chains', () => {
+        const pairs = distinctSwapPairs([
+            row('1', ['0', '7'], '2026-10-01T10:00:00Z'),
+            row(
+                '2',
+                ['usdc', 'eth'],
+                '2026-10-03T10:00:00Z',
+                'completed',
+                'ethereum',
+            ),
+            row('3', ['0', '9'], '2026-10-02T10:00:00Z'),
+        ])
+
+        expect(pairs.map(pair => pair.pairKey)).toEqual([
+            'ethereum/usdc|ethereum/eth',
+            'algorand/0|algorand/9',
+            'algorand/0|algorand/7',
+        ])
     })
 })

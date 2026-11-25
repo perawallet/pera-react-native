@@ -24,7 +24,6 @@ import { isSwapHistoryRow } from '../utils/isSwapHistoryRow'
 import { swapHistoryBatchesOf } from '../utils/swapHistoryBatches'
 import { swapQueryKeys } from './querykeys'
 
-const DISTINCT_PAIRS_LIMIT = 10
 // The pairs are read off the newest history page; the router has no pair view.
 const HISTORY_PAGE_SIZE = 50
 
@@ -37,8 +36,8 @@ export type UseDistinctPairsHistoryQueryResult = {
 }
 
 /**
- * The newest distinct pairs any of `accounts` swapped, each with the account
- * that paid. Accounts are named rather than left to the device's
+ * Every distinct pair on the newest history page of any of `accounts`, each
+ * with the account that paid. Accounts are named rather than left to the device's
  * registration, which doesn't carry EVM addresses on every deployment; one the
  * router refuses is dropped rather than failing its batch.
  */
@@ -52,7 +51,7 @@ export const useDistinctPairsHistoryQuery = (
         (results: UseQueryResult<SwapHistoryItem[]>[]) => {
             const rows = results.flatMap(result => result.data ?? [])
             return {
-                data: distinctSwapPairs(rows, DISTINCT_PAIRS_LIMIT),
+                data: distinctSwapPairs(rows),
                 isLoading:
                     rows.length === 0 &&
                     results.some(result => result.isLoading),

@@ -84,6 +84,57 @@ describe('swaps/useRecentSwapPairsQuery', () => {
         expect(result.current.pairs).toEqual([{ ...paid, accountId: 'main' }])
     })
 
+    test("counts the cap after leaving out pairs that are not the wallet's", () => {
+        const strangers = Array.from({ length: 3 }, (_, i) =>
+            pairPaidBy(`STRANGER${i}`),
+        )
+        const own = Array.from({ length: 12 }, () => pairPaidBy('MAIN'))
+        mocks.history.mockReturnValue({
+            data: [...strangers, ...own],
+            isLoading: false,
+            isError: false,
+        })
+
+        const { result } = renderHook(() => useRecentSwapPairsQuery())
+
+        expect(result.current.pairs).toHaveLength(10)
+        expect(result.current.pairs.every(p => p.accountId === 'main')).toBe(
+            true,
+        )
+    })
+
+    test('lists an Ethereum same-chain pair paid by an EVM payer first', () => {
+        const ETH = { chainId: 'ethereum', networkId: 'mainnet' } as const
+        mocks.sourceChains = { main: ['algorand'], evm: ['ethereum'] }
+        mocks.payers = [
+            ...mocks.payers,
+            {
+                scope: ETH,
+                address: '0xEvm',
+                accountId: 'evm',
+                isOnDevice: true,
+            },
+        ]
+        const ethPair = {
+            ...pairPaidBy('0xevm'),
+            assetIn: { assetId: 'usdc', ref: { ...ETH, assetId: 'usdc' } },
+            assetOut: { assetId: 'eth', ref: { ...ETH, assetId: 'eth' } },
+            sourceAccount: { scope: ETH, address: '0xevm' },
+        } as unknown as SwapDistinctPairItem
+        mocks.history.mockReturnValue({
+            data: [ethPair, pairPaidBy('MAIN')],
+            isLoading: false,
+            isError: false,
+        })
+
+        const { result } = renderHook(() => useRecentSwapPairsQuery())
+
+        expect(result.current.pairs.map(p => p.accountId)).toEqual([
+            'evm',
+            'main',
+        ])
+    })
+
     test('leaves out of the history read an address the device does not register', () => {
         const ETH = { chainId: 'ethereum', networkId: 'mainnet' } as const
         mocks.payers = [

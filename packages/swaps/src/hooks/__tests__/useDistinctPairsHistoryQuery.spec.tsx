@@ -82,6 +82,30 @@ describe('swaps/useDistinctPairsHistoryQuery', () => {
         )
     })
 
+    test('returns more than ten distinct pairs', async () => {
+        const base = makeSwapHistoryItem()
+        vi.mocked(fetchSwapHistory).mockResolvedValue({
+            results: Array.from({ length: 12 }, (_, index) =>
+                makeSwapHistoryItem({
+                    orderId: `order-${index}`,
+                    assetOut: {
+                        ...base.assetOut!,
+                        assetId: `${index}`,
+                        ref: { ...base.assetOut!.ref, assetId: `${index}` },
+                    },
+                }),
+            ),
+            next: null,
+        })
+
+        const { result } = renderHook(
+            () => useDistinctPairsHistoryQuery([ACCOUNT]),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.data).toHaveLength(12))
+    })
+
     test('keeps who paid each pair', async () => {
         const paidBy = { scope: SCOPE, address: 'SECOND' }
         vi.mocked(fetchSwapHistory).mockResolvedValue({

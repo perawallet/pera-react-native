@@ -13,12 +13,17 @@
 import { useCallback, useMemo, type ReactElement } from 'react'
 import {
     useRecentSwapPairsQuery,
+    scopeOfSwapAsset,
     useSwapAccountNames,
     useSwapSigningAccounts,
+    useSwapSourceChainsByAccount,
     useSwapsStore,
     type SwapHistoryPair,
 } from '@perawallet/wallet-core-swaps'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    toScopeKey,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { PWView } from '@components/core'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { SwapHistoryContent } from '@modules/swap/components/SwapHistoryContent'
@@ -51,6 +56,8 @@ export const useSwapPairHistoryWidget = (
         () => new Map(names.map(({ accountId, name }) => [accountId, name])),
         [names],
     )
+    const { sourceChainIds } = useSwapSourceChainsByAccount()
+    const isChainShown = sourceChainIds.length > 1
     const { request: requestBottomSheet } = useBottomSheet()
     const styles = useStyles()
 
@@ -62,11 +69,17 @@ export const useSwapPairHistoryWidget = (
                 [AnalyticsMetadataKey.ChainId]: pair.assetIn.ref.chainId,
                 [AnalyticsMetadataKey.SwapPairing]: `${pair.assetIn.unitName}/${pair.assetOut.unitName}`,
             })
+            const fromScope = scopeOfSwapAsset(pair.assetIn.ref)
+            const toScope = scopeOfSwapAsset(pair.assetOut.ref)
             setAccountPair({
                 accountId: pair.accountId,
                 chainId: pair.assetIn.ref.chainId,
                 fromAsset: pair.assetIn.assetId,
                 toAsset: pair.assetOut.assetId,
+                toAssetScope:
+                    toScopeKey(fromScope) === toScopeKey(toScope)
+                        ? null
+                        : toScope,
             })
         },
         [setAccountPair],
@@ -94,10 +107,11 @@ export const useSwapPairHistoryWidget = (
                 accountName={
                     isMultiAccount ? nameById.get(item.accountId) : undefined
                 }
+                isChainShown={isChainShown}
                 onPress={() => handlePairPress(item)}
             />
         ),
-        [handlePairPress, nameById, isMultiAccount],
+        [handlePairPress, nameById, isMultiAccount, isChainShown],
     )
 
     const keyExtractor = useCallback(

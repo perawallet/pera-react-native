@@ -54,16 +54,18 @@ export const SwapHistoryList = ({
         shouldShowErrorState,
         shouldShowEmptyState,
         shouldShowLoadMore,
+        isChainShown,
     } = useSwapHistoryList({ onClose })
 
     const renderItem = useCallback(
         ({ item }: { item: ListedSwapHistoryItem }) => (
             <SwapHistoryListItem
                 item={item}
+                isChainShown={isChainShown}
                 onPress={handleItemPress}
             />
         ),
-        [handleItemPress],
+        [handleItemPress, isChainShown],
     )
 
     const ItemSeparator = useCallback(
