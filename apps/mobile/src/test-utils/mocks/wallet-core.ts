@@ -117,9 +117,14 @@ vi.mock('@perawallet/wallet-core-walletconnect', async () => {
 
 vi.mock('@perawallet/wallet-core-swaps', async () => {
     // Pure quote helpers stay real, by path: the barrel pulls in stores.
-    const { formatSwapRate, swapRate } = await vi.importActual<
-        typeof import('@packages/swaps/src/utils/swapQuoteHelpers')
-    >('@packages/swaps/src/utils/swapQuoteHelpers')
+    const { formatSwapRate, swapRate, quoteForAssetOut, quoteOutUsdPrice } =
+        await vi.importActual<
+            typeof import('@packages/swaps/src/utils/swapQuoteHelpers')
+        >('@packages/swaps/src/utils/swapQuoteHelpers')
+    const { peraAssetFromSwapAsset, swapAssetTierOf, withSwapAssetLogo } =
+        await vi.importActual<
+            typeof import('@packages/swaps/src/utils/swapAssetMetadata')
+        >('@packages/swaps/src/utils/swapAssetMetadata')
     const {
         swapFeeOf,
         swapNetworkFeeUsd,
@@ -153,6 +158,11 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
         SwapQuoteMismatchError,
         formatSwapRate,
         swapRate,
+        quoteForAssetOut,
+        quoteOutUsdPrice,
+        peraAssetFromSwapAsset,
+        swapAssetTierOf,
+        withSwapAssetLogo,
         swapFeeOf,
         swapNetworkFeeUsd,
         swapNetworkFeeSharePercent,

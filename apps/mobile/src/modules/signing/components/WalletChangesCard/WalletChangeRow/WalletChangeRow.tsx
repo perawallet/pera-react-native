@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { PWIcon, PWText, PWView } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
@@ -28,6 +29,8 @@ export type WalletChangeRowProps = {
     item?: Optional<BalanceImpactItem>
     /** With no item: the user may still receive something Pera can't see. */
     isReceiveUnknown?: boolean
+    /** Where `item` is priced when it carries no price of its own. */
+    scope?: ChainScope
     testID?: string
 }
 
@@ -35,6 +38,7 @@ export const WalletChangeRow = ({
     label,
     item,
     isReceiveUnknown = false,
+    scope,
     testID,
 }: WalletChangeRowProps) => {
     const styles = useStyles()
@@ -115,6 +119,7 @@ export const WalletChangeRow = ({
                     sourceAmount={item.amount}
                     sourceAssetId={item.assetId}
                     usdPrice={item.usdPrice}
+                    scope={scope}
                     variant='bodyLarge'
                     style={styles.fiat}
                 />

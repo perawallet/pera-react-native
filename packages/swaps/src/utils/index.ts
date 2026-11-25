@@ -13,6 +13,7 @@
 export * from './isSwappableAsset'
 export * from './quoteFreshness'
 export * from './swapQuoteHelpers'
+export * from './swapAssetMetadata'
 export * from './resolveSwapHandoffOutcome'
 export * from './swapFees'
 export * from './swapSpendLimit'

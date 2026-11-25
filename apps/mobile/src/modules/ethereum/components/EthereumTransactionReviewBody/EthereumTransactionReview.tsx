@@ -83,6 +83,7 @@ const changesOf = ({
     const actionChangesCard =
         actionChanges.spend.length > 0 || actionChanges.receive.length > 0 ? (
             <WalletChangesCard
+                scope={scope}
                 spend={actionChanges.spend}
                 receive={actionChanges.receive}
                 isReceiveUnknown={actionChanges.isReceiveUnknown}
@@ -106,6 +107,7 @@ const changesOf = ({
                 <>
                     {(movesValue || permissions.length === 0) && (
                         <WalletChangesCard
+                            scope={scope}
                             spend={simulation.spend}
                             receive={simulation.receive}
                         />
@@ -128,6 +130,7 @@ const changesOf = ({
             if (isTransfer && transferSpend.length > 0) {
                 return (
                     <WalletChangesCard
+                        scope={scope}
                         spend={transferSpend}
                         receive={[]}
                     />

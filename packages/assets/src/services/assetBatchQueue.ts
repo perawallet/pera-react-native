@@ -23,9 +23,10 @@ import type { PeraAsset } from '../models'
 const ASSET_BATCH_DELAY_MS = 100 // same value as the name batch queue
 
 /**
- * On-demand asset batch queue. Used by `useSingleAssetDetailsQuery`'s DB-miss
- * path to coalesce concurrent asset lookups (e.g. a list mounting 30 rows
- * over a few render commits) into a single bulk-read HTTP call.
+ * On-demand asset batch queue. Used by `useSingleAssetDetailsQuery` for a
+ * missing or chain-only row to coalesce concurrent asset lookups (e.g. a list
+ * mounting 30 rows over a few render commits) into a single bulk-read HTTP
+ * call.
  *
  * Partitioned by the scope key, not a scope: partitions are Map keys, so a
  * fresh scope object per enqueue would never batch.
@@ -36,7 +37,7 @@ export const assetBatchQueue = new BatchQueue<
     ChainScopeKey
 >(async (assetIds, scopeKey) => {
     const scope = parseScopeKey(scopeKey)
-    await fetchAndPersistAssets(assetIds, scope)
+    await fetchAndPersistAssets(assetIds, scope, { isOnDemand: true })
 
     const assets = await getAssetsByIds({ assetIds, scope })
     const map = new Map<string, Nullable<PeraAsset>>()

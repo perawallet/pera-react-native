@@ -439,10 +439,40 @@ describe('syncAssets', () => {
             expect.objectContaining({
                 assetIds: [USDC, DAI],
                 recheckMissingLogo: true,
+                recheckBackendless: false,
             }),
         )
         expect(requested).toEqual([{ ids: [USDC_CAIP19] }])
         expect(full.map(a => a.assetId)).toEqual([USDC])
+    })
+
+    it('rechecks chain-only tokens for assets on screen', async () => {
+        const { persistence } = memoryPersistence(() => [])
+        const ops = createEthereumAssetsAdapter(
+            testChainContext({ services: ['assets'] }),
+            ETHEREUM,
+        )
+
+        await ops.syncAssets([USDC].map(ref), SCOPE, { isOnDemand: true })
+
+        expect(persistence.getStaleOrMissingAssetIds).toHaveBeenCalledWith(
+            expect.objectContaining({ recheckBackendless: true }),
+        )
+    })
+
+    it('leaves chain-only tokens alone on a network with no assets service', async () => {
+        server.use(...rpc({ [USDC]: usdcOnChain }))
+        const { persistence } = memoryPersistence(() => [])
+        const ops = createEthereumAssetsAdapter(
+            testChainContext({ services: [] }),
+            ETHEREUM,
+        )
+
+        await ops.syncAssets([USDC].map(ref), SCOPE, { isOnDemand: true })
+
+        expect(persistence.getStaleOrMissingAssetIds).toHaveBeenCalledWith(
+            expect.objectContaining({ recheckBackendless: false }),
+        )
     })
 
     it("stores the native coin under the chain's name with the backend's cross-chain group only", async () => {
@@ -746,7 +776,7 @@ describe('syncAssets', () => {
                     [USDC_CAIP19]: usdcFromPera,
                     [DAI_CAIP19]: {
                         ...unknownAssetItem(DAI_CAIP19),
-                        usd_value: '1.5',
+                        verification_tier: 'trusted',
                     },
                 },
             }),

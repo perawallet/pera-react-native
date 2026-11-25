@@ -16,6 +16,8 @@ import type { SwapQuote } from '../../models'
 import {
     formatSwapRate,
     pickBestByAmountOut,
+    quoteForAssetOut,
+    quoteOutUsdPrice,
     sortQuotesByAmountOutDesc,
     swapRate,
 } from '../swapQuoteHelpers'
@@ -120,5 +122,49 @@ describe('formatSwapRate', () => {
         expect(
             formatSwapRate(makeSwapQuote({ assetIn: { decimals: undefined } })),
         ).toBe('-')
+    })
+})
+
+describe('quoteForAssetOut', () => {
+    const MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+
+    it('returns the quote for its out asset on its network', () => {
+        const swapQuote = makeSwapQuote()
+
+        expect(quoteForAssetOut(swapQuote, MAINNET, '31566704')).toBe(swapQuote)
+    })
+
+    it.each([
+        ['another asset', MAINNET, '0'],
+        [
+            'another network',
+            { chainId: 'algorand', networkId: 'testnet' },
+            '31566704',
+        ],
+    ] as const)('returns null for %s', (_name, scope, assetId) => {
+        expect(quoteForAssetOut(makeSwapQuote(), scope, assetId)).toBeNull()
+    })
+
+    it('returns null without a quote', () => {
+        expect(quoteForAssetOut(null, MAINNET, '31566704')).toBeNull()
+    })
+})
+
+describe('quoteOutUsdPrice', () => {
+    it('prices one display unit of the out asset from the quoted USD value', () => {
+        // 1.2 USDC valued at $1.09.
+        const price = quoteOutUsdPrice(makeSwapQuote())
+
+        expect(price?.toString()).toBe(
+            new Decimal('1.09').div('1.2').toString(),
+        )
+    })
+
+    it.each([
+        ['has no USD value', { amountOutUsdValue: null }],
+        ['receives nothing', { amountOut: new Decimal(0) }],
+        ['has a USD value that is not a number', { amountOutUsdValue: 'n/a' }],
+    ])('leaves the price unknown when the quote %s', (_name, overrides) => {
+        expect(quoteOutUsdPrice(makeSwapQuote(overrides))).toBeUndefined()
     })
 })

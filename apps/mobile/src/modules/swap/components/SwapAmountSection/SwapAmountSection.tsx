@@ -19,12 +19,13 @@ import { PreferredAmount } from '@components/PreferredAmount'
 import { ChainLabel } from '@modules/chain-ui/icon'
 import { Trans } from 'react-i18next'
 import { useLanguage } from '@hooks/useLanguage'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { useSwapAmountSection } from './useSwapAmountSection'
 import { useTheme } from '@rneui/themed'
 import { isNativeAssetId } from '@perawallet/wallet-core-assets'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 
 type SwapAmountSectionBaseProps = {
     /** Where `assetId` lives. */
@@ -54,6 +55,7 @@ type SwapAmountSectionReceiveProps = SwapAmountSectionBaseProps & {
     amount: Nullable<Decimal>
     isLoading?: boolean
     onAssetPress: () => void
+    quote?: Maybe<SwapQuote>
 }
 
 export type SwapAmountSectionProps =
@@ -85,8 +87,10 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
     const localCurrencySymbol = payProps?.localCurrencySymbol
     const fiatToAsset = payProps?.fiatToAsset
     const assetToFiat = payProps?.assetToFiat
+    const quote = receiveProps?.quote
     const {
         asset,
+        usdPrice,
         isBalanceShown,
         isPay,
         isFiatInput,
@@ -105,6 +109,7 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
         isLocalCurrencyInput,
         fiatToAsset,
         assetToFiat,
+        quote,
     })
 
     const renderAmount = () => {
@@ -234,6 +239,7 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
                     <PreferredAmount
                         sourceAmount={amount ?? new Decimal(0)}
                         sourceAssetId={assetId}
+                        usdPrice={usdPrice}
                         scope={scope}
                         showSymbol
                         isLoading={isLoading}

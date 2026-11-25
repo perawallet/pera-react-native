@@ -12,13 +12,24 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Decimal } from 'decimal.js'
-import { useAssetsQuery, type PeraAsset } from '@perawallet/wallet-core-assets'
+import {
+    useAssetPricesQuery,
+    useAssetsQuery,
+    type PeraAsset,
+} from '@perawallet/wallet-core-assets'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { FIAT_DECIMAL_PLACES } from '@perawallet/wallet-core-currencies'
+import {
+    quoteForAssetOut,
+    quoteOutUsdPrice,
+    withSwapAssetLogo,
+    type SwapQuote,
+} from '@perawallet/wallet-core-swaps'
 import {
     formatCurrency,
     resolveAssetDisplayPrecision,
     roundAssetAmountForDisplay,
+    type Maybe,
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
@@ -35,10 +46,13 @@ type UseSwapAmountSectionParams = {
     isLocalCurrencyInput?: boolean
     fiatToAsset?: (fiat: Nullable<Decimal>) => Nullable<Decimal>
     assetToFiat?: (asset: Nullable<Decimal>) => Nullable<Decimal>
+    quote?: Maybe<SwapQuote>
 }
 
 type UseSwapAmountSectionResult = {
     asset: Optional<PeraAsset>
+    /** USD per display unit; undefined leaves the price to the stored rows. */
+    usdPrice: Optional<Decimal>
     /** False until the asset resolves, so a balance never sits beside an empty selector. */
     isBalanceShown: boolean
     isPay: boolean
@@ -117,18 +131,39 @@ export const useSwapAmountSection = ({
     isLocalCurrencyInput = false,
     fiatToAsset,
     assetToFiat,
+    quote,
 }: UseSwapAmountSectionParams): UseSwapAmountSectionResult => {
+    const isPay = variant === 'pay'
     // Same cache entry as the section's AssetSelector, which may show an
     // asset the account doesn't hold.
     const { data: assets } = useAssetsQuery(scope, [assetId], {
         fetchMissing: true,
     })
-    const asset = useMemo(() => assets?.get(assetId), [assets, assetId])
+    // The background sync prices only held assets, and the receive asset
+    // often isn't one.
+    const { data: prices } = useAssetPricesQuery(scope, [assetId], !isPay, {
+        fetchMissing: true,
+    })
+    // The receive quote stands in for the logo and price the store lacks.
+    const assetQuote = useMemo(
+        () => (isPay ? null : quoteForAssetOut(quote, scope, assetId)),
+        [isPay, quote, scope, assetId],
+    )
+    const asset = useMemo(() => {
+        const stored = assets?.get(assetId)
+        return stored && assetQuote
+            ? withSwapAssetLogo(stored, assetQuote.assetOut)
+            : stored
+    }, [assets, assetId, assetQuote])
+    const usdPrice = useMemo(() => {
+        if (isPay) return undefined
+        const stored = prices?.get(assetId)?.usdPrice
+        return stored ?? (assetQuote ? quoteOutUsdPrice(assetQuote) : undefined)
+    }, [isPay, prices, assetId, assetQuote])
     // Passed explicitly rather than left to formatCurrency's getActiveLocale()
     // default so a mid-session language switch actually invalidates the memo.
     const { currentLanguage } = useLanguage()
 
-    const isPay = variant === 'pay'
     const isFiatInput = isPay && isLocalCurrencyInput
 
     const [rawText, setRawText] = useState(amount ? amount.toString() : '')
@@ -226,6 +261,7 @@ export const useSwapAmountSection = ({
 
     return {
         asset,
+        usdPrice,
         isBalanceShown: asset !== undefined,
         isPay,
         isFiatInput,

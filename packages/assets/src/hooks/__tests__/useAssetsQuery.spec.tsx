@@ -189,6 +189,7 @@ describe('useAssetsQuery', () => {
             expect(mocks.syncAssets).toHaveBeenCalledWith(
                 [{ chainId: 'algorand', assetId: '123' }],
                 { chainId: 'algorand', networkId: 'mainnet' },
+                { isOnDemand: true },
             )
             expect(result.current.data.get('123')).toEqual(
                 expect.objectContaining({ assetId: '123', name: 'Test Asset' }),

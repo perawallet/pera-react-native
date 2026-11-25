@@ -101,7 +101,14 @@ describe('useSingleAssetDetailsQuery', () => {
     })
 
     it('reads asset from DB without asking the adapter', async () => {
-        const dbAsset = makeAsset('123', 'DB Asset')
+        const dbAsset = {
+            ...makeAsset('123', 'DB Asset'),
+            peraMetadata: {
+                isDeleted: false,
+                verificationTier: 'verified',
+                logo: 'https://logo/123.png',
+            },
+        }
         mocks.getAssetById.mockResolvedValue(dbAsset)
 
         const { result } = renderHook(
@@ -116,6 +123,76 @@ describe('useSingleAssetDetailsQuery', () => {
         expect(result.current.data).toEqual(dbAsset)
         expect(mocks.batchEnqueue).not.toHaveBeenCalled()
         expect(mocks.getAssetMetadata).not.toHaveBeenCalled()
+    })
+
+    describe('a row stored from the chain alone', () => {
+        const chainOnly = makeAsset('123', 'Chain Only')
+
+        beforeEach(() => {
+            mocks.getAssetById.mockResolvedValue(chainOnly)
+        })
+
+        it('shows the stored row, then the one the backend refreshed', async () => {
+            const refreshed = {
+                ...chainOnly,
+                peraMetadata: {
+                    isDeleted: false,
+                    verificationTier: 'verified',
+                    logo: 'https://logo/123.png',
+                },
+            }
+            let resolveRefresh: (asset: typeof refreshed) => void = () => {}
+            mocks.batchEnqueue.mockReturnValue(
+                new Promise(resolve => {
+                    resolveRefresh = resolve
+                }),
+            )
+
+            const { result } = renderHook(
+                () => useSingleAssetDetailsQuery('123', mainnetScope),
+                { wrapper: createWrapper(queryClient) },
+            )
+
+            await waitFor(() => expect(result.current.data).toEqual(chainOnly))
+            expect(mocks.batchEnqueue).toHaveBeenCalledWith(
+                '123',
+                toScopeKey(mainnetScope),
+            )
+
+            resolveRefresh(refreshed)
+
+            await waitFor(() => expect(result.current.data).toEqual(refreshed))
+        })
+
+        it('keeps the stored row when the refresh fails', async () => {
+            mocks.batchEnqueue.mockRejectedValue(new Error('offline'))
+
+            const { result } = renderHook(
+                () => useSingleAssetDetailsQuery('123', mainnetScope),
+                { wrapper: createWrapper(queryClient) },
+            )
+
+            await waitFor(() => expect(result.current.data).toEqual(chainOnly))
+            await waitFor(() => expect(mocks.batchEnqueue).toHaveBeenCalled())
+            expect(result.current.data).toEqual(chainOnly)
+            expect(mocks.getAssetMetadata).not.toHaveBeenCalled()
+        })
+
+        it('leaves the native asset alone', async () => {
+            mocks.getAssetById.mockResolvedValue(FAKE_NATIVE_ASSET)
+
+            const { result } = renderHook(
+                () =>
+                    useSingleAssetDetailsQuery(
+                        FAKE_NATIVE_ASSET.assetId,
+                        mainnetScope,
+                    ),
+                { wrapper: createWrapper(queryClient) },
+            )
+
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+            expect(mocks.batchEnqueue).not.toHaveBeenCalled()
+        })
     })
 
     it("returns the adapter's native asset when it is not in the DB yet", async () => {
@@ -219,6 +296,21 @@ describe('useSingleAssetDetailsQuery', () => {
 
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(result.current.error?.message).toBe('adapter down')
+    })
+
+    it('serves a stored row for a chain this build has no adapter for', async () => {
+        assetsChainAdapters.reset()
+        const stored = makeAsset('123', 'Chain Only')
+        mocks.getAssetById.mockResolvedValue(stored)
+
+        const { result } = renderHook(
+            () => useSingleAssetDetailsQuery('123', mainnetScope),
+            { wrapper: createWrapper(queryClient) },
+        )
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+        expect(result.current.isError).toBe(false)
+        expect(result.current.data).toEqual(stored)
     })
 
     it('ends in ChainAdapterNotRegisteredError on a DB miss when no adapter is registered', async () => {

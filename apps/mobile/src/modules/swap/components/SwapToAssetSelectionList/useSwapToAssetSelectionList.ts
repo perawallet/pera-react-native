@@ -19,7 +19,6 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     type PeraAsset,
-    type PeraAssetVerificationTier,
     getAssetsQueryKey,
 } from '@perawallet/wallet-core-assets'
 import {
@@ -28,8 +27,10 @@ import {
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    peraAssetFromSwapAsset,
     scopeOfSwapAsset,
     useSwapPairsInfiniteQuery,
+    withSwapAssetLogo,
     type SwapAsset,
     useSwapAccount,
 } from '@perawallet/wallet-core-swaps'
@@ -202,35 +203,16 @@ export const useSwapToAssetSelectionList = ({
             const [cachedAsset] =
                 queryClient.getQueryData<PeraAsset[]>(queryKey) ?? []
             const { swapAsset } = item
-            const tier = swapAsset.verificationTier as PeraAssetVerificationTier
             if (!cachedAsset) {
-                const peraAsset: PeraAsset = {
-                    assetId,
-                    decimals: swapAsset.decimals ?? 0,
-                    creator: { address: '' },
-                    totalSupply: new Decimal(0),
-                    name: swapAsset.name,
-                    unitName: swapAsset.unitName,
-                    peraMetadata: {
-                        isDeleted: false,
-                        verificationTier: tier,
-                        logo: swapAsset.logo,
-                    },
-                }
-                queryClient.setQueryData(queryKey, [peraAsset])
-            } else if (!cachedAsset.peraMetadata?.logo && swapAsset.logo) {
-                // A stored row can lack the logo the router has.
                 queryClient.setQueryData(queryKey, [
-                    {
-                        ...cachedAsset,
-                        peraMetadata: {
-                            isDeleted: false,
-                            verificationTier: tier,
-                            ...cachedAsset.peraMetadata,
-                            logo: swapAsset.logo,
-                        },
-                    },
+                    peraAssetFromSwapAsset(swapAsset),
                 ])
+            } else {
+                // A stored row can lack the logo the router has.
+                const withLogo = withSwapAssetLogo(cachedAsset, swapAsset)
+                if (withLogo !== cachedAsset) {
+                    queryClient.setQueryData(queryKey, [withLogo])
+                }
             }
             onAssetSelected(
                 {
