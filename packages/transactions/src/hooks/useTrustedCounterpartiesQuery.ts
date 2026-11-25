@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { queryOptions, useQueries } from '@tanstack/react-query'
+import { queryOptions, useQueries, useQueryClient } from '@tanstack/react-query'
 import {
     addressCodecs,
     type ChainScope,
@@ -41,6 +41,22 @@ type TrustedCounterpartyRead = {
     isTimedOut: boolean
 }
 
+// History only grows, so a timed-out refetch must not forget a payee an
+// earlier, fuller read found.
+const unionCounterparties = (
+    previous: TrustedCounterparty[],
+    partial: TrustedCounterparty[],
+): TrustedCounterparty[] => {
+    const hasBeenPaid = new Map(previous.map(c => [c.address, c.hasBeenPaid]))
+    for (const { address, hasBeenPaid: paid } of partial) {
+        hasBeenPaid.set(address, (hasBeenPaid.get(address) ?? false) || paid)
+    }
+    return [...hasBeenPaid].map(([address, paid]) => ({
+        address,
+        hasBeenPaid: paid,
+    }))
+}
+
 // The race releases Confirm even while page valuation is still in flight.
 const withDeadline = async (
     read: (
@@ -48,6 +64,7 @@ const withDeadline = async (
         onPage: (counterparties: TrustedCounterparty[]) => void,
     ) => Promise<TrustedCounterparty[]>,
     querySignal: AbortSignal,
+    previous: TrustedCounterparty[],
 ): Promise<TrustedCounterpartyRead> => {
     querySignal.throwIfAborted()
     const controller = new AbortController()
@@ -60,7 +77,10 @@ const withDeadline = async (
             if (partial === undefined) {
                 reject(new Error('Trusted counterparty lookup timed out'))
             } else {
-                resolve({ counterparties: partial, isTimedOut: true })
+                resolve({
+                    counterparties: unionCounterparties(previous, partial),
+                    isTimedOut: true,
+                })
             }
             controller.abort()
         }, TRUSTED_COUNTERPARTIES_DEADLINE_MS)
@@ -88,6 +108,7 @@ export const useTrustedCounterpartiesQuery = ({
     scope: Optional<ChainScope>
     isEnabled?: boolean
 }): UseTrustedCounterpartiesQueryResult => {
+    const queryClient = useQueryClient()
     const codec =
         scope && addressCodecs.has(scope.chainId)
             ? addressCodecs.get(scope.chainId)
@@ -97,12 +118,13 @@ export const useTrustedCounterpartiesQuery = ({
 
     const readAddresses = scope ? accountAddresses : []
     const queries = scope
-        ? readAddresses.map(accountAddress =>
-              queryOptions({
-                  queryKey: transactionQueryKeys.trustedCounterparties(
-                      accountAddress,
-                      scope,
-                  ),
+        ? readAddresses.map(accountAddress => {
+              const queryKey = transactionQueryKeys.trustedCounterparties(
+                  accountAddress,
+                  scope,
+              )
+              return queryOptions({
+                  queryKey,
                   queryFn: ({ signal }: { signal: AbortSignal }) =>
                       withDeadline(
                           (deadlineSignal, onPage) =>
@@ -113,6 +135,9 @@ export const useTrustedCounterpartiesQuery = ({
                                   onPage,
                               }),
                           signal,
+                          queryClient.getQueryData<TrustedCounterpartyRead>(
+                              queryKey,
+                          )?.counterparties ?? [],
                       ),
                   staleTime: query =>
                       query.state.data?.isTimedOut
@@ -120,8 +145,8 @@ export const useTrustedCounterpartiesQuery = ({
                           : TRUSTED_COUNTERPARTIES_STALE_TIME_MS,
                   enabled: isEnabled,
                   retry: false,
-              }),
-          )
+              })
+          })
         : []
 
     return useQueries({
