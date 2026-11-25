@@ -269,7 +269,10 @@
         "empty_title": "No hay aprobaciones abiertas",
         "empty_body": "No se encontraron aprobaciones abiertas de tokens ni de colecciones para esta cuenta.",
         "error_title": "No se pudieron cargar las aprobaciones",
-        "error_body": "Comprueba tu conexión e inténtalo de nuevo.",
+        "error_body": "Algo salió mal al cargarlas. Inténtalo de nuevo en un momento.",
+        "offline_body": "Comprueba tu conexión e inténtalo de nuevo.",
+        "unavailable_title": "Las aprobaciones aún no están disponibles en esta red",
+        "unavailable_body": "Pera todavía no puede consultar las aprobaciones de tokens de esta cuenta en esta red.",
         "revoke_error_title": "Revocación sin confirmar",
         "revoke_error_body": "Comprueba en la lista el estado de la aprobación antes de volver a intentarlo."
     },

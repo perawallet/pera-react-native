@@ -100,7 +100,11 @@ describe('useTokenApprovalsQuery', () => {
         const { result } = renderQuery('')
 
         expect(listApprovals).not.toHaveBeenCalled()
-        expect(result.current).toMatchObject({ data: [], isPending: false })
+        expect(result.current).toMatchObject({
+            data: [],
+            isPending: false,
+            error: null,
+        })
     })
 
     it('reads nothing on a chain whose adapter lists no approvals', () => {
@@ -113,17 +117,20 @@ describe('useTokenApprovalsQuery', () => {
     })
 
     it('reports a failed read and reads again on refetch', async () => {
-        listApprovals.mockRejectedValueOnce(new Error('rpc down'))
+        const failure = new Error('rpc down')
+        listApprovals.mockRejectedValueOnce(failure)
         listApprovals.mockResolvedValueOnce([APPROVAL])
 
         const { result } = renderQuery()
 
         await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(result.current.error).toBe(failure)
         expect(result.current.data).toEqual([])
 
         result.current.refetch()
 
         await waitFor(() => expect(result.current.data).toEqual([APPROVAL]))
         expect(result.current.isError).toBe(false)
+        expect(result.current.error).toBeNull()
     })
 })

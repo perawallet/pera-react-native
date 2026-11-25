@@ -269,7 +269,10 @@
         "empty_title": "Keine offenen Freigaben",
         "empty_body": "Für dieses Konto wurden keine offenen Token- oder Sammlungsfreigaben gefunden.",
         "error_title": "Freigaben konnten nicht geladen werden",
-        "error_body": "Prüfe deine Verbindung und versuche es erneut.",
+        "error_body": "Beim Laden ist etwas schiefgelaufen. Versuche es gleich noch einmal.",
+        "offline_body": "Prüfe deine Verbindung und versuche es erneut.",
+        "unavailable_title": "Freigaben sind in diesem Netzwerk noch nicht verfügbar",
+        "unavailable_body": "Pera kann die Token-Freigaben dieses Kontos in diesem Netzwerk noch nicht abrufen.",
         "revoke_error_title": "Widerruf nicht bestätigt",
         "revoke_error_body": "Prüfe in der Liste, wie der Status der Freigabe ist, bevor du es erneut versuchst."
     },

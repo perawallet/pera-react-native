@@ -19,6 +19,10 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import {
+    PeraNetworkError,
+    PeraServiceUnavailableError,
+} from '@perawallet/wallet-core-shared'
 import { useTokenApprovalsScreen } from '../useTokenApprovalsScreen'
 
 const mocks = vi.hoisted(() => {
@@ -34,6 +38,7 @@ const mocks = vi.hoisted(() => {
             data: [] as unknown[],
             isPending: false,
             isError: false,
+            error: null as unknown,
         },
         assets: new Map<string, unknown>(),
         isAssetsPending: false,
@@ -129,7 +134,12 @@ describe('useTokenApprovalsScreen', () => {
         mocks.params = { accountId: 'eth-1', scope }
         mocks.canSign = true
         mocks.revokingApproval = null
-        mocks.approvals = { data: [], isPending: false, isError: false }
+        mocks.approvals = {
+            data: [],
+            isPending: false,
+            isError: false,
+            error: null,
+        }
         mocks.assets = new Map()
         mocks.isAssetsPending = false
         mocks.revoke.mockResolvedValue(undefined)
@@ -276,14 +286,65 @@ describe('useTokenApprovalsScreen', () => {
     })
 
     it('reports the list reading, failing and reading again', () => {
-        mocks.approvals = { data: [], isPending: true, isError: false }
+        mocks.approvals.isPending = true
         expect(render().current.isPending).toBe(true)
 
-        mocks.approvals = { data: [], isPending: false, isError: true }
+        mocks.approvals.isPending = false
+        mocks.approvals.isError = true
+        mocks.approvals.error = new Error('boom')
         const result = render()
-        expect(result.current.isError).toBe(true)
+        expect(result.current.loadError).toBe('failed')
 
         result.current.handleRetry()
         expect(mocks.refetch).toHaveBeenCalledOnce()
+    })
+
+    it('reports no load error while the list is readable', () => {
+        expect(render().current.loadError).toBeNull()
+    })
+
+    it.each([
+        [
+            'a scope the backend serves no approvals for',
+            () => new PeraServiceUnavailableError(scope, 'approvals'),
+        ],
+        [
+            'an approvals endpoint the backend has not deployed',
+            () => new PeraNetworkError('client', { status: 404 }),
+        ],
+    ])('says approvals are unavailable for %s', (_name, makeError) => {
+        mocks.approvals.isError = true
+        mocks.approvals.error = makeError()
+
+        expect(render().current.loadError).toBe('unavailable')
+    })
+
+    it('blames the connection only when the device or node is unreachable', () => {
+        mocks.approvals.isError = true
+        mocks.approvals.error = new PeraNetworkError('offline')
+
+        expect(render().current.loadError).toBe('offline')
+    })
+
+    it.each([
+        [
+            'a server error',
+            () => new PeraNetworkError('server', { status: 503 }),
+        ],
+        ['a timeout', () => new PeraNetworkError('timeout')],
+        [
+            'a cursor the backend rejected mid-read',
+            () =>
+                new PeraNetworkError('client', {
+                    status: 404,
+                    backendCode: 'invalid_cursor',
+                }),
+        ],
+        ['an unclassified failure', () => new Error('boom')],
+    ])('makes no claim about the connection on %s', (_name, makeError) => {
+        mocks.approvals.isError = true
+        mocks.approvals.error = makeError()
+
+        expect(render().current.loadError).toBe('failed')
     })
 })
