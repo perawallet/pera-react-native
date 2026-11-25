@@ -39,6 +39,7 @@ import {
     WalletConnectError,
     WalletConnectInvalidNetworkError,
     WalletConnectInvalidSessionError,
+    WalletConnectPermissionError,
     WalletConnectSessionRequestExpiredError,
 } from '../shared/errors'
 import {
@@ -136,6 +137,7 @@ export const createV1ProposalHandlers = (deps: {
                 chainId: input.chainId,
                 handshakeId: input.handshakeId,
                 permissions: input.permissions,
+                permissionsApproved: true,
             },
         })
         await store().upsert(connection)
@@ -269,6 +271,21 @@ export const createV1ProposalHandlers = (deps: {
         const methods = params.permissions
             ? params.permissions.filter(isAlgorandPermission)
             : [...ALL_PERMISSIONS]
+        // Enforcement reads an empty list as "nothing granted", so approving it
+        // would leave a session that refuses every request.
+        if (methods.length === 0) {
+            if (!connector.connected) {
+                connector.rejectSession()
+                abandonDeclinedPairing(clientId, connector)
+            }
+            reportError(
+                new WalletConnectPermissionError(
+                    'The connection request names no Algorand method',
+                ),
+                pairingScope(clientId),
+            )
+            return
+        }
         const proposalId = `${clientId}:${request.id}`
         if (openProposals.get(clientId) === proposalId) {
             logger.debug('[WC v1] ignoring a replayed pairing handshake', {

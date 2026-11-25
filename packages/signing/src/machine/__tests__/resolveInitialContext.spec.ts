@@ -381,6 +381,24 @@ describe('resolveInitialContext — source callbacks', () => {
         expect(source.type).toBe('multisig-cosign')
         expect(source.signRequestId).toBe('sr-42')
     })
+
+    it('carries the pending transaction a replacement re-prices', () => {
+        const request: TransactionSignRequest = {
+            id: 'req-replacement',
+            type: 'transactions',
+            transport: 'network',
+            sourceType: 'replacement',
+            replacesTxId: '0xpending',
+            txs: [neutralPayment(userAddr, 1n)],
+        }
+
+        const context = resolveInitialContext(baseInput(request))
+
+        expect(context.signableGroups![0].source).toMatchObject({
+            type: 'replacement',
+            replacesTxId: '0xpending',
+        })
+    })
 })
 
 describe('resolveInitialContext — arbitrary-data requests', () => {

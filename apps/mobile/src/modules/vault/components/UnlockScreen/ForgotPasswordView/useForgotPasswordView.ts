@@ -12,11 +12,7 @@
 
 import { useCallback, useState } from 'react'
 import { logger } from '@perawallet/wallet-core-shared'
-import {
-    clearAccountsStore,
-    KeyWipeIncompleteError,
-    useDeleteAllData,
-} from '@hooks/useDeleteAllData'
+import { clearAccountsStore, useDeleteAllData } from '@hooks/useDeleteAllData'
 
 export type UseForgotPasswordViewResult = {
     isAcknowledged: boolean
@@ -50,10 +46,9 @@ export const useForgotPasswordView = ({
             try {
                 await wipeAllUserData()
             } catch (error) {
-                // Raised after every step ran, the vault included, so there is
-                // nothing left to unlock: finish the reset rather than report it.
-                if (!(error instanceof KeyWipeIncompleteError)) throw error
-                logger.error('Forgot-password reset left wallet keys behind', {
+                // Raised after every step ran and keeps the pending-wipe marker,
+                // which onboarding finishes before a new wallet is made.
+                logger.error('Forgot-password reset did not complete', {
                     error,
                 })
             }

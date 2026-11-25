@@ -269,7 +269,10 @@
         "empty_title": "Açık onay yok",
         "empty_body": "Bu hesap için açık token veya koleksiyon onayı bulunamadı.",
         "error_title": "Onaylar yüklenemedi",
-        "error_body": "Bağlantını kontrol et ve tekrar dene.",
+        "error_body": "Yüklenirken bir sorun oluştu. Birazdan tekrar dene.",
+        "offline_body": "Bağlantını kontrol et ve tekrar dene.",
+        "unavailable_title": "Onaylar bu ağda henüz kullanılamıyor",
+        "unavailable_body": "Pera bu hesabın token onaylarını bu ağda henüz sorgulayamıyor.",
         "revoke_error_title": "İptal onaylanmadı",
         "revoke_error_body": "Tekrar denemeden önce listede onayın güncel durumuna bak."
     },
@@ -1538,6 +1541,10 @@
             "asset_frozen": {
                 "title": "Varlık donduruldu",
                 "body": "{{assetId}} ID’li varlık dondurulmuş, bu yüzden bu transfer tamamlanamıyor. Önce varlığın dondurma yöneticisinin dondurmayı kaldırması gerekir."
+            },
+            "fee_above_shown": {
+                "title": "Ağ ücreti değişti",
+                "body": "Ağ artık gösterilenden daha yüksek bir ücret istiyor, bu yüzden hiçbir şey imzalanmadı. Güncel ücreti görmek için tekrar dene."
             }
         },
         "kms": {
@@ -2419,6 +2426,8 @@
             "load_error": "Bu işlem yüklenemedi. Süresi dolmuş veya kaldırılmış olabilir.",
             "cosign_rejected_title": "Bu işlem imzalanamıyor",
             "cosign_rejected_body": "Bu istek, paylaşılan hesabın yetkilendirmediği bir işlem içeriyor. Gönderen, paylaşılan hesaba rekey edilmiş bir hesapsa onu cüzdanına ekle ve tekrar dene.",
+            "request_open_title": "Önce açık isteği kapat",
+            "request_open_body": "İmza isteğini tamamla veya kapat, ardından bağlantıyı yeniden aç.",
             "retry": "Tekrar dene",
             "canceled": "İşlem iptal edildi.",
             "declined": "İşlem reddedildi.",
@@ -2813,6 +2822,14 @@
                 "fetch_failed_title": "Yedekleme yüklenemedi",
                 "decrypt_failed_title": "Yedeklemenin kilidi açılamadı"
             },
+            "review": {
+                "title": "Hesapları gözden geçir",
+                "body_one": "Bu kod {{count}} hesap içe aktarır. İçe aktarmadan önce senin olduğundan emin ol.",
+                "body_other": "Bu kod {{count}} hesap içe aktarır. İçe aktarmadan önce senin olduklarından emin ol.",
+                "body": "Bu kod {{count}} hesap içe aktarır. İçe aktarmadan önce senin olduklarından emin ol.",
+                "confirm": "Hesapları içe aktar",
+                "interrupted": "İçe aktarma kesintiye uğradı. Devam etmek için QR kodunu yeniden tara."
+            },
             "result": {
                 "success_title": "Hesaplar içe aktarıldı",
                 "success_body_one": "Cüzdanına {{count}} hesap eklendi.",
@@ -3190,6 +3207,7 @@
             "verify_title": "PIN kodunu gir",
             "unlock_title": "PIN kodunu gir",
             "change_old_title": "Eski 6 haneli PIN\nkodunu gir",
+            "matches_duress_pin": "Yeni PIN’in zorlama PIN’inden farklı olmalı.",
             "logging_in": "Giriş yapılıyor"
         },
         "lockout": {
@@ -4163,12 +4181,14 @@
         "suspected_poisoning": {
             "marker": "Şüpheli adres zehirlenmesi",
             "title": "Şüpheli adres zehirlenmesi",
-            "body": "Bu transfer değerli hiçbir şey taşımadı ve tanıdığın bir adrese benzeyecek şekilde oluşturulmuş bir adresten geliyor. Dolandırıcılar bunu, adresleri geçmişinde görünsün ve daha sonra kopyalansın diye gönderir. Bu adresi kopyalama ve ona gönderim yapma.",
+            "body": "Bu transfer değerli hiçbir şey taşımadı ve tanıdığın bir adrese benzeyecek şekilde oluşturulmuş bir adresten geliyor. Dolandırıcılar bunu, adresleri geçmişinde görünsün ve daha sonra kopyalansın diye gönderir.",
+            "do_not_reuse": "Bu adresi kopyalama ve ona gönderim yapma.",
             "sender_label": "Bu adres",
             "reuse_title": "Bu adres tanıdığın bir adresi taklit ediyor",
             "reuse_body": "Tanıdığın bir adres gibi başlayıp bitiyor ama aynı değil. Kullanmadan önce tam adresleri karşılaştır.",
             "reuse_confirm": "Yine de devam et",
-            "reuse_cancel": "İptal"
+            "reuse_cancel": "İptal",
+            "dismiss": "Anladım"
         },
         "suspicious_token": {
             "marker": "Şüpheli token"

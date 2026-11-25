@@ -56,6 +56,11 @@ import { useCardStore } from '../../store'
 import { migrateCardUxState } from '../../store/ux-store'
 import { useAppIntegrityStore } from '@perawallet/wallet-core-app-integrity'
 import {
+    CardOwnerMismatchError,
+    CardOwnerUnconfirmedError,
+} from '../../api/escrow'
+import { registerFakeCardAdapter } from '../../__tests__/fakeCardAdapter'
+import {
     CardAccountLinkedElsewhereError,
     CardIntegrityAttestationRequiredError,
     CardUserUnavailableError,
@@ -97,6 +102,10 @@ describe.each(SCOPES)('useCreateAndApproveCardMutation ($chainId)', SCOPE => {
         buildEnv.appEnvironment = 'production'
         createCard.mockResolvedValue({ cardAddress: 'ESCROW1', txId: 'TX1' })
         postDelegationApproval.mockResolvedValue(undefined)
+        registerFakeCardAdapter({
+            chainId: SCOPE.chainId,
+            cardOwnerOf: async () => ADDRESS,
+        })
         fetchUser.mockResolvedValue({
             id: BAANX_USER_ID,
             verificationState: 'VERIFIED',
@@ -142,6 +151,94 @@ describe.each(SCOPES)('useCreateAndApproveCardMutation ($chainId)', SCOPE => {
         expect(outcome).toEqual({ cardAddress: 'ESCROW1' })
         expect(useCardStore.getState().escrowCardAddress).toBe('ESCROW1')
         expect(useCardStore.getState().escrowCardTxId).toBe('TX1')
+        expect(useCardStore.getState().escrowCardApproved).toBe(true)
+    })
+
+    it('refuses a newly created card owned on chain by someone else, clearing it without approving', async () => {
+        registerFakeCardAdapter({
+            chainId: SCOPE.chainId,
+            cardOwnerOf: async () => 'SOMEONE_ELSE',
+        })
+        const { result } = renderHook(
+            () => useCreateAndApproveCardMutation(SCOPE),
+            { wrapper },
+        )
+
+        await expect(
+            result.current.mutateAsync({ address: ADDRESS, proof: PROOF }),
+        ).rejects.toBeInstanceOf(CardOwnerMismatchError)
+        expect(useCardStore.getState().escrowCardAddress).toBeNull()
+        expect(postDelegationApproval).not.toHaveBeenCalled()
+    })
+
+    it('keeps a created card unapproved when its owner is not yet visible, and a retry verifies it without creating again', async () => {
+        const cardOwnerOf = vi.fn(async (): Promise<string | null> => null)
+        registerFakeCardAdapter({ chainId: SCOPE.chainId, cardOwnerOf })
+        const { result } = renderHook(
+            () => useCreateAndApproveCardMutation(SCOPE),
+            { wrapper },
+        )
+
+        await expect(
+            result.current.mutateAsync({ address: ADDRESS, proof: PROOF }),
+        ).rejects.toBeInstanceOf(CardOwnerUnconfirmedError)
+        expect(useCardStore.getState().escrowCardAddress).toBe('ESCROW1')
+        expect(useCardStore.getState().escrowCardApproved).toBe(false)
+        expect(postDelegationApproval).not.toHaveBeenCalled()
+
+        cardOwnerOf.mockResolvedValue(ADDRESS)
+        await expect(
+            result.current.mutateAsync({ address: ADDRESS, proof: PROOF }),
+        ).resolves.toEqual({ cardAddress: 'ESCROW1' })
+        expect(createCard).toHaveBeenCalledOnce()
+        expect(useCardStore.getState().escrowCardApproved).toBe(true)
+    })
+
+    it('keeps a created card when confirming its mint fails, without approving', async () => {
+        registerFakeCardAdapter({
+            chainId: SCOPE.chainId,
+            cardOwnerOf: async () => null,
+            awaitConfirmation: async () => {
+                throw new Error('algod unavailable')
+            },
+        })
+        const { result } = renderHook(
+            () => useCreateAndApproveCardMutation(SCOPE),
+            { wrapper },
+        )
+
+        await expect(
+            result.current.mutateAsync({ address: ADDRESS, proof: PROOF }),
+        ).rejects.toThrow('algod unavailable')
+        expect(useCardStore.getState().escrowCardAddress).toBe('ESCROW1')
+        expect(useCardStore.getState().escrowCardTxId).toBe('TX1')
+        expect(postDelegationApproval).not.toHaveBeenCalled()
+    })
+
+    it('waits for a newly minted card to become visible before approving it', async () => {
+        const cardOwnerOf = vi
+            .fn()
+            .mockResolvedValueOnce(null)
+            .mockResolvedValueOnce(ADDRESS)
+        const awaitConfirmation = vi.fn(async () => {
+            expect(useCardStore.getState().escrowCardApproved).toBe(false)
+            expect(postDelegationApproval).not.toHaveBeenCalled()
+        })
+        registerFakeCardAdapter({
+            chainId: SCOPE.chainId,
+            cardOwnerOf,
+            awaitConfirmation,
+        })
+        const { result } = renderHook(
+            () => useCreateAndApproveCardMutation(SCOPE),
+            { wrapper },
+        )
+
+        await expect(
+            result.current.mutateAsync({ address: ADDRESS, proof: PROOF }),
+        ).resolves.toEqual({ cardAddress: 'ESCROW1' })
+        expect(awaitConfirmation).toHaveBeenCalledExactlyOnceWith(SCOPE, 'TX1')
+        expect(cardOwnerOf).toHaveBeenCalledTimes(2)
         expect(useCardStore.getState().escrowCardApproved).toBe(true)
     })
 
@@ -339,6 +436,32 @@ describe.each(SCOPES)('useCreateAndApproveCardMutation ($chainId)', SCOPE => {
         expect(createCard).not.toHaveBeenCalled()
         expect(postDelegationApproval).not.toHaveBeenCalled()
         expect(outcome).toEqual({ cardAddress: 'EXISTING_CARD' })
+    })
+
+    it('refuses to resume an old stored card whose on-chain owner does not match', async () => {
+        useCardStore.getState().setEscrowCard({
+            cardAddress: 'UNRELATED_CARD',
+            ownerAddress: ADDRESS,
+            scope: SCOPE,
+            txId: 'EXISTING_TX',
+        })
+        const cardOwnerOf = vi.fn(async () => 'SOMEONE_ELSE')
+        registerFakeCardAdapter({ chainId: SCOPE.chainId, cardOwnerOf })
+        const { result } = renderHook(
+            () => useCreateAndApproveCardMutation(SCOPE),
+            { wrapper },
+        )
+
+        await expect(
+            result.current.mutateAsync({ address: ADDRESS, proof: PROOF }),
+        ).rejects.toBeInstanceOf(CardOwnerMismatchError)
+        expect(cardOwnerOf).toHaveBeenCalledExactlyOnceWith(
+            SCOPE,
+            'UNRELATED_CARD',
+        )
+        expect(createCard).not.toHaveBeenCalled()
+        expect(postDelegationApproval).not.toHaveBeenCalled()
+        expect(useCardStore.getState().escrowCardAddress).toBeNull()
     })
 
     it('does NOT reuse a card created for a DIFFERENT account', async () => {

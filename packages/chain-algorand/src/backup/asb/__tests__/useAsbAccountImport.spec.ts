@@ -86,8 +86,9 @@ const importHook = async () => {
     return useAsbAccountImport
 }
 
+// The address the `fill(1)` seed derives.
 const VALID_ADDRESS_A =
-    'EGRJQ7DXMIJ577UUN6AFOIUZY6CNSFKLMGFHQNTC5US5TRC23LK6DGQRDM'
+    'RKEOHXLUBHYZL7KS3MWTZOS5OLFGOCN7DWKBEG7TOSEADNAPN5OOTUNSLE'
 const VALID_ADDRESS_B =
     '7TTLR5VQAY5YVQ5QV4IBOVIKUULGVNPURNWM5NG7M7ELEOQPVROA4CS3FM'
 
@@ -239,7 +240,10 @@ describe('useAsbAccountImport', () => {
 
         expect(mockMarkBackupComplete).not.toHaveBeenCalled()
         // The finally block must still wipe the seed buffer.
-        expect(mockZeroBytes).toHaveBeenCalledTimes(1)
+        expect(mockZeroBytes).toHaveBeenLastCalledWith(
+            expect.objectContaining({ length: 32 }),
+            expect.objectContaining({ length: 25 }),
+        )
     })
 
     test('zeroes the seed buffer even when the underlying import throws', async () => {
@@ -252,7 +256,10 @@ describe('useAsbAccountImport', () => {
             result.current.importAccount(singleAccount()),
         ).rejects.toThrow('keystore exploded')
 
-        expect(mockZeroBytes).toHaveBeenCalledTimes(1)
+        expect(mockZeroBytes).toHaveBeenLastCalledWith(
+            expect.objectContaining({ length: 32 }),
+            expect.objectContaining({ length: 25 }),
+        )
         expect(mockMarkBackupComplete).not.toHaveBeenCalled()
     })
 

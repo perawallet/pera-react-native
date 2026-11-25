@@ -15,7 +15,12 @@ import { renderHook, act } from '@testing-library/react'
 import { useAutoLockListener } from '../useAutoLockListener'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { usePinCode } from '@perawallet/wallet-core-security'
-import { clearAccountsStore, useDeleteAllData } from '@hooks/useDeleteAllData'
+import {
+    clearAccountsStore,
+    readPendingWipe,
+    useDeleteAllData,
+} from '@hooks/useDeleteAllData'
+import { useWipeRecoveryStore } from '@hooks/useWipeRecoveryStore'
 import { AppState, type AppStateStatus } from 'react-native'
 import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 
@@ -37,6 +42,12 @@ vi.mock('@perawallet/wallet-core-security', () => ({
 vi.mock('@hooks/useDeleteAllData', () => ({
     useDeleteAllData: vi.fn(),
     clearAccountsStore: vi.fn(),
+    readPendingWipe: vi.fn(() => null),
+}))
+
+const mockPerformDuressWipe = vi.hoisted(() => vi.fn())
+vi.mock('@modules/security/hooks/useDuressWipe', () => ({
+    useDuressWipe: () => ({ performDuressWipe: mockPerformDuressWipe }),
 }))
 
 const platformState = vi.hoisted(() => ({ OS: 'android' as 'android' | 'ios' }))
@@ -66,6 +77,7 @@ describe('useAutoLockListener', () => {
     > = null
 
     beforeEach(() => {
+        useWipeRecoveryStore.setState(false)
         vi.clearAllMocks()
         platformState.OS = 'android'
         appStateState.currentState = 'active'
@@ -74,6 +86,7 @@ describe('useAutoLockListener', () => {
         useBottomSheetStore.getState().resetState()
         mockCheckPinEnabled.mockResolvedValue(false)
         mockCheckAutoLock.mockResolvedValue(false)
+        ;(readPendingWipe as Mock).mockReturnValue(null)
         ;(usePinCode as Mock).mockReturnValue({
             checkAutoLock: mockCheckAutoLock,
             startAutoLockTimer: mockStartAutoLockTimer,
@@ -103,6 +116,97 @@ describe('useAutoLockListener', () => {
         expect(result.current.isChecking).toBe(true)
         expect(typeof result.current.unlock).toBe('function')
         expect(typeof result.current.handleResetData).toBe('function')
+    })
+
+    describe('resuming a wipe the process died in', () => {
+        it('finishes a pending wipe before the PIN check, keeping the overlay up until then', async () => {
+            ;(readPendingWipe as Mock).mockReturnValue('delete-all')
+            let finishWipe: () => void = () => {}
+            mockDeleteAllData.mockReturnValue(
+                new Promise<void>(resolve => {
+                    finishWipe = resolve
+                }),
+            )
+
+            const { result } = renderHook(() => useAutoLockListener())
+            await act(async () => {})
+
+            expect(mockDeleteAllData).toHaveBeenCalledTimes(1)
+            expect(mockCheckPinEnabled).not.toHaveBeenCalled()
+            expect(result.current.isChecking).toBe(true)
+
+            await act(async () => finishWipe())
+
+            expect(clearAccountsStore).toHaveBeenCalled()
+            expect(mockCheckPinEnabled).toHaveBeenCalled()
+            expect(result.current.isChecking).toBe(false)
+        })
+
+        it('keeps the guard active until a failed wipe is retried successfully', async () => {
+            vi.mocked(readPendingWipe).mockReturnValue('delete-all')
+            mockDeleteAllData
+                .mockRejectedValueOnce(new Error('keystore busy'))
+                .mockImplementationOnce(async () => {
+                    useWipeRecoveryStore.setState(false)
+                })
+
+            const { result } = renderHook(() => useAutoLockListener())
+            await act(async () => {})
+
+            expect(result.current.isChecking).toBe(false)
+            expect(result.current.isWipeRecoveryRequired).toBe(true)
+
+            await act(async () => result.current.retryWipeRecovery())
+
+            expect(mockDeleteAllData).toHaveBeenCalledTimes(2)
+            expect(result.current.isWipeRecoveryRequired).toBe(false)
+        })
+
+        it('resumes a duress wipe into the decoy', async () => {
+            ;(readPendingWipe as Mock).mockReturnValue('duress')
+            mockPerformDuressWipe.mockResolvedValue(undefined)
+
+            renderHook(() => useAutoLockListener())
+            await act(async () => {})
+
+            expect(mockPerformDuressWipe).toHaveBeenCalledTimes(1)
+            expect(mockDeleteAllData).not.toHaveBeenCalled()
+        })
+
+        it('never shows the recovery screen while resuming a duress wipe', async () => {
+            ;(readPendingWipe as Mock).mockReturnValue('duress')
+            useWipeRecoveryStore.setState(true)
+            mockPerformDuressWipe.mockResolvedValue(undefined)
+
+            const { result } = renderHook(() => useAutoLockListener())
+            await act(async () => {})
+
+            expect(result.current.isWipeRecoveryRequired).toBe(false)
+            expect(result.current.isChecking).toBe(false)
+        })
+
+        it('runs no wipe when none is pending', async () => {
+            renderHook(() => useAutoLockListener())
+            await act(async () => {})
+
+            expect(mockDeleteAllData).not.toHaveBeenCalled()
+            expect(mockPerformDuressWipe).not.toHaveBeenCalled()
+        })
+
+        it('locks a PIN-protected wallet even when the pending wipe cannot be read', async () => {
+            vi.mocked(readPendingWipe).mockImplementationOnce(() => {
+                throw new Error('storage unavailable')
+            })
+            mockCheckPinEnabled.mockResolvedValueOnce(true)
+
+            const { result } = renderHook(() => useAutoLockListener())
+            await act(async () => {})
+
+            expect(mockCheckPinEnabled).toHaveBeenCalledTimes(1)
+            expect(clearAccountsStore).not.toHaveBeenCalled()
+            expect(result.current.isLocked).toBe(true)
+            expect(result.current.isWipeRecoveryRequired).toBe(true)
+        })
     })
 
     it('should check PIN enabled on mount', async () => {

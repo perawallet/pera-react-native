@@ -11,7 +11,7 @@
  */
 
 // An Algorand address shows its NFD name only once the NFD application on
-// chain confirms it: the real adapter, the real registry client and algod
+// chain confirms it: the real adapter and the real registry and NFD algod
 // reads, with only the network answering from MSW.
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
@@ -37,6 +37,14 @@ import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
 
 const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 const APP_ID = 1234
+const MAINNET_NFD_REGISTRY_APP_ID = '760937186'
+
+const registryBoxValue = () => {
+    const value = Buffer.alloc(16)
+    value.writeBigUInt64BE(1n, 0)
+    value.writeBigUInt64BE(BigInt(APP_ID), 8)
+    return value.toString('base64')
+}
 
 const b64 = (text: string) => Buffer.from(text, 'utf8').toString('base64')
 
@@ -55,9 +63,6 @@ type NfdFixture = { name: string; owner: Uint8Array; verified?: Uint8Array[] }
 
 const serveNfd = ({ name, owner, verified = [] }: NfdFixture) =>
     server.use(
-        http.get('https://api.nf.domains/nfd/:name', () =>
-            HttpResponse.json({ appID: APP_ID }),
-        ),
         http.get('*/v2/applications/:appId', () => {
             algodRequests++
             if (isAlgodDown) return new HttpResponse(null, { status: 503 })
@@ -84,9 +89,12 @@ const serveNfd = ({ name, owner, verified = [] }: NfdFixture) =>
                 boxes: verified.length ? [{ name: b64('v.caAlgo.0.as') }] : [],
             }),
         ),
-        http.get('*/v2/applications/:appId/box', () =>
+        http.get('*/v2/applications/:appId/box', ({ params }) =>
             HttpResponse.json({
-                value: Buffer.concat(verified).toString('base64'),
+                value:
+                    params.appId === MAINNET_NFD_REGISTRY_APP_ID
+                        ? registryBoxValue()
+                        : Buffer.concat(verified).toString('base64'),
             }),
         ),
     )

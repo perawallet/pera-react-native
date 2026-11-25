@@ -12,7 +12,7 @@
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { SuspectedPoisoning } from '@perawallet/wallet-core-transactions'
-import { PWRoundIcon, PWText, PWView } from '@components/core'
+import { PWIcon, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { ComparedAddress, useImitationComparison } from '../ComparedAddress'
 import { useStyles } from './styles'
@@ -39,8 +39,8 @@ export const SuspectedPoisoningNotice = ({
             testID={testID}
         >
             <PWView style={styles.header}>
-                <PWRoundIcon
-                    icon='info'
+                <PWIcon
+                    name='warning'
                     size='md'
                     variant='error'
                 />
@@ -51,8 +51,11 @@ export const SuspectedPoisoningNotice = ({
                     {t('transactions.suspected_poisoning.title')}
                 </PWText>
             </PWView>
-            <PWText style={styles.body}>
-                {t('transactions.suspected_poisoning.body')}
+            <PWText>
+                {t('transactions.suspected_poisoning.body')}{' '}
+                <PWText variant='bodySemibold'>
+                    {t('transactions.suspected_poisoning.do_not_reuse')}
+                </PWText>
             </PWText>
             <ComparedAddress
                 label={t('transactions.suspected_poisoning.sender_label')}

@@ -47,6 +47,10 @@ vi.mock('@perawallet/wallet-core-config', () => ({
         bidaliApiKey: 'test-api-key',
         bidaliBaseUrl: 'https://commerce.bidali.com/dapp',
     }),
+    getIframeOrigins: () => [
+        'https://commerce.bidali.com',
+        'https://giftcards.bidali.com',
+    ],
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
@@ -134,11 +138,24 @@ const mockAccount: WalletAccount = {
 
 const emptyBalances: AccountBalances = new Map()
 
+const BRIDGE_TOKEN = 'bidali-test-token'
+vi.mock('@modules/webview', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    generateBridgeToken: () => BRIDGE_TOKEN,
+}))
+
+// Bidali's commerce host redirects to this twin, which then posts the messages.
+const FROM_BIDALI = {
+    securedConnection: false,
+    sourceUrl: 'https://giftcards.bidali.com/checkout',
+}
+
 const bidaliRPC = (method: string, params?: Record<string, unknown>) => ({
     jsonrpc: '2.0' as const,
     method,
     params,
     id: 'bidali-1234',
+    token: BRIDGE_TOKEN,
 })
 
 // Stands in for the Algorand codec, which the unit registry lacks.
@@ -179,8 +196,14 @@ describe('useBidaliTransport', () => {
             )
             const fakeWindow: {
                 bidaliProvider?: Record<string, unknown>
-                ReactNativeWebView?: unknown
-            } = {}
+                ReactNativeWebView: { postMessage: (data: string) => void }
+                top?: unknown
+                location: { origin: string }
+            } = {
+                location: { origin: new URL(FROM_BIDALI.sourceUrl).origin },
+                ReactNativeWebView: { postMessage: vi.fn() },
+            }
+            fakeWindow.top = fakeWindow
 
             new Function('window', result.current.providerJS)(fakeWindow)
 
@@ -192,6 +215,15 @@ describe('useBidaliTransport', () => {
                 algorand: '0',
                 usdcalgorand: '0',
             })
+            const openUrl = fakeWindow.bidaliProvider?.openUrl
+            if (typeof openUrl !== 'function')
+                throw new Error('Bidali provider did not install')
+            openUrl('https://example.com/receipt')
+            expect(
+                fakeWindow.ReactNativeWebView.postMessage,
+            ).toHaveBeenCalledWith(
+                expect.stringContaining(`"token":"${BRIDGE_TOKEN}"`),
+            )
         })
 
         it('includes supported currencies', () => {
@@ -231,19 +263,70 @@ describe('useBidaliTransport', () => {
     // -- Message routing ---------------------------------------------------
 
     describe('handleMessage', () => {
+        it('requires a main-frame token even for a trusted URL', async () => {
+            const { Linking } = await import('react-native')
+            const { result } = renderHook(() =>
+                useBidaliTransport(mockAccount, emptyBalances),
+            )
+
+            await act(async () =>
+                result.current.handleMessage(
+                    {
+                        ...bidaliRPC('openUrl', {
+                            url: 'https://example.com/receipt',
+                        }),
+                        token: undefined,
+                    },
+                    FROM_BIDALI,
+                ),
+            )
+
+            expect(Linking.openURL).not.toHaveBeenCalled()
+        })
+
+        // The bridge token is the first gate; the posting frame's origin is
+        // the second, so a token-bearing message from outside Bidali still drops.
+        it('drops a payment request posted by a frame outside Bidali', async () => {
+            const { result } = renderHook(() =>
+                useBidaliTransport(mockAccount, emptyBalances),
+            )
+
+            await act(async () =>
+                result.current.handleMessage(
+                    bidaliRPC('bidaliPaymentRequest', {
+                        address: VALID_ADDRESS,
+                        amount: '1.5',
+                        protocol: 'algorand',
+                    }),
+                    {
+                        securedConnection: false,
+                        sourceUrl: 'https://evil.example/',
+                    },
+                ),
+            )
+
+            expect(mockBuildTransferTxs).not.toHaveBeenCalled()
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+        })
+
         it('ignores non-RPC messages', () => {
             const { result } = renderHook(() =>
                 useBidaliTransport(mockAccount, emptyBalances),
             )
-            act(() => result.current.handleMessage('garbage'))
-            act(() => result.current.handleMessage(null))
-            act(() => result.current.handleMessage({ random: true }))
+            act(() => result.current.handleMessage('garbage', FROM_BIDALI))
+            act(() => result.current.handleMessage(null, FROM_BIDALI))
             act(() =>
-                result.current.handleMessage({
-                    jsonrpc: '2.0',
-                    method: 'x',
-                    id: 'not-bidali',
-                }),
+                result.current.handleMessage({ random: true }, FROM_BIDALI),
+            )
+            act(() =>
+                result.current.handleMessage(
+                    {
+                        jsonrpc: '2.0',
+                        method: 'x',
+                        id: 'not-bidali',
+                    },
+                    FROM_BIDALI,
+                ),
             )
             expect(mockAddSignRequest).not.toHaveBeenCalled()
         })
@@ -254,7 +337,10 @@ describe('useBidaliTransport', () => {
                 useBidaliTransport(mockAccount, emptyBalances),
             )
             act(() =>
-                result.current.handleMessage(bidaliRPC('bidaliPaymentRequest')),
+                result.current.handleMessage(
+                    bidaliRPC('bidaliPaymentRequest'),
+                    FROM_BIDALI,
+                ),
             )
             expect(logger.warn).toHaveBeenCalledWith(
                 'Bidali: message missing params',
@@ -270,6 +356,7 @@ describe('useBidaliTransport', () => {
             act(() =>
                 result.current.handleMessage(
                     bidaliRPC('unknownMethod', { foo: 'bar' }),
+                    FROM_BIDALI,
                 ),
             )
             expect(logger.warn).toHaveBeenCalledWith(
@@ -294,6 +381,7 @@ describe('useBidaliTransport', () => {
                         amount: '1.5',
                         protocol: 'algorand',
                     }),
+                    FROM_BIDALI,
                 ),
             )
             expect(logger.warn).toHaveBeenCalledWith(
@@ -314,6 +402,7 @@ describe('useBidaliTransport', () => {
                         amount: '1.5',
                         protocol: 'algorand',
                     }),
+                    FROM_BIDALI,
                 ),
             )
             expect(logger.warn).toHaveBeenCalledWith(
@@ -334,6 +423,7 @@ describe('useBidaliTransport', () => {
                         amount: '1.5',
                         protocol: 'algorand',
                     }),
+                    FROM_BIDALI,
                 ),
             )
             expect(logger.warn).toHaveBeenCalledWith(
@@ -354,6 +444,7 @@ describe('useBidaliTransport', () => {
                         amount: 123,
                         protocol: 'algorand',
                     }),
+                    FROM_BIDALI,
                 ),
             )
             expect(logger.warn).toHaveBeenCalledWith(
@@ -374,6 +465,7 @@ describe('useBidaliTransport', () => {
                         amount: '0',
                         protocol: 'algorand',
                     }),
+                    FROM_BIDALI,
                 ),
             )
             expect(logger.warn).toHaveBeenCalledWith(
@@ -394,6 +486,7 @@ describe('useBidaliTransport', () => {
                         amount: '-5',
                         protocol: 'algorand',
                     }),
+                    FROM_BIDALI,
                 ),
             )
             expect(logger.warn).toHaveBeenCalledWith(
@@ -414,6 +507,7 @@ describe('useBidaliTransport', () => {
                         amount: 'not-a-number',
                         protocol: 'algorand',
                     }),
+                    FROM_BIDALI,
                 ),
             )
             expect(logger.warn).toHaveBeenCalledWith(
@@ -434,6 +528,7 @@ describe('useBidaliTransport', () => {
                         amount: '1.5',
                         protocol: 'bitcoin',
                     }),
+                    FROM_BIDALI,
                 ),
             )
             expect(logger.warn).toHaveBeenCalledWith(
@@ -457,6 +552,7 @@ describe('useBidaliTransport', () => {
                         amount: '1.5',
                         protocol: 'algorand',
                     }),
+                    FROM_BIDALI,
                 ),
             )
             expect(mockBuildTransferTxs).toHaveBeenCalledWith({
@@ -466,6 +562,7 @@ describe('useBidaliTransport', () => {
                 assetId: '0',
                 amount: 1_500_000n,
                 note: undefined,
+                allowFeeReview: true,
             })
             expect(mockAddSignRequest).not.toHaveBeenCalledWith(
                 expect.objectContaining({ chainId: expect.anything() }),
@@ -506,6 +603,7 @@ describe('useBidaliTransport', () => {
                         amount: '1.5',
                         protocol: 'algorand',
                     }),
+                    FROM_BIDALI,
                 ),
             )
 
@@ -529,6 +627,7 @@ describe('useBidaliTransport', () => {
                         amount: '10',
                         protocol: 'usdcalgorand',
                     }),
+                    FROM_BIDALI,
                 ),
             )
             expect(mockBuildTransferTxs).toHaveBeenCalledTimes(1)
@@ -559,6 +658,7 @@ describe('useBidaliTransport', () => {
                         amount: '10',
                         protocol: 'usdcalgorand',
                     }),
+                    FROM_BIDALI,
                 ),
             )
 
@@ -582,6 +682,7 @@ describe('useBidaliTransport', () => {
                         protocol: 'algorand',
                         extraId: 'bidali-charge-123',
                     }),
+                    FROM_BIDALI,
                 ),
             )
             expect(mockBuildTransferTxs).toHaveBeenCalledWith(
@@ -601,6 +702,7 @@ describe('useBidaliTransport', () => {
                         protocol: 'algorand',
                         extraId: '',
                     }),
+                    FROM_BIDALI,
                 ),
             )
             expect(mockBuildTransferTxs).toHaveBeenCalledWith(
@@ -623,6 +725,7 @@ describe('useBidaliTransport', () => {
                         amount: '1',
                         protocol: 'algorand',
                     }),
+                    FROM_BIDALI,
                 ),
             )
             expect(logger.error).toHaveBeenCalledWith(
@@ -646,6 +749,7 @@ describe('useBidaliTransport', () => {
                     bidaliRPC('openUrl', {
                         url: 'https://example.com/gift-card',
                     }),
+                    FROM_BIDALI,
                 ),
             )
             expect(Linking.openURL).toHaveBeenCalledWith(
@@ -661,6 +765,7 @@ describe('useBidaliTransport', () => {
             act(() =>
                 result.current.handleMessage(
                     bidaliRPC('openUrl', { url: 'http://example.com' }),
+                    FROM_BIDALI,
                 ),
             )
             expect(Linking.openURL).toHaveBeenCalledWith('http://example.com')
@@ -676,6 +781,7 @@ describe('useBidaliTransport', () => {
                     bidaliRPC('openUrl', {
                         url: 'javascript:alert(1)',
                     }),
+                    FROM_BIDALI,
                 ),
             )
             expect(Linking.openURL).not.toHaveBeenCalled()
@@ -691,6 +797,7 @@ describe('useBidaliTransport', () => {
                     bidaliRPC('openUrl', {
                         url: 'data:text/html,<h1>hi</h1>',
                     }),
+                    FROM_BIDALI,
                 ),
             )
             expect(Linking.openURL).not.toHaveBeenCalled()
@@ -702,7 +809,10 @@ describe('useBidaliTransport', () => {
                 useBidaliTransport(mockAccount, emptyBalances),
             )
             act(() =>
-                result.current.handleMessage(bidaliRPC('openUrl', { url: '' })),
+                result.current.handleMessage(
+                    bidaliRPC('openUrl', { url: '' }),
+                    FROM_BIDALI,
+                ),
             )
             expect(Linking.openURL).not.toHaveBeenCalled()
         })
@@ -715,6 +825,7 @@ describe('useBidaliTransport', () => {
             act(() =>
                 result.current.handleMessage(
                     bidaliRPC('openUrl', { url: 12_345 }),
+                    FROM_BIDALI,
                 ),
             )
             expect(Linking.openURL).not.toHaveBeenCalled()

@@ -12,11 +12,18 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import { Linking } from 'react-native'
-import { getPeraServicesConfig } from '@perawallet/wallet-core-config'
+import {
+    getIframeOrigins,
+    getPeraServicesConfig,
+} from '@perawallet/wallet-core-config'
 import { useSelectedChainMode } from '@perawallet/wallet-core-chain-shared'
 import { useAccountBalancesQuery } from '@perawallet/wallet-core-accounts'
 import { useCapability } from '@hooks/useCapability'
-import { isTrustedWebviewOrigin, type WebViewScript } from '@modules/webview'
+import {
+    isTrustedWebviewOrigin,
+    type WebViewScript,
+    type WebviewMessageSecurity,
+} from '@modules/webview'
 import { useBidali } from '../../hooks/useBidali'
 import { useBidaliClose } from '../../hooks/useBidaliClose'
 import { useGiftCardScope } from '../../hooks/useGiftCardScope'
@@ -36,7 +43,7 @@ type UseBidaliWebViewScreenResult = {
     url: string
     bidaliProviderJS: WebViewScript
     onClose: () => void
-    handleMessage: (data: unknown) => void
+    handleMessage: (data: unknown, security: WebviewMessageSecurity) => void
     onShouldStartLoadWithRequest: (request: ShouldStartLoadRequest) => boolean
     webviewRef: React.RefObject<Nullable<WebView>>
 }
@@ -87,6 +94,7 @@ export const useBidaliWebViewScreen = (): UseBidaliWebViewScreenResult => {
             paymentCurrencies: BIDALI_PAYMENT_CURRENCIES,
         })
     }, [scope, frozenBalances])
+    const trustedOrigins = useMemo(() => getIframeOrigins(url), [url])
 
     // The provider global (API key + user balances) is re-injected into the
     // main frame on every navigation, so no foreign origin may ever load in
@@ -95,14 +103,14 @@ export const useBidaliWebViewScreen = (): UseBidaliWebViewScreenResult => {
     // browser); everything else is dropped.
     const onShouldStartLoadWithRequest = useCallback(
         (request: ShouldStartLoadRequest): boolean => {
-            if (isTrustedWebviewOrigin(request.url, [url])) return true
+            if (isTrustedWebviewOrigin(request.url, trustedOrigins)) return true
             if (/^https?:/i.test(request.url)) {
                 // oxlint-disable-next-line pera/no-unvalidated-open-url -- http(s) check above, native webview only
                 void Linking.openURL(request.url)
             }
             return false
         },
-        [url],
+        [trustedOrigins],
     )
 
     return {

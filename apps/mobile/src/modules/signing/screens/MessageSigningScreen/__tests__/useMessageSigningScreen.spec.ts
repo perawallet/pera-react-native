@@ -11,7 +11,13 @@
  */
 
 import { renderHook, act } from '@testing-library/react'
+import type {
+    LayoutChangeEvent,
+    NativeScrollEvent,
+    NativeSyntheticEvent,
+} from 'react-native'
 import { afterEach, describe, it, expect, vi, beforeEach } from 'vitest'
+import { measureFittingReview } from '@test-utils/review-scroll'
 import { useMessageSigningScreen } from '../useMessageSigningScreen'
 
 type MockPipeline = {
@@ -97,6 +103,12 @@ vi.mock('@hooks/useHaptics', () => ({
     useHaptics: () => mockHaptics,
 }))
 
+const renderScreen = () => {
+    const hook = renderHook(() => useMessageSigningScreen())
+    measureFittingReview(hook.result.current.scrollHint)
+    return hook
+}
+
 describe('useMessageSigningScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -123,10 +135,35 @@ describe('useMessageSigningScreen', () => {
     })
 
     it('reads the summary and the signer account from the resolved request', () => {
-        const { result } = renderHook(() => useMessageSigningScreen())
+        const { result } = renderScreen()
 
         expect(result.current.summary).toBe(SUMMARY)
         expect(result.current.signerAccount).toBe(SIGNER_ACCOUNT)
+    })
+
+    it('holds approval on a message taller than its body until it is scrolled to the end', () => {
+        const { result } = renderScreen()
+        act(() => {
+            result.current.scrollHint.handleBodyLayout({
+                nativeEvent: { layout: { height: 400 } },
+            } as LayoutChangeEvent)
+            result.current.scrollHint.handleContentSizeChange(0, 1000)
+        })
+
+        act(() => result.current.handleApprove())
+
+        expect(result.current.isConfirmBlocked).toBe(true)
+        expect(mockPipeline.next).not.toHaveBeenCalled()
+
+        act(() =>
+            result.current.scrollHint.handleScroll({
+                nativeEvent: { contentOffset: { y: 600 } },
+            } as NativeSyntheticEvent<NativeScrollEvent>),
+        )
+        act(() => result.current.handleApprove())
+
+        expect(result.current.isConfirmBlocked).toBe(false)
+        expect(mockPipeline.next).toHaveBeenCalledOnce()
     })
 
     it('checks every address the message names and holds approval until it is acknowledged', () => {
@@ -134,7 +171,7 @@ describe('useMessageSigningScreen', () => {
         mockReviewedMessageAddressesOf.mockReturnValue(named)
         mockAddressSafety.isConfirmBlocked = true
 
-        const { result } = renderHook(() => useMessageSigningScreen())
+        const { result } = renderScreen()
         act(() => result.current.handleApprove())
 
         expect(mockReviewedMessageAddressesOf).toHaveBeenCalledWith({
@@ -151,7 +188,7 @@ describe('useMessageSigningScreen', () => {
         mockAddressSafety.isListedAddressBlocking = true
         mockAddressSafety.isConfirmBlocked = true
 
-        const { result } = renderHook(() => useMessageSigningScreen())
+        const { result } = renderScreen()
         act(() => result.current.handleApprove())
 
         expect(result.current.isListedAddressBlocking).toBe(true)
@@ -161,7 +198,7 @@ describe('useMessageSigningScreen', () => {
     it('holds approval while the dApp site waits on acknowledgement', () => {
         mockSiteSafety.isConfirmBlocked = true
 
-        const { result } = renderHook(() => useMessageSigningScreen())
+        const { result } = renderScreen()
         act(() => result.current.handleApprove())
 
         expect(result.current.isListedAddressBlocking).toBe(false)
@@ -172,14 +209,14 @@ describe('useMessageSigningScreen', () => {
     it('checks no address for a request that is not a message', () => {
         mockPipeline.currentRequest = { id: 'req-2', type: 'transactions' }
 
-        const { result } = renderHook(() => useMessageSigningScreen())
+        const { result } = renderScreen()
 
         expect(result.current.reviewedAddresses).toEqual([])
         expect(mockReviewedMessageAddressesOf).not.toHaveBeenCalled()
     })
 
     it("reads the message request's scope", () => {
-        const { result } = renderHook(() => useMessageSigningScreen())
+        const { result } = renderScreen()
 
         expect(result.current.scope).toBe(SCOPE)
     })
@@ -187,13 +224,13 @@ describe('useMessageSigningScreen', () => {
     it('has no scope for a request that is not a message', () => {
         mockPipeline.currentRequest = { id: 'req-2', type: 'arbitrary-data' }
 
-        const { result } = renderHook(() => useMessageSigningScreen())
+        const { result } = renderScreen()
 
         expect(result.current.scope).toBeNull()
     })
 
     it('carries the requesting source and its verified origin', () => {
-        const { result } = renderHook(() => useMessageSigningScreen())
+        const { result } = renderScreen()
 
         expect(result.current.sourceMetadata).toBe(SOURCE)
         expect(result.current.verifiedOrigin).toBe('https://dapp.example')
@@ -205,13 +242,13 @@ describe('useMessageSigningScreen', () => {
             kind: { type: 'arbitrary-data', isSingle: true },
         }
 
-        const { result } = renderHook(() => useMessageSigningScreen())
+        const { result } = renderScreen()
 
         expect(result.current.summary).toBeNull()
     })
 
     it('approves through the pipeline', () => {
-        const { result } = renderHook(() => useMessageSigningScreen())
+        const { result } = renderScreen()
 
         act(() => result.current.handleApprove())
 
@@ -222,7 +259,7 @@ describe('useMessageSigningScreen', () => {
     })
 
     it('rejects through the pipeline', () => {
-        const { result } = renderHook(() => useMessageSigningScreen())
+        const { result } = renderScreen()
 
         act(() => result.current.handleReject())
 
@@ -235,7 +272,7 @@ describe('useMessageSigningScreen', () => {
     it('is pending while the pipeline loads', () => {
         mockPipeline.isLoading = true
 
-        const { result } = renderHook(() => useMessageSigningScreen())
+        const { result } = renderScreen()
 
         expect(result.current.isPending).toBe(true)
     })
@@ -243,7 +280,7 @@ describe('useMessageSigningScreen', () => {
     it('is pending as soon as signing starts, before the pipeline reports loading', () => {
         mockSigningStarted.current = { type: 'signing-started' }
 
-        const { result } = renderHook(() => useMessageSigningScreen())
+        const { result } = renderScreen()
 
         expect(result.current.isPending).toBe(true)
     })
@@ -260,7 +297,7 @@ describe('useMessageSigningScreen', () => {
             },
         }
 
-        const { result } = renderHook(() => useMessageSigningScreen())
+        const { result } = renderScreen()
 
         expect(result.current.signInSiteMismatch).toBe('dapp.example')
     })
@@ -277,13 +314,13 @@ describe('useMessageSigningScreen', () => {
             },
         }
 
-        const { result } = renderHook(() => useMessageSigningScreen())
+        const { result } = renderScreen()
 
         expect(result.current.signInSiteMismatch).toBeUndefined()
     })
 
     it('reports no site mismatch for a message that is not a sign-in', () => {
-        const { result } = renderHook(() => useMessageSigningScreen())
+        const { result } = renderScreen()
 
         expect(result.current.signInSiteMismatch).toBeUndefined()
     })
@@ -306,7 +343,7 @@ describe('useMessageSigningScreen', () => {
                 },
             }
 
-            const { result } = renderHook(() => useMessageSigningScreen())
+            const { result } = renderScreen()
 
             expect(mockRiskGate.flagged).toBe(expected)
             expect(result.current.isSignInRiskFlagged).toBe(expected)
@@ -316,7 +353,7 @@ describe('useMessageSigningScreen', () => {
     it('blocks approval while the sign-in risk is unacknowledged', () => {
         mockRiskGate.isConfirmBlocked = true
 
-        const { result } = renderHook(() => useMessageSigningScreen())
+        const { result } = renderScreen()
         act(() => result.current.handleApprove())
 
         expect(result.current.isConfirmBlocked).toBe(true)
@@ -324,24 +361,18 @@ describe('useMessageSigningScreen', () => {
     })
 
     it('shows the chain badge for an EVM request only', () => {
-        expect(
-            renderHook(() => useMessageSigningScreen()).result.current
-                .isChainBadgeShown,
-        ).toBe(true)
+        expect(renderScreen().result.current.isChainBadgeShown).toBe(true)
 
         mockPipeline.currentRequest = {
             id: 'req-1',
             type: 'message',
             message: { scope: { chainId: 'algorand', networkId: 'mainnet' } },
         }
-        expect(
-            renderHook(() => useMessageSigningScreen()).result.current
-                .isChainBadgeShown,
-        ).toBe(false)
+        expect(renderScreen().result.current.isChainBadgeShown).toBe(false)
     })
 
     it('is idle otherwise', () => {
-        const { result } = renderHook(() => useMessageSigningScreen())
+        const { result } = renderScreen()
 
         expect(result.current.isPending).toBe(false)
     })
@@ -379,7 +410,7 @@ describe('useMessageSigningScreen', () => {
                 isLongLived: false,
                 signature: { deadline: NOW + 60_000, isLongLived: false },
             })
-            const { result } = renderHook(() => useMessageSigningScreen())
+            const { result } = renderScreen()
             expect(result.current.isExpired).toBe(false)
 
             act(() => {
@@ -400,7 +431,7 @@ describe('useMessageSigningScreen', () => {
                 isLongLived: false,
             })
 
-            const { result } = renderHook(() => useMessageSigningScreen())
+            const { result } = renderScreen()
 
             expect(result.current.isExpired).toBe(true)
         })
@@ -413,7 +444,7 @@ describe('useMessageSigningScreen', () => {
                 isLongLived: false,
             })
 
-            const { result } = renderHook(() => useMessageSigningScreen())
+            const { result } = renderScreen()
             act(() => result.current.handleApprove())
 
             expect(result.current.isExpired).toBe(false)
@@ -427,7 +458,7 @@ describe('useMessageSigningScreen', () => {
                 deadline: NOW - 59_000,
                 isLongLived: false,
             })
-            const { result } = renderHook(() => useMessageSigningScreen())
+            const { result } = renderScreen()
             expect(result.current.isExpired).toBe(false)
 
             // Moves the clock without running timers, as after the app sleeps.
@@ -447,7 +478,7 @@ describe('useMessageSigningScreen', () => {
                 signature: { deadline: NOW + 60_000, isLongLived: false },
             })
 
-            const { result } = renderHook(() => useMessageSigningScreen())
+            const { result } = renderScreen()
             act(() => result.current.handleApprove())
 
             expect(result.current.isExpired).toBe(false)

@@ -13,6 +13,7 @@
 export const name = '@perawallet/wallet-core-security'
 
 export * from './constants'
+export * from './errors'
 export * from './models'
 export * from './hooks'
 // The comparisons stay internal: `usePinCode().verifyPin` is the only way in,

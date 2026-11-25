@@ -276,7 +276,7 @@ describe('useAddAssetView', () => {
 
     it('does not show an error toast when user cancels the signing overlay', async () => {
         mockOptIn.mockRejectedValueOnce(new UserRejectedSigningError())
-        mockRequestByType.mockResolvedValueOnce('confirm')
+        mockRequestByType.mockResolvedValueOnce(1000n)
 
         const { result } = renderHook(() =>
             useAddAssetView({ chainId: 'algorand' }),
@@ -295,7 +295,7 @@ describe('useAddAssetView', () => {
     it('shows an error toast when opt-in fails with a non-cancel error', async () => {
         const optInError = new Error('Network error')
         mockOptIn.mockRejectedValueOnce(optInError)
-        mockRequestByType.mockResolvedValueOnce('confirm')
+        mockRequestByType.mockResolvedValueOnce(1000n)
 
         const { result } = renderHook(() =>
             useAddAssetView({ chainId: 'algorand' }),
@@ -313,7 +313,7 @@ describe('useAddAssetView', () => {
 
     it('plays the success haptic with the success toast', async () => {
         mockOptIn.mockResolvedValueOnce({ txIds: ['tx-a', 'tx-b'] })
-        mockRequestByType.mockResolvedValueOnce('confirm')
+        mockRequestByType.mockResolvedValueOnce(1000n)
         const { result } = renderHook(() =>
             useAddAssetView({ chainId: 'algorand' }),
         )
@@ -331,7 +331,7 @@ describe('useAddAssetView', () => {
         mockOptIn
             .mockRejectedValueOnce(optInError)
             .mockRejectedValueOnce(new UserRejectedSigningError())
-        mockRequestByType.mockResolvedValue('confirm')
+        mockRequestByType.mockResolvedValue(1000n)
         const { result } = renderHook(() =>
             useAddAssetView({ chainId: 'algorand' }),
         )
@@ -715,7 +715,7 @@ describe('useAddAssetView', () => {
 
         it('shows an asset as added only on the chain it was added on', async () => {
             registerEthereumChain()
-            mockRequestByType.mockResolvedValueOnce('confirm')
+            mockRequestByType.mockResolvedValueOnce(1000n)
             const { result } = renderHook(() =>
                 useAddAssetView({ chainId: null }),
             )

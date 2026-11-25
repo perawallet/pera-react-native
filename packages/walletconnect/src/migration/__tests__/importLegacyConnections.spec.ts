@@ -250,6 +250,10 @@ describe('importLegacyConnections', () => {
         expect((await store.list())[0].metadata?.permissions).toEqual([
             'algo_signTxn',
         ])
+        expect((await store.list())[0]).toMatchObject({
+            status: 'active',
+            metadata: { permissionsApproved: true },
+        })
     })
 
     it('leaves a record already in the store untouched on a resumed run', async () => {

@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi, beforeEach, afterAll } from 'vitest'
+import { createHash } from 'node:crypto'
+import { describe, test, expect, vi, beforeEach } from 'vitest'
 
 const fetchNodeJsonMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
@@ -29,6 +30,8 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: loggerMock,
     decodeFromBase64: (base64: string) =>
         new Uint8Array(Buffer.from(base64, 'base64')),
+    encodeToBase64: (bytes: Uint8Array) =>
+        Buffer.from(bytes).toString('base64'),
 }))
 // The blockchain barrel pulls native deps that don't load under node; a
 // byte-labelled stand-in keeps the address maths observable.
@@ -40,17 +43,57 @@ import { verifyNfdAddress } from '../verifyNfdAddress'
 
 const b64 = (text: string) => Buffer.from(text, 'utf8').toString('base64')
 const key = (fill: number) => Buffer.alloc(32, fill)
-const fetchMock = vi.fn()
-vi.stubGlobal('fetch', fetchMock)
+const registries = {
+    mainnet: {
+        id: 760937186,
+        legacyAlice:
+            'BXZV6QX6NWPCG2NEA7AYEEUD64FPR3F4C6RED35LMWVT4VGUVTPF4ZY6VY',
+    },
+    testnet: {
+        id: 84366825,
+        legacyAlice:
+            'MJFIL6HXDW44NSJ6CGTNJLXNFEDA4G6YTD7BBFFJP73LN72UZ7TLQZBHXA',
+    },
+} as const
+type Network = keyof typeof registries
 
-const registry = (status: number, body?: unknown) =>
-    fetchMock.mockResolvedValue({
-        status,
-        ok: status >= 200 && status < 300,
-        json: async () => body,
-    })
+const registryRoute = (name: string, network: Network) =>
+    `/v2/applications/${registries[network].id}/box?name=b64:${createHash(
+        'sha256',
+    )
+        .update(`name/${name}`)
+        .digest('base64')}`
 
-const application = (name: string, ownerFill: number) => ({
+const registryBox = (appId: number) => {
+    const value = Buffer.alloc(16)
+    value.writeBigUInt64BE(99n, 0)
+    value.writeBigUInt64BE(BigInt(appId), 8)
+    return { value: value.toString('base64') }
+}
+
+const legacyRegistryRoute = (network: Network) =>
+    `/v2/accounts/${registries[network].legacyAlice}/applications/${registries[network].id}`
+
+const legacyRegistryState = (appId: number, network: Network) => {
+    const value = Buffer.alloc(8)
+    value.writeBigUInt64BE(BigInt(appId))
+    return {
+        'app-local-state': {
+            id: registries[network].id,
+            'key-value': [
+                {
+                    key: b64('i.appid'),
+                    value: { type: 1, bytes: value.toString('base64') },
+                },
+            ],
+        },
+    }
+}
+
+const notFound = () =>
+    Object.assign(new Error('box not found'), { status: 404 })
+
+const application = (name: string, ownerFill: number, linked?: Buffer) => ({
     params: {
         'global-state': [
             { key: b64('i.name'), value: { type: 1, bytes: b64(name) } },
@@ -58,6 +101,14 @@ const application = (name: string, ownerFill: number) => ({
                 key: b64('i.owner.a'),
                 value: { type: 1, bytes: key(ownerFill).toString('base64') },
             },
+            ...(linked
+                ? [
+                      {
+                          key: b64('v.caAlgo.0.as'),
+                          value: { type: 1, bytes: linked.toString('base64') },
+                      },
+                  ]
+                : []),
         ],
     },
 })
@@ -71,38 +122,46 @@ const algod = (responses: Record<string, unknown>) =>
             { params }: { params?: { name?: string } },
         ) => {
             const route = params?.name ? `${url}?name=${params.name}` : url
-            if (!(route in responses)) throw new Error(`unexpected ${route}`)
-            return responses[route]
+            if (!(route in responses)) throw notFound()
+            const response = responses[route]
+            if (response instanceof Error) throw response
+            return response
         },
     )
 
-const verify = (address: string, name = 'alice.algo') =>
+const registered = (
+    appId: number,
+    name = 'alice.algo',
+    network: Network = 'mainnet',
+) => ({
+    [registryRoute(name, network)]: registryBox(appId),
+})
+
+const verify = (
+    address: string,
+    name = 'alice.algo',
+    networkId: Network = 'mainnet',
+) =>
     verifyNfdAddress({
         name,
         address,
-        scope: { chainId: 'algorand', networkId: 'mainnet' },
+        scope: { chainId: 'algorand', networkId },
     })
 
 describe('verifyNfdAddress', () => {
     beforeEach(() => {
         fetchNodeJsonMock.mockReset()
-        fetchMock.mockReset()
         loggerMock.warn.mockReset()
     })
-    afterAll(() => vi.unstubAllGlobals())
 
     test('verifies the on-chain owner', async () => {
-        registry(200, { appID: 7 })
         algod({
+            ...registered(7),
             '/v2/applications/7': application('alice.algo', 1),
             '/v2/applications/7/boxes': { boxes: [] },
         })
 
         expect(await verify('ADDR(1)')).toBe('verified')
-        expect(fetchMock).toHaveBeenCalledWith(
-            'https://api.nf.domains/nfd/alice.algo?view=brief',
-            expect.anything(),
-        )
         expect(fetchNodeJsonMock).toHaveBeenCalledWith(
             { chainId: 'algorand', networkId: 'mainnet' },
             'algod',
@@ -112,9 +171,9 @@ describe('verifyNfdAddress', () => {
     })
 
     test('verifies an address from the verified-addresses box, reading only those boxes', async () => {
-        registry(200, { appID: 7 })
         const verifiedBox = b64('v.caAlgo.0.as')
         algod({
+            ...registered(7),
             '/v2/applications/7': application('alice.algo', 1),
             '/v2/applications/7/boxes': {
                 boxes: [{ name: b64('v.avatar') }, { name: verifiedBox }],
@@ -136,8 +195,8 @@ describe('verifyNfdAddress', () => {
     })
 
     test('rejects an address the contract does not list', async () => {
-        registry(200, { appID: 7 })
         algod({
+            ...registered(7),
             '/v2/applications/7': application('alice.algo', 1),
             '/v2/applications/7/boxes': { boxes: [] },
         })
@@ -146,8 +205,8 @@ describe('verifyNfdAddress', () => {
     })
 
     test('rejects an application whose on-chain name is not the one typed, even when the owner matches', async () => {
-        registry(200, { appID: 7 })
         algod({
+            ...registered(7),
             '/v2/applications/7': application('mallory.algo', 1),
             '/v2/applications/7/boxes': { boxes: [] },
         })
@@ -155,31 +214,104 @@ describe('verifyNfdAddress', () => {
         expect(await verify('ADDR(1)')).toBe('mismatch')
     })
 
-    test('rejects a name the registry does not know or will not parse', async () => {
-        registry(404)
-        expect(await verify('ADDR(1)')).toBe('mismatch')
-
-        registry(400)
-        expect(await verify('ADDR(1)')).toBe('mismatch')
-        expect(fetchNodeJsonMock).not.toHaveBeenCalled()
-    })
-
-    test('normalizes the name before asking the registry and comparing on chain', async () => {
-        registry(200, { appID: 7 })
+    test('rejects a name absent from both on-chain registry formats', async () => {
         algod({
             '/v2/applications/7': application('alice.algo', 1),
             '/v2/applications/7/boxes': { boxes: [] },
         })
 
+        expect(await verify('ADDR(1)')).toBe('mismatch')
+        expect(fetchNodeJsonMock).toHaveBeenCalledTimes(2)
+    })
+
+    test.each(['mainnet', 'testnet'] as const)(
+        'rejects a named application absent from the %s registry',
+        async network => {
+            const unrelated = application('alice.algo', 1)
+            algod({
+                ...registered(8, 'alice.algo', network),
+                '/v2/applications/7': {
+                    params: { ...unrelated.params, creator: 'OTHER_CREATOR' },
+                },
+                '/v2/applications/8': application('alice.algo', 2),
+                '/v2/applications/8/boxes': { boxes: [] },
+            })
+
+            expect(await verify('ADDR(1)', 'alice.algo', network)).toBe(
+                'mismatch',
+            )
+            expect(fetchNodeJsonMock).not.toHaveBeenCalledWith(
+                expect.anything(),
+                'algod',
+                '/v2/applications/7',
+                expect.anything(),
+            )
+        },
+    )
+
+    test.each(['mainnet', 'testnet'] as const)(
+        'verifies a legacy name through the %s registry account when no box exists',
+        async network => {
+            algod({
+                [legacyRegistryRoute(network)]: legacyRegistryState(7, network),
+                '/v2/applications/7': application(
+                    'alice.algo',
+                    1,
+                    Buffer.concat([key(2), key(0)]),
+                ),
+                '/v2/applications/7/boxes': { boxes: [] },
+            })
+
+            expect(await verify('ADDR(1)', 'alice.algo', network)).toBe(
+                'verified',
+            )
+            expect(await verify('ADDR(2)', 'alice.algo', network)).toBe(
+                'verified',
+            )
+            expect(await verify('ADDR(0)', 'alice.algo', network)).toBe(
+                'mismatch',
+            )
+        },
+    )
+
+    test('verifies a legacy name from the verified-addresses box when its contract moved to boxes', async () => {
+        const verifiedBox = b64('v.caAlgo.0.as')
+        algod({
+            [legacyRegistryRoute('mainnet')]: legacyRegistryState(7, 'mainnet'),
+            '/v2/applications/7': application('alice.algo', 1),
+            '/v2/applications/7/boxes': { boxes: [{ name: verifiedBox }] },
+            [`/v2/applications/7/box?name=b64:${verifiedBox}`]: {
+                value: key(4).toString('base64'),
+            },
+        })
+
+        expect(await verify('ADDR(4)')).toBe('verified')
+    })
+
+    test('ignores legacy address state for a name that has migrated to boxes', async () => {
+        algod({
+            ...registered(7),
+            '/v2/applications/7': application('alice.algo', 1, key(2)),
+            '/v2/applications/7/boxes': { boxes: [] },
+        })
+
+        expect(await verify('ADDR(2)')).toBe('mismatch')
+    })
+
+    test('normalizes the name before asking the registry and comparing on chain', async () => {
+        algod({
+            ...registered(7),
+            '/v2/applications/7': application('alice.algo', 1),
+            '/v2/applications/7/boxes': { boxes: [] },
+        })
+
         expect(await verify('ADDR(1)', 'AliCe.ALGO')).toBe('verified')
-        expect(fetchMock.mock.calls[0]?.[0]).toContain('/nfd/alice.algo?')
     })
 
     test('is unavailable, not a verdict, when the registry or algod fail', async () => {
-        registry(503)
+        algod({ ...registered(7), '/v2/applications/7': new Error('down') })
         expect(await verify('ADDR(1)')).toBe('unavailable')
 
-        registry(200, { appID: 7 })
         fetchNodeJsonMock.mockRejectedValue(new Error('algod down'))
         expect(await verify('ADDR(1)')).toBe('unavailable')
         expect(loggerMock.warn).toHaveBeenCalled()
@@ -193,13 +325,13 @@ describe('verifyNfdAddress', () => {
         })
 
         expect(result).toBe('unavailable')
-        expect(fetchMock).not.toHaveBeenCalled()
+        expect(fetchNodeJsonMock).not.toHaveBeenCalled()
     })
 
     test('lets an abort propagate so callers can ignore a stale answer', async () => {
         const abort = new Error('aborted')
         abort.name = 'AbortError'
-        fetchMock.mockRejectedValue(abort)
+        fetchNodeJsonMock.mockRejectedValue(abort)
 
         await expect(verify('ADDR(1)')).rejects.toBe(abort)
     })

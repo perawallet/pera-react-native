@@ -830,7 +830,7 @@ describe('useTransactionConfirmationScreen', () => {
                 ).toHaveBeenCalledWith(new Decimal(500))
             })
 
-            it('leaves an Algorand send alone: no re-size and no confirmed max fee', () => {
+            it('keeps the Algorand amount and records the fee the user saw', () => {
                 ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
                 ;(sendFlowChainAdapters.has as Mock).mockReturnValue(true)
                 ;(useAssetsQuery as Mock).mockReturnValue({
@@ -853,7 +853,9 @@ describe('useTransactionConfirmationScreen', () => {
 
                 expect(result.current.amount?.toFixed()).toBe('900')
                 expect(state.setAmount).not.toHaveBeenCalled()
-                expect(state.setConfirmedMaxFee).toHaveBeenCalledWith(undefined)
+                expect(state.setConfirmedMaxFee).toHaveBeenCalledWith(
+                    new Decimal(500),
+                )
             })
         })
 
@@ -941,6 +943,32 @@ describe('useTransactionConfirmationScreen', () => {
 
             expect(result.current.isFeeCoveragePending).toBe(true)
             expect(result.current.feeError).toBeDefined()
+        })
+
+        it('shows a retryable fee error on Algorand when the fee parameters fail to load', () => {
+            ;(useSendFeeQuery as Mock).mockReturnValue(
+                failedFee(new Error('fetch failed')),
+            )
+            ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
+            ;(useSendFunds as Mock).mockReturnValue({
+                ...mockSendFundsState,
+                selectedAssetId: '0',
+                amount: new Decimal(1),
+                destination: 'DEST_ADDRESS',
+            })
+            ;(useAssetsQuery as Mock).mockReturnValue({
+                data: new Map([['0', { ...NATIVE_ASSET, decimals: 0 }]]),
+            })
+            const { result } = renderHook(() =>
+                useTransactionConfirmationScreen(),
+            )
+            act(() => {
+                result.current.handleConfirm()
+            })
+
+            expect(result.current.isFeeCoveragePending).toBe(true)
+            expect(result.current.feeError?.canRetry).toBe(true)
+            expect(mockNavigate).not.toHaveBeenCalled()
         })
 
         it('reads an unclassified estimate failure as the network not answering, with a retry', () => {

@@ -14,6 +14,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import {
+    AddressMismatchError,
     DuplicateAccountError,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -66,8 +67,9 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 
 import { useImportAlgo25FromSeed } from '../useImportAlgo25FromSeed'
 
+// The address the `fill(7)` seed derives.
 const VALID_ADDRESS =
-    'EGRJQ7DXMIJ577UUN6AFOIUZY6CNSFKLMGFHQNTC5US5TRC23LK6DGQRDM'
+    '5JFGYY7CTRJAVPXVKB5RGLWF7GKUO5VOX27HXESCD3VGSFCG2IWAKDM5YU'
 
 const importedAccount: WalletAccount = {
     id: 'acc-1',
@@ -147,6 +149,24 @@ describe('useImportAlgo25FromSeed', () => {
         expect(mocks.zeroBytes).not.toHaveBeenCalled()
     })
 
+    it('refuses a key that does not derive the declared address before any keystore work', async () => {
+        const importFromSeed = renderImport()
+
+        await expect(
+            importFromSeed({
+                address: VALID_ADDRESS,
+                privateKey: new Uint8Array(64).fill(3),
+                name: 'My Savings',
+            }),
+        ).rejects.toBeInstanceOf(AddressMismatchError)
+        expect(mocks.importAlgo25).not.toHaveBeenCalled()
+        expect(mocks.updateAccount).not.toHaveBeenCalled()
+        expect(mocks.zeroBytes).toHaveBeenLastCalledWith(
+            expect.objectContaining({ length: 32 }),
+            null,
+        )
+    })
+
     it('throws when the private key is shorter than the seed length', async () => {
         const importFromSeed = renderImport()
 
@@ -172,7 +192,10 @@ describe('useImportAlgo25FromSeed', () => {
             }),
         ).rejects.toThrow('Unexpected non-account result')
         // Seed is still wiped even on the error path.
-        expect(mocks.zeroBytes).toHaveBeenCalledTimes(1)
+        expect(mocks.zeroBytes).toHaveBeenLastCalledWith(
+            expect.objectContaining({ length: 32 }),
+            expect.objectContaining({ length: 25 }),
+        )
     })
 
     it('re-throws DuplicateAccountError and still wipes the seed', async () => {
@@ -187,7 +210,10 @@ describe('useImportAlgo25FromSeed', () => {
                 privateKey: new Uint8Array(64).fill(7),
             }),
         ).rejects.toBeInstanceOf(DuplicateAccountError)
-        expect(mocks.zeroBytes).toHaveBeenCalledTimes(1)
+        expect(mocks.zeroBytes).toHaveBeenLastCalledWith(
+            expect.objectContaining({ length: 32 }),
+            expect.objectContaining({ length: 25 }),
+        )
     })
 
     it('wipes the derived seed copy without mutating the caller buffer', async () => {
@@ -201,8 +227,7 @@ describe('useImportAlgo25FromSeed', () => {
         // ...while the 32-byte derived seed copy was handed to `zeroBytes` in
         // `finally`. (Not asserting the buffer is all-zero: the mock fills it,
         // so that would test the mock, not the production wipe.)
-        expect(mocks.zeroBytes).toHaveBeenCalledTimes(1)
-        const wiped = mocks.zeroBytes.mock.calls[0][0] as Uint8Array
+        const wiped = mocks.zeroBytes.mock.lastCall?.[0] as Uint8Array
         expect(wiped).toHaveLength(32)
     })
 })

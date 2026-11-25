@@ -171,7 +171,8 @@ export const migration: Migration<PeraMigrationContext> = {
             // retries next launch. Declining is permanent — it ledgers this
             // revision, the next launch skips it, and upstream adopts the
             // record, writing `metadata.rootKey.privateKey` into plaintext
-            // `k/` (`legacy.js:113,120`).
+            // `k/` (`legacy.js:113,120`). The runner still starts upstream
+            // this launch; `WithPeraKeystorePreflight` holds its adoption back.
             throw error
         }
 

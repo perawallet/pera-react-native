@@ -14,18 +14,15 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useForgotPasswordView } from '../useForgotPasswordView'
 
-const { mockWipe, mockClearAccounts, mockVaultReset, KeyWipeIncompleteError } =
-    vi.hoisted(() => ({
-        mockWipe: vi.fn(),
-        mockClearAccounts: vi.fn(),
-        mockVaultReset: vi.fn(),
-        KeyWipeIncompleteError: class extends AggregateError {},
-    }))
+const { mockWipe, mockClearAccounts, mockVaultReset } = vi.hoisted(() => ({
+    mockWipe: vi.fn(),
+    mockClearAccounts: vi.fn(),
+    mockVaultReset: vi.fn(),
+}))
 
 vi.mock('@hooks/useDeleteAllData', () => ({
     useDeleteAllData: () => ({ wipeAllUserData: mockWipe }),
     clearAccountsStore: mockClearAccounts,
-    KeyWipeIncompleteError,
 }))
 
 describe('useForgotPasswordView', () => {
@@ -67,28 +64,9 @@ describe('useForgotPasswordView', () => {
         expect(mockVaultReset).toHaveBeenCalledTimes(1)
     })
 
-    it('keeps the accounts and reports the failure when the wipe throws', async () => {
-        mockWipe.mockRejectedValue(new Error('wipe failed'))
-        const { result } = renderHook(() =>
-            useForgotPasswordView({ onVaultReset: mockVaultReset }),
-        )
-
-        act(() => {
-            result.current.toggleAcknowledged()
-        })
-        await act(async () => {
-            await result.current.handleReset()
-        })
-
-        expect(result.current.hasError).toBe(true)
-        expect(result.current.isResetting).toBe(false)
-        expect(mockClearAccounts).not.toHaveBeenCalled()
-        expect(mockVaultReset).not.toHaveBeenCalled()
-    })
-
-    it('finishes the reset when only the key wipe failed', async () => {
+    it('finishes the reset when the wipe throws, leaving its marker to onboarding', async () => {
         mockWipe.mockRejectedValue(
-            new KeyWipeIncompleteError([new Error('keystore not ready')]),
+            new AggregateError([new Error('keystore not ready')]),
         )
         const { result } = renderHook(() =>
             useForgotPasswordView({ onVaultReset: mockVaultReset }),
@@ -104,5 +82,22 @@ describe('useForgotPasswordView', () => {
         expect(result.current.hasError).toBe(false)
         expect(mockClearAccounts).toHaveBeenCalledTimes(1)
         expect(mockVaultReset).toHaveBeenCalledTimes(1)
+    })
+
+    it('reports the failure when the vault gate cannot be reset', async () => {
+        mockVaultReset.mockRejectedValue(new Error('vault read failed'))
+        const { result } = renderHook(() =>
+            useForgotPasswordView({ onVaultReset: mockVaultReset }),
+        )
+
+        act(() => {
+            result.current.toggleAcknowledged()
+        })
+        await act(async () => {
+            await result.current.handleReset()
+        })
+
+        expect(result.current.hasError).toBe(true)
+        expect(result.current.isResetting).toBe(false)
     })
 })

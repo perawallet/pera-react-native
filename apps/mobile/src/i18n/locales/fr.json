@@ -269,7 +269,10 @@
         "empty_title": "Aucune autorisation ouverte",
         "empty_body": "Aucune autorisation ouverte de jeton ou de collection n'a été trouvée pour ce compte.",
         "error_title": "Impossible de charger les autorisations",
-        "error_body": "Vérifiez votre connexion et réessayez.",
+        "error_body": "Un problème est survenu lors du chargement. Réessayez dans un instant.",
+        "offline_body": "Vérifiez votre connexion et réessayez.",
+        "unavailable_title": "Les autorisations ne sont pas encore disponibles sur ce réseau",
+        "unavailable_body": "Pera ne peut pas encore consulter les autorisations de jetons de ce compte sur ce réseau.",
         "revoke_error_title": "Révocation non confirmée",
         "revoke_error_body": "Vérifiez dans la liste l'état de l'autorisation avant de réessayer."
     },
@@ -1538,6 +1541,10 @@
             "asset_frozen": {
                 "title": "Actif gelé",
                 "body": "L’actif {{assetId}} est gelé, ce transfert ne peut donc pas aboutir. Le gestionnaire de gel de l’actif doit d’abord le dégeler."
+            },
+            "fee_above_shown": {
+                "title": "Frais de réseau modifiés",
+                "body": "Le réseau demande maintenant des frais plus élevés que ceux affichés, donc rien n’a été signé. Réessayez pour voir les frais actuels."
             }
         },
         "kms": {
@@ -2419,6 +2426,8 @@
             "load_error": "Impossible de charger cette transaction. Elle a peut-être expiré ou été supprimée.",
             "cosign_rejected_title": "Impossible de signer cette transaction",
             "cosign_rejected_body": "Cette demande contient une transaction que le compte partagé n’autorise pas. Si l’expéditeur est un compte ayant fait l’objet d’un rekey vers le compte partagé, ajoutez-le à votre wallet et réessayez.",
+            "request_open_title": "Ferme d’abord la demande ouverte",
+            "request_open_body": "Termine ou ferme la demande de signature, puis rouvre le lien.",
             "retry": "Réessayer",
             "canceled": "Transaction annulée.",
             "declined": "Transaction refusée.",
@@ -2813,6 +2822,14 @@
                 "fetch_failed_title": "Impossible de charger la sauvegarde",
                 "decrypt_failed_title": "Impossible de déverrouiller la sauvegarde"
             },
+            "review": {
+                "title": "Vérifiez les comptes",
+                "body_one": "Ce code importe {{count}} compte. Vérifiez qu’il vous appartient avant de l’importer.",
+                "body_other": "Ce code importe {{count}} comptes. Vérifiez qu’ils vous appartiennent avant de les importer.",
+                "body": "Ce code importe {{count}} comptes. Vérifiez qu’ils vous appartiennent avant de les importer.",
+                "confirm": "Importer les comptes",
+                "interrupted": "L’importation a été interrompue. Scannez à nouveau le code QR pour continuer."
+            },
             "result": {
                 "success_title": "Comptes importés",
                 "success_body_one": "{{count}} compte a été ajouté à votre wallet.",
@@ -3190,6 +3207,7 @@
             "verify_title": "Saisissez votre code PIN",
             "unlock_title": "Saisissez votre code PIN",
             "change_old_title": "Saisissez votre ancien\ncode PIN à 6 chiffres",
+            "matches_duress_pin": "Votre nouveau code PIN doit être différent de votre code PIN de contrainte.",
             "logging_in": "Connexion en cours"
         },
         "lockout": {
@@ -4163,12 +4181,14 @@
         "suspected_poisoning": {
             "marker": "Empoisonnement d’adresse suspecté",
             "title": "Empoisonnement d’adresse suspecté",
-            "body": "Ce transfert n’a rien transféré de valeur et provient d’une adresse conçue pour ressembler à une adresse que vous connaissez. Les escrocs envoient ce type de transfert pour que leur adresse apparaisse dans votre historique et soit copiée plus tard. Ne la copiez pas et n’y envoyez rien.",
+            "body": "Ce transfert n’a rien transféré de valeur et provient d’une adresse conçue pour ressembler à une adresse que vous connaissez. Les escrocs envoient ce type de transfert pour que leur adresse apparaisse dans votre historique et soit copiée plus tard.",
+            "do_not_reuse": "Ne copiez pas cette adresse et n’y envoyez rien.",
             "sender_label": "Cette adresse",
             "reuse_title": "Cette adresse imite une adresse que vous connaissez",
             "reuse_body": "Elle commence et se termine comme une adresse que vous connaissez, mais ce n’est pas la même. Comparez les adresses complètes avant de l’utiliser.",
             "reuse_confirm": "Continuer quand même",
-            "reuse_cancel": "Annuler"
+            "reuse_cancel": "Annuler",
+            "dismiss": "J’ai compris"
         },
         "suspicious_token": {
             "marker": "Jeton suspect"

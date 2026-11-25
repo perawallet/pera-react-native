@@ -22,6 +22,7 @@ import { SpendApprovalTitle } from '@modules/signing/components/SpendApprovalTit
 import { SpendApprovalWarning } from '@modules/signing/components/SpendApprovalWarning'
 import { RequestAddressWarning } from '@modules/signing/components/RequestAddressWarning'
 import { ReviewNetworkRow } from '@modules/signing/components/ReviewNetworkRow'
+import { ReviewScrollHint } from '@modules/signing/components/ReviewScrollHint'
 import { RequestSiteWarning } from '@modules/signing/components/RequestSiteWarning'
 import { SignInMessageDetails } from '@modules/signing/components/SignInMessageDetails'
 import { MessageTreeView } from './MessageTreeView'
@@ -47,6 +48,7 @@ export const MessageSigningScreen = () => {
         isSignInRiskAcknowledged,
         toggleSignInRiskAcknowledged,
         isChainBadgeShown,
+        scrollHint,
         handleApprove,
         handleReject,
     } = useMessageSigningScreen()
@@ -63,8 +65,18 @@ export const MessageSigningScreen = () => {
 
     return (
         <PWScreen
+            scrollRef={scrollHint.scrollRef}
+            onScroll={scrollHint.handleScroll}
+            onBodyLayout={scrollHint.handleBodyLayout}
+            onContentSizeChange={scrollHint.handleContentSizeChange}
+            testID='message-signing-review'
             footer={
                 <PWView style={[styles.buttonContainer, CONFIRM_ACTION_LAYOUT]}>
+                    <ReviewScrollHint
+                        isVisible={scrollHint.isMoreBelow}
+                        isReserved={scrollHint.isScrollable}
+                        onPress={scrollHint.handleScrollToEnd}
+                    />
                     {isListedAddressBlocking && (
                         <CannotSignNotice
                             title={t('signing.address_safety.blocked_title')}
@@ -114,6 +126,20 @@ export const MessageSigningScreen = () => {
                     <PWText variant='h2'>
                         {t(summary.title.key, summary.title.params)}
                     </PWText>
+                )}
+
+                {!!signerAccount && (
+                    <PWView style={styles.accountContainer}>
+                        <PWText style={styles.onBehalfOf}>
+                            {t('signing.arbitrary_data_view.on_behalf_of')}
+                        </PWText>
+                        <AccountDisplay
+                            account={signerAccount}
+                            showChevron={false}
+                            chainId={scope?.chainId}
+                            showChainBadge={isChainBadgeShown}
+                        />
+                    </PWView>
                 )}
 
                 <PWView style={styles.section}>
@@ -177,20 +203,6 @@ export const MessageSigningScreen = () => {
                     )}
                     {!!summary.tree && <MessageTreeView nodes={summary.tree} />}
                 </PWView>
-
-                {!!signerAccount && (
-                    <PWView style={styles.accountContainer}>
-                        <PWText style={styles.onBehalfOf}>
-                            {t('signing.arbitrary_data_view.on_behalf_of')}
-                        </PWText>
-                        <AccountDisplay
-                            account={signerAccount}
-                            showChevron={false}
-                            chainId={scope?.chainId}
-                            showChainBadge={isChainBadgeShown}
-                        />
-                    </PWView>
-                )}
             </PWView>
         </PWScreen>
     )

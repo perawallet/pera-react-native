@@ -28,6 +28,7 @@ import { fileURLToPath } from 'node:url'
 import {
     openApprovalSurface,
     expectApprovalSurfaceUrl,
+    scrollReviewToEnd,
     selectEvmAccountAndArmConnect,
     standInForToolbarPopup,
     tapToConfirm,
@@ -580,6 +581,7 @@ test.describe('signing from a connected dApp', () => {
                     'message-signing-spend-approval-warning',
                 ),
             ).toBeVisible({ timeout: 20_000 })
+            await scrollReviewToEnd(approvalPage)
             await tapToConfirm(
                 approvalPage,
                 approvalPage.getByTestId('message-signing-confirm-slide'),

@@ -34,6 +34,7 @@ import { WalletConnectError } from '../shared/errors'
 import { createV1ConnectorBinding } from './binding'
 import {
     bridgeUrlFromV1Uri,
+    grantedMethodsOf,
     isSecureBridgeUrl,
     isV1PairingUri,
     isWalletConnectV1Connection,
@@ -98,7 +99,11 @@ export const createWalletConnectV1Handler = (
     const connectors = createConnectorRegistry({
         bindHandlers: connector => bindHandlers(connector),
     })
-    const delivery = createWalletConnectV1Delivery(connectors, answeredRequests)
+    const delivery = createWalletConnectV1Delivery(
+        connectors,
+        answeredRequests,
+        chainId,
+    )
 
     const requests = createV1RequestHandlers({
         kit,
@@ -157,11 +162,17 @@ export const createWalletConnectV1Handler = (
     const restore = async () => {
         const sessions = await restoreSessions()
         const now = Date.now()
-        const idle = sessions.filter(session => isIdleSession(session, now))
+        // An ungranted session has no re-consent path in v1, so it is ended
+        // and the dApp offers its connect button again.
+        const ended = sessions.filter(
+            session =>
+                isIdleSession(session, now) ||
+                grantedMethodsOf(session).length === 0,
+        )
         await withTimeout(
             Promise.allSettled(
-                idle.map(({ id }) => {
-                    logger.warn('[WC v1] ending an idle session', {
+                ended.map(({ id }) => {
+                    logger.warn('[WC v1] ending an idle or ungranted session', {
                         connectionId: id,
                     })
                     return disconnect(id)
@@ -172,7 +183,7 @@ export const createWalletConnectV1Handler = (
         ).catch((error: unknown) => {
             logger.warn('[WC v1] idle sessions are still ending', { error })
         })
-        return sessions.filter(session => !idle.includes(session))
+        return sessions.filter(session => !ended.includes(session))
     }
 
     return {
@@ -256,7 +267,7 @@ export const createWalletConnectV1Handler = (
 
         methodsFor: connection =>
             isWalletConnectV1Connection(connection)
-                ? (connection.metadata.permissions ?? [])
+                ? [...grantedMethodsOf(connection)]
                 : [],
     }
 }

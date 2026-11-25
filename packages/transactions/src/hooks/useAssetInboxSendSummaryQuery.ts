@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
@@ -18,6 +19,7 @@ import {
     sendFlowFeatureFor,
     type AssetInboxSendSummary,
 } from '../chain-adapter'
+import { InvalidSendParamsError } from '../errors'
 import { getAssetInboxSendSummaryQueryKey } from './querykeys'
 
 export type UseAssetInboxSendSummaryQueryResult = {
@@ -27,28 +29,51 @@ export type UseAssetInboxSendSummaryQueryResult = {
     error: Nullable<Error>
     /** True when the chain's active network has no inbox backend: this can never succeed here. */
     isUnavailableOnNetwork: boolean
+    refresh: () => void
 }
 
 export const useAssetInboxSendSummaryQuery = (
     scope: ChainScope,
+    sender: string,
     receiver: string,
     assetId: string,
+    amount?: bigint,
 ): UseAssetInboxSendSummaryQueryResult => {
     const isUnavailableOnNetwork = !useChainCapability(
         scope.chainId,
         'assetInbox',
     )
 
+    const enabled =
+        !!sender &&
+        !!receiver &&
+        !!assetId &&
+        amount !== undefined &&
+        !isUnavailableOnNetwork
     const query = useQuery({
-        queryKey: getAssetInboxSendSummaryQueryKey(receiver, assetId, scope),
-        queryFn: (): Promise<AssetInboxSendSummary> =>
-            sendFlowFeatureFor(scope, 'assetInbox').fetchSendSummary({
+        queryKey: getAssetInboxSendSummaryQueryKey(
+            sender,
+            receiver,
+            assetId,
+            scope,
+            amount,
+        ),
+        queryFn: (): Promise<AssetInboxSendSummary> => {
+            if (amount === undefined) throw new InvalidSendParamsError()
+            return sendFlowFeatureFor(scope, 'assetInbox').fetchSendSummary({
                 scope,
+                sender,
                 receiver,
                 assetId,
-            }),
-        enabled: !!receiver && !!assetId && !isUnavailableOnNetwork,
+                amount,
+            })
+        },
+        enabled,
     })
+    const { refetch } = query
+    const refresh = useCallback(() => {
+        if (enabled) void refetch()
+    }, [enabled, refetch])
 
     return {
         data: query.data,
@@ -56,5 +81,6 @@ export const useAssetInboxSendSummaryQuery = (
         isError: query.isError,
         error: query.error,
         isUnavailableOnNetwork,
+        refresh,
     }
 }

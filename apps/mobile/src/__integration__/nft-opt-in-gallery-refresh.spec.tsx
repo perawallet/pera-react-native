@@ -108,7 +108,7 @@ const GalleryOptInHost = ({
     const { request } = useBottomSheet()
 
     useEffect(() => {
-        void request<'confirm'>({
+        void request<bigint>({
             contents: (
                 <OptInConfirmationContent
                     assetId={assetId}
@@ -117,11 +117,12 @@ const GalleryOptInHost = ({
                 />
             ),
             options: { size: 'auto', enablePanDownToClose: true },
-        }).then(result => {
-            if (result !== 'confirm') return
+        }).then(maxFee => {
+            if (maxFee === undefined) return
             optIn({
                 sender: addressOf(sender),
                 assetId: BigInt(assetId),
+                maxFee,
             }).catch(() => {})
         })
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -237,7 +238,7 @@ describe('Flow: NFT gallery reflects a fresh opt-in across sort modes', () => {
                     assets: [],
                 },
             }),
-            mockAlgodTransactionParams({ response: { fee: 1000 } }),
+            mockAlgodTransactionParams({ response: { fee: 0 } }),
             mockAlgodStatus({ response: { 'last-round': 100 } }),
             mockAlgodSendRawTransaction(),
             // The mutation re-fetches the opted-in asset's metadata from the

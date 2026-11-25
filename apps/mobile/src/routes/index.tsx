@@ -327,15 +327,11 @@ export const MainRoutes = () => {
                             name='BannersCarouselModal'
                             component={BannersCarouselModalScreen}
                             options={{
-                                // Full-screen on both platforms. `modal` is an
-                                // iOS-only presentation — Android has no
-                                // page-sheet equivalent and renders it
-                                // full-screen anyway — so the same banner
-                                // looked like a sheet on one platform and a
-                                // takeover on the other, and different again
-                                // from the auto-open prompt, which is a
-                                // full-bleed overlay.
-                                presentation: 'fullScreenModal',
+                                // A full-screen card sliding up, not a native
+                                // modal: iOS presents a modal as its own view
+                                // controller above the AutoLockGuard's PIN
+                                // overlay, so it stayed tappable while locked.
+                                animation: 'slide_from_bottom',
                                 headerShown: false,
                             }}
                         />

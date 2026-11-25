@@ -168,6 +168,8 @@ window.addEventListener(CHANNEL_HANDSHAKE_EVENT, (e: Event) => {
 // Answers and notifications from the wallet. Only the service worker (an
 // extension-id sender with no tab) may speak on this scope, and only for this
 // document's origin — a stale tab id must never surface another site's traffic.
+// `window.origin` is the document's real origin: a `sandbox` CSP makes it
+// 'null' while `location.origin` still names the host the SW authorizes.
 chrome.runtime.onMessage.addListener(
     (
         message: unknown,
@@ -177,7 +179,11 @@ chrome.runtime.onMessage.addListener(
         if (!isDappPageResponseMessage(message)) return false
         if (sender.id !== chrome.runtime.id || sender.tab !== undefined)
             return false
-        if (message.origin !== window.location.origin) return false
+        if (
+            message.origin !== window.location.origin ||
+            message.origin !== window.origin
+        )
+            return false
         if (!responseEventName) return false
         const { payload, provider } = message
         const detail:

@@ -20,13 +20,14 @@ import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { useFeeDelegation } from '../fee-delegation'
 import { isAlgorandNativeAssetId } from '../descriptor'
 import { toUnsignedAlgorandTransactions } from '../signing/unsignedTransaction'
+import { resolveAlgorandSenderFee } from '../transactions/transfer-fees'
 
 export type EnsureAssetOptInParams = Parameters<EnsureSwapReceivable>[0] & {
     /** Asked once an opt-in is needed; declining leaves the account as it was. */
     confirm?: (details: {
         assetId: string
         isSponsored: boolean
-    }) => Promise<boolean>
+    }) => Promise<boolean | bigint>
     sourceMetadata?: { name: string; description: string }
 }
 
@@ -70,12 +71,21 @@ export const useEnsureAssetOptIn = (): ((
                 BigInt(suggestedParams.minFee)
             const isSponsored = accountInfo.amount < balanceNeeded
 
-            if (confirm && !(await confirm({ assetId, isSponsored }))) {
-                return false
-            }
+            const approval = await confirm?.({ assetId, isSponsored })
+            if (approval === false) return false
 
             if (!isSponsored) {
-                await optIn({ sender: address, assetId: asa })
+                await optIn({
+                    sender: address,
+                    assetId: asa,
+                    maxFee:
+                        typeof approval === 'bigint'
+                            ? approval
+                            : resolveAlgorandSenderFee(
+                                  address,
+                                  BigInt(suggestedParams.minFee),
+                              ),
+                })
                 return true
             }
 

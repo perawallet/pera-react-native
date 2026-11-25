@@ -12,16 +12,22 @@
 
 import { create } from 'zustand'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import {
+    hasDraftSignRequest,
+    isDraftSignRequestId,
+} from '@perawallet/wallet-core-multisig'
 import { registerStore, type Nullable } from '@perawallet/wallet-core-shared'
 
 type State = {
     signRequestId: Nullable<string>
     /** Null when the opener can't tell, as with a sign-request deeplink. */
     chainId: Nullable<ChainId>
+    queued: { signRequestId: string; chainId: Nullable<ChainId> }[]
 }
 
 type Actions = {
     openSheet: (signRequestId: string, chainId?: ChainId) => void
+    enqueueSheet: (signRequestId: string, chainId?: ChainId) => void
     closeSheet: () => void
     resetState: () => void
 }
@@ -31,13 +37,47 @@ type Store = State & Actions
 const initialState: State = {
     signRequestId: null,
     chainId: null,
+    queued: [],
 }
 
 export const usePendingSignaturesSheetStore = create<Store>(set => ({
     ...initialState,
     openSheet: (signRequestId, chainId) =>
-        set({ signRequestId, chainId: chainId ?? null }),
-    closeSheet: () => set({ signRequestId: null, chainId: null }),
+        set(state => ({
+            signRequestId,
+            chainId: chainId ?? null,
+            queued: state.queued.filter(
+                request => request.signRequestId !== signRequestId,
+            ),
+        })),
+    enqueueSheet: (signRequestId, chainId) =>
+        set(state => {
+            if (
+                state.signRequestId === signRequestId ||
+                state.queued.some(
+                    request => request.signRequestId === signRequestId,
+                )
+            ) {
+                return state
+            }
+            const next = { signRequestId, chainId: chainId ?? null }
+            if (!state.signRequestId) return next
+            return { queued: [...state.queued, next] }
+        }),
+    closeSheet: () =>
+        set(state => {
+            // A queued draft that was proposed or discarded meanwhile has nothing left to show.
+            const [next, ...queued] = state.queued.filter(
+                ({ signRequestId }) =>
+                    !isDraftSignRequestId(signRequestId) ||
+                    hasDraftSignRequest(signRequestId),
+            )
+            return {
+                signRequestId: next?.signRequestId ?? null,
+                chainId: next?.chainId ?? null,
+                queued,
+            }
+        }),
     resetState: () => set(initialState),
 }))
 

@@ -105,9 +105,10 @@ const isWithinTxnBounds = (txns: unknown): boolean =>
 export const algorandDappRequestAdapter: DappRequestChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
     accountTypeOf: bridgeAccountTypeOf,
-    // ARC-0001 requires a message that only echoes the dApp's own request. Other
-    // signing errors wrap third-party text or interpolate held addresses.
-    relayableErrorNames: ['Arc0001Error'],
+    // ARC-0001 requires a message that only echoes the dApp's own request, and
+    // the stale-group decline is fixed copy written for the dApp. Other signing
+    // errors wrap third-party text or interpolate held addresses.
+    relayableErrorNames: ['Arc0001Error', 'StaleSignRequestError'],
 
     // Webview-compatible param shapes: `{ txns, opts?, metadata? }` for
     // ARC-0001; an ARC-60 wire object or `{ data: [...] }` for data. Only the

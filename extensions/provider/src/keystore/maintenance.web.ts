@@ -71,4 +71,7 @@ export const writePasskeyCredential = async (
     )
 }
 
+/** keystore-web's IndexedDB is reachable only through its engine. */
+export const clearKeystoreStorage = (): boolean => false
+
 export const wipeKeystoreStorage = async (): Promise<void> => {}

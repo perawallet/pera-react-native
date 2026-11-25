@@ -292,6 +292,10 @@ export type MinFeeForSenderResult = {
     /** Native base units; undefined while fee parameters load or when there is no sender. */
     minFee: Optional<bigint>
     isPending: boolean
+    /** Why the fee parameters failed to load; `minFee` stays undefined meanwhile. */
+    error: Nullable<Error>
+    isRetrying: boolean
+    refresh: () => void
 }
 
 export type AssignFeeToGroup = (

@@ -25,7 +25,12 @@ const mocks = vi.hoisted(() => ({
     showError: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-security', () => ({
+vi.mock('@perawallet/wallet-core-security', async importOriginal => ({
+    PinMatchesDuressPinError: (
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-security')
+        >()
+    ).PinMatchesDuressPinError,
     usePinCode: () => ({
         savePin: mocks.savePin,
         verifyPin: mocks.verifyPin,
@@ -219,6 +224,32 @@ describe('usePinEditView onPinConfirmed', () => {
 
         expect(onPinConfirmed).toHaveBeenCalledWith('123456')
         expect(mocks.savePin).not.toHaveBeenCalled()
+    })
+})
+
+describe('usePinEditView change to the duress PIN', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        mocks.isLockedOut = false
+    })
+
+    it('stays in the flow and shows the error when the new PIN matches the duress PIN', async () => {
+        const { PinMatchesDuressPinError } =
+            await import('@perawallet/wallet-core-security')
+        const error = new PinMatchesDuressPinError()
+        mocks.savePin.mockRejectedValue(error)
+        const onSuccess = vi.fn()
+        const { result } = renderHook(() =>
+            usePinEditView({ mode: 'setup', onSuccess }),
+        )
+
+        act(() => result.current.handlePinComplete('111111'))
+        await act(() => result.current.handlePinComplete('111111'))
+
+        expect(onSuccess).not.toHaveBeenCalled()
+        expect(mocks.showError).toHaveBeenCalledWith(error)
+        expect(result.current.hasError).toBe(true)
+        expect(result.current.title).toBe('security.pin.setup_title')
     })
 })
 

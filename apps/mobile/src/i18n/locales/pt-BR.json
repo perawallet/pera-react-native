@@ -269,7 +269,10 @@
         "empty_title": "Nenhuma aprovação em aberto",
         "empty_body": "Nenhuma aprovação aberta de token ou de coleção foi encontrada para esta conta.",
         "error_title": "Não foi possível carregar as aprovações",
-        "error_body": "Verifique sua conexão e tente novamente.",
+        "error_body": "Algo deu errado ao carregá-las. Tente novamente em instantes.",
+        "offline_body": "Verifique sua conexão e tente novamente.",
+        "unavailable_title": "As aprovações ainda não estão disponíveis nesta rede",
+        "unavailable_body": "A Pera ainda não consegue consultar as aprovações de tokens desta conta nesta rede.",
         "revoke_error_title": "Revogação não confirmada",
         "revoke_error_body": "Confira na lista o status da aprovação antes de tentar novamente."
     },
@@ -1538,6 +1541,10 @@
             "asset_frozen": {
                 "title": "Ativo congelado",
                 "body": "O ativo {{assetId}} está congelado, então esta transferência não pode ser concluída. O gestor de congelamento do ativo precisa descongelá-lo primeiro."
+            },
+            "fee_above_shown": {
+                "title": "Taxa de rede alterada",
+                "body": "A rede agora pede uma taxa maior do que a exibida, então nada foi assinado. Tente novamente para ver a taxa atual."
             }
         },
         "kms": {
@@ -2423,6 +2430,8 @@
             "load_error": "Não foi possível carregar esta transação. Ela pode ter expirado ou sido removida.",
             "cosign_rejected_title": "Não é possível assinar esta transação",
             "cosign_rejected_body": "Esta solicitação inclui uma transação que a conta compartilhada não autoriza. Se o remetente for uma conta com rekey feito para a conta compartilhada, adicione-a à sua wallet e tente novamente.",
+            "request_open_title": "Feche a solicitação aberta primeiro",
+            "request_open_body": "Conclua ou feche a solicitação de assinatura e abra o link novamente.",
             "retry": "Tentar novamente",
             "canceled": "Transação cancelada.",
             "declined": "Transação recusada.",
@@ -2823,6 +2832,14 @@
                 "fetch_failed_title": "Não foi possível carregar o backup",
                 "decrypt_failed_title": "Não foi possível desbloquear o backup"
             },
+            "review": {
+                "title": "Revise as contas",
+                "body_one": "Este código importa {{count}} conta. Confira se ela é sua antes de importar.",
+                "body_other": "Este código importa {{count}} contas. Confira se elas são suas antes de importar.",
+                "body": "Este código importa {{count}} contas. Confira se elas são suas antes de importar.",
+                "confirm": "Importar contas",
+                "interrupted": "A importação foi interrompida. Escaneie o código QR novamente para continuar."
+            },
             "result": {
                 "success_title": "Contas importadas",
                 "success_body_zero": "{{count}} contas foram adicionadas à sua wallet.",
@@ -3206,6 +3223,7 @@
             "verify_title": "Digite seu código PIN",
             "unlock_title": "Digite seu código PIN",
             "change_old_title": "Digite seu antigo\ncódigo PIN de 6 dígitos",
+            "matches_duress_pin": "Seu novo PIN precisa ser diferente do seu PIN de emergência.",
             "logging_in": "Entrando"
         },
         "lockout": {
@@ -4185,12 +4203,14 @@
         "suspected_poisoning": {
             "marker": "Suspeita de envenenamento de endereço",
             "title": "Suspeita de envenenamento de endereço",
-            "body": "Esta transferência não movimentou nada de valor e vem de um endereço criado para parecer com um que você conhece. Golpistas enviam isso para que o endereço deles apareça no seu histórico e seja copiado depois. Não copie esse endereço nem envie nada para ele.",
+            "body": "Esta transferência não movimentou nada de valor e vem de um endereço criado para parecer com um que você conhece. Golpistas enviam isso para que o endereço deles apareça no seu histórico e seja copiado depois.",
+            "do_not_reuse": "Não copie esse endereço nem envie nada para ele.",
             "sender_label": "Este endereço",
             "reuse_title": "Este endereço imita um que você conhece",
             "reuse_body": "Ele começa e termina como um endereço que você conhece, mas não é o mesmo. Compare os endereços completos antes de usá-lo.",
             "reuse_confirm": "Continuar mesmo assim",
-            "reuse_cancel": "Cancelar"
+            "reuse_cancel": "Cancelar",
+            "dismiss": "Entendi"
         },
         "suspicious_token": {
             "marker": "Token suspeito"

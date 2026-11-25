@@ -17,6 +17,7 @@ import { AssetAmount } from '@components/AssetAmount'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useNativeAsset, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { displayUnitsToBaseUnitsBigInt } from '@perawallet/wallet-core-shared'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { AssetNameBadge } from '@modules/assets/components/AssetNameBadge'
 import { useLanguage } from '@hooks/useLanguage'
@@ -45,7 +46,7 @@ export const OptInConfirmationContent = ({
     const styles = useStyles()
     const { t } = useLanguage()
     const { copyToClipboard } = useClipboard()
-    const { resolve } = useBottomSheetResult<'confirm'>()
+    const { resolve } = useBottomSheetResult<bigint>()
     const { resolvedFee } = useOptInConfirmationContent(
         accountAddress,
         scope,
@@ -64,7 +65,10 @@ export const OptInConfirmationContent = ({
         void copyToClipboard(assetId)
     }
 
-    const handleConfirm = () => resolve('confirm')
+    const handleConfirm = () =>
+        resolve(
+            displayUnitsToBaseUnitsBigInt(resolvedFee, nativeAsset.decimals),
+        )
 
     return (
         <PWSheetLayout

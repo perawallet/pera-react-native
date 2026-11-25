@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useMemo } from 'react'
+import { hasPeraService } from '@perawallet/wallet-core-config'
 import type { SheetOption } from '@components/SheetOptionRow'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCapability } from '@hooks/useCapability'
@@ -22,12 +23,15 @@ export type UseEthereumAccountSectionResult = {
 }
 
 // The list needs no signer: a watch account can see its approvals, just not revoke them.
+// Hidden where the backend doesn't serve approvals, since the list can't load there.
 export const useHasEthereumAccountSection = ({
     scope,
-}: AccountChainSectionProps): boolean =>
-    useCapability({
+}: AccountChainSectionProps): boolean => {
+    const hasCapability = useCapability({
         chain: { chainId: scope.chainId, capability: 'tokenApprovals' },
     })
+    return hasCapability && hasPeraService(scope, 'approvals')
+}
 
 export const useEthereumAccountSection = ({
     account,

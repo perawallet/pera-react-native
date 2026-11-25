@@ -59,6 +59,11 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
         bottom: 0,
         zIndex: theme.zIndex.max,
     },
+    recoveryContent: {
+        justifyContent: 'center',
+        gap: theme.spacing.lg,
+        paddingHorizontal: theme.spacing.xl,
+    },
 }))
 
 // lanekeep-ignore-next-line pera/no-numeric-sizes reason: lockout icon size

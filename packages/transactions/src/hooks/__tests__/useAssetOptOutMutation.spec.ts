@@ -78,7 +78,10 @@ describe('useAssetOptOutMutation', () => {
         sendFlowChainAdapters.register({
             chainId: 'algorand',
             buildTransferTxs: vi.fn(),
-            transactionFee: vi.fn(),
+            transactionFee: tx =>
+                new Decimal(
+                    String((tx as unknown as { fee?: bigint }).fee ?? 0n),
+                ),
             assetHolding: {
                 buildOptInTxs: vi.fn(),
                 buildOptOutTxs: mockBuild,
@@ -137,6 +140,28 @@ describe('useAssetOptOutMutation', () => {
         expect(mockInvalidate).toHaveBeenCalledWith(expect.anything(), [
             'SENDER',
         ])
+    })
+
+    it('asks for review of the built opt-out when it exceeds the approved fee', async () => {
+        const repriced = { sender: 'SENDER', fee: 1500n }
+        mockBuild.mockResolvedValueOnce([repriced])
+        const { result } = renderHook(() => useAssetOptOutMutation(SCOPE), {
+            wrapper,
+        })
+        await act(async () => {
+            await result.current.optOut({
+                sender: 'SENDER',
+                assetId: 12345n,
+                creator: 'CREATOR',
+                maxFee: 1000n,
+            })
+        })
+        expect(mockSubmit).toHaveBeenCalledWith(
+            expect.objectContaining({
+                unsignedTxs: [repriced],
+                reviewFee: true,
+            }),
+        )
     })
 
     it('looks the creator up on chain when the caller does not pass one', async () => {

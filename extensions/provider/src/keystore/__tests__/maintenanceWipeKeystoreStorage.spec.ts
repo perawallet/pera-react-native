@@ -60,7 +60,7 @@ describe('wipeKeystoreStorage', () => {
         await wipeKeystoreStorage()
 
         expect(mocks.storage.getAllKeys()).toEqual([])
-        expect(mocks.calls).toEqual(['clearAll', 'destroyMasterKey', 'trim'])
+        expect(mocks.calls).toEqual(['clearAll', 'trim', 'destroyMasterKey'])
     })
 
     it('keeps the master key when the records could not be removed', async () => {
@@ -95,17 +95,20 @@ describe('wipeKeystoreStorage', () => {
         expect(mocks.storage.getAllKeys()).toEqual([])
         expect(mocks.calls).toEqual([
             'clearAll',
+            'trim',
             'destroyMasterKey',
             'clearAll',
             'trim',
         ])
     })
 
-    it('compacts removed records even if a master-key copy was not deleted', async () => {
+    it('counts the wipe done when a master-key copy outlives its cleared records', async () => {
+        mocks.records.set('m/seed-1', 'sealed')
         mocks.destroyMasterKey.mockRejectedValueOnce(new Error('keychain busy'))
 
-        await expect(wipeKeystoreStorage()).rejects.toThrow('keychain busy')
+        await expect(wipeKeystoreStorage()).resolves.toBeUndefined()
 
+        expect(mocks.storage.getAllKeys()).toEqual([])
         expect(mocks.storage.trim).toHaveBeenCalledOnce()
     })
 })

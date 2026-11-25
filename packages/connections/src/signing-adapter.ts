@@ -487,6 +487,20 @@ const enqueueArc60Request = (
         return
     }
 
+    // The sign-in names its own subject, which the grant must cover: the
+    // signer check alone admits any account rekeyed to a granted key. A body
+    // that doesn't parse is left to the pipeline, which refuses it.
+    const parsed = messageSignerChainAdapters
+        .get(message.chainId)
+        .authData?.parseAuthDataForDisplay(authData.data, metadata.encoding)
+    if (
+        parsed?.type === 'siwx' &&
+        !message.authorizedAccounts.includes(parsed.siwx.address)
+    ) {
+        declineRequest(message, new Error('Invalid signer'), onError)
+        return
+    }
+
     const account = findAccountByAddressOn(accounts, message.chainId, signer)
     // Account-local: an ARC-60 signature verifies against the signer's own
     // key, so a keyless rekeyed signer is refused rather than signed for by

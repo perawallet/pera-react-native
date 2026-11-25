@@ -37,6 +37,10 @@ import { useIsDataSigningBlocked } from '@hooks/useIsDataSigningBlocked'
 import { useQuantumDappWarning } from '@hooks/useQuantumDappWarning'
 import { useNodeErrorMessage } from '@hooks/useNodeErrorMessage'
 import { resolveErrorCopy } from '@i18n/resolveErrorCopy'
+import {
+    useReviewScrollHint,
+    type UseReviewScrollHintResult,
+} from '@modules/signing/components/ReviewScrollHint'
 import type { SigningStackParamList } from '@modules/signing/routes'
 
 type NavigationProp = StackNavigationProp<SigningStackParamList, 'Arc60Signing'>
@@ -63,6 +67,9 @@ type UseArc60SigningScreenResult = {
      * notice instead of the confirm control.
      */
     isSigningBlocked: boolean
+    /** Requests taller than the body have not been scrolled to their end yet. */
+    isConfirmBlocked: boolean
+    scrollHint: UseReviewScrollHintResult
     handleApprove: () => void
     handleReject: () => void
     handleDetailsPress: () => void
@@ -84,6 +91,8 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
         scope,
     )
     const isSigningBlocked = useIsDataSigningBlocked(request)
+    const scrollHint = useReviewScrollHint()
+    const isConfirmBlocked = !scrollHint.hasReachedEnd
     const parsed =
         pipeline.resolved?.kind.type === 'auth-data'
             ? pipeline.resolved.kind.parsed
@@ -113,7 +122,7 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
         // Backstop for the blocked terminal states: the confirm control is
         // hidden when quantum-blocked and disabled on an origin mismatch, so
         // this should be unreachable.
-        if (isSigningBlocked || hasOriginMismatch) return
+        if (isSigningBlocked || hasOriginMismatch || isConfirmBlocked) return
 
         if (isCardRequest) trackEvent(CardEvent.CreateArbTxConfirm)
 
@@ -143,6 +152,7 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
         confirmQuantumDappUsage,
         isSigningBlocked,
         hasOriginMismatch,
+        isConfirmBlocked,
         scope.chainId,
     ])
 
@@ -162,7 +172,8 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
         !!account &&
         parsed?.type === 'siwx' &&
         !isSigningBlocked &&
-        !hasOriginMismatch
+        !hasOriginMismatch &&
+        !isConfirmBlocked
 
     const errorMessage = pipeline.error
         ? resolveErrorCopy(pipeline.error, t, undefined, getMessage).body
@@ -177,6 +188,8 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
         errorMessage,
         hasOriginMismatch,
         isSigningBlocked,
+        isConfirmBlocked,
+        scrollHint,
         handleApprove,
         handleReject,
         handleDetailsPress,

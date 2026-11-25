@@ -10,13 +10,14 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     ChainAdapterNotRegisteredError,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { cardAdapterFor, cardChainAdapters } from '../chain-adapter'
+import { CardOwnerMismatchError } from '../api/escrow'
 import {
     buildCardManualDeposit,
     describeCardChainError,
@@ -69,12 +70,14 @@ describe('chain-backed card helpers', () => {
         const adapter = registerFakeCardAdapter({
             describeError: () => 'insufficient-native-balance',
             transactionUrl: () => 'https://explorer/tx/HASH',
+            cardOwnerOf: vi.fn(async () => 'FUNDING'),
         })
 
         expect(getCardSettlementAssetId(SCOPE)).toBe('31566704')
         expect(adapter.settlementAsset).toHaveBeenCalledWith(SCOPE)
         await buildCardManualDeposit(deposit, SCOPE)
         expect(adapter.buildManualDeposit).toHaveBeenCalledWith(deposit, SCOPE)
+        expect(adapter.cardOwnerOf).toHaveBeenCalledWith(SCOPE, 'CARD')
         expect(getCardFundingSourceEligibility(account, SCOPE).canFund).toBe(
             true,
         )
@@ -88,5 +91,23 @@ describe('chain-backed card helpers', () => {
         expect(getCardTransactionUrl('HASH', 'algorand', SCOPE)).toBe(
             'https://explorer/tx/HASH',
         )
+    })
+})
+
+describe('buildCardManualDeposit', () => {
+    const deposit = { sender: 'FUNDING', cardAddress: 'CARD', amount: 5n }
+
+    it.each([
+        ['another account', 'SOMEONE_ELSE'],
+        ['no account, as it is no card', null],
+    ])('refuses a card address owned on chain by %s', async (_case, owner) => {
+        const adapter = registerFakeCardAdapter({
+            cardOwnerOf: async () => owner,
+        })
+
+        await expect(
+            buildCardManualDeposit(deposit, SCOPE),
+        ).rejects.toBeInstanceOf(CardOwnerMismatchError)
+        expect(adapter.buildManualDeposit).not.toHaveBeenCalled()
     })
 })

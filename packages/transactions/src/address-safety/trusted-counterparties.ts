@@ -36,9 +36,10 @@ import { valueTransfers } from './transfer-valuation'
 
 export const MAX_COUNTERPARTY_HISTORY_PAGES = 12
 
-// Paging stops once this many transfers prove trust. Untrusted rows never
-// count, so a poisoner's spam can't push real payees out of the window; only
-// more than MAX_COUNTERPARTY_HISTORY_PAGES pages of it can.
+// Paging stops once the account has signed this many trusted sends. Untrusted
+// and inbound rows never count, since anyone can send them, so a poisoner's
+// transfers can't push real payees out of the window; only more than
+// MAX_COUNTERPARTY_HISTORY_PAGES pages of them can.
 export const MIN_TRUSTED_TRANSFERS = 10
 
 // A poisoner seeds history with zero-value, dust or fake-token transfers; any
@@ -154,6 +155,7 @@ export const fetchTrustedCounterparties = async ({
     accountAddress,
     scope,
     signal,
+    onPage,
 }: FetchTrustedCounterpartiesParams): Promise<TrustedCounterparty[]> => {
     if (!historyChainAdapters.has(scope.chainId)) return []
     const adapter = historyChainAdapters.get(scope.chainId)
@@ -183,8 +185,10 @@ export const fetchTrustedCounterparties = async ({
         )
         const trusted =
             transfers.length > 0 ? await trustedOf(transfers, scope) : []
-        trustedTransfers += trusted.length
+        signal?.throwIfAborted()
+        trustedTransfers += trusted.filter(t => t.hasBeenPaid).length
         mergeInto(known, trusted, codec)
+        onPage?.(known.map(counterparty => ({ ...counterparty })))
         if (!result.next || trustedTransfers >= MIN_TRUSTED_TRANSFERS) break
         page = result.next
     }

@@ -21,7 +21,13 @@ export const useMinFeeForSender = (
     senderAddress: Optional<string>,
 ): MinFeeForSenderResult => {
     const accounts = useAllAccounts()
-    const { data: params, isPending } = useSuggestedParametersQuery()
+    const {
+        data: params,
+        isPending,
+        isFetching,
+        error,
+        refetch,
+    } = useSuggestedParametersQuery()
     const { minTxnFee, pqMultiplier } = useMinimumFeeConfig()
 
     const minFee = useMemo(() => {
@@ -37,5 +43,13 @@ export const useMinFeeForSender = (
         })
     }, [senderAddress, accounts, params, minTxnFee, pqMultiplier])
 
-    return { minFee, isPending }
+    // A failed background refetch keeps the last params, so only a missing fee is an error.
+    const loadError = params === undefined ? error : null
+    return {
+        minFee,
+        isPending,
+        error: loadError,
+        isRetrying: loadError !== null && isFetching,
+        refresh: refetch,
+    }
 }

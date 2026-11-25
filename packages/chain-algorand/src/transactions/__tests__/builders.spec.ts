@@ -39,6 +39,7 @@ vi.mock('../../blockchain', async importOriginal => ({
     createWalletAlgorandClient: mocks.createWalletAlgorandClient,
 }))
 
+import { FeeAboveShownError } from '@perawallet/wallet-core-transactions'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import {
     buildExpressTransferTxs,
@@ -75,6 +76,7 @@ describe('Algorand transaction builders', () => {
         })
         mocks.createWalletAlgorandClient.mockReturnValue({
             newGroup: () => mocks.composer,
+            getSuggestedParams: vi.fn().mockResolvedValue({ minFee: 1000n }),
             createTransaction: {
                 payment: mocks.payment,
                 offlineKeyRegistration: mocks.offlineKeyRegistration,
@@ -87,6 +89,120 @@ describe('Algorand transaction builders', () => {
         await buildOptInTxs({ scope, sender: 'S', assetId: 1n })
 
         expect(mocks.createWalletAlgorandClient).toHaveBeenCalledWith('testnet')
+    })
+
+    describe('the fee the user was shown', () => {
+        const pricedAt = (fee: bigint) =>
+            mocks.composer.build.mockResolvedValue({
+                transactions: [{ txn: { id: 'one', fee } }],
+            })
+
+        it.each([
+            [
+                'send',
+                () =>
+                    buildTransferTxs({
+                        scope,
+                        sender: 'S',
+                        receiver: 'R',
+                        amount: 5n,
+                        assetId: '0',
+                    }),
+            ],
+            [
+                'opt-in',
+                () => buildOptInTxs({ scope, sender: 'S', assetId: 1n }),
+            ],
+            [
+                'opt-out',
+                () =>
+                    buildOptOutTxs({
+                        scope,
+                        optOuts: [{ sender: 'S', assetId: 1n, creator: 'C' }],
+                    }),
+            ],
+        ])(
+            'refuses a %s the node prices above its min fee',
+            async (_kind, build) => {
+                pricedAt(1_000_000n)
+
+                await expect(build()).rejects.toBeInstanceOf(FeeAboveShownError)
+            },
+        )
+
+        it('builds a send priced at the min fee', async () => {
+            pricedAt(1000n)
+
+            await expect(
+                buildTransferTxs({
+                    scope,
+                    sender: 'S',
+                    receiver: 'R',
+                    amount: 5n,
+                    assetId: '0',
+                }),
+            ).resolves.toHaveLength(1)
+        })
+
+        it('leaves an express group above the min fee to its review', async () => {
+            pricedAt(1_000_000n)
+
+            await expect(
+                buildExpressTransferTxs({
+                    scope,
+                    sender: 'S',
+                    receiver: 'R',
+                    assetId: 99n,
+                    amount: 5n,
+                    funding: 0n,
+                }),
+            ).resolves.toHaveLength(1)
+        })
+
+        it('allows up to the explicit fee the caller passed', async () => {
+            pricedAt(3000n)
+
+            await expect(
+                buildTransferTxs({
+                    scope,
+                    sender: 'S',
+                    receiver: 'R',
+                    amount: 5n,
+                    assetId: '0',
+                    fee: 3000n,
+                }),
+            ).resolves.toHaveLength(1)
+        })
+
+        describe('with fee review', () => {
+            const send = () =>
+                buildTransferTxs({
+                    scope,
+                    sender: 'S',
+                    receiver: 'R',
+                    amount: 5n,
+                    assetId: '0',
+                    fee: 3000n,
+                    allowFeeReview: true,
+                })
+
+            it('lets the node size the fee and raises it to the explicit fee', async () => {
+                pricedAt(1000n)
+
+                const [txn] = await send()
+
+                expect(txn.fee).toBe(3000n)
+                expect(mocks.calls[0][1]).not.toHaveProperty('staticFee')
+            })
+
+            it('keeps a node fee above the explicit fee for review', async () => {
+                pricedAt(1_000_000n)
+
+                const [txn] = await send()
+
+                expect(txn.fee).toBe(1_000_000n)
+            })
+        })
     })
 
     describe('buildTransferTxs', () => {

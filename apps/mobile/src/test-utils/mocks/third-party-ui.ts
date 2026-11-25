@@ -318,7 +318,21 @@ vi.mock('@gorhom/bottom-sheet', async () => {
                     scrollTo: vi.fn(),
                     scrollToEnd: vi.fn(),
                 }))
-                return React.createElement('div', { ...props }, children)
+                // jsdom lays nothing out; report a body whose content fits, as
+                // a short review would on device. Tests needing overflow re-measure.
+                React.useLayoutEffect(() => {
+                    props.onLayout?.({
+                        nativeEvent: {
+                            layout: { x: 0, y: 0, width: 0, height: 400 },
+                        },
+                    })
+                    props.onContentSizeChange?.(0, 200)
+                }, [])
+                return React.createElement(
+                    'div',
+                    { ...props, 'data-scroll-body': props.testID },
+                    children,
+                )
             },
         ),
         BottomSheetView: ({ children, ...props }: any) =>

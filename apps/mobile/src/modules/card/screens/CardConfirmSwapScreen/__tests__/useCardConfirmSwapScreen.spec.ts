@@ -241,15 +241,19 @@ describe('useCardConfirmSwapScreen', () => {
         expect(result.current.step).toBe('idle')
     })
 
-    it('keeps the screen with a retry when the deposit fails after a good swap', async () => {
+    it('offers a deposit retry without discarding the completed swap when the card owner check fails', async () => {
         mockSwap.quote = QUOTE
-        mockDeposit.mockRejectedValueOnce(new Error('escrow rejected'))
+        const { CardOwnerMismatchError } = await vi.importActual<
+            typeof import('@perawallet/wallet-core-card')
+        >('@perawallet/wallet-core-card')
+        const mismatch = new CardOwnerMismatchError()
+        mockDeposit.mockRejectedValueOnce(mismatch)
         const { result } = renderHook(() => useCardConfirmSwapScreen())
 
         act(() => result.current.handleConfirm())
 
         await waitFor(() => expect(result.current.step).toBe('deposit-failed'))
-        expect(mockDepositError).toHaveBeenCalledTimes(1)
+        expect(mockDepositError).toHaveBeenCalledExactlyOnceWith(mismatch)
         expect(mockPop).not.toHaveBeenCalled()
         expect(mockPlaySuccess).not.toHaveBeenCalled()
         // The swap is kept as done so only the deposit reads as the problem.

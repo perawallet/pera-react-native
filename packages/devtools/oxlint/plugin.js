@@ -41,6 +41,7 @@ import { webviewInjectionSerializer } from './rules/webview-injection-serializer
 import { typedDomainErrors } from './rules/typed-domain-errors.js'
 import { queryPendingGated } from './rules/query-pending-gated.js'
 import { componentLogicInHook } from './rules/component-logic-in-hook.js'
+import { noNativeModalPresentation } from './rules/no-native-modal-presentation.js'
 
 // A mobile-source rule needs its own override in apps/mobile/.oxlintrc.json:
 // oxlint resolves an inherited override's globs from the extending config's
@@ -79,5 +80,6 @@ export default {
         'typed-domain-errors': typedDomainErrors,
         'query-pending-gated': queryPendingGated,
         'component-logic-in-hook': componentLogicInHook,
+        'no-native-modal-presentation': noNativeModalPresentation,
     },
 }

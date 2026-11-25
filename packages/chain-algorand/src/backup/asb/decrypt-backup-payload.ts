@@ -15,7 +15,7 @@ import {
     decodeBoundedBase64,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { decodePrivateKeyBytes } from '../decode-key-bytes'
+import { algo25AddressOfKey, decodePrivateKeyBytes } from '../decode-key-bytes'
 import { backupIndicesToKey, generateBackupCipherKey } from './asb-crypto'
 import {
     SecureBackupAccountKind,
@@ -50,7 +50,13 @@ const isSecureBackupAccountKind = (
 ): value is SecureBackupAccountKind =>
     ACCOUNT_KIND_VALUES.includes(value as SecureBackupAccountKind)
 
-const parseAccount = (raw: unknown): Nullable<SecureBackupAccount> => {
+type ParsedAccount = {
+    account: SecureBackupAccount
+    /** The row's key derives another address than the one it declares. */
+    isRebound: boolean
+}
+
+const parseAccount = (raw: unknown): Nullable<ParsedAccount> => {
     if (!isPlainObject(raw)) return null
 
     const { address, account_type, name, private_key } = raw
@@ -62,21 +68,53 @@ const parseAccount = (raw: unknown): Nullable<SecureBackupAccount> => {
     }
 
     let privateKey: Nullable<Uint8Array> = null
+    let keyAddress = address
     if (account_type === SecureBackupAccountKind.Single) {
         if (!isNonEmptyString(private_key)) return null
         // ARC-35 always emits base64; we don't pass
         // `allowCommaSeparated: true` since that legacy format was
         // Pera-Web-specific.
-        privateKey = decodePrivateKeyBytes(private_key)
-        if (!privateKey) return null
+        const decoded = decodePrivateKeyBytes(private_key)
+        if (!decoded) return null
+        try {
+            keyAddress = algo25AddressOfKey(decoded)
+            privateKey = decoded.slice()
+        } finally {
+            zeroBytes(decoded)
+        }
     }
 
+    // A legacy Android rekeyed account kept its auth key under the rekeyed
+    // address. The selection screen shows `address`, so such a row is listed
+    // as the account its key imports, without the name it declared.
+    const isRebound = keyAddress !== address
     return {
-        address,
-        name: isNonEmptyString(name) ? name : null,
-        kind: account_type,
-        privateKey,
+        account: {
+            address: keyAddress,
+            name: !isRebound && isNonEmptyString(name) ? name : null,
+            kind: account_type,
+            privateKey,
+        },
+        isRebound,
     }
+}
+
+/** A rebound row whose key another row already lists is dropped. */
+const withoutDuplicateRebounds = (
+    parsed: readonly ParsedAccount[],
+): SecureBackupAccount[] => {
+    const listed = new Set(
+        parsed.filter(p => !p.isRebound).map(p => p.account.address),
+    )
+    return parsed.flatMap(({ account, isRebound }) => {
+        if (!isRebound) return [account]
+        if (listed.has(account.address)) {
+            zeroBytes(account.privateKey)
+            return []
+        }
+        listed.add(account.address)
+        return [account]
+    })
 }
 
 /**
@@ -154,11 +192,9 @@ export const decryptBackupPayload = (
             )
         }
 
-        const accounts: SecureBackupAccount[] = []
-        for (const row of parsed.accounts) {
-            const account = parseAccount(row)
-            if (account) accounts.push(account)
-        }
+        const accounts = withoutDuplicateRebounds(
+            parsed.accounts.flatMap(row => parseAccount(row) ?? []),
+        )
 
         if (accounts.length === 0) {
             throw new SecureBackupImportError(

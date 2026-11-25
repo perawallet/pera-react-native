@@ -22,7 +22,7 @@ import {
     normalizeEvmAddress,
 } from '../accounts/address-codec'
 import { isRecord } from '../signing/adapter'
-import { isPermitTypedData } from '../signing/permits'
+import { isPermitTypedData, isUnboundPermitTypedData } from '../signing/permits'
 import { hasUnreadableTypedDataValue } from '../signing/typedDataValues'
 import {
     domainChainBindingOf,
@@ -200,6 +200,11 @@ const validateSignTypedData = (
     }
     const refusal = domainChainRefusal(typedData, session)
     if (refusal) return refusal
+    if (isUnboundPermitTypedData(typedData)) {
+        return invalid(
+            'eth_signTypedData_v4 permit domain binds no verifyingContract, so it names no token',
+        )
+    }
     return {
         ok: true,
         request: {
