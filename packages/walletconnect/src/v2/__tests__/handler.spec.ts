@@ -986,12 +986,19 @@ const makeDivergentSession = (): WalletKitSession =>
  * these assertions have to see it before validation.
  */
 const openSession = async (
-    options: { walletKit?: FakeWalletKit; seed?: Connection[] } = {},
+    options: {
+        walletKit?: FakeWalletKit
+        seed?: Connection[]
+        shouldRevokeForAccountRemoval?: (connection: Connection) => boolean
+    } = {},
 ) => {
     const walletKit =
         options.walletKit ??
         createFakeWalletKit({ [TOPIC]: makeDivergentSession() })
-    const { handler } = makeHandler({ walletKit })
+    const { handler } = makeHandler({
+        walletKit,
+        shouldRevokeForAccountRemoval: options.shouldRevokeForAccountRemoval,
+    })
     const store = memoryStore(options.seed ?? [storedV2Record()])
     const context = makeContext(store)
     await handler.initialize(context)
@@ -1089,6 +1096,25 @@ describe('session requests', () => {
             expect.any(Error),
             expect.objectContaining({ connectionId: TOPIC }),
         )
+    })
+
+    it('refuses a request on a live session holding a removed account as disconnected', async () => {
+        const { request, walletKit, context } = await openSession({
+            shouldRevokeForAccountRemoval: ({ accounts }) =>
+                accounts.includes(ADDRESS),
+        })
+
+        await request()
+
+        expect(context.onMessage).not.toHaveBeenCalled()
+        expect(walletKit.respondSessionRequest).toHaveBeenCalledWith({
+            topic: TOPIC,
+            response: {
+                id: REQUEST_ID,
+                jsonrpc: '2.0',
+                error: expect.objectContaining({ code: 6000 }),
+            },
+        })
     })
 
     it('refuses a request on a chain that is not the active network', async () => {

@@ -46,6 +46,7 @@ import {
     IDLE_END_TIMEOUT_MS,
     IDLE_SESSION_TIMEOUT_MS,
 } from '../../shared/idleSession'
+import { WalletConnectInvalidSessionError } from '../../shared/errors'
 import { toPeer } from '../../shared/peer'
 
 // Spied, not replaced: the point is proving the handler reaches the one
@@ -1177,6 +1178,32 @@ describe('walletconnect v1 handler behaviour', () => {
         expect(getConnector('c1')).toBeUndefined()
         expect(keys.has('c1')).toBe(false)
         expect(getConnector('c2')).toBeDefined()
+    })
+
+    it('refuses a request on a live session that came to hold a removed account', async () => {
+        keys.set('c1', 'restored-key')
+        let isRevoked = false
+        const { handler, onMessage, onError } = await setup([SEEDED], {
+            shouldRevokeForAccountRemoval: () => isRevoked,
+        })
+        await handler.restore()
+        const connector = lastConnector()
+        isRevoked = true
+
+        connector.emit('algo_signTxn', null, {
+            id: 9,
+            params: [[{ txn: 'dHhu' }]],
+        })
+        await flush()
+
+        expect(onMessage).not.toHaveBeenCalled()
+        expect(connector.rejectRequest).toHaveBeenCalledWith(
+            expect.objectContaining({ id: 9 }),
+        )
+        expect(onError).toHaveBeenCalledWith(
+            expect.any(WalletConnectInvalidSessionError),
+            expect.objectContaining({ connectionId: 'c1' }),
+        )
     })
 
     it('rebinds a surviving connector when the handler is re-initialised', async () => {
