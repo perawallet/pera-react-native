@@ -1276,6 +1276,58 @@ describe('walletconnect v1 handler behaviour', () => {
         ])
     })
 
+    it('relays an ARC-0001 rejection with its data, and drops data from any other error', async () => {
+        keys.set('c1', 'restored-key')
+        const { onMessage } = await setupRestored([SEEDED])
+        const connector = lastConnector()
+        const withData = (name: string, message: string) =>
+            Object.assign(new Error(message), {
+                name,
+                code: 4300,
+                data: { index: 1, field: 'fee' },
+            })
+
+        connector.emit('algo_signTxn', null, {
+            id: 11,
+            params: [[{ txn: 'dHhu' }]],
+        })
+        await flush()
+        await asRequest(onMessage.mock.calls[0][0]).reject(
+            withData('Arc0001Error', 'Invalid fee'),
+        )
+
+        connector.emit('algo_signTxn', null, {
+            id: 12,
+            params: [[{ txn: 'dHhu' }]],
+        })
+        await flush()
+        await asRequest(onMessage.mock.calls[1][0]).reject(
+            withData('Error', 'node at https://private.example failed'),
+        )
+
+        expect(connector.rejectRequest.mock.calls).toEqual([
+            [
+                {
+                    id: 11,
+                    error: {
+                        message: 'Invalid fee',
+                        code: 4300,
+                        data: { index: 1, field: 'fee' },
+                    },
+                },
+            ],
+            [
+                {
+                    id: 12,
+                    error: {
+                        message: 'An error occurred during signing',
+                        code: 4300,
+                    },
+                },
+            ],
+        ])
+    })
+
     it('answers algo_getEmptySignatures for the session accounts without prompting', async () => {
         keys.set('c1', 'restored-key')
         const adapter = dappRequestAdapterFor({

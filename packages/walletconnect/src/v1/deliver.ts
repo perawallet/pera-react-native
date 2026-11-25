@@ -37,13 +37,15 @@ export const v1PeerError = (
     error: Error,
     chainId: ChainId,
 ): IJsonRpcErrorMessage => {
-    const { code } = error as Error & { code?: unknown }
+    const { code, data } = error as Error & { code?: unknown; data?: unknown }
+    const relayableNames = dappRelayableErrorNames(chainId)
     return {
-        message: sanitizeErrorForWebview(
-            error,
-            dappRelayableErrorNames(chainId),
-        ),
+        message: sanitizeErrorForWebview(error, relayableNames),
         ...(typeof code === 'number' ? { code } : {}),
+        // ARC-0001's `{ index, field }`; the bridge forwards any `data` despite its string type.
+        ...(data !== undefined && relayableNames.includes(error.name)
+            ? { data: data as string }
+            : {}),
     }
 }
 
