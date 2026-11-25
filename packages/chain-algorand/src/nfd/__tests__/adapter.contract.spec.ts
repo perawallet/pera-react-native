@@ -22,8 +22,10 @@ const VALID = 'A4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DVZ36IB4'
 const abortError = (): Error =>
     Object.assign(new Error('Aborted'), { name: 'AbortError' })
 
-const fetchMock = vi.fn()
-vi.stubGlobal('fetch', fetchMock)
+const fetchNodeJsonMock = vi.hoisted(() => vi.fn())
+vi.mock('../../blockchain/utils/nodeHttp', () => ({
+    fetchNodeJson: fetchNodeJsonMock,
+}))
 
 nameServiceContractTests(() => algorandNameServiceAdapter, {
     valid: [VALID],
@@ -39,15 +41,24 @@ nameServiceContractTests(() => algorandNameServiceAdapter, {
             } as const,
         },
         arrangeUnreachable: () => {
-            fetchMock.mockRejectedValue(new TypeError('Network request failed'))
+            fetchNodeJsonMock.mockRejectedValue(
+                new TypeError('Network request failed'),
+            )
         },
         arrangeAbortable: () => {
-            fetchMock.mockImplementation(
-                async (_url: string, init?: { signal?: AbortSignal }) => {
+            fetchNodeJsonMock.mockImplementation(
+                async (
+                    _scope: unknown,
+                    _backend: unknown,
+                    _path: string,
+                    init?: { signal?: AbortSignal },
+                ) => {
                     if (init?.signal?.aborted) {
                         throw abortError()
                     }
-                    return { status: 404, ok: false, json: async () => ({}) }
+                    throw Object.assign(new Error('box not found'), {
+                        status: 404,
+                    })
                 },
             )
         },
