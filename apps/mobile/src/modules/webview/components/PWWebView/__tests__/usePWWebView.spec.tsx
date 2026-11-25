@@ -71,6 +71,33 @@ describe('usePWWebView', () => {
         expect(result.current.committedUrl).toBe('https://good.xyz/landing')
     })
 
+    it('hands a custom message over with the posting frame it came from', () => {
+        const onCustomMessage = vi.fn()
+        const { result } = renderHook(() =>
+            usePWWebView({ ...baseProps, onCustomMessage }),
+        )
+        const { onMessage } = result.current.renderWebView().props as {
+            onMessage: (event: unknown) => void
+        }
+
+        act(() =>
+            onMessage({
+                nativeEvent: {
+                    data: JSON.stringify({ method: 'openUrl' }),
+                    url: 'https://frame.example/checkout',
+                },
+            }),
+        )
+
+        expect(onCustomMessage).toHaveBeenCalledWith(
+            { method: 'openUrl' },
+            {
+                securedConnection: false,
+                sourceUrl: 'https://frame.example/checkout',
+            },
+        )
+    })
+
     it('closes the caller when no request is tracked', () => {
         const onClose = vi.fn()
         const { result } = renderHook(() =>

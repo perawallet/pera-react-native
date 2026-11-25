@@ -10,9 +10,12 @@
  limitations under the License
  */
 
-import { useCallback, useMemo, useRef } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { Linking } from 'react-native'
-import { getPeraServicesConfig } from '@perawallet/wallet-core-config'
+import {
+    getIframeOrigins,
+    getPeraServicesConfig,
+} from '@perawallet/wallet-core-config'
 import {
     chainAccountOf,
     type AccountBalances,
@@ -42,7 +45,14 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import type WebView from 'react-native-webview'
 import { Decimal } from 'decimal.js'
-import { webViewScript, type WebViewScript } from '@modules/webview'
+import {
+    generateBridgeToken,
+    hasValidBridgeToken,
+    isTrustedWebviewOrigin,
+    webViewScript,
+    type WebViewScript,
+    type WebviewMessageSecurity,
+} from '@modules/webview'
 import { sendBidaliEvent } from './bidali-events'
 import { useGiftCardScope } from './useGiftCardScope'
 
@@ -121,15 +131,19 @@ export const computeBidaliBalances = (
 const buildBidaliProviderJS = (
     apiKey: string,
     balances: Record<string, string>,
+    trustedOrigins: string[],
+    bridgeToken: string,
 ): WebViewScript => {
     return webViewScript`
         (function() {
+            if (window.top !== window || !${trustedOrigins}.includes(window.location.origin)) return;
             function sendRPC(method, params) {
                 if (!window.ReactNativeWebView) return;
                 window.ReactNativeWebView.postMessage(JSON.stringify({
                     jsonrpc: '2.0',
                     method: method,
                     params: params,
+                    token: ${bridgeToken},
                     id: 'bidali-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8)
                 }));
             }
@@ -183,7 +197,7 @@ const isBidaliRPC = (data: unknown): data is BidaliRPCMessage => {
 
 type UseBidaliTransportResult = {
     providerJS: WebViewScript
-    handleMessage: (data: unknown) => void
+    handleMessage: (data: unknown, security: WebviewMessageSecurity) => void
     webviewRef: React.RefObject<Nullable<WebView>>
 }
 
@@ -197,13 +211,21 @@ export const useBidaliTransport = (
     const { t } = useLanguage()
     const { addSignRequest } = useSigningRequest()
     const webviewRef = useRef<Nullable<WebView>>(null)
+    const [bridgeToken] = useState(generateBridgeToken)
+    const bidaliBaseUrl = getPeraServicesConfig(scope).bidaliBaseUrl
+    const trustedOrigins = useMemo(
+        () => getIframeOrigins(bidaliBaseUrl),
+        [bidaliBaseUrl],
+    )
 
     const providerJS = useMemo(() => {
         return buildBidaliProviderJS(
             getPeraServicesConfig(scope).bidaliApiKey,
             computeBidaliBalances(account, balances, scope, chainMode),
+            trustedOrigins,
+            bridgeToken,
         )
-    }, [chainMode, account, balances, scope])
+    }, [chainMode, account, balances, scope, trustedOrigins, bridgeToken])
 
     const handlePaymentRequest = useCallback(
         async (params: Record<string, unknown>) => {
@@ -324,8 +346,27 @@ export const useBidaliTransport = (
     }, [])
 
     const handleMessage = useCallback(
-        (data: unknown) => {
+        (data: unknown, security: WebviewMessageSecurity) => {
             if (!isBidaliRPC(data)) return
+            const isAuthenticated =
+                security.isAuthenticatedFrame === true ||
+                hasValidBridgeToken(data, bridgeToken)
+            // Some Android bridges report the top page URL for every frame.
+            if (
+                !isAuthenticated ||
+                !isTrustedWebviewOrigin(
+                    security.sourceUrl ?? '',
+                    trustedOrigins,
+                )
+            ) {
+                logger.warn(
+                    'Bidali: dropped message without trusted main-frame provenance',
+                    {
+                        method: data.method,
+                    },
+                )
+                return
+            }
 
             const { method, params } = data
 
@@ -348,7 +389,7 @@ export const useBidaliTransport = (
                 }
             }
         },
-        [handlePaymentRequest, handleOpenUrl],
+        [handlePaymentRequest, handleOpenUrl, trustedOrigins, bridgeToken],
     )
 
     return { providerJS, handleMessage, webviewRef }
