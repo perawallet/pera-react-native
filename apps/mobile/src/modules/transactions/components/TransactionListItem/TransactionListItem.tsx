@@ -11,32 +11,32 @@
  */
 
 import { memo } from 'react'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { PWListItemLayout, PWText, PWView } from '@components/core'
+import {
+    PWIcon,
+    PWListItemLayout,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { ChainNotice } from '@components/ChainNotice'
 import { CurrencyAmount } from '@components/CurrencyAmount'
-import { TransactionIcon } from '@components/TransactionIcon'
+import { PreferredAmount } from '@components/PreferredAmount'
+import { TransactionLeadingIcon } from '@components/TransactionLeadingIcon'
 import { useLanguage } from '@hooks/useLanguage'
-import { ChainLabel } from '@modules/chain-ui/icon'
 import { useStyles } from './styles'
+import { rowAmountPrecision } from './amounts'
 import {
     useTransactionListItem,
     type UseTransactionListItemParams,
+    type RowAmount,
 } from './useTransactionListItem'
-import type { AmountDisplay } from './amounts'
 
 // A token's own unit has no length cap, so the amount column is capped and cuts off rather than squeezing the title.
 const AMOUNT_MAX_WIDTH_RATIO = 0.5
 
-export type TransactionListItemProps = UseTransactionListItemParams & {
-    /** Labels the row with its network, on a list that mixes them. */
-    networkChainId?: ChainId
-}
+export type TransactionListItemProps = UseTransactionListItemParams
 
-const TransactionListItemView = ({
-    networkChainId,
-    ...props
-}: TransactionListItemProps) => {
+const TransactionListItemView = (props: TransactionListItemProps) => {
     const { id } = 'record' in props ? props.record : props.transaction
     const styles = useStyles()
     const { t } = useLanguage()
@@ -46,17 +46,24 @@ const TransactionListItemView = ({
         subtitle,
         subtitleEllipsizeMode,
         amounts,
+        fiatValue,
         amountsOverflowCount,
         fee,
         feeLabel,
         notice,
         handlePress,
         handleLongPress,
-        isSuspectedPoisoning,
-        imitatedCurrency,
+        isSuspicious,
+        suspicionTitle,
+        handleSuspiciousPress,
+        leadingChainIds,
+        leadingAssets,
     } = useTransactionListItem(props)
 
-    const getAmountStyle = (amount: AmountDisplay) => {
+    // A scam airdrop isn't a credit: no green amount to make it look like one.
+    // Only its own leg: the real coin beside it in a swap keeps its colour.
+    const getAmountStyle = (amount: RowAmount) => {
+        if (amount.isMuted) return styles.amountMuted
         if (amount.prefix === '+') return styles.amountPositive
         if (amount.prefix === '-') return styles.amountNegative
         return styles.amount
@@ -65,24 +72,17 @@ const TransactionListItemView = ({
     return (
         <PWListItemLayout
             testID={`transaction_row_${id}`}
-            style={styles.container}
-            // A title alone (a swap) sits centred against its stacked amounts.
-            align={
-                subtitle ||
-                networkChainId ||
-                notice ||
-                isSuspectedPoisoning ||
-                imitatedCurrency !== null
-                    ? 'top'
-                    : 'center'
-            }
+            style={[styles.container, isSuspicious && styles.suspicious]}
+            // A title alone sits centred against its stacked amounts.
+            align={subtitle || notice ? 'top' : 'center'}
             rightMaxWidthRatio={AMOUNT_MAX_WIDTH_RATIO}
             onPress={handlePress}
             onLongPress={handleLongPress}
             left={
-                <TransactionIcon
-                    name={iconName}
-                    size='md'
+                <TransactionLeadingIcon
+                    iconName={iconName}
+                    leadingAssets={leadingAssets}
+                    chainIds={leadingChainIds}
                 />
             }
             right={
@@ -94,7 +94,7 @@ const TransactionListItemView = ({
                             value={amount.value}
                             currency={amount.currency}
                             assetId={amount.assetId}
-                            precision='compact'
+                            precision={rowAmountPrecision(amount.decimals)}
                             abbreviateFrom='million'
                             assetDecimals={amount.decimals}
                             prefix={amount.prefix}
@@ -104,6 +104,14 @@ const TransactionListItemView = ({
                             variant='h4'
                         />
                     ))}
+                    {fiatValue && (
+                        <PreferredAmount
+                            value={fiatValue}
+                            density='compact'
+                            showSymbol
+                            style={styles.fiatAmount}
+                        />
+                    )}
                     {amountsOverflowCount > 0 && (
                         <PWText style={styles.amountOverflow}>
                             {t('transactions.list_item.more_impacts', {
@@ -131,15 +139,29 @@ const TransactionListItemView = ({
             }
         >
             <PWView>
-                {/* The amounts never shrink, so a long swap pair needs a third line to keep the received token in view. */}
-                <PWText
-                    variant='h4'
-                    style={styles.title}
-                    truncate
-                    numberOfLines={3}
-                >
-                    {title}
-                </PWText>
+                <PWView style={styles.titleRow}>
+                    <PWText
+                        variant='h4'
+                        style={isSuspicious ? styles.titleMuted : styles.title}
+                        truncate
+                    >
+                        {title}
+                    </PWText>
+                    {isSuspicious && (
+                        <PWTouchableOpacity
+                            onPress={handleSuspiciousPress}
+                            hitSlop={styles.badgeHitSlop}
+                            accessibilityRole='button'
+                            accessibilityLabel={suspicionTitle ?? undefined}
+                            testID={`transaction_row_suspicious_${id}`}
+                        >
+                            <PWIcon
+                                name='assets/suspicious'
+                                size='sm'
+                            />
+                        </PWTouchableOpacity>
+                    )}
+                </PWView>
                 {subtitle && (
                     <PWText
                         style={styles.subtitle}
@@ -149,34 +171,11 @@ const TransactionListItemView = ({
                         {subtitle}
                     </PWText>
                 )}
-                {networkChainId && (
-                    <ChainLabel
-                        chainId={networkChainId}
-                        style={styles.network}
-                    />
-                )}
                 {notice && (
                     <ChainNotice
                         {...notice}
                         style={styles.notice}
                         testID={`transaction_row_notice_${id}`}
-                    />
-                )}
-                {isSuspectedPoisoning && (
-                    <ChainNotice
-                        kind='warning'
-                        titleKey='transactions.suspected_poisoning.marker'
-                        style={styles.notice}
-                        testID={`transaction_row_suspected_poisoning_${id}`}
-                    />
-                )}
-                {imitatedCurrency !== null && (
-                    <ChainNotice
-                        kind='warning'
-                        titleKey='asset.imitated_currency.marker'
-                        params={{ code: imitatedCurrency }}
-                        style={styles.notice}
-                        testID={`transaction_row_imitated_currency_${id}`}
                     />
                 )}
             </PWView>

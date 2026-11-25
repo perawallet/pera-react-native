@@ -82,6 +82,7 @@ const context = (storage: FakeKeychainStorage): PeraMigrationContext => ({
     subtle,
     masterKeyForRead,
     declined: createDeclinedRegister(noteStoreApi()),
+    getPasskeyAnchorSeedIds: async () => new Set(['root-1']),
 })
 
 const utils = (revision: {

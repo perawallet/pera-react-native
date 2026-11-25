@@ -187,6 +187,24 @@ export const validateRawMessage = (
         return accepted(raw, { type: 'show-batch', batchId })
     }
 
+    if (rawOperation.type === 'watch-asset') {
+        const { params } = rawOperation
+        const assetId =
+            typeof params === 'object' && params !== null
+                ? (params as { assetId?: unknown }).assetId
+                : undefined
+        if (typeof assetId !== 'string' || assetId.length === 0) {
+            return {
+                ok: false,
+                error: new ConnectionsError(
+                    'invalid-payload',
+                    'Expected a token id',
+                ),
+            }
+        }
+        return accepted(raw, { type: 'watch-asset', assetId })
+    }
+
     if (rawOperation.type === 'switch-network') {
         const adapter = dappRequestChainAdapters.get(raw.chainId)
         const { params } = rawOperation

@@ -283,6 +283,7 @@ describe('useWatchAccountScreen', () => {
         expect(mockImportWatchAccount).toHaveBeenCalledWith(
             'algorand',
             VALID_ALGORAND_ADDRESS,
+            undefined,
         )
         await waitFor(() =>
             expect(mockPush).toHaveBeenCalledWith('NameAccount', {
@@ -305,7 +306,7 @@ describe('useWatchAccountScreen', () => {
             restoreAlgorandOnlyChains()
         })
 
-        it('imports an ENS name as an Ethereum watch account at the address it resolves to', async () => {
+        it('imports an ENS name as an Ethereum watch account at the address it resolves to, named after it', async () => {
             mockResolution({ name: 'alice.eth', address: ETHEREUM_ADDRESS })
             const { result } = renderHook(() => useWatchAccountScreen())
 
@@ -322,6 +323,7 @@ describe('useWatchAccountScreen', () => {
             expect(mockImportWatchAccount).toHaveBeenCalledWith(
                 ETHEREUM_CHAIN_ID,
                 ETHEREUM_ADDRESS,
+                'alice.eth',
             )
         })
 
@@ -354,11 +356,12 @@ describe('useWatchAccountScreen', () => {
             expect(mockImportWatchAccount).toHaveBeenCalledWith(
                 ETHEREUM_CHAIN_ID,
                 ETHEREUM_ADDRESS,
+                undefined,
             )
         })
     })
 
-    it('imports an NFD name on Algorand at the address it resolves to', async () => {
+    it('imports an NFD name on Algorand at the address it resolves to, named after it', async () => {
         mockResolution({ name: 'alice.algo', address: VALID_ALGORAND_ADDRESS })
         const { result } = renderHook(() => useWatchAccountScreen())
 
@@ -372,6 +375,7 @@ describe('useWatchAccountScreen', () => {
         expect(mockImportWatchAccount).toHaveBeenCalledWith(
             'algorand',
             VALID_ALGORAND_ADDRESS,
+            'alice.algo',
         )
     })
 
@@ -459,6 +463,7 @@ describe('useWatchAccountScreen', () => {
         expect(mockImportWatchAccount).toHaveBeenCalledWith(
             'algorand',
             QUANTUM_TEST_ADDRESS,
+            undefined,
         )
         await waitFor(() =>
             expect(mockPush).toHaveBeenCalledWith('NameAccount', {
@@ -499,6 +504,7 @@ describe('useWatchAccountScreen', () => {
             expect(mockImportWatchAccount).toHaveBeenCalledWith(
                 FIXTURE_CHAIN_ID,
                 FIXTURE_ADDRESS.toUpperCase(),
+                undefined,
             )
             await waitFor(() =>
                 expect(mockPush).toHaveBeenCalledWith('NameAccount', {
@@ -640,6 +646,7 @@ describe('useWatchAccountScreen', () => {
             expect(mockImportWatchAccount).toHaveBeenCalledWith(
                 defaultChainId,
                 FIXTURE_ADDRESS,
+                undefined,
             )
             await waitFor(() =>
                 expect(mockPush).toHaveBeenCalledWith('NameAccount', {

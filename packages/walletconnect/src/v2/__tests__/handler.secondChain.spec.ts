@@ -12,6 +12,10 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MemoryKeyValueStorage } from '@perawallet/wallet-extension-platform/test-utils'
+import {
+    accountGrantedAt,
+    type Connection,
+} from '@perawallet/wallet-extension-connections'
 import { memoryStore } from '@perawallet/wallet-core-connections/testing'
 import {
     ConnectionsError,
@@ -769,37 +773,72 @@ describe('a request’s answer', () => {
         chainId: ETH_MAINNET,
     }
 
+    const GENERIC = 'An error occurred during signing'
+
     it.each([
-        ['a user rejection', new DappRequestRejectedError(), 4001],
+        [
+            'a user rejection',
+            new DappRequestRejectedError(),
+            4001,
+            'User rejected',
+        ],
         [
             'an unauthorized account',
             new ConnectionsError('unauthorized-account', 'not held'),
             4100,
+            GENERIC,
         ],
         [
             'an invalid payload',
             new ConnectionsError('invalid-payload', 'bad params'),
             -32_602,
+            GENERIC,
         ],
-        ['a plain failure', new Error('node down'), JSON_RPC_SERVER_ERROR],
+        [
+            'a plain failure',
+            new Error('node down'),
+            JSON_RPC_SERVER_ERROR,
+            GENERIC,
+        ],
         [
             'a refusal in the chain’s own code',
             new DappRequestCodedError(5720, 'Duplicate id'),
             5720,
+            'Duplicate id',
         ],
-    ])('sends eip155 %s as its code', async (_, error, code) => {
-        const { walletKit, message } = await delivered(ETH_SEND)
+        [
+            'an internal error with a numeric wire code',
+            Object.assign(new Error('RPC unavailable'), { wireCode: 5720 }),
+            5720,
+            GENERIC,
+        ],
+    ])('sends eip155 %s as its code', async (_, error, code, message) => {
+        const { walletKit, message: request } = await delivered(ETH_SEND)
 
-        await message.reject(error)
+        await request.reject(error)
 
         expect(walletKit.respondSessionRequest).toHaveBeenCalledWith({
             topic: TOPIC,
             response: {
                 id: REQUEST_ID,
                 jsonrpc: '2.0',
-                error: { code, message: error.message },
+                error: { code, message },
             },
         })
+    })
+
+    it('never relays a node error’s URL to the dApp', async () => {
+        const { walletKit, message } = await delivered(ETH_SEND)
+        const nodeUrl = 'https://eth.example/v2/secret-provider-key'
+
+        await message.reject(
+            new Error(
+                `[evm:rpc] HTTP request failed.\n\nURL: ${nodeUrl}\nRequest body: {}`,
+            ),
+        )
+
+        const [[{ response }]] = walletKit.respondSessionRequest.mock.calls
+        expect(JSON.stringify(response)).not.toContain(nodeUrl)
     })
 
     it('sends the result the chain’s toWireResult makes', async () => {
@@ -1519,6 +1558,55 @@ describe('changeAccount', () => {
         signable.clear()
         signable.add(NEW_ETH)
         signable.add(ETH)
+    })
+
+    it('keeps an older session switched to an account re-imported after its removal', async () => {
+        // NEW_ETH was removed at 10, after this session (createdAt 1) began.
+        const removedAt: Record<string, number> = {
+            [NEW_ETH.toLowerCase()]: 10,
+        }
+        const isRevoked = (
+            connection: Pick<
+                Connection,
+                'accounts' | 'createdAt' | 'accountsGrantedAt'
+            >,
+        ): boolean =>
+            connection.accounts.some(address => {
+                const cutoff = removedAt[address.toLowerCase()]
+                return (
+                    cutoff !== undefined &&
+                    accountGrantedAt(connection, address) <= cutoff
+                )
+            })
+        const walletKit = createFakeWalletKit({
+            [TOPIC]: liveSession(TOPIC, BOTH_ETHEREUM_NETWORKS),
+        })
+        const { handler, store, context } = await open(
+            [
+                recordFor(TOPIC, {
+                    accounts: [ADDRESS, ETH],
+                    chains: [MAINNET_CHAIN_ID, ETH_MAINNET, ETH_SEPOLIA],
+                }),
+            ],
+            walletKit,
+            {
+                canSignWith: (chainId, address) =>
+                    chainId === 'ethereum' && signable.has(address),
+                shouldRevokeForAccountRemoval: isRevoked,
+            },
+        )
+
+        await handler.changeAccount?.(TOPIC, 'ethereum', NEW_ETH)
+        walletKit.emit('session_request', makeRequest())
+        await flush()
+
+        const [stored] = await store.list()
+        expect(stored.createdAt).toBe(1)
+        expect(isRevoked(stored)).toBe(false)
+        expect(context.onMessage).toHaveBeenCalledWith(
+            expect.objectContaining({ connectionId: TOPIC }),
+        )
+        expect((await handler.restore()).map(({ id }) => id)).toEqual([TOPIC])
     })
 
     it('narrows the eip155 namespace to the new address on every chain it holds', async () => {

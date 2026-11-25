@@ -20,6 +20,7 @@ import {
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { displayUnitsToBaseUnitsBigInt } from '@perawallet/wallet-core-shared'
 import { useNativeAsset, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
@@ -42,7 +43,7 @@ export const OptOutConfirmationContent = ({
     const styles = useStyles()
     const { t } = useLanguage()
     const { copyToClipboard } = useClipboard()
-    const { resolve, dismiss } = useBottomSheetResult<'confirm'>()
+    const { resolve, dismiss } = useBottomSheetResult<bigint>()
     const { fee } = useOptOutConfirmationContent(accountAddress, scope)
 
     const accountName = useAccountsStore(s => {
@@ -101,7 +102,6 @@ export const OptOutConfirmationContent = ({
                         paddingStyle='dense'
                         onPress={handleCopyId}
                         testID='opt_out_copy_id'
-                        rounded
                     />
                 </PWView>
 
@@ -152,7 +152,14 @@ export const OptOutConfirmationContent = ({
                 <PWView style={[styles.buttonContainer, CONFIRM_ACTION_LAYOUT]}>
                     <ConfirmAction
                         title={t('common.slide_to_confirm.label')}
-                        onConfirm={() => resolve('confirm')}
+                        onConfirm={() =>
+                            resolve(
+                                displayUnitsToBaseUnitsBigInt(
+                                    fee,
+                                    nativeAsset.decimals,
+                                ),
+                            )
+                        }
                         testID='opt_out_confirm'
                     />
                     <PWButton

@@ -13,7 +13,6 @@
 import {
     PWScreen,
     PWText,
-    PWTouchableOpacity,
     PWButton,
     PWCheckbox,
     PWFlatList,
@@ -124,23 +123,22 @@ export const LedgerSelectAccountsScreen = () => {
             />
 
             {showSelectAll && (
-                <PWTouchableOpacity
+                <PWCheckbox
+                    label={
+                        <PWText
+                            variant='link'
+                            style={styles.selectAllText}
+                        >
+                            {t('ledger.select_accounts.select_all')}
+                        </PWText>
+                    }
+                    boxPosition='trailing'
+                    isChecked={isAllSelected}
                     onPress={toggleSelectAll}
                     style={styles.selectAllRow}
-                >
-                    <PWText
-                        variant='link'
-                        style={styles.selectAllText}
-                    >
-                        {t('ledger.select_accounts.select_all')}
-                    </PWText>
-                    <PWCheckbox
-                        checked={isAllSelected}
-                        onPress={toggleSelectAll}
-                        containerStyle={styles.checkboxContainer}
-                        testID='ledger_select_accounts_select_all_checkbox'
-                    />
-                </PWTouchableOpacity>
+                    boxStyle={styles.checkboxContainer}
+                    testID='ledger_select_accounts_select_all_checkbox'
+                />
             )}
 
             <PWFlatList

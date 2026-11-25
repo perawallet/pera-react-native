@@ -566,6 +566,7 @@ describe('pushDirty', () => {
             launchAccount: { value: TEST_SETTINGS.launchAccount, updatedAt: 0 },
             accountOrder: { value: TEST_SETTINGS.accountOrder, updatedAt: 0 },
             hiddenTokens: { value: TEST_SETTINGS.hiddenTokens, updatedAt: 0 },
+            keptTokens: { value: TEST_SETTINGS.keptTokens, updatedAt: 0 },
         })
         expect(next.items['settings/S']).toMatchObject({
             isDirty: false,

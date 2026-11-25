@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+export * from './register-account-cleanup'
+
 export const name = '@perawallet/wallet-core-connections'
 
 export * from './errors'

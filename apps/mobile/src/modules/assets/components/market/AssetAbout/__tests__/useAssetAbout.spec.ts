@@ -10,9 +10,11 @@
  limitations under the License
  */
 
+import { Linking } from 'react-native'
 import { renderHook } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import { logger } from '@perawallet/wallet-core-shared'
 import {
     i18nKey,
     type ChainScope,
@@ -20,7 +22,10 @@ import {
 import type { AssetAboutDisplay } from '@modules/assets/types/asset-details-display'
 import { useAssetAbout } from '../useAssetAbout'
 
-const { mockPushWebView } = vi.hoisted(() => ({ mockPushWebView: vi.fn() }))
+const { mockPushWebView, mockOpenExplorerUrl } = vi.hoisted(() => ({
+    mockPushWebView: vi.fn(),
+    mockOpenExplorerUrl: vi.fn(),
+}))
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 vi.mock('@modules/webview', async () => ({
@@ -28,6 +33,7 @@ vi.mock('@modules/webview', async () => ({
         typeof import('@modules/webview/hooks/handlers-shared')
     >('@modules/webview/hooks/handlers-shared')),
     useWebView: () => ({ pushWebView: mockPushWebView }),
+    openExplorerUrl: mockOpenExplorerUrl,
 }))
 
 vi.mock('@hooks/useClipboard', () => ({
@@ -102,6 +108,23 @@ describe('useAssetAbout', () => {
         )
     })
 
+    it('opens the explorer link in the system browser, not the in-app webview', () => {
+        const { result } = renderHook(() =>
+            useAssetAbout(
+                makeAsset(undefined, undefined),
+                makeAbout('https://basescan.org/token/0xabc'),
+                SCOPE,
+            ),
+        )
+
+        result.current.openExplorer()
+
+        expect(mockOpenExplorerUrl).toHaveBeenCalledWith(
+            'https://basescan.org/token/0xabc',
+        )
+        expect(mockPushWebView).not.toHaveBeenCalled()
+    })
+
     it("falls back to the display's website when the asset has no project URL", () => {
         const { result } = renderHook(() =>
             useAssetAbout(
@@ -136,5 +159,60 @@ describe('useAssetAbout', () => {
         )
 
         expect(result.current.projectUrl).toBeNull()
+    })
+
+    it('opens the project website in the system browser, not the webview', () => {
+        vi.mocked(Linking.openURL).mockResolvedValue(undefined)
+        const { result } = renderHook(() =>
+            useAssetAbout(
+                makeAsset(undefined, 'https://project.example'),
+                makeAbout(null),
+                SCOPE,
+            ),
+        )
+
+        result.current.openInBrowser('https://project.example')
+
+        expect(Linking.openURL).toHaveBeenCalledWith('https://project.example')
+        expect(mockPushWebView).not.toHaveBeenCalled()
+    })
+
+    it('opens nothing for a project website that fails the browser gate', () => {
+        const { result } = renderHook(() =>
+            useAssetAbout(
+                makeAsset(undefined, undefined),
+                makeAbout(null),
+                SCOPE,
+            ),
+        )
+
+        result.current.openInBrowser('http://project.example')
+
+        expect(Linking.openURL).not.toHaveBeenCalled()
+    })
+
+    it('contains a failed open of the project website', async () => {
+        vi.mocked(Linking.openURL).mockRejectedValueOnce(
+            new Error('no handler'),
+        )
+        const { result } = renderHook(() =>
+            useAssetAbout(
+                makeAsset(undefined, undefined),
+                makeAbout(null),
+                SCOPE,
+            ),
+        )
+
+        const warn = vi.spyOn(logger, 'warn')
+        onTestFinished(() => warn.mockRestore())
+
+        result.current.openInBrowser('https://project.example')
+
+        await vi.waitFor(() =>
+            expect(warn).toHaveBeenCalledWith(
+                'Failed to open external URL',
+                expect.anything(),
+            ),
+        )
     })
 })

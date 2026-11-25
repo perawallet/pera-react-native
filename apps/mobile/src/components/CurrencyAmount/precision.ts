@@ -34,14 +34,20 @@ export const PREFERRED_MAX_PRECISION = ASSET_MAX_PRECISION
  * {@link DEFAULT_PRECISION} dp, extended only for amounts that would
  * otherwise round to zero (see {@link resolveCompactPrecision}). An asset with
  * more than {@link ASSET_MAX_PRECISION} decimals (ETH, ERC-20s) follows
- * `assetFull` instead, so its row reads like its detail. A fiat amount
+ * `assetFull` instead; a History row lists such an amount with
+ * `rowSignificant`. A fiat amount
  * never extends: a non-zero one under a cent renders as `< 0.01` (`> -0.01`
  * when negative; see {@link resolveAmountFloor}).
  * - `assetFull` — an asset amount on a detail surface: trims
  * {@link DEFAULT_PRECISION} → the asset's own `decimals`, capped at
  * {@link ASSET_MAX_PRECISION} (see `resolveAssetDisplayPrecision`).
  * Collectibles / 0-decimal assets resolve to 0 dp. Pair with `assetDecimals`.
- * - `assetExact` — a transaction total, preserving the asset's full decimal precision.
+ * - `assetExact` — an amount that moves or moved, on the send review or a
+ * transaction detail: the asset's full decimals, trailing zeros trimmed.
+ * - `rowSignificant` — such an amount in a History row, which has no room for
+ * 18 decimals: {@link ROW_SIGNIFICANT_DIGITS} significant digits, between
+ * {@link DEFAULT_PRECISION} and the asset's `decimals`, rounded down. The
+ * row's detail shows it exact. Pair with `assetDecimals`.
  * - `preferredFull` — a preferred-currency amount on a detail surface. Fiat
  * shows {@link DEFAULT_PRECISION} dp, a non-zero amount under a cent as
  * `< 0.01` like `compact`; non-fiat trims {@link DEFAULT_PRECISION} →
@@ -65,6 +71,7 @@ export type PrecisionVariant =
     | 'preferredFull'
     | 'unitPrice'
     | 'significant'
+    | 'rowSignificant'
     | 'list'
 
 export type ResolvedPrecision = {
@@ -98,16 +105,21 @@ const resolveCompactPrecision = (value: Maybe<Decimal>): number => {
 
 export const SIGNIFICANT_DIGITS = 3
 
+// Keeps 0.0000575 whole while a long amount fits a History row's half width:
+// 0.013499892065126118 reads 0.013499, as wide as the 6-decimal rounding it replaces.
+export const ROW_SIGNIFICANT_DIGITS = 5
+
 export const LIST_MAX_PRECISION = 4
 
 /**
- * Decimals that keep {@link SIGNIFICANT_DIGITS} significant digits of an
- * amount under 1 (an 18-decimal gas fee otherwise prints 18 digits), never
- * fewer than {@link DEFAULT_PRECISION} nor more than `assetDecimals`.
+ * Decimals that keep `digits` significant digits of an amount under 1 (an
+ * 18-decimal gas fee otherwise prints 18 digits), never fewer than
+ * {@link DEFAULT_PRECISION} nor more than `assetDecimals`.
  */
 export const resolveSignificantPrecision = (
     value: Maybe<Decimal>,
     assetDecimals?: number,
+    digits = SIGNIFICANT_DIGITS,
 ): number => {
     const maxPrecision = assetDecimals ?? DEFAULT_PRECISION
     if (value == null || value.isZero()) {
@@ -115,7 +127,7 @@ export const resolveSignificantPrecision = (
     }
     return Math.min(
         maxPrecision,
-        Math.max(DEFAULT_PRECISION, SIGNIFICANT_DIGITS - 1 - value.e),
+        Math.max(DEFAULT_PRECISION, digits - 1 - value.e),
     )
 }
 
@@ -125,8 +137,8 @@ export const resolveSignificantPrecision = (
  * consulted for the asset-precision variants; when absent it falls back to
  * {@link DEFAULT_PRECISION}, matching the legacy `asset?.decimals ?? DEFAULT_PRECISION`.
  * `value` is consulted only for `compact` and `assetFull`, whose caps can
- * hide an amount entirely, and `significant`, which falls back to 2 dp
- * without it. `isFiat` is consulted only for `preferredFull`.
+ * hide an amount entirely, and `significant` and `rowSignificant`, which fall
+ * back to 2 dp without it. `isFiat` is consulted only for `preferredFull`.
  *
  * This is the only place precision policy lives. `CurrencyAmount` delegates to
  * it and never branches on asset-vs-preferred itself.
@@ -196,6 +208,21 @@ export const resolvePrecision = (
                     DEFAULT_PRECISION,
                     assetDecimals ?? DEFAULT_PRECISION,
                 ),
+            }
+        }
+        case 'rowSignificant': {
+            return {
+                precision: resolveSignificantPrecision(
+                    value,
+                    assetDecimals,
+                    ROW_SIGNIFICANT_DIGITS,
+                ),
+                minPrecision: Math.min(
+                    DEFAULT_PRECISION,
+                    assetDecimals ?? DEFAULT_PRECISION,
+                ),
+                // Down, so the row never reads as more than moved.
+                rounding: Decimal.ROUND_DOWN,
             }
         }
     }

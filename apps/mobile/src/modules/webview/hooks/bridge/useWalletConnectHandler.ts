@@ -31,7 +31,6 @@ const WC_CONNECT_THROTTLE_WINDOW_MS = 2000
 
 export const useWalletConnectHandler = (
     webview: Nullable<WebView>,
-    sourceUrl: Nullable<string>,
 ): BridgeHandler => {
     const { hasInternet } = useNetworkStatus()
     const { pair, describeUri } = useConnectionPairing()
@@ -45,7 +44,7 @@ export const useWalletConnectHandler = (
     const lastWcConnectByOriginRef = useRef(new Map<string, number>())
 
     return useCallback(
-        message => {
+        (message, security) => {
             if (!canConnectDapps) {
                 sendErrorToWebview(
                     message.id,
@@ -87,8 +86,13 @@ export const useWalletConnectHandler = (
                 return
             }
 
+            // The posting frame, never the webview's navigation state: a
+            // pending or cancelled navigation names its target, not the
+            // document that is still running and sent this message.
+            const sourceUrl = security.sourceUrl ?? ''
+            const requesterOrigin = safeOrigin(sourceUrl) ?? undefined
             const now = Date.now()
-            const throttleKey = safeOrigin(sourceUrl ?? '') ?? sourceUrl ?? ''
+            const throttleKey = requesterOrigin ?? sourceUrl
             const lastConnectAt =
                 lastWcConnectByOriginRef.current.get(throttleKey) ?? 0
             if (now - lastConnectAt < WC_CONNECT_THROTTLE_WINDOW_MS) {
@@ -110,7 +114,6 @@ export const useWalletConnectHandler = (
             // rather than silence.
             // The webview reports the page's origin itself, so the approval
             // and later requests can check the site the user is really on.
-            const requesterOrigin = safeOrigin(sourceUrl ?? '') ?? undefined
             void (async () => {
                 const result = await pair(parsed.uri, {
                     origin: {
@@ -167,7 +170,6 @@ export const useWalletConnectHandler = (
             hasRequiredParams,
             webview,
             hasInternet,
-            sourceUrl,
         ],
     )
 }

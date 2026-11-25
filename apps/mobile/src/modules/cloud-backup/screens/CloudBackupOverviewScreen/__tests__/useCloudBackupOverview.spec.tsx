@@ -83,6 +83,9 @@ vi.mock('@perawallet/wallet-core-shared', async () => ({
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: vi.fn(),
 }))
+vi.mock('@modules/backup', () => ({
+    useBackupFlowLauncher: () => launchBackupFlowMock,
+}))
 vi.mock('@modules/security', () => ({
     useRequirePinVerification: () => ({
         requirePinVerification: requirePinVerificationMock,
@@ -99,6 +102,7 @@ vi.mock('../../../components/ConfirmTurnOffBackupSheet', () => ({
 }))
 
 const {
+    launchBackupFlowMock,
     disableBackupMock,
     removeBackupMock,
     syncNowMock,
@@ -110,6 +114,7 @@ const {
     provenPasskeysMock,
     navigationMock,
 } = vi.hoisted(() => ({
+    launchBackupFlowMock: vi.fn(),
     disableBackupMock: vi.fn(),
     removeBackupMock: vi.fn(),
     syncNowMock: vi.fn(),
@@ -217,10 +222,20 @@ const mockStores = (opts: {
     syncState: SyncStateFixture | null
     accounts: (string | { chains: Record<string, { address: string }> })[]
     contacts: (string | { evm: string })[]
+    needsCredentialsConfirmation?: boolean
 }) => {
     ;(useCloudBackupStore as unknown as Mock).mockImplementation(
-        (s: (st: { backupId: string | null }) => unknown) =>
-            s({ backupId: opts.backupId }),
+        (
+            s: (st: {
+                backupId: string | null
+                needsCredentialsConfirmation: () => boolean
+            }) => unknown,
+        ) =>
+            s({
+                backupId: opts.backupId,
+                needsCredentialsConfirmation: () =>
+                    opts.needsCredentialsConfirmation ?? false,
+            }),
     )
     ;(useBackupSyncStateStore as unknown as Mock).mockImplementation(
         (s: (st: { syncState: unknown }) => unknown) =>
@@ -295,7 +310,9 @@ describe('useCloudBackupOverview', () => {
         syncState.items = {
             // Dirty but still backed up (local edits not yet pushed).
             [accountKey('A')]: uploaded('A'),
+            [secretsKey('A')]: uploaded('A'),
             [accountKey('B')]: uploaded('B', { isDirty: true }),
+            [secretsKey('B')]: uploaded('B'),
             // IGNORED = not backed up.
             [accountKey('C')]: uploaded('C', { status: 'IGNORED' }),
         }
@@ -391,7 +408,24 @@ describe('useCloudBackupOverview', () => {
                 [recordKey('A')]: uploaded('A', {
                     addresses: ['A', '0xeth'],
                     knownVer,
+                    record: {
+                        formatVersion: 2,
+                        updatedAt: 1,
+                        chains: [
+                            {
+                                chain: 'algorand',
+                                type: 'standaloneKey',
+                                address: 'A',
+                            },
+                            {
+                                chain: 'ethereum',
+                                type: 'standaloneKey',
+                                address: '0xeth',
+                            },
+                        ],
+                    },
                 }),
+                [secretsKey('A')]: uploaded('A', { knownVer }),
             }
             mockStores({
                 backupId: 'did:pera:abc',
@@ -538,7 +572,7 @@ describe('useCloudBackupOverview', () => {
         })
         mockRequestBottomSheet
             .mockResolvedValueOnce('turnOff')
-            .mockResolvedValueOnce(true)
+            .mockResolvedValueOnce({ kind: 'turnOff' })
 
         const { result } = renderHook(() => useCloudBackupOverview())
         await result.current.onPressTurnOff()
@@ -561,7 +595,7 @@ describe('useCloudBackupOverview', () => {
         })
         mockRequestBottomSheet
             .mockResolvedValueOnce('turnOffAndRemove')
-            .mockResolvedValueOnce(true)
+            .mockResolvedValueOnce({ kind: 'turnOff' })
 
         const { result } = renderHook(() => useCloudBackupOverview())
         await result.current.onPressTurnOff()
@@ -594,6 +628,44 @@ describe('useCloudBackupOverview', () => {
             expect(removeBackupMock).not.toHaveBeenCalled()
         },
     )
+
+    test('starts the passphrase backup for that account, and turns nothing off, when the user backs up first', async () => {
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState: null,
+            accounts: [],
+            contacts: [],
+        })
+        const account = { id: 'at-risk' }
+        mockRequestBottomSheet
+            .mockResolvedValueOnce('turnOff')
+            .mockResolvedValueOnce({ kind: 'backUpFirst', account })
+
+        const { result } = renderHook(() => useCloudBackupOverview())
+        await result.current.onPressTurnOff()
+
+        expect(launchBackupFlowMock).toHaveBeenCalledWith(account)
+        expect(requirePinVerificationMock).not.toHaveBeenCalled()
+        expect(disableBackupMock).not.toHaveBeenCalled()
+        expect(removeBackupMock).not.toHaveBeenCalled()
+    })
+
+    test('does not start the passphrase backup when turning off is confirmed', async () => {
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState: null,
+            accounts: [],
+            contacts: [],
+        })
+        mockRequestBottomSheet
+            .mockResolvedValueOnce('turnOff')
+            .mockResolvedValueOnce({ kind: 'turnOff' })
+
+        const { result } = renderHook(() => useCloudBackupOverview())
+        await result.current.onPressTurnOff()
+
+        expect(launchBackupFlowMock).not.toHaveBeenCalled()
+    })
 
     test('does not ask for the PIN when the turn off sheet is dismissed', async () => {
         mockStores({
@@ -747,5 +819,37 @@ describe('useCloudBackupOverview', () => {
         renderHook(() => useCloudBackupOverview())
 
         expect(markIntroductionSeenMock).not.toHaveBeenCalled()
+    })
+
+    test('flags the credentials confirmation while the store asks for it', () => {
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState: emptySync(),
+            accounts: [],
+            contacts: [],
+            needsCredentialsConfirmation: true,
+        })
+
+        const { result } = renderHook(() => useCloudBackupOverview())
+
+        expect(result.current.needsCredentialsConfirmation).toBe(true)
+    })
+
+    test('opens the confirm screen without a PIN of its own', () => {
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState: emptySync(),
+            accounts: [],
+            contacts: [],
+            needsCredentialsConfirmation: true,
+        })
+        const { result } = renderHook(() => useCloudBackupOverview())
+
+        result.current.onPressConfirmCredentials()
+
+        expect(navigationMock.navigate).toHaveBeenCalledWith(
+            'CloudBackupConfirmCredentials',
+        )
+        expect(requirePinVerificationMock).not.toHaveBeenCalled()
     })
 })

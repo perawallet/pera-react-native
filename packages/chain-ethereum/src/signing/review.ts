@@ -84,6 +84,7 @@ import {
     readEthereumNative,
     toEthereumNative,
     type EthereumMinedView,
+    type EthereumOnChainPricing,
     type EthereumPreviewView,
     type EthereumPricedView,
     type EthereumTransactionView,
@@ -229,7 +230,7 @@ type Call = {
     /** Absent on a batch preview, which is priced only once it is reached. */
     pricing?: Pricing
     /** A transaction already on chain: it carries what it cost, not what a signature commits to. */
-    mined?: { feePaid?: Decimal }
+    mined?: { feePaid?: Decimal; onChain?: EthereumOnChainPricing }
 }
 
 // As the Send quote prices its maximum: the surcharge isn't capped by the
@@ -346,6 +347,7 @@ const pricingOf = (
         return {
             isMined: true,
             ...(call.mined.feePaid && { feePaid: call.mined.feePaid }),
+            ...(call.mined.onChain && { onChain: call.mined.onChain }),
         }
     }
     return { isPreview: true }
@@ -582,8 +584,9 @@ export const ethereumViewOf = (
 export const ethereumMinedViewOf = (
     call: { from: Address; to?: Address; data: Hex; value: bigint },
     feePaid?: Decimal,
+    onChain?: EthereumOnChainPricing,
 ): EthereumTransactionView => {
-    const mined = { ...call, mined: { feePaid } }
+    const mined = { ...call, mined: { feePaid, onChain } }
     return call.to && size(call.data) === 0
         ? viewOf(mined, 'transfer')
         : contractCallView(mined)

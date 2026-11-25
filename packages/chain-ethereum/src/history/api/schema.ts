@@ -81,6 +81,12 @@ export const evmHistoryItemSchema = z.object({
     to: address.nullable(),
     value: amount.nullable(),
     fee: amount.nullable(),
+    // Newer than the rest and display only, so a backend that predates them, or a
+    // malformed value, drops the field and never the row.
+    nonce: z.number().int().min(0).nullable().optional().catch(undefined),
+    gas_limit: amount.nullable().optional().catch(undefined),
+    gas_used: amount.nullable().optional().catch(undefined),
+    gas_price: amount.nullable().optional().catch(undefined),
     status: z.enum(['success', 'failed']),
     method: z.string().nullable(),
     // Null, or missing from a backend that predates it, on anything but a call
@@ -110,6 +116,9 @@ export const evmHistoryItemSchema = z.object({
                     !isEip7708Mirror(asset_id.split('/erc20:')[1] ?? ''),
             ),
         ),
+    // Only on a recorded leg of a swap order; read by `readSwapLeg` where the
+    // row is summarized, so an unreadable one drops the swap, never the row.
+    swap: z.unknown().optional(),
 })
 
 export type EvmHistoryItem = z.output<typeof evmHistoryItemSchema>
@@ -154,6 +163,15 @@ export type EvmHistoryItemResponse = {
     /** Wei: the transaction's total gas cost, whoever paid it. */
     // lanekeep-ignore-next-line pera/amount-types reason: JSON wire response shape
     fee: Nullable<string>
+    /** The sender's nonce; absent from a backend that predates it. */
+    nonce?: Nullable<number>
+    // lanekeep-ignore-next-line pera/amount-types reason: JSON wire response shape
+    gas_limit?: Nullable<string>
+    // lanekeep-ignore-next-line pera/amount-types reason: JSON wire response shape
+    gas_used?: Nullable<string>
+    /** Wei per gas, the effective price paid. */
+    // lanekeep-ignore-next-line pera/amount-types reason: JSON wire response shape
+    gas_price?: Nullable<string>
     status: 'success' | 'failed'
     method: Nullable<string>
     /** 0x-prefixed calldata, set only on a call `from` the account. */

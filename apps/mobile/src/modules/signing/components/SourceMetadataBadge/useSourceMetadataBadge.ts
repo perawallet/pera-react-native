@@ -28,6 +28,7 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { useSiteSafetyQuery } from '@perawallet/wallet-core-site-safety'
 import { useLanguage } from '@hooks/useLanguage'
+import { getPreferredDappIcon } from '@modules/walletconnect'
 import { useSignRequestScope } from '../../hooks/useSignRequestScope'
 
 const siteKeyOf = (value?: string): Optional<string> =>
@@ -46,15 +47,7 @@ export const useSourceMetadataBadge = (
         isEnabled: !!metadata.url,
     })
 
-    const preferredIcon =
-        metadata.icons?.find(
-            icon =>
-                icon.endsWith('.png') ||
-                icon.endsWith('.jpg') ||
-                icon.endsWith('.jpeg'),
-        ) ?? metadata.icons?.at(0)
-
-    const displayIcon = preferredIcon ?? project?.logoPng
+    const displayIcon = getPreferredDappIcon(metadata.icons) ?? project?.logoPng
     const displayName = metadata.name ?? project?.name
 
     // Same inputs as the sign gate, so this reads its cached verdict.

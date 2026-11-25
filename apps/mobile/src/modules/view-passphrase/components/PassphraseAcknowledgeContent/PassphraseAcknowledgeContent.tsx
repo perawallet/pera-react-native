@@ -16,7 +16,6 @@ import {
     PWIcon,
     PWSheetLayout,
     PWText,
-    PWTouchableOpacity,
     PWView,
 } from '@components/core'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
@@ -93,28 +92,27 @@ export const PassphraseAcknowledgeContent = ({
                 )}
                 <PWView style={styles.rows}>
                     {rowKeys.map((key, index) => (
-                        <PWTouchableOpacity
+                        <PWCheckbox
                             key={key}
+                            label={
+                                <PWText
+                                    variant='body'
+                                    style={styles.rowText}
+                                >
+                                    {t(key)}
+                                </PWText>
+                            }
+                            boxPosition='trailing'
+                            isChecked={checked[index]}
+                            onPress={() => toggle(index)}
                             style={[
                                 styles.row,
                                 index !== 0
                                     ? styles.separatorBorder
                                     : undefined,
                             ]}
-                            onPress={() => toggle(index)}
                             testID={`${testID}_row_${index}`}
-                        >
-                            <PWText
-                                variant='body'
-                                style={styles.rowText}
-                            >
-                                {t(key)}
-                            </PWText>
-                            <PWCheckbox
-                                checked={checked[index]}
-                                onPress={() => toggle(index)}
-                            />
-                        </PWTouchableOpacity>
+                        />
                     ))}
                 </PWView>
             </PWView>

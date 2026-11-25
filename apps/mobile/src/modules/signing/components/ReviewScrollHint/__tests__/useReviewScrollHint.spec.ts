@@ -63,6 +63,65 @@ describe('useReviewScrollHint', () => {
         expect(result.current.isMoreBelow).toBe(true)
     })
 
+    it('keeps the hint slot for an overflowing review once scrolled to the end', () => {
+        const { result } = measured(400, 1000)
+
+        act(() => result.current.handleScroll(scrollTo(600)))
+
+        expect(result.current.isMoreBelow).toBe(false)
+        expect(result.current.isScrollable).toBe(true)
+    })
+
+    it('has not reached the end of an overflowing review until it is scrolled there, and stays there on scrolling back up', () => {
+        const { result } = measured(400, 1000)
+        expect(result.current.hasReachedEnd).toBe(false)
+
+        act(() => result.current.handleScroll(scrollTo(580)))
+        act(() => result.current.handleScroll(scrollTo(0)))
+
+        expect(result.current.hasReachedEnd).toBe(true)
+    })
+
+    it('has not reached the end before both the body and its content are measured', () => {
+        const { result } = renderHook(() => useReviewScrollHint())
+        expect(result.current.hasReachedEnd).toBe(false)
+
+        act(() => result.current.handleBodyLayout(layoutOf(400)))
+        expect(result.current.hasReachedEnd).toBe(false)
+
+        act(() => result.current.handleContentSizeChange(0, 200))
+        expect(result.current.hasReachedEnd).toBe(true)
+    })
+
+    it('un-reaches the end when content grows past it, and reaches it again once scrolled there', () => {
+        const { result } = measured(400, 1000)
+        act(() => result.current.handleScroll(scrollTo(600)))
+        expect(result.current.hasReachedEnd).toBe(true)
+
+        act(() => result.current.handleContentSizeChange(0, 1600))
+        expect(result.current.hasReachedEnd).toBe(false)
+
+        act(() => result.current.handleScroll(scrollTo(1200)))
+        expect(result.current.hasReachedEnd).toBe(true)
+    })
+
+    it('counts a review that fits its body as read to the end', () => {
+        expect(measured(400, 424).result.current.hasReachedEnd).toBe(true)
+    })
+
+    it('reserves no slot for a review that fits its body', () => {
+        expect(measured(400, 424).result.current.isScrollable).toBe(false)
+    })
+
+    it('stays hidden when a fitting review is pulled past its top', () => {
+        const { result } = measured(400, 424)
+
+        act(() => result.current.handleScroll(scrollTo(-60)))
+
+        expect(result.current.isMoreBelow).toBe(false)
+        expect(result.current.isScrollable).toBe(false)
+    })
+
     it('scrolls the body to its end', () => {
         const { result } = renderHook(() => useReviewScrollHint())
         const scrollToEnd = vi.fn()

@@ -58,7 +58,8 @@
             "search_web": "Search on the web",
             "no_results": "No results",
             "assets_unavailable": "Asset search is unavailable right now",
-            "dapps_unavailable": "dApp search is unavailable right now"
+            "dapps_unavailable": "dApp search is unavailable right now",
+            "unverified": "Unverified"
         },
         "news": {
             "title": "News",
@@ -268,7 +269,10 @@
         "empty_title": "No open approvals",
         "empty_body": "No open token or collection approvals were found for this account.",
         "error_title": "Couldn't load approvals",
-        "error_body": "Check your connection and try again.",
+        "error_body": "Something went wrong while loading them. Try again in a moment.",
+        "offline_body": "Check your connection and try again.",
+        "unavailable_title": "Approvals aren't available on this network yet",
+        "unavailable_body": "Pera can't look up this account's token approvals on this network yet.",
         "revoke_error_title": "Revoke not confirmed",
         "revoke_error_body": "Check the list for the approval's current status before trying again."
     },
@@ -287,7 +291,11 @@
         "hidden_toast_body": "It won't show in your assets or count toward your balance. Unhide it from Manage Assets > Hide Tokens.",
         "hidden_swipe_toast_body": "Tap to undo. It won't show in your assets or count toward your balance.",
         "shown_toast_title": "{{assetName}} shown",
-        "filtered_note": "Pera flagged this token as suspicious, so it stays out of your assets. List it with Show suspicious assets in the asset filters."
+        "filtered_note": "Pera flagged this token as suspicious, so it stays out of your assets. Unhide it from Hidden tokens at the end of your assets.",
+        "auto_hidden_row_title": "Hidden tokens ({{total}})",
+        "auto_hidden_title": "Hidden tokens",
+        "auto_hidden_description": "Pera hid these tokens because they look like spam or scams. Don't visit websites named in them. Unhide a token to list it again; it still won't count toward your balance.",
+        "auto_hidden_empty_title": "No hidden tokens"
     },
     "deeplink": {
         "error": {
@@ -386,7 +394,8 @@
         "imitated_currency": {
             "marker": "Not real {{code}}",
             "title": "This asset is not {{code}}",
-            "body": "Its unit name is {{code}}, but it is a separate asset that anyone could have created. Receiving it does not give you any {{code}}."
+            "body": "Its unit name is {{code}}, but it is a separate asset that anyone could have created. Receiving it does not give you any {{code}}.",
+            "unit_label": "Unknown asset"
         }
     },
     "asset_details": {
@@ -429,8 +438,6 @@
             "social_media": "Social Media",
             "chart_empty_body": "You will see a chart here once you have some balance history",
             "total_supply_info_body": "The total supply of an asset is set at creation time and it corresponds to the asset's total created units.",
-            "circulating_supply": "Circulating Supply",
-            "circulating_supply_info_body": "The circulating supply is the number of coins in public circulation right now. A network's native coin has no fixed total, so this figure changes as coins are issued or burned.",
             "token_total_supply_info_body": "The total supply is the number of tokens the contract has issued, minus any burned. It changes when the issuer mints or burns tokens."
         },
         "action_buttons": {
@@ -446,14 +453,13 @@
             "empty_filtered_body": "No transactions match this filter",
             "empty_on_network_body": "No transactions yet on {{network}}",
             "network_failed": "Couldn't load transactions on {{networks}}",
-            "network_unavailable": "Transactions aren't available on {{networks}}",
+            "network_unavailable": "Full history isn't available on {{networks}}",
             "offline_empty_title": "You're offline",
             "offline_empty_body": "No transactions are saved on this device yet. They'll appear once you're back online.",
             "search_paused_body": "No transactions found in recent history.",
             "search_older": "Search Older",
             "filter": "Filter",
-            "csv": "CSV",
-            "csv_on_network": "{{network}} CSV"
+            "csv": "CSV"
         },
         "collectible": {
             "description": "Description",
@@ -486,7 +492,7 @@
         },
         "token_warning": {
             "suspicious_title": "Suspicious token",
-            "body": "Pera has flagged this token as suspicious. You didn't request it, and it may be a scam. Don't interact with websites or links related to it."
+            "body": "Pera has flagged this token as suspicious. You didn't request it, and it may be a scam. Be careful interacting with it or with websites and links related to it."
         },
         "copy_full_amount_hint": "Long press to copy the full amount",
         "toggle_amount_hint": "Tap to switch between the value and the asset amount"
@@ -524,6 +530,7 @@
             "empty_title": "NFTs",
             "empty_body": "Welcome to your NFT Gallery! You don't have any NFTs yet. All the NFTs available in your wallet will be visible here.",
             "empty_body_multichain": "Welcome to your NFT Gallery!\nYou don't have any NFTs yet. NFTs you receive on networks like Ethereum show up here on their own. Algorand NFTs need an opt-in first.",
+            "empty_body_unsupported": "NFTs on {{chains}} aren't shown in Pera yet.",
             "empty_optin": "Opt-in to NFT",
             "empty_optin_algorand": "Opt in to Algorand NFT",
             "nomatch_title": "No Matching NFTs",
@@ -629,6 +636,8 @@
         "enable_network_success": "{{network}} enabled",
         "see_all_networks": "See all networks",
         "view_passphrase": "View passphrase",
+        "write_down_passphrase": "Also write down your passphrase",
+        "write_down_passphrase_subtitle": "Recommended, not required",
         "network_options": "More options"
     },
     "account_info": {
@@ -731,18 +740,29 @@
     "backup": {
         "banner": {
             "text": "You need to back up your recovery passphrase",
-            "cta": "Back Up Now"
+            "cta": "Back Up Now",
+            "text_with_cloud_backup": "You need to back up this account",
+            "cta_passphrase": "Back Up Passphrase",
+            "cta_turn_on_cloud_backup": "Turn On Cloud Backup",
+            "cta_fix_cloud_backup": "Fix Cloud Backup"
+        },
+        "status": {
+            "cloud_backup": "Backed up · Cloud Backup"
         },
         "info": {
             "title": "Create a recovery passphrase backup for your account",
             "body": "Creating a recovery passphrase backup will allow you to recover your account. Without the recovery passphrase, if you lose your device, remove the account or delete the app, you can permanently lose access to your Algorand account!",
-            "body_all_networks": "Your recovery passphrase is the only way to recover your account on all networks: {{networks}}. If you lose your device, remove the account or delete the app without a backup, you'll permanently lose access to your funds.",
+            "body_all_networks": "A recovery passphrase backup lets you recover your account on all networks: {{networks}}. If you lose your device, remove the account or delete the app without a backup, you'll permanently lose access to your funds.",
+            "body_with_cloud_backup": "A recovery passphrase backup lets you recover your Algorand account. Cloud Backup can restore it too. Without either backup, if you lose your device, remove the account or delete the app, you can permanently lose access to your account.",
+            "body_all_networks_with_cloud_backup": "A recovery passphrase backup lets you recover your account on all networks: {{networks}}. Cloud Backup can restore it too. Without either backup, if you lose your device, remove the account or delete the app, you'll permanently lose access to your funds.",
             "cta": "I Understand"
         },
         "write_down": {
             "title": "Prepare to write down your recovery passphrase",
-            "body": "The only way to recover an Algorand account is with this recovery passphrase.",
-            "body_all_networks": "This recovery passphrase is the only way to recover your account and all its addresses on every network.",
+            "body": "This recovery passphrase recovers your Algorand account.",
+            "body_all_networks": "This recovery passphrase recovers your account and all its addresses on every network.",
+            "body_with_cloud_backup": "This recovery passphrase recovers your Algorand account. Cloud Backup is the other way to restore it.",
+            "body_all_networks_with_cloud_backup": "This recovery passphrase recovers your account and all its addresses on every network. Cloud Backup is the other way to restore it.",
             "warning": "Do not share this recovery passphrase with anyone, as it grants full access to your account.",
             "warning_all_networks": "Never share this recovery passphrase. Anyone who has it controls your funds on every network.",
             "cta": "I'm Ready to Begin"
@@ -850,6 +870,16 @@
             "description": "Choose the correct words to confirm you’ve stored your 12-word key securely.",
             "proceed": "Proceed",
             "error_message": "Incorrect selection. Please try again."
+        },
+        "confirm_credentials": {
+            "warning": "Confirm you’ve saved your backup key",
+            "title": "Confirm Backup Key",
+            "description": "Choose the correct words of your 12-word key and enter your encryption key to confirm you’ve stored them.",
+            "confirm": "Confirm",
+            "error_words": "Some of the selected words are incorrect. Please try again.",
+            "error_key": "This encryption key doesn’t match your backup.",
+            "error_both": "The selected words and the encryption key are both incorrect.",
+            "success": "Backup key confirmed"
         },
         "store_encryption_key": {
             "title": "Store your Encryption Key",
@@ -1067,6 +1097,12 @@
             "confirm_button": "Delete Backup",
             "confirm_checkbox_label": "I understand my backup will be permanently deleted from the server and this can’t be undone."
         },
+        "turn_off_at_risk": {
+            "summary_one": "This account holding <0/> will no longer be backed up.",
+            "summary_other": "These {{count}} accounts holding <0/> will no longer be backed up.",
+            "back_up_first": "Back Up Passphrases First",
+            "turn_off_anyway": "Turn Off Anyway"
+        },
         "restore": {
             "sheet_title": "Restore/Retrieve a Backup",
             "sheet_description": "Restore your backup by scanning a QR code or entering your credentials manually.",
@@ -1205,6 +1241,10 @@
             "title": "Copied to clipboard",
             "body": ""
         },
+        "address_copied": {
+            "algorand": "Algorand address copied",
+            "evm": "EVM address copied"
+        },
         "email_failed": {
             "title": "Couldn't open email app",
             "body": "No email app is set up on this device. You can write to {{email}} directly."
@@ -1231,7 +1271,8 @@
             "asset_empty_body": "You will see a chart here once you have some balance history for this asset on this account",
             "excludes_networks": "This chart doesn't include {{networks}} assets yet",
             "failed_networks": "Couldn't load {{networks}} history, so this chart leaves it out",
-            "currency_unavailable_body": "This chart isn't available in {{currency}} right now"
+            "currency_unavailable_body": "This chart isn't available in {{currency}} right now",
+            "balance_change_label": "Balance change"
         },
         "webview": {
             "failed_title": "Failed to load page",
@@ -1499,6 +1540,10 @@
             "asset_frozen": {
                 "title": "Asset frozen",
                 "body": "Asset {{assetId}} is frozen, so this transfer can't be completed. The asset's freeze manager must unfreeze it first."
+            },
+            "fee_above_shown": {
+                "title": "Network fee changed",
+                "body": "The network now asks for a higher fee than the one you saw, so nothing was signed. Try again to see the current fee."
             }
         },
         "kms": {
@@ -1532,7 +1577,8 @@
             "request_expired_body": "This signing request expired before it was answered. Ask the app to send it again.",
             "unsupported_method_body": "{{dappName}} asked for {{method}}, which Pera doesn't support, so the request was declined.",
             "unsupported_network_body": "{{dappName}} asked to use the network with chain ID {{chainId}}, which Pera doesn't support, so the request was declined.",
-            "unsupported_chains_body": "This app asked to use a network Pera doesn't support, so the connection was declined."
+            "unsupported_chains_body": "This app asked to use a network Pera doesn't support, so the connection was declined.",
+            "unselected_network_body": "This app only offers networks Pera isn't on right now, so the connection was declined. Turn developer mode on or off to match the app, then try again."
         },
         "signing": {
             "title": "An error occurred processing the signing request",
@@ -2379,6 +2425,8 @@
             "load_error": "Couldn't load this transaction. It may have expired or been removed.",
             "cosign_rejected_title": "Can't sign this transaction",
             "cosign_rejected_body": "This request includes a transaction the shared account doesn't authorize. If the sender is an account rekeyed to the shared account, add it to your wallet and try again.",
+            "request_open_title": "Close the open request first",
+            "request_open_body": "Finish or close the signing request, then open the link again.",
             "retry": "Try Again",
             "canceled": "Transaction canceled.",
             "declined": "Transaction declined.",
@@ -2773,6 +2821,14 @@
                 "fetch_failed_title": "Could not load backup",
                 "decrypt_failed_title": "Backup could not be unlocked"
             },
+            "review": {
+                "title": "Review accounts",
+                "body_one": "This code imports {{count}} account. Check it is yours before importing.",
+                "body_other": "This code imports {{count}} accounts. Check they are yours before importing.",
+                "body": "This code imports {{count}} accounts. Check they are yours before importing.",
+                "confirm": "Import accounts",
+                "interrupted": "The import was interrupted. Scan the QR code again to continue."
+            },
             "result": {
                 "success_title": "Accounts imported",
                 "success_body_one": "{{count}} account was added to your wallet.",
@@ -3150,6 +3206,7 @@
             "verify_title": "Enter your PIN",
             "unlock_title": "Enter your PIN",
             "change_old_title": "Enter your old\n6-digit PIN",
+            "matches_duress_pin": "Your new PIN must be different from your duress PIN.",
             "logging_in": "Logging in"
         },
         "lockout": {
@@ -3297,7 +3354,8 @@
             },
             "fee_shortfall": {
                 "title": "Not enough {{symbol}} for the fee",
-                "body": "This send can be charged up to {{fee}} in fees. Lower the amount or pick a slower fee."
+                "body": "This send can be charged up to {{fee}} in fees. Lower the amount or pick a slower fee.",
+                "body_non_native": "This send can be charged up to {{fee}} in fees on {{network}}. Add {{symbol}} or pick a slower fee."
             },
             "fee_unavailable": {
                 "title": "Couldn't estimate the fee",
@@ -3628,6 +3686,31 @@
             "typed_data_warning_title": "This signature can move your tokens",
             "typed_data_warning_body": "Signing structured data can authorize an app to spend or trade your tokens without asking you again. Only approve if you trust this application."
         },
+        "sign_in": {
+            "title": "Sign in to {{domain}}",
+            "domain": "Domain",
+            "address": "Address",
+            "uri": "URI",
+            "chain_id": "Chain ID",
+            "nonce": "Nonce",
+            "issued_at": "Issued",
+            "expires_at": "Expires",
+            "advanced": "Advanced",
+            "site_mismatch_title": "This sign-in is for another site",
+            "site_mismatch_body": "The message signs you in to {{domain}}, but the request comes from {{site}}. Only approve if you trust both.",
+            "other_address_note": "The message names {{address}}, not the account signing it.",
+            "other_chain_note": "The message names {{chain}}, not the network this request is for. Signing in sends no transaction.",
+            "other_chain_id_note": "The message names chain ID {{chainId}}, not the network this request is for. Signing in sends no transaction.",
+            "statement_label": "Message from {{domain}}",
+            "not_before": "Valid from",
+            "request_id": "Request ID",
+            "resource": "Resource",
+            "grants_title": "This sign-in also grants permissions",
+            "grants_body": "Signing lets {{domain}} act for you with the permissions below. Only approve if you trust it.",
+            "grants_unreadable_body": "This sign-in grants {{domain}} permissions Pera can't read. Only approve if you trust it.",
+            "malformed_title": "This sign-in message has unexpected content",
+            "malformed_body": "Parts of this message don't follow the sign-in format, so {{domain}} may read it differently than shown here. Check the full message under Advanced, and only approve if you trust the site."
+        },
         "spend_approval": {
             "spend_warning": "This signature lets another address move tokens out of your account without asking you again.",
             "spend_warning_transaction": "This transaction lets another address move tokens out of your account without asking you again.",
@@ -3639,7 +3722,11 @@
             "no_deadline_warning": "This permission never expires.",
             "spender_label": "Spender",
             "unlimited": "Unlimited",
-            "deadline_label": "Deadline",
+            "expiry_label": "Permit expires",
+            "signature_deadline_label": "Signature valid until",
+            "signature_long_deadline_warning": "This signature stays valid for more than a year, so it can be used long after you sign it.",
+            "expired_title": "This request has expired",
+            "expired_body": "Its signing deadline has passed, so it would be refused. Cancel and start again in the app.",
             "never": "Never",
             "known_title": "About this approval",
             "known_description": "{{name}} is a well-known contract",
@@ -3902,6 +3989,7 @@
             "approval_for": "For {{spender}}",
             "unlimited_approval_for": "Unlimited · for {{spender}}",
             "swap_pair": "Swap {{from}} → {{to}}",
+            "swap_assets": "{{from}} → {{to}}",
             "add_liquidity": "Add liquidity",
             "remove_liquidity": "Remove liquidity",
             "collect_fees": "Collect fees",
@@ -3917,7 +4005,10 @@
             "nft_subtitle": "{{collection}} #{{tokenId}}",
             "nft_batch_subtitle": "{{collection}} · {{count}} items",
             "inner_transaction_count": "{{innerCount}} inner txns",
-            "cancel_transaction": "Cancel transaction"
+            "cancel_transaction": "Cancel transaction",
+            "send_by_approval": "Send (approved)",
+            "spoofed_send": "Spoofed send",
+            "contract_call_named": "Contract: {{method}}"
         },
         "record_detail": {
             "read_failed": "Couldn't read this transaction's call details from the network.",
@@ -4067,6 +4158,8 @@
             "title": "Filter",
             "all_time": "All Time",
             "today": "Today",
+            "hide_suspicious": "Hide suspicious transactions",
+            "hide_suspicious_description": "Hides spoofed sends, look-alike and spam tokens, and suspected address poisoning.",
             "yesterday": "Yesterday",
             "last_week": "Last Week",
             "last_month": "Last Month",
@@ -4089,15 +4182,20 @@
             "blocked_body": "An earlier transaction from this account never reached the network, so this one can't confirm until something takes its place. Unblock sends an empty transfer to yourself in its place, which costs a network fee.",
             "unblock": "Unblock"
         },
+        "suspected_fake_transfer": {
+            "title": "Suspected fake transfer",
+            "body": "Your account didn't sign this transfer, and it moved nothing. Anyone can make a transfer of 0 tokens look like it came from your account, without any approval. Scammers do this so their address shows up in your history and gets copied later. Don't copy addresses from it."
+        },
         "suspected_poisoning": {
-            "marker": "Suspected address poisoning",
             "title": "Suspected address poisoning",
-            "body": "This transfer moved nothing of value and comes from an address made to look like one you know. Scammers send these so their address shows up in your history and gets copied later. Don't copy it or send to it.",
+            "body": "This transfer moved nothing of value and comes from an address made to look like one you know. Scammers send these so their address shows up in your history and gets copied later.",
+            "do_not_reuse": "Don't copy this address or send to it.",
             "sender_label": "This address",
             "reuse_title": "This address imitates one you know",
             "reuse_body": "It starts and ends like an address you know, but it isn't the same. Compare the full addresses before you use it.",
             "reuse_confirm": "Continue anyway",
-            "reuse_cancel": "Cancel"
+            "reuse_cancel": "Cancel",
+            "dismiss": "Got it"
         }
     },
     "tabbar": {
@@ -4145,15 +4243,34 @@
             "view_accounts": "See your address and balances",
             "approve_transactions": "Ask you to approve transactions",
             "sign_messages": "Ask you to sign messages",
-            "switch_networks": "Ask to switch networks"
+            "switch_networks": "Ask to switch networks",
+            "add_tokens": "Ask to add tokens to your account"
         },
         "connection": {
             "approve_delivery_failed": "Couldn't reach the dApp to confirm the connection. Check your internet connection and try again."
         },
         "switch_network": {
             "title": "Allow network access?",
-            "body": "{{name}} wants to use your {{chain}} accounts on {{network}}.",
+            "body": "{{name}} wants to use your accounts on {{chain}}.",
+            "body_with_network": "{{name}} wants to use your accounts on {{chain}} {{network}}.",
             "confirm": "Allow"
+        },
+        "watch_asset": {
+            "title": "Add token?",
+            "body": "{{name}} wants to add this token to your account.",
+            "unreadable": "Pera couldn't read a token at this address on {{chain}}.",
+            "confirm": "Add token",
+            "token": "Token",
+            "verification": "Verification",
+            "contract": "Contract",
+            "decimals": "Decimals",
+            "network": "Network",
+            "account": "Account",
+            "tier": {
+                "verified": "Verified",
+                "unverified": "Unverified",
+                "suspicious": "Suspicious"
+            }
         },
         "settings": {
             "empty_title": "No WalletConnect Sessions",
@@ -4292,6 +4409,7 @@
             "quote_error": "Unable to get quotes. Please try again.",
             "amount_too_low": "Amount too small to swap on {{network}}. The minimum is {{amount}} {{unit}}.",
             "amount_too_low_fiat": "Amount too small to swap on {{network}}. The minimum is {{amount}} {{unit}} (~{{fiat}}).",
+            "amount_too_low_above_balance": "Your available balance is below the {{amount}} {{unit}} minimum to swap on {{network}}.",
             "use_minimum": "Use minimum",
             "amount_too_low_unknown": "Amount too small to swap on {{network}}. Try a larger amount or a lower-fee network.",
             "amount_too_high": "Amount too large to swap. The maximum is {{amount}} {{unit}}.",
@@ -4311,9 +4429,12 @@
                 "swap": "Swap failed"
             },
             "provider_failed_body": "This provider couldn't complete the swap. Try another provider.",
+            "provider_failed_single_body": "The provider couldn't complete the swap. Try again later or try a different amount.",
             "provider_unavailable_body": "The provider is unavailable right now. Try again in a moment.",
             "quote_mismatch_body": "The provider's transactions didn't match this quote, so nothing was signed. Try again or choose another provider.",
+            "quote_mismatch_single_body": "The provider's transactions didn't match this quote, so nothing was signed. Try again later.",
             "unsupported_order_body": "Pera can't complete this provider's order, so nothing was signed. Choose another provider.",
+            "unsupported_order_single_body": "Pera can't complete this provider's order, so nothing was signed. Try again later.",
             "signing_failed_body": "The transaction couldn't be signed, so it wasn't sent. Try again.",
             "order_insufficient_balance_body": "Your balance can't cover this amount and the network fee. Try a smaller amount or add funds for the fee.",
             "insufficient_native_body": "This account needs at least {{amount}} more {{symbol}} to cover this swap, its fees, and the minimum balance. Add more {{symbol}} and try again.",
@@ -4360,6 +4481,8 @@
                         "refunded": "Refunded"
                     }
                 },
+                "account_filter_all": "All accounts",
+                "load_more": "Load more",
                 "empty": {
                     "title": "No swaps yet",
                     "body": "Your swap history will appear here."
@@ -5197,6 +5320,8 @@
             "gwei": "Gwei",
             "nonce": "Nonce",
             "gas_limit": "Gas limit",
+            "gas_used": "Gas used",
+            "gas_price": "Gas price",
             "max_fee_per_gas": "Max fee per gas",
             "max_priority_fee_per_gas": "Max priority fee per gas"
         },

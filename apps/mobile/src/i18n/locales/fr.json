@@ -58,7 +58,8 @@
             "search_web": "Rechercher sur le web",
             "no_results": "Aucun résultat",
             "assets_unavailable": "La recherche d’actifs est indisponible pour le moment",
-            "dapps_unavailable": "La recherche de dApps est indisponible pour le moment"
+            "dapps_unavailable": "La recherche de dApps est indisponible pour le moment",
+            "unverified": "Non vérifié"
         },
         "news": {
             "title": "Actualités",
@@ -268,7 +269,10 @@
         "empty_title": "Aucune autorisation ouverte",
         "empty_body": "Aucune autorisation ouverte de jeton ou de collection n'a été trouvée pour ce compte.",
         "error_title": "Impossible de charger les autorisations",
-        "error_body": "Vérifiez votre connexion et réessayez.",
+        "error_body": "Un problème est survenu lors du chargement. Réessayez dans un instant.",
+        "offline_body": "Vérifiez votre connexion et réessayez.",
+        "unavailable_title": "Les autorisations ne sont pas encore disponibles sur ce réseau",
+        "unavailable_body": "Pera ne peut pas encore consulter les autorisations de jetons de ce compte sur ce réseau.",
         "revoke_error_title": "Révocation non confirmée",
         "revoke_error_body": "Vérifiez dans la liste l'état de l'autorisation avant de réessayer."
     },
@@ -287,7 +291,11 @@
         "hidden_toast_body": "Il n’apparaîtra plus dans vos actifs et ne comptera plus dans votre solde. Affichez-le de nouveau depuis Gérer les actifs > Masquer des jetons.",
         "hidden_swipe_toast_body": "Touchez pour annuler. Il n’apparaîtra plus dans vos actifs et ne comptera plus dans votre solde.",
         "shown_toast_title": "{{assetName}} affiché",
-        "filtered_note": "Pera a signalé ce jeton comme suspect, il reste donc hors de vos actifs. Affichez-le avec « Afficher les actifs suspects » dans les filtres d’actifs."
+        "filtered_note": "Pera a signalé ce jeton comme suspect, il reste donc hors de vos actifs. Affichez-le depuis « Jetons masqués », à la fin de vos actifs.",
+        "auto_hidden_row_title": "Jetons masqués ({{total}})",
+        "auto_hidden_title": "Jetons masqués",
+        "auto_hidden_description": "Pera a masqué ces jetons, car ils ressemblent à du spam ou à des arnaques. Ne visitez pas les sites web qu’ils mentionnent. Affichez un jeton pour le voir de nouveau dans la liste ; il ne comptera toujours pas dans votre solde.",
+        "auto_hidden_empty_title": "Aucun jeton masqué"
     },
     "deeplink": {
         "error": {
@@ -386,7 +394,8 @@
         "imitated_currency": {
             "marker": "Imite {{code}}",
             "title": "Cet actif n’est pas {{code}}",
-            "body": "Son nom d’unité est {{code}}, mais il s’agit d’un actif distinct que n’importe qui a pu créer. Le recevoir ne vous donne aucun {{code}}."
+            "body": "Son nom d’unité est {{code}}, mais il s’agit d’un actif distinct que n’importe qui a pu créer. Le recevoir ne vous donne aucun {{code}}.",
+            "unit_label": "Actif inconnu"
         }
     },
     "asset_details": {
@@ -429,8 +438,6 @@
             "social_media": "Réseaux sociaux",
             "chart_empty_body": "Un graphique apparaîtra ici dès que vous aurez un historique de solde",
             "total_supply_info_body": "L’offre totale d’un actif est définie lors de sa création et correspond au nombre total d’unités créées.",
-            "circulating_supply": "Offre en circulation",
-            "circulating_supply_info_body": "L’offre en circulation est le nombre de pièces actuellement en circulation. La monnaie native d’un réseau n’a pas de total fixe : ce chiffre évolue à mesure que des pièces sont émises ou brûlées.",
             "token_total_supply_info_body": "L’offre totale est le nombre de jetons émis par le contrat, moins ceux qui ont été brûlés. Elle change lorsque l’émetteur crée ou brûle des jetons."
         },
         "action_buttons": {
@@ -446,14 +453,13 @@
             "empty_filtered_body": "Aucune transaction ne correspond à ce filtre",
             "empty_on_network_body": "Aucune transaction pour le moment sur {{network}}",
             "network_failed": "Impossible de charger les transactions sur {{networks}}",
-            "network_unavailable": "Les transactions ne sont pas disponibles sur {{networks}}",
+            "network_unavailable": "L’historique complet n’est pas disponible sur {{networks}}",
             "offline_empty_title": "Vous êtes hors ligne",
             "offline_empty_body": "Aucune transaction n’est encore enregistrée sur cet appareil. Elles apparaîtront dès que vous serez de retour en ligne.",
             "search_paused_body": "Aucune transaction trouvée dans l’historique récent.",
             "search_older": "Rechercher les plus anciennes",
             "filter": "Filtrer",
-            "csv": "CSV",
-            "csv_on_network": "CSV {{network}}"
+            "csv": "CSV"
         },
         "collectible": {
             "description": "Description",
@@ -486,7 +492,7 @@
         },
         "token_warning": {
             "suspicious_title": "Jeton suspect",
-            "body": "Pera a signalé ce jeton comme suspect. Vous ne l’avez pas demandé et il pourrait s’agir d’une arnaque. N’interagissez pas avec les sites web ou les liens qui s’y rapportent."
+            "body": "Pera a signalé ce jeton comme suspect. Vous ne l’avez pas demandé et il pourrait s’agir d’une arnaque. Soyez prudent avec ce jeton et avec les sites web ou les liens qui s’y rapportent."
         },
         "copy_full_amount_hint": "Appuyez longuement pour copier le montant complet",
         "toggle_amount_hint": "Appuyez pour basculer entre la valeur et le montant de l’actif"
@@ -524,6 +530,7 @@
             "empty_title": "NFT",
             "empty_body": "Bienvenue dans votre galerie NFT ! Vous n’avez pas encore de NFT. Tous les NFT disponibles dans votre wallet apparaîtront ici.",
             "empty_body_multichain": "Bienvenue dans votre galerie NFT !\nVous n’avez pas encore de NFT. Les NFT que vous recevez sur des réseaux comme Ethereum apparaissent ici automatiquement. Les NFT Algorand nécessitent d’abord un opt-in.",
+            "empty_body_unsupported": "Les NFT sur {{chains}} ne sont pas encore affichés dans Pera.",
             "empty_optin": "Opt-in à un NFT",
             "empty_optin_algorand": "Opt-in à un NFT Algorand",
             "nomatch_title": "Aucun NFT correspondant",
@@ -629,6 +636,8 @@
         "enable_network_success": "Réseau {{network}} activé",
         "see_all_networks": "Voir tous les réseaux",
         "view_passphrase": "Voir la passphrase",
+        "write_down_passphrase": "Notez aussi votre passphrase",
+        "write_down_passphrase_subtitle": "Recommandé, pas obligatoire",
         "network_options": "Plus d’options"
     },
     "account_info": {
@@ -731,18 +740,29 @@
     "backup": {
         "banner": {
             "text": "Vous devez sauvegarder la passphrase de récupération",
-            "cta": "Sauvegarder maintenant"
+            "cta": "Sauvegarder maintenant",
+            "text_with_cloud_backup": "Vous devez sauvegarder ce compte",
+            "cta_passphrase": "Sauvegarder la passphrase de récupération",
+            "cta_turn_on_cloud_backup": "Activer la sauvegarde cloud",
+            "cta_fix_cloud_backup": "Corriger la sauvegarde cloud"
+        },
+        "status": {
+            "cloud_backup": "Sauvegardé · Sauvegarde cloud"
         },
         "info": {
             "title": "Créer une sauvegarde de la passphrase de récupération de votre compte",
             "body": "Créer une sauvegarde de la passphrase de récupération vous permettra de récupérer votre compte. Sans la passphrase de récupération, si vous perdez votre appareil, supprimez le compte ou désinstallez l’application, vous risquez de perdre définitivement l’accès à votre compte Algorand !",
-            "body_all_networks": "Votre passphrase de récupération est le seul moyen de récupérer votre compte sur tous les réseaux : {{networks}}. Si vous perdez votre appareil, supprimez le compte ou désinstallez l’application sans sauvegarde, vous perdrez définitivement l’accès à vos fonds.",
+            "body_all_networks": "Une sauvegarde de la passphrase de récupération vous permet de récupérer votre compte sur tous les réseaux : {{networks}}. Si vous perdez votre appareil, supprimez le compte ou désinstallez l’application sans sauvegarde, vous perdrez définitivement l’accès à vos fonds.",
+            "body_with_cloud_backup": "Une sauvegarde de la passphrase de récupération vous permet de récupérer votre compte Algorand. La sauvegarde cloud peut aussi le restaurer. Sans l’une ou l’autre, si vous perdez votre appareil, supprimez le compte ou désinstallez l’application, vous risquez de perdre définitivement l’accès à votre compte.",
+            "body_all_networks_with_cloud_backup": "Une sauvegarde de la passphrase de récupération vous permet de récupérer votre compte sur tous les réseaux : {{networks}}. La sauvegarde cloud peut aussi le restaurer. Sans l’une ou l’autre, si vous perdez votre appareil, supprimez le compte ou désinstallez l’application, vous perdrez définitivement l’accès à vos fonds.",
             "cta": "J’ai compris"
         },
         "write_down": {
             "title": "Préparez-vous à noter votre passphrase de récupération",
-            "body": "La seule façon de récupérer un compte Algorand est d’utiliser cette passphrase de récupération.",
-            "body_all_networks": "Cette passphrase de récupération est le seul moyen de récupérer votre compte et toutes ses adresses sur tous les réseaux.",
+            "body": "Cette passphrase de récupération permet de récupérer votre compte Algorand.",
+            "body_all_networks": "Cette passphrase de récupération permet de récupérer votre compte et toutes ses adresses sur tous les réseaux.",
+            "body_with_cloud_backup": "Cette passphrase de récupération permet de récupérer votre compte Algorand. La sauvegarde cloud est l’autre moyen de le restaurer.",
+            "body_all_networks_with_cloud_backup": "Cette passphrase de récupération permet de récupérer votre compte et toutes ses adresses sur tous les réseaux. La sauvegarde cloud est l’autre moyen de le restaurer.",
             "warning": "Ne partagez cette passphrase de récupération avec personne : elle donne un accès total à votre compte.",
             "warning_all_networks": "Ne partagez cette passphrase de récupération avec personne. Toute personne qui la possède contrôle vos fonds sur tous les réseaux.",
             "cta": "Tout est prêt, commencer"
@@ -850,6 +870,16 @@
             "description": "Choisissez les bons mots pour confirmer que vous avez conservé votre clé de 12 mots en lieu sûr.",
             "proceed": "Continuer",
             "error_message": "Sélection incorrecte. Veuillez réessayer."
+        },
+        "confirm_credentials": {
+            "warning": "Confirmez que vous avez enregistré votre clé de sauvegarde",
+            "title": "Confirmer la clé de sauvegarde",
+            "description": "Choisissez les bons mots de votre clé de 12 mots et saisissez votre clé de chiffrement pour confirmer que vous les avez conservées.",
+            "confirm": "Confirmer",
+            "error_words": "Certains des mots sélectionnés sont incorrects. Veuillez réessayer.",
+            "error_key": "Cette clé de chiffrement ne correspond pas à votre sauvegarde.",
+            "error_both": "Les mots sélectionnés et la clé de chiffrement sont tous deux incorrects.",
+            "success": "Clé de sauvegarde confirmée"
         },
         "store_encryption_key": {
             "title": "Conservez votre clé de chiffrement",
@@ -1067,6 +1097,12 @@
             "confirm_button": "Supprimer la sauvegarde",
             "confirm_checkbox_label": "Je comprends que ma sauvegarde sera définitivement supprimée du serveur et que cette action est irréversible."
         },
+        "turn_off_at_risk": {
+            "summary_one": "Ce compte, qui détient <0/>, ne sera plus sauvegardé.",
+            "summary_other": "Ces {{count}} comptes, qui détiennent <0/> au total, ne seront plus sauvegardés.",
+            "back_up_first": "Sauvegarder d’abord les passphrases",
+            "turn_off_anyway": "Désactiver quand même"
+        },
         "restore": {
             "sheet_title": "Restaurer/récupérer une sauvegarde",
             "sheet_description": "Restaurez votre sauvegarde en scannant un QR code ou en saisissant vos identifiants manuellement.",
@@ -1205,6 +1241,10 @@
             "title": "Copié dans le presse-papiers",
             "body": ""
         },
+        "address_copied": {
+            "algorand": "Adresse Algorand copiée",
+            "evm": "Adresse EVM copiée"
+        },
         "email_failed": {
             "title": "Impossible d’ouvrir l’app e-mail",
             "body": "Aucune app e-mail n’est configurée sur cet appareil. Vous pouvez écrire directement à {{email}}."
@@ -1231,7 +1271,8 @@
             "asset_empty_body": "Un graphique apparaîtra ici dès que vous aurez un historique de solde pour cet actif sur ce compte",
             "excludes_networks": "Ce graphique n'inclut pas encore les actifs {{networks}}",
             "failed_networks": "Impossible de charger l'historique {{networks}}, ce graphique ne l'inclut donc pas",
-            "currency_unavailable_body": "Ce graphique n'est pas disponible en {{currency}} pour le moment"
+            "currency_unavailable_body": "Ce graphique n'est pas disponible en {{currency}} pour le moment",
+            "balance_change_label": "Variation du solde"
         },
         "webview": {
             "failed_title": "Échec du chargement de la page",
@@ -1499,6 +1540,10 @@
             "asset_frozen": {
                 "title": "Actif gelé",
                 "body": "L’actif {{assetId}} est gelé, ce transfert ne peut donc pas aboutir. Le gestionnaire de gel de l’actif doit d’abord le dégeler."
+            },
+            "fee_above_shown": {
+                "title": "Frais de réseau modifiés",
+                "body": "Le réseau demande maintenant des frais plus élevés que ceux affichés, donc rien n’a été signé. Réessayez pour voir les frais actuels."
             }
         },
         "kms": {
@@ -1532,7 +1577,8 @@
             "request_expired_body": "Cette demande de signature a expiré avant d’être traitée. Demandez à l’application de la renvoyer.",
             "unsupported_method_body": "{{dappName}} a demandé {{method}}, que Pera ne prend pas en charge. La demande a été refusée.",
             "unsupported_network_body": "{{dappName}} a voulu utiliser le réseau dont l’ID de chaîne est {{chainId}}, que Pera ne prend pas en charge. La demande a été refusée.",
-            "unsupported_chains_body": "Cette application a voulu utiliser un réseau que Pera ne prend pas en charge. La connexion a été refusée."
+            "unsupported_chains_body": "Cette application a voulu utiliser un réseau que Pera ne prend pas en charge. La connexion a été refusée.",
+            "unselected_network_body": "Cette application ne propose que des réseaux sur lesquels Pera n’est pas actuellement. La connexion a été refusée. Activez ou désactivez le mode développeur pour correspondre à l’application, puis réessayez."
         },
         "signing": {
             "title": "Une erreur est survenue lors du traitement de la demande de signature",
@@ -2379,6 +2425,8 @@
             "load_error": "Impossible de charger cette transaction. Elle a peut-être expiré ou été supprimée.",
             "cosign_rejected_title": "Impossible de signer cette transaction",
             "cosign_rejected_body": "Cette demande contient une transaction que le compte partagé n’autorise pas. Si l’expéditeur est un compte ayant fait l’objet d’un rekey vers le compte partagé, ajoutez-le à votre wallet et réessayez.",
+            "request_open_title": "Ferme d’abord la demande ouverte",
+            "request_open_body": "Termine ou ferme la demande de signature, puis rouvre le lien.",
             "retry": "Réessayer",
             "canceled": "Transaction annulée.",
             "declined": "Transaction refusée.",
@@ -2773,6 +2821,14 @@
                 "fetch_failed_title": "Impossible de charger la sauvegarde",
                 "decrypt_failed_title": "Impossible de déverrouiller la sauvegarde"
             },
+            "review": {
+                "title": "Vérifiez les comptes",
+                "body_one": "Ce code importe {{count}} compte. Vérifiez qu’il vous appartient avant de l’importer.",
+                "body_other": "Ce code importe {{count}} comptes. Vérifiez qu’ils vous appartiennent avant de les importer.",
+                "body": "Ce code importe {{count}} comptes. Vérifiez qu’ils vous appartiennent avant de les importer.",
+                "confirm": "Importer les comptes",
+                "interrupted": "L’importation a été interrompue. Scannez à nouveau le code QR pour continuer."
+            },
             "result": {
                 "success_title": "Comptes importés",
                 "success_body_one": "{{count}} compte a été ajouté à votre wallet.",
@@ -3150,6 +3206,7 @@
             "verify_title": "Saisissez votre code PIN",
             "unlock_title": "Saisissez votre code PIN",
             "change_old_title": "Saisissez votre ancien\ncode PIN à 6 chiffres",
+            "matches_duress_pin": "Votre nouveau code PIN doit être différent de votre code PIN de contrainte.",
             "logging_in": "Connexion en cours"
         },
         "lockout": {
@@ -3297,7 +3354,8 @@
             },
             "fee_shortfall": {
                 "title": "Pas assez de {{symbol}} pour les frais",
-                "body": "Cet envoi peut coûter jusqu’à {{fee}} de frais. Réduisez le montant ou choisissez des frais plus lents."
+                "body": "Cet envoi peut coûter jusqu’à {{fee}} de frais. Réduisez le montant ou choisissez des frais plus lents.",
+                "body_non_native": "Cet envoi peut coûter jusqu’à {{fee}} de frais sur {{network}}. Ajoutez des {{symbol}} ou choisissez des frais plus lents."
             },
             "fee_unavailable": {
                 "title": "Impossible d’estimer les frais",
@@ -3628,6 +3686,31 @@
             "typed_data_warning_title": "Cette signature peut déplacer vos tokens",
             "typed_data_warning_body": "Signer des données structurées peut autoriser une application à dépenser ou échanger vos tokens sans vous redemander votre accord. N’approuvez que si vous faites confiance à cette application."
         },
+        "sign_in": {
+            "title": "Se connecter à {{domain}}",
+            "domain": "Domaine",
+            "address": "Adresse",
+            "uri": "URI",
+            "chain_id": "ID de chaîne",
+            "nonce": "Nonce",
+            "issued_at": "Émis",
+            "expires_at": "Expire",
+            "advanced": "Avancé",
+            "site_mismatch_title": "Cette connexion concerne un autre site",
+            "site_mismatch_body": "Le message vous connecte à {{domain}}, mais la demande provient de {{site}}. N’approuvez que si vous faites confiance aux deux.",
+            "other_address_note": "Le message indique {{address}}, et non le compte qui signe.",
+            "other_chain_note": "Le message indique {{chain}}, et non le réseau de cette demande. La connexion n’envoie aucune transaction.",
+            "other_chain_id_note": "Le message indique l’ID de chaîne {{chainId}}, et non le réseau de cette demande. La connexion n’envoie aucune transaction.",
+            "statement_label": "Message de {{domain}}",
+            "not_before": "Valide à partir du",
+            "request_id": "ID de la demande",
+            "resource": "Ressource",
+            "grants_title": "Cette connexion accorde aussi des autorisations",
+            "grants_body": "En signant, vous permettez à {{domain}} d’agir pour vous avec les autorisations ci-dessous. N’approuvez que si vous faites confiance à ce site.",
+            "grants_unreadable_body": "Cette connexion accorde à {{domain}} des autorisations que Pera ne peut pas lire. N’approuvez que si vous faites confiance à ce site.",
+            "malformed_title": "Ce message de connexion contient un contenu inattendu",
+            "malformed_body": "Certaines parties de ce message ne suivent pas le format de connexion, donc {{domain}} pourrait le lire autrement qu'affiché ici. Vérifiez le message complet dans Avancé et n'approuvez que si vous faites confiance au site."
+        },
         "spend_approval": {
             "spend_warning": "Cette signature permet à une autre adresse de déplacer des tokens depuis votre compte sans vous redemander votre accord.",
             "spend_warning_transaction": "Cette transaction permet à une autre adresse de déplacer des tokens depuis votre compte sans vous redemander votre accord.",
@@ -3639,7 +3722,11 @@
             "no_deadline_warning": "Cette autorisation n’expire jamais.",
             "spender_label": "Adresse autorisée",
             "unlimited": "Illimité",
-            "deadline_label": "Date limite",
+            "expiry_label": "L’autorisation expire",
+            "signature_deadline_label": "Signature valable jusqu’au",
+            "signature_long_deadline_warning": "Cette signature reste valable plus d’un an et peut donc être utilisée longtemps après que vous l’avez signée.",
+            "expired_title": "Cette demande a expiré",
+            "expired_body": "Son délai de signature est dépassé, elle serait donc refusée. Annulez et recommencez dans l’application.",
             "never": "Jamais",
             "known_title": "À propos de cette autorisation",
             "known_description": "{{name}} est un contrat connu",
@@ -3902,6 +3989,7 @@
             "approval_for": "Pour {{spender}}",
             "unlimited_approval_for": "Illimité · pour {{spender}}",
             "swap_pair": "Swap {{from}} → {{to}}",
+            "swap_assets": "{{from}} → {{to}}",
             "add_liquidity": "Ajout de liquidité",
             "remove_liquidity": "Retrait de liquidité",
             "collect_fees": "Collecte des frais",
@@ -3917,7 +4005,10 @@
             "nft_subtitle": "{{collection}} #{{tokenId}}",
             "nft_batch_subtitle": "{{collection}} · {{count}} éléments",
             "inner_transaction_count": "{{innerCount}} transactions internes",
-            "cancel_transaction": "Annulation"
+            "cancel_transaction": "Annulation",
+            "send_by_approval": "Envoi (autorisé)",
+            "spoofed_send": "Faux envoi",
+            "contract_call_named": "Contrat : {{method}}"
         },
         "record_detail": {
             "read_failed": "Impossible de lire depuis le réseau les détails de l’appel de cette transaction.",
@@ -4067,6 +4158,8 @@
             "title": "Filtre",
             "all_time": "Toute la période",
             "today": "Aujourd’hui",
+            "hide_suspicious": "Masquer les transactions suspectes",
+            "hide_suspicious_description": "Masque les faux envois, les jetons d'imitation ou de spam et les empoisonnements d'adresse présumés.",
             "yesterday": "Hier",
             "last_week": "Semaine dernière",
             "last_month": "Mois dernier",
@@ -4089,15 +4182,20 @@
             "blocked_body": "Une transaction antérieure de ce compte n’a jamais atteint le réseau, donc celle-ci ne peut pas être confirmée tant que rien ne prend sa place. Débloquer envoie à sa place un transfert vide vers vous-même, qui coûte des frais de réseau.",
             "unblock": "Débloquer"
         },
+        "suspected_fake_transfer": {
+            "title": "Faux transfert présumé",
+            "body": "Votre compte n'a pas signé ce transfert, et il n'a rien déplacé. N'importe qui peut faire passer un transfert de 0 jeton pour un envoi depuis votre compte, sans aucune autorisation. Les escrocs le font pour que leur adresse apparaisse dans votre historique et soit copiée plus tard. Ne copiez aucune adresse depuis ce transfert."
+        },
         "suspected_poisoning": {
-            "marker": "Empoisonnement d’adresse suspecté",
             "title": "Empoisonnement d’adresse suspecté",
-            "body": "Ce transfert n’a rien transféré de valeur et provient d’une adresse conçue pour ressembler à une adresse que vous connaissez. Les escrocs envoient ce type de transfert pour que leur adresse apparaisse dans votre historique et soit copiée plus tard. Ne la copiez pas et n’y envoyez rien.",
+            "body": "Ce transfert n’a rien transféré de valeur et provient d’une adresse conçue pour ressembler à une adresse que vous connaissez. Les escrocs envoient ce type de transfert pour que leur adresse apparaisse dans votre historique et soit copiée plus tard.",
+            "do_not_reuse": "Ne copiez pas cette adresse et n’y envoyez rien.",
             "sender_label": "Cette adresse",
             "reuse_title": "Cette adresse imite une adresse que vous connaissez",
             "reuse_body": "Elle commence et se termine comme une adresse que vous connaissez, mais ce n’est pas la même. Comparez les adresses complètes avant de l’utiliser.",
             "reuse_confirm": "Continuer quand même",
-            "reuse_cancel": "Annuler"
+            "reuse_cancel": "Annuler",
+            "dismiss": "J’ai compris"
         }
     },
     "tabbar": {
@@ -4145,15 +4243,34 @@
             "view_accounts": "Voir votre adresse et vos soldes",
             "approve_transactions": "Vous demander d’approuver des transactions",
             "sign_messages": "Vous demander de signer des messages",
-            "switch_networks": "Demander à changer de réseau"
+            "switch_networks": "Demander à changer de réseau",
+            "add_tokens": "Demander d’ajouter des tokens à votre compte"
         },
         "connection": {
             "approve_delivery_failed": "Impossible de joindre la dApp pour confirmer la connexion. Vérifiez votre connexion Internet et réessayez."
         },
         "switch_network": {
             "title": "Autoriser l’accès au réseau ?",
-            "body": "{{name}} souhaite utiliser vos comptes {{chain}} sur {{network}}.",
+            "body": "{{name}} souhaite utiliser vos comptes sur {{chain}}.",
+            "body_with_network": "{{name}} souhaite utiliser vos comptes sur {{chain}} {{network}}.",
             "confirm": "Autoriser"
+        },
+        "watch_asset": {
+            "title": "Ajouter le token ?",
+            "body": "{{name}} souhaite ajouter ce token à votre compte.",
+            "unreadable": "Pera n’a pas pu lire de token à cette adresse sur {{chain}}.",
+            "confirm": "Ajouter le token",
+            "token": "Token",
+            "verification": "Vérification",
+            "contract": "Contrat",
+            "decimals": "Décimales",
+            "network": "Réseau",
+            "account": "Compte",
+            "tier": {
+                "verified": "Vérifié",
+                "unverified": "Non vérifié",
+                "suspicious": "Suspect"
+            }
         },
         "settings": {
             "empty_title": "Aucune session WalletConnect",
@@ -4292,6 +4409,7 @@
             "quote_error": "Impossible d’obtenir des cotations. Veuillez réessayer.",
             "amount_too_low": "Montant trop faible pour un swap sur {{network}}. Le minimum est de {{amount}} {{unit}}.",
             "amount_too_low_fiat": "Montant trop faible pour un swap sur {{network}}. Le minimum est de {{amount}} {{unit}} (~{{fiat}}).",
+            "amount_too_low_above_balance": "Votre solde disponible est inférieur au minimum de {{amount}} {{unit}} pour un swap sur {{network}}.",
             "use_minimum": "Utiliser le minimum",
             "amount_too_low_unknown": "Montant trop faible pour un swap sur {{network}}. Essayez un montant plus élevé ou un réseau aux frais plus bas.",
             "amount_too_high": "Montant trop élevé pour un swap. Le maximum est de {{amount}} {{unit}}.",
@@ -4311,9 +4429,12 @@
                 "swap": "Échec du swap"
             },
             "provider_failed_body": "Ce fournisseur n’a pas pu effectuer le swap. Veuillez essayer un autre fournisseur.",
+            "provider_failed_single_body": "Le fournisseur n’a pas pu effectuer le swap. Veuillez réessayer plus tard ou essayer un autre montant.",
             "provider_unavailable_body": "Le fournisseur est indisponible pour le moment. Veuillez réessayer dans un instant.",
             "quote_mismatch_body": "Les transactions du fournisseur ne correspondaient pas à cette cotation, rien n’a donc été signé. Veuillez réessayer ou choisir un autre fournisseur.",
+            "quote_mismatch_single_body": "Les transactions du fournisseur ne correspondaient pas à cette cotation, rien n’a donc été signé. Veuillez réessayer plus tard.",
             "unsupported_order_body": "Pera ne peut pas finaliser l’ordre de ce fournisseur, rien n’a donc été signé. Choisissez un autre fournisseur.",
+            "unsupported_order_single_body": "Pera ne peut pas finaliser l’ordre de ce fournisseur, rien n’a donc été signé. Veuillez réessayer plus tard.",
             "signing_failed_body": "La transaction n’a pas pu être signée, elle n’a donc pas été envoyée. Veuillez réessayer.",
             "order_insufficient_balance_body": "Votre solde ne couvre pas ce montant et les frais de réseau. Essayez un montant plus faible ou ajoutez des fonds pour les frais.",
             "insufficient_native_body": "Ce compte a besoin d’au moins {{amount}} {{symbol}} supplémentaires pour couvrir ce swap, ses frais et le solde minimum. Ajoutez des fonds en {{symbol}}, puis réessayez.",
@@ -4360,6 +4481,8 @@
                         "refunded": "Remboursé"
                     }
                 },
+                "account_filter_all": "Tous les comptes",
+                "load_more": "Charger plus",
                 "empty": {
                     "title": "Aucun swap pour le moment",
                     "body": "Votre historique de swaps apparaîtra ici."
@@ -5197,6 +5320,8 @@
             "gwei": "Gwei",
             "nonce": "Nonce",
             "gas_limit": "Limite de gas",
+            "gas_used": "Gaz utilisé",
+            "gas_price": "Prix du gaz",
             "max_fee_per_gas": "Frais max. par gas",
             "max_priority_fee_per_gas": "Frais de priorité max. par gas"
         },

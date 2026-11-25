@@ -32,6 +32,7 @@ import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import {
     ETHEREUM_FIXTURE_CONTRACT_CALL_DATA,
+    ETHEREUM_FIXTURE_NFT_CONTRACT,
     ETHEREUM_FIXTURE_NFT_ID,
     ETHEREUM_FIXTURE_RECIPIENT,
     ETHEREUM_FIXTURE_SENDER,
@@ -524,6 +525,70 @@ describe('Ethereum transaction bodies', () => {
             expect(textOf('transaction_detail_amount')).toMatch(/USDC.*5/)
         })
 
+        describe('an NFT transfer with the amount out of the hero', () => {
+            const presentationWith = (primaryImage?: string) => {
+                vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
+                    data: {
+                        assetId: ETHEREUM_FIXTURE_NFT_ID,
+                        decimals: 0,
+                        unitName: 'BAYC',
+                        peraMetadata: {
+                            collectible: {
+                                collection: { name: 'Apes' },
+                                primaryImage,
+                            },
+                        },
+                    },
+                    isPending: false,
+                } as unknown as ReturnType<typeof useSingleAssetDetailsQuery>)
+                const { result } = renderHook(
+                    () =>
+                        useEthereumTransactionPresentation(
+                            natives['nft-transfer'],
+                            ETHEREUM_SCOPE,
+                        ),
+                    { wrapper: createQueryClientWrapper() },
+                )
+                return result.current!
+            }
+
+            it('shows the NFT image beside its name, its contract on a row of its own and the amount without the collection ticker', () => {
+                const { container } = render(
+                    <EthereumTransactionDetailSection
+                        presentation={presentationWith(
+                            'https://nft.example/ape.png',
+                        )}
+                        isAmountInHero={false}
+                    />,
+                )
+
+                expect(textOf('ethereum_detail_nft')).toContain(
+                    'transactions.list_item.nft_subtitle',
+                )
+                expect(container.innerHTML).toContain('nft.example')
+                expect(textOf('ethereum_detail_nft_contract')).toContain(
+                    shortOnEthereum(ETHEREUM_FIXTURE_NFT_CONTRACT),
+                )
+                // The formatCurrency mock prints the currency before the figure
+                // regardless; the unit an asset amount trails with is what is dropped.
+                expect(textOf('ethereum_detail_amount')).toMatch(/1$/)
+            })
+
+            it('shows a placeholder when the NFT has no image', () => {
+                render(
+                    <EthereumTransactionDetailSection
+                        presentation={presentationWith()}
+                        isAmountInHero={false}
+                    />,
+                )
+
+                expect(textOf('ethereum_detail_nft')).toContain(
+                    'transactions.list_item.nft_subtitle',
+                )
+                expect(screen.getByTestId('icon-card-stack')).toBeTruthy()
+            })
+        })
+
         it('shows an unrecognised call as an unverified contract, with its selector, collapsed calldata and zero value', () => {
             render(
                 <TransactionDetailBody
@@ -834,6 +899,9 @@ describe('Ethereum transaction bodies', () => {
                 )
                 expect(screen.queryByTestId('ethereum_detail_nft')).toBeNull()
                 expect(
+                    screen.queryByTestId('ethereum_detail_nft_contract'),
+                ).toBeNull()
+                expect(
                     screen.queryByTestId('ethereum_detail_amount'),
                 ).toBeNull()
             })
@@ -850,6 +918,9 @@ describe('Ethereum transaction bodies', () => {
                     screen.queryByTestId('ethereum_detail_sender'),
                 ).toBeNull()
                 expect(screen.queryByTestId('ethereum_detail_nft')).toBeNull()
+                expect(
+                    screen.queryByTestId('ethereum_detail_nft_contract'),
+                ).toBeNull()
             })
         })
 
@@ -878,7 +949,7 @@ describe('Ethereum transaction bodies', () => {
             expect(sends).toHaveLength(2)
         })
 
-        it('titles the preview row of an approval as one', () => {
+        it('titles the preview row of an approval as the review does and shows what it allows', () => {
             render(
                 <TransactionPreviewRow
                     scope={ETHEREUM_SCOPE}
@@ -888,7 +959,10 @@ describe('Ethereum transaction bodies', () => {
             )
 
             expect(
-                screen.getByText('transactions.list_item.approval'),
+                screen.getByText('signing.review.title_approve'),
+            ).toBeTruthy()
+            expect(
+                screen.getByTestId('transaction_preview_amount'),
             ).toBeTruthy()
         })
     })

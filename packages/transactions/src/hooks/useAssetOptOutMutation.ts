@@ -19,7 +19,7 @@ import {
     type AccountHoldingSnapshot,
 } from '@perawallet/wallet-core-accounts'
 import { CreatorCannotOptOutError, NonZeroBalanceError } from '../errors'
-import { sendFlowFeatureFor } from '../chain-adapter'
+import { sendFlowChainAdapters, sendFlowFeatureFor } from '../chain-adapter'
 import { useAssetHoldingMutation } from './useAssetHoldingMutation'
 
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
@@ -29,6 +29,8 @@ type AssetOptOutParams = {
     assetId: bigint
     /** Creator address. If omitted, it will be fetched from the indexer. */
     creator?: string
+    /** The fee the user approved in native base units. */
+    maxFee?: bigint
 }
 
 type UseAssetOptOutMutationResult = {
@@ -44,6 +46,7 @@ type ResolvedOptOutParams = {
     sender: string
     assetId: bigint
     creator: string
+    maxFee?: bigint
 }
 
 const SOURCE = {
@@ -113,13 +116,34 @@ export const useAssetOptOutMutation = (
 
             let txIds: string[] = []
             if (toSubmit.length > 0) {
+                const hasFeeApproval = toSubmit.some(
+                    tx => tx.maxFee !== undefined,
+                )
                 const unsignedTxs = await assignFees(
                     await sendFlowFeatureFor(
                         scope,
                         'assetHolding',
-                    ).buildOptOutTxs({ scope, optOuts: toSubmit }),
+                    ).buildOptOutTxs({
+                        scope,
+                        optOuts: toSubmit.map(
+                            ({ maxFee: _maxFee, ...tx }) => tx,
+                        ),
+                        ...(hasFeeApproval ? { allowFeeReview: true } : {}),
+                    }),
                 )
-                const result = await submit(unsignedTxs)
+                const { transactionFee } = sendFlowChainAdapters.get(
+                    scope.chainId,
+                )
+                const reviewFee =
+                    hasFeeApproval &&
+                    unsignedTxs.some((tx, index) => {
+                        const maxFee = toSubmit[index]?.maxFee
+                        return (
+                            maxFee === undefined ||
+                            transactionFee(tx).gt(maxFee.toString())
+                        )
+                    })
+                const result = await submit(unsignedTxs, reviewFee)
                 txIds = result.txIds
             }
 

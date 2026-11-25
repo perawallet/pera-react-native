@@ -111,6 +111,14 @@ const seedQrInFlowStore = (
     usePeraWebImportFlowStore.getState().setQr(parsed)
 }
 
+const confirmReview = async () => {
+    const confirm = await waitFor(
+        () => screen.getByTestId('pera_web_import_review_confirm_button'),
+        { timeout: 10_000 },
+    )
+    fireEvent.click(confirm)
+}
+
 describe('Flow: Pera Web Import — Loading → Result pipeline', () => {
     beforeEach(() => {
         resetTestKeystore()
@@ -130,6 +138,7 @@ describe('Flow: Pera Web Import — Loading → Result pipeline', () => {
         seedQrInFlowStore()
 
         renderLoadingWithFlowStore()
+        await confirmReview()
 
         await waitFor(
             () => {
@@ -152,6 +161,7 @@ describe('Flow: Pera Web Import — Loading → Result pipeline', () => {
         seedQrInFlowStore()
 
         renderLoadingWithFlowStore()
+        await confirmReview()
 
         await waitFor(
             () => {
@@ -169,6 +179,27 @@ describe('Flow: Pera Web Import — Loading → Result pipeline', () => {
         for (const a of useAccountsStore.getState().accounts) {
             expect(a.custody).toEqual({ kind: 'local', seed: null })
         }
+    })
+
+    it('Given a decrypted backup, its addresses are listed and nothing is imported until the user confirms', async () => {
+        const { encryptedContent, addresses } = buildMultiAccountPeraWebBackup()
+        installBackupHandler({ status: 200, encryptedContent })
+        seedQrInFlowStore()
+
+        renderLoadingWithFlowStore()
+
+        await waitFor(
+            () => screen.getByTestId('pera_web_import_review_confirm_button'),
+            { timeout: 10_000 },
+        )
+        expect(
+            screen.getByTestId('pera_web_import_review_cancel_button'),
+        ).toBeTruthy()
+        for (const address of addresses) {
+            expect(screen.getByText(address)).toBeTruthy()
+        }
+        expect(useAccountsStore.getState().accounts).toHaveLength(0)
+        expect(screen.queryByTestId('pera_web_import_result')).toBeNull()
     })
 
     it('Given the QR encryption key does not match the encrypted blob, decryption fails and no account is imported', async () => {
@@ -219,6 +250,7 @@ describe('Flow: Pera Web Import — Loading → Result pipeline', () => {
         seedQrInFlowStore()
 
         renderLoadingWithFlowStore()
+        await confirmReview()
 
         await waitFor(() => screen.getByTestId('pera_web_import_result'), {
             timeout: 10_000,
@@ -280,6 +312,7 @@ describe('Flow: Pera Web Import — Loading → Result pipeline', () => {
 
         try {
             renderLoadingWithFlowStore()
+            await confirmReview()
 
             await waitFor(() => screen.getByTestId('pera_web_import_result'), {
                 timeout: 10_000,
@@ -366,8 +399,9 @@ describe('Entry: QR scan → deeplink dispatch → Loading pipeline', () => {
         // store. This is the same pipeline the production app runs:
         // dispatcher seeds qr → navigation lands on
         // PeraWebImportLoading → its mount hook reads qr → fetch +
-        // decrypt + import.
+        // decrypt + review + import.
         renderLoadingWithFlowStore()
+        await confirmReview()
 
         await waitFor(
             () => {

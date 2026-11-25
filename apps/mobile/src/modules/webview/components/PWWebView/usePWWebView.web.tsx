@@ -202,7 +202,6 @@ export const usePWWebView = ({
     const mobileInterface = usePeraWebviewInterface(
         bridgeWebview,
         isSecure,
-        url,
         onClose,
         onBack,
     )
@@ -216,8 +215,11 @@ export const usePWWebView = ({
     // Mirror native handleEvent's dispatch order (PWWebView.tsx:173-215),
     // with the pushWebView web op intercept between token validation and dispatch.
     const handleBridgeMessage = (data: unknown): void => {
+        // The iframe's origin is fixed for the mount, and the bridge host has
+        // already checked the port's origin against it.
+        const security = { securedConnection: isSecure, sourceUrl: url }
         if (onCustomMessage) {
-            onCustomMessage(data)
+            onCustomMessage(data, { ...security, isAuthenticatedFrame: true })
             return
         }
         if (!enablePeraConnect) return
@@ -254,11 +256,9 @@ export const usePWWebView = ({
                 )
                 continue
             }
-            // The iframe's origin is fixed for the mount, so there is no
-            // per-message race to resolve here.
             mobileInterface.handleMessage(
                 message as Parameters<typeof mobileInterface.handleMessage>[0],
-                { securedConnection: isSecure, sourceUrl: url },
+                security,
             )
         }
     }

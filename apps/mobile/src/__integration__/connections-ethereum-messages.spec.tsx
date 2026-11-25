@@ -34,13 +34,20 @@ import { server, setSuiteUnhandledRequestMode } from '@test-utils/msw-server'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { walletKitStub, type FakeWalletKit } from '@test-utils/walletkit-stub'
-import { getAllPressables, isElementDisabled } from '@test-utils/rnw'
+import {
+    findEnabledByTestId,
+    getAllPressables,
+    isElementDisabled,
+} from '@test-utils/rnw'
+import { measureScrollBody, scrollBodyTo } from '@test-utils/review-scroll'
 import {
     makeProposal,
     makeRequest,
+    type RequestOverrides,
     TOPIC as V2_SESSION_TOPIC,
     V2_URI,
 } from '@packages/walletconnect/src/v2/__tests__/fakeWalletKit'
+import { truncateEvmAddress } from '@packages/chain-ethereum/src/accounts/address-codec'
 import { useSigningStore } from '@packages/signing/src/store'
 import { __resetSigningActorRegistryForTests } from '@packages/signing/src/hooks/useSigningActorLifecycle'
 import {
@@ -55,6 +62,7 @@ import {
     vectorSignature,
     verifyMessage,
     verifyTypedData,
+    pinClockToPermitFixtures,
 } from '@packages/chain-ethereum/src/__tests__/testing'
 import {
     useAccountsStore,
@@ -73,6 +81,7 @@ import type { Optional } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { ConnectionsProvider } from '@modules/connections/shell'
 import { SigningOverlays } from '@modules/signing/shell'
+import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 
 // The integration setup registers whichever chains config enables, and v2
 // builds no client without a Reown project id.
@@ -94,6 +103,8 @@ const NOT_A_SESSION_ACCOUNT = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
 const HELLO_WORLD_HEX = '0x68656c6c6f20776f726c64'
 const CONFIRM_SLIDE = 'message-signing-confirm-slide'
 const REJECT_BUTTON = 'message-signing-reject-button'
+const REVIEW_BODY = 'message-signing-review-body'
+const SCROLL_HINT = 'review_scroll_hint'
 const TYPED_DATA_WARNING = 'message-signing-typed-data-warning'
 const SPEND_APPROVAL_WARNING = 'message-signing-spend-approval-warning'
 const SPEND_APPROVAL_SPENDER = 'message-signing-spend-approval-spender'
@@ -111,7 +122,48 @@ const ETHEREUM_ACCOUNT: WalletAccount = {
     name: 'Ether',
 }
 
+const MULTICHAIN_ACCOUNT: WalletAccount = {
+    ...ETHEREUM_ACCOUNT,
+    id: 'multichain-msg-account',
+    chains: {
+        algorand: { address: ALGO25_TEST_ADDRESS, keyPairId: 'algo-key' },
+        ...ETHEREUM_ACCOUNT.chains,
+    },
+}
+
+const signInMessage = (
+    domain: string,
+    chainId: number,
+    resources: string[] = [],
+    trailing: string[] = [],
+) =>
+    `0x${Buffer.from(
+        [
+            `${domain} wants you to sign in with your Ethereum account:`,
+            SENDER,
+            '',
+            'Click to sign in.',
+            '',
+            `URI: https://${domain}/`,
+            'Version: 1',
+            `Chain ID: ${chainId}`,
+            'Nonce: 3fp8w2kd',
+            'Issued At: 2026-11-20T10:00:00.000Z',
+            ...(resources.length > 0
+                ? ['Resources:', ...resources.map(uri => `- ${uri}`)]
+                : []),
+            ...trailing,
+        ].join('\n'),
+    ).toString('hex')}`
+
+const RECAP = `urn:recap:${Buffer.from(
+    JSON.stringify({
+        att: { 'https://dapp.example/': { 'crud/update': [{}] } },
+    }),
+).toString('base64url')}`
+
 const IN_APP_ORIGIN: ConnectionOrigin = { source: 'in-app' }
+const VERIFIED: RequestOverrides['verified'] = { validation: 'VALID' }
 
 const captured: { registry: Optional<ConnectionRegistryClient> } = {
     registry: undefined,
@@ -156,7 +208,9 @@ const waitForWalletKit = (): Promise<FakeWalletKit> =>
     )
 
 // Connects the Ethereum account over a session that lists the message methods.
-const connectSession = async (): Promise<FakeWalletKit> => {
+const connectSession = async (
+    account: WalletAccount = ETHEREUM_ACCOUNT,
+): Promise<FakeWalletKit> => {
     renderWithNavigation(ConnectionsWithSigning, 'ConnectionsWithSigning')
     await waitFor(() => {
         expect(captured.registry).toBeTruthy()
@@ -186,7 +240,7 @@ const connectSession = async (): Promise<FakeWalletKit> => {
     await waitFor(() => {
         expect(findButton('common.connect.label')).toBeTruthy()
     })
-    await selectEvmConnectAccount(ETHEREUM_ACCOUNT)
+    await selectEvmConnectAccount(account)
     await waitFor(() => {
         expect(isElementDisabled(findButton('common.connect.label')!)).toBe(
             false,
@@ -209,11 +263,12 @@ const send = (
     method: string,
     params: unknown[],
     id = 1,
+    verified?: RequestOverrides['verified'],
 ) =>
     act(() => {
         walletKit.emit(
             'session_request',
-            makeRequest({ id, method, params, chainId: ETH_MAINNET }),
+            makeRequest({ id, method, params, chainId: ETH_MAINNET, verified }),
         )
     })
 
@@ -252,6 +307,7 @@ describe('Flow: an eip155 dApp asks for a message signature', () => {
 
     afterEach(async () => {
         vi.restoreAllMocks()
+        vi.useRealTimers()
         await getProvider().connections.store.clear()
         useAccountsStore.getState().setAccounts([])
         useRemoteConfigStore.getState().resetState()
@@ -277,6 +333,166 @@ describe('Flow: an eip155 dApp asks for a message signature', () => {
                 signature: response.result,
             }),
         ).resolves.toBe(true)
+    })
+
+    it.each([
+        {
+            kind: 'personal_sign',
+            method: 'personal_sign',
+            params: [HELLO_WORLD_HEX, SENDER],
+            signature: VIEM_HELLO_WORLD,
+        },
+        {
+            kind: 'typed data',
+            method: 'eth_signTypedData_v4',
+            params: [SENDER, JSON.stringify(MAIL_TYPED_DATA)],
+            signature: VIEM_MAIL,
+        },
+    ])(
+        'Given a connected session, when the dApp sends $kind taller than the review, then Confirm waits behind the scroll hint until the review is scrolled to its end, and the dApp then receives a signature',
+        async ({ method, params, signature }) => {
+            const walletKit = await connectSession()
+
+            send(walletKit, method, params)
+            await waitFor(
+                () => expect(screen.getByTestId(CONFIRM_SLIDE)).toBeTruthy(),
+                { timeout: 15_000 },
+            )
+            measureScrollBody(REVIEW_BODY, 400, 2000)
+
+            expect(isElementDisabled(screen.getByTestId(CONFIRM_SLIDE))).toBe(
+                true,
+            )
+            expect(screen.getByTestId(SCROLL_HINT)).toBeTruthy()
+
+            scrollBodyTo(REVIEW_BODY, 1600)
+            fireEvent.click(await findEnabledByTestId(CONFIRM_SLIDE))
+
+            expect(screen.queryByTestId(SCROLL_HINT)).toBeNull()
+            expect((await answerOf(walletKit)).result).toBe(signature)
+        },
+    )
+
+    it('Given an account on Algorand and Ethereum, when the dApp sends personal_sign, then the review names the account by its 0x address, never its Algorand address', async () => {
+        useAccountsStore.getState().setAccounts([MULTICHAIN_ACCOUNT])
+        const walletKit = await connectSession(MULTICHAIN_ACCOUNT)
+
+        send(walletKit, 'personal_sign', [HELLO_WORLD_HEX, SENDER])
+        await waitFor(
+            () => expect(screen.getByTestId(CONFIRM_SLIDE)).toBeTruthy(),
+            { timeout: 15_000 },
+        )
+
+        const review = document.body.textContent ?? ''
+        expect(review).toContain(truncateEvmAddress(SENDER))
+        expect(review).not.toContain(ALGO25_TEST_ADDRESS.slice(0, 5))
+        fireEvent.click(screen.getByTestId(REJECT_BUTTON))
+        expect((await answerOf(walletKit)).error).toMatchObject({ code: 4001 })
+    })
+
+    it('Given a connected session, when the dApp sends a Sign-In with Ethereum message for its own domain on another chain, then the review is titled by the domain, lists the parsed fields and notes the chain', async () => {
+        const walletKit = await connectSession()
+
+        send(walletKit, 'personal_sign', [
+            signInMessage('dapp.example', 8453),
+            SENDER,
+        ])
+        await waitFor(
+            () => expect(screen.getByTestId(CONFIRM_SLIDE)).toBeTruthy(),
+            { timeout: 15_000 },
+        )
+
+        expect(screen.getByText('signing.sign_in.title')).toBeTruthy()
+        expect(screen.getByTestId('sign_in_domain').textContent).toContain(
+            'dapp.example',
+        )
+        expect(screen.getByTestId('sign_in_nonce').textContent).toContain(
+            '3fp8w2kd',
+        )
+        expect(screen.getByTestId('sign_in_other_chain')).toBeTruthy()
+        expect(screen.queryByTestId('sign_in_other_address')).toBeNull()
+        expect(screen.queryByTestId('sign_in_site_mismatch')).toBeNull()
+        expect(screen.queryByTestId('sign_in_grants_warning')).toBeNull()
+        expect(screen.getByTestId('sign_in_advanced')).toBeTruthy()
+        fireEvent.click(screen.getByTestId(REJECT_BUTTON))
+        expect((await answerOf(walletKit)).error).toMatchObject({ code: 4001 })
+    })
+
+    it('Given a connected session, when the dApp sends a Sign-In with Ethereum message whose resources include a ReCap, then the review lists each resource and warns of the permissions it grants', async () => {
+        const walletKit = await connectSession()
+
+        send(walletKit, 'personal_sign', [
+            signInMessage('dapp.example', 1, ['ipfs://bafy', RECAP]),
+            SENDER,
+        ])
+        await waitFor(
+            () =>
+                expect(
+                    screen.getByTestId('sign_in_grants_warning'),
+                ).toBeTruthy(),
+            { timeout: 15_000 },
+        )
+
+        expect(screen.getByTestId('sign_in_grant_0').textContent).toContain(
+            'crud/update',
+        )
+        expect(screen.getByTestId('sign_in_resource_0').textContent).toContain(
+            'ipfs://bafy',
+        )
+        expect(screen.getByTestId('sign_in_resource_1').textContent).toContain(
+            'urn:recap:',
+        )
+        fireEvent.click(screen.getByTestId(REJECT_BUTTON))
+        expect((await answerOf(walletKit)).error).toMatchObject({ code: 4001 })
+    })
+
+    it('Given a connected session, when the dApp sends a Sign-In with Ethereum message for another domain from a site Verify vouches for, then the review warns that the sign-in is for another site', async () => {
+        const walletKit = await connectSession()
+
+        send(
+            walletKit,
+            'personal_sign',
+            [signInMessage('opensea.io', 1), SENDER],
+            1,
+            VERIFIED,
+        )
+        await waitFor(
+            () =>
+                expect(
+                    screen.getByTestId('sign_in_site_mismatch'),
+                ).toBeTruthy(),
+            { timeout: 15_000 },
+        )
+
+        expect(screen.queryByTestId('sign_in_other_chain')).toBeNull()
+        expect(screen.queryByTestId('sign_in_malformed')).toBeNull()
+        fireEvent.click(screen.getByTestId(REJECT_BUTTON))
+        expect((await answerOf(walletKit)).error).toMatchObject({ code: 4001 })
+    })
+
+    it('Given a connected session, when the dApp sends a Sign-In with Ethereum message for another domain from a verified site with a ReCap and an extra trailing line, then the review keeps the site and permission warnings and flags the unexpected content', async () => {
+        const walletKit = await connectSession()
+
+        send(
+            walletKit,
+            'personal_sign',
+            [
+                signInMessage('opensea.io', 1, [RECAP], ['Note: ignore me']),
+                SENDER,
+            ],
+            1,
+            VERIFIED,
+        )
+        await waitFor(
+            () => expect(screen.getByTestId('sign_in_malformed')).toBeTruthy(),
+            { timeout: 15_000 },
+        )
+
+        expect(screen.getByText('signing.sign_in.title')).toBeTruthy()
+        expect(screen.getByTestId('sign_in_site_mismatch')).toBeTruthy()
+        expect(screen.getByTestId('sign_in_grants_warning')).toBeTruthy()
+        fireEvent.click(screen.getByTestId(REJECT_BUTTON))
+        expect((await answerOf(walletKit)).error).toMatchObject({ code: 4001 })
     })
 
     it('Given a connected session, when the dApp sends eth_signTypedData_v4 as a JSON string and the user slides to confirm, then the dApp receives a signature viem verifies for the signer', async () => {
@@ -345,6 +561,7 @@ describe('Flow: an eip155 dApp asks for a message signature', () => {
     })
 
     it('Given a connected session, when the dApp sends a Permit2 PermitSingle whose declared EIP712Domain leaves out chainId, then it is answered -32602 and no review opens', async () => {
+        pinClockToPermitFixtures()
         const walletKit = await connectSession()
 
         send(walletKit, 'eth_signTypedData_v4', [
@@ -367,7 +584,23 @@ describe('Flow: an eip155 dApp asks for a message signature', () => {
         expect(kmsCore.sign).not.toHaveBeenCalled()
     })
 
-    it('Given a connected session, when the dApp sends a Permit2 PermitSingle for an unlimited amount, then the review shows the spend-approval warning with the spender, an unlimited amount and its deadline, and cancelling answers 4001', async () => {
+    it('Given a connected session, when the dApp sends a Permit2 PermitSingle whose signature deadline has already passed, then it is answered -32602 and no review opens', async () => {
+        const walletKit = await connectSession()
+
+        // On the real clock the fixture's 2026-01-31 deadline has lapsed.
+        send(walletKit, 'eth_signTypedData_v4', [
+            SENDER,
+            JSON.stringify(PERMIT2_SINGLE_TYPED_DATA),
+        ])
+
+        const response = await answerOf(walletKit)
+        expect(response.error).toMatchObject({ code: -32_602 })
+        expect(screen.queryByTestId('sign-request-view')).toBeNull()
+        expect(kmsCore.sign).not.toHaveBeenCalled()
+    })
+
+    it('Given a connected session, when the dApp sends a Permit2 PermitSingle for an unlimited amount, then the review shows the network, the spender, an unlimited amount with its warning and one expiry row for an expiration that matches the signature deadline, and cancelling answers 4001', async () => {
+        pinClockToPermitFixtures()
         const walletKit = await connectSession()
 
         send(walletKit, 'eth_signTypedData_v4', [
@@ -387,6 +620,15 @@ describe('Flow: an eip155 dApp asks for a message signature', () => {
         expect(
             screen.getByTestId('message-signing-spend-approval-deadline'),
         ).toBeTruthy()
+        expect(
+            screen.queryByTestId(
+                'message-signing-spend-approval-signature-deadline',
+            ),
+        ).toBeNull()
+        expect(
+            screen.getByTestId('message-signing-spend-approval-unlimited-0'),
+        ).toBeTruthy()
+        expect(screen.getByTestId('review_network')).toBeTruthy()
         fireEvent.click(screen.getByTestId(REJECT_BUTTON))
 
         const response = await answerOf(walletKit)
@@ -395,6 +637,7 @@ describe('Flow: an eip155 dApp asks for a message signature', () => {
     })
 
     it('Given a connected session, when the dApp sends a Permit2 PermitSingle for a limited amount, then the review shows the spender and the base-unit amount instead of unlimited', async () => {
+        pinClockToPermitFixtures()
         const walletKit = await connectSession()
 
         send(walletKit, 'eth_signTypedData_v4', [
@@ -425,6 +668,7 @@ describe('Flow: an eip155 dApp asks for a message signature', () => {
     })
 
     it('Given a connected session, when the dApp sends an ERC-721 Permit, then the review shows the NFT by collection and token id, with no amount and the NFT spend warning', async () => {
+        pinClockToPermitFixtures()
         const walletKit = await connectSession()
 
         send(walletKit, 'eth_signTypedData_v4', [

@@ -13,14 +13,12 @@
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import {
+    useAssetPricesQuery,
     useAssetsQuery,
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
-import {
-    addressCodecs,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import { truncateAddressOn } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { useLanguage } from '@hooks/useLanguage'
 import {
@@ -29,18 +27,22 @@ import {
     type ReviewWarningItem,
 } from '@modules/signing'
 import type { EthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
-import { useEthereumVerifiedCall } from '../../hooks/useEthereumVerifiedCall'
-import { humaniseFunctionName } from '../../utils/humaniseFunctionName'
-import { CONTRACT_CALL_TITLE_KEY } from '../../utils/recordTitleKeys'
+import { useEthereumReviewTitle } from '../../hooks/useEthereumReviewTitle'
 import { requesterHostOf } from '../../utils/contractCallNotice'
 import {
     useEthereumSimulationSection,
     type EthereumSimulationSectionState,
 } from '../EthereumSimulationSection'
 import {
+    approvedContractOf,
     ethereumPermissionsOf,
     type EthereumPermission,
 } from './ethereumPermissions'
+import {
+    ethereumActionAssetIdsOf,
+    ethereumActionChangesOf,
+    type EthereumActionChanges,
+} from './ethereumActionChanges'
 import { ethereumReviewWarningsOf } from './ethereumReviewWarnings'
 import { ethereumReviewWarningItemOf } from './ethereumReviewWarningItemOf'
 
@@ -64,30 +66,10 @@ export type UseEthereumTransactionReviewResult = {
     permissions: EthereumPermission[]
     /** What a transfer sends, for a review the simulation doesn't cover. */
     transferSpend: BalanceImpactItem[]
+    /** What a decoded call's calldata fixes it moves, for a review the simulation doesn't cover. */
+    actionChanges: EthereumActionChanges
     /** The site the request came from, as the platform observed it. */
     requesterHost: Optional<string>
-}
-
-// History lists a call by what it was; the review asks the user to do it.
-const REVIEW_TITLE_KEYS: Partial<Record<string, string>> = {
-    'transactions.list_item.approval': 'signing.review.title_approve',
-    [CONTRACT_CALL_TITLE_KEY]: 'signing.review.title_contract_interaction',
-}
-
-const shortAddressOf = (scope: ChainScope, address: string): string =>
-    addressCodecs.has(scope.chainId)
-        ? addressCodecs.get(scope.chainId).truncate(address)
-        : address
-
-const approvedContractOf = (
-    presentation: EthereumTransactionPresentation,
-): Optional<string> => {
-    const { standardCall } = presentation
-    return standardCall?.kind === 'token-approval' ||
-        standardCall?.kind === 'nft-approval' ||
-        standardCall?.kind === 'collection-approval'
-        ? standardCall.contract
-        : undefined
 }
 
 export const useEthereumTransactionReview = ({
@@ -100,7 +82,6 @@ export const useEthereumTransactionReview = ({
     const {
         scope,
         view,
-        titleKey,
         standardCall,
         contractAction,
         knownContract,
@@ -111,15 +92,70 @@ export const useEthereumTransactionReview = ({
         nftItems,
     } = presentation
     const approvedContract = approvedContractOf(presentation)
-    const verifiedCall = useEthereumVerifiedCall(view, scope, true)
-    const { data: tokenAssets } = useAssetsQuery(
-        scope,
-        approvedContract ? [approvedContract] : [],
-        { fetchMissing: true },
+    const title = useEthereumReviewTitle(presentation)
+    const wrappedNativeContract =
+        (contractAction?.kind === 'wrap' ||
+            contractAction?.kind === 'unwrap') &&
+        view.to
+            ? view.to
+            : undefined
+    const recordIds = [approvedContract, wrappedNativeContract].filter(
+        (id): id is string => !!id,
     )
+    const { data: tokenAssets } = useAssetsQuery(scope, recordIds, {
+        fetchMissing: true,
+    })
     const tokenAsset = approvedContract
         ? (tokenAssets.get(approvedContract) ?? null)
         : null
+    const wrappedNativeRecord = wrappedNativeContract
+        ? (tokenAssets.get(wrappedNativeContract) ?? null)
+        : null
+    const nativeAsset =
+        contractAction?.kind === 'wrap' || contractAction?.kind === 'unwrap'
+            ? contractAction.amount.asset
+            : null
+    const wrappedNative = useMemo((): Nullable<DisplayableAsset> => {
+        if (wrappedNativeRecord || !wrappedNativeContract || !nativeAsset) {
+            return wrappedNativeRecord
+        }
+        // Without its record, the 1:1 pair still shares the native decimals.
+        const label = truncateAddressOn(scope.chainId, wrappedNativeContract)
+        return {
+            assetId: wrappedNativeContract,
+            name: label,
+            unitName: label,
+            decimals: nativeAsset.decimals,
+        }
+    }, [wrappedNativeRecord, wrappedNativeContract, nativeAsset, scope])
+    const actionAssetIds = ethereumActionAssetIdsOf(
+        contractAction,
+        wrappedNative,
+    )
+    const { data: actionPrices } = useAssetPricesQuery(
+        scope,
+        actionAssetIds,
+        actionAssetIds.length > 0,
+        { fetchMissing: true },
+    )
+    const isReverted = simulation.status === 'reverted'
+    const actionChanges = useMemo(
+        () =>
+            ethereumActionChangesOf(
+                // A call predicted to fail moves nothing but gas.
+                isReverted ? null : contractAction,
+                wrappedNative,
+                scope.chainId,
+                assetId => actionPrices.get(assetId)?.usdPrice,
+            ),
+        [
+            isReverted,
+            contractAction,
+            wrappedNative,
+            scope.chainId,
+            actionPrices,
+        ],
+    )
 
     const warningItems = useMemo(
         () =>
@@ -132,22 +168,10 @@ export const useEthereumTransactionReview = ({
         [presentation, simulation, source, verifiedOrigin, scope, t],
     )
 
-    const title = useMemo(() => {
-        if (
-            verifiedCall.status === 'decoded' &&
-            !standardCall &&
-            !contractAction &&
-            !isTransfer
-        ) {
-            return humaniseFunctionName(verifiedCall.call.functionName)
-        }
-        return t(REVIEW_TITLE_KEYS[titleKey] ?? titleKey)
-    }, [titleKey, verifiedCall, standardCall, contractAction, isTransfer, t])
-
     const target = useMemo((): Optional<EthereumReviewTarget> => {
         if (isTransfer) {
             return counterparty
-                ? { label: shortAddressOf(scope, counterparty) }
+                ? { label: truncateAddressOn(scope.chainId, counterparty) }
                 : undefined
         }
         if (approvedContract) {
@@ -156,14 +180,17 @@ export const useEthereumTransactionReview = ({
                     ? t('signing.review.token_contract', {
                           symbol: tokenAsset.unitName,
                       })
-                    : shortAddressOf(scope, approvedContract),
+                    : truncateAddressOn(scope.chainId, approvedContract),
             }
         }
         if (knownContract) {
             return { label: knownContract.name, status: 'verified' }
         }
         return view.to
-            ? { label: shortAddressOf(scope, view.to), status: 'unverified' }
+            ? {
+                  label: truncateAddressOn(scope.chainId, view.to),
+                  status: 'unverified',
+              }
             : undefined
     }, [
         isTransfer,
@@ -200,7 +227,7 @@ export const useEthereumTransactionReview = ({
                     ? standardCall.collectionName
                     : undefined) ??
                 record?.unitName ??
-                shortAddressOf(scope, nftContract)
+                truncateAddressOn(scope.chainId, nftContract)
             const asset: DisplayableAsset = record ?? {
                 assetId: nftContract,
                 name: collection,
@@ -266,6 +293,7 @@ export const useEthereumTransactionReview = ({
         target,
         permissions,
         transferSpend,
+        actionChanges,
         requesterHost: requesterHostOf(source, verifiedOrigin),
     }
 }

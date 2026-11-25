@@ -14,10 +14,11 @@
 // security package against the in-memory keystore and the driver's
 // always-approve biometrics stub.
 //
-// Enabling no longer needs a PIN: the opt-in wraps a random token under an
-// OS-bound key, and unlock compares the token the OS releases against the
-// hash stored alongside the blob — it never touches the PIN record. PIN
-// lifecycle itself is covered by `pin-lifecycle.spec.tsx`.
+// The opt-in wraps a random token under an OS-bound key, and unlock compares
+// the token the OS releases against the hash stored alongside the blob; it
+// never touches the PIN record. Proving the PIN before an opt-in is the
+// caller's job (Settings and the re-enable prompt). PIN lifecycle itself is
+// covered by `pin-lifecycle.spec.tsx`.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook, waitFor } from '@testing-library/react'
@@ -205,7 +206,7 @@ describe('Flow: Biometric authentication lifecycle', () => {
         expect(outcome).toEqual({ kind: 'ok' })
     })
 
-    it('Given a blob from before OS-bound keys existed and a PIN the user no longer remembers, when the lock screen prompts, then the biometric ceremony unlocks and finishes the migration', async () => {
+    it('Given a blob from before OS-bound keys existed, when the lock screen prompts before any PIN entry, then biometrics neither unlock nor re-arm', async () => {
         const { result: pinHook } = renderHook(() => usePinCode())
         await act(async () => {
             await pinHook.current.savePin(TEST_PIN)
@@ -224,17 +225,11 @@ describe('Flow: Biometric authentication lifecycle', () => {
         await act(async () => {
             outcome = await result.current.unlockWithBiometrics(PROMPT)
         })
-        expect(outcome).toEqual({ kind: 'ok' })
-        expect(hasSecret(BIOMETRIC_BLOB_KEY_ID)).toBe(true)
-        expect(result.current.isEnabled).toBe(true)
-
-        // Migrated: the next unlock takes the regular path, not a re-arm.
-        mockedBiometrics().armBiometricBinding.mockClear()
-        await act(async () => {
-            outcome = await result.current.unlockWithBiometrics(PROMPT)
-        })
-        expect(outcome).toEqual({ kind: 'ok' })
+        expect(outcome).toEqual({ kind: 'failed', reason: 'unavailable' })
         expect(mockedBiometrics().armBiometricBinding).not.toHaveBeenCalled()
+        expect(mockedBiometrics().unwrapBiometricToken).not.toHaveBeenCalled()
+        expect(hasSecret(BIOMETRIC_BLOB_KEY_ID)).toBe(false)
+        expect(result.current.isEnabled).toBe(false)
     })
 
     it('Given biometrics is enabled, when the sensor is temporarily unavailable, then the keystore record survives and unlock recovers by itself', async () => {

@@ -56,8 +56,10 @@ export const EthereumRawCallRows = ({
                     chainId={scope.chainId}
                     asset={value.asset}
                     value={value.value}
+                    density='exact'
                     showSymbol
                     ignorePrivacyMode
+                    truncate={false}
                 />
             </KeyValueRow>
             {!!view.selector && (

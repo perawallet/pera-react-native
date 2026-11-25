@@ -25,10 +25,7 @@ import {
     toScopeKey,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    chainDisplayNameOf,
-    getChainDescriptor,
-} from '@perawallet/wallet-core-chain-shared'
+import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import { useContacts } from '@perawallet/wallet-core-contacts'
 import { useDebouncedValue } from '@perawallet/wallet-core-shared'
 import {
@@ -93,11 +90,7 @@ export const useGlobalSearch = (
     const registeredChainIds = useRegisteredChainIds()
 
     const chains = useMemo<SearchableChain[]>(
-        () =>
-            registeredChainIds.map(id => ({
-                id,
-                displayName: chainDisplayNameOf(id) ?? id,
-            })),
+        () => registeredChainIds.map(id => ({ id })),
         [registeredChainIds],
     )
 

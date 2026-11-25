@@ -11,7 +11,13 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
+import {
+    act,
+    fireEvent,
+    renderHook,
+    screen,
+    waitFor,
+} from '@testing-library/react'
 import { Notifier } from 'react-native-notifier'
 import { File } from 'expo-file-system'
 import { server } from '@test-utils/msw-server'
@@ -33,13 +39,13 @@ import {
     useCloudBackupRestoreDraftStore,
     useResolveHdSeedForBackup,
     useMnemonicBackupStore,
+    useIsAccountCoveredByCloudBackup,
     useRequiresMnemonicBackup,
     useResolveMnemonicForBackup,
     createBackupSyncStoreSources,
     initializeBackupSyncManager,
 } from '@perawallet/wallet-core-backup'
 import {
-    accountItemKey,
     accountRecordItemKey,
     buildRestoreHandlers,
     buildSyncHandlers,
@@ -103,11 +109,18 @@ const expectRestoreLandedOnOverview = async () => {
 /** The pair a pushed Algo25 account leaves behind. */
 const algo25BackupItems = (hashAddress: ItemKeyHasher) => [
     {
-        key: accountItemKey(hashAddress(ALGO25_TEST_ADDRESS)),
+        key: accountRecordItemKey(hashAddress(ALGO25_TEST_ADDRESS)),
         plaintext: JSON.stringify({
-            type: 'algo25',
-            address: ALGO25_TEST_ADDRESS,
+            formatVersion: 2,
             customName: 'Restored',
+            updatedAt: 1,
+            chains: [
+                {
+                    chain: 'algorand',
+                    type: 'algo25',
+                    address: ALGO25_TEST_ADDRESS,
+                },
+            ],
         }),
     },
     {
@@ -120,14 +133,29 @@ const algo25BackupItems = (hashAddress: ItemKeyHasher) => [
     },
 ]
 
-// An account whose seed can't be resolved also reads as not requiring a
-// backup, so the mark on the seed is asserted too.
-const expectRestoredBackedUp = (account: WalletAccount): void => {
+// A restore never writes a manual-backup mark: the restored account reads as
+// backed up only while the restored Cloud Backup covers it.
+const expectRestoredCoveredByCloudBackup = (account: WalletAccount): void => {
     expect(useMnemonicBackupStore.getState().isBackedUp(seedOf(account))).toBe(
-        true,
+        false,
     )
-    const { result } = renderHook(() => useRequiresMnemonicBackup(account))
-    expect(result.current).toBe(false)
+    const { result: requires } = renderHook(() =>
+        useRequiresMnemonicBackup(account),
+    )
+    expect(requires.current).toBe(true)
+    const { result: covered } = renderHook(() =>
+        useIsAccountCoveredByCloudBackup(account),
+    )
+    expect(covered.current).toBe(true)
+
+    const configured = useCloudBackupStore.getState()
+    act(() => {
+        useCloudBackupStore.getState().resetState()
+    })
+    expect(covered.current).toBe(false)
+    act(() => {
+        useCloudBackupStore.setState(configured)
+    })
 }
 
 describe('Flow: Cloud backup → Restore', () => {
@@ -183,13 +211,15 @@ describe('Flow: Cloud backup → Restore', () => {
         await waitFor(() => {
             expect(useCloudBackupStore.getState().isConfigured()).toBe(true)
         })
+        // Typed by the user, so both credentials count as held.
+        expect(useCloudBackupStore.getState().credentialsConfirmed).toBe(true)
 
         const restored = useAccountsStore
             .getState()
             .accounts.find(a => addressOf(a) === ALGO25_TEST_ADDRESS)
         expect(restored?.custody).toEqual({ kind: 'local', seed: null })
         expect(restored?.name).toBe('Restored')
-        expectRestoredBackedUp(restored!)
+        expectRestoredCoveredByCloudBackup(restored!)
 
         // The restore has to hand the sync engine the versions the server
         // holds. Tracking an item at 0 offers it as new, the server refuses
@@ -224,6 +254,7 @@ describe('Flow: Cloud backup → Restore', () => {
             backupId,
             salt: BACKUP_SALT,
             deviceId: 'test-device-id',
+            credentialsConfirmed: true,
         })
 
         const { handlers, getItem } = buildSyncHandlers({ backupId })
@@ -311,8 +342,8 @@ describe('Flow: Cloud backup → Restore', () => {
         })
         expect(restoredFirst?.name).toBe('HD First')
         expect(restoredSecond?.name).toBe('HD Second')
-        expectRestoredBackedUp(restoredFirst!)
-        expectRestoredBackedUp(restoredSecond!)
+        expectRestoredCoveredByCloudBackup(restoredFirst!)
+        expectRestoredCoveredByCloudBackup(restoredSecond!)
 
         expect(useBackupSyncStateStore.getState().syncState).not.toBeNull()
         await expectRestoreLandedOnOverview()

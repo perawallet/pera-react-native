@@ -88,7 +88,7 @@ export const useBannersCarouselModalScreen =
             if (banners.length === 0) onClose()
         }, [banners.length, onClose, isClosable])
 
-        // When a banner is forced, disable iOS swipe-down-to-dismiss and
+        // When a banner is forced, disable the iOS swipe-back gesture and
         // intercept the Android hardware back button. Combined with the
         // already-hidden close X, this leaves the user no escape until they
         // tap the CTA — matching the intent for severe-security prompts.

@@ -68,19 +68,19 @@ export const SelectableAccountCheckboxRow = ({
         </PWText>
     )
 
-    return (
-        <PWTouchableOpacity
-            style={styles.container}
-            onPress={onToggle}
-            disabled={isImported}
-            testID={testID}
-        >
+    const content = (
+        <>
             {leadingIcon}
 
             <PWView style={styles.textContainer}>
                 <PWView style={styles.titleRow}>
                     {titleCopyValue ? (
-                        <CopyableText copyValue={titleCopyValue}>
+                        // CopyableText claims the tap even with only a long
+                        // press, so without the toggle a tap on the title is lost.
+                        <CopyableText
+                            copyValue={titleCopyValue}
+                            onPress={isImported ? undefined : onToggle}
+                        >
                             {titleText}
                         </CopyableText>
                     ) : (
@@ -110,19 +110,34 @@ export const SelectableAccountCheckboxRow = ({
                     testID={infoTestID}
                 />
             )}
+        </>
+    )
 
-            {isImported ? (
+    if (isImported) {
+        return (
+            <PWTouchableOpacity
+                style={styles.container}
+                disabled
+                testID={testID}
+            >
+                {content}
                 <PWChip
                     title={importedLabel ?? ''}
                     variant='secondary'
                 />
-            ) : (
-                <PWCheckbox
-                    checked={isSelected}
-                    onPress={onToggle}
-                    testID={checkboxTestID}
-                />
-            )}
-        </PWTouchableOpacity>
+            </PWTouchableOpacity>
+        )
+    }
+
+    return (
+        <PWCheckbox
+            label={content}
+            boxPosition='trailing'
+            isChecked={isSelected}
+            onPress={onToggle}
+            style={styles.container}
+            testID={testID}
+            boxTestID={checkboxTestID}
+        />
     )
 }

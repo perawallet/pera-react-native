@@ -13,9 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 import type { ScaledSize } from 'react-native'
 
-// lanekeep-ignore-next-line pera/no-numeric-sizes reason: pager dot diameter
-const DOT_SIZE = 6
-
 export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
     // lanekeep-ignore-next-line pera/no-numeric-sizes reason: window width minus xl padding on each side
     const mediaSize = dimensions.width - 2 * theme.spacing.xl
@@ -64,6 +61,18 @@ export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
             alignItems: 'center',
             justifyContent: 'center',
         },
+        counter: {
+            position: 'absolute',
+            top: theme.spacing.md,
+            right: theme.spacing.md,
+            borderRadius: theme.borderRadius.sm,
+            paddingHorizontal: theme.spacing.sm,
+            paddingVertical: theme.spacing.xxs,
+            backgroundColor: theme.colors.nftIconBg,
+        },
+        counterText: {
+            color: theme.colors.textWhite,
+        },
         carouselItem: {
             alignSelf: 'center',
             marginVertical: theme.spacing.lg,
@@ -77,15 +86,18 @@ export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
             flexDirection: 'row',
             justifyContent: 'center',
             gap: theme.spacing.xs,
-            marginTop: theme.spacing.sm,
+            // The pager already leaves lg under the media; xl below keeps the
+            // dots grouped with the media rather than the action row.
+            marginBottom: theme.spacing.xl,
         },
         dot: {
-            width: DOT_SIZE,
-            height: DOT_SIZE,
+            width: theme.spacing.sm,
+            height: theme.spacing.sm,
             borderRadius: theme.borderRadius.full,
-            backgroundColor: theme.colors.layerGrayLighter,
+            backgroundColor: theme.colors.textGrayLighter,
         },
         dotActive: {
+            width: theme.spacing.lg,
             backgroundColor: theme.colors.textMain,
         },
         pagerView: {

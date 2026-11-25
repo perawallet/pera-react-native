@@ -33,7 +33,7 @@ export const calculateTotalFee = (
 // Fee allowances (µAlgo) for the high-fee sanity check. keyreg gets generous
 // headroom: incentive-eligibility online keyreg legitimately pays 2 ALGO.
 const KEYREG_FEE_ALLOWANCE_MICRO_ALGO = 5_000_000n // 5 ALGO
-const DEFAULT_FEE_ALLOWANCE_MICRO_ALGO = 500_000n // 0.5 ALGO
+export const DEFAULT_FEE_ALLOWANCE_MICRO_ALGO = 500_000n // 0.5 ALGO
 
 /**
  * Upper bound (µAlgo) on what the user should reasonably pay in fees for one

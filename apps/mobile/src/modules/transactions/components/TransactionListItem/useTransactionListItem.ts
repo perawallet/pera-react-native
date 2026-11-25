@@ -11,20 +11,22 @@
  */
 
 import { useCallback, useMemo } from 'react'
+import type { Decimal } from 'decimal.js'
 import {
     chainAccountOf,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useAssetsQuery, useNativeAsset } from '@perawallet/wallet-core-assets'
-import { imitatedCurrencyOf } from '@perawallet/wallet-core-currencies'
 import {
     i18nKey,
+    type ChainId,
     type ChainScope,
     type LocalizedText,
     type TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     isFeePaidByAccount,
+    recordSignerOf,
     summarizeHistoryItem,
     type SuspectedPoisoning,
     type TransactionHistoryItem,
@@ -32,24 +34,33 @@ import {
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import type { IconName } from '@components/core'
 import { chainNoticeOf, type ChainNoticeContent } from '@components/ChainNotice'
+import { useInfoButton } from '@components/InfoButton'
+import type { LeadingAsset } from '@components/TransactionLeadingIcon'
+import { usePreferredAmount } from '@components/PreferredAmount'
 import { transactionIconName } from '@components/TransactionIcon'
 import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'
-import { useSuspectedPoisoningSheet } from '../../hooks/address-safety/useSuspectedPoisoningSheet'
 import { useCounterpartyName } from '../../hooks/history/useCounterpartyName'
 import { useOpenRecordDetails } from '../../hooks/history/useOpenRecordDetails'
 import { useReplaceTransaction } from '../../hooks/history/useReplaceTransaction'
-import { useSummaryTitle } from '../../hooks/history/useSummaryTitle'
+import { useResolvedSummaryTitle } from '../../hooks/history/useSummaryTitle'
+import {
+    assessHistoryEntry,
+    suspicionCopyOf,
+} from '../../utils/historySuspicion'
+import { leadingAssetsOf, swapChainIdsOf } from '../../utils/leadingAssets'
 import {
     MAX_VISIBLE_AMOUNTS,
     summaryAmountsOf,
-    toAmountDisplay,
-    type AmountDisplay,
-} from './amounts'
+    visibleAssetIdsOf,
+} from '../../utils/summaryAmounts'
+import { toAmountDisplay, type AmountDisplay } from './amounts'
 
 const WAITING_ON_EARLIER = {
     key: i18nKey('transactions.notice.waiting_on_earlier'),
 }
+const SWAP = i18nKey('transactions.list_item.swap')
+const SWAP_ASSETS = i18nKey('transactions.list_item.swap_assets')
 const FEE_LABEL = i18nKey('transactions.common.fee')
 const MAX_FEE_LABEL = i18nKey('send_funds.fee.max_fee')
 
@@ -64,12 +75,19 @@ export type UseTransactionListItemParams = (
     | { record: TransactionRecord }
 ) & { suspectedPoisoning?: SuspectedPoisoning }
 
+export type RowAmount = AmountDisplay & {
+    /** Drawn grey: a flagged token, or an entry that moved no real value. */
+    isMuted: boolean
+}
+
 export type UseTransactionListItemResult = {
     iconName: IconName
     title: string
     subtitle: Nullable<string>
     subtitleEllipsizeMode: 'middle' | 'tail'
-    amounts: AmountDisplay[]
+    amounts: RowAmount[]
+    /** The single visible amount in the preferred currency; null with several amounts, a muted one, or no stored price. */
+    fiatValue: Nullable<Decimal>
     /** Number of impacts hidden beyond {@link MAX_VISIBLE_AMOUNTS}, for "+N more". */
     amountsOverflowCount: number
     /** The network fee in the native asset, only for a row the account paid for that shows no other amount. */
@@ -81,9 +99,16 @@ export type UseTransactionListItemResult = {
     handlePress: Optional<() => void>
     /** Long-press copies the transaction id (with the shared copied toast). */
     handleLongPress: () => void
-    isSuspectedPoisoning: boolean
-    /** Code imitated by the first visible amount whose unit name passes itself off as a currency (its chain's native ticker or a fiat code), or null. */
-    imitatedCurrency: Nullable<string>
+    /** Poisoning, a look-alike or forged transfer, or a flagged token: the row is muted and carries a badge. */
+    isSuspicious: boolean
+    /** Why the row is suspicious, as the sheet it opens is titled; null on an ordinary row. */
+    suspicionTitle: Nullable<string>
+    /** Opens the sheet explaining why the row is suspicious. */
+    handleSuspiciousPress: () => void
+    /** The networks the icon leads with when no asset does: a cross-chain swap's, else the row's own. */
+    leadingChainIds: ChainId[]
+    /** The asset a send or receive moved, or a swap's from and to assets; empty for any other row. */
+    leadingAssets: LeadingAsset[]
 }
 
 export const useTransactionListItem = (
@@ -100,6 +125,7 @@ export const useTransactionListItem = (
         ? (chainAccountOf(account, scope.chainId)?.address ?? '')
         : ''
     const id = (record ?? transaction)?.id ?? ''
+    const { suspectedPoisoning } = params
 
     const summary = useMemo(
         () =>
@@ -119,12 +145,18 @@ export const useTransactionListItem = (
         [t],
     )
 
-    const title = useSummaryTitle(summary, scope)
+    const resolvedTitle = useResolvedSummaryTitle(summary, scope)
+    const isSwap = summary.kind === 'swap'
 
-    const subtitle = useMemo(() => {
+    // A swap's second line names its pair; the provider belongs on the detail screen.
+    const counterpartySubtitle = useMemo(() => {
+        if (isSwap) {
+            const { from, to } = resolvedTitle.params ?? {}
+            return from && to ? t(SWAP_ASSETS, { from, to }) : null
+        }
         if (summary.subtitle) return render(summary.subtitle)
         return summary.counterparty ? counterpartyName : null
-    }, [render, summary, counterpartyName])
+    }, [isSwap, resolvedTitle, t, render, summary, counterpartyName])
 
     const { canReplace, isBlocked, handleReplace } =
         useReplaceTransaction(record)
@@ -141,31 +173,89 @@ export const useTransactionListItem = (
         () => allAmounts.slice(0, MAX_VISIBLE_AMOUNTS),
         [allAmounts],
     )
-    const { data: storedAssets } = useAssetsQuery(
-        scope,
-        visibleAmounts.map(amount => amount.assetRef.assetId),
+    const heroAssetIds = useMemo(() => visibleAssetIdsOf(summary), [summary])
+    const { data: storedAssets } = useAssetsQuery(scope, heroAssetIds)
+    const assessment = useMemo(
+        () =>
+            assessHistoryEntry({
+                summary,
+                signer: record
+                    ? recordSignerOf(record, address)
+                    : transaction?.sender,
+                isSignedElsewhere: record?.isSignedElsewhere,
+                accountAddress: address,
+                chainId: scope.chainId,
+                isSuspectedPoisoning: !!suspectedPoisoning,
+                storedAssets,
+            }),
+        [
+            summary,
+            record,
+            transaction,
+            address,
+            scope.chainId,
+            suspectedPoisoning,
+            storedAssets,
+        ],
+    )
+    const { suspicion, isApprovedSend, isMovingNothing, flaggedAssetIds } =
+        assessment
+    // The signer of an allowance spend is who spent it; a row known only from a
+    // transfer log names none, so it keeps the recipient.
+    const spenderName = useCounterpartyName(
+        isApprovedSend ? (record?.initiator ?? '') : '',
+        scope.chainId,
     )
     const amounts = useMemo(
         () =>
-            visibleAmounts.map(amount =>
-                toAmountDisplay(
+            visibleAmounts.map((amount): RowAmount => {
+                const { assetId } = amount.assetRef
+                const display = toAmountDisplay(
                     amount,
-                    storedAssets.get(amount.assetRef.assetId),
-                ),
-            ),
-        [visibleAmounts, storedAssets],
+                    storedAssets.get(assetId),
+                )
+                return {
+                    ...display,
+                    prefix: isMovingNothing ? undefined : display.prefix,
+                    isMuted: isMovingNothing || flaggedAssetIds.has(assetId),
+                }
+            }),
+        [visibleAmounts, storedAssets, isMovingNothing, flaggedAssetIds],
     )
 
-    const imitatedCurrency = useMemo<Nullable<string>>(() => {
-        for (const a of amounts) {
-            const code = imitatedCurrencyOf(
-                { chainId: a.chainId, assetId: a.assetId },
-                a.currency,
-            )
-            if (code !== null) return code
-        }
-        return null
-    }, [amounts])
+    // From the synced price store only: an asset with no stored price shows no line.
+    const fiatSource =
+        allAmounts.length === 1 && !amounts[0]?.isMuted ? amounts[0] : undefined
+    const { convertedValue: fiatValue } = usePreferredAmount(
+        fiatSource?.value,
+        fiatSource?.assetId ?? '',
+        undefined,
+        undefined,
+        scope,
+    )
+    const suspicionCopy = suspicion ? suspicionCopyOf(suspicion) : undefined
+    const suspicionTitle = suspicionCopy ? render(suspicionCopy.title) : null
+    const { openInfo: handleSuspiciousPress } = useInfoButton({
+        title: suspicionTitle ?? undefined,
+        children: suspicionCopy && render(suspicionCopy.body),
+    })
+
+    const defaultTitle = isSwap ? { key: SWAP } : resolvedTitle
+    const title = render(
+        assessment.titleKey ? { key: assessment.titleKey } : defaultTitle,
+    )
+    const subtitle =
+        isApprovedSend && record?.initiator ? spenderName : counterpartySubtitle
+
+    const leadingAssets = useMemo(
+        () => leadingAssetsOf(summary, storedAssets),
+        [summary, storedAssets],
+    )
+
+    const leadingChainIds = useMemo(() => {
+        const swapChainIds = swapChainIdsOf(summary)
+        return swapChainIds.length > 1 ? swapChainIds : [scope.chainId]
+    }, [summary, scope.chainId])
 
     const nativeAsset = useNativeAsset(scope)
     const fee = useMemo<Nullable<AmountDisplay>>(() => {
@@ -187,21 +277,16 @@ export const useTransactionListItem = (
         if (transaction) onPress?.(transaction)
     }, [onPress, transaction])
 
-    const { suspectedPoisoning } = params
-    const { openSuspectedPoisoningSheet } = useSuspectedPoisoningSheet()
-    const handleSuspectedRecordPress = useCallback(() => {
-        if (suspectedPoisoning) {
-            openSuspectedPoisoningSheet(suspectedPoisoning, scope)
-        }
-    }, [openSuspectedPoisoningSheet, suspectedPoisoning, scope])
-
     const handleRecordPress = useCallback(() => {
         void handleReplace()
     }, [handleReplace])
     const replacePress = canReplace ? handleRecordPress : undefined
-    const { handleOpenDetails } = useOpenRecordDetails(record)
+    const { handleOpenDetails } = useOpenRecordDetails(
+        record,
+        suspectedPoisoning,
+    )
     const recordPress = suspectedPoisoning
-        ? handleSuspectedRecordPress
+        ? handleOpenDetails
         : (replacePress ?? handleOpenDetails)
 
     const handleLongPress = useCallback(
@@ -215,6 +300,7 @@ export const useTransactionListItem = (
         subtitle,
         subtitleEllipsizeMode: summary.subtitleEllipsis ?? 'middle',
         amounts,
+        fiatValue: fiatSource ? fiatValue : null,
         amountsOverflowCount: Math.max(
             0,
             allAmounts.length - MAX_VISIBLE_AMOUNTS,
@@ -224,7 +310,10 @@ export const useTransactionListItem = (
         notice,
         handlePress: record ? recordPress : handleTransactionPress,
         handleLongPress,
-        isSuspectedPoisoning: !!suspectedPoisoning,
-        imitatedCurrency,
+        isSuspicious: suspicion !== null,
+        suspicionTitle,
+        handleSuspiciousPress,
+        leadingChainIds,
+        leadingAssets,
     }
 }

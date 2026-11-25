@@ -95,7 +95,10 @@ const ids = () => useAccountsStore.getState().accounts.map(a => a.id)
 
 describe('useRemoveAccount', () => {
     beforeEach(() => {
-        useAccountsStore.setState({ accounts: [] })
+        useAccountsStore.setState({
+            accounts: [],
+            connectionRevokedThrough: {},
+        })
         vi.clearAllMocks()
         parentMap.clear()
     })
@@ -119,6 +122,54 @@ describe('useRemoveAccount', () => {
         // Hardware accounts hold no local key material.
         expect(deleteKeySpy).not.toHaveBeenCalled()
         expect(removeKeyAndChildrenSpy).not.toHaveBeenCalled()
+    })
+
+    test('records connection revocation in the same account-state update as removal', async () => {
+        const removed = ledgerAccount('REMOVED', 0)
+        useAccountsStore.setState({ accounts: [removed] })
+        const { result } = renderWithClient()
+        const beforeRemoval = Date.now()
+        const removalSnapshots: (number | undefined)[] = []
+        const unsubscribe = useAccountsStore.subscribe(
+            ({ accounts, connectionRevokedThrough }) => {
+                if (accounts.length === 0)
+                    removalSnapshots.push(connectionRevokedThrough.removed)
+            },
+        )
+
+        try {
+            await act(async () => result.current(removed.id))
+        } finally {
+            unsubscribe()
+        }
+
+        expect(removalSnapshots[0]).toBeGreaterThanOrEqual(beforeRemoval)
+        const { setAccounts, connectionRevokedThrough } =
+            useAccountsStore.getState()
+        await act(async () => setAccounts([removed]))
+        expect(useAccountsStore.getState().connectionRevokedThrough).toEqual(
+            connectionRevokedThrough,
+        )
+    })
+
+    test('clamps a revocation cutoff left ahead of a clock corrected backwards when the account is re-added', () => {
+        const removed = ledgerAccount('REMOVED', 0)
+        const correctedNow = 1_000
+        useAccountsStore.setState({
+            connectionRevokedThrough: { removed: 5_000, other: 5_000 },
+        })
+        vi.spyOn(Date, 'now').mockReturnValue(correctedNow)
+
+        try {
+            useAccountsStore.getState().setAccounts([removed])
+        } finally {
+            vi.mocked(Date.now).mockRestore()
+        }
+
+        expect(useAccountsStore.getState().connectionRevokedThrough).toEqual({
+            removed: correctedNow,
+            other: 5_000,
+        })
     })
 
     test('removes the child key and sweeps the seed when no other account references it', async () => {
@@ -398,6 +449,34 @@ describe('useRemoveAccount', () => {
         expect(cleanupRemovedAccountData).toHaveBeenCalledWith({
             accountAddress: '0xADDR',
         })
+    })
+
+    test('cleans up every address even when one address fails', async () => {
+        parentMap.set('k-fake', 'seed-1')
+        parentMap.set('k-eth', 'seed-1')
+        const spanning = buildTestAccount(
+            TEST_CUSTODY.local,
+            {
+                algorand: { address: 'FAKE-ADDR', keyPairId: 'k-fake' },
+                ethereum: { address: '0xADDR', keyPairId: 'k-eth' },
+            },
+            { id: 'spanning' },
+        )
+        useAccountsStore.setState({ accounts: [spanning] })
+        vi.mocked(cleanupRemovedAccountData).mockRejectedValueOnce(
+            new Error('database busy'),
+        )
+        const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {})
+
+        const { result } = renderWithClient()
+
+        await act(async () => {
+            await result.current('spanning')
+        })
+
+        await waitFor(() => expect(errorSpy).toHaveBeenCalled())
+        expect(cleanupRemovedAccountData).toHaveBeenCalledTimes(2)
+        errorSpy.mockRestore()
     })
 
     test('leaves the wallet as it is for an unknown id', async () => {

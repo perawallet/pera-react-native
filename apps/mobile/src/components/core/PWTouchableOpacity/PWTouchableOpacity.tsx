@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useRef } from 'react'
+import { useCallback, useLayoutEffect, useRef } from 'react'
 import {
     Keyboard,
     TouchableOpacity,
@@ -41,6 +41,14 @@ export const PWTouchableOpacity = ({
 }: PWTouchableOpacityProps) => {
     const lastPressAtRef = useRef(0)
 
+    // react-native-web hands the touchable a new handler only in a passive
+    // effect, so a press landing before it would run the previous render's
+    // onPress with stale state. Updated at commit, read at press time.
+    const onPressRef = useRef(onPress)
+    useLayoutEffect(() => {
+        onPressRef.current = onPress
+    })
+
     // onPress before Keyboard.dismiss — bottom-sheet open races if reversed.
     const handlePress = useCallback(
         (event: GestureResponderEvent) => {
@@ -49,12 +57,12 @@ export const PWTouchableOpacity = ({
                 if (now - lastPressAtRef.current < DOUBLE_PRESS_GUARD_MS) return
                 lastPressAtRef.current = now
             }
-            onPress?.(event)
+            onPressRef.current?.(event)
             if (dismissKeyboardOnPress) {
                 Keyboard.dismiss()
             }
         },
-        [onPress, dismissKeyboardOnPress, allowRapidPress],
+        [dismissKeyboardOnPress, allowRapidPress],
     )
 
     return (

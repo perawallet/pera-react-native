@@ -66,6 +66,8 @@ export const QUERY_PREFIX_POLICY: Record<string, 'persist' | 'never'> = {
     // on disk exposes nothing that isn't already public, and it is what lets
     // the app render before the first fetch lands.
     'asa-inbox': 'persist',
+    // An unsigned inbox send quote includes the intended sender, recipient and amount.
+    'asa-inbox/send-summary': 'never',
     'balance-impact-simulation': 'persist',
     banners: 'persist',
     currencies: 'persist',

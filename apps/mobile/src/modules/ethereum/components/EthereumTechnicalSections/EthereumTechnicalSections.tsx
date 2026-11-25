@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { formatAssetAmount } from '@perawallet/wallet-core-assets'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { PWIcon, PWText, PWTouchableIcon, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
@@ -26,14 +25,20 @@ import { EthereumAbiArgumentRow } from './EthereumAbiArgumentRow'
 import { EthereumRawCallRows } from './EthereumRawCallRows'
 import { useEthereumTechnicalSections } from './useEthereumTechnicalSections'
 import { useStyles } from './styles'
-
-const GWEI_DECIMALS = 9
+import {
+    mergePricing,
+    viewPricingOf,
+    type EthereumTransactionPricing,
+} from '../../utils/transactionPricing'
+import { EthereumPricingSection } from '../EthereumPricingSection'
 
 export type EthereumTechnicalSectionsProps = {
     presentation: EthereumTransactionPresentation
     /** The request the transaction is under review in; a history record has none. */
     source?: SignRequestSource
     verifiedOrigin?: string
+    /** The history's gas facts, filling what the view itself lacks. */
+    historyPricing?: EthereumTransactionPricing
 }
 
 /**
@@ -44,6 +49,7 @@ export const EthereumTechnicalSections = ({
     presentation,
     source,
     verifiedOrigin,
+    historyPricing,
 }: EthereumTechnicalSectionsProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -53,12 +59,7 @@ export const EthereumTechnicalSections = ({
         verifiedOrigin,
     )
     const { view, scope } = presentation
-    const gwei = {
-        decimals: GWEI_DECIMALS,
-        unitName: t('ethereum.pricing.gwei'),
-    }
-    // The gas labels are long and their values short, so the label wraps rather than truncates.
-    const untruncated = { truncate: false }
+    const pricing = mergePricing(viewPricingOf(view), historyPricing)
 
     return (
         <>
@@ -216,51 +217,7 @@ export const EthereumTechnicalSections = ({
                     </TechnicalBlock>
                 </TechnicalSection>
             )}
-            {'fee' in view && (
-                <TechnicalSection
-                    title={t('signing.technical.transaction')}
-                    testID='ethereum_detail_advanced'
-                >
-                    <TechnicalBlock>
-                        <KeyValueRow
-                            testID='ethereum_nonce'
-                            title={t('ethereum.pricing.nonce')}
-                        >
-                            <PWText>{String(view.nonce)}</PWText>
-                        </KeyValueRow>
-                        <KeyValueRow
-                            testID='ethereum_gas_limit'
-                            title={t('ethereum.pricing.gas_limit')}
-                            titleProps={untruncated}
-                        >
-                            <PWText>{view.gas.toString()}</PWText>
-                        </KeyValueRow>
-                        <KeyValueRow
-                            testID='ethereum_max_fee_per_gas'
-                            title={t('ethereum.pricing.max_fee_per_gas')}
-                            titleProps={untruncated}
-                        >
-                            <PWText>
-                                {formatAssetAmount(view.fee.maxFeePerGas, gwei)}
-                            </PWText>
-                        </KeyValueRow>
-                        <KeyValueRow
-                            testID='ethereum_max_priority_fee_per_gas'
-                            title={t(
-                                'ethereum.pricing.max_priority_fee_per_gas',
-                            )}
-                            titleProps={untruncated}
-                        >
-                            <PWText>
-                                {formatAssetAmount(
-                                    view.fee.maxPriorityFeePerGas,
-                                    gwei,
-                                )}
-                            </PWText>
-                        </KeyValueRow>
-                    </TechnicalBlock>
-                </TechnicalSection>
-            )}
+            {!!pricing && <EthereumPricingSection pricing={pricing} />}
         </>
     )
 }

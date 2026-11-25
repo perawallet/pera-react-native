@@ -269,6 +269,8 @@ const plantRoot = (
     }))
 }
 
+const everyKey = (keys: readonly Key[]) => new Set(keys.map(key => key.id))
+
 const credentialParams = (overrides: Record<string, unknown> = {}) => ({
     rpId: 'webauthn.io',
     userHandle: 'alice',
@@ -289,7 +291,7 @@ describe('vault-chrome webauthn signer', () => {
 
     describe('createP256Credential', () => {
         it("mints a pbkdf2-p256 main key from the wallet root's entropy child, then derives the credential from it", async () => {
-            const signer = createKeystoreSigner(engine, store)
+            const signer = createKeystoreSigner(engine, store, everyKey)
 
             const { keyId, publicKeyXY } =
                 await signer.createP256Credential(credentialParams())
@@ -317,7 +319,7 @@ describe('vault-chrome webauthn signer', () => {
         })
 
         it('reuses the existing main key across credentials instead of minting one per passkey', async () => {
-            const signer = createKeystoreSigner(engine, store)
+            const signer = createKeystoreSigner(engine, store, everyKey)
 
             await signer.createP256Credential(credentialParams())
             await signer.createP256Credential(
@@ -337,7 +339,7 @@ describe('vault-chrome webauthn signer', () => {
                         : k,
                 ),
             }))
-            const signer = createKeystoreSigner(engine, store)
+            const signer = createKeystoreSigner(engine, store, everyKey)
 
             const { keyId } =
                 await signer.createP256Credential(credentialParams())
@@ -353,7 +355,7 @@ describe('vault-chrome webauthn signer', () => {
         // 96-byte extended root would give a main key no mnemonic reproduces
         // on any other platform.
         it('PBKDF2s the BIP39 entropy, not the 96-byte extended root', async () => {
-            const signer = createKeystoreSigner(engine, store)
+            const signer = createKeystoreSigner(engine, store, everyKey)
 
             const { publicKeyXY } =
                 await signer.createP256Credential(credentialParams())
@@ -397,7 +399,7 @@ describe('vault-chrome webauthn signer', () => {
         it('derives from a 16-byte entropy child, as a 12-word wallet stores', async () => {
             const entropy12 = new Uint8Array(16).fill(5)
             engine.addMaterial(ENTROPY_CHILD_ID, entropy12)
-            const signer = createKeystoreSigner(engine, store)
+            const signer = createKeystoreSigner(engine, store, everyKey)
 
             const { publicKeyXY } =
                 await signer.createP256Credential(credentialParams())
@@ -424,7 +426,7 @@ describe('vault-chrome webauthn signer', () => {
         // Same formula as `usePasskeyMainKey`/`repairs/0003` on mobile, so a
         // keystore written by either side is recognised by the other.
         it('names the main key with the shared `<seedKeyId>-passkey-main` id', async () => {
-            const signer = createKeystoreSigner(engine, store)
+            const signer = createKeystoreSigner(engine, store, everyKey)
 
             await signer.createP256Credential(credentialParams())
 
@@ -442,7 +444,7 @@ describe('vault-chrome webauthn signer', () => {
             // disagree: an unsorted scan takes `wallet-root`.
             plantRoot(store, engine, 'zzz-root')
             plantRoot(store, engine, 'aaa-root')
-            const signer = createKeystoreSigner(engine, store)
+            const signer = createKeystoreSigner(engine, store, everyKey)
 
             await signer.createP256Credential(credentialParams())
 
@@ -462,7 +464,7 @@ describe('vault-chrome webauthn signer', () => {
                 withEntropyChild: false,
                 first: true,
             })
-            const signer = createKeystoreSigner(engine, store)
+            const signer = createKeystoreSigner(engine, store, everyKey)
 
             await signer.createP256Credential(credentialParams())
 
@@ -472,12 +474,60 @@ describe('vault-chrome webauthn signer', () => {
             })
         })
 
+        it('never mints the main key on a root no account uses, even when it sorts first', async () => {
+            plantRoot(store, engine, 'aaa-root')
+            const signer = createKeystoreSigner(
+                engine,
+                store,
+                () => new Set([WALLET_ROOT_ID]),
+            )
+
+            await signer.createP256Credential(credentialParams())
+
+            expect(engine.generateCalls[0]?.params).toMatchObject({
+                parentKeyId: ENTROPY_CHILD_ID,
+                id: `${WALLET_ROOT_ID}-passkey-main`,
+            })
+        })
+
+        it('mints on an account-backed root rather than reuse a main key left on an unclaimed seed', async () => {
+            plantRoot(store, engine, 'aaa-root')
+            await createKeystoreSigner(
+                engine,
+                store,
+                () => new Set(['aaa-root']),
+            ).createP256Credential(credentialParams())
+            const signer = createKeystoreSigner(
+                engine,
+                store,
+                () => new Set([WALLET_ROOT_ID]),
+            )
+
+            await signer.createP256Credential(
+                credentialParams({ rpId: 'example.com' }),
+            )
+
+            expect(engine.generateCalls).toHaveLength(2)
+            expect(engine.generateCalls[1]?.params?.parentKeyId).toBe(
+                ENTROPY_CHILD_ID,
+            )
+        })
+
+        it('throws when no account uses any wallet root', async () => {
+            const signer = createKeystoreSigner(engine, store, () => new Set())
+
+            await expect(
+                signer.createP256Credential(credentialParams()),
+            ).rejects.toBeInstanceOf(InvalidKeyDataError)
+            expect(engine.generateCalls).toHaveLength(0)
+        })
+
         it('throws when the wallet root has no entropy child to derive from', async () => {
             store.setState(state => ({
                 ...state,
                 keys: state.keys.filter(k => k.id !== ENTROPY_CHILD_ID),
             }))
-            const signer = createKeystoreSigner(engine, store)
+            const signer = createKeystoreSigner(engine, store, everyKey)
 
             await expect(
                 signer.createP256Credential(credentialParams()),
@@ -488,7 +538,7 @@ describe('vault-chrome webauthn signer', () => {
         })
 
         it('lowercases userHandle for derivation without touching userHandleOriginalB64Url', async () => {
-            const signer = createKeystoreSigner(engine, store)
+            const signer = createKeystoreSigner(engine, store, everyKey)
             const userHandleOriginalB64Url = bytesToB64url(
                 new TextEncoder().encode('AliceMixedCase'),
             )
@@ -509,7 +559,7 @@ describe('vault-chrome webauthn signer', () => {
 
         it('throws when the keystore holds no wallet root to derive from', async () => {
             store.setState(state => ({ ...state, keys: [] }))
-            const signer = createKeystoreSigner(engine, store)
+            const signer = createKeystoreSigner(engine, store, everyKey)
 
             await expect(
                 signer.createP256Credential(credentialParams()),
@@ -522,7 +572,7 @@ describe('vault-chrome webauthn signer', () => {
 
     describe('signP256', () => {
         it('returns a raw 64-byte ES256 signature the credential public key verifies', async () => {
-            const signer = createKeystoreSigner(engine, store)
+            const signer = createKeystoreSigner(engine, store, everyKey)
             const { keyId, publicKeyXY } =
                 await signer.createP256Credential(credentialParams())
             const payload = new TextEncoder().encode('authData||clientDataHash')
@@ -545,7 +595,7 @@ describe('vault-chrome webauthn signer', () => {
         // Regression pin. The engine hashes internally; pre-hashing here would
         // sign SHA256(SHA256(payload)), which no relying party can verify.
         it('hands the payload to the engine unhashed, leaving ES256 hashing to it', async () => {
-            const signer = createKeystoreSigner(engine, store)
+            const signer = createKeystoreSigner(engine, store, everyKey)
             const { keyId } =
                 await signer.createP256Credential(credentialParams())
             const payload = new TextEncoder().encode('authData||clientDataHash')
@@ -562,7 +612,7 @@ describe('vault-chrome webauthn signer', () => {
         })
 
         it("fails verification against a different credential's public key, proving the derivation is domain-specific", async () => {
-            const signer = createKeystoreSigner(engine, store)
+            const signer = createKeystoreSigner(engine, store, everyKey)
             const alice = await signer.createP256Credential(credentialParams())
             const bob = await signer.createP256Credential(
                 credentialParams({ userHandle: 'bob' }),
@@ -588,7 +638,7 @@ describe('vault-chrome webauthn signer', () => {
         })
 
         it('stamps lastUsedAt and bumps count, keeping the derivation inputs and registration metadata', async () => {
-            const signer = createKeystoreSigner(engine, store)
+            const signer = createKeystoreSigner(engine, store, everyKey)
             const { keyId } =
                 await signer.createP256Credential(credentialParams())
             const registered = store.state.keys.find(k => k.id === keyId)
@@ -610,7 +660,7 @@ describe('vault-chrome webauthn signer', () => {
         })
 
         it('re-derives with the stored derivation counter, so the keypair survives', async () => {
-            const signer = createKeystoreSigner(engine, store)
+            const signer = createKeystoreSigner(engine, store, everyKey)
             const { keyId: firstId } =
                 await signer.createP256Credential(credentialParams())
             const mainKeyId = metadataOf(
@@ -632,7 +682,7 @@ describe('vault-chrome webauthn signer', () => {
         })
 
         it('writes nothing for an unknown key id', async () => {
-            const signer = createKeystoreSigner(engine, store)
+            const signer = createKeystoreSigner(engine, store, everyKey)
             const keysBefore = store.state.keys
 
             await signer.recordP256Use('missing')
@@ -643,7 +693,7 @@ describe('vault-chrome webauthn signer', () => {
 
     describe('listP256Credentials', () => {
         it('returns only the passkeys registered for the given rpId', async () => {
-            const signer = createKeystoreSigner(engine, store)
+            const signer = createKeystoreSigner(engine, store, everyKey)
             const registered =
                 await signer.createP256Credential(credentialParams())
             await signer.createP256Credential(
@@ -668,7 +718,7 @@ describe('vault-chrome webauthn signer', () => {
         })
 
         it('returns the byte-exact original user.id, not the lossy lowercased derivation string', async () => {
-            const signer = createKeystoreSigner(engine, store)
+            const signer = createKeystoreSigner(engine, store, everyKey)
             const userHandleOriginalB64Url = bytesToB64url(
                 new TextEncoder().encode('Alice'),
             )
@@ -687,7 +737,7 @@ describe('vault-chrome webauthn signer', () => {
         })
 
         it('round-trips an opaque, non-UTF-8 user.id byte-for-byte through create -> list', async () => {
-            const signer = createKeystoreSigner(engine, store)
+            const signer = createKeystoreSigner(engine, store, everyKey)
             const opaque = Uint8Array.from([0xff, 0x00, 0x41, 0xfe, 0x7f, 0x80])
             const userHandleOriginalB64Url = bytesToB64url(opaque)
 
@@ -700,7 +750,7 @@ describe('vault-chrome webauthn signer', () => {
         })
 
         it('falls back to base64url of the derivation userHandle when userHandleOriginal is absent', async () => {
-            const signer = createKeystoreSigner(engine, store)
+            const signer = createKeystoreSigner(engine, store, everyKey)
             store.setState(state => ({
                 ...state,
                 keys: [
@@ -726,7 +776,7 @@ describe('vault-chrome webauthn signer', () => {
         })
 
         it('never returns a vault-unlock-shaped keystore entry, even if it names this rpId', async () => {
-            const signer = createKeystoreSigner(engine, store)
+            const signer = createKeystoreSigner(engine, store, everyKey)
             await signer.createP256Credential(credentialParams())
 
             // The M2 vault-unlock passkey is a browser-platform WebAuthn

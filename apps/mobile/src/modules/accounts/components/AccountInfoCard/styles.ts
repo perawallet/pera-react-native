@@ -152,7 +152,7 @@ export const useStyles = makeStyles(theme => {
             gap: theme.spacing.xxs,
         },
         addressText: {
-            color: theme.colors.textGrayLighter,
+            color: theme.colors.textGray,
         },
         chevronExpanded: {
             transform: [{ rotate: '180deg' }],
@@ -209,7 +209,7 @@ export const useStyles = makeStyles(theme => {
             flexShrink: 1,
         },
         rekeyedSubtitle: {
-            color: theme.colors.textGrayLighter,
+            color: theme.colors.textGray,
         },
         rekeyedUndo: {
             marginLeft: 'auto',

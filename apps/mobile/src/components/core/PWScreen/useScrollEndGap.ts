@@ -16,12 +16,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
 import { PWScreenNestedContext } from './nestedContext'
 
-/**
- * Bottom padding that ends a vertical scroll body: `spacing.xl` above whatever
- * sits below it, plus the home-indicator inset when nothing else clears it.
- * Zero inside a `PWScreen` or `PWSheetLayout` body, which already carries the
- * gap — a scroller adding its own would double it.
- */
 type UseScrollEndGapOptions = {
     isInSheet?: boolean
     /** False for a full-bleed body that should only clear the system UI. */
@@ -31,6 +25,12 @@ type UseScrollEndGapOptions = {
     hasBottomInset?: boolean
 }
 
+/**
+ * Bottom padding that ends a vertical scroll body: `spacing.xl` above whatever
+ * sits below it, plus the home-indicator inset when nothing else clears it.
+ * Zero inside a `PWScreen` or `PWSheetLayout` body, which already carries the
+ * gap — a scroller adding its own would double it.
+ */
 export const useScrollEndGap = ({
     isInSheet = false,
     hasGap = true,

@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 
-import type { Decimal } from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import type {
     ChainScope,
     FeePreset,
@@ -72,7 +72,7 @@ type SendTransactionParams = BaseSendParams & {
     isCloseAccount?: boolean
     /** The speed a gas-priced chain builds at; a flat-fee chain ignores it. */
     feePreset?: FeePreset
-    /** Base units of the native asset: the most the sender confirmed paying; a flat-fee chain ignores it. */
+    /** Base units of the native asset: the most the sender confirmed paying. */
     maxFee?: Decimal
     /** The inbox quote the send was confirmed against; the chain adapter validates it. */
     assetInboxQuote?: AssetInboxQuote
@@ -263,6 +263,7 @@ export const useTransactionSendFlow = (
                 note: params.note,
                 isCloseAccount: params.isCloseAccount,
                 fee: resolvedFee > suggestedMinFee ? resolvedFee : undefined,
+                allowFeeReview: true,
             })
         },
         [accounts, fetchSuggestedMinFee, minTxnFee, pqMultiplier, scope],
@@ -312,6 +313,9 @@ export const useTransactionSendFlow = (
                         scope,
                         unsignedTxs,
                         source: SEND_TRANSACTION_SOURCE,
+                        // The send screen quotes a single fee. Review the full
+                        // group, including the receiver's opt-in and funding.
+                        reviewFee: true,
                     })
                     return result.txIds[result.txIds.length - 1]
                 }
@@ -349,10 +353,26 @@ export const useTransactionSendFlow = (
                 }
                 case 'normal': {
                     const unsignedTxs = await buildNormalTxs(params)
+                    let reviewFee = false
+                    if (sendFlowChainAdapters.has(scope.chainId)) {
+                        const { transactionFee } = sendFlowChainAdapters.get(
+                            scope.chainId,
+                        )
+                        reviewFee =
+                            !params.maxFee?.isFinite() ||
+                            unsignedTxs
+                                .reduce(
+                                    (total, tx) =>
+                                        total.plus(transactionFee(tx)),
+                                    new Decimal(0),
+                                )
+                                .gt(params.maxFee)
+                    }
                     const result = await submit({
                         scope,
                         unsignedTxs,
                         source: SEND_TRANSACTION_SOURCE,
+                        ...(reviewFee ? { reviewFee } : {}),
                     })
                     return result.txIds[0]
                 }

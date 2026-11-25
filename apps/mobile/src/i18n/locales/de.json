@@ -58,7 +58,8 @@
             "search_web": "Im Web suchen",
             "no_results": "Keine Ergebnisse",
             "assets_unavailable": "Die Asset-Suche ist momentan nicht verfügbar",
-            "dapps_unavailable": "Die dApp-Suche ist momentan nicht verfügbar"
+            "dapps_unavailable": "Die dApp-Suche ist momentan nicht verfügbar",
+            "unverified": "Nicht verifiziert"
         },
         "news": {
             "title": "News",
@@ -268,7 +269,10 @@
         "empty_title": "Keine offenen Freigaben",
         "empty_body": "Für dieses Konto wurden keine offenen Token- oder Sammlungsfreigaben gefunden.",
         "error_title": "Freigaben konnten nicht geladen werden",
-        "error_body": "Prüfe deine Verbindung und versuche es erneut.",
+        "error_body": "Beim Laden ist etwas schiefgelaufen. Versuche es gleich noch einmal.",
+        "offline_body": "Prüfe deine Verbindung und versuche es erneut.",
+        "unavailable_title": "Freigaben sind in diesem Netzwerk noch nicht verfügbar",
+        "unavailable_body": "Pera kann die Token-Freigaben dieses Kontos in diesem Netzwerk noch nicht abrufen.",
         "revoke_error_title": "Widerruf nicht bestätigt",
         "revoke_error_body": "Prüfe in der Liste, wie der Status der Freigabe ist, bevor du es erneut versuchst."
     },
@@ -287,7 +291,11 @@
         "hidden_toast_body": "Das Token erscheint nicht mehr in deinen Assets und zählt nicht zu deinem Guthaben. Du kannst es unter Assets verwalten > Tokens ausblenden wieder einblenden.",
         "hidden_swipe_toast_body": "Tippe, um es rückgängig zu machen. Das Token erscheint nicht mehr in deinen Assets und zählt nicht zu deinem Guthaben.",
         "shown_toast_title": "{{assetName}} eingeblendet",
-        "filtered_note": "Pera hat dieses Token als verdächtig markiert, daher erscheint es nicht in deinen Assets. Mit „Verdächtige Assets anzeigen“ in den Asset-Filtern kannst du es einblenden."
+        "filtered_note": "Pera hat dieses Token als verdächtig markiert, daher erscheint es nicht in deinen Assets. Unter „Ausgeblendete Tokens“ am Ende deiner Assets kannst du es einblenden.",
+        "auto_hidden_row_title": "Ausgeblendete Tokens ({{total}})",
+        "auto_hidden_title": "Ausgeblendete Tokens",
+        "auto_hidden_description": "Pera hat diese Tokens ausgeblendet, weil sie nach Spam oder Betrug aussehen. Besuche keine Websites, die darin genannt werden. Blende ein Token ein, um es wieder anzuzeigen; zu deinem Guthaben zählt es weiterhin nicht.",
+        "auto_hidden_empty_title": "Keine ausgeblendeten Tokens"
     },
     "deeplink": {
         "error": {
@@ -386,7 +394,8 @@
         "imitated_currency": {
             "marker": "Imitiert {{code}}",
             "title": "Dieses Asset ist nicht {{code}}",
-            "body": "Sein Einheitenname ist {{code}}, aber es ist ein eigenständiges Asset, das jeder erstellt haben könnte. Wenn du es erhältst, bekommst du kein {{code}}."
+            "body": "Sein Einheitenname ist {{code}}, aber es ist ein eigenständiges Asset, das jeder erstellt haben könnte. Wenn du es erhältst, bekommst du kein {{code}}.",
+            "unit_label": "Unbekanntes Asset"
         }
     },
     "asset_details": {
@@ -429,8 +438,6 @@
             "social_media": "Soziale Medien",
             "chart_empty_body": "Sobald ein Guthabenverlauf vorliegt, wird hier ein Diagramm angezeigt",
             "total_supply_info_body": "Das Gesamtangebot eines Assets wird bei der Erstellung festgelegt und entspricht der Gesamtzahl der erstellten Einheiten des Assets.",
-            "circulating_supply": "Umlaufendes Angebot",
-            "circulating_supply_info_body": "Das umlaufende Angebot ist die Anzahl der Coins, die derzeit im Umlauf sind. Die native Währung eines Netzwerks hat kein festes Gesamtangebot, daher ändert sich diese Zahl, wenn Coins ausgegeben oder verbrannt werden.",
             "token_total_supply_info_body": "Das Gesamtangebot ist die Anzahl der Token, die der Vertrag ausgegeben hat, abzüglich der verbrannten. Es ändert sich, wenn der Emittent Token prägt oder verbrennt."
         },
         "action_buttons": {
@@ -446,14 +453,13 @@
             "empty_filtered_body": "Keine Transaktionen entsprechen diesem Filter",
             "empty_on_network_body": "Noch keine Transaktionen auf {{network}}",
             "network_failed": "Transaktionen auf {{networks}} konnten nicht geladen werden",
-            "network_unavailable": "Transaktionen sind auf {{networks}} nicht verfügbar",
+            "network_unavailable": "Der vollständige Verlauf ist auf {{networks}} nicht verfügbar",
             "offline_empty_title": "Du bist offline",
             "offline_empty_body": "Auf diesem Gerät sind noch keine Transaktionen gespeichert. Sie erscheinen, sobald du wieder online bist.",
             "search_paused_body": "Keine Transaktionen im jüngsten Verlauf gefunden.",
             "search_older": "Ältere durchsuchen",
             "filter": "Filter",
-            "csv": "CSV",
-            "csv_on_network": "{{network}}-CSV"
+            "csv": "CSV"
         },
         "collectible": {
             "description": "Beschreibung",
@@ -486,7 +492,7 @@
         },
         "token_warning": {
             "suspicious_title": "Verdächtiges Token",
-            "body": "Pera hat dieses Token als verdächtig markiert. Du hast es nicht angefordert und es könnte ein Betrug sein. Interagiere nicht mit Websites oder Links, die damit zu tun haben."
+            "body": "Pera hat dieses Token als verdächtig markiert. Du hast es nicht angefordert und es könnte ein Betrug sein. Sei vorsichtig im Umgang damit und mit Websites oder Links, die damit zu tun haben."
         },
         "copy_full_amount_hint": "Lange drücken, um den vollen Betrag zu kopieren",
         "toggle_amount_hint": "Tippe, um zwischen Wert und Asset-Betrag zu wechseln"
@@ -524,6 +530,7 @@
             "empty_title": "NFTs",
             "empty_body": "Willkommen in deiner NFT-Galerie! Du hast noch keine NFTs. Alle NFTs in deinem Wallet werden hier angezeigt.",
             "empty_body_multichain": "Willkommen in deiner NFT-Galerie!\nDu hast noch keine NFTs. NFTs, die du in Netzwerken wie Ethereum erhältst, erscheinen hier automatisch. Für Algorand-NFTs musst du dich zuerst anmelden.",
+            "empty_body_unsupported": "NFTs auf {{chains}} werden in Pera noch nicht angezeigt.",
             "empty_optin": "Für NFT anmelden",
             "empty_optin_algorand": "Für Algorand-NFT anmelden",
             "nomatch_title": "Keine passenden NFTs",
@@ -629,6 +636,8 @@
         "enable_network_success": "{{network}} aktiviert",
         "see_all_networks": "Alle Netzwerke anzeigen",
         "view_passphrase": "Wiederherstellungsphrase anzeigen",
+        "write_down_passphrase": "Schreibe auch deine Wiederherstellungsphrase auf",
+        "write_down_passphrase_subtitle": "Empfohlen, nicht erforderlich",
         "network_options": "Weitere Optionen"
     },
     "account_info": {
@@ -731,18 +740,29 @@
     "backup": {
         "banner": {
             "text": "Du musst die Wiederherstellungsphrase sichern",
-            "cta": "Jetzt sichern"
+            "cta": "Jetzt sichern",
+            "text_with_cloud_backup": "Du musst dieses Konto sichern",
+            "cta_passphrase": "Wiederherstellungsphrase sichern",
+            "cta_turn_on_cloud_backup": "Cloud-Backup aktivieren",
+            "cta_fix_cloud_backup": "Cloud-Backup prüfen"
+        },
+        "status": {
+            "cloud_backup": "Gesichert · Cloud-Backup"
         },
         "info": {
             "title": "Backup der Wiederherstellungsphrase für dein Konto erstellen",
             "body": "Ein Backup der Wiederherstellungsphrase ermöglicht es dir, dein Konto wiederherzustellen. Ohne die Wiederherstellungsphrase kannst du den Zugriff auf dein Algorand-Konto unwiderruflich verlieren, wenn du dein Gerät verlierst, das Konto entfernst oder die App löschst!",
-            "body_all_networks": "Deine Wiederherstellungsphrase ist die einzige Möglichkeit, dein Konto in allen Netzwerken wiederherzustellen: {{networks}}. Wenn du ohne Backup dein Gerät verlierst, das Konto entfernst oder die App löschst, verlierst du den Zugriff auf dein Guthaben unwiderruflich.",
+            "body_all_networks": "Mit einem Backup der Wiederherstellungsphrase kannst du dein Konto in allen Netzwerken wiederherstellen: {{networks}}. Wenn du ohne Backup dein Gerät verlierst, das Konto entfernst oder die App löschst, verlierst du den Zugriff auf dein Guthaben unwiderruflich.",
+            "body_with_cloud_backup": "Mit einem Backup der Wiederherstellungsphrase kannst du dein Algorand-Konto wiederherstellen. Ein Cloud-Backup kann es ebenfalls wiederherstellen. Ohne eines der beiden Backups kannst du den Zugriff auf dein Konto unwiderruflich verlieren, wenn du dein Gerät verlierst, das Konto entfernst oder die App löschst.",
+            "body_all_networks_with_cloud_backup": "Mit einem Backup der Wiederherstellungsphrase kannst du dein Konto in allen Netzwerken wiederherstellen: {{networks}}. Ein Cloud-Backup kann es ebenfalls wiederherstellen. Ohne eines der beiden Backups verlierst du den Zugriff auf dein Guthaben unwiderruflich, wenn du dein Gerät verlierst, das Konto entfernst oder die App löschst.",
             "cta": "Ich verstehe"
         },
         "write_down": {
             "title": "Bereite dich darauf vor, deine Wiederherstellungsphrase aufzuschreiben",
-            "body": "Die einzige Möglichkeit, ein Algorand-Konto wiederherzustellen, ist diese Wiederherstellungsphrase.",
-            "body_all_networks": "Diese Wiederherstellungsphrase ist die einzige Möglichkeit, dein Konto und alle seine Adressen in allen Netzwerken wiederherzustellen.",
+            "body": "Mit dieser Wiederherstellungsphrase kannst du dein Algorand-Konto wiederherstellen.",
+            "body_all_networks": "Mit dieser Wiederherstellungsphrase kannst du dein Konto und alle seine Adressen in allen Netzwerken wiederherstellen.",
+            "body_with_cloud_backup": "Mit dieser Wiederherstellungsphrase kannst du dein Algorand-Konto wiederherstellen. Das Cloud-Backup ist der andere Weg, es wiederherzustellen.",
+            "body_all_networks_with_cloud_backup": "Mit dieser Wiederherstellungsphrase kannst du dein Konto und alle seine Adressen in allen Netzwerken wiederherstellen. Das Cloud-Backup ist der andere Weg, es wiederherzustellen.",
             "warning": "Teile diese Wiederherstellungsphrase mit niemandem, da sie vollen Zugriff auf dein Konto gewährt.",
             "warning_all_networks": "Teile diese Wiederherstellungsphrase mit niemandem. Wer sie hat, kontrolliert dein Guthaben in allen Netzwerken.",
             "cta": "Ich bin bereit zu beginnen"
@@ -842,6 +862,16 @@
             "description": "Wähle die richtigen Wörter aus, um zu bestätigen, dass du deine 12-Wort-Passphrase sicher aufbewahrt hast.",
             "proceed": "Fortfahren",
             "error_message": "Falsche Auswahl. Bitte versuche es erneut."
+        },
+        "confirm_credentials": {
+            "warning": "Bestätige, dass du deine Backup-Zugangsdaten gespeichert hast",
+            "title": "Backup-Zugangsdaten bestätigen",
+            "description": "Wähle die richtigen Wörter deiner 12-Wort-Passphrase aus und gib deinen Backup-Schlüssel ein, um zu bestätigen, dass du beides aufbewahrt hast.",
+            "confirm": "Bestätigen",
+            "error_words": "Einige der ausgewählten Wörter sind falsch. Bitte versuche es erneut.",
+            "error_key": "Dieser Backup-Schlüssel passt nicht zu deinem Backup.",
+            "error_both": "Die ausgewählten Wörter und der Backup-Schlüssel sind beide falsch.",
+            "success": "Backup-Zugangsdaten bestätigt"
         },
         "store_encryption_key": {
             "title": "Backup-Schlüssel speichern",
@@ -1059,6 +1089,12 @@
             "confirm_button": "Backup löschen",
             "confirm_checkbox_label": "Ich verstehe, dass mein Backup endgültig vom Server gelöscht wird und das nicht rückgängig gemacht werden kann."
         },
+        "turn_off_at_risk": {
+            "summary_one": "Dieses Konto mit <0/> wird nicht mehr gesichert.",
+            "summary_other": "Diese {{count}} Konten mit <0/> werden nicht mehr gesichert.",
+            "back_up_first": "Zuerst Wiederherstellungsphrasen sichern",
+            "turn_off_anyway": "Trotzdem deaktivieren"
+        },
         "restore": {
             "sheet_title": "Backup wiederherstellen/abrufen",
             "sheet_description": "Stelle dein Backup wieder her, indem du einen QR-Code scannst oder deine Zugangsdaten manuell eingibst.",
@@ -1197,6 +1233,10 @@
             "title": "In die Zwischenablage kopiert",
             "body": ""
         },
+        "address_copied": {
+            "algorand": "Algorand-Adresse kopiert",
+            "evm": "EVM-Adresse kopiert"
+        },
         "email_failed": {
             "title": "E-Mail-App konnte nicht geöffnet werden",
             "body": "Auf diesem Gerät ist keine E-Mail-App eingerichtet. Du kannst direkt an {{email}} schreiben."
@@ -1223,7 +1263,8 @@
             "asset_empty_body": "Sobald für dieses Asset auf diesem Konto ein Guthabenverlauf vorliegt, wird hier ein Diagramm angezeigt",
             "excludes_networks": "Dieses Diagramm enthält noch keine {{networks}}-Assets",
             "failed_networks": "Der Verlauf von {{networks}} konnte nicht geladen werden und fehlt daher in diesem Diagramm",
-            "currency_unavailable_body": "Dieses Diagramm ist in {{currency}} derzeit nicht verfügbar"
+            "currency_unavailable_body": "Dieses Diagramm ist in {{currency}} derzeit nicht verfügbar",
+            "balance_change_label": "Saldoänderung"
         },
         "webview": {
             "failed_title": "Seite konnte nicht geladen werden",
@@ -1491,6 +1532,10 @@
             "asset_frozen": {
                 "title": "Asset eingefroren",
                 "body": "Das Asset {{assetId}} ist eingefroren, daher kann diese Übertragung nicht abgeschlossen werden. Der Freeze-Manager des Assets muss es zuerst freigeben."
+            },
+            "fee_above_shown": {
+                "title": "Netzwerkgebühr geändert",
+                "body": "Das Netzwerk verlangt jetzt eine höhere Gebühr als die angezeigte, daher wurde nichts signiert. Versuche es erneut, um die aktuelle Gebühr zu sehen."
             }
         },
         "kms": {
@@ -1524,7 +1569,8 @@
             "request_expired_body": "Diese Signaturanfrage ist abgelaufen, bevor sie beantwortet wurde. Lass die App sie erneut senden.",
             "unsupported_method_body": "{{dappName}} hat {{method}} angefragt, was Pera nicht unterstützt. Die Anfrage wurde abgelehnt.",
             "unsupported_network_body": "{{dappName}} wollte das Netzwerk mit der Chain-ID {{chainId}} verwenden, das Pera nicht unterstützt. Die Anfrage wurde abgelehnt.",
-            "unsupported_chains_body": "Diese App wollte ein Netzwerk verwenden, das Pera nicht unterstützt. Die Verbindung wurde abgelehnt."
+            "unsupported_chains_body": "Diese App wollte ein Netzwerk verwenden, das Pera nicht unterstützt. Die Verbindung wurde abgelehnt.",
+            "unselected_network_body": "Diese App bietet nur Netzwerke an, auf denen Pera gerade nicht ist. Die Verbindung wurde abgelehnt. Schalte den Entwicklermodus ein oder aus, damit er zur App passt, und versuche es erneut."
         },
         "signing": {
             "title": "Bei der Verarbeitung der Signaturanfrage ist ein Fehler aufgetreten",
@@ -2371,6 +2417,8 @@
             "load_error": "Diese Transaktion konnte nicht geladen werden. Sie ist möglicherweise abgelaufen oder wurde entfernt.",
             "cosign_rejected_title": "Signieren nicht möglich",
             "cosign_rejected_body": "Diese Anfrage enthält eine Transaktion, die das Gemeinschaftskonto nicht autorisiert. Wenn der Absender ein Konto ist, das auf das Gemeinschaftskonto gerekeyt wurde, füge es deinem Wallet hinzu und versuche es erneut.",
+            "request_open_title": "Schließe zuerst die offene Anfrage",
+            "request_open_body": "Schließe die Signaturanfrage ab oder beende sie und öffne den Link erneut.",
             "retry": "Erneut versuchen",
             "canceled": "Transaktion abgebrochen.",
             "declined": "Transaktion abgelehnt.",
@@ -2765,6 +2813,14 @@
                 "fetch_failed_title": "Backup konnte nicht geladen werden",
                 "decrypt_failed_title": "Backup konnte nicht entsperrt werden"
             },
+            "review": {
+                "title": "Konten prüfen",
+                "body_one": "Dieser Code importiert {{count}} Konto. Prüfe vor dem Import, dass es dir gehört.",
+                "body_other": "Dieser Code importiert {{count}} Konten. Prüfe vor dem Import, dass sie dir gehören.",
+                "body": "Dieser Code importiert {{count}} Konten. Prüfe vor dem Import, dass sie dir gehören.",
+                "confirm": "Konten importieren",
+                "interrupted": "Der Import wurde unterbrochen. Scanne den QR-Code erneut, um fortzufahren."
+            },
             "result": {
                 "success_title": "Konten importiert",
                 "success_body_one": "{{count}} Konto wurde deinem Wallet hinzugefügt.",
@@ -3142,6 +3198,7 @@
             "verify_title": "Gib deine PIN ein",
             "unlock_title": "Gib deine PIN ein",
             "change_old_title": "Gib deine alte\n6-stellige PIN ein",
+            "matches_duress_pin": "Deine neue PIN muss sich von deiner Notfall-PIN unterscheiden.",
             "logging_in": "Anmeldung läuft"
         },
         "lockout": {
@@ -3289,7 +3346,8 @@
             },
             "fee_shortfall": {
                 "title": "Nicht genug {{symbol}} für die Gebühr",
-                "body": "Diese Überweisung kann bis zu {{fee}} an Gebühren kosten. Verringere den Betrag oder wähle eine langsamere Gebühr."
+                "body": "Diese Überweisung kann bis zu {{fee}} an Gebühren kosten. Verringere den Betrag oder wähle eine langsamere Gebühr.",
+                "body_non_native": "Diese Überweisung kann auf {{network}} bis zu {{fee}} an Gebühren kosten. Füge {{symbol}} hinzu oder wähle eine langsamere Gebühr."
             },
             "fee_unavailable": {
                 "title": "Gebühr konnte nicht geschätzt werden",
@@ -3620,6 +3678,31 @@
             "typed_data_warning_title": "Diese Signatur kann deine Token bewegen",
             "typed_data_warning_body": "Das Signieren strukturierter Daten kann einer Anwendung erlauben, deine Token ohne erneute Rückfrage auszugeben oder zu tauschen. Genehmige dies nur, wenn du dieser Anwendung vertraust."
         },
+        "sign_in": {
+            "title": "Bei {{domain}} anmelden",
+            "domain": "Domain",
+            "address": "Adresse",
+            "uri": "URI",
+            "chain_id": "Chain-ID",
+            "nonce": "Nonce",
+            "issued_at": "Ausgestellt",
+            "expires_at": "Läuft ab",
+            "advanced": "Erweitert",
+            "site_mismatch_title": "Diese Anmeldung gilt für eine andere Website",
+            "site_mismatch_body": "Die Nachricht meldet dich bei {{domain}} an, die Anfrage kommt aber von {{site}}. Bestätige nur, wenn du beiden vertraust.",
+            "other_address_note": "Die Nachricht nennt {{address}}, nicht das signierende Konto.",
+            "other_chain_note": "Die Nachricht nennt {{chain}}, nicht das Netzwerk dieser Anfrage. Bei der Anmeldung wird keine Transaktion gesendet.",
+            "other_chain_id_note": "Die Nachricht nennt die Chain-ID {{chainId}}, nicht das Netzwerk dieser Anfrage. Bei der Anmeldung wird keine Transaktion gesendet.",
+            "statement_label": "Nachricht von {{domain}}",
+            "not_before": "Gültig ab",
+            "request_id": "Anfrage-ID",
+            "resource": "Ressource",
+            "grants_title": "Diese Anmeldung erteilt auch Berechtigungen",
+            "grants_body": "Mit der Signatur kann {{domain}} mit den folgenden Berechtigungen in deinem Namen handeln. Bestätige nur, wenn du der Website vertraust.",
+            "grants_unreadable_body": "Diese Anmeldung erteilt {{domain}} Berechtigungen, die Pera nicht lesen kann. Bestätige nur, wenn du der Website vertraust.",
+            "malformed_title": "Diese Anmeldenachricht enthält unerwartete Inhalte",
+            "malformed_body": "Teile dieser Nachricht entsprechen nicht dem Anmeldeformat, daher könnte {{domain}} sie anders lesen als hier angezeigt. Prüfe die vollständige Nachricht unter Erweitert und bestätige nur, wenn du der Website vertraust."
+        },
         "spend_approval": {
             "spend_warning": "Diese Signatur erlaubt einer anderen Adresse, Token ohne erneute Rückfrage von deinem Konto zu bewegen.",
             "spend_warning_transaction": "Diese Transaktion erlaubt einer anderen Adresse, Token ohne erneute Rückfrage von deinem Konto zu bewegen.",
@@ -3631,7 +3714,11 @@
             "no_deadline_warning": "Diese Berechtigung läuft nie ab.",
             "spender_label": "Berechtigte Adresse",
             "unlimited": "Unbegrenzt",
-            "deadline_label": "Frist",
+            "expiry_label": "Berechtigung läuft ab",
+            "signature_deadline_label": "Signatur gültig bis",
+            "signature_long_deadline_warning": "Diese Signatur bleibt länger als ein Jahr gültig und kann daher noch lange nach dem Signieren verwendet werden.",
+            "expired_title": "Diese Anfrage ist abgelaufen",
+            "expired_body": "Die Frist zum Signieren ist vorbei, daher würde sie abgelehnt. Brich ab und starte in der App neu.",
             "never": "Nie",
             "known_title": "Über diese Freigabe",
             "known_description": "{{name}} ist ein bekannter Smart Contract",
@@ -3894,6 +3981,7 @@
             "approval_for": "Für {{spender}}",
             "unlimited_approval_for": "Unbegrenzt · für {{spender}}",
             "swap_pair": "Tausch {{from}} → {{to}}",
+            "swap_assets": "{{from}} → {{to}}",
             "add_liquidity": "Liquidität hinzufügen",
             "remove_liquidity": "Liquidität entfernen",
             "collect_fees": "Gebühren einsammeln",
@@ -3909,7 +3997,10 @@
             "nft_subtitle": "{{collection}} #{{tokenId}}",
             "nft_batch_subtitle": "{{collection}} · {{count}} Elemente",
             "inner_transaction_count": "{{innerCount}} innere Transaktionen",
-            "cancel_transaction": "Transaktion stornieren"
+            "cancel_transaction": "Transaktion stornieren",
+            "send_by_approval": "Senden (freigegeben)",
+            "spoofed_send": "Gefälschtes Senden",
+            "contract_call_named": "Smart Contract: {{method}}"
         },
         "record_detail": {
             "read_failed": "Die Aufrufdetails dieser Transaktion konnten nicht aus dem Netzwerk gelesen werden.",
@@ -4059,6 +4150,8 @@
             "title": "Filter",
             "all_time": "Gesamter Zeitraum",
             "today": "Heute",
+            "hide_suspicious": "Verdächtige Transaktionen ausblenden",
+            "hide_suspicious_description": "Blendet gefälschte Sendungen, nachgeahmte und Spam-Token sowie vermutete Adressvergiftung aus.",
             "yesterday": "Gestern",
             "last_week": "Letzte Woche",
             "last_month": "Letzter Monat",
@@ -4081,15 +4174,20 @@
             "blocked_body": "Eine frühere Transaktion von diesem Konto hat das Netzwerk nie erreicht, daher kann diese erst bestätigt werden, wenn etwas ihren Platz einnimmt. Freigeben sendet an ihrer Stelle eine leere Überweisung an dich selbst, die eine Netzwerkgebühr kostet.",
             "unblock": "Freigeben"
         },
+        "suspected_fake_transfer": {
+            "title": "Vermutlich gefälschte Überweisung",
+            "body": "Dein Konto hat diese Überweisung nicht signiert, und sie hat nichts bewegt. Jeder kann eine Überweisung von 0 Token so aussehen lassen, als käme sie von deinem Konto, ganz ohne Freigabe. Betrüger tun das, damit ihre Adresse in deinem Verlauf erscheint und später kopiert wird. Kopiere keine Adressen daraus."
+        },
         "suspected_poisoning": {
-            "marker": "Verdacht auf Address Poisoning",
             "title": "Verdacht auf Address Poisoning",
-            "body": "Diese Überweisung hatte keinen Wert und stammt von einer Adresse, die so gestaltet ist, dass sie wie eine aussieht, die du kennst. Betrüger senden so etwas, damit ihre Adresse in deinem Verlauf auftaucht und später kopiert wird. Kopiere sie nicht und sende nichts an sie.",
+            "body": "Diese Überweisung hatte keinen Wert und stammt von einer Adresse, die so gestaltet ist, dass sie wie eine aussieht, die du kennst. Betrüger senden so etwas, damit ihre Adresse in deinem Verlauf auftaucht und später kopiert wird.",
+            "do_not_reuse": "Kopiere diese Adresse nicht und sende nichts an sie.",
             "sender_label": "Diese Adresse",
             "reuse_title": "Diese Adresse imitiert eine, die du kennst",
             "reuse_body": "Sie beginnt und endet wie eine Adresse, die du kennst, ist aber nicht dieselbe. Vergleiche die vollständigen Adressen, bevor du sie verwendest.",
             "reuse_confirm": "Trotzdem fortfahren",
-            "reuse_cancel": "Abbrechen"
+            "reuse_cancel": "Abbrechen",
+            "dismiss": "Verstanden"
         }
     },
     "tabbar": {
@@ -4137,15 +4235,34 @@
             "view_accounts": "Deine Adresse und Guthaben sehen",
             "approve_transactions": "Dich bitten, Transaktionen zu genehmigen",
             "sign_messages": "Dich bitten, Nachrichten zu signieren",
-            "switch_networks": "Darum bitten, das Netzwerk zu wechseln"
+            "switch_networks": "Darum bitten, das Netzwerk zu wechseln",
+            "add_tokens": "Darum bitten, Token zu deinem Konto hinzuzufügen"
         },
         "connection": {
             "approve_delivery_failed": "Die dApp konnte nicht erreicht werden, um die Verbindung zu bestätigen. Überprüfe deine Internetverbindung und versuche es erneut."
         },
         "switch_network": {
             "title": "Netzwerkzugriff erlauben?",
-            "body": "{{name}} möchte deine {{chain}}-Konten im Netzwerk {{network}} verwenden.",
+            "body": "{{name}} möchte deine Konten auf {{chain}} verwenden.",
+            "body_with_network": "{{name}} möchte deine Konten auf {{chain}} {{network}} verwenden.",
             "confirm": "Erlauben"
+        },
+        "watch_asset": {
+            "title": "Token hinzufügen?",
+            "body": "{{name}} möchte diesen Token zu deinem Konto hinzufügen.",
+            "unreadable": "Pera konnte unter dieser Adresse auf {{chain}} keinen Token lesen.",
+            "confirm": "Token hinzufügen",
+            "token": "Token",
+            "verification": "Verifizierung",
+            "contract": "Vertrag",
+            "decimals": "Dezimalstellen",
+            "network": "Netzwerk",
+            "account": "Konto",
+            "tier": {
+                "verified": "Verifiziert",
+                "unverified": "Nicht verifiziert",
+                "suspicious": "Verdächtig"
+            }
         },
         "settings": {
             "empty_title": "Keine WalletConnect-Sitzungen",
@@ -4284,6 +4401,7 @@
             "quote_error": "Angebote konnten nicht abgerufen werden. Bitte versuche es erneut.",
             "amount_too_low": "Betrag zu klein für einen Tausch auf {{network}}. Das Minimum beträgt {{amount}} {{unit}}.",
             "amount_too_low_fiat": "Betrag zu klein für einen Tausch auf {{network}}. Das Minimum beträgt {{amount}} {{unit}} (~{{fiat}}).",
+            "amount_too_low_above_balance": "Dein verfügbares Guthaben liegt unter dem Minimum von {{amount}} {{unit}} für einen Tausch auf {{network}}.",
             "use_minimum": "Minimum verwenden",
             "amount_too_low_unknown": "Betrag zu klein für einen Tausch auf {{network}}. Versuche einen höheren Betrag oder ein Netzwerk mit niedrigeren Gebühren.",
             "amount_too_high": "Betrag zu groß für einen Tausch. Das Maximum beträgt {{amount}} {{unit}}.",
@@ -4303,9 +4421,12 @@
                 "swap": "Tausch fehlgeschlagen"
             },
             "provider_failed_body": "Dieser Anbieter konnte den Tausch nicht durchführen. Versuche es mit einem anderen Anbieter.",
+            "provider_failed_single_body": "Der Anbieter konnte den Tausch nicht durchführen. Versuche es später erneut oder mit einem anderen Betrag.",
             "provider_unavailable_body": "Der Anbieter ist gerade nicht verfügbar. Versuche es gleich noch einmal.",
             "quote_mismatch_body": "Die Transaktionen des Anbieters passten nicht zu diesem Angebot, deshalb wurde nichts signiert. Versuche es erneut oder wähle einen anderen Anbieter.",
+            "quote_mismatch_single_body": "Die Transaktionen des Anbieters passten nicht zu diesem Angebot, deshalb wurde nichts signiert. Versuche es später erneut.",
             "unsupported_order_body": "Pera kann die Bestellung dieses Anbieters nicht abschließen, deshalb wurde nichts signiert. Wähle einen anderen Anbieter.",
+            "unsupported_order_single_body": "Pera kann die Bestellung dieses Anbieters nicht abschließen, deshalb wurde nichts signiert. Versuche es später erneut.",
             "signing_failed_body": "Die Transaktion konnte nicht signiert werden, deshalb wurde sie nicht gesendet. Versuche es erneut.",
             "order_insufficient_balance_body": "Dein Guthaben reicht für diesen Betrag und die Netzwerkgebühr nicht aus. Versuche einen kleineren Betrag oder füge Guthaben für die Gebühr hinzu.",
             "insufficient_native_body": "Dieses Konto benötigt mindestens {{amount}} {{symbol}} mehr, um diesen Tausch, die Gebühren und das Mindestguthaben zu decken. Füge mehr {{symbol}} hinzu und versuche es erneut.",
@@ -4352,6 +4473,8 @@
                         "refunded": "Erstattet"
                     }
                 },
+                "account_filter_all": "Alle Konten",
+                "load_more": "Mehr laden",
                 "empty": {
                     "title": "Noch keine Tauschvorgänge",
                     "body": "Dein Tauschverlauf wird hier angezeigt."
@@ -5197,6 +5320,8 @@
             "gwei": "Gwei",
             "nonce": "Nonce",
             "gas_limit": "Gas-Limit",
+            "gas_used": "Verbrauchtes Gas",
+            "gas_price": "Gaspreis",
             "max_fee_per_gas": "Max. Gebühr pro Gas",
             "max_priority_fee_per_gas": "Max. Prioritätsgebühr pro Gas"
         },

@@ -59,6 +59,7 @@ describe('connection permissions cover every signing method', () => {
             'approve-transactions',
             'sign-messages',
             'switch-networks',
+            'add-tokens',
         ])
     })
 })

@@ -11,10 +11,24 @@
  */
 
 import { create } from 'zustand'
-import { guardedPersist, registerStore } from '@perawallet/wallet-core-shared'
+import {
+    guardedPersist,
+    registerStore,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { MigrationStepVersions } from '@perawallet/wallet-extension-platform'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { holdsLegacyAccountKey } from '../migrate/legacyAccountKey'
 
 const STORE_NAME = 'migration-gate-store'
+
+/** A refused legacy wipe: it is re-checked once a step version moves or none of `addresses` blocks any more. */
+export type LegacyWipeBlock = {
+    versions: MigrationStepVersions
+    /** Migrated addresses whose key was held only as watch or was missing from the keystore. */
+    addresses: string[]
+}
 
 type MigrationGateState = {
     isChecking: boolean
@@ -22,9 +36,17 @@ type MigrationGateState = {
     dismissed: boolean
     hasStarted: boolean
     skipped: boolean
+    legacyWipeBlock: Nullable<LegacyWipeBlock>
+    /** Addresses the accounts step must leave alone once the user removes them. */
+    removedAccountAddresses: string[]
+    /** Removed addresses whose signing material was present in the new keystore. */
+    removedKeyAddresses: string[]
 }
 
 type MigrationGateActions = {
+    setLegacyWipeBlock: (block: Nullable<LegacyWipeBlock>) => void
+    /** Call before deletion so the wipe can distinguish a retained legacy key. */
+    recordRemovedAccount: (account: WalletAccount) => void
     markStarted: () => void
     setStatus: (input: { needsMigration: boolean }) => void
     dismiss: () => void
@@ -41,6 +63,9 @@ const initialState: MigrationGateState = {
     dismissed: false,
     hasStarted: false,
     skipped: false,
+    legacyWipeBlock: null,
+    removedAccountAddresses: [],
+    removedKeyAddresses: [],
 }
 
 export const useMigrationGateStore = create<MigrationGateStore>()(
@@ -53,15 +78,54 @@ export const useMigrationGateStore = create<MigrationGateStore>()(
             dismiss: () => set({ dismissed: true }),
             setSkipped: () => set({ skipped: true }),
             clearSkipped: () => set({ skipped: false }),
+            setLegacyWipeBlock: block => set({ legacyWipeBlock: block }),
+            recordRemovedAccount: account => {
+                const { custody } = account
+                const entries = Object.values(account.chains)
+                const addresses = entries.flatMap(entry => entry?.address ?? [])
+                const keyedAddresses =
+                    custody.kind === 'local'
+                        ? entries.flatMap(entry =>
+                              entry &&
+                              holdsLegacyAccountKey(
+                                  entry.keyPairId,
+                                  custody.seed === 'bip39',
+                              )
+                                  ? [entry.address]
+                                  : [],
+                          )
+                        : []
+                set(state => ({
+                    removedAccountAddresses: [
+                        ...new Set([
+                            ...state.removedAccountAddresses,
+                            ...addresses,
+                        ]),
+                    ],
+                    removedKeyAddresses: [
+                        ...new Set([
+                            ...state.removedKeyAddresses.filter(
+                                address => !addresses.includes(address),
+                            ),
+                            ...keyedAddresses,
+                        ]),
+                    ],
+                }))
+            },
             resetState: () => set(initialState),
         }),
         {
             name: STORE_NAME,
             storage: () => getProvider().keyValueStorage,
-            // Only `skipped` survives cold launches. Session-local fields
-            // (isChecking, needsMigration, dismissed, hasStarted) re-evaluate
-            // on every launch.
-            partialize: state => ({ skipped: state.skipped }),
+            // Only `skipped`, the wipe verdict and removals survive cold launches.
+            // Session-local fields (isChecking, needsMigration, dismissed,
+            // hasStarted) re-evaluate on every launch.
+            partialize: state => ({
+                skipped: state.skipped,
+                legacyWipeBlock: state.legacyWipeBlock,
+                removedAccountAddresses: state.removedAccountAddresses,
+                removedKeyAddresses: state.removedKeyAddresses,
+            }),
         },
     ),
 )

@@ -95,6 +95,30 @@ describe('useClipboard', () => {
         )
     })
 
+    it('shows a custom title', async () => {
+        const mockShowToast = vi.fn()
+        ;(useToast as Mock).mockReturnValue({
+            showToast: mockShowToast,
+        })
+
+        const { result } = renderHook(() => useClipboard())
+
+        await act(async () => {
+            await result.current.copyToClipboard('0xabc', {
+                title: 'EVM address copied',
+                body: '0xab…bc',
+            })
+        })
+
+        expect(mockShowToast).toHaveBeenCalledWith(
+            expect.objectContaining({
+                title: 'EVM address copied',
+                body: '0xab…bc',
+            }),
+            expect.anything(),
+        )
+    })
+
     it('should read text from the clipboard', async () => {
         ;(Clipboard.getStringAsync as Mock).mockResolvedValue('pasted text')
 

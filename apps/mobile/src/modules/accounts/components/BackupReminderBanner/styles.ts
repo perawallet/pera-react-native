@@ -20,12 +20,29 @@ export const useStyles = makeStyles(theme => ({
         overflow: 'hidden',
     },
     container: {
-        flexDirection: 'row',
-        alignItems: 'center',
         backgroundColor: theme.colors.negative,
         paddingVertical: theme.spacing.lg,
         paddingHorizontal: theme.spacing.md,
         borderRadius: theme.borderRadius.sm,
+        gap: theme.spacing.md,
+    },
+    containerInline: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.sm,
+    },
+    messageRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.sm,
+    },
+    messageRowInline: {
+        flex: 1,
+    },
+    actions: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'flex-end',
         gap: theme.spacing.sm,
     },
     text: {
@@ -35,7 +52,8 @@ export const useStyles = makeStyles(theme => ({
         marginHorizontal: theme.spacing.xs,
     },
     ctaButton: {
-        height: theme.spacing.xxl,
+        minHeight: theme.spacing.xxl,
+        paddingVertical: theme.spacing.xs,
         paddingHorizontal: theme.spacing.md,
         borderRadius: theme.borderRadius.xs,
         backgroundColor: theme.colors.bannerButton,
@@ -45,5 +63,6 @@ export const useStyles = makeStyles(theme => ({
     ctaText: {
         ...getTypography(theme, 'body'),
         color: theme.colors.textWhite,
+        textAlign: 'center',
     },
 }))

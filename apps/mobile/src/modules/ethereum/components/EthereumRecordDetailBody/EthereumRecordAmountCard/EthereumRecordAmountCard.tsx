@@ -15,6 +15,7 @@ import type {
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { PWText } from '@components/core'
+import { AddressDisplay } from '@components/AddressDisplay'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { useLanguage } from '@hooks/useLanguage'
 import { TransactionDetailCard } from '@modules/signing'
@@ -25,6 +26,10 @@ type EthereumRecordAmountCardProps = {
     scope: ChainScope
     /** Names the asset moved, for a summary the balance legs alone can't say which of. */
     assetLabel?: string
+    /** The token contract of the asset moved, shown beside it so a lookalike name can be checked. */
+    assetContract?: string
+    /** Titles each leg by its side, what left and what arrived, rather than as a bare amount. */
+    isSwap?: boolean
 }
 
 /** What the history says happened to the balances, whether or not the call was read. */
@@ -32,10 +37,12 @@ export const EthereumRecordAmountCard = ({
     changes,
     scope,
     assetLabel,
+    assetContract,
+    isSwap = false,
 }: EthereumRecordAmountCardProps) => {
     const { t } = useLanguage()
 
-    if (changes.length === 0 && !assetLabel) {
+    if (changes.length === 0 && !assetLabel && !assetContract) {
         return null
     }
 
@@ -49,11 +56,32 @@ export const EthereumRecordAmountCard = ({
                     <PWText>{assetLabel}</PWText>
                 </KeyValueRow>
             )}
+            {!!assetContract && (
+                <KeyValueRow
+                    testID='ethereum_record_asset_contract'
+                    title={t('transactions.common.asset')}
+                >
+                    <AddressDisplay
+                        address={assetContract}
+                        displayType='address-only'
+                        scope={scope}
+                    />
+                </KeyValueRow>
+            )}
             {changes.map((change, index) => (
                 <EthereumRecordAmountRow
                     key={`${change.assetRef.assetId}-${index}`}
                     change={change}
                     scope={scope}
+                    title={
+                        isSwap
+                            ? t(
+                                  change.value.isNegative()
+                                      ? 'transactions.list_item.send'
+                                      : 'transactions.list_item.receive',
+                              )
+                            : undefined
+                    }
                     testID={`ethereum_record_amount_${index}`}
                 />
             ))}

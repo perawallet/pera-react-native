@@ -325,6 +325,8 @@ export const useTransactionConfirmationScreen =
             scope,
         })
 
+        const networkName = chainDisplayNameOf(scope.chainId) ?? scope.chainId
+
         // A node refuses a send its native balance can't cover at the selected
         // preset's worst-case fee, so check that before signing. Algorand's
         // amount step already sizes the send against its reserve and close-out.
@@ -338,7 +340,8 @@ export const useTransactionConfirmationScreen =
             ) {
                 return undefined
             }
-            const nativeNeeded = isNativeAssetId(selectedAssetId)
+            const isNativeSend = isNativeAssetId(selectedAssetId)
+            const nativeNeeded = isNativeSend
                 ? baseUnitAmount.plus(maxFeeAmount)
                 : maxFeeAmount
             // A MAX that re-sizes to nothing leaves the whole balance for the fee, which
@@ -366,9 +369,18 @@ export const useTransactionConfirmationScreen =
                 title: t('send_funds.confirmation.fee_shortfall.title', {
                     symbol: unitName,
                 }),
-                body: t('send_funds.confirmation.fee_shortfall.body', {
-                    fee: maxFeeLabel,
-                }),
+                body: isNativeSend
+                    ? t('send_funds.confirmation.fee_shortfall.body', {
+                          fee: maxFeeLabel,
+                      })
+                    : t(
+                          'send_funds.confirmation.fee_shortfall.body_non_native',
+                          {
+                              fee: maxFeeLabel,
+                              network: networkName,
+                              symbol: unitName,
+                          },
+                      ),
             }
         }, [
             isFeeCoverageChecked,
@@ -379,27 +391,22 @@ export const useTransactionConfirmationScreen =
             selectedAssetId,
             isNativeAssetId,
             nativeAsset,
+            networkName,
             t,
             currentLanguage,
         ])
 
         const isFeeCoveragePending =
-            isFeeCoverageChecked &&
-            (!maxFeeAmount || !nativeSpendable || !baseUnitAmount)
+            !maxFeeAmount ||
+            (isFeeCoverageChecked && (!nativeSpendable || !baseUnitAmount))
 
         const feeError = useMemo((): Optional<FeeErrorNotice> => {
-            if (!isFeeCoverageChecked || !isFeeError) return undefined
+            if (!isFeeError) return undefined
             return {
                 ...feeErrorCopy(feeEstimateError, t),
                 isRetrying: isFeeRetrying,
             }
-        }, [
-            isFeeCoverageChecked,
-            isFeeError,
-            feeEstimateError,
-            isFeeRetrying,
-            t,
-        ])
+        }, [isFeeError, feeEstimateError, isFeeRetrying, t])
 
         const sendTotal = useSendTotal({
             scope,
@@ -446,17 +453,7 @@ export const useTransactionConfirmationScreen =
                 return
             }
 
-            if (isFeeCoverageChecked) {
-                // The screen shows the shortfall or the fee error and disables Confirm.
-                if (
-                    !maxFeeAmount ||
-                    !nativeSpendable ||
-                    !baseUnitAmount ||
-                    feeShortfall
-                ) {
-                    return
-                }
-            }
+            if (isFeeCoveragePending || feeShortfall) return
 
             if (recipientWarning) {
                 errorToast(
@@ -475,7 +472,7 @@ export const useTransactionConfirmationScreen =
             }
 
             if (isMaxNativeSend) setAmount(reviewedAmount)
-            setConfirmedMaxFee(isFeeCoverageChecked ? maxFeeAmount : undefined)
+            setConfirmedMaxFee(maxFeeAmount)
             setIsSigning(true)
             navigation.navigate('TransactionProcessing')
         }
@@ -493,7 +490,7 @@ export const useTransactionConfirmationScreen =
         const title = assetLabel
             ? t('send_funds.confirmation.send_on_network', {
                   asset: assetLabel,
-                  network: chainDisplayNameOf(scope.chainId) ?? scope.chainId,
+                  network: networkName,
               })
             : undefined
 

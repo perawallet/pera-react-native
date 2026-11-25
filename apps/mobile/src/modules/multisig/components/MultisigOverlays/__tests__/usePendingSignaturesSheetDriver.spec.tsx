@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
 import { usePendingSignaturesSheetStore } from '../../../stores/usePendingSignaturesSheetStore'
 import { usePendingSignaturesSheetDriver } from '../usePendingSignaturesSheetDriver'
 
@@ -47,5 +47,28 @@ describe('usePendingSignaturesSheetDriver', () => {
         renderHook(() => usePendingSignaturesSheetDriver())
 
         expect(requestBottomSheetMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('presents the next request when the current sheet dismisses', async () => {
+        let dismiss = () => {}
+        requestBottomSheetMock.mockImplementationOnce(
+            () =>
+                new Promise<void>(resolve => {
+                    dismiss = resolve
+                }),
+        )
+        const store = usePendingSignaturesSheetStore
+        store.getState().openSheet('sr-1')
+        renderHook(() => usePendingSignaturesSheetDriver())
+
+        act(() => store.getState().enqueueSheet('sr-2', 'ethereum'))
+        expect(requestBottomSheetMock).toHaveBeenCalledTimes(1)
+        expect(store.getState().signRequestId).toBe('sr-1')
+
+        await act(async () => dismiss())
+
+        expect(requestBottomSheetMock).toHaveBeenCalledTimes(2)
+        expect(store.getState().signRequestId).toBe('sr-2')
+        expect(store.getState().chainId).toBe('ethereum')
     })
 })

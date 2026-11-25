@@ -15,6 +15,7 @@ import { OverlayErrorFallback } from './OverlayErrorFallback'
 import { OfflineBanner } from '@components/OfflineBanner'
 import ErrorBoundary from 'react-native-error-boundary'
 import {
+    useAbandonedImportSeedSweep,
     useHiddenTokensInvalidation,
     useSyncNewAccounts,
 } from '@perawallet/wallet-core-accounts'
@@ -23,6 +24,7 @@ import { useNeedsMigration } from '@perawallet/wallet-core-migrate'
 import { DeviceRegistrar } from '@components/DeviceRegistrar'
 import { useNetworkSwitchInvalidation } from '@hooks/useNetworkSwitchInvalidation'
 import { useImageMemoryRelease } from '@hooks/useImageMemoryRelease'
+import { useNetworkChipFollowsSelection } from '@modules/accounts/shell'
 import { ConnectionsProvider } from '@modules/connections/shell'
 import { AutoLockGuard } from '@modules/security/shell'
 import { SigningOverlays } from '@modules/signing/shell'
@@ -31,6 +33,7 @@ import {
     MultisigOverlays,
 } from '@modules/multisig/shell'
 import { SwapOverlays } from '@modules/swap/shell'
+import { useLegacyDataWipe } from '@modules/migration/shell'
 import { useBackupSyncLifecycle } from '@modules/cloud-backup'
 import { RootContentContainer } from './RootContentContainer'
 import { useRootComponent } from './useRootComponent'
@@ -56,12 +59,15 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     // picks up an account whose activity predates its checkpoint. Gated on
     // migration because syncing before the migrated device id lands caches favorites as false.
     useSyncNewAccounts({ isEnabled: !migrationInProgress })
+    useLegacyDataWipe({ isEnabled: !migrationInProgress })
+    useAbandonedImportSeedSweep({ isEnabled: !migrationInProgress })
 
     useNetworkSwitchInvalidation()
     useImageMemoryRelease()
 
     useBackupSyncLifecycle()
     useHiddenTokensInvalidation()
+    useNetworkChipFollowsSelection()
 
     // Called where the sync start/stop effect used to sit, after the other
     // lifecycle hooks, so this refactor doesn't change the startup order.
@@ -70,8 +76,11 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     return (
         <>
             <BottomSheetModalProvider>
-                {!migrationInProgress && <DeviceRegistrar />}
-                <AutoLockGuard>
+                <AutoLockGuard
+                    afterInitialization={
+                        !migrationInProgress && <DeviceRegistrar />
+                    }
+                >
                     {/* The app's single connection registry: it owns every
                         handler's lifecycle, so exactly one may be mounted. */}
                     <ConnectionsProvider>

@@ -31,9 +31,10 @@ export type EnsureCanReceiveParams = {
     assetId: string
     /**
      * Shown before anything is signed. Resolve false to cancel: `EnsureCanReceive`
-     * then resolves false. When omitted, the preparation proceeds unconfirmed.
+     * then resolves false. A bigint returns the approved fee in native base
+     * units. When omitted, the preparation proceeds unconfirmed.
      */
-    confirm?: (context: ConfirmReceiveContext) => Promise<boolean>
+    confirm?: (context: ConfirmReceiveContext) => Promise<boolean | bigint>
 }
 
 /** Resolves false when the user declined, or when there is nothing to receive into. */

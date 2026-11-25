@@ -43,7 +43,7 @@ export const darkColorTokens = {
     // Layer
     layerGray: palette.gray[700],
     layerGrayLighter: palette.gray[800],
-    layerGrayLightest: palette.gray[800],
+    layerGrayLightest: palette.gray[850],
 
     // Inverted, and far weaker: darkening gray[900] is invisible, so the
     // covered screen is lifted instead. Alpha is the dial to turn if the
@@ -111,9 +111,9 @@ export const darkColorTokens = {
     positiveLighter: tints.turquoise600Alpha12,
     negative: palette.salmon[500],
     negativeLighter: 'rgba(255, 109, 95, 0.12)',
-    warningText: palette.yellow[600],
+    warningText: palette.yellow[500],
     successCheckmark: palette.gray[900],
-    heroBg: '#1D1D21',
+    heroBg: palette.gray[850],
 
     // Chart
     chartAreaFill: accentPalette.chartTeal,
@@ -209,7 +209,7 @@ export const darkColorTokens = {
     tabBarButton: palette.gray[800],
     tabBarBg: 'rgba(24, 24, 27, 0.84)',
     tabBarIconActive: palette.gray[50],
-    tabBarIconNonActive: palette.gray[500],
+    tabBarIconNonActive: palette.gray[400],
     tabBarIconDisabled: 'rgba(113, 113, 122, 0.5)',
 
     // Bottom Sheet
@@ -220,7 +220,7 @@ export const darkColorTokens = {
 
     // Switches
     switchBg: palette.yellow[500],
-    switchOffBg: palette.gray[800],
+    switchOffBg: palette.gray[600],
 
     // NFT Icon
     nftIconBg: tints.gray900Alpha60,

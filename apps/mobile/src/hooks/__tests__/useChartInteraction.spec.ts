@@ -53,6 +53,22 @@ describe('useChartInteraction', () => {
         )
     })
 
+    it('neither reads nor writes the shared period when it is not shared', () => {
+        getPreference.mockReturnValue('one-year')
+
+        const { result } = renderHook(() =>
+            useChartInteraction('one-week', { isPeriodShared: false }),
+        )
+        expect(result.current.period).toBe('one-week')
+
+        act(() => {
+            result.current.setPeriod('one-day')
+        })
+
+        expect(result.current.period).toBe('one-day')
+        expect(setPreference).not.toHaveBeenCalled()
+    })
+
     it('falls back to the default when the stored period is invalid', () => {
         getPreference.mockReturnValue('bogus')
 

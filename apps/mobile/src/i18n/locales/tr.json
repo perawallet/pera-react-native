@@ -58,7 +58,8 @@
             "search_web": "Web’de ara",
             "no_results": "Sonuç yok",
             "assets_unavailable": "Varlık araması şu anda kullanılamıyor",
-            "dapps_unavailable": "dApp araması şu anda kullanılamıyor"
+            "dapps_unavailable": "dApp araması şu anda kullanılamıyor",
+            "unverified": "Doğrulanmamış"
         },
         "news": {
             "title": "Haberler",
@@ -268,7 +269,10 @@
         "empty_title": "Açık onay yok",
         "empty_body": "Bu hesap için açık token veya koleksiyon onayı bulunamadı.",
         "error_title": "Onaylar yüklenemedi",
-        "error_body": "Bağlantını kontrol et ve tekrar dene.",
+        "error_body": "Yüklenirken bir sorun oluştu. Birazdan tekrar dene.",
+        "offline_body": "Bağlantını kontrol et ve tekrar dene.",
+        "unavailable_title": "Onaylar bu ağda henüz kullanılamıyor",
+        "unavailable_body": "Pera bu hesabın token onaylarını bu ağda henüz sorgulayamıyor.",
         "revoke_error_title": "İptal onaylanmadı",
         "revoke_error_body": "Tekrar denemeden önce listede onayın güncel durumuna bak."
     },
@@ -287,7 +291,11 @@
         "hidden_toast_body": "Varlıklarında görünmez ve bakiyene dahil edilmez. Varlıkları yönet > Tokenları gizle bölümünden yeniden gösterebilirsin.",
         "hidden_swipe_toast_body": "Geri almak için dokun. Varlıklarında görünmez ve bakiyene dahil edilmez.",
         "shown_toast_title": "{{assetName}} gösterildi",
-        "filtered_note": "Pera bu tokenı şüpheli olarak işaretledi, bu yüzden varlıklarında görünmez. Varlık filtrelerindeki “Şüpheli varlıkları göster” ile listeleyebilirsin."
+        "filtered_note": "Pera bu tokenı şüpheli olarak işaretledi, bu yüzden varlıklarında görünmez. Varlıklarının sonundaki “Gizli tokenlar” bölümünden gösterebilirsin.",
+        "auto_hidden_row_title": "Gizli tokenlar ({{total}})",
+        "auto_hidden_title": "Gizli tokenlar",
+        "auto_hidden_description": "Pera bu tokenları spam veya dolandırıcılık gibi göründükleri için gizledi. İçlerinde adı geçen web sitelerini ziyaret etme. Bir tokenı yeniden listelemek için göster; yine de bakiyene dahil edilmez.",
+        "auto_hidden_empty_title": "Gizli token yok"
     },
     "deeplink": {
         "error": {
@@ -386,7 +394,8 @@
         "imitated_currency": {
             "marker": "Gerçek {{code}} değil",
             "title": "Bu varlık {{code}} değil",
-            "body": "Birim adı {{code}} olsa da herkesin oluşturabileceği ayrı bir varlıktır. Bunu almak sana hiç {{code}} kazandırmaz."
+            "body": "Birim adı {{code}} olsa da herkesin oluşturabileceği ayrı bir varlıktır. Bunu almak sana hiç {{code}} kazandırmaz.",
+            "unit_label": "Bilinmeyen varlık"
         }
     },
     "asset_details": {
@@ -429,8 +438,6 @@
             "social_media": "Sosyal medya",
             "chart_empty_body": "Bir bakiye geçmişin oluştuğunda burada bir grafik göreceksin",
             "total_supply_info_body": "Bir varlığın toplam arzı oluşturulma anında belirlenir ve varlığın oluşturulan toplam birim sayısına karşılık gelir.",
-            "circulating_supply": "Dolaşımdaki arz",
-            "circulating_supply_info_body": "Dolaşımdaki arz, şu anda dolaşımda olan coin sayısıdır. Bir ağın yerel coin’inin sabit bir toplamı yoktur; bu rakam coin’ler basıldıkça veya yakıldıkça değişir.",
             "token_total_supply_info_body": "Toplam arz, sözleşmenin ihraç ettiği token sayısından yakılanların çıkarılmasıyla bulunur. İhraççı token bastığında veya yaktığında değişir."
         },
         "action_buttons": {
@@ -446,14 +453,13 @@
             "empty_filtered_body": "Bu filtreyle eşleşen işlem yok",
             "empty_on_network_body": "{{network}} ağında henüz işlem yok",
             "network_failed": "{{networks}} ağındaki işlemler yüklenemedi",
-            "network_unavailable": "{{networks}} ağında işlemler kullanılamıyor",
+            "network_unavailable": "{{networks}} ağında geçmişin tamamı kullanılamıyor",
             "offline_empty_title": "Çevrimdışısın",
             "offline_empty_body": "Bu cihazda henüz kayıtlı işlem yok. Yeniden çevrimiçi olduğunda görünecekler.",
             "search_paused_body": "Yakın geçmişte işlem bulunamadı.",
             "search_older": "Daha eskileri ara",
             "filter": "Filtrele",
-            "csv": "CSV",
-            "csv_on_network": "{{network}} CSV"
+            "csv": "CSV"
         },
         "collectible": {
             "description": "Açıklama",
@@ -486,7 +492,7 @@
         },
         "token_warning": {
             "suspicious_title": "Şüpheli token",
-            "body": "Pera bu tokenı şüpheli olarak işaretledi. Bunu sen istemedin ve bir dolandırıcılık olabilir. Bununla ilgili web siteleriyle veya bağlantılarla etkileşime girme."
+            "body": "Pera bu tokenı şüpheli olarak işaretledi. Bunu sen istemedin ve bir dolandırıcılık olabilir. Onunla veya ilgili web siteleri ve bağlantılarla etkileşime girerken dikkatli ol."
         },
         "copy_full_amount_hint": "Tam tutarı kopyalamak için basılı tutun",
         "toggle_amount_hint": "Değer ile varlık miktarı arasında geçiş yapmak için dokun"
@@ -524,6 +530,7 @@
             "empty_title": "NFT’ler",
             "empty_body": "NFT galerine hoş geldin! Henüz hiç NFT’n yok. Cüzdanındaki tüm NFT’ler burada görünecek.",
             "empty_body_multichain": "NFT galerine hoş geldin!\nHenüz hiç NFT’n yok. Ethereum gibi ağlarda aldığın NFT’ler burada kendiliğinden görünür. Algorand NFT’leri için önce opt-in olman gerekir.",
+            "empty_body_unsupported": "{{chains}} üzerindeki NFT’ler henüz Pera’da gösterilmiyor.",
             "empty_optin": "NFT ekle",
             "empty_optin_algorand": "Algorand NFT’sine opt-in ol",
             "nomatch_title": "Eşleşen NFT yok",
@@ -629,6 +636,8 @@
         "enable_network_success": "{{network}} ağı etkinleştirildi",
         "see_all_networks": "Tüm ağları gör",
         "view_passphrase": "Passphrase’i görüntüle",
+        "write_down_passphrase": "Passphrase’ini de yaz",
+        "write_down_passphrase_subtitle": "Önerilir, zorunlu değil",
         "network_options": "Diğer seçenekler"
     },
     "account_info": {
@@ -731,18 +740,29 @@
     "backup": {
         "banner": {
             "text": "Kurtarma passphrase’ini yedeklemen gerekiyor",
-            "cta": "Şimdi yedekle"
+            "cta": "Şimdi yedekle",
+            "text_with_cloud_backup": "Bu hesabı yedeklemen gerekiyor",
+            "cta_passphrase": "Kurtarma passphrase’ini yedekle",
+            "cta_turn_on_cloud_backup": "Bulut yedeklemeyi etkinleştir",
+            "cta_fix_cloud_backup": "Bulut yedeklemeyi düzelt"
+        },
+        "status": {
+            "cloud_backup": "Yedeklendi · Bulut yedekleme"
         },
         "info": {
             "title": "Hesabın için kurtarma passphrase’i yedeklemesi oluştur",
             "body": "Kurtarma passphrase’i yedeklemesi oluşturmak, hesabını kurtarmanı sağlar. Kurtarma passphrase’i olmadan; cihazını kaybedersen, hesabı kaldırırsan veya uygulamayı silersen, Algorand hesabına erişimini kalıcı olarak kaybedebilirsin!",
-            "body_all_networks": "Kurtarma passphrase’in, hesabını tüm ağlarda kurtarmanın tek yoludur: {{networks}}. Yedeğin olmadan cihazını kaybedersen, hesabı kaldırırsan veya uygulamayı silersen fonlarına erişimini kalıcı olarak kaybedersin.",
+            "body_all_networks": "Kurtarma passphrase’i yedeklemesi, hesabını tüm ağlarda kurtarmanı sağlar: {{networks}}. Yedeğin olmadan cihazını kaybedersen, hesabı kaldırırsan veya uygulamayı silersen fonlarına erişimini kalıcı olarak kaybedersin.",
+            "body_with_cloud_backup": "Kurtarma passphrase’i yedeklemesi, Algorand hesabını kurtarmanı sağlar. Bulut yedekleme de hesabı geri yükleyebilir. İki yedeğin de yoksa, cihazını kaybedersen, hesabı kaldırırsan veya uygulamayı silersen hesabına erişimini kalıcı olarak kaybedebilirsin.",
+            "body_all_networks_with_cloud_backup": "Kurtarma passphrase’i yedeklemesi, hesabını tüm ağlarda kurtarmanı sağlar: {{networks}}. Bulut yedekleme de hesabı geri yükleyebilir. İki yedeğin de yoksa, cihazını kaybedersen, hesabı kaldırırsan veya uygulamayı silersen fonlarına erişimini kalıcı olarak kaybedersin.",
             "cta": "Anladım"
         },
         "write_down": {
             "title": "Kurtarma passphrase’ini yazmaya hazırlan",
-            "body": "Bir Algorand hesabını kurtarmanın tek yolu bu kurtarma passphrase’idir.",
-            "body_all_networks": "Bu kurtarma passphrase’i, hesabını ve tüm ağlardaki adreslerini kurtarmanın tek yoludur.",
+            "body": "Bu kurtarma passphrase’i Algorand hesabını kurtarır.",
+            "body_all_networks": "Bu kurtarma passphrase’i, hesabını ve tüm ağlardaki adreslerini kurtarır.",
+            "body_with_cloud_backup": "Bu kurtarma passphrase’i Algorand hesabını kurtarır. Bulut yedekleme, onu geri yüklemenin diğer yoludur.",
+            "body_all_networks_with_cloud_backup": "Bu kurtarma passphrase’i, hesabını ve tüm ağlardaki adreslerini kurtarır. Bulut yedekleme, onu geri yüklemenin diğer yoludur.",
             "warning": "Bu kurtarma passphrase’ini kimseyle paylaşma; hesabına tam erişim sağlar.",
             "warning_all_networks": "Bu kurtarma passphrase’ini kimseyle paylaşma. Ona sahip olan herkes tüm ağlardaki fonlarını kontrol eder.",
             "cta": "Başlamaya hazırım"
@@ -850,6 +870,16 @@
             "description": "12 kelimelik anahtarını güvenle sakladığını onaylamak için doğru kelimeleri seç.",
             "proceed": "Devam et",
             "error_message": "Yanlış seçim. Lütfen tekrar dene."
+        },
+        "confirm_credentials": {
+            "warning": "Yedekleme anahtarını kaydettiğini onayla",
+            "title": "Yedekleme anahtarını onayla",
+            "description": "12 kelimelik anahtarından doğru kelimeleri seç ve şifreleme anahtarını girerek ikisini de sakladığını onayla.",
+            "confirm": "Onayla",
+            "error_words": "Seçilen kelimelerden bazıları yanlış. Lütfen tekrar dene.",
+            "error_key": "Bu şifreleme anahtarı yedeğinle eşleşmiyor.",
+            "error_both": "Seçilen kelimeler ve şifreleme anahtarı yanlış.",
+            "success": "Yedekleme anahtarı onaylandı"
         },
         "store_encryption_key": {
             "title": "Şifreleme anahtarını sakla",
@@ -1067,6 +1097,12 @@
             "confirm_button": "Yedeklemeyi sil",
             "confirm_checkbox_label": "Yedeklememin sunucudan kalıcı olarak silineceğini ve bu işlemin geri alınamayacağını anlıyorum."
         },
+        "turn_off_at_risk": {
+            "summary_one": "<0/> tutarındaki bu hesap artık yedeklenmeyecek.",
+            "summary_other": "Toplam <0/> tutarındaki bu {{count}} hesap artık yedeklenmeyecek.",
+            "back_up_first": "Önce passphrase’leri yedekle",
+            "turn_off_anyway": "Yine de kapat"
+        },
         "restore": {
             "sheet_title": "Yedeklemeyi geri yükle/al",
             "sheet_description": "QR kodu tarayarak veya kimlik bilgilerini elle girerek yedeklemeni geri yükle.",
@@ -1205,6 +1241,10 @@
             "title": "Panoya kopyalandı",
             "body": ""
         },
+        "address_copied": {
+            "algorand": "Algorand adresi kopyalandı",
+            "evm": "EVM adresi kopyalandı"
+        },
         "email_failed": {
             "title": "E-posta uygulaması açılamadı",
             "body": "Bu cihazda kurulu bir e-posta uygulaması yok. Doğrudan {{email}} adresine yazabilirsin."
@@ -1231,7 +1271,8 @@
             "asset_empty_body": "Bu hesapta bu varlık için bakiye geçmişin olduğunda burada bir grafik göreceksin",
             "excludes_networks": "Bu grafik henüz {{networks}} varlıklarını içermiyor",
             "failed_networks": "{{networks}} geçmişi yüklenemedi, bu yüzden bu grafikte yer almıyor",
-            "currency_unavailable_body": "Bu grafik şu anda {{currency}} para biriminde kullanılamıyor"
+            "currency_unavailable_body": "Bu grafik şu anda {{currency}} para biriminde kullanılamıyor",
+            "balance_change_label": "Bakiye değişimi"
         },
         "webview": {
             "failed_title": "Sayfa yüklenemedi",
@@ -1499,6 +1540,10 @@
             "asset_frozen": {
                 "title": "Varlık donduruldu",
                 "body": "{{assetId}} ID’li varlık dondurulmuş, bu yüzden bu transfer tamamlanamıyor. Önce varlığın dondurma yöneticisinin dondurmayı kaldırması gerekir."
+            },
+            "fee_above_shown": {
+                "title": "Ağ ücreti değişti",
+                "body": "Ağ artık gösterilenden daha yüksek bir ücret istiyor, bu yüzden hiçbir şey imzalanmadı. Güncel ücreti görmek için tekrar dene."
             }
         },
         "kms": {
@@ -1532,7 +1577,8 @@
             "request_expired_body": "Bu imza isteğinin süresi yanıtlanmadan önce doldu. Uygulamadan isteği tekrar göndermesini iste.",
             "unsupported_method_body": "{{dappName}} uygulaması Pera’nın desteklemediği bir yöntem istedi ({{method}}). İstek reddedildi.",
             "unsupported_network_body": "{{dappName}} uygulaması, Pera’nın desteklemediği zincir kimliği {{chainId}} olan ağı kullanmak istedi. İstek reddedildi.",
-            "unsupported_chains_body": "Bu uygulama Pera’nın desteklemediği bir ağ kullanmak istedi. Bağlantı reddedildi."
+            "unsupported_chains_body": "Bu uygulama Pera’nın desteklemediği bir ağ kullanmak istedi. Bağlantı reddedildi.",
+            "unselected_network_body": "Bu uygulama yalnızca Pera’nın şu anda kullanmadığı ağları sunuyor. Bağlantı reddedildi. Uygulamaya uyması için geliştirici modunu aç ya da kapat, sonra tekrar dene."
         },
         "signing": {
             "title": "İmzalama isteği işlenirken bir hata oluştu",
@@ -2379,6 +2425,8 @@
             "load_error": "Bu işlem yüklenemedi. Süresi dolmuş veya kaldırılmış olabilir.",
             "cosign_rejected_title": "Bu işlem imzalanamıyor",
             "cosign_rejected_body": "Bu istek, paylaşılan hesabın yetkilendirmediği bir işlem içeriyor. Gönderen, paylaşılan hesaba rekey edilmiş bir hesapsa onu cüzdanına ekle ve tekrar dene.",
+            "request_open_title": "Önce açık isteği kapat",
+            "request_open_body": "İmza isteğini tamamla veya kapat, ardından bağlantıyı yeniden aç.",
             "retry": "Tekrar dene",
             "canceled": "İşlem iptal edildi.",
             "declined": "İşlem reddedildi.",
@@ -2773,6 +2821,14 @@
                 "fetch_failed_title": "Yedekleme yüklenemedi",
                 "decrypt_failed_title": "Yedeklemenin kilidi açılamadı"
             },
+            "review": {
+                "title": "Hesapları gözden geçir",
+                "body_one": "Bu kod {{count}} hesap içe aktarır. İçe aktarmadan önce senin olduğundan emin ol.",
+                "body_other": "Bu kod {{count}} hesap içe aktarır. İçe aktarmadan önce senin olduklarından emin ol.",
+                "body": "Bu kod {{count}} hesap içe aktarır. İçe aktarmadan önce senin olduklarından emin ol.",
+                "confirm": "Hesapları içe aktar",
+                "interrupted": "İçe aktarma kesintiye uğradı. Devam etmek için QR kodunu yeniden tara."
+            },
             "result": {
                 "success_title": "Hesaplar içe aktarıldı",
                 "success_body_one": "Cüzdanına {{count}} hesap eklendi.",
@@ -3150,6 +3206,7 @@
             "verify_title": "PIN kodunu gir",
             "unlock_title": "PIN kodunu gir",
             "change_old_title": "Eski 6 haneli PIN\nkodunu gir",
+            "matches_duress_pin": "Yeni PIN’in zorlama PIN’inden farklı olmalı.",
             "logging_in": "Giriş yapılıyor"
         },
         "lockout": {
@@ -3297,7 +3354,8 @@
             },
             "fee_shortfall": {
                 "title": "Ücret için yeterli {{symbol}} yok",
-                "body": "Bu gönderim en fazla {{fee}} ücret tutabilir. Miktarı azalt veya daha yavaş bir ücret seç."
+                "body": "Bu gönderim en fazla {{fee}} ücret tutabilir. Miktarı azalt veya daha yavaş bir ücret seç.",
+                "body_non_native": "Bu gönderim {{network}} ağında en fazla {{fee}} ücret tutabilir. {{symbol}} ekle veya daha yavaş bir ücret seç."
             },
             "fee_unavailable": {
                 "title": "Ücret tahmin edilemedi",
@@ -3628,6 +3686,31 @@
             "typed_data_warning_title": "Bu imza token’larını hareket ettirebilir",
             "typed_data_warning_body": "Yapılandırılmış veriyi imzalamak, bir uygulamaya token’larını sana tekrar sormadan harcama veya takas etme yetkisi verebilir. Yalnızca bu uygulamaya güveniyorsan onayla."
         },
+        "sign_in": {
+            "title": "Oturum aç: {{domain}}",
+            "domain": "Alan adı",
+            "address": "Adres",
+            "uri": "URI",
+            "chain_id": "Zincir kimliği",
+            "nonce": "Nonce",
+            "issued_at": "Oluşturulma",
+            "expires_at": "Bitiş",
+            "advanced": "Gelişmiş",
+            "site_mismatch_title": "Bu oturum açma başka bir site için",
+            "site_mismatch_body": "Mesaj şu alan adında oturum açar: {{domain}}. Ancak istek şu siteden geliyor: {{site}}. Yalnızca ikisine de güveniyorsan onayla.",
+            "other_address_note": "Mesajdaki adres imzalayan hesap değil: {{address}}",
+            "other_chain_note": "Mesajdaki ağ bu isteğin ağı değil: {{chain}}. Oturum açmak işlem göndermez.",
+            "other_chain_id_note": "Mesajdaki zincir kimliği bu isteğin ağı değil: {{chainId}}. Oturum açmak işlem göndermez.",
+            "statement_label": "{{domain}} sitesinden mesaj",
+            "not_before": "Geçerlilik başlangıcı",
+            "request_id": "İstek kimliği",
+            "resource": "Kaynak",
+            "grants_title": "Bu oturum açma izin de veriyor",
+            "grants_body": "İmzaladığında bu site aşağıdaki izinlerle senin adına işlem yapabilir: {{domain}}. Yalnızca siteye güveniyorsan onayla.",
+            "grants_unreadable_body": "Bu oturum açma, Pera'nın okuyamadığı izinler veriyor. Site: {{domain}}. Yalnızca siteye güveniyorsan onayla.",
+            "malformed_title": "Bu oturum açma mesajında beklenmeyen içerik var",
+            "malformed_body": "Bu mesajın bazı bölümleri oturum açma biçimine uymuyor, bu yüzden {{domain}} onu burada gösterilenden farklı okuyabilir. Tam mesajı Gelişmiş bölümünde kontrol et ve yalnızca siteye güveniyorsan onayla."
+        },
         "spend_approval": {
             "spend_warning": "Bu imza, başka bir adresin hesabından sana tekrar sormadan token hareket ettirmesine izin verir.",
             "spend_warning_transaction": "Bu işlem, başka bir adresin hesabından sana tekrar sormadan token hareket ettirmesine izin verir.",
@@ -3639,7 +3722,11 @@
             "no_deadline_warning": "Bu izin hiçbir zaman sona ermez.",
             "spender_label": "Yetkili adres",
             "unlimited": "Sınırsız",
-            "deadline_label": "Son tarih",
+            "expiry_label": "İznin sona ereceği tarih",
+            "signature_deadline_label": "İmzanın geçerli olduğu son tarih",
+            "signature_long_deadline_warning": "Bu imza bir yıldan uzun süre geçerli kalır, bu yüzden imzaladıktan çok sonra da kullanılabilir.",
+            "expired_title": "Bu isteğin süresi doldu",
+            "expired_body": "İmzalama süresi geçti, bu yüzden reddedilir. İptal et ve uygulamada yeniden başla.",
             "never": "Hiçbir zaman",
             "known_title": "Bu onay hakkında",
             "known_description": "{{name}} bilinen bir sözleşme",
@@ -3902,6 +3989,7 @@
             "approval_for": "Harcayan: {{spender}}",
             "unlimited_approval_for": "Sınırsız · Harcayan: {{spender}}",
             "swap_pair": "Swap {{from}} → {{to}}",
+            "swap_assets": "{{from}} → {{to}}",
             "add_liquidity": "Likidite ekle",
             "remove_liquidity": "Likidite çek",
             "collect_fees": "Ücretleri topla",
@@ -3917,7 +4005,10 @@
             "nft_subtitle": "{{collection}} #{{tokenId}}",
             "nft_batch_subtitle": "{{collection}} · {{count}} öğe",
             "inner_transaction_count": "{{innerCount}} iç işlem",
-            "cancel_transaction": "İşlem iptali"
+            "cancel_transaction": "İşlem iptali",
+            "send_by_approval": "Gönderim (onaylı)",
+            "spoofed_send": "Sahte gönderim",
+            "contract_call_named": "Sözleşme: {{method}}"
         },
         "record_detail": {
             "read_failed": "Bu işlemin çağrı ayrıntıları ağdan okunamadı.",
@@ -4067,6 +4158,8 @@
             "title": "Filtre",
             "all_time": "Tüm zamanlar",
             "today": "Bugün",
+            "hide_suspicious": "Şüpheli işlemleri gizle",
+            "hide_suspicious_description": "Sahte gönderimleri, taklit ve spam tokenleri ve şüpheli adres zehirlemelerini gizler.",
             "yesterday": "Dün",
             "last_week": "Geçen hafta",
             "last_month": "Geçen ay",
@@ -4089,15 +4182,20 @@
             "blocked_body": "Bu hesaptan yapılan önceki bir işlem ağa hiç ulaşmadı, bu yüzden onun yerini bir şey almadan bu işlem onaylanamaz. Engeli kaldır, onun yerine kendine boş bir transfer gönderir; bu da bir ağ ücreti gerektirir.",
             "unblock": "Engeli kaldır"
         },
+        "suspected_fake_transfer": {
+            "title": "Sahte transfer şüphesi",
+            "body": "Hesabınız bu transferi imzalamadı ve transfer hiçbir şey taşımadı. Herkes, hiçbir onay olmadan 0 tokenlik bir transferi hesabınızdan gelmiş gibi gösterebilir. Dolandırıcılar bunu, adreslerinin geçmişinizde görünüp daha sonra kopyalanması için yapar. Buradan adres kopyalamayın."
+        },
         "suspected_poisoning": {
-            "marker": "Şüpheli adres zehirlenmesi",
             "title": "Şüpheli adres zehirlenmesi",
-            "body": "Bu transfer değerli hiçbir şey taşımadı ve tanıdığın bir adrese benzeyecek şekilde oluşturulmuş bir adresten geliyor. Dolandırıcılar bunu, adresleri geçmişinde görünsün ve daha sonra kopyalansın diye gönderir. Bu adresi kopyalama ve ona gönderim yapma.",
+            "body": "Bu transfer değerli hiçbir şey taşımadı ve tanıdığın bir adrese benzeyecek şekilde oluşturulmuş bir adresten geliyor. Dolandırıcılar bunu, adresleri geçmişinde görünsün ve daha sonra kopyalansın diye gönderir.",
+            "do_not_reuse": "Bu adresi kopyalama ve ona gönderim yapma.",
             "sender_label": "Bu adres",
             "reuse_title": "Bu adres tanıdığın bir adresi taklit ediyor",
             "reuse_body": "Tanıdığın bir adres gibi başlayıp bitiyor ama aynı değil. Kullanmadan önce tam adresleri karşılaştır.",
             "reuse_confirm": "Yine de devam et",
-            "reuse_cancel": "İptal"
+            "reuse_cancel": "İptal",
+            "dismiss": "Anladım"
         }
     },
     "tabbar": {
@@ -4145,15 +4243,34 @@
             "view_accounts": "Adresini ve bakiyelerini görüntüleme",
             "approve_transactions": "İşlemleri onaylamanı isteme",
             "sign_messages": "Mesajları imzalamanı isteme",
-            "switch_networks": "Ağ değiştirmeyi isteme"
+            "switch_networks": "Ağ değiştirmeyi isteme",
+            "add_tokens": "Hesabına token eklemeyi isteme"
         },
         "connection": {
             "approve_delivery_failed": "Bağlantıyı onaylamak için dApp’e ulaşılamadı. İnternet bağlantını kontrol et ve tekrar dene."
         },
         "switch_network": {
             "title": "Ağ erişimine izin verilsin mi?",
-            "body": "{{name}}, {{network}} ağında {{chain}} hesaplarını kullanmak istiyor.",
+            "body": "{{name}}, {{chain}} ağındaki hesaplarını kullanmak istiyor.",
+            "body_with_network": "{{name}}, {{chain}} {{network}} ağındaki hesaplarını kullanmak istiyor.",
             "confirm": "İzin ver"
+        },
+        "watch_asset": {
+            "title": "Token eklensin mi?",
+            "body": "{{name}}, bu token’ı hesabına eklemek istiyor.",
+            "unreadable": "{{chain}} üzerinde bu adresteki token okunamadı.",
+            "confirm": "Token ekle",
+            "token": "Token",
+            "verification": "Doğrulama",
+            "contract": "Kontrat",
+            "decimals": "Ondalık basamak",
+            "network": "Ağ",
+            "account": "Hesap",
+            "tier": {
+                "verified": "Doğrulanmış",
+                "unverified": "Doğrulanmamış",
+                "suspicious": "Şüpheli"
+            }
         },
         "settings": {
             "empty_title": "WalletConnect oturumu yok",
@@ -4292,6 +4409,7 @@
             "quote_error": "Teklifler alınamadı. Lütfen tekrar dene.",
             "amount_too_low": "Tutar, {{network}} ağında swap için çok düşük. Minimum {{amount}} {{unit}}.",
             "amount_too_low_fiat": "Tutar, {{network}} ağında swap için çok düşük. Minimum {{amount}} {{unit}} (~{{fiat}}).",
+            "amount_too_low_above_balance": "Kullanılabilir bakiyen, {{network}} ağında swap için gereken {{amount}} {{unit}} minimumun altında.",
             "use_minimum": "Minimumu kullan",
             "amount_too_low_unknown": "Tutar, {{network}} ağında swap için çok düşük. Daha yüksek bir tutar veya daha düşük ücretli bir ağ dene.",
             "amount_too_high": "Tutar swap için çok yüksek. Maksimum {{amount}} {{unit}}.",
@@ -4311,9 +4429,12 @@
                 "swap": "Swap başarısız"
             },
             "provider_failed_body": "Bu sağlayıcı swap işlemini tamamlayamadı. Başka bir sağlayıcı dene.",
+            "provider_failed_single_body": "Sağlayıcı swap işlemini tamamlayamadı. Daha sonra tekrar dene veya farklı bir tutar dene.",
             "provider_unavailable_body": "Sağlayıcı şu anda kullanılamıyor. Biraz sonra tekrar dene.",
             "quote_mismatch_body": "Sağlayıcının işlemleri bu teklifle eşleşmedi, bu yüzden hiçbir şey imzalanmadı. Tekrar dene veya başka bir sağlayıcı seç.",
+            "quote_mismatch_single_body": "Sağlayıcının işlemleri bu teklifle eşleşmedi, bu yüzden hiçbir şey imzalanmadı. Daha sonra tekrar dene.",
             "unsupported_order_body": "Pera bu sağlayıcının siparişini tamamlayamıyor, bu yüzden hiçbir şey imzalanmadı. Başka bir sağlayıcı seç.",
+            "unsupported_order_single_body": "Pera bu sağlayıcının siparişini tamamlayamıyor, bu yüzden hiçbir şey imzalanmadı. Daha sonra tekrar dene.",
             "signing_failed_body": "İşlem imzalanamadı, bu yüzden gönderilmedi. Tekrar dene.",
             "order_insufficient_balance_body": "Bakiyen bu tutarı ve ağ ücretini karşılamıyor. Daha küçük bir tutar dene veya ücret için bakiye ekle.",
             "insufficient_native_body": "Bu hesapta bu swap işlemini, ücretleri ve minimum bakiyeyi karşılamak için en az {{amount}} {{symbol}} daha gerekiyor. Daha fazla {{symbol}} ekle ve tekrar dene.",
@@ -4360,6 +4481,8 @@
                         "refunded": "İade edildi"
                     }
                 },
+                "account_filter_all": "Tüm hesaplar",
+                "load_more": "Daha fazla yükle",
                 "empty": {
                     "title": "Henüz swap yok",
                     "body": "Swap geçmişin burada görünecek."
@@ -5197,6 +5320,8 @@
             "gwei": "Gwei",
             "nonce": "Nonce",
             "gas_limit": "Gas limiti",
+            "gas_used": "Kullanılan gas",
+            "gas_price": "Gas fiyatı",
             "max_fee_per_gas": "Gas başına maks. ücret",
             "max_priority_fee_per_gas": "Gas başına maks. öncelik ücreti"
         },

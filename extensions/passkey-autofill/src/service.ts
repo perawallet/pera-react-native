@@ -32,6 +32,7 @@ import type {
 export interface PasskeyAutofillNativeAPI {
     setMasterKey(secret: Uint8Array): Promise<void>
     setMainKeyId(id: string): Promise<void>
+    setRegistrationParentKeyId?(id: string): Promise<void>
     getMainKeyId?(): Promise<Nullable<string>>
     /** @deprecated use {@link PasskeyAutofillNativeAPI.setMainKeyId} */
     setHdRootKeyId(id: string): Promise<void>
@@ -97,6 +98,11 @@ export class PasskeyAutofillService {
      */
     setMainKeyId(id: string): Promise<void> {
         return this.invoke('setMainKeyId', [id], undefined)
+    }
+
+    /** Authorizes this parent for new credentials. An empty id revokes it. */
+    setRegistrationParentKeyId(id: string): Promise<void> {
+        return this.invoke('setRegistrationParentKeyId', [id], undefined)
     }
 
     getMainKeyId(): Promise<Nullable<string>> {

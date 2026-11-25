@@ -12,6 +12,7 @@
 
 import { useCallback } from 'react'
 import {
+    AddressMismatchError,
     useImportAccount,
     useUpdateAccount,
     type WalletAccount,
@@ -26,6 +27,7 @@ import {
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
+import { algo25AddressOfKey } from './decode-key-bytes'
 
 /**
  * Copy the first 32 bytes off `privateKey` so the caller's buffer is left
@@ -91,6 +93,12 @@ export const useImportAlgo25FromSeed = (): UseImportAlgo25FromSeedResult => {
             const seed = sliceSeed(params.privateKey)
             let mnemonicIndices: Nullable<Uint16Array> = null
             try {
+                // The backup's address and name are the author's claim; the
+                // key imports as the address it derives, so the two must agree.
+                const derived = algo25AddressOfKey(seed)
+                if (derived !== params.address) {
+                    throw new AddressMismatchError(params.address, derived)
+                }
                 mnemonicIndices = algo25SeedToIndices(seed)
                 const imported = await importAlgo25({
                     mnemonicIndices,

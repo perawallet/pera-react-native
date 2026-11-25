@@ -26,6 +26,9 @@ export const accountItemKey = (hash: ItemKeyHash): BackupItemKey =>
 export const secretsItemKey = (hash: ItemKeyHash): BackupItemKey =>
     `${BACKUP_SECRETS_KEY_PREFIX}${hash}`
 
+export const isSecretsItemKey = (key: BackupItemKey): boolean =>
+    key.startsWith(BACKUP_SECRETS_KEY_PREFIX)
+
 /** An address record and its key material are both BackupItemType.ACCOUNT on
  *  the wire, so only the key prefix tells them apart. */
 export const isAccountItemKey = (key: BackupItemKey): boolean =>

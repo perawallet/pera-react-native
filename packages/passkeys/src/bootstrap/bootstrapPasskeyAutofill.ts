@@ -17,7 +17,7 @@ import {
     readMasterKey,
     storage as keystoreStorage,
 } from '@algorandfoundation/react-native-keystore'
-import type { KeyData } from '@algorandfoundation/keystore-core'
+import type { Key, KeyData } from '@algorandfoundation/keystore-core'
 import {
     logger,
     type Nullable,
@@ -28,6 +28,13 @@ import type { PasskeyAutofillService } from '@perawallet/wallet-extension-passke
 export interface BootstrapPasskeyAutofillOptions {
     /** Required. The service registered on the provider. */
     service: PasskeyAutofillService
+    /** Confirms which wallet roots are backed by an account. */
+    getPasskeyAnchorSeedIds?: (keys: readonly Key[]) => ReadonlySet<string>
+    /** Mints the main key of `seedKeyId` from its BIP39 entropy child. */
+    mintPasskeyMainKey?: (
+        seedKeyId: string,
+        entropyChildId: string,
+    ) => Promise<string>
     /**
      * Android-only intent action ids matching the values declared in the
      * autofill Expo plugin / AndroidManifest.xml.
@@ -124,10 +131,35 @@ export const bootstrapPasskeyAutofill = (
 const runBootstrap = async (
     options: BootstrapPasskeyAutofillOptions,
 ): Promise<PasskeyBootstrapOutcome> => {
-    const { service, intentActions } = options
+    const {
+        service,
+        intentActions,
+        getPasskeyAnchorSeedIds,
+        mintPasskeyMainKey,
+    } = options
 
     let masterKey: Nullable<Buffer> = null
     try {
+        let parentKeys = findParentKeyCandidates()
+        const anchorIds = getPasskeyAnchorSeedIds?.(parentKeys.keys)
+        let registrationParent = findRegistrationParent(parentKeys, anchorIds)
+        if (
+            mintPasskeyMainKey &&
+            (!registrationParent ||
+                !parentKeys.mainKeys.includes(registrationParent)) &&
+            (await mintAnchoredMainKey(
+                parentKeys,
+                anchorIds,
+                mintPasskeyMainKey,
+            ))
+        ) {
+            parentKeys = findParentKeyCandidates()
+            registrationParent = findRegistrationParent(parentKeys, anchorIds)
+        }
+        await service
+            .setRegistrationParentKeyId(registrationParent?.id ?? '')
+            .catch(err => abortStep('setRegistrationParentKeyId', err))
+
         try {
             masterKey = await readMasterKey()
         } catch (err) {
@@ -158,7 +190,7 @@ const runBootstrap = async (
             masterKeyBytes.fill(0)
         }
 
-        await configureParentKey(service)
+        await configureParentKey(service, parentKeys, registrationParent)
 
         await service
             .configureIntentActions(
@@ -223,11 +255,15 @@ const byId = (a: KeyData, b: KeyData): number => {
  * `getAllKeys` order is arbitrary — without the sort, which root wins a tie
  * would silently change between launches.
  */
-const findParentKeyCandidates = (): {
+type ParentKeyCandidates = {
+    keys: KeyData[]
     mainKeys: KeyData[]
     hdRoots: KeyData[]
-} => {
+}
+
+const findParentKeyCandidates = (): ParentKeyCandidates => {
     let scanned = 0
+    const keys: KeyData[] = []
     const mainKeys: KeyData[] = []
     const hdRoots: KeyData[] = []
 
@@ -248,6 +284,8 @@ const findParentKeyCandidates = (): {
             continue
         }
 
+        if (!record || typeof record !== 'object') continue
+        keys.push(record)
         const scheme = (record.metadata as Optional<{ scheme?: unknown }>)
             ?.scheme
         if (
@@ -269,20 +307,90 @@ const findParentKeyCandidates = (): {
         )
     }
 
-    return { mainKeys: mainKeys.sort(byId), hdRoots: hdRoots.sort(byId) }
+    return { keys, mainKeys: mainKeys.sort(byId), hdRoots: hdRoots.sort(byId) }
+}
+
+/** Each anchored root's BIP39 entropy child id, keyed by root id. */
+const anchoredEntropyChildren = (
+    keys: readonly KeyData[],
+    anchorIds: ReadonlySet<string>,
+): Map<string, string> => {
+    const byRoot = new Map<string, string>()
+    for (const key of keys) {
+        const { entropyKey, parentKeyId } = key.metadata ?? {}
+        if (
+            key.type !== 'secret-key' ||
+            entropyKey !== true ||
+            typeof parentKeyId !== 'string' ||
+            !anchorIds.has(parentKeyId)
+        )
+            continue
+        const seen = byRoot.get(parentKeyId)
+        if (seen === undefined || key.id < seen) byRoot.set(parentKeyId, key.id)
+    }
+    return byRoot
+}
+
+const findRegistrationParent = (
+    { keys, mainKeys, hdRoots }: ParentKeyCandidates,
+    anchorIds: Optional<ReadonlySet<string>>,
+): Optional<KeyData> => {
+    if (!anchorIds?.size) return undefined
+
+    const entropyIds = new Set(
+        anchoredEntropyChildren(keys, anchorIds).values(),
+    )
+
+    return (
+        mainKeys.find(key => {
+            const parentKeyId = key.metadata?.parentKeyId
+            return (
+                typeof parentKeyId === 'string' && entropyIds.has(parentKeyId)
+            )
+        }) ?? hdRoots.find(root => anchorIds.has(root.id))
+    )
+}
+
+/**
+ * Mints a main key on the lowest-id account-backed root with an entropy child,
+ * as the extension's `resolveMainKeyId` does. Without it, a device whose only
+ * main key sits on an abandoned import's seed (`repairs/0003` picks by id, not
+ * by account) would register new mobile passkeys under the XHD root while the
+ * extension registers them under the main key, from the same mnemonic.
+ */
+const mintAnchoredMainKey = async (
+    { keys, hdRoots }: ParentKeyCandidates,
+    anchorIds: Optional<ReadonlySet<string>>,
+    mint: NonNullable<BootstrapPasskeyAutofillOptions['mintPasskeyMainKey']>,
+): Promise<boolean> => {
+    if (!anchorIds?.size) return false
+    const entropyByRoot = anchoredEntropyChildren(keys, anchorIds)
+    const root = hdRoots.find(({ id }) => entropyByRoot.has(id))
+    const entropyChildId = root && entropyByRoot.get(root.id)
+    if (!root || !entropyChildId) return false
+
+    try {
+        await mint(root.id, entropyChildId)
+        return true
+    } catch (err) {
+        // Registration falls back to the anchored root; the next refresh retries.
+        logger.error(err as Error, { step: 'mintPasskeyMainKey' })
+        return false
+    }
 }
 
 const configureParentKey = async (
     service: PasskeyAutofillService,
+    { mainKeys, hdRoots }: ParentKeyCandidates,
+    registrationParent: Optional<KeyData>,
 ): Promise<void> => {
-    const { mainKeys, hdRoots } = findParentKeyCandidates()
-
     if (mainKeys.length > 0) {
-        if (mainKeys.length > 1) {
-            // The dp256 main key is a device-wide singleton (`usePasskeyMainKey`
-            // short-circuits on it; repair 0003 mints at most one). A second one
-            // is an invariant violation worth a crash report, but not worth
-            // killing autofill over — the deterministic pick keeps it alive.
+        // An account-backed main key beside ones left on abandoned imports'
+        // seeds is expected; several with none account-backed is not.
+        if (
+            mainKeys.length > 1 &&
+            !(registrationParent && mainKeys.includes(registrationParent))
+        ) {
             logger.error(
                 new Error(
                     `Expected one passkey main key, found ${mainKeys.length}: ${mainKeys

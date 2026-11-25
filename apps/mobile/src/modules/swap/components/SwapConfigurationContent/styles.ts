@@ -27,7 +27,6 @@ export const useStyles = makeStyles(theme => ({
         paddingHorizontal: 0,
     },
     inputInnerContainer: {
-        borderRadius: theme.spacing.xs,
         paddingHorizontal: theme.spacing.sm,
     },
     input: {

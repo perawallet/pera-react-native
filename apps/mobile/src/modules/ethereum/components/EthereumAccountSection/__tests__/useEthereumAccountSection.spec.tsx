@@ -22,6 +22,11 @@ import {
 const mocks = vi.hoisted(() => ({
     navigate: vi.fn(),
     useCapability: vi.fn((_requirement: unknown) => true),
+    hasPeraService: vi.fn((..._args: unknown[]) => true),
+}))
+
+vi.mock('@perawallet/wallet-core-config', () => ({
+    hasPeraService: (...args: unknown[]) => mocks.hasPeraService(...args),
 }))
 
 vi.mock('@hooks/useLanguage')
@@ -49,27 +54,34 @@ const account: WalletAccount = {
 }
 
 describe('useHasEthereumAccountSection', () => {
+    const props = { account, scope, onClose: vi.fn() }
+    const render = () =>
+        renderHook(() => useHasEthereumAccountSection(props)).result.current
+
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.useCapability.mockReturnValue(true)
+        mocks.hasPeraService.mockReturnValue(true)
     })
 
-    it('follows the chain’s token approvals capability', () => {
-        const props = { account, scope, onClose: vi.fn() }
-
-        expect(
-            renderHook(() => useHasEthereumAccountSection(props)).result
-                .current,
-        ).toBe(true)
+    it('shows the section when the capability is on and the backend serves approvals', () => {
+        expect(render()).toBe(true)
         expect(mocks.useCapability).toHaveBeenCalledWith({
             chain: { chainId: 'ethereum', capability: 'tokenApprovals' },
         })
+        expect(mocks.hasPeraService).toHaveBeenCalledWith(scope, 'approvals')
+    })
 
+    it('hides the section where the backend does not serve approvals', () => {
+        mocks.hasPeraService.mockReturnValue(false)
+
+        expect(render()).toBe(false)
+    })
+
+    it('hides the section when the capability is off', () => {
         mocks.useCapability.mockReturnValue(false)
-        expect(
-            renderHook(() => useHasEthereumAccountSection(props)).result
-                .current,
-        ).toBe(false)
+
+        expect(render()).toBe(false)
     })
 })
 

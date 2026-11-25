@@ -27,6 +27,6 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.md,
     },
     countdownText: {
-        color: theme.colors.textGrayLighter,
+        color: theme.colors.textGray,
     },
 }))

@@ -31,6 +31,7 @@ export const EIP1193_METHOD = {
     personalSign: 'personal_sign',
     signTypedDataV4: 'eth_signTypedData_v4',
     signTypedData: 'eth_signTypedData',
+    watchAsset: 'wallet_watchAsset',
 } as const
 
 /**
@@ -42,6 +43,7 @@ export const EIP1193_SIGNING_METHODS: readonly string[] = [
     EIP1193_METHOD.personalSign,
     EIP1193_METHOD.signTypedDataV4,
     EIP1193_METHOD.signTypedData,
+    EIP1193_METHOD.watchAsset,
 ]
 
 /**

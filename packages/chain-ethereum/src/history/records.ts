@@ -16,9 +16,31 @@ import type {
     TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import {
+    readSwapLeg,
+    summarizeSwapLeg,
+    swapLegOf,
+} from '@perawallet/wallet-core-transactions'
+import { evmAssetIdOfRouterId } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
 import type { EvmHistoryItem } from './api/schema'
 import { singleNftOf, summarizeEthereumHistoryItem } from './summarize'
+
+type EvmRecordData = Extract<TransactionRecord['chainData'], { family: 'evm' }>
+
+// Each part only when the backend gives it, so a backend that predates them
+// leaves the record as it was.
+const historyGasOf = (item: EvmHistoryItem): Pick<EvmRecordData, 'gas'> => {
+    const gas: NonNullable<EvmRecordData['gas']> = {
+        ...(item.nonce != null && { nonce: item.nonce }),
+        ...(item.gas_limit != null && { gasLimit: BigInt(item.gas_limit) }),
+        ...(item.gas_used != null && { gasUsed: BigInt(item.gas_used) }),
+        ...(item.gas_price != null && {
+            gasPrice: new Decimal(item.gas_price),
+        }),
+    }
+    return Object.keys(gas).length > 0 ? { gas } : {}
+}
 
 // A withdrawal row has no hash; its first EIP-4895 index is unique
 // chain-wide. Explorer links must special-case these ids.
@@ -34,6 +56,7 @@ export const toEvmHistoryRecords = (
     chain: EvmChain,
     isDecoding: boolean,
     nftApprovals: ReadonlySet<string>,
+    isAssetView: boolean,
 ): TransactionRecord[] => {
     const id = evmHistoryRecordId(item)
     if (id === undefined) return []
@@ -46,11 +69,14 @@ export const toEvmHistoryRecords = (
         nftApprovals,
     )
     const nft = singleNftOf(item, address, summary)
+    const status = item.status === 'success' ? 'confirmed' : 'failed'
+    const leg = readSwapLeg(item.swap)
+    const swapLeg = leg && swapLegOf(leg)
     return [
         {
             id,
             scope,
-            status: item.status === 'success' ? 'confirmed' : 'failed',
+            status,
             timestamp: Date.parse(item.block_time),
             ...(item.block_number !== undefined && {
                 blockNumber: item.block_number,
@@ -64,8 +90,30 @@ export const toEvmHistoryRecords = (
                     ? undefined
                     : new Decimal(item.fee),
             ...(item.from !== null && { initiator: item.from }),
-            summary,
-            chainData: { family: 'evm', ...(nft && { nft }) },
+            ...(item.kind === 'transaction' &&
+                item.from === null &&
+                !isAssetView && {
+                    isSignedElsewhere: true,
+                }),
+            summary:
+                leg && swapLeg
+                    ? summarizeSwapLeg(leg, summary, status, routerAssetId => {
+                          const assetId = evmAssetIdOfRouterId(
+                              routerAssetId,
+                              scope,
+                              chain,
+                          )
+                          return assetId
+                              ? { chainId: scope.chainId, assetId }
+                              : undefined
+                      })
+                    : summary,
+            chainData: {
+                family: 'evm',
+                ...(nft && { nft }),
+                ...historyGasOf(item),
+            },
+            ...(swapLeg && { swapLeg }),
         },
     ]
 }

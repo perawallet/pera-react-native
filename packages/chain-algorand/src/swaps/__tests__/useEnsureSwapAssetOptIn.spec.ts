@@ -68,6 +68,10 @@ vi.mock('../../fee-delegation', async () => ({
     }),
 }))
 
+vi.mock('../../transactions/transfer-fees', () => ({
+    resolveAlgorandSenderFee: (_sender: string, minFee: bigint) => minFee * 2n,
+}))
+
 vi.mock('../../signing/unsignedTransaction', () => ({
     toUnsignedAlgorandTransactions: (transactions: unknown[]) => transactions,
 }))
@@ -122,6 +126,7 @@ describe('useEnsureSwapAssetOptIn', () => {
         expect(optInMock).toHaveBeenCalledWith({
             sender: ADDRESS,
             assetId: ASA,
+            maxFee: 2000n,
         })
         expect(submitWithFeeDelegationMock).not.toHaveBeenCalled()
     })

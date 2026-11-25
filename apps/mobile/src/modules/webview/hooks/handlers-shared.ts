@@ -51,6 +51,8 @@ export type RequireSecureContext = {
 export type WebviewMessageSecurity = {
     securedConnection: boolean
     sourceUrl: Nullable<string>
+    /** The web host authenticated the iframe's message port and origin. */
+    isAuthenticatedFrame?: boolean
 }
 
 type SendError = (
@@ -208,6 +210,15 @@ export const openValidatedBrowserUrl = (raw: unknown): boolean => {
     )
     return true
 }
+
+/**
+ * Opens a block explorer page (Lora, Etherscan, BaseScan…) in the system browser.
+ * Explorers sit behind Cloudflare, whose challenge can hang indefinitely in an
+ * embedded webview; the browser carries the user's cookies, passes it, and
+ * leaves the user a way back to the app.
+ */
+export const openExplorerUrl = (url: string): boolean =>
+    openValidatedBrowserUrl(url)
 
 const RELATIVE_PATH_BASE = 'https://perawallet.invalid/'
 

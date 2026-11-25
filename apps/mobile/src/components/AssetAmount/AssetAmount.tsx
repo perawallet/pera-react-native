@@ -24,9 +24,10 @@ import type { Maybe } from '@perawallet/wallet-core-shared'
  *   floor up to the asset's own `decimals`; collectibles / 0-decimal assets
  *   render whole).
  * - `compact` — a fixed 2 dp, for dense list rows; an asset with more than 6
- *   decimals keeps its detailed precision so a row reads like its detail.
+ *   decimals keeps its detailed precision.
  * - `significant` — a few significant digits, for a tiny amount such as a fee.
- * - `exact` — all of the asset's decimals, for a transaction total.
+ * - `exact` — all of the asset's decimals, trailing zeros trimmed, for an
+ *   amount that moves or moved: rounding would hide part of what is sent.
  * - `list` — for an asset list row: up to 4 dp, rounded down, whatever the
  *   asset's decimals; dust reads "< 0.0001".
  */

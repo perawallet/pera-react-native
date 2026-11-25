@@ -53,13 +53,15 @@ import type {
 import {
     bootConnections,
     createConnectionRegistry,
+    isConnectionRevokedForAccountRemoval,
+    waitForAccountsHydration,
     watchLockNotices,
     watchWalletNotices,
 } from '@perawallet/wallet-core-connections'
 import {
+    clearLegacyDappPermissions,
     createDappConnectionHandler,
     createEip1193ConnectionHandler,
-    importLegacyDappPermissions,
     type SiteWarningLevel,
 } from '@perawallet/wallet-core-dapp'
 import {
@@ -189,6 +191,8 @@ export const runOffscreenApp = async ({
             chainId: ALGORAND_CHAIN_ID,
             getNetworkId,
             sessionKeys,
+            restoreWhen: waitForAccountsHydration,
+            shouldRevokeForAccountRemoval: isConnectionRevokedForAccountRemoval,
         }),
     )
     registry.register(
@@ -232,9 +236,7 @@ export const runOffscreenApp = async ({
         store,
         keystoreReady: Promise.resolve(),
         importLegacy: async () => {
-            // bootConnections only catches at this boundary, so one legacy
-            // importer that keeps throwing would strand the other's records
-            // unmigrated on this boot and every later one.
+            // A failing WalletConnect import must not strand old dApp storage.
             try {
                 await importLegacyConnections({ storage, store, sessionKeys })
             } catch (error) {
@@ -242,10 +244,7 @@ export const runOffscreenApp = async ({
                     error,
                 })
             }
-            await importLegacyDappPermissions({
-                area: chrome.storage.local,
-                store,
-            })
+            await clearLegacyDappPermissions(chrome.storage.local)
         },
     })
     onConnectionsControlMessage(connectionsHost.handleControlMessage)

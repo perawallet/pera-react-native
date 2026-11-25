@@ -11,7 +11,13 @@
  */
 
 import { renderHook, act } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type {
+    LayoutChangeEvent,
+    NativeScrollEvent,
+    NativeSyntheticEvent,
+} from 'react-native'
+import { afterEach, describe, it, expect, vi, beforeEach } from 'vitest'
+import { measureFittingReview } from '@test-utils/review-scroll'
 import { useMessageSigningScreen } from '../useMessageSigningScreen'
 
 type MockPipeline = {
@@ -51,6 +57,22 @@ vi.mock('../../../hooks/useRequestAddressSafety', () => ({
     },
 }))
 
+const mockRiskGate = vi.hoisted(() => ({
+    flagged: undefined as unknown,
+    isConfirmBlocked: false,
+}))
+
+vi.mock('../../../hooks/useReviewRiskGate', () => ({
+    useFlagReviewRisk: (isFlagged: boolean) => {
+        mockRiskGate.flagged = isFlagged
+    },
+    useReviewRiskGate: () => ({
+        isAcknowledged: false,
+        toggleAcknowledged: vi.fn(),
+        isConfirmBlocked: mockRiskGate.isConfirmBlocked,
+    }),
+}))
+
 vi.mock('../../../hooks/useRequestSiteSafety', () => ({
     useRequestSiteSafety: () => mockSiteSafety,
 }))
@@ -81,6 +103,12 @@ vi.mock('@hooks/useHaptics', () => ({
     useHaptics: () => mockHaptics,
 }))
 
+const renderScreen = () => {
+    const hook = renderHook(() => useMessageSigningScreen())
+    measureFittingReview(hook.result.current.scrollHint)
+    return hook
+}
+
 describe('useMessageSigningScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -89,6 +117,8 @@ describe('useMessageSigningScreen', () => {
         mockAddressSafety.isListedAddressBlocking = false
         mockAddressSafety.addresses = undefined
         mockSiteSafety.isConfirmBlocked = false
+        mockRiskGate.flagged = undefined
+        mockRiskGate.isConfirmBlocked = false
         mockReviewedMessageAddressesOf.mockReturnValue([])
         mockPipeline.isLoading = false
         mockPipeline.currentRequest = {
@@ -105,10 +135,35 @@ describe('useMessageSigningScreen', () => {
     })
 
     it('reads the summary and the signer account from the resolved request', () => {
-        const { result } = renderHook(() => useMessageSigningScreen())
+        const { result } = renderScreen()
 
         expect(result.current.summary).toBe(SUMMARY)
         expect(result.current.signerAccount).toBe(SIGNER_ACCOUNT)
+    })
+
+    it('holds approval on a message taller than its body until it is scrolled to the end', () => {
+        const { result } = renderScreen()
+        act(() => {
+            result.current.scrollHint.handleBodyLayout({
+                nativeEvent: { layout: { height: 400 } },
+            } as LayoutChangeEvent)
+            result.current.scrollHint.handleContentSizeChange(0, 1000)
+        })
+
+        act(() => result.current.handleApprove())
+
+        expect(result.current.isConfirmBlocked).toBe(true)
+        expect(mockPipeline.next).not.toHaveBeenCalled()
+
+        act(() =>
+            result.current.scrollHint.handleScroll({
+                nativeEvent: { contentOffset: { y: 600 } },
+            } as NativeSyntheticEvent<NativeScrollEvent>),
+        )
+        act(() => result.current.handleApprove())
+
+        expect(result.current.isConfirmBlocked).toBe(false)
+        expect(mockPipeline.next).toHaveBeenCalledOnce()
     })
 
     it('checks every address the message names and holds approval until it is acknowledged', () => {
@@ -116,7 +171,7 @@ describe('useMessageSigningScreen', () => {
         mockReviewedMessageAddressesOf.mockReturnValue(named)
         mockAddressSafety.isConfirmBlocked = true
 
-        const { result } = renderHook(() => useMessageSigningScreen())
+        const { result } = renderScreen()
         act(() => result.current.handleApprove())
 
         expect(mockReviewedMessageAddressesOf).toHaveBeenCalledWith({
@@ -133,7 +188,7 @@ describe('useMessageSigningScreen', () => {
         mockAddressSafety.isListedAddressBlocking = true
         mockAddressSafety.isConfirmBlocked = true
 
-        const { result } = renderHook(() => useMessageSigningScreen())
+        const { result } = renderScreen()
         act(() => result.current.handleApprove())
 
         expect(result.current.isListedAddressBlocking).toBe(true)
@@ -143,7 +198,7 @@ describe('useMessageSigningScreen', () => {
     it('holds approval while the dApp site waits on acknowledgement', () => {
         mockSiteSafety.isConfirmBlocked = true
 
-        const { result } = renderHook(() => useMessageSigningScreen())
+        const { result } = renderScreen()
         act(() => result.current.handleApprove())
 
         expect(result.current.isListedAddressBlocking).toBe(false)
@@ -154,14 +209,14 @@ describe('useMessageSigningScreen', () => {
     it('checks no address for a request that is not a message', () => {
         mockPipeline.currentRequest = { id: 'req-2', type: 'transactions' }
 
-        const { result } = renderHook(() => useMessageSigningScreen())
+        const { result } = renderScreen()
 
         expect(result.current.reviewedAddresses).toEqual([])
         expect(mockReviewedMessageAddressesOf).not.toHaveBeenCalled()
     })
 
     it("reads the message request's scope", () => {
-        const { result } = renderHook(() => useMessageSigningScreen())
+        const { result } = renderScreen()
 
         expect(result.current.scope).toBe(SCOPE)
     })
@@ -169,13 +224,13 @@ describe('useMessageSigningScreen', () => {
     it('has no scope for a request that is not a message', () => {
         mockPipeline.currentRequest = { id: 'req-2', type: 'arbitrary-data' }
 
-        const { result } = renderHook(() => useMessageSigningScreen())
+        const { result } = renderScreen()
 
         expect(result.current.scope).toBeNull()
     })
 
     it('carries the requesting source and its verified origin', () => {
-        const { result } = renderHook(() => useMessageSigningScreen())
+        const { result } = renderScreen()
 
         expect(result.current.sourceMetadata).toBe(SOURCE)
         expect(result.current.verifiedOrigin).toBe('https://dapp.example')
@@ -187,13 +242,13 @@ describe('useMessageSigningScreen', () => {
             kind: { type: 'arbitrary-data', isSingle: true },
         }
 
-        const { result } = renderHook(() => useMessageSigningScreen())
+        const { result } = renderScreen()
 
         expect(result.current.summary).toBeNull()
     })
 
     it('approves through the pipeline', () => {
-        const { result } = renderHook(() => useMessageSigningScreen())
+        const { result } = renderScreen()
 
         act(() => result.current.handleApprove())
 
@@ -204,7 +259,7 @@ describe('useMessageSigningScreen', () => {
     })
 
     it('rejects through the pipeline', () => {
-        const { result } = renderHook(() => useMessageSigningScreen())
+        const { result } = renderScreen()
 
         act(() => result.current.handleReject())
 
@@ -217,7 +272,7 @@ describe('useMessageSigningScreen', () => {
     it('is pending while the pipeline loads', () => {
         mockPipeline.isLoading = true
 
-        const { result } = renderHook(() => useMessageSigningScreen())
+        const { result } = renderScreen()
 
         expect(result.current.isPending).toBe(true)
     })
@@ -225,14 +280,209 @@ describe('useMessageSigningScreen', () => {
     it('is pending as soon as signing starts, before the pipeline reports loading', () => {
         mockSigningStarted.current = { type: 'signing-started' }
 
-        const { result } = renderHook(() => useMessageSigningScreen())
+        const { result } = renderScreen()
 
         expect(result.current.isPending).toBe(true)
     })
 
+    it('names the requesting site when a sign-in message is for another domain', () => {
+        mockPipeline.resolved = {
+            signerAccount: SIGNER_ACCOUNT,
+            kind: {
+                type: 'message',
+                summary: {
+                    ...SUMMARY,
+                    signIn: { message: { domain: 'opensea.io' } },
+                },
+            },
+        }
+
+        const { result } = renderScreen()
+
+        expect(result.current.signInSiteMismatch).toBe('dapp.example')
+    })
+
+    it('reports no site mismatch for a sign-in message from its own domain', () => {
+        mockPipeline.resolved = {
+            signerAccount: SIGNER_ACCOUNT,
+            kind: {
+                type: 'message',
+                summary: {
+                    ...SUMMARY,
+                    signIn: { message: { domain: 'dapp.example' } },
+                },
+            },
+        }
+
+        const { result } = renderScreen()
+
+        expect(result.current.signInSiteMismatch).toBeUndefined()
+    })
+
+    it('reports no site mismatch for a message that is not a sign-in', () => {
+        const { result } = renderScreen()
+
+        expect(result.current.signInSiteMismatch).toBeUndefined()
+    })
+
+    it.each([
+        ['a sign-in for another site', { domain: 'opensea.io' }, false, true],
+        ['unreadable grants', { domain: 'dapp.example' }, true, true],
+        ['a clean sign-in', { domain: 'dapp.example' }, false, false],
+    ])(
+        'flags %s for acknowledgement',
+        (_label, message, hasUnreadableGrants, expected) => {
+            mockPipeline.resolved = {
+                signerAccount: SIGNER_ACCOUNT,
+                kind: {
+                    type: 'message',
+                    summary: {
+                        ...SUMMARY,
+                        signIn: { message, hasUnreadableGrants },
+                    },
+                },
+            }
+
+            const { result } = renderScreen()
+
+            expect(mockRiskGate.flagged).toBe(expected)
+            expect(result.current.isSignInRiskFlagged).toBe(expected)
+        },
+    )
+
+    it('blocks approval while the sign-in risk is unacknowledged', () => {
+        mockRiskGate.isConfirmBlocked = true
+
+        const { result } = renderScreen()
+        act(() => result.current.handleApprove())
+
+        expect(result.current.isConfirmBlocked).toBe(true)
+        expect(mockPipeline.next).not.toHaveBeenCalled()
+    })
+
+    it('shows the chain badge for an EVM request only', () => {
+        expect(renderScreen().result.current.isChainBadgeShown).toBe(true)
+
+        mockPipeline.currentRequest = {
+            id: 'req-1',
+            type: 'message',
+            message: { scope: { chainId: 'algorand', networkId: 'mainnet' } },
+        }
+        expect(renderScreen().result.current.isChainBadgeShown).toBe(false)
+    })
+
     it('is idle otherwise', () => {
-        const { result } = renderHook(() => useMessageSigningScreen())
+        const { result } = renderScreen()
 
         expect(result.current.isPending).toBe(false)
+    })
+
+    describe('a permit past its signature deadline', () => {
+        const NOW = Date.UTC(2026, 0, 1)
+        const permitSummary = (spendApproval: unknown) => ({
+            kind: 'typed-data',
+            title: { key: 'signing.arbitrary_data_view.body' },
+            spendApproval,
+        })
+        const resolveWith = (spendApproval: unknown) => {
+            mockPipeline.resolved = {
+                signerAccount: SIGNER_ACCOUNT,
+                kind: {
+                    type: 'message',
+                    summary: permitSummary(spendApproval),
+                },
+            }
+        }
+
+        beforeEach(() => {
+            vi.useFakeTimers()
+            vi.setSystemTime(NOW)
+        })
+        afterEach(() => {
+            vi.useRealTimers()
+        })
+
+        it('blocks approval once the signature deadline passes while the review is open', () => {
+            resolveWith({
+                spender: '0xSPENDER',
+                allowances: [],
+                deadline: NOW + 30 * 86_400_000,
+                isLongLived: false,
+                signature: { deadline: NOW + 60_000, isLongLived: false },
+            })
+            const { result } = renderScreen()
+            expect(result.current.isExpired).toBe(false)
+
+            act(() => {
+                vi.advanceTimersByTime(120_000)
+            })
+            act(() => result.current.handleApprove())
+
+            expect(result.current.isExpired).toBe(true)
+            expect(result.current.isConfirmBlocked).toBe(true)
+            expect(mockPipeline.next).not.toHaveBeenCalled()
+        })
+
+        it("reads a signature transfer's own deadline as its signature deadline", () => {
+            resolveWith({
+                spender: '0xSPENDER',
+                allowances: [],
+                deadline: NOW - 60_000,
+                isLongLived: false,
+            })
+
+            const { result } = renderScreen()
+
+            expect(result.current.isExpired).toBe(true)
+        })
+
+        it('allows a minute past the deadline for a device clock running ahead', () => {
+            resolveWith({
+                spender: '0xSPENDER',
+                allowances: [],
+                deadline: NOW - 59_999,
+                isLongLived: false,
+            })
+
+            const { result } = renderScreen()
+            act(() => result.current.handleApprove())
+
+            expect(result.current.isExpired).toBe(false)
+            expect(mockPipeline.next).toHaveBeenCalled()
+        })
+
+        it('shows the expired notice when the slide lands before the expiry timer fires', () => {
+            resolveWith({
+                spender: '0xSPENDER',
+                allowances: [],
+                deadline: NOW - 59_000,
+                isLongLived: false,
+            })
+            const { result } = renderScreen()
+            expect(result.current.isExpired).toBe(false)
+
+            // Moves the clock without running timers, as after the app sleeps.
+            vi.setSystemTime(NOW + 1000)
+            act(() => result.current.handleApprove())
+
+            expect(result.current.isExpired).toBe(true)
+            expect(mockPipeline.next).not.toHaveBeenCalled()
+        })
+
+        it('ignores an allowance expiry that passed while the signature is still valid', () => {
+            resolveWith({
+                spender: '0xSPENDER',
+                allowances: [],
+                deadline: NOW - 1,
+                isLongLived: false,
+                signature: { deadline: NOW + 60_000, isLongLived: false },
+            })
+
+            const { result } = renderScreen()
+            act(() => result.current.handleApprove())
+
+            expect(result.current.isExpired).toBe(false)
+            expect(mockPipeline.next).toHaveBeenCalled()
+        })
     })
 })

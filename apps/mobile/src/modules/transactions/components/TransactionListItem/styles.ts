@@ -11,6 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { SUSPICIOUS_ROW_OPACITY } from '@constants/ui'
 
 export const useStyles = makeStyles(theme => {
     const amount = {
@@ -24,11 +25,31 @@ export const useStyles = makeStyles(theme => {
             paddingVertical: theme.spacing.md,
             gap: theme.spacing.md,
         },
+        suspicious: {
+            opacity: SUSPICIOUS_ROW_OPACITY,
+        },
         amountContainer: {
             alignItems: 'flex-end',
         },
+        titleRow: {
+            flexDirection: 'row' as const,
+            alignItems: 'center' as const,
+            gap: theme.spacing.xs,
+        },
         title: {
             color: theme.colors.textMain,
+            flexShrink: 1,
+        },
+        titleMuted: {
+            color: theme.colors.textGray,
+            flexShrink: 1,
+        },
+        // The glyph is small, so its touch target reaches past it.
+        badgeHitSlop: {
+            top: theme.spacing.sm,
+            bottom: theme.spacing.sm,
+            left: theme.spacing.sm,
+            right: theme.spacing.sm,
         },
         subtitle: {
             color: theme.colors.textGray,
@@ -37,10 +58,11 @@ export const useStyles = makeStyles(theme => {
         notice: {
             marginTop: theme.spacing.xs,
         },
-        network: {
-            marginTop: theme.spacing.xxs,
-        },
         amount,
+        amountMuted: {
+            ...amount,
+            color: theme.colors.textGray,
+        },
         amountPositive: {
             color: theme.colors.positive,
         },
@@ -54,6 +76,10 @@ export const useStyles = makeStyles(theme => {
         },
         feeText: {
             color: theme.colors.textGray,
+        },
+        fiatAmount: {
+            color: theme.colors.textGray,
+            marginTop: theme.spacing.xxs,
         },
         amountOverflow: {
             color: theme.colors.textGray,

@@ -33,9 +33,11 @@ import { useCloudBackupRestoreSessionStore } from '../../store/restoreSessionSto
 import { useDiscardCloudBackupRestore } from '../useDiscardCloudBackupRestore'
 
 const holdSession = () =>
-    useCloudBackupRestoreSessionStore
-        .getState()
-        .setSession({ prepared: {} as never, salt: 'c2FsdA==' })
+    useCloudBackupRestoreSessionStore.getState().setSession({
+        prepared: {} as never,
+        salt: 'c2FsdA==',
+        credentialsConfirmed: true,
+    })
 
 describe('useDiscardCloudBackupRestore', () => {
     beforeEach(() => {

@@ -313,7 +313,8 @@ export const useAccountAssetList = ({
     // the FlashList re-population that follows (with the sticky search bar at
     // index 0) pushes the list past the header; keying off the sort alone missed
     // the reset entirely whenever the rows hadn't arrived yet.
-    const viewRequestKey = `${account.id}|${selectedChainId ?? ''}|${assetSortMode}`
+    // A network chip is left out: picking one keeps the chips where they are.
+    const viewRequestKey = `${account.id}|${assetSortMode}`
     const appliedViewRequestKeyRef = useRef(viewRequestKey)
     const hasRowsForRequest = holdings.length > 0 && !isPlaceholderData
 
@@ -368,7 +369,7 @@ export const useAccountAssetList = ({
 
     const handleOptOut = useCallback(
         async (item: AccountHoldingsLiteRow) => {
-            const result = await requestBottomSheet<'confirm'>({
+            const maxFee = await requestBottomSheet<bigint>({
                 contents: (
                     <OptOutConfirmationContent
                         assetId={item.assetId}
@@ -382,7 +383,7 @@ export const useAccountAssetList = ({
                     autoCreateContainer: false,
                 },
             })
-            if (result !== 'confirm') return
+            if (maxFee === undefined) return
 
             const asset = assetFromHoldingLiteRow(item, scope.chainId)
             try {
@@ -390,6 +391,7 @@ export const useAccountAssetList = ({
                     sender: accountAddress,
                     assetId: BigInt(item.assetId),
                     creator: asset?.creator.address,
+                    maxFee,
                 })
                 showToast({
                     title: t('asset_opt_out.success'),

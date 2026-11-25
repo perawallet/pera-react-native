@@ -120,3 +120,6 @@ registerStore({
 
 export const deleteDraftSignRequest = (localId: string): void =>
     useDraftSignRequestStore.getState().deleteDraft(localId)
+
+export const hasDraftSignRequest = (localId: string): boolean =>
+    localId in useDraftSignRequestStore.getState().drafts

@@ -29,6 +29,7 @@ export const flatHistoryItem = ({
     applicationId,
     innerTransactionCount,
     swapGroupDetail,
+    swapLeg,
     ...item
 }: FlatHistoryItem): TransactionHistoryItem => ({
     ...item,
@@ -40,5 +41,6 @@ export const flatHistoryItem = ({
         ...(applicationId !== undefined && { applicationId }),
         ...(innerTransactionCount !== undefined && { innerTransactionCount }),
         ...(swapGroupDetail !== undefined && { swapGroupDetail }),
+        ...(swapLeg !== undefined && { swapLeg }),
     },
 })

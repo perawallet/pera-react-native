@@ -17,6 +17,8 @@ import { useEthereumRecordLayout } from '@modules/ethereum/hooks/useEthereumReco
 import { useEthereumRecordNft } from '@modules/ethereum/hooks/useEthereumRecordNft'
 import { EthereumRecordAmountCard } from '../EthereumRecordAmountCard'
 import { EthereumRecordNftCard } from '../EthereumRecordNftCard'
+import { recordPricingOf } from '@modules/ethereum/utils/transactionPricing'
+import { EthereumPricingSection } from '../../EthereumPricingSection'
 
 type EthereumRecordSummaryProps = {
     record: TransactionRecord
@@ -28,27 +30,35 @@ export const EthereumRecordSummary = ({
     record,
     warnings,
 }: EthereumRecordSummaryProps) => {
-    const { summary, amountRows, assetLabel } = useEthereumRecordLayout(record)
+    const { summary, amountRows, assetLabel, assetContract } =
+        useEthereumRecordLayout(record)
     const { nft, handleOpen } = useEthereumRecordNft(record)
+    // Only what the history gave: with no node read there is nothing else to fill it.
+    const pricing = recordPricingOf(record)
 
     return (
         <TransactionDetailLayout
             summary={summary}
             warnings={warnings}
             chainSection={
-                nft ? (
-                    <EthereumRecordNftCard
-                        nft={nft}
-                        scope={record.scope}
-                        onPress={handleOpen}
-                    />
-                ) : (
-                    <EthereumRecordAmountCard
-                        changes={amountRows}
-                        scope={record.scope}
-                        assetLabel={assetLabel}
-                    />
-                )
+                <>
+                    {nft ? (
+                        <EthereumRecordNftCard
+                            nft={nft}
+                            scope={record.scope}
+                            onPress={handleOpen}
+                        />
+                    ) : (
+                        <EthereumRecordAmountCard
+                            changes={amountRows}
+                            scope={record.scope}
+                            assetLabel={assetLabel}
+                            assetContract={assetContract}
+                            isSwap={record.summary.kind === 'swap'}
+                        />
+                    )}
+                    {!!pricing && <EthereumPricingSection pricing={pricing} />}
+                </>
             }
         />
     )

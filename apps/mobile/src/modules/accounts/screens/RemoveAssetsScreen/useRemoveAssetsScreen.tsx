@@ -18,12 +18,7 @@ import {
     type RefObject,
     type ReactElement,
 } from 'react'
-import {
-    PWCheckbox,
-    PWTouchableOpacity,
-    PWView,
-    type PWFlatListRef,
-} from '@components/core'
+import { PWCheckbox, PWView, type PWFlatListRef } from '@components/core'
 import { AccountAssetItemView } from '@modules/assets'
 import {
     addressOn,
@@ -35,9 +30,17 @@ import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     useIsNativeAssetId,
     useAssetsQuery,
+    useNativeAsset,
+    toWholeUnits,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
+import {
+    useFeeConfig,
+    useMinFeeForSender,
+    UserRejectedSigningError,
+} from '@perawallet/wallet-core-signing'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Decimal } from 'decimal.js'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -52,6 +55,9 @@ type UseRemoveAssetsScreenResult = {
     selectedAssetIds: Set<string>
     isAllSelected: boolean
     isRemoving: boolean
+    scope: ChainScope
+    nativeAsset: ReturnType<typeof useNativeAsset>
+    fee: Decimal
     /** Whether the Select All header action should be offered to the user */
     isSelectAllVisible: boolean
     /** Whether the Remove Selected footer CTA should be rendered */
@@ -82,6 +88,10 @@ export const useRemoveAssetsScreen = (): UseRemoveAssetsScreenResult => {
     const selectedAddress = selectedAccount
         ? addressOn(selectedAccount, scope)
         : undefined
+    const nativeAsset = useNativeAsset(scope)
+    const { minTxnFee } = useFeeConfig(scope.chainId)
+    const { minFee } = useMinFeeForSender(selectedAddress, scope.chainId)
+    const maxFee = minFee ?? minTxnFee
     const { accountBalances } = useAccountBalancesQuery(
         selectedAccount ? [selectedAccount] : [],
         scope,
@@ -174,6 +184,7 @@ export const useRemoveAssetsScreen = (): UseRemoveAssetsScreenResult => {
                 // Creator is optional — the mutation will fetch it from the
                 // indexer when the asset metadata is not in the local DB.
                 creator: asset?.creator.address,
+                maxFee,
             }
         })
 
@@ -201,6 +212,7 @@ export const useRemoveAssetsScreen = (): UseRemoveAssetsScreenResult => {
         selectedAddress,
         selectedAssetIds,
         assets,
+        maxFee,
         optOut,
         showToast,
         t,
@@ -211,24 +223,28 @@ export const useRemoveAssetsScreen = (): UseRemoveAssetsScreenResult => {
     const renderItem = useCallback(
         ({ item }: { item: AssetWithAccountBalance }) => {
             const isSelected = selectedAssetIds.has(item.assetId)
+            const handleToggle = () => handleToggleSelect(item.assetId)
 
             return (
-                <PWTouchableOpacity
+                <PWCheckbox
+                    label={
+                        <PWView style={styles.assetInfo}>
+                            {/* The asset row is its own touchable (long press
+                                copies the id) and would swallow the tap. */}
+                            <AccountAssetItemView
+                                accountBalance={item}
+                                scope={scope}
+                                iconSize='md'
+                                onPress={handleToggle}
+                            />
+                        </PWView>
+                    }
+                    boxPosition='trailing'
+                    isChecked={isSelected}
+                    onPress={handleToggle}
                     style={styles.itemContainer}
-                    onPress={() => handleToggleSelect(item.assetId)}
                     testID={`remove_asset_row_${item.assetId}`}
-                >
-                    <PWView style={styles.assetInfo}>
-                        <AccountAssetItemView
-                            accountBalance={item}
-                            scope={scope}
-                            iconSize='md'
-                        />
-                    </PWView>
-                    <PWView pointerEvents='none'>
-                        <PWCheckbox checked={isSelected} />
-                    </PWView>
-                </PWTouchableOpacity>
+                />
             )
         },
         [selectedAssetIds, handleToggleSelect, scope, styles],
@@ -248,6 +264,9 @@ export const useRemoveAssetsScreen = (): UseRemoveAssetsScreenResult => {
         selectedAssetIds,
         isAllSelected,
         isRemoving,
+        scope,
+        nativeAsset,
+        fee: toWholeUnits(BigInt(selectedAssetIds.size) * maxFee, nativeAsset),
         isSelectAllVisible,
         isRemoveSelectedVisible,
         handleToggleSelect,

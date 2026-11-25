@@ -15,9 +15,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { createQueryClientWrapper } from '@test-utils/render'
-import type {
-    LocalizedText,
-    TransactionIconKind,
+import {
+    type LocalizedText,
+    type TransactionIconKind,
 } from '@perawallet/wallet-core-chain-contract'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import {
@@ -44,10 +44,28 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import { useTransactionListItem } from '../useTransactionListItem'
 
+vi.mock('@components/PreferredAmount', () => ({
+    usePreferredAmount: vi.fn(() => ({
+        displayCurrency: 'USD',
+        convertedValue: null,
+        isPending: false,
+    })),
+}))
+
+vi.mock('@perawallet/wallet-core-currencies', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-currencies')
+    >()),
+    imitatedTickerOf: vi.fn(() => null),
+}))
+
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
     chainAccountOf: (account: WalletAccount, chainId: 'algorand') =>
         account.chains[chainId],
+    isSameAddress: (_chainId: string, a: string, b: string) => a === b,
+    // Algorand is opt-in, so nothing there is hidden as unasked.
+    canHideHolding: () => false,
 }))
 
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
@@ -216,6 +234,7 @@ describe('useTransactionListItem against the history summary goldens', () => {
                     algorandTransactionIconName,
                 ),
             ).toContain(row.iconName)
+            // A clawback is signed by the asset's clawback address, but it is no EVM allowance spend.
             expect(row.title).toBe(render(summary.title))
             expect(row.subtitle).toBe(
                 summary.subtitle

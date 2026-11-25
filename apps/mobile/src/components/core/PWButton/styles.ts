@@ -44,7 +44,7 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
         },
         destructive: {
             backgroundColor: theme.colors.alertNegative,
-            color: theme.colors.textWhite,
+            color: theme.colors.alertContent,
         },
         destructiveLight: {
             backgroundColor: theme.colors.negativeLighter,
@@ -70,26 +70,31 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
 
     const paddingStyles = {
         normal: {
-            paddingHorizontal: theme.spacing.lg,
+            paddingHorizontal: theme.spacing.xl,
             paddingVertical: theme.spacing.md,
             minWidth: undefined as Optional<number>,
+            minHeight: theme.controlHeight.lg,
         },
         dense: {
-            paddingHorizontal: theme.spacing.md,
+            paddingHorizontal: props.title
+                ? theme.spacing.lg
+                : theme.spacing.md,
             // Titled buttons trim vertical padding so they match icon-only
             // height (the 24px label box is 8px taller than the 16px icon).
             paddingVertical: props.title ? theme.spacing.sm : theme.spacing.md,
             minWidth: theme.spacing.xxl,
+            minHeight: theme.controlHeight.sm,
         },
         none: {
             paddingHorizontal: 0,
             paddingVertical: 0,
             minWidth: undefined as Optional<number>,
+            minHeight: undefined as Optional<number>,
         },
     }
 
     const { backgroundColor, color } = variantStyles[props.variant ?? 'primary']
-    const { paddingHorizontal, paddingVertical, minWidth } =
+    const { paddingHorizontal, paddingVertical, minWidth, minHeight } =
         paddingStyles[props.paddingStyle ?? 'normal']
 
     // The spinner must occupy the same box as the content it replaces so the
@@ -129,10 +134,11 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
             alignItems: 'center',
             justifyContent: 'center',
             gap: theme.spacing.sm,
-            borderRadius: props.rounded ? theme.spacing.xl : theme.spacing.sm,
+            borderRadius: theme.borderRadius.full,
             paddingHorizontal,
             paddingVertical,
             minWidth: minWidth ?? 0,
+            minHeight,
             maxWidth: '100%',
             flexShrink: 1,
             overflow: 'hidden',

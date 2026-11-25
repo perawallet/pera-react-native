@@ -21,8 +21,9 @@ export const useStyles = makeStyles(theme => {
         },
         search: {
             backgroundColor: theme.colors.layerGrayLighter,
-            borderRadius: theme.borderRadius.sm,
-            paddingHorizontal: theme.spacing.md,
+            minHeight: theme.controlHeight.md,
+            borderRadius: theme.borderRadius.md,
+            paddingHorizontal: theme.spacing.lg,
             minWidth: 0,
         },
         input: {

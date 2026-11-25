@@ -455,7 +455,7 @@ index 57f9b7c6f01682b537cd0b5b8c188f025965586d..bbf4400076c7675c195f9efa1d03d542
                  biometricPrompt.authenticate(promptInfo)
              }
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt b/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt
-index c0b23c0c1c5de2e32ed94b442125c56f7660b347..458c3be81148f1bf8c53ce05f2a1ad776f46dfcd 100644
+index c0b23c0c1c5de2e32ed94b442125c56f7660b347..fa56c15b7c1476d6517f2d63e43794b80cad39d7 100644
 --- a/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt
 +++ b/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt
 @@ -4,7 +4,10 @@ import expo.modules.kotlin.exception.CodedException
@@ -506,7 +506,15 @@ index c0b23c0c1c5de2e32ed94b442125c56f7660b347..458c3be81148f1bf8c53ce05f2a1ad77
        if (context != null) {
          credentialRepository.getMainKeyId(context)
        } else {
-@@ -93,7 +96,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+@@ -90,10 +93,15 @@ class ReactNativePasskeyAutofillModule : Module() {
+       }
+     }
+ 
++    AsyncFunction("setRegistrationParentKeyId") { id: String ->
++      val context = checkNotNull(appContext.reactContext) { "Could not get context to save the registration parent" }
++      credentialRepository.saveRegistrationParentKeyId(context, id)
++    }
++
      // Deprecated aliases of the two above, kept because installed wallets still
      // call them. They address the same slot — see `saveMainKeyId`.
      AsyncFunction("setHdRootKeyId") { id: String ->
@@ -515,7 +523,7 @@ index c0b23c0c1c5de2e32ed94b442125c56f7660b347..458c3be81148f1bf8c53ce05f2a1ad77
        if (context != null) {
          credentialRepository.saveMainKeyId(context, id)
        } else {
-@@ -102,7 +105,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+@@ -102,7 +110,7 @@ class ReactNativePasskeyAutofillModule : Module() {
      }
  
      AsyncFunction("getHdRootKeyId") {
@@ -524,7 +532,7 @@ index c0b23c0c1c5de2e32ed94b442125c56f7660b347..458c3be81148f1bf8c53ce05f2a1ad77
        if (context != null) {
          credentialRepository.getMainKeyId(context)
        } else {
-@@ -112,19 +115,19 @@ class ReactNativePasskeyAutofillModule : Module() {
+@@ -112,19 +120,19 @@ class ReactNativePasskeyAutofillModule : Module() {
      }
  
      AsyncFunction("clearCredentials") {
@@ -547,7 +555,7 @@ index c0b23c0c1c5de2e32ed94b442125c56f7660b347..458c3be81148f1bf8c53ce05f2a1ad77
        if (context != null) {
          credentialRepository.configureIntentActions(context, getPasskeyAction, createPasskeyAction)
        }
-@@ -143,14 +146,6 @@ class ReactNativePasskeyAutofillModule : Module() {
+@@ -143,14 +151,6 @@ class ReactNativePasskeyAutofillModule : Module() {
        // No-op: see comment above.
      }
  
@@ -562,7 +570,7 @@ index c0b23c0c1c5de2e32ed94b442125c56f7660b347..458c3be81148f1bf8c53ce05f2a1ad77
      // NoOp on Android. iOS exposes diagnostics from the shared App Group
      // store; there is no equivalent on Android yet.
      AsyncFunction("getDiagnostics") {
-@@ -158,28 +153,27 @@ class ReactNativePasskeyAutofillModule : Module() {
+@@ -158,28 +158,27 @@ class ReactNativePasskeyAutofillModule : Module() {
      }
  
      AsyncFunction("isProviderActive") {
@@ -595,7 +603,7 @@ index c0b23c0c1c5de2e32ed94b442125c56f7660b347..458c3be81148f1bf8c53ce05f2a1ad77
          )
        }
      }
-@@ -194,7 +188,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+@@ -194,7 +193,7 @@ class ReactNativePasskeyAutofillModule : Module() {
    }
  
    /**
@@ -604,7 +612,7 @@ index c0b23c0c1c5de2e32ed94b442125c56f7660b347..458c3be81148f1bf8c53ce05f2a1ad77
     * is registered as an active credential provider for the current user.
     *
     * On API 34+ (UpsideDownCake) we use the official
-@@ -209,7 +203,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+@@ -209,7 +208,7 @@ class ReactNativePasskeyAutofillModule : Module() {
    private fun isProviderEnabled(context: Context): Boolean {
      val component = ComponentName(
        context.packageName,
@@ -613,7 +621,7 @@ index c0b23c0c1c5de2e32ed94b442125c56f7660b347..458c3be81148f1bf8c53ce05f2a1ad77
      )
      val expected = component.flattenToString()
  
-@@ -260,7 +254,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+@@ -260,7 +259,7 @@ class ReactNativePasskeyAutofillModule : Module() {
      // Manager screen isn't a directly launchable activity.
      val component = ComponentName(
        context.packageName,
@@ -752,7 +760,7 @@ index 0000000000000000000000000000000000000000..c08b47f5cc6e2ca671947a4dc4eae5d3
 +    cause: Throwable? = null,
 +) : IllegalStateException(message, cause)
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/credentials/Credential.kt b/android/src/main/java/co/algorand/passkeyautofill/credentials/Credential.kt
-index e1b86733f4537225cfb079a594c10b28308762bf..a42f220881e4e6b1592f8b7e609411cbeae02610 100644
+index e1b86733f4537225cfb079a594c10b28308762bf..231eb4a21b3f5fd967c234d66e08b228b4b0b27c 100644
 --- a/android/src/main/java/co/algorand/passkeyautofill/credentials/Credential.kt
 +++ b/android/src/main/java/co/algorand/passkeyautofill/credentials/Credential.kt
 @@ -8,10 +8,10 @@ data class Credential(
@@ -770,11 +778,10 @@ index e1b86733f4537225cfb079a594c10b28308762bf..a42f220881e4e6b1592f8b7e609411cb
       */
      val privateKey: String,
      val count: Int,
-@@ -37,4 +37,20 @@ data class Credential(
-      * unchanged.
+@@ -38,3 +38,19 @@ data class Credential(
       */
      val derivationVersion: Int = PasskeyDerivation.VERSION_LEGACY_LABEL,
-+)
+ )
 +
 +/**
 + * PERA LOCAL PATCH — listing hands the chooser metadata only, never private material.
@@ -790,10 +797,9 @@ index e1b86733f4537225cfb079a594c10b28308762bf..a42f220881e4e6b1592f8b7e609411cb
 +    val origin: String,
 +    val userHandle: String,
 +    val biometricIv: String? = null,
- )
-\ No newline at end of file
++)
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt b/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt
-index fab158d8d072a437ce1518e038cf2479664018a6..34d2b308fea94a7a82b64433581b04fe4d60df87 100644
+index fab158d8d072a437ce1518e038cf2479664018a6..2e9ca2832d67bdb9eb1e775c114c9b07ce048eb8 100644
 --- a/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt
 +++ b/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt
 @@ -4,6 +4,7 @@ import android.content.Context
@@ -879,7 +885,15 @@ index fab158d8d072a437ce1518e038cf2479664018a6..34d2b308fea94a7a82b64433581b04fe
      fun getPublicKeyFromKeyPair(keyPair: KeyPair?): ByteArray
      fun sign(keyPair: KeyPair, payload: ByteArray): ByteArray
      /**
-@@ -214,23 +250,6 @@ interface CredentialRepository {
+@@ -183,6 +219,7 @@ interface CredentialRepository {
+      * mislabel it.
+      */
+     fun saveMainKeyId(context: Context, id: String)
++    fun saveRegistrationParentKeyId(context: Context, id: String)
+     fun getMainKeyId(context: Context): String?
+ 
+     @Deprecated("The passkey parent is no longer the BIP32-Ed25519 root", ReplaceWith("saveMainKeyId(context, id)"))
+@@ -214,23 +251,6 @@ interface CredentialRepository {
      fun getBiometricCipherForEncryption(context: Context, requirement: BiometricRequirement): Cipher
      fun getBiometricCipherForDecryption(context: Context, iv: ByteArray, requirement: BiometricRequirement): Cipher
  
@@ -903,7 +917,15 @@ index fab158d8d072a437ce1518e038cf2479664018a6..34d2b308fea94a7a82b64433581b04fe
      companion object {
          const val TAG = "CredentialRepository"
          const val PASSKEYS_MMKV_ID = "keystore"
-@@ -269,11 +288,12 @@ interface CredentialRepository {
+@@ -250,6 +270,7 @@ interface CredentialRepository {
+          * main key.
+          */
+         const val MAIN_KEY_ID_KEY = "main_key_id"
++        internal const val REGISTRATION_PARENT_KEY_ID_KEY = "registration_parent_key_id"
+ 
+         @Deprecated("Superseded by MAIN_KEY_ID_KEY; still read so installed wallets keep working")
+         const val HD_ROOT_KEY_ID_KEY = "hd_root_key_id"
+@@ -269,11 +290,12 @@ interface CredentialRepository {
  fun CredentialRepository(): CredentialRepository = Repository()
  
  class Repository() : CredentialRepository {
@@ -919,7 +941,7 @@ index fab158d8d072a437ce1518e038cf2479664018a6..34d2b308fea94a7a82b64433581b04fe
      }
  
      private fun getPasskeysMMKV(context: Context): MMKV {
-@@ -287,35 +307,25 @@ class Repository() : CredentialRepository {
+@@ -287,35 +309,25 @@ class Repository() : CredentialRepository {
          return MMKV.mmkvWithID(CredentialRepository.PASSKEY_AUTOFILL_MMKV_ID, MMKV.MULTI_PROCESS_MODE)
      }
  
@@ -970,17 +992,17 @@ index fab158d8d072a437ce1518e038cf2479664018a6..34d2b308fea94a7a82b64433581b04fe
          val metadata = JSONObject()
          metadata.put("origin", credential.origin)
          metadata.put("userHandle", credential.userHandle)
-@@ -327,122 +337,69 @@ class Repository() : CredentialRepository {
+@@ -327,122 +339,69 @@ class Repository() : CredentialRepository {
          credential.parentKeyId?.let { metadata.put("parentKeyId", it) }
          credential.derivationScheme?.let { metadata.put("scheme", it) }
          metadata.put("derivationVersion", credential.derivationVersion)
 -        keyData.put("metadata", metadata)
-+        record.put("metadata", metadata)
- 
+-
 -        // 2. Encode matching react-native-keystore's encode()
 -        val jsonString = keyData.toString()
 -        val base64urlJson = AndroidBase64.encodeToString(jsonString.toByteArray(Charsets.UTF_8), AndroidBase64.URL_SAFE or AndroidBase64.NO_WRAP)
--
++        record.put("metadata", metadata)
+ 
 -        // 3. Seal matching react-native-keystore's commit(). There is deliberately
 -        // no unsealed fallback: without the master key the record — which carries
 -        // the P-256 private key — is not written at all and creation aborts.
@@ -1138,7 +1160,7 @@ index fab158d8d072a437ce1518e038cf2479664018a6..34d2b308fea94a7a82b64433581b04fe
       */
      private fun credentialFromMetadataRecord(json: JSONObject): Credential? {
          val id = json.optString("id").takeUnless { it.isEmpty() } ?: return null
-@@ -457,20 +414,13 @@ class Repository() : CredentialRepository {
+@@ -457,20 +416,13 @@ class Repository() : CredentialRepository {
              publicKey = AndroidBase64.encodeToString(publicKey, AndroidBase64.DEFAULT),
              privateKey = "",
              count = metadata.optInt("count", 0),
@@ -1160,7 +1182,7 @@ index fab158d8d072a437ce1518e038cf2479664018a6..34d2b308fea94a7a82b64433581b04fe
      override fun generateCredentialId(keyPair: KeyPair): ByteArray {
          val publicKeyBytes = keyPair.public.encoded
          val messageDigest = MessageDigest.getInstance("SHA-256")
-@@ -483,46 +433,175 @@ class Repository() : CredentialRepository {
+@@ -483,46 +435,186 @@ class Repository() : CredentialRepository {
      override fun getCredentialMetadata(context: Context, credentialId: ByteArray): Credential? =
          readCredential(context, credentialId, biometricCipher = null, includeMaterial = false)
  
@@ -1227,13 +1249,13 @@ index fab158d8d072a437ce1518e038cf2479664018a6..34d2b308fea94a7a82b64433581b04fe
 +                throw IllegalStateException("Stored biometric IV is not valid base64", e)
              }
 +            return AssertionUnlock.UnwrapCipher(iv)
-+        }
+         }
 +        val needsProof = includePrfSecret || !hasStoredMaterial(context, candidate)
 +        return if (needsProof && BiometricRequirement.resolve(context).isCryptoBound) {
 +            AssertionUnlock.AuthenticatedCipher
 +        } else {
 +            AssertionUnlock.None
-         }
++        }
 +    }
  
 -        val payload = mmkv.decodeString(id) ?: run {
@@ -1277,11 +1299,22 @@ index fab158d8d072a437ce1518e038cf2479664018a6..34d2b308fea94a7a82b64433581b04fe
 +            if (credential.origin.isEmpty() || credential.userHandle.isEmpty()) {
 +                throw IllegalStateException("Passkey record lacks the origin or user handle to re-derive from")
 +            }
-+            createDomainKeyPair(context, credential.origin, credential.userHandle, pinnedScheme).keyPair
++            val parentKeyId = credential.parentKeyId
++            if (parentKeyId == null) {
++                createDomainKeyPair(context, credential.origin, credential.userHandle, pinnedScheme).keyPair
++            } else {
++                deriveDomainKeyPair(context, credential.origin, credential.userHandle, pinnedScheme, parentKeyId).keyPair
++            }
 +        }
 +
 +        val prfParentSecret = if (includePrfSecret) {
-+            when (val parent = resolveParentSecret(context, pinnedScheme)) {
++            val parentKeyId = credential.parentKeyId
++            val resolved = if (parentKeyId == null) {
++                resolveParentSecret(context, pinnedScheme)
++            } else {
++                resolveParentSecret(context, pinnedScheme, parentKeyId)
++            }
++            when (val parent = resolved) {
 +                is ParentSecretResult.Available -> parent.secret
 +                else -> {
 +                    PasskeyLog.w(CredentialRepository.TAG, "PRF parent secret unavailable (${parent.reason})")
@@ -1356,7 +1389,7 @@ index fab158d8d072a437ce1518e038cf2479664018a6..34d2b308fea94a7a82b64433581b04fe
      }
  
      fun getKeyPairFromCredential(credential: Credential): KeyPair? {
-@@ -592,27 +671,9 @@ class Repository() : CredentialRepository {
+@@ -592,27 +684,9 @@ class Repository() : CredentialRepository {
          }
      }
  
@@ -1387,7 +1420,26 @@ index fab158d8d072a437ce1518e038cf2479664018a6..34d2b308fea94a7a82b64433581b04fe
  
      override fun createDeterministicKeyPair(
          context: Context,
-@@ -640,14 +701,26 @@ class Repository() : CredentialRepository {
+@@ -626,9 +700,17 @@ class Repository() : CredentialRepository {
+         origin: String,
+         userHandle: String,
+         requestedScheme: String?,
++    ): DerivedDomainKeyPair = deriveDomainKeyPair(context, origin, userHandle, requestedScheme, null)
++
++    private fun deriveDomainKeyPair(
++        context: Context,
++        origin: String,
++        userHandle: String,
++        requestedScheme: String?,
++        requestedParentKeyId: String?,
+     ): DerivedDomainKeyPair {
+         PasskeyLog.d(CredentialRepository.TAG, "createDomainKeyPair (scheme: ${requestedScheme ?: "preferred"})")
+-        val resolved = resolveParentSecret(context, requestedScheme)
++        val resolved = resolveParentSecret(context, requestedScheme, requestedParentKeyId)
+         if (resolved is ParentSecretResult.MasterKeyUnavailable) {
+             // Typed so the create flow can report a definite failure to the
+             // relying party: without the master key nothing can be derived OR
+@@ -640,16 +722,45 @@ class Repository() : CredentialRepository {
          }
          val parent = resolved.secret
          PasskeyLog.d(CredentialRepository.TAG, "deriving from parent ${parent.keyId} (${parent.scheme}, ${parent.bytes.size} bytes)")
@@ -1416,11 +1468,47 @@ index fab158d8d072a437ce1518e038cf2479664018a6..34d2b308fea94a7a82b64433581b04fe
 +     * @param requestedScheme the scheme a credential is pinned to, or `null` to
 +     *   let the preferred (dp256 main key) parent be chosen.
 +     */
-+    private fun resolveParentSecret(context: Context, requestedScheme: String? = null): ParentSecretResult {
++    private fun resolveParentSecret(context: Context, requestedScheme: String? = null): ParentSecretResult =
++        resolveParentSecret(context, requestedScheme, null)
++
++    private fun resolveParentSecret(
++        context: Context,
++        requestedScheme: String?,
++        requestedParentKeyId: String?,
++    ): ParentSecretResult {
          val masterKey = getMasterKey(context) ?: return ParentSecretResult.MasterKeyUnavailable
-         val selected = KeystoreRecords.selectParentKey(parentKeyCandidates(context, masterKey), requestedScheme)
+-        val selected = KeystoreRecords.selectParentKey(parentKeyCandidates(context, masterKey), requestedScheme)
++        val candidates = if (requestedScheme == null) {
++            // Only the wallet host may authorize a parent for new registrations.
++            val id = getAutofillMMKV(context).decodeString(CredentialRepository.REGISTRATION_PARENT_KEY_ID_KEY)
++                ?.takeIf { it.isNotEmpty() }
++            val record = id?.let { readMetadata(context, it, masterKey) }
++            if (id == null || record == null) emptyList()
++            else listOf(KeystoreRecords.ParentKeyRecord(id, KeystoreRecords.schemeOf(record)))
++        } else {
++            parentKeyCandidates(context, masterKey, requestedParentKeyId)
++        }
++        val selected = KeystoreRecords.selectParentKey(candidates, requestedScheme)
              ?: return ParentSecretResult.NoParentKey(requestedScheme)
-@@ -737,51 +810,10 @@ class Repository() : CredentialRepository {
+         val bytes = readMaterial(context, selected.keyId, masterKey)
+             ?: return ParentSecretResult.MaterialUnavailable(selected.keyId, selected.scheme)
+@@ -666,9 +777,14 @@ class Repository() : CredentialRepository {
+      * the BIP32-Ed25519 root even once the wallet has moved new keys onto its
+      * dp256 main key.
+      */
+-    private fun parentKeyCandidates(context: Context, masterKey: ByteArray): List<KeystoreRecords.ParentKeyRecord> {
++    private fun parentKeyCandidates(
++        context: Context,
++        masterKey: ByteArray,
++        requestedParentKeyId: String?,
++    ): List<KeystoreRecords.ParentKeyRecord> {
+         val mmkvAutofill = getAutofillMMKV(context)
+         val pointed = listOfNotNull(
++            requestedParentKeyId,
+             mmkvAutofill.decodeString(CredentialRepository.MAIN_KEY_ID_KEY),
+             @Suppress("DEPRECATION")
+             mmkvAutofill.decodeString(CredentialRepository.HD_ROOT_KEY_ID_KEY),
+@@ -737,51 +853,10 @@ class Repository() : CredentialRepository {
          }
      }
  
@@ -1473,7 +1561,18 @@ index fab158d8d072a437ce1518e038cf2479664018a6..34d2b308fea94a7a82b64433581b04fe
      override fun saveMasterKey(context: Context, secret: ByteArray) {
          // Reject a key that could never seal anything BEFORE touching storage, so
          // a bad key does not replace a working one.
-@@ -952,26 +984,28 @@ class Repository() : CredentialRepository {
+@@ -878,6 +953,10 @@ class Repository() : CredentialRepository {
+         mmkv.encode(CredentialRepository.MAIN_KEY_ID_KEY, id)
+     }
+ 
++    override fun saveRegistrationParentKeyId(context: Context, id: String) {
++        getAutofillMMKV(context).encode(CredentialRepository.REGISTRATION_PARENT_KEY_ID_KEY, id)
++    }
++
+     override fun getMainKeyId(context: Context): String? {
+         val mmkv = getAutofillMMKV(context)
+         @Suppress("DEPRECATION")
+@@ -952,26 +1031,28 @@ class Repository() : CredentialRepository {
          }
      }
  
@@ -1517,7 +1616,7 @@ index fab158d8d072a437ce1518e038cf2479664018a6..34d2b308fea94a7a82b64433581b04fe
          }
      }
  
-@@ -1012,7 +1046,8 @@ class Repository() : CredentialRepository {
+@@ -1012,7 +1093,8 @@ class Repository() : CredentialRepository {
      private fun getBiometricSecretKey(context: Context, requirement: BiometricRequirement): SecretKey {
          // The key's auth binding is fixed at creation. If a new build changed the configured
          // level, regenerate the key so the prompt's allowed authenticators stay compatible.
@@ -1527,7 +1626,7 @@ index fab158d8d072a437ce1518e038cf2479664018a6..34d2b308fea94a7a82b64433581b04fe
          val mmkv = getAutofillMMKV(context)
          val storedLevel = mmkv.decodeString(CredentialRepository.BIOMETRIC_KEY_LEVEL_KEY)
          if (keyStore.containsAlias(CredentialRepository.BIOMETRIC_KEY_ALIAS) &&
-@@ -1079,7 +1114,16 @@ class Repository() : CredentialRepository {
+@@ -1079,7 +1161,16 @@ class Repository() : CredentialRepository {
  
      override fun getBiometricCipherForEncryption(context: Context, requirement: BiometricRequirement): Cipher {
          val cipher = newAndroidKeyStoreAesGcmCipher()
@@ -1546,7 +1645,7 @@ index fab158d8d072a437ce1518e038cf2479664018a6..34d2b308fea94a7a82b64433581b04fe
      }
  
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/service/PasskeyAutofillCredentialProviderService.kt b/android/src/main/java/co/algorand/passkeyautofill/service/PasskeyAutofillCredentialProviderService.kt
-index 3256e6d20df3e978e4d08e2e52fc118da45c4415..f3f373a974651cfd06463be27e31dfc95aa700e4 100644
+index 3256e6d20df3e978e4d08e2e52fc118da45c4415..00498495f41112b4f7f77a946f0588a86834a490 100644
 --- a/android/src/main/java/co/algorand/passkeyautofill/service/PasskeyAutofillCredentialProviderService.kt
 +++ b/android/src/main/java/co/algorand/passkeyautofill/service/PasskeyAutofillCredentialProviderService.kt
 @@ -39,8 +39,12 @@ import kotlinx.coroutines.*
@@ -1690,10 +1789,10 @@ index 0000000000000000000000000000000000000000..e0d0f1e00ba916899c30daa72aa9de6b
 +}
 diff --git a/android/src/test/java/co/algorand/passkeyautofill/credentials/CredentialRepositoryAssertionKeysTest.kt b/android/src/test/java/co/algorand/passkeyautofill/credentials/CredentialRepositoryAssertionKeysTest.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..f728b288f45c85f734205a636a3c33d7c65c66ec
+index 0000000000000000000000000000000000000000..3cbe5e483045c51e97082c5a3e603006c21db545
 --- /dev/null
 +++ b/android/src/test/java/co/algorand/passkeyautofill/credentials/CredentialRepositoryAssertionKeysTest.kt
-@@ -0,0 +1,341 @@
+@@ -0,0 +1,382 @@
 +package co.algorand.passkeyautofill.credentials
 +
 +import android.content.Context
@@ -1891,6 +1990,37 @@ index 0000000000000000000000000000000000000000..f728b288f45c85f734205a636a3c33d7
 +    }
 +
 +    @Test
++    fun `registration needs an authorized parent even with existing assertion material`() {
++        storeParent("assertion-parent")
++        repository.saveMainKeyId(context, "assertion-parent")
++
++        assertThrows(IllegalStateException::class.java) {
++            repository.createDomainKeyPair(context, ORIGIN, USER_HANDLE)
++        }
++
++        storeParent("registration-parent")
++        repository.saveRegistrationParentKeyId(context, "registration-parent")
++
++        val created = repository.createDomainKeyPair(context, ORIGIN, USER_HANDLE)
++        assertEquals("registration-parent", created.parentKeyId)
++    }
++
++    @Test
++    fun `assertion PRF prefers the credential's recorded parent to the current registration parent`() {
++        val original = "original-parent"
++        val current = "current-parent"
++        storeParent(original)
++        storeParent(current)
++        repository.saveMainKeyId(context, current)
++        repository.saveRegistrationParentKeyId(context, current)
++        storeMetadata(biometricIv = null, parentKeyId = original)
++        storeMaterial(storedKeyPair.private.encoded)
++
++        val keys = repository.openAssertionKeys(context, credentialId, encryptCipher(), includePrfSecret = true)
++        assertEquals(original, keys!!.prfParentSecret!!.keyId)
++    }
++
++    @Test
 +    fun `a wrapped credential's unwrap is the proof for its PRF parent secret`() {
 +        val iv = storeWrappedCredential()
 +        val parent = ParentSecret("parent", KeystoreRecords.SCHEME_PBKDF2_P256, ByteArray(32) { 7 })
@@ -1988,7 +2118,7 @@ index 0000000000000000000000000000000000000000..f728b288f45c85f734205a636a3c33d7
 +        return iv
 +    }
 +
-+    private fun storeMetadata(biometricIv: ByteArray?, rawIv: String? = null) {
++    private fun storeMetadata(biometricIv: ByteArray?, rawIv: String? = null, parentKeyId: String? = null) {
 +        val record = JSONObject()
 +            .put("id", storedId)
 +            .put("type", "hd-derived-p256")
@@ -2001,7 +2131,8 @@ index 0000000000000000000000000000000000000000..f728b288f45c85f734205a636a3c33d7
 +                    .put("origin", ORIGIN)
 +                    .put("userHandle", USER_HANDLE)
 +                    .put("userId", "dXNlcg")
-+                    .put("scheme", KeystoreRecords.SCHEME_PBKDF2_P256),
++                    .put("scheme", KeystoreRecords.SCHEME_PBKDF2_P256)
++                    .put("parentKeyId", parentKeyId),
 +            )
 +        (rawIv ?: biometricIv?.let { AndroidBase64.encodeToString(it, AndroidBase64.NO_WRAP) })?.let {
 +            record.put("privateKeyEnc", JSONObject().put("iv", it))
@@ -2011,6 +2142,15 @@ index 0000000000000000000000000000000000000000..f728b288f45c85f734205a636a3c33d7
 +
 +    private fun storeMaterial(material: ByteArray) {
 +        keystoreRecords[KeystoreRecords.materialKey(storedId)] = KeystoreRecords.sealMaterial(masterKey, material)
++    }
++
++    private fun storeParent(id: String) {
++        keystoreRecords[KeystoreRecords.metadataKey(id)] = JSONObject()
++            .put("id", id)
++            .put("type", KeystoreRecords.TYPE_HD_ROOT_KEY)
++            .put("metadata", JSONObject().put("scheme", KeystoreRecords.SCHEME_PBKDF2_P256))
++            .toString()
++        keystoreRecords[KeystoreRecords.materialKey(id)] = KeystoreRecords.sealMaterial(masterKey, ByteArray(64) { 7 })
 +    }
 +
 +    private fun encryptCipher(): Cipher =
@@ -2049,10 +2189,10 @@ index eff2a3e9241eca0e3f586cc30ac94c29bf1fcd33..7a383e0a6a205972adcf6be56d6a9116
    <dict>
      <key>ASCredentialProviderExtensionSupportedDomains</key>
 diff --git a/ios/AutofillCredentialProvider/CredentialProviderViewController.swift b/ios/AutofillCredentialProvider/CredentialProviderViewController.swift
-index 3c5ca74b8705ad37700082da41b8fbad77bcb7de..860ead226f54ec647d2baa74576aed2a1f753217 100644
+index 3c5ca74b8705ad37700082da41b8fbad77bcb7de..387ade1f8d3f7cc6ac1ee1aac6f164978ffceb15 100644
 --- a/ios/AutofillCredentialProvider/CredentialProviderViewController.swift
 +++ b/ios/AutofillCredentialProvider/CredentialProviderViewController.swift
-@@ -149,7 +149,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+@@ -149,13 +149,11 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
      do {
        guard let store else {
          self.store?.appendDiagnostic("missing wallet root-key state")
@@ -2061,7 +2201,14 @@ index 3c5ca74b8705ad37700082da41b8fbad77bcb7de..860ead226f54ec647d2baa74576aed2a
          return
        }
  
-@@ -251,8 +251,10 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+-      // No requested scheme: a new credential takes the preferred parent (the
+-      // wallet's deterministic-P256 main key) and records which one it got, so
+-      // every later assertion re-derives the same key.
++      // New credentials require the parent authorized by the wallet host.
+       let parent = try store.parentSecret()
+       let parentKeyId = parent.keyId
+       let userHandle = identity.userHandleString
+@@ -251,8 +249,10 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
          credential: credential,
          relyingPartyIdentifier: relyingPartyIdentifier
        )
@@ -2073,7 +2220,7 @@ index 3c5ca74b8705ad37700082da41b8fbad77bcb7de..860ead226f54ec647d2baa74576aed2a
          self?.authContext = nil
          self?.isCompletingAssertion = false
          self?.pendingAssertionCredential = nil
-@@ -316,7 +318,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+@@ -316,7 +316,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
      }
  
      store?.appendDiagnostic("evaluatePolicy assertion start")
@@ -2082,7 +2229,7 @@ index 3c5ca74b8705ad37700082da41b8fbad77bcb7de..860ead226f54ec647d2baa74576aed2a
        DispatchQueue.main.async {
          guard let self else {
            return
-@@ -414,7 +416,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+@@ -414,7 +414,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
      }
  
      store?.appendDiagnostic("evaluatePolicy start")
@@ -2091,3 +2238,110 @@ index 3c5ca74b8705ad37700082da41b8fbad77bcb7de..860ead226f54ec647d2baa74576aed2a
        DispatchQueue.main.async {
          guard let self else {
            return
+@@ -545,7 +545,8 @@ extension CredentialProviderViewController {
+       // use the very parent this credential was created against — an unstamped
+       // credential predates the dp256 main key and is pinned to the BIP32 root.
+       let parent = try store.parentSecret(
+-        scheme: credential.derivationScheme ?? PasskeyKeystoreRecords.schemeBip32Ed25519
++        scheme: credential.derivationScheme ?? PasskeyKeystoreRecords.schemeBip32Ed25519,
++        keyId: credential.parentKeyId
+       )
+       let userHandle = credential.userHandle
+       let credRandom = Prf.credRandom(
+diff --git a/ios/AutofillCredentialProvider/PasskeyCredentialStore.swift b/ios/AutofillCredentialProvider/PasskeyCredentialStore.swift
+index 4da1aa9d33dc1b356e21289d3d9340cee463bc9f..6ab7c79c78a621c3c3666d4944bd07d0ec6e103f 100644
+--- a/ios/AutofillCredentialProvider/PasskeyCredentialStore.swift
++++ b/ios/AutofillCredentialProvider/PasskeyCredentialStore.swift
+@@ -121,6 +121,7 @@ final class PasskeyCredentialStore {
+   /// the slot was renamed rather than reused so a wallet that still writes the
+   /// old one is not mistaken for one that opted into the dp256 main key.
+   static let defaultMainKeyIdKey = "ReactNativePasskeyAutofillMainKeyId"
++  static let registrationParentKeyIdKey = "ReactNativePasskeyAutofillRegistrationParentKeyId"
+   static let defaultHdRootKeyIdKey = "ReactNativePasskeyAutofillHdRootKeyId"
+   static let defaultGetPasskeyActionKey = "ReactNativePasskeyAutofillGetPasskeyAction"
+   static let defaultCreatePasskeyActionKey = "ReactNativePasskeyAutofillCreatePasskeyAction"
+@@ -423,6 +424,7 @@ final class PasskeyCredentialStore {
+     defaults.removeObject(forKey: Self.defaultDeletedCredentialIdsKey)
+     defaults.removeObject(forKey: Self.defaultMasterKeyKey)
+     defaults.removeObject(forKey: Self.defaultMainKeyIdKey)
++    defaults.removeObject(forKey: Self.registrationParentKeyIdKey)
+     defaults.removeObject(forKey: Self.defaultHdRootKeyIdKey)
+     defaults.removeObject(forKey: Self.defaultGetPasskeyActionKey)
+     defaults.removeObject(forKey: Self.defaultCreatePasskeyActionKey)
+@@ -554,6 +556,10 @@ final class PasskeyCredentialStore {
+     defaults.set(id, forKey: Self.defaultMainKeyIdKey)
+   }
+ 
++  func saveRegistrationParentKeyId(_ id: String) {
++    defaults.set(id, forKey: Self.registrationParentKeyIdKey)
++  }
++
+   func mainKeyId() -> String? {
+     defaults.string(forKey: Self.defaultMainKeyIdKey)
+       ?? defaults.string(forKey: Self.defaultHdRootKeyIdKey)
+@@ -574,9 +580,9 @@ final class PasskeyCredentialStore {
+   /// Resolves the parent secret the deterministic P-256 key and the PRF
+   /// `credRandom` are derived from.
+   ///
+-  /// - Parameter scheme: the scheme a credential is pinned to, or `nil` for a new
+-  ///   credential, which then takes the preferred (dp256 main key) parent.
+-  func parentSecret(scheme: String? = nil) throws -> PasskeyParentSecret {
++  /// New credentials use the host-authorized registration parent. Existing
++  /// credentials prefer their recorded parent and retain their scheme fallback.
++  func parentSecret(scheme: String? = nil, keyId: String? = nil) throws -> PasskeyParentSecret {
+     guard let masterKey = masterKey() else {
+       throw PasskeyCredentialStoreError.masterKeyUnavailable
+     }
+@@ -585,7 +591,16 @@ final class PasskeyCredentialStore {
+       throw PasskeyCredentialStoreError.appGroupUnavailable
+     }
+ 
+-    let candidates = parentKeyCandidates(masterKey: masterKey, appGroup: appGroup)
++    let candidates: [(keyId: String, scheme: String)]
++    if scheme == nil {
++      guard let id = defaults.string(forKey: Self.registrationParentKeyIdKey), !id.isEmpty,
++            let record = metadata(of: id, masterKey: masterKey, appGroup: appGroup) else {
++        throw PasskeyCredentialStoreError.parentKeyUnavailable(nil)
++      }
++      candidates = [(id, PasskeyKeystoreRecords.scheme(of: record))]
++    } else {
++      candidates = parentKeyCandidates(masterKey: masterKey, appGroup: appGroup, keyId: keyId)
++    }
+     guard let selected = PasskeyKeystoreRecords.selectParentKey(
+       candidates: candidates,
+       requestedScheme: scheme
+@@ -606,9 +621,11 @@ final class PasskeyCredentialStore {
+   /// BIP32-Ed25519 root even once new keys use the dp256 main key.
+   private func parentKeyCandidates(
+     masterKey: Data,
+-    appGroup: String
++    appGroup: String,
++    keyId: String?
+   ) -> [(keyId: String, scheme: String)] {
+     let pointed = [
++      keyId,
+       defaults.string(forKey: Self.defaultMainKeyIdKey),
+       defaults.string(forKey: Self.defaultHdRootKeyIdKey),
+     ].compactMap { $0 }
+diff --git a/ios/ReactNativePasskeyAutofillModule.swift b/ios/ReactNativePasskeyAutofillModule.swift
+index b66566006ebb26bb66cdd07168591b3d36d4621a..0c53207f6bd14d27095af44490247f94a8373fa2 100644
+--- a/ios/ReactNativePasskeyAutofillModule.swift
++++ b/ios/ReactNativePasskeyAutofillModule.swift
+@@ -48,6 +48,17 @@ public class ReactNativePasskeyAutofillModule: Module {
+       return store.mainKeyId()
+     }
+ 
++    AsyncFunction("setRegistrationParentKeyId") { (id: String) in
++      guard let store = PasskeyCredentialStore() else {
++        throw NSError(
++          domain: "ReactNativePasskeyAutofill",
++          code: 1,
++          userInfo: [NSLocalizedDescriptionKey: "App Group is not configured for passkey autofill."]
++        )
++      }
++      store.saveRegistrationParentKeyId(id)
++    }
++
+     // Deprecated aliases of the two above, kept because installed wallets still
+     // call them. They address the same slot — see `saveMainKeyId`.
+     AsyncFunction("setHdRootKeyId") { (id: String) in

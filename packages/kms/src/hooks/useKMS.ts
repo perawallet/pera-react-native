@@ -56,7 +56,12 @@ export type ExecuteWithMnemonicHandler<T> = (
     indices: Uint16Array,
 ) => T | Promise<T>
 
-export const useKMS = () => {
+type UseKMSOptions = {
+    getPasskeyAnchorSeedIds: (keys: readonly Key[]) => ReadonlySet<string>
+}
+
+const useKMSImpl = (options?: UseKMSOptions) => {
+    const getPasskeyAnchorSeedIds = options?.getPasskeyAnchorSeedIds
     const keystoreKeys = useKeystoreKeys()
     const { createAlgo25Key } = useAlgo25()
     const { createQuantumKey } = useQuantum()
@@ -161,12 +166,10 @@ export const useKMS = () => {
                 !survivors.some(isPasskeyMainKey)
             if (!lostMainKey) return
 
-            // Lowest-sorted root with an entropy child wins, matching
-            // `repairs/0003` and the extension's `resolveMainKeyId`, so the
-            // choice never depends on store order. `isSeedKey` states the
-            // intent; `entropyChildIdOf` alone would already exclude non-roots.
+            // A surviving seed may belong to an old abandoned import.
+            const anchors = getPasskeyAnchorSeedIds?.(survivors)
             const heir = survivors
-                .filter(isSeedKey)
+                .filter(k => isSeedKey(k) && anchors?.has(k.id))
                 .map(k => k.id)
                 .sort()
                 .find(id => entropyChildIdOf(id, survivors))
@@ -181,7 +184,7 @@ export const useKMS = () => {
                 logger.error('passkey main key re-mint failed', { error })
             }
         },
-        [keyStore, ensurePasskeyMainKey],
+        [keyStore, ensurePasskeyMainKey, getPasskeyAnchorSeedIds],
     )
 
     const getKey = useCallback(
@@ -405,4 +408,14 @@ export const useKMS = () => {
         exportSecp256k1Key: core.exportSecp256k1Key,
         signSecp256k1Digest: core.signSecp256k1Digest,
     }
+}
+
+type KMS = ReturnType<typeof useKMSImpl>
+
+// Removing a seed can strip the device's passkey main key, and only the anchor
+// resolver can pick a safe heir to re-mint it on, so the destructive path is
+// unreachable without one.
+export const useKMS = useKMSImpl as {
+    (options: UseKMSOptions): KMS
+    (): Omit<KMS, 'removeKeyAndChildren'>
 }

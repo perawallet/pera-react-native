@@ -33,7 +33,7 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.xs,
     },
     unitName: {
-        color: theme.colors.textGrayLighter,
+        color: theme.colors.textGray,
     },
     divider: {
         height: theme.borders.sm,
@@ -47,7 +47,7 @@ export const useStyles = makeStyles(theme => ({
         minHeight: theme.spacing.xxl,
     },
     rowLabel: {
-        color: theme.colors.textGrayLighter,
+        color: theme.colors.textGray,
         flexShrink: 1,
     },
     rowValue: {

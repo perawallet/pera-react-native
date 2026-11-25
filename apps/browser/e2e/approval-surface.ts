@@ -218,6 +218,13 @@ export const armApprovalAction = async (
     await expect(control).not.toHaveAttribute('aria-disabled', 'true')
 }
 
+/** Taps the review's "more below" hint: signing holds Confirm until a review that overflows is read to its end. */
+export const scrollReviewToEnd = async (approvalPage: Page): Promise<void> => {
+    const hint = approvalPage.getByTestId('review_scroll_hint')
+    await hint.click()
+    await expect(hint).toBeHidden()
+}
+
 /** Arms the web tap-to-confirm, then taps twice with the required gap. */
 export const tapToConfirm = async (
     approvalPage: Page,
@@ -232,9 +239,7 @@ export const tapToConfirm = async (
 /**
  * Arms Connect, then selects the first account unless one is already selected.
  * Connect stays disabled until the arming delay passes and input lands inside
- * the approval window, so only then does its state report the selection. The
- * checkboxes can't be read instead: react-native-web renders no aria-checked
- * for them.
+ * the approval window, so only then does its state report the selection.
  */
 export const selectAccountAndArmConnect = async (
     approvalPage: Page,

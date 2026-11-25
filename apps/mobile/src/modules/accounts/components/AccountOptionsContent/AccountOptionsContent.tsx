@@ -48,6 +48,7 @@ export const AccountOptionsContent = ({
         sheetTitle,
         topActions,
         sharedAccountOptions,
+        writeDownPassphraseOption,
         networks,
         isRekeyed,
         canUndoRekey,
@@ -141,6 +142,12 @@ export const AccountOptionsContent = ({
             }
         >
             <AccountTopActions actions={topActions} />
+
+            {writeDownPassphraseOption && (
+                <PWView style={styles.writeDownPassphraseOption}>
+                    <SheetOptionRow option={writeDownPassphraseOption} />
+                </PWView>
+            )}
 
             <PWView style={styles.accountInfoContainer}>
                 <AccountInfoCard

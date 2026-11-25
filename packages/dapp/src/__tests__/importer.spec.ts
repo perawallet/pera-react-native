@@ -10,117 +10,59 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
-import { memoryStore } from '@perawallet/wallet-core-connections/testing'
+import { describe, expect, it, vi } from 'vitest'
 import {
-    importLegacyDappPermissions,
+    clearLegacyDappPermissions,
     LEGACY_DAPP_PERMISSIONS_KEY,
 } from '../importer'
-import { DAPP_KIND } from '../protocol'
 
-const makeArea = (seed?: unknown) => {
-    const backing: Record<string, unknown> =
-        seed === undefined ? {} : { [LEGACY_DAPP_PERMISSIONS_KEY]: seed }
+const makeArea = (legacy?: unknown) => {
+    const entries: Record<string, unknown> =
+        legacy === undefined ? {} : { [LEGACY_DAPP_PERMISSIONS_KEY]: legacy }
     return {
-        backing,
-        get: async (key: string) =>
-            key in backing ? { [key]: backing[key] } : {},
-        remove: async (key: string) => {
-            delete backing[key]
-        },
+        get: vi.fn(async (key: string) =>
+            key in entries ? { [key]: entries[key] } : {},
+        ),
+        remove: vi.fn(async (key: string) => {
+            delete entries[key]
+        }),
     }
 }
 
-const GRANTS = {
-    'https://a.example': {
-        origin: 'https://a.example',
+const legacy = {
+    'https://dapp.example': {
+        origin: 'https://dapp.example',
         addresses: ['AAAA'],
-        name: 'A',
-        iconUrl: 'https://a.example/i.png',
         grantedAt: 1_700_000_000_000,
-    },
-    'https://b.example': {
-        origin: 'https://b.example',
-        addresses: ['BBBB', 'CCCC'],
-        grantedAt: 1_700_000_001_000,
     },
 }
 
-describe('importLegacyDappPermissions', () => {
-    it('upserts one dapp connection per origin and deletes the legacy key once every record reads back', async () => {
-        const area = makeArea(GRANTS)
-        const store = memoryStore()
+describe('clearLegacyDappPermissions', () => {
+    it('leaves storage alone when the legacy key is absent', async () => {
+        const area = makeArea()
 
-        const result = await importLegacyDappPermissions({ area, store })
+        await clearLegacyDappPermissions(area)
 
-        expect(result).toEqual({ imported: 2 })
-        const a = await store.get('https://a.example')
-        expect(a).toMatchObject({
-            id: 'https://a.example',
-            kind: DAPP_KIND,
-            name: 'A',
-            peer: {
-                name: 'A',
-                url: 'https://a.example',
-                icons: ['https://a.example/i.png'],
-            },
-            accounts: ['AAAA'],
-            status: 'active',
-            createdAt: 1_700_000_000_000,
-            lastActiveAt: 1_700_000_000_000,
-        })
-        expect(a?.origin).toBeUndefined()
-        expect((await store.get('https://b.example'))?.peer).toEqual({
-            name: 'b.example',
-            url: 'https://b.example',
-        })
-        expect(area.backing[LEGACY_DAPP_PERMISSIONS_KEY]).toBeUndefined()
+        expect(area.remove).not.toHaveBeenCalled()
     })
 
-    it('is a no-op with nothing to import', async () => {
-        const store = memoryStore()
+    it('removes a legacy grant blob without returning any grants', async () => {
+        const area = makeArea(legacy)
 
-        expect(
-            await importLegacyDappPermissions({ area: makeArea(), store }),
-        ).toEqual({ imported: 0 })
+        await expect(clearLegacyDappPermissions(area)).resolves.toBeUndefined()
+
+        expect(area.remove).toHaveBeenCalledWith(LEGACY_DAPP_PERMISSIONS_KEY)
+        expect(await area.get(LEGACY_DAPP_PERMISSIONS_KEY)).toEqual({})
     })
 
-    it('does not overwrite a connection the registry already holds, and skips malformed grants', async () => {
-        const area = makeArea({ ...GRANTS, junk: { origin: 42 } })
-        const store = memoryStore([
-            {
-                id: 'https://a.example',
-                kind: DAPP_KIND,
-                name: 'Kept',
-                peer: { name: 'Kept', url: 'https://a.example' },
-                accounts: ['ZZZZ'],
-                status: 'active',
-                createdAt: 9,
-                lastActiveAt: 9,
-            },
-        ])
+    it('can retry cleanup when the earlier storage removal did not land', async () => {
+        const area = makeArea(legacy)
+        area.remove.mockResolvedValueOnce(undefined)
 
-        const result = await importLegacyDappPermissions({ area, store })
+        await clearLegacyDappPermissions(area)
+        await clearLegacyDappPermissions(area)
 
-        expect(result).toEqual({ imported: 1 })
-        expect((await store.get('https://a.example'))?.accounts).toEqual([
-            'ZZZZ',
-        ])
-        expect(await store.get('https://b.example')).toBeDefined()
-        expect(area.backing[LEGACY_DAPP_PERMISSIONS_KEY]).toBeUndefined()
-    })
-
-    it('keeps the legacy key when a record did not persist, so the next launch retries', async () => {
-        const area = makeArea(GRANTS)
-        const base = memoryStore()
-        const flaky = { ...base, upsert: async () => {} }
-
-        const result = await importLegacyDappPermissions({
-            area,
-            store: flaky,
-        })
-
-        expect(result).toEqual({ imported: 2 })
-        expect(area.backing[LEGACY_DAPP_PERMISSIONS_KEY]).toBeDefined()
+        expect(area.remove).toHaveBeenCalledTimes(2)
+        expect(await area.get(LEGACY_DAPP_PERMISSIONS_KEY)).toEqual({})
     })
 })

@@ -14,9 +14,17 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
-import { useIsCloudBackupAvailable } from '../useIsCloudBackupAvailable'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useIsCloudBackupAvailable,
+    useIsCloudBackupAvailableFor,
+} from '../useIsCloudBackupAvailable'
 
-const mocks = vi.hoisted(() => ({ isFlagOn: false }))
+const mocks = vi.hoisted(() => ({ isFlagOn: false, hasBackupChains: true }))
+
+vi.mock('@perawallet/wallet-core-backup', () => ({
+    hasBackupChains: () => mocks.hasBackupChains,
+}))
 
 vi.mock('@hooks/useIsCloudBackupEnabled', () => ({
     useIsCloudBackupEnabled: () => mocks.isFlagOn,
@@ -43,4 +51,54 @@ describe('useIsCloudBackupAvailable', () => {
             expect(result.current).toBe(expected)
         },
     )
+})
+
+describe('useIsCloudBackupAvailableFor', () => {
+    const account = { id: 'a' } as WalletAccount
+
+    afterEach(() => {
+        useRemoteConfigStore.getState().resetState()
+    })
+
+    it.each([
+        { hasBackupChains: true, expected: true },
+        { hasBackupChains: false, expected: false },
+    ])(
+        'is $expected when the account is on a backed-up chain: $hasBackupChains',
+        ({ hasBackupChains, expected }) => {
+            mocks.isFlagOn = true
+            mocks.hasBackupChains = hasBackupChains
+            setCapabilityOverrides({ cloudBackup: true })
+
+            const { result } = renderHook(() =>
+                useIsCloudBackupAvailableFor(account),
+            )
+
+            expect(result.current).toBe(expected)
+        },
+    )
+
+    it('is false without an account', () => {
+        mocks.isFlagOn = true
+        mocks.hasBackupChains = true
+        setCapabilityOverrides({ cloudBackup: true })
+
+        const { result } = renderHook(() =>
+            useIsCloudBackupAvailableFor(undefined),
+        )
+
+        expect(result.current).toBe(false)
+    })
+
+    it('is false while Cloud Backup is unavailable', () => {
+        mocks.isFlagOn = false
+        mocks.hasBackupChains = true
+        setCapabilityOverrides({ cloudBackup: true })
+
+        const { result } = renderHook(() =>
+            useIsCloudBackupAvailableFor(account),
+        )
+
+        expect(result.current).toBe(false)
+    })
 })

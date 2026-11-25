@@ -30,11 +30,13 @@ import {
     type AccountBalances,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { getPeraServicesConfig } from '@perawallet/wallet-core-config'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import { mockAlgodTransactionParams } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { BidaliAccountSelectionScreen } from '@modules/gift-card/screens/BidaliAccountSelectionScreen'
 import { useBidali } from '@modules/gift-card/hooks/useBidali'
 import { useBidaliTransport } from '@modules/gift-card/hooks/useBidaliTransport'
+import { useGiftCardScope } from '@modules/gift-card/hooks/useGiftCardScope'
 
 import { closestPressable } from '@test-utils/rnw'
 import {
@@ -68,12 +70,33 @@ const EVM_FIRST_ETH_ADDRESS = '0x9858EfFD232B4033E47d90003D41EC34EcaEda94'
 
 const EMPTY_BALANCES: AccountBalances = new Map()
 
+const BRIDGE_TOKEN = 'bidali-integration-token'
+vi.mock('@modules/webview', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    generateBridgeToken: () => BRIDGE_TOKEN,
+}))
+
 const bidaliRPC = (method: string, params?: Record<string, unknown>) => ({
     jsonrpc: '2.0' as const,
     method,
     params,
     id: `bidali-${Date.now()}`,
+    token: BRIDGE_TOKEN,
 })
+
+// Posted from the configured Bidali page, the frame the transport accepts.
+const renderTransport = () =>
+    renderHook(
+        () => ({
+            ...useBidaliTransport(ACCOUNT_A, EMPTY_BALANCES),
+            frame: {
+                securedConnection: false,
+                sourceUrl: getPeraServicesConfig(useGiftCardScope(ACCOUNT_A))
+                    .bidaliBaseUrl,
+            },
+        }),
+        { wrapper: Wrapper },
+    )
 
 // The selection screen renders the account name inside AccountWithBalance
 // wrapped in a PWTouchableOpacity (mocked as <button>) with no per-row
@@ -203,10 +226,7 @@ describe('Flow: Gift card (Bidali)', () => {
     })
 
     it('Given a selected account, when a malformed Bidali payment request arrives (bad address), then no sign request is enqueued', async () => {
-        const { result } = renderHook(
-            () => useBidaliTransport(ACCOUNT_A, EMPTY_BALANCES),
-            { wrapper: Wrapper },
-        )
+        const { result } = renderTransport()
 
         await act(async () => {
             result.current.handleMessage(
@@ -215,6 +235,7 @@ describe('Flow: Gift card (Bidali)', () => {
                     amount: '1.5',
                     protocol: 'algorand',
                 }),
+                result.current.frame,
             )
         })
 
@@ -222,10 +243,7 @@ describe('Flow: Gift card (Bidali)', () => {
     })
 
     it('Given a selected account, when a Bidali payment request uses an unsupported protocol, then no sign request is enqueued', async () => {
-        const { result } = renderHook(
-            () => useBidaliTransport(ACCOUNT_A, EMPTY_BALANCES),
-            { wrapper: Wrapper },
-        )
+        const { result } = renderTransport()
 
         await act(async () => {
             result.current.handleMessage(
@@ -234,35 +252,41 @@ describe('Flow: Gift card (Bidali)', () => {
                     amount: '1.5',
                     protocol: 'bitcoin',
                 }),
+                result.current.frame,
             )
         })
 
         expect(getPendingSignRequests()).toHaveLength(0)
     })
 
-    it('Given a selected account, when a well-formed ALGO Bidali payment request arrives, then a transactions sign request is enqueued', async () => {
-        server.use(mockAlgodTransactionParams())
+    it.each([false, true])(
+        'enqueues an ALGO payment from the verified Bidali frame (browser port: %s)',
+        async isAuthenticatedFrame => {
+            server.use(mockAlgodTransactionParams())
 
-        const { result } = renderHook(
-            () => useBidaliTransport(ACCOUNT_A, EMPTY_BALANCES),
-            { wrapper: Wrapper },
-        )
+            const { result } = renderTransport()
+            const request = bidaliRPC('bidaliPaymentRequest', {
+                address: HD_TEST_ADDRESS,
+                amount: '1.5',
+                protocol: 'algorand',
+            })
 
-        await act(async () => {
-            result.current.handleMessage(
-                bidaliRPC('bidaliPaymentRequest', {
-                    address: HD_TEST_ADDRESS,
-                    amount: '1.5',
-                    protocol: 'algorand',
-                }),
-            )
-        })
+            await act(async () => {
+                result.current.handleMessage(
+                    {
+                        ...request,
+                        token: isAuthenticatedFrame ? undefined : request.token,
+                    },
+                    { ...result.current.frame, isAuthenticatedFrame },
+                )
+            })
 
-        await waitFor(() => {
-            const requests = getPendingSignRequests()
-            expect(requests).toHaveLength(1)
-            expect(requests[0].type).toBe('transactions')
-            expect(requests[0].sourceType).toBe('gift-card')
-        })
-    })
+            await waitFor(() => {
+                const requests = getPendingSignRequests()
+                expect(requests).toHaveLength(1)
+                expect(requests[0].type).toBe('transactions')
+                expect(requests[0].sourceType).toBe('gift-card')
+            })
+        },
+    )
 })

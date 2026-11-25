@@ -194,6 +194,9 @@ describe('useAlgorandTransactionDetailLayout', () => {
 
         expect(summary.amount?.asset).toEqual(USDC)
         expect(summary.to).toBe(FIXTURE_RECEIVER)
+        expect(summary.leadingAssets).toEqual([
+            { chainId: 'algorand', asset: USDC },
+        ])
     })
 
     it('Given a u64-max asset amount, then it converts exactly', () => {
@@ -219,6 +222,7 @@ describe('useAlgorandTransactionDetailLayout', () => {
 
         expect(summary.amount).toBeUndefined()
         expect(summary.isAmountLoading).toBe(true)
+        expect(summary.leadingAssets).toBeUndefined()
     })
 
     it('Given an asset the lookup settled with no result, then the hero stops holding its place', () => {

@@ -1,0 +1,91 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { describe, expect, it, vi } from 'vitest'
+import { renderHook } from '@testing-library/react'
+import {
+    accountRecordItemKey,
+    createItemKeyHasher,
+    secretsItemKey,
+} from '@perawallet/wallet-core-backup/test-handlers'
+import { useIsAccountInBackup } from '../useIsAccountInBackup'
+
+const { syncStateMock } = vi.hoisted(() => ({
+    syncStateMock: {
+        current: { items: {} } as { items: Record<string, unknown> },
+    },
+}))
+
+vi.mock('@perawallet/wallet-core-backup', async () => ({
+    useBackupSyncStateStore: (selector: (state: unknown) => unknown) =>
+        selector({ syncState: syncStateMock.current }),
+    ...(await vi.importActual<
+        typeof import('../../../../../../../packages/backup/src/cloud/models/reviewBuckets')
+    >('../../../../../../../packages/backup/src/cloud/models/reviewBuckets')),
+}))
+
+const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
+
+const live = {
+    type: 'ACCOUNT',
+    knownVer: 1,
+    baseVer: 1,
+    isDirty: false,
+    status: 'ACTIVE',
+    lastRemoteHash: 'h',
+}
+
+syncStateMock.current = {
+    items: {
+        [accountRecordItemKey(hashAddress('NO-SECRET'))]: {
+            ...live,
+            address: 'NO-SECRET',
+            addresses: ['NO-SECRET'],
+        },
+        [secretsItemKey(hashAddress('SECRET-ONLY'))]: {
+            ...live,
+            address: 'SECRET-ONLY',
+        },
+        [accountRecordItemKey(hashAddress('PENDING'))]: {
+            ...live,
+            address: 'PENDING',
+            addresses: ['PENDING'],
+            pendingImport: true,
+        },
+        [accountRecordItemKey(hashAddress('DELETED'))]: {
+            ...live,
+            status: 'IGNORED',
+            address: 'DELETED',
+            addresses: ['DELETED'],
+        },
+    },
+}
+
+describe('useIsAccountInBackup', () => {
+    it.each(['NO-SECRET', 'SECRET-ONLY'])(
+        'reports %s as in the backup while any of its items is live',
+        address => {
+            expect(
+                renderHook(() => useIsAccountInBackup(address)).result.current,
+            ).toBe(true)
+        },
+    )
+
+    it.each(['UNKNOWN', 'PENDING', 'DELETED'])(
+        'reports %s as not in the backup',
+        address => {
+            expect(
+                renderHook(() => useIsAccountInBackup(address)).result.current,
+            ).toBe(false)
+        },
+    )
+})

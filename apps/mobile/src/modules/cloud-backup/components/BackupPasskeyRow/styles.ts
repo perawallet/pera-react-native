@@ -34,6 +34,6 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textMain,
     },
     origin: {
-        color: theme.colors.textGrayLighter,
+        color: theme.colors.textGray,
     },
 }))

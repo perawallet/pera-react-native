@@ -127,6 +127,26 @@ export const eip1193ProviderJS = (bridgeToken: string) => webViewScript`
         emit(EVENT.connect, { chainId: result });
     }
 
+    // A WebView has no tab favicon for native to read (the extension's script
+    // never sends icons), so connect requests carry the page's own links.
+    // /favicon.ico always goes last: native keeps only same-origin entries, and
+    // pages often list only CDN-hosted icons. Seven links plus it stays within
+    // the transport's cap of eight, which would otherwise cut it.
+    function pageIcons() {
+        try {
+            var links = document.querySelectorAll('link[rel~="icon"], link[rel~="apple-touch-icon"]');
+            var fallback = location.origin + '/favicon.ico';
+            var hrefs = [];
+            for (var i = 0; i < links.length && hrefs.length < 7; i += 1) {
+                if (links[i].href && links[i].href !== fallback) { hrefs.push(links[i].href); }
+            }
+            hrefs.push(fallback);
+            return hrefs;
+        } catch (_) {
+            return [];
+        }
+    }
+
     function send(method, params) {
         return new Promise(function (resolve, reject) {
             counter += 1;
@@ -137,12 +157,16 @@ export const eip1193ProviderJS = (bridgeToken: string) => webViewScript`
                 reject(providerError(ERROR_CODE.disconnected, 'No response from wallet'));
             }, timeoutMs);
             pending[id] = { resolve: resolve, reject: reject, timer: timer };
-            var isPosted = post(stringify({
+            var envelope = {
                 provider: 'eip1193',
                 token: TOKEN,
                 hasUserActivation: now() - lastGestureAt < ACTIVATION_MS,
                 request: { jsonrpc: '2.0', id: id, method: method, params: params },
-            }));
+            };
+            if (method === METHOD.requestAccounts || method === METHOD.requestPermissions) {
+                envelope.icons = pageIcons();
+            }
+            var isPosted = post(stringify(envelope));
             if (!isPosted) {
                 clearTimeout(timer);
                 delete pending[id];

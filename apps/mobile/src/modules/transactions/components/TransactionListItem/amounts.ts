@@ -11,22 +11,23 @@
  */
 
 import type { Decimal } from 'decimal.js'
-import type {
-    AssetDisplayHint,
-    AssetRef,
-    ChainId,
-    TransactionSummary,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
+    ASSET_MAX_PRECISION,
     baseUnitsToDisplayUnits,
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import type { MinimalAsset } from '@perawallet/wallet-core-assets'
+import type { AmountPrefix, SummaryAmount } from '../../utils/summaryAmounts'
 
-/** Maximum number of stacked amounts shown in a list row before overflow. */
-export const MAX_VISIBLE_AMOUNTS = 2
-
-type AmountPrefix = '+' | '-'
+/**
+ * An asset past ALGO's precision (ETH, ERC-20s) keeps enough significant
+ * digits that 0.0000575 ETH no longer reads 0.000057; its detail shows it exact.
+ */
+export const rowAmountPrecision = (
+    decimals: number,
+): 'compact' | 'rowSignificant' =>
+    decimals > ASSET_MAX_PRECISION ? 'rowSignificant' : 'compact'
 
 export type AmountDisplay = {
     /** Display units, unsigned. */
@@ -43,49 +44,6 @@ export type AmountDisplay = {
     decimals: number
     /** Also picks the colour; undefined for a zero or unsigned amount. */
     prefix?: AmountPrefix
-}
-
-export type SummaryAmount = {
-    assetRef: AssetRef
-    /** Base units, unsigned. */
-    baseUnits: Decimal
-    prefix?: AmountPrefix
-    display?: AssetDisplayHint
-}
-
-const DIRECTION_PREFIX: Record<
-    TransactionSummary['direction'],
-    Optional<AmountPrefix>
-> = { in: '+', out: '-', self: undefined, none: undefined }
-
-const signPrefix = (value: Decimal): Optional<AmountPrefix> => {
-    if (value.isZero()) return undefined
-    return value.isNegative() ? '-' : '+'
-}
-
-export const summaryAmountsOf = (
-    summary: TransactionSummary,
-): SummaryAmount[] => {
-    if (summary.balanceChanges) {
-        return summary.balanceChanges.map(({ assetRef, value, display }) => ({
-            assetRef,
-            baseUnits: value.abs(),
-            prefix: signPrefix(value),
-            display,
-        }))
-    }
-    if (!summary.amount) return []
-    const { assetRef, value, display } = summary.amount
-    return [
-        {
-            assetRef,
-            baseUnits: value.abs(),
-            prefix: value.isZero()
-                ? undefined
-                : DIRECTION_PREFIX[summary.direction],
-            display,
-        },
-    ]
 }
 
 /**

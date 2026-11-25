@@ -167,7 +167,7 @@ describe('useAssetDetailsScreen', () => {
         )
     })
 
-    it('hides the id row and links the explorer front page for ETH', () => {
+    it('hides the id and supply rows and links the explorer front page for ETH', () => {
         const nativeId = ethereumDescriptor.nativeAsset.ref.assetId
         mockAsset({ data: assetFixture(nativeId) })
 
@@ -181,11 +181,7 @@ describe('useAssetDetailsScreen', () => {
 
         expect(result.current.about?.idLabelKey).toBeNull()
         expect(result.current.about?.explorerLink?.label).toBe('etherscan.io')
-        expect(result.current.supply).toEqual({
-            labelKey: 'asset_details.markets.circulating_supply',
-            infoBodyKey: 'asset_details.markets.circulating_supply_info_body',
-            amount: null,
-        })
+        expect(result.current.supply).toBeNull()
     })
 
     describe('when the stored supply is unknown', () => {

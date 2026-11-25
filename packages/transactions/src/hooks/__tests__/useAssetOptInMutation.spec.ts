@@ -236,7 +236,7 @@ describe('useAssetOptInMutation', () => {
 
     // a Falcon-signed opt-in must carry the PQ minimum, or algod
     // rejects it with `txgroup with 1mA fees is less than 3mA`.
-    it('submits the fee-raised group returned by the minimum-fee calculator', async () => {
+    it('asks for review when the minimum-fee calculator raises the approved opt-in fee', async () => {
         const built = { sender: 'SENDER', fee: 1000n }
         const raised = { sender: 'SENDER', fee: 3000n }
         mockBuild.mockResolvedValueOnce([built])
@@ -257,14 +257,18 @@ describe('useAssetOptInMutation', () => {
         })
 
         await act(async () => {
-            await result.current.optIn({ sender: 'SENDER', assetId: 12345n })
+            await result.current.optIn({
+                sender: 'SENDER',
+                assetId: 12345n,
+                maxFee: 1000n,
+            })
         })
 
         expect(mockAssignFeeToGroup).toHaveBeenCalledWith({
             transactions: [built],
         })
         expect(mockSubmit).toHaveBeenCalledWith(
-            expect.objectContaining({ unsignedTxs: [raised] }),
+            expect.objectContaining({ unsignedTxs: [raised], reviewFee: true }),
         )
     })
 

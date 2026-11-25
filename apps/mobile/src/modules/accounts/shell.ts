@@ -15,3 +15,4 @@
 // (and its test mocks) must not load.
 export { AccountHeaderToolbar } from './components/AccountHeaderToolbar'
 export type { AccountHeaderToolbarProps } from './components/AccountHeaderToolbar'
+export { useNetworkChipFollowsSelection } from './hooks/useNetworkChipFollowsSelection'

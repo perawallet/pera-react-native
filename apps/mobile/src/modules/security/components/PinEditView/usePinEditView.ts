@@ -11,7 +11,11 @@
  */
 
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
-import { usePinCode, useBiometrics } from '@perawallet/wallet-core-security'
+import {
+    PinMatchesDuressPinError,
+    usePinCode,
+    useBiometrics,
+} from '@perawallet/wallet-core-security'
 import { useLanguage } from '@hooks/useLanguage'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -101,8 +105,7 @@ export const usePinEditView = ({
     //
     // Gated on the store flag, not a fresh reconcile: unlockWithBiometrics runs
     // its own, so a second one here only doubles the wait on the shared Expo
-    // queue. The flag also keeps a disabled user out of unlock's pending-rearm
-    // recovery, which this sheet must not start.
+    // queue.
     const lastPromptedModeRef = useRef<Nullable<PinEntryMode>>(null)
 
     // A transient reconcile can clear the flag and the sheet's own mount
@@ -211,7 +214,19 @@ export const usePinEditView = ({
                                 setHasError(true)
                             }
                         } else {
-                            await savePin(pin)
+                            try {
+                                await savePin(pin)
+                            } catch (error) {
+                                if (
+                                    !(error instanceof PinMatchesDuressPinError)
+                                )
+                                    throw error
+                                showError(error)
+                                setStoredPin('')
+                                setCurrentMode('setup')
+                                setHasError(true)
+                                break
+                            }
                             setHasError(false)
                             onSuccess?.()
                         }
@@ -241,7 +256,15 @@ export const usePinEditView = ({
                 }
             }
         },
-        [currentMode, storedPin, savePin, verifyPin, onSuccess, onPinConfirmed],
+        [
+            currentMode,
+            storedPin,
+            savePin,
+            verifyPin,
+            onSuccess,
+            onPinConfirmed,
+            showError,
+        ],
     )
 
     const handleErrorAnimationComplete = useCallback(() => {

@@ -14,4 +14,6 @@ export {
     AutoDrawProgramUnverifiedError,
     AutoDrawTealUnverifiedError,
     CardEscrowNotConfiguredError,
+    CardOwnerMismatchError,
+    CardOwnerUnconfirmedError,
 } from './errors'

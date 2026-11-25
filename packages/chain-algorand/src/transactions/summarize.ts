@@ -23,10 +23,13 @@ import { toBigInt } from '@perawallet/wallet-core-shared'
 import {
     getDebitedAddress,
     isOutgoingFor,
+    summarizeSwapLeg,
     transactionStatusNotice,
+    type ResolveSwapAssetRef,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
 import { classifyDisplayableTransaction } from '../blockchain/utils/transactions'
+import { algorandAssetIdOfAnyNetwork } from '../router-asset-id'
 import { algorandDescriptor } from '../descriptor'
 import { resolveAlgorandAssetFacts } from './history/assetFacts'
 import {
@@ -47,6 +50,12 @@ import {
     assetRefOf,
 } from './summaryKeys'
 import type { PeraDisplayableTransaction } from '../blockchain/models/algosdk-shapes'
+
+// A history row carries no network; a swap leg's assets on this chain are on the row's.
+const algorandSwapAssetRef: ResolveSwapAssetRef = routerAssetId => {
+    const assetId = algorandAssetIdOfAnyNetwork(routerAssetId)
+    return assetId === null ? undefined : assetRefOf(assetId)
+}
 
 const RECEIVE = i18nKey('transactions.list_item.receive')
 const SWAP = i18nKey('transactions.list_item.swap')
@@ -182,13 +191,21 @@ export const summarizeAlgorandHistoryItem = (
         item.status,
         item.roundTime > 0 ? item.roundTime * 1000 : undefined,
     )
-    return {
+    const chainSummary: TransactionSummary = {
         ...summary,
         ...(interpretedTitle
             ? { title: text(INTERPRETED_TITLE, { title: interpretedTitle }) }
             : {}),
         ...(notice && { notice }),
     }
+    return data.swapLeg
+        ? summarizeSwapLeg(
+              data.swapLeg,
+              chainSummary,
+              item.status,
+              algorandSwapAssetRef,
+          )
+        : chainSummary
 }
 
 const classifiedSummary = (

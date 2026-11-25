@@ -13,7 +13,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { createQueryClientWrapper } from '@test-utils/render'
-import { imitatedCurrencyOf } from '@perawallet/wallet-core-currencies'
 import { Decimal } from 'decimal.js'
 import { useAssetsQuery, type PeraAsset } from '@perawallet/wallet-core-assets'
 import {
@@ -33,11 +32,30 @@ import {
     ALGORAND_HISTORY_SUMMARY_GOLDENS,
     type HistorySummaryGolden,
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
+import { usePreferredAmount } from '@components/PreferredAmount'
 import { useCounterpartyName } from '../../../hooks/history/useCounterpartyName'
 import { useTransactionListItem } from '../useTransactionListItem'
 
+const mockCanHideHolding = vi.hoisted(() => ({ current: false }))
+
+vi.mock('@components/PreferredAmount', () => ({
+    usePreferredAmount: vi.fn(() => ({
+        displayCurrency: 'USD',
+        convertedValue: null,
+        isPending: false,
+    })),
+}))
+
+vi.mock('@perawallet/wallet-core-currencies', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-currencies')
+    >()),
+    imitatedTickerOf: vi.fn(() => null),
+}))
+
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
+    canHideHolding: () => mockCanHideHolding.current,
     chainAccountOf: (account: WalletAccount, chainId: 'algorand') =>
         account.chains[chainId],
     isSameAddress: (_chainId: string, a: string, b: string) =>
@@ -76,17 +94,12 @@ vi.mock('../../../hooks/history/useReplaceTransaction', () => ({
 }))
 
 const mockOpenRecordDetails = vi.hoisted(() => vi.fn())
+const mockOpenRecordDetailsArgs = vi.hoisted(() => vi.fn())
 vi.mock('../../../hooks/history/useOpenRecordDetails', () => ({
-    useOpenRecordDetails: (record?: unknown) => ({
-        handleOpenDetails: record ? mockOpenRecordDetails : undefined,
-    }),
-}))
-
-const mockOpenSuspectedPoisoningSheet = vi.hoisted(() => vi.fn())
-vi.mock('../../../hooks/address-safety/useSuspectedPoisoningSheet', () => ({
-    useSuspectedPoisoningSheet: () => ({
-        openSuspectedPoisoningSheet: mockOpenSuspectedPoisoningSheet,
-    }),
+    useOpenRecordDetails: (record?: unknown, suspectedPoisoning?: unknown) => {
+        mockOpenRecordDetailsArgs(record, suspectedPoisoning)
+        return { handleOpenDetails: record ? mockOpenRecordDetails : undefined }
+    },
 }))
 
 vi.mock('../../../hooks/history/useCounterpartyName', () => ({
@@ -165,6 +178,7 @@ describe('useTransactionListItem', () => {
                     currency: 'ALGO',
                     decimals: 6,
                     prefix: '-',
+                    isMuted: false,
                 },
             ])
         })
@@ -293,44 +307,111 @@ describe('useTransactionListItem', () => {
         })
     })
 
-    describe('imitated currency', () => {
-        beforeEach(() => {
-            vi.mocked(imitatedCurrencyOf).mockImplementation((_ref, name) =>
-                name === 'ALGO' ? 'ALGO' : null,
-            )
-        })
-
+    describe('suspicious token', () => {
         afterEach(() => {
-            vi.mocked(imitatedCurrencyOf).mockReset()
-            vi.mocked(imitatedCurrencyOf).mockReturnValue(null)
+            mockCanHideHolding.current = false
         })
 
-        it('flags a received asset whose stored unit name imitates a currency', () => {
-            stored([{ assetId: '31566704', unitName: 'ALGO', decimals: 6 }])
+        it('marks a receive of a token Pera flags suspicious', () => {
+            mockCanHideHolding.current = true
+            stored([
+                {
+                    assetId: '31566704',
+                    decimals: 6,
+                    peraMetadata: {
+                        isDeleted: false,
+                        verificationTier: 'suspicious',
+                    },
+                },
+            ])
 
             const row = renderRow(golden('asset transfer received'))
 
-            expect(row.imitatedCurrency).toBe('ALGO')
-            expect(imitatedCurrencyOf).toHaveBeenCalledWith(
-                { chainId: 'algorand', assetId: '31566704' },
-                'ALGO',
-            )
+            expect(row.isSuspicious).toBe(true)
         })
 
-        it('has no imitated currency on an ordinary row', () => {
-            const row = renderRow(golden('asset transfer received'))
+        it('marks only the suspicious leg of a swap, not the real coin beside it', () => {
+            mockCanHideHolding.current = true
+            const swap = golden('swap')
+            const [first] = renderRow(swap).amounts
+            stored([
+                {
+                    assetId: first!.assetId,
+                    decimals: first!.decimals,
+                    peraMetadata: {
+                        isDeleted: false,
+                        verificationTier: 'suspicious',
+                    },
+                },
+            ])
 
-            expect(row.imitatedCurrency).toBeNull()
+            const row = renderRow(swap)
+
+            expect(row.isSuspicious).toBe(true)
+            expect(row.amounts.map(amount => amount.isMuted)).toEqual([
+                true,
+                false,
+            ])
         })
 
-        it('names the leg that imitates when only one of two does', () => {
-            vi.mocked(imitatedCurrencyOf).mockImplementation(ref =>
-                ref.assetId === '0' ? 'USD' : null,
-            )
+        it('leaves a receive of a verified token unmarked', () => {
+            mockCanHideHolding.current = true
+            stored([
+                {
+                    assetId: '31566704',
+                    decimals: 6,
+                    peraMetadata: {
+                        isDeleted: false,
+                        verificationTier: 'verified',
+                    },
+                },
+            ])
 
-            const row = renderRow(golden('swap'))
+            expect(
+                renderRow(golden('asset transfer received')).isSuspicious,
+            ).toBe(false)
+        })
 
-            expect(row.imitatedCurrency).toBe('USD')
+        it('leaves a flagged asset unmarked on a chain where the user opts in to each asset', () => {
+            stored([
+                {
+                    assetId: '31566704',
+                    decimals: 6,
+                    peraMetadata: {
+                        isDeleted: false,
+                        verificationTier: 'suspicious',
+                    },
+                },
+            ])
+
+            expect(
+                renderRow(golden('asset transfer received')).isSuspicious,
+            ).toBe(false)
+        })
+    })
+
+    describe('leading icon', () => {
+        it.each([
+            'asset opt-in with a zero amount',
+            'asset opt-out with a close amount',
+            'asset transfer received',
+        ])('Given an %s, then it leads with that asset', name => {
+            const row = renderRow(golden(name))
+
+            expect(row.leadingAssets.map(lead => lead.asset.assetId)).toEqual([
+                '31566704',
+            ])
+        })
+
+        it.each([
+            'key registration',
+            'asset config',
+            'app call with three balance impacts and three inner transactions',
+        ])('Given a %s, then it leads with its own chain', name => {
+            const row = renderRow(golden(name))
+
+            expect(row.leadingAssets).toEqual([])
+            expect(row.leadingChainIds).toEqual(['algorand'])
         })
     })
 
@@ -609,21 +690,182 @@ describe('useTransactionListItem with a record', () => {
     })
 
     it('is not marked unless suspected', () => {
-        expect(renderRecord().isSuspectedPoisoning).toBe(false)
+        expect(renderRecord().isSuspicious).toBe(false)
     })
 
-    it('explains a suspected record on press instead of opening anything else', () => {
+    it('opens the details of a suspected record with its poisoning on press, even where a replace is offered', () => {
         mockReplace.canReplace = true
         const row = renderRecord({ suspectedPoisoning })
 
         row.handlePress?.()
 
-        expect(row.isSuspectedPoisoning).toBe(true)
-        expect(mockOpenSuspectedPoisoningSheet).toHaveBeenCalledWith(
+        expect(row.isSuspicious).toBe(true)
+        expect(mockOpenRecordDetailsArgs).toHaveBeenCalledWith(
+            record,
             suspectedPoisoning,
-            record.scope,
         )
+        expect(mockOpenRecordDetails).toHaveBeenCalled()
         expect(mockReplace.handleReplace).not.toHaveBeenCalled()
-        expect(mockOpenRecordDetails).not.toHaveBeenCalled()
+    })
+
+    describe('amounts of a suspected record', () => {
+        it('Given a flagged outgoing record, then its amount is unsigned and muted, and the title stays a send', () => {
+            const row = renderRecord({ suspectedPoisoning })
+
+            expect(row.amounts[0]).toMatchObject({
+                prefix: undefined,
+                isMuted: true,
+            })
+            expect(row.title).toBe('transactions.list_item.send')
+        })
+
+        it('Given a flagged incoming record, then its amount is unsigned and muted, and the title stays a receive', () => {
+            const incoming: TransactionRecord = {
+                ...record,
+                summary: {
+                    ...record.summary,
+                    title: { key: i18nKey('transactions.list_item.receive') },
+                    direction: 'in',
+                },
+            }
+
+            const row = renderRecord({ suspectedPoisoning }, incoming)
+
+            expect(row.amounts[0]).toMatchObject({
+                prefix: undefined,
+                isMuted: true,
+            })
+            expect(row.title).toBe('transactions.list_item.receive')
+        })
+    })
+
+    describe('sends the account did not sign', () => {
+        it.each([
+            ['another initiator', { initiator: '0xmallory' }],
+            ['a signer the history does not name', { isSignedElsewhere: true }],
+        ])(
+            'Given an outgoing record with %s, then it reads as a send by approval',
+            (_label, extra) => {
+                const row = renderRecord({}, { ...record, ...extra })
+
+                expect(row.title).toBe(
+                    'transactions.list_item.send_by_approval',
+                )
+                expect(row.amounts[0]?.prefix).toBe('-')
+                expect(row.amounts[0]?.isMuted).toBe(false)
+            },
+        )
+
+        it('Given an own send, then it reads as a send with a signed amount', () => {
+            const row = renderRecord({}, { ...record, initiator: '0xALICE' })
+
+            expect(row.title).toBe('transactions.list_item.send')
+            expect(row.amounts[0]).toMatchObject({
+                prefix: '-',
+                isMuted: false,
+            })
+        })
+    })
+
+    describe('spoofed and approved sends', () => {
+        it('Given a send another address signed that moved nothing, then it reads as a spoofed send, muted and suspicious', () => {
+            const zero: TransactionRecord = {
+                ...record,
+                initiator: '0xmallory',
+                summary: {
+                    ...record.summary,
+                    amount: {
+                        ...record.summary.amount!,
+                        value: new Decimal(0),
+                    },
+                },
+            }
+
+            const row = renderRecord({}, zero)
+
+            expect(row.title).toBe('transactions.list_item.spoofed_send')
+            expect(row.isSuspicious).toBe(true)
+            expect(row.amounts[0]).toMatchObject({
+                prefix: undefined,
+                isMuted: true,
+            })
+            expect(row.fiatValue).toBeNull()
+        })
+
+        it('Given an allowance spend whose signer the history names, then the second line names the spender', () => {
+            vi.mocked(useCounterpartyName).mockImplementation(address =>
+                address === '0xmallory' ? 'Spender' : 'Counterparty',
+            )
+
+            const row = renderRecord({}, { ...record, initiator: '0xmallory' })
+
+            expect(row.title).toBe('transactions.list_item.send_by_approval')
+            expect(row.subtitle).toBe('Spender')
+            vi.mocked(useCounterpartyName).mockImplementation(
+                () => 'Counterparty',
+            )
+        })
+    })
+
+    describe('swaps', () => {
+        const swap: TransactionRecord = {
+            ...record,
+            summary: {
+                kind: 'swap',
+                title: {
+                    key: i18nKey('transactions.list_item.swap_pair'),
+                    params: { from: 'ETH', to: 'USDC' },
+                },
+                direction: 'none',
+                icon: 'swap',
+                balanceChanges: [
+                    {
+                        assetRef: { chainId: 'ethereum', assetId: 'native' },
+                        value: new Decimal(-1),
+                    },
+                    {
+                        assetRef: { chainId: 'base', assetId: '0xusdc' },
+                        value: new Decimal(2),
+                    },
+                ],
+            } as TransactionRecord['summary'],
+        }
+
+        it('titles it Swap and names the pair on the second line', () => {
+            const row = renderRecord({}, swap)
+
+            expect(row.title).toBe('transactions.list_item.swap')
+            expect(row.subtitle).toBe(
+                'transactions.list_item.swap_assets {"from":"ETH","to":"USDC"}',
+            )
+        })
+
+        it('leads with what it paid and what it returned, and lists each network', () => {
+            const row = renderRecord({}, swap)
+
+            expect(row.leadingAssets.map(lead => lead.asset.assetId)).toEqual([
+                'native',
+                '0xusdc',
+            ])
+            expect(row.leadingChainIds).toEqual(['ethereum', 'base'])
+            expect(row.fiatValue).toBeNull()
+        })
+    })
+
+    describe('fiat value', () => {
+        it('converts a single unmuted amount to the preferred currency', () => {
+            vi.mocked(usePreferredAmount).mockReturnValueOnce({
+                displayCurrency: 'USD',
+                convertedValue: new Decimal('1.23'),
+                isPending: false,
+            })
+
+            const row = renderRecord()
+
+            expect(row.fiatValue).toEqual(new Decimal('1.23'))
+            expect(row.leadingAssets.map(lead => lead.asset.assetId)).toEqual([
+                '0xusdc',
+            ])
+        })
     })
 })

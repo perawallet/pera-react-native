@@ -254,6 +254,7 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     withSecret: vi.fn(async () => null),
     hasSecret: vi.fn(() => false),
     removeSecret: vi.fn(async () => {}),
+    generatePasskeyMainKey: vi.fn(),
     uniformIntBelow: (max: number) =>
         max <= 0 ? 0 : Math.floor(Math.random() * max),
     pickDistinctIndexes: (count: number, poolSize: number) => {
@@ -410,6 +411,8 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     useAssetPriceHistoryQuery: vi.fn(() => ({ data: [], isPending: false })),
     // The real hook resolves to a Map keyed by asset id, not an array.
     useAssetsQuery: vi.fn(() => ({ data: new Map(), isPending: false })),
+    useStoredAssetsAcrossScopesQuery: vi.fn(() => new Map()),
+    isSpamAssetText: vi.fn(() => false),
     useAssetPricesQuery: vi.fn(() => ({
         data: new Map(),
         isPending: false,
@@ -556,6 +559,89 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         replaceHiddenTokens: hiddenTokens => set({ hiddenTokens }),
         resetState: () => set({ hiddenTokens: {} }),
     }))
+    const keptAssetIdsOf = hiddenAssetIdsOf
+    const useKeptTokensStore = create<{
+        keptTokens: Record<string, Record<string, string[]>>
+        setTokenKept: (params: {
+            address: string
+            scope: ChainScope
+            assetId: string
+            isKept: boolean
+        }) => void
+        keepTokens: (params: {
+            address: string
+            scope: ChainScope
+            assetIds: readonly string[]
+        }) => void
+        replaceKeptTokens: (
+            keptTokens: Record<string, Record<string, string[]>>,
+        ) => void
+        mergeKeptTokens: (
+            keptTokens: Record<string, Record<string, string[]>>,
+        ) => void
+        resetState: () => void
+    }>(set => {
+        const update = (
+            address: string,
+            scope: ChainScope,
+            assetIds: readonly string[],
+            isKept: boolean,
+        ) =>
+            set(state => {
+                const key = hiddenScopeKey(scope)
+                const held = state.keptTokens[key]?.[address] ?? []
+                const next = isKept
+                    ? [...new Set([...held, ...assetIds])].sort()
+                    : held.filter(id => !assetIds.includes(id))
+                return {
+                    keptTokens: {
+                        ...state.keptTokens,
+                        [key]: { ...state.keptTokens[key], [address]: next },
+                    },
+                }
+            })
+        return {
+            keptTokens: {},
+            setTokenKept: ({ address, scope, assetId, isKept }) =>
+                update(address, scope, [assetId], isKept),
+            keepTokens: ({ address, scope, assetIds }) =>
+                update(address, scope, assetIds, true),
+            replaceKeptTokens: keptTokens => set({ keptTokens }),
+            mergeKeptTokens: incoming =>
+                set(state => {
+                    const keptTokens = { ...state.keptTokens }
+                    for (const [key, byAddress] of Object.entries(incoming)) {
+                        for (const [address, ids] of Object.entries(
+                            byAddress,
+                        )) {
+                            const held = keptTokens[key]?.[address] ?? []
+                            keptTokens[key] = {
+                                ...keptTokens[key],
+                                [address]: [
+                                    ...new Set([...held, ...ids]),
+                                ].sort(),
+                            }
+                        }
+                    }
+                    return { keptTokens }
+                }),
+            resetState: () => set({ keptTokens: {} }),
+        }
+    })
+    const isAutoHiddenHolding = (
+        holding: {
+            address: string
+            scope: ChainScope
+            assetId: string
+            asset?: { peraMetadata?: { verificationTier?: string } } | null
+        },
+        keptTokens: Record<string, Record<string, string[]>>,
+    ) =>
+        holding.asset?.peraMetadata?.verificationTier === 'suspicious' &&
+        canHideHolding(holding.scope.chainId, holding.assetId) &&
+        !keptAssetIdsOf(keptTokens, holding.address, holding.scope).includes(
+            holding.assetId,
+        )
     // Pure re-implementations of the accessors: an account is its custody and
     // its per-chain entries.
     const entriesOf = (account: any): any[] =>
@@ -634,6 +720,9 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         receivesUnaskedAssets,
         hiddenAssetIdsOf,
         useHiddenTokensStore,
+        keptAssetIdsOf,
+        useKeptTokensStore,
+        isAutoHiddenHolding,
         useHiddenTokensInvalidation: vi.fn(),
         accountChainIdOf: vi.fn(accountChainIdOf),
         secondaryChainIdsOf: vi.fn(secondaryChainIdsOf),
@@ -910,16 +999,27 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         useAccountValueTotalsQuery: vi.fn(() => ({
             accountValueTotals: new Map(),
         })),
-        useAccountsStore: vi.fn((selector: (s: any) => any) =>
-            selector({
-                accounts: [],
-                addAccount: vi.fn(),
-                removeAccount: vi.fn(),
-                resetState: vi.fn(),
-            }),
+        useAccountsStore: Object.assign(
+            vi.fn((selector: (s: any) => any) =>
+                selector({
+                    accounts: [],
+                    addAccount: vi.fn(),
+                    removeAccount: vi.fn(),
+                    resetState: vi.fn(),
+                }),
+            ),
+            {
+                subscribe: () => vi.fn(),
+                persist: {
+                    onFinishHydration: () => vi.fn(),
+                    hasHydrated: vi.fn(() => true),
+                },
+            },
         ),
+        getPasskeyAnchorSeedIds: vi.fn(() => new Set()),
         useWalletHoldingSources: vi.fn(() => []),
         rehydrateAccountsStore: vi.fn(async () => {}),
+        whenAccountsHydrationSettled: vi.fn(async () => {}),
         // Subclassed at module load by chain packages' own account errors.
         AccountError: class AccountError extends Error {},
         AuthorityTargetCategories: {
@@ -1057,6 +1157,8 @@ vi.mock('@perawallet/wallet-core-currencies', async () => {
             isPending: false,
         })),
         imitatedCurrencyOf: vi.fn(() => null),
+        imitatedNativeTickerOf: vi.fn(() => null),
+        imitatedTickerOf: vi.fn(() => null),
     }
 })
 

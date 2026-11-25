@@ -123,9 +123,11 @@ describe('useCompleteCloudBackupRestoreMutation', () => {
         vi.clearAllMocks()
         completeMock.mockResolvedValue(RESULT)
         useCloudBackupRestoreProgressStore.getState().resetState()
-        useCloudBackupRestoreSessionStore
-            .getState()
-            .setSession({ prepared: PREPARED as never, salt: SALT })
+        useCloudBackupRestoreSessionStore.getState().setSession({
+            prepared: PREPARED as never,
+            salt: SALT,
+            credentialsConfirmed: true,
+        })
     })
 
     test('completes the session with the selection and configures the backup', async () => {
@@ -156,9 +158,27 @@ describe('useCompleteCloudBackupRestoreMutation', () => {
             backupId: 'did:pera:abc',
             salt: SALT,
             deviceId: 'device-123',
+            credentialsConfirmed: true,
         })
         expect(setSyncStateMock).toHaveBeenCalledWith(SYNC_STATE)
         expect(useCloudBackupRestoreSessionStore.getState().session).toBeNull()
+    })
+
+    test('configures the backup unconfirmed when the session was an unconfirmed join', async () => {
+        useCloudBackupRestoreSessionStore.getState().setSession({
+            prepared: PREPARED as never,
+            salt: SALT,
+            credentialsConfirmed: false,
+        })
+        const onSuccess = vi.fn()
+        const { result } = renderComplete({ onSuccess })
+
+        act(() => result.current.mutate(new Set(['A'])))
+
+        await waitFor(() => expect(onSuccess).toHaveBeenCalled())
+        expect(setConfiguredMock).toHaveBeenCalledWith(
+            expect.objectContaining({ credentialsConfirmed: false }),
+        )
     })
 
     test('tells the restore which addresses this device already holds', async () => {

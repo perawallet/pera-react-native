@@ -10,16 +10,29 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { afterEach, describe, test, expect, vi, beforeEach } from 'vitest'
 
 const keystoreMocks = vi.hoisted(() => ({
     clear: vi.fn(),
     decode: vi.fn(),
     storageGetAllKeys: vi.fn(() => [] as string[]),
     storageGetString: vi.fn(),
+    storageClearAll: vi.fn(),
+    storageTrim: vi.fn(),
+}))
+
+const resealMocks = vi.hoisted(() => ({
+    resealLegacyMaterialWith: vi.fn(),
+    discardLegacyKeyWith: vi.fn(),
 }))
 
 vi.mock('react-native-quick-crypto', () => ({ subtle: {} }))
+
+vi.mock('../keystore/resealLegacyMaterial', () => ({
+    resealLegacyMaterialWith: resealMocks.resealLegacyMaterialWith,
+    checkLegacyMaterialWith: vi.fn(),
+    discardLegacyKeyWith: resealMocks.discardLegacyKeyWith,
+}))
 
 vi.mock('@algorandfoundation/react-native-keystore', () => ({
     WithKeyStore: () => ({ key: { store: {} } }),
@@ -32,6 +45,8 @@ vi.mock('@algorandfoundation/react-native-keystore', () => ({
     storage: {
         getAllKeys: keystoreMocks.storageGetAllKeys,
         getString: keystoreMocks.storageGetString,
+        clearAll: keystoreMocks.storageClearAll,
+        trim: keystoreMocks.storageTrim,
     },
 }))
 
@@ -70,7 +85,10 @@ import {
     getKeystoreHooks,
     clearKeystore,
     reconcileKeystore,
+    resealLegacyMaterial,
+    discardLegacyKey,
 } from '../singleton'
+import { logger } from '@perawallet/wallet-core-shared'
 import { PeraProvider } from '../pera-provider'
 
 const resetKeystoreStateForTest = (): void => {
@@ -89,6 +107,7 @@ describe('provider singleton', () => {
         keystoreMocks.decode.mockReset()
         keystoreMocks.storageGetAllKeys.mockReset()
         keystoreMocks.storageGetString.mockReset()
+        keystoreMocks.storageClearAll.mockReset()
         keystoreMocks.storageGetAllKeys.mockReturnValue([])
         resetKeystoreStateForTest()
     })
@@ -105,6 +124,22 @@ describe('provider singleton', () => {
         await clearKeystore()
 
         expect(keystoreMocks.clear).toHaveBeenCalled()
+        expect(keystoreMocks.storageClearAll).not.toHaveBeenCalled()
+    })
+
+    test('clearKeystore empties storage directly when the engine cannot clear', async () => {
+        keystoreMocks.clear.mockRejectedValue(new Error('hydration failed'))
+
+        await clearKeystore()
+
+        expect(keystoreMocks.storageClearAll).toHaveBeenCalled()
+    })
+
+    test('clearKeystore rejects while records survive the direct clear', async () => {
+        keystoreMocks.clear.mockRejectedValue(new Error('hydration failed'))
+        keystoreMocks.storageGetAllKeys.mockReturnValue(['m/seed-1'])
+
+        await expect(clearKeystore()).rejects.toThrow('hydration failed')
     })
 
     // Bootstrap awaits this rather than a hand-rolled hydrate: the engine loads
@@ -236,6 +271,93 @@ describe('provider singleton', () => {
             expect(keys).toHaveLength(1)
             expect(keys[0].id).toBe('good')
             expect(result.failedIds).toEqual(['k/bad'])
+        })
+    })
+
+    describe('resealLegacyMaterial', () => {
+        afterEach(() => {
+            vi.restoreAllMocks()
+        })
+
+        test('re-seals under the key the unlock hands over and logs what moved and what did not', async () => {
+            const report = {
+                resealed: 2,
+                unrecoverable: ['pin'],
+                legacyKeyRemoved: true,
+            }
+            resealMocks.resealLegacyMaterialWith.mockResolvedValue(report)
+            const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+            const info = vi.spyOn(logger, 'info').mockImplementation(() => {})
+            const engineKey = {} as CryptoKey
+
+            await expect(resealLegacyMaterial(engineKey)).resolves.toBe(report)
+
+            expect(resealMocks.resealLegacyMaterialWith).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    engineKey,
+                    databaseName: 'keystore',
+                }),
+            )
+            expect(warn).toHaveBeenCalledWith(expect.any(String), {
+                ids: ['pin'],
+            })
+            expect(info).toHaveBeenCalledWith(expect.any(String), {
+                resealed: 2,
+            })
+        })
+
+        test('logs nothing for a profile with nothing to move', async () => {
+            resealMocks.resealLegacyMaterialWith.mockResolvedValue({
+                resealed: 0,
+                unrecoverable: [],
+                legacyKeyRemoved: false,
+            })
+            const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+            const info = vi.spyOn(logger, 'info').mockImplementation(() => {})
+
+            await resealLegacyMaterial({} as CryptoKey)
+
+            expect(warn).not.toHaveBeenCalled()
+            expect(info).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('discardLegacyKey', () => {
+        afterEach(() => {
+            vi.restoreAllMocks()
+        })
+
+        test('warns with the records the vault key cannot open when a key is discarded', async () => {
+            resealMocks.discardLegacyKeyWith.mockResolvedValue({
+                unrecoverable: ['seed-1'],
+                legacyKeyRemoved: true,
+            })
+            const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+            const engineKey = {} as CryptoKey
+
+            await discardLegacyKey(engineKey)
+
+            expect(resealMocks.discardLegacyKeyWith).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    engineKey,
+                    databaseName: 'keystore',
+                }),
+            )
+            expect(warn).toHaveBeenCalledWith(expect.any(String), {
+                ids: ['seed-1'],
+            })
+        })
+
+        test('logs nothing when there was no key to discard', async () => {
+            resealMocks.discardLegacyKeyWith.mockResolvedValue({
+                unrecoverable: [],
+                legacyKeyRemoved: false,
+            })
+            const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+
+            await discardLegacyKey({} as CryptoKey)
+
+            expect(warn).not.toHaveBeenCalled()
         })
     })
 })

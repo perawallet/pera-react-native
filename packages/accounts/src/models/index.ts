@@ -125,6 +125,11 @@ export type AccountsState = BaseStoreState & {
      * resolves them into `authorities`.
      */
     unscopedAuthorities: Record<string, string>
+    /**
+     * Removal time of each removed address, keyed by lowercased address, in
+     * epoch ms: a dApp grant of that address made at or before it is revoked.
+     */
+    connectionRevokedThrough: Record<string, number>
     /** Records authorities, replacing any held for the same scope and address. */
     recordAuthorities: (incoming: RecordedAuthorities) => void
     /** Replaces both authority maps; hydration's reconciliation. */
@@ -135,7 +140,10 @@ export type AccountsState = BaseStoreState & {
     /** Drops every authority held for `address`, on any scope. */
     forgetAuthorities: (address: string) => void
     getSelectedAccount: () => Nullable<WalletAccount>
-    setAccounts: (accounts: WalletAccount[]) => void
+    setAccounts: (
+        accounts: WalletAccount[],
+        revokedConnectionAddresses?: readonly string[],
+    ) => void
     /**
      * Appends one account, throwing `DuplicateAccountError` naming the
      * existing account when one of its chain addresses is already taken.

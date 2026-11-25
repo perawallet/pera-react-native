@@ -16,6 +16,7 @@ import {
     i18nKey,
     type TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
+import type { SuspectedPoisoning } from '@perawallet/wallet-core-transactions'
 import { useOpenRecordDetails } from '../useOpenRecordDetails'
 
 const mockNavigate = vi.hoisted(() => vi.fn())
@@ -50,6 +51,24 @@ describe('useOpenRecordDetails', () => {
             scope: RECORD.scope,
             transactionId: RECORD.id,
             historyRecord: RECORD,
+        })
+    })
+
+    it('carries the suspected poisoning it was opened with', () => {
+        const suspectedPoisoning = {
+            counterparty: '0xabc',
+        } as unknown as SuspectedPoisoning
+        const { result } = renderHook(() =>
+            useOpenRecordDetails(RECORD, suspectedPoisoning),
+        )
+
+        result.current.handleOpenDetails?.()
+
+        expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
+            scope: RECORD.scope,
+            transactionId: RECORD.id,
+            historyRecord: RECORD,
+            suspectedPoisoning,
         })
     })
 

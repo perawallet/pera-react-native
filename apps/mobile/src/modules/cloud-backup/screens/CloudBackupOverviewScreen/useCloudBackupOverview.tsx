@@ -27,13 +27,17 @@ import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useContactsStore } from '@perawallet/wallet-core-contacts'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { trackEvent, CloudBackupEvent } from '@analytics'
+import { useBackupFlowLauncher } from '@modules/backup'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useRequirePinVerification } from '@modules/security'
 import {
     BackupCredentialsSheet,
     type BackupCredentialsSheetResult,
 } from '../../components/BackupCredentialsSheet'
-import { ConfirmTurnOffBackupSheet } from '../../components/ConfirmTurnOffBackupSheet'
+import {
+    ConfirmTurnOffBackupSheet,
+    type ConfirmTurnOffBackupResult,
+} from '../../components/ConfirmTurnOffBackupSheet'
 import {
     TurnOffBackupSheet,
     type TurnOffBackupChoice,
@@ -61,6 +65,8 @@ type UseCloudBackupOverviewResult = {
     /** False while the passkey counts are still a guess; the row then shows no
      *  subtitle rather than claiming everything is in sync. */
     arePasskeysResolved: boolean
+    needsCredentialsConfirmation: boolean
+    onPressConfirmCredentials: () => void
     onPressAccounts: () => void
     onPressContacts: () => void
     onPressPasskeys: () => void
@@ -73,6 +79,7 @@ type UseCloudBackupOverviewResult = {
 export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
     const { requirePinVerification } = useRequirePinVerification()
     const { request: requestBottomSheet } = useBottomSheet()
+    const launchBackupFlow = useBackupFlowLauncher()
     const navigation =
         useNavigation<NativeStackNavigationProp<CloudBackupStackParamList>>()
     const { disableBackup } = useDisableCloudBackup()
@@ -81,6 +88,9 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
     const { storeCredentials, isSaving: isSavingCredentials } =
         useStoreBackupCredentials()
     const backupId = useCloudBackupStore(state => state.backupId)
+    const needsCredentialsConfirmation = useCloudBackupStore(state =>
+        state.needsCredentialsConfirmation(),
+    )
     const syncState = useBackupSyncStateStore(state => state.syncState)
     const accounts = useAccountsStore(state => state.accounts)
     const contacts = useContactsStore(state => state.contacts)
@@ -130,6 +140,11 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
         ? truncateAlgorandAddress(backupIdToAddress(backupId))
         : ''
 
+    // No PIN here: the confirm screen gates itself, which covers every way in.
+    const onPressConfirmCredentials = useCallback(() => {
+        navigation.navigate('CloudBackupConfirmCredentials')
+    }, [navigation])
+
     const onPressAccounts = useCallback(() => {
         trackEvent(CloudBackupEvent.OverviewAccounts)
         navigation.navigate('CloudBackupAccounts')
@@ -176,11 +191,16 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
         })
         if (!choice) return
 
-        const isConfirmed = await requestBottomSheet<boolean>({
-            contents: <ConfirmTurnOffBackupSheet choice={choice} />,
-            options: { size: 'auto', enablePanDownToClose: true },
-        })
-        if (isConfirmed !== true) return
+        const confirmation =
+            await requestBottomSheet<ConfirmTurnOffBackupResult>({
+                contents: <ConfirmTurnOffBackupSheet choice={choice} />,
+                options: { size: 'auto', enablePanDownToClose: true },
+            })
+        if (confirmation?.kind === 'backUpFirst') {
+            launchBackupFlow(confirmation.account)
+            return
+        }
+        if (confirmation?.kind !== 'turnOff') return
         if (!(await requirePinVerification())) return
 
         switch (choice) {
@@ -199,6 +219,7 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
         }
     }, [
         requestBottomSheet,
+        launchBackupFlow,
         requirePinVerification,
         disableBackup,
         removeBackup,
@@ -214,6 +235,8 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
         passkeysInSync: passkeyReview.backedUp.size,
         passkeysNotBackedUp: passkeyReview.notBackedUp.length,
         arePasskeysResolved,
+        needsCredentialsConfirmation,
+        onPressConfirmCredentials,
         onPressAccounts,
         onPressContacts,
         onPressPasskeys,

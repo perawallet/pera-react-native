@@ -19,11 +19,13 @@ import type { MigrationReport } from '@algorandfoundation/provider-migrations'
 import {
     AppError,
     ErrorCategory,
+    logger,
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { subtle } from './keystore/subtle'
 import { createPeraKeystore } from './keystore/createKeystore'
 import {
+    clearKeystoreStorage,
     readPersistedKeys,
     runMaterialRepair,
     runPasskeyCredentialSplit,
@@ -31,13 +33,22 @@ import {
 import type { PasskeySplitResult } from './keystore/passkeyCredentials/splitFlatPasskeyCredentials'
 import type { QuantumMaterialRepairResult } from './keystore/repairQuantumMaterial'
 import { resolveEngineKey } from './keystore/engineKeySource'
-import { resealLegacyMaterialWith } from './keystore/resealLegacyMaterial'
-import type { ResealReport } from './keystore/resealTypes'
+import {
+    checkLegacyMaterialWith,
+    discardLegacyKeyWith,
+    resealLegacyMaterialWith,
+} from './keystore/resealLegacyMaterial'
+import type {
+    LegacyCheckReport,
+    LegacyDiscardReport,
+    ResealReport,
+} from './keystore/resealTypes'
 import {
     PQ_DERIVATION_LEGACY,
     PQ_DERIVATION_CANONICAL,
 } from './keystore/pqDerivation'
 import { createPeraMigrationLedger } from './keystore/migrationsLedger'
+import { withDeferredRevisions } from './keystore/migrations/deferredRevisions'
 import { safeErrorMessage, safeWarn } from './keystore/migrations/safeLog'
 import { PeraProvider } from './pera-provider'
 
@@ -84,7 +95,9 @@ const instance = new PeraProvider(
             // applied — permanently.
             subtle,
         },
-        migrations: { ledger: createPeraMigrationLedger() },
+        migrations: {
+            ledger: withDeferredRevisions(createPeraMigrationLedger()),
+        },
     },
 )
 
@@ -130,17 +143,74 @@ export const getKeystoreHooks = (): HookCollection<any> => keystoreHooks
  * Used during "delete all data" flows as a safety net after individual key deletion.
  */
 export const clearKeystore = async (): Promise<void> => {
-    await keystore.clear?.()
+    try {
+        await keystore.clear?.()
+    } catch (error) {
+        // `clear()` first awaits `ready`, so a keystore that failed to hydrate
+        // rejects on every attempt. With its records gone the step is done.
+        if (!clearKeystoreStorage()) throw error
+        logger.warn('Keystore cleared from storage after clear() failed', {
+            error,
+        })
+    }
 }
 
 /**
  * Moves material sealed under keystore-web's old auto-generated key onto the
- * vault-derived engine key. The web shell runs it right after unlock and
- * before any other material operation; native has nothing to move and never
- * calls it, which is why the web globals below are read only on call.
+ * vault-derived engine key. Passed to the vault's unlock, which runs it only
+ * until its blob records a finished re-seal; native has nothing to move and
+ * never calls it, which is why the web globals below are read only on call.
  */
-export const resealLegacyMaterial = (): Promise<ResealReport> =>
-    resealLegacyMaterialWith({
+export const resealLegacyMaterial = async (
+    engineKey: CryptoKey,
+): Promise<ResealReport> => {
+    const report = await resealLegacyMaterialWith({
+        engineKey,
+        subtle,
+        indexedDB: globalThis.indexedDB,
+        databaseName: 'keystore',
+    })
+    if (report.unrecoverable.length > 0) {
+        logger.warn('Keystore records unrecoverable after re-seal', {
+            ids: report.unrecoverable,
+        })
+    }
+    if (report.resealed > 0) {
+        logger.info('Keystore records re-sealed', {
+            resealed: report.resealed,
+        })
+    }
+    return report
+}
+
+/**
+ * Removes a legacy key the vault's unlock has ruled out: its blob already
+ * records a finished re-seal. Logs any record the vault key can't open.
+ */
+export const discardLegacyKey = async (
+    engineKey: CryptoKey,
+): Promise<LegacyDiscardReport> => {
+    const report = await discardLegacyKeyWith({
+        engineKey,
+        subtle,
+        indexedDB: globalThis.indexedDB,
+        databaseName: 'keystore',
+    })
+    if (report.legacyKeyRemoved) {
+        logger.warn('Keystore legacy key discarded on a re-sealed vault', {
+            ids: report.unrecoverable,
+        })
+    }
+    return report
+}
+
+/**
+ * Re-mints leftover native-CryptoKey children and reports material the vault
+ * key can't open. The web shell runs it right after unlock, before any other
+ * material operation.
+ */
+export const checkLegacyMaterial = (): Promise<LegacyCheckReport> =>
+    checkLegacyMaterialWith({
         keystore,
         resolveEngineKey,
         subtle,

@@ -27,10 +27,12 @@ import {
     DP256_DEFAULT_KEY_LENGTH_BYTES,
     DP256_DEFAULT_SALT,
     genDerivedMainKeyWithSubtle,
+    type Key,
 } from '@algorandfoundation/keystore-core'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import type { PeraMigrationContext } from '../types'
 import { safeErrorMessage, safeWarn } from '../safeLog'
+import { deferRevisionToNextLaunch } from '../deferredRevisions'
 import { sealAndVerify, wipeBytes } from '../sealing'
 import { PASSKEY_MAIN_KEY_SCHEME, passkeyMainKeyId } from '../../passkeyMainKey'
 
@@ -92,7 +94,9 @@ export const migration: Migration<PeraMigrationContext> = {
         context: PeraMigrationContext,
         utils: MigrationUtils,
     ): Promise<void> => {
-        const { storage, subtle } = context
+        const { storage, subtle, getPasskeyAnchorSeedIds } = context
+        const deferToNextLaunch = () =>
+            deferRevisionToNextLaunch(utils.revision.module, utils.revision.id)
 
         let allKeys: string[]
         try {
@@ -102,6 +106,7 @@ export const migration: Migration<PeraMigrationContext> = {
         }
 
         const rootIds: string[] = []
+        const keys: Key[] = []
         const entropyChildByParent = new Map<string, string>()
 
         for (const key of allKeys) {
@@ -116,13 +121,15 @@ export const migration: Migration<PeraMigrationContext> = {
             }
             if (raw === undefined) continue
 
-            let record: { type?: unknown }
+            let record: Key
             try {
-                record = decode(raw) as { type?: unknown }
+                record = decode(raw) as Key
             } catch {
                 // Not a record this keystore wrote in the plaintext k/ shape.
                 continue
             }
+            if (!record || typeof record !== 'object') continue
+            keys.push({ ...record, id })
 
             const meta = metadataOf(record)
 
@@ -154,9 +161,39 @@ export const migration: Migration<PeraMigrationContext> = {
 
         if (rootIds.length === 0) return
 
+        // Ledgering this run without the accounts would leave the device on the
+        // XHD-root fallback for good, so it waits for a launch that has them.
+        if (!getPasskeyAnchorSeedIds) {
+            safeWarn(
+                '[provider] mint-passkey-main-key: no account seed resolver registered; deferred to the next launch',
+            )
+            deferToNextLaunch()
+            return
+        }
+
+        let anchorIds: ReadonlySet<string>
+        try {
+            anchorIds = await getPasskeyAnchorSeedIds(keys)
+        } catch (error) {
+            safeWarn(
+                `[provider] mint-passkey-main-key: account seed references unavailable, deferred to the next launch: ${safeErrorMessage(error)}`,
+            )
+            deferToNextLaunch()
+            return
+        }
+
+        const referencedRootIds = rootIds.filter(id => anchorIds.has(id))
+        if (referencedRootIds.length === 0) {
+            safeWarn(
+                `[provider] mint-passkey-main-key: no account uses any of ${rootIds.length} wallet root(s); left without a passkey main key`,
+            )
+            context.declined.record(utils.revision.module, rootIds)
+            return
+        }
+
         // `getAllKeys()` order is not specified, and which root gets the
         // device's one main key must not depend on it.
-        const target = rootIds
+        const target = referencedRootIds
             .sort()
             .map(id => ({ id, entropyChildId: entropyChildByParent.get(id) }))
             .find(
@@ -169,9 +206,9 @@ export const migration: Migration<PeraMigrationContext> = {
             // derive from. Expected, not a fault — but recorded, because it is
             // also what a lost entropy child looks like.
             safeWarn(
-                `[provider] mint-passkey-main-key: no wallet root has an entropy child; left ${rootIds.length} root(s) without a passkey main key`,
+                `[provider] mint-passkey-main-key: no wallet root has an entropy child; left ${referencedRootIds.length} root(s) without a passkey main key`,
             )
-            context.declined.record(utils.revision.module, rootIds)
+            context.declined.record(utils.revision.module, referencedRootIds)
             return
         }
 

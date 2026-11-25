@@ -50,6 +50,7 @@ const page = window as PageWindow
 type Posted = {
     token: string
     hasUserActivation: boolean
+    icons?: string[]
     request: { id: string; method: string; params?: unknown }
 }
 
@@ -202,6 +203,67 @@ describe('eip1193ProviderJS', () => {
 
         expect(second).toBe(first)
         expect(postMessage).toHaveBeenCalledTimes(1)
+    })
+
+    describe('page icons on a connect request', () => {
+        afterEach(() => {
+            document.head.innerHTML = ''
+        })
+
+        it('posts the icon links the page lists as absolute urls', () => {
+            document.head.innerHTML =
+                '<link rel="icon" href="/favicon.png"><link rel="apple-touch-icon" href="/touch.png">'
+            install()
+
+            void page.ethereum?.request({ method: 'eth_requestAccounts' })
+
+            expect(posted(postMessage).icons).toEqual([
+                'https://app.uniswap.org/favicon.png',
+                'https://app.uniswap.org/touch.png',
+                'https://app.uniswap.org/favicon.ico',
+            ])
+            expect(isEip1193PageMessage(posted(postMessage))).toBe(true)
+        })
+
+        it('keeps /favicon.ico last, once, when the page lists only CDN icons or many links', () => {
+            document.head.innerHTML =
+                '<link rel="icon" href="/favicon.ico">' +
+                Array.from(
+                    { length: 9 },
+                    (_, i) =>
+                        `<link rel="icon" href="https://cdn.example.com/${i}.png">`,
+                ).join('')
+            install()
+
+            void page.ethereum?.request({ method: 'eth_requestAccounts' })
+
+            const { icons } = posted(postMessage)
+            expect(icons).toHaveLength(8)
+            expect(icons?.at(-1)).toBe('https://app.uniswap.org/favicon.ico')
+            expect(
+                icons?.filter(
+                    icon => icon === 'https://app.uniswap.org/favicon.ico',
+                ),
+            ).toHaveLength(1)
+        })
+
+        it('falls back to /favicon.ico when the page lists none', () => {
+            install()
+
+            void page.ethereum?.request({ method: 'wallet_requestPermissions' })
+
+            expect(posted(postMessage).icons).toEqual([
+                'https://app.uniswap.org/favicon.ico',
+            ])
+        })
+
+        it('sends no icons with any other request', () => {
+            install()
+
+            void page.ethereum?.request({ method: 'eth_chainId' })
+
+            expect(posted(postMessage)).not.toHaveProperty('icons')
+        })
     })
 
     it('reports no user activation for a scripted click', () => {

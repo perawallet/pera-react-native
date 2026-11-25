@@ -103,7 +103,7 @@ export const useAssetOptInDeeplink = (): AssetOptInDeeplinkHandler => {
             }
 
             // 2. Confirm the opt-in (shows the asset and fee being signed).
-            const confirmation = await requestByType<'asset-opt-in', 'confirm'>(
+            const maxFee = await requestByType<'asset-opt-in', bigint>(
                 'asset-opt-in',
                 {
                     assetId,
@@ -112,13 +112,13 @@ export const useAssetOptInDeeplink = (): AssetOptInDeeplinkHandler => {
                 },
                 SHEET_OPTIONS,
             )
-            if (confirmation !== 'confirm') return
+            if (maxFee === undefined) return
 
             // 3. Execute. The mutation throws AlreadyOptedInError /
             //    InsufficientBalanceForOptInError, which showError renders as a
             //    readable message.
             try {
-                await optIn({ sender, assetId: BigInt(assetId) })
+                await optIn({ sender, assetId: BigInt(assetId), maxFee })
                 playSuccess()
                 showToast({
                     title: t('add_asset.opt_in.success_title'),

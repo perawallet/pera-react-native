@@ -11,16 +11,23 @@
  */
 
 import type { ReactNode } from 'react'
-import { PWCheckbox, PWText, PWView } from '@components/core'
+import {
+    PWCheckbox,
+    PWText,
+    type PWCheckboxLabelAccessibilityProps,
+} from '@components/core'
 import { useStyles } from './styles'
 
 type CardConsentCheckboxRowProps = {
     checked: boolean
     onPress: () => void
     testID: string
-    /** The consent label — plain text or a `<Trans>` with inline links. */
+    /**
+     * The consent label: plain text or a `<Trans>` with inline links. A label
+     * with a link sets `isLabelInteractive` and its plain `accessibilityLabel`.
+     */
     children: ReactNode
-}
+} & PWCheckboxLabelAccessibilityProps
 
 /**
  * A checkbox + wrapped label row used for the onboarding consent boxes (SMS /
@@ -32,23 +39,26 @@ export const CardConsentCheckboxRow = ({
     onPress,
     testID,
     children,
+    ...labelAccessibilityProps
 }: CardConsentCheckboxRowProps) => {
     const styles = useStyles()
 
     return (
-        <PWView style={styles.row}>
-            <PWCheckbox
-                checked={checked}
-                onPress={onPress}
-                testID={testID}
-            />
-            <PWText
-                variant='footnoteMedium'
-                weight={400}
-                style={styles.label}
-            >
-                {children}
-            </PWText>
-        </PWView>
+        <PWCheckbox
+            label={
+                <PWText
+                    variant='footnoteMedium'
+                    weight={400}
+                    style={styles.label}
+                >
+                    {children}
+                </PWText>
+            }
+            isChecked={checked}
+            onPress={onPress}
+            style={styles.row}
+            testID={testID}
+            {...labelAccessibilityProps}
+        />
     )
 }

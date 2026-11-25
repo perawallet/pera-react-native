@@ -35,7 +35,7 @@ import {
 } from '../password-auth'
 import { deriveArgon2id } from '../argon2'
 import { deriveKvAuthKey } from '../kv-auth-key'
-import { isMarkedSalt } from '../marked-salt'
+import { createMarkedSalt, isMarkedSalt, readSaltMarks } from '../marked-salt'
 import {
     InvalidPasswordError,
     VaultCorruptedError,
@@ -565,8 +565,10 @@ describe('vault', () => {
 
         // Current cost, so only the missing mark distinguishes it from a
         // blob written after this change.
-        const writeUnmarkedBlob = async (password: string): Promise<void> => {
-            const salt = new Uint8Array(16).fill(4)
+        const writeUnmarkedBlob = async (
+            password: string,
+            salt: Uint8Array = new Uint8Array(16).fill(4),
+        ): Promise<void> => {
             const iv = new Uint8Array(12).fill(6)
             const kek = await crypto.subtle.importKey(
                 'raw',
@@ -694,6 +696,216 @@ describe('vault', () => {
             await unlockVault('pw', { migrateLegacyRecords: migrate })
 
             expect(migrate).not.toHaveBeenCalled()
+        })
+
+        it('re-seals the keystore before the session key is set, with a key that opens what the master key sealed, then marks it', async () => {
+            await writeUnmarkedBlob('pw')
+            let sawSessionKey = true
+            let opened = new Uint8Array()
+            const iv = new Uint8Array(12).fill(1)
+            const masterAes = await crypto.subtle.importKey(
+                'raw',
+                MASTER_KEY,
+                'AES-GCM',
+                false,
+                ['encrypt'],
+            )
+            const sealed = await crypto.subtle.encrypt(
+                { name: 'AES-GCM', iv },
+                masterAes,
+                Uint8Array.of(7, 7),
+            )
+            const reseal = vi.fn(async (engineKey: CryptoKey) => {
+                sawSessionKey = fake.sessionData.has('vault:master-key')
+                opened = new Uint8Array(
+                    await crypto.subtle.decrypt(
+                        { name: 'AES-GCM', iv },
+                        engineKey,
+                        sealed,
+                    ),
+                )
+            })
+
+            await unlockVault('pw', { resealLegacyKeystore: reseal })
+            await lockVault()
+            await unlockVault('pw', { resealLegacyKeystore: reseal })
+
+            expect(reseal).toHaveBeenCalledTimes(1)
+            expect(sawSessionKey).toBe(false)
+            expect(opened).toEqual(Uint8Array.of(7, 7))
+            expect(readSaltMarks(storedSalt())).toEqual({
+                isKvSealed: false,
+                isKeystoreResealed: true,
+            })
+        })
+
+        it('still unlocks when the keystore re-seal throws, and leaves only that mark off to retry', async () => {
+            await writeUnmarkedBlob('pw')
+            const migrate = vi.fn(async () => {})
+            const reseal = vi
+                .fn<(key: CryptoKey) => Promise<void>>()
+                .mockRejectedValueOnce(new Error('idb'))
+                .mockResolvedValue(undefined)
+
+            await unlockVault('pw', {
+                migrateLegacyRecords: migrate,
+                resealLegacyKeystore: reseal,
+            })
+
+            expect(await isUnlocked()).toBe(true)
+            expect(readSaltMarks(storedSalt())).toEqual({
+                isKvSealed: true,
+                isKeystoreResealed: false,
+            })
+            await lockVault()
+            await unlockVault('pw', {
+                migrateLegacyRecords: migrate,
+                resealLegacyKeystore: reseal,
+            })
+            expect(migrate).toHaveBeenCalledTimes(1)
+            expect(reseal).toHaveBeenCalledTimes(2)
+            expect(readSaltMarks(storedSalt())).toEqual({
+                isKvSealed: true,
+                isKeystoreResealed: true,
+            })
+        })
+
+        it('never re-seals the keystore of a vault created after this change', async () => {
+            await createVault('pw')
+            await lockVault()
+            const reseal = vi.fn(async () => {})
+
+            await unlockVault('pw', { resealLegacyKeystore: reseal })
+
+            expect(readSaltMarks(storedSalt()).isKeystoreResealed).toBe(true)
+            expect(reseal).not.toHaveBeenCalled()
+        })
+
+        it('carries marks through a password change rather than granting them', async () => {
+            await writeUnmarkedBlob('pw')
+
+            await changePassword('pw', 'next')
+
+            expect(readSaltMarks(storedSalt())).toEqual({
+                isKvSealed: false,
+                isKeystoreResealed: false,
+            })
+        })
+
+        describe('a legacy key left after the re-seal is recorded', () => {
+            it('is discarded, never re-sealed, on a marked vault', async () => {
+                await createVault('pw')
+                await lockVault()
+                const reseal = vi.fn(async () => {})
+                let sawSessionKey = true
+                const discard = vi.fn(async (_engineKey: CryptoKey) => {
+                    sawSessionKey = fake.sessionData.has('vault:master-key')
+                })
+
+                await unlockVault('pw', {
+                    resealLegacyKeystore: reseal,
+                    discardLegacyKeystoreKey: discard,
+                })
+
+                expect(reseal).not.toHaveBeenCalled()
+                expect(discard).toHaveBeenCalledTimes(1)
+                expect(sawSessionKey).toBe(false)
+            })
+
+            it('still unlocks when discarding throws', async () => {
+                await createVault('pw')
+                await lockVault()
+                const discard = vi.fn(async () => {
+                    throw new Error('idb')
+                })
+
+                await unlockVault('pw', { discardLegacyKeystoreKey: discard })
+
+                expect(await isUnlocked()).toBe(true)
+            })
+
+            it('is neither re-sealed nor discarded while an unreadable passkey blob is all that closes the window', async () => {
+                await writeUnmarkedBlob('pw')
+                fake.data.set('vault:wrapped-master-key-prf', 'not json')
+                const reseal = vi.fn(async () => {})
+                const discard = vi.fn(async () => {})
+
+                await unlockVault('pw', {
+                    resealLegacyKeystore: reseal,
+                    discardLegacyKeystoreKey: discard,
+                })
+
+                expect(reseal).not.toHaveBeenCalled()
+                expect(discard).not.toHaveBeenCalled()
+            })
+        })
+
+        describe('from an upgraded vault (network marked, keystore not)', () => {
+            const writeUpgradedBlob = (): Promise<void> =>
+                writeUnmarkedBlob(
+                    'pw',
+                    createMarkedSalt({
+                        isKvSealed: true,
+                        isKeystoreResealed: false,
+                    }),
+                )
+
+            it('marks the keystore once the re-seal succeeds, without re-running the network migration', async () => {
+                await writeUpgradedBlob()
+                const migrate = vi.fn(async () => {})
+                const reseal = vi.fn(async () => {})
+
+                await unlockVault('pw', {
+                    migrateLegacyRecords: migrate,
+                    resealLegacyKeystore: reseal,
+                })
+
+                expect(migrate).not.toHaveBeenCalled()
+                expect(reseal).toHaveBeenCalledTimes(1)
+                expect(readSaltMarks(storedSalt())).toEqual({
+                    isKvSealed: true,
+                    isKeystoreResealed: true,
+                })
+            })
+
+            it('leaves the blob as it was when the re-seal fails, and retries next unlock', async () => {
+                await writeUpgradedBlob()
+                const before = fake.data.get(BLOB_KEY)
+                const reseal = vi
+                    .fn<(key: CryptoKey) => Promise<void>>()
+                    .mockRejectedValueOnce(new Error('idb'))
+                    .mockResolvedValue(undefined)
+
+                await unlockVault('pw', { resealLegacyKeystore: reseal })
+
+                expect(await isUnlocked()).toBe(true)
+                expect(fake.data.get(BLOB_KEY)).toBe(before)
+                await lockVault()
+                await unlockVault('pw', { resealLegacyKeystore: reseal })
+                expect(reseal).toHaveBeenCalledTimes(2)
+                expect(readSaltMarks(storedSalt())).toEqual({
+                    isKvSealed: true,
+                    isKeystoreResealed: true,
+                })
+            })
+        })
+
+        it('cannot reopen the keystore window by stripping only its mark', async () => {
+            await createVault('pw')
+            await lockVault()
+            const blob = JSON.parse(String(fake.data.get(BLOB_KEY)))
+            const salt = base64.decode(blob.salt)
+            salt.fill(0, 4, 8)
+            fake.data.set(
+                BLOB_KEY,
+                JSON.stringify({ ...blob, salt: base64.encode(salt) }),
+            )
+            const reseal = vi.fn(async () => {})
+
+            await expect(
+                unlockVault('pw', { resealLegacyKeystore: reseal }),
+            ).rejects.toBeInstanceOf(InvalidPasswordError)
+            expect(reseal).not.toHaveBeenCalled()
         })
 
         it('cannot be reopened by stripping the mark from the stored salt', async () => {

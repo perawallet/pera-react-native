@@ -126,7 +126,8 @@ type PersistedAccountsState = Pick<
     | 'launchAccountId'
     | 'authorities'
     | 'unscopedAuthorities'
->
+> &
+    Partial<Pick<AccountsState, 'connectionRevokedThrough'>>
 
 type PersistedRecord = Record<string, unknown> & {
     id?: unknown
@@ -975,6 +976,11 @@ const withChainEntry = (
             : account,
     )
 
+let settleAccountsHydration: () => void = () => {}
+const accountsHydrationSettled = new Promise<void>(resolve => {
+    settleAccountsHydration = resolve
+})
+
 const initialState = {
     accounts: [] as WalletAccount[],
     selectedAccountId: null as Nullable<string>,
@@ -984,6 +990,7 @@ const initialState = {
     launchAccountId: null as Nullable<string>,
     authorities: {} as RecordedAuthorities,
     unscopedAuthorities: {} as Record<string, string>,
+    connectionRevokedThrough: {} as Record<string, number>,
 }
 
 export const useAccountsStore: UseBoundStore<
@@ -1000,7 +1007,7 @@ export const useAccountsStore: UseBoundStore<
                 }
                 return accounts.find(a => a.id === selectedAccountId) ?? null
             },
-            setAccounts: (accounts: WalletAccount[]) => {
+            setAccounts: (accounts, revokedConnectionAddresses) => {
                 // Single chokepoint for every account write — dedupe by
                 // chain address so no caller can ever persist the same account
                 // twice, keeping the account its chain ranks higher
@@ -1013,7 +1020,37 @@ export const useAccountsStore: UseBoundStore<
 
                 const currentSelected = get().selectedAccountId
                 const currentManualOrder = get().manualAccountOrder
-                set({ accounts })
+                const revokedThrough = get().connectionRevokedThrough
+                const now = Date.now()
+                // A cutoff ahead of a clock since corrected backwards would
+                // revoke the re-added account's fresh grants.
+                const clampedConnections = accounts
+                    .flatMap(chainAddressesOf)
+                    .map(({ address }) => address.toLowerCase())
+                    .filter(address => (revokedThrough[address] ?? 0) > now)
+                    .map(address => [address, now] as const)
+                const revokedConnections =
+                    revokedConnectionAddresses?.map(address => {
+                        const normalized = address.toLowerCase()
+                        return [
+                            normalized,
+                            Math.max(now, revokedThrough[normalized] ?? 0),
+                        ] as const
+                    }) ?? []
+                const connectionChanges = [
+                    ...clampedConnections,
+                    ...revokedConnections,
+                ]
+                set({
+                    accounts,
+                    connectionRevokedThrough:
+                        connectionChanges.length > 0
+                            ? {
+                                  ...revokedThrough,
+                                  ...Object.fromEntries(connectionChanges),
+                              }
+                            : revokedThrough,
+                })
 
                 const accountIds = new Set(accounts.map(a => a.id))
                 if (currentSelected == null && accounts.length) {
@@ -1789,6 +1826,7 @@ export const useAccountsStore: UseBoundStore<
                         { error },
                     )
                 }
+                settleAccountsHydration()
             },
             partialize: (state): PersistedAccountsState => ({
                 accounts: state.accounts,
@@ -1799,10 +1837,15 @@ export const useAccountsStore: UseBoundStore<
                 launchAccountId: state.launchAccountId,
                 authorities: state.authorities,
                 unscopedAuthorities: state.unscopedAuthorities,
+                connectionRevokedThrough: state.connectionRevokedThrough,
             }),
         },
     ),
 )
+
+/** Resolves after the first hydration attempt, even one that failed: `onFinishHydration` never fires then. */
+export const whenAccountsHydrationSettled = (): Promise<void> =>
+    accountsHydrationSettled
 
 /** Called once the chain adapters are registered; until then the store holds its defaults. */
 export const rehydrateAccountsStore = async (): Promise<void> => {

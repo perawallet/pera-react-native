@@ -26,6 +26,10 @@ export type UseReviewScrollHintResult = {
     scrollRef: RefObject<Nullable<PWScreenScrollHandle>>
     /** More of the review sits below the fold. */
     isMoreBelow: boolean
+    /** The review overflows its body at all, so the hint keeps a slot of its own. */
+    isScrollable: boolean
+    /** The body is measured and the review fits it, or was scrolled to its current end. */
+    hasReachedEnd: boolean
     handleScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void
     handleBodyLayout: (event: LayoutChangeEvent) => void
     handleContentSizeChange: (width: number, height: number) => void
@@ -37,12 +41,21 @@ export const useReviewScrollHint = (): UseReviewScrollHintResult => {
     const scrollRef = useRef<PWScreenScrollHandle>(null)
     const metrics = useRef({ viewport: 0, content: 0, offset: 0 })
     const [isMoreBelow, setIsMoreBelow] = useState(false)
+    const [isScrollable, setIsScrollable] = useState(false)
+    const [hasScrolledToEnd, setHasScrolledToEnd] = useState(false)
+    const [isMeasured, setIsMeasured] = useState(false)
 
     const update = useCallback(() => {
         const { viewport, content, offset } = metrics.current
-        setIsMoreBelow(
-            viewport > 0 && content - viewport - offset > END_THRESHOLD,
-        )
+        setIsMeasured(viewport > 0 && content > 0)
+        const overflow = viewport > 0 ? content - viewport : 0
+        const isOverflowing = overflow > END_THRESHOLD
+        setIsScrollable(isOverflowing)
+        // iOS rubber-banding reports a negative offset on a review that fits; clamp it or the strip appears and makes the body overflow.
+        const isMore =
+            isOverflowing && overflow - Math.max(offset, 0) > END_THRESHOLD
+        setIsMoreBelow(isMore)
+        if (isOverflowing && !isMore) setHasScrolledToEnd(true)
     }, [])
 
     const handleScroll = useCallback(
@@ -63,6 +76,8 @@ export const useReviewScrollHint = (): UseReviewScrollHintResult => {
 
     const handleContentSizeChange = useCallback(
         (_width: number, height: number) => {
+            // Content added below the end the reader reached has not been read.
+            if (height > metrics.current.content) setHasScrolledToEnd(false)
             metrics.current.content = height
             update()
         },
@@ -76,6 +91,8 @@ export const useReviewScrollHint = (): UseReviewScrollHintResult => {
     return {
         scrollRef,
         isMoreBelow,
+        isScrollable,
+        hasReachedEnd: isMeasured && (!isScrollable || hasScrolledToEnd),
         handleScroll,
         handleBodyLayout,
         handleContentSizeChange,

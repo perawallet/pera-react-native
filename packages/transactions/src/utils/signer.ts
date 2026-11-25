@@ -10,7 +10,12 @@
  limitations under the License
  */
 
-import type { TransactionRecord } from '@perawallet/wallet-core-chain-contract'
+import { isSameAddress } from '@perawallet/wallet-core-accounts'
+import type {
+    ChainId,
+    TransactionRecord,
+    TransactionSummary,
+} from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
 
 /**
@@ -26,4 +31,27 @@ export const recordSignerOf = (
     return accountAddress !== '' && record.status !== 'confirmed'
         ? accountAddress
         : undefined
+}
+
+export type IsSentByOtherSignerInput = {
+    summary: TransactionSummary
+    signer: Optional<string>
+    isSignedElsewhere?: boolean
+    accountAddress: string
+    chainId: ChainId
+}
+
+/** An unnamed signer counts as the account's: only a named other address, or a known third-party signer, says otherwise. */
+export const isSentByOtherSigner = ({
+    summary,
+    signer,
+    isSignedElsewhere,
+    accountAddress,
+    chainId,
+}: IsSentByOtherSignerInput): boolean => {
+    if (accountAddress === '' || summary.direction !== 'out') return false
+    if (isSignedElsewhere === true) return true
+    return (
+        signer !== undefined && !isSameAddress(chainId, signer, accountAddress)
+    )
 }

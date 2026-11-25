@@ -12,7 +12,10 @@
 
 import type { Decimal } from 'decimal.js'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
+import type {
+    SwapLegResponse,
+    TransactionHistoryItem,
+} from '@perawallet/wallet-core-transactions'
 
 /** Aggregate details for a DEX swap, whose transactions are grouped. */
 export interface AlgorandSwapGroupDetail {
@@ -49,6 +52,8 @@ export interface AlgorandHistoryData {
     innerTransactionCount: Nullable<number>
     /** Only present for DEX swaps. */
     swapGroupDetail: Nullable<AlgorandSwapGroupDetail>
+    /** The swap order the backend recorded this transaction as a leg of, as it sent it. */
+    swapLeg: Nullable<SwapLegResponse>
 }
 
 export const EMPTY_ALGORAND_HISTORY_DATA: Readonly<AlgorandHistoryData> =
@@ -60,6 +65,7 @@ export const EMPTY_ALGORAND_HISTORY_DATA: Readonly<AlgorandHistoryData> =
         applicationId: null,
         innerTransactionCount: null,
         swapGroupDetail: null,
+        swapLeg: null,
     })
 
 const isAlgorandHistoryData = (value: unknown): value is AlgorandHistoryData =>

@@ -50,7 +50,7 @@ export const EVM_CHAIN_ROWS: readonly EvmChainRow[] = [
         finality: { kind: 'confirmations', recommended: 12 },
         enabledByDefault: true,
         capabilities: {
-            swap: config.appEnvironment !== 'production',
+            swap: true,
             onramp: config.appEnvironment !== 'production',
         },
         defaultSwapReceiveAssetId: ETHEREUM_USDC,
@@ -71,7 +71,7 @@ export const EVM_CHAIN_ROWS: readonly EvmChainRow[] = [
         blockTimeMs: 2000,
         finality: { kind: 'confirmations', recommended: 10 },
         enabledByDefault: false,
-        capabilities: { swap: config.appEnvironment !== 'production' },
+        capabilities: { swap: true },
         defaultSwapReceiveAssetId: BASE_USDC,
     },
     {
@@ -114,7 +114,7 @@ export const EVM_CHAIN_ROWS: readonly EvmChainRow[] = [
         blockTimeMs: 250,
         finality: { kind: 'confirmations', recommended: 20 },
         enabledByDefault: false,
-        capabilities: { swap: config.appEnvironment !== 'production' },
+        capabilities: { swap: true },
         defaultSwapReceiveAssetId: ARBITRUM_USDC,
     },
     {

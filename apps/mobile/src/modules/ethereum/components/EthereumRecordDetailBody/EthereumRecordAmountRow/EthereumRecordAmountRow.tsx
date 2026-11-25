@@ -10,63 +10,45 @@
  limitations under the License
  */
 
-import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import type {
     BalanceChange,
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
 import { AssetAmount } from '@components/AssetAmount'
 import { KeyValueRow } from '@components/KeyValueRow'
-import { useLanguage } from '@hooks/useLanguage'
+import { useEthereumRecordAmountRow } from './useEthereumRecordAmountRow'
 
 type EthereumRecordAmountRowProps = {
     change: BalanceChange
     scope: ChainScope
+    /** Replaces the row's own title, such as a swap leg's side. */
+    title?: string
     testID: string
 }
 
-/**
- * The asset comes from the local store only, as in the list row: a page that
- * makes no node read of its own must not trigger one by naming a token. The
- * backend's symbol and decimals cover one the store doesn't hold.
- */
 export const EthereumRecordAmountRow = ({
     change,
     scope,
+    title: titleOverride,
     testID,
 }: EthereumRecordAmountRowProps) => {
-    const { t } = useLanguage()
-    const { assetId } = change.assetRef
-    const { data, isPending } = useAssetsQuery(scope, [assetId])
-    const stored = data.get(assetId)
-    const known =
-        stored ??
-        (change.display && {
-            assetId,
-            unitName: change.display.symbol,
-            decimals: change.display.decimals,
-        })
+    const { title, asset, value, isLoading, showSymbol } =
+        useEthereumRecordAmountRow(change, scope)
 
     return (
         <KeyValueRow
             testID={testID}
-            title={t('transactions.common.amount')}
+            title={titleOverride ?? title}
         >
             <AssetAmount
                 chainId={scope.chainId}
-                asset={known || undefined}
-                value={
-                    known
-                        ? baseUnitsToDisplayUnits(
-                              change.value,
-                              known.decimals ?? 0,
-                          )
-                        : change.value
-                }
-                isLoading={isPending}
-                showSymbol
+                asset={asset}
+                value={value}
+                density='exact'
+                isLoading={isLoading}
+                showSymbol={showSymbol}
                 ignorePrivacyMode
+                truncate={false}
             />
         </KeyValueRow>
     )

@@ -67,11 +67,26 @@ export type EthereumPricedView = {
  */
 export type EthereumPreviewView = { isPreview: true }
 
+/**
+ * Wei per gas. The nonce, gas limit and per-gas prices the node reports for a
+ * mined transaction: a type-2 one caps its fees, an older one names a single
+ * gas price.
+ */
+export type EthereumOnChainPricing = {
+    nonce: number
+    gas: bigint
+    maxFeePerGas?: Decimal
+    maxPriorityFeePerGas?: Decimal
+    gasPrice?: Decimal
+}
+
 /** A transaction already on chain, read for a detail screen: nothing was signed from it. */
 export type EthereumMinedView = {
     isMined: true
     /** Wei the transaction cost in gas, whoever paid it; absent when the history gave none. */
     feePaid?: Decimal
+    /** Absent when the transaction wasn't read from the node. */
+    onChain?: EthereumOnChainPricing
 }
 
 type EthereumTransactionViewBase = {
@@ -296,7 +311,7 @@ const isContractAction = (value: unknown): boolean => {
         case 'borrow':
         case 'repay': {
             return (
-                isAddressValue(value.asset) &&
+                isActionAsset(value.asset) &&
                 Decimal.isDecimal(value.amount) &&
                 typeof value.isEntireBalance === 'boolean'
             )
@@ -338,6 +353,17 @@ const isFeeEstimate = (value: unknown): boolean =>
     FEE_PRESETS.some(preset => preset === value.preset) &&
     Decimal.isDecimal(value.amount)
 
+const isOptionalDecimal = (value: unknown): boolean =>
+    value === undefined || Decimal.isDecimal(value)
+
+const isOnChainPricing = (value: unknown): boolean =>
+    isRecord(value) &&
+    typeof value.nonce === 'number' &&
+    typeof value.gas === 'bigint' &&
+    isOptionalDecimal(value.maxFeePerGas) &&
+    isOptionalDecimal(value.maxPriorityFeePerGas) &&
+    isOptionalDecimal(value.gasPrice)
+
 const isView = (value: unknown): value is EthereumTransactionView =>
     isRecord(value) &&
     typeof value.kind === 'string' &&
@@ -349,8 +375,8 @@ const isView = (value: unknown): value is EthereumTransactionView =>
     isOptional(value.selector, isHexValue) &&
     (value.isPreview === true ||
         (value.isMined === true &&
-            (value.feePaid === undefined ||
-                Decimal.isDecimal(value.feePaid))) ||
+            (value.feePaid === undefined || Decimal.isDecimal(value.feePaid)) &&
+            (value.onChain === undefined || isOnChainPricing(value.onChain))) ||
         ((value.isPreview === undefined || value.isPreview === false) &&
             typeof value.nonce === 'number' &&
             typeof value.gas === 'bigint' &&

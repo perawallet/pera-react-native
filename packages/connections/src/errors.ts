@@ -97,3 +97,14 @@ export class DappRequestCodedError extends ConnectionsError {
         this.name = 'DappRequestCodedError'
     }
 }
+
+/**
+ * A refusal the prompt's own sheet has already explained, so the pipeline
+ * answers the peer without raising a second notice.
+ */
+export class DappRequestExplainedError extends ConnectionsError {
+    constructor(message: string) {
+        super('invalid-payload', message)
+        this.name = 'DappRequestExplainedError'
+    }
+}

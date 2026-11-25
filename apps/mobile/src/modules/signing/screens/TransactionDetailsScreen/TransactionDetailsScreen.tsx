@@ -35,12 +35,25 @@ export const TransactionDetailsScreen = () => {
         addressReuseGuard,
         handleRelatedTransactionPress,
         handleRetry,
+        handleClose,
     } = useTransactionDetailsScreen()
+
+    const poisoningFooter = suspectedPoisoning ? (
+        <PWButton
+            variant='primary'
+            title={t('transactions.suspected_poisoning.dismiss')}
+            onPress={handleClose}
+            testID='suspected_poisoning_dismiss'
+        />
+    ) : undefined
 
     if (renderState.kind === 'content') {
         return (
             <AddressReuseGuardProvider guard={addressReuseGuard}>
-                <PWScreen testID='transaction_details_screen'>
+                <PWScreen
+                    testID='transaction_details_screen'
+                    footer={poisoningFooter}
+                >
                     {notice && (
                         <ChainNotice
                             {...notice}
@@ -76,15 +89,26 @@ export const TransactionDetailsScreen = () => {
     if (renderState.kind === 'record') {
         const { RecordDetailBody, record } = renderState
         return (
-            <PWScreen testID='transaction_details_screen'>
-                {notice && (
-                    <ChainNotice
-                        {...notice}
-                        testID='transaction_details_notice'
-                    />
-                )}
-                <RecordDetailBody record={record} />
-            </PWScreen>
+            <AddressReuseGuardProvider guard={addressReuseGuard}>
+                <PWScreen
+                    testID='transaction_details_screen'
+                    footer={poisoningFooter}
+                >
+                    {notice && (
+                        <ChainNotice
+                            {...notice}
+                            testID='transaction_details_notice'
+                        />
+                    )}
+                    {suspectedPoisoning && (
+                        <SuspectedPoisoningNotice
+                            suspectedPoisoning={suspectedPoisoning}
+                            scope={scope}
+                        />
+                    )}
+                    <RecordDetailBody record={record} />
+                </PWScreen>
+            </AddressReuseGuardProvider>
         )
     }
 

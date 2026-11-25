@@ -48,6 +48,13 @@ export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => {
             textAlign: 'center',
             width: '100%',
         },
+        suspiciousSection: {
+            paddingHorizontal: theme.spacing.xl,
+            paddingBottom: theme.spacing.lg,
+        },
+        suspiciousDivider: {
+            marginHorizontal: theme.spacing.xl,
+        },
         typeSection: {
             paddingBottom: theme.spacing.md,
             width: '100%',

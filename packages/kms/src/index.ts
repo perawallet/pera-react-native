@@ -27,6 +27,12 @@ export {
 } from './crypto/mnemonic-indices'
 export { uniformIntBelow, pickDistinctIndexes } from './crypto/random'
 export { handOffSecret, zeroBytes } from './crypto/secure-memory'
+export {
+    clearProvisionalSeed,
+    markSeedProvisional,
+    provisionalSeedLockName,
+    readProvisionalSeeds,
+} from './storage/provisionalSeeds'
 export { AesGcmOpenError, openAesGcm, sealAesGcm } from './crypto/aesGcm'
 export { argon2idDerive, type Argon2idParams } from './crypto/argon2id'
 export {
@@ -81,6 +87,7 @@ export {
 } from './utils'
 export {
     findPasskeyMainKey,
+    generatePasskeyMainKey,
     passkeyMainKeyId,
     usePasskeyMainKey,
     PASSKEY_MAIN_KEY_SCHEME,
@@ -88,6 +95,7 @@ export {
 } from './hooks/usePasskeyMainKey'
 export {
     commitSecret,
+    getSecretMetadata,
     hasSecret,
     removeSecret,
     withSecret,

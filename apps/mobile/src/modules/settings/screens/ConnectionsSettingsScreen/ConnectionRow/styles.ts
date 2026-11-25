@@ -44,6 +44,6 @@ export const useStyles = makeStyles(theme => ({
         flexShrink: 1,
     },
     subtitle: {
-        color: theme.colors.textGrayLighter,
+        color: theme.colors.textGray,
     },
 }))

@@ -31,7 +31,6 @@ export { SwapPairHistoryWidget } from './SwapPairHistoryWidget'
 export { SwapAssetPairIcon } from './SwapAssetPairIcon'
 export type { SwapAssetPairIconProps } from './SwapAssetPairIcon'
 export { SwapHistoryContent } from './SwapHistoryContent'
-export type { SwapHistoryContentProps } from './SwapHistoryContent'
 export { SwapProviderContent } from './SwapProviderContent'
 export type {
     SwapProviderContentProps,

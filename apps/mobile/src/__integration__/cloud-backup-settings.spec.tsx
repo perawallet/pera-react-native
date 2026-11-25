@@ -75,6 +75,7 @@ const setupSyncedBackup = async () => {
         backupId,
         salt: BACKUP_SALT,
         deviceId: 'test-device-id',
+        credentialsConfirmed: true,
     })
 
     const { handlers, getItem, pushFromOtherDevice } = buildSyncHandlers({
@@ -160,6 +161,7 @@ describe('Flow: Cloud backup → Settings sync', () => {
                 updatedAt: 0,
             },
             hiddenTokens: { value: {}, updatedAt: 0 },
+            keptTokens: { value: {}, updatedAt: 0 },
         })
     })
 

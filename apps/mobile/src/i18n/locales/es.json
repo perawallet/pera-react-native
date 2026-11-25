@@ -58,7 +58,8 @@
             "search_web": "Buscar en la web",
             "no_results": "Sin resultados",
             "assets_unavailable": "La búsqueda de activos no está disponible en este momento",
-            "dapps_unavailable": "La búsqueda de dApps no está disponible en este momento"
+            "dapps_unavailable": "La búsqueda de dApps no está disponible en este momento",
+            "unverified": "No verificado"
         },
         "news": {
             "title": "Noticias",
@@ -268,7 +269,10 @@
         "empty_title": "No hay aprobaciones abiertas",
         "empty_body": "No se encontraron aprobaciones abiertas de tokens ni de colecciones para esta cuenta.",
         "error_title": "No se pudieron cargar las aprobaciones",
-        "error_body": "Comprueba tu conexión e inténtalo de nuevo.",
+        "error_body": "Algo salió mal al cargarlas. Inténtalo de nuevo en un momento.",
+        "offline_body": "Comprueba tu conexión e inténtalo de nuevo.",
+        "unavailable_title": "Las aprobaciones aún no están disponibles en esta red",
+        "unavailable_body": "Pera todavía no puede consultar las aprobaciones de tokens de esta cuenta en esta red.",
         "revoke_error_title": "Revocación sin confirmar",
         "revoke_error_body": "Comprueba en la lista el estado de la aprobación antes de volver a intentarlo."
     },
@@ -287,7 +291,11 @@
         "hidden_toast_body": "Ya no aparecerá en tus activos ni se contará en tu saldo. Vuelve a mostrarlo desde Gestionar activos > Ocultar tokens.",
         "hidden_swipe_toast_body": "Toca para deshacer. Ya no aparecerá en tus activos ni se contará en tu saldo.",
         "shown_toast_title": "Se mostró {{assetName}}",
-        "filtered_note": "Pera marcó este token como sospechoso, por eso no aparece en tus activos. Puedes mostrarlo con «Mostrar activos sospechosos» en los filtros de activos."
+        "filtered_note": "Pera marcó este token como sospechoso, por eso no aparece en tus activos. Puedes mostrarlo desde «Tokens ocultos», al final de tus activos.",
+        "auto_hidden_row_title": "Tokens ocultos ({{total}})",
+        "auto_hidden_title": "Tokens ocultos",
+        "auto_hidden_description": "Pera ocultó estos tokens porque parecen spam o estafas. No visites los sitios web que mencionan. Muestra un token para volver a verlo en la lista; seguirá sin contarse en tu saldo.",
+        "auto_hidden_empty_title": "No hay tokens ocultos"
     },
     "deeplink": {
         "error": {
@@ -386,7 +394,8 @@
         "imitated_currency": {
             "marker": "No es {{code}} real",
             "title": "Este activo no es {{code}}",
-            "body": "Su nombre de unidad es {{code}}, pero es un activo distinto que cualquiera podría haber creado. Recibirlo no te da ningún {{code}}."
+            "body": "Su nombre de unidad es {{code}}, pero es un activo distinto que cualquiera podría haber creado. Recibirlo no te da ningún {{code}}.",
+            "unit_label": "Activo desconocido"
         }
     },
     "asset_details": {
@@ -429,8 +438,6 @@
             "social_media": "Redes sociales",
             "chart_empty_body": "Verás un gráfico aquí cuando tengas algo de historial de saldo",
             "total_supply_info_body": "El suministro total de un activo se fija en el momento de su creación y corresponde al total de unidades creadas del activo.",
-            "circulating_supply": "Suministro circulante",
-            "circulating_supply_info_body": "El suministro circulante es el número de monedas que están actualmente en circulación. La moneda nativa de una red no tiene un total fijo, por lo que esta cifra cambia a medida que se emiten o se queman monedas.",
             "token_total_supply_info_body": "El suministro total es el número de tokens que ha emitido el contrato, menos los quemados. Cambia cuando el emisor acuña o quema tokens."
         },
         "action_buttons": {
@@ -446,14 +453,13 @@
             "empty_filtered_body": "Ninguna transacción coincide con este filtro",
             "empty_on_network_body": "Aún no hay transacciones en {{network}}",
             "network_failed": "No se pudieron cargar las transacciones en {{networks}}",
-            "network_unavailable": "Las transacciones no están disponibles en {{networks}}",
+            "network_unavailable": "El historial completo no está disponible en {{networks}}",
             "offline_empty_title": "Estás sin conexión",
             "offline_empty_body": "Todavía no hay transacciones guardadas en este dispositivo. Aparecerán cuando vuelvas a estar en línea.",
             "search_paused_body": "No se encontraron transacciones en el historial reciente.",
             "search_older": "Buscar más antiguas",
             "filter": "Filtrar",
-            "csv": "CSV",
-            "csv_on_network": "CSV de {{network}}"
+            "csv": "CSV"
         },
         "collectible": {
             "description": "Descripción",
@@ -486,7 +492,7 @@
         },
         "token_warning": {
             "suspicious_title": "Token sospechoso",
-            "body": "Pera ha marcado este token como sospechoso. No lo solicitaste y podría ser una estafa. No interactúes con sitios web ni enlaces relacionados con él."
+            "body": "Pera ha marcado este token como sospechoso. No lo solicitaste y podría ser una estafa. Ten cuidado al interactuar con él o con sitios web y enlaces relacionados."
         },
         "copy_full_amount_hint": "Mantén pulsado para copiar el importe completo",
         "toggle_amount_hint": "Toca para alternar entre el valor y la cantidad del activo"
@@ -524,6 +530,7 @@
             "empty_title": "NFT",
             "empty_body": "¡Bienvenido a tu galería de NFT! Todavía no tienes ningún NFT. Todos los NFT disponibles en tu wallet aparecerán aquí.",
             "empty_body_multichain": "¡Bienvenido a tu galería de NFT!\nTodavía no tienes ningún NFT. Los NFT que recibas en redes como Ethereum aparecerán aquí automáticamente. Los NFT de Algorand necesitan un opt-in primero.",
+            "empty_body_unsupported": "Los NFT en {{chains}} aún no se muestran en Pera.",
             "empty_optin": "Añadir NFT",
             "empty_optin_algorand": "Añadir NFT de Algorand",
             "nomatch_title": "Sin NFT coincidentes",
@@ -629,6 +636,8 @@
         "enable_network_success": "Red {{network}} activada",
         "see_all_networks": "Ver todas las redes",
         "view_passphrase": "Ver passphrase",
+        "write_down_passphrase": "Anota también tu passphrase",
+        "write_down_passphrase_subtitle": "Recomendado, no obligatorio",
         "network_options": "Más opciones"
     },
     "account_info": {
@@ -731,18 +740,29 @@
     "backup": {
         "banner": {
             "text": "Debes hacer una copia de seguridad de la passphrase de recuperación",
-            "cta": "Hacer copia ahora"
+            "cta": "Hacer copia ahora",
+            "text_with_cloud_backup": "Debes hacer una copia de seguridad de esta cuenta",
+            "cta_passphrase": "Respaldar passphrase de recuperación",
+            "cta_turn_on_cloud_backup": "Activar copia de seguridad en la nube",
+            "cta_fix_cloud_backup": "Corregir copia de seguridad en la nube"
+        },
+        "status": {
+            "cloud_backup": "Con copia de seguridad · Copia de seguridad en la nube"
         },
         "info": {
             "title": "Crea una copia de seguridad de la passphrase de recuperación de tu cuenta",
             "body": "Crear una copia de seguridad de la passphrase de recuperación te permitirá recuperar tu cuenta. Sin la passphrase de recuperación, si pierdes tu dispositivo, eliminas la cuenta o borras la app, ¡puedes perder el acceso a tu cuenta de Algorand de forma permanente!",
-            "body_all_networks": "Tu passphrase de recuperación es la única forma de recuperar tu cuenta en todas las redes: {{networks}}. Si pierdes tu dispositivo, eliminas la cuenta o borras la app sin una copia de seguridad, perderás el acceso a tus fondos de forma permanente.",
+            "body_all_networks": "Una copia de seguridad de la passphrase de recuperación te permite recuperar tu cuenta en todas las redes: {{networks}}. Si pierdes tu dispositivo, eliminas la cuenta o borras la app sin una copia de seguridad, perderás el acceso a tus fondos de forma permanente.",
+            "body_with_cloud_backup": "Una copia de seguridad de la passphrase de recuperación te permite recuperar tu cuenta de Algorand. La copia de seguridad en la nube también puede restaurarla. Sin ninguna de las dos copias, si pierdes tu dispositivo, eliminas la cuenta o borras la app, puedes perder el acceso a tu cuenta de forma permanente.",
+            "body_all_networks_with_cloud_backup": "Una copia de seguridad de la passphrase de recuperación te permite recuperar tu cuenta en todas las redes: {{networks}}. La copia de seguridad en la nube también puede restaurarla. Sin ninguna de las dos copias, si pierdes tu dispositivo, eliminas la cuenta o borras la app, perderás el acceso a tus fondos de forma permanente.",
             "cta": "Lo entiendo"
         },
         "write_down": {
             "title": "Prepárate para anotar tu passphrase de recuperación",
-            "body": "La única forma de recuperar una cuenta de Algorand es con esta passphrase de recuperación.",
-            "body_all_networks": "Esta passphrase de recuperación es la única forma de recuperar tu cuenta y todas sus direcciones en todas las redes.",
+            "body": "Esta passphrase de recuperación recupera tu cuenta de Algorand.",
+            "body_all_networks": "Esta passphrase de recuperación recupera tu cuenta y todas sus direcciones en todas las redes.",
+            "body_with_cloud_backup": "Esta passphrase de recuperación recupera tu cuenta de Algorand. La copia de seguridad en la nube es la otra forma de restaurarla.",
+            "body_all_networks_with_cloud_backup": "Esta passphrase de recuperación recupera tu cuenta y todas sus direcciones en todas las redes. La copia de seguridad en la nube es la otra forma de restaurarla.",
             "warning": "No compartas esta passphrase de recuperación con nadie, ya que otorga acceso total a tu cuenta.",
             "warning_all_networks": "No compartas esta passphrase de recuperación con nadie. Cualquiera que la tenga controla tus fondos en todas las redes.",
             "cta": "Todo listo, empezar"
@@ -850,6 +870,16 @@
             "description": "Elige las palabras correctas para confirmar que has guardado tu clave de 12 palabras de forma segura.",
             "proceed": "Continuar",
             "error_message": "Selección incorrecta. Vuelve a intentarlo."
+        },
+        "confirm_credentials": {
+            "warning": "Confirma que has guardado la clave de tu copia de seguridad",
+            "title": "Confirmar clave de la copia",
+            "description": "Elige las palabras correctas de tu clave de 12 palabras e introduce tu clave de cifrado para confirmar que las has guardado.",
+            "confirm": "Confirmar",
+            "error_words": "Algunas de las palabras seleccionadas son incorrectas. Vuelve a intentarlo.",
+            "error_key": "Esta clave de cifrado no coincide con tu copia de seguridad.",
+            "error_both": "Las palabras seleccionadas y la clave de cifrado son incorrectas.",
+            "success": "Clave de la copia confirmada"
         },
         "store_encryption_key": {
             "title": "Guarda tu clave de cifrado",
@@ -1067,6 +1097,12 @@
             "confirm_button": "Eliminar la copia de seguridad",
             "confirm_checkbox_label": "Entiendo que mi copia de seguridad se eliminará del servidor de forma permanente y que esta acción no se puede deshacer."
         },
+        "turn_off_at_risk": {
+            "summary_one": "Esta cuenta con <0/> dejará de tener copia de seguridad.",
+            "summary_other": "Estas {{count}} cuentas con <0/> dejarán de tener copia de seguridad.",
+            "back_up_first": "Hacer copia de las passphrases primero",
+            "turn_off_anyway": "Desactivar de todos modos"
+        },
         "restore": {
             "sheet_title": "Restaurar una copia de seguridad",
             "sheet_description": "Restaura tu copia de seguridad escaneando un código QR o introduciendo tus credenciales manualmente.",
@@ -1205,6 +1241,10 @@
             "title": "Copiado al portapapeles",
             "body": ""
         },
+        "address_copied": {
+            "algorand": "Dirección de Algorand copiada",
+            "evm": "Dirección EVM copiada"
+        },
         "email_failed": {
             "title": "No se pudo abrir la app de correo",
             "body": "No hay ninguna app de correo configurada en este dispositivo. Puedes escribir directamente a {{email}}."
@@ -1231,7 +1271,8 @@
             "asset_empty_body": "Aquí verás un gráfico cuando tengas historial de saldo de este activo en esta cuenta",
             "excludes_networks": "Este gráfico aún no incluye los activos de {{networks}}",
             "failed_networks": "No se pudo cargar el historial de {{networks}}, así que este gráfico no lo incluye",
-            "currency_unavailable_body": "Este gráfico no está disponible en {{currency}} por ahora"
+            "currency_unavailable_body": "Este gráfico no está disponible en {{currency}} por ahora",
+            "balance_change_label": "Cambio de saldo"
         },
         "webview": {
             "failed_title": "No se pudo cargar la página",
@@ -1499,6 +1540,10 @@
             "asset_frozen": {
                 "title": "Activo congelado",
                 "body": "El activo {{assetId}} está congelado, por lo que esta transferencia no se puede completar. El gestor de congelación del activo debe descongelarlo primero."
+            },
+            "fee_above_shown": {
+                "title": "La comisión de red cambió",
+                "body": "La red ahora pide una comisión más alta que la que viste, así que no se firmó nada. Inténtalo de nuevo para ver la comisión actual."
             }
         },
         "kms": {
@@ -1532,7 +1577,8 @@
             "request_expired_body": "Esta solicitud de firma caducó antes de recibir respuesta. Pide a la app que la envíe de nuevo.",
             "unsupported_method_body": "{{dappName}} solicitó {{method}}, que Pera no admite, por lo que se rechazó la solicitud.",
             "unsupported_network_body": "{{dappName}} quiso usar la red con ID de cadena {{chainId}}, que Pera no admite, por lo que se rechazó la solicitud.",
-            "unsupported_chains_body": "Esta app quiso usar una red que Pera no admite, por lo que se rechazó la conexión."
+            "unsupported_chains_body": "Esta app quiso usar una red que Pera no admite, por lo que se rechazó la conexión.",
+            "unselected_network_body": "Esta app solo ofrece redes en las que Pera no está ahora, por lo que se rechazó la conexión. Activa o desactiva el modo desarrollador para que coincida con la app y vuelve a intentarlo."
         },
         "signing": {
             "title": "Error al procesar la solicitud de firma",
@@ -2379,6 +2425,8 @@
             "load_error": "No se pudo cargar esta transacción. Es posible que haya caducado o se haya eliminado.",
             "cosign_rejected_title": "No se puede firmar esta transacción",
             "cosign_rejected_body": "Esta solicitud incluye una transacción que la cuenta compartida no autoriza. Si el remitente es una cuenta con rekey a la cuenta compartida, añádela a tu wallet e inténtalo de nuevo.",
+            "request_open_title": "Cierra primero la solicitud abierta",
+            "request_open_body": "Completa o cierra la solicitud de firma y vuelve a abrir el enlace.",
             "retry": "Volver a intentar",
             "canceled": "Transacción cancelada.",
             "declined": "Transacción rechazada.",
@@ -2773,6 +2821,14 @@
                 "fetch_failed_title": "No se pudo cargar la copia de seguridad",
                 "decrypt_failed_title": "No se pudo desbloquear la copia de seguridad"
             },
+            "review": {
+                "title": "Revisa las cuentas",
+                "body_one": "Este código importa {{count}} cuenta. Comprueba que es tuya antes de importarla.",
+                "body_other": "Este código importa {{count}} cuentas. Comprueba que son tuyas antes de importarlas.",
+                "body": "Este código importa {{count}} cuentas. Comprueba que son tuyas antes de importarlas.",
+                "confirm": "Importar cuentas",
+                "interrupted": "La importación se interrumpió. Vuelve a escanear el código QR para continuar."
+            },
             "result": {
                 "success_title": "Cuentas importadas",
                 "success_body_one": "Se añadió {{count}} cuenta a tu wallet.",
@@ -3150,6 +3206,7 @@
             "verify_title": "Introduce tu PIN",
             "unlock_title": "Introduce tu PIN",
             "change_old_title": "Introduce tu PIN\nanterior de 6 dígitos",
+            "matches_duress_pin": "Tu nuevo PIN debe ser distinto de tu PIN de emergencia.",
             "logging_in": "Iniciando sesión"
         },
         "lockout": {
@@ -3297,7 +3354,8 @@
             },
             "fee_shortfall": {
                 "title": "No tienes suficiente {{symbol}} para la comisión",
-                "body": "Este envío puede costar hasta {{fee}} en comisiones. Reduce la cantidad o elige una comisión más lenta."
+                "body": "Este envío puede costar hasta {{fee}} en comisiones. Reduce la cantidad o elige una comisión más lenta.",
+                "body_non_native": "Este envío puede costar hasta {{fee}} en comisiones en {{network}}. Añade {{symbol}} o elige una comisión más lenta."
             },
             "fee_unavailable": {
                 "title": "No se pudo estimar la comisión",
@@ -3628,6 +3686,31 @@
             "typed_data_warning_title": "Esta firma puede mover tus tokens",
             "typed_data_warning_body": "Firmar datos estructurados puede autorizar a una aplicación a gastar o intercambiar tus tokens sin volver a preguntarte. Aprueba solo si confías en esta aplicación."
         },
+        "sign_in": {
+            "title": "Iniciar sesión en {{domain}}",
+            "domain": "Dominio",
+            "address": "Dirección",
+            "uri": "URI",
+            "chain_id": "ID de cadena",
+            "nonce": "Nonce",
+            "issued_at": "Emitido",
+            "expires_at": "Caduca",
+            "advanced": "Avanzado",
+            "site_mismatch_title": "Este inicio de sesión es para otro sitio",
+            "site_mismatch_body": "El mensaje inicia tu sesión en {{domain}}, pero la solicitud viene de {{site}}. Aprueba solo si confías en ambos.",
+            "other_address_note": "El mensaje indica {{address}}, no la cuenta que firma.",
+            "other_chain_note": "El mensaje indica {{chain}}, no la red de esta solicitud. Iniciar sesión no envía ninguna transacción.",
+            "other_chain_id_note": "El mensaje indica el ID de cadena {{chainId}}, no la red de esta solicitud. Iniciar sesión no envía ninguna transacción.",
+            "statement_label": "Mensaje de {{domain}}",
+            "not_before": "Válido desde",
+            "request_id": "ID de solicitud",
+            "resource": "Recurso",
+            "grants_title": "Este inicio de sesión también concede permisos",
+            "grants_body": "Al firmar, {{domain}} podrá actuar en tu nombre con los permisos de abajo. Aprueba solo si confías en el sitio.",
+            "grants_unreadable_body": "Este inicio de sesión concede a {{domain}} permisos que Pera no puede leer. Aprueba solo si confías en el sitio.",
+            "malformed_title": "Este mensaje de inicio de sesión tiene contenido inesperado",
+            "malformed_body": "Partes de este mensaje no siguen el formato de inicio de sesión, así que {{domain}} podría leerlo de forma distinta a como se muestra aquí. Revisa el mensaje completo en Avanzado y apruébalo solo si confías en el sitio."
+        },
         "spend_approval": {
             "spend_warning": "Esta firma permite que otra dirección mueva tokens de tu cuenta sin volver a preguntarte.",
             "spend_warning_transaction": "Esta transacción permite que otra dirección mueva tokens de tu cuenta sin volver a preguntarte.",
@@ -3639,7 +3722,11 @@
             "no_deadline_warning": "Este permiso nunca caduca.",
             "spender_label": "Dirección autorizada",
             "unlimited": "Ilimitada",
-            "deadline_label": "Fecha límite",
+            "expiry_label": "El permiso vence",
+            "signature_deadline_label": "Firma válida hasta",
+            "signature_long_deadline_warning": "Esta firma sigue siendo válida durante más de un año, así que puede usarse mucho después de que la firmes.",
+            "expired_title": "Esta solicitud ha vencido",
+            "expired_body": "Su plazo de firma ya pasó, así que sería rechazada. Cancela y vuelve a empezar en la app.",
             "never": "Nunca",
             "known_title": "Sobre esta autorización",
             "known_description": "{{name}} es un contrato conocido",
@@ -3902,6 +3989,7 @@
             "approval_for": "Para {{spender}}",
             "unlimited_approval_for": "Ilimitado · para {{spender}}",
             "swap_pair": "Swap {{from}} → {{to}}",
+            "swap_assets": "{{from}} → {{to}}",
             "add_liquidity": "Añadir liquidez",
             "remove_liquidity": "Retirar liquidez",
             "collect_fees": "Cobrar comisiones",
@@ -3917,7 +4005,10 @@
             "nft_subtitle": "{{collection}} #{{tokenId}}",
             "nft_batch_subtitle": "{{collection}} · {{count}} elementos",
             "inner_transaction_count": "{{innerCount}} transacciones internas",
-            "cancel_transaction": "Cancelar transacción"
+            "cancel_transaction": "Cancelar transacción",
+            "send_by_approval": "Envío (aprobado)",
+            "spoofed_send": "Envío falsificado",
+            "contract_call_named": "Contrato: {{method}}"
         },
         "record_detail": {
             "read_failed": "No se pudieron leer de la red los detalles de la llamada de esta transacción.",
@@ -4067,6 +4158,8 @@
             "title": "Filtrar",
             "all_time": "Todo el tiempo",
             "today": "Hoy",
+            "hide_suspicious": "Ocultar transacciones sospechosas",
+            "hide_suspicious_description": "Oculta envíos falsificados, tokens de imitación o spam y posibles envenenamientos de direcciones.",
             "yesterday": "Ayer",
             "last_week": "Última semana",
             "last_month": "Último mes",
@@ -4089,15 +4182,20 @@
             "blocked_body": "Una transacción anterior de esta cuenta nunca llegó a la red, así que esta no puede confirmarse hasta que algo ocupe su lugar. Desbloquear envía en su lugar una transferencia vacía a ti mismo, que cuesta una comisión de red.",
             "unblock": "Desbloquear"
         },
+        "suspected_fake_transfer": {
+            "title": "Posible transferencia falsa",
+            "body": "Tu cuenta no firmó esta transferencia y no movió nada. Cualquiera puede hacer que una transferencia de 0 tokens parezca venir de tu cuenta, sin ninguna aprobación. Los estafadores lo hacen para que su dirección aparezca en tu historial y se copie más tarde. No copies direcciones de ella."
+        },
         "suspected_poisoning": {
-            "marker": "Posible envenenamiento de direcciones",
             "title": "Posible envenenamiento de direcciones",
-            "body": "Esta transferencia no movió nada de valor y viene de una dirección creada para parecerse a una que conoces. Los estafadores envían esto para que su dirección aparezca en tu historial y la copies más adelante. No la copies ni le envíes nada.",
+            "body": "Esta transferencia no movió nada de valor y viene de una dirección creada para parecerse a una que conoces. Los estafadores envían esto para que su dirección aparezca en tu historial y la copies más adelante.",
+            "do_not_reuse": "No copies esta dirección ni le envíes nada.",
             "sender_label": "Esta dirección",
             "reuse_title": "Esta dirección imita a una que conoces",
             "reuse_body": "Empieza y termina como una dirección que conoces, pero no es la misma. Compara las direcciones completas antes de usarla.",
             "reuse_confirm": "Continuar de todos modos",
-            "reuse_cancel": "Cancelar"
+            "reuse_cancel": "Cancelar",
+            "dismiss": "Entendido"
         }
     },
     "tabbar": {
@@ -4145,15 +4243,34 @@
             "view_accounts": "Ver tu dirección y tus saldos",
             "approve_transactions": "Pedirte que apruebes transacciones",
             "sign_messages": "Pedirte que firmes mensajes",
-            "switch_networks": "Pedir cambiar de red"
+            "switch_networks": "Pedir cambiar de red",
+            "add_tokens": "Pedir añadir tokens a tu cuenta"
         },
         "connection": {
             "approve_delivery_failed": "No se ha podido contactar con la dApp para confirmar la conexión. Comprueba tu conexión a internet y vuelve a intentarlo."
         },
         "switch_network": {
             "title": "¿Permitir acceso a la red?",
-            "body": "{{name}} quiere usar tus cuentas de {{chain}} en {{network}}.",
+            "body": "{{name}} quiere usar tus cuentas en {{chain}}.",
+            "body_with_network": "{{name}} quiere usar tus cuentas en {{chain}} {{network}}.",
             "confirm": "Permitir"
+        },
+        "watch_asset": {
+            "title": "¿Añadir token?",
+            "body": "{{name}} quiere añadir este token a tu cuenta.",
+            "unreadable": "Pera no pudo leer ningún token en esta dirección de {{chain}}.",
+            "confirm": "Añadir token",
+            "token": "Token",
+            "verification": "Verificación",
+            "contract": "Contrato",
+            "decimals": "Decimales",
+            "network": "Red",
+            "account": "Cuenta",
+            "tier": {
+                "verified": "Verificado",
+                "unverified": "No verificado",
+                "suspicious": "Sospechoso"
+            }
         },
         "settings": {
             "empty_title": "No hay sesiones de WalletConnect",
@@ -4292,6 +4409,7 @@
             "quote_error": "No se pudieron obtener cotizaciones. Vuelve a intentarlo.",
             "amount_too_low": "El importe es demasiado pequeño para un swap en {{network}}. El mínimo es {{amount}} {{unit}}.",
             "amount_too_low_fiat": "El importe es demasiado pequeño para un swap en {{network}}. El mínimo es {{amount}} {{unit}} (~{{fiat}}).",
+            "amount_too_low_above_balance": "Tu saldo disponible es inferior al mínimo de {{amount}} {{unit}} para un swap en {{network}}.",
             "use_minimum": "Usar mínimo",
             "amount_too_low_unknown": "El importe es demasiado pequeño para un swap en {{network}}. Prueba con un importe mayor o una red con comisiones más bajas.",
             "amount_too_high": "El importe es demasiado grande para un swap. El máximo es {{amount}} {{unit}}.",
@@ -4311,9 +4429,12 @@
                 "swap": "Swap fallido"
             },
             "provider_failed_body": "Este proveedor no pudo completar el swap. Prueba con otro proveedor.",
+            "provider_failed_single_body": "El proveedor no pudo completar el swap. Inténtalo más tarde o prueba con otro importe.",
             "provider_unavailable_body": "El proveedor no está disponible en este momento. Inténtalo de nuevo en unos instantes.",
             "quote_mismatch_body": "Las transacciones del proveedor no coincidían con esta cotización, así que no se firmó nada. Inténtalo de nuevo o elige otro proveedor.",
+            "quote_mismatch_single_body": "Las transacciones del proveedor no coincidían con esta cotización, así que no se firmó nada. Inténtalo más tarde.",
             "unsupported_order_body": "Pera no puede completar la orden de este proveedor, así que no se firmó nada. Elige otro proveedor.",
+            "unsupported_order_single_body": "Pera no puede completar la orden de este proveedor, así que no se firmó nada. Inténtalo más tarde.",
             "signing_failed_body": "No se pudo firmar la transacción, así que no se envió. Inténtalo de nuevo.",
             "order_insufficient_balance_body": "Tu saldo no cubre esta cantidad y la comisión de red. Prueba con una cantidad menor o añade fondos para la comisión.",
             "insufficient_native_body": "Esta cuenta necesita al menos {{amount}} {{symbol}} más para cubrir este swap, sus comisiones y el saldo mínimo. Añade más {{symbol}} y vuelve a intentarlo.",
@@ -4360,6 +4481,8 @@
                         "refunded": "Reembolsado"
                     }
                 },
+                "account_filter_all": "Todas las cuentas",
+                "load_more": "Cargar más",
                 "empty": {
                     "title": "Aún no hay swaps",
                     "body": "Tu historial de swaps aparecerá aquí."
@@ -5197,6 +5320,8 @@
             "gwei": "Gwei",
             "nonce": "Nonce",
             "gas_limit": "Límite de gas",
+            "gas_used": "Gas usado",
+            "gas_price": "Precio del gas",
             "max_fee_per_gas": "Comisión máxima por gas",
             "max_priority_fee_per_gas": "Comisión de prioridad máxima por gas"
         },

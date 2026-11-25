@@ -66,6 +66,7 @@ import { SENDER } from '@packages/chain-ethereum/src/__tests__/testing'
 import { OP_STACK_ORACLE_ADDRESS } from '@packages/chain-ethereum/src/transfer/__tests__/op-stack-oracle'
 import {
     chainAccountOf,
+    getAccountAddedTokens,
     useAccountsStore,
     ownAddressOf,
     type WalletAccount,
@@ -88,14 +89,17 @@ import {
 import {
     resetConnectionPairingStateForTesting,
     useConnectionRegistry,
+    type ConnectionRegistry,
     type ConnectionRegistryClient,
 } from '@perawallet/wallet-core-connections'
 import type { ConnectionOrigin } from '@perawallet/wallet-extension-connections'
 import {
     DEFAULT_EVM_RPC_RESPONSES,
+    erc20CallResponder,
     EvmRpcErrorFixture,
     evmRpcHandlers,
     evmTransactionReceipt,
+    peraEvmHandlers,
 } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
 import { kmsCore, useKMS } from '@perawallet/wallet-core-kms'
 import { nativeAssetFor, upsertAssets } from '@perawallet/wallet-core-assets'
@@ -215,6 +219,7 @@ const ETHEREUM_METHODS = [
     'eth_signTypedData',
     'wallet_switchEthereumChain',
     'wallet_sendCalls',
+    'wallet_watchAsset',
     'eth_accounts',
     'eth_requestAccounts',
     'eth_chainId',
@@ -427,7 +432,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
         it('Given an eip155-only proposal, when the sheet opens, then only the Ethereum account is listed and Connect approves its checksummed address', async () => {
             await mountProvider()
             // The approved methods are the requested ones the wallet lists, so
-            // the dApp asks for the whole set and two Pera never lists.
+            // the dApp asks for the whole set and one Pera never lists.
             const walletKit = await propose({
                 requiredNamespaces: {
                     eip155: {
@@ -439,10 +444,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                 optionalNamespaces: {
                     eip155: {
                         chains: [ETH_MAINNET],
-                        methods: [
-                            'wallet_addEthereumChain',
-                            'wallet_watchAsset',
-                        ],
+                        methods: ['wallet_addEthereumChain'],
                         events: [],
                     },
                 },
@@ -2358,6 +2360,45 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                 ).toBeNull()
             })
 
+            it('Given a batch sending 1 wei and 1 ETH to one address and an unlimited approval, when it is queued, then each row shows its own amount and the approval is flagged unlimited', async () => {
+                const RECIPIENT = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
+                const MAX_UINT = 'f'.repeat(64)
+                const walletKit = await settle()
+                renderSignReview()
+
+                sendCalls(walletKit, {
+                    calls: [
+                        { to: RECIPIENT, value: '0x1' },
+                        { to: RECIPIENT, value: '0xde0b6b3a7640000' },
+                        {
+                            to: TOKEN,
+                            data: `0x095ea7b3${ROUTER.slice(2).toLowerCase().padStart(64, '0')}${MAX_UINT}`,
+                        },
+                    ],
+                })
+
+                await waitFor(
+                    () => {
+                        expect(
+                            screen.getAllByTestId(
+                                'transaction_preview_warning',
+                            ),
+                        ).not.toHaveLength(0)
+                    },
+                    { timeout: 5000 },
+                )
+                const details = screen
+                    .getAllByTestId('transaction_preview_amount')
+                    .map(node => node.textContent)
+                expect(details).toContain('signing.review.permission_unlimited')
+                const amounts = new Set(
+                    details.filter(
+                        text => text !== 'signing.review.permission_unlimited',
+                    ),
+                )
+                expect(amounts.size).toBe(2)
+            })
+
             it('Given a batch of one call, when it is reviewed and approved, then it lands and its status is 200 with one receipt', async () => {
                 const walletKit = await settle()
 
@@ -2464,8 +2505,165 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
             })
         })
 
+        describe('wallet_watchAsset', () => {
+            const WATCHED_TOKEN = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+            const ETH_SCOPE = {
+                chainId: 'ethereum',
+                networkId: 'mainnet',
+            } as const
+
+            beforeAll(setupTestDatabase)
+            beforeEach(resetTestDatabase)
+            afterAll(teardownTestDatabase)
+
+            const serveToken = () =>
+                server.use(
+                    ...peraEvmHandlers(),
+                    ...evmRpcHandlers({
+                        responses: {
+                            eth_call: erc20CallResponder({
+                                [WATCHED_TOKEN]: {
+                                    name: 'USD Coin',
+                                    symbol: 'USDC',
+                                    decimals: 6,
+                                    totalSupply: 1_000_000_000_000n,
+                                },
+                            }),
+                        },
+                    }),
+                )
+
+            const watch = async (
+                address: string = WATCHED_TOKEN.toLowerCase(),
+            ) => {
+                serveToken()
+                await mountProvider()
+                const walletKit = await propose(
+                    eip155Namespace('requiredNamespaces'),
+                )
+                await selectRows(ETHEREUM_ACCOUNT)
+                await connect(walletKit)
+                act(() => {
+                    walletKit.emit(
+                        'session_request',
+                        makeRequest({
+                            id: 41,
+                            method: 'wallet_watchAsset',
+                            // The dApp's own symbol and decimals are wrong on purpose.
+                            params: {
+                                type: 'ERC20',
+                                options: {
+                                    address,
+                                    symbol: 'FAKE',
+                                    decimals: 2,
+                                    image: 'https://example.test/fake.png',
+                                },
+                            },
+                            chainId: ETH_MAINNET,
+                        }),
+                    )
+                })
+                return walletKit
+            }
+
+            const answerTo = (walletKit: FakeWalletKit) =>
+                (walletKit.respondSessionRequest as Mock).mock.calls
+                    .map(([{ response }]) => response)
+                    .find(response => response.id === 41)
+
+            const addedTokens = () =>
+                getAccountAddedTokens({
+                    sources: [
+                        { address: STORED_ETH_ADDRESS, scope: ETH_SCOPE },
+                    ],
+                })
+
+            it('Given an ERC-20 request, when the sheet opens, then it shows the on-chain symbol, decimals, contract and tier, and Add lists the token on the account and answers true', async () => {
+                const walletKit = await watch()
+
+                await waitFor(
+                    () => {
+                        expect(
+                            findButton('walletconnect.watch_asset.confirm'),
+                        ).toBeTruthy()
+                        expect(screen.getByText('USDC')).toBeTruthy()
+                    },
+                    { timeout: 15_000 },
+                )
+                expect(screen.queryByText('FAKE')).toBeNull()
+                expect(screen.getByText('6')).toBeTruthy()
+                expect(
+                    screen.getByText(
+                        'walletconnect.watch_asset.tier.unverified',
+                    ),
+                ).toBeTruthy()
+                expect(answerTo(walletKit)).toBeUndefined()
+
+                fireEvent.click(
+                    findButton('walletconnect.watch_asset.confirm')!,
+                )
+
+                await waitFor(
+                    () => {
+                        expect(answerTo(walletKit)).toMatchObject({
+                            result: true,
+                        })
+                    },
+                    { timeout: 15_000 },
+                )
+                expect(await addedTokens()).toEqual([
+                    {
+                        scope: ETH_SCOPE,
+                        assetId: WATCHED_TOKEN,
+                        hasBalance: false,
+                    },
+                ])
+            })
+
+            it('Given an ERC-20 request, when the user cancels, then the dApp gets 4001 and no token is added', async () => {
+                const walletKit = await watch()
+                await waitFor(
+                    () => {
+                        expect(findButton('common.cancel.label')).toBeTruthy()
+                    },
+                    { timeout: 15_000 },
+                )
+
+                fireEvent.click(findButton('common.cancel.label')!)
+
+                await waitFor(() => {
+                    expect(answerTo(walletKit)).toMatchObject({
+                        error: { code: 4001 },
+                    })
+                })
+                expect(await addedTokens()).toEqual([])
+            })
+
+            it('Given an address that holds no token, when the sheet reads it, then Close answers the dApp -32602 and no token is added', async () => {
+                const walletKit = await watch(
+                    '0x1111111111111111111111111111111111111111',
+                )
+
+                await waitFor(
+                    () => {
+                        expect(findButton('common.close.label')).toBeTruthy()
+                    },
+                    { timeout: 15_000 },
+                )
+                fireEvent.click(findButton('common.close.label')!)
+
+                await waitFor(() => {
+                    expect(answerTo(walletKit)).toMatchObject({
+                        error: { code: -32_602 },
+                    })
+                })
+                expect(await addedTokens()).toEqual([])
+            })
+        })
+
         describe('network switching and session events', () => {
             const ETH_SEPOLIA = 'eip155:11155111'
+            const BASE_SEPOLIA = 'eip155:84532'
             const EVENTS = ['chainChanged', 'accountsChanged']
             const ALGORAND_TESTNET_GENESIS_HASH =
                 'SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI='
@@ -2493,10 +2691,16 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     walletKit.emit('session_request', makeRequest(request))
                 })
 
-            const settleEthereum = async (chains = [ETH_MAINNET]) => {
+            const settleEthereum = async (
+                chains = [ETH_MAINNET],
+                namespaceKind:
+                    | 'requiredNamespaces'
+                    | 'optionalNamespaces' = 'requiredNamespaces',
+            ) => {
                 await mountProvider()
                 const walletKit = await propose({
-                    requiredNamespaces: {
+                    requiredNamespaces: {},
+                    [namespaceKind]: {
                         eip155: {
                             chains,
                             methods: [
@@ -2583,7 +2787,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                                 events: [],
                             },
                             eip155: {
-                                chains: [ETH_MAINNET],
+                                chains: [BASE_SEPOLIA],
                                 methods: [
                                     'wallet_switchEthereumChain',
                                     'eth_chainId',
@@ -2622,7 +2826,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                         id: 22,
                         method: 'wallet_switchEthereumChain',
                         params: [{ chainId: '0xaa36a7' }],
-                        chainId: ETH_MAINNET,
+                        chainId: BASE_SEPOLIA,
                     })
                     await waitFor(() => {
                         expect(
@@ -2768,29 +2972,36 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                         ([call]) => call,
                     )
 
-                it('Given a session approved for both Ethereum networks, when the wallet leaves live mode, then it hears chainChanged and an Algorand-only one hears nothing', async () => {
-                    const walletKit = await settleEthereum([
-                        ETH_MAINNET,
-                        ETH_SEPOLIA,
-                    ])
+                it('Given a dApp naming both Ethereum networks in live mode, when it connects, then the session holds mainnet only and leaving live mode sends it nothing', async () => {
+                    const walletKit = await settleEthereum(
+                        [ETH_MAINNET, ETH_SEPOLIA],
+                        'optionalNamespaces',
+                    )
                     await openAlgorandOnlySession(walletKit)
 
-                    act(() => {
+                    expect(approvedNamespaces(walletKit).eip155.chains).toEqual(
+                        [ETH_MAINNET],
+                    )
+                    const notify = vi.spyOn(
+                        captured.registry as ConnectionRegistry,
+                        'notify',
+                    )
+
+                    await act(async () => {
                         useNetworkStore.getState().setMode('developer')
                     })
-
-                    await waitFor(() => {
-                        expect(emitted(walletKit)).toEqual([
-                            {
-                                topic: V2_SESSION_TOPIC,
-                                event: {
-                                    name: 'chainChanged',
-                                    data: '0xaa36a7',
-                                },
-                                chainId: ETH_SEPOLIA,
-                            },
-                        ])
+                    // The emit would land only once each notice settles, so
+                    // an absence asserted earlier proves nothing.
+                    await act(async () => {
+                        await Promise.all(
+                            notify.mock.results.map(({ value }) => value),
+                        )
                     })
+
+                    expect(notify).toHaveBeenCalledWith(
+                        expect.objectContaining({ type: 'network-changed' }),
+                    )
+                    expect(emitted(walletKit)).toEqual([])
                     expect(walletKit.updateSession).not.toHaveBeenCalled()
                 })
 
@@ -2798,11 +3009,14 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     act(() => {
                         useNetworkStore.getState().setMode('developer')
                     })
-                    const walletKit = await settleEthereum([
-                        ETH_MAINNET,
-                        ETH_SEPOLIA,
-                    ])
+                    const walletKit = await settleEthereum(
+                        [ETH_MAINNET, ETH_SEPOLIA],
+                        'optionalNamespaces',
+                    )
 
+                    expect(approvedNamespaces(walletKit).eip155.chains).toEqual(
+                        [ETH_SEPOLIA],
+                    )
                     await waitFor(() => {
                         expect(emitted(walletKit)).toEqual([
                             {

@@ -58,5 +58,9 @@ public class LegacyMigrationModule: Module {
     AsyncFunction("resetLegacyData") { () in
       LegacyDataWiper().forceClear()
     }
+
+    AsyncFunction("wipeMigratedLegacyData") { () throws in
+      try LegacyDataWiper().wipeMigrated()
+    }
   }
 }

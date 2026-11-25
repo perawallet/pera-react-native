@@ -170,6 +170,7 @@ export const AssetHoldings = ({
                                     ? selectedPoint?.preferredValue
                                     : selectedPoint?.amount
                             }
+                            selectedAt={selectedPoint?.datetime}
                         />
                     </PWView>
                 </PWView>

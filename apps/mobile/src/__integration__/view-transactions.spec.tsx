@@ -17,9 +17,11 @@ import {
     describe,
     expect,
     it,
+    onTestFinished,
     vi,
 } from 'vitest'
 import React from 'react'
+import { Linking } from 'react-native'
 import { Decimal } from 'decimal.js'
 import {
     act,
@@ -486,13 +488,17 @@ describe('Flow: View transactions → tap into details', () => {
 
         // The explorer link is Pera Explorer's page for this transaction.
         useWebViewStore.getState().clearWebViews()
+        const openURL = vi.spyOn(Linking, 'openURL').mockResolvedValue(true)
+        onTestFinished(() => openURL.mockRestore())
         fireEvent.click(
             closestPressable(
                 screen.getByTestId('transaction_detail_explorer'),
             ) ?? screen.getByTestId('transaction_detail_explorer'),
         )
-        const [explorerView] = useWebViewStore.getState().openWebViews
-        expect(explorerView?.url).toMatch(new RegExp(`/tx/${TX_PAYMENT.id}$`))
+        expect(openURL).toHaveBeenCalledWith(
+            expect.stringMatching(new RegExp(`/tx/${TX_PAYMENT.id}$`)),
+        )
+        expect(useWebViewStore.getState().openWebViews).toEqual([])
     })
 
     it('Given an application call with inner transactions, when the user taps its row, then the details screen shows them and its application details, with no note link', async () => {
@@ -595,20 +601,9 @@ describe('Flow: View transactions → tap into details', () => {
             truncateAlgorandAddress(HD_TEST_ADDRESS),
         )
         expect(transferRow.textContent).toMatch(/\+\s*2\.5\d*\s*USDC/)
-
-        expect(
-            screen.queryByTestId(
-                `transaction_row_imitated_currency_${TX_PAYMENT.id}`,
-            ),
-        ).toBeNull()
-        expect(
-            screen.queryByTestId(
-                `transaction_row_imitated_currency_${TX_ASSET_TRANSFER.id}`,
-            ),
-        ).toBeNull()
     })
 
-    it('Given a received asset whose unit name is ALGO, its row warns that it is not ALGO and the real payment row does not', async () => {
+    it('Given a received asset whose unit name is ALGO, its row names it an unknown asset rather than ALGO', async () => {
         await upsertTransactions({
             items: [TX_SPOOF_TRANSFER],
             accountAddress: addressOf(ACCOUNT),
@@ -617,22 +612,13 @@ describe('Flow: View transactions → tap into details', () => {
 
         renderWithNavigation(AccountHistory, 'AccountHistory')
 
-        const marker = await screen.findByTestId(
-            `transaction_row_imitated_currency_${TX_SPOOF_TRANSFER.id}`,
+        const row = await screen.findByTestId(
+            `transaction_row_${TX_SPOOF_TRANSFER.id}`,
             undefined,
             { timeout: 5000 },
         )
-        expect(marker.textContent).toContain('asset.imitated_currency.marker')
-        expect(
-            screen.queryByTestId(
-                `transaction_row_imitated_currency_${TX_PAYMENT.id}`,
-            ),
-        ).toBeNull()
-        expect(
-            screen.queryByTestId(
-                `transaction_row_imitated_currency_${TX_ASSET_TRANSFER.id}`,
-            ),
-        ).toBeNull()
+        expect(row.textContent).toContain('asset.imitated_currency.unit_label')
+        expect(row.textContent).not.toContain('ALGO')
     })
 
     it('Given a close-out payment ("send max"), the history list shows the swept amount and the details screen shows the close-remainder row', async () => {

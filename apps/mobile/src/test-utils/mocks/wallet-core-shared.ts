@@ -608,6 +608,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
                 response?: { status?: number }
             } | null
             if (!e) return false
+            if (isPeraNetworkError(error)) return error.metadata.retryable
             if (isIntegrityRequiredError(error)) return true
             if (e.name === 'TimeoutError' || e.name === 'NetworkError')
                 return true

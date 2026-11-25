@@ -54,7 +54,7 @@ describe('neutralAssetDetailsDisplay', () => {
     it('shows the supply under the total supply copy', () => {
         expect(
             neutralAssetDetailsDisplay.resolveSupply(paramsFor(USDC, false))
-                .labelKey,
+                ?.labelKey,
         ).toBe('asset_details.markets.total_supply')
     })
 })

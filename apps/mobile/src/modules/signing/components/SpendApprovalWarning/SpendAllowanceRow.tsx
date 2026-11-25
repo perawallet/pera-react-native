@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import type {
-    ChainScope,
-    SpendAllowance,
+import {
+    truncateAddressOn,
+    type ChainScope,
+    type SpendAllowance,
 } from '@perawallet/wallet-core-chain-contract'
 import { PWText, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
@@ -20,18 +21,21 @@ import { AssetAmount } from '@components/AssetAmount'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { useBaseUnitsAmount } from '@hooks/useBaseUnitsAmount'
 import { useLanguage } from '@hooks/useLanguage'
+import { CautionCard } from '../CautionCard'
 import { useStyles } from './styles'
 
 type SpendAllowanceRowProps = {
     allowance: SpendAllowance
     scope: ChainScope
     index: number
+    shouldWarnUnlimited: boolean
 }
 
 export const SpendAllowanceRow = ({
     allowance,
     scope,
     index,
+    shouldWarnUnlimited,
 }: SpendAllowanceRowProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -41,6 +45,10 @@ export const SpendAllowanceRow = ({
         scope,
     )
     const { nft } = allowance
+    const isUnlimited = !nft && allowance.amount === undefined
+    const symbol =
+        asset?.unitName ??
+        truncateAddressOn(scope.chainId, allowance.assetRef.assetId)
 
     return (
         <>
@@ -73,7 +81,7 @@ export const SpendAllowanceRow = ({
                     testID={`message-signing-spend-approval-amount-${index}`}
                     title={t('transactions.common.amount')}
                 >
-                    {allowance.amount === undefined ? (
+                    {isUnlimited ? (
                         <PWText>{t('signing.spend_approval.unlimited')}</PWText>
                     ) : (
                         <AssetAmount
@@ -86,6 +94,15 @@ export const SpendAllowanceRow = ({
                         />
                     )}
                 </KeyValueRow>
+            )}
+            {isUnlimited && shouldWarnUnlimited && (
+                <CautionCard
+                    icon='warning'
+                    message={t('signing.review.permission_unlimited_note', {
+                        symbol,
+                    })}
+                    testID={`message-signing-spend-approval-unlimited-${index}`}
+                />
             )}
         </>
     )

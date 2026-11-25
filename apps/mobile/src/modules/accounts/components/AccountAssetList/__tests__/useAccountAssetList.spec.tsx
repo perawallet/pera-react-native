@@ -1070,7 +1070,7 @@ describe('useAccountAssetList', () => {
     })
 
     it('does not show an error toast when user cancels the signing overlay', async () => {
-        mockRequestBottomSheet.mockResolvedValueOnce('confirm')
+        mockRequestBottomSheet.mockResolvedValueOnce(1000n)
         mockOptOut.mockRejectedValueOnce(new UserRejectedSigningError())
 
         const { result } = renderHook(() =>
@@ -1085,7 +1085,7 @@ describe('useAccountAssetList', () => {
     })
 
     it('shows an error toast when opt-out fails with a non-cancel error', async () => {
-        mockRequestBottomSheet.mockResolvedValueOnce('confirm')
+        mockRequestBottomSheet.mockResolvedValueOnce(1000n)
         const optOutError = new Error('Network error')
         mockOptOut.mockRejectedValueOnce(optOutError)
 
@@ -1210,6 +1210,21 @@ describe('useAccountAssetList', () => {
             await flushFrame()
 
             expect(scrollToOffset).toHaveBeenCalledTimes(1)
+        })
+
+        it('keeps the scroll position when a network chip is picked', async () => {
+            registerEthereum()
+            const { result, rerender } = renderHook(() =>
+                useAccountAssetList({ account: twoChainAccount, t: mockT }),
+            )
+            const scrollToOffset = attachListRef(result)
+
+            act(() => result.current.setSelectedChainId('algorand'))
+            mockAssetsQuery.holdings = [makeHolding('456')]
+            rerender({})
+            await flushFrame()
+
+            expect(scrollToOffset).not.toHaveBeenCalled()
         })
 
         it('starts a switched-to account at the top without animating', async () => {

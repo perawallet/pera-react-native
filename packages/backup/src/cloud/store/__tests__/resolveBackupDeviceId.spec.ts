@@ -42,6 +42,7 @@ describe('resolveBackupDeviceId', () => {
             backupId: 'did:pera:abc',
             salt: 'c2FsdA==',
             deviceId: 'registered-device',
+            credentialsConfirmed: true,
         })
         expect(resolveBackupDeviceId('live')).toBe('registered-device')
     })

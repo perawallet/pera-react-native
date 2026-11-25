@@ -548,6 +548,29 @@ describe('Flow: list and revoke an Ethereum account’s token approvals', () => 
                 ),
             ).toBeTruthy()
             expect(screen.getByText('token_approvals.error_title')).toBeTruthy()
+            expect(screen.getByText('token_approvals.error_body')).toBeTruthy()
+            expect(
+                screen.queryByText('token_approvals.offline_body'),
+            ).toBeNull()
+        })
+
+        it('Given the backend has no approvals endpoint, when the screen opens, then it says approvals are not available on this network and offers no retry', async () => {
+            server.use(
+                ...peraEvmHandlers({ baseUrl: PERA_URL, approvals: 404 }),
+            )
+            renderScreen()
+
+            expect(
+                await screen.findByText(
+                    'token_approvals.unavailable_title',
+                    {},
+                    { timeout: 10_000 },
+                ),
+            ).toBeTruthy()
+            expect(
+                screen.getByText('token_approvals.unavailable_body'),
+            ).toBeTruthy()
+            expect(screen.queryByTestId('token_approvals_retry')).toBeNull()
         })
     })
 })

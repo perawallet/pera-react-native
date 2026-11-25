@@ -151,7 +151,7 @@ const ACTIONS: EvmContractAction[] = [
     { kind: 'unwrap', amount: new Decimal(10) },
     {
         kind: 'supply',
-        asset: TOKEN,
+        asset: { kind: 'token', contract: TOKEN },
         amount: new Decimal(10),
         isEntireBalance: false,
     },
@@ -303,6 +303,18 @@ describe('the Ethereum transaction view', () => {
             { isMined: true as const, feePaid: new Decimal(21_000) },
         ],
         ['without a fee', { isMined: true as const }],
+        [
+            'with the pricing the node read',
+            {
+                isMined: true as const,
+                onChain: {
+                    nonce: 7,
+                    gas: 21_000n,
+                    maxFeePerGas: new Decimal(2_000_000_000),
+                    maxPriorityFeePerGas: new Decimal(1_000_000_000),
+                },
+            },
+        ],
     ])('round-trips a mined view %s', (_, mined) => {
         const view: EthereumTransactionView = {
             kind: 'contract-call',
@@ -357,6 +369,28 @@ describe('the Ethereum transaction view', () => {
                 data: '0x',
                 isMined: true,
                 feePaid: '21000',
+            },
+        ],
+        [
+            'a mined view whose pricing gas limit is not a bigint',
+            {
+                kind: 'transfer',
+                from: SENDER,
+                value: new Decimal(0),
+                data: '0x',
+                isMined: true,
+                onChain: { nonce: 7, gas: 21_000 },
+            },
+        ],
+        [
+            'a mined view whose gas price is not a Decimal',
+            {
+                kind: 'transfer',
+                from: SENDER,
+                value: new Decimal(0),
+                data: '0x',
+                isMined: true,
+                onChain: { nonce: 7, gas: 21_000n, gasPrice: '1' },
             },
         ],
         [

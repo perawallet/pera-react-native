@@ -36,12 +36,17 @@ export * from './import-session'
 
 export {
     rehydrateAccountsStore,
+    whenAccountsHydrationSettled,
     backfillAccountRecords,
     useAccountsStore,
     useAccountChainStateStore,
     useHoldingsRefreshStore,
     useHiddenTokensStore,
     hiddenAssetIdsOf,
+    useKeptTokensStore,
+    keptAssetIdsOf,
+    isAutoHiddenHolding,
+    unionTokenSets,
     hydrateAccountChainStates,
     recordAuthority,
     getAllAccounts,
@@ -56,6 +61,9 @@ export {
     type AccountChainStateSlice,
     type HiddenTokens,
     type SetTokenHiddenParams,
+    type KeptTokens,
+    type SetTokenKeptParams,
+    type KeepTokensParams,
 } from './store'
 export {
     fetchAndPersistAccount,
@@ -64,6 +72,7 @@ export {
     syncAndEnrichNewAccount,
     type AccountSyncResult,
 } from './sync/account-syncer'
+export { getPasskeyAnchorSeedIds } from './import-session/provisionalImportSeeds'
 
 export {
     setPendingAccountRollback,

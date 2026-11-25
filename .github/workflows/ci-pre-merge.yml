@@ -183,6 +183,13 @@ jobs:
         if: ${{ !cancelled() && steps.oxlint.outcome != 'skipped' }}
         run: pnpm run check:single-algosdk
 
+      # No pre-merge job launches the Android app, and a prebuilt Expo AAR
+      # compiled against a newer v2 runtime than expo-modules-core bundles
+      # builds fine and aborts on launch.
+      - name: Prebuilt Expo AARs match the bundled v2 runtime
+        if: ${{ !cancelled() && steps.oxlint.outcome != 'skipped' }}
+        run: pnpm run check:expo-aar-runtime
+
   # Blocking static analysis: unused code, circular dependencies, and code
   # duplication via fallow. Findings are surfaced in the job summary and fail
   # the PR (the step exits with fallow's status).

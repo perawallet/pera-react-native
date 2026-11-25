@@ -20,10 +20,14 @@ export {
     type WebViewRequest,
 } from './hooks/useWebViewStore'
 export {
+    generateBridgeToken,
+    hasValidBridgeToken,
     isSafeRelativePath,
     isTrustedWebviewOrigin,
+    openExplorerUrl,
     openValidatedBrowserUrl,
     toValidatedBrowserUrl,
+    type WebviewMessageSecurity,
 } from './hooks/handlers'
 export {
     resolveWebviewLanguage,

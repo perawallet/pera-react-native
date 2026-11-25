@@ -10,15 +10,7 @@
  limitations under the License
  */
 
-import {
-    afterEach,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-    type Mock,
-} from 'vitest'
+import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useRemoteConfig } from '@perawallet/wallet-core-remote-config'
 import { useCapability, type CapabilityRequirement } from '@hooks/useCapability'
@@ -40,16 +32,10 @@ vi.mock('@perawallet/wallet-core-remote-config', async importOriginal => ({
 vi.mock('@hooks/useCapability', () => ({ useCapability: vi.fn() }))
 
 const buildFlags = vi.hoisted(() => ({
-    appEnvironment: 'production',
     isDebug: false,
     isStaging: false,
 }))
 vi.mock('@perawallet/wallet-core-config', () => ({
-    config: {
-        get appEnvironment() {
-            return buildFlags.appEnvironment
-        },
-    },
     get isDebug() {
         return buildFlags.isDebug
     },
@@ -60,10 +46,6 @@ vi.mock('@perawallet/wallet-core-config', () => ({
 
 const BUILD_ENVS = {
     production: () => {},
-    __DEV__: () => vi.stubGlobal('__DEV__', true),
-    'appEnvironment staging': () => {
-        buildFlags.appEnvironment = 'staging'
-    },
     isDebug: () => {
         buildFlags.isDebug = true
     },
@@ -99,13 +81,13 @@ const FLAG_HOOKS: FlagHookCase[] = [
         name: 'useIsCardAutoFundingEnabled',
         hook: useIsCardAutoFundingEnabled,
         key: 'enable_card_auto_funding',
-        enabledWhenUnsetIn: ['__DEV__', 'appEnvironment staging'],
+        enabledWhenUnsetIn: ['isDebug', 'isStaging'],
     },
     {
         name: 'useIsCardPushProvisioningEnabled',
         hook: useIsCardPushProvisioningEnabled,
         key: 'enable_card_push_provisioning',
-        enabledWhenUnsetIn: ['__DEV__', 'appEnvironment staging'],
+        enabledWhenUnsetIn: ['isDebug', 'isStaging'],
     },
     {
         name: 'useIsGiftCardsEnabled',
@@ -134,18 +116,12 @@ const mockGetBooleanValue = vi.fn()
 
 beforeEach(() => {
     vi.clearAllMocks()
-    vi.stubGlobal('__DEV__', false)
-    buildFlags.appEnvironment = 'production'
     buildFlags.isDebug = false
     buildFlags.isStaging = false
     vi.mocked(useCapability).mockReturnValue(true)
     ;(useRemoteConfig as Mock).mockReturnValue({
         getBooleanValue: mockGetBooleanValue,
     })
-})
-
-afterEach(() => {
-    vi.unstubAllGlobals()
 })
 
 describe.each(FLAG_HOOKS)(

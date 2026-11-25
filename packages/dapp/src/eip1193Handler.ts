@@ -34,9 +34,10 @@ import {
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
-import type {
-    ConnectionId,
-    ConnectionPeer,
+import {
+    withAccountsGranted,
+    type ConnectionId,
+    type ConnectionPeer,
 } from '@perawallet/wallet-extension-connections'
 import {
     jsonRpcError,
@@ -60,9 +61,11 @@ import {
     EIP1193_PERMISSION_METHODS,
     EIP1193_SIGNING_METHODS,
 } from './eip1193Protocol'
+import { sanitizeDappIcons } from './icons'
 import {
     acknowledgedSiteWarningOf,
     canSiteSeeAccounts,
+    eip1193ApprovedChainIdsOf,
     eip1193ConnectionIdOf,
     isEip1193Connection,
     isWorseSiteWarning,
@@ -101,6 +104,14 @@ export type Eip1193HandlerDeps = {
      * reading on its context. A realm that never pushes passes `() => true`.
      */
     isWalletLocked: () => boolean | Promise<boolean>
+    /**
+     * Set by a surface whose connect sheet lists every requested chain. A
+     * connect proposal then offers every served chain and requires only the
+     * site's current one, and a switch to an approved chain answers without a
+     * prompt. Default false: every switch prompts, because that surface shows
+     * no list of approved chains to review or revoke.
+     */
+    shouldProposeEveryServedChain?: boolean
     now?: () => number
     proposalTtlMs?: number
     requestTtlMs?: number
@@ -194,17 +205,16 @@ const grantOf = (
               },
           ]
 
-// EIP-2255 carries the requested permissions as `[{ <method>: {} }]`; Pera
-// grants nothing but `eth_accounts`, so anything beyond that one is refused
-// rather than quietly narrowed.
-const isAccountsPermissionRequest = (params: unknown): boolean => {
-    if (!Array.isArray(params) || params.length !== 1) return false
+// EIP-2255 carries the requested permissions as `[{ <method>: {} }]`; null for
+// any other shape.
+const requestedPermissionsOf = (params: unknown): Nullable<string[]> => {
+    if (!Array.isArray(params) || params.length !== 1) return null
     const requested: unknown = params[0]
-    return (
-        isRecord(requested) &&
-        Object.keys(requested).join() === EIP1193_METHOD.accounts &&
-        isRecord(requested[EIP1193_METHOD.accounts])
-    )
+    if (!isRecord(requested)) return null
+    const entries = Object.entries(requested)
+    return entries.length > 0 && entries.every(([, value]) => isRecord(value))
+        ? entries.map(([name]) => name)
+        : null
 }
 
 export const createEip1193ConnectionHandler = (
@@ -329,11 +339,16 @@ export const createEip1193ConnectionHandler = (
         return { settle, isSettled: () => settled }
     }
 
-    const buildPeer = (ctx: DappRequestContext): ConnectionPeer => ({
-        name: new URL(ctx.origin).host,
-        url: ctx.origin,
-        ...(ctx.faviconUrl ? { icons: [ctx.faviconUrl] } : {}),
-    })
+    const buildPeer = (ctx: DappRequestContext): ConnectionPeer => {
+        const peerIcons =
+            sanitizeDappIcons(ctx.pageIcons, ctx.origin) ??
+            (ctx.faviconUrl ? [ctx.faviconUrl] : undefined)
+        return {
+            name: new URL(ctx.origin).host,
+            url: ctx.origin,
+            ...(peerIcons ? { icons: peerIcons } : {}),
+        }
+    }
 
     const handleChainId = async (
         ctx: DappRequestContext,
@@ -449,6 +464,12 @@ export const createEip1193ConnectionHandler = (
         }
 
         const peer = buildPeer(ctx)
+        const offered = deps.shouldProposeEveryServedChain
+            ? [chain, ...served.filter(other => other !== chain)]
+            : [chain]
+        const offeredNetworkIds = [
+            ...new Set(offered.map(({ scope }) => scope.networkId)),
+        ]
         const { settle, isSettled } = timedSettle(() => {
             releaseSlot()
             void deliver(
@@ -467,8 +488,11 @@ export const createEip1193ConnectionHandler = (
             peer,
             requesterOrigin: origin,
             requested: {
-                networks: [chain.scope.networkId],
-                chains: [chain.scope.chainId],
+                networks: offeredNetworkIds,
+                chains: offered.map(({ scope }) => scope.chainId),
+                ...(deps.shouldProposeEveryServedChain
+                    ? { requiredChains: [chain.scope.chainId] }
+                    : {}),
                 methods: [...EIP1193_PERMISSION_METHODS],
             },
             expiresAt: now() + proposalTtlMs,
@@ -484,7 +508,10 @@ export const createEip1193ConnectionHandler = (
                         .getAccounts(chain.scope.chainId)
                         .map(({ address }) => address),
                 )
-                const granted = accounts.filter(address => held.has(address))
+                // The multi-chain sheet lists an account once per chain it is on.
+                const granted = [
+                    ...new Set(accounts.filter(address => held.has(address))),
+                ]
                 if (granted.length === 0) {
                     releaseSlot()
                     await deliver(
@@ -506,8 +533,24 @@ export const createEip1193ConnectionHandler = (
                     status: 'active',
                     createdAt: existing?.createdAt ?? now(),
                     lastActiveAt: now(),
+                    accountsGrantedAt: withAccountsGranted(
+                        undefined,
+                        granted,
+                        now(),
+                    ),
                     metadata: {
                         chainId: chain.scope.chainId,
+                        // Read now, not at proposal time: a network added from
+                        // the sheet counts.
+                        approvedChainIds: offered
+                            .map(({ scope }) => scope.chainId)
+                            .filter(chainId =>
+                                deps
+                                    .getAccounts(chainId)
+                                    .some(({ address }) =>
+                                        granted.includes(address),
+                                    ),
+                            ),
                         acknowledgedSiteWarning: siteWarning,
                     },
                     origin: { requesterOrigin: origin },
@@ -689,6 +732,48 @@ export const createEip1193ConnectionHandler = (
         pendingTimers.add(entry.timer)
     }
 
+    const switchSite = async (
+        entry: QueuedRequest,
+        target: ServedChain,
+        assertLive: () => void,
+    ): Promise<void> => {
+        const { ctx, request } = entry
+        const stored = await getConnection(ctx.origin)
+        // The timer stays armed until the answer: a throw below may never be
+        // followed by a `reject`, and only it frees the queue.
+        assertLive()
+        const current = chainOn(target.scope.chainId)
+        if (!stored || current?.hexChainId !== target.hexChainId) {
+            throw new Error('The chain is no longer available')
+        }
+        const switched: Eip1193Connection = {
+            ...stored,
+            metadata: {
+                ...stored.metadata,
+                chainId: target.scope.chainId,
+                approvedChainIds: [
+                    ...new Set([
+                        ...eip1193ApprovedChainIdsOf(stored),
+                        target.scope.chainId,
+                    ]),
+                ],
+            },
+            lastActiveAt: now(),
+        }
+        await store().upsert(switched)
+        await notifyOrigin(
+            ctx.origin,
+            EIP1193_EVENT.chainChanged,
+            target.hexChainId,
+        )
+        const before = reportedAccounts(stored)
+        const after = reportedAccounts(switched)
+        if (!isSameList(before, after)) {
+            await notifyOrigin(ctx.origin, EIP1193_EVENT.accountsChanged, after)
+        }
+        await finishQueued(entry, jsonRpcResult(request.id, null))
+    }
+
     const raiseSwitchRequest = async (
         entry: QueuedRequest,
         connection: Eip1193Connection,
@@ -716,6 +801,37 @@ export const createEip1193ConnectionHandler = (
             return
         }
 
+        const assertLive = (): void => {
+            if (entry.isAnswered) {
+                throw new Error('The request has expired')
+            }
+        }
+
+        // A chain the user approved for this site, and on which a granted
+        // account still signs, needs no prompt; a dApp's own timeout would
+        // otherwise fire while the sheet waits. A locked wallet or a worsened
+        // site warning still prompts: switchSite pushes accounts, which the
+        // prompt's unlock would otherwise gate.
+        const isPreApproved =
+            deps.shouldProposeEveryServedChain === true &&
+            eip1193ApprovedChainIdsOf(connection).includes(
+                target.scope.chainId,
+            ) &&
+            deps
+                .getAccounts(target.scope.chainId)
+                .some(({ address }) => connection.accounts.includes(address)) &&
+            (await canSiteSeeAccounts(
+                await deps.isWalletLocked(),
+                connection,
+                ctx.origin,
+                deps.siteWarningOf,
+            ))
+        if (isPreApproved) {
+            await switchSite(entry, target, assertLive)
+            kit.recordActivity(connection.id)
+            return
+        }
+
         const correlationId = generateOrderedUniqueId()
         armOnScreen(entry, connection.id, correlationId, requestTtlMs)
         requireContext().onMessage({
@@ -734,39 +850,8 @@ export const createEip1193ConnectionHandler = (
             // A throw here declines the request, so the page is answered
             // through `reject` rather than told of a chain it can't use.
             respond: async () => {
-                if (entry.isAnswered) throw new Error('The request has expired')
-                const stored = await getConnection(ctx.origin)
-                // The timer stays armed until the answer: a throw below may
-                // never be followed by a `reject`, and only it frees the queue.
-                if (entry.isAnswered) throw new Error('The request has expired')
-                const current = chainOn(target.scope.chainId)
-                if (!stored || current?.hexChainId !== target.hexChainId) {
-                    throw new Error('The chain is no longer available')
-                }
-                const switched: Eip1193Connection = {
-                    ...stored,
-                    metadata: {
-                        ...stored.metadata,
-                        chainId: target.scope.chainId,
-                    },
-                    lastActiveAt: now(),
-                }
-                await store().upsert(switched)
-                await notifyOrigin(
-                    ctx.origin,
-                    EIP1193_EVENT.chainChanged,
-                    target.hexChainId,
-                )
-                const before = reportedAccounts(stored)
-                const after = reportedAccounts(switched)
-                if (!isSameList(before, after)) {
-                    await notifyOrigin(
-                        ctx.origin,
-                        EIP1193_EVENT.accountsChanged,
-                        after,
-                    )
-                }
-                await finishQueued(entry, jsonRpcResult(request.id, null))
+                assertLive()
+                await switchSite(entry, target, assertLive)
             },
             reject: async error => {
                 if (isDappUserRejection(error)) {
@@ -1039,6 +1124,14 @@ export const createEip1193ConnectionHandler = (
                 request.method,
                 request.params,
             )
+            if (!answer.ok) {
+                logger.debug('[eip1193] node refused read', {
+                    method: request.method,
+                    code: answer.error.code,
+                    message: answer.error.message,
+                    data: answer.error.data,
+                })
+            }
             return deliver(
                 respond,
                 answer.ok
@@ -1226,7 +1319,15 @@ export const createEip1193ConnectionHandler = (
         if (isSameList(connection.accounts, [address])) return
         // Store first, then withdraw: a request read before the write would
         // be raised for the account being replaced.
-        await store().upsert({ ...connection, accounts: [address] })
+        await store().upsert({
+            ...connection,
+            accounts: [address],
+            accountsGrantedAt: withAccountsGranted(
+                connection.accountsGrantedAt,
+                [address],
+                now(),
+            ),
+        })
         withdrawSiteQueue(id)
         await notifyOrigin(
             connection.origin.requesterOrigin,
@@ -1281,12 +1382,25 @@ export const createEip1193ConnectionHandler = (
                 )
             }
             case EIP1193_METHOD.requestPermissions: {
-                if (!isAccountsPermissionRequest(request.params)) {
+                const requested = requestedPermissionsOf(request.params)
+                if (!requested) {
                     return deliver(
                         respond,
                         jsonRpcError(
                             request.id,
                             EIP1193_ERROR_CODE.invalidParams,
+                            'Expected [{ eth_accounts: {} }]',
+                        ),
+                    )
+                }
+                // Anything beyond eth_accounts is refused rather than quietly
+                // narrowed to it.
+                if (requested.join() !== EIP1193_METHOD.accounts) {
+                    return deliver(
+                        respond,
+                        jsonRpcError(
+                            request.id,
+                            EIP1193_ERROR_CODE.unsupportedMethod,
                             'Pera grants only eth_accounts',
                         ),
                     )
@@ -1336,8 +1450,20 @@ export const createEip1193ConnectionHandler = (
     const onRequest = (
         ctx: DappRequestContext,
         request: JsonRpcRequest,
-        respond: DappRespond,
+        pageRespond: DappRespond,
     ): void => {
+        // Params stay out: they carry addresses, calldata and messages to sign.
+        // A relayed node's message is its own text and can echo an argument.
+        const respond: DappRespond = response => {
+            if ('error' in response) {
+                logger.debug('[eip1193] request rejected', {
+                    method: request.method,
+                    code: response.error.code,
+                    message: response.error.message,
+                })
+            }
+            return pageRespond(response)
+        }
         void dispatch(ctx, request, respond).catch((error: unknown) => {
             // A request that threw between claiming the site's slot and handing
             // over the proposal would otherwise hold it forever.
@@ -1408,8 +1534,11 @@ export const createEip1193ConnectionHandler = (
             await Promise.all(all.map(connection => disconnect(connection.id)))
         },
         restore,
+        // A site follows the wallet's selected network, so that one is all it
+        // is usable on.
         matchesChainScope: (connection, scope) =>
-            isOnChain(connection, scope.chainId),
+            isOnChain(connection, scope.chainId) &&
+            scope.networkId === deps.getNetworkId(scope.chainId),
         methodsFor: () => [...EIP1193_PERMISSION_METHODS],
         async notify(id, notice: WalletNotice) {
             const connection = await getConnectionById(id)

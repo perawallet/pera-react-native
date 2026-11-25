@@ -45,6 +45,8 @@ export type AccountMenuProps = {
      * instead of the global selection, and tapping won't change the global account.
      */
     selectedAccountId?: Nullable<string>
+    /** False when the host already clears the home indicator below the list. */
+    hasBottomInset?: boolean
 }
 
 export const AccountMenu = (props: AccountMenuProps) => {
@@ -60,11 +62,12 @@ export const AccountMenu = (props: AccountMenuProps) => {
         addAccountPillBottomInset,
         handleAddAccountPillLayout,
     } = useAccountMenu(props)
+    const { hasBottomInset = true } = props
     const insets = useSafeAreaInsets()
     const pillStyles = useAddAccountPillStyles({
         pillHeight: addAccountPillHeight,
         bottomInset: addAccountPillBottomInset,
-        safeAreaBottomInset: insets.bottom,
+        safeAreaBottomInset: hasBottomInset ? insets.bottom : 0,
     })
     const {
         onAddAccount,
@@ -122,6 +125,7 @@ export const AccountMenu = (props: AccountMenuProps) => {
                     // prepends here, so anchoring has nothing to protect.
                     maintainVisibleContentPosition={{ disabled: true }}
                     data={listItems}
+                    hasBottomInset={hasBottomInset}
                     extraData={sortMode}
                     keyExtractor={item =>
                         item.kind === 'account' ? item.account.id : 'pera-card'
@@ -152,7 +156,6 @@ export const AccountMenu = (props: AccountMenuProps) => {
                         testID='account_menu_add_account_button'
                         variant='primary'
                         icon='plus'
-                        rounded
                         title={t('onboarding.add_account.title')}
                         onPress={onAddAccount}
                     />

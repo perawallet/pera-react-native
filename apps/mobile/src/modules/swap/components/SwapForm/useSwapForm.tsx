@@ -34,6 +34,7 @@ import {
     pickBestByAmountOut,
     swapAdapterFor,
     useSwapAccount,
+    useSwapFeeReservesQuery,
     useSwaps,
     type SwapQuote,
     type SwapQuoteFailure,
@@ -76,6 +77,8 @@ import {
 } from '../SwapProviderContent'
 import { useSwapMinimum } from './useSwapMinimum'
 
+const ZERO = new Decimal(0)
+
 type UseSwapFormResult = {
     swapAccount: Nullable<WalletAccount>
     payAssetId: string
@@ -102,6 +105,8 @@ type UseSwapFormResult = {
     isLocalCurrencyInput: boolean
     /** The router refused the amount as too small, named a minimum, and the account can spend at least that. */
     canUseMinimum: boolean
+    /** The router's minimum is more than the account can spend. */
+    isMinimumAboveSpendable: boolean
     handleRetryQuote: () => void
     handleUseMinimum: () => void
     handlePayAmountChange: (amount: Nullable<Decimal>) => void
@@ -160,6 +165,10 @@ export const useSwapForm = (
     // Only a MAX or percentage fill follows the balance and the quote's fee; a
     // typed amount stays as typed and fails at the balance checks instead.
     const isPercentageFillRef = useRef(false)
+    // The swap the confirmation sends enters the ledger as in flight and takes
+    // the spendable balance with it; following that drop would clear the amount
+    // and say the balance is too low while the swap goes through.
+    const [isConfirming, setIsConfirming] = useState(false)
 
     const { invalidate: invalidateAccountBalances } =
         useAccountBalancesInvalidator()
@@ -195,17 +204,27 @@ export const useSwapForm = (
     // unsettled receive balance reserves too: short of MAX beats failing at
     // confirm. A holding on another chain locks nothing on this one.
     const swapAdapter = swapAdapterFor(scope)
+    // A token's MAX is its whole balance, so only the native coin reads the fee.
+    const isNativePay = fromAsset === nativeAssetId
+    const feeReserveScopes = useMemo(
+        () => (isNativePay ? [scope] : []),
+        [isNativePay, scope],
+    )
+    const {
+        reserves: [feeReserve],
+    } = useSwapFeeReservesQuery(feeReserveScopes)
+    const maxAmountFeeReserve = isNativePay ? feeReserve : ZERO
     const { data: spendable, isPending: isSpendablePending } =
         useSpendableBalanceQuery(
-            swapAccount
+            swapAccount && maxAmountFeeReserve
                 ? {
                       account: swapAccount,
                       asset: { chainId: scope.chainId, assetId: fromAsset },
                       scope,
                       fee:
                           isCrossChain || receiveAssetBalance
-                              ? swapAdapter.maxAmountFeeReserve
-                              : swapAdapter.maxAmountFeeReserve.add(
+                              ? maxAmountFeeReserve
+                              : maxAmountFeeReserve.add(
                                     swapAdapter.holdingReserve(scope),
                                 ),
                   }
@@ -490,7 +509,12 @@ export const useSwapForm = (
         isPercentageFillRef.current = false
         setPayAmount(amount)
     }, [])
-    const { liftToMinimum, canUseMinimum, handleUseMinimum } = useSwapMinimum({
+    const {
+        liftToMinimum,
+        canUseMinimum,
+        isMinimumAboveSpendable,
+        handleUseMinimum,
+    } = useSwapMinimum({
         pairMinimum,
         quoteFailure,
         spendableMax: spendable?.max ?? null,
@@ -553,7 +577,7 @@ export const useSwapForm = (
     // Shrink only: the smaller amount's lower fee must not grow it back into
     // another request.
     useEffect(() => {
-        if (!isPercentageFillRef.current) return
+        if (!isPercentageFillRef.current || isConfirming) return
         if (!payAmount || !spendable || isSpendablePending) return
         const decimals = payAsset?.decimals ?? 0
         const amount = displayUnitsToBaseUnits(payAmount, decimals)
@@ -576,6 +600,7 @@ export const useSwapForm = (
         selectedQuote,
         spendable,
         isSpendablePending,
+        isConfirming,
         resetAmounts,
         resetQuotes,
         showBalanceTooLow,
@@ -805,12 +830,14 @@ export const useSwapForm = (
             })
         }
         let result: Optional<SwapConfirmationResult>
+        setIsConfirming(true)
         try {
             result = await requestBottomSheet<SwapConfirmationResult>({
                 contents: (
                     <SwapConfirmationContent
                         scope={scope}
                         quote={selectedQuote}
+                        canChooseProvider={canChooseProvider}
                     />
                 ),
                 options: {
@@ -822,6 +849,7 @@ export const useSwapForm = (
             })
         } finally {
             clearTabResumeIntent()
+            setIsConfirming(false)
         }
         if (!result || result.kind === 'cancelled') return
         if (result.kind === 'stale-quote') {
@@ -836,6 +864,9 @@ export const useSwapForm = (
             return
         }
         if (result.kind === 'error') {
+            // A failure after submission leaves the swap in flight until the
+            // chain settles it, so the amount stays as confirmed.
+            isPercentageFillRef.current = false
             errorToast(
                 result.title ?? t('swap.execution.error_title'),
                 result.message,
@@ -885,6 +916,7 @@ export const useSwapForm = (
         receivingAddress,
         scope,
         selectedQuote,
+        canChooseProvider,
         requestBottomSheet,
         invalidateAccountBalances,
         successToast,
@@ -963,6 +995,7 @@ export const useSwapForm = (
         handleSwapDirection,
         handleMaxPress,
         canUseMinimum,
+        isMinimumAboveSpendable,
         handleUseMinimum,
         handleOpenPayAssetSelection: () => void handleOpenPayAssetSelection(),
         handleOpenReceiveAssetSelection: () =>

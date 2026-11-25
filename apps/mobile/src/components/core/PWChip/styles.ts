@@ -71,7 +71,7 @@ export const useStyles = makeStyles(
                         : theme.spacing.sm,
                 paddingVertical:
                     paddingStyle === 'dense' ? 0 : theme.spacing.xs,
-                borderRadius: theme.spacing.sm,
+                borderRadius: theme.borderRadius.full,
                 alignSelf: 'flex-start',
                 justifyContent: 'center',
                 alignItems: 'center',

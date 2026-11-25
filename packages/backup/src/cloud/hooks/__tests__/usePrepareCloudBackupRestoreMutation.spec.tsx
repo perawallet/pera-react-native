@@ -118,7 +118,9 @@ describe('usePrepareCloudBackupRestoreMutation', () => {
         const onSuccess = vi.fn()
         const { result } = renderPrepare({ onSuccess })
 
-        act(() => result.current.mutate({ salt: SALT }))
+        act(() =>
+            result.current.mutate({ salt: SALT, credentialsConfirmed: true }),
+        )
 
         await waitFor(() => expect(onSuccess).toHaveBeenCalled())
         expect(prepareMock).toHaveBeenCalledWith({
@@ -130,14 +132,32 @@ describe('usePrepareCloudBackupRestoreMutation', () => {
         expect(useCloudBackupRestoreSessionStore.getState().session).toEqual({
             prepared: PREPARED,
             salt: SALT,
+            credentialsConfirmed: true,
         })
+    })
+
+    test('carries an unconfirmed join through to the session', async () => {
+        const onSuccess = vi.fn()
+        const { result } = renderPrepare({ onSuccess })
+
+        act(() =>
+            result.current.mutate({ salt: SALT, credentialsConfirmed: false }),
+        )
+
+        await waitFor(() => expect(onSuccess).toHaveBeenCalled())
+        expect(
+            useCloudBackupRestoreSessionStore.getState().session
+                ?.credentialsConfirmed,
+        ).toBe(false)
     })
 
     test('holds the session even if the screen unmounts mid-flight', async () => {
         const finish = pending()
         const { result, unmount } = renderPrepare()
 
-        act(() => result.current.mutate({ salt: SALT }))
+        act(() =>
+            result.current.mutate({ salt: SALT, credentialsConfirmed: true }),
+        )
         await waitFor(() => expect(prepareMock).toHaveBeenCalled())
         unmount()
         await act(async () => finish())
@@ -154,7 +174,9 @@ describe('usePrepareCloudBackupRestoreMutation', () => {
         const onError = vi.fn()
         const { result } = renderPrepare({ onError })
 
-        act(() => result.current.mutate({ salt: SALT }))
+        act(() =>
+            result.current.mutate({ salt: SALT, credentialsConfirmed: true }),
+        )
 
         await waitFor(() => expect(onError).toHaveBeenCalled())
         expect(restoreErrorCategoryOf(onError.mock.calls[0][0])).toBe(
@@ -168,7 +190,9 @@ describe('usePrepareCloudBackupRestoreMutation', () => {
         const onError = vi.fn()
         const { result } = renderPrepare({ onError })
 
-        act(() => result.current.mutate({ salt: SALT }))
+        act(() =>
+            result.current.mutate({ salt: SALT, credentialsConfirmed: true }),
+        )
 
         await waitFor(() => expect(onError).toHaveBeenCalled())
         expect(restoreErrorCategoryOf(onError.mock.calls[0][0])).toBe('UNKNOWN')
@@ -179,7 +203,9 @@ describe('usePrepareCloudBackupRestoreMutation', () => {
         const onError = vi.fn()
         const { result } = renderPrepare({ onError })
 
-        act(() => result.current.mutate({ salt: SALT }))
+        act(() =>
+            result.current.mutate({ salt: SALT, credentialsConfirmed: true }),
+        )
 
         await waitFor(() => expect(onError).toHaveBeenCalled())
         expect(prepareMock).not.toHaveBeenCalled()
@@ -190,7 +216,9 @@ describe('usePrepareCloudBackupRestoreMutation', () => {
         const onError = vi.fn()
         const { result } = renderPrepare({ onError })
 
-        act(() => result.current.mutate({ salt: SALT }))
+        act(() =>
+            result.current.mutate({ salt: SALT, credentialsConfirmed: true }),
+        )
 
         await waitFor(() => expect(onError).toHaveBeenCalled())
         expect(prepareMock).not.toHaveBeenCalled()
@@ -201,7 +229,9 @@ describe('usePrepareCloudBackupRestoreMutation', () => {
         const { result } = renderPrepare()
 
         expect(result.current.isPending).toBe(false)
-        act(() => result.current.mutate({ salt: SALT }))
+        act(() =>
+            result.current.mutate({ salt: SALT, credentialsConfirmed: true }),
+        )
         await waitFor(() => expect(result.current.isPending).toBe(true))
 
         await act(async () => finish())
@@ -224,7 +254,9 @@ describe('usePrepareCloudBackupRestoreMutation', () => {
         )
         const { result } = renderPrepare()
 
-        act(() => result.current.mutate({ salt: SALT }))
+        act(() =>
+            result.current.mutate({ salt: SALT, credentialsConfirmed: true }),
+        )
         await waitFor(() => expect(prepareMock).toHaveBeenCalled())
         act(() => report({ phase: 'downloading' }))
 
@@ -254,7 +286,9 @@ describe('usePrepareCloudBackupRestoreMutation', () => {
         const onError = vi.fn()
         const { result } = renderPrepare({ onError })
 
-        act(() => result.current.mutate({ salt: SALT }))
+        act(() =>
+            result.current.mutate({ salt: SALT, credentialsConfirmed: true }),
+        )
 
         await waitFor(() => expect(onError).toHaveBeenCalled())
         expect(
@@ -266,7 +300,9 @@ describe('usePrepareCloudBackupRestoreMutation', () => {
         const finish = pending()
         const { result, rerender } = renderPrepare()
 
-        act(() => result.current.mutate({ salt: SALT }))
+        act(() =>
+            result.current.mutate({ salt: SALT, credentialsConfirmed: true }),
+        )
         deviceIdMock.value = 'device-456'
         rerender()
         await waitFor(() => expect(prepareMock).toHaveBeenCalled())
@@ -285,7 +321,7 @@ describe('usePrepareCloudBackupRestoreMutation', () => {
         const { mutate: captured } = result.current
 
         deviceIdMock.value = 'device-123'
-        act(() => captured({ salt: SALT }))
+        act(() => captured({ salt: SALT, credentialsConfirmed: true }))
 
         await waitFor(() => expect(onSuccess).toHaveBeenCalled())
         expect(prepareMock).toHaveBeenCalledWith(
@@ -310,7 +346,10 @@ describe('usePrepareCloudBackupRestoreMutation', () => {
 
         let prepared: Promise<unknown> | undefined
         act(() => {
-            prepared = result.current.mutateAsync({ salt: SALT })
+            prepared = result.current.mutateAsync({
+                salt: SALT,
+                credentialsConfirmed: true,
+            })
         })
 
         await expect(prepared).resolves.toEqual(PREPARED)

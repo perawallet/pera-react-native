@@ -183,6 +183,9 @@ export const createFakeWalletKit = (
         session_authenticate: new Set(),
     }
     const sessions = { ...initial }
+    const activePairings = new Set(
+        Object.values(sessions).map(({ pairingTopic }) => pairingTopic),
+    )
     const transportClose = vi.fn<() => Promise<void>>(async () => {})
     const heartbeatStop = vi.fn<() => void>()
     const pair = vi.fn<WalletKitClient['core']['pairing']['pair']>(
@@ -192,13 +195,16 @@ export const createFakeWalletKit = (
     )
     const pairingDisconnect = vi.fn<
         WalletKitClient['core']['pairing']['disconnect']
-    >(async () => {})
+    >(async ({ topic }) => {
+        activePairings.delete(topic)
+    })
     // Settles the session the way the relay would, so restore() and the store
     // see what the dApp does. The topic is the session's, never the pairing's.
     const approveSession = vi.fn<WalletKitClient['approveSession']>(
         async ({ namespaces }) => {
             const session = makeSession({ namespaces })
             sessions[session.topic] = session
+            activePairings.add(session.pairingTopic)
             return session
         },
     )
@@ -236,7 +242,12 @@ export const createFakeWalletKit = (
         updateSession,
         emitSessionEvent,
         core: {
-            pairing: { pair, disconnect: pairingDisconnect },
+            pairing: {
+                pair,
+                disconnect: pairingDisconnect,
+                getPairings: () =>
+                    [...activePairings].map(topic => ({ topic, active: true })),
+            },
             relayer: { transportClose },
             heartbeat: { stop: heartbeatStop },
             expirer: {

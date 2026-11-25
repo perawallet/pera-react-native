@@ -190,18 +190,11 @@ test('a dApp signing request from the quantum account returns a valid Falcon pqs
     await unlockIfNeeded(connect.approvalPage)
     const connectButton = connect.approvalPage.getByTestId('wc-connect-connect')
     await selectAccountAndArmConnect(connect.approvalPage, connectButton)
-    // Only the first account is preselected. The address label sits beside the
-    // row's checkbox rather than inside it, so take the innermost element that
-    // holds both, then its outer checkbox (the inner box is covered by it).
+    // Only the first account is preselected. Each account row is one checkbox
+    // that holds its address label.
     await connect.approvalPage
-        .locator('div')
-        .filter({
-            hasText: quantumAddress.slice(0, 5),
-            has: connect.approvalPage.getByRole('checkbox'),
-        })
-        .last()
         .getByRole('checkbox')
-        .first()
+        .filter({ hasText: quantumAddress.slice(0, 5) })
         .click()
     await connectButton.click()
     await expect

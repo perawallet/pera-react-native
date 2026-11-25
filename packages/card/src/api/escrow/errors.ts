@@ -28,6 +28,32 @@ export class CardEscrowNotConfiguredError extends AppError {
     }
 }
 
+/**
+ * The card address the backend named is not, on chain, a card the funding
+ * account owns, so nothing may be stored for it or sent to it.
+ */
+export class CardOwnerMismatchError extends AppError {
+    constructor() {
+        super('Card address is not owned on chain by the funding account', {
+            severity: ErrorSeverity.HIGH,
+            category: ErrorCategory.BLOCKCHAIN,
+            recoverable: false,
+        })
+        this.name = 'CardOwnerMismatchError'
+    }
+}
+
+/** The card's on-chain owner could not be read yet; retrying may succeed. */
+export class CardOwnerUnconfirmedError extends AppError {
+    constructor() {
+        super('Card owner is not yet visible on chain', {
+            category: ErrorCategory.BLOCKCHAIN,
+            recoverable: true,
+        })
+        this.name = 'CardOwnerUnconfirmedError'
+    }
+}
+
 /** The bundled AutoDraw template does not match the build-time pin. */
 export class AutoDrawTealUnverifiedError extends AppError {
     constructor() {

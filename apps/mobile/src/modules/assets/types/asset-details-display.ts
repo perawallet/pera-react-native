@@ -59,5 +59,6 @@ export type AssetDetailsDisplay = {
     /** Renders on the Markets tab, after the description. */
     IssuerControlsSection?: ComponentType<AssetChainSectionProps>
     resolveAbout: (params: AssetDisplayParams) => AssetAboutDisplay
-    resolveSupply: (params: AssetDisplayParams) => AssetSupplyDisplay
+    /** Null leaves the supply row out. */
+    resolveSupply: (params: AssetDisplayParams) => Nullable<AssetSupplyDisplay>
 }

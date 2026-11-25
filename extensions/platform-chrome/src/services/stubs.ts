@@ -114,6 +114,7 @@ export class ChromeMigrationService implements MigrationService {
         return []
     }
     async resetLegacyData(): Promise<void> {}
+    async wipeLegacyData(): Promise<void> {}
     async getCompletedStepVersions(): Promise<Nullable<MigrationStepVersions>> {
         return null
     }

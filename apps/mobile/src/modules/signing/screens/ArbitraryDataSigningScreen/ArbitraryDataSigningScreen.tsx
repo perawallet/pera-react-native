@@ -14,6 +14,7 @@ import { PWButton, PWScreen, PWView } from '@components/core'
 import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
+import { ReviewScrollHint } from '@modules/signing/components/ReviewScrollHint'
 import { SourceMetadataView } from '@modules/signing/components/SourceMetadataView'
 import { SingleArbitrarySignRequestView } from '@modules/signing/components/SingleArbitrarySignRequestView'
 import { MultipleArbitrarySignRequestView } from '@modules/signing/components/MultipleArbitrarySignRequestView'
@@ -28,6 +29,8 @@ export const ArbitraryDataSigningScreen = () => {
         isSingleSignRequest,
         isPending,
         isSigningBlocked,
+        isConfirmBlocked,
+        scrollHint,
         handleApprove,
         handleReject,
         handleDetailsPress,
@@ -62,12 +65,23 @@ export const ArbitraryDataSigningScreen = () => {
 
     return (
         <PWScreen
+            scrollRef={scrollHint.scrollRef}
+            onScroll={scrollHint.handleScroll}
+            onBodyLayout={scrollHint.handleBodyLayout}
+            onContentSizeChange={scrollHint.handleContentSizeChange}
+            testID='arbitrary-data-review'
             footer={
                 <PWView style={[styles.buttonContainer, CONFIRM_ACTION_LAYOUT]}>
+                    <ReviewScrollHint
+                        isVisible={scrollHint.isMoreBelow}
+                        isReserved={scrollHint.isScrollable}
+                        onPress={scrollHint.handleScrollToEnd}
+                    />
                     <ConfirmAction
                         title={t('common.slide_to_confirm.label')}
                         onConfirm={handleApprove}
                         isLoading={isPending}
+                        isDisabled={isConfirmBlocked}
                         testID='arbitrary-data-confirm-slide'
                     />
                     <PWButton

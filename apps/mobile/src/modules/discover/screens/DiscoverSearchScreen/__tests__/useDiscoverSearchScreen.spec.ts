@@ -292,6 +292,47 @@ describe('useDiscoverSearchScreen', () => {
             expect(result.current.assetResults).toEqual([])
         })
 
+        it('ranks the verified token first, and keeps NFTs and names out of Markets', () => {
+            const nft: ScopedAssetSearchResult = {
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
+                asset: {
+                    assetId: '236205803',
+                    name: 'Uniswap#0',
+                    peraMetadata: {
+                        verificationTier: 'unverified',
+                        type: 'collectible',
+                    },
+                },
+            }
+            const lookalike: ScopedAssetSearchResult = {
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
+                asset: {
+                    assetId: '236320538',
+                    name: 'Uniswap#0 Collection',
+                    peraMetadata: { verificationTier: 'unverified' },
+                },
+            }
+            const uni: ScopedAssetSearchResult = {
+                scope: { chainId: 'ethereum', networkId: 'mainnet' },
+                asset: {
+                    assetId: '0xuni',
+                    name: 'Uniswap',
+                    unitName: 'UNI',
+                    peraMetadata: { verificationTier: 'verified' },
+                },
+            }
+            // As the search answers: Algorand's page, then Ethereum's.
+            assetQuery({ results: [nft, lookalike, uni] })
+            const { result } = setup()
+            typeQuery(result, 'uniswap')
+
+            expect(result.current.assetResults).toEqual([uni, lookalike, nft])
+
+            act(() => result.current.setFilter('markets'))
+
+            expect(result.current.assetResults).toEqual([uni, lookalike])
+        })
+
         it('drops the dapp row for the typed domain on All, keeping it on dApps', () => {
             const { result } = setup()
             typeQuery(result, 'app.uniswap.org')

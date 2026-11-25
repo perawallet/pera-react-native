@@ -24,11 +24,16 @@ export {
     PASSKEY_MAIN_KEY_SCHEME,
     passkeyMainKeyId,
 } from './keystore/passkeyMainKey'
+export { setKeystorePasskeyAnchorResolver } from './keystore/migrations/passkeyAnchorSeedResolver'
 export {
     setEngineKeySource,
     type EngineKeySource,
 } from './keystore/engineKeySource'
-export type { ResealReport } from './keystore/resealTypes'
+export type {
+    LegacyCheckReport,
+    LegacyDiscardReport,
+    ResealReport,
+} from './keystore/resealTypes'
 /**
  * The `SubtleCrypto` the keystore engine runs on. Packages that seal records
  * for the native keystore take it from here rather than importing

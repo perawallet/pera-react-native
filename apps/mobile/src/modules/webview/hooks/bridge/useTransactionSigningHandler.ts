@@ -32,7 +32,6 @@ import { useRequiredParams } from './useRequiredParams'
 
 export const useTransactionSigningHandler = (
     webview: Nullable<WebView>,
-    sourceUrl: Nullable<string>,
 ): BridgeHandler => {
     const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const { t } = useLanguage()
@@ -42,7 +41,7 @@ export const useTransactionSigningHandler = (
     const hasRequiredParams = useRequiredParams(webview)
 
     return useCallback(
-        message => {
+        (message, security) => {
             if (!hasRequiredParams(['txns', 'metadata'], message)) {
                 return
             }
@@ -69,7 +68,7 @@ export const useTransactionSigningHandler = (
                     // Platform-observed origin — unlike sourceMetadata the
                     // page can't assert it, so it's what gates the
                     // verification badge.
-                    verifiedOrigin: sourceUrl ?? undefined,
+                    verifiedOrigin: security.sourceUrl ?? undefined,
                     respondWithResult: result =>
                         sendMessageToWebview(message.id, result, webview),
                     respondWithReject: () =>
@@ -116,7 +115,6 @@ export const useTransactionSigningHandler = (
             hasRequiredParams,
             resolveSignRequest,
             enqueueSignRequest,
-            sourceUrl,
             showError,
             t,
         ],

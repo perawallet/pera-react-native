@@ -68,3 +68,6 @@ export const writePasskeyCredential = async (
         'passkey credentials are written by the native provider only',
     )
 }
+
+/** keystore-web's IndexedDB is reachable only through its engine. */
+export const clearKeystoreStorage = (): boolean => false

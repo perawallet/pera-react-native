@@ -100,16 +100,13 @@ const decodeWrappedNativeAction = (call: Call): Optional<EvmContractAction> => {
     return undefined
 }
 
-// The gateway wraps the native coin into the pool's wrapped-native reserve, so
-// that reserve is the action's asset.
-const decodeAaveGatewayAction = (
-    call: Call,
-    wrappedNative: Optional<Address>,
-): Optional<EvmContractAction> => {
+// The gateway wraps and unwraps on the signer's behalf, so the native coin is
+// what moves; the pool's wrapped-native reserve never reaches the account.
+const decodeAaveGatewayAction = (call: Call): Optional<EvmContractAction> => {
     const read = readFunction(AAVE_GATEWAY_FUNCTIONS, call.data)
-    if (!read || !wrappedNative) return undefined
+    if (!read) return undefined
     const { name, args } = read
-    const asset = getAddress(wrappedNative)
+    const asset = { kind: 'native' } as const
     const isForSigner = (address: unknown) =>
         areEvmAddressesEqual(address as Address, call.from)
 
@@ -165,7 +162,10 @@ const decodeAavePoolAction = (call: Call): Optional<EvmContractAction> => {
     const read = readFunction(AAVE_POOL_FUNCTIONS, call.data)
     if (!read || call.value !== 0n) return undefined
     const { name, args } = read
-    const asset = getAddress(args[0] as Address)
+    const asset = {
+        kind: 'token',
+        contract: getAddress(args[0] as Address),
+    } as const
     const amount = args[1] as bigint
     const isForSigner = (address: unknown) =>
         areEvmAddressesEqual(address as Address, call.from)
@@ -423,7 +423,7 @@ export const decodeEvmContractAction = (
                 return decodeAavePoolAction(call)
             }
             case 'aave-v3-gateway': {
-                return decodeAaveGatewayAction(call, wrappedNative)
+                return decodeAaveGatewayAction(call)
             }
             case 'uniswap-v3-position-manager': {
                 return decodeUniswapV3PositionAction(call, wrappedNative)

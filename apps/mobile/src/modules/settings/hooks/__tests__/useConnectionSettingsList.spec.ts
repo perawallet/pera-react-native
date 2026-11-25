@@ -33,17 +33,30 @@ const mockScopesFor = vi.fn((connection: Connection) =>
 const mockMethodsFor = vi.fn((connection: Connection) =>
     connection.id === 'conn-a' ? ['algo_signTxn'] : [],
 )
+const mockRegistry = {
+    disconnect: mockDisconnect,
+    scopesFor: mockScopesFor,
+    methodsFor: mockMethodsFor,
+}
 // Partial: the read model runs for real, the store and registry are stubbed.
 vi.mock('@perawallet/wallet-core-connections', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-connections')
     >()),
     useConnectionsStore: vi.fn(),
-    useConnectionRegistry: () => ({
-        disconnect: mockDisconnect,
-        scopesFor: mockScopesFor,
-        methodsFor: mockMethodsFor,
-    }),
+    useConnectionRegistry: () => mockRegistry,
+}))
+
+const mockSelectedScopes = vi.hoisted(() => ({
+    current: [{ chainId: 'algorand', networkId: 'mainnet' }],
+}))
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    useSelectedScopes: () => mockSelectedScopes.current,
+}))
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    useRegisteredChainIds: () => ['algorand'],
 }))
 
 const connectionA: Connection = {
@@ -86,6 +99,7 @@ const mockUseConnectionsStore = (
 describe('useConnectionSettingsList', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockSelectedScopes.current = [algorand('mainnet')]
         mockDisconnect.mockResolvedValue(undefined)
         mockUseConnectionsStore([connectionA, connectionB])
     })
@@ -119,6 +133,23 @@ describe('useConnectionSettingsList', () => {
             'conn-b': [algorand('testnet')],
         })
         expect(mockScopesFor).toHaveBeenCalledWith(connectionA)
+    })
+
+    it('asks the registry again when the selected network changes', () => {
+        const { result, rerender } = renderHook(() =>
+            useConnectionSettingsList(),
+        )
+        mockScopesFor
+            .mockReturnValueOnce([algorand('testnet')])
+            .mockReturnValueOnce([algorand('testnet')])
+
+        mockSelectedScopes.current = [algorand('testnet')]
+        rerender()
+
+        expect(
+            result.current.connections.find(row => row.id === 'conn-a')
+                ?.networks,
+        ).toEqual([algorand('testnet')])
     })
 
     // Same reason: the approved methods live under a kind-specific key (v1

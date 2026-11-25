@@ -30,7 +30,9 @@ import {
     type AssetGroupMemberIdentity,
 } from './ExpandableAssetGroup'
 import { SwipeableAssetItem } from './SwipeableAssetItem'
+import { AutoHiddenTokensRow } from '../AutoHiddenTokensRow'
 import { BackupReminderBanner } from '../BackupReminderBanner'
+import { CloudBackupStatus } from '../CloudBackupStatus'
 import { LegacyQuantumNotice } from '../LegacyQuantumNotice'
 import { NetworkFundingState } from './NetworkFundingState'
 import {
@@ -143,6 +145,7 @@ export const AccountAssetList = ({
                 account={account}
                 isLoading={isLoading}
             />
+            <CloudBackupStatus account={account} />
             <LegacyQuantumNotice account={account} />
             {headerState.isOpen && (
                 <>
@@ -212,12 +215,15 @@ export const AccountAssetList = ({
                 contentContainerStyle={styles.rootContainer}
                 ListHeaderComponent={listHeader}
                 ListFooterComponent={
-                    fundingChainId === null ? undefined : (
-                        <NetworkFundingState
-                            account={account}
-                            chainId={fundingChainId}
-                        />
-                    )
+                    <>
+                        <AutoHiddenTokensRow account={account} />
+                        {fundingChainId !== null && (
+                            <NetworkFundingState
+                                account={account}
+                                chainId={fundingChainId}
+                            />
+                        )}
+                    </>
                 }
                 searchPlaceholder={t(
                     'account_details.assets.search_placeholder',

@@ -24,19 +24,21 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import type { Optional } from '@perawallet/wallet-core-shared'
 import { useFeatureFlagOverrides } from '../useFeatureFlagOverrides'
 
 const mockSetConfigOverride = vi.fn()
-const mockConfigOverrides: Record<string, Optional<boolean>> = {}
+const mockConfigOverrides: Record<string, string | boolean | number> = {}
+const mockEffectiveValues: Record<string, boolean> = {}
 
 // A chain's overrides key reaches the registry through the composition root's
 // declaration, next to the platform's own keys.
 vi.mock('@perawallet/wallet-core-remote-config', () => ({
     useRemoteConfigOverrides: () => ({
-        configOverrides: mockConfigOverrides,
+        configOverrides: { ...mockConfigOverrides },
         setConfigOverride: mockSetConfigOverride,
     }),
+    readBooleanFlagWithoutOverride: (key: string) =>
+        mockEffectiveValues[key] ?? false,
     remoteConfigDefaultsRegistry: {
         all: () => ({
             enable_pera_card: false, // boolean
@@ -56,21 +58,28 @@ describe('useFeatureFlagOverrides', () => {
         Object.keys(mockConfigOverrides).forEach(key => {
             delete mockConfigOverrides[key]
         })
+        Object.keys(mockEffectiveValues).forEach(key => {
+            delete mockEffectiveValues[key]
+        })
     })
 
     describe('toggleExpand', () => {
-        it('sets override to false when key is not expanded', () => {
-            const { result } = renderHook(() => useFeatureFlagOverrides())
+        it.each([true, false])(
+            'starts a new override from the effective value %s',
+            effective => {
+                mockEffectiveValues['test_flag'] = effective
+                const { result } = renderHook(() => useFeatureFlagOverrides())
 
-            act(() => {
-                result.current.toggleExpand('test_flag')
-            })
+                act(() => {
+                    result.current.toggleExpand('test_flag')
+                })
 
-            expect(mockSetConfigOverride).toHaveBeenCalledWith(
-                'test_flag',
-                false,
-            )
-        })
+                expect(mockSetConfigOverride).toHaveBeenCalledWith(
+                    'test_flag',
+                    effective,
+                )
+            },
+        )
 
         it('clears override when key is already expanded', () => {
             mockConfigOverrides['test_flag'] = false
@@ -154,6 +163,69 @@ describe('useFeatureFlagOverrides', () => {
                 'enable_motion_lock',
                 'enable_quantum_swap',
             ])
+        })
+    })
+
+    describe('booleanFlagValues', () => {
+        it('shows true for a flag with no override that reads true', () => {
+            mockEffectiveValues['enable_pera_card'] = true
+            const { result } = renderHook(() => useFeatureFlagOverrides())
+
+            expect(result.current.booleanFlagValues['enable_pera_card']).toBe(
+                true,
+            )
+        })
+
+        it('shows false for a flag with no override that reads false', () => {
+            mockEffectiveValues['enable_motion_lock'] = false
+            const { result } = renderHook(() => useFeatureFlagOverrides())
+
+            expect(result.current.booleanFlagValues['enable_motion_lock']).toBe(
+                false,
+            )
+        })
+
+        it('has a value for every boolean flag key', () => {
+            const { result } = renderHook(() => useFeatureFlagOverrides())
+
+            expect(Object.keys(result.current.booleanFlagValues)).toEqual(
+                result.current.booleanFlagKeys,
+            )
+        })
+
+        it('shows the override over the effective value', () => {
+            mockEffectiveValues['enable_pera_card'] = true
+            mockConfigOverrides['enable_pera_card'] = false
+            const { result } = renderHook(() => useFeatureFlagOverrides())
+
+            expect(result.current.booleanFlagValues['enable_pera_card']).toBe(
+                false,
+            )
+        })
+
+        it('returns to the effective value once the override is cleared', () => {
+            mockEffectiveValues['enable_pera_card'] = true
+            mockConfigOverrides['enable_pera_card'] = false
+            const { result, rerender } = renderHook(() =>
+                useFeatureFlagOverrides(),
+            )
+
+            delete mockConfigOverrides['enable_pera_card']
+            rerender()
+
+            expect(result.current.booleanFlagValues['enable_pera_card']).toBe(
+                true,
+            )
+        })
+
+        it('ignores a non-boolean override, as the app does', () => {
+            mockEffectiveValues['enable_pera_card'] = true
+            mockConfigOverrides['enable_pera_card'] = 'false'
+            const { result } = renderHook(() => useFeatureFlagOverrides())
+
+            expect(result.current.booleanFlagValues['enable_pera_card']).toBe(
+                true,
+            )
         })
     })
 

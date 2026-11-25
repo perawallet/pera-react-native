@@ -386,7 +386,7 @@ registerPreview({
                     label: 'checked',
                     node: (
                         <PWCheckbox
-                            checked={true}
+                            isChecked={true}
                             onPress={() => undefined}
                         />
                     ),
@@ -395,7 +395,28 @@ registerPreview({
                     label: 'unchecked',
                     node: (
                         <PWCheckbox
-                            checked={false}
+                            isChecked={false}
+                            onPress={() => undefined}
+                        />
+                    ),
+                },
+                {
+                    label: 'with label',
+                    node: (
+                        <PWCheckbox
+                            label='I have saved my passphrase'
+                            isChecked={true}
+                            onPress={() => undefined}
+                        />
+                    ),
+                },
+                {
+                    label: 'disabled',
+                    node: (
+                        <PWCheckbox
+                            label='I have saved my passphrase'
+                            isChecked={false}
+                            isDisabled
                             onPress={() => undefined}
                         />
                     ),

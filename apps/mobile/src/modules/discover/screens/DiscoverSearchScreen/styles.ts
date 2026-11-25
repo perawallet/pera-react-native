@@ -23,7 +23,6 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
     },
     searchField: {
-        borderRadius: theme.spacing.sm,
         paddingHorizontal: theme.spacing.sm,
     },
     filtersBleed: {
@@ -44,6 +43,10 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingVertical: theme.spacing.md,
+    },
+    // The asset row has no padding of its own; this matches the dApp rows around it.
+    assetRow: {
+        paddingVertical: theme.spacing.sm,
     },
     linkRow: {
         flexDirection: 'row',

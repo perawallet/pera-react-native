@@ -54,6 +54,14 @@ const PRESETS = {
 }
 
 const mockRefresh = vi.fn()
+const mockMinFeeRefresh = vi.fn()
+const minFeeResult = {
+    minFee: undefined,
+    isPending: false,
+    error: null,
+    isRetrying: false,
+    refresh: mockMinFeeRefresh,
+}
 
 describe('useSendFeeQuery', () => {
     beforeEach(() => {
@@ -61,10 +69,7 @@ describe('useSendFeeQuery', () => {
         ;(sendFlowChainAdapters.has as Mock).mockImplementation(
             (chainId: string) => chainId === 'algorand',
         )
-        ;(useMinFeeForSender as Mock).mockReturnValue({
-            minFee: undefined,
-            isPending: false,
-        })
+        ;(useMinFeeForSender as Mock).mockReturnValue(minFeeResult)
         ;(useTransferFeeEstimateQuery as Mock).mockReturnValue({
             data: undefined,
             isPending: false,
@@ -75,8 +80,8 @@ describe('useSendFeeQuery', () => {
 
     it('keeps the PQ-aware sender fee on a chain with a send-flow adapter', () => {
         ;(useMinFeeForSender as Mock).mockReturnValue({
+            ...minFeeResult,
             minFee: 3000n,
-            isPending: false,
         })
 
         const { result } = renderHook(() =>
@@ -119,7 +124,32 @@ describe('useSendFeeQuery', () => {
         expect(mockRefresh).toHaveBeenCalledTimes(1)
     })
 
-    it('does nothing on refresh with a send-flow adapter', () => {
+    it('reports a failed fee parameters load on a chain with a send-flow adapter', () => {
+        const error = new Error('offline')
+        ;(useMinFeeForSender as Mock).mockReturnValue({
+            ...minFeeResult,
+            error,
+            isRetrying: true,
+        })
+
+        const { result } = renderHook(() =>
+            useSendFeeQuery({
+                scope: ALGORAND,
+                senderAddress: 'SENDER',
+                assetId: '0',
+                feePreset: 'normal',
+            }),
+        )
+
+        expect(result.current).toMatchObject({
+            maxFeeAmount: undefined,
+            isError: true,
+            error,
+            isRetrying: true,
+        })
+    })
+
+    it('reloads the fee parameters on refresh with a send-flow adapter', () => {
         const { result } = renderHook(() =>
             useSendFeeQuery({
                 scope: ALGORAND,
@@ -131,6 +161,7 @@ describe('useSendFeeQuery', () => {
 
         result.current.refresh()
 
+        expect(mockMinFeeRefresh).toHaveBeenCalledTimes(1)
         expect(mockRefresh).not.toHaveBeenCalled()
     })
 

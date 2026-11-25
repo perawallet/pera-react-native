@@ -13,12 +13,22 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
+    row: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    textRow: {
+        gap: theme.spacing.sm,
+    },
+    label: {
+        flexShrink: 1,
+    },
     uncheckedIcon: {
         width: theme.spacing.xl,
         height: theme.spacing.xl,
         borderWidth: theme.borders.md,
-        borderColor: theme.colors.layerGray,
-        borderRadius: theme.spacing.xs,
+        borderColor: theme.colors.textGray,
+        borderRadius: theme.borderRadius.xs,
         backgroundColor: 'transparent',
     },
 }))

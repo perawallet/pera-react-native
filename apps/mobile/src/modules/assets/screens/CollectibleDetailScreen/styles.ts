@@ -35,7 +35,7 @@ export const useStyles = makeStyles(theme => ({
         paddingVertical: theme.spacing.xs,
     },
     traitLabel: {
-        color: theme.colors.textGrayLighter,
+        color: theme.colors.textGray,
         textTransform: 'uppercase',
     },
     infoSection: {

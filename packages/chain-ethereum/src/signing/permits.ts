@@ -107,6 +107,12 @@ const YEAR_MS = 365 * 24 * 60 * 60 * 1000
 // The largest time a JS Date holds; a later deadline is one that never lapses.
 const MAX_DATE_MS = 8_640_000_000_000_000n
 
+// Unix seconds to Unix ms; undefined past what a Date holds, a deadline that never lapses.
+const toDeadlineMs = (seconds: bigint): Optional<number> => {
+    const ms = seconds * 1000n
+    return ms > MAX_DATE_MS ? undefined : Number(ms)
+}
+
 type Types = Record<string, readonly TypedDataParameter[]>
 
 const matches = (
@@ -164,9 +170,18 @@ const toNftAllowance = (
 type Parsed = {
     spender: unknown
     allowances: Optional<TokenAllowance>[]
-    /** Unix seconds; undefined when a deadline can't be read. */
+    /** Unix seconds the allowance lapses; undefined when it can't be read. */
     expiry: Optional<bigint>
+    /**
+     * Set for a permit whose allowance outlives its signature: Unix seconds the
+     * signature can be submitted until, undefined when it can't be read.
+     */
+    signature?: { deadline: Optional<bigint> }
+    /** The allowance stays until it is used or revoked, like an on-chain approve's. */
+    isLasting?: true
 }
+
+const LASTING = { expiry: maxUint256, isLasting: true } as const
 
 const parsePermit = (
     message: Record<string, unknown>,
@@ -174,11 +189,12 @@ const parsePermit = (
 ): Parsed => ({
     spender: message.spender,
     allowances: [toAllowance(token, message.value)],
-    expiry: toUint(message.deadline),
+    ...LASTING,
+    signature: { deadline: toUint(message.deadline) },
 })
 
 // DAI grants its whole balance when `allowed` is true and nothing otherwise;
-// an expiry of 0 means it never lapses.
+// an expiry of 0 means the signature never lapses.
 const parseDaiPermit = (
     message: Record<string, unknown>,
     token: unknown,
@@ -188,7 +204,8 @@ const parseDaiPermit = (
         spender: message.spender,
         allowances:
             message.allowed === true ? [toAllowance(token, maxUint256)] : [],
-        expiry: expiry === 0n ? maxUint256 : expiry,
+        ...LASTING,
+        signature: { deadline: expiry === 0n ? maxUint256 : expiry },
     }
 }
 
@@ -198,7 +215,8 @@ const parseErc721Permit = (
 ): Parsed => ({
     spender: message.spender,
     allowances: [toNftAllowance(contract, message.tokenId)],
-    expiry: toUint(message.deadline),
+    ...LASTING,
+    signature: { deadline: toUint(message.deadline) },
 })
 
 type PermitShape = {
@@ -245,53 +263,98 @@ const parsePermit2 = (
             }
             return expiry > latest ? expiry : latest
         }, 0n),
+        // A signature transfer is spent once, by its deadline; an allowance
+        // permit leaves an allowance that runs to its own expiration.
+        ...(key === 'details' && { signature: { deadline } }),
     }
 }
 
-const parseTypedData = (typedData: TypedDataDefinition): Optional<Parsed> => {
+// viem hashes only the fields a declared `EIP712Domain` lists, so a
+// verifyingContract it leaves out, or types as other than an address, binds the
+// signature to no token; undeclared, viem derives an address field from the value.
+const boundVerifyingContractOf = (
+    domain: Optional<Record<string, unknown>>,
+    declared: Optional<readonly TypedDataParameter[]>,
+): Optional<string> =>
+    declared === undefined ||
+    declared.some(
+        ({ name, type }) => name === 'verifyingContract' && type === 'address',
+    )
+        ? toAddress(domain?.verifyingContract)
+        : undefined
+
+// An unbound permit is still a permit: the typehash is a real token's, and the
+// signature is valid on any token whose domain has no verifyingContract.
+type Recognised = { isBound: false } | { isBound: true; parsed: Parsed }
+
+const recogniseTypedData = (
+    typedData: TypedDataDefinition,
+): Optional<Recognised> => {
     const { primaryType, message, domain } = typedData as {
         primaryType: string
         message: Record<string, unknown>
         domain?: Record<string, unknown>
     }
     const types = typedData.types as Types
-    const verifyingContract = domain?.verifyingContract
+    const verifyingContract = boundVerifyingContractOf(
+        domain,
+        types.EIP712Domain,
+    )
 
     if (primaryType === 'Permit') {
-        // The token is the contract that verifies the signature.
         const permit = PERMIT_SHAPES.find(({ fields }) =>
             matches(types.Permit, fields),
         )
-        return permit && toAddress(verifyingContract) !== undefined
-            ? permit.parse(message, verifyingContract)
-            : undefined
+        if (!permit) return undefined
+        // The token is the contract that verifies the signature.
+        return verifyingContract === undefined
+            ? { isBound: false }
+            : {
+                  isBound: true,
+                  parsed: permit.parse(message, verifyingContract),
+              }
     }
 
     const shape = PERMIT2_SHAPES[primaryType]
-    if (
-        !shape ||
-        typeof verifyingContract !== 'string' ||
-        !areEvmAddressesEqual(verifyingContract, PERMIT2_ADDRESS)
-    ) {
-        return undefined
-    }
+    if (!shape) return undefined
     const struct =
         shape.key === 'details' ? 'PermitDetails' : 'TokenPermissions'
     const head: Field = [shape.key, shape.isBatch ? `${struct}[]` : struct]
     const tail = shape.key === 'details' ? SIGNED_TAIL : TRANSFER_TAIL
-    return matches(
-        types[primaryType],
-        [head, ...tail],
-        shape.hasWitness ? 1 : 0,
-    ) && matches(types[struct], STRUCTS[struct])
-        ? parsePermit2(shape, message)
+    if (
+        !matches(
+            types[primaryType],
+            [head, ...tail],
+            shape.hasWitness ? 1 : 0,
+        ) ||
+        !matches(types[struct], STRUCTS[struct])
+    ) {
+        return undefined
+    }
+    if (verifyingContract === undefined) return { isBound: false }
+    return areEvmAddressesEqual(verifyingContract, PERMIT2_ADDRESS)
+        ? { isBound: true, parsed: parsePermit2(shape, message) }
         : undefined
 }
 
-/** EIP-2612, DAI-style or ERC-721 `Permit`, or Permit2 typed data, complete or not. Never throws. */
+/** EIP-2612, DAI-style or ERC-721 `Permit`, or Permit2 typed data, complete or not, bound to a token or not. Never throws. */
 export const isPermitTypedData = (typedData: unknown): boolean => {
     try {
-        return parseTypedData(typedData as TypedDataDefinition) !== undefined
+        return (
+            recogniseTypedData(typedData as TypedDataDefinition) !== undefined
+        )
+    } catch {
+        return false
+    }
+}
+
+/** A permit whose signed domain binds no verifyingContract, so no token it names is the one it spends. Never throws. */
+export const isUnboundPermitTypedData = (typedData: unknown): boolean => {
+    try {
+        return (
+            recogniseTypedData(typedData as TypedDataDefinition)?.isBound ===
+            false
+        )
     } catch {
         return false
     }
@@ -309,19 +372,31 @@ export const spendApprovalOf = (
     eip155ChainId?: number,
 ): Optional<SpendApproval> => {
     try {
-        const parsed = parseTypedData(typedData)
+        const recognised = recogniseTypedData(typedData)
+        const parsed = recognised?.isBound ? recognised.parsed : undefined
         const spender = parsed && toAddress(parsed.spender)
         if (
             !parsed ||
             spender === undefined ||
             parsed.allowances.length === 0 ||
             parsed.expiry === undefined ||
+            (parsed.signature && parsed.signature.deadline === undefined) ||
             parsed.allowances.some(allowance => !allowance)
         ) {
             return undefined
         }
-        const ms = parsed.expiry * 1000n
-        const deadline = ms > MAX_DATE_MS ? undefined : Number(ms)
+        const deadline = toDeadlineMs(parsed.expiry)
+        const signatureDeadline =
+            parsed.signature?.deadline !== undefined
+                ? toDeadlineMs(parsed.signature.deadline)
+                : undefined
+        const isLongLasting = (ms: Optional<number>) =>
+            ms === undefined || ms - now > YEAR_MS
+        // A Permit2 expiration of 0 falls back to the signature's deadline, so a
+        // second row would repeat the date.
+        const hasOwnWindow =
+            !!parsed.signature &&
+            (parsed.isLasting || signatureDeadline !== deadline)
         const knownSpender = knownSpenderOf(eip155ChainId, spender)
         return {
             spender,
@@ -333,7 +408,15 @@ export const spendApprovalOf = (
                 }),
             ),
             ...(deadline !== undefined && { deadline }),
-            isLongLived: deadline === undefined || deadline - now > YEAR_MS,
+            isLongLived: isLongLasting(deadline),
+            ...(hasOwnWindow && {
+                signature: {
+                    ...(signatureDeadline !== undefined && {
+                        deadline: signatureDeadline,
+                    }),
+                    isLongLived: isLongLasting(signatureDeadline),
+                },
+            }),
         }
     } catch {
         return undefined

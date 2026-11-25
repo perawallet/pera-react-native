@@ -79,6 +79,7 @@ export type PWScreenProps = {
     onContentSizeChange?: (width: number, height: number) => void
     scrollRef?: Ref<PWScreenScrollHandle>
     style?: StyleProp<ViewStyle>
+    /** Also tags the scrolling body, as `${testID}-body`. */
     testID?: string
 }
 
@@ -131,9 +132,19 @@ export const PWScreen = ({
         isInSheet,
         hasGap: bottomGap === 'xl',
     })
+    const isNested = useContext(PWScreenNestedContext)
+    // Above the tab bar a fixed body leaves the gap to the scroller it hosts,
+    // so rows scroll down to the bar instead of clipping a gap short of it.
+    const leavesEndGapToScroller =
+        scroll !== 'auto' &&
+        bottomGap === 'xl' &&
+        footer == null &&
+        isBottomHandledOutside &&
+        !isNested &&
+        !isInSheet
     const styles = useStyles({
         horizontalPadding,
-        endGap,
+        endGap: leavesEndGapToScroller ? 0 : endGap,
         hasFooter: footer != null,
         isKeyboardVisible,
     })
@@ -161,6 +172,8 @@ export const PWScreen = ({
     const renderedHeader =
         header == null ? null : <PWView style={styles.header}>{header}</PWView>
 
+    const bodyTestID = testID ? `${testID}-body` : undefined
+
     const renderBody = () => {
         if (children == null) {
             // Header + footer only: a flex filler absorbs the free space so the
@@ -179,6 +192,7 @@ export const PWScreen = ({
                     onScroll={onScroll}
                     onLayout={onBodyLayout}
                     onContentSizeChange={onContentSizeChange}
+                    testID={bodyTestID}
                     style={styles.body}
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
@@ -196,6 +210,7 @@ export const PWScreen = ({
                 onLayout={onBodyLayout}
                 onContentSizeChange={onContentSizeChange}
                 scrollEventThrottle={SCROLL_EVENT_THROTTLE}
+                testID={bodyTestID}
                 style={styles.body}
                 contentContainerStyle={styles.scrollContent}
                 bottomOffset={
@@ -256,7 +271,7 @@ export const PWScreen = ({
     // PWFlatList). `behavior='padding'` shrinks the container as the keyboard
     // opens, lifting the fixed body and its footer above it.
     return (
-        <PWScreenNestedContext.Provider value={true}>
+        <PWScreenNestedContext.Provider value={!leavesEndGapToScroller}>
             <PWView
                 style={[styles.root, style]}
                 testID={testID}
