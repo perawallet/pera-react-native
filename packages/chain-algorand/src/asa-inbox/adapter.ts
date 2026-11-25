@@ -10,8 +10,10 @@
  limitations under the License
  */
 
+import { z } from 'zod'
 import { createWalletAlgorandClient } from '../blockchain'
 import {
+    InvalidSendParamsError,
     toAssetInboxQuote,
     type AssetInboxSendFlow,
 } from '@perawallet/wallet-core-transactions'
@@ -22,6 +24,7 @@ import {
     arc59SendSummaryResponseSchema,
 } from './api'
 import { getArc59SignedFundingAmount } from './getArc59SignedFundingAmount'
+import { resolveAlgorandSenderFee } from '../transactions/transfer-fees'
 import { toUnsignedAlgorandTransactions } from '../signing/unsignedTransaction'
 import {
     buildArc59ClaimTxs,
@@ -29,31 +32,76 @@ import {
     buildArc59SendViaInboxTxs,
 } from './builders'
 
+const sendQuoteSchema = z.object({
+    summary: arc59SendSummaryResponseSchema,
+    network: z.string(),
+    sender: z.string(),
+    receiver: z.string(),
+    assetId: z.string(),
+    amount: z.bigint().nonnegative(),
+    networkFee: z.bigint().nonnegative(),
+})
+
 // Built per call so a custom-network edit is picked up, as useAlgorandClient's
 // memo does.
 export const algorandAssetInbox: AssetInboxSendFlow = {
     fetchRequests: ({ scope, address }) =>
         fetchArc59AssetRequests(algorandNetworkOf(scope), address),
-    fetchSendSummary: async ({ scope, receiver, assetId }) => {
-        const quote = await fetchArc59SendSummary(
-            algorandNetworkOf(scope),
-            receiver,
-            assetId,
+    fetchSendSummary: async ({ scope, sender, receiver, assetId, amount }) => {
+        const network = algorandNetworkOf(scope)
+        const algokit = createWalletAlgorandClient(network)
+        const [summary, suggestedParams] = await Promise.all([
+            fetchArc59SendSummary(network, receiver, assetId),
+            algokit.getSuggestedParams(),
+        ])
+        const { networkFee } = await buildArc59SendViaInboxTxs(
+            { algokit, network },
+            {
+                sender,
+                receiver,
+                assetId: BigInt(assetId),
+                amount,
+                summary,
+                senderMinFee: resolveAlgorandSenderFee(
+                    sender,
+                    BigInt(suggestedParams.minFee),
+                ),
+            },
         )
         return {
-            quote: toAssetInboxQuote(quote),
-            fundingAmount: getArc59SignedFundingAmount(quote),
+            quote: toAssetInboxQuote(
+                Object.freeze({
+                    summary: Object.freeze(summary),
+                    network,
+                    sender,
+                    receiver,
+                    assetId,
+                    amount,
+                    networkFee,
+                }),
+            ),
+            fundingAmount: getArc59SignedFundingAmount(summary),
+            networkFee,
         }
     },
     buildSendTxs: async ({ scope, quote, ...params }) => {
         const network = algorandNetworkOf(scope)
-        const transactions = await buildArc59SendViaInboxTxs(
+        const approved = sendQuoteSchema.parse(quote)
+        if (
+            approved.network !== network ||
+            approved.sender !== params.sender ||
+            approved.receiver !== params.receiver ||
+            approved.assetId !== params.assetId.toString() ||
+            approved.amount !== params.amount
+        ) {
+            throw new InvalidSendParamsError()
+        }
+        const { transactions } = await buildArc59SendViaInboxTxs(
             { algokit: createWalletAlgorandClient(network), network },
             {
                 ...params,
-                // Re-validated here because the send flow carries the
-                // quote opaquely and it decides a headlessly signed payment.
-                summary: arc59SendSummaryResponseSchema.parse(quote),
+                summary: approved.summary,
+                maxFee: approved.networkFee,
             },
         )
         return toUnsignedAlgorandTransactions(transactions, scope)

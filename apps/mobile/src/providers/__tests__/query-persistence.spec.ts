@@ -83,6 +83,25 @@ const suggestedParametersKey: QueryKey = [
 ]
 
 describe('shouldDehydrateQuery', () => {
+    it('keeps unsigned inbox send quotes off disk', () => {
+        expect(
+            shouldDehydrateQuery(
+                asQuery(
+                    [
+                        'asa-inbox',
+                        'send-summary',
+                        {
+                            sender: 'SENDER',
+                            receiver: 'RECEIVER',
+                            amount: '5000',
+                        },
+                    ],
+                    'success',
+                ),
+            ),
+        ).toBe(false)
+    })
+
     it('persists successful chart-history snapshots (the allowlist)', () => {
         expect(
             shouldDehydrateQuery(asQuery(balanceHistoryKey, 'success')),

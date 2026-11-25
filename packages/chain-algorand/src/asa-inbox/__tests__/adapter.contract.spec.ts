@@ -35,7 +35,10 @@ vi.mock('../../blockchain', async importOriginal => ({
     createWalletAlgorandClient: vi.fn(() => ({})),
 }))
 vi.mock('../builders', () => ({
-    buildArc59SendViaInboxTxs: vi.fn(payment),
+    buildArc59SendViaInboxTxs: vi.fn(async () => ({
+        transactions: await payment(),
+        networkFee: 5000n,
+    })),
     buildArc59ClaimTxs: vi.fn(payment),
     buildArc59RejectTxs: vi.fn(payment),
 }))
@@ -70,13 +73,21 @@ sendFlowContractTests(() => algorandSendFlowAdapter, {
         senderMinFee: 1000n,
     },
     inboxSendQuote: toAssetInboxQuote({
-        is_arc59_opted_in: true,
-        minimum_balance_requirement: 100000,
-        inner_tx_count: 2,
-        total_protocol_and_mbr_fee: 4000,
-        inbox_address: null,
-        algo_fund_amount: 0,
-        warning_message: null,
+        summary: {
+            is_arc59_opted_in: true,
+            minimum_balance_requirement: 100000,
+            inner_tx_count: 2,
+            total_protocol_and_mbr_fee: 4000,
+            inbox_address: null,
+            algo_fund_amount: 0,
+            warning_message: null,
+        },
+        network: scope.networkId,
+        sender: 'SENDER',
+        receiver: 'RECEIVER',
+        assetId: '31566704',
+        amount: 1n,
+        networkFee: 5000n,
     }),
     inboxClaim: claim,
     inboxReject: { ...claim, assetCreator: 'CREATOR' },

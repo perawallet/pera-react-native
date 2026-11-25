@@ -236,6 +236,7 @@ describe('Flow: suspected address poisoning in Algorand history', () => {
         expect(notice.textContent).toContain(
             'send_funds.recipient_safety.look_alike_known_label_contact',
         )
+        expect(screen.getByTestId('suspected_poisoning_dismiss')).toBeTruthy()
 
         const from = await screen.findByTestId('transaction_detail_from')
         const sender = closestPressable(

@@ -92,4 +92,38 @@ describe('useMinFeeForSender', () => {
 
         expect(result.current.minFee).toBeUndefined()
     })
+
+    it('surfaces a failed params load with a refresh while the fee is missing', () => {
+        const error = new Error('offline')
+        const refetch = vi.fn()
+        mockUseSuggestedParametersQuery.mockReturnValue({
+            data: undefined,
+            isPending: false,
+            isFetching: true,
+            error,
+            refetch,
+        })
+        const { result } = renderHook(() => useMinFeeForSender('QADDR'))
+
+        result.current.refresh()
+
+        expect(result.current.minFee).toBeUndefined()
+        expect(result.current.error).toBe(error)
+        expect(result.current.isRetrying).toBe(true)
+        expect(refetch).toHaveBeenCalled()
+    })
+
+    it('ignores a failed background refetch that kept the last params', () => {
+        mockUseSuggestedParametersQuery.mockReturnValue({
+            data: { minFee: 1000 },
+            isPending: false,
+            isFetching: false,
+            error: new Error('offline'),
+            refetch: vi.fn(),
+        })
+        const { result } = renderHook(() => useMinFeeForSender('QADDR'))
+
+        expect(result.current.minFee).toBe(3000n)
+        expect(result.current.error).toBeNull()
+    })
 })

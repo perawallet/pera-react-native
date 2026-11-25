@@ -18,6 +18,7 @@ import {
     describe,
     expect,
     it,
+    onTestFinished,
     vi,
 } from 'vitest'
 import {
@@ -306,6 +307,77 @@ describe('call batch execution', () => {
         unlock()
         expect(await settled()).toMatchObject({ outcome: 'confirmed' })
         expect(node.sentCount()).toBe(2)
+    })
+
+    it('Given a locked app, when the unlock comes after the approval expired, then the native send waiting on it is never signed', async () => {
+        const node = fakeNode()
+        const signTransaction = vi.fn(signAsSender)
+        let unlock = () => {}
+        const unlocked = new Promise<void>(resolve => {
+            unlock = resolve
+        })
+        let reachUnlock = () => {}
+        const reachedUnlock = new Promise<void>(resolve => {
+            reachUnlock = resolve
+        })
+        const nativeSend: typeof SWAP = { ...SWAP, value: 1n, data: '0x' }
+
+        await approve([APPROVE, nativeSend], {
+            ...deps,
+            signTransaction,
+            whenUnlocked: () => {
+                reachUnlock()
+                return unlocked
+            },
+        })
+        await reachedUnlock
+        const expiredAt = Date.now() + REVIEW_APPROVAL_TTL_MS + 1
+        const now = vi.spyOn(Date, 'now').mockReturnValue(expiredAt)
+        onTestFinished(() => now.mockRestore())
+        unlock()
+
+        expect(await settled()).toMatchObject({
+            outcome: 'failed',
+            position: 1,
+        })
+        expect(signTransaction).not.toHaveBeenCalled()
+        expect(node.sentCount()).toBe(1)
+    })
+
+    it('Given a native send queued behind another sign request, when it is signed after the approval expired, then the signed bytes are dropped and never sent', async () => {
+        const node = fakeNode()
+        let release = () => {}
+        const released = new Promise<void>(resolve => {
+            release = resolve
+        })
+        let reachSigning = () => {}
+        const reachedSigning = new Promise<void>(resolve => {
+            reachSigning = resolve
+        })
+        const nativeSend: typeof SWAP = { ...SWAP, value: 1n, data: '0x' }
+
+        await approve([APPROVE, nativeSend], {
+            ...deps,
+            signTransaction: async (tx, approval) => {
+                if (approval.positions[0] === 1) {
+                    reachSigning()
+                    await released
+                }
+                return signAsSender(tx)
+            },
+        })
+        await reachedSigning
+        const expiredAt = Date.now() + REVIEW_APPROVAL_TTL_MS + 1
+        const now = vi.spyOn(Date, 'now').mockReturnValue(expiredAt)
+        onTestFinished(() => now.mockRestore())
+        release()
+
+        expect(await settled()).toMatchObject({
+            outcome: 'failed',
+            position: 1,
+            signedRaw: null,
+        })
+        expect(node.sentCount()).toBe(1)
     })
 
     it('Given the swap fails before it reaches the node, when the batch runs, then it fails rather than rebuilding it forever', async () => {

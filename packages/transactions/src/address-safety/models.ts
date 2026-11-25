@@ -82,6 +82,7 @@ export type FetchTrustedCounterpartiesParams = {
     accountAddress: string
     scope: ChainScope
     signal?: AbortSignal
+    onPage?: (counterparties: TrustedCounterparty[]) => void
 }
 
 /** A history entry as the poisoning check reads it. */

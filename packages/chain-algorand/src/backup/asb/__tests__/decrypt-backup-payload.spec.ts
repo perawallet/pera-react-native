@@ -31,6 +31,14 @@ const RECOVERY_MNEMONIC =
     'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
 const RECOVERY_INDICES = mnemonicWordsToIndices(RECOVERY_MNEMONIC.split(' '))!
 
+// The addresses the seeds `fill(7)`, `fill(3)` and all-zero derive.
+const SEED_7_ADDRESS =
+    '5JFGYY7CTRJAVPXVKB5RGLWF7GKUO5VOX27HXESCD3VGSFCG2IWAKDM5YU'
+const SEED_3_ADDRESS =
+    '5VESRRRI2HBMN2XJAM4JAWMVMEUVSJZ2LRR7SNRWYFDBJLEHG7I2572N4M'
+const ZERO_SEED_ADDRESS =
+    'HNVCPPGOW2SC2YVDVDICU3YNONSTEFLXDXREHJR2YBEKDC2Z3IUZSC6YGI'
+
 // Helper: produce a valid ARC-35 envelope for the given plaintext + mnemonic.
 // Mirrors what the iOS/Android creators do: secretbox-encrypt, prepend nonce,
 // base64 the result, embed in the JSON envelope.
@@ -68,8 +76,7 @@ describe('decryptBackupPayload', () => {
             {
                 accounts: [
                     {
-                        address:
-                            'EGRJQ7DXMIJ577UUN6AFOIUZY6CNSFKLMGFHQNTC5US5TRC23LK6DGQRDM',
+                        address: SEED_7_ADDRESS,
                         name: 'My Single',
                         account_type: 'single',
                         private_key: encodeToBase64(privateKey),
@@ -88,9 +95,7 @@ describe('decryptBackupPayload', () => {
         expect(result.accounts).toHaveLength(1)
         expect(result.accounts[0].kind).toBe(SecureBackupAccountKind.Single)
         expect(result.accounts[0].name).toBe('My Single')
-        expect(result.accounts[0].address).toBe(
-            'EGRJQ7DXMIJ577UUN6AFOIUZY6CNSFKLMGFHQNTC5US5TRC23LK6DGQRDM',
-        )
+        expect(result.accounts[0].address).toBe(SEED_7_ADDRESS)
         expect(result.accounts[0].privateKey).not.toBeNull()
         expect(Array.from(result.accounts[0].privateKey!)).toEqual(
             Array.from(privateKey),
@@ -131,8 +136,7 @@ describe('decryptBackupPayload', () => {
                     { not: 'an account' },
                     { address: 'A', account_type: 'unknown' },
                     {
-                        address:
-                            'EGRJQ7DXMIJ577UUN6AFOIUZY6CNSFKLMGFHQNTC5US5TRC23LK6DGQRDM',
+                        address: SEED_3_ADDRESS,
                         account_type: 'single',
                         private_key: validPrivateKey,
                     },
@@ -144,6 +148,60 @@ describe('decryptBackupPayload', () => {
         const result = decryptBackupPayload(envelope, RECOVERY_INDICES)
         expect(result.accounts).toHaveLength(1)
         expect(result.accounts[0].kind).toBe(SecureBackupAccountKind.Single)
+    })
+
+    it('lists a single row under the address its key derives, without its declared name', () => {
+        const envelope = buildEnvelope(
+            {
+                accounts: [
+                    {
+                        address: SEED_3_ADDRESS,
+                        name: 'My Savings',
+                        account_type: 'single',
+                        private_key: encodeToBase64(new Uint8Array(64).fill(7)),
+                    },
+                ],
+            },
+            RECOVERY_INDICES,
+        )
+
+        const result = decryptBackupPayload(envelope, RECOVERY_INDICES)
+
+        expect(result.accounts).toHaveLength(1)
+        expect(result.accounts[0]).toMatchObject({
+            address: SEED_7_ADDRESS,
+            name: null,
+        })
+    })
+
+    it('drops a rebound row whose key another row already lists', () => {
+        const envelope = buildEnvelope(
+            {
+                accounts: [
+                    {
+                        address: SEED_3_ADDRESS,
+                        name: 'Rekeyed',
+                        account_type: 'single',
+                        private_key: encodeToBase64(new Uint8Array(64).fill(7)),
+                    },
+                    {
+                        address: SEED_7_ADDRESS,
+                        name: 'Auth',
+                        account_type: 'single',
+                        private_key: encodeToBase64(new Uint8Array(32).fill(7)),
+                    },
+                ],
+            },
+            RECOVERY_INDICES,
+        )
+
+        const result = decryptBackupPayload(envelope, RECOVERY_INDICES)
+
+        expect(result.accounts).toHaveLength(1)
+        expect(result.accounts[0]).toMatchObject({
+            address: SEED_7_ADDRESS,
+            name: 'Auth',
+        })
     })
 
     it('reports InvalidRecoveryKey when the recovery key is malformed', () => {
@@ -255,8 +313,7 @@ describe('decryptBackupPayload', () => {
             {
                 accounts: [
                     {
-                        address:
-                            'EGRJQ7DXMIJ577UUN6AFOIUZY6CNSFKLMGFHQNTC5US5TRC23LK6DGQRDM',
+                        address: ZERO_SEED_ADDRESS,
                         account_type: 'single',
                         private_key: encodeToBase64(new Uint8Array(64)),
                     },

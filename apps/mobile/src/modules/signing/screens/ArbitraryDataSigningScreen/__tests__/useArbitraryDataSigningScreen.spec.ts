@@ -11,8 +11,14 @@
  */
 
 import { renderHook, act } from '@testing-library/react'
+import type {
+    LayoutChangeEvent,
+    NativeScrollEvent,
+    NativeSyntheticEvent,
+} from 'react-native'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { registerAlgorandReviewerAdapter } from '@test-utils/reviewerChainAdapter'
+import { measureFittingReview } from '@test-utils/review-scroll'
 import { useArbitraryDataSigningScreen } from '../useArbitraryDataSigningScreen'
 
 const mockNavigate = vi.fn()
@@ -70,6 +76,12 @@ const buildRequest = (sourceType: string) => ({
     data: [{ signer: 'ADDR', data: 'ZGF0YQ==' }],
 })
 
+const renderScreen = () => {
+    const hook = renderHook(() => useArbitraryDataSigningScreen())
+    measureFittingReview(hook.result.current.scrollHint)
+    return hook
+}
+
 describe('useArbitraryDataSigningScreen', () => {
     beforeEach(() => {
         registerAlgorandReviewerAdapter()
@@ -82,7 +94,7 @@ describe('useArbitraryDataSigningScreen', () => {
 
     it('exposes the quantum block state for the current request', () => {
         mockIsQuantumDataSigningBlocked.mockReturnValue(true)
-        const { result } = renderHook(() => useArbitraryDataSigningScreen())
+        const { result } = renderScreen()
 
         expect(mockIsQuantumDataSigningBlocked).toHaveBeenCalledWith(
             mockPipeline.currentRequest,
@@ -92,7 +104,7 @@ describe('useArbitraryDataSigningScreen', () => {
 
     it('never advances the pipeline from handleApprove when quantum-blocked', async () => {
         mockIsQuantumDataSigningBlocked.mockReturnValue(true)
-        const { result } = renderHook(() => useArbitraryDataSigningScreen())
+        const { result } = renderScreen()
 
         await act(async () => {
             result.current.handleApprove()
@@ -103,7 +115,7 @@ describe('useArbitraryDataSigningScreen', () => {
     })
 
     it('advances the pipeline when the quantum dApp warning continues', async () => {
-        const { result } = renderHook(() => useArbitraryDataSigningScreen())
+        const { result } = renderScreen()
 
         await act(async () => {
             result.current.handleApprove()
@@ -117,8 +129,37 @@ describe('useArbitraryDataSigningScreen', () => {
         expect(mockHaptics.medium).toHaveBeenCalledTimes(1)
     })
 
+    it('holds approval on data taller than its body until it is scrolled to the end', async () => {
+        const { result } = renderScreen()
+        act(() => {
+            result.current.scrollHint.handleBodyLayout({
+                nativeEvent: { layout: { height: 400 } },
+            } as LayoutChangeEvent)
+            result.current.scrollHint.handleContentSizeChange(0, 1000)
+        })
+
+        await act(async () => {
+            result.current.handleApprove()
+        })
+
+        expect(result.current.isConfirmBlocked).toBe(true)
+        expect(mockPipeline.next).not.toHaveBeenCalled()
+
+        act(() =>
+            result.current.scrollHint.handleScroll({
+                nativeEvent: { contentOffset: { y: 600 } },
+            } as NativeSyntheticEvent<NativeScrollEvent>),
+        )
+        await act(async () => {
+            result.current.handleApprove()
+        })
+
+        expect(result.current.isConfirmBlocked).toBe(false)
+        expect(mockPipeline.next).toHaveBeenCalledOnce()
+    })
+
     it('plays the light haptic when the request is rejected', () => {
-        const { result } = renderHook(() => useArbitraryDataSigningScreen())
+        const { result } = renderScreen()
 
         act(() => {
             result.current.handleReject()
@@ -130,7 +171,7 @@ describe('useArbitraryDataSigningScreen', () => {
 
     it('rejects the request when the quantum dApp warning is cancelled', async () => {
         mockConfirmQuantumDappUsage.mockResolvedValue('cancel')
-        const { result } = renderHook(() => useArbitraryDataSigningScreen())
+        const { result } = renderScreen()
 
         await act(async () => {
             result.current.handleApprove()
@@ -144,7 +185,7 @@ describe('useArbitraryDataSigningScreen', () => {
 
     it('does not consult the quantum dApp warning for non-dApp requests', async () => {
         mockPipeline.currentRequest = buildRequest('local')
-        const { result } = renderHook(() => useArbitraryDataSigningScreen())
+        const { result } = renderScreen()
 
         await act(async () => {
             result.current.handleApprove()

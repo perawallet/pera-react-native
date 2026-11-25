@@ -74,8 +74,11 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     return (
         <>
             <BottomSheetModalProvider>
-                {!migrationInProgress && <DeviceRegistrar />}
-                <AutoLockGuard>
+                <AutoLockGuard
+                    afterInitialization={
+                        !migrationInProgress && <DeviceRegistrar />
+                    }
+                >
                     {/* The app's single connection registry: it owns every
                         handler's lifecycle, so exactly one may be mounted. */}
                     <ConnectionsProvider>

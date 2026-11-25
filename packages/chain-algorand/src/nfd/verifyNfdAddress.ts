@@ -22,13 +22,11 @@ import type {
     NameAddressVerification,
     VerifyForwardResolutionParams,
 } from '@perawallet/wallet-core-names'
-import { fetchNfdAppId } from './registry'
+import { fetchNfdRegistryRecord } from './registry'
 
-// NFD contract (v2) layout: the name and owner sit in global state; verified
-// addresses live in `v.caAlgo.<n>.as` boxes as back-to-back 32-byte keys.
 const NAME_KEY = 'i.name'
 const OWNER_KEY = 'i.owner.a'
-const VERIFIED_BOX = /^v\.caAlgo\.\d+\.as$/
+const VERIFIED_ADDRESSES = /^v\.caAlgo\.\d+\.as$/
 const PUBLIC_KEY_LENGTH = 32
 
 const applicationSchema = z.object({
@@ -53,26 +51,26 @@ const utf8 = (base64: string): string =>
 
 const addressesIn = (base64: string): string[] => {
     const bytes = decodeFromBase64(base64)
+    if (bytes.length % PUBLIC_KEY_LENGTH !== 0) return []
     const addresses: string[] = []
     for (
         let offset = 0;
         offset + PUBLIC_KEY_LENGTH <= bytes.length;
         offset += PUBLIC_KEY_LENGTH
     ) {
-        addresses.push(
-            encodeAlgorandAddress(
-                bytes.subarray(offset, offset + PUBLIC_KEY_LENGTH),
-            ),
-        )
+        const publicKey = bytes.subarray(offset, offset + PUBLIC_KEY_LENGTH)
+        if (publicKey.some(byte => byte !== 0)) {
+            addresses.push(encodeAlgorandAddress(publicKey))
+        }
     }
     return addresses
 }
 
 /**
- * Checks a name's backend-asserted address against the NFD contract itself.
- * The registry only says which application holds the name; the name, the
- * owner and the verified addresses are read from that application on chain,
- * so neither Pera's backend nor the registry can vouch for an address.
+ * Checks a name's backend-asserted address against the NFD contracts on chain:
+ * the registry contract says which application holds the name, and the name,
+ * the owner and the verified addresses are read from that application, so no
+ * off-chain service can vouch for an address.
  */
 export const verifyNfdAddress = async ({
     name,
@@ -82,12 +80,13 @@ export const verifyNfdAddress = async ({
 }: VerifyForwardResolutionParams): Promise<NameAddressVerification> => {
     const normalizedName = name.toLowerCase()
     try {
-        const appId = await fetchNfdAppId({
+        const record = await fetchNfdRegistryRecord({
             name: normalizedName,
-            networkId: scope.networkId,
+            scope,
             signal,
         })
-        if (appId === null) return 'mismatch'
+        if (record === null) return 'mismatch'
+        const { appId, storage } = record
 
         const application = applicationSchema.parse(
             await fetchNodeJson(scope, 'algod', `/v2/applications/${appId}`, {
@@ -102,8 +101,7 @@ export const verifyNfdAddress = async ({
         )
         const onChainName = state.get(NAME_KEY)
         const owner = state.get(OWNER_KEY)
-        // The registry could point at any application; the name the app
-        // itself carries is what ties it to what the user typed.
+        // The application must itself carry the name the user typed.
         if (!onChainName || !owner || utf8(onChainName) !== normalizedName) {
             return 'mismatch'
         }
@@ -111,6 +109,17 @@ export const verifyNfdAddress = async ({
         const trusted = new Set([
             encodeAlgorandAddress(decodeFromBase64(owner)),
         ])
+        // A name the registry maps by box has moved to box storage, so any
+        // address left in its global state is stale. Boxes are read for every
+        // name: a contract can move to boxes before its registry entry does.
+        if (storage === 'global') {
+            for (const [key, value] of state) {
+                if (!value || !VERIFIED_ADDRESSES.test(key)) continue
+                for (const verified of addressesIn(value)) trusted.add(verified)
+            }
+        }
+        if (trusted.has(address)) return 'verified'
+
         const { boxes } = boxesSchema.parse(
             await fetchNodeJson(
                 scope,
@@ -120,7 +129,7 @@ export const verifyNfdAddress = async ({
             ),
         )
         for (const box of boxes) {
-            if (!VERIFIED_BOX.test(utf8(box.name))) continue
+            if (!VERIFIED_ADDRESSES.test(utf8(box.name))) continue
             const { value } = boxSchema.parse(
                 await fetchNodeJson(
                     scope,

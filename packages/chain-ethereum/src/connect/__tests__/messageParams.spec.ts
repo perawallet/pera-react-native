@@ -31,6 +31,24 @@ import { ETHEREUM_WC_V2_METHOD } from '../walletConnect'
 const LOWERCASE_SENDER = SENDER.toLowerCase()
 const OTHER = '0x0000000000000000000000000000000000000001'
 
+// The permit's own domain, with verifyingContract dropped from the declared
+// type, or re-declared under `type`.
+const unbindingContract = <T extends { domain: object; types: object }>(
+    typedData: T,
+    type?: string,
+) => ({
+    ...typedData,
+    types: {
+        EIP712Domain: [
+            ...getTypesForEIP712Domain({ domain: typedData.domain }).filter(
+                field => field.name !== 'verifyingContract',
+            ),
+            ...(type ? [{ name: 'verifyingContract', type }] : []),
+        ],
+        ...typedData.types,
+    },
+})
+
 const validate = (
     type: 'sign-message' | 'sign-typed-data',
     params: unknown,
@@ -362,6 +380,41 @@ describe('validateEthereumMessagePayload: typed-data chain', () => {
         )
 
         expect(result.ok).toBe(false)
+    })
+})
+
+describe('validateEthereumMessagePayload: typed-data verifyingContract', () => {
+    it.each([
+        ['an EIP-2612 permit', EIP2612_PERMIT_TYPED_DATA],
+        ['a Permit2 permit', PERMIT2_SINGLE_TYPED_DATA],
+        ['a DAI-style permit', DAI_PERMIT_TYPED_DATA],
+        ['an ERC-721 permit', ERC721_PERMIT_TYPED_DATA],
+    ])(
+        'refuses %s whose signed domain binds no verifyingContract',
+        (_name, permit) => {
+            for (const typedData of [
+                unbindingContract(permit),
+                unbindingContract(permit, 'string'),
+            ]) {
+                expect(
+                    validate('sign-typed-data', [SENDER, typedData]),
+                ).toMatchObject({
+                    ok: false,
+                    failure: 'invalid-params',
+                    message:
+                        'eth_signTypedData_v4 permit domain binds no verifyingContract, so it names no token',
+                })
+            }
+        },
+    )
+
+    it('accepts typed data that is not a permit whose domain binds no verifyingContract', () => {
+        expect(
+            validate('sign-typed-data', [
+                SENDER,
+                unbindingContract(MAIL_TYPED_DATA),
+            ]).ok,
+        ).toBe(true)
     })
 })
 

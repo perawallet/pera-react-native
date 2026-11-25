@@ -74,7 +74,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(() => ({
         id: 'sender',
         custody: { kind: 'watch' },
-        chains: { algorand: { address: 'SENDERADDR' } },
+        chains: {
+            algorand: { address: 'SENDERADDR' },
+            ethereum: { address: 'SENDERADDR' },
+        },
     })),
 }))
 
@@ -109,7 +112,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
             `${value.toString()} base ${asset.unitName}`,
     ),
     useSingleAssetDetailsQuery: vi.fn(() => ({
-        data: null,
+        data: { decimals: 2 },
         isLoading: false,
     })),
 }))
@@ -128,6 +131,9 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         ...(await vi.importActual<
             typeof import('@packages/shared/src/errors/base')
         >('@packages/shared/src/errors/base')),
+        ...(await vi.importActual<
+            typeof import('@packages/shared/src/utils/unit-conversion')
+        >('@packages/shared/src/utils/unit-conversion')),
         IntegrityRequiredError,
         isIntegrityRequiredError: (error: unknown) =>
             error instanceof IntegrityRequiredError,
@@ -190,9 +196,14 @@ const spendableWithMax = (max: number) =>
         isPending: false,
     })
 
-// The chain quotes the amount it signs as `fundingAmount`; the opaque `quote` is
-// what the send flow carries on to the builder.
-const mockSummary = { quote: { opaque: true }, fundingAmount: 300_000n }
+// The chain quotes the payment it signs as `fundingAmount` and the group's fees
+// as `networkFee`; the opaque `quote` is what the send flow carries on to the
+// builder.
+const mockSummary = {
+    quote: { opaque: true },
+    fundingAmount: 300_000n,
+    networkFee: 5500n,
+}
 
 describe('useAssetInboxSendSummaryScreen', () => {
     beforeEach(async () => {
@@ -206,7 +217,7 @@ describe('useAssetInboxSendSummaryScreen', () => {
         ;(useSendFunds as Mock).mockReturnValue({
             selectedAssetId: '123',
             destination: 'RECEIVERADDR',
-            amount: '50',
+            amount: new Decimal(50),
             setAssetInboxQuote: mockSetAssetInboxQuote,
         })
 
@@ -215,13 +226,19 @@ describe('useAssetInboxSendSummaryScreen', () => {
         const { useAssetInboxSendSummaryQuery } =
             await import('@perawallet/wallet-core-transactions')
         ;(useAssetInboxSendSummaryQuery as Mock).mockReturnValue({
-            data: null,
-            isLoading: true,
+            data: mockSummary,
+            isLoading: false,
         })
         spendableWithMax(9_900_000)
     })
 
-    it('returns loading state when query is loading', () => {
+    it('returns loading state when query is loading', async () => {
+        const { useAssetInboxSendSummaryQuery } =
+            await import('@perawallet/wallet-core-transactions')
+        ;(useAssetInboxSendSummaryQuery as Mock).mockReturnValue({
+            data: null,
+            isLoading: true,
+        })
         const { result } = renderHook(() => useAssetInboxSendSummaryScreen())
 
         expect(result.current.isLoading).toBe(true)
@@ -251,6 +268,7 @@ describe('useAssetInboxSendSummaryScreen', () => {
             result.current.handleSend()
         })
 
+        expect(mockSetAssetInboxQuote).toHaveBeenCalledWith(mockSummary.quote)
         expect(mockNavigate).toHaveBeenCalledWith('TransactionProcessing')
         // Slider stays in its slid/loading state through to the processing
         // screen — it is not reset on confirm.
@@ -300,20 +318,38 @@ describe('useAssetInboxSendSummaryScreen', () => {
         expect(mockRequestBottomSheet).not.toHaveBeenCalled()
     })
 
-    it('stores the chain quote for the send flow once the summary lands', async () => {
+    it('keeps the quote shown when confirmation begins while a new quote arrives', async () => {
+        let accept: (result: 'confirm') => void = () => {}
+        mockRequestBottomSheet.mockReturnValueOnce(
+            new Promise(resolve => {
+                accept = resolve
+            }),
+        )
         const { useAssetInboxSendSummaryQuery } =
             await import('@perawallet/wallet-core-transactions')
-        ;(useAssetInboxSendSummaryQuery as Mock).mockReturnValue({
-            data: mockSummary,
-            isLoading: false,
+        const { result, rerender } = renderHook(() =>
+            useAssetInboxSendSummaryScreen(),
+        )
+        expect(mockSetAssetInboxQuote).not.toHaveBeenCalled()
+        act(() => {
+            void result.current.handleSend()
         })
 
-        renderHook(() => useAssetInboxSendSummaryScreen())
+        ;(useAssetInboxSendSummaryQuery as Mock).mockReturnValue({
+            data: { ...mockSummary, networkFee: 6000n, quote: { new: true } },
+            isLoading: false,
+        })
+        rerender()
+        await act(async () => {
+            accept('confirm')
+        })
 
-        expect(mockSetAssetInboxQuote).toHaveBeenCalledWith(mockSummary.quote)
+        expect(mockSetAssetInboxQuote).toHaveBeenCalledExactlyOnceWith(
+            mockSummary.quote,
+        )
     })
 
-    it('computes fee from summary', async () => {
+    it('shows the funding payment plus the network fee as the cost', async () => {
         const { useAssetInboxSendSummaryQuery } =
             await import('@perawallet/wallet-core-transactions')
         ;(useAssetInboxSendSummaryQuery as Mock).mockReturnValue({
@@ -323,7 +359,7 @@ describe('useAssetInboxSendSummaryScreen', () => {
 
         const { result } = renderHook(() => useAssetInboxSendSummaryScreen())
 
-        expect(result.current.fee).toBe(0.3)
+        expect(result.current.fee).toBe(0.3055)
         expect(result.current.isLoading).toBe(false)
     })
 
@@ -407,24 +443,36 @@ describe('useAssetInboxSendSummaryScreen', () => {
 
             expect(useAssetInboxSendSummaryQuery).toHaveBeenCalledWith(
                 scope,
+                'SENDERADDR',
                 'RECEIVERADDR',
                 '123',
+                5000n,
             )
             expect(result.current.nativeAsset.unitName).toBe(unitName)
         })
 
         it('redirects to InsufficientBalance labelled in the native asset when spendable funds fall short', () => {
-            spendableWithMax(150_000)
+            spendableWithMax(305_200)
 
             renderHook(() => useAssetInboxSendSummaryScreen())
 
             expect(mockReplace).toHaveBeenCalledWith('InsufficientBalance', {
-                requiredBalanceLabel: `300000 base ${unitName}`,
+                requiredBalanceLabel: `305500 base ${unitName}`,
             })
         })
 
-        it("stays on the summary when the transfer adapter's spendable native funds cover the quote", () => {
-            spendableWithMax(300_000)
+        it('redirects when spendable funds cover the payment but not its network fee', () => {
+            spendableWithMax(304_999)
+
+            renderHook(() => useAssetInboxSendSummaryScreen())
+
+            expect(mockReplace).toHaveBeenCalledWith('InsufficientBalance', {
+                requiredBalanceLabel: `305500 base ${unitName}`,
+            })
+        })
+
+        it("stays on the summary when the transfer adapter's spendable native funds cover the payment and its fees", () => {
+            spendableWithMax(305_500)
 
             renderHook(() => useAssetInboxSendSummaryScreen())
 

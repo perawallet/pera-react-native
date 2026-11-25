@@ -86,6 +86,16 @@ vi.mock('../../../components/TermsAndConditionsSheet', () => ({
 vi.mock('@hooks/useToast', () => ({ useToast: () => ({ showToast: vi.fn() }) }))
 vi.mock('@hooks/useLanguage')
 
+const mockFinishPendingWipe = vi.fn(async () => {})
+vi.mock('@hooks/useDeleteAllData', () => ({
+    useDeleteAllData: () => ({ finishPendingWipe: mockFinishPendingWipe }),
+}))
+
+const mockShowError = vi.fn()
+vi.mock('@hooks/useErrorToast', () => ({
+    useErrorToast: () => ({ showError: mockShowError }),
+}))
+
 describe('useOnboardingScreen — double-tap guard', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -125,5 +135,41 @@ describe('useOnboardingScreen — double-tap guard', () => {
         expect(mockPushWebView).toHaveBeenCalledWith(
             expect.objectContaining({ id: 'terms-of-service' }),
         )
+    })
+})
+
+describe('useOnboardingScreen — pending wipe', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        mockFinishPendingWipe.mockResolvedValue(undefined)
+    })
+
+    it('finishes a pending wipe before creating the wallet', async () => {
+        const { result } = renderHook(() => useOnboardingScreen())
+
+        await act(async () => {
+            result.current.handleCreateAccount()
+        })
+
+        expect(mockFinishPendingWipe).toHaveBeenCalledTimes(1)
+        expect(mockFinishPendingWipe.mock.invocationCallOrder[0]).toBeLessThan(
+            mockBuildHdWalletAccount.mock.invocationCallOrder[0],
+        )
+    })
+
+    it('creates and imports nothing while the pending wipe keeps failing', async () => {
+        mockFinishPendingWipe.mockRejectedValue(new Error('keystore busy'))
+        const { result } = renderHook(() => useOnboardingScreen())
+
+        await act(async () => {
+            result.current.handleCreateAccount()
+        })
+        await act(async () => {
+            result.current.handleImportAccount()
+        })
+
+        expect(mockBuildHdWalletAccount).not.toHaveBeenCalled()
+        expect(mockPush).not.toHaveBeenCalled()
+        expect(mockShowError).toHaveBeenCalledTimes(2)
     })
 })

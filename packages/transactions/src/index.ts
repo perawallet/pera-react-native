@@ -128,6 +128,7 @@ export {
     NonZeroBalanceError,
     CreatorCannotOptOutError,
     AssetFrozenError,
+    FeeAboveShownError,
     TransactionNotReplaceableError,
     NonceGapFilledError,
     TransactionDetailNotFoundError,

@@ -24,7 +24,7 @@ export {
     useCloudBackupRestoreExit,
     useDisableCloudBackup,
     useEnableCloudBackup,
-    useIsAccountBackedUp,
+    useIsAccountInBackup,
     useIsContactBackedUp,
     useRegisterCloudBackup,
     useRemoveCloudBackup,

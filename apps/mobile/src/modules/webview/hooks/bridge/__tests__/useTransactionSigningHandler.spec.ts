@@ -56,7 +56,7 @@ describe('useTransactionSigningHandler', () => {
     const render = () => {
         const webview = createMockWebview()
         const { result } = renderHook(() =>
-            useTransactionSigningHandler(webview, SOURCE_URL),
+            useTransactionSigningHandler(webview),
         )
         return { webview, handle: result.current }
     }
@@ -84,6 +84,28 @@ describe('useTransactionSigningHandler', () => {
                 transportId: '13',
                 sourceMetadata: metadata,
                 verifiedOrigin: SOURCE_URL,
+            }),
+        )
+    })
+
+    it('binds the verified origin to the posting frame of each message', () => {
+        const { handle } = render()
+
+        handle(
+            bridgeMessage('13-frame', 'requestTransactionSigning', {
+                txns,
+                metadata,
+            }),
+            {
+                securedConnection: true,
+                sourceUrl: 'https://per-message.example/',
+            },
+        )
+
+        expect(mockEnqueue).toHaveBeenCalledWith(
+            { resolved: true },
+            expect.objectContaining({
+                verifiedOrigin: 'https://per-message.example/',
             }),
         )
     })

@@ -124,6 +124,7 @@ export type MachineSnapshot = {
 
 export type SourceKind =
     | 'local'
+    | 'local-fee-review'
     | 'walletconnect'
     | 'webview'
     | 'multisig-cosign'

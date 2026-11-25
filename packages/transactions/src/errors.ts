@@ -184,6 +184,31 @@ export class AssetFrozenError extends TransactionError {
     }
 }
 
+const FEE_ABOVE_SHOWN_KEYS: ErrorMessageKeys = {
+    titleKey: i18nKey('errors.transaction.fee_above_shown.title'),
+    bodyKey: i18nKey('errors.transaction.fee_above_shown.body'),
+}
+
+/** The built transaction pays more than the fee the user was shown. */
+export class FeeAboveShownError extends TransactionError {
+    /**
+     * @param fee Base units of the native asset the built transaction pays.
+     * @param shownFee Base units of the native asset the user was shown.
+     */
+    constructor(fee: bigint, shownFee: bigint) {
+        super(
+            `The transaction fee ${fee} is above the ${shownFee} the user was shown`,
+            undefined,
+            {
+                titleKey: FEE_ABOVE_SHOWN_KEYS.titleKey,
+                messageKey: FEE_ABOVE_SHOWN_KEYS.bodyKey,
+                params: { fee: fee.toString(), shownFee: shownFee.toString() },
+            },
+        )
+        this.name = 'FeeAboveShownError'
+    }
+}
+
 /**
  * The stage of a delegation flow that failed. Confirm screens map this to
  * failure-specific copy instead of a single generic "something went wrong".

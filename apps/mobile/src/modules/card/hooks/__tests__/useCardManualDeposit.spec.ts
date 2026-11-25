@@ -14,6 +14,7 @@ import { renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { CardOwnerMismatchError } from '@perawallet/wallet-core-card'
 
 const mocks = vi.hoisted(() => ({
     escrowCardAddress: null as string | null,
@@ -118,6 +119,22 @@ describe('useCardManualDeposit', () => {
         await expect(
             result.current.deposit({ account, amount: new Decimal('1') }),
         ).rejects.toBeInstanceOf(CardEscrowUnavailableError)
+        expect(mockSubmit).not.toHaveBeenCalled()
+    })
+
+    it('never assigns fees or submits when the card owner check refuses the stored address', async () => {
+        const mismatch = new CardOwnerMismatchError()
+        mockBuildDeposit.mockRejectedValueOnce(mismatch)
+        const { result } = renderHook(() => useCardManualDeposit())
+
+        await expect(
+            result.current.deposit({ account, amount: new Decimal('1') }),
+        ).rejects.toBe(mismatch)
+        expect(mockBuildDeposit).toHaveBeenCalledExactlyOnceWith(
+            { sender: 'FUNDINGADDR', cardAddress: ESCROW, amount: 1_000_000n },
+            SCOPE,
+        )
+        expect(mockAssignFeeToGroup).not.toHaveBeenCalled()
         expect(mockSubmit).not.toHaveBeenCalled()
     })
 

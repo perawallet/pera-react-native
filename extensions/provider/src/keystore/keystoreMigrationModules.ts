@@ -15,8 +15,8 @@ import { REPAIRS_MODULE_ID } from './migrations/repairs'
 
 /**
  * Upstream keystore-core's module id — a private literal inside
- * `@algorandfoundation/react-native-keystore`. Resetting Repairs (our own id) is
- * the normal recovery lever, so drift on this literal is low-impact.
+ * `@algorandfoundation/react-native-keystore`. The preflight gate keys on it, so
+ * drift silently drops that gate; `preflightGate.spec.ts` pins it to upstream.
  */
 export const UPSTREAM_KEYSTORE_MODULE_ID =
     '@algorandfoundation/react-native-keystore'

@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
     wipeAllUserData: vi.fn(),
     createHdWalletAccount: vi.fn(),
     clearAccountsStore: vi.fn(),
+    clearPendingWipe: vi.fn(),
     setPreference: vi.fn(),
 }))
 
@@ -26,6 +27,7 @@ vi.mock('@hooks/useDeleteAllData', () => ({
         deleteAllData: mocks.wipeAllUserData,
     }),
     clearAccountsStore: mocks.clearAccountsStore,
+    clearPendingWipe: mocks.clearPendingWipe,
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -38,6 +40,7 @@ vi.mock('@perawallet/wallet-core-settings', () => ({
     usePreferences: () => ({ setPreference: mocks.setPreference }),
 }))
 
+import { useWipeRecoveryStore } from '@hooks/useWipeRecoveryStore'
 import { useDuressWipe } from '../useDuressWipe'
 import { UserPreferences } from '@constants/user-preferences'
 
@@ -101,4 +104,36 @@ describe('useDuressWipe', () => {
             true,
         )
     })
+
+    test('runs the wipe as a duress wipe and clears the pending mark only once the decoy exists', async () => {
+        const { result } = renderHook(() => useDuressWipe())
+        await act(async () => {
+            await result.current.performDuressWipe()
+        })
+
+        expect(mocks.wipeAllUserData).toHaveBeenCalledWith('duress')
+        expect(mocks.clearPendingWipe).toHaveBeenCalledTimes(1)
+        expect(
+            mocks.createHdWalletAccount.mock.invocationCallOrder[0],
+        ).toBeLessThan(mocks.clearPendingWipe.mock.invocationCallOrder[0])
+    })
+
+    test.each([
+        ['the wipe', () => mocks.wipeAllUserData],
+        ['the decoy', () => mocks.createHdWalletAccount],
+    ])(
+        'leaves the pending mark for retry when %s fails',
+        async (_step, failing) => {
+            failing().mockRejectedValueOnce(new Error('boom'))
+
+            const { result } = renderHook(() => useDuressWipe())
+            await act(async () => {
+                await result.current.performDuressWipe()
+            })
+
+            expect(mocks.clearPendingWipe).not.toHaveBeenCalled()
+            expect(mocks.clearAccountsStore).toHaveBeenCalled()
+            expect(useWipeRecoveryStore.getState()).toBe(false)
+        },
+    )
 })

@@ -49,8 +49,7 @@ export const usePendingSignaturesSheetDriver = () => {
                     autoCreateContainer: false,
                 },
             })
-            // Dismissed — clear the open flag and the id; the next
-            // openSheet() re-fires this effect with a fresh value.
+            // Leave the next request in the queue until this sheet is dismissed.
             isSheetOpenRef.current = false
             closeSheet()
         })()

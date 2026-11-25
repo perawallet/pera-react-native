@@ -46,8 +46,11 @@ describe('AutoLockGuard lock-overlay context', () => {
     }) => {
         ;(useAutoLockListener as Mock).mockReturnValue({
             ...listener,
+            isInitialized: true,
+            isWipeRecoveryRequired: false,
             unlock: vi.fn(),
             handleResetData: vi.fn(),
+            retryWipeRecovery: vi.fn(),
         })
         render(
             <AutoLockGuard>

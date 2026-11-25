@@ -28,7 +28,7 @@ const seed = () => {
     const queryClient = new QueryClient()
     queryClient.setQueryData(getAssetInboxRequestsQueryKey('A', scope), [])
     queryClient.setQueryData(
-        getAssetInboxSendSummaryQueryKey('R', '1', scope),
+        getAssetInboxSendSummaryQueryKey('S', 'R', '1', scope),
         {},
     )
     queryClient.setQueryData(transactionQueryKeys.history('A', scope), [])

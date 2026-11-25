@@ -14,7 +14,6 @@ import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import type { LegacyWalletConnectV1Session } from '@perawallet/wallet-extension-platform'
 import {
-    ALL_PERMISSIONS,
     buildWalletConnectV1Connection,
     createKeystoreSessionKeyStore,
     isWalletConnectV1Connection,
@@ -224,9 +223,6 @@ export const migrateWalletConnect = async (
                     peerId: reconstructed.peerId,
                     chainId: reconstructed.chainId,
                     handshakeId: reconstructed.handshakeId,
-                    // The native export has no per-session method list and the
-                    // legacy apps gated none; this is the v1 handler's fallback too.
-                    permissions: [...ALL_PERMISSIONS],
                 },
             })
             await store.upsert(connection)

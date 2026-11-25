@@ -397,22 +397,16 @@ export const useTransactionConfirmationScreen =
         ])
 
         const isFeeCoveragePending =
-            isFeeCoverageChecked &&
-            (!maxFeeAmount || !nativeSpendable || !baseUnitAmount)
+            !maxFeeAmount ||
+            (isFeeCoverageChecked && (!nativeSpendable || !baseUnitAmount))
 
         const feeError = useMemo((): Optional<FeeErrorNotice> => {
-            if (!isFeeCoverageChecked || !isFeeError) return undefined
+            if (!isFeeError) return undefined
             return {
                 ...feeErrorCopy(feeEstimateError, t),
                 isRetrying: isFeeRetrying,
             }
-        }, [
-            isFeeCoverageChecked,
-            isFeeError,
-            feeEstimateError,
-            isFeeRetrying,
-            t,
-        ])
+        }, [isFeeError, feeEstimateError, isFeeRetrying, t])
 
         const sendTotal = useSendTotal({
             scope,
@@ -459,17 +453,7 @@ export const useTransactionConfirmationScreen =
                 return
             }
 
-            if (isFeeCoverageChecked) {
-                // The screen shows the shortfall or the fee error and disables Confirm.
-                if (
-                    !maxFeeAmount ||
-                    !nativeSpendable ||
-                    !baseUnitAmount ||
-                    feeShortfall
-                ) {
-                    return
-                }
-            }
+            if (isFeeCoveragePending || feeShortfall) return
 
             if (recipientWarning) {
                 errorToast(
@@ -488,7 +472,7 @@ export const useTransactionConfirmationScreen =
             }
 
             if (isMaxNativeSend) setAmount(reviewedAmount)
-            setConfirmedMaxFee(isFeeCoverageChecked ? maxFeeAmount : undefined)
+            setConfirmedMaxFee(maxFeeAmount)
             setIsSigning(true)
             navigation.navigate('TransactionProcessing')
         }

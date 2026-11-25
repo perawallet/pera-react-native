@@ -38,6 +38,8 @@ vi.mock('../../store', () => ({
 
 import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { CardUserUnavailableError } from '../../api/card-creation'
+import { CardOwnerMismatchError } from '../../api/escrow'
+import { registerFakeCardAdapter } from '../../__tests__/fakeCardAdapter'
 import { useRestoreEscrowCardMutation } from '../useRestoreEscrowCardMutation'
 
 const SCOPES: ChainScope[] = [
@@ -57,6 +59,10 @@ describe.each(SCOPES)('useRestoreEscrowCardMutation ($chainId)', SCOPE => {
         })
         vi.clearAllMocks()
         fetchUser.mockResolvedValue({ id: 'baanx-user-1' })
+        registerFakeCardAdapter({
+            chainId: SCOPE.chainId,
+            cardOwnerOf: async () => 'OWNER',
+        })
     })
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -96,6 +102,55 @@ describe.each(SCOPES)('useRestoreEscrowCardMutation ($chainId)', SCOPE => {
             ownerAddress: 'OWNER',
             scope: SCOPE,
         })
+    })
+
+    it.each(['SOMEONE_ELSE', null])(
+        'stores nothing when the linked card has on-chain owner %s',
+        async owner => {
+            registerFakeCardAdapter({
+                chainId: SCOPE.chainId,
+                cardOwnerOf: async () => owner,
+            })
+            fetchFundingAddressLink.mockResolvedValue({
+                state: 'linked_to_caller',
+                cardAddress: 'CARD1',
+            })
+            const { result } = renderHook(
+                () => useRestoreEscrowCardMutation(SCOPE),
+                {
+                    wrapper,
+                },
+            )
+
+            await expect(
+                result.current.mutateAsync(['OWNER']),
+            ).rejects.toBeInstanceOf(CardOwnerMismatchError)
+            expect(mockRestoreEscrowCard).not.toHaveBeenCalled()
+        },
+    )
+
+    it('surfaces a failed owner read as itself, not as a mismatch', async () => {
+        registerFakeCardAdapter({
+            chainId: SCOPE.chainId,
+            cardOwnerOf: async () => {
+                throw new Error('algod unavailable')
+            },
+        })
+        fetchFundingAddressLink.mockResolvedValue({
+            state: 'linked_to_caller',
+            cardAddress: 'CARD1',
+        })
+        const { result } = renderHook(
+            () => useRestoreEscrowCardMutation(SCOPE),
+            { wrapper },
+        )
+
+        const error = await result.current
+            .mutateAsync(['OWNER'])
+            .catch((caught: unknown) => caught)
+        expect(error).not.toBeInstanceOf(CardOwnerMismatchError)
+        expect(error).toEqual(new Error('algod unavailable'))
+        expect(mockRestoreEscrowCard).not.toHaveBeenCalled()
     })
 
     it('restores nothing when no address holds a card for this user', async () => {

@@ -37,12 +37,17 @@ import {
     type WalletOperationType,
 } from '@perawallet/wallet-core-connections'
 import {
+    dappRelayableErrorNames,
     dappRequestChainAdapters,
     dappRequestFailureOf,
     dappRequestWireCodeOf,
     type DappRequestFailure,
     type WalletConnectV2ChainSupport,
 } from '@perawallet/wallet-core-connections/dappRequest'
+import {
+    MAX_ERROR_LENGTH,
+    sanitizeErrorForWebview,
+} from '@perawallet/wallet-core-dapp/wire'
 import type {
     Connection,
     ConnectionId,
@@ -498,6 +503,8 @@ export const createWalletConnectV2Handler = (
     // because a slow dApp can still deliver a proposal on one and a sheet
     // appearing from nowhere is worse than a map entry per abandon.
     const abandonedPairings = new Set<string>()
+    // Settled by pair() or a recovered record, even when the origin is none.
+    const pairingsWithKnownOrigin = new Set<string>()
 
     const requireClient = (): WalletKitClient => {
         if (!client) {
@@ -884,15 +891,23 @@ export const createWalletConnectV2Handler = (
             },
             reject: async error => {
                 const failure = dappRequestFailureOf(error)
+                const wireCode = dappRequestWireCodeOf(error)
                 await respond({
                     id,
                     jsonrpc: '2.0',
                     error: {
                         code:
-                            dappRequestWireCodeOf(error) ??
+                            wireCode ??
                             (failure && support.toWireErrorCode?.(failure)) ??
                             JSON_RPC_SERVER_ERROR,
-                        message: error.message,
+                        message:
+                            wireCode !== undefined &&
+                            error.name === 'DappRequestCodedError'
+                                ? error.message.slice(0, MAX_ERROR_LENGTH)
+                                : sanitizeErrorForWebview(
+                                      error,
+                                      dappRelayableErrorNames(chain.chainId),
+                                  ),
                     },
                 })
             },
@@ -1074,19 +1089,24 @@ export const createWalletConnectV2Handler = (
                           })
                         : { id, jsonrpc: '2.0', result },
                 (error: unknown): WalletKitJsonRpcResponse => {
-                    const wireCode = dappRequestWireCodeOf(toError(error))
+                    const refusal = toError(error)
+                    const wireCode = dappRequestWireCodeOf(refusal)
                     return {
                         id,
                         jsonrpc: '2.0',
                         error:
-                            wireCode === undefined
+                            wireCode !== undefined &&
+                            refusal.name === 'DappRequestCodedError'
                                 ? {
-                                      code: JSON_RPC_INTERNAL_ERROR,
-                                      message: 'Internal error',
+                                      code: wireCode,
+                                      message: refusal.message.slice(
+                                          0,
+                                          MAX_ERROR_LENGTH,
+                                      ),
                                   }
                                 : {
-                                      code: wireCode,
-                                      message: toError(error).message,
+                                      code: JSON_RPC_INTERNAL_ERROR,
+                                      message: 'Internal error',
                                   },
                     }
                 },
@@ -1318,8 +1338,9 @@ export const createWalletConnectV2Handler = (
                 ...record,
                 lastActiveAt: Date.now(),
             }
+            // Kept until the pairing is released: an approved pairing stays
+            // live, and a later proposal on it must still name its page.
             await store().upsert(approved)
-            pendingOrigins.forget(pairingId)
             for (const { chain, networkId } of announcementsFor(
                 chains,
                 input.proposal,
@@ -1354,6 +1375,7 @@ export const createWalletConnectV2Handler = (
      */
     const releasePairing = (pairingId: string): void => {
         pendingOrigins.forget(pairingId)
+        pairingsWithKnownOrigin.delete(pairingId)
         expirePairing(pairingId)
     }
 
@@ -1453,6 +1475,25 @@ export const createWalletConnectV2Handler = (
         await endRevokedSession(topic)
     }
 
+    // Pending origins die with the process while WalletKit keeps the pairing;
+    // a live session on it still carries the origin its approval stored.
+    const recoverPairingOrigin = async (
+        pairingId: string,
+    ): Promise<boolean> => {
+        const sessions = Object.values(
+            client?.getActiveSessions() ?? {},
+        ).filter(session => session.pairingTopic === pairingId)
+        if (sessions.length === 0) return false
+        const stored = await storedById()
+        const record = sessions
+            .map(session => stored.get(session.topic))
+            .find(Boolean)
+        if (!record) return false
+        pendingOrigins.remember(pairingId, record.origin)
+        pairingsWithKnownOrigin.add(pairingId)
+        return true
+    }
+
     const handleProposal = async (
         event: WalletKitSessionProposal,
     ): Promise<void> => {
@@ -1463,6 +1504,26 @@ export const createWalletConnectV2Handler = (
             logger.debug('[WC v2] dropped a proposal on an abandoned pairing', {
                 pairingId,
             })
+            return
+        }
+
+        // A pairing approved in an earlier run: its origin comes back from its
+        // session's record, or the proposal cannot say which page it is for.
+        if (
+            !pairingsWithKnownOrigin.has(pairingId) &&
+            client?.core.pairing
+                .getPairings()
+                .some(({ topic, active }) => topic === pairingId && active) &&
+            !(await recoverPairingOrigin(pairingId))
+        ) {
+            await deliverRejection(id, 'USER_REJECTED', undefined, pairingId)
+            releasePairing(pairingId)
+            reportError(
+                new WalletConnectError(
+                    'This connection request came from an earlier pairing. Start a new connection from the dApp.',
+                ),
+                pairingScope(pairingId),
+            )
             return
         }
 
@@ -2248,6 +2309,7 @@ export const createWalletConnectV2Handler = (
             const walletKit = await ensureClient()
             const topic = await pairTopic(walletKit, uri)
             abandonedPairings.delete(topic)
+            pairingsWithKnownOrigin.add(topic)
             // Cleared, not left: a re-pairing of the same topic from another
             // entry point would otherwise inherit the first one's origin.
             pendingOrigins.remember(topic, opts?.origin)
@@ -2255,11 +2317,10 @@ export const createWalletConnectV2Handler = (
         },
 
         abandonPairing: pairingId => {
-            pendingOrigins.forget(pairingId)
             // Tombstoned before the delete: the caller has moved on, and a
             // relay that will not take it still leaves the tombstone.
             abandonedPairings.add(pairingId)
-            expirePairing(pairingId)
+            releasePairing(pairingId)
         },
 
         initialize: async next => {
@@ -2301,6 +2362,7 @@ export const createWalletConnectV2Handler = (
             pendingProposals.clear()
             pendingRequests.clear()
             abandonedPairings.clear()
+            pairingsWithKnownOrigin.clear()
             await releaseClient()
         },
 

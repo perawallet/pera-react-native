@@ -40,6 +40,7 @@ import {
     hasValidBridgeToken,
     isTrustedWebviewOrigin,
     toValidatedBrowserUrl,
+    type WebviewMessageSecurity,
 } from '@modules/webview/hooks/handlers'
 import { useNotifyWebViewOnContextChange } from '@modules/webview/hooks/useNotifyWebViewOnContextChange'
 import {
@@ -86,7 +87,8 @@ export type PWWebViewProps = {
     onBack?: () => void
     inBottomSheet?: boolean
     customJavaScript?: WebViewScript
-    onCustomMessage?: (data: unknown) => void
+    // Untokened: the caller must authenticate the posting frame itself.
+    onCustomMessage?: (data: unknown, security: WebviewMessageSecurity) => void
     webviewRef?: React.RefObject<Nullable<WebView>>
     favorite?: WebViewFavorite
 } & WebViewProps
@@ -218,7 +220,6 @@ export const usePWWebView = (props: PWWebViewProps): UsePWWebViewResult => {
     const mobileInterface = usePeraWebviewInterface(
         webview.current,
         isSecure,
-        currentUrl,
         onCloseRequested,
         onBack,
     )
@@ -259,7 +260,7 @@ export const usePWWebView = (props: PWWebViewProps): UsePWWebViewResult => {
             }
 
             if (onCustomMessage) {
-                onCustomMessage(data)
+                onCustomMessage(data, resolveMessageSecurity(event))
                 return
             }
 

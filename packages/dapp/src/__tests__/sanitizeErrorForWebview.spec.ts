@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
+import { DappRequestRejectedError } from '@perawallet/wallet-core-connections'
 
 import { sanitizeErrorForWebview } from '../codec'
 
@@ -26,6 +27,12 @@ describe('sanitizeErrorForWebview', () => {
                 named('UserCancelledError', 'User cancelled the operation'),
             ),
         ).toBe('User cancelled the operation')
+    })
+
+    it('relays DappRequestRejectedError by default, a fixed literal', () => {
+        expect(sanitizeErrorForWebview(new DappRequestRejectedError())).toBe(
+            'User rejected',
+        )
     })
 
     it('relays an error the caller names as relayable', () => {

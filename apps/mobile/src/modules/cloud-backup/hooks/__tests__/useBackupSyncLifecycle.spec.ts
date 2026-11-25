@@ -112,7 +112,10 @@ vi.mock('@perawallet/wallet-core-passkeys', () => ({
     },
 }))
 
-vi.mock('@perawallet/wallet-core-shared', async () => ({
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-shared')
+    >()),
     logger: { error: vi.fn() },
     registerStore: vi.fn(),
     guardedPersist: (

@@ -90,7 +90,11 @@ import {
     useSettingsStore,
 } from '@perawallet/wallet-core-settings'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
-import { AlgorandWalletConnectChainId } from '@perawallet/wallet-core-walletconnect'
+import {
+    AlgorandWalletConnectChainId,
+    WalletConnectSignRequestError,
+} from '@perawallet/wallet-core-walletconnect'
+import { GenesisHashMismatchError } from '@perawallet/wallet-core-signing'
 import {
     resetConnectionPairingStateForTesting,
     useConnectionRegistry,
@@ -697,6 +701,8 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
         const connector = await pairAndHandshake('Garbage dApp')
         await approveViaUi(SIGNING_ACCOUNT.name as string)
         await waitForStoredConnection(connector.clientId)
+        const reported: Error[] = []
+        captured.registry!.subscribeToErrors(error => reported.push(error))
 
         const requestId = 9002
         act(() => {
@@ -711,9 +717,10 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
             expect(connector.rejectRequestCalls).toHaveLength(1)
         })
         expect(connector.rejectRequestCalls[0].id).toBe(requestId)
-        expect(connector.rejectRequestCalls[0].error?.name).toBe(
-            'WalletConnectSignRequestError',
+        expect(connector.rejectRequestCalls[0].error?.message).toBe(
+            'An error occurred during signing',
         )
+        expect(reported).toEqual([expect.any(WalletConnectSignRequestError)])
         expect(connector.approveRequestCalls).toHaveLength(0)
     })
 
@@ -1116,6 +1123,8 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
             })
             await approveViaUi(signer.name as string)
             await waitForStoredConnection(connector.clientId)
+            const reported: Error[] = []
+            captured.registry!.subscribeToErrors(error => reported.push(error))
 
             const foreign = new Transaction({
                 type: TransactionType.pay,
@@ -1158,11 +1167,12 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
                 { timeout: 15_000 },
             )
             expect(connector.rejectRequestCalls[0].id).toBe(requestId)
-            // Pinned to the cause so an unrelated rejection cannot pass
-            // vacuously.
-            expect(connector.rejectRequestCalls[0].error?.name).toBe(
-                'GenesisHashMismatchError',
+            // The mismatch names the wallet's network, so the peer gets the
+            // generic copy; the cause is pinned wallet-side instead.
+            expect(connector.rejectRequestCalls[0].error?.message).toBe(
+                'An error occurred during signing',
             )
+            expect(reported).toEqual([expect.any(GenesisHashMismatchError)])
             expect(connector.approveRequestCalls).toHaveLength(0)
         })
 

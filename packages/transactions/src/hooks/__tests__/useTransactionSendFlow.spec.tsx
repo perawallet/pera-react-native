@@ -81,7 +81,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 const fakeSendFlowAdapter: SendFlowChainAdapter = {
     chainId: 'algorand',
     buildTransferTxs: mockBuildTransfer,
-    transactionFee: vi.fn(),
+    transactionFee: vi.fn(() => new Decimal(1000)),
     express: { buildTxs: mockBuildExpress },
     assetInbox: {
         buildSendTxs: mockBuildSendViaInbox,
@@ -194,6 +194,7 @@ describe('useTransactionSendFlow', () => {
             note: undefined,
             isCloseAccount: undefined,
             fee: undefined,
+            allowFeeReview: true,
         })
         expect(mockSubmit).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -205,6 +206,45 @@ describe('useTransactionSendFlow', () => {
             }),
         )
     })
+
+    it.each([
+        [1000, false],
+        [1500, true],
+    ])(
+        'applies the approved cap to a built send fee of %s',
+        async (fee, reviewFee) => {
+            vi.mocked(fakeSendFlowAdapter.transactionFee).mockReturnValueOnce(
+                new Decimal(fee),
+            )
+            const { result } = renderHook(() =>
+                useTransactionSendFlow({
+                    chainId: 'algorand',
+                    networkId: 'mainnet',
+                }),
+            )
+            await act(async () => {
+                await result.current.execute({
+                    params: {
+                        sendMode: 'normal',
+                        sender: SENDER_ACCOUNT,
+                        receiver: 'B',
+                        asset: { assetId: '0', decimals: 6 } as any,
+                        amount: new Decimal(1),
+                        maxFee: new Decimal(1000),
+                    },
+                })
+            })
+            expect(mockSubmit).toHaveBeenCalledWith({
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
+                unsignedTxs: [TXN],
+                source: {
+                    name: 'send-transaction',
+                    description: 'Send transaction',
+                },
+                ...(reviewFee ? { reviewFee } : {}),
+            })
+        },
+    )
 
     it('normal ASA send: passes the asset id on + submits via pipeline', async () => {
         const { result } = renderHook(() =>

@@ -32,6 +32,7 @@ import { algorandAddressOf } from '../accounts/vocabulary'
 import { algorandNetworkOf } from '../network-id'
 import { assertTransactionsMatchNetwork } from './assertTransactionsMatchNetwork'
 import { readAlgorandTransaction } from './planner'
+import { detectHighGroupFee } from './fees'
 import { algorandGroupDataOf } from './requestChainData'
 import { validateTransactionRoundTrip } from './validateTransactionRoundTrip'
 import type { PeraTransaction } from '../blockchain/models/algosdk-shapes'
@@ -164,11 +165,12 @@ const detect = (
 ): AnalysisWarning[] => {
     try {
         if (group.data.type === 'transactions') {
-            return decoded.signableAddresses.length > 0
-                ? detectWarnings(
-                      algorandTransactionsOf(group.data, context).transactions,
-                  )
-                : []
+            if (decoded.signableAddresses.length === 0) return []
+            const { transactions } = algorandTransactionsOf(group.data, context)
+            return [
+                ...detectWarnings(transactions),
+                ...highFeeWarningsOf(transactions, context),
+            ]
         }
         if (
             group.data.type === 'auth-data' &&
@@ -189,6 +191,34 @@ const detect = (
     } catch (error) {
         throw toAnalysisError(error)
     }
+}
+
+// Fees are paid by the sender, so the budget counts every wallet sender's fee,
+// whichever key signs for it.
+const highFeeWarningsOf = (
+    transactions: PeraTransaction[],
+    context: AnalysisContext,
+): AnalysisWarning[] => {
+    const walletSenders = new Set(
+        context.accounts.flatMap(a => algorandAddressOf(a) ?? []),
+    )
+    const highFee = detectHighGroupFee(
+        transactions.map(tx => ({
+            sender: tx.sender.toString(),
+            fee: tx.fee ?? 0n,
+            txType: tx.type,
+        })),
+        walletSenders,
+    )
+    return highFee?.type === 'high-fee'
+        ? [
+              {
+                  type: 'high-fee',
+                  severity: 'danger',
+                  message: `This request pays ${highFee.totalFee} microAlgo in fees`,
+              },
+          ]
+        : []
 }
 
 const detectWarnings = (transactions: PeraTransaction[]): AnalysisWarning[] => {
@@ -239,7 +269,9 @@ export const algorandTransactionDecoder: TransactionDecoder = { decode }
 export const algorandWarningDetector: WarningDetector = { detect }
 
 // A local request is one the app built from the user's own choice, a rekey or
-// close-out included, so every one signs without review whatever it warns about.
+// close-out included, so it signs without review. Its fee is the exception: the
+// node prices it, so a fee over the group budget is refused rather than signed.
 export const algorandReviewPolicy: ReviewPolicy = {
-    autoApproveLocal: () => true,
+    autoApproveLocal: analysis =>
+        !analysis.warnings.some(w => w.type === 'high-fee'),
 }
