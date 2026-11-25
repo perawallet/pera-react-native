@@ -270,11 +270,12 @@ extension still records approved switches but prompts for every one.
 Any other method goes through the site's chain's WalletConnect v2 route table
 (`walletConnect.v2.handleRequest` on its `dapp-request` adapter), so a page gets
 the same signing methods, review and refusals as a WalletConnect session.
-`eth_sendTransaction`, `personal_sign` and `eth_signTypedData_v4` go to the
-approval as `sourceType: 'injected'`, a route the chain refuses is answered with
-its error unchanged, and everything else answers 4200. The handler queues only
-the methods `EIP1193_SIGNING_METHODS` names, so a chain that adds a signing
-method answers 4200 until that list names it too.
+`eth_sendTransaction`, `personal_sign`, `eth_signTypedData_v4` and
+`wallet_watchAsset` go to the approval as `sourceType: 'injected'`, a route the
+chain refuses is answered with its error unchanged, and everything else answers 4200.
+
+The handler queues only the methods `EIP1193_SIGNING_METHODS` names, so a chain
+that adds a signing method answers 4200 until that list names it too.
 
 ### Node reads
 
