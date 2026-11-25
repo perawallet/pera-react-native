@@ -76,6 +76,7 @@ export type WireWalletOperation =
     | Extract<WalletOperation, { type: 'sign-transactions' }>
     | Extract<WalletOperation, { type: MessageOperationType }>
     | Extract<WalletOperation, { type: 'switch-network' }>
+    | Extract<WalletOperation, { type: 'watch-asset' }>
     | {
           type: 'send-transaction'
           /** `stringifyTypedJson` of the request, whose bigints JSON drops. */
@@ -89,6 +90,7 @@ export type WireWalletOperation =
 export type WireWalletOperationResult =
     | Extract<WalletOperationResult, { type: 'sign-transactions' }>
     | Extract<WalletOperationResult, { type: 'switch-network' }>
+    | Extract<WalletOperationResult, { type: 'watch-asset' }>
     | Extract<WalletOperationResult, { type: 'send-transaction' }>
     | {
           type: MessageOperationType
@@ -180,6 +182,7 @@ export const encodeWalletOperationResult = (
     if (result.type === 'send-transaction') return result
     if (result.type === 'sign-transactions') return result
     if (result.type === 'switch-network') return result
+    if (result.type === 'watch-asset') return result
     if (result.type !== 'sign-data') {
         return {
             type: result.type,
@@ -197,6 +200,7 @@ export const decodeWalletOperationResult = (
 ): WalletOperationResult => {
     if (result.type === 'sign-transactions') return result
     if (result.type === 'switch-network') return result
+    if (result.type === 'watch-asset') return result
     if (result.type === 'send-transaction') return result
     if (result.type !== 'sign-data') {
         return {
@@ -223,6 +227,9 @@ export const isWireWalletOperation = (
         }
         case 'switch-network': {
             return typeof value.networkId === 'string'
+        }
+        case 'watch-asset': {
+            return typeof value.assetId === 'string'
         }
         case 'send-transaction': {
             return typeof value.request === 'string'
@@ -254,7 +261,8 @@ export const isWireWalletOperationResult = (
                 )
             )
         }
-        case 'switch-network': {
+        case 'switch-network':
+        case 'watch-asset': {
             return true
         }
         case 'send-transaction': {

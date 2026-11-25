@@ -62,12 +62,13 @@ import {
     type EnqueueTransactionSigning,
 } from './dappRequest'
 import { pendingCapacityBreach } from './capacity'
-import { ConnectionsError } from './errors'
+import { ConnectionsError, DappRequestExplainedError } from './errors'
 import type {
     ConnectionErrorScope,
     DappMessageRequest,
     InboundMessage,
     MessageOperationType,
+    WalletOperationResult,
 } from './models'
 import type { ConnectionRegistry } from './registry'
 
@@ -788,10 +789,10 @@ const enqueueShowBatchRequest = (
 }
 
 /**
- * A network-switch sheet held open for the user. `decision` is true only on
- * approve, and resolves false after `dismiss`.
+ * A sheet held open for the user. `decision` is true only on approve, and
+ * resolves false after `dismiss`.
  */
-export type NetworkSwitchPrompt = {
+export type DappRequestPrompt = {
     decision: Promise<boolean>
     dismiss: () => void
 }
@@ -799,13 +800,71 @@ export type NetworkSwitchPrompt = {
 export type ConfirmNetworkSwitch = (request: {
     scope: ChainScope
     peer: ConnectionPeer
-}) => NetworkSwitchPrompt
+}) => DappRequestPrompt
+
+/**
+ * `decision` resolves true only once the token is on `accountAddress`, false
+ * on cancel, and rejects when the token can't be read or added.
+ */
+export type ConfirmWatchAsset = (request: {
+    scope: ChainScope
+    assetId: string
+    accountAddress: string
+    peer: ConnectionPeer
+}) => DappRequestPrompt
+
+/**
+ * Opens the prompt, then answers `result` once the user approves. An expiry or
+ * close while it is open dismisses it and answers nothing. A rejection from
+ * the decision or from `respond` is a failure, not a success.
+ */
+const answerAfterPrompt = (
+    message: RequestMessage,
+    deps: EnqueueInboundRequestDeps,
+    openPrompt: () => DappRequestPrompt,
+    result: WalletOperationResult,
+): void => {
+    const { onError } = deps
+    let prompt: DappRequestPrompt
+    try {
+        prompt = openPrompt()
+    } catch (error) {
+        declineRequest(message, toError(error), onError)
+        return
+    }
+    trackRequest(deps, message, null, prompt.dismiss)
+
+    const isOpen = (): boolean => deps.pendingRequests.has(requestKey(message))
+    prompt.decision.then(
+        isApproved => {
+            if (!isOpen()) return
+            forgetRequest(deps, message)
+            if (!isApproved) {
+                rejectInBackground(message, new DappRequestRejectedError())
+                return
+            }
+            message
+                .respond(result)
+                .catch((error: unknown) =>
+                    declineRequest(message, toError(error), onError),
+                )
+        },
+        (error: unknown) => {
+            if (!isOpen()) return
+            forgetRequest(deps, message)
+            const failure = toError(error)
+            if (failure instanceof DappRequestExplainedError) {
+                rejectInBackground(message, failure)
+                return
+            }
+            declineRequest(message, failure, onError)
+        },
+    )
+}
 
 /**
  * Asks the user, then answers once they approve; the handler's `respond`
- * performs the switch, so a rejection from it is a failed switch, not a
- * success. An expiry or close while the sheet is open dismisses it and
- * answers nothing.
+ * performs the switch.
  */
 const enqueueNetworkSwitch = (
     message: RequestMessage,
@@ -824,39 +883,67 @@ const enqueueNetworkSwitch = (
         )
         return
     }
+    answerAfterPrompt(
+        message,
+        deps,
+        () =>
+            confirmNetworkSwitch({
+                scope: { chainId: message.chainId, networkId },
+                peer: message.peer,
+            }),
+        { type: 'switch-network' },
+    )
+}
 
-    let prompt: NetworkSwitchPrompt
-    try {
-        prompt = confirmNetworkSwitch({
-            scope: { chainId: message.chainId, networkId },
-            peer: message.peer,
-        })
-    } catch (error) {
-        declineRequest(message, toError(error), onError)
+// The request names no account, so the token goes to the one the connection
+// reports first, which is the account the dApp acts as.
+const enqueueWatchAsset = (
+    message: RequestMessage,
+    assetId: string,
+    deps: EnqueueInboundRequestDeps,
+): void => {
+    const { confirmWatchAsset, onError, accounts } = deps
+    if (!confirmWatchAsset) {
+        declineRequest(
+            message,
+            new ConnectionsError(
+                'unsupported-operation',
+                'This wallet cannot add a token here',
+            ),
+            onError,
+        )
         return
     }
-    trackRequest(deps, message, null, prompt.dismiss)
-
-    const isOpen = (): boolean => deps.pendingRequests.has(requestKey(message))
-    prompt.decision.then(
-        isApproved => {
-            if (!isOpen()) return
-            forgetRequest(deps, message)
-            if (!isApproved) {
-                rejectInBackground(message, new DappRequestRejectedError())
-                return
-            }
-            message
-                .respond({ type: 'switch-network' })
-                .catch((error: unknown) =>
-                    declineRequest(message, toError(error), onError),
-                )
-        },
-        (error: unknown) => {
-            if (!isOpen()) return
-            forgetRequest(deps, message)
-            declineRequest(message, toError(error), onError)
-        },
+    const [authorized] = message.authorizedAccounts
+    const account =
+        authorized === undefined
+            ? undefined
+            : findAccountByAddressOn(accounts, message.chainId, authorized)
+    const accountAddress = account
+        ? chainAccountOf(account, message.chainId)?.address
+        : undefined
+    if (!accountAddress) {
+        declineRequest(
+            message,
+            new ConnectionsError(
+                'unauthorized-account',
+                'The account is not in this wallet',
+            ),
+            onError,
+        )
+        return
+    }
+    answerAfterPrompt(
+        message,
+        deps,
+        () =>
+            confirmWatchAsset({
+                scope: getSelectedScope(message.chainId),
+                assetId,
+                accountAddress,
+                peer: message.peer,
+            }),
+        { type: 'watch-asset' },
     )
 }
 
@@ -887,6 +974,8 @@ export type EnqueueInboundRequestDeps = {
     onError?: ConnectionErrorReporter
     /** Without one a network switch is declined. */
     confirmNetworkSwitch?: ConfirmNetworkSwitch
+    /** Without one a watch-asset request is declined. */
+    confirmWatchAsset?: ConfirmWatchAsset
     /** Without one a batch the peer asks to show is answered but nothing opens. */
     showTransaction?: ShowTransaction
     /**
@@ -1048,6 +1137,11 @@ export const enqueueInboundRequest = (
         return
     }
 
+    if (message.operation.type === 'watch-asset') {
+        enqueueWatchAsset(message, message.operation.assetId, deps)
+        return
+    }
+
     if (message.operation.type === 'send-batch') {
         enqueueSendBatchRequest(message, message.operation.request, deps)
         return
@@ -1093,6 +1187,7 @@ export const useChainTransactionSigning = (
 
 export type UseConnectionSigningAdapterOptions = {
     confirmNetworkSwitch?: ConfirmNetworkSwitch
+    confirmWatchAsset?: ConfirmWatchAsset
     showTransaction?: ShowTransaction
 }
 
@@ -1103,6 +1198,7 @@ export const useConnectionSigningAdapter = (
     options?: UseConnectionSigningAdapterOptions,
 ): void => {
     const confirmNetworkSwitch = options?.confirmNetworkSwitch
+    const confirmWatchAsset = options?.confirmWatchAsset
     const showTransaction = options?.showTransaction
     const transactionSigning = useChainTransactionSigning(chainId)
     const { addSignRequest, removeSignRequest } = useSigningRequest()
@@ -1124,6 +1220,7 @@ export const useConnectionSigningAdapter = (
         pendingRequests: pendingRequestsRef.current,
         onError,
         confirmNetworkSwitch,
+        confirmWatchAsset,
         showTransaction,
     })
     depsRef.current = {
@@ -1136,6 +1233,7 @@ export const useConnectionSigningAdapter = (
         pendingRequests: pendingRequestsRef.current,
         onError,
         confirmNetworkSwitch,
+        confirmWatchAsset,
         showTransaction,
     }
 

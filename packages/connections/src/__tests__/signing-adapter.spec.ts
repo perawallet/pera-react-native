@@ -33,7 +33,7 @@ import {
     type DappRequestChainAdapter,
     PendingRequestCapacityError,
 } from '../dappRequest'
-import { DappRequestCodedError } from '../errors'
+import { DappRequestCodedError, DappRequestExplainedError } from '../errors'
 import type { InboundMessage } from '../models'
 import type { ConnectionRegistry } from '../registry'
 import type { PendingRequestLedger } from '../signing-adapter'
@@ -2540,6 +2540,158 @@ describe('useConnectionSigningAdapter', () => {
 
             send(message)
             send({ kind: 'connection-closed', connectionId: 'c1' })
+            await settle()
+
+            expect(prompt.dismiss).toHaveBeenCalledTimes(1)
+            expect(message.respond).not.toHaveBeenCalled()
+            expect(message.reject).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('watch-asset', () => {
+        const WALLET_ADDRESS = 'AAAA'
+
+        const watchMessage = (authorizedAccounts = [WALLET_ADDRESS]) => ({
+            kind: 'request' as const,
+            chainId: CHAIN_ID,
+            connectionId: 'c1',
+            correlationId: '4',
+            sourceType: 'walletconnect' as const,
+            authorizedAccounts,
+            peer: PEER,
+            operation: { type: 'watch-asset' as const, assetId: '0xToken' },
+            respond: vi.fn(async () => {}),
+            reject: vi.fn(async () => {}),
+        })
+
+        const makePrompt = () => {
+            let decide: (approved: boolean) => void = () => {}
+            const decision = new Promise<boolean>(resolve => {
+                decide = resolve
+            })
+            const dismiss = vi.fn(() => decide(false))
+            return { decision, dismiss, decide }
+        }
+
+        const mount = (prompt = makePrompt()) => {
+            mockAccounts = [mockAccount(WALLET_ADDRESS)]
+            const confirmWatchAsset = vi.fn(() => prompt)
+            const harness = makeRegistry()
+            renderHook(() =>
+                useConnectionSigningAdapter(harness.registry, CHAIN_ID, {
+                    confirmWatchAsset,
+                }),
+            )
+            return { ...harness, prompt, confirmWatchAsset }
+        }
+
+        const settle = () => new Promise(resolve => setTimeout(resolve, 0))
+
+        it('asks with the selected scope, the token, the first reported account and the peer, then answers once approved', async () => {
+            const { send, prompt, confirmWatchAsset } = mount()
+            const message = watchMessage()
+
+            send(message)
+            expect(confirmWatchAsset).toHaveBeenCalledWith({
+                scope: { chainId: CHAIN_ID, networkId: 'mainnet' },
+                assetId: '0xToken',
+                accountAddress: WALLET_ADDRESS,
+                peer: PEER,
+            })
+            expect(message.respond).not.toHaveBeenCalled()
+
+            prompt.decide(true)
+            await settle()
+
+            expect(message.respond).toHaveBeenCalledWith({
+                type: 'watch-asset',
+            })
+            expect(message.reject).not.toHaveBeenCalled()
+        })
+
+        it('rejects the dApp with a user rejection when the user cancels', async () => {
+            const { send, prompt, reportError } = mount()
+            const message = watchMessage()
+
+            send(message)
+            prompt.decide(false)
+            await settle()
+
+            expect(message.reject).toHaveBeenCalledWith(
+                expect.any(DappRequestRejectedError),
+            )
+            expect(message.respond).not.toHaveBeenCalled()
+            expect(reportError).not.toHaveBeenCalled()
+        })
+
+        it('declines and tells the user when the token cannot be added', async () => {
+            const failure = new Error('no such token')
+            const { send, reportError } = mount({
+                decision: Promise.reject(failure),
+                dismiss: vi.fn(),
+                decide: () => {},
+            })
+            const message = watchMessage()
+
+            send(message)
+            await vi.waitFor(() => expect(message.reject).toHaveBeenCalled())
+
+            expect(message.reject).toHaveBeenCalledWith(failure)
+            expect(reportError).toHaveBeenCalledWith(failure, {
+                connectionId: 'c1',
+            })
+        })
+
+        it('answers the dApp without a second notice when the sheet already explained the refusal', async () => {
+            const refusal = new DappRequestExplainedError('no token here')
+            const { send, reportError } = mount({
+                decision: Promise.reject(refusal),
+                dismiss: vi.fn(),
+                decide: () => {},
+            })
+            const message = watchMessage()
+
+            send(message)
+            await vi.waitFor(() => expect(message.reject).toHaveBeenCalled())
+
+            expect(message.reject).toHaveBeenCalledWith(refusal)
+            expect(reportError).not.toHaveBeenCalled()
+        })
+
+        it('declines when no prompt is available', () => {
+            const { registry, send, reportError } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            const message = watchMessage()
+
+            send(message)
+
+            expect(message.reject).toHaveBeenCalledTimes(1)
+            expect(reportError).toHaveBeenCalledTimes(1)
+            expect(message.respond).not.toHaveBeenCalled()
+        })
+
+        it('declines without opening a sheet when the account is no longer in the wallet', () => {
+            const { send, confirmWatchAsset } = mount()
+            const message = watchMessage(['GONE'])
+
+            send(message)
+
+            expect(confirmWatchAsset).not.toHaveBeenCalled()
+            expect(message.reject).toHaveBeenCalledWith(
+                expect.objectContaining({ code: 'unauthorized-account' }),
+            )
+        })
+
+        it('dismisses the sheet and answers nothing when the request expires', async () => {
+            const { send, prompt } = mount()
+            const message = watchMessage()
+
+            send(message)
+            send({
+                kind: 'request-expired',
+                connectionId: 'c1',
+                correlationId: '4',
+            })
             await settle()
 
             expect(prompt.dismiss).toHaveBeenCalledTimes(1)

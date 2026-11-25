@@ -150,6 +150,10 @@ since approval was consent to it; otherwise the user is asked before it is added
 Either way a session that listed `chainChanged` is then sent it for the target, best effort: the
 switch is answered whether or not the event is delivered.
 
+A watch-asset request names only a contract: the dApp's symbol, decimals and image are dropped at the
+chain's route, and the sheet shows what the chain and Pera report for it. Approving adds the token
+to the first account the connection reports; a contract Pera can't read as a token answers invalid-params.
+
 ## The `dapp` handler
 
 `packages/dapp` is the `window.pera` transport ([dApp bridge](DAPP_BRIDGE.md)) as a handler. It is

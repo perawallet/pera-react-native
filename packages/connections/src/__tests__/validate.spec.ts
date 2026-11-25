@@ -146,6 +146,37 @@ describe('validateRawMessage', () => {
         })
     })
 
+    describe('watch-asset', () => {
+        it('carries the token id', () => {
+            const result = validateRawMessage(
+                request('watch-asset', { assetId: '0xToken' }),
+            )
+
+            expect(result).toMatchObject({
+                ok: true,
+                message: {
+                    operation: { type: 'watch-asset', assetId: '0xToken' },
+                },
+            })
+        })
+
+        it.each([{}, { assetId: '' }, { assetId: 7 }, null])(
+            'refuses a token without an id: %o',
+            params => {
+                const result = validateRawMessage(
+                    request('watch-asset', params),
+                )
+
+                expect(result.ok).toBe(false)
+                if (!result.ok) {
+                    expect(result.error).toMatchObject({
+                        code: 'invalid-payload',
+                    })
+                }
+            },
+        )
+    })
+
     describe('send-batch', () => {
         const validate = vi.fn()
 

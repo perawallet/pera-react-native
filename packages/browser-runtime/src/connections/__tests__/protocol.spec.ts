@@ -263,6 +263,29 @@ describe('wallet operation wire codec', () => {
         ).toBe(false)
     })
 
+    it('round-trips a watch-asset operation and its result unchanged, and the guards accept them', () => {
+        const operation: WalletOperation = {
+            type: 'watch-asset',
+            assetId: '0xToken',
+        }
+        const result = { type: 'watch-asset' as const }
+
+        const wireOperation = overTheWire(encodeWalletOperation(operation))
+        const wireResult = overTheWire(encodeWalletOperationResult(result))
+
+        expect(isWireWalletOperation(wireOperation)).toBe(true)
+        expect(decodeWalletOperation(wireOperation)).toEqual(operation)
+        expect(isWireWalletOperationResult(wireResult)).toBe(true)
+        expect(decodeWalletOperationResult(wireResult)).toEqual(result)
+    })
+
+    it('rejects a watch-asset operation with no token id', () => {
+        expect(isWireWalletOperation({ type: 'watch-asset' })).toBe(false)
+        expect(isWireWalletOperation({ type: 'watch-asset', assetId: 5 })).toBe(
+            false,
+        )
+    })
+
     it('rejects a message operation with no signer and a message result with no signature', () => {
         expect(
             isWireWalletOperation({
