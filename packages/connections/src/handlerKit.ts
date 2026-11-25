@@ -34,8 +34,8 @@ export const connectionScope = (id: ConnectionId): ConnectionErrorScope => ({
 })
 
 /**
- * Origins handed to `pair()`, held until a session settles and there is a
- * record to write them onto. Keyed by whatever the handler calls a pairing.
+ * Origins handed to `pair()`, held for the handler to write onto the records
+ * its pairings settle into. Keyed by whatever the handler calls a pairing.
  */
 export interface PendingOrigins {
     get(pairingId: string): Optional<ConnectionOrigin>
