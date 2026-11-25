@@ -40,15 +40,10 @@ import type { SyncEngineDeps } from './types'
  * enough that its DELETE entry is pruned too. `knownVer > 0` is what separates
  * that from a local item still waiting for its first push: the server has never
  * seen that one, and marking it deleted would drop it from the backup silently.
- *
- * With `missing: 'unconfirmed'` no DELETE is emitted: a manifest behind the
- * cursor is a stale read or a rolled-back server, where a missing item was lost
- * or is not visible yet rather than deleted.
  */
 export const rebuildDeltasFromManifest = (
     manifest: Manifest,
     state: SyncState,
-    missing: 'deleted' | 'unconfirmed' = 'deleted',
 ): DeltaEntry[] => [
     ...Object.entries(manifest.items).map(([key, item]) => ({
         seq: Math.min(item.lastSeq, manifest.lastSeq),
@@ -62,9 +57,7 @@ export const rebuildDeltasFromManifest = (
     ...Object.entries(state.items)
         .filter(
             ([key, item]) =>
-                missing === 'deleted' &&
-                !Object.hasOwn(manifest.items, key) &&
-                item.knownVer > 0,
+                !Object.hasOwn(manifest.items, key) && item.knownVer > 0,
         )
         .map(([key, item]) => ({
             seq: manifest.lastSeq,
@@ -114,34 +107,6 @@ export const unreadAccountDeltas = (
             hash: item.lastRemoteHash,
         }))
 
-/** Tracked items a manifest behind the cursor does not list, set back to a
- *  first push: marking them deleted would drop them from the backup, and
- *  leaving them settled would never push them again. A create the server
- *  already holds conflicts and settles on the next push. */
-const requeueUnconfirmed = (
-    manifest: Manifest,
-    state: SyncState,
-): SyncState => ({
-    ...state,
-    items: Object.fromEntries(
-        Object.entries(state.items).map(([key, item]) => [
-            key,
-            !Object.hasOwn(manifest.items, key) &&
-            item.knownVer > 0 &&
-            item.status === BackupItemStatus.ACTIVE &&
-            item.pendingDelete !== true
-                ? {
-                      ...item,
-                      knownVer: 0,
-                      baseVer: 0,
-                      isDirty: true,
-                      lastRemoteHash: null,
-                  }
-                : item,
-        ]),
-    ),
-})
-
 /** A registered backup has no manifest until its first item lands, so the very
  *  first sync of a new backup 404s. Destroying a backup drops its auth key, so
  *  a wiped backup fails with 401 instead — a 404 can only mean "still empty".
@@ -161,15 +126,8 @@ export const fetchManifestOrNull = async (
 }
 
 /**
- * Deltas from the cursor, or the manifest replayed as deltas when the changelog
- * was pruned past the cursor or the cursor is past the manifest: a cursor ahead
- * of the backup asks for changes that never come. `state` is what to apply
- * the deltas to: on a replay its cursor is the manifest's and `rebuiltThroughSeq`
- * says so, null on the ordinary path. A delta past the
- * manifest's `lastSeq` is still applied, but at that seq: a write that landed
- * after the manifest was read is fetched again next pull, and a bad seq never
- * becomes the cursor. A null manifest is an empty backup, with nothing to bound
- * by or rebuild from.
+ * A delta past `manifest.lastSeq` is applied at that seq, so a bad seq never
+ * becomes the cursor. A null manifest is an empty backup.
  */
 export const fetchDeltaOrRebuild = async (
     deps: Pick<SyncEngineDeps, 'backupId' | 'deviceId'>,
@@ -186,17 +144,9 @@ export const fetchDeltaOrRebuild = async (
             fromSeq: state.lastSyncedSeq,
             manifestSeq: from.lastSeq,
         })
-        const isAhead = reason === 'ahead'
         return {
-            deltas: rebuildDeltasFromManifest(
-                from,
-                state,
-                isAhead ? 'unconfirmed' : 'deleted',
-            ),
-            state: {
-                ...(isAhead ? requeueUnconfirmed(from, state) : state),
-                lastSyncedSeq: from.lastSeq,
-            },
+            deltas: rebuildDeltasFromManifest(from, state),
+            state: { ...state, lastSyncedSeq: from.lastSeq },
             rebuiltThroughSeq: from.lastSeq,
         }
     }

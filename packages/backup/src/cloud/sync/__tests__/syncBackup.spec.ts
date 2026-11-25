@@ -44,6 +44,7 @@ import {
     contactItemKey,
     contactRecordItemKey,
     createEmptySyncState,
+    isAddressBackedUp,
     passkeyItemKey,
     passkeySecretsItemKey,
     settingsItemKey,
@@ -314,6 +315,22 @@ describe('syncBackup', () => {
             })
             expect(next.lastSyncedSeq).toBe(100)
             expect(next.lastSyncResult).toBe('SUCCESS')
+        })
+
+        it('treats a tracked account the manifest no longer lists as deleted, and leaves it not backed up', async () => {
+            const manifest = manifestWith()
+            delete manifest.items[recordKey('W')]
+            fetchManifest.mockResolvedValue(manifest)
+
+            const next = await syncBackup(deps(), synced(102))
+
+            expect(fetchDelta).not.toHaveBeenCalled()
+            expect(batchUpsertItems).not.toHaveBeenCalled()
+            expect(next.items[recordKey('W')]?.status).toBe(
+                BackupItemStatus.IGNORED,
+            )
+            expect(isAddressBackedUp(next, 'W')).toBe(false)
+            expect(next.lastSyncedSeq).toBe(100)
         })
     })
 

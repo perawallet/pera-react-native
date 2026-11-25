@@ -228,14 +228,13 @@ describe('fetchDeltaOrRebuild', () => {
         expect(result.deltas.map(d => d.key)).toEqual(['accounts/A'])
     })
 
-    it('re-pushes a tracked item a manifest behind the cursor does not list, instead of deleting it', async () => {
+    it('deletes a tracked item a manifest behind the cursor no longer lists, rather than re-pushing it', async () => {
         const result = await fetchDeltaOrRebuild(
             deps,
             {
                 ...stateWith({
                     'accounts/A': tracked({ knownVer: 2 }),
                     'accounts/B': tracked({ knownVer: 5 }),
-                    'accounts/C': tracked({ knownVer: 4, pendingDelete: true }),
                 }),
                 lastSyncedSeq: 102,
             },
@@ -244,18 +243,12 @@ describe('fetchDeltaOrRebuild', () => {
 
         expect(result.deltas.map(d => [d.key, d.op])).toEqual([
             ['accounts/A', DeltaOperation.UPSERT],
+            ['accounts/B', DeltaOperation.DELETE],
         ])
         expect(result.state.lastSyncedSeq).toBe(100)
         expect(result.state.items['accounts/B']).toMatchObject({
-            knownVer: 0,
-            baseVer: 0,
-            isDirty: true,
-            status: BackupItemStatus.ACTIVE,
-            lastRemoteHash: null,
-        })
-        expect(result.state.items['accounts/C']).toMatchObject({
-            knownVer: 4,
-            pendingDelete: true,
+            knownVer: 5,
+            isDirty: false,
         })
     })
 
