@@ -2809,6 +2809,14 @@
                 "fetch_failed_title": "Backup konnte nicht geladen werden",
                 "decrypt_failed_title": "Backup konnte nicht entsperrt werden"
             },
+            "review": {
+                "title": "Konten prüfen",
+                "body_one": "Dieser Code importiert {{count}} Konto. Prüfe vor dem Import, dass es dir gehört.",
+                "body_other": "Dieser Code importiert {{count}} Konten. Prüfe vor dem Import, dass sie dir gehören.",
+                "body": "Dieser Code importiert {{count}} Konten. Prüfe vor dem Import, dass sie dir gehören.",
+                "confirm": "Konten importieren",
+                "interrupted": "Der Import wurde unterbrochen. Scanne den QR-Code erneut, um fortzufahren."
+            },
             "result": {
                 "success_title": "Konten importiert",
                 "success_body_one": "{{count}} Konto wurde deinem Wallet hinzugefügt.",

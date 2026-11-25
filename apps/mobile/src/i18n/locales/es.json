@@ -2817,6 +2817,14 @@
                 "fetch_failed_title": "No se pudo cargar la copia de seguridad",
                 "decrypt_failed_title": "No se pudo desbloquear la copia de seguridad"
             },
+            "review": {
+                "title": "Revisa las cuentas",
+                "body_one": "Este código importa {{count}} cuenta. Comprueba que es tuya antes de importarla.",
+                "body_other": "Este código importa {{count}} cuentas. Comprueba que son tuyas antes de importarlas.",
+                "body": "Este código importa {{count}} cuentas. Comprueba que son tuyas antes de importarlas.",
+                "confirm": "Importar cuentas",
+                "interrupted": "La importación se interrumpió. Vuelve a escanear el código QR para continuar."
+            },
             "result": {
                 "success_title": "Cuentas importadas",
                 "success_body_one": "Se añadió {{count}} cuenta a tu wallet.",

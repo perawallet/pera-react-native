@@ -2817,6 +2817,14 @@
                 "fetch_failed_title": "Impossible de charger la sauvegarde",
                 "decrypt_failed_title": "Impossible de déverrouiller la sauvegarde"
             },
+            "review": {
+                "title": "Vérifiez les comptes",
+                "body_one": "Ce code importe {{count}} compte. Vérifiez qu’il vous appartient avant de l’importer.",
+                "body_other": "Ce code importe {{count}} comptes. Vérifiez qu’ils vous appartiennent avant de les importer.",
+                "body": "Ce code importe {{count}} comptes. Vérifiez qu’ils vous appartiennent avant de les importer.",
+                "confirm": "Importer les comptes",
+                "interrupted": "L’importation a été interrompue. Scannez à nouveau le code QR pour continuer."
+            },
             "result": {
                 "success_title": "Comptes importés",
                 "success_body_one": "{{count}} compte a été ajouté à votre wallet.",

@@ -2817,6 +2817,14 @@
                 "fetch_failed_title": "Yedekleme yüklenemedi",
                 "decrypt_failed_title": "Yedeklemenin kilidi açılamadı"
             },
+            "review": {
+                "title": "Hesapları gözden geçir",
+                "body_one": "Bu kod {{count}} hesap içe aktarır. İçe aktarmadan önce senin olduğundan emin ol.",
+                "body_other": "Bu kod {{count}} hesap içe aktarır. İçe aktarmadan önce senin olduklarından emin ol.",
+                "body": "Bu kod {{count}} hesap içe aktarır. İçe aktarmadan önce senin olduklarından emin ol.",
+                "confirm": "Hesapları içe aktar",
+                "interrupted": "İçe aktarma kesintiye uğradı. Devam etmek için QR kodunu yeniden tara."
+            },
             "result": {
                 "success_title": "Hesaplar içe aktarıldı",
                 "success_body_one": "Cüzdanına {{count}} hesap eklendi.",
