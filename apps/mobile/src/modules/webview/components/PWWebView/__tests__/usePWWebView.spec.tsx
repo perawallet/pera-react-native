@@ -13,12 +13,19 @@
 import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
+import type { WebViewMessageEvent, WebViewProps } from 'react-native-webview'
+import { config } from '@perawallet/wallet-core-config'
+import { usePeraWebviewInterface } from '@modules/webview/hooks/usePeraWebviewInterface'
 import { usePWWebView, type PWWebViewProps } from '../usePWWebView'
 
 const mocks = vi.hoisted(() => ({
     removeWebView: vi.fn(),
     pushWebView: vi.fn(),
     handleMessage: vi.fn(),
+    pair: vi.fn(async () => ({
+        type: 'session',
+        pairingId: 'fixture-pairing',
+    })),
 }))
 
 vi.mock('react-native-webview', () => ({
@@ -28,7 +35,19 @@ vi.mock('react-native-webview', () => ({
 
 vi.mock('@modules/webview/hooks', () => ({
     useContextFingerprints: () => ({}),
-    usePeraWebviewInterface: () => ({ handleMessage: mocks.handleMessage }),
+    usePeraWebviewInterface: (
+        ...args: Parameters<typeof usePeraWebviewInterface>
+    ) => {
+        const bridge = usePeraWebviewInterface(...args)
+        return {
+            handleMessage: (
+                ...message: Parameters<typeof bridge.handleMessage>
+            ) => {
+                mocks.handleMessage(...message)
+                bridge.handleMessage(...message)
+            },
+        }
+    },
     useWebViewStore: (
         selector: (state: {
             removeWebView: typeof mocks.removeWebView
@@ -53,6 +72,31 @@ vi.mock('../useWebViewNavigationGuard', () => ({
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
+}))
+
+vi.mock('@hooks/useCapability', async () =>
+    (await import('@test-utils/capability-mock')).capabilityHookMock(),
+)
+
+vi.mock('@modules/connections', async importOriginal => ({
+    ...(await importOriginal<typeof import('@modules/connections')>()),
+    useConnectionPairing: () => ({ pair: mocks.pair, describeUri: vi.fn() }),
+}))
+
+vi.mock('@modules/webview/hooks/bridge/useExternalUriHandlers', () => ({
+    useExternalUriHandlers: () => ({
+        openSystemBrowser: vi.fn(),
+        canOpenURI: vi.fn(),
+        openNativeURI: vi.fn(),
+    }),
+}))
+
+vi.mock('@modules/webview/hooks/bridge/useTransactionSigningHandler', () => ({
+    useTransactionSigningHandler: () => vi.fn(),
+}))
+
+vi.mock('@modules/webview/hooks/bridge/useDataSigningHandler', () => ({
+    useDataSigningHandler: () => vi.fn(),
 }))
 
 const baseProps: PWWebViewProps = {
@@ -131,4 +175,75 @@ describe('usePWWebView', () => {
             }),
         )
     })
+
+    it.each([
+        [
+            'v1',
+            'wc:fixture-topic@1?bridge=https%3A%2F%2Fbridge.example&key=' +
+                'a'.repeat(64),
+        ],
+        [
+            'v2',
+            'wc:' +
+                'b'.repeat(64) +
+                '@2?relay-protocol=irn&symKey=' +
+                'c'.repeat(64),
+        ],
+    ])(
+        'saves a %s pairing under the posting frame while the page navigates away',
+        async (_, uri) => {
+            const url = new URL('/discover/landing', config.discoverBaseUrl)
+            const frameUrl = new URL('/discover/pairing', url).href
+            const { result } = renderHook(() =>
+                usePWWebView({ url: url.href, enablePeraConnect: true }),
+            )
+            const webViewProps = () =>
+                (
+                    result.current.renderWebView() as React.ReactElement<WebViewProps>
+                ).props
+            act(() => {
+                webViewProps().onNavigationStateChange?.({
+                    url: 'https://evil.example/',
+                    loading: true,
+                } as Parameters<
+                    NonNullable<WebViewProps['onNavigationStateChange']>
+                >[0])
+            })
+            const props = webViewProps()
+            const token = /var __peraBridgeToken = "([^"]+)";/.exec(
+                props.injectedJavaScriptBeforeContentLoaded ?? '',
+            )?.[1]
+            expect(token).toBeDefined()
+            const request = {
+                id: 'pair',
+                jsonrpc: '2.0',
+                method: 'walletConnect',
+                params: { uri },
+                token,
+            }
+
+            await act(async () => {
+                props.onMessage?.({
+                    nativeEvent: {
+                        data: JSON.stringify(request),
+                        url: frameUrl,
+                    },
+                } as WebViewMessageEvent)
+            })
+
+            expect(mocks.handleMessage).toHaveBeenCalledExactlyOnceWith(
+                request,
+                {
+                    securedConnection: true,
+                    sourceUrl: frameUrl,
+                },
+            )
+            expect(mocks.pair).toHaveBeenCalledExactlyOnceWith(uri, {
+                origin: {
+                    source: 'in-app',
+                    requesterOrigin: new URL(frameUrl).origin,
+                },
+            })
+        },
+    )
 })

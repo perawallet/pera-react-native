@@ -202,7 +202,6 @@ export const usePWWebView = ({
     const mobileInterface = usePeraWebviewInterface(
         bridgeWebview,
         isSecure,
-        url,
         onClose,
         onBack,
     )

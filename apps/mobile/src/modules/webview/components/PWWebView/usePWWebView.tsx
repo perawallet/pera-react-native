@@ -220,7 +220,6 @@ export const usePWWebView = (props: PWWebViewProps): UsePWWebViewResult => {
     const mobileInterface = usePeraWebviewInterface(
         webview.current,
         isSecure,
-        currentUrl,
         onCloseRequested,
         onBack,
     )
