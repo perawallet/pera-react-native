@@ -98,6 +98,14 @@ export const usePasskeyAutofillLifecycle = (): void => {
         const service = getService()
         if (!service) return
 
+        const refreshBootstrap = () => {
+            runPasskeyAutofillBootstrap().catch(err =>
+                logger.error(err as Error, {
+                    step: 'passkeyAutofillRefresh',
+                }),
+            )
+        }
+
         const handleRefresh = () => {
             // Keys the credential provider wrote to MMKV out-of-process must be
             // pulled into the reactive store, or Settings misses them until a cold start.
@@ -122,11 +130,7 @@ export const usePasskeyAutofillLifecycle = (): void => {
             void queryClient.invalidateQueries({
                 queryKey: passkeysQueryKeyRoot,
             })
-            runPasskeyAutofillBootstrap().catch(err =>
-                logger.error(err as Error, {
-                    step: 'passkeyAutofillRefresh',
-                }),
-            )
+            refreshBootstrap()
         }
 
         // Re-run whenever the number of keystore keys changes — covers the
@@ -142,7 +146,8 @@ export const usePasskeyAutofillLifecycle = (): void => {
         })
         const accountsUnsubscribe = useAccountsStore.subscribe(
             (state, previous) => {
-                if (state.accounts !== previous.accounts) handleRefresh()
+                // Only the registration parent depends on accounts.
+                if (state.accounts !== previous.accounts) refreshBootstrap()
             },
         )
         const hydrationUnsubscribe =
