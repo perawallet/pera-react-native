@@ -18,16 +18,34 @@ const mocks = vi.hoisted(() => ({
     invalidateQueries: vi.fn(async () => {}),
     reconcileKeystore: vi.fn(async () => ({ failedIds: [] as string[] })),
     onPasskeyAuthenticated: vi.fn(),
+    bootstrapPasskeyAutofill: vi.fn(async () => {}),
+    liquidAuth: false,
+    accountsListener: undefined as
+        | undefined
+        | ((state: object, previous: object) => void),
 }))
 
 vi.mock('@perawallet/wallet-core-passkeys', () => ({
-    bootstrapPasskeyAutofill: vi.fn(async () => {}),
+    bootstrapPasskeyAutofill: mocks.bootstrapPasskeyAutofill,
     passkeysQueryKeyRoot: ['passkeys'],
+}))
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    getPasskeyAnchorSeedIds: vi.fn(),
+    useAccountsStore: {
+        subscribe: (listener: typeof mocks.accountsListener) => {
+            mocks.accountsListener = listener
+            return vi.fn()
+        },
+        persist: { onFinishHydration: () => vi.fn() },
+    },
 }))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
-        chains: { capabilities: () => ({ liquidAuth: false }) },
+        chains: {
+            list: () => [{ id: 'algorand' }],
+            capabilities: () => ({ liquidAuth: mocks.liquidAuth }),
+        },
         passkeyAutofill: {
             onPasskeyAdded: () => ({ remove: vi.fn() }),
             onPasskeyAuthenticated: mocks.onPasskeyAuthenticated,
@@ -51,6 +69,7 @@ describe('usePasskeyAutofillLifecycle', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        mocks.liquidAuth = false
         mocks.onPasskeyAuthenticated.mockReturnValue({ remove: vi.fn() })
         vi.spyOn(AppState, 'addEventListener').mockImplementation(
             (_event, handler) => {
@@ -87,6 +106,19 @@ describe('usePasskeyAutofillLifecycle', () => {
         expect(mocks.invalidateQueries).toHaveBeenCalledWith({
             queryKey: ['passkeys'],
         })
+    })
+
+    it('refreshes only the bootstrap when accounts change', async () => {
+        mocks.liquidAuth = true
+        renderHook(() => usePasskeyAutofillLifecycle())
+
+        mocks.accountsListener?.({ accounts: [] }, { accounts: [] })
+        await vi.waitFor(() =>
+            expect(mocks.bootstrapPasskeyAutofill).toHaveBeenCalledTimes(1),
+        )
+
+        expect(mocks.reconcileKeystore).not.toHaveBeenCalled()
+        expect(mocks.invalidateQueries).not.toHaveBeenCalled()
     })
 
     it('leaves the passkey list alone when the app goes to the background', () => {

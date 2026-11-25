@@ -42,7 +42,10 @@ import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useDatabaseReadinessStore } from '@hooks/useDatabaseReadinessStore.web'
 import { showConfirmedThenClose } from '@hooks/useApprovalConfirmedStore.web'
 import { useLanguage } from '@hooks/useLanguage'
-import { useNetworkSwitchPrompt } from '@modules/connections/web'
+import {
+    useNetworkSwitchPrompt,
+    useWatchAssetPrompt,
+} from '@modules/connections/web'
 import { useDappRequest } from '../../hooks/useDappRequest.web'
 
 type UseSignRequestApprovalScreenResult = {
@@ -78,6 +81,7 @@ export const useSignRequestApprovalScreen =
         // addresses, so it gets every account, keyless ones included.
         const allAccounts = useAllAccounts()
         const confirmNetworkSwitch = useNetworkSwitchPrompt()
+        const confirmWatchAsset = useWatchAssetPrompt()
         const databaseReadiness = useDatabaseReadinessStore(
             state => state.readiness,
         )
@@ -93,9 +97,12 @@ export const useSignRequestApprovalScreen =
             // screen required a granted account, so it hydrates non-empty.
             if (allAccounts.length === 0) return
             // Building a send allocates its nonce from the submission ledger,
-            // which the shell opens only after this window has rendered. Other
-            // operations skip the wait so the window stays quick for them.
-            const needsDatabase = approval.operation.type === 'send-transaction'
+            // and adding a token writes the accounts database; the shell opens
+            // both only after this window has rendered. Other operations skip
+            // the wait so the window stays quick for them.
+            const needsDatabase =
+                approval.operation.type === 'send-transaction' ||
+                approval.operation.type === 'watch-asset'
             if (needsDatabase && databaseReadiness === 'pending') return
             enqueuedRef.current = true
 
@@ -151,6 +158,7 @@ export const useSignRequestApprovalScreen =
                 // approval at the bridge rather than this one entry.
                 pendingRequests: new Map(),
                 confirmNetworkSwitch,
+                confirmWatchAsset,
                 // Keep the window open so the reason is readable.
                 onError: err => setError(describeSignError(err, t)),
                 // The host broadcasts and answers the dApp, so closing this
@@ -178,6 +186,7 @@ export const useSignRequestApprovalScreen =
             removeSignRequest,
             allAccounts,
             confirmNetworkSwitch,
+            confirmWatchAsset,
             databaseReadiness,
             t,
         ])

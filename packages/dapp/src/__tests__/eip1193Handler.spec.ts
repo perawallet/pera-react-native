@@ -124,6 +124,7 @@ const fakeAdapter = (
             ) {
                 return toHex(result.signature)
             }
+            if (result.type === 'watch-asset') return true
             return null
         },
         toWireErrorCode: failure => EIP_1193_CODE[failure],
@@ -135,6 +136,7 @@ const fakeAdapter = (
                 'eth_signTypedData_v4',
                 'eth_signTypedData',
                 'wallet_switchEthereumChain',
+                'wallet_watchAsset',
             ],
             handleRequest: (method, params) => {
                 switch (method) {
@@ -174,6 +176,13 @@ const fakeAdapter = (
                                   type: 'sign-typed-data',
                                   params,
                               }
+                    }
+                    case 'wallet_watchAsset': {
+                        return {
+                            kind: 'operation',
+                            type: 'watch-asset',
+                            params: { assetId: '0xToken' },
+                        }
                     }
                     default: {
                         return { kind: 'unsupported' }
@@ -390,6 +399,7 @@ describe('createEip1193ConnectionHandler', () => {
                     'personal_sign',
                     'eth_signTypedData_v4',
                     'eth_signTypedData',
+                    'wallet_watchAsset',
                     'wallet_switchEthereumChain',
                     'wallet_addEthereumChain',
                 ],
@@ -1835,6 +1845,7 @@ describe('createEip1193ConnectionHandler', () => {
             ['personal_sign', 'sign-message'],
             ['eth_signTypedData_v4', 'sign-typed-data'],
             ['eth_signTypedData', 'sign-typed-data'],
+            ['wallet_watchAsset', 'watch-asset'],
         ])(
             '%s from a connected site raises one injected request on the site chain',
             async (method, type) => {
@@ -1848,6 +1859,20 @@ describe('createEip1193ConnectionHandler', () => {
                 expect(message.operation.type).toBe(type)
             },
         )
+
+        it('answers wallet_watchAsset with true once the token is added', async () => {
+            const { pending, message } = await raise('wallet_watchAsset')
+            await message.respond({ type: 'watch-asset' })
+            expect(resultOf(await pending)).toBe(true)
+        })
+
+        it('answers a cancelled wallet_watchAsset with 4001', async () => {
+            const { pending, message } = await raise('wallet_watchAsset')
+            await message.reject(new DappRequestRejectedError())
+            expect(errorOf(await pending)?.code).toBe(
+                EIP1193_ERROR_CODE.userRejected,
+            )
+        })
 
         it('answers eth_sendTransaction with the tx hash', async () => {
             const { pending, message } = await raise('eth_sendTransaction')

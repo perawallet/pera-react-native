@@ -18,6 +18,7 @@ import { useAccountsStore } from '../store'
 import type { WalletAccount } from '../models'
 import { isKeyReferenced } from '../credentials'
 import { cleanupRemovedAccountData } from '../cleanup'
+import { getPasskeyAnchorSeedIds } from '../import-session/provisionalImportSeeds'
 import {
     invalidateAccountQueries,
     removeAccountQueriesForAddresses,
@@ -25,7 +26,9 @@ import {
 
 export const useRemoveAccount = () => {
     const accounts = useAccountsStore(state => state.accounts)
-    const { deleteKey, seedIdOf, removeKeyAndChildren } = useKMS()
+    const { deleteKey, seedIdOf, removeKeyAndChildren } = useKMS({
+        getPasskeyAnchorSeedIds,
+    })
     const setAccounts = useAccountsStore(state => state.setAccounts)
     const queryClient = useQueryClient()
 

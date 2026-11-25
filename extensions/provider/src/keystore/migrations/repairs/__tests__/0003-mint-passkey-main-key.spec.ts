@@ -42,6 +42,10 @@ vi.mock('@algorandfoundation/react-native-keystore', async () => {
     }
 })
 
+vi.mock('../../deferredRevisions', () => ({
+    deferRevisionToNextLaunch: vi.fn(),
+}))
+
 import {
     MasterKeyNotFoundError,
     MATERIAL_PREFIX,
@@ -60,6 +64,7 @@ import {
     sealData,
 } from '../../__fixtures__/keystoreFormats'
 import { createDeclinedRegister } from '../../declined'
+import { deferRevisionToNextLaunch } from '../../deferredRevisions'
 import { passkeyMainKeyId } from '../../../passkeyMainKey'
 import { migration } from '../0003-mint-passkey-main-key'
 import { REPAIRS_MODULE_ID, repairsMigrations } from '../index'
@@ -111,6 +116,7 @@ const context = (storage: FakeKeychainStorage): PeraMigrationContext => ({
     subtle,
     masterKeyForRead: masterKeyForRead as () => Promise<Uint8Array>,
     declined: createDeclinedRegister(noteStoreApi()),
+    getPasskeyAnchorSeedIds: async () => new Set(['hd-1', 'hd-a', 'hd-b']),
 })
 
 /** The XHD wallet root as `useHDWallet` persists it. */
@@ -240,10 +246,87 @@ describe('0003-mint-passkey-main-key', () => {
         vi.spyOn(console, 'warn').mockImplementation(() => {})
         vi.mocked(openData).mockReset()
         vi.mocked(openData).mockImplementation(realOpenData)
+        vi.mocked(deferRevisionToNextLaunch).mockClear()
     })
 
     afterEach(() => {
         vi.restoreAllMocks()
+    })
+
+    it('mints a main key only from a root with an account reference', async () => {
+        const storage = fakeStorage({})
+        await bip39Wallet(storage, 'hd-a', 'ent-a')
+        await bip39Wallet(storage, 'hd-b', 'ent-b')
+        const migrationContext = context(storage)
+        migrationContext.getPasskeyAnchorSeedIds = async () => new Set(['hd-b'])
+
+        await migration.up(migrationContext, utils())
+
+        expect(
+            storage.getString(METADATA_PREFIX + passkeyMainKeyId('hd-a')),
+        ).toBeUndefined()
+        expect(
+            storage.getString(METADATA_PREFIX + passkeyMainKeyId('hd-b')),
+        ).toBeDefined()
+    })
+
+    it('defers to the next launch, untouched, when no account seed resolver is registered', async () => {
+        const storage = fakeStorage({})
+        await bip39Wallet(storage)
+        const migrationContext = context(storage)
+        migrationContext.getPasskeyAnchorSeedIds = undefined
+
+        await migration.up(migrationContext, utils())
+
+        expect(masterKeyForRead).not.toHaveBeenCalled()
+        expect(
+            storage.getString(METADATA_PREFIX + passkeyMainKeyId('hd-1')),
+        ).toBeUndefined()
+        expect(deferRevisionToNextLaunch).toHaveBeenCalledWith(
+            REPAIRS_MODULE_ID,
+            migration.id,
+        )
+        expect(declinedIds()).toEqual([])
+    })
+
+    it('defers to the next launch when the account seed references cannot be read', async () => {
+        const storage = fakeStorage({})
+        await bip39Wallet(storage)
+        const migrationContext = context(storage)
+        migrationContext.getPasskeyAnchorSeedIds = async () => {
+            throw new Error('Accounts store did not hydrate')
+        }
+
+        await migration.up(migrationContext, utils())
+
+        expect(masterKeyForRead).not.toHaveBeenCalled()
+        expect(deferRevisionToNextLaunch).toHaveBeenCalledWith(
+            REPAIRS_MODULE_ID,
+            migration.id,
+        )
+        expect(declinedIds()).toEqual([])
+    })
+
+    it('declines every root, without deferring, when no account uses one', async () => {
+        const storage = fakeStorage({})
+        await bip39Wallet(storage)
+        const migrationContext = context(storage)
+        migrationContext.getPasskeyAnchorSeedIds = async () => new Set()
+
+        await migration.up(migrationContext, utils())
+
+        expect(masterKeyForRead).not.toHaveBeenCalled()
+        expect(deferRevisionToNextLaunch).not.toHaveBeenCalled()
+        expect(declinedIds()).toEqual(['hd-1'])
+    })
+
+    it('does not defer a store with no wallet root, even without a resolver', async () => {
+        const migrationContext = context(fakeStorage({}))
+        migrationContext.getPasskeyAnchorSeedIds = undefined
+
+        await migration.up(migrationContext, utils())
+
+        expect(deferRevisionToNextLaunch).not.toHaveBeenCalled()
     })
 
     it('mints a pbkdf2-p256 root from the entropy child', async () => {

@@ -26,6 +26,7 @@ describe('wallet operation vocabulary', () => {
             'switch-network',
             'send-batch',
             'show-batch',
+            'watch-asset',
         ])
     })
 })

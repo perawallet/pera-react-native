@@ -48,6 +48,10 @@ const kmsMock = vi.hoisted(() => ({
     removeKeyAndChildren: vi.fn().mockResolvedValue(undefined),
 }))
 const prepareMock = vi.hoisted(() => vi.fn())
+const provisionalMock = vi.hoisted(() => ({
+    mark: vi.fn(),
+    clear: vi.fn(),
+}))
 const withDefaultChainsMock = vi.hoisted(() =>
     vi.fn(async <A>(draft: A): Promise<A> => draft),
 )
@@ -61,6 +65,8 @@ vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
     ...(await importOriginal<typeof import('@perawallet/wallet-core-kms')>()),
     useKMS: () => kmsMock,
     prepareHDMasterKey: prepareMock,
+    markSeedProvisional: provisionalMock.mark,
+    clearProvisionalSeed: provisionalMock.clear,
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
@@ -96,8 +102,9 @@ describe('useHDImportSession', () => {
         AccountsState['discoverWalletAccounts']
     >
 
-    beforeEach(() => {
+    beforeEach(async () => {
         vi.clearAllMocks()
+        await useAccountsStore.persist.rehydrate()
         useHDImportSessionStore.getState().resetState()
         useAccountsStore.setState({ accounts: [] })
         discoverWalletAccounts = vi
@@ -152,6 +159,10 @@ describe('useHDImportSession', () => {
         })
 
         const selected = [discovered()]
+        let accountsAtMint = 0
+        kmsMock.mintPasskeyMainKey.mockImplementationOnce(async () => {
+            accountsAtMint = useAccountsStore.getState().accounts.length
+        })
 
         let saved: any
         await act(async () => {
@@ -163,8 +174,16 @@ describe('useHDImportSession', () => {
 
         expect(kmsMock.persistHDMasterKey).toHaveBeenCalledWith(
             expect.objectContaining({ keyId: 'w-1' }),
+            { shouldMintPasskeyMainKey: false },
         )
-        expect(kmsMock.mintPasskeyMainKey).not.toHaveBeenCalled()
+        expect(provisionalMock.mark).toHaveBeenCalledExactlyOnceWith('w-1')
+        expect(provisionalMock.mark.mock.invocationCallOrder[0]).toBeLessThan(
+            kmsMock.persistHDMasterKey.mock.invocationCallOrder[0],
+        )
+        expect(kmsMock.mintPasskeyMainKey).toHaveBeenCalledExactlyOnceWith(
+            'w-1',
+        )
+        expect(accountsAtMint).toBe(1)
         expect(
             fakeAccountsChain().derivation.deriveAccount,
         ).toHaveBeenCalledWith(expect.anything(), 'w-1', 1, 0, {
@@ -802,6 +821,86 @@ describe('useHDImportSession', () => {
             expect(useHDImportSessionStore.getState().pending).toBeNull()
         })
 
+        test('cancelImport preserves a seed a stored account already references', async () => {
+            setUpChains()
+            const { result } = renderHook(() => useHDImportSession(MAINNET))
+            await prepare(result)
+            await discover(result)
+            const account = discovered()
+            useAccountsStore.setState({
+                accounts: [
+                    {
+                        ...account,
+                        chains: {
+                            algorand: { address: 'ADDR-A', keyPairId: 'w-1' },
+                        },
+                    },
+                ],
+            })
+
+            await act(async () => result.current.cancelImport())
+
+            expect(kmsMock.removeKeyAndChildren).not.toHaveBeenCalled()
+            expect(provisionalMock.clear).toHaveBeenCalledExactlyOnceWith('w-1')
+        })
+
+        test('marks the seed provisional before saving it during the search, so a killed import is found on the next launch', async () => {
+            setUpChains()
+            const { result } = renderHook(() => useHDImportSession(MAINNET))
+            await prepare(result)
+
+            await discover(result)
+
+            expect(provisionalMock.mark).toHaveBeenCalledExactlyOnceWith('w-1')
+            expect(
+                provisionalMock.mark.mock.invocationCallOrder[0],
+            ).toBeLessThan(
+                kmsMock.persistHDMasterKey.mock.invocationCallOrder[0],
+            )
+            expect(provisionalMock.clear).not.toHaveBeenCalled()
+        })
+
+        test('unmarks the seed once a commit stores the accounts that use it', async () => {
+            setUpChains({ [BASE]: [familyHdAddress('evm', 2, 0)] })
+            const { result } = renderHook(() => useHDImportSession(MAINNET))
+            await prepare(result)
+            const found = await discover(result)
+            let accountsAtClear = -1
+            provisionalMock.clear.mockImplementationOnce(() => {
+                accountsAtClear = useAccountsStore.getState().accounts.length
+            })
+
+            await act(async () => {
+                await result.current.commitImport({
+                    walletKeyId: 'w-1',
+                    selectedAccounts: found,
+                })
+            })
+
+            expect(provisionalMock.clear).toHaveBeenCalledExactlyOnceWith('w-1')
+            expect(accountsAtClear).toBe(1)
+        })
+
+        test('unmarks the seed only once cancelImport has removed it', async () => {
+            setUpChains()
+            const { result } = renderHook(() => useHDImportSession(MAINNET))
+            await prepare(result)
+            await discover(result)
+            kmsMock.removeKeyAndChildren.mockRejectedValueOnce(
+                new Error('keystore busy'),
+            )
+
+            await act(async () => result.current.cancelImport())
+
+            expect(provisionalMock.clear).not.toHaveBeenCalled()
+
+            await prepare(result)
+            await discover(result)
+            await act(async () => result.current.cancelImport())
+
+            expect(provisionalMock.clear).toHaveBeenCalledExactlyOnceWith('w-1')
+        })
+
         test('prepareImport removes the seed a previous persisted session left behind', async () => {
             setUpChains()
             const { result } = renderHook(() => useHDImportSession(MAINNET))
@@ -914,6 +1013,8 @@ describe('useHDImportSession', () => {
                     }),
                 ).rejects.toThrow('derive failed')
             })
+            expect(provisionalMock.clear).toHaveBeenCalledExactlyOnceWith('w-1')
+            expect(kmsMock.mintPasskeyMainKey).not.toHaveBeenCalled()
             kmsMock.persistHDMasterKey.mockClear()
             await act(async () => {
                 await result.current.commitImport({
@@ -923,6 +1024,34 @@ describe('useHDImportSession', () => {
             })
 
             expect(kmsMock.persistHDMasterKey).toHaveBeenCalledOnce()
+        })
+
+        test('keeps the provisional marker if a failed commit cannot roll back the seed', async () => {
+            const families = setUpChains()
+            const { result } = renderHook(() => useHDImportSession(MAINNET))
+            await prepare(result)
+            const found = await discover(result)
+            vi.mocked(
+                families.derivations.get(ALGORAND)!.deriveAccount,
+            ).mockRejectedValueOnce(new Error('derive failed'))
+            kmsMock.removeKeyAndChildren.mockRejectedValueOnce(
+                new Error('keystore busy'),
+            )
+
+            await act(async () => {
+                await expect(
+                    result.current.commitImport({
+                        walletKeyId: 'w-1',
+                        selectedAccounts: found,
+                    }),
+                ).rejects.toThrow('derive failed')
+            })
+
+            expect(provisionalMock.clear).not.toHaveBeenCalled()
+            expect(
+                useHDImportSessionStore.getState().pending?.isSeedPersisted,
+            ).toBe(true)
+            expect(kmsMock.mintPasskeyMainKey).not.toHaveBeenCalled()
         })
     })
 })

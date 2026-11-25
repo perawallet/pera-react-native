@@ -17,6 +17,7 @@ import {
     isAddress,
     isHex,
     numberToHex,
+    zeroAddress,
 } from 'viem'
 import type { Hex } from 'viem'
 import type {
@@ -54,6 +55,7 @@ export const ETHEREUM_WC_V2_METHOD = {
     chainId: 'eth_chainId',
     getCapabilities: 'wallet_getCapabilities',
     sendCalls: 'wallet_sendCalls',
+    watchAsset: 'wallet_watchAsset',
     getCallsStatus: 'wallet_getCallsStatus',
     showCallsStatus: 'wallet_showCallsStatus',
     sign: 'eth_sign',
@@ -143,6 +145,40 @@ const routeSwitch = (params: unknown): WalletConnectRequestRoute => {
     }
 }
 
+// EIP-747's `{ type, options }`. Only the contract address leaves this route:
+// the dApp's symbol, decimals and image are never trusted, so the wallet reads
+// them from the chain and Pera.
+const routeWatchAsset = (params: unknown): WalletConnectRequestRoute => {
+    const first = firstPositional(params)
+    const { type, options } =
+        typeof first === 'object' && first !== null
+            ? (first as { type?: unknown; options?: unknown })
+            : {}
+    const address =
+        typeof options === 'object' && options !== null
+            ? (options as { address?: unknown }).address
+            : undefined
+    if (
+        type !== 'ERC20' ||
+        typeof address !== 'string' ||
+        !isAddress(address, { strict: false }) ||
+        getAddress(address) === zeroAddress
+    ) {
+        return {
+            kind: 'refused',
+            error: {
+                code: EIP_1193_CODE['invalid-params'],
+                message: 'Expected an ERC20 { type, options: { address } }',
+            },
+        }
+    }
+    return {
+        kind: 'operation',
+        type: 'watch-asset',
+        params: { assetId: getAddress(address) },
+    }
+}
+
 const SIGNING_METHODS = [
     ETHEREUM_WC_V2_METHOD.sendTransaction,
     ETHEREUM_WC_V2_METHOD.personalSign,
@@ -150,6 +186,7 @@ const SIGNING_METHODS = [
     ETHEREUM_WC_V2_METHOD.signTypedData,
     ETHEREUM_WC_V2_METHOD.switchChain,
     ETHEREUM_WC_V2_METHOD.sendCalls,
+    ETHEREUM_WC_V2_METHOD.watchAsset,
 ] as const
 
 // Listed so proposals that require them connect; every call answers 4200: no
@@ -281,6 +318,9 @@ const createV2 = (
             case ETHEREUM_WC_V2_METHOD.sendCalls: {
                 return routeSendCalls(params)
             }
+            case ETHEREUM_WC_V2_METHOD.watchAsset: {
+                return routeWatchAsset(params)
+            }
             case ETHEREUM_WC_V2_METHOD.showCallsStatus: {
                 return {
                     kind: 'operation',
@@ -352,6 +392,7 @@ export const createEvmWalletConnectSupport = (
         if (result.type === 'switch-network') return null
         if (result.type === 'send-batch') return { id: result.batchId }
         if (result.type === 'show-batch') return null
+        if (result.type === 'watch-asset') return true
         if (
             result.type === 'sign-message' ||
             result.type === 'sign-typed-data'

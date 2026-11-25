@@ -45,6 +45,7 @@ export const WALLET_OPERATION_TYPES = [
     'switch-network',
     'send-batch',
     'show-batch',
+    'watch-asset',
 ] as const
 
 export type WalletOperationType = (typeof WALLET_OPERATION_TYPES)[number]
@@ -82,6 +83,8 @@ export type WalletOperation =
       }
     /** Shows the user a batch the peer sent earlier; nothing is signed. */
     | { type: 'show-batch'; batchId: string }
+    /** Lists a token on the dApp's account; nothing is signed. `assetId` is the chain's canonical id. */
+    | { type: 'watch-asset'; assetId: string }
 
 /** Signing results, before the handler envelopes them for its wire. */
 export type WalletOperationResult =
@@ -96,6 +99,7 @@ export type WalletOperationResult =
     /** `batchId` is what the peer tracks the batch by. */
     | { type: 'send-batch'; batchId: string }
     | { type: 'show-batch' }
+    | { type: 'watch-asset' }
 
 /** Wallet-initiated push. Only handlers implementing `notify` receive these. */
 export type WalletNotice =
