@@ -37,12 +37,17 @@ import {
     type WalletOperationType,
 } from '@perawallet/wallet-core-connections'
 import {
+    dappRelayableErrorNames,
     dappRequestChainAdapters,
     dappRequestFailureOf,
     dappRequestWireCodeOf,
     type DappRequestFailure,
     type WalletConnectV2ChainSupport,
 } from '@perawallet/wallet-core-connections/dappRequest'
+import {
+    MAX_ERROR_LENGTH,
+    sanitizeErrorForWebview,
+} from '@perawallet/wallet-core-dapp/wire'
 import type {
     Connection,
     ConnectionId,
@@ -881,15 +886,23 @@ export const createWalletConnectV2Handler = (
             },
             reject: async error => {
                 const failure = dappRequestFailureOf(error)
+                const wireCode = dappRequestWireCodeOf(error)
                 await respond({
                     id,
                     jsonrpc: '2.0',
                     error: {
                         code:
-                            dappRequestWireCodeOf(error) ??
+                            wireCode ??
                             (failure && support.toWireErrorCode?.(failure)) ??
                             JSON_RPC_SERVER_ERROR,
-                        message: error.message,
+                        message:
+                            wireCode !== undefined &&
+                            error.name === 'DappRequestCodedError'
+                                ? error.message.slice(0, MAX_ERROR_LENGTH)
+                                : sanitizeErrorForWebview(
+                                      error,
+                                      dappRelayableErrorNames(chain.chainId),
+                                  ),
                     },
                 })
             },
@@ -1071,19 +1084,24 @@ export const createWalletConnectV2Handler = (
                           })
                         : { id, jsonrpc: '2.0', result },
                 (error: unknown): WalletKitJsonRpcResponse => {
-                    const wireCode = dappRequestWireCodeOf(toError(error))
+                    const refusal = toError(error)
+                    const wireCode = dappRequestWireCodeOf(refusal)
                     return {
                         id,
                         jsonrpc: '2.0',
                         error:
-                            wireCode === undefined
+                            wireCode !== undefined &&
+                            refusal.name === 'DappRequestCodedError'
                                 ? {
-                                      code: JSON_RPC_INTERNAL_ERROR,
-                                      message: 'Internal error',
+                                      code: wireCode,
+                                      message: refusal.message.slice(
+                                          0,
+                                          MAX_ERROR_LENGTH,
+                                      ),
                                   }
                                 : {
-                                      code: wireCode,
-                                      message: toError(error).message,
+                                      code: JSON_RPC_INTERNAL_ERROR,
+                                      message: 'Internal error',
                                   },
                     }
                 },

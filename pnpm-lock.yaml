@@ -4659,6 +4659,9 @@ importers:
       '@perawallet/wallet-core-connections':
         specifier: workspace:*
         version: link:../connections
+      '@perawallet/wallet-core-dapp':
+        specifier: workspace:*
+        version: link:../dapp
       '@perawallet/wallet-core-kms':
         specifier: workspace:*
         version: link:../kms

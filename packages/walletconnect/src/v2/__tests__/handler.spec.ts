@@ -1010,7 +1010,10 @@ describe('session requests', () => {
             response: {
                 id: REQUEST_ID,
                 jsonrpc: '2.0',
-                error: { code: -32_000, message: 'user declined' },
+                error: {
+                    code: -32_000,
+                    message: 'An error occurred during signing',
+                },
             },
         })
     })

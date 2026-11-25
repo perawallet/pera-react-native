@@ -10,6 +10,10 @@
  limitations under the License
  */
 
+import type { IJsonRpcErrorMessage } from '@perawallet/walletconnect'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { dappRelayableErrorNames } from '@perawallet/wallet-core-connections/dappRequest'
+import { sanitizeErrorForWebview } from '@perawallet/wallet-core-dapp/wire'
 import { logger, toError } from '@perawallet/wallet-core-shared'
 import type { WalletConnectConnectorRegistry } from '../connection'
 import { WC_DELIVERY_TIMEOUT_MS } from '../shared/constants'
@@ -29,11 +33,28 @@ export type WalletConnectV1Delivery = {
     deliverRejectInBackground(clientId: string, id: number, error: Error): void
 }
 
+export const v1PeerError = (
+    error: Error,
+    chainId: ChainId,
+): IJsonRpcErrorMessage => {
+    const { code, data } = error as Error & { code?: unknown; data?: unknown }
+    const relayableNames = dappRelayableErrorNames(chainId)
+    return {
+        message: sanitizeErrorForWebview(error, relayableNames),
+        ...(typeof code === 'number' ? { code } : {}),
+        // ARC-0001's `{ index, field }`; the bridge forwards any `data` despite its string type.
+        ...(data !== undefined && relayableNames.includes(error.name)
+            ? { data: data as string }
+            : {}),
+    }
+}
+
 // A backgrounded v1 socket queues sends silently, so every response goes
 // through a socket verified open; a failed revival throws a retryable timeout.
 export const createWalletConnectV1Delivery = (
     connectors: Pick<WalletConnectConnectorRegistry, 'ensureReady'>,
     answeredRequests: WalletConnectV1AnsweredRequests,
+    chainId: ChainId,
 ): WalletConnectV1Delivery => {
     const deliverReject = async (
         clientId: string,
@@ -44,7 +65,7 @@ export const createWalletConnectV1Delivery = (
             clientId,
             WC_DELIVERY_TIMEOUT_MS,
         )
-        readyConnector.rejectRequest({ id, error })
+        readyConnector.rejectRequest({ id, error: v1PeerError(error, chainId) })
         answeredRequests.record(clientId, id)
     }
 

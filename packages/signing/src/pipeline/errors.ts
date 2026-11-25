@@ -69,6 +69,8 @@ export class UserCancelledError extends PipelineError {
             severity: ErrorSeverity.LOW,
             retryable: false,
         })
+        // Relayed to dApps by name; the minified dist mangles `constructor.name`.
+        this.name = 'UserCancelledError'
     }
 }
 
@@ -267,6 +269,8 @@ export class StaleSignRequestError extends PipelineError {
             undefined,
             { severity: ErrorSeverity.LOW },
         )
+        // Relayed to dApps by name; the minified dist mangles `constructor.name`.
+        this.name = 'StaleSignRequestError'
     }
 }
 

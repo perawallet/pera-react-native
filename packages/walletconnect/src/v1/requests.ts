@@ -48,6 +48,7 @@ import {
     isWalletConnectV1Connection,
     type WalletConnectV1Connection,
 } from './connection'
+import { v1PeerError } from './deliver'
 import {
     asWcRequest,
     legacyItemChainIdsAcceptable,
@@ -194,7 +195,10 @@ export const createV1RequestHandlers = (deps: {
         void connectors
             .ensureReady(clientId, WC_DELIVERY_TIMEOUT_MS)
             .then(connector => {
-                connector.rejectRequest({ id: requestId, error })
+                connector.rejectRequest({
+                    id: requestId,
+                    error: v1PeerError(error, getScope().chainId),
+                })
                 markAnswered(clientId, requestId)
             })
             .catch((deliveryError: unknown) => {
@@ -233,7 +237,8 @@ export const createV1RequestHandlers = (deps: {
         }
 
         // The gate already required a registered adapter for this network.
-        const support = walletConnectSupportFor(getScope())
+        const scope = getScope()
+        const support = walletConnectSupportFor(scope)
         if (!support) {
             const unsupported = new WalletConnectInvalidNetworkError()
             rejectToPeer(connection.id, requestId, unsupported)
@@ -243,7 +248,7 @@ export const createV1RequestHandlers = (deps: {
 
         requireContext().onMessage({
             kind: 'request',
-            chainId: getScope().chainId,
+            chainId: scope.chainId,
             connectionId: connection.id,
             correlationId: String(requestId),
             sourceType: 'walletconnect',
@@ -263,7 +268,10 @@ export const createV1RequestHandlers = (deps: {
             // RETRY. A failed `reject` is the request's last answer.
             reject: error =>
                 deliver(connector =>
-                    connector.rejectRequest({ id: requestId, error }),
+                    connector.rejectRequest({
+                        id: requestId,
+                        error: v1PeerError(error, scope.chainId),
+                    }),
                 ).catch((deliveryError: unknown) => {
                     releaseClaim(connection.id, requestId)
                     throw deliveryError
@@ -318,8 +326,7 @@ export const createV1RequestHandlers = (deps: {
         return { request, connection }
     }
 
-    // The gate's `reason` is developer English that reaches the peer; the code
-    // is what picks the class, and with it the copy the user is shown.
+    // The code picks the user-facing copy while the reason stays in wallet logs.
     const rejectionFor = (reason: string, code: GateRejectionCode): Error => {
         if (code === 'invalid-network')
             return new WalletConnectInvalidNetworkError(reason)

@@ -24,7 +24,9 @@ import {
     SIGNING_ERROR_KEYS,
     SignerKeyMissingError,
     SigningError,
+    StaleSignRequestError,
     TransportError,
+    UserCancelledError,
 } from '../errors'
 
 describe('pipeline error retryable flags', () => {
@@ -132,5 +134,23 @@ describe('signing errors carry user-facing keys', () => {
             'signing.cannot_sign.signer_key_missing_body',
         )
         expect(error.metadata.params).toMatchObject({ authAddress: 'ADDR' })
+    })
+})
+
+describe('dApp-relayable error names', () => {
+    it.each([
+        ['UserCancelledError', () => new UserCancelledError()],
+        ['StaleSignRequestError', () => new StaleSignRequestError()],
+    ])('%s keeps its name when the class name is mangled', (name, create) => {
+        const ctor = create().constructor
+        Object.defineProperty(ctor, 'name', { value: 'e', configurable: true })
+        try {
+            expect(create().name).toBe(name)
+        } finally {
+            Object.defineProperty(ctor, 'name', {
+                value: name,
+                configurable: true,
+            })
+        }
     })
 })
