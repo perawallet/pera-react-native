@@ -21,6 +21,7 @@ import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
 import { Arc60DataSigningSummaryView } from '@modules/signing/components/Arc60DataSigningView'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
+import { ReviewScrollHint } from '@modules/signing/components/ReviewScrollHint'
 import { useStyles } from './styles'
 import { useArc60SigningScreen } from './useArc60SigningScreen'
 
@@ -36,6 +37,7 @@ export const Arc60SigningScreen = () => {
         errorMessage,
         hasOriginMismatch,
         isSigningBlocked,
+        scrollHint,
         handleApprove,
         handleReject,
         handleDetailsPress,
@@ -93,9 +95,18 @@ export const Arc60SigningScreen = () => {
 
     return (
         <PWScreen
-            scroll='never'
+            scrollRef={scrollHint.scrollRef}
+            onScroll={scrollHint.handleScroll}
+            onBodyLayout={scrollHint.handleBodyLayout}
+            onContentSizeChange={scrollHint.handleContentSizeChange}
+            testID='arc60-review'
             footer={
                 <PWView style={[styles.buttonContainer, CONFIRM_ACTION_LAYOUT]}>
+                    <ReviewScrollHint
+                        isVisible={scrollHint.isMoreBelow}
+                        isReserved={scrollHint.isScrollable}
+                        onPress={scrollHint.handleScrollToEnd}
+                    />
                     <ConfirmAction
                         title={t('common.slide_to_confirm.label')}
                         onConfirm={handleApprove}

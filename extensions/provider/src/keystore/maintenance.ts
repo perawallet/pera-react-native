@@ -133,3 +133,14 @@ export const writePasskeyCredential = async (
         split,
     )
 }
+
+/**
+ * Removes every keystore record straight from storage, for when the engine's
+ * own `clear()` cannot run. Returns whether none remain.
+ */
+export const clearKeystoreStorage = (): boolean => {
+    keystoreStorage.clearAll()
+    // MMKV appends rather than overwrites; compacting drops the old bytes.
+    keystoreStorage.trim()
+    return keystoreStorage.getAllKeys().length === 0
+}

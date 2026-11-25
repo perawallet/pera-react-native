@@ -59,6 +59,19 @@ import { isTransactionKnownToNode } from './submission'
 // A just-broadcast transaction can be briefly unknown to a load-balanced RPC.
 export const DROPPED_GRACE_MS = 5 * 60_000
 
+/** Passes in a row every RPC URL must miss a transaction, past the grace window, before its row fails. */
+export const DROPPED_ABSENCE_PASSES = 3
+
+/** The least time from the first to the last miss of that run, so a load-balanced node's flapping backends can't fail a row within a few ticks. */
+export const DROPPED_ABSENCE_SPAN_MS = 60_000
+
+/**
+ * Age past which a URL that cannot answer no longer keeps a row open, so a
+ * dead URL can't hold a dropped send's nonce, and every later send behind it,
+ * for good. The URLs that do answer must still all miss it.
+ */
+export const DROPPED_UNREACHABLE_AFTER_MS = 6 * DROPPED_GRACE_MS
+
 /** Bounded per pass; survivors are probed on the next tick. */
 const DEFAULT_PASS_LIMIT = 20
 
@@ -78,6 +91,16 @@ export type ProbeFailureStreaks = Map<string, ProbeFailureStreak>
 
 /** One per broadcaster: the open row ids probed so far, least recently probed first. */
 export type ProbeRotation = Set<string>
+
+/** A row's current run of passes on which no RPC URL held its transaction. */
+export interface AbsenceRun {
+    misses: number
+    firstMissAt: number
+    lastMissAt: number
+}
+
+/** One per broadcaster: per open row id, carried across passes. */
+export type AbsenceSightings = Map<string, AbsenceRun>
 
 // Keeps each streak's count and interval, so escalation still lands on the
 // same failure; only the wait goes.
@@ -107,6 +130,10 @@ export const PROBE_FAILURE_ESCALATION_STREAK =
             Math.log(PROBE_BACKOFF_MULTIPLIER),
     ) + 1
 
+/** Longest gap between two misses of one run: a backed-off probe plus a tick. A longer pause says nothing about the time between. */
+export const ABSENCE_RUN_MAX_GAP_MS =
+    PROBE_BACKOFF_MAX_MS + PROBE_BACKOFF_BASE_MS
+
 type Verdict = 'confirmed' | 'failed' | 'replaced'
 
 /** An open status a probe moves a row to, rather than settling it. */
@@ -119,11 +146,14 @@ const finalityDepthOf = ({ finality }: EvmChainRow): bigint =>
 /** What one probe reads through; `receiptOf` reads each hash once per pass, `headOf` each scope's head. */
 type ProbeContext = {
     client: PublicClient
+    /** One client per RPC URL, none failing over. */
+    nodes: PublicClient[]
     scope: ChainScope
     db: Optional<Database>
     depth: bigint
     receiptOf: (hash: Hex) => ReturnType<typeof readReceipt>
     headOf: () => Promise<bigint>
+    absences: AbsenceSightings
 }
 
 const isOlder = (a: SubmissionAttempt, b: SubmissionAttempt): boolean =>
@@ -202,7 +232,8 @@ const probe = async (
     attempt: SubmissionAttempt,
     context: ProbeContext,
 ): Promise<Nullable<Verdict | Progress>> => {
-    const { client, scope, db, depth, receiptOf, headOf } = context
+    const { client, nodes, scope, db, depth, receiptOf, headOf, absences } =
+        context
     const hash = attempt.txIds[0] as Optional<Hex>
     if (hash === undefined) return null
 
@@ -236,18 +267,68 @@ const probe = async (
     const pastGrace = Date.now() - attempt.createdAt > DROPPED_GRACE_MS
     if (!landedPast && !pastGrace) return null
 
-    // A transaction the node still holds is mined or pending, so a nonce past
-    // ours with a lagging receipt index on a load-balanced RPC is not a
-    // replacement. A dropped or replaced one is gone from the node.
-    if (await isTransactionKnownToNode(client, hash)) return null
     if (landedPast) {
+        // A transaction the node still holds is mined, so a nonce past ours
+        // with a lagging receipt index on a load-balanced RPC is not a
+        // replacement. A replaced one is gone from the node.
+        if (await isTransactionKnownToNode(client, hash)) return null
         return (await hasReorgableSibling(attempt, context)) ? null : 'replaced'
     }
     // A re-priced original waits for its nonce to be mined, when the winner
     // decides between replaced and failed.
     if (await hasNewerOpenSibling(attempt, scope, db)) return null
-    // Settling a dropped row `failed` frees its nonce for the next send.
-    return 'failed'
+    // The nonce is unconsumed, so failing the row hands it to the next send
+    // while the transaction may still mine. A broadcast fails over to a later
+    // URL when an earlier one errors, so any URL may be the only one holding
+    // it: each is read on its own, and a not-found counts only from all of them.
+    const sightings = await Promise.allSettled(
+        nodes.map(
+            async node =>
+                (await isTransactionKnownToNode(node, hash)) ||
+                (nonce !== null &&
+                    sender !== null &&
+                    (await node.getTransactionCount({
+                        address: sender as Address,
+                        blockTag: 'pending',
+                    })) > nonce),
+        ),
+    )
+    if (sightings.some(seen => seen.status === 'fulfilled' && seen.value)) {
+        absences.delete(attempt.id)
+        return null
+    }
+    const unanswered = sightings.filter(
+        (seen): seen is PromiseRejectedResult => seen.status === 'rejected',
+    )
+    if (
+        unanswered.length > 0 &&
+        (unanswered.length === sightings.length ||
+            Date.now() - attempt.createdAt <= DROPPED_UNREACHABLE_AFTER_MS)
+    ) {
+        throw unanswered[0]!.reason
+    }
+    return tallyMiss(attempt.id, absences)
+}
+
+const tallyMiss = (
+    id: string,
+    absences: AbsenceSightings,
+): Nullable<'failed'> => {
+    const now = Date.now()
+    const run = absences.get(id)
+    const next: AbsenceRun =
+        run && now - run.lastMissAt <= ABSENCE_RUN_MAX_GAP_MS
+            ? { ...run, misses: run.misses + 1, lastMissAt: now }
+            : { misses: 1, firstMissAt: now, lastMissAt: now }
+    if (
+        next.misses >= DROPPED_ABSENCE_PASSES &&
+        now - next.firstMissAt >= DROPPED_ABSENCE_SPAN_MS
+    ) {
+        absences.delete(id)
+        return 'failed'
+    }
+    absences.set(id, next)
+    return null
 }
 
 /**
@@ -327,7 +408,10 @@ export type ReconcileEthereumSubmissionsParams = {
     settleHandlers: SubmissionSettledHandlers
     probeFailures: ProbeFailureStreaks
     probeRotation: ProbeRotation
+    absences: AbsenceSightings
     getClient: (scope: ChainScope) => PublicClient
+    /** One client per RPC URL of the scope, none failing over: a row fails only on what every node it may have reached says. */
+    getNodeClients: (scope: ChainScope) => PublicClient[]
     /** Told which tokens a mined send's receipt delivered back to the sender, so the next account read includes them, and that the sender's NFT list is stale. */
     tokenSightings?: TokenSightings
     db?: Database
@@ -343,7 +427,9 @@ export const reconcileEthereumSubmissions = async ({
     settleHandlers,
     probeFailures,
     probeRotation,
+    absences,
     getClient,
+    getNodeClients,
     tokenSightings,
     db,
     limit = DEFAULT_PASS_LIMIT,
@@ -375,6 +461,9 @@ export const reconcileEthereumSubmissions = async ({
     for (const id of probeRotation) {
         if (!openIds.has(id)) probeRotation.delete(id)
     }
+    for (const id of absences.keys()) {
+        if (!openIds.has(id)) absences.delete(id)
+    }
     // Rows never probed go first, oldest first, then the least recently
     // probed, so rows that stay pending can't keep a later send out of the pass.
     const rank = new Map([...probeRotation].map((id, index) => [id, index]))
@@ -388,6 +477,7 @@ export const reconcileEthereumSubmissions = async ({
     }
 
     const clients = new Map<ChainScopeKey, PublicClient>()
+    const nodeClients = new Map<ChainScopeKey, PublicClient[]>()
     // Siblings at one nonce read each other's receipts, so a pass reads each once.
     const receipts = new Map<string, ReturnType<typeof readReceipt>>()
     const heads = new Map<ChainScopeKey, Promise<bigint>>()
@@ -399,11 +489,15 @@ export const reconcileEthereumSubmissions = async ({
                 const scopeKey = toScopeKey(scope)
                 const client = clients.get(scopeKey) ?? getClient(scope)
                 clients.set(scopeKey, client)
+                const nodes = nodeClients.get(scopeKey) ?? getNodeClients(scope)
+                nodeClients.set(scopeKey, nodes)
                 const context: ProbeContext = {
                     client,
+                    nodes,
                     scope,
                     db,
                     depth,
+                    absences,
                     // Uncached: viem would otherwise serve a head up to a block old to a reused client.
                     headOf: () => {
                         let head = heads.get(scopeKey)

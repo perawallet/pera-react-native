@@ -40,6 +40,7 @@ import {
 import { hydrateLockoutState } from '../lockoutHydration'
 import { withPinRecordLock } from '../pinRecordLock'
 import { useBiometrics } from './useBiometrics'
+import { PinMatchesDuressPinError } from '../errors'
 import { useKMSService, zeroBytes } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -226,6 +227,14 @@ export const usePinCode = (): UsePinCodeResult => {
             if (pin) {
                 await withPinRecordLock(async () => {
                     const existing = await loadRecord()
+                    // A regular match unlocks before the duress result is
+                    // read, so a shared PIN would silently disarm duress.
+                    if (
+                        existing?.duressEnabled === 1 &&
+                        (await verifyPinAgainstDuressSlot(pin, existing))
+                    ) {
+                        throw new PinMatchesDuressPinError()
+                    }
                     let record = await createPinRecord(pin)
                     // A PIN change must not silently disarm the duress PIN,
                     // which now lives inside the same record.

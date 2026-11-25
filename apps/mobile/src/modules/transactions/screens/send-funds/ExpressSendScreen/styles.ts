@@ -41,7 +41,7 @@ export const useStyles = makeStyles(theme => ({
         paddingVertical: theme.spacing.md,
     },
     stepNumber: {
-        color: theme.colors.textGrayLighter,
+        color: theme.colors.textGray,
     },
     stepText: {
         flex: 1,

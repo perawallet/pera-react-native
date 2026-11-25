@@ -36,7 +36,7 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.warningText,
     },
     inactiveTitle: {
-        color: theme.colors.textGrayLighter,
+        color: theme.colors.textGray,
     },
     titleRow: {
         flexDirection: 'row',
@@ -78,6 +78,6 @@ export const useStyles = makeStyles(theme => ({
     },
     contactText: {
         textAlign: 'center',
-        color: theme.colors.textGrayLighter,
+        color: theme.colors.textGray,
     },
 }))

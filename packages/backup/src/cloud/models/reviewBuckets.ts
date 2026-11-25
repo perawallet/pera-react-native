@@ -19,13 +19,18 @@ import {
     isPasskeyItemKey,
 } from './itemKeys'
 import {
+    accountRecordEntries,
+    accountRecordSeedReference,
     cachedRecordOverview,
-    cachedRecordSeedReference,
     isNewerAccountRecord,
     type CachedRecordChain,
 } from './accountRecord'
 import { trackedContactId } from './contactRecord'
-import type { BackupItemKind } from './payloads'
+import {
+    accountRecordPayloadSchema,
+    BackupAccountType,
+    type BackupItemKind,
+} from './payloads'
 import type { SyncItemState, SyncState } from './syncState'
 import { BackupItemStatus, type BackupItemKey } from './types'
 
@@ -103,44 +108,98 @@ const deriveReview = <TAvailable>(
 const addressesOfItem = (item: SyncItemState): string[] =>
     item.addresses ?? (item.address == null ? [] : [item.address])
 
-/**
- * Reads records and legacy items of one kind. A legacy item a record covers is
- * that entity as written before records, so the record speaks for it.
- *
- * `localRecords` holds each entity's addresses, primary first; the buckets
- * name an entity by its primary, and a row from the backup by its record's.
- */
-const deriveRecordReview = <TAvailable>(
-    syncState: Nullable<SyncState>,
-    localRecords: readonly (readonly string[])[],
-    isKey: (key: BackupItemKey) => boolean,
-    isRecordKey: (key: BackupItemKey) => boolean,
-    toAvailable: (item: SyncItemState) => TAvailable,
-): ReviewBuckets<TAvailable> => {
-    const live = Object.entries(syncState?.items ?? {}).filter(
+type TrackedItems = readonly [BackupItemKey, SyncItemState][]
+
+const liveSecretAddressesOf = (items: TrackedItems): ReadonlySet<string> =>
+    new Set(
+        items.flatMap(([key, item]) =>
+            isSecretsItemKey(key) &&
+            isLiveInBackup(item) &&
+            item.address != null
+                ? [item.address]
+                : [],
+        ),
+    )
+
+const isSecretFreeType = (type: SyncItemState['accountType']): boolean =>
+    type === BackupAccountType.watch ||
+    type === BackupAccountType.hardware ||
+    type === BackupAccountType.multisig
+
+const accountRecordCoverage = (
+    item: SyncItemState,
+    liveSecretAddresses: ReadonlySet<string>,
+): 'with-secret' | 'secret-free' | 'newer' | 'incomplete' => {
+    // This build can't read a newer record nor write over it, so it trusts the
+    // newer client that wrote it; restoring from it still needs that client.
+    if (isNewerAccountRecord(item.record)) return 'newer'
+    const parsed = accountRecordPayloadSchema.safeParse(item.record)
+    if (!parsed.success) return 'incomplete'
+    const entries = accountRecordEntries(parsed.data, () => true)
+    if (entries.length === 0 || entries.length !== parsed.data.chains.length) {
+        return 'incomplete'
+    }
+    if (entries.every(({ payload }) => isSecretFreeType(payload.type))) {
+        return 'secret-free'
+    }
+
+    // An HD child's secret is filed under its seed's first derived address.
+    const seedReference = accountRecordSeedReference(parsed.data)
+    const owners =
+        seedReference === null ? addressesOfItem(item) : [seedReference]
+    return owners.some(address => liveSecretAddresses.has(address))
+        ? 'with-secret'
+        : 'incomplete'
+}
+
+const visibleAccountItems = (items: TrackedItems): TrackedItems => {
+    const live = items.filter(
         ([key, item]) =>
-            isKey(key) && item.address != null && isLiveInBackup(item),
+            isAccountKey(key) && item.address != null && isLiveInBackup(item),
     )
     const recordAddresses = new Set(
         live
-            .filter(([key]) => isRecordKey(key))
+            .filter(([key]) => isAccountRecordKey(key))
             .flatMap(([, item]) => addressesOfItem(item)),
     )
-    const shown = live
-        .filter(
-            ([key, item]) =>
-                isRecordKey(key) ||
-                !recordAddresses.has(item.address as string),
-        )
-        .map(([, item]) => item)
+    // A live record supersedes its legacy address items.
+    return live.filter(
+        ([key, item]) =>
+            isAccountRecordKey(key) ||
+            !recordAddresses.has(item.address as string),
+    )
+}
 
+/** A legacy item doesn't cache an HD child's seed reference, so only the
+ *  child's record can cover it. */
+const isAccountItemBackedUp = (
+    key: BackupItemKey,
+    item: SyncItemState,
+    liveSecretAddresses: ReadonlySet<string>,
+): boolean =>
+    item.pendingImport !== true &&
+    (isAccountRecordKey(key)
+        ? accountRecordCoverage(item, liveSecretAddresses) !== 'incomplete'
+        : isSecretFreeType(item.accountType) ||
+          liveSecretAddresses.has(item.address as string))
+
+/** The buckets name a local account by its primary address. */
+export const deriveBackupAccountReview = (
+    syncState: Nullable<SyncState>,
+    localAccounts: readonly (readonly string[])[],
+): BackupAccountReview => {
+    const items = Object.entries(syncState?.items ?? {})
+    const shown = visibleAccountItems(items)
+    const liveSecretAddresses = liveSecretAddressesOf(items)
     const covered = new Set(
         shown
-            .filter(item => item.pendingImport !== true)
-            .flatMap(addressesOfItem),
+            .filter(([key, item]) =>
+                isAccountItemBackedUp(key, item, liveSecretAddresses),
+            )
+            .flatMap(([, item]) => addressesOfItem(item)),
     )
-    const local = new Set(localRecords.flat())
-    const primaries = localRecords.flatMap(([primary]) =>
+    const local = new Set(localAccounts.flat())
+    const primaries = localAccounts.flatMap(([primary]) =>
         primary === undefined ? [] : [primary],
     )
     return {
@@ -148,32 +207,17 @@ const deriveRecordReview = <TAvailable>(
         notBackedUp: primaries.filter(address => !covered.has(address)),
         availableFromBackup: shown
             .filter(
-                item =>
+                ([, item]) =>
                     item.pendingImport === true &&
                     !addressesOfItem(item).some(address => local.has(address)),
             )
-            .map(toAvailable),
+            .map(([, item]) => ({
+                address: item.address as string,
+                type: item.accountType ?? null,
+                ...cachedRecordOverview(item.record),
+            })),
     }
 }
-
-/** Reads account records and legacy address items only: a secret-bearing
- *  account also stores key material under the same item type, so counting every
- *  ACCOUNT item would double it. */
-export const deriveBackupAccountReview = (
-    syncState: Nullable<SyncState>,
-    localAccounts: readonly (readonly string[])[],
-): BackupAccountReview =>
-    deriveRecordReview(
-        syncState,
-        localAccounts,
-        isAccountKey,
-        isAccountRecordKey,
-        item => ({
-            address: item.address as string,
-            type: item.accountType ?? null,
-            ...cachedRecordOverview(item.record),
-        }),
-    )
 
 /** Accounts the backup holds that only a newer version of the app can
  *  restore. This device keeps them as they are and never writes over them. */
@@ -259,12 +303,32 @@ const isAddressLiveUnder = (
 export const isAddressBackedUp = (
     syncState: Nullable<SyncState>,
     address: string,
-): boolean => isAddressLiveUnder(syncState, address, isAccountKey)
+): boolean => {
+    const items = Object.entries(syncState?.items ?? {})
+    const liveSecretAddresses = liveSecretAddressesOf(items)
+    return visibleAccountItems(items).some(
+        ([key, item]) =>
+            addressesOfItem(item).includes(address) &&
+            isAccountItemBackedUp(key, item, liveSecretAddresses),
+    )
+}
+
+/** Whether the backup holds any of the address's items, restorable or not, so
+ *  removal still offers to delete a record whose secret is gone. */
+export const isAddressInBackup = (
+    syncState: Nullable<SyncState>,
+    address: string,
+): boolean =>
+    isAddressLiveUnder(
+        syncState,
+        address,
+        key => isAccountKey(key) || isSecretsItemKey(key),
+    )
 
 /**
  * Whether the latest sync succeeded and the backup holds a live record naming
  * every address in `addresses`, plus the live secret that record restores
- * from. A record with no secret to restore from (watch, hardware) reads false.
+ * from. A record with no secret to restore from reads false.
  * Fails closed: an empty list, a missing or unreadable record, or a secret
  * with no cached address all read false.
  */
@@ -277,38 +341,17 @@ export const isAccountRestorableFromLatestSync = (
     }
 
     const items = Object.entries(syncState.items)
-
-    return items.some(([key, item]) => {
-        if (
-            !isAccountRecordKey(key) ||
-            !isLiveInBackup(item) ||
-            item.pendingImport === true
-        ) {
-            return false
-        }
-        const recordAddresses = addressesOfItem(item)
-        if (!addresses.every(address => recordAddresses.includes(address))) {
-            return false
-        }
-        // A record that doesn't parse can't say whether it is an HD one, so
-        // its secret can't be located.
-        if (cachedRecordOverview(item.record).chains.length === 0) {
-            return false
-        }
-        // One seed secret serves every child, filed under the seed's own first
-        // address rather than the child's.
-        const seedReference = cachedRecordSeedReference(item.record)
-        const secretOwners =
-            seedReference === null ? recordAddresses : [seedReference]
-        return items.some(
-            ([secretKey, secret]) =>
-                isSecretsItemKey(secretKey) &&
-                isLiveInBackup(secret) &&
-                secret.address !== undefined &&
-                secret.address !== null &&
-                secretOwners.includes(secret.address),
-        )
-    })
+    const liveSecretAddresses = liveSecretAddressesOf(items)
+    return items.some(
+        ([key, item]) =>
+            isAccountRecordKey(key) &&
+            isLiveInBackup(item) &&
+            item.pendingImport !== true &&
+            addresses.every(address =>
+                addressesOfItem(item).includes(address),
+            ) &&
+            accountRecordCoverage(item, liveSecretAddresses) === 'with-secret',
+    )
 }
 
 export const isContactBackedUp = (

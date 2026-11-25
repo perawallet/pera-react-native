@@ -39,7 +39,7 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textGray,
     },
     countdownText: {
-        color: theme.colors.textGrayLighter,
+        color: theme.colors.textGray,
     },
     accountLocked: {
         color: theme.colors.error,

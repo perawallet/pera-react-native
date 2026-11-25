@@ -22,4 +22,13 @@ export const useStyles = makeStyles(theme => ({
     title: {
         textAlign: 'center',
     },
+    review: {
+        flex: 1,
+    },
+    footer: {
+        gap: theme.spacing.sm,
+    },
+    address: {
+        color: theme.colors.textGray,
+    },
 }))

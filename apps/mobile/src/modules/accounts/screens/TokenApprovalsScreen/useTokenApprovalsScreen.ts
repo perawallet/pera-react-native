@@ -27,7 +27,13 @@ import type {
     ChainScope,
     TokenApproval,
 } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import {
+    isConnectivityError,
+    isPeraNetworkError,
+    isPeraServiceUnavailableError,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import {
     useRevokeTokenApprovalMutation,
@@ -55,11 +61,14 @@ export type TokenApprovalItem = {
     amount: Nullable<Decimal>
 }
 
+export type TokenApprovalsLoadError = 'unavailable' | 'offline' | 'failed'
+
 export type UseTokenApprovalsScreenResult = {
     scope: ChainScope
     items: TokenApprovalItem[]
     isPending: boolean
-    isError: boolean
+    /** Null unless the list read failed; `unavailable` can't be fixed by retrying. */
+    loadError: Nullable<TokenApprovalsLoadError>
     /** A watch account's list is shown, but it holds no key to revoke with. */
     canRevoke: boolean
     revokingId: Nullable<string>
@@ -74,6 +83,22 @@ const displayAmountOf = (
 ): Nullable<Decimal> => {
     if (!base) return null
     return asset ? toWholeUnits(base, asset) : base
+}
+
+const loadErrorOf = (
+    error: Nullable<Error>,
+): Nullable<TokenApprovalsLoadError> => {
+    if (!error) return null
+    if (isPeraServiceUnavailableError(error)) return 'unavailable'
+    // An empty account gets a 200, so a bare 404 means the endpoint isn't deployed; a coded one (invalid_cursor) is a real answer to retry.
+    if (
+        isPeraNetworkError(error) &&
+        error.status === 404 &&
+        error.backendCode === undefined
+    )
+        return 'unavailable'
+    if (isConnectivityError(error)) return 'offline'
+    return 'failed'
 }
 
 const approvalIdOf = (approval: TokenApproval): string =>
@@ -155,7 +180,7 @@ export const useTokenApprovalsScreen = (): UseTokenApprovalsScreenResult => {
         scope,
         items,
         isPending: approvals.isPending,
-        isError: approvals.isError,
+        loadError: loadErrorOf(approvals.error),
         canRevoke,
         revokingId: revokingApproval ? approvalIdOf(revokingApproval) : null,
         handleRevoke,

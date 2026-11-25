@@ -16,7 +16,10 @@ import {
     PWScreen,
     PWText,
     PWTouchableOpacity,
+    PWView,
 } from '@components/core'
+import { AssetAmount } from '@components/AssetAmount'
+import { KeyValueRow } from '@components/KeyValueRow'
 import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
 import { EmptyView } from '@components/EmptyView'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
@@ -28,6 +31,9 @@ export const RemoveAssetsScreen = () => {
         selectedAssetIds,
         isAllSelected,
         isRemoving,
+        scope,
+        nativeAsset,
+        fee,
         isSelectAllVisible,
         isRemoveSelectedVisible,
         handleToggleSelectAll,
@@ -58,14 +64,28 @@ export const RemoveAssetsScreen = () => {
             scroll='never'
             footer={
                 isRemoveSelectedVisible ? (
-                    <ConfirmAction
-                        title={t('common.slide_to_confirm.label')}
-                        onConfirm={handleRemoveSelected}
-                        isLoading={isRemoving}
-                        isDisabled={selectedAssetIds.size === 0 || isRemoving}
-                        style={CONFIRM_ACTION_LAYOUT}
-                        testID='remove_assets_confirm_slide'
-                    />
+                    <PWView style={CONFIRM_ACTION_LAYOUT}>
+                        {!!selectedAssetIds.size && (
+                            <KeyValueRow title={t('asset_opt_out.fee_label')}>
+                                <AssetAmount
+                                    chainId={scope.chainId}
+                                    asset={nativeAsset}
+                                    value={fee}
+                                    showSymbol
+                                    ignorePrivacyMode
+                                />
+                            </KeyValueRow>
+                        )}
+                        <ConfirmAction
+                            title={t('common.slide_to_confirm.label')}
+                            onConfirm={handleRemoveSelected}
+                            isLoading={isRemoving}
+                            isDisabled={
+                                selectedAssetIds.size === 0 || isRemoving
+                            }
+                            testID='remove_assets_confirm_slide'
+                        />
+                    </PWView>
                 ) : undefined
             }
         >

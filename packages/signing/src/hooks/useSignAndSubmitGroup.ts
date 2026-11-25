@@ -58,6 +58,8 @@ export type SignAndSubmitGroupParams = {
     unsignedTxs: UnsignedTransaction[]
     /** Display metadata threaded through the pipeline. */
     source: SignAndSubmitGroupSource
+    /** Ask for approval of the assembled group before signing. */
+    reviewFee?: boolean
 }
 
 export type SignAndSubmitGroupResult = {
@@ -65,17 +67,11 @@ export type SignAndSubmitGroupResult = {
 }
 
 /**
- * Push a pre-built unsigned transaction group through the XState signing
- * pipeline as a headless request (`sourceType: 'local'` falls outside
- * `INTERACTIVE_SOURCES`, so no review or completion sheet is surfaced). An
- * Algorand group comes back as signed bytes this hook submits itself; any
- * other chain's is submitted by its broadcaster, which answers with the ids.
- * Resolves with the submitted txIds once signing and submission succeed.
- *
- * Local-key accounts run validating → signing → completed without showing
- * any sheet (headless skips the review state). Hardware-wallet accounts
- * render the LedgerSigningContent sheet automatically because the pipeline
- * binds its phase callbacks for every actor.
+ * Submits a pre-built group through the signing pipeline. The originating
+ * flow owns initial confirmation. Set `reviewFee` to show the assembled
+ * transactions and wait for a new approval. Hardware wallet requests still
+ * surface their device prompt. Algorand returns the signed bytes for this
+ * hook to submit, and other chains submit through their own broadcaster.
  */
 export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
     const { addSignRequest } = useSigningRequest()
@@ -85,10 +81,12 @@ export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
             scope,
             unsignedTxs,
             source,
+            reviewFee = false,
         }: SignAndSubmitGroupParams): Promise<{ txIds: string[] }> => {
             if (unsignedTxs.length === 0) {
                 return Promise.resolve({ txIds: [] })
             }
+            const sourceType = reviewFee ? 'local-fee-review' : 'local'
             return new Promise((resolve, reject) => {
                 const callbacks = {
                     reject: async () => {
@@ -107,7 +105,7 @@ export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
                         id: generateOrderedUniqueId(),
                         type: 'transactions',
                         transport: 'submit-and-answer',
-                        sourceType: 'local',
+                        sourceType,
                         txs: unsignedTxs,
                         sourceMetadata: source,
                         approve: async (_signed, submission) => {
@@ -123,13 +121,12 @@ export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
                     id: generateOrderedUniqueId(),
                     type: 'transactions',
                     transport: 'callback',
-                    sourceType: 'local',
+                    sourceType,
                     txs: unsignedTxs,
                     sourceMetadata: source,
                     approve: async (signed: Nullable<SignedTransaction>[]) => {
                         try {
-                            // This headless local-submit request never
-                            // filters slots (unlike the dApp enqueue
+                            // This local-submit request never filters slots (unlike the dApp enqueue
                             // path), so every entry is expected to be
                             // present — the null guard is defensive only.
                             const signedTxns = signed.filter(

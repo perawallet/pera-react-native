@@ -11,3 +11,4 @@
  */
 
 export { useHDImportSessionStore, type HDImportSession } from './store'
+export { sweepAbandonedImportSeeds } from './sweepAbandonedImportSeeds'

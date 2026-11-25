@@ -13,7 +13,7 @@
 import { findNativeAsset } from '@perawallet/wallet-core-assets'
 import type { AssetRef } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
-import { toTickerSkeleton } from './ticker-skeleton'
+import { hasLatinLookalike, toTickerSkeleton } from './ticker-skeleton'
 
 // ISO 4217 codes people read as money; fund, precious-metal, bond, SDR, test and no-currency codes are left out.
 const FIAT_CURRENCY_CODES: ReadonlySet<string> = new Set(
@@ -59,3 +59,16 @@ export const imitatedCurrencyOf = (
     const skeleton = toTickerSkeleton(unitName)
     return FIAT_CURRENCY_CODES.has(skeleton) ? skeleton : null
 }
+
+/**
+ * As {@link imitatedCurrencyOf}, and also any ticker spelt with another script's look-alike
+ * letters (`USDꓚ` for USDC), which no real token's symbol needs. Only ever feeds a warning.
+ */
+export const imitatedTickerOf = (
+    ref: AssetRef,
+    unitName: Optional<string>,
+): Nullable<string> =>
+    imitatedCurrencyOf(ref, unitName) ??
+    (unitName && hasLatinLookalike(unitName)
+        ? toTickerSkeleton(unitName)
+        : null)

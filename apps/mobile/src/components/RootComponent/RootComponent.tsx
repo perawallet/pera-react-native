@@ -15,6 +15,7 @@ import { OverlayErrorFallback } from './OverlayErrorFallback'
 import { OfflineBanner } from '@components/OfflineBanner'
 import ErrorBoundary from 'react-native-error-boundary'
 import {
+    useAbandonedImportSeedSweep,
     useHiddenTokensInvalidation,
     useSyncNewAccounts,
 } from '@perawallet/wallet-core-accounts'
@@ -59,6 +60,7 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     // migration because syncing before the migrated device id lands caches favorites as false.
     useSyncNewAccounts({ isEnabled: !migrationInProgress })
     useLegacyDataWipe({ isEnabled: !migrationInProgress })
+    useAbandonedImportSeedSweep({ isEnabled: !migrationInProgress })
 
     useNetworkSwitchInvalidation()
     useImageMemoryRelease()
@@ -74,8 +76,11 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     return (
         <>
             <BottomSheetModalProvider>
-                {!migrationInProgress && <DeviceRegistrar />}
-                <AutoLockGuard>
+                <AutoLockGuard
+                    afterInitialization={
+                        !migrationInProgress && <DeviceRegistrar />
+                    }
+                >
                     {/* The app's single connection registry: it owns every
                         handler's lifecycle, so exactly one may be mounted. */}
                     <ConnectionsProvider>

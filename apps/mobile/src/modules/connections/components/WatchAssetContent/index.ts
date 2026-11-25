@@ -10,11 +10,8 @@
  limitations under the License
  */
 
-// A missing box is algod's HTTP 404 ("box not found"). Both the wallet's
-// TimeoutHttpClient and algosdk's own client implement BaseHTTPClientError
-// (`.response.status`); tolerate a bare `.status` too for robustness.
-export const isAlgodNotFoundError = (error: unknown): boolean => {
-    if (typeof error !== 'object' || error == null) return false
-    const err = error as { status?: number; response?: { status?: number } }
-    return err.response?.status === 404 || err.status === 404
-}
+export {
+    WatchAssetContent,
+    type WatchAssetContentProps,
+    type WatchAssetSheetResult,
+} from './WatchAssetContent'

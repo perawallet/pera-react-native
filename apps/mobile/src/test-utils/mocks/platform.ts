@@ -11,8 +11,18 @@
  */
 
 import { vi, afterEach } from 'vitest'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 const store = new Map<string, string>()
+
+function getJSON<T>(key: string): Nullable<T> {
+    const value = store.get(key)
+    return value === undefined ? null : (JSON.parse(value) as T)
+}
+
+function setJSON<T>(key: string, value: T): void {
+    store.set(key, JSON.stringify(value))
+}
 
 // Mock platform driver to prevent "No platform driver configured" errors
 vi.mock('@perawallet/wallet-extension-platform-driver', async () => {
@@ -98,6 +108,8 @@ vi.mock('@perawallet/wallet-extension-platform-driver', async () => {
             keyValueStorage: {
                 getItem: (key: string) => store.get(key) ?? null,
                 setItem: (key: string, value: string) => store.set(key, value),
+                getJSON,
+                setJSON,
                 removeItem: (key: string) => {
                     store.delete(key)
                 },
@@ -143,6 +155,8 @@ vi.mock('@perawallet/wallet-extension-platform-driver', async () => {
             keyValueStorage: {
                 getItem: (key: string) => store.get(key) ?? null,
                 setItem: (key: string, value: string) => store.set(key, value),
+                getJSON,
+                setJSON,
                 removeItem: (key: string) => {
                     store.delete(key)
                 },
@@ -248,6 +262,8 @@ vi.mock('@perawallet/wallet-extension-provider', async () => {
         keyValueStorage: {
             getItem: (key: string) => store.get(key) ?? null,
             setItem: (key: string, value: string) => store.set(key, value),
+            getJSON,
+            setJSON,
             removeItem: (key: string) => {
                 store.delete(key)
             },
@@ -312,6 +328,7 @@ vi.mock('@perawallet/wallet-extension-passkey-autofill', () => {
         setMasterKey: vi.fn().mockResolvedValue(undefined),
         setHdRootKeyId: vi.fn().mockResolvedValue(undefined),
         setMainKeyId: vi.fn().mockResolvedValue(undefined),
+        setRegistrationParentKeyId: vi.fn().mockResolvedValue(undefined),
         getMainKeyId: vi.fn().mockResolvedValue(null),
         configureIntentActions: vi.fn().mockResolvedValue(undefined),
         clearCredentials: vi.fn().mockResolvedValue(undefined),

@@ -13,10 +13,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
-const { accountsStoreMock, loggerMock } = vi.hoisted(() => ({
+const { accountsStoreMock, gateMock, loggerMock } = vi.hoisted(() => ({
     accountsStoreMock: {
         accounts: [] as WalletAccount[],
     },
+    gateMock: { removedAccountAddresses: [] as string[] },
     loggerMock: {
         error: vi.fn(),
         info: vi.fn(),
@@ -36,6 +37,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 vi.mock('@perawallet/wallet-core-shared', () => ({
     toError: (e: unknown) => (e instanceof Error ? e : new Error(String(e))),
     logger: loggerMock,
+}))
+
+vi.mock('../../store', () => ({
+    useMigrationGateStore: { getState: () => gateMock },
 }))
 
 vi.mock('../accountStoreOps', () => ({
@@ -109,6 +114,7 @@ const buildDeps = (): MigrationRunOptions => ({
 
 beforeEach(() => {
     accountsStoreMock.accounts = []
+    gateMock.removedAccountAddresses = []
     migrationChainAdapters.reset()
     migrationChainAdapters.register({
         chainId: 'algorand',
@@ -181,6 +187,53 @@ describe('runMigrationLoop', () => {
         expect(result.skipped).toBe(1)
         expect(result.imported).toBe(1)
         expect(migrateLegacyAccount).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not re-import a migrated account the user removed when the step re-runs', async () => {
+        migrateLegacyAccount.mockResolvedValue(algo25Account('ADDR') as never)
+        await runMigrationLoop({
+            ...buildDeps(),
+            accounts: [buildAccount()],
+            hdSeeds: [],
+        })
+        migrateLegacyAccount.mockClear()
+        accountsStoreMock.accounts = []
+        gateMock.removedAccountAddresses = ['ADDR']
+
+        const result = await runMigrationLoop({
+            ...buildDeps(),
+            accounts: [
+                buildAccount(),
+                buildAccount({ address: 'ADDR_NEVER_IMPORTED' }),
+            ],
+            hdSeeds: [],
+            isRerun: true,
+        })
+
+        expect(migrateLegacyAccount).toHaveBeenCalledTimes(1)
+        expect(migrateLegacyAccount.mock.calls[0][0].account.address).toBe(
+            'ADDR_NEVER_IMPORTED',
+        )
+        expect(result.imported).toBe(1)
+        expect(result.skipped).toBe(1)
+    })
+
+    it('preserves a manual watch-only re-add without restoring the removed signing key', async () => {
+        const watch = watchAccount('ADDR')
+        accountsStoreMock.accounts = [watch]
+        gateMock.removedAccountAddresses = ['ADDR']
+
+        const result = await runMigrationLoop({
+            ...buildDeps(),
+            accounts: [buildAccount()],
+            hdSeeds: [],
+            isRerun: true,
+        })
+
+        expect(result).toEqual({ imported: 0, skipped: 1, failed: [] })
+        expect(migrateLegacyAccount).not.toHaveBeenCalled()
+        expect(removeAccountFromStore).not.toHaveBeenCalled()
+        expect(accountsStoreMock.accounts).toEqual([watch])
     })
 
     it('records imported accounts as MigratedAccountPair entries on the metadata batch', async () => {

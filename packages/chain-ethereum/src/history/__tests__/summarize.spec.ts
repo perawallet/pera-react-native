@@ -1349,8 +1349,8 @@ describe('summarizeEthereumHistoryItem', () => {
             const summary = decoded(swap)
 
             expect(summary.title).toEqual({
-                key: 'transactions.list_item.interpreted_title',
-                params: { title: 'swapExactTokensForTokens' },
+                key: 'transactions.list_item.contract_call_named',
+                params: { method: 'swapExactTokensForTokens' },
             })
             expect(summary.balanceChanges).toEqual(
                 summarize(swap).balanceChanges,
@@ -1399,7 +1399,7 @@ describe('summarizeEthereumHistoryItem', () => {
             })
 
             expect(decoded(failed)).toMatchObject({
-                title: { params: { title: 'execute' } },
+                title: { params: { method: 'execute' } },
                 notice: { kind: 'error' },
             })
         })
@@ -1615,8 +1615,8 @@ describe('summarizeEthereumHistoryItem', () => {
                 icon: 'contract-call',
                 counterparty: getAddress(PEER),
                 title: {
-                    key: 'transactions.list_item.interpreted_title',
-                    params: { title: 'execute' },
+                    key: 'transactions.list_item.contract_call_named',
+                    params: { method: 'execute' },
                 },
             })
             expect(summary.subtitle).toBeUndefined()
@@ -1661,8 +1661,8 @@ describe('summarizeEthereumHistoryItem', () => {
             expect(summary).toMatchObject({
                 kind: 'contract-call',
                 title: {
-                    key: 'transactions.list_item.interpreted_title',
-                    params: { title: 'collect' },
+                    key: 'transactions.list_item.contract_call_named',
+                    params: { method: 'collect' },
                 },
                 subtitle: {
                     key: 'transactions.list_item.interpreted_title',
@@ -1759,5 +1759,46 @@ describe('summarizeEthereumHistoryItem', () => {
             expect(summary.subtitle).toBeUndefined()
             expect(summary.title.key).not.toBe('transactions.list_item.supply')
         })
+    })
+})
+
+describe('a counterparty that is a known contract', () => {
+    const PERMIT2 = '0x000000000022d473030f116ddee9f6b43ac78ba3'
+    const sendToPermit2 = () =>
+        row({
+            from: ME,
+            to: PERMIT2,
+            value: '1000',
+            fee: '21000',
+            balance_impacts: [{ asset_id: ETH_ID, amount: '-22000' }],
+        })
+
+    it('names the contract instead of its address when decoding', () => {
+        const summary = summarizeEthereumHistoryItem(
+            sendToPermit2(),
+            ME,
+            SCOPE,
+            ETHEREUM,
+            true,
+        )
+
+        expect(summary.subtitle).toEqual({
+            key: 'transactions.list_item.interpreted_title',
+            params: { title: 'Permit2' },
+        })
+        expect(summary.subtitleEllipsis).toBe('tail')
+    })
+
+    it('leaves it unnamed with decoding off', () => {
+        const summary = summarizeEthereumHistoryItem(
+            sendToPermit2(),
+            ME,
+            SCOPE,
+            ETHEREUM,
+            false,
+        )
+
+        expect(summary.subtitle).toBeUndefined()
+        expect(summary.counterparty).toBe(getAddress(PERMIT2))
     })
 })

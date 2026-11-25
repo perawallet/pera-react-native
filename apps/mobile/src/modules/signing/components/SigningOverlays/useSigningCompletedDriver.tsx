@@ -67,6 +67,7 @@ export const useSigningCompletedDriver = (): void => {
             if (event.result.type === 'proposed') return
 
             if (!isInteractiveSource(req.sourceType)) return
+            if (req.sourceType === 'local-fee-review') return
 
             // In-app dApps are right behind this sheet and show their own
             // confirmation: skip for webview-bridge and injected-provider

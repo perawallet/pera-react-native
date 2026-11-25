@@ -47,7 +47,7 @@ export const useStyles = makeStyles(theme => ({
         marginBottom: theme.spacing.md,
     },
     poweredBy: {
-        color: theme.colors.textGrayLighter,
+        color: theme.colors.textGray,
         textAlign: 'center',
     },
     poweredByBrand: {

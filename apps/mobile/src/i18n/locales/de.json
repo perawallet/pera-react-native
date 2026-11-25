@@ -269,7 +269,10 @@
         "empty_title": "Keine offenen Freigaben",
         "empty_body": "Für dieses Konto wurden keine offenen Token- oder Sammlungsfreigaben gefunden.",
         "error_title": "Freigaben konnten nicht geladen werden",
-        "error_body": "Prüfe deine Verbindung und versuche es erneut.",
+        "error_body": "Beim Laden ist etwas schiefgelaufen. Versuche es gleich noch einmal.",
+        "offline_body": "Prüfe deine Verbindung und versuche es erneut.",
+        "unavailable_title": "Freigaben sind in diesem Netzwerk noch nicht verfügbar",
+        "unavailable_body": "Pera kann die Token-Freigaben dieses Kontos in diesem Netzwerk noch nicht abrufen.",
         "revoke_error_title": "Widerruf nicht bestätigt",
         "revoke_error_body": "Prüfe in der Liste, wie der Status der Freigabe ist, bevor du es erneut versuchst."
     },
@@ -456,8 +459,7 @@
             "search_paused_body": "Keine Transaktionen im jüngsten Verlauf gefunden.",
             "search_older": "Ältere durchsuchen",
             "filter": "Filter",
-            "csv": "CSV",
-            "csv_on_network": "{{network}}-CSV"
+            "csv": "CSV"
         },
         "collectible": {
             "description": "Beschreibung",
@@ -490,7 +492,7 @@
         },
         "token_warning": {
             "suspicious_title": "Verdächtiges Token",
-            "body": "Pera hat dieses Token als verdächtig markiert. Du hast es nicht angefordert und es könnte ein Betrug sein. Interagiere nicht mit Websites oder Links, die damit zu tun haben."
+            "body": "Pera hat dieses Token als verdächtig markiert. Du hast es nicht angefordert und es könnte ein Betrug sein. Sei vorsichtig im Umgang damit und mit Websites oder Links, die damit zu tun haben."
         },
         "copy_full_amount_hint": "Lange drücken, um den vollen Betrag zu kopieren",
         "toggle_amount_hint": "Tippe, um zwischen Wert und Asset-Betrag zu wechseln"
@@ -1530,6 +1532,10 @@
             "asset_frozen": {
                 "title": "Asset eingefroren",
                 "body": "Das Asset {{assetId}} ist eingefroren, daher kann diese Übertragung nicht abgeschlossen werden. Der Freeze-Manager des Assets muss es zuerst freigeben."
+            },
+            "fee_above_shown": {
+                "title": "Netzwerkgebühr geändert",
+                "body": "Das Netzwerk verlangt jetzt eine höhere Gebühr als die angezeigte, daher wurde nichts signiert. Versuche es erneut, um die aktuelle Gebühr zu sehen."
             }
         },
         "kms": {
@@ -2411,6 +2417,8 @@
             "load_error": "Diese Transaktion konnte nicht geladen werden. Sie ist möglicherweise abgelaufen oder wurde entfernt.",
             "cosign_rejected_title": "Signieren nicht möglich",
             "cosign_rejected_body": "Diese Anfrage enthält eine Transaktion, die das Gemeinschaftskonto nicht autorisiert. Wenn der Absender ein Konto ist, das auf das Gemeinschaftskonto gerekeyt wurde, füge es deinem Wallet hinzu und versuche es erneut.",
+            "request_open_title": "Schließe zuerst die offene Anfrage",
+            "request_open_body": "Schließe die Signaturanfrage ab oder beende sie und öffne den Link erneut.",
             "retry": "Erneut versuchen",
             "canceled": "Transaktion abgebrochen.",
             "declined": "Transaktion abgelehnt.",
@@ -2805,6 +2813,14 @@
                 "fetch_failed_title": "Backup konnte nicht geladen werden",
                 "decrypt_failed_title": "Backup konnte nicht entsperrt werden"
             },
+            "review": {
+                "title": "Konten prüfen",
+                "body_one": "Dieser Code importiert {{count}} Konto. Prüfe vor dem Import, dass es dir gehört.",
+                "body_other": "Dieser Code importiert {{count}} Konten. Prüfe vor dem Import, dass sie dir gehören.",
+                "body": "Dieser Code importiert {{count}} Konten. Prüfe vor dem Import, dass sie dir gehören.",
+                "confirm": "Konten importieren",
+                "interrupted": "Der Import wurde unterbrochen. Scanne den QR-Code erneut, um fortzufahren."
+            },
             "result": {
                 "success_title": "Konten importiert",
                 "success_body_one": "{{count}} Konto wurde deinem Wallet hinzugefügt.",
@@ -3182,6 +3198,7 @@
             "verify_title": "Gib deine PIN ein",
             "unlock_title": "Gib deine PIN ein",
             "change_old_title": "Gib deine alte\n6-stellige PIN ein",
+            "matches_duress_pin": "Deine neue PIN muss sich von deiner Notfall-PIN unterscheiden.",
             "logging_in": "Anmeldung läuft"
         },
         "lockout": {
@@ -3965,6 +3982,7 @@
             "approval_for": "Für {{spender}}",
             "unlimited_approval_for": "Unbegrenzt · für {{spender}}",
             "swap_pair": "Tausch {{from}} → {{to}}",
+            "swap_assets": "{{from}} → {{to}}",
             "add_liquidity": "Liquidität hinzufügen",
             "remove_liquidity": "Liquidität entfernen",
             "collect_fees": "Gebühren einsammeln",
@@ -3981,7 +3999,9 @@
             "nft_batch_subtitle": "{{collection}} · {{count}} Elemente",
             "inner_transaction_count": "{{innerCount}} innere Transaktionen",
             "cancel_transaction": "Transaktion stornieren",
-            "not_sent_by_you": "Nicht von dir gesendet"
+            "send_by_approval": "Senden (freigegeben)",
+            "spoofed_send": "Gefälschtes Senden",
+            "contract_call_named": "Smart Contract: {{method}}"
         },
         "record_detail": {
             "read_failed": "Die Aufrufdetails dieser Transaktion konnten nicht aus dem Netzwerk gelesen werden.",
@@ -4138,6 +4158,8 @@
             "title": "Filter",
             "all_time": "Gesamter Zeitraum",
             "today": "Heute",
+            "hide_suspicious": "Verdächtige Transaktionen ausblenden",
+            "hide_suspicious_description": "Blendet gefälschte Sendungen, nachgeahmte und Spam-Token sowie vermutete Adressvergiftung aus.",
             "yesterday": "Gestern",
             "last_week": "Letzte Woche",
             "last_month": "Letzter Monat",
@@ -4160,18 +4182,20 @@
             "blocked_body": "Eine frühere Transaktion von diesem Konto hat das Netzwerk nie erreicht, daher kann diese erst bestätigt werden, wenn etwas ihren Platz einnimmt. Freigeben sendet an ihrer Stelle eine leere Überweisung an dich selbst, die eine Netzwerkgebühr kostet.",
             "unblock": "Freigeben"
         },
+        "suspected_fake_transfer": {
+            "title": "Vermutlich gefälschte Überweisung",
+            "body": "Dein Konto hat diese Überweisung nicht signiert, und sie hat nichts bewegt. Jeder kann eine Überweisung von 0 Token so aussehen lassen, als käme sie von deinem Konto, ganz ohne Freigabe. Betrüger tun das, damit ihre Adresse in deinem Verlauf erscheint und später kopiert wird. Kopiere keine Adressen daraus."
+        },
         "suspected_poisoning": {
-            "marker": "Verdacht auf Address Poisoning",
             "title": "Verdacht auf Address Poisoning",
-            "body": "Diese Überweisung hatte keinen Wert und stammt von einer Adresse, die so gestaltet ist, dass sie wie eine aussieht, die du kennst. Betrüger senden so etwas, damit ihre Adresse in deinem Verlauf auftaucht und später kopiert wird. Kopiere sie nicht und sende nichts an sie.",
+            "body": "Diese Überweisung hatte keinen Wert und stammt von einer Adresse, die so gestaltet ist, dass sie wie eine aussieht, die du kennst. Betrüger senden so etwas, damit ihre Adresse in deinem Verlauf auftaucht und später kopiert wird.",
+            "do_not_reuse": "Kopiere diese Adresse nicht und sende nichts an sie.",
             "sender_label": "Diese Adresse",
             "reuse_title": "Diese Adresse imitiert eine, die du kennst",
             "reuse_body": "Sie beginnt und endet wie eine Adresse, die du kennst, ist aber nicht dieselbe. Vergleiche die vollständigen Adressen, bevor du sie verwendest.",
             "reuse_confirm": "Trotzdem fortfahren",
-            "reuse_cancel": "Abbrechen"
-        },
-        "suspicious_token": {
-            "marker": "Verdächtiges Token"
+            "reuse_cancel": "Abbrechen",
+            "dismiss": "Verstanden"
         }
     },
     "tabbar": {
@@ -4219,7 +4243,8 @@
             "view_accounts": "Deine Adresse und Guthaben sehen",
             "approve_transactions": "Dich bitten, Transaktionen zu genehmigen",
             "sign_messages": "Dich bitten, Nachrichten zu signieren",
-            "switch_networks": "Darum bitten, das Netzwerk zu wechseln"
+            "switch_networks": "Darum bitten, das Netzwerk zu wechseln",
+            "add_tokens": "Darum bitten, Token zu deinem Konto hinzuzufügen"
         },
         "connection": {
             "approve_delivery_failed": "Die dApp konnte nicht erreicht werden, um die Verbindung zu bestätigen. Überprüfe deine Internetverbindung und versuche es erneut."
@@ -4229,6 +4254,23 @@
             "body": "{{name}} möchte deine Konten auf {{chain}} verwenden.",
             "body_with_network": "{{name}} möchte deine Konten auf {{chain}} {{network}} verwenden.",
             "confirm": "Erlauben"
+        },
+        "watch_asset": {
+            "title": "Token hinzufügen?",
+            "body": "{{name}} möchte diesen Token zu deinem Konto hinzufügen.",
+            "unreadable": "Pera konnte unter dieser Adresse auf {{chain}} keinen Token lesen.",
+            "confirm": "Token hinzufügen",
+            "token": "Token",
+            "verification": "Verifizierung",
+            "contract": "Vertrag",
+            "decimals": "Dezimalstellen",
+            "network": "Netzwerk",
+            "account": "Konto",
+            "tier": {
+                "verified": "Verifiziert",
+                "unverified": "Nicht verifiziert",
+                "suspicious": "Verdächtig"
+            }
         },
         "settings": {
             "empty_title": "Keine WalletConnect-Sitzungen",
@@ -5286,6 +5328,8 @@
             "gwei": "Gwei",
             "nonce": "Nonce",
             "gas_limit": "Gas-Limit",
+            "gas_used": "Verbrauchtes Gas",
+            "gas_price": "Gaspreis",
             "max_fee_per_gas": "Max. Gebühr pro Gas",
             "max_priority_fee_per_gas": "Max. Prioritätsgebühr pro Gas"
         },

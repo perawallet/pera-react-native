@@ -21,13 +21,26 @@ import {
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { algorandDescriptor, isAlgorandNativeAssetId } from '../descriptor'
+import { DEFAULT_FEE_ALLOWANCE_MICRO_ALGO } from '../signing/fees'
+import { isAlgoFee } from './computeSwapAlgoShortfall'
 import type { PeraDisplayableTransaction } from '../blockchain/models/algosdk-shapes'
 
-// Absorbs the few µAlgo of network fees (and any small native-ALGO movement a
-// provider may route through a payment `amount` rather than the `fee` field) so
-// a legitimate swap is never falsely rejected. Bounds an unexpected ALGO drain
-// to a negligible amount.
+// Bounds the swapper's fees together with any small native-ALGO movement a
+// provider routes through a payment `amount`. A router pools its inner fees on
+// the user's slot (~0.07 ALGO seen on Haystack), so this keeps headroom above
+// that while bounding an unexpected ALGO drain to a negligible amount.
 const NETWORK_FEE_ALLOWANCE_MICRO_ALGO = 100_000n // 0.1 ALGO
+// A quote whose ALGO network fee is higher (multi-hop, pooled) lifts the bound
+// on the slots' fees, never on payments, to that fee plus a tenth. The quote
+// comes from the backend that builds the group, so the lift stops at the
+// signing pipeline's group fee ceiling.
+const QUOTED_NETWORK_FEE_MARGIN_DIVISOR = 10n
+
+// A same-chain swap signs transfers to the router and calls into it; any other
+// type, or an app call that updates, deletes or leaves an app, does nothing a
+// swap needs and moves no outflow this check could bound.
+const SWAP_TX_TYPES: ReadonlySet<string> = new Set(['pay', 'axfer', 'appl'])
+const SWAP_APP_ON_COMPLETIONS: ReadonlySet<string> = new Set(['noop', 'optin'])
 
 const toBig = (value: bigint | number | undefined): bigint => {
     if (typeof value === 'bigint') return value
@@ -116,6 +129,10 @@ const validateCrossChainSourceLeg = (
  * on-chain by the router). The checks:
  *  - no rekey of the swapper's account (would hand control to a third party);
  *  - no close-remainder / close-to (a swap must never empty the account/asset);
+ *  - only transfers and NoOp/OptIn calls to an existing app;
+ *  - the slots' summed fee within the larger of the quoted ALGO network fee
+ *    (plus a margin) and a flat allowance, capped at the group fee ceiling;
+ *  - ALGO payments within the flat allowance left after fees;
  *  - no outflow of an asset other than the quoted input, ALGO (fees), or the
  *    Pera fee asset (an unexpected asset gets a 0 bound, so it trips over-spend);
  *  - the input / ALGO / Pera-fee asset is not spent beyond the bounds. The
@@ -153,6 +170,35 @@ export const validateSwapGroupAgainstQuote = (
     const peraFeeAssetId = isPeraFeeOnChain ? peraFee?.asset.assetId : undefined
     const maxInput = ceilToBig(spendLimit.amount)
     const maxPeraFee = ceilToBig(isPeraFeeOnChain ? peraFee?.amount : undefined)
+    const networkFee = swapFeeOf(quote, 'network')
+    const quotedNetworkFee = ceilToBig(
+        isAlgoFee(networkFee) ? networkFee?.amount : undefined,
+    )
+    const quotedNetworkFeeWithMargin =
+        quotedNetworkFee + quotedNetworkFee / QUOTED_NETWORK_FEE_MARGIN_DIVISOR
+    const quotedFeeBound =
+        quotedNetworkFeeWithMargin > NETWORK_FEE_ALLOWANCE_MICRO_ALGO
+            ? quotedNetworkFeeWithMargin
+            : NETWORK_FEE_ALLOWANCE_MICRO_ALGO
+    const feeBound =
+        quotedFeeBound < DEFAULT_FEE_ALLOWANCE_MICRO_ALGO
+            ? quotedFeeBound
+            : DEFAULT_FEE_ALLOWANCE_MICRO_ALGO
+    const totalFee = signableTransactions.reduce(
+        (sum, tx) => sum + toBig(tx.fee),
+        0n,
+    )
+    if (totalFee > feeBound) {
+        throw new SwapQuoteMismatchError(
+            'Swap fees exceed the quoted network fee',
+        )
+    }
+    // Fees past the flat allowance are admitted as fees only, so a payment
+    // can never spend the quote's lift.
+    const feeAboveFlatAllowance =
+        totalFee > NETWORK_FEE_ALLOWANCE_MICRO_ALGO
+            ? totalFee - NETWORK_FEE_ALLOWANCE_MICRO_ALGO
+            : 0n
 
     // Upper bound the swapper may spend per asset. Anything not listed gets a 0
     // bound, so both an unexpected-asset outflow and an over-spend trip the same
@@ -163,7 +209,7 @@ export const validateSwapGroupAgainstQuote = (
         (assetId === inputAssetId ? maxInput : 0n) +
         (assetId === peraFeeAssetId ? maxPeraFee : 0n) +
         (isAlgorandNativeAssetId(assetId)
-            ? NETWORK_FEE_ALLOWANCE_MICRO_ALGO
+            ? NETWORK_FEE_ALLOWANCE_MICRO_ALGO + feeAboveFlatAllowance
             : 0n)
 
     const outflow = new Map<string, bigint>()
@@ -189,6 +235,29 @@ export const validateSwapGroupAgainstQuote = (
                 'Swap transaction rekeys the account',
             )
         }
+
+        if (!tx.txType || !SWAP_TX_TYPES.has(tx.txType)) {
+            throw new SwapQuoteMismatchError(
+                'Swap group contains a transaction type a swap never signs',
+            )
+        }
+
+        if (tx.txType === 'appl') {
+            const app = tx.applicationTransaction
+            if (
+                !app?.onCompletion ||
+                !SWAP_APP_ON_COMPLETIONS.has(app.onCompletion)
+            ) {
+                throw new SwapQuoteMismatchError(
+                    'Swap app call does more than call or opt into the router',
+                )
+            }
+            if (toBig(app.applicationId) === 0n) {
+                throw new SwapQuoteMismatchError('Swap app call creates an app')
+            }
+        }
+
+        addOutflow(algorandDescriptor.nativeAsset.ref.assetId, toBig(tx.fee))
 
         const payment = tx.paymentTransaction
         if (payment) {

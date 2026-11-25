@@ -784,7 +784,6 @@ describe('useAccountHistory', () => {
                 expect.objectContaining({ accountAddress: '' }),
             )
             expect(result.current.networkChainId).toBeNull()
-            expect(result.current.isCsvExportVisible).toBe(false)
             expect(result.current.emptyBody).toBe(
                 'asset_details.transaction_list.empty_body',
             )
@@ -847,7 +846,7 @@ describe('useAccountHistory', () => {
             })
         }
 
-        it('offers the Algorand CSV export on All while Ethereum has none, named for Algorand and run at its address', () => {
+        it('offers the Algorand CSV export on All while Ethereum has none, run at its address', () => {
             vi.mocked(useChainCapabilityCheck).mockReturnValue(
                 ({ chain }) => chain?.chainId !== 'ethereum',
             )
@@ -861,11 +860,7 @@ describe('useAccountHistory', () => {
 
             expect(result.current.isCsvExportVisible).toBe(true)
             expect(result.current.csvExportTitle).toBe(
-                'asset_details.transaction_list.csv_on_network',
-            )
-            expect(mockT).toHaveBeenCalledWith(
-                'asset_details.transaction_list.csv_on_network',
-                { network: 'Algorand' },
+                'asset_details.transaction_list.csv',
             )
             expect(useCsvExportMutation).toHaveBeenLastCalledWith(
                 expect.objectContaining({
@@ -885,10 +880,6 @@ describe('useAccountHistory', () => {
             act(() => result.current.handleExportCsv())
 
             expect(result.current.isCsvExportVisible).toBe(true)
-            expect(mockT).toHaveBeenCalledWith(
-                'asset_details.transaction_list.csv_on_network',
-                { network: 'Ethereum' },
-            )
             expect(mockRequestByType).not.toHaveBeenCalled()
             expect(mockExportCsv).toHaveBeenCalledWith({
                 accountAddress: ETH_ADDRESS,
@@ -939,13 +930,25 @@ describe('useAccountHistory', () => {
             expect(mockExportCsv).not.toHaveBeenCalled()
         })
 
-        it('hides the CSV export on All while only Ethereum has rows and no export', () => {
-            vi.mocked(useChainCapabilityCheck).mockReturnValue(() => false)
+        it('keeps the CSV export on All for a network that has one, even with no rows, so the header does not move', () => {
+            vi.mocked(useChainCapabilityCheck).mockReturnValue(
+                ({ chain }) => chain?.chainId !== 'ethereum',
+            )
             const { result } = renderHook(() => useAccountHistory())
 
             reportRecords(result, { ethereum: ['0xeth'] })
 
             expect(result.current.isEmpty).toBe(false)
+            expect(result.current.isCsvExportVisible).toBe(true)
+        })
+
+        it('hides the CSV export on All when no network has one', () => {
+            vi.mocked(useChainCapabilityCheck).mockReturnValue(() => false)
+            vi.mocked(useChainCapability).mockReturnValue(false)
+            const { result } = renderHook(() => useAccountHistory())
+
+            reportRecords(result, { ethereum: ['0xeth'] })
+
             expect(result.current.isCsvExportVisible).toBe(false)
         })
 
@@ -1433,23 +1436,79 @@ describe('useAccountHistory', () => {
             expect(result.current.isCsvExportVisible).toBe(true)
         })
 
-        it('hides the export action on an Ethereum account while its CSV export is off', () => {
+        const ETHEREUM_ACCOUNT_ADDRESS = `0x${'c'.repeat(40)}`
+
+        const ethereumRecord = (id: string): TransactionRecord => ({
+            id,
+            scope: { chainId: 'ethereum', networkId: 'mainnet' },
+            status: 'confirmed',
+            timestamp: 1_704_067_200_000,
+            summary: {
+                kind: 'transfer',
+                title: { key: i18nKey('transactions.list_item.receive') },
+                direction: 'in',
+                icon: 'receive',
+            },
+            chainData: { family: 'evm' },
+        })
+
+        const arrangeEthereumHistory = (records: TransactionRecord[]) => {
             registerEthereumChain()
             vi.mocked(useSelectedAccount).mockReturnValue({
                 id: 'eth',
                 custody: { kind: 'watch' },
-                chains: { ethereum: { address: `0x${'c'.repeat(40)}` } },
+                chains: { ethereum: { address: ETHEREUM_ACCOUNT_ADDRESS } },
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } as any)
-            vi.mocked(useTransactionHistoryQuery).mockReturnValue({
-                transactions: [{ id: '1', roundTime: 1_704_067_200 }],
+            vi.mocked(useTransactionRecordsQuery).mockReturnValue({
+                records,
                 isLoading: false,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            } as any)
+                isFetched: true,
+                isFetching: false,
+                isFetchingNextPage: false,
+                isError: false,
+                isNextPageError: false,
+                error: null,
+                hasNextPage: false,
+                isSearchPaused: false,
+                fetchNextPage: mockFetchNextPage,
+                refetch: vi.fn(),
+            })
+        }
+
+        it('shows the export action on an Ethereum account once its History lists a record', () => {
+            arrangeEthereumHistory([ethereumRecord('0xhash')])
+
+            const { result } = renderHook(() => useAccountHistory())
+
+            expect(result.current.isCsvExportVisible).toBe(true)
+            expect(result.current.csvExportTitle).toBe(
+                'asset_details.transaction_list.csv',
+            )
+
+            act(() => result.current.handleExportCsv())
+
+            expect(mockExportCsv).toHaveBeenCalledTimes(1)
+            expect(mockExportCsv).toHaveBeenCalledWith({
+                accountAddress: ETHEREUM_ACCOUNT_ADDRESS,
+            })
+        })
+
+        it('hides the export action on an Ethereum account whose CSV export is switched off, even with records', () => {
+            arrangeEthereumHistory([ethereumRecord('0xhash')])
+            vi.mocked(useChainCapability).mockReturnValue(false)
 
             const { result } = renderHook(() => useAccountHistory())
 
             expect(result.current.isCsvExportVisible).toBe(false)
+        })
+
+        it('shows the export action on an Ethereum account before its History lists a record, so the header does not move', () => {
+            arrangeEthereumHistory([])
+
+            const { result } = renderHook(() => useAccountHistory())
+
+            expect(result.current.isCsvExportVisible).toBe(true)
         })
 
         it.each(['betanet', 'custom'])(

@@ -776,7 +776,7 @@ describe('Flow: History on an Ethereum account', () => {
                 expect(nodeReads).toEqual([SWAP_HASH])
                 expect(
                     screen.getByText(
-                        'transactions.list_item.interpreted_title',
+                        'transactions.list_item.contract_call_named',
                     ),
                 ).toBeTruthy()
                 expect(
@@ -815,8 +815,10 @@ describe('Flow: History on an Ethereum account', () => {
                 renderHistory()
 
                 const swap = await rowText(ROUTER_SWAP_HASH, /ETH/)
-                expect(swap).toContain('transactions.list_item.swap_pair')
-                expect(swap).toContain(
+                expect(swap).toContain('transactions.list_item.swap')
+                expect(swap).toContain('transactions.list_item.swap_assets')
+                // The provider is the detail screen's, not the row's.
+                expect(swap).not.toContain(
                     'transactions.list_item.interpreted_title',
                 )
                 expect(swap).toMatch(/-.*0\.001143.*ETH/)

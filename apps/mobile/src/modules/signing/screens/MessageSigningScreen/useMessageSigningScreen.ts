@@ -30,6 +30,10 @@ import {
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useHaptics } from '@hooks/useHaptics'
 import { useHasTimePassed } from '@hooks/useHasTimePassed'
+import {
+    useReviewScrollHint,
+    type UseReviewScrollHintResult,
+} from '@modules/signing/components/ReviewScrollHint'
 import { useRequestAddressSafety } from '../../hooks/useRequestAddressSafety'
 import { useRequestSiteSafety } from '../../hooks/useRequestSiteSafety'
 import {
@@ -49,7 +53,7 @@ type UseMessageSigningScreenResult = {
     reviewedAddresses: ReviewedAddress[]
     /** A scam-listed address under the hard block: the request can only be rejected. */
     isListedAddressBlocking: boolean
-    /** A flagged address or site, or a risky sign-in, still waits on the user's acknowledgement, or the permit has expired. */
+    /** A flagged address or site, or a risky sign-in, still waits on the user's acknowledgement, the message has not been scrolled to its end, or the permit has expired. */
     isConfirmBlocked: boolean
     /** The permit's signature deadline has passed, so the contract would refuse it. */
     isExpired: boolean
@@ -61,6 +65,7 @@ type UseMessageSigningScreenResult = {
     toggleSignInRiskAcknowledged: () => void
     /** EVM accounts share one address across chains, so the signer row names the chain. */
     isChainBadgeShown: boolean
+    scrollHint: UseReviewScrollHintResult
     handleApprove: () => void
     handleReject: () => void
 }
@@ -124,10 +129,13 @@ export const useMessageSigningScreen = (): UseMessageSigningScreenResult => {
         toggleAcknowledged: toggleSignInRiskAcknowledged,
         isConfirmBlocked: isSignInRiskConfirmBlocked,
     } = useReviewRiskGate()
+    const scrollHint = useReviewScrollHint()
+    // A long message can hide its decisive fields below the fold.
     const isConfirmBlocked =
         isAddressConfirmBlocked ||
         isSiteConfirmBlocked ||
         isSignInRiskConfirmBlocked ||
+        !scrollHint.hasReachedEnd ||
         isExpired
 
     const handleApprove = useCallback(() => {
@@ -158,6 +166,7 @@ export const useMessageSigningScreen = (): UseMessageSigningScreenResult => {
         isSignInRiskAcknowledged,
         toggleSignInRiskAcknowledged,
         isChainBadgeShown: isEvmChainId(message?.scope?.chainId),
+        scrollHint,
         handleApprove,
         handleReject,
     }

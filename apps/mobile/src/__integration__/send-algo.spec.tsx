@@ -169,7 +169,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         // build-and-submit pipeline plus the confirmation screen's
         // recipient-MBR check.
         server.use(
-            mockAlgodTransactionParams({ response: { fee: 1000 } }),
+            mockAlgodTransactionParams({ response: { fee: 0 } }),
             mockAlgodAccountInformation({
                 address: ALGO25_TEST_ADDRESS,
                 response: { amount: 5_000_000, 'min-balance': 100_000 },
@@ -932,7 +932,7 @@ describe('Flow: save the recipient as a contact from Confirm Transaction', () =>
         useSendFundsStore.getState().reset()
         resetContacts()
         server.use(
-            mockAlgodTransactionParams({ response: { fee: 1000 } }),
+            mockAlgodTransactionParams({ response: { fee: 0 } }),
             mockAlgodAccountInformation({
                 address: ALGO25_TEST_ADDRESS,
                 response: { amount: 5_000_000, 'min-balance': 100_000 },

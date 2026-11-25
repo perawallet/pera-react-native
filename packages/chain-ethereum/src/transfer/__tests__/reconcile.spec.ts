@@ -60,7 +60,10 @@ import {
     evmTransactionReceipt,
     type EvmRpcFixtures,
 } from '../../blockchain/msw-handlers'
-import { createEvmClient } from '../../blockchain/utils/createEvmClient'
+import {
+    createEvmClient,
+    createEvmNodeClients,
+} from '../../blockchain/utils/createEvmClient'
 import { TEST_RPC_URL, testChainContext } from '../../__tests__/context'
 import {
     SENDER,
@@ -73,13 +76,18 @@ import {
     type TokenSightings,
 } from '../../accounts/token-detection'
 import {
+    ABSENCE_RUN_MAX_GAP_MS,
+    DROPPED_ABSENCE_PASSES,
+    DROPPED_ABSENCE_SPAN_MS,
     DROPPED_GRACE_MS,
+    DROPPED_UNREACHABLE_AFTER_MS,
     makeProbeFailuresDue,
     PROBE_BACKOFF_BASE_MS,
     PROBE_BACKOFF_MAX_MS,
     PROBE_FAILURE_ESCALATION_STREAK,
     reconcileEthereumSubmissions,
     type ProbeFailureStreaks,
+    type AbsenceSightings,
     type ProbeRotation,
     type SubmissionSettledHandlers,
 } from '../reconcile'
@@ -104,10 +112,13 @@ afterAll(() => server.close())
 
 const getClient = (scope: ChainScope) =>
     createEvmClient(scope, testChainContext(), ETHEREUM)
+const getNodeClients = (scope: ChainScope) =>
+    createEvmNodeClients(scope, testChainContext(), ETHEREUM)
 
 const settleHandlers: SubmissionSettledHandlers = new Map()
 const probeFailures: ProbeFailureStreaks = new Map()
 const probeRotation: ProbeRotation = new Set()
+const absences: AbsenceSightings = new Map()
 
 // Keyed by block tag: `latest` is the mined count, `pending` the pool's.
 // `head` is the chain's block number; the default is deep enough for a receipt
@@ -149,6 +160,7 @@ describe('reconcileEthereumSubmissions', () => {
         settleHandlers.clear()
         probeFailures.clear()
         probeRotation.clear()
+        absences.clear()
         teardown()
     })
 
@@ -165,22 +177,38 @@ describe('reconcileEthereumSubmissions', () => {
             ...overrides,
         })
 
-    const reconcile = (ledgerDb = db, chain = ETHEREUM) =>
-        reconcileEthereumSubmissions({
+    const reconcile = (ledgerDb = db, chain = ETHEREUM) => {
+        const context = testChainContext({ chain })
+        return reconcileEthereumSubmissions({
             chain,
             settleHandlers,
             probeFailures,
             probeRotation,
-            getClient: scope =>
-                createEvmClient(scope, testChainContext({ chain }), chain),
+            absences,
+            getClient: scope => createEvmClient(scope, context, chain),
+            getNodeClients: scope =>
+                createEvmNodeClients(scope, context, chain),
             db: ledgerDb,
         })
+    }
     const statuses = async () =>
         (await db.select().from(SubmissionAttemptsSchema).all()).map(
             row => row.status,
         )
     const pastGraceWindow = () =>
         vi.setSystemTime(Date.now() + DROPPED_GRACE_MS + 1)
+    const ABSENCE_STEP_MS = Math.ceil(
+        DROPPED_ABSENCE_SPAN_MS / (DROPPED_ABSENCE_PASSES - 1),
+    )
+    // Passes spread so that the next one after `count` spans the absence window.
+    const spacedPasses = async (count: number, run = () => reconcile()) => {
+        for (let pass = 0; pass < count; pass++) {
+            await run()
+            vi.setSystemTime(Date.now() + ABSENCE_STEP_MS)
+        }
+    }
+    // The passes before the one whose not-found settles a dropped row.
+    const missOnNode = () => spacedPasses(DROPPED_ABSENCE_PASSES - 1)
     const failedProbeCounts = () =>
         [...probeFailures.values()].map(({ failedProbes }) => failedProbes)
 
@@ -366,13 +394,188 @@ describe('reconcileEthereumSubmissions', () => {
         expect(await statuses()).toEqual(['submitted'])
     })
 
-    it('fails a row the node does not know once the grace window has passed', async () => {
+    it('fails a row the node has missed on enough passes in a row, with no further grace window', async () => {
         await record()
         node()
         pastGraceWindow()
 
+        await missOnNode()
+        expect(await statuses()).toEqual(['submitted'])
         await expect(reconcile()).resolves.toMatchObject({ failed: 1 })
         expect(await statuses()).toEqual(['failed'])
+    })
+
+    it('keeps a row open while its misses come back to back, short of the absence window', async () => {
+        await record()
+        node()
+        pastGraceWindow()
+
+        for (let pass = 0; pass < 3 * DROPPED_ABSENCE_PASSES; pass++) {
+            await expect(reconcile()).resolves.toMatchObject({ failed: 0 })
+        }
+        expect(await statuses()).toEqual(['submitted'])
+    })
+
+    it('starts the run over after a pause longer than a backed-off probe', async () => {
+        await record()
+        node()
+        pastGraceWindow()
+        await reconcile()
+        vi.setSystemTime(Date.now() + ABSENCE_RUN_MAX_GAP_MS + 1)
+
+        await missOnNode()
+        expect(await statuses()).toEqual(['submitted'])
+        await expect(reconcile()).resolves.toMatchObject({ failed: 1 })
+    })
+
+    it('starts the count over once the node holds the transaction again', async () => {
+        await record()
+        node()
+        pastGraceWindow()
+        await missOnNode()
+        node({ eth_getTransactionByHash: HELD_BY_NODE })
+        await reconcile()
+        node()
+        await missOnNode()
+
+        expect(await statuses()).toEqual(['submitted'])
+    })
+
+    it('keeps a row open while a pool holds a transaction at its nonce', async () => {
+        await record()
+        node({
+            eth_getTransactionCount: params =>
+                params[1] === 'latest' ? '0x0' : '0x1',
+        })
+        pastGraceWindow()
+        await missOnNode()
+
+        await expect(reconcile()).resolves.toMatchObject({ failed: 0 })
+        expect(await statuses()).toEqual(['submitted'])
+    })
+
+    describe('with a fallback URL', () => {
+        const FIRST_RPC = 'https://first.rpc.test/'
+        const context = {
+            ...testChainContext(),
+            getEndpoints: () => ({ mainnet: [FIRST_RPC, TEST_RPC_URL] }),
+        }
+        const reconcileTwoUrls = () =>
+            reconcileEthereumSubmissions({
+                chain: ETHEREUM,
+                settleHandlers,
+                probeFailures,
+                probeRotation,
+                absences,
+                getClient: scope => createEvmClient(scope, context, ETHEREUM),
+                getNodeClients: scope =>
+                    createEvmNodeClients(scope, context, ETHEREUM),
+                db,
+            })
+        const firstNode = (responses: EvmRpcFixtures['responses'] = {}) =>
+            server.use(
+                ...evmRpcHandlers({
+                    rpcUrl: FIRST_RPC,
+                    responses: {
+                        eth_blockNumber: '0x3e8',
+                        eth_getTransactionCount: '0x0',
+                        ...responses,
+                    },
+                }),
+            )
+        const rateLimit = (url: string) =>
+            server.use(
+                http.post(url, () => new HttpResponse(null, { status: 429 })),
+            )
+        const nextNonce = () =>
+            allocateEthereumNonce({
+                client: createEvmClient(SCOPE, context, ETHEREUM),
+                scope: SCOPE,
+                sender: SENDER,
+                db,
+            })
+
+        it('keeps a row open while only the fallback, which the broadcast failed over to, holds its transaction', async () => {
+            await record()
+            firstNode()
+            node({ eth_getTransactionByHash: HELD_BY_NODE })
+            pastGraceWindow()
+
+            await spacedPasses(3 * DROPPED_ABSENCE_PASSES, reconcileTwoUrls)
+
+            expect(await statuses()).toEqual(['submitted'])
+        })
+
+        it('fails a row once every URL has missed it across the absence window', async () => {
+            await record()
+            firstNode()
+            node()
+            pastGraceWindow()
+
+            await spacedPasses(DROPPED_ABSENCE_PASSES - 1, reconcileTwoUrls)
+            expect(await statuses()).toEqual(['submitted'])
+            await expect(reconcileTwoUrls()).resolves.toMatchObject({
+                failed: 1,
+            })
+        })
+
+        it.each([
+            ['the first URL', FIRST_RPC],
+            ['the fallback', TEST_RPC_URL],
+        ])(
+            'keeps a row open, its nonce held, while %s cannot answer',
+            async (_, down) => {
+                await record()
+                firstNode()
+                node()
+                rateLimit(down)
+
+                for (let pass = 0; pass < 2 * DROPPED_ABSENCE_PASSES; pass++) {
+                    vi.setSystemTime(Date.now() + PROBE_BACKOFF_MAX_MS + 1)
+                    pastGraceWindow()
+                    await expect(reconcileTwoUrls()).resolves.toMatchObject({
+                        failed: 0,
+                    })
+                }
+
+                expect(await statuses()).toEqual(['submitted'])
+                await expect(nextNonce()).resolves.toBe(1)
+            },
+        )
+
+        it('fails a row on the URLs that answer once it has been open past the unreachable cap', async () => {
+            await record()
+            firstNode()
+            rateLimit(TEST_RPC_URL)
+            vi.setSystemTime(Date.now() + DROPPED_UNREACHABLE_AFTER_MS + 1)
+
+            await spacedPasses(DROPPED_ABSENCE_PASSES - 1, reconcileTwoUrls)
+            await expect(reconcileTwoUrls()).resolves.toMatchObject({
+                failed: 1,
+            })
+            await expect(nextNonce()).resolves.toBe(0)
+        })
+
+        it('keeps a row open past the unreachable cap while no URL answers', async () => {
+            await record()
+            const refused = {
+                eth_getTransactionByHash: new EvmRpcErrorFixture(
+                    -32_601,
+                    'method not found',
+                ),
+            }
+            firstNode(refused)
+            node(refused)
+            vi.setSystemTime(Date.now() + DROPPED_UNREACHABLE_AFTER_MS + 1)
+
+            for (let pass = 0; pass < 2 * DROPPED_ABSENCE_PASSES; pass++) {
+                vi.setSystemTime(Date.now() + PROBE_BACKOFF_MAX_MS + 1)
+                await expect(reconcileTwoUrls()).resolves.toMatchObject({
+                    failed: 0,
+                })
+            }
+            expect(await statuses()).toEqual(['submitted'])
+        })
     })
 
     it.each([
@@ -400,6 +603,7 @@ describe('reconcileEthereumSubmissions', () => {
             txIds: ['ALGOTX'],
         })
         const unused = vi.fn(getClient)
+        const unusedNodes = vi.fn(getNodeClients)
 
         await expect(
             reconcileEthereumSubmissions({
@@ -407,7 +611,9 @@ describe('reconcileEthereumSubmissions', () => {
                 settleHandlers,
                 probeFailures,
                 probeRotation,
+                absences,
                 getClient: unused,
+                getNodeClients: unusedNodes,
                 db,
             }),
         ).resolves.toEqual({
@@ -417,6 +623,7 @@ describe('reconcileEthereumSubmissions', () => {
             failed: 0,
         })
         expect(unused).not.toHaveBeenCalled()
+        expect(unusedNodes).not.toHaveBeenCalled()
     })
 
     it('fails a dropped send under a later open one, which then names the dropped nonce as its gap', async () => {
@@ -429,6 +636,7 @@ describe('reconcileEthereumSubmissions', () => {
                 params[0] === stuck ? HELD_BY_NODE : null,
         })
         pastGraceWindow()
+        await missOnNode()
 
         await expect(reconcile()).resolves.toMatchObject({ failed: 1 })
         expect(await statuses()).toEqual(['failed', 'submitted'])
@@ -453,6 +661,7 @@ describe('reconcileEthereumSubmissions', () => {
         await record({ txIds: [HASH] })
         node()
         pastGraceWindow()
+        await missOnNode()
         await reconcile()
         const allocate = () =>
             allocateEthereumNonce({
@@ -731,8 +940,8 @@ describe('reconcileEthereumSubmissions', () => {
             // Neither is mined, and the node holds neither.
             node({ latest: 0, eth_getTransactionByHash: null })
 
-            await reconcile()
-            await reconcile()
+            // The original is counted only once its replacement has failed.
+            await spacedPasses(2 * DROPPED_ABSENCE_PASSES)
 
             expect(await statusOf(original)).toBe('failed')
             expect(await statusOf(replacement)).toBe('failed')
@@ -1055,6 +1264,7 @@ describe('reconcileEthereumSubmissions', () => {
             ).toBe(1)
 
             pastGraceWindow()
+            await missOnNode()
             await expect(reconcile()).resolves.toMatchObject({ failed: 1 })
 
             expect(await statuses()).toEqual(['failed'])
@@ -1320,7 +1530,9 @@ describe('reconcileEthereumSubmissions', () => {
                 settleHandlers,
                 probeFailures,
                 probeRotation,
+                absences,
                 getClient,
+                getNodeClients,
                 db,
                 limit: 1,
             })
@@ -1546,7 +1758,9 @@ describe('reconcileEthereumSubmissions', () => {
                 settleHandlers,
                 probeFailures,
                 probeRotation,
+                absences,
                 getClient,
+                getNodeClients,
                 tokenSightings,
                 db,
             })

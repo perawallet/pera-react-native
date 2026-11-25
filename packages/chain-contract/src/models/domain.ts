@@ -251,6 +251,17 @@ export type ChainTransactionData =
               standard: 'erc721' | 'erc1155'
               collectionName?: string
           }
+          /**
+           * What the history says of the transaction's gas, each part only when the
+           * backend gives it. `gasLimit` and `gasUsed` are gas units; `gasPrice` is
+           * wei per gas, the effective price paid.
+           */
+          gas?: {
+              nonce?: number
+              gasLimit?: bigint
+              gasUsed?: bigint
+              gasPrice?: Decimal
+          }
       }
 
 /** Payment-link fields only the parsing chain reads; each family adds a member discriminated by `family`. */

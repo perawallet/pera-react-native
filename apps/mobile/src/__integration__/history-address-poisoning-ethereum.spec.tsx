@@ -62,7 +62,8 @@ vi.doMock('@react-navigation/native-stack', async () => ({
 const { setTestTheme } = await import('@test-utils/test-theme')
 const { getTheme } = await import('@theme/theme')
 setTestTheme(getTheme('light'))
-const { fireEvent, screen, within } = await import('@testing-library/react')
+const { fireEvent, screen, waitFor, within } =
+    await import('@testing-library/react')
 const { Decimal } = await import('decimal.js')
 const { useAccountsStore } = await import('@perawallet/wallet-core-accounts')
 const { SeedScheme } = await import('@perawallet/wallet-core-kms')
@@ -159,7 +160,7 @@ const UNSIGNED_UNKNOWN_TOKEN_TO_CONTACT_LOOK_ALIKE = (() => {
 })()
 
 const markerOf = (item: EvmHistoryItemResponse) =>
-    `transaction_row_suspected_poisoning_${item.hash}`
+    `transaction_row_suspicious_${item.hash}`
 
 const renderHistory = () =>
     renderWithNavigation(AccountHistory, 'AccountHistory', {
@@ -167,6 +168,15 @@ const renderHistory = () =>
             { name: 'TransactionDetails', component: TransactionDetailsScreen },
         ],
     })
+
+// The badge shows as soon as any check flags the row; poisoning resolves after
+// the faster spoof and look-alike checks, and names itself in the badge's label.
+const findPoisoningMark = (item: EvmHistoryItemResponse) =>
+    screen.findByLabelText(
+        'transactions.suspected_poisoning.title',
+        { selector: `[data-testid="${markerOf(item)}"]` },
+        { timeout: SLOW_WAIT_TIMEOUT_MS },
+    )
 
 const openRow = (item: EvmHistoryItemResponse) => {
     const row = closestPressable(
@@ -259,6 +269,43 @@ describe('Flow: suspected address poisoning in Ethereum history', () => {
         expect(notice.textContent).toContain(
             'send_funds.recipient_safety.look_alike_known_label_history',
         )
+        expect(notice.textContent).toContain(
+            'transactions.suspected_poisoning.do_not_reuse',
+        )
+    })
+
+    it('Given the explanation on a marked row, when the user presses Got it, then the details close', async () => {
+        renderHistory()
+        await screen.findByTestId(
+            markerOf(DUST_FROM_PAYEE_LOOK_ALIKE),
+            undefined,
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+        openRow(DUST_FROM_PAYEE_LOOK_ALIKE)
+        await screen.findByTestId('suspected_poisoning_notice')
+
+        fireEvent.click(screen.getByTestId('suspected_poisoning_dismiss'))
+
+        await waitFor(() =>
+            expect(
+                screen.queryByTestId('transaction_details_screen'),
+            ).toBeNull(),
+        )
+    })
+
+    it('Given an unmarked row, when the user opens it, then no explanation or Got it shows', async () => {
+        renderHistory()
+        await screen.findByTestId(
+            markerOf(DUST_FROM_PAYEE_LOOK_ALIKE),
+            undefined,
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+
+        openRow(REAL_FROM_CONTACT_LOOK_ALIKE)
+
+        await screen.findByTestId('transaction_details_screen')
+        expect(screen.queryByTestId('suspected_poisoning_notice')).toBeNull()
+        expect(screen.queryByTestId('suspected_poisoning_dismiss')).toBeNull()
     })
 
     it('Given a token send the history names no signer for, to a look-alike of a contact, then it is marked and its details name the contact', async () => {
@@ -270,11 +317,7 @@ describe('Flow: suspected address poisoning in Ethereum history', () => {
             }),
         )
         renderHistory()
-        await screen.findByTestId(
-            markerOf(UNSIGNED_UNKNOWN_TOKEN_TO_CONTACT_LOOK_ALIKE),
-            undefined,
-            { timeout: SLOW_WAIT_TIMEOUT_MS },
-        )
+        await findPoisoningMark(UNSIGNED_UNKNOWN_TOKEN_TO_CONTACT_LOOK_ALIKE)
 
         openRow(UNSIGNED_UNKNOWN_TOKEN_TO_CONTACT_LOOK_ALIKE)
 
@@ -384,13 +427,13 @@ describe.each([
 
         it('Given a real send and a fake one of the same amount, then the list tells them apart without opening either', async () => {
             renderHistory()
-            await screen.findByTestId(markerOf(fakeSend), undefined, {
-                timeout: SLOW_WAIT_TIMEOUT_MS,
-            })
+            await findPoisoningMark(fakeSend)
             const unit = nativeAssetFor(chainId).unitName
 
             const fake = rowText(fakeSend)
-            expect(fake).toContain('transactions.list_item.not_sent_by_you')
+            // Poisoning outranks the spoof, and a poisoning row keeps its plain title.
+            expect(fake).toContain('transactions.list_item.send')
+            expect(fake).not.toContain('transactions.list_item.spoofed_send')
             expect(fake).toContain('asset.imitated_currency.unit_label')
             expect(fake).not.toContain('-')
             expect(fake).not.toContain(`0.001 ${unit}`)
@@ -403,9 +446,7 @@ describe.each([
 
         it('Given the fake send, when the user presses it, then its details name the token contract beside the explanation and an explorer link', async () => {
             renderHistory()
-            await screen.findByTestId(markerOf(fakeSend), undefined, {
-                timeout: SLOW_WAIT_TIMEOUT_MS,
-            })
+            await findPoisoningMark(fakeSend)
 
             openRow(fakeSend)
 

@@ -89,6 +89,7 @@ type UseTransactionDetailsScreenResult = {
     addressReuseGuard: AddressReuseGuard
     handleRelatedTransactionPress: (related: TransactionNative) => void
     handleRetry: () => void
+    handleClose: () => void
 }
 
 export const useTransactionDetailsScreen =
@@ -285,6 +286,10 @@ export const useTransactionDetailsScreen =
             void (isRecordLookup ? refetchLookup() : refetchDetail())
         }, [refetchDetail, refetchLookup, isRecordLookup])
 
+        const handleClose = useCallback(() => {
+            navigation.goBack()
+        }, [navigation])
+
         return {
             renderState,
             scope,
@@ -295,5 +300,6 @@ export const useTransactionDetailsScreen =
             addressReuseGuard,
             handleRelatedTransactionPress,
             handleRetry,
+            handleClose,
         }
     }

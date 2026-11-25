@@ -99,7 +99,7 @@ const OptInHost = ({
     const { optIn } = useAssetOptInMutation(MAINNET_SCOPE)
     const { request } = useBottomSheet()
     useEffect(() => {
-        void request<'confirm'>({
+        void request<bigint>({
             contents: (
                 <OptInConfirmationContent
                     assetId={assetId}
@@ -108,11 +108,12 @@ const OptInHost = ({
                 />
             ),
             options: { size: 'auto', enablePanDownToClose: true },
-        }).then(result => {
-            if (result !== 'confirm') return
+        }).then(maxFee => {
+            if (maxFee === undefined) return
             optIn({
                 sender: addressOf(sender),
                 assetId: BigInt(assetId),
+                maxFee,
             }).catch(error => onRejected?.(error))
         })
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -144,7 +145,7 @@ const OptOutHost = ({
     const { optOut } = useAssetOptOutMutation(MAINNET_SCOPE)
     const { request } = useBottomSheet()
     useEffect(() => {
-        void request<'confirm'>({
+        void request<bigint>({
             contents: (
                 <OptOutConfirmationContent
                     assetId={accountBalance.assetId}
@@ -153,12 +154,13 @@ const OptOutHost = ({
                 />
             ),
             options: { size: 'auto', enablePanDownToClose: true },
-        }).then(result => {
-            if (result !== 'confirm') return
+        }).then(maxFee => {
+            if (maxFee === undefined) return
             optOut({
                 sender: addressOf(sender),
                 assetId: BigInt(accountBalance.assetId),
                 creator,
+                maxFee,
             })
                 .then(res => onResolved?.(res))
                 .catch(error => onRejected?.(error))
@@ -223,7 +225,7 @@ describe('Flow: Opt into an asset', () => {
                     assets: [],
                 },
             }),
-            mockAlgodTransactionParams({ response: { fee: 1000 } }),
+            mockAlgodTransactionParams({ response: { fee: 0 } }),
             mockAlgodStatus({ response: { 'last-round': 100 } }),
             mockAlgodSendRawTransaction(),
             // After the opt-in submits, the mutation calls
@@ -451,7 +453,7 @@ describe('Flow: Opt out of an asset', () => {
                     ],
                 },
             }),
-            mockAlgodTransactionParams({ response: { fee: 1000 } }),
+            mockAlgodTransactionParams({ response: { fee: 0 } }),
             mockAlgodStatus({ response: { 'last-round': 100 } }),
             mockAlgodSendRawTransaction(),
         )

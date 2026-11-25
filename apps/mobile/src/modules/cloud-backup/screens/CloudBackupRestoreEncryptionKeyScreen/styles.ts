@@ -15,6 +15,8 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     inputContainer: {
         borderBottomWidth: theme.borders.sm,
+        borderRadius: theme.borderRadius.none,
+        minHeight: theme.controlHeight.sm,
         borderBottomColor: theme.colors.layerGray,
     },
 }))

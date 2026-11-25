@@ -13,9 +13,10 @@
 import type WalletConnect from '@perawallet/walletconnect'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
-import type {
-    Connection,
-    ConnectionPeer,
+import {
+    withAccountsGranted,
+    type Connection,
+    type ConnectionPeer,
 } from '@perawallet/wallet-extension-connections'
 import type { ConnectionProposal } from '@perawallet/wallet-core-connections'
 import {
@@ -39,6 +40,7 @@ import {
     WalletConnectError,
     WalletConnectInvalidNetworkError,
     WalletConnectInvalidSessionError,
+    WalletConnectPermissionError,
     WalletConnectSessionRequestExpiredError,
 } from '../shared/errors'
 import {
@@ -128,6 +130,11 @@ export const createV1ProposalHandlers = (deps: {
             secretRef,
             createdAt: existing?.createdAt ?? now,
             lastActiveAt: now,
+            accountsGrantedAt: withAccountsGranted(
+                undefined,
+                input.accounts,
+                now,
+            ),
             origin,
             metadata: {
                 bridge: connector.bridge,
@@ -136,6 +143,7 @@ export const createV1ProposalHandlers = (deps: {
                 chainId: input.chainId,
                 handshakeId: input.handshakeId,
                 permissions: input.permissions,
+                permissionsApproved: true,
             },
         })
         await store().upsert(connection)
@@ -269,6 +277,21 @@ export const createV1ProposalHandlers = (deps: {
         const methods = params.permissions
             ? params.permissions.filter(isAlgorandPermission)
             : [...ALL_PERMISSIONS]
+        // Enforcement reads an empty list as "nothing granted", so approving it
+        // would leave a session that refuses every request.
+        if (methods.length === 0) {
+            if (!connector.connected) {
+                connector.rejectSession()
+                abandonDeclinedPairing(clientId, connector)
+            }
+            reportError(
+                new WalletConnectPermissionError(
+                    'The connection request names no Algorand method',
+                ),
+                pairingScope(clientId),
+            )
+            return
+        }
         const proposalId = `${clientId}:${request.id}`
         if (openProposals.get(clientId) === proposalId) {
             logger.debug('[WC v1] ignoring a replayed pairing handshake', {

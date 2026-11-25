@@ -50,7 +50,11 @@ describe('useMinFeeForSender', () => {
             useMinFeeForSender('0xA', 'fixturehex' as ChainId),
         )
 
-        expect(result.current).toEqual({ minFee: undefined, isPending: false })
+        expect(result.current).toMatchObject({
+            minFee: undefined,
+            isPending: false,
+            error: null,
+        })
         expect(chainHook).toHaveBeenCalledWith(undefined)
     })
 

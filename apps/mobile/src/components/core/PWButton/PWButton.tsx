@@ -48,7 +48,6 @@ export type PWButtonProps = TouchableOpacityProps & {
     style?: StyleProp<ViewStyle>
     isDisabled?: boolean
     isLoading?: boolean
-    rounded?: boolean
     paddingStyle?: 'none' | 'dense' | 'normal'
     /** Opt out of the double-press guard for rapid-tap surfaces (e.g. steppers). */
     allowRapidPress?: boolean
@@ -85,7 +84,6 @@ export const PWButton = ({
     style,
     isDisabled,
     isLoading,
-    rounded,
     paddingStyle,
     testID,
     allowRapidPress,
@@ -100,7 +98,6 @@ export const PWButton = ({
         isDisabled,
         isLoading,
         paddingStyle,
-        rounded,
     })
 
     const iconVariant = ICON_VARIANT_MAP[variant]

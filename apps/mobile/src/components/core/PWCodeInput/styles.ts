@@ -23,7 +23,7 @@ export const useStyles = makeStyles(theme => ({
     },
     cell: {
         flex: 1,
-        height: theme.spacing['3xl'],
+        height: theme.controlHeight.lg,
         borderWidth: theme.borders.md,
         borderRadius: theme.borderRadius.md,
         borderColor: theme.colors.layerGray,

@@ -156,7 +156,6 @@ export const AccountMenu = (props: AccountMenuProps) => {
                         testID='account_menu_add_account_button'
                         variant='primary'
                         icon='plus'
-                        rounded
                         title={t('onboarding.add_account.title')}
                         onPress={onAddAccount}
                     />

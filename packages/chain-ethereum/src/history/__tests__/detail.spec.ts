@@ -306,4 +306,44 @@ describe('readEvmTransactionDetail', () => {
 
         await expect(read(HASH)).rejects.toThrow()
     })
+
+    it("carries a type-2 transaction's nonce, gas limit and fee caps, and no single gas price", async () => {
+        const tx = await evmSignedRpcTransaction(call({ data: approve(1n) }))
+        node(tx)
+
+        const view = readEthereumNative((await read(tx.hash))!)
+
+        expect(view).toMatchObject({
+            onChain: {
+                nonce: 7,
+                gas: 60_000n,
+                maxFeePerGas: new Decimal('2000000000'),
+                maxPriorityFeePerGas: new Decimal('1000000000'),
+            },
+        })
+        expect('onChain' in view && view.onChain?.gasPrice).toBeUndefined()
+    })
+
+    it("carries a legacy transaction's single gas price, and no fee caps", async () => {
+        const tx = await evmSignedRpcTransaction(
+            call({
+                ...PRE_EIP1559,
+                type: 'legacy',
+                gasPrice: 3_000_000_000n,
+                data: approve(1n),
+            }),
+        )
+        node(tx)
+
+        const view = readEthereumNative((await read(tx.hash))!)
+
+        expect(view).toMatchObject({
+            onChain: {
+                nonce: 7,
+                gas: 60_000n,
+                gasPrice: new Decimal('3000000000'),
+            },
+        })
+        expect('onChain' in view && view.onChain?.maxFeePerGas).toBeUndefined()
+    })
 })

@@ -37,17 +37,23 @@ import {
     type WalletOperationType,
 } from '@perawallet/wallet-core-connections'
 import {
+    dappRelayableErrorNames,
     dappRequestChainAdapters,
     dappRequestFailureOf,
     dappRequestWireCodeOf,
     type DappRequestFailure,
     type WalletConnectV2ChainSupport,
 } from '@perawallet/wallet-core-connections/dappRequest'
-import type {
-    Connection,
-    ConnectionId,
-    ConnectionOrigin,
-    ConnectionPeer,
+import {
+    MAX_ERROR_LENGTH,
+    sanitizeErrorForWebview,
+} from '@perawallet/wallet-core-dapp/wire'
+import {
+    withAccountsGranted,
+    type Connection,
+    type ConnectionId,
+    type ConnectionOrigin,
+    type ConnectionPeer,
 } from '@perawallet/wallet-extension-connections'
 import {
     WalletConnectError,
@@ -237,6 +243,12 @@ export type CreateWalletConnectV2HandlerOptions = {
      * client itself.
      */
     startWhen?: () => Promise<void>
+    shouldRevokeForAccountRemoval?: (
+        connection: Pick<
+            Connection,
+            'accounts' | 'createdAt' | 'accountsGrantedAt'
+        >,
+    ) => boolean
     /**
      * Whether a held account can sign for `address` on `chainId`; the handler
      * holds no wallet accounts itself. Without it no session's account can be
@@ -431,6 +443,9 @@ const pairTopic = async (
     }
 }
 
+// Outside WalletKit's `wc2:` namespace, which it enumerates as its own.
+const REVOKED_TOPICS_KEY = 'wallet-connect-v2:revoked-topics'
+
 /**
  * WalletConnect v2 as one implementation of {@link ConnectionHandler}. Unlike
  * v1's socket per session, v2 is a single relay connection multiplexing every
@@ -446,6 +461,7 @@ export const createWalletConnectV2Handler = (
         keyValueStorage,
         createWalletKit = createWalletKitClient,
         startWhen,
+        shouldRevokeForAccountRemoval,
         canSignWith,
     } = options
 
@@ -495,6 +511,8 @@ export const createWalletConnectV2Handler = (
     // because a slow dApp can still deliver a proposal on one and a sheet
     // appearing from nowhere is worse than a map entry per abandon.
     const abandonedPairings = new Set<string>()
+    // Settled by pair() or a recovered record, even when the origin is none.
+    const pairingsWithKnownOrigin = new Set<string>()
 
     const requireClient = (): WalletKitClient => {
         if (!client) {
@@ -677,7 +695,11 @@ export const createWalletConnectV2Handler = (
         const stored = await store().get(topic)
         const record =
             stored && isWalletConnectV2Connection(stored) ? stored : null
-        if (!record) {
+        if (
+            !record ||
+            readRevokedTopics().has(topic) ||
+            shouldRevokeForAccountRemoval?.(record)
+        ) {
             refuseRequest(
                 topic,
                 id,
@@ -881,15 +903,23 @@ export const createWalletConnectV2Handler = (
             },
             reject: async error => {
                 const failure = dappRequestFailureOf(error)
+                const wireCode = dappRequestWireCodeOf(error)
                 await respond({
                     id,
                     jsonrpc: '2.0',
                     error: {
                         code:
-                            dappRequestWireCodeOf(error) ??
+                            wireCode ??
                             (failure && support.toWireErrorCode?.(failure)) ??
                             JSON_RPC_SERVER_ERROR,
-                        message: error.message,
+                        message:
+                            wireCode !== undefined &&
+                            error.name === 'DappRequestCodedError'
+                                ? error.message.slice(0, MAX_ERROR_LENGTH)
+                                : sanitizeErrorForWebview(
+                                      error,
+                                      dappRelayableErrorNames(chain.chainId),
+                                  ),
                     },
                 })
             },
@@ -1071,19 +1101,24 @@ export const createWalletConnectV2Handler = (
                           })
                         : { id, jsonrpc: '2.0', result },
                 (error: unknown): WalletKitJsonRpcResponse => {
-                    const wireCode = dappRequestWireCodeOf(toError(error))
+                    const refusal = toError(error)
+                    const wireCode = dappRequestWireCodeOf(refusal)
                     return {
                         id,
                         jsonrpc: '2.0',
                         error:
-                            wireCode === undefined
+                            wireCode !== undefined &&
+                            refusal.name === 'DappRequestCodedError'
                                 ? {
-                                      code: JSON_RPC_INTERNAL_ERROR,
-                                      message: 'Internal error',
+                                      code: wireCode,
+                                      message: refusal.message.slice(
+                                          0,
+                                          MAX_ERROR_LENGTH,
+                                      ),
                                   }
                                 : {
-                                      code: wireCode,
-                                      message: toError(error).message,
+                                      code: JSON_RPC_INTERNAL_ERROR,
+                                      message: 'Internal error',
                                   },
                     }
                 },
@@ -1311,12 +1346,19 @@ export const createWalletConnectV2Handler = (
                     'The approved session names no account this wallet can sign for',
                 )
             }
+            const approvedAt = Date.now()
             const approved: WalletConnectV2Connection = {
                 ...record,
-                lastActiveAt: Date.now(),
+                lastActiveAt: approvedAt,
+                accountsGrantedAt: withAccountsGranted(
+                    record.accountsGrantedAt,
+                    record.accounts,
+                    approvedAt,
+                ),
             }
+            // Kept until the pairing is released: an approved pairing stays
+            // live, and a later proposal on it must still name its page.
             await store().upsert(approved)
-            pendingOrigins.forget(pairingId)
             for (const { chain, networkId } of announcementsFor(
                 chains,
                 input.proposal,
@@ -1329,7 +1371,7 @@ export const createWalletConnectV2Handler = (
             // The session settled, so the dApp believes it is connected: left
             // alive it would be a session with no record — invisible in
             // settings and unanswerable when it sends a request.
-            await endSession(session.topic)
+            await revokeSession(session.topic)
             throw error
         }
     }
@@ -1351,6 +1393,7 @@ export const createWalletConnectV2Handler = (
      */
     const releasePairing = (pairingId: string): void => {
         pendingOrigins.forget(pairingId)
+        pairingsWithKnownOrigin.delete(pairingId)
         expirePairing(pairingId)
     }
 
@@ -1416,6 +1459,59 @@ export const createWalletConnectV2Handler = (
         }
     }
 
+    const readRevokedTopics = (): Set<string> => {
+        const raw = keyValueStorage.getJSON<unknown>(REVOKED_TOPICS_KEY)
+        return new Set(
+            Array.isArray(raw)
+                ? raw.filter(
+                      (topic): topic is string => typeof topic === 'string',
+                  )
+                : [],
+        )
+    }
+
+    const writeRevokedTopics = (topics: Set<string>): void => {
+        if (topics.size === 0) keyValueStorage.removeItem(REVOKED_TOPICS_KEY)
+        else keyValueStorage.setJSON(REVOKED_TOPICS_KEY, [...topics])
+    }
+
+    const markRevoked = (topic: string): void => {
+        writeRevokedTopics(readRevokedTopics().add(topic))
+    }
+
+    const endRevokedSession = async (topic: string): Promise<void> => {
+        if (!(await endSession(topic))) return
+        const revoked = readRevokedTopics()
+        revoked.delete(topic)
+        writeRevokedTopics(revoked)
+    }
+
+    // Persist before sending the end: a crash during delivery must not
+    // restore a session the user already disconnected.
+    const revokeSession = async (topic: string): Promise<void> => {
+        markRevoked(topic)
+        await endRevokedSession(topic)
+    }
+
+    // Pending origins die with the process while WalletKit keeps the pairing;
+    // a live session on it still carries the origin its approval stored.
+    const recoverPairingOrigin = async (
+        pairingId: string,
+    ): Promise<boolean> => {
+        const sessions = Object.values(
+            client?.getActiveSessions() ?? {},
+        ).filter(session => session.pairingTopic === pairingId)
+        if (sessions.length === 0) return false
+        const stored = await storedById()
+        const record = sessions
+            .map(session => stored.get(session.topic))
+            .find(Boolean)
+        if (!record) return false
+        pendingOrigins.remember(pairingId, record.origin)
+        pairingsWithKnownOrigin.add(pairingId)
+        return true
+    }
+
     const handleProposal = async (
         event: WalletKitSessionProposal,
     ): Promise<void> => {
@@ -1426,6 +1522,26 @@ export const createWalletConnectV2Handler = (
             logger.debug('[WC v2] dropped a proposal on an abandoned pairing', {
                 pairingId,
             })
+            return
+        }
+
+        // A pairing approved in an earlier run: its origin comes back from its
+        // session's record, or the proposal cannot say which page it is for.
+        if (
+            !pairingsWithKnownOrigin.has(pairingId) &&
+            client?.core.pairing
+                .getPairings()
+                .some(({ topic, active }) => topic === pairingId && active) &&
+            !(await recoverPairingOrigin(pairingId))
+        ) {
+            await deliverRejection(id, 'USER_REJECTED', undefined, pairingId)
+            releasePairing(pairingId)
+            reportError(
+                new WalletConnectError(
+                    'This connection request came from an earlier pairing. Start a new connection from the dApp.',
+                ),
+                pairingScope(pairingId),
+            )
             return
         }
 
@@ -1624,6 +1740,9 @@ export const createWalletConnectV2Handler = (
             // stored record so the settings list does not reorder every boot.
             createdAt: existing?.createdAt ?? now,
             lastActiveAt: existing?.lastActiveAt ?? now,
+            ...(existing?.accountsGrantedAt
+                ? { accountsGrantedAt: existing.accountsGrantedAt }
+                : {}),
             metadata: {
                 topic: session.topic,
                 // A namespace's `chains` is absent, or empty, when its key is
@@ -1665,6 +1784,29 @@ export const createWalletConnectV2Handler = (
         )
     }
 
+    const restorableConnections = (
+        records: WalletConnectV2Connection[],
+        revoked: Set<string>,
+        stored: ReadonlyMap<string, WalletConnectV2Connection>,
+    ): WalletConnectV2Connection[] => {
+        const revokedCount = revoked.size
+        const kept = records.filter(({ id, accounts }) => {
+            if (revoked.has(id)) return false
+            // A WalletKit-only row has no wallet-recorded approval time.
+            const removed = shouldRevokeForAccountRemoval?.({
+                accounts,
+                createdAt: stored.get(id)?.createdAt ?? 0,
+                accountsGrantedAt: stored.get(id)?.accountsGrantedAt,
+            })
+            if (!removed) return true
+            revoked.add(id)
+            return false
+        })
+        // The relay may not have started when a cached connection is dropped.
+        if (revoked.size !== revokedCount) writeRevokedTopics(revoked)
+        return kept
+    }
+
     /**
      * WalletKit's active sessions ARE the answer: it expires sessions while the
      * app is closed, so one missing from `getActiveSessions()` must disappear
@@ -1674,7 +1816,16 @@ export const createWalletConnectV2Handler = (
      */
     const restore = async (): Promise<WalletConnectV2Connection[]> => {
         // Reporting no sessions here would read as "prune every v2 row".
-        if (isBootStartPending) return [...(await storedById()).values()]
+        if (isBootStartPending) {
+            const stored = await storedById()
+            if (isBootStartPending) {
+                return restorableConnections(
+                    [...stored.values()],
+                    readRevokedTopics(),
+                    stored,
+                )
+            }
+        }
         const walletKit = client
         // No client means v2 is unavailable, so it claims no connections and
         // reconciliation prunes whatever v2 rows are left over.
@@ -1695,15 +1846,25 @@ export const createWalletConnectV2Handler = (
         const now = Date.now()
         const restored: WalletConnectV2Connection[] = []
         const idle: WalletConnectV2Connection[] = []
-        for (const session of Object.values(walletKit.getActiveSessions())) {
+        const sessions = walletKit.getActiveSessions()
+        const revokedTopics = readRevokedTopics()
+        const candidates = Object.values(sessions).flatMap(session => {
+            if (revokedTopics.has(session.topic)) return []
             const record = toConnection(
                 session,
                 existing.get(session.topic) ?? null,
             )
-            if (!record) continue
+            return record ? [record] : []
+        })
+        for (const record of restorableConnections(
+            candidates,
+            revokedTopics,
+            existing,
+        )) {
             if (isIdleSession(record, now)) idle.push(record)
             else restored.push(record)
         }
+        const revoked = [...revokedTopics].filter(topic => topic in sessions)
         // Omitting a record deletes it, so one the relay did not take is kept:
         // WalletKit would otherwise hand the live session back next launch with
         // no stored dates, restarting its idle clock. Bounded so a dead relay
@@ -1723,7 +1884,26 @@ export const createWalletConnectV2Handler = (
         idle.forEach((record, index) => {
             if (!ended[index]) restored.push(record)
         })
-        return restored
+        const revokedEnded = await Promise.all(
+            revoked.map(topic =>
+                withTimeout(
+                    endSession(topic),
+                    IDLE_END_TIMEOUT_MS,
+                    'ending a revoked WalletConnect v2 session',
+                ).catch(() => false),
+            ),
+        )
+        // Re-read: a disconnect may have revoked another topic meanwhile.
+        const live = walletKit.getActiveSessions()
+        const stillRevoked = readRevokedTopics()
+        for (const topic of stillRevoked) {
+            if (!(topic in live)) stillRevoked.delete(topic)
+        }
+        revoked.forEach((topic, index) => {
+            if (revokedEnded[index]) stillRevoked.delete(topic)
+        })
+        writeRevokedTopics(stillRevoked)
+        return restored.filter(({ id }) => id in live && !stillRevoked.has(id))
     }
 
     /**
@@ -1793,15 +1973,28 @@ export const createWalletConnectV2Handler = (
         for (const id of (await storedById()).keys()) {
             if (!liveIds.has(id)) await store().remove(id)
         }
-        for (const connection of live) await store().upsert(connection)
+        for (const connection of live) {
+            // A disconnect may have settled while the other rows were pruned.
+            if (
+                client?.getActiveSessions()[connection.id] &&
+                !readRevokedTopics().has(connection.id)
+            ) {
+                await store().upsert(connection)
+            }
+        }
     }
 
     const startAtBoot = async (startedIn: number): Promise<void> => {
         try {
             await startWhen?.()
             if (startedIn !== generation) return
-            // A wallet with no v2 sessions loads the SDK on its first pairing.
-            if ((await storedById()).size === 0) return
+            // Without active sessions or pending revocations, wait for pairing.
+            if (
+                (await storedById()).size === 0 &&
+                readRevokedTopics().size === 0
+            ) {
+                return
+            }
             await startClient()
         } finally {
             if (startedIn === generation) isBootStartPending = false
@@ -2054,6 +2247,11 @@ export const createWalletConnectV2Handler = (
                 ),
                 normalized,
             ],
+            accountsGrantedAt: withAccountsGranted(
+                current.accountsGrantedAt,
+                [normalized],
+                Date.now(),
+            ),
             metadata: {
                 ...current.metadata,
                 chains: current.metadata.chains.filter(
@@ -2139,11 +2337,15 @@ export const createWalletConnectV2Handler = (
             })
     }
 
-    // The record goes whatever the relay says: a dApp the user removed must
-    // not reappear in settings because the peer was unreachable.
+    // The record goes whatever the relay says, and before the relay wait: a
+    // kill during it must leave no row for boot restore or a queued request.
     const disconnect = async (id: ConnectionId): Promise<void> => {
-        await endSession(id)
-        await store().remove(id)
+        markRevoked(id)
+        try {
+            await store().remove(id)
+        } finally {
+            await endRevokedSession(id)
+        }
     }
 
     return {
@@ -2170,6 +2372,7 @@ export const createWalletConnectV2Handler = (
             const walletKit = await ensureClient()
             const topic = await pairTopic(walletKit, uri)
             abandonedPairings.delete(topic)
+            pairingsWithKnownOrigin.add(topic)
             // Cleared, not left: a re-pairing of the same topic from another
             // entry point would otherwise inherit the first one's origin.
             pendingOrigins.remember(topic, opts?.origin)
@@ -2177,11 +2380,10 @@ export const createWalletConnectV2Handler = (
         },
 
         abandonPairing: pairingId => {
-            pendingOrigins.forget(pairingId)
             // Tombstoned before the delete: the caller has moved on, and a
             // relay that will not take it still leaves the tombstone.
             abandonedPairings.add(pairingId)
-            expirePairing(pairingId)
+            releasePairing(pairingId)
         },
 
         initialize: async next => {
@@ -2223,6 +2425,7 @@ export const createWalletConnectV2Handler = (
             pendingProposals.clear()
             pendingRequests.clear()
             abandonedPairings.clear()
+            pairingsWithKnownOrigin.clear()
             await releaseClient()
         },
 

@@ -20,7 +20,9 @@ import { signingAccountAddressesOn } from '@perawallet/wallet-core-accounts'
 import { config } from '@perawallet/wallet-core-config'
 import {
     createConnectionRegistry,
+    isConnectionRevokedForAccountRemoval,
     useConnectionSigningAdapter,
+    waitForAccountsHydration,
     watchLockNotices,
     watchWalletNotices,
     type ConnectionRegistry,
@@ -48,6 +50,7 @@ import { useShowDappTransaction } from '../hooks'
 import { useConnectionsBoot } from './useConnectionsBoot'
 import { useConnectionErrorToasts } from './useConnectionErrorToasts'
 import { useNetworkSwitchPrompt } from './useNetworkSwitchPrompt'
+import { useWatchAssetPrompt } from './useWatchAssetPrompt'
 import { useProposalQueue } from './useProposalQueue'
 
 const getNetworkId = (chainId: ChainId) => getSelectedScope(chainId).networkId
@@ -77,6 +80,8 @@ export const useConnectionsProvider = (): ConnectionRegistry => {
         const v1Handler = createWalletConnectV1Handler({
             chainId: ALGORAND_CHAIN_ID,
             getNetworkId,
+            restoreWhen: waitForAccountsHydration,
+            shouldRevokeForAccountRemoval: isConnectionRevokedForAccountRemoval,
         })
         registry.register(v1Handler)
         v1HandlerRef.current = v1Handler
@@ -91,7 +96,12 @@ export const useConnectionsProvider = (): ConnectionRegistry => {
                 keyValueStorage: getProvider().keyValueStorage,
                 // Loading the v2 SDK holds the JS thread for seconds; at boot
                 // that delayed the PIN pad and the biometric prompt.
-                startWhen: whenAppUnlocked,
+                startWhen: async () => {
+                    await whenAppUnlocked()
+                    await waitForAccountsHydration()
+                },
+                shouldRevokeForAccountRemoval:
+                    isConnectionRevokedForAccountRemoval,
                 // The handler passes its codec's normalized form (EVM
                 // checksum case), which the store need not share.
                 canSignWith: (chainId, address) =>
@@ -128,9 +138,11 @@ export const useConnectionsProvider = (): ConnectionRegistry => {
     }, [])
 
     const confirmNetworkSwitch = useNetworkSwitchPrompt()
+    const confirmWatchAsset = useWatchAssetPrompt()
     const showTransaction = useShowDappTransaction()
     useConnectionSigningAdapter(registry, ALGORAND_CHAIN_ID, {
         confirmNetworkSwitch,
+        confirmWatchAsset,
         showTransaction,
     })
     useEffect(() => watchWalletNotices(registry), [registry])

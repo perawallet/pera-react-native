@@ -11,10 +11,16 @@
  */
 
 import { renderHook, act } from '@testing-library/react'
+import type {
+    LayoutChangeEvent,
+    NativeScrollEvent,
+    NativeSyntheticEvent,
+} from 'react-native'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AppError, PeraNetworkError } from '@perawallet/wallet-core-shared'
 import { CardEvent } from '@analytics'
 import { registerAlgorandReviewerAdapter } from '@test-utils/reviewerChainAdapter'
+import { measureFittingReview } from '@test-utils/review-scroll'
 import { useArc60SigningScreen } from '../useArc60SigningScreen'
 
 const { mockTrackEvent } = vi.hoisted(() => ({ mockTrackEvent: vi.fn() }))
@@ -94,6 +100,12 @@ vi.mock('@hooks/useHaptics', () => ({
     useHaptics: () => mockHaptics,
 }))
 
+const renderScreen = () => {
+    const hook = renderHook(() => useArc60SigningScreen())
+    measureFittingReview(hook.result.current.scrollHint)
+    return hook
+}
+
 describe('useArc60SigningScreen', () => {
     beforeEach(() => {
         registerAlgorandReviewerAdapter()
@@ -112,7 +124,7 @@ describe('useArc60SigningScreen', () => {
     })
 
     it('returns a null errorMessage when the pipeline has no error', () => {
-        const { result } = renderHook(() => useArc60SigningScreen())
+        const { result } = renderScreen()
 
         expect(result.current.errorMessage).toBeNull()
     })
@@ -120,7 +132,7 @@ describe('useArc60SigningScreen', () => {
     it('resolves localized copy rather than exposing the raw AppError message', () => {
         mockPipeline.error = new AppError('raw internal detail', {})
 
-        const { result } = renderHook(() => useArc60SigningScreen())
+        const { result } = renderScreen()
 
         expect(result.current.errorMessage).not.toBe('raw internal detail')
         expect(result.current.errorMessage).toBe('errors.general.body')
@@ -129,7 +141,7 @@ describe('useArc60SigningScreen', () => {
     it('resolves localized copy for a typed PeraNetworkError', () => {
         mockPipeline.error = new PeraNetworkError('timeout')
 
-        const { result } = renderHook(() => useArc60SigningScreen())
+        const { result } = renderScreen()
 
         expect(result.current.errorMessage).toBe('errors.network.timeout.body')
     })
@@ -137,7 +149,7 @@ describe('useArc60SigningScreen', () => {
     it('resolves localized copy for an untyped raw Error the chain does not describe', () => {
         mockPipeline.error = new Error('boom')
 
-        const { result } = renderHook(() => useArc60SigningScreen())
+        const { result } = renderScreen()
 
         expect(result.current.errorMessage).not.toBe('boom')
         expect(result.current.errorMessage).toBe('errors.general.body')
@@ -150,7 +162,7 @@ describe('useArc60SigningScreen', () => {
             sourceType: 'card',
             authData: { signer: 'ADDR', domain: 'example.com' },
         }
-        const { result } = renderHook(() => useArc60SigningScreen())
+        const { result } = renderScreen()
 
         await act(async () => {
             result.current.handleApprove()
@@ -172,7 +184,7 @@ describe('useArc60SigningScreen', () => {
             sourceType: 'walletconnect',
             authData: { signer: 'ADDR', domain: 'example.com' },
         }
-        const { result } = renderHook(() => useArc60SigningScreen())
+        const { result } = renderScreen()
 
         await act(async () => {
             result.current.handleApprove()
@@ -194,7 +206,7 @@ describe('useArc60SigningScreen', () => {
             sourceType: 'walletconnect',
             authData: { signer: 'ADDR', domain: 'example.com' },
         }
-        const { result } = renderHook(() => useArc60SigningScreen())
+        const { result } = renderScreen()
 
         await act(async () => {
             result.current.handleApprove()
@@ -216,7 +228,7 @@ describe('useArc60SigningScreen', () => {
         mockPipeline.resolved = {
             kind: { type: 'auth-data', parsed: { type: 'siwx' } },
         }
-        const { result } = renderHook(() => useArc60SigningScreen())
+        const { result } = renderScreen()
 
         expect(result.current.isSigningBlocked).toBe(true)
         expect(result.current.canConfirm).toBe(false)
@@ -227,15 +239,50 @@ describe('useArc60SigningScreen', () => {
         mockPipeline.resolved = {
             kind: { type: 'auth-data', parsed: { type: 'siwx' } },
         }
-        const { result } = renderHook(() => useArc60SigningScreen())
+        const { result } = renderScreen()
 
         expect(result.current.isSigningBlocked).toBe(false)
         expect(result.current.canConfirm).toBe(true)
     })
 
+    it('holds approval until the review is measured and, when taller than its body, scrolled to the end', async () => {
+        mockFindAccountByAddress.mockReturnValue(SIGNER_ACCOUNT)
+        mockPipeline.resolved = {
+            kind: { type: 'auth-data', parsed: { type: 'siwx' } },
+        }
+        const { result } = renderHook(() => useArc60SigningScreen())
+        expect(result.current.canConfirm).toBe(false)
+
+        act(() => {
+            result.current.scrollHint.handleBodyLayout({
+                nativeEvent: { layout: { height: 400 } },
+            } as LayoutChangeEvent)
+            result.current.scrollHint.handleContentSizeChange(0, 1000)
+        })
+        await act(async () => {
+            result.current.handleApprove()
+        })
+
+        expect(result.current.isConfirmBlocked).toBe(true)
+        expect(result.current.canConfirm).toBe(false)
+        expect(mockPipeline.next).not.toHaveBeenCalled()
+
+        act(() =>
+            result.current.scrollHint.handleScroll({
+                nativeEvent: { contentOffset: { y: 600 } },
+            } as NativeSyntheticEvent<NativeScrollEvent>),
+        )
+        await act(async () => {
+            result.current.handleApprove()
+        })
+
+        expect(result.current.canConfirm).toBe(true)
+        expect(mockPipeline.next).toHaveBeenCalledOnce()
+    })
+
     it('never advances the pipeline from handleApprove when quantum-blocked', async () => {
         mockIsQuantumDataSigningBlocked.mockReturnValue(true)
-        const { result } = renderHook(() => useArc60SigningScreen())
+        const { result } = renderScreen()
 
         await act(async () => {
             result.current.handleApprove()
@@ -257,7 +304,7 @@ describe('useArc60SigningScreen', () => {
         mockPipeline.resolved = {
             kind: { type: 'auth-data', parsed: { type: 'siwx' } },
         }
-        const { result } = renderHook(() => useArc60SigningScreen())
+        const { result } = renderScreen()
 
         expect(result.current.hasOriginMismatch).toBe(true)
         expect(result.current.canConfirm).toBe(false)
@@ -281,7 +328,7 @@ describe('useArc60SigningScreen', () => {
         mockPipeline.resolved = {
             kind: { type: 'auth-data', parsed: { type: 'siwx' } },
         }
-        const { result } = renderHook(() => useArc60SigningScreen())
+        const { result } = renderScreen()
 
         expect(result.current.hasOriginMismatch).toBe(false)
         expect(result.current.canConfirm).toBe(true)
@@ -298,7 +345,7 @@ describe('useArc60SigningScreen', () => {
         mockPipeline.resolved = {
             kind: { type: 'auth-data', parsed: { type: 'siwx' } },
         }
-        const { result } = renderHook(() => useArc60SigningScreen())
+        const { result } = renderScreen()
 
         expect(result.current.hasOriginMismatch).toBe(false)
         expect(result.current.canConfirm).toBe(true)
@@ -311,7 +358,7 @@ describe('useArc60SigningScreen', () => {
             sourceType: 'card',
             authData: { signer: 'ADDR', domain: 'example.com' },
         }
-        const { result } = renderHook(() => useArc60SigningScreen())
+        const { result } = renderScreen()
 
         await act(async () => {
             result.current.handleApprove()

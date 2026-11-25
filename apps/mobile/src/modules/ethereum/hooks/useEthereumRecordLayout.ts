@@ -33,7 +33,6 @@ import {
 } from '@perawallet/wallet-core-shared'
 import {
     isFeePaidByAccount,
-    isSentByOtherSigner,
     recordSignerOf,
 } from '@perawallet/wallet-core-transactions'
 import { transactionIconName } from '@components/TransactionIcon'
@@ -44,7 +43,12 @@ import {
     type TransactionDetailStatus,
     type TransactionDetailSummary,
 } from '@modules/signing'
-import { useResolvedSummaryTitle } from '@modules/transactions'
+import {
+    assessHistoryEntry,
+    leadingAssetsOf,
+    useResolvedSummaryTitle,
+    visibleAssetIdsOf,
+} from '@modules/transactions'
 import { isEvmTransactionHash } from '../utils/isEvmTransactionHash'
 import { callTargetOf } from '../utils/callTargetOf'
 import { headlineFiatOf, headlineLegOf } from '../utils/headlineLegOf'
@@ -73,8 +77,6 @@ const STATUS: Record<TransactionRecord['status'], TransactionDetailStatus> = {
     failed: 'failed',
     replaced: 'failed',
 }
-
-const NOT_SENT_BY_YOU = i18nKey('transactions.list_item.not_sent_by_you')
 
 // A call's own amount (an approval's allowance, a contract call's value) is
 // one leg among its effects, so only a plain transfer leads with it.
@@ -167,13 +169,19 @@ export const useEthereumRecordLayout = (
     const headlineLeg = leading
         ? undefined
         : headlineLegOf(recordSummary.balanceChanges, nativeAsset.assetId)
+    const headlineAssetId = headlineLeg?.assetRef.assetId
+    const heroAssetIds = useMemo(
+        () => [
+            ...new Set([
+                ...visibleAssetIdsOf(recordSummary),
+                ...(headlineAssetId ? [headlineAssetId] : []),
+            ]),
+        ],
+        [recordSummary, headlineAssetId],
+    )
     const { data: storedAssets, isPending: isAssetsPending } = useAssetsQuery(
         scope,
-        [leading, headlineLeg].flatMap(leg =>
-            leg && leg.assetRef.assetId !== nativeAsset.assetId
-                ? [leg.assetRef.assetId]
-                : [],
-        ),
+        heroAssetIds,
     )
 
     return useMemo(() => {
@@ -208,12 +216,16 @@ export const useEthereumRecordLayout = (
             storedAssets,
         )
 
-        const isNotSentByYou = isSentByOtherSigner({
+        // The same reading the history row titles it with, so the two never disagree.
+        const { titleKey } = assessHistoryEntry({
             summary: recordSummary,
             signer: recordSignerOf(record, ownAddress),
             isSignedElsewhere: record.isSignedElsewhere,
             accountAddress: ownAddress,
             chainId: scope.chainId,
+            // The detail's own notice covers poisoning; the title stays the summary's.
+            isSuspectedPoisoning: false,
+            storedAssets,
         })
 
         const title =
@@ -238,12 +250,11 @@ export const useEthereumRecordLayout = (
         return {
             summary: {
                 scope,
+                leadingAssets: leadingAssetsOf(recordSummary, storedAssets),
                 iconName:
                     presentation?.iconName ??
                     transactionIconName(recordSummary.icon),
-                title: heroTitle(
-                    isNotSentByYou ? { key: NOT_SENT_BY_YOU } : title,
-                ),
+                title: heroTitle(titleKey ? { key: titleKey } : title),
                 status: STATUS[record.status],
                 amount,
                 isAmountLoading,

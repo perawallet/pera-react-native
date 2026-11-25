@@ -24,7 +24,7 @@ import { isAlgorandNativeAssetId } from '../descriptor'
 
 const ZERO = new Decimal(0)
 
-const isAlgoFee = (fee: Optional<SwapFee>): boolean =>
+export const isAlgoFee = (fee: Optional<SwapFee>): boolean =>
     fee !== undefined &&
     fee.asset.chainId === ALGORAND_CHAIN_ID &&
     isAlgorandNativeAssetId(fee.asset.assetId)

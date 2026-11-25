@@ -17,7 +17,6 @@ export const useStyles = makeStyles(theme => ({
         marginTop: theme.spacing.md,
     },
     searchField: {
-        borderRadius: theme.spacing.sm,
         paddingHorizontal: theme.spacing.sm,
     },
     list: {

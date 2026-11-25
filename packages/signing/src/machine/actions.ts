@@ -290,6 +290,9 @@ const buildSourceMetadata = (
         handoffDelivery: isTransactionRequest(request)
             ? handoffDeliveryOf(request, scope)
             : undefined,
+        replacesTxId: isTransactionRequest(request)
+            ? request.replacesTxId
+            : undefined,
     }
 }
 

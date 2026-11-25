@@ -71,6 +71,7 @@ import {
     SENDER,
     VIEM_ERC20_TRANSFER,
     VIEM_TRANSFER_NONCE_0,
+    VIEM_TRANSFER_NONCE_0_CANCELLED,
     VIEM_TRANSFER_NONCE_0_SPED_UP,
     VIEM_TRANSFER_NONCE_0_UNDERPRICED,
 } from '../../signing/__tests__/fixtures'
@@ -823,7 +824,14 @@ describe('Ethereum broadcaster adapter', () => {
     })
 
     describe('a replacement at a nonce an open send holds', () => {
-        const sendBytes = (hex: `0x${string}`) =>
+        const REPLACEMENT_SOURCE = {
+            type: 'replacement',
+            replacesTxId: keccak256(VIEM_TRANSFER_NONCE_0),
+        } as SourceMetadata
+        const sendBytes = (
+            hex: `0x${string}`,
+            source: SourceMetadata = REPLACEMENT_SOURCE,
+        ) =>
             adapter.createSubmitTransport(SCOPE).send(
                 signed({
                     type: 'signed-transactions',
@@ -836,7 +844,7 @@ describe('Ethereum broadcaster adapter', () => {
                     ],
                     historyEntries: [HISTORY_ENTRY],
                 }),
-                SOURCE,
+                source,
             )
         const sends = vi.fn()
         const useCountingRpc = (responses: EvmRpcFixtures['responses'] = {}) =>
@@ -896,6 +904,66 @@ describe('Ethereum broadcaster adapter', () => {
             })
             expect(sends).not.toHaveBeenCalled()
             expect(await rows()).toHaveLength(1)
+        })
+
+        it.each([
+            ['speed-up', VIEM_TRANSFER_NONCE_0_SPED_UP],
+            ['cancel', VIEM_TRANSFER_NONCE_0_CANCELLED],
+        ] as const)(
+            'refuses a %s-shaped send from outside the replacement flow as a collision',
+            async (_, hex) => {
+                useCountingRpc()
+                await sendBytes(VIEM_TRANSFER_NONCE_0, SOURCE)
+                sends.mockClear()
+
+                await expect(
+                    sendBytes(hex, {
+                        type: 'walletconnect',
+                    } as SourceMetadata),
+                ).rejects.toMatchObject({
+                    classification: 'rejected-by-node',
+                    nodeError: { code: EvmErrorCode.NONCE_TOO_LOW },
+                })
+                expect(sends).not.toHaveBeenCalled()
+                expect(await rows()).toHaveLength(1)
+            },
+        )
+
+        it.each([
+            ['names no pending send', { type: 'replacement' }],
+            [
+                'names another pending send',
+                { type: 'replacement', replacesTxId: '0xanother' },
+            ],
+        ] as const)(
+            'refuses a cancel-shaped replacement that %s as a collision',
+            async (_, source) => {
+                useCountingRpc()
+                await sendBytes(VIEM_TRANSFER_NONCE_0, SOURCE)
+                sends.mockClear()
+
+                await expect(
+                    sendBytes(
+                        VIEM_TRANSFER_NONCE_0_CANCELLED,
+                        source as SourceMetadata,
+                    ),
+                ).rejects.toMatchObject({
+                    classification: 'rejected-by-node',
+                    nodeError: { code: EvmErrorCode.NONCE_TOO_LOW },
+                })
+                expect(sends).not.toHaveBeenCalled()
+                expect(await rows()).toHaveLength(1)
+            },
+        )
+
+        it('replaces with a cancel from the replacement flow', async () => {
+            useCountingRpc()
+            await sendBytes(VIEM_TRANSFER_NONCE_0, SOURCE)
+
+            await sendBytes(VIEM_TRANSFER_NONCE_0_CANCELLED)
+
+            const [original, cancel] = await rows()
+            expect(cancel).toMatchObject({ replacesAttemptId: original!.id })
         })
 
         it('refuses a replacement under the 10% bump without sending or recording it', async () => {

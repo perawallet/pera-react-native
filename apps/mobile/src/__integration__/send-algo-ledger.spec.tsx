@@ -171,7 +171,7 @@ describe('Flow: Send ALGO from a Ledger account (Confirmation → Awaiting Appro
         useSendFundsStore.getState().reset()
 
         server.use(
-            mockAlgodTransactionParams({ response: { fee: 1000 } }),
+            mockAlgodTransactionParams({ response: { fee: 0 } }),
             mockAlgodAccountInformation({
                 address: LEDGER_ADDRESS,
                 response: { amount: 5_000_000, 'min-balance': 100_000 },

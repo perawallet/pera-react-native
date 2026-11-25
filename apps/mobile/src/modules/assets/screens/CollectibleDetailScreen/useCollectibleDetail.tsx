@@ -249,7 +249,7 @@ export const useCollectibleDetail = (
         if (!account || !asset || !assetBalance) {
             return
         }
-        const result = await requestBottomSheet<'confirm'>({
+        const maxFee = await requestBottomSheet<bigint>({
             contents: (
                 <OptOutConfirmationContent
                     assetId={assetBalance.assetId}
@@ -263,13 +263,14 @@ export const useCollectibleDetail = (
                 autoCreateContainer: false,
             },
         })
-        if (result !== 'confirm') return
+        if (maxFee === undefined) return
 
         try {
             await optOut({
                 sender: accountAddress,
                 assetId: BigInt(assetId),
                 creator: asset.creator.address,
+                maxFee,
             })
             showToast({
                 title: t('asset_opt_out.success'),

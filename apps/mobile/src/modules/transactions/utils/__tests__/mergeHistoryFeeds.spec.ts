@@ -112,7 +112,13 @@ describe('mergeHistoryFeeds', () => {
         expect(merged.rows.filter(row => row.kind === 'header')).toHaveLength(1)
         expect(
             merged.rows.flatMap(row =>
-                row.kind === 'header' ? [] : [row.networkChainId],
+                row.kind === 'header'
+                    ? []
+                    : [
+                          row.kind === 'record'
+                              ? row.record.scope.chainId
+                              : row.scope.chainId,
+                      ],
             ),
         ).toEqual(['algorand', 'ethereum', 'algorand'])
         expect(merged.transactionCount).toBe(3)

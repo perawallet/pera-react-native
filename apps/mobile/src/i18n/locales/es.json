@@ -269,7 +269,10 @@
         "empty_title": "No hay aprobaciones abiertas",
         "empty_body": "No se encontraron aprobaciones abiertas de tokens ni de colecciones para esta cuenta.",
         "error_title": "No se pudieron cargar las aprobaciones",
-        "error_body": "Comprueba tu conexión e inténtalo de nuevo.",
+        "error_body": "Algo salió mal al cargarlas. Inténtalo de nuevo en un momento.",
+        "offline_body": "Comprueba tu conexión e inténtalo de nuevo.",
+        "unavailable_title": "Las aprobaciones aún no están disponibles en esta red",
+        "unavailable_body": "Pera todavía no puede consultar las aprobaciones de tokens de esta cuenta en esta red.",
         "revoke_error_title": "Revocación sin confirmar",
         "revoke_error_body": "Comprueba en la lista el estado de la aprobación antes de volver a intentarlo."
     },
@@ -456,8 +459,7 @@
             "search_paused_body": "No se encontraron transacciones en el historial reciente.",
             "search_older": "Buscar más antiguas",
             "filter": "Filtrar",
-            "csv": "CSV",
-            "csv_on_network": "CSV de {{network}}"
+            "csv": "CSV"
         },
         "collectible": {
             "description": "Descripción",
@@ -490,7 +492,7 @@
         },
         "token_warning": {
             "suspicious_title": "Token sospechoso",
-            "body": "Pera ha marcado este token como sospechoso. No lo solicitaste y podría ser una estafa. No interactúes con sitios web ni enlaces relacionados con él."
+            "body": "Pera ha marcado este token como sospechoso. No lo solicitaste y podría ser una estafa. Ten cuidado al interactuar con él o con sitios web y enlaces relacionados."
         },
         "copy_full_amount_hint": "Mantén pulsado para copiar el importe completo",
         "toggle_amount_hint": "Toca para alternar entre el valor y la cantidad del activo"
@@ -1538,6 +1540,10 @@
             "asset_frozen": {
                 "title": "Activo congelado",
                 "body": "El activo {{assetId}} está congelado, por lo que esta transferencia no se puede completar. El gestor de congelación del activo debe descongelarlo primero."
+            },
+            "fee_above_shown": {
+                "title": "La comisión de red cambió",
+                "body": "La red ahora pide una comisión más alta que la que viste, así que no se firmó nada. Inténtalo de nuevo para ver la comisión actual."
             }
         },
         "kms": {
@@ -2419,6 +2425,8 @@
             "load_error": "No se pudo cargar esta transacción. Es posible que haya caducado o se haya eliminado.",
             "cosign_rejected_title": "No se puede firmar esta transacción",
             "cosign_rejected_body": "Esta solicitud incluye una transacción que la cuenta compartida no autoriza. Si el remitente es una cuenta con rekey a la cuenta compartida, añádela a tu wallet e inténtalo de nuevo.",
+            "request_open_title": "Cierra primero la solicitud abierta",
+            "request_open_body": "Completa o cierra la solicitud de firma y vuelve a abrir el enlace.",
             "retry": "Volver a intentar",
             "canceled": "Transacción cancelada.",
             "declined": "Transacción rechazada.",
@@ -2813,6 +2821,14 @@
                 "fetch_failed_title": "No se pudo cargar la copia de seguridad",
                 "decrypt_failed_title": "No se pudo desbloquear la copia de seguridad"
             },
+            "review": {
+                "title": "Revisa las cuentas",
+                "body_one": "Este código importa {{count}} cuenta. Comprueba que es tuya antes de importarla.",
+                "body_other": "Este código importa {{count}} cuentas. Comprueba que son tuyas antes de importarlas.",
+                "body": "Este código importa {{count}} cuentas. Comprueba que son tuyas antes de importarlas.",
+                "confirm": "Importar cuentas",
+                "interrupted": "La importación se interrumpió. Vuelve a escanear el código QR para continuar."
+            },
             "result": {
                 "success_title": "Cuentas importadas",
                 "success_body_one": "Se añadió {{count}} cuenta a tu wallet.",
@@ -3190,6 +3206,7 @@
             "verify_title": "Introduce tu PIN",
             "unlock_title": "Introduce tu PIN",
             "change_old_title": "Introduce tu PIN\nanterior de 6 dígitos",
+            "matches_duress_pin": "Tu nuevo PIN debe ser distinto de tu PIN de emergencia.",
             "logging_in": "Iniciando sesión"
         },
         "lockout": {
@@ -3973,6 +3990,7 @@
             "approval_for": "Para {{spender}}",
             "unlimited_approval_for": "Ilimitado · para {{spender}}",
             "swap_pair": "Swap {{from}} → {{to}}",
+            "swap_assets": "{{from}} → {{to}}",
             "add_liquidity": "Añadir liquidez",
             "remove_liquidity": "Retirar liquidez",
             "collect_fees": "Cobrar comisiones",
@@ -3989,7 +4007,9 @@
             "nft_batch_subtitle": "{{collection}} · {{count}} elementos",
             "inner_transaction_count": "{{innerCount}} transacciones internas",
             "cancel_transaction": "Cancelar transacción",
-            "not_sent_by_you": "No enviado por ti"
+            "send_by_approval": "Envío (aprobado)",
+            "spoofed_send": "Envío falsificado",
+            "contract_call_named": "Contrato: {{method}}"
         },
         "record_detail": {
             "read_failed": "No se pudieron leer de la red los detalles de la llamada de esta transacción.",
@@ -4146,6 +4166,8 @@
             "title": "Filtrar",
             "all_time": "Todo el tiempo",
             "today": "Hoy",
+            "hide_suspicious": "Ocultar transacciones sospechosas",
+            "hide_suspicious_description": "Oculta envíos falsificados, tokens de imitación o spam y posibles envenenamientos de direcciones.",
             "yesterday": "Ayer",
             "last_week": "Última semana",
             "last_month": "Último mes",
@@ -4168,18 +4190,20 @@
             "blocked_body": "Una transacción anterior de esta cuenta nunca llegó a la red, así que esta no puede confirmarse hasta que algo ocupe su lugar. Desbloquear envía en su lugar una transferencia vacía a ti mismo, que cuesta una comisión de red.",
             "unblock": "Desbloquear"
         },
+        "suspected_fake_transfer": {
+            "title": "Posible transferencia falsa",
+            "body": "Tu cuenta no firmó esta transferencia y no movió nada. Cualquiera puede hacer que una transferencia de 0 tokens parezca venir de tu cuenta, sin ninguna aprobación. Los estafadores lo hacen para que su dirección aparezca en tu historial y se copie más tarde. No copies direcciones de ella."
+        },
         "suspected_poisoning": {
-            "marker": "Posible envenenamiento de direcciones",
             "title": "Posible envenenamiento de direcciones",
-            "body": "Esta transferencia no movió nada de valor y viene de una dirección creada para parecerse a una que conoces. Los estafadores envían esto para que su dirección aparezca en tu historial y la copies más adelante. No la copies ni le envíes nada.",
+            "body": "Esta transferencia no movió nada de valor y viene de una dirección creada para parecerse a una que conoces. Los estafadores envían esto para que su dirección aparezca en tu historial y la copies más adelante.",
+            "do_not_reuse": "No copies esta dirección ni le envíes nada.",
             "sender_label": "Esta dirección",
             "reuse_title": "Esta dirección imita a una que conoces",
             "reuse_body": "Empieza y termina como una dirección que conoces, pero no es la misma. Compara las direcciones completas antes de usarla.",
             "reuse_confirm": "Continuar de todos modos",
-            "reuse_cancel": "Cancelar"
-        },
-        "suspicious_token": {
-            "marker": "Token sospechoso"
+            "reuse_cancel": "Cancelar",
+            "dismiss": "Entendido"
         }
     },
     "tabbar": {
@@ -4227,7 +4251,8 @@
             "view_accounts": "Ver tu dirección y tus saldos",
             "approve_transactions": "Pedirte que apruebes transacciones",
             "sign_messages": "Pedirte que firmes mensajes",
-            "switch_networks": "Pedir cambiar de red"
+            "switch_networks": "Pedir cambiar de red",
+            "add_tokens": "Pedir añadir tokens a tu cuenta"
         },
         "connection": {
             "approve_delivery_failed": "No se ha podido contactar con la dApp para confirmar la conexión. Comprueba tu conexión a internet y vuelve a intentarlo."
@@ -4237,6 +4262,23 @@
             "body": "{{name}} quiere usar tus cuentas en {{chain}}.",
             "body_with_network": "{{name}} quiere usar tus cuentas en {{chain}} {{network}}.",
             "confirm": "Permitir"
+        },
+        "watch_asset": {
+            "title": "¿Añadir token?",
+            "body": "{{name}} quiere añadir este token a tu cuenta.",
+            "unreadable": "Pera no pudo leer ningún token en esta dirección de {{chain}}.",
+            "confirm": "Añadir token",
+            "token": "Token",
+            "verification": "Verificación",
+            "contract": "Contrato",
+            "decimals": "Decimales",
+            "network": "Red",
+            "account": "Cuenta",
+            "tier": {
+                "verified": "Verificado",
+                "unverified": "No verificado",
+                "suspicious": "Sospechoso"
+            }
         },
         "settings": {
             "empty_title": "No hay sesiones de WalletConnect",
@@ -5286,6 +5328,8 @@
             "gwei": "Gwei",
             "nonce": "Nonce",
             "gas_limit": "Límite de gas",
+            "gas_used": "Gas usado",
+            "gas_price": "Precio del gas",
             "max_fee_per_gas": "Comisión máxima por gas",
             "max_priority_fee_per_gas": "Comisión de prioridad máxima por gas"
         },

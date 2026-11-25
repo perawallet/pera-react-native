@@ -12,6 +12,7 @@
 
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { getPasskeyAnchorSeedIds } from '@perawallet/wallet-core-accounts'
 import { APPROVAL_SUCCESS_CLOSE_DELAY_MS } from '@constants/ui'
 import { useApprovalConfirmedStore } from '@hooks/useApprovalConfirmedStore.web'
 
@@ -229,6 +230,7 @@ describe('usePasskeyApproval', () => {
         expect(mocks.createKeystoreSigner).toHaveBeenCalledWith(
             FAKE_KEYSTORE,
             FAKE_STORE,
+            getPasskeyAnchorSeedIds,
         )
         expect(mocks.createCredential).toHaveBeenCalledWith(
             DESERIALIZED_CREATE,

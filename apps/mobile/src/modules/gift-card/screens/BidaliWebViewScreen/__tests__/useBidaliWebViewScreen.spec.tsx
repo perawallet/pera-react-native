@@ -34,7 +34,12 @@ vi.mock('react-native', () => ({
 
 vi.mock('react-native-webview', () => ({ default: {} }))
 
-vi.mock('@perawallet/wallet-core-config', () => ({
+vi.mock('@perawallet/wallet-core-config', async () => ({
+    getIframeOrigins: (
+        await vi.importActual<typeof import('@perawallet/wallet-core-config')>(
+            '@perawallet/wallet-core-config',
+        )
+    ).getIframeOrigins,
     config: {
         bidaliApiKey: 'test-key',
         bidaliBaseUrl: 'https://commerce.bidali.com/dapp',
@@ -88,6 +93,9 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         ...(await vi.importActual<
             typeof import('@packages/shared/src/errors/base')
         >('@packages/shared/src/errors/base')),
+        ...(await vi.importActual<
+            typeof import('@packages/shared/src/utils/strings')
+        >('@packages/shared/src/utils/strings')),
         generateOrderedUniqueId: () => 'id',
         registerStore: vi.fn(),
         logger: {
@@ -171,6 +179,16 @@ describe('useBidaliWebViewScreen', () => {
             expect(
                 result.current.onShouldStartLoadWithRequest({
                     url: 'https://commerce.bidali.com/checkout/123',
+                } as never),
+            ).toBe(true)
+        })
+
+        it('follows the commerce host redirect to its giftcards twin', () => {
+            const { result } = renderHook(() => useBidaliWebViewScreen())
+
+            expect(
+                result.current.onShouldStartLoadWithRequest({
+                    url: 'https://giftcards.bidali.com/dapp',
                 } as never),
             ).toBe(true)
         })

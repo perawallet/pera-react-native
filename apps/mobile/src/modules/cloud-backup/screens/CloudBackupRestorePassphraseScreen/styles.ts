@@ -42,12 +42,16 @@ export const useStyles = makeStyles(theme => ({
     inputContainer: {
         backgroundColor: theme.colors.background,
         borderBottomWidth: theme.borders.sm,
+        borderRadius: theme.borderRadius.none,
+        minHeight: theme.controlHeight.sm,
         borderBottomColor: theme.colors.layerGray,
         flexShrink: 1,
     },
     focusedInputContainer: {
         backgroundColor: theme.colors.background,
         borderBottomWidth: theme.borders.sm,
+        borderRadius: theme.borderRadius.none,
+        minHeight: theme.controlHeight.sm,
         borderBottomColor: theme.colors.textMain,
         flexShrink: 1,
     },

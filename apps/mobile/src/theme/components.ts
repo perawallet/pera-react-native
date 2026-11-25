@@ -11,7 +11,7 @@
  */
 
 import type { CreateThemeOptions } from '@rneui/themed'
-import { getFontFamily } from './typography'
+import { getFontFamily, getTypography } from './typography'
 
 export const componentOverrides: CreateThemeOptions['components'] = {
     Button: (_, theme) => ({
@@ -75,16 +75,12 @@ export const componentOverrides: CreateThemeOptions['components'] = {
             borderRadius: theme.spacing.xs,
         },
         labelStyle: {
-            fontFamily: getFontFamily(400),
-            fontSize: 13,
+            ...getTypography(theme, 'bodyCompact'),
             color: theme.colors.textGray,
             marginBottom: theme.spacing.xs,
         },
         inputContainerStyle: {
-            backgroundColor:
-                theme.mode === 'dark'
-                    ? theme.colors.layerGrayLightest
-                    : theme.colors.layerGrayLighter,
+            backgroundColor: theme.colors.layerGrayLighter,
             borderBottomWidth: theme.borders.none,
         },
         rightIconContainerStyle: {
@@ -94,10 +90,7 @@ export const componentOverrides: CreateThemeOptions['components'] = {
             theme.mode === 'dark'
                 ? theme.colors.textGray
                 : theme.colors.textMain,
-        placeholderTextColor:
-            theme.mode === 'dark'
-                ? theme.colors.textGrayLighter
-                : theme.colors.textGray,
+        placeholderTextColor: theme.colors.textGrayLighter,
         renderErrorMessage: false,
     }),
     Skeleton: (_, theme) => ({

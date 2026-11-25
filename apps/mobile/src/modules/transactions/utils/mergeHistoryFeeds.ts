@@ -102,10 +102,7 @@ export const mergeHistoryFeeds = (
     feeds: readonly Optional<HistoryFeedSnapshot>[],
 ): MergedHistory => {
     const entriesByFeed = feeds.map(feed =>
-        (feed?.rows ?? []).filter(isEntryRow).map(row => ({
-            ...row,
-            networkChainId: feed!.scope.chainId,
-        })),
+        (feed?.rows ?? []).filter(isEntryRow),
     )
 
     // A feed that loaded nothing or paused holds nothing back. One whose later

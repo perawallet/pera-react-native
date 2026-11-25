@@ -13,3 +13,4 @@
 // Web-only entry: import it from `.web` files only. Kept off `index.ts`, whose
 // every consumer would otherwise load the bottom-sheet prompt.
 export { useNetworkSwitchPrompt } from './providers/useNetworkSwitchPrompt'
+export { useWatchAssetPrompt } from './providers/useWatchAssetPrompt'

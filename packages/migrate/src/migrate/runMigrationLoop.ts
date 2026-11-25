@@ -31,6 +31,7 @@ import {
     removeAccountFromStore,
 } from './accountStoreOps'
 import { migrationChainAdapters } from '../chain-adapter'
+import { useMigrationGateStore } from '../store'
 import type {
     ImportedHdRoot,
     MigratedAccountPair,
@@ -62,6 +63,9 @@ export const runMigrationLoop = async (
     const existingAddresses = new Set(
         useAccountsStore.getState().accounts.map(addressOf),
     )
+    const removedAddresses = new Set(
+        useMigrationGateStore.getState().removedAccountAddresses,
+    )
     const hdSeedsById = new Map(args.hdSeeds.map(w => [w.walletId, w]))
     const importedHdRoots = new Map<string, ImportedHdRoot>()
     const pendingMetadata: MigratedAccountPair[] = []
@@ -74,6 +78,11 @@ export const runMigrationLoop = async (
         // removed record so a failed reimport can restore it instead of
         // orphaning the user's visible account.
         let removedForReconcile: Nullable<WalletAccount> = null
+        // A manual watch-only re-add does not invite migration to restore its key.
+        if (removedAddresses.has(account.address)) {
+            summary.skipped += 1
+            continue
+        }
         if (existingAddresses.has(account.address)) {
             const existing = useAccountsStore
                 .getState()
@@ -155,7 +164,10 @@ export const runMigrationLoop = async (
     }
 
     for (const undecodable of args.undecodableAccounts ?? []) {
-        if (existingAddresses.has(undecodable.address)) {
+        if (
+            existingAddresses.has(undecodable.address) ||
+            removedAddresses.has(undecodable.address)
+        ) {
             summary.skipped += 1
             continue
         }

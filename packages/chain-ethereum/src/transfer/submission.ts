@@ -169,6 +169,8 @@ export type SubmitAndRecordEthereumTransactionsParams = {
     flow: SubmissionFlow
     /** Index-aligned with `signedTransactions`; a transaction without one is left out of history. */
     historyEntries: readonly SubmissionHistoryEntry[]
+    /** The pending send the wallet's own speed-up or cancel re-prices; nothing else may replace a send at a held nonce. */
+    replacesTxId?: string
     db?: Database
 }
 
@@ -281,13 +283,19 @@ const isSameAddress = (a: Maybe<string>, b: string): boolean =>
 // Two sends built before either was recorded pick the same nonce, and the
 // second would replace the first, leaving its dApp a hash that never mines.
 // A speed-up resends the original's call and a cancel sends nothing to the
-// sender; any other transaction at a held nonce is that collision.
+// sender; any other transaction at a held nonce is that collision. The shape
+// alone proves nothing: a dApp can ask for a zero-value self-send, and a gap
+// fill is cancel-shaped, so only a replacement naming the held send may replace.
 const isNonceCollision = (
     replaced: Optional<SubmissionAttempt>,
     parsed: ReturnType<typeof parseTransaction>,
     sender: string,
+    replacesTxId: Optional<string>,
 ): boolean => {
     if (!replaced) return false
+    if (replacesTxId === undefined || !replaced.txIds.includes(replacesTxId)) {
+        return true
+    }
     const original =
         replaced.rawTransaction != null
             ? readReplaceableTransaction(replaced.rawTransaction)
@@ -370,8 +378,8 @@ export class SubmissionLedgerUnreadableError extends TransportError {
  * Writes each transaction's ledger row before sending it, so a send that gets
  * no answer still holds its nonce. A ledger write failure never blocks the
  * send; a failed read of the nonce's open rows refuses it unsent with a
- * retryable `SubmissionLedgerUnreadableError`. A speed-up or cancel at a nonce an open attempt
- * already holds replaces it: the row links the two, and one that doesn't
+ * retryable `SubmissionLedgerUnreadableError`. A speed-up or cancel naming the
+ * open attempt that holds its nonce replaces it: the row links the two, and one that doesn't
  * outbid the original by the node's minimum bump is refused without being
  * sent. Any other send at a held nonce is refused the same way. On an
  * OP-stack chain the recorded max fee includes the oracle's fee for the
@@ -384,6 +392,7 @@ export const submitAndRecordEthereumTransactions = async ({
     signedTransactions,
     flow,
     historyEntries,
+    replacesTxId,
     db,
 }: SubmitAndRecordEthereumTransactionsParams): Promise<string[]> => {
     const txIds: string[] = []
@@ -417,7 +426,7 @@ export const submitAndRecordEthereumTransactions = async ({
                   ).catch((error: unknown) => {
                       throw new SubmissionLedgerUnreadableError(toError(error))
                   })
-        if (isNonceCollision(replaced, parsed, sender)) {
+        if (isNonceCollision(replaced, parsed, sender, replacesTxId)) {
             throw new SubmissionError(
                 [hash],
                 'rejected-by-node',

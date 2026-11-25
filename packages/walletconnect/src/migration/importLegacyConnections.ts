@@ -317,6 +317,9 @@ export const importLegacyConnections = async (options: {
                     chainId: reconstructed.chainId,
                     handshakeId: reconstructed.handshakeId,
                     permissions: reconstructed.permissions,
+                    permissionsApproved: reconstructed.permissions?.length
+                        ? true
+                        : undefined,
                 },
             })
             await store.upsert(connection)

@@ -49,6 +49,7 @@ vi.mock('react-native', () => ({
 vi.mock('react-native-webview', () => ({ default: {} }))
 
 vi.mock('@perawallet/wallet-core-config', () => ({
+    getIframeOrigins: (url: string) => [new URL(url).origin],
     config: {
         bidaliApiKey: 'test-key',
         bidaliBaseUrl: 'https://commerce.bidali.com/dapp',
@@ -110,6 +111,9 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         ...(await vi.importActual<
             typeof import('@packages/shared/src/errors/base')
         >('@packages/shared/src/errors/base')),
+        ...(await vi.importActual<
+            typeof import('@packages/shared/src/utils/strings')
+        >('@packages/shared/src/utils/strings')),
         generateOrderedUniqueId: () => 'id',
         registerStore: vi.fn(),
         logger: {

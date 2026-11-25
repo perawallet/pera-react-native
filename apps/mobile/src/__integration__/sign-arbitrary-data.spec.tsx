@@ -32,6 +32,8 @@ import {
     seedAlgo25Signer,
     seedQuantumSigner,
 } from '@test-utils/signing-review'
+import { measureScrollBody, scrollBodyTo } from '@test-utils/review-scroll'
+import { findEnabledByTestId, isElementDisabled } from '@test-utils/rnw'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { addressOf } from './__fixtures__/accounts'
 
@@ -82,6 +84,50 @@ describe('Flow: arbitrary-data (algo_signData) signing review', () => {
         expect(Array.isArray(delivered)).toBe(true)
         expect(delivered[0].signature).toBeInstanceOf(Uint8Array)
         expect(reject).not.toHaveBeenCalled()
+    })
+
+    it('names the signer above the data and holds Confirm on a review taller than its body until it is scrolled to the end', async () => {
+        const { request, approve } = buildArbitraryDataSignRequest({
+            messages: [{ message: 'Authenticate to dApp' }],
+        })
+        const { confirm } = renderSignReview(request)
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByTestId('arbitrary-data-confirm-slide'),
+                ).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
+
+        const signer = screen.getByText(
+            'signing.arbitrary_data_view.on_behalf_of',
+        )
+        const data = screen.getByText('signing.arbitrary_data_view.data_label')
+        expect(
+            signer.compareDocumentPosition(data) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy()
+
+        measureScrollBody('arbitrary-data-review-body', 400, 2000)
+
+        expect(
+            isElementDisabled(
+                screen.getByTestId('arbitrary-data-confirm-slide'),
+            ),
+        ).toBe(true)
+        expect(screen.getByTestId('review_scroll_hint')).toBeTruthy()
+
+        scrollBodyTo('arbitrary-data-review-body', 1600)
+        await findEnabledByTestId('arbitrary-data-confirm-slide')
+        confirm('arbitrary-data-confirm-slide')
+
+        await waitFor(
+            () => {
+                expect(approve).toHaveBeenCalled()
+            },
+            { timeout: 10_000 },
+        )
     })
 
     it('renders a binary payload as a hex dump with the unreadable-data warning', async () => {

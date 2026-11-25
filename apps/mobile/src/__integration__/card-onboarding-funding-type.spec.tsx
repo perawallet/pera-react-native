@@ -156,6 +156,26 @@ const ELSEWHERE_CARD_ADDRESS =
     'YHHOHURTKJF7VK6UAETAACBGAK3E4XZ4U3HTX7WACDKJCVBWTNCFBAWFRQ'
 const ELSEWHERE_OWNER_ADDRESS =
     '6LZGPL2AMVFL537W47DY5WBELKLHTKJ3O3E24W7XHFBICJILDT454CUV2Q'
+const ESCROW_CARD_ADDRESS =
+    'BEEQSCIJBEEQSCIJBEEQSCIJBEEQSCIJBEEQSCIJBEEQSCIJBEEURVP5F4'
+const RESTORED_CARD_ADDRESS =
+    'A4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DVZ36IB4'
+
+const mockCardBox = (ownerAddress: string, cardAddress: string) =>
+    http.get('*/v2/applications/:appId/box', () =>
+        HttpResponse.json({
+            name: '',
+            round: 1,
+            value: Buffer.from(
+                ABIType.from('(address,address,uint64,uint64)').encode([
+                    ownerAddress,
+                    cardAddress,
+                    0n,
+                    0n,
+                ]),
+            ).toString('base64'),
+        }),
+    )
 
 const LEDGER_ACCOUNT: HardwareWalletAccount = {
     id: 'hw-ledger-1',
@@ -310,12 +330,13 @@ describe('Flow: Card onboarding — select funding type', () => {
         let approvalBody: Record<string, unknown> | null = null
         server.use(
             mockCreateCard({
-                cardAddress: 'ESCROWCARD1',
+                cardAddress: ESCROW_CARD_ADDRESS,
                 txId: 'TX1',
                 onRequest: body => {
                     createBody = body
                 },
             }),
+            mockCardBox(FUNDING_ADDRESS, ESCROW_CARD_ADDRESS),
             mockPostAlgorandDelegationApproval({
                 onRequest: body => {
                     approvalBody = body
@@ -355,7 +376,7 @@ describe('Flow: Card onboarding — select funding type', () => {
         // whose nonce Baanx also matches against the single-use token.
         expect(approvalBody).toEqual(
             expect.objectContaining({
-                address: 'ESCROWCARD1',
+                address: ESCROW_CARD_ADDRESS,
                 network: 'algorand',
                 currency: 'usdc',
                 amount: '0',
@@ -379,7 +400,9 @@ describe('Flow: Card onboarding — select funding type', () => {
                 FundingType.Manual,
             ),
         )
-        expect(useCardStore.getState().escrowCardAddress).toBe('ESCROWCARD1')
+        expect(useCardStore.getState().escrowCardAddress).toBe(
+            ESCROW_CARD_ADDRESS,
+        )
         expect(useCardStore.getState().escrowCardTxId).toBe('TX1')
         expect(useCardStore.getState().escrowCardApproved).toBe(true)
     })
@@ -389,7 +412,8 @@ describe('Flow: Card onboarding — select funding type', () => {
         let lsigBody: Record<string, unknown> | null = null
         server.use(
             mockAlgodTealCompile(),
-            mockCreateCard({ cardAddress: 'ESCROWCARD1', txId: 'TX1' }),
+            mockCreateCard({ cardAddress: ESCROW_CARD_ADDRESS, txId: 'TX1' }),
+            mockCardBox(FUNDING_ADDRESS, ESCROW_CARD_ADDRESS),
             mockPostAlgorandDelegationApproval({
                 onRequest: body => {
                     approvalBody = body
@@ -436,7 +460,7 @@ describe('Flow: Card onboarding — select funding type', () => {
         expect(lsigBody).toEqual(
             expect.objectContaining({
                 delegatorAddress: FUNDING_ADDRESS,
-                cardAddress: 'ESCROWCARD1',
+                cardAddress: ESCROW_CARD_ADDRESS,
                 currency: 'usdc',
                 blockchain: 'algorand',
             }),
@@ -473,7 +497,8 @@ describe('Flow: Card onboarding — select funding type', () => {
     it('Given the approval call fails after creation, then the card persists unapproved and no funding type is set', async () => {
         server.use(
             mockAlgodTealCompile(),
-            mockCreateCard({ cardAddress: 'ESCROWCARD1', txId: 'TX1' }),
+            mockCreateCard({ cardAddress: ESCROW_CARD_ADDRESS, txId: 'TX1' }),
+            mockCardBox(FUNDING_ADDRESS, ESCROW_CARD_ADDRESS),
             mockPostAlgorandDelegationApproval({ status: 500 }),
         )
 
@@ -496,7 +521,7 @@ describe('Flow: Card onboarding — select funding type', () => {
         // even though the Baanx approval call failed.
         await waitFor(() =>
             expect(useCardStore.getState().escrowCardAddress).toBe(
-                'ESCROWCARD1',
+                ESCROW_CARD_ADDRESS,
             ),
         )
         expect(useCardStore.getState().escrowCardApproved).toBe(false)
@@ -506,7 +531,8 @@ describe('Flow: Card onboarding — select funding type', () => {
     it('Given the LSig leg fails after creation, when the user cancels, then the card persists approved and Auto degrades to Manual', async () => {
         server.use(
             mockAlgodTealCompile(),
-            mockCreateCard({ cardAddress: 'ESCROWCARD1', txId: 'TX1' }),
+            mockCreateCard({ cardAddress: ESCROW_CARD_ADDRESS, txId: 'TX1' }),
+            mockCardBox(FUNDING_ADDRESS, ESCROW_CARD_ADDRESS),
             mockPostAlgorandDelegationApproval(),
             mockPostAutoDrawDelegation({ status: 500 }),
         )
@@ -524,7 +550,7 @@ describe('Flow: Card onboarding — select funding type', () => {
         // Card is created + approved (persisted) before the authorize step.
         await waitFor(() =>
             expect(useCardStore.getState().escrowCardAddress).toBe(
-                'ESCROWCARD1',
+                ESCROW_CARD_ADDRESS,
             ),
         )
         expect(useCardStore.getState().escrowCardApproved).toBe(true)
@@ -559,7 +585,8 @@ describe('Flow: Card onboarding — select funding type', () => {
     it('Given the kill-switch is off, then Auto shows the coming-soon hint and Create persists Manual', async () => {
         autoFunding.enabled = false
         server.use(
-            mockCreateCard({ cardAddress: 'ESCROWCARD1', txId: 'TX1' }),
+            mockCreateCard({ cardAddress: ESCROW_CARD_ADDRESS, txId: 'TX1' }),
+            mockCardBox(FUNDING_ADDRESS, ESCROW_CARD_ADDRESS),
             mockPostAlgorandDelegationApproval(),
         )
 
@@ -660,20 +687,7 @@ describe('Flow: Card onboarding — select funding type', () => {
                     },
                 ]),
             ),
-            http.get('*/v2/applications/:appId/box', () =>
-                HttpResponse.json({
-                    name: '',
-                    round: 1,
-                    value: Buffer.from(
-                        ABIType.from('(address,address,uint64,uint64)').encode([
-                            ELSEWHERE_OWNER_ADDRESS,
-                            ELSEWHERE_CARD_ADDRESS,
-                            0n,
-                            0n,
-                        ]),
-                    ).toString('base64'),
-                }),
-            ),
+            mockCardBox(ELSEWHERE_OWNER_ADDRESS, ELSEWHERE_CARD_ADDRESS),
         )
 
         renderStatus()
@@ -725,12 +739,13 @@ describe('Flow: Card onboarding — select funding type', () => {
                     {
                         address: FUNDING_ADDRESS,
                         linkState: 'linked_to_caller',
-                        cardAddress: 'RESTOREDCARDADDRESS',
+                        cardAddress: RESTORED_CARD_ADDRESS,
                     },
                     { status: 200 },
                 ),
             ),
             http.get('*/v1/wallet/external', () => HttpResponse.json([])),
+            mockCardBox(FUNDING_ADDRESS, RESTORED_CARD_ADDRESS),
         )
 
         renderStatus()
@@ -740,7 +755,7 @@ describe('Flow: Card onboarding — select funding type', () => {
         await waitFor(
             () =>
                 expect(useCardStore.getState().escrowCardAddress).toBe(
-                    'RESTOREDCARDADDRESS',
+                    RESTORED_CARD_ADDRESS,
                 ),
             { timeout: 5000 },
         )

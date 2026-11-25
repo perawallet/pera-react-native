@@ -11,6 +11,7 @@
  */
 
 import { useInboxInvalidator } from '@perawallet/wallet-core-messages'
+import { isDraftSignRequestId } from '@perawallet/wallet-core-multisig'
 import {
     chainIdOfSignRequest,
     isTransactionRequest,
@@ -27,7 +28,7 @@ import { usePendingSignaturesSheet } from './usePendingSignaturesSheet'
  * here too. Subscribes to the signing event bus, so dedupe is intrinsic.
  */
 export const useMultisigProposeListener = () => {
-    const { showSignRequest } = usePendingSignaturesSheet()
+    const { enqueueSignRequest, replaceDraft } = usePendingSignaturesSheet()
     const { invalidate: invalidateInbox } = useInboxInvalidator()
     const { pendingSignRequests } = useSigningRequest()
 
@@ -61,10 +62,19 @@ export const useMultisigProposeListener = () => {
                     r.signRequestId === result.signRequestId,
             )
             if (hasQueuedSiblingCosign) return
-            showSignRequest(
-                result.signRequestId,
-                chainIdOfSignRequest(event.request),
-            )
+            const chainId = chainIdOfSignRequest(event.request)
+            const draftId = isTransactionRequest(event.request)
+                ? event.request.signRequestId
+                : undefined
+            if (
+                draftId &&
+                isDraftSignRequestId(draftId) &&
+                draftId !== result.signRequestId
+            ) {
+                replaceDraft(draftId, result.signRequestId, chainId)
+                return
+            }
+            enqueueSignRequest(result.signRequestId, chainId)
         },
     )
 }

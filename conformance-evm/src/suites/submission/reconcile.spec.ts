@@ -11,10 +11,16 @@
  */
 
 import { describe, expect, it, vi } from 'vitest'
-import { createEvmClient } from '@perawallet/wallet-core-chain-ethereum/blockchain/utils/createEvmClient'
 import {
+    createEvmClient,
+    createEvmNodeClients,
+} from '@perawallet/wallet-core-chain-ethereum/blockchain/utils/createEvmClient'
+import {
+    DROPPED_ABSENCE_PASSES,
+    DROPPED_ABSENCE_SPAN_MS,
     DROPPED_GRACE_MS,
     reconcileEthereumSubmissions,
+    type AbsenceSightings,
     type ProbeFailureStreaks,
     type ProbeRotation,
     type SubmissionSettledHandlers,
@@ -57,13 +63,17 @@ const setUp = async (finality: Finality = { kind: 'instant' }) => {
     const handlers: SubmissionSettledHandlers = new Map([['pipeline', settled]])
     const probeFailures: ProbeFailureStreaks = new Map()
     const probeRotation: ProbeRotation = new Set()
+    const absences: AbsenceSightings = new Map()
     const reconcile = (limit?: number) =>
         reconcileEthereumSubmissions({
             chain,
             settleHandlers: handlers,
             probeFailures,
             probeRotation,
+            absences,
             getClient: scope => createEvmClient(scope, env.ctx, env.evmChain),
+            getNodeClients: scope =>
+                createEvmNodeClients(scope, env.ctx, env.evmChain),
             db: env.db,
             limit,
         })
@@ -82,6 +92,26 @@ const afterGrace = async <T>(fn: () => Promise<T>): Promise<T> => {
     } finally {
         vi.useRealTimers()
     }
+}
+
+// Spread so the last pass spans the absence window.
+const absencePasses = async <T>(
+    count: number,
+    pass: () => Promise<T>,
+): Promise<T[]> => {
+    const results: T[] = []
+    for (let index = 0; index < count; index++) {
+        if (index > 0) {
+            vi.setSystemTime(
+                Date.now() +
+                    Math.ceil(
+                        DROPPED_ABSENCE_SPAN_MS / (DROPPED_ABSENCE_PASSES - 1),
+                    ),
+            )
+        }
+        results.push(await pass())
+    }
+    return results
 }
 
 const dropFromPool = async (env: EvmConformanceEnv, hash: `0x${string}`) => {
@@ -189,6 +219,7 @@ describe('evm submission reconcile', () => {
                             original.raw,
                         )
                     ).raw,
+                    originalHash,
                 )
                 await mine(env.chain)
                 return { originalHash, replacementHash }
@@ -232,12 +263,13 @@ describe('evm submission reconcile', () => {
             })
             expect(await statuses()).toEqual(['submitted'])
 
-            expect(await afterGrace(reconcile)).toEqual({
-                probed: 1,
-                confirmed: 0,
-                progressed: 0,
-                failed: 1,
-            })
+            const passes = await afterGrace(() =>
+                absencePasses(DROPPED_ABSENCE_PASSES, () => reconcile()),
+            )
+            expect(passes.map(({ failed }) => failed)).toEqual([
+                ...Array<number>(DROPPED_ABSENCE_PASSES - 1).fill(0),
+                1,
+            ])
             expect(await statuses()).toEqual(['failed'])
             expect(settled).toHaveBeenCalledExactlyOnceWith(
                 [hash],
@@ -258,11 +290,12 @@ describe('evm submission reconcile', () => {
                 RECIPIENT,
                 AMOUNT,
             )
-            await submitAndRecord(env, original.raw)
+            const originalHash = await submitAndRecord(env, original.raw)
             const replacementHash = await submitAndRecord(
                 env,
                 (await signedReplacement(env, sender, 'speed-up', original.raw))
                     .raw,
+                originalHash,
             )
             // The node evicted the original on the replacement; dropping the
             // replacement too leaves the nonce with nothing pooled.
@@ -279,8 +312,9 @@ describe('evm submission reconcile', () => {
             expect(await statuses()).toEqual(['submitted', 'submitted'])
 
             // Once the replacement fails, nothing newer holds the nonce.
-            await afterGrace(() => reconcile())
-            await afterGrace(() => reconcile())
+            await afterGrace(() =>
+                absencePasses(2 * DROPPED_ABSENCE_PASSES, () => reconcile()),
+            )
             expect(await statuses()).toEqual(['failed', 'failed'])
         })
     })

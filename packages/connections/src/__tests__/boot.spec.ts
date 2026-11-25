@@ -20,12 +20,29 @@ import { bootConnections } from '../boot'
 import type { ConnectionRegistry } from '../registry'
 import { useConnectionsStore } from '../store'
 
-const connection = (id: string): Connection => ({
+vi.mock('@perawallet/wallet-core-accounts', async () => {
+    const { create: createStore } = await import('zustand')
+    return {
+        useAccountsStore: Object.assign(
+            createStore(() => ({
+                connectionRevokedThrough: { gone: 0 },
+            })),
+            {
+                persist: {
+                    hasHydrated: () => true,
+                    onFinishHydration: () => () => {},
+                },
+            },
+        ),
+    }
+})
+
+const connection = (id: string, accounts: string[] = []): Connection => ({
     id,
     kind: 'walletconnect-v1',
     name: 'Tinyman',
     peer: { name: 'Tinyman' },
-    accounts: [],
+    accounts,
     status: 'active',
     createdAt: 0,
     lastActiveAt: 0,
@@ -131,6 +148,45 @@ describe('bootConnections', () => {
             expect.objectContaining({ error: new Error('corrupt record') }),
         )
         error.mockRestore()
+    })
+
+    it('disconnects the connections of removed accounts once restored', async () => {
+        const order: string[] = []
+        const registry = makeRegistry(order)
+
+        await bootConnections({
+            registry,
+            store: makeStore([
+                connection('removed', ['GONE']),
+                connection('kept', ['HELD']),
+            ]).api,
+            keystoreReady: Promise.resolve(),
+        })
+        await flush()
+
+        expect(registry.disconnect).toHaveBeenCalledTimes(1)
+        expect(registry.disconnect).toHaveBeenCalledWith('removed')
+    })
+
+    it('does not disconnect an orphaned connection before the host is ready', async () => {
+        const registry = makeRegistry([])
+        let release: () => void = () => {}
+        const ready = new Promise<void>(resolve => {
+            release = resolve
+        })
+
+        await bootConnections({
+            registry,
+            store: makeStore([connection('removed', ['GONE'])]).api,
+            keystoreReady: Promise.resolve(),
+            beforeAccountCleanup: () => ready,
+        })
+        expect(registry.disconnect).not.toHaveBeenCalled()
+
+        release()
+        await flush()
+
+        expect(registry.disconnect).toHaveBeenCalledWith('removed')
     })
 
     it('skips the import step when none is supplied', async () => {

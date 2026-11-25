@@ -21,6 +21,7 @@ import { useEthereumTransactionPresentation } from '@modules/ethereum/hooks/useE
 import { EthereumTransactionDetailSection } from '../../EthereumTransactionDetailSection'
 import { EthereumRecordAmountCard } from '../EthereumRecordAmountCard'
 import { EthereumRecordNftCard } from '../EthereumRecordNftCard'
+import { recordPricingOf } from '@modules/ethereum/utils/transactionPricing'
 
 type EthereumRecordReadBodyProps = {
     record: TransactionRecord
@@ -42,6 +43,7 @@ export const EthereumRecordReadBody = ({
         presentation,
     )
     const { nft, handleOpen } = useEthereumRecordNft(record)
+    const isSwap = record.summary.kind === 'swap'
 
     return (
         <TransactionDetailLayout
@@ -54,7 +56,9 @@ export const EthereumRecordReadBody = ({
                             isAmountInHero={
                                 !!summary.amount || !!summary.isAmountLoading
                             }
-                            isAssetInCard={!!nft}
+                            // A swap's legs below name both its assets.
+                            isAssetInCard={!!nft || isSwap}
+                            historyPricing={recordPricingOf(record)}
                         />
                     )}
                     {nft ? (
@@ -67,6 +71,7 @@ export const EthereumRecordReadBody = ({
                         <EthereumRecordAmountCard
                             changes={amountRows}
                             scope={record.scope}
+                            isSwap={isSwap}
                         />
                     )}
                 </>

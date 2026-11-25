@@ -217,7 +217,7 @@ describe('PWWebView.web', () => {
         expect(showToast).not.toHaveBeenCalled()
     })
 
-    it('routes to onCustomMessage before any gating when provided', () => {
+    it('routes to onCustomMessage with the mount origin before any gating when provided', () => {
         const onCustomMessage = vi.fn()
         render(
             <PWWebView
@@ -227,7 +227,14 @@ describe('PWWebView.web', () => {
             />,
         )
         hostParams.current!.onMessage({ anything: true })
-        expect(onCustomMessage).toHaveBeenCalledWith({ anything: true })
+        expect(onCustomMessage).toHaveBeenCalledWith(
+            { anything: true },
+            {
+                securedConnection: true,
+                sourceUrl: DISCOVER,
+                isAuthenticatedFrame: true,
+            },
+        )
         expect(handleMessage).not.toHaveBeenCalled()
     })
 

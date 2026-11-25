@@ -183,7 +183,7 @@ describe('Flow: suspected address poisoning in Algorand history', () => {
         renderWithNavigation(AccountHistory, 'AccountHistory')
 
         await screen.findByTestId(
-            `transaction_row_suspected_poisoning_${TX_POISON.id}`,
+            `transaction_row_suspicious_${TX_POISON.id}`,
             undefined,
             { timeout: SLOW_WAIT_TIMEOUT_MS },
         )
@@ -197,7 +197,7 @@ describe('Flow: suspected address poisoning in Algorand history', () => {
         ])
         expect(
             screen.queryByTestId(
-                `transaction_row_suspected_poisoning_${TX_STRANGER.id}`,
+                `transaction_row_suspicious_${TX_STRANGER.id}`,
             ),
         ).toBeNull()
     })
@@ -213,7 +213,7 @@ describe('Flow: suspected address poisoning in Algorand history', () => {
             ],
         })
         await screen.findByTestId(
-            `transaction_row_suspected_poisoning_${TX_POISON.id}`,
+            `transaction_row_suspicious_${TX_POISON.id}`,
             undefined,
             { timeout: SLOW_WAIT_TIMEOUT_MS },
         )
@@ -236,6 +236,7 @@ describe('Flow: suspected address poisoning in Algorand history', () => {
         expect(notice.textContent).toContain(
             'send_funds.recipient_safety.look_alike_known_label_contact',
         )
+        expect(screen.getByTestId('suspected_poisoning_dismiss')).toBeTruthy()
 
         const from = await screen.findByTestId('transaction_detail_from')
         const sender = closestPressable(
@@ -311,7 +312,7 @@ describe('Flow: suspected address poisoning in Algorand history', () => {
             ])
             expect(
                 screen.queryByTestId(
-                    `transaction_row_suspected_poisoning_${TX_NEWER.id}`,
+                    `transaction_row_suspicious_${TX_NEWER.id}`,
                 ),
             ).toBeNull()
 
@@ -328,14 +329,12 @@ describe('Flow: suspected address poisoning in Algorand history', () => {
             })
 
             await screen.findByTestId(
-                `transaction_row_suspected_poisoning_${TX_NEWER.id}`,
+                `transaction_row_suspicious_${TX_NEWER.id}`,
                 undefined,
                 { timeout: SLOW_WAIT_TIMEOUT_MS },
             )
             expect(
-                screen.getByTestId(
-                    `transaction_row_suspected_poisoning_${TX_OLDER.id}`,
-                ),
+                screen.getByTestId(`transaction_row_suspicious_${TX_OLDER.id}`),
             ).toBeDefined()
             expect(rowIds()).toEqual([
                 `transaction_row_${TX_NEWER.id}`,
@@ -363,7 +362,7 @@ describe('Flow: suspected address poisoning in Algorand history', () => {
                 ],
             })
             await screen.findByTestId(
-                `transaction_row_suspected_poisoning_${TX_NEWER.id}`,
+                `transaction_row_suspicious_${TX_NEWER.id}`,
                 undefined,
                 { timeout: SLOW_WAIT_TIMEOUT_MS },
             )

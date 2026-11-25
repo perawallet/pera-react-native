@@ -94,6 +94,46 @@ describe('useTransactionsFilterContent', () => {
         })
     })
 
+    it('flips hiding suspicious transactions, keeping the custom range and type in force', () => {
+        const customRange = {
+            from: new Date('2026-11-01'),
+            to: new Date('2026-11-20'),
+        }
+        const { result } = renderHook(() =>
+            useTransactionsFilterContent({
+                activeFilter: TransactionFilter.CustomRange,
+                initialCustomRange: customRange,
+                activeHistoryType: 'swaps',
+                isSuspiciousHidden: false,
+            }),
+        )
+
+        act(() => result.current.handleToggleSuspiciousHidden())
+
+        expect(mocks.resolve).toHaveBeenCalledWith({
+            filter: TransactionFilter.CustomRange,
+            customRange,
+            historyType: 'swaps',
+            isSuspiciousHidden: true,
+        })
+    })
+
+    it('turns hiding suspicious transactions back off, with the preset range alone', () => {
+        const { result } = renderHook(() =>
+            useTransactionsFilterContent({
+                activeFilter: TransactionFilter.LastWeek,
+                isSuspiciousHidden: true,
+            }),
+        )
+
+        act(() => result.current.handleToggleSuspiciousHidden())
+
+        expect(mocks.resolve).toHaveBeenCalledWith({
+            filter: TransactionFilter.LastWeek,
+            isSuspiciousHidden: false,
+        })
+    })
+
     it('opens the custom range view instead of resolving', () => {
         const { result } = renderHook(() =>
             useTransactionsFilterContent({

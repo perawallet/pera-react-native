@@ -137,9 +137,7 @@ describe('useDataSigningHandler', () => {
 
     const render = () => {
         const webview = createMockWebview()
-        const { result } = renderHook(() =>
-            useDataSigningHandler(webview, SOURCE_URL),
-        )
+        const { result } = renderHook(() => useDataSigningHandler(webview))
         return { webview, handle: result.current }
     }
 

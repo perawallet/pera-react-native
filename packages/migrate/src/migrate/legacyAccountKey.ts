@@ -10,15 +10,16 @@
  limitations under the License
  */
 
-import {
-    isAddressBackedUp,
-    useBackupSyncStateStore,
-} from '@perawallet/wallet-core-backup'
+import { getSecretMetadata, hasSecret } from '@perawallet/wallet-core-kms'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
-/** One account's backup state, for callers that need nothing else:
- *  `useBackupAccountReview` also builds the mutation and the review buckets, so
- *  reading this through it re-renders on every account and sync-state change. */
-export const useIsAccountBackedUp = (address: string): boolean =>
-    useBackupSyncStateStore(state =>
-        isAddressBackedUp(state.syncState, address),
-    )
+export const holdsLegacyAccountKey = (
+    keyPairId: Optional<string>,
+    needsParent: boolean,
+): boolean => {
+    if (!keyPairId || !hasSecret(keyPairId)) return false
+    const parentKeyId = getSecretMetadata(keyPairId)?.parentKeyId
+    return typeof parentKeyId === 'string'
+        ? hasSecret(parentKeyId)
+        : !needsParent
+}

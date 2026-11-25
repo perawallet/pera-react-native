@@ -17,6 +17,7 @@ import {
     arc59AssetRequestsResponseSchema,
     mapArc59AssetRequest,
     MAX_ARC59_FUNDING_MICRO_ALGO,
+    MAX_ARC59_INNER_TX_COUNT,
     type Arc59AssetRequestResponse,
 } from '../schema'
 import { getArc59SignedFundingAmount } from '../../getArc59SignedFundingAmount'
@@ -128,6 +129,19 @@ describe('arc59SendSummaryResponseSchema', () => {
                 minimum_balance_requirement: 1,
             }),
         ).toThrow()
+    })
+
+    test.each([
+        [MAX_ARC59_INNER_TX_COUNT, true],
+        [MAX_ARC59_INNER_TX_COUNT + 1, false],
+        [5_000_000, false],
+    ])('parses an inner_tx_count of %i: %s', (count, isAccepted) => {
+        const result = arc59SendSummaryResponseSchema.safeParse({
+            ...validSummary,
+            inner_tx_count: count,
+        })
+
+        expect(result.success).toBe(isAccepted)
     })
 
     test('accepts a funding total exactly at the ceiling', () => {

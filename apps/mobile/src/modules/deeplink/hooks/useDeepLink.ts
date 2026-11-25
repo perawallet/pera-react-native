@@ -803,7 +803,12 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 }
 
                 case DeeplinkType.SIGN_REQUEST: {
-                    showSignRequest(parsedData.signRequestId)
+                    if (!showSignRequest(parsedData.signRequestId)) {
+                        infoToast(
+                            t('multisig.pending_signatures.request_open_title'),
+                            t('multisig.pending_signatures.request_open_body'),
+                        )
+                    }
                     break
                 }
 

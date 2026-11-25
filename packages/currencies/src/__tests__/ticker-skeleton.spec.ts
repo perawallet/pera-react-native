@@ -11,7 +11,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { toTickerSkeleton } from '../ticker-skeleton'
+import { hasLatinLookalike, toTickerSkeleton } from '../ticker-skeleton'
 
 const text = (...codePoints: number[]) => String.fromCodePoint(...codePoints)
 
@@ -51,6 +51,22 @@ describe('toTickerSkeleton', () => {
         'leaves %j distinct from ETH',
         unitName => {
             expect(toTickerSkeleton(unitName)).toBe(unitName)
+        },
+    )
+})
+
+describe('hasLatinLookalike', () => {
+    it.each([
+        ['USDꓚ', 'a Lisu C'],
+        ['ЕΤН', 'a Cyrillic E and a Greek T'],
+    ])('flags %j, which spells Latin with %s', unitName => {
+        expect(hasLatinLookalike(unitName)).toBe(true)
+    })
+
+    it.each(['USDC', 'stETH', 'WETH', '币安币', ''])(
+        'leaves %j unflagged',
+        unitName => {
+            expect(hasLatinLookalike(unitName)).toBe(false)
         },
     )
 })

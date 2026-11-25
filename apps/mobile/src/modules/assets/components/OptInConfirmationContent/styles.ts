@@ -31,7 +31,7 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.xs,
     },
     unitName: {
-        color: theme.colors.textGrayLighter,
+        color: theme.colors.textGray,
     },
     divider: {
         height: theme.borders.sm,
@@ -46,7 +46,7 @@ export const useStyles = makeStyles(theme => ({
         minWidth: 0,
     },
     rowLabel: {
-        color: theme.colors.textGrayLighter,
+        color: theme.colors.textGray,
         flexShrink: 1,
         minWidth: 0,
     },
@@ -58,7 +58,7 @@ export const useStyles = makeStyles(theme => ({
     // AddressDisplay value side hugs its content (`hugContent`) and truncates
     // instead, mirroring the OnrampDetailRow address rows.
     accountLabel: {
-        color: theme.colors.textGrayLighter,
+        color: theme.colors.textGray,
     },
     description: {
         color: theme.colors.textMain,

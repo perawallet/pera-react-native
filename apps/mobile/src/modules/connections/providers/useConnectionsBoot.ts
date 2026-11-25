@@ -17,6 +17,7 @@ import {
     type ConnectionRegistry,
 } from '@perawallet/wallet-core-connections'
 import { useNeedsMigration } from '@perawallet/wallet-core-migrate'
+import { whenAppUnlocked } from '@perawallet/wallet-core-security'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 // lanekeep-ignore-next-line pera/no-wc-imports-in-connections-module reason: the legacy v1 import is a boot step of the composition root, not a protocol decision
 import { importLegacyConnections } from '@perawallet/wallet-core-walletconnect'
@@ -29,7 +30,7 @@ export const useConnectionsBoot = (registry: ConnectionRegistry): void => {
     // (see `activeRegistry`). An effect, so StrictMode's mount/unmount/mount
     // pairs the clear with a set.
     useEffect(() => {
-        setActiveConnectionRegistry(registry)
+        setActiveConnectionRegistry(registry, getProvider().connections.store)
         return () => setActiveConnectionRegistry(null)
     }, [registry])
 
@@ -48,6 +49,7 @@ export const useConnectionsBoot = (registry: ConnectionRegistry): void => {
             registry,
             store: getProvider().connections.store,
             keystoreReady: getKeystore().ready,
+            beforeAccountCleanup: whenAppUnlocked,
             importLegacy: () =>
                 importLegacyConnections({
                     storage: getProvider().keyValueStorage,

@@ -27,7 +27,7 @@ export const useStyles = makeStyles(theme => ({
     },
     label: {
         ...getTypography(theme, 'footnoteMedium'),
-        color: theme.colors.textGrayLighter,
+        color: theme.colors.textGray,
     },
     inlineLink: {
         alignSelf: 'flex-start',

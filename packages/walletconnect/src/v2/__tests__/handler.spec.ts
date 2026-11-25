@@ -147,13 +147,18 @@ const makeHandler = (
         createWalletKit?: Mock<WalletKitFactory>
         startWhen?: () => Promise<void>
         getNetworkId?: () => string
+        keyValueStorage?: MemoryKeyValueStorage
+        shouldRevokeForAccountRemoval?: (
+            connection: Pick<Connection, 'accounts' | 'createdAt'>,
+        ) => boolean
     } = {},
 ) => {
     const walletKit = overrides.walletKit ?? createFakeWalletKit()
     const createWalletKit =
         overrides.createWalletKit ??
         vi.fn<WalletKitFactory>(async () => walletKit)
-    const keyValueStorage = new MemoryKeyValueStorage()
+    const keyValueStorage =
+        overrides.keyValueStorage ?? new MemoryKeyValueStorage()
     const handler = createWalletConnectV2Handler({
         getNetworkId: overrides.getNetworkId ?? (() => 'mainnet'),
         isDappConnectEnabled: () => true,
@@ -161,6 +166,7 @@ const makeHandler = (
         keyValueStorage,
         createWalletKit,
         startWhen: overrides.startWhen,
+        shouldRevokeForAccountRemoval: overrides.shouldRevokeForAccountRemoval,
     })
     return { handler, walletKit, createWalletKit, keyValueStorage }
 }
@@ -326,6 +332,173 @@ describe('deferred start', () => {
             topic: TOPIC,
             reason: expect.objectContaining({ code: 6000 }),
         })
+    })
+
+    it('retries a pending revocation after unlock even with no stored sessions', async () => {
+        const walletKit = createFakeWalletKit({ [TOPIC]: makeSession() })
+        walletKit.disconnectSession.mockRejectedValueOnce(new Error('offline'))
+        const keyValueStorage = new MemoryKeyValueStorage()
+        const store = memoryStore([storedV2Record()])
+        const first = makeHandler({ walletKit, keyValueStorage })
+        await first.handler.initialize(makeContext(store))
+        await first.handler.disconnect(TOPIC)
+        await first.handler.teardown()
+
+        const { startWhen, open } = gate()
+        const { handler, createWalletKit } = makeHandler({
+            walletKit,
+            keyValueStorage,
+            startWhen,
+        })
+        await handler.initialize(makeContext(store))
+        expect(createWalletKit).not.toHaveBeenCalled()
+        expect(await store.list()).toEqual([])
+
+        open()
+        await flush()
+
+        expect(createWalletKit).toHaveBeenCalledOnce()
+        expect(walletKit.disconnectSession).toHaveBeenCalledTimes(2)
+        expect(walletKit.getActiveSessions()).not.toHaveProperty(TOPIC)
+        expect(await store.list()).toEqual([])
+        expect(
+            keyValueStorage.getItem('wallet-connect-v2:revoked-topics'),
+        ).toBeNull()
+        await handler.teardown()
+    })
+
+    it.each([true, false])(
+        'does not restore a session for a removed account (locally cached: %s)',
+        async isLocallyCached => {
+            const kept = makeSession({
+                topic: OTHER_TOPIC,
+                namespaces: {
+                    algorand: {
+                        accounts: [`${MAINNET_CHAIN_ID}:${OTHER_ADDRESS}`],
+                        methods: ['algo_signTxn'],
+                        events: [],
+                    },
+                },
+            })
+            const walletKit = createFakeWalletKit({
+                [TOPIC]: makeSession(),
+                [OTHER_TOPIC]: kept,
+            })
+            walletKit.disconnectSession.mockRejectedValue(new Error('offline'))
+            const { startWhen, open } = gate()
+            const { handler, createWalletKit } = makeHandler({
+                walletKit,
+                startWhen,
+                shouldRevokeForAccountRemoval: ({ accounts }) =>
+                    accounts.includes(ADDRESS),
+            })
+            const keptRecord = storedV2Record({
+                id: OTHER_TOPIC,
+                accounts: [OTHER_ADDRESS],
+            })
+            const store = memoryStore(
+                isLocallyCached ? [storedV2Record(), keptRecord] : [keptRecord],
+            )
+            const registry = createConnectionRegistry({ store })
+            registry.register(handler)
+
+            await registry.initialize()
+
+            expect(createWalletKit).not.toHaveBeenCalled()
+            expect((await store.list()).map(({ id }) => id)).toEqual([
+                OTHER_TOPIC,
+            ])
+
+            open()
+            await flush()
+
+            expect(walletKit.disconnectSession).toHaveBeenCalledWith(
+                expect.objectContaining({ topic: TOPIC }),
+            )
+            expect((await store.list()).map(({ id }) => id)).toEqual([
+                OTHER_TOPIC,
+            ])
+
+            expect((await handler.restore()).map(({ id }) => id)).toEqual([
+                OTHER_TOPIC,
+            ])
+            await registry.teardown()
+        },
+    )
+
+    it.each([true, false])(
+        'revokes old sessions after re-adding the account (locally cached: %s)',
+        async isLocallyCached => {
+            const walletKit = createFakeWalletKit({
+                [TOPIC]: makeSession(),
+                [OTHER_TOPIC]: makeSession({ topic: OTHER_TOPIC }),
+            })
+            const { startWhen, open } = gate()
+            const { handler, createWalletKit } = makeHandler({
+                walletKit,
+                startWhen,
+                shouldRevokeForAccountRemoval: ({ createdAt }) =>
+                    createdAt <= 10,
+            })
+            const old = storedV2Record({ createdAt: 1 })
+            const fresh = storedV2Record({ id: OTHER_TOPIC, createdAt: 11 })
+            const store = memoryStore(isLocallyCached ? [old, fresh] : [fresh])
+            const registry = createConnectionRegistry({ store })
+            registry.register(handler)
+
+            await registry.initialize()
+            expect((await store.list()).map(({ id }) => id)).toEqual([
+                OTHER_TOPIC,
+            ])
+            expect(createWalletKit).not.toHaveBeenCalled()
+
+            open()
+            await flush()
+
+            expect(walletKit.disconnectSession).toHaveBeenCalledWith(
+                expect.objectContaining({ topic: TOPIC }),
+            )
+            expect((await store.list()).map(({ id }) => id)).toEqual([
+                OTHER_TOPIC,
+            ])
+            await registry.teardown()
+        },
+    )
+
+    it('honors disconnects completed while the boot retry is pending', async () => {
+        const walletKit = createFakeWalletKit({
+            [TOPIC]: makeSession(),
+            [OTHER_TOPIC]: makeSession({ topic: OTHER_TOPIC }),
+        })
+        const keyValueStorage = new MemoryKeyValueStorage()
+        const store = memoryStore([
+            storedV2Record(),
+            storedV2Record({ id: OTHER_TOPIC }),
+        ])
+        const first = makeHandler({ walletKit, keyValueStorage })
+        await first.handler.initialize(makeContext(store))
+        walletKit.disconnectSession.mockRejectedValueOnce(new Error('offline'))
+        await first.handler.disconnect(TOPIC)
+        await first.handler.teardown()
+
+        const retry = gate()
+        walletKit.disconnectSession.mockImplementationOnce(retry.startWhen)
+        walletKit.disconnectSession.mockRejectedValueOnce(new Error('offline'))
+        const { handler } = makeHandler({
+            walletKit,
+            keyValueStorage,
+            startWhen: async () => undefined,
+        })
+        await handler.initialize(makeContext(store))
+        await flush()
+        expect(walletKit.disconnectSession).toHaveBeenCalledTimes(2)
+
+        await handler.disconnect(OTHER_TOPIC)
+        retry.open()
+        await flush()
+
+        expect(await store.list()).toEqual([])
+        await handler.teardown()
     })
 
     it('loads nothing at boot without v2 sessions, and starts on the first pairing', async () => {
@@ -813,12 +986,19 @@ const makeDivergentSession = (): WalletKitSession =>
  * these assertions have to see it before validation.
  */
 const openSession = async (
-    options: { walletKit?: FakeWalletKit; seed?: Connection[] } = {},
+    options: {
+        walletKit?: FakeWalletKit
+        seed?: Connection[]
+        shouldRevokeForAccountRemoval?: (connection: Connection) => boolean
+    } = {},
 ) => {
     const walletKit =
         options.walletKit ??
         createFakeWalletKit({ [TOPIC]: makeDivergentSession() })
-    const { handler } = makeHandler({ walletKit })
+    const { handler } = makeHandler({
+        walletKit,
+        shouldRevokeForAccountRemoval: options.shouldRevokeForAccountRemoval,
+    })
     const store = memoryStore(options.seed ?? [storedV2Record()])
     const context = makeContext(store)
     await handler.initialize(context)
@@ -918,6 +1098,25 @@ describe('session requests', () => {
         )
     })
 
+    it('refuses a request on a live session holding a removed account as disconnected', async () => {
+        const { request, walletKit, context } = await openSession({
+            shouldRevokeForAccountRemoval: ({ accounts }) =>
+                accounts.includes(ADDRESS),
+        })
+
+        await request()
+
+        expect(context.onMessage).not.toHaveBeenCalled()
+        expect(walletKit.respondSessionRequest).toHaveBeenCalledWith({
+            topic: TOPIC,
+            response: {
+                id: REQUEST_ID,
+                jsonrpc: '2.0',
+                error: expect.objectContaining({ code: 6000 }),
+            },
+        })
+    })
+
     it('refuses a request on a chain that is not the active network', async () => {
         // The session is approved for every chain the dApp asked for; the
         // active network is what decides which one may sign.
@@ -1010,7 +1209,10 @@ describe('session requests', () => {
             response: {
                 id: REQUEST_ID,
                 jsonrpc: '2.0',
-                error: { code: -32_000, message: 'user declined' },
+                error: {
+                    code: -32_000,
+                    message: 'An error occurred during signing',
+                },
             },
         })
     })
@@ -1172,7 +1374,115 @@ describe('disconnecting', () => {
         expect(await store.list()).toEqual([])
     })
 
-    it('sweeps its own kind and leaves another kind alone', async () => {
+    it('keeps a session the relay would not end out of a later restore, and ends it then', async () => {
+        const walletKit = createFakeWalletKit({
+            [TOPIC]: makeSession(),
+            [OTHER_TOPIC]: makeSession({ topic: OTHER_TOPIC }),
+        })
+        walletKit.disconnectSession.mockRejectedValueOnce(
+            new Error('relay down'),
+        )
+        const keyValueStorage = new MemoryKeyValueStorage()
+        const first = makeHandler({ walletKit, keyValueStorage })
+        await first.handler.initialize(
+            makeContext(
+                memoryStore([
+                    storedV2Record(),
+                    storedV2Record({ id: OTHER_TOPIC }),
+                ]),
+            ),
+        )
+        await first.handler.disconnect(TOPIC)
+        await first.handler.teardown()
+
+        const { handler } = makeHandler({ walletKit, keyValueStorage })
+        await handler.initialize(makeContext())
+        const restored = await handler.restore()
+
+        expect(restored.map(({ id }) => id)).toEqual([OTHER_TOPIC])
+        expect(walletKit.getActiveSessions()).not.toHaveProperty(TOPIC)
+    })
+
+    it('remembers the revocation before the end reaches the relay', async () => {
+        const walletKit = createFakeWalletKit({ [TOPIC]: makeSession() })
+        walletKit.disconnectSession.mockImplementation(
+            () => new Promise(() => {}),
+        )
+        const keyValueStorage = new MemoryKeyValueStorage()
+        const first = makeHandler({ walletKit, keyValueStorage })
+        await first.handler.initialize(
+            makeContext(memoryStore([storedV2Record()])),
+        )
+        void first.handler.disconnect(TOPIC)
+        await flush()
+
+        const { handler } = makeHandler({ walletKit, keyValueStorage })
+        await handler.initialize(makeContext())
+
+        expect(await handler.restore()).toEqual([])
+    })
+
+    it('refuses a request on a session whose disconnect was killed while the relay waited', async () => {
+        const walletKit = createFakeWalletKit({ [TOPIC]: makeSession() })
+        walletKit.disconnectSession.mockImplementation(
+            () => new Promise(() => {}),
+        )
+        const keyValueStorage = new MemoryKeyValueStorage()
+        const store = memoryStore([storedV2Record()])
+        const first = makeHandler({ walletKit, keyValueStorage })
+        await first.handler.initialize(makeContext(store))
+        void first.handler.disconnect(TOPIC)
+        await flush()
+
+        let open: () => void = () => undefined
+        const unlocked = new Promise<void>(resolve => {
+            open = resolve
+        })
+        const { handler } = makeHandler({
+            walletKit,
+            keyValueStorage,
+            startWhen: () => unlocked,
+        })
+        const context = makeContext(store)
+        await handler.initialize(context)
+        expect(await handler.restore()).toEqual([])
+
+        open()
+        await flush()
+        walletKit.emit('session_request', makeRequest())
+        await flush()
+
+        expect(context.onMessage).not.toHaveBeenCalled()
+        expect(walletKit.respondSessionRequest).toHaveBeenCalledWith({
+            topic: TOPIC,
+            response: {
+                id: REQUEST_ID,
+                jsonrpc: '2.0',
+                error: expect.objectContaining({ code: 6000 }),
+            },
+        })
+        await handler.teardown()
+    })
+
+    it('keeps a revoked session out of every restore until the relay takes the end', async () => {
+        const walletKit = createFakeWalletKit({ [TOPIC]: makeSession() })
+        walletKit.disconnectSession.mockRejectedValue(new Error('relay down'))
+        const keyValueStorage = new MemoryKeyValueStorage()
+        const first = makeHandler({ walletKit, keyValueStorage })
+        await first.handler.initialize(
+            makeContext(memoryStore([storedV2Record()])),
+        )
+        await first.handler.disconnect(TOPIC)
+        await first.handler.teardown()
+
+        const { handler } = makeHandler({ walletKit, keyValueStorage })
+        await handler.initialize(makeContext())
+
+        expect(await handler.restore()).toEqual([])
+        expect(await handler.restore()).toEqual([])
+    })
+
+    it('keeps disconnect-all revocations across a restart and leaves other kinds alone', async () => {
         const v1Record: Connection = {
             ...storedV2Record({ id: 'v1-connection' }),
             kind: 'walletconnect-v1',
@@ -1185,20 +1495,28 @@ describe('disconnecting', () => {
         walletKit.disconnectSession.mockRejectedValueOnce(
             new Error('relay down'),
         )
-        const { handler, store } = await openSession({
-            walletKit,
-            seed: [
-                storedV2Record(),
-                storedV2Record({ id: OTHER_TOPIC }),
-                v1Record,
-            ],
-        })
+        const keyValueStorage = new MemoryKeyValueStorage()
+        const { handler } = makeHandler({ walletKit, keyValueStorage })
+        const store = memoryStore([
+            storedV2Record(),
+            storedV2Record({ id: OTHER_TOPIC }),
+            v1Record,
+        ])
+        await handler.initialize(makeContext(store))
 
         await handler.disconnectAll()
 
         expect((await store.list()).map(({ id }) => id)).toEqual([
             'v1-connection',
         ])
+        await handler.teardown()
+
+        const restarted = makeHandler({ walletKit, keyValueStorage })
+        await restarted.handler.initialize(makeContext(store))
+        expect(await restarted.handler.restore()).toEqual([])
+        expect(walletKit.getActiveSessions()).toEqual({})
+        expect(await store.list()).toEqual([v1Record])
+        await restarted.handler.teardown()
     })
 
     it('removes the record when the peer hangs up', async () => {
@@ -1339,6 +1657,7 @@ type OpenProposalOptions = {
     origin?: ConnectionOrigin
     proposal?: WalletKitSessionProposal
     getNetworkId?: () => string
+    keyValueStorage?: MemoryKeyValueStorage
 }
 
 /**
@@ -1351,6 +1670,7 @@ const openPairing = async (options: OpenProposalOptions = {}) => {
     const { handler } = makeHandler({
         walletKit,
         getNetworkId: options.getNetworkId,
+        keyValueStorage: options.keyValueStorage,
     })
     const store = memoryStore(options.seed ?? [])
     const registry = createConnectionRegistry({ store })
@@ -1963,6 +2283,27 @@ describe('approving a proposal', () => {
         await registry.teardown()
     })
 
+    it('does not restore a session whose approval could not be recorded or ended', async () => {
+        const keyValueStorage = new MemoryKeyValueStorage()
+        const { requireProposal, store, registry, walletKit } =
+            await openProposal({ keyValueStorage })
+        vi.spyOn(store, 'upsert').mockRejectedValueOnce(
+            new Error('write failed'),
+        )
+        walletKit.disconnectSession.mockRejectedValueOnce(new Error('offline'))
+
+        await expect(requireProposal().approve([ADDRESS])).rejects.toThrow(
+            'write failed',
+        )
+        await registry.teardown()
+
+        const { handler } = makeHandler({ walletKit, keyValueStorage })
+        await handler.initialize(makeContext(store))
+        expect(await handler.restore()).toEqual([])
+        expect(walletKit.getActiveSessions()).not.toHaveProperty(TOPIC)
+        await handler.teardown()
+    })
+
     it('refuses an approval with no accounts without consuming the proposal', async () => {
         const { requireProposal, walletKit, registry } = await openProposal()
         const proposal = requireProposal()
@@ -1976,27 +2317,81 @@ describe('approving a proposal', () => {
         await registry.teardown()
     })
 
-    it('clears the pairing origin once a session is approved', async () => {
+    it('keeps the pairing origin for a later proposal on an approved pairing', async () => {
         const walletKit = createFakeWalletKit()
+        const origin: ConnectionOrigin = {
+            ...ORIGIN,
+            requesterOrigin: 'https://dapp.example',
+        }
         const { propose, requireProposal, registry } = await openProposal({
             walletKit,
-            origin: ORIGIN,
+            origin,
         })
         const first = await requireProposal().approve([ADDRESS])
-        expect(first.origin).toEqual(ORIGIN)
+        expect(first.origin).toEqual(origin)
 
-        // A second session on the same pairing has no origin of its own, and
-        // no stored record to carry one off either.
         walletKit.approveSession.mockImplementationOnce(
             async ({ namespaces }) =>
                 makeSession({ topic: OTHER_TOPIC, namespaces }),
         )
         await propose(makeNextProposal())
+        expect(requireProposal().requesterOrigin).toBe('https://dapp.example')
         const second = await requireProposal().approve([ADDRESS])
 
         expect(second.id).toBe(OTHER_TOPIC)
-        expect(second.origin).toBeUndefined()
+        expect(second.origin).toEqual(origin)
         await registry.teardown()
+    })
+
+    it('recovers the pairing origin from its live session after a restart', async () => {
+        const origin: ConnectionOrigin = {
+            ...ORIGIN,
+            requesterOrigin: 'https://dapp.example',
+        }
+        const { walletKit, requireProposal, registry, store } =
+            await openProposal({ origin })
+        await requireProposal().approve([ADDRESS])
+        await registry.teardown()
+
+        const { handler } = makeHandler({ walletKit })
+        const context = makeContext(store)
+        await handler.initialize(context)
+        walletKit.emit('session_proposal', makeNextProposal())
+        await flush()
+
+        expect(walletKit.rejectSession).not.toHaveBeenCalled()
+        expect(context.onProposal).toHaveBeenCalledWith(
+            expect.objectContaining({
+                proposalId: String(NEXT_PROPOSAL_ID),
+                requesterOrigin: 'https://dapp.example',
+            }),
+        )
+        await handler.teardown()
+    })
+
+    it('refuses, reports and releases a restored pairing whose origin is gone', async () => {
+        const { handler, walletKit } = makeHandler({
+            walletKit: createFakeWalletKit({ [TOPIC]: makeSession() }),
+        })
+        const context = makeContext()
+        await handler.initialize(context)
+
+        walletKit.emit('session_proposal', makeProposal())
+        await flush()
+
+        expect(context.onProposal).not.toHaveBeenCalled()
+        expect(walletKit.rejectSession).toHaveBeenCalledWith({
+            id: PROPOSAL_ID,
+            reason: expect.objectContaining({ code: expect.any(Number) }),
+        })
+        expect(walletKit.pairingDisconnect).toHaveBeenCalledWith({
+            topic: PAIRING_TOPIC,
+        })
+        expect(context.onError).toHaveBeenCalledWith(
+            expect.any(WalletConnectError),
+            { pairingId: PAIRING_TOPIC },
+        )
+        await handler.teardown()
     })
 
     it('clears the pairing origin when the proposal expires', async () => {

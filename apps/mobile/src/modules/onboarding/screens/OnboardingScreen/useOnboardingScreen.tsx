@@ -27,6 +27,7 @@ import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useHomeChainScope } from '@hooks/useHomeChainScope'
+import { useDeleteAllData } from '@hooks/useDeleteAllData'
 
 type UseOnboardingScreenResult = {
     handleTermsPress: () => void
@@ -52,6 +53,7 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
     const { t, currentLanguage } = useLanguage()
     const { request: requestBottomSheet } = useBottomSheet()
     const { needsAcceptance } = useTermsAcceptance()
+    const { finishPendingWipe } = useDeleteAllData()
 
     // Synchronous re-entrancy latch shared by create + import. The button's
     // `disabled` prop is driven by React state (`isCreatingAccount`), which only
@@ -93,6 +95,18 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
         return accepted === true
     }, [needsAcceptance, requestBottomSheet])
 
+    // A failed duress wipe drops here with its marker set, and the next launch
+    // would finish that wipe over whatever wallet is created now.
+    const ensureNoPendingWipe = useCallback(async (): Promise<boolean> => {
+        try {
+            await finishPendingWipe()
+            return true
+        } catch (error) {
+            showError(error, t('onboarding.create_account.error_title'))
+            return false
+        }
+    }, [finishPendingWipe, showError, t])
+
     const handleTermsPress = useCallback(() => {
         pushWebView({
             url: withLanguageParam(config.termsOfServiceUrl, currentLanguage),
@@ -111,7 +125,10 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
         if (isStartingRef.current) return
         isStartingRef.current = true
         void (async () => {
-            if (!(await ensureTermsAccepted())) {
+            if (
+                !(await ensureNoPendingWipe()) ||
+                !(await ensureTermsAccepted())
+            ) {
                 isStartingRef.current = false
                 return
             }
@@ -138,6 +155,7 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
             })
         })()
     }, [
+        ensureNoPendingWipe,
         ensureTermsAccepted,
         isMounted,
         setIsOnboarding,
@@ -153,7 +171,10 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
         if (isStartingRef.current) return
         isStartingRef.current = true
         void (async () => {
-            if (!(await ensureTermsAccepted())) {
+            if (
+                !(await ensureNoPendingWipe()) ||
+                !(await ensureTermsAccepted())
+            ) {
                 isStartingRef.current = false
                 return
             }
@@ -161,7 +182,7 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
             setIsOnboarding(true)
             navigation.push('ImportAccountOptions')
         })()
-    }, [ensureTermsAccepted, navigation, setIsOnboarding])
+    }, [ensureNoPendingWipe, ensureTermsAccepted, navigation, setIsOnboarding])
 
     return {
         handleTermsPress,

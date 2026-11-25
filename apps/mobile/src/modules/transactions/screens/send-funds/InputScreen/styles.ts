@@ -66,11 +66,9 @@ export const useStyles = makeStyles(theme => {
             alignSelf: 'stretch',
         },
         secondaryButton: {
-            paddingVertical: theme.spacing.xs,
             backgroundColor: theme.colors.background,
             borderWidth: theme.borders.sm,
             borderColor: theme.colors.layerGrayLighter,
-            borderRadius: theme.spacing.xs,
         },
         numpadContainer: {
             paddingHorizontal: theme.spacing.xl,

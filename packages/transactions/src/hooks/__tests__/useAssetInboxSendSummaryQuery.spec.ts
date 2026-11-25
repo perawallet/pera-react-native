@@ -37,9 +37,15 @@ const adapter = {
     assetInbox: { fetchSendSummary },
 } as unknown as SendFlowChainAdapter
 
+const SENDER = 'SENDER'
 const RECEIVER = 'RECEIVER'
 const ASSET_ID = '12345'
-const summary = { quote: { opaque: true }, fundingAmount: 100_000n }
+const AMOUNT = 250n
+const summary = {
+    quote: { opaque: true },
+    fundingAmount: 100_000n,
+    networkFee: 4000n,
+}
 
 describe('useAssetInboxSendSummaryQuery', () => {
     let queryClient: QueryClient
@@ -68,7 +74,14 @@ describe('useAssetInboxSendSummaryQuery', () => {
         fetchSendSummary.mockResolvedValue(summary)
 
         const { result } = renderHook(
-            () => useAssetInboxSendSummaryQuery(scope, RECEIVER, ASSET_ID),
+            () =>
+                useAssetInboxSendSummaryQuery(
+                    scope,
+                    SENDER,
+                    RECEIVER,
+                    ASSET_ID,
+                    AMOUNT,
+                ),
             { wrapper },
         )
 
@@ -78,33 +91,54 @@ describe('useAssetInboxSendSummaryQuery', () => {
         expect(useChainCapability).toHaveBeenCalledWith(chainId, 'assetInbox')
         expect(fetchSendSummary).toHaveBeenCalledWith({
             scope,
+            sender: SENDER,
             receiver: RECEIVER,
             assetId: ASSET_ID,
+            amount: AMOUNT,
         })
         expect(result.current.data).toEqual(summary)
         expect(result.current.isUnavailableOnNetwork).toBe(false)
     })
 
     it.each([
-        ['an empty receiver', '', ASSET_ID],
-        ['an empty asset id', RECEIVER, ''],
-    ])('does not fetch with %s', async (_, receiver, assetId) => {
-        const { result } = renderHook(
-            () => useAssetInboxSendSummaryQuery(scope, receiver, assetId),
-            { wrapper },
-        )
+        ['an empty sender', '', RECEIVER, ASSET_ID, AMOUNT],
+        ['an empty receiver', SENDER, '', ASSET_ID, AMOUNT],
+        ['an empty asset id', SENDER, RECEIVER, '', AMOUNT],
+        ['an unknown amount', SENDER, RECEIVER, ASSET_ID, undefined],
+    ])(
+        'does not fetch with %s',
+        async (_, sender, receiver, assetId, amount) => {
+            const { result } = renderHook(
+                () =>
+                    useAssetInboxSendSummaryQuery(
+                        scope,
+                        sender,
+                        receiver,
+                        assetId,
+                        amount,
+                    ),
+                { wrapper },
+            )
 
-        await waitFor(() => expect(result.current.isLoading).toBe(false))
+            await waitFor(() => expect(result.current.isLoading).toBe(false))
 
-        expect(fetchSendSummary).not.toHaveBeenCalled()
-        expect(result.current.data).toBeUndefined()
-    })
+            expect(fetchSendSummary).not.toHaveBeenCalled()
+            expect(result.current.data).toBeUndefined()
+        },
+    )
 
     it('reports unavailable, never fetches and is not loading when assetInbox is off', () => {
         vi.mocked(useChainCapability).mockReturnValue(false)
 
         const { result } = renderHook(
-            () => useAssetInboxSendSummaryQuery(scope, RECEIVER, ASSET_ID),
+            () =>
+                useAssetInboxSendSummaryQuery(
+                    scope,
+                    SENDER,
+                    RECEIVER,
+                    ASSET_ID,
+                    AMOUNT,
+                ),
             { wrapper },
         )
 
@@ -118,7 +152,14 @@ describe('useAssetInboxSendSummaryQuery', () => {
         fetchSendSummary.mockRejectedValue(error)
 
         const { result } = renderHook(
-            () => useAssetInboxSendSummaryQuery(scope, RECEIVER, ASSET_ID),
+            () =>
+                useAssetInboxSendSummaryQuery(
+                    scope,
+                    SENDER,
+                    RECEIVER,
+                    ASSET_ID,
+                    AMOUNT,
+                ),
             { wrapper },
         )
 

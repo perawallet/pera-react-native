@@ -135,7 +135,8 @@ export const readErc20TotalSupply = async (
 
 /**
  * The contract's own answers, with no Pera opinion: always unverified. The
- * device-local flags stay unset so persisting it keeps the user's own.
+ * device-local flags stay unset so persisting it keeps the user's own. A node
+ * that can't be reached rejects with a transient `PeraNetworkError`.
  */
 export const readErc20 = async (
     ctx: ChainContext,
@@ -145,6 +146,7 @@ export const readErc20 = async (
 ): Promise<PeraAsset> => {
     const client = createEvmClient(scope, ctx, chain)
     const address = getAddress(assetId)
+    // A node that can't be reached must read as transient, not as "no token here".
     const [name, symbol, decimals, totalSupply] = await Promise.all([
         readText(client, address, 'name'),
         readText(client, address, 'symbol'),
@@ -158,7 +160,9 @@ export const readErc20 = async (
             abi: erc20Abi,
             functionName: 'totalSupply',
         }),
-    ])
+    ]).catch((error: unknown) => {
+        throw toRpcTransportError(error) ?? error
+    })
     return {
         assetId: address,
         name,

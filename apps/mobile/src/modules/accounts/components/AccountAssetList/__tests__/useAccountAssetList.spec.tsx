@@ -1070,7 +1070,7 @@ describe('useAccountAssetList', () => {
     })
 
     it('does not show an error toast when user cancels the signing overlay', async () => {
-        mockRequestBottomSheet.mockResolvedValueOnce('confirm')
+        mockRequestBottomSheet.mockResolvedValueOnce(1000n)
         mockOptOut.mockRejectedValueOnce(new UserRejectedSigningError())
 
         const { result } = renderHook(() =>
@@ -1085,7 +1085,7 @@ describe('useAccountAssetList', () => {
     })
 
     it('shows an error toast when opt-out fails with a non-cancel error', async () => {
-        mockRequestBottomSheet.mockResolvedValueOnce('confirm')
+        mockRequestBottomSheet.mockResolvedValueOnce(1000n)
         const optOutError = new Error('Network error')
         mockOptOut.mockRejectedValueOnce(optOutError)
 

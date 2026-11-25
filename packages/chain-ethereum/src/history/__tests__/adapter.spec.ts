@@ -891,7 +891,7 @@ describe('with contractDecoding', () => {
 
     // No RPC handler is registered, so a node read would fail the test.
     it.each([
-        [true, 'transactions.list_item.interpreted_title'],
+        [true, 'transactions.list_item.contract_call_named'],
         [false, 'transactions.list_item.contract_interaction'],
     ])(
         'reads the history without touching the node (decoding %s)',
@@ -965,7 +965,7 @@ describe('with contractDecoding', () => {
             'transactions.list_item.contract_interaction',
         )
         expect(second.items[0]?.summary.title.key).toBe(
-            'transactions.list_item.interpreted_title',
+            'transactions.list_item.contract_call_named',
         )
     })
 

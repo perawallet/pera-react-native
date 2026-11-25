@@ -13,6 +13,8 @@
 import { describe, test, expect, vi, beforeEach, Mock } from 'vitest'
 import { decodeAddress } from 'algosdk'
 
+import { FeeAboveShownError } from '@perawallet/wallet-core-transactions'
+import { ReviewRequiredError } from '@perawallet/wallet-core-signing'
 import { buildArc59SendViaInboxTxs } from '../buildArc59SendViaInboxTxs'
 import { config } from '@perawallet/wallet-core-config'
 import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
@@ -99,6 +101,7 @@ const baseParams = {
     amount: 1000n,
     summary: baseSummary,
     senderMinFee: 1000n,
+    maxFee: 20_000n,
 }
 
 describe('buildArc59SendViaInboxTxs', () => {
@@ -274,8 +277,7 @@ describe('buildArc59SendViaInboxTxs', () => {
     test('returns PeraTransaction[] from the built group', async () => {
         const txResult = await buildArc59SendViaInboxTxs(ctx(), baseParams)
 
-        expect(Array.isArray(txResult)).toBe(true)
-        expect(txResult).toEqual([STUB_TXN])
+        expect(txResult.transactions).toEqual([STUB_TXN])
     })
 
     test('fetches suggested params before building transactions', async () => {
@@ -536,6 +538,84 @@ describe('buildArc59SendViaInboxTxs', () => {
                     ).microAlgo(),
                 }),
             )
+        })
+    })
+
+    describe('the network fee the summary showed', () => {
+        const builtWithFees = (fees: bigint[]) =>
+            mockComposer.build.mockResolvedValue({
+                atc: {
+                    buildGroup: () =>
+                        fees.map(fee => ({ txn: { ...STUB_TXN, fee } })),
+                },
+            })
+
+        // Router opted in: payment, axfer and router call at the min fee, plus
+        // the two reported inners pooled onto the call.
+        const approved = { ...baseParams, maxFee: 5000n }
+
+        test('builds a group paying exactly the quoted network fee', async () => {
+            builtWithFees([1000n, 1000n, 3000n])
+
+            const result = await buildArc59SendViaInboxTxs(ctx(), approved)
+            expect(result.transactions).toHaveLength(3)
+            expect(result.networkFee).toBe(5000n)
+        })
+
+        test('quotes a surcharge above the minimum and accepts the same assembled fee on send', async () => {
+            builtWithFees([1000n, 1500n, 3000n])
+            const quote = await buildArc59SendViaInboxTxs(ctx(), {
+                ...baseParams,
+                maxFee: undefined,
+            })
+            expect(quote.networkFee).toBe(5500n)
+            await expect(
+                buildArc59SendViaInboxTxs(ctx(), {
+                    ...baseParams,
+                    maxFee: quote.networkFee,
+                }),
+            ).resolves.toEqual(quote)
+        })
+
+        test('refuses a group the node prices above the quoted network fee', async () => {
+            builtWithFees([1000n, 1001n, 3000n])
+
+            await expect(
+                buildArc59SendViaInboxTxs(ctx(), approved),
+            ).rejects.toBeInstanceOf(FeeAboveShownError)
+        })
+
+        test('refuses an inbox fee that rose above the approved quote', async () => {
+            mockAlgokit.getSuggestedParams.mockResolvedValueOnce({
+                minFee: 1100n,
+            })
+            await expect(
+                buildArc59SendViaInboxTxs(ctx(), approved),
+            ).rejects.toBeInstanceOf(FeeAboveShownError)
+            expect(mockAlgokit.newGroup).not.toHaveBeenCalled()
+        })
+
+        test('does not quote an assembled fee above the local group budget', async () => {
+            builtWithFees([1000n, 1000n, 500_000n])
+            await expect(
+                buildArc59SendViaInboxTxs(ctx(), {
+                    ...baseParams,
+                    maxFee: undefined,
+                }),
+            ).rejects.toBeInstanceOf(ReviewRequiredError)
+        })
+
+        test('refuses a suggested minimum above the local group budget', async () => {
+            mockAlgokit.getSuggestedParams.mockResolvedValueOnce({
+                minFee: 120_000n,
+            })
+            await expect(
+                buildArc59SendViaInboxTxs(ctx(), {
+                    ...approved,
+                    maxFee: 600_000n,
+                }),
+            ).rejects.toBeInstanceOf(ReviewRequiredError)
+            expect(mockAlgokit.newGroup).not.toHaveBeenCalled()
         })
     })
 

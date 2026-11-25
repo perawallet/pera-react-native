@@ -458,6 +458,46 @@ describe('fetchTrustedCounterparties', () => {
         )
     })
 
+    it('keeps paging past real inbound transfers, which an outsider can send at will', async () => {
+        const onPage = vi.fn()
+        getTransactionHistory.mockImplementation(async (_, __, page) =>
+            page
+                ? {
+                      items: [
+                          record({ direction: 'out', counterparty: 'PAYEE' }),
+                      ],
+                  }
+                : {
+                      items: Array.from(
+                          { length: MIN_TRUSTED_TRANSFERS },
+                          (_, n) =>
+                              record({
+                                  direction: 'in',
+                                  counterparty: `SENDER-${n}`,
+                              }),
+                      ),
+                      next: { cursor: '1' },
+                  },
+        )
+
+        expect(
+            await fetchTrustedCounterparties({
+                accountAddress: ME,
+                scope: SCOPE,
+                onPage,
+            }),
+        ).toContainEqual(paid('PAYEE'))
+        expect(onPage).toHaveBeenNthCalledWith(
+            1,
+            expect.arrayContaining([payer('SENDER-0')]),
+        )
+        expect(onPage).toHaveBeenNthCalledWith(
+            2,
+            expect.arrayContaining([paid('PAYEE')]),
+        )
+        expect(getTransactionHistory).toHaveBeenCalledTimes(2)
+    })
+
     it(`stops after ${MAX_COUNTERPARTY_HISTORY_PAGES} pages without enough trusted transfers`, async () => {
         getTransactionHistory.mockImplementation(async (_, __, page) => ({
             items: [

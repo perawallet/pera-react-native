@@ -269,7 +269,10 @@
         "empty_title": "Aucune autorisation ouverte",
         "empty_body": "Aucune autorisation ouverte de jeton ou de collection n'a été trouvée pour ce compte.",
         "error_title": "Impossible de charger les autorisations",
-        "error_body": "Vérifiez votre connexion et réessayez.",
+        "error_body": "Un problème est survenu lors du chargement. Réessayez dans un instant.",
+        "offline_body": "Vérifiez votre connexion et réessayez.",
+        "unavailable_title": "Les autorisations ne sont pas encore disponibles sur ce réseau",
+        "unavailable_body": "Pera ne peut pas encore consulter les autorisations de jetons de ce compte sur ce réseau.",
         "revoke_error_title": "Révocation non confirmée",
         "revoke_error_body": "Vérifiez dans la liste l'état de l'autorisation avant de réessayer."
     },
@@ -456,8 +459,7 @@
             "search_paused_body": "Aucune transaction trouvée dans l’historique récent.",
             "search_older": "Rechercher les plus anciennes",
             "filter": "Filtrer",
-            "csv": "CSV",
-            "csv_on_network": "CSV {{network}}"
+            "csv": "CSV"
         },
         "collectible": {
             "description": "Description",
@@ -490,7 +492,7 @@
         },
         "token_warning": {
             "suspicious_title": "Jeton suspect",
-            "body": "Pera a signalé ce jeton comme suspect. Vous ne l’avez pas demandé et il pourrait s’agir d’une arnaque. N’interagissez pas avec les sites web ou les liens qui s’y rapportent."
+            "body": "Pera a signalé ce jeton comme suspect. Vous ne l’avez pas demandé et il pourrait s’agir d’une arnaque. Soyez prudent avec ce jeton et avec les sites web ou les liens qui s’y rapportent."
         },
         "copy_full_amount_hint": "Appuyez longuement pour copier le montant complet",
         "toggle_amount_hint": "Appuyez pour basculer entre la valeur et le montant de l’actif"
@@ -1538,6 +1540,10 @@
             "asset_frozen": {
                 "title": "Actif gelé",
                 "body": "L’actif {{assetId}} est gelé, ce transfert ne peut donc pas aboutir. Le gestionnaire de gel de l’actif doit d’abord le dégeler."
+            },
+            "fee_above_shown": {
+                "title": "Frais de réseau modifiés",
+                "body": "Le réseau demande maintenant des frais plus élevés que ceux affichés, donc rien n’a été signé. Réessayez pour voir les frais actuels."
             }
         },
         "kms": {
@@ -2419,6 +2425,8 @@
             "load_error": "Impossible de charger cette transaction. Elle a peut-être expiré ou été supprimée.",
             "cosign_rejected_title": "Impossible de signer cette transaction",
             "cosign_rejected_body": "Cette demande contient une transaction que le compte partagé n’autorise pas. Si l’expéditeur est un compte ayant fait l’objet d’un rekey vers le compte partagé, ajoutez-le à votre wallet et réessayez.",
+            "request_open_title": "Ferme d’abord la demande ouverte",
+            "request_open_body": "Termine ou ferme la demande de signature, puis rouvre le lien.",
             "retry": "Réessayer",
             "canceled": "Transaction annulée.",
             "declined": "Transaction refusée.",
@@ -2813,6 +2821,14 @@
                 "fetch_failed_title": "Impossible de charger la sauvegarde",
                 "decrypt_failed_title": "Impossible de déverrouiller la sauvegarde"
             },
+            "review": {
+                "title": "Vérifiez les comptes",
+                "body_one": "Ce code importe {{count}} compte. Vérifiez qu’il vous appartient avant de l’importer.",
+                "body_other": "Ce code importe {{count}} comptes. Vérifiez qu’ils vous appartiennent avant de les importer.",
+                "body": "Ce code importe {{count}} comptes. Vérifiez qu’ils vous appartiennent avant de les importer.",
+                "confirm": "Importer les comptes",
+                "interrupted": "L’importation a été interrompue. Scannez à nouveau le code QR pour continuer."
+            },
             "result": {
                 "success_title": "Comptes importés",
                 "success_body_one": "{{count}} compte a été ajouté à votre wallet.",
@@ -3190,6 +3206,7 @@
             "verify_title": "Saisissez votre code PIN",
             "unlock_title": "Saisissez votre code PIN",
             "change_old_title": "Saisissez votre ancien\ncode PIN à 6 chiffres",
+            "matches_duress_pin": "Votre nouveau code PIN doit être différent de votre code PIN de contrainte.",
             "logging_in": "Connexion en cours"
         },
         "lockout": {
@@ -3973,6 +3990,7 @@
             "approval_for": "Pour {{spender}}",
             "unlimited_approval_for": "Illimité · pour {{spender}}",
             "swap_pair": "Swap {{from}} → {{to}}",
+            "swap_assets": "{{from}} → {{to}}",
             "add_liquidity": "Ajout de liquidité",
             "remove_liquidity": "Retrait de liquidité",
             "collect_fees": "Collecte des frais",
@@ -3989,7 +4007,9 @@
             "nft_batch_subtitle": "{{collection}} · {{count}} éléments",
             "inner_transaction_count": "{{innerCount}} transactions internes",
             "cancel_transaction": "Annulation",
-            "not_sent_by_you": "Non envoyé par vous"
+            "send_by_approval": "Envoi (autorisé)",
+            "spoofed_send": "Faux envoi",
+            "contract_call_named": "Contrat : {{method}}"
         },
         "record_detail": {
             "read_failed": "Impossible de lire depuis le réseau les détails de l’appel de cette transaction.",
@@ -4146,6 +4166,8 @@
             "title": "Filtre",
             "all_time": "Toute la période",
             "today": "Aujourd’hui",
+            "hide_suspicious": "Masquer les transactions suspectes",
+            "hide_suspicious_description": "Masque les faux envois, les jetons d'imitation ou de spam et les empoisonnements d'adresse présumés.",
             "yesterday": "Hier",
             "last_week": "Semaine dernière",
             "last_month": "Mois dernier",
@@ -4168,18 +4190,20 @@
             "blocked_body": "Une transaction antérieure de ce compte n’a jamais atteint le réseau, donc celle-ci ne peut pas être confirmée tant que rien ne prend sa place. Débloquer envoie à sa place un transfert vide vers vous-même, qui coûte des frais de réseau.",
             "unblock": "Débloquer"
         },
+        "suspected_fake_transfer": {
+            "title": "Faux transfert présumé",
+            "body": "Votre compte n'a pas signé ce transfert, et il n'a rien déplacé. N'importe qui peut faire passer un transfert de 0 jeton pour un envoi depuis votre compte, sans aucune autorisation. Les escrocs le font pour que leur adresse apparaisse dans votre historique et soit copiée plus tard. Ne copiez aucune adresse depuis ce transfert."
+        },
         "suspected_poisoning": {
-            "marker": "Empoisonnement d’adresse suspecté",
             "title": "Empoisonnement d’adresse suspecté",
-            "body": "Ce transfert n’a rien transféré de valeur et provient d’une adresse conçue pour ressembler à une adresse que vous connaissez. Les escrocs envoient ce type de transfert pour que leur adresse apparaisse dans votre historique et soit copiée plus tard. Ne la copiez pas et n’y envoyez rien.",
+            "body": "Ce transfert n’a rien transféré de valeur et provient d’une adresse conçue pour ressembler à une adresse que vous connaissez. Les escrocs envoient ce type de transfert pour que leur adresse apparaisse dans votre historique et soit copiée plus tard.",
+            "do_not_reuse": "Ne copiez pas cette adresse et n’y envoyez rien.",
             "sender_label": "Cette adresse",
             "reuse_title": "Cette adresse imite une adresse que vous connaissez",
             "reuse_body": "Elle commence et se termine comme une adresse que vous connaissez, mais ce n’est pas la même. Comparez les adresses complètes avant de l’utiliser.",
             "reuse_confirm": "Continuer quand même",
-            "reuse_cancel": "Annuler"
-        },
-        "suspicious_token": {
-            "marker": "Jeton suspect"
+            "reuse_cancel": "Annuler",
+            "dismiss": "J’ai compris"
         }
     },
     "tabbar": {
@@ -4227,7 +4251,8 @@
             "view_accounts": "Voir votre adresse et vos soldes",
             "approve_transactions": "Vous demander d’approuver des transactions",
             "sign_messages": "Vous demander de signer des messages",
-            "switch_networks": "Demander à changer de réseau"
+            "switch_networks": "Demander à changer de réseau",
+            "add_tokens": "Demander d’ajouter des tokens à votre compte"
         },
         "connection": {
             "approve_delivery_failed": "Impossible de joindre la dApp pour confirmer la connexion. Vérifiez votre connexion Internet et réessayez."
@@ -4237,6 +4262,23 @@
             "body": "{{name}} souhaite utiliser vos comptes sur {{chain}}.",
             "body_with_network": "{{name}} souhaite utiliser vos comptes sur {{chain}} {{network}}.",
             "confirm": "Autoriser"
+        },
+        "watch_asset": {
+            "title": "Ajouter le token ?",
+            "body": "{{name}} souhaite ajouter ce token à votre compte.",
+            "unreadable": "Pera n’a pas pu lire de token à cette adresse sur {{chain}}.",
+            "confirm": "Ajouter le token",
+            "token": "Token",
+            "verification": "Vérification",
+            "contract": "Contrat",
+            "decimals": "Décimales",
+            "network": "Réseau",
+            "account": "Compte",
+            "tier": {
+                "verified": "Vérifié",
+                "unverified": "Non vérifié",
+                "suspicious": "Suspect"
+            }
         },
         "settings": {
             "empty_title": "Aucune session WalletConnect",
@@ -5286,6 +5328,8 @@
             "gwei": "Gwei",
             "nonce": "Nonce",
             "gas_limit": "Limite de gas",
+            "gas_used": "Gaz utilisé",
+            "gas_price": "Prix du gaz",
             "max_fee_per_gas": "Frais max. par gas",
             "max_priority_fee_per_gas": "Frais de priorité max. par gas"
         },

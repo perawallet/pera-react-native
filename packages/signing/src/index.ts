@@ -256,6 +256,7 @@ export {
     SignerKeyMissingError,
     SigningError,
     SourceError,
+    StaleSignRequestError,
     SubmissionError,
     TransactionRoundTripError,
     TransportError,

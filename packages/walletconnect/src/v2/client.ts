@@ -122,6 +122,7 @@ export interface WalletKitClient {
              * which `ConnectionHandler.pair` must resolve with — appears.
              */
             pair(params: { uri: string }): Promise<{ topic: string }>
+            getPairings(): readonly { topic: string; active: boolean }[]
             /** Ends a pairing, whether or not it ever produced a session. */
             disconnect(params: { topic: string }): Promise<void>
         }

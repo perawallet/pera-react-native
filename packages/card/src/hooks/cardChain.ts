@@ -16,6 +16,7 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { CardOwnerMismatchError } from '../api/escrow'
 import {
     cardAdapterFor,
     type CardChainErrorReason,
@@ -26,11 +27,22 @@ import {
 export const getCardSettlementAssetId = (scope: ChainScope): Nullable<string> =>
     cardAdapterFor(scope).settlementAsset(scope)
 
-export const buildCardManualDeposit = (
+/**
+ * The card address comes from the backend and the transfer is auto-approved,
+ * so the chain must confirm the sender owns that card before anything is built.
+ * @throws CardOwnerMismatchError when it doesn't.
+ */
+export const buildCardManualDeposit = async (
     params: CardManualDepositBuildParams,
     scope: ChainScope,
-): Promise<UnsignedTransaction[]> =>
-    cardAdapterFor(scope).buildManualDeposit(params, scope)
+): Promise<UnsignedTransaction[]> => {
+    const adapter = cardAdapterFor(scope)
+    const owner = await adapter.cardOwnerOf(scope, params.cardAddress)
+    if (owner !== params.sender) {
+        throw new CardOwnerMismatchError()
+    }
+    return adapter.buildManualDeposit(params, scope)
+}
 
 export const getCardFundingSourceEligibility = (
     account: WalletAccount,

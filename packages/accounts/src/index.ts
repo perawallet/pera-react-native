@@ -36,6 +36,7 @@ export * from './import-session'
 
 export {
     rehydrateAccountsStore,
+    whenAccountsHydrationSettled,
     backfillAccountRecords,
     useAccountsStore,
     useAccountChainStateStore,
@@ -71,6 +72,7 @@ export {
     syncAndEnrichNewAccount,
     type AccountSyncResult,
 } from './sync/account-syncer'
+export { getPasskeyAnchorSeedIds } from './import-session/provisionalImportSeeds'
 
 export {
     setPendingAccountRollback,

@@ -25,6 +25,7 @@ import {
 import { subtle } from './keystore/subtle'
 import { createPeraKeystore } from './keystore/createKeystore'
 import {
+    clearKeystoreStorage,
     readPersistedKeys,
     runMaterialRepair,
     runPasskeyCredentialSplit,
@@ -47,6 +48,7 @@ import {
     PQ_DERIVATION_CANONICAL,
 } from './keystore/pqDerivation'
 import { createPeraMigrationLedger } from './keystore/migrationsLedger'
+import { withDeferredRevisions } from './keystore/migrations/deferredRevisions'
 import { safeErrorMessage, safeWarn } from './keystore/migrations/safeLog'
 import { PeraProvider } from './pera-provider'
 
@@ -93,7 +95,9 @@ const instance = new PeraProvider(
             // applied — permanently.
             subtle,
         },
-        migrations: { ledger: createPeraMigrationLedger() },
+        migrations: {
+            ledger: withDeferredRevisions(createPeraMigrationLedger()),
+        },
     },
 )
 
@@ -139,7 +143,16 @@ export const getKeystoreHooks = (): HookCollection<any> => keystoreHooks
  * Used during "delete all data" flows as a safety net after individual key deletion.
  */
 export const clearKeystore = async (): Promise<void> => {
-    await keystore.clear?.()
+    try {
+        await keystore.clear?.()
+    } catch (error) {
+        // `clear()` first awaits `ready`, so a keystore that failed to hydrate
+        // rejects on every attempt. With its records gone the step is done.
+        if (!clearKeystoreStorage()) throw error
+        logger.warn('Keystore cleared from storage after clear() failed', {
+            error,
+        })
+    }
 }
 
 /**

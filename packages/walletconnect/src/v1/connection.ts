@@ -17,11 +17,18 @@ import type {
 } from '@perawallet/wallet-extension-connections'
 import type { ConnectionHandler } from '@perawallet/wallet-core-connections'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { AlgorandPermission, isAlgorandPermission } from '../models'
 import { isStringArray, readString } from '../shared/read'
 import { walletConnectUriVersion } from '../shared/uri'
 import type { WalletConnectV1Delivery } from './deliver'
 
 export const WALLET_CONNECT_V1_KIND = 'walletconnect-v1'
+
+const NATIVE_MIGRATION_DEFAULT_PERMISSIONS = [
+    AlgorandPermission.ACCOUNT_PERMISSION,
+    AlgorandPermission.TX_PERMISSION,
+    AlgorandPermission.DATA_PERMISSION,
+] as const
 
 /** No session key here: it lives in the keystore behind `secretRef` (`./secrets`). */
 export type WalletConnectV1Metadata = {
@@ -36,8 +43,10 @@ export type WalletConnectV1Metadata = {
      * spurious "repeat connection request" error.
      */
     handshakeId?: number
-    /** Approved methods (`algo_signTxn`, …). Absent reads as "unknown", never as "none". */
+    /** Method names recorded for the session. A missing list cannot authorize signing. */
     permissions?: string[]
+    /** The wallet recorded the method list after approval. */
+    permissionsApproved?: true
 }
 
 export type WalletConnectV1Connection = Connection & {
@@ -57,8 +66,38 @@ export type BuildWalletConnectV1ConnectionInput = {
     createdAt: number
     /** Epoch milliseconds. */
     lastActiveAt: number
+    accountsGrantedAt?: Record<string, number>
     origin?: ConnectionOrigin
     metadata: WalletConnectV1Metadata
+}
+
+export const grantedMethodsOf = ({
+    metadata,
+    origin,
+}: Pick<
+    WalletConnectV1Connection,
+    'metadata' | 'origin'
+>): readonly AlgorandPermission[] => {
+    const permissions = metadata.permissions?.filter(isAlgorandPermission) ?? []
+    const hasWalletOrigin =
+        origin?.source === 'qr' ||
+        origin?.source === 'in-app' ||
+        origin?.source === 'external-browser' ||
+        (typeof origin?.requesterOrigin === 'string' &&
+            origin.requesterOrigin.length > 0)
+    // Native imports used to stamp every method without consent or an origin.
+    // A scoped list or a wallet-recorded origin distinguishes older approvals.
+    if (
+        metadata.permissionsApproved !== true &&
+        !hasWalletOrigin &&
+        permissions.length === NATIVE_MIGRATION_DEFAULT_PERMISSIONS.length &&
+        NATIVE_MIGRATION_DEFAULT_PERMISSIONS.every(method =>
+            permissions.includes(method),
+        )
+    ) {
+        return []
+    }
+    return permissions
 }
 
 /**
@@ -69,7 +108,8 @@ export type BuildWalletConnectV1ConnectionInput = {
 export const buildWalletConnectV1Connection = (
     input: BuildWalletConnectV1ConnectionInput,
 ): WalletConnectV1Connection => {
-    const { handshakeId, permissions, ...metadata } = input.metadata
+    const { handshakeId, permissions, permissionsApproved, ...metadata } =
+        input.metadata
     return {
         id: input.clientId,
         kind: WALLET_CONNECT_V1_KIND,
@@ -77,9 +117,12 @@ export const buildWalletConnectV1Connection = (
         peer: input.peer,
         accounts: input.accounts,
         secretRef: input.secretRef,
-        status: 'active',
+        status: grantedMethodsOf(input).length > 0 ? 'active' : 'inactive',
         createdAt: input.createdAt,
         lastActiveAt: input.lastActiveAt,
+        ...(input.accountsGrantedAt
+            ? { accountsGrantedAt: input.accountsGrantedAt }
+            : {}),
         ...(input.origin ? { origin: input.origin } : {}),
         metadata: {
             bridge: metadata.bridge,
@@ -88,6 +131,7 @@ export const buildWalletConnectV1Connection = (
             chainId: metadata.chainId,
             ...(handshakeId !== undefined ? { handshakeId } : {}),
             ...(permissions !== undefined ? { permissions } : {}),
+            ...(permissionsApproved ? { permissionsApproved } : {}),
         },
     }
 }
@@ -187,6 +231,8 @@ export const isWalletConnectV1Connection = (
         readString(metadata, 'handshakeTopic') !== undefined &&
         readString(metadata, 'peerId') !== undefined &&
         typeof metadata.chainId === 'number' &&
+        (metadata.permissionsApproved === undefined ||
+            metadata.permissionsApproved === true) &&
         // Optional on the record, but the settings screen maps whatever is
         // there, so a present value has to be the shape the type promises.
         (metadata.permissions === undefined ||

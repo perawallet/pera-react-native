@@ -49,7 +49,6 @@ export const RawTransactionButton = ({
             iconRight='code'
             onPress={handleOpen}
             paddingStyle='dense'
-            rounded
         />
     )
 }
