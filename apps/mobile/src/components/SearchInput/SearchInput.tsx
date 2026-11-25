@@ -45,7 +45,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(
                 inputContainerStyle={[styles.search, props.inputContainerStyle]}
                 inputStyle={styles.input}
                 placeholder={props.placeholder ?? 'Search'}
-                placeholderTextColor={theme.colors.textGray}
+                placeholderTextColor={theme.colors.textGrayLighter}
                 renderErrorMessage={false}
                 leftIcon={
                     <PWIcon
