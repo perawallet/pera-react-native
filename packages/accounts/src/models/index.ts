@@ -125,7 +125,10 @@ export type AccountsState = BaseStoreState & {
      * resolves them into `authorities`.
      */
     unscopedAuthorities: Record<string, string>
-    /** Existing connection grants through this time were revoked on account removal. */
+    /**
+     * Removal time of each removed address, keyed by lowercased address, in
+     * epoch ms: a dApp grant of that address made at or before it is revoked.
+     */
     connectionRevokedThrough: Record<string, number>
     /** Records authorities, replacing any held for the same scope and address. */
     recordAuthorities: (incoming: RecordedAuthorities) => void
