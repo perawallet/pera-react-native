@@ -20,10 +20,10 @@ import type { KeyData } from '@algorandfoundation/keystore-core'
  * `MATERIAL_PREFIX`, `METADATA_PREFIX`, `serializeKey` and
  * `MasterKeyNotFoundError` are re-exported from the package's real dist in each
  * spec's `vi.mock` factory instead, because their modules only depend on
- * `@scure/base` and `keystore-core`. These three cannot follow: `crypto.js`
- * pulls in `react-native-keychain` and `react-native-quick-crypto`, and
- * `state.js` pulls in `react-native-mmkv` — neither resolves under vitest, and
- * `vi.mock` does not reach inside an externalised dependency's own graph.
+ * `@scure/base` and `keystore-core`. `crypto.js` and `state.js` pull in
+ * `react-native-keychain`, `react-native-quick-crypto` and `react-native-mmkv`;
+ * the vitest config stubs those so the real ones load too, and
+ * `preflightGate.spec.ts` uses them. Specs here keep these stand-ins.
  *
  * They re-implement the on-disk formats read out of that dist over the same
  * AES-256-GCM primitives, so they pin behaviour and the metadata/material

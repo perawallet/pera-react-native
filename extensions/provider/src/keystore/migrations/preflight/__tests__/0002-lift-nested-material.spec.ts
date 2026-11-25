@@ -28,10 +28,9 @@ import { assertIdempotent } from '@algorandfoundation/provider-migrations/testin
 // dist does: `driver.js` and `errors.js` depend only on `@scure/base` and
 // `keystore-core`, so the prefixes, `serializeKey` and the error class this
 // revision branches on are the genuine articles and an upstream change to any
-// of them still breaks this test. `crypto.js` and `state.js` cannot follow —
-// they pull in react-native-keychain/quick-crypto/mmkv — so `sealData`,
-// `openData` and `decode` come from the shared format stand-ins. Paths are
-// relative because the package's `exports` map publishes only `.`.
+// of them still breaks this test. `sealData`, `openData` and `decode` come from
+// the shared format stand-ins (see `keystoreFormats.ts`). Paths are relative
+// because the package's `exports` map publishes only `.`.
 vi.mock('@algorandfoundation/react-native-keystore', async () => {
     const driver =
         await import('../../../../../node_modules/@algorandfoundation/react-native-keystore/dist/storage/driver.js')
