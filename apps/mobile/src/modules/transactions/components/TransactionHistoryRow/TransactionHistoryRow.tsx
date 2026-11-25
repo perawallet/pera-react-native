@@ -14,6 +14,8 @@ import type {
     SuspectedPoisoning,
     TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
+import { useLanguage } from '@hooks/useLanguage'
+import { relativeDayKeyOf } from '../../utils/relativeDay'
 import type { TransactionListRow } from '../../utils/transactionListRows'
 import { TransactionDateHeader } from '../TransactionDateHeader'
 import { TransactionListItem } from '../TransactionListItem'
@@ -29,16 +31,21 @@ export const TransactionHistoryRow = ({
     onTransactionPress,
     suspectedPoisoning,
 }: TransactionHistoryRowProps) => {
+    const { t } = useLanguage()
     switch (row.kind) {
         case 'header': {
-            return <TransactionDateHeader title={row.title} />
+            const relativeDay = relativeDayKeyOf(row.key)
+            return (
+                <TransactionDateHeader
+                    title={relativeDay ? t(relativeDay) : row.title}
+                />
+            )
         }
         case 'record': {
             return (
                 <TransactionListItem
                     record={row.record}
                     suspectedPoisoning={suspectedPoisoning}
-                    networkChainId={row.networkChainId}
                 />
             )
         }
@@ -49,7 +56,6 @@ export const TransactionHistoryRow = ({
                     scope={row.scope}
                     onPress={onTransactionPress}
                     suspectedPoisoning={suspectedPoisoning}
-                    networkChainId={row.networkChainId}
                 />
             )
         }

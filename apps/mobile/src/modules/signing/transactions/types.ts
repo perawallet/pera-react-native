@@ -21,6 +21,7 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { IconName } from '@components/core'
+import type { LeadingAsset } from '@components/TransactionLeadingIcon'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 
@@ -59,6 +60,8 @@ export type TransactionDetailAmount = {
 export type TransactionDetailSummary = {
     scope: ChainScope
     iconName: IconName
+    /** Leads the hero as in History: a send's or receive's asset, or a swap's from and to. Unset leads with the chain. */
+    leadingAssets?: LeadingAsset[]
     /** Already translated by the chain. */
     title: string
     /** Unset before signing: a transaction not yet sent has no status to report. */

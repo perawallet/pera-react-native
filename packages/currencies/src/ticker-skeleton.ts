@@ -75,3 +75,14 @@ export const toTickerSkeleton = (unitName: string): string =>
     Array.from(unitName.normalize('NFKD').replace(IGNORED_CHARACTERS, ''))
         .map(toSkeletonChar)
         .join('')
+
+/**
+ * True when the unit name spells a Latin letter with another script's look-alike, as a ticker
+ * disguised as a real one does (`USDꓚ`, `ЕΤН`). Non-Latin names with no Latin twin stay false.
+ */
+export const hasLatinLookalike = (unitName: string): boolean =>
+    Array.from(unitName.normalize('NFKD')).some(
+        char =>
+            char.charCodeAt(0) >= 0x80 &&
+            toSkeletonChar(char) !== char.toUpperCase(),
+    )

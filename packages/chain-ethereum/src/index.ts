@@ -86,6 +86,7 @@ export type {
 } from './signing/contract-action-types'
 export type { EvmNftItem, EvmStandardCall } from './signing/standard-call-types'
 export { readEvmRecordNft, type EvmRecordNft } from './history/record-nft'
+export { readEvmRecordGas, type EvmRecordGas } from './history/record-gas'
 export { isEvmApprovalCall } from './signing/standard-calls'
 export {
     readEthereumNative,

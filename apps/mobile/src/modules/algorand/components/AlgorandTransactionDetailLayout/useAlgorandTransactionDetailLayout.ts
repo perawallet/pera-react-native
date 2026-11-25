@@ -152,6 +152,11 @@ export const useAlgorandTransactionDetailLayout = (
         return {
             scope,
             iconName: algorandTransactionIconName(txType),
+            ...(amount && {
+                leadingAssets: [
+                    { chainId: scope.chainId, asset: amount.asset },
+                ],
+            }),
             title: heroTitle({ key: titleKeyOf(transaction, viewer) }),
             ...(isOnChain && { status: 'completed' as const }),
             amount,

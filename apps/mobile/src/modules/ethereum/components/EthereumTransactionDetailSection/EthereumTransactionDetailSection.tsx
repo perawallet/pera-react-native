@@ -20,6 +20,7 @@ import type { EthereumTransactionPresentation } from '../../hooks/useEthereumTra
 import { EthereumApprovalDetails } from '../EthereumApprovalDetails'
 import { EthereumContractActionDetails } from '../EthereumContractActionDetails'
 import { EthereumTransferAssetRows } from '../EthereumTransferAssetRows'
+import type { EthereumTransactionPricing } from '../../utils/transactionPricing'
 import { EthereumTechnicalSections } from '../EthereumTechnicalSections'
 
 type EthereumTransactionDetailSectionProps = {
@@ -28,6 +29,8 @@ type EthereumTransactionDetailSectionProps = {
     isAmountInHero?: boolean
     /** A transfer's asset and amount are shown in their own card, so only its holder is listed here. */
     isAssetInCard?: boolean
+    /** The history's gas facts, for a record; see {@link EthereumTechnicalSections}. */
+    historyPricing?: EthereumTransactionPricing
     /** The request the transaction is under review in; a history record has none. */
     source?: SignRequestSource
     verifiedOrigin?: string
@@ -38,6 +41,7 @@ export const EthereumTransactionDetailSection = ({
     presentation,
     isAmountInHero = !!presentation.amount?.asset,
     isAssetInCard = false,
+    historyPricing,
     source,
     verifiedOrigin,
 }: EthereumTransactionDetailSectionProps) => {
@@ -148,6 +152,7 @@ export const EthereumTransactionDetailSection = ({
             )}
             <EthereumTechnicalSections
                 presentation={presentation}
+                historyPricing={historyPricing}
                 source={source}
                 verifiedOrigin={verifiedOrigin}
             />

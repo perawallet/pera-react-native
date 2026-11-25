@@ -11,7 +11,7 @@
  */
 
 import { Decimal } from 'decimal.js'
-import { getAddress, size } from 'viem'
+import { getAddress, isAddress, size } from 'viem'
 import {
     type AssetDisplayHint,
     type BalanceChange,
@@ -33,7 +33,10 @@ import {
     toEvmNftAssetId,
 } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
-import { findKnownEvmContract } from '../signing/known-contracts'
+import {
+    findKnownEvmContract,
+    type KnownEvmContract,
+} from '../signing/known-contracts'
 import {
     classifyEvmHistoryCall,
     historyActionSummary,
@@ -53,7 +56,9 @@ const CONTRACT_INTERACTION = i18nKey(
 )
 const NFT_SUBTITLE = i18nKey('transactions.list_item.nft_subtitle')
 const NFT_BATCH_SUBTITLE = i18nKey('transactions.list_item.nft_batch_subtitle')
-const INTERPRETED_TITLE = i18nKey('transactions.list_item.interpreted_title')
+const CONTRACT_CALL_NAMED = i18nKey(
+    'transactions.list_item.contract_call_named',
+)
 
 // A verified contract's function name; anything else the backend sends in
 // `method` is a raw selector, which says nothing a reader can use.
@@ -580,13 +585,35 @@ export const summarizeEthereumHistoryItem = (
             ? {
                   ...summary,
                   title: {
-                      key: INTERPRETED_TITLE,
-                      params: { title: item.method },
+                      key: CONTRACT_CALL_NAMED,
+                      params: { method: item.method },
                   },
               }
             : summary
+    // Naming a contract needs decoding, as for a call: the row then names the
+    // project behind a known counterparty instead of its address.
+    const counterpartyContract =
+        isDecoding &&
+        named.subtitle === undefined &&
+        named.counterparty !== undefined
+            ? knownContractAt(named.counterparty, scope, chain)
+            : undefined
+    const labelled = counterpartyContract
+        ? { ...named, ...knownContractSubtitle(counterpartyContract) }
+        : named
     const notice = transactionStatusNotice(
         item.status === 'success' ? 'confirmed' : 'failed',
     )
-    return notice ? { ...named, notice } : named
+    return notice ? { ...labelled, notice } : labelled
+}
+
+const knownContractAt = (
+    address: string,
+    scope: ChainScope,
+    chain: EvmChain,
+): Optional<KnownEvmContract> => {
+    const eip155ChainId = eip155ChainIdOfNetwork(chain, scope.networkId)
+    return eip155ChainId === undefined || !isAddress(address)
+        ? undefined
+        : findKnownEvmContract(eip155ChainId, address)
 }

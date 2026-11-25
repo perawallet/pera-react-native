@@ -459,8 +459,7 @@
             "search_paused_body": "Keine Transaktionen im jüngsten Verlauf gefunden.",
             "search_older": "Ältere durchsuchen",
             "filter": "Filter",
-            "csv": "CSV",
-            "csv_on_network": "{{network}}-CSV"
+            "csv": "CSV"
         },
         "collectible": {
             "description": "Beschreibung",
@@ -493,7 +492,7 @@
         },
         "token_warning": {
             "suspicious_title": "Verdächtiges Token",
-            "body": "Pera hat dieses Token als verdächtig markiert. Du hast es nicht angefordert und es könnte ein Betrug sein. Interagiere nicht mit Websites oder Links, die damit zu tun haben."
+            "body": "Pera hat dieses Token als verdächtig markiert. Du hast es nicht angefordert und es könnte ein Betrug sein. Sei vorsichtig im Umgang damit und mit Websites oder Links, die damit zu tun haben."
         },
         "copy_full_amount_hint": "Lange drücken, um den vollen Betrag zu kopieren",
         "toggle_amount_hint": "Tippe, um zwischen Wert und Asset-Betrag zu wechseln"
@@ -3982,6 +3981,7 @@
             "approval_for": "Für {{spender}}",
             "unlimited_approval_for": "Unbegrenzt · für {{spender}}",
             "swap_pair": "Tausch {{from}} → {{to}}",
+            "swap_assets": "{{from}} → {{to}}",
             "add_liquidity": "Liquidität hinzufügen",
             "remove_liquidity": "Liquidität entfernen",
             "collect_fees": "Gebühren einsammeln",
@@ -3998,7 +3998,9 @@
             "nft_batch_subtitle": "{{collection}} · {{count}} Elemente",
             "inner_transaction_count": "{{innerCount}} innere Transaktionen",
             "cancel_transaction": "Transaktion stornieren",
-            "not_sent_by_you": "Nicht von dir gesendet"
+            "send_by_approval": "Senden (freigegeben)",
+            "spoofed_send": "Gefälschtes Senden",
+            "contract_call_named": "Smart Contract: {{method}}"
         },
         "record_detail": {
             "read_failed": "Die Aufrufdetails dieser Transaktion konnten nicht aus dem Netzwerk gelesen werden.",
@@ -4148,6 +4150,8 @@
             "title": "Filter",
             "all_time": "Gesamter Zeitraum",
             "today": "Heute",
+            "hide_suspicious": "Verdächtige Transaktionen ausblenden",
+            "hide_suspicious_description": "Blendet gefälschte Sendungen, nachgeahmte und Spam-Token sowie vermutete Adressvergiftung aus.",
             "yesterday": "Gestern",
             "last_week": "Letzte Woche",
             "last_month": "Letzter Monat",
@@ -4170,8 +4174,11 @@
             "blocked_body": "Eine frühere Transaktion von diesem Konto hat das Netzwerk nie erreicht, daher kann diese erst bestätigt werden, wenn etwas ihren Platz einnimmt. Freigeben sendet an ihrer Stelle eine leere Überweisung an dich selbst, die eine Netzwerkgebühr kostet.",
             "unblock": "Freigeben"
         },
+        "suspected_fake_transfer": {
+            "title": "Vermutlich gefälschte Überweisung",
+            "body": "Dein Konto hat diese Überweisung nicht signiert, und sie hat nichts bewegt. Jeder kann eine Überweisung von 0 Token so aussehen lassen, als käme sie von deinem Konto, ganz ohne Freigabe. Betrüger tun das, damit ihre Adresse in deinem Verlauf erscheint und später kopiert wird. Kopiere keine Adressen daraus."
+        },
         "suspected_poisoning": {
-            "marker": "Verdacht auf Address Poisoning",
             "title": "Verdacht auf Address Poisoning",
             "body": "Diese Überweisung hatte keinen Wert und stammt von einer Adresse, die so gestaltet ist, dass sie wie eine aussieht, die du kennst. Betrüger senden so etwas, damit ihre Adresse in deinem Verlauf auftaucht und später kopiert wird.",
             "do_not_reuse": "Kopiere diese Adresse nicht und sende nichts an sie.",
@@ -4181,9 +4188,6 @@
             "reuse_confirm": "Trotzdem fortfahren",
             "reuse_cancel": "Abbrechen",
             "dismiss": "Verstanden"
-        },
-        "suspicious_token": {
-            "marker": "Verdächtiges Token"
         }
     },
     "tabbar": {
@@ -5316,6 +5320,8 @@
             "gwei": "Gwei",
             "nonce": "Nonce",
             "gas_limit": "Gas-Limit",
+            "gas_used": "Verbrauchtes Gas",
+            "gas_price": "Gaspreis",
             "max_fee_per_gas": "Max. Gebühr pro Gas",
             "max_priority_fee_per_gas": "Max. Prioritätsgebühr pro Gas"
         },

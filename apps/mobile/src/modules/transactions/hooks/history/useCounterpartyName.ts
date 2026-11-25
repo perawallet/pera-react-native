@@ -10,27 +10,53 @@
  limitations under the License
  */
 
+import { useMemo } from 'react'
+import {
+    findAccountByAddressOn,
+    getAccountDisplayName,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
+    getChainDescriptor,
     useChainCapability,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
+import {
+    findContactByAddress,
+    useContacts,
+} from '@perawallet/wallet-core-contacts'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 
 /**
- * The name-service lookup only runs on a chain that has one, so another
- * chain's address is never sent to it; the fallback is the address truncated
- * with that chain's codec. An empty address skips the lookup.
+ * Resolved as `AddressDisplay` does: the wallet's own account, then a contact,
+ * then the chain's name service. The name-service lookup only runs on a chain
+ * that has one and only when nothing local matched, so another chain's address
+ * is never sent to it; the fallback is the address truncated with that chain's
+ * codec. An empty address skips every lookup.
  */
 export const useCounterpartyName = (
     address: string,
     chainId: ChainId,
 ): string => {
+    const accounts = useAllAccounts()
+    const { contacts } = useContacts()
+    const localName = useMemo(() => {
+        if (!address) return undefined
+        const account = findAccountByAddressOn(accounts, chainId, address)
+        if (account) return getAccountDisplayName(account, chainId)
+        return findContactByAddress(
+            contacts,
+            address,
+            getChainDescriptor(chainId).family,
+        )?.name
+    }, [address, accounts, contacts, chainId])
+
     const hasNameService = useChainCapability(chainId, 'nameService')
     const { displayName } = useResolvedAddress(
         address,
         useSelectedScope(chainId),
-        { enabled: !!address && hasNameService },
+        { enabled: !!address && hasNameService && localName === undefined },
     )
-    return displayName
+    return localName ?? displayName
 }

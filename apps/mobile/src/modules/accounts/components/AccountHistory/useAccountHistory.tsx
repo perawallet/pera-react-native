@@ -30,6 +30,7 @@ import { useNetworkStatus } from '@modules/network'
 import {
     TransactionHistoryRow,
     TransactionHistorySearchOlder,
+    useWithoutSuspiciousRows,
     type HistoryFeedProps,
     type TransactionListRow,
 } from '@modules/transactions'
@@ -124,11 +125,12 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         afterTime,
         beforeTime,
         historyType,
+        isSuspiciousHidden,
         openFilter,
     } = useAccountHistoryFilter()
 
     const {
-        rows,
+        rows: allRows,
         transactionCount,
         historySources,
         isLoading,
@@ -159,6 +161,11 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         isRefreshing,
         scopeOf,
     } = useAccountHistoryRows({ afterTime, beforeTime, historyType })
+    const rows = useWithoutSuspiciousRows({
+        rows: allRows,
+        suspectedPoisoningById,
+        isEnabled: isSuspiciousHidden,
+    })
 
     // The event needs one chain, so on All it names the account's own; a
     // filter there covers every network.
@@ -177,7 +184,6 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     } = useAccountHistoryCsvExport({
         scope,
         sources: historySources,
-        isMerged,
         afterTime,
         beforeTime,
     })
@@ -230,7 +236,8 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     const emptyCopy = emptyBodyCopy({
         isFiltered:
             activeFilter !== TransactionFilter.AllTime ||
-            (canFilterByType && historyType !== null),
+            (canFilterByType && historyType !== null) ||
+            isSuspiciousHidden,
         networkChainId,
     })
     const emptyBody = t(emptyCopy.key, emptyCopy.params)

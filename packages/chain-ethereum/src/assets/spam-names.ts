@@ -12,21 +12,12 @@
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
+    isSpamAssetText,
     PeraAssetVerificationTier,
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import type { ListedTokens } from './api/whitelist-cache'
-
-const LINK =
-    /https?:\/\/|www\.|t\.me\/|t\.ly\/|\b[a-z0-9-]{2,}\.(com|net|org|io|xyz|live|app|top|site|online|club|vip|pro|fun|info|cc|gift|link|claims?)\b/i
-const LURE_EMOJI = /[✅⭐🎁💰🔥]/u
-// Only verbs that ask the holder to act: "reward" or "distribution" alone
-// also name real tokens.
-const CALL_TO_ACT = /\b(claim|redeem|visit|airdrop)\b/i
-
-const isSpamText = (text: string): boolean =>
-    LINK.test(text) || LURE_EMOJI.test(text) || CALL_TO_ACT.test(text)
 
 const symbolOf = (unitName: string): string =>
     unitName.trim().replace(/^\$/, '').trim().toUpperCase()
@@ -44,7 +35,7 @@ export const isSpamNamedToken = (
     const texts = [token.name, token.unitName].filter(
         (text): text is string => !!text,
     )
-    if (texts.some(isSpamText)) return true
+    if (texts.some(isSpamAssetText)) return true
     return !!token.unitName && listedSymbols.has(symbolOf(token.unitName))
 }
 

@@ -37,6 +37,8 @@ export type UseAccountHistoryFilterResult = {
     beforeTime?: string
     /** Null is All. */
     historyType: Nullable<TransactionHistoryType>
+    /** Off by default: suspicious rows show, dimmed and badged. */
+    isSuspiciousHidden: boolean
     /** `chainId` is the network the analytics event names; `canFilterByType` shows the Type section. */
     openFilter: (chainId: ChainId, canFilterByType: boolean) => Promise<void>
 }
@@ -48,6 +50,7 @@ export const useAccountHistoryFilter = (): UseAccountHistoryFilterResult => {
     const [customRange, setCustomRange] = useState<CustomDateRange>()
     const [historyType, setHistoryType] =
         useState<Nullable<TransactionHistoryType>>(null)
+    const [isSuspiciousHidden, setIsSuspiciousHidden] = useState(false)
     const { request: requestBottomSheet } = useBottomSheet()
 
     const { afterTime, beforeTime } = useMemo(
@@ -65,6 +68,7 @@ export const useAccountHistoryFilter = (): UseAccountHistoryFilterResult => {
                         activeHistoryType={
                             canFilterByType ? historyType : undefined
                         }
+                        isSuspiciousHidden={isSuspiciousHidden}
                     />
                 ),
                 options: { size: 'auto', enablePanDownToClose: true },
@@ -85,8 +89,17 @@ export const useAccountHistoryFilter = (): UseAccountHistoryFilterResult => {
             if (result.historyType !== undefined) {
                 setHistoryType(result.historyType)
             }
+            if (result.isSuspiciousHidden !== undefined) {
+                setIsSuspiciousHidden(result.isSuspiciousHidden)
+            }
         },
-        [requestBottomSheet, activeFilter, customRange, historyType],
+        [
+            requestBottomSheet,
+            activeFilter,
+            customRange,
+            historyType,
+            isSuspiciousHidden,
+        ],
     )
 
     return {
@@ -95,6 +108,7 @@ export const useAccountHistoryFilter = (): UseAccountHistoryFilterResult => {
         afterTime,
         beforeTime,
         historyType,
+        isSuspiciousHidden,
         openFilter,
     }
 }

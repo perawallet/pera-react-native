@@ -202,7 +202,7 @@ describe('Flow: History on an account with Algorand and Ethereum', () => {
         useAccountsStore.getState().setAccounts([])
     })
 
-    it('Given history on both networks, when History opens on All, then it interleaves them newest first, labels each row with its network, and offers the CSV export for both networks', async () => {
+    it('Given history on both networks, when History opens on All, then it interleaves them newest first, leads each row with its icon, and offers the CSV export for both networks', async () => {
         renderWithNavigation(AccountHistory, 'AccountHistory')
 
         await waitFor(
@@ -215,16 +215,14 @@ describe('Flow: History on an account with Algorand and Ethereum', () => {
                 ]),
             { timeout: SLOW_WAIT_TIMEOUT_MS },
         )
-        expect(
-            within(
-                screen.getByTestId(`transaction_row_${ALGO_TX.id}`),
-            ).getByTestId('chain_label_algorand'),
-        ).toBeTruthy()
-        expect(
-            within(
-                screen.getByTestId(`transaction_row_${hashOf(3)}`),
-            ).getByTestId('chain_label_ethereum'),
-        ).toBeTruthy()
+        // A transfer leads with its asset, the kind riding as a badge.
+        for (const id of [ALGO_TX.id, hashOf(3)]) {
+            expect(
+                within(screen.getByTestId(`transaction_row_${id}`)).getByTestId(
+                    /^transaction_kind_badge_/,
+                ),
+            ).toBeTruthy()
+        }
         expect(
             screen.getByText('asset_details.transaction_list.csv'),
         ).toBeTruthy()
@@ -258,7 +256,7 @@ describe('Flow: History on an account with Algorand and Ethereum', () => {
         expect(requestsAfterTap).toEqual([])
     })
 
-    it('Given rows on Ethereum alone, when History opens on All, then the export names Ethereum', async () => {
+    it('Given rows on Ethereum alone, when History opens on All, then the export is offered', async () => {
         await resetTestDatabase()
         serveUnfundedAlgorandAddress()
 
@@ -268,7 +266,7 @@ describe('Flow: History on an account with Algorand and Ethereum', () => {
         })
 
         expect(
-            screen.getByText('asset_details.transaction_list.csv_on_network'),
+            screen.getByText('asset_details.transaction_list.csv'),
         ).toBeTruthy()
     })
 
@@ -320,7 +318,9 @@ describe('Flow: History on an account with Algorand and Ethereum', () => {
         expect(useAssetListViewStore.getState().selectedChainId).toBe(
             'ethereum',
         )
-        expect(screen.queryByTestId('chain_label_ethereum')).toBeNull()
+        for (const row of screen.queryAllByTestId(/^transaction_row_/)) {
+            expect(within(row).queryByTestId('chain_icon_ethereum')).toBeNull()
+        }
     })
 
     it('Given History narrowed to Ethereum, when CSV is tapped, then it shares the stored Ethereum rows without a network request', async () => {

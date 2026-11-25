@@ -52,6 +52,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         mockOwnAddress === undefined ? undefined : { address: mockOwnAddress },
     isSameAddress: (_chainId: string, a: string, b: string) =>
         a.toLowerCase() === b.toLowerCase(),
+    canHideHolding: () => true,
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -663,12 +664,12 @@ describe('useEthereumRecordLayout', () => {
                 { initiator: undefined, isSignedElsewhere: true },
             ],
         ])(
-            'Given an outgoing record with %s, then the hero reads not sent by you',
+            'Given an outgoing record with %s, then the hero reads as a send by approval',
             (_label, overrides) => {
                 const { summary } = layoutOf(tokenSend(overrides))
 
                 expect(summary.title).toBe(
-                    'transactions.list_item.not_sent_by_you',
+                    'transactions.list_item.send_by_approval',
                 )
             },
         )
@@ -677,6 +678,21 @@ describe('useEthereumRecordLayout', () => {
             const { summary } = layoutOf(tokenSend())
 
             expect(summary.title).toBe('transactions.list_item.send')
+        })
+
+        it('Given a send another address signed that moved nothing, then the hero reads as spoofed, as its row does', () => {
+            const zero = recordOf(
+                { initiator: PEER },
+                {
+                    kind: 'token-transfer',
+                    amount: { assetRef: USDC_REF, value: new Decimal(0) },
+                    counterparty: PEER,
+                },
+            )
+
+            expect(layoutOf(zero).summary.title).toBe(
+                'transactions.list_item.spoofed_send',
+            )
         })
 
         it('Given a record that names no sender and a read that does, then the read names the sender', () => {
@@ -714,6 +730,51 @@ describe('useEthereumRecordLayout', () => {
 
         it('Given a transfer of the native coin, then no contract is named', () => {
             expect(layoutOf(recordOf()).assetContract).toBeUndefined()
+        })
+    })
+
+    describe('the hero leads with', () => {
+        it('a transfer leads with the asset it moved', () => {
+            const { summary } = layoutOf(recordOf())
+
+            expect(
+                summary.leadingAssets?.map(lead => lead.asset.assetId),
+            ).toEqual([NATIVE_REF.assetId])
+        })
+
+        it('a swap leads with what it paid, then what it returned', () => {
+            const swap = recordOf(
+                {},
+                {
+                    kind: 'swap',
+                    amount: undefined,
+                    direction: 'none',
+                    balanceChanges: [
+                        { assetRef: NATIVE_REF, value: new Decimal(-1) },
+                        { assetRef: USDC_REF, value: new Decimal(2) },
+                    ],
+                },
+            )
+
+            expect(
+                layoutOf(swap).summary.leadingAssets?.map(
+                    lead => lead.asset.assetId,
+                ),
+            ).toEqual([NATIVE_REF.assetId, USDC_REF.assetId])
+        })
+
+        it('a contract call leads with nothing, leaving the chain to lead', () => {
+            const call = recordOf(
+                {},
+                {
+                    kind: 'contract-call',
+                    amount: undefined,
+                    direction: 'none',
+                    balanceChanges: [],
+                },
+            )
+
+            expect(layoutOf(call).summary.leadingAssets).toEqual([])
         })
     })
 })

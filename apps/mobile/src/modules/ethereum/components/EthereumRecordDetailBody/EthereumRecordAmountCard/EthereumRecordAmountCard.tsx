@@ -28,6 +28,8 @@ type EthereumRecordAmountCardProps = {
     assetLabel?: string
     /** The token contract of the asset moved, shown beside it so a lookalike name can be checked. */
     assetContract?: string
+    /** Titles each leg by its side, what left and what arrived, rather than as a bare amount. */
+    isSwap?: boolean
 }
 
 /** What the history says happened to the balances, whether or not the call was read. */
@@ -36,6 +38,7 @@ export const EthereumRecordAmountCard = ({
     scope,
     assetLabel,
     assetContract,
+    isSwap = false,
 }: EthereumRecordAmountCardProps) => {
     const { t } = useLanguage()
 
@@ -70,6 +73,15 @@ export const EthereumRecordAmountCard = ({
                     key={`${change.assetRef.assetId}-${index}`}
                     change={change}
                     scope={scope}
+                    title={
+                        isSwap
+                            ? t(
+                                  change.value.isNegative()
+                                      ? 'transactions.list_item.send'
+                                      : 'transactions.list_item.receive',
+                              )
+                            : undefined
+                    }
                     testID={`ethereum_record_amount_${index}`}
                 />
             ))}

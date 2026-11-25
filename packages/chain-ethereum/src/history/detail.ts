@@ -30,7 +30,11 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 import { createEvmClient } from '../blockchain/utils/createEvmClient'
 import type { EvmChain } from '../chains/types'
 import { ethereumMinedViewOf } from '../signing/review'
-import { toEthereumNative } from '../signing/transaction-view'
+import { toDecimal } from '../signing/to-decimal'
+import {
+    toEthereumNative,
+    type EthereumOnChainPricing,
+} from '../signing/transaction-view'
 
 // viem's legacy serializer ignores a signature left on the transaction.
 const serializeSigned = (tx: Transaction) =>
@@ -55,6 +59,20 @@ const signedSenderOf = async (
         return null
     }
 }
+
+// What the read already carries; the gas used would need a receipt read too.
+const onChainPricingOf = (tx: Transaction): EthereumOnChainPricing => ({
+    nonce: tx.nonce,
+    gas: tx.gas,
+    ...(tx.maxFeePerGas !== undefined && {
+        maxFeePerGas: toDecimal(tx.maxFeePerGas),
+    }),
+    ...(tx.maxPriorityFeePerGas !== undefined && {
+        maxPriorityFeePerGas: toDecimal(tx.maxPriorityFeePerGas),
+    }),
+    ...(tx.maxFeePerGas === undefined &&
+        tx.gasPrice !== undefined && { gasPrice: toDecimal(tx.gasPrice) }),
+})
 
 /**
  * The transaction as the node holds it, read for a detail screen: the
@@ -90,6 +108,7 @@ export const readEvmTransactionDetail = async (
                 value: tx.value,
             },
             feePaid,
+            onChainPricingOf(tx),
         ),
     )
 }
