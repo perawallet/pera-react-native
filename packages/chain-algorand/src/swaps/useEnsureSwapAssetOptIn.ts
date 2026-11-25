@@ -20,6 +20,7 @@ import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { useFeeDelegation } from '../fee-delegation'
 import { isAlgorandNativeAssetId } from '../descriptor'
 import { toUnsignedAlgorandTransactions } from '../signing/unsignedTransaction'
+import { resolveAlgorandSenderFee } from '../transactions/transfer-fees'
 
 export type EnsureAssetOptInParams = Parameters<EnsureSwapReceivable>[0] & {
     /** Asked once an opt-in is needed; declining leaves the account as it was. */
@@ -77,9 +78,13 @@ export const useEnsureAssetOptIn = (): ((
                 await optIn({
                     sender: address,
                     assetId: asa,
-                    ...(typeof approval === 'bigint'
-                        ? { maxFee: approval }
-                        : {}),
+                    maxFee:
+                        typeof approval === 'bigint'
+                            ? approval
+                            : resolveAlgorandSenderFee(
+                                  address,
+                                  BigInt(suggestedParams.minFee),
+                              ),
                 })
                 return true
             }

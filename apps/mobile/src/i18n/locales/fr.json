@@ -1541,7 +1541,7 @@
             },
             "fee_above_shown": {
                 "title": "Frais de réseau modifiés",
-                "body": "Le réseau demande maintenant des frais plus élevés que ceux affichés, donc rien n’a été signé. Réessaie pour voir les frais actuels."
+                "body": "Le réseau demande maintenant des frais plus élevés que ceux affichés, donc rien n’a été signé. Réessayez pour voir les frais actuels."
             }
         },
         "kms": {

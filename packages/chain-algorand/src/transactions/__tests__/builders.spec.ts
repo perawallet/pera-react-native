@@ -144,6 +144,21 @@ describe('Algorand transaction builders', () => {
             ).resolves.toHaveLength(1)
         })
 
+        it('leaves an express group above the min fee to its review', async () => {
+            pricedAt(1_000_000n)
+
+            await expect(
+                buildExpressTransferTxs({
+                    scope,
+                    sender: 'S',
+                    receiver: 'R',
+                    assetId: 99n,
+                    amount: 5n,
+                    funding: 0n,
+                }),
+            ).resolves.toHaveLength(1)
+        })
+
         it('allows up to the explicit fee the caller passed', async () => {
             pricedAt(3000n)
 

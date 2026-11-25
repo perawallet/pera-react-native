@@ -21,6 +21,7 @@ import {
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { SigningActionButtons } from '@modules/signing/components/SigningActionButtons'
 import { useSignRequestScope } from '@modules/signing/hooks/useSignRequestScope'
+import { requesterSourceOf } from '@modules/signing/utils/requesterSource'
 
 export const SingleTransactionScreen = () => {
     const { t } = useLanguage()
@@ -54,7 +55,7 @@ export const SingleTransactionScreen = () => {
         <TransactionReviewBody
             transaction={native}
             scope={scope}
-            source={request.sourceMetadata}
+            source={requesterSourceOf(request)}
             verifiedOrigin={request.verifiedOrigin}
             actions={<SigningActionButtons />}
         />
