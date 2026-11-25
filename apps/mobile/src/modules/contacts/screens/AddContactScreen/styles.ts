@@ -12,10 +12,8 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
+export const useStyles = makeStyles(() => ({
     footerButton: {
-        minHeight: theme.spacing['3xl'],
-        borderRadius: theme.borderRadius.xs,
         opacity: 1,
     },
 }))

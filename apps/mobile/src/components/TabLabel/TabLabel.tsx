@@ -28,6 +28,7 @@ export const TabLabel = ({ labelKey, active }: TabLabelProps) => {
         <PWView style={styles.container}>
             <PWText
                 variant='caption'
+                weight={active ? 500 : 400}
                 truncate
                 style={[styles.label, active ? styles.active : styles.inactive]}
             >

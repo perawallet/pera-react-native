@@ -74,6 +74,7 @@ export const palette = {
         600: '#52525B',
         700: '#3F3F46',
         800: '#27272A',
+        850: '#1F1F23',
         900: '#18181B',
     },
     yellow: {
@@ -83,6 +84,7 @@ export const palette = {
         400: '#FFEE55',
         500: '#EDB21C',
         600: '#C77700',
+        700: '#A66200',
     },
     black: '#000000',
     white: '#FFFFFF',

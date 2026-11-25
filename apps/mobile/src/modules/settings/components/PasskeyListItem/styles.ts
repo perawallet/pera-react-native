@@ -36,7 +36,7 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.xxs,
     },
     subtitle: {
-        color: theme.colors.textGrayLighter,
+        color: theme.colors.textGray,
     },
     divider: {
         height: theme.borders.sm,
@@ -48,6 +48,6 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'space-between',
     },
     metaValue: {
-        color: theme.colors.textGrayLighter,
+        color: theme.colors.textGray,
     },
 }))

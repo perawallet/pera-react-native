@@ -35,7 +35,7 @@ export const lightColorTokens = {
     systemElements: palette.black,
 
     // Text
-    textGray: palette.gray[500],
+    textGray: palette.gray[600],
     textGrayLighter: palette.gray[400],
     textMain: palette.gray[900],
     textWhite: palette.white,
@@ -54,7 +54,7 @@ export const lightColorTokens = {
     warningSurface: 'rgba(237, 178, 28, 0.06)',
 
     // Link
-    linkPrimary: palette.turquoise[700],
+    linkPrimary: palette.turquoise[800],
     linkIcon: palette.turquoise[600],
 
     // Button Primary
@@ -103,15 +103,15 @@ export const lightColorTokens = {
     buttonSquareBg: tints.turquoise600Alpha12,
     buttonSquareFocusBg: tints.turquoise600Alpha28,
     buttonSquareSecondaryBg: palette.gray[100],
-    buttonSquareIcon: palette.turquoise[700],
+    buttonSquareIcon: palette.turquoise[800],
     buttonSquareSecondaryIcon: palette.gray[500],
 
     // Helpers
-    positive: palette.turquoise[700],
+    positive: palette.turquoise[800],
     positiveLighter: palette.turquoise[100],
     negative: palette.salmon[600],
     negativeLighter: palette.salmon[100],
-    warningText: palette.yellow[600],
+    warningText: palette.yellow[700],
     successCheckmark: palette.white,
     heroBg: palette.gray[50],
 
@@ -165,7 +165,7 @@ export const lightColorTokens = {
     suspiciousIconInline: palette.white,
 
     // ASA Banners
-    trustedBannerContent: palette.turquoise[700],
+    trustedBannerContent: palette.turquoise[800],
     trustedBannerBg: tints.turquoise600Alpha16,
     verifiedBannerContent: accentPalette.blue,
     verifiedBannerBg: tints.blueAlpha16,
@@ -209,7 +209,7 @@ export const lightColorTokens = {
     tabBarButton: palette.gray[800],
     tabBarBg: 'rgba(255, 255, 255, 0.84)',
     tabBarIconActive: palette.gray[900],
-    tabBarIconNonActive: palette.gray[400],
+    tabBarIconNonActive: palette.gray[500],
     tabBarIconDisabled: 'rgba(161, 161, 170, 0.5)',
 
     // Bottom Sheet
@@ -220,7 +220,7 @@ export const lightColorTokens = {
 
     // Switches
     switchBg: palette.turquoise[600],
-    switchOffBg: palette.gray[400],
+    switchOffBg: palette.gray[500],
 
     // NFT Icon
     nftIconBg: tints.gray900Alpha60,

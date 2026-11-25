@@ -77,6 +77,6 @@ export const useStyles = makeStyles(theme => ({
     },
     contactText: {
         textAlign: 'center',
-        color: theme.colors.textGrayLighter,
+        color: theme.colors.textGray,
     },
 }))

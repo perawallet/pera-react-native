@@ -42,8 +42,9 @@ export const useStyles = makeStyles(
                 paddingHorizontal: 0,
             },
             inputContainer: {
-                paddingHorizontal: theme.spacing.md,
-                borderRadius: theme.borderRadius.xs,
+                minHeight: theme.controlHeight.md,
+                paddingHorizontal: theme.spacing.lg,
+                borderRadius: theme.borderRadius.md,
             },
             input,
             // Locked value: dimmed with the same token the checklist uses for

@@ -18,7 +18,7 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.xxl,
     },
     description: {
-        color: theme.colors.textGrayLighter,
+        color: theme.colors.textGray,
     },
     errorMessage: {
         marginTop: theme.spacing.xs,

@@ -42,7 +42,7 @@ export const useStyles = makeStyles(theme => ({
     },
     label: {
         ...getFontWeightVariant(theme, 'body', 500),
-        color: theme.colors.textGrayLighter,
+        color: theme.colors.textGray,
     },
     activeLabel: getFontWeightVariant(theme, 'body', 500),
     emphasizedLabel: {
