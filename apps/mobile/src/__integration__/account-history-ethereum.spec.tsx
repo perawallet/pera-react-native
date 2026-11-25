@@ -57,7 +57,7 @@ const nftService = vi.hoisted(() => ({ isServed: false }))
 vi.mock('@perawallet/wallet-core-config', async importOriginal => {
     const withBackend = await (
         await import('@packages/chain-ethereum/src/__tests__/pera-backend')
-    ).withEthereumPeraBackend(importOriginal)
+    ).withEthereumPeraBackend(importOriginal, ['contracts'])
     return {
         ...withBackend,
         // An entry's calldata is read from the node, which the test build has no URL for.
@@ -140,6 +140,8 @@ const { closestPressable, waitPastDoublePressGuard } =
 const { useRoute } = await import('@react-navigation/native')
 const { peraEvmHistoryHandlers } =
     await import('@packages/chain-ethereum/src/history/api/msw-handlers')
+const { contractMetadataResponse, peraEvmContractHandlers } =
+    await import('@packages/chain-ethereum/src/contracts/api/msw-handlers')
 const { evmNftItem, peraEvmAssetHandlers } =
     await import('@packages/chain-ethereum/src/assets/api/msw-handlers')
 const { renderWithNavigation } =
@@ -877,6 +879,78 @@ describe('Flow: History on an Ethereum account', () => {
                     screen.queryByTestId('ethereum_record_loading'),
                 ).toBeNull()
                 expect(nodeReads).not.toContain(SUPPLY_HASH)
+            })
+
+            it('Given calls to a contract Pera curates but the app does not bundle and to an unknown address, when History lists them, then only the curated one is named by its project', async () => {
+                const CURATED = '0x00000000000000000000000000000000000000cc'
+                const UNKNOWN = '0x00000000000000000000000000000000000000dd'
+                const CURATED_HASH = hashOf(34)
+                const UNKNOWN_HASH = hashOf(35)
+                const call = (hash: string, to: string, blockTime: string) =>
+                    evmHistoryItem({
+                        hash,
+                        block_time: blockTime,
+                        from: ETH_ADDRESS,
+                        to,
+                        value: '0',
+                        method: 'stake',
+                        fee: GAS,
+                        balance_impacts: [
+                            { asset_id: ETH_ASSET_ID, amount: `-${GAS}` },
+                        ],
+                    })
+                const lookedUp: string[] = []
+                const trackLookups = ({ request }: { request: Request }) => {
+                    if (request.url.includes('/contracts/')) {
+                        lookedUp.push(new URL(request.url).pathname)
+                    }
+                }
+                server.events.on('request:start', trackLookups)
+                onTestFinished(() =>
+                    server.events.removeListener('request:start', trackLookups),
+                )
+                server.use(
+                    ...peraEvmHistoryHandlers({
+                        history: {
+                            [ETH_ADDRESS]: [
+                                [
+                                    call(
+                                        CURATED_HASH,
+                                        CURATED,
+                                        '2026-01-12T00:00:00Z',
+                                    ),
+                                    call(
+                                        UNKNOWN_HASH,
+                                        UNKNOWN,
+                                        '2026-01-11T00:00:00Z',
+                                    ),
+                                ],
+                            ],
+                        },
+                    }),
+                    ...peraEvmContractHandlers({
+                        contractMetadata: {
+                            [CURATED]: contractMetadataResponse(
+                                'Staking Pool',
+                                'Lido',
+                                'https://lido.fi',
+                            ),
+                        },
+                    }),
+                )
+
+                renderHistory()
+
+                expect(await rowText(CURATED_HASH)).toContain(
+                    'transactions.list_item.interpreted_title',
+                )
+                expect(await rowText(UNKNOWN_HASH)).not.toContain(
+                    'transactions.list_item.interpreted_title',
+                )
+                expect([...new Set(lookedUp)].sort()).toEqual([
+                    `/api/v3/evm/1/contracts/${CURATED}/`,
+                    `/api/v3/evm/1/contracts/${UNKNOWN}/`,
+                ])
             })
 
             it("Given the QA account's rows, when a type is picked in the filter, then only that type's rows list, read from the page already loaded", async () => {

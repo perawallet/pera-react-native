@@ -127,6 +127,7 @@ export const fetchEvmContractMetadata = async (
     }
     return {
         name: metadata.name,
+        projectName: metadata.project.name,
         projectUrl: metadata.project.url,
     }
 }

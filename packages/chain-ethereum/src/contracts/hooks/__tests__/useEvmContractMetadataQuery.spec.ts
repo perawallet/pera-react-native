@@ -96,6 +96,7 @@ describe('useEvmContractMetadataQuery', () => {
         await waitFor(() => {
             expect(result.current.data).toEqual({
                 name: 'Universal Router',
+                projectName: 'Uniswap',
                 projectUrl: 'https://uniswap.org',
             })
         })

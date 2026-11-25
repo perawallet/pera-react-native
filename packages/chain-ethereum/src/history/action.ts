@@ -447,7 +447,7 @@ export const classifyEvmHistoryCall = (
 
 /** The subtitle naming a well-known contract; a proper noun, never translated. */
 export const knownContractSubtitle = (
-    contract: KnownEvmContract,
+    contract: Pick<KnownEvmContract, 'name' | 'projectName'>,
 ): Pick<TransactionSummary, 'subtitle' | 'subtitleEllipsis'> => ({
     subtitle: {
         key: INTERPRETED_TITLE,
