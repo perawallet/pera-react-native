@@ -332,7 +332,7 @@ export const historyEntryOfSigned = async (
 
 // A dApp call's decoded summary names the action but at most the ETH it sends;
 // the review's simulation also has what comes back, so History shows that
-// until the chain lists it. A transfer or approval keeps its own amount.
+// while the call is pending. A transfer or approval keeps its own amount.
 const withPrediction = (
     entry: SubmissionHistoryEntry,
     scope: ChainScope,
@@ -347,14 +347,14 @@ const withPrediction = (
     ) {
         return entry
     }
-    const balanceChanges = predictedBalanceChangesOf(scope, {
+    const predictedBalanceChanges = predictedBalanceChangesOf(scope, {
         from: sender,
         to,
         value: new Decimal((value ?? 0n).toString()),
         data: data ?? '0x',
     })
-    return balanceChanges
-        ? { ...entry, summary: { ...summary, balanceChanges } }
+    return predictedBalanceChanges
+        ? { ...entry, predictedBalanceChanges }
         : entry
 }
 

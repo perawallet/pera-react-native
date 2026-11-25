@@ -91,6 +91,32 @@ describe('useCurrentOwnRecord', () => {
         await waitFor(() => expect(result.current).toBe(landed))
     })
 
+    test('follows a send opened while confirming, after its charged fee replaced the maximum', async () => {
+        const confirmed = send({
+            status: 'confirmed',
+            fee: new Decimal('126000000000'),
+            isFeeMaximum: undefined,
+            blockNumber: 42,
+        })
+        mocks.getPendingTransactionRecords.mockResolvedValue([confirmed])
+
+        const { result } = renderHook(
+            () =>
+                useCurrentOwnRecord({
+                    record: send({
+                        fee: new Decimal('126000000000'),
+                        isFeeMaximum: undefined,
+                        blockNumber: 42,
+                    }),
+                    scope: SCOPE,
+                    accountAddress: ADDRESS,
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current).toBe(confirmed))
+    })
+
     test('keeps the snapshot while the ledger has no row for it', async () => {
         mocks.getPendingTransactionRecords.mockResolvedValue([])
         const snapshot = send()

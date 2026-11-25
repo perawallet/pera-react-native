@@ -149,7 +149,16 @@ export const getPendingTransactionRecords = async ({
             ...(isFeeMaximum &&
                 !chargedFee &&
                 historyEntry.fee && { isFeeMaximum }),
-            summary: { ...historyEntry.summary, ...(notice && { notice }) },
+            summary: {
+                ...historyEntry.summary,
+                // An estimate: it never moved on a revert, and once the send confirms the chain's own record has the real legs.
+                ...(status === 'pending' &&
+                    !historyEntry.summary.balanceChanges &&
+                    historyEntry.predictedBalanceChanges && {
+                        balanceChanges: historyEntry.predictedBalanceChanges,
+                    }),
+                ...(notice && { notice }),
+            },
             chainData: historyEntry.chainData,
         })
         if (records.length === MAX_PENDING_HISTORY_ROWS) break

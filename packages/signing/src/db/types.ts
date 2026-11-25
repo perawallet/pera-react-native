@@ -12,6 +12,7 @@
 
 import type { Decimal } from 'decimal.js'
 import type {
+    BalanceChange,
     ChainScope,
     ChainSubmissionData,
     ChainTransactionData,
@@ -32,6 +33,12 @@ export type SubmissionHistoryEntry = {
     chargedFee?: Decimal
     /** Read from the receipt with `chargedFee`. */
     blockNumber?: number
+    /**
+     * Base units. What the review's simulation expected a dApp call to move,
+     * kept apart from `summary` because it is an estimate: shown only while the
+     * attempt is unsettled, never once it fails or confirms.
+     */
+    predictedBalanceChanges?: BalanceChange[]
 }
 
 /**

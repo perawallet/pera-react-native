@@ -273,6 +273,77 @@ describe('getPendingTransactionRecords', () => {
         expect(record.fee?.toString()).toBe('126000000000')
     })
 
+    describe("a dApp call's predicted balance changes", () => {
+        const PREDICTED = [
+            {
+                assetRef: { chainId: SCOPE.chainId, assetId: 'native' },
+                value: new Decimal('-1000000000000000000'),
+            },
+        ]
+        const predictedCall = (
+            status: SubmissionStatus,
+            overrides: Partial<
+                SubmissionAttemptWithHistoryEntry['historyEntry']
+            > = {},
+        ) => {
+            const { historyEntry } = attempt()
+            return attempt({
+                status,
+                historyEntry: {
+                    ...historyEntry,
+                    summary: { ...historyEntry.summary, kind: 'contract-call' },
+                    predictedBalanceChanges: PREDICTED,
+                    ...overrides,
+                },
+            })
+        }
+
+        it.each(['submitted', 'unknown', 'confirming'] as const)(
+            'shows them on a %s call',
+            async status => {
+                ledger(predictedCall(status))
+
+                const [record] = await pendingRecords()
+
+                expect(record.summary.balanceChanges).toBe(PREDICTED)
+            },
+        )
+
+        it.each(['failed', 'confirmed', 'replaced'] as const)(
+            'drops them once the call is %s, since they never moved or the chain has the real ones',
+            async status => {
+                ledger(
+                    predictedCall(status, {
+                        chargedFee: new Decimal('126000000000'),
+                    }),
+                )
+
+                const [record] = await pendingRecords()
+
+                expect(record.summary.balanceChanges).toBeUndefined()
+            },
+        )
+
+        it('keeps the balance changes the summary already names', async () => {
+            const named = [
+                {
+                    assetRef: { chainId: SCOPE.chainId, assetId: 'native' },
+                    value: new Decimal('-5'),
+                },
+            ]
+            const { historyEntry } = predictedCall('submitted')
+            ledger(
+                predictedCall('submitted', {
+                    summary: { ...historyEntry.summary, balanceChanges: named },
+                }),
+            )
+
+            const [record] = await pendingRecords()
+
+            expect(record.summary.balanceChanges).toBe(named)
+        })
+    })
+
     it('names no sender for a failed send that never landed', async () => {
         ledger(attempt({ status: 'failed' }))
 

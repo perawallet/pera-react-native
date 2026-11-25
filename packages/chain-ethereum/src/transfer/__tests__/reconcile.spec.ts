@@ -520,30 +520,31 @@ describe('reconcileEthereumSubmissions', () => {
                 historyEntries: [{ summary, chainData: { family: 'evm' } }],
                 db,
             })
-        const recordedSummary = async () =>
+        const recordedEntry = async () =>
             (
                 await getSubmissionAttemptsWithHistoryEntry({
                     db,
                     scope: SCOPE,
                 })
-            )[0]!.historyEntry.summary
+            )[0]!.historyEntry
 
         afterEach(() => clearPredictions())
 
-        it("adds the review's predicted balance changes to a call that names none", async () => {
+        it("records the review's predicted balance changes beside a call that names none, leaving its summary as decoded", async () => {
             rememberPrediction(SCOPE, SIGNED_CALL, PREDICTED)
             node()
 
             await submit(CALL_SUMMARY)
 
-            const { balanceChanges, title } = await recordedSummary()
-            expect(title).toEqual(CALL_SUMMARY.title)
+            const { summary, predictedBalanceChanges } = await recordedEntry()
+            expect(summary.title).toEqual(CALL_SUMMARY.title)
+            expect(summary.balanceChanges).toBeUndefined()
             expect(
-                balanceChanges?.map(change => change.value.toFixed()),
+                predictedBalanceChanges?.map(change => change.value.toFixed()),
             ).toEqual(['-1000000000000000000'])
         })
 
-        it("replaces a payable call's own ETH amount with everything the review predicted", async () => {
+        it('predicts everything a payable call moves, beside its own ETH amount', async () => {
             rememberPrediction(SCOPE, SIGNED_CALL, {
                 ...PREDICTED,
                 assetChanges: [
@@ -563,9 +564,10 @@ describe('reconcileEthereumSubmissions', () => {
 
             await submit({ ...CALL_SUMMARY, direction: 'out', amount })
 
-            const { balanceChanges } = await recordedSummary()
+            const { summary, predictedBalanceChanges } = await recordedEntry()
+            expect(summary.amount?.value.toFixed()).toBe('1000000000000000000')
             expect(
-                balanceChanges?.map(change => change.value.toFixed()),
+                predictedBalanceChanges?.map(change => change.value.toFixed()),
             ).toEqual(['-1000000000000000000', '999000000000000000'])
         })
 
@@ -579,8 +581,8 @@ describe('reconcileEthereumSubmissions', () => {
 
             await submit({ ...CALL_SUMMARY, kind: 'transfer', amount })
 
-            const summary = await recordedSummary()
-            expect(summary.balanceChanges).toBeUndefined()
+            const { summary, predictedBalanceChanges } = await recordedEntry()
+            expect(predictedBalanceChanges).toBeUndefined()
             expect(summary.amount?.value.toFixed()).toBe('1000000000000000000')
         })
 
@@ -589,7 +591,9 @@ describe('reconcileEthereumSubmissions', () => {
 
             await submit(CALL_SUMMARY)
 
-            expect((await recordedSummary()).balanceChanges).toBeUndefined()
+            expect(
+                (await recordedEntry()).predictedBalanceChanges,
+            ).toBeUndefined()
         })
     })
 

@@ -27,16 +27,18 @@ export type UseCurrentOwnRecordParams = {
 
 /**
  * The ledger's current version of one of the wallet's own unsettled sends,
- * so a screen opened on it shows the fee it was charged and its block once it
- * lands. Any other record comes back as given: only a ledger row carries
- * `isFeeMaximum`, and a chain's own record never changes underneath.
+ * so a screen opened on it shows the fee it was charged, its block and its
+ * status as it lands. Any other record comes back as given: a chain's own
+ * record never changes underneath.
  */
 export const useCurrentOwnRecord = ({
     record,
     scope,
     accountAddress,
 }: UseCurrentOwnRecordParams): Optional<TransactionRecord> => {
-    const isOwnUnsettled = !!record?.isFeeMaximum
+    // A confirming send already has its charged fee, so it no longer carries `isFeeMaximum`.
+    const isOwnUnsettled =
+        record?.status === 'pending' || !!record?.isFeeMaximum
     const { records } = usePendingTransactionRecordsQuery({
         accountAddress,
         scope,
