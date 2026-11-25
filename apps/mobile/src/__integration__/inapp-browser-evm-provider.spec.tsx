@@ -15,13 +15,27 @@
 // through the real connection sheet, signing adapter and review sheet.
 
 import React, { useEffect, useRef } from 'react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+    afterAll,
+    afterEach,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+} from 'vitest'
 import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { server, setSuiteUnhandledRequestMode } from '@test-utils/msw-server'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
+import {
+    resetTestDatabase,
+    setupTestDatabase,
+    teardownTestDatabase,
+} from '@test-utils/database-setup'
 import { getAllPressables, isElementDisabled } from '@test-utils/rnw'
 import { useSigningStore } from '@packages/signing/src/store'
 import { __resetSigningActorRegistryForTests } from '@packages/signing/src/hooks/useSigningActorLifecycle'
@@ -32,9 +46,14 @@ import {
     vectorSignature,
 } from '@packages/chain-ethereum/src/__tests__/testing'
 import {
+    getAccountAddedTokens,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import {
+    erc20CallResponder,
+    evmRpcHandlers,
+} from '@perawallet/wallet-core-chain-ethereum/test-handlers'
 import {
     resetConnectionPairingStateForTesting,
     useConnectionRegistry,
@@ -49,6 +68,10 @@ import { ConnectionsProvider } from '@modules/connections/shell'
 import { SigningOverlays } from '@modules/signing/shell'
 import { webViewDappTransport } from '@modules/webview'
 
+const { RPC_URL } = vi.hoisted(() => ({
+    RPC_URL: 'https://mainnet.rpc.test/',
+}))
+
 vi.mock('@perawallet/wallet-core-config', async importOriginal => {
     const actual =
         await importOriginal<typeof import('@perawallet/wallet-core-config')>()
@@ -59,6 +82,12 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
             reownProjectId: 'integration-project-id',
             chains: { enabled: ['algorand', 'ethereum'], capabilities: {} },
         },
+        chainEndpointsFor: (
+            chainId: Parameters<typeof actual.chainEndpointsFor>[0],
+        ) =>
+            chainId === 'ethereum'
+                ? { mainnet: [RPC_URL], sepolia: [RPC_URL] }
+                : actual.chainEndpointsFor(chainId),
     }
 })
 
@@ -201,7 +230,11 @@ describe('Flow: an EVM dApp in the in-app browser', () => {
     setSuiteUnhandledRequestMode('bypass')
     let detach: () => void
 
+    beforeAll(setupTestDatabase)
+    afterAll(teardownTestDatabase)
+
     beforeEach(async () => {
+        await resetTestDatabase()
         __resetSigningActorRegistryForTests()
         useSigningStore.getState().resetState()
         resetTestKeystore()
@@ -291,5 +324,79 @@ describe('Flow: an EVM dApp in the in-app browser', () => {
         fireEvent.click(screen.getByTestId(CONFIRM_SLIDE))
 
         expect((await answerOf('sign')).result).toBe(VIEM_HELLO_WORLD)
+    })
+
+    describe('wallet_watchAsset', () => {
+        const WATCHED_TOKEN = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+        const ETH_SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
+
+        const watch = async () => {
+            server.use(
+                ...evmRpcHandlers({
+                    responses: {
+                        eth_call: erc20CallResponder({
+                            [WATCHED_TOKEN]: {
+                                name: 'USD Coin',
+                                symbol: 'USDC',
+                                decimals: 6,
+                                totalSupply: 1_000_000_000_000n,
+                            },
+                        }),
+                    },
+                }),
+            )
+            await connect()
+            request('watch', 'wallet_watchAsset', [
+                {
+                    type: 'ERC20',
+                    options: {
+                        address: WATCHED_TOKEN,
+                        symbol: 'FAKE',
+                        decimals: 2,
+                    },
+                },
+            ])
+            await waitFor(
+                () => {
+                    expect(screen.getByText('USDC')).toBeTruthy()
+                    expect(
+                        isElementDisabled(
+                            findButton('walletconnect.watch_asset.confirm')!,
+                        ),
+                    ).toBe(false)
+                },
+                { timeout: 15_000 },
+            )
+        }
+
+        const addedTokens = () =>
+            getAccountAddedTokens({
+                sources: [{ address: SENDER, scope: ETH_SCOPE }],
+            })
+
+        it('Given a connected site, when it asks to watch an ERC-20 and the user adds it, then the page receives true and the token is on the account', async () => {
+            await watch()
+            expect(screen.queryByText('FAKE')).toBeNull()
+
+            fireEvent.click(findButton('walletconnect.watch_asset.confirm')!)
+
+            expect((await answerOf('watch')).result).toBe(true)
+            expect(await addedTokens()).toEqual([
+                {
+                    scope: ETH_SCOPE,
+                    assetId: WATCHED_TOKEN,
+                    hasBalance: false,
+                },
+            ])
+        })
+
+        it('Given a connected site, when it asks to watch an ERC-20 and the user cancels, then the page receives 4001 and nothing is added', async () => {
+            await watch()
+
+            fireEvent.click(findButton('common.cancel.label')!)
+
+            expect((await answerOf('watch')).error?.code).toBe(4001)
+            expect(await addedTokens()).toEqual([])
+        })
     })
 })

@@ -4261,7 +4261,8 @@
             "view_accounts": "Ver seu endereço e saldos",
             "approve_transactions": "Pedir que você aprove transações",
             "sign_messages": "Pedir que você assine mensagens",
-            "switch_networks": "Pedir para trocar de rede"
+            "switch_networks": "Pedir para trocar de rede",
+            "add_tokens": "Pedir para adicionar tokens à sua conta"
         },
         "connection": {
             "approve_delivery_failed": "Não foi possível contatar o dApp para confirmar a conexão. Verifique sua conexão com a internet e tente novamente."
@@ -4271,6 +4272,23 @@
             "body": "{{name}} quer usar suas contas em {{chain}}.",
             "body_with_network": "{{name}} quer usar suas contas em {{chain}} {{network}}.",
             "confirm": "Permitir"
+        },
+        "watch_asset": {
+            "title": "Adicionar token?",
+            "body": "{{name}} quer adicionar este token à sua conta.",
+            "unreadable": "Não foi possível ler um token neste endereço em {{chain}}.",
+            "confirm": "Adicionar token",
+            "token": "Token",
+            "verification": "Verificação",
+            "contract": "Contrato",
+            "decimals": "Casas decimais",
+            "network": "Rede",
+            "account": "Conta",
+            "tier": {
+                "verified": "Verificado",
+                "unverified": "Não verificado",
+                "suspicious": "Suspeito"
+            }
         },
         "settings": {
             "empty_title": "Nenhuma sessão do WalletConnect",

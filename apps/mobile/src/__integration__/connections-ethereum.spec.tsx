@@ -66,6 +66,7 @@ import { SENDER } from '@packages/chain-ethereum/src/__tests__/testing'
 import { OP_STACK_ORACLE_ADDRESS } from '@packages/chain-ethereum/src/transfer/__tests__/op-stack-oracle'
 import {
     chainAccountOf,
+    getAccountAddedTokens,
     useAccountsStore,
     ownAddressOf,
     type WalletAccount,
@@ -94,9 +95,11 @@ import {
 import type { ConnectionOrigin } from '@perawallet/wallet-extension-connections'
 import {
     DEFAULT_EVM_RPC_RESPONSES,
+    erc20CallResponder,
     EvmRpcErrorFixture,
     evmRpcHandlers,
     evmTransactionReceipt,
+    peraEvmHandlers,
 } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
 import { kmsCore, useKMS } from '@perawallet/wallet-core-kms'
 import { nativeAssetFor, upsertAssets } from '@perawallet/wallet-core-assets'
@@ -216,6 +219,7 @@ const ETHEREUM_METHODS = [
     'eth_signTypedData',
     'wallet_switchEthereumChain',
     'wallet_sendCalls',
+    'wallet_watchAsset',
     'eth_accounts',
     'eth_requestAccounts',
     'eth_chainId',
@@ -428,7 +432,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
         it('Given an eip155-only proposal, when the sheet opens, then only the Ethereum account is listed and Connect approves its checksummed address', async () => {
             await mountProvider()
             // The approved methods are the requested ones the wallet lists, so
-            // the dApp asks for the whole set and two Pera never lists.
+            // the dApp asks for the whole set and one Pera never lists.
             const walletKit = await propose({
                 requiredNamespaces: {
                     eip155: {
@@ -440,10 +444,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                 optionalNamespaces: {
                     eip155: {
                         chains: [ETH_MAINNET],
-                        methods: [
-                            'wallet_addEthereumChain',
-                            'wallet_watchAsset',
-                        ],
+                        methods: ['wallet_addEthereumChain'],
                         events: [],
                     },
                 },
@@ -2501,6 +2502,162 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                         },
                     })
                 })
+            })
+        })
+
+        describe('wallet_watchAsset', () => {
+            const WATCHED_TOKEN = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+            const ETH_SCOPE = {
+                chainId: 'ethereum',
+                networkId: 'mainnet',
+            } as const
+
+            beforeAll(setupTestDatabase)
+            beforeEach(resetTestDatabase)
+            afterAll(teardownTestDatabase)
+
+            const serveToken = () =>
+                server.use(
+                    ...peraEvmHandlers(),
+                    ...evmRpcHandlers({
+                        responses: {
+                            eth_call: erc20CallResponder({
+                                [WATCHED_TOKEN]: {
+                                    name: 'USD Coin',
+                                    symbol: 'USDC',
+                                    decimals: 6,
+                                    totalSupply: 1_000_000_000_000n,
+                                },
+                            }),
+                        },
+                    }),
+                )
+
+            const watch = async (
+                address: string = WATCHED_TOKEN.toLowerCase(),
+            ) => {
+                serveToken()
+                await mountProvider()
+                const walletKit = await propose(
+                    eip155Namespace('requiredNamespaces'),
+                )
+                await selectRows(ETHEREUM_ACCOUNT)
+                await connect(walletKit)
+                act(() => {
+                    walletKit.emit(
+                        'session_request',
+                        makeRequest({
+                            id: 41,
+                            method: 'wallet_watchAsset',
+                            // The dApp's own symbol and decimals are wrong on purpose.
+                            params: {
+                                type: 'ERC20',
+                                options: {
+                                    address,
+                                    symbol: 'FAKE',
+                                    decimals: 2,
+                                    image: 'https://example.test/fake.png',
+                                },
+                            },
+                            chainId: ETH_MAINNET,
+                        }),
+                    )
+                })
+                return walletKit
+            }
+
+            const answerTo = (walletKit: FakeWalletKit) =>
+                (walletKit.respondSessionRequest as Mock).mock.calls
+                    .map(([{ response }]) => response)
+                    .find(response => response.id === 41)
+
+            const addedTokens = () =>
+                getAccountAddedTokens({
+                    sources: [
+                        { address: STORED_ETH_ADDRESS, scope: ETH_SCOPE },
+                    ],
+                })
+
+            it('Given an ERC-20 request, when the sheet opens, then it shows the on-chain symbol, decimals, contract and tier, and Add lists the token on the account and answers true', async () => {
+                const walletKit = await watch()
+
+                await waitFor(
+                    () => {
+                        expect(
+                            findButton('walletconnect.watch_asset.confirm'),
+                        ).toBeTruthy()
+                        expect(screen.getByText('USDC')).toBeTruthy()
+                    },
+                    { timeout: 15_000 },
+                )
+                expect(screen.queryByText('FAKE')).toBeNull()
+                expect(screen.getByText('6')).toBeTruthy()
+                expect(
+                    screen.getByText(
+                        'walletconnect.watch_asset.tier.unverified',
+                    ),
+                ).toBeTruthy()
+                expect(answerTo(walletKit)).toBeUndefined()
+
+                fireEvent.click(
+                    findButton('walletconnect.watch_asset.confirm')!,
+                )
+
+                await waitFor(
+                    () => {
+                        expect(answerTo(walletKit)).toMatchObject({
+                            result: true,
+                        })
+                    },
+                    { timeout: 15_000 },
+                )
+                expect(await addedTokens()).toEqual([
+                    {
+                        scope: ETH_SCOPE,
+                        assetId: WATCHED_TOKEN,
+                        hasBalance: false,
+                    },
+                ])
+            })
+
+            it('Given an ERC-20 request, when the user cancels, then the dApp gets 4001 and no token is added', async () => {
+                const walletKit = await watch()
+                await waitFor(
+                    () => {
+                        expect(findButton('common.cancel.label')).toBeTruthy()
+                    },
+                    { timeout: 15_000 },
+                )
+
+                fireEvent.click(findButton('common.cancel.label')!)
+
+                await waitFor(() => {
+                    expect(answerTo(walletKit)).toMatchObject({
+                        error: { code: 4001 },
+                    })
+                })
+                expect(await addedTokens()).toEqual([])
+            })
+
+            it('Given an address that holds no token, when the sheet reads it, then Close answers the dApp -32602 and no token is added', async () => {
+                const walletKit = await watch(
+                    '0x1111111111111111111111111111111111111111',
+                )
+
+                await waitFor(
+                    () => {
+                        expect(findButton('common.close.label')).toBeTruthy()
+                    },
+                    { timeout: 15_000 },
+                )
+                fireEvent.click(findButton('common.close.label')!)
+
+                await waitFor(() => {
+                    expect(answerTo(walletKit)).toMatchObject({
+                        error: { code: -32_602 },
+                    })
+                })
+                expect(await addedTokens()).toEqual([])
             })
         })
 

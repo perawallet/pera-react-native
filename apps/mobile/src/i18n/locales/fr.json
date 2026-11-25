@@ -4239,7 +4239,8 @@
             "view_accounts": "Voir votre adresse et vos soldes",
             "approve_transactions": "Vous demander d’approuver des transactions",
             "sign_messages": "Vous demander de signer des messages",
-            "switch_networks": "Demander à changer de réseau"
+            "switch_networks": "Demander à changer de réseau",
+            "add_tokens": "Demander d’ajouter des tokens à votre compte"
         },
         "connection": {
             "approve_delivery_failed": "Impossible de joindre la dApp pour confirmer la connexion. Vérifiez votre connexion Internet et réessayez."
@@ -4249,6 +4250,23 @@
             "body": "{{name}} souhaite utiliser vos comptes sur {{chain}}.",
             "body_with_network": "{{name}} souhaite utiliser vos comptes sur {{chain}} {{network}}.",
             "confirm": "Autoriser"
+        },
+        "watch_asset": {
+            "title": "Ajouter le token ?",
+            "body": "{{name}} souhaite ajouter ce token à votre compte.",
+            "unreadable": "Pera n’a pas pu lire de token à cette adresse sur {{chain}}.",
+            "confirm": "Ajouter le token",
+            "token": "Token",
+            "verification": "Vérification",
+            "contract": "Contrat",
+            "decimals": "Décimales",
+            "network": "Réseau",
+            "account": "Compte",
+            "tier": {
+                "verified": "Vérifié",
+                "unverified": "Non vérifié",
+                "suspicious": "Suspect"
+            }
         },
         "settings": {
             "empty_title": "Aucune session WalletConnect",

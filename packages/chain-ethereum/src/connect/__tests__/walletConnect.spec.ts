@@ -11,6 +11,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { zeroAddress } from 'viem'
 import { DappRequestCodedError } from '@perawallet/wallet-core-connections'
 import { findTransactionBatch } from '@perawallet/wallet-core-signing'
 import { getProvider } from '@perawallet/wallet-extension-provider'
@@ -73,7 +74,7 @@ describe('caip2ChainIdFor / networkForCaip2ChainId', () => {
 })
 
 describe('v2.methods', () => {
-    it('is exactly the seventeen listed methods', () => {
+    it('is exactly the eighteen listed methods', () => {
         expect(v2.methods).toEqual([
             'eth_sendTransaction',
             'personal_sign',
@@ -81,6 +82,7 @@ describe('v2.methods', () => {
             'eth_signTypedData',
             'wallet_switchEthereumChain',
             'wallet_sendCalls',
+            'wallet_watchAsset',
             'eth_accounts',
             'eth_requestAccounts',
             'eth_chainId',
@@ -127,19 +129,18 @@ describe('v2.methods', () => {
         ).not.toHaveProperty('failure')
     })
 
-    it.each([
-        'wallet_addEthereumChain',
-        'eth_signTypedData_v1',
-        'wallet_watchAsset',
-    ])('never lists %s', method => {
-        expect(v2.methods).not.toContain(method)
-        expect(v2.handleRequest(method, [])).toEqual({
-            kind: 'unsupported',
-        })
-    })
+    it.each(['wallet_addEthereumChain', 'eth_signTypedData_v1'])(
+        'never lists %s',
+        method => {
+            expect(v2.methods).not.toContain(method)
+            expect(v2.handleRequest(method, [])).toEqual({
+                kind: 'unsupported',
+            })
+        },
+    )
 
-    it('asks the user only for the six signing methods', () => {
-        expect(v2.signingMethods).toEqual(v2.methods.slice(0, 6))
+    it('asks the user only for the seven signing methods', () => {
+        expect(v2.signingMethods).toEqual(v2.methods.slice(0, 7))
     })
 })
 
@@ -324,6 +325,59 @@ describe('message signing gate', () => {
         expect(
             v2.handleRequest(ETHEREUM_WC_V2_METHOD.personalSign, [ADDRESS]),
         ).toEqual(REFUSED)
+    })
+})
+
+describe('wallet_watchAsset', () => {
+    const TOKEN = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+
+    it('routes an ERC20 to a watch-asset operation carrying only the checksummed contract', () => {
+        const watched = {
+            type: 'ERC20',
+            options: {
+                address: TOKEN.toLowerCase(),
+                symbol: 'FAKE',
+                decimals: 2,
+                image: 'https://example.test/fake.png',
+            },
+        }
+
+        expect(v2.handleRequest('wallet_watchAsset', watched)).toEqual({
+            kind: 'operation',
+            type: 'watch-asset',
+            params: { assetId: TOKEN },
+        })
+        expect(v2.handleRequest('wallet_watchAsset', [watched])).toEqual({
+            kind: 'operation',
+            type: 'watch-asset',
+            params: { assetId: TOKEN },
+        })
+    })
+
+    it.each([
+        ['an ERC721', { type: 'ERC721', options: { address: TOKEN } }],
+        ['no options', { type: 'ERC20' }],
+        ['a non-address', { type: 'ERC20', options: { address: '0x12' } }],
+        [
+            'the zero address',
+            { type: 'ERC20', options: { address: zeroAddress } },
+        ],
+        ['no params', undefined],
+    ])(
+        'refuses %s as invalid params without alerting the user',
+        (_, params) => {
+            const route = v2.handleRequest('wallet_watchAsset', params)
+
+            expect(route).toMatchObject({
+                kind: 'refused',
+                error: { code: -32_602 },
+            })
+            expect(route).not.toHaveProperty('failure')
+        },
+    )
+
+    it('answers an approved watch with true', () => {
+        expect(support.toWireResult({ type: 'watch-asset' })).toBe(true)
     })
 })
 
