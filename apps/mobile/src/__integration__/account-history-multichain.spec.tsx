@@ -154,6 +154,19 @@ const serveEthereumHistory = () =>
         }),
     )
 
+let stopRecordingRequests: (() => void) | undefined
+
+const recordRequests = () => {
+    const requests: string[] = []
+    const record = ({ request }: { request: Request }) => {
+        requests.push(`${request.method} ${request.url}`)
+    }
+    server.events.on('request:start', record)
+    stopRecordingRequests = () =>
+        server.events.removeListener('request:start', record)
+    return requests
+}
+
 const rowIds = () =>
     screen
         .queryAllByTestId(/^transaction_row_(0x|ALGOTX)[0-9A-Za-z]+$/)
@@ -183,6 +196,8 @@ describe('Flow: History on an account with Algorand and Ethereum', () => {
     })
 
     afterEach(() => {
+        stopRecordingRequests?.()
+        stopRecordingRequests = undefined
         server.resetHandlers()
         useAccountsStore.getState().setAccounts([])
     })
@@ -215,22 +230,13 @@ describe('Flow: History on an account with Algorand and Ethereum', () => {
         ).toBeTruthy()
     })
 
-    it('Given rows on both networks, when CSV is tapped on All and Ethereum picked, then it shares a file built from the stored Ethereum rows without asking the export route', async () => {
-        let exportHits = 0
-        server.use(
-            http.get(
-                '*/api/v3/evm/:chainId/accounts/:address/export-history/',
-                () => {
-                    exportHits += 1
-                    return new HttpResponse('"Date"\r\n')
-                },
-            ),
-        )
+    it('Given rows on both networks, when CSV is tapped on All and Ethereum picked, then it shares a file built from the stored Ethereum rows without a network request', async () => {
         renderWithNavigation(AccountHistory, 'AccountHistory')
         await waitFor(() => expect(rowIds()).toHaveLength(4), {
             timeout: SLOW_WAIT_TIMEOUT_MS,
         })
 
+        const requestsAfterTap = recordRequests()
         fireEvent.click(screen.getByText('asset_details.transaction_list.csv'))
         fireEvent.click(
             await screen.findByTestId('chain_selection_ethereum', undefined, {
@@ -249,7 +255,7 @@ describe('Flow: History on an account with Algorand and Ethereum', () => {
         expect(content).toContain(hashOf(3))
         expect(content).toContain(hashOf(1))
         expect(content).not.toContain(ALGO_TX.id)
-        expect(exportHits).toBe(0)
+        expect(requestsAfterTap).toEqual([])
     })
 
     it('Given rows on Ethereum alone, when History opens on All, then the export names Ethereum', async () => {
@@ -315,6 +321,42 @@ describe('Flow: History on an account with Algorand and Ethereum', () => {
             'ethereum',
         )
         expect(screen.queryByTestId('chain_label_ethereum')).toBeNull()
+    })
+
+    it('Given History narrowed to Ethereum, when CSV is tapped, then it shares the stored Ethereum rows without a network request', async () => {
+        renderWithNavigation(AccountHistory, 'AccountHistory')
+        await waitFor(() => expect(rowIds()).toHaveLength(4), {
+            timeout: SLOW_WAIT_TIMEOUT_MS,
+        })
+
+        fireEvent.click(screen.getByTestId('history_network_filter_ethereum'))
+        await waitFor(
+            () =>
+                expect(rowIds()).toEqual([
+                    `transaction_row_${hashOf(3)}`,
+                    `transaction_row_${hashOf(1)}`,
+                ]),
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+        expect(
+            screen.queryByText('asset_details.transaction_list.csv_on_network'),
+        ).toBeNull()
+        const requestsAfterTap = recordRequests()
+        fireEvent.click(screen.getByText('asset_details.transaction_list.csv'))
+
+        await waitFor(() => expect(shared.shareFile).toHaveBeenCalledTimes(1), {
+            timeout: SLOW_WAIT_TIMEOUT_MS,
+        })
+        expect(screen.queryByTestId('chain_selection_ethereum')).toBeNull()
+        const [filename, content] = shared.shareFile.mock.calls[0] as [
+            string,
+            string,
+        ]
+        expect(filename).toBe('Transactions-1-0x5aae--eaed-Pera.csv')
+        expect(content).toContain(hashOf(3))
+        expect(content).toContain(hashOf(1))
+        expect(content).not.toContain(ALGO_TX.id)
+        expect(requestsAfterTap).toEqual([])
     })
 
     describe('when the Algorand address was never funded', () => {
