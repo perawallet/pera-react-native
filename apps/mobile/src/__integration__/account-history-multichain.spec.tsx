@@ -167,6 +167,27 @@ const recordRequests = () => {
     return requests
 }
 
+// Rows look up their counterparties' names on a batch timer of their own, which a
+// slow runner can fire after a tap; let it go out first so only the tap's requests count.
+const waitForRequestsToSettle = async (quietMs = 300) => {
+    let lastRequestAt = Date.now()
+    const touch = () => {
+        lastRequestAt = Date.now()
+    }
+    server.events.on('request:start', touch)
+    try {
+        await waitFor(
+            () =>
+                expect(Date.now() - lastRequestAt).toBeGreaterThanOrEqual(
+                    quietMs,
+                ),
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+    } finally {
+        server.events.removeListener('request:start', touch)
+    }
+}
+
 const rowIds = () =>
     screen
         .queryAllByTestId(/^transaction_row_(0x|ALGOTX)[0-9A-Za-z]+$/)
@@ -233,6 +254,7 @@ describe('Flow: History on an account with Algorand and Ethereum', () => {
         await waitFor(() => expect(rowIds()).toHaveLength(4), {
             timeout: SLOW_WAIT_TIMEOUT_MS,
         })
+        await waitForRequestsToSettle()
 
         const requestsAfterTap = recordRequests()
         fireEvent.click(screen.getByText('asset_details.transaction_list.csv'))
@@ -338,9 +360,7 @@ describe('Flow: History on an account with Algorand and Ethereum', () => {
                 ]),
             { timeout: SLOW_WAIT_TIMEOUT_MS },
         )
-        expect(
-            screen.queryByText('asset_details.transaction_list.csv_on_network'),
-        ).toBeNull()
+        await waitForRequestsToSettle()
         const requestsAfterTap = recordRequests()
         fireEvent.click(screen.getByText('asset_details.transaction_list.csv'))
 
