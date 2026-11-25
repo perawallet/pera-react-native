@@ -23,6 +23,7 @@ import { useDataSigningHandler } from '../bridge/useDataSigningHandler'
 import { useDeviceIdHandler } from '../bridge/useDeviceIdHandler'
 import { useTransactionSigningHandler } from '../bridge/useTransactionSigningHandler'
 import { useWalletConnectHandler } from '../bridge/useWalletConnectHandler'
+import type { WebviewMessageSecurity } from '../handlers'
 import {
     bridgeMessage,
     createMockWebview,
@@ -126,9 +127,13 @@ describe('usePeraWebviewInterface', () => {
     const render = (securedConnection: boolean, sourceUrl: string | null) => {
         const webview = createMockWebview()
         const { result } = renderHook(() =>
-            usePeraWebviewInterface(webview, securedConnection, sourceUrl),
+            usePeraWebviewInterface(webview, securedConnection),
         )
-        return { webview, handleMessage: result.current.handleMessage }
+        const handleMessage = (
+            message: Parameters<typeof result.current.handleMessage>[0],
+            security: WebviewMessageSecurity = { securedConnection, sourceUrl },
+        ) => result.current.handleMessage(message, security)
+        return { webview, handleMessage }
     }
 
     it('wires the mount-level context into the handlers that need it', () => {
@@ -141,7 +146,7 @@ describe('usePeraWebviewInterface', () => {
     })
 
     it.each([...PERA_WEBVIEW_BRIDGE_METHODS])(
-        'routes a trusted %s message to its handler with the mount-level security',
+        'routes a trusted %s message to its handler with its security',
         method => {
             const { handleMessage } = render(true, TRUSTED_URL)
             const message = bridgeMessage('1', method, { a: 1 })

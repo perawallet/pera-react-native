@@ -41,7 +41,6 @@ import { useWalletConnectHandler } from './bridge/useWalletConnectHandler'
 export const usePeraWebviewInterface = (
     webview: Nullable<WebView>,
     securedConnection: boolean,
-    sourceUrl: Nullable<string>,
     onCloseRequested?: () => void,
     onBackRequested?: () => void,
 ) => {
@@ -70,12 +69,10 @@ export const usePeraWebviewInterface = (
         (
             message: WebviewMessage | WebviewMessage[],
             // Native derives this per message (a message can race a
-            // navigation); web's origin is mount-fixed. Omitting it falls back
-            // to the mount-level decision.
-            messageSecurity?: WebviewMessageSecurity,
+            // navigation); web's origin is mount-fixed.
+            security: WebviewMessageSecurity,
         ) => {
             const messages = Array.isArray(message) ? message : [message]
-            const security = messageSecurity ?? { securedConnection, sourceUrl }
             logger.debug('Received webview interface call', {
                 message: messages,
             })
@@ -214,8 +211,6 @@ export const usePeraWebviewInterface = (
             requestTransactionSigning,
             requestDataSigning,
             walletConnect,
-            securedConnection,
-            sourceUrl,
             webview,
             t,
         ],
