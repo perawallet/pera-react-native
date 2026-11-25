@@ -132,20 +132,71 @@ describe('rebuildDeltasFromManifest', () => {
 describe('fetchDeltaOrRebuild', () => {
     beforeEach(() => fetchDelta.mockReset())
 
+    const withAccount = (itemSeq = 97, lastSeq = 100) =>
+        manifest(
+            {
+                'accounts/A': {
+                    type: BackupItemType.ACCOUNT,
+                    ver: 2,
+                    status: BackupItemStatus.ACTIVE,
+                    hash: 'h1',
+                    lastSeq: itemSeq,
+                },
+            },
+            lastSeq,
+        )
+
     it('passes the deltas through while the cursor is still in the window', async () => {
         const entries = [{ seq: 4, key: 'accounts/A' }]
         fetchDelta.mockResolvedValue(entries)
-        const getManifest = vi.fn()
 
         const result = await fetchDeltaOrRebuild(
             deps,
             { ...createEmptySyncState('b'), lastSyncedSeq: 3 },
-            getManifest,
+            withAccount(),
         )
 
         expect(fetchDelta).toHaveBeenCalledWith('b', 'dev', 3)
-        expect(result).toEqual({ deltas: entries, rebuiltThroughSeq: 0 })
-        expect(getManifest).not.toHaveBeenCalled()
+        expect(result).toEqual({
+            deltas: entries,
+            state: { ...createEmptySyncState('b'), lastSyncedSeq: 3 },
+            rebuiltThroughSeq: null,
+        })
+    })
+
+    it('applies a delta past the manifest at the manifest seq', async () => {
+        fetchDelta.mockResolvedValue([
+            { seq: 4, key: 'accounts/A' },
+            { seq: Number.MAX_SAFE_INTEGER, key: 'accounts/B' },
+        ])
+
+        const result = await fetchDeltaOrRebuild(
+            deps,
+            { ...createEmptySyncState('b'), lastSyncedSeq: 3 },
+            withAccount(),
+        )
+
+        expect(result.deltas).toEqual([
+            { seq: 4, key: 'accounts/A' },
+            { seq: 100, key: 'accounts/B' },
+        ])
+    })
+
+    it('passes every delta through when the backup has no manifest yet', async () => {
+        const entries = [{ seq: 4, key: 'accounts/A' }]
+        fetchDelta.mockResolvedValue(entries)
+
+        const result = await fetchDeltaOrRebuild(
+            deps,
+            createEmptySyncState('b'),
+            null,
+        )
+
+        expect(result).toEqual({
+            deltas: entries,
+            state: createEmptySyncState('b'),
+            rebuiltThroughSeq: null,
+        })
     })
 
     it('rebuilds from the manifest when the cursor has been pruned', async () => {
@@ -154,16 +205,7 @@ describe('fetchDeltaOrRebuild', () => {
         const result = await fetchDeltaOrRebuild(
             deps,
             { ...createEmptySyncState('b'), lastSyncedSeq: 3 },
-            async () =>
-                manifest({
-                    'accounts/A': {
-                        type: BackupItemType.ACCOUNT,
-                        ver: 2,
-                        status: BackupItemStatus.ACTIVE,
-                        hash: 'h1',
-                        lastSeq: 97,
-                    },
-                }),
+            withAccount(),
         )
 
         expect(result.rebuiltThroughSeq).toBe(100)
@@ -171,15 +213,80 @@ describe('fetchDeltaOrRebuild', () => {
         expect(result.deltas[0].key).toBe('accounts/A')
     })
 
+    it('rebuilds from the manifest without asking for deltas when the cursor is past it', async () => {
+        const result = await fetchDeltaOrRebuild(
+            deps,
+            {
+                ...createEmptySyncState('b'),
+                lastSyncedSeq: Number.MAX_SAFE_INTEGER,
+            },
+            withAccount(),
+        )
+
+        expect(fetchDelta).not.toHaveBeenCalled()
+        expect(result.rebuiltThroughSeq).toBe(100)
+        expect(result.deltas.map(d => d.key)).toEqual(['accounts/A'])
+    })
+
+    it('deletes a tracked item a manifest behind the cursor no longer lists, rather than re-pushing it', async () => {
+        const result = await fetchDeltaOrRebuild(
+            deps,
+            {
+                ...stateWith({
+                    'accounts/A': tracked({ knownVer: 2 }),
+                    'accounts/B': tracked({ knownVer: 5 }),
+                }),
+                lastSyncedSeq: 102,
+            },
+            withAccount(),
+        )
+
+        expect(result.deltas.map(d => [d.key, d.op])).toEqual([
+            ['accounts/A', DeltaOperation.UPSERT],
+            ['accounts/B', DeltaOperation.DELETE],
+        ])
+        expect(result.state.lastSyncedSeq).toBe(100)
+        expect(result.state.items['accounts/B']).toMatchObject({
+            knownVer: 5,
+            isDirty: false,
+        })
+    })
+
+    it('still deletes a tracked item a pruned changelog no longer lists', async () => {
+        fetchDelta.mockRejectedValueOnce(new FromSeqTooOldError(3))
+
+        const result = await fetchDeltaOrRebuild(
+            deps,
+            {
+                ...stateWith({ 'accounts/B': tracked({ knownVer: 5 }) }),
+                lastSyncedSeq: 3,
+            },
+            withAccount(),
+        )
+
+        expect(result.deltas.find(d => d.key === 'accounts/B')).toMatchObject({
+            op: DeltaOperation.DELETE,
+        })
+        expect(result.state.items['accounts/B'].knownVer).toBe(5)
+    })
+
+    it('replays an item seq past the manifest at the manifest seq', async () => {
+        fetchDelta.mockRejectedValueOnce(new FromSeqTooOldError(3))
+
+        const result = await fetchDeltaOrRebuild(
+            deps,
+            { ...createEmptySyncState('b'), lastSyncedSeq: 3 },
+            withAccount(Number.MAX_SAFE_INTEGER),
+        )
+
+        expect(result.deltas[0].seq).toBe(100)
+    })
+
     it('rethrows when there is no manifest to rebuild from', async () => {
         fetchDelta.mockRejectedValueOnce(new FromSeqTooOldError(3))
 
         await expect(
-            fetchDeltaOrRebuild(
-                deps,
-                createEmptySyncState('b'),
-                async () => null,
-            ),
+            fetchDeltaOrRebuild(deps, createEmptySyncState('b'), null),
         ).rejects.toMatchObject({ name: 'FromSeqTooOldError' })
     })
 
@@ -187,12 +294,10 @@ describe('fetchDeltaOrRebuild', () => {
         fetchDelta.mockRejectedValueOnce(
             new PeraNetworkError('server', { status: 500 }),
         )
-        const getManifest = vi.fn()
 
         await expect(
-            fetchDeltaOrRebuild(deps, createEmptySyncState('b'), getManifest),
+            fetchDeltaOrRebuild(deps, createEmptySyncState('b'), withAccount()),
         ).rejects.toMatchObject({ status: 500 })
-        expect(getManifest).not.toHaveBeenCalled()
     })
 })
 
