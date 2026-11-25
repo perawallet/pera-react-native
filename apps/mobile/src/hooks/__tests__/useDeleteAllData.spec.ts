@@ -267,6 +267,42 @@ describe('useDeleteAllData', () => {
         expect(useWipeRecoveryStore.getState()).toBe(false)
     })
 
+    it('finishes a pending duress wipe without a decoy and clears the mark', async () => {
+        kvItems.set('wipe-in-progress', 'duress')
+        const { result } = renderHook(() => useDeleteAllData())
+
+        await act(async () => {
+            await result.current.finishPendingWipe()
+        })
+
+        expect(mockClearKeystore).toHaveBeenCalledTimes(1)
+        expect(readPendingWipe()).toBeNull()
+    })
+
+    it('keeps the mark when finishing the pending wipe fails', async () => {
+        kvItems.set('wipe-in-progress', 'duress')
+        mockSavePin.mockRejectedValueOnce(new Error('keystore busy'))
+        const { result } = renderHook(() => useDeleteAllData())
+
+        await act(async () => {
+            await expect(result.current.finishPendingWipe()).rejects.toThrow(
+                'Some wallet data could not be cleared',
+            )
+        })
+
+        expect(readPendingWipe()).toBe('duress')
+    })
+
+    it('wipes nothing when no wipe is pending', async () => {
+        const { result } = renderHook(() => useDeleteAllData())
+
+        await act(async () => {
+            await result.current.finishPendingWipe()
+        })
+
+        expect(mockClearKeystore).not.toHaveBeenCalled()
+    })
+
     it('treats an unrecognised mark as a full wipe', () => {
         kvItems.set('wipe-in-progress', 'something-else')
 

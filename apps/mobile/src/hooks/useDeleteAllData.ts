@@ -82,6 +82,8 @@ type UseDeleteAllDataResult = {
      * decoy exists. A failed wipe leaves the marker for the next launch.
      */
     wipeAllUserData: (kind?: WipeKind) => Promise<void>
+    /** Completes a pending wipe, if any, without provisioning a decoy. */
+    finishPendingWipe: () => Promise<void>
 }
 
 export const useDeleteAllData = (): UseDeleteAllDataResult => {
@@ -279,5 +281,16 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
         [runWipe],
     )
 
-    return { deleteAllData: wipeAllUserData, wipeAllUserData }
+    const finishPendingWipe = useCallback(async () => {
+        const pending = readPendingWipe()
+        if (pending === null) return
+        await wipeAllUserData(pending)
+        clearPendingWipe()
+    }, [wipeAllUserData])
+
+    return {
+        deleteAllData: wipeAllUserData,
+        wipeAllUserData,
+        finishPendingWipe,
+    }
 }
