@@ -35,6 +35,8 @@ const { accountsStoreMock, hydrationMock, keystoreMock, gateMock } = vi.hoisted(
                 addresses: string[]
             } | null,
             setLegacyWipeBlock: vi.fn(),
+            removedAccountAddresses: [] as string[],
+            removedKeyAddresses: [] as string[],
         },
     }),
 )
@@ -142,6 +144,48 @@ describe('wipeMigratedLegacyData', () => {
         keystoreMock.parents = new Map()
         gateMock.legacyWipeBlock = null
         gateMock.setLegacyWipeBlock.mockClear()
+        gateMock.removedAccountAddresses = []
+        gateMock.removedKeyAddresses = []
+    })
+
+    it('wipes when the user removed the key-bearing account themselves', async () => {
+        accountsStoreMock.accounts = []
+        gateMock.removedKeyAddresses = ['ADDR']
+        const { service } = buildService()
+
+        expect(await wipeMigratedLegacyData(service, 'algorand')).toBe('wiped')
+        expect(service.wipeLegacyData).toHaveBeenCalledOnce()
+    })
+
+    it('lifts a remembered refusal once the user removed the account', async () => {
+        accountsStoreMock.accounts = []
+        gateMock.legacyWipeBlock = {
+            versions: MIGRATION_STEP_TARGET_VERSIONS,
+            addresses: ['ADDR'],
+        }
+        gateMock.removedKeyAddresses = ['ADDR']
+        const { service } = buildService()
+
+        expect(await wipeMigratedLegacyData(service, 'algorand')).toBe('wiped')
+    })
+
+    it('retains the legacy key when a removed account had no confirmed local key', async () => {
+        accountsStoreMock.accounts = []
+        gateMock.removedAccountAddresses = ['ADDR']
+        const { service } = buildService()
+
+        expect(await wipeMigratedLegacyData(service, 'algorand')).toBe(
+            'keyed-account-removed',
+        )
+        expect(service.wipeLegacyData).not.toHaveBeenCalled()
+    })
+
+    it('does not need a legacy key after a confirmed key removal and watch-only re-add', async () => {
+        accountsStoreMock.accounts = [watchAccount('ADDR')]
+        gateMock.removedKeyAddresses = ['ADDR']
+        const { service } = buildService()
+
+        expect(await wipeMigratedLegacyData(service, 'algorand')).toBe('wiped')
     })
 
     it('wipes once every step is done and each key is held by the keystore', async () => {

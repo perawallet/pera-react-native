@@ -55,8 +55,15 @@ const { mockIsAccountEnabled, mockSetAccountEnabled } = vi.hoisted(() => ({
     mockIsAccountEnabled: vi.fn((_address: string) => true),
     mockSetAccountEnabled: vi.fn(),
 }))
-const { mockRemoveAccount } = vi.hoisted(() => ({
+const { mockRemoveAccount, mockRecordRemovedAccount } = vi.hoisted(() => ({
     mockRemoveAccount: vi.fn(),
+    mockRecordRemovedAccount: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-migrate', () => ({
+    useMigrationGateStore: (
+        selector: (state: { recordRemovedAccount: unknown }) => unknown,
+    ) => selector({ recordRemovedAccount: mockRecordRemovedAccount }),
 }))
 const { mockAllAccounts } = vi.hoisted(() => ({
     mockAllAccounts: vi.fn((): WalletAccount[] => []),
@@ -1063,6 +1070,11 @@ describe('useAccountOptions', () => {
                 'cloud-backup-delete',
             )
             expect(mockRemoveAccount).toHaveBeenCalledWith('acc-1')
+            // Recorded first, so a migration re-run never restores it from Pera 6.
+            expect(mockRecordRemovedAccount).toHaveBeenCalledWith(algo25Account)
+            expect(
+                mockRecordRemovedAccount.mock.invocationCallOrder[0],
+            ).toBeLessThan(mockRemoveAccount.mock.invocationCallOrder[0])
         })
 
         it('keeps the mute toggle when notifications are off, since pushes already registered still arrive', () => {

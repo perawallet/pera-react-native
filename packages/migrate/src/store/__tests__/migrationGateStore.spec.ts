@@ -10,13 +10,26 @@
  limitations under the License
  */
 
-import { describe, test, expect, beforeEach } from 'vitest'
+import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { getStoreRegistry } from '@perawallet/wallet-core-shared'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useMigrationGateStore } from '../migrationGateStore'
+
+const { hasSecret, getSecretMetadata } = vi.hoisted(() => ({
+    hasSecret: vi.fn<(id: string) => boolean>(),
+    getSecretMetadata: vi.fn<() => Record<string, string>>(),
+}))
+
+vi.mock('@perawallet/wallet-core-kms', () => ({
+    hasSecret,
+    getSecretMetadata,
+}))
 
 describe('migrationGateStore', () => {
     beforeEach(() => {
         useMigrationGateStore.getState().resetState()
+        hasSecret.mockReturnValue(false)
+        getSecretMetadata.mockReturnValue({})
     })
 
     test('setSkipped / clearSkipped toggle the persistent skip flag', () => {
@@ -43,4 +56,51 @@ describe('migrationGateStore', () => {
 
         expect(useMigrationGateStore.getState().skipped).toBe(false)
     })
+
+    test('remembers the addresses of a removed key-bearing account, once each', () => {
+        hasSecret.mockReturnValue(true)
+        const account = {
+            id: 'id-1',
+            custody: { kind: 'local', seed: null },
+            chains: { algorand: { address: 'ADDR', keyPairId: 'kp-1' } },
+        } as unknown as WalletAccount
+
+        useMigrationGateStore.getState().recordRemovedAccount(account)
+        useMigrationGateStore.getState().recordRemovedAccount(account)
+
+        expect(
+            useMigrationGateStore.getState().removedAccountAddresses,
+        ).toEqual(['ADDR'])
+        expect(useMigrationGateStore.getState().removedKeyAddresses).toEqual([
+            'ADDR',
+        ])
+    })
+
+    test.each([
+        ['watch-only', { kind: 'watch' }],
+        ['local without its key', { kind: 'local', seed: null }],
+        ['HD without its parent', { kind: 'local', seed: 'bip39' }],
+    ])(
+        'remembers the removal but keeps the legacy key when %s',
+        (kind, custody) => {
+            if (kind === 'HD without its parent') {
+                hasSecret.mockImplementation(id => id === 'kp-1')
+                getSecretMetadata.mockReturnValue({ parentKeyId: 'parent-1' })
+            }
+
+            const account = {
+                id: 'id-1',
+                custody,
+                chains: { algorand: { address: 'ADDR', keyPairId: 'kp-1' } },
+            } as unknown as WalletAccount
+            useMigrationGateStore.getState().recordRemovedAccount(account)
+
+            expect(
+                useMigrationGateStore.getState().removedAccountAddresses,
+            ).toEqual(['ADDR'])
+            expect(
+                useMigrationGateStore.getState().removedKeyAddresses,
+            ).toEqual([])
+        },
+    )
 })
