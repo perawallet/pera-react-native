@@ -42,6 +42,7 @@ const {
             isError: false,
             isEnabled: true,
         },
+        sourceChainIds: ['algorand', 'ethereum'] as string[],
     },
 }))
 
@@ -56,6 +57,13 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
     useRecentSwapPairsQuery: () => state.recent,
     useSwapSigningAccounts: () => [],
     useSwapAccountNames: () => state.names,
+    useSwapSourceChainsByAccount: () => ({
+        sourceChainIds: state.sourceChainIds,
+    }),
+    scopeOfSwapAsset: (ref: { chainId: string; networkId: string }) => ({
+        chainId: ref.chainId,
+        networkId: ref.networkId,
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -106,6 +114,7 @@ describe('useSwapPairHistoryWidget', () => {
             isError: false,
             isEnabled: true,
         }
+        state.sourceChainIds = ['algorand', 'ethereum']
     })
 
     it('passes through the recent pairs and their state', () => {
@@ -137,11 +146,35 @@ describe('useSwapPairHistoryWidget', () => {
             chainId: 'algorand',
             fromAsset: '0',
             toAsset: '31566704',
+            toAssetScope: null,
         })
         expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
         expect(mockTrackEvent).toHaveBeenCalledWith(SwapEvent.SelectHistory, {
             [AnalyticsMetadataKey.ChainId]: 'algorand',
             [AnalyticsMetadataKey.SwapPairing]: 'ALGO/USDC',
+        })
+    })
+
+    it('restores a cross-chain pair with its destination network', () => {
+        const ETH = { chainId: 'ethereum', networkId: 'mainnet' } as const
+        const crossChain = {
+            ...pairPaidBy('main'),
+            assetOut: {
+                assetId: 'eth',
+                ref: { ...ETH, assetId: 'eth' },
+                unitName: 'ETH',
+            },
+        } as unknown as SwapHistoryPair
+        const { result } = renderHook(() => useSwapPairHistoryWidget(SCOPE))
+
+        act(() => result.current.handlePairPress(crossChain))
+
+        expect(mockSetAccountPair).toHaveBeenCalledWith({
+            accountId: 'main',
+            chainId: 'algorand',
+            fromAsset: '0',
+            toAsset: 'eth',
+            toAssetScope: ETH,
         })
     })
 
@@ -173,6 +206,42 @@ describe('useSwapPairHistoryWidget', () => {
         }) as ReactElement<{ accountName: string }>
 
         expect(chip.props.accountName).toBe('Savings')
+    })
+
+    it('names the EVM account that paid an Ethereum chip', () => {
+        const ETH = { chainId: 'ethereum', networkId: 'mainnet' } as const
+        state.names = {
+            names: [
+                { accountId: 'main', name: 'Main' },
+                { accountId: 'evm', name: 'EVM Test 1' },
+            ],
+            isMultiAccount: true,
+        }
+        const ethPair = {
+            ...pairPaidBy('evm'),
+            assetIn: { assetId: 'usdc', ref: { ...ETH, assetId: 'usdc' } },
+            assetOut: { assetId: 'eth', ref: { ...ETH, assetId: 'eth' } },
+        } as unknown as SwapHistoryPair
+        const { result } = renderHook(() => useSwapPairHistoryWidget(SCOPE))
+
+        const chip = result.current.renderPair({
+            item: ethPair,
+        }) as ReactElement<{ accountName: string }>
+
+        expect(chip.props.accountName).toBe('EVM Test 1')
+    })
+
+    it('shows each chip\'s chain only when the wallet swaps on more than one', () => {
+        const render = () =>
+            renderHook(() => useSwapPairHistoryWidget(SCOPE)).result.current.renderPair(
+                { item: pairPaidBy('main') },
+            ) as ReactElement<{ isChainShown: boolean }>
+
+        expect(render().props.isChainShown).toBe(true)
+
+        state.sourceChainIds = ['algorand']
+
+        expect(render().props.isChainShown).toBe(false)
     })
 
     it('leaves the account name off the chips of a wallet with one swap account', () => {

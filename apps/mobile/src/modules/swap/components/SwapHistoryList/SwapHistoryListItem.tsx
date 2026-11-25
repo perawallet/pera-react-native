@@ -22,11 +22,13 @@ import { useStyles } from './styles'
 
 export type SwapHistoryListItemProps = {
     item: ListedSwapHistoryItem
+    isChainShown?: boolean
     onPress: (item: ListedSwapHistoryItem) => void
 }
 
 export const SwapHistoryListItem = ({
     item,
+    isChainShown,
     onPress,
 }: SwapHistoryListItemProps) => {
     const styles = useStyles()
@@ -55,6 +57,7 @@ export const SwapHistoryListItem = ({
                 assetIn={item.assetIn}
                 assetOut={item.assetOut}
                 surfaceColor={theme.colors.background}
+                isChainShown={isChainShown}
             />
             <PWView style={styles.itemBody}>
                 <PWText

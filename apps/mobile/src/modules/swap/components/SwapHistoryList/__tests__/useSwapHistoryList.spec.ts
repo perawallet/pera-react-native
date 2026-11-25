@@ -38,6 +38,7 @@ const {
     wallet: {
         accounts: [] as { id: string; name: string }[],
         addresses: [] as unknown[],
+        sourceChainIds: ['algorand', 'ethereum'] as string[],
     },
 }))
 
@@ -45,6 +46,9 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
     swapExplorerUrlFor: mockExplorerUrlFor,
     useSwapHistoryInfiniteQuery: mockHistory,
     useSwapSigningAccounts: () => wallet.accounts,
+    useSwapSourceChainsByAccount: () => ({
+        sourceChainIds: wallet.sourceChainIds,
+    }),
     useSwapAccountNames: (accounts: { id: string; name: string }[]) => {
         const names = accounts
             .filter(account =>
@@ -124,6 +128,7 @@ describe('useSwapHistoryList', () => {
             (amount: Decimal, asset: { unitName: string }) =>
                 `${amount.toString()} ${asset.unitName}`,
         )
+        wallet.sourceChainIds = ['algorand', 'ethereum']
         wallet.accounts = [
             { id: 'one', name: 'First' },
             { id: 'two', name: 'Second' },
@@ -286,6 +291,40 @@ describe('useSwapHistoryList', () => {
             undefined,
             undefined,
         ])
+    })
+
+    it('lists an Ethereum swap paid by an EVM address in lowercase with its payer\'s name', () => {
+        const ethSwap = {
+            ...item,
+            orderId: 'eth-swap',
+            assetIn: {
+                assetId: 'usdc',
+                ref: { ...ETH_SCOPE, assetId: 'usdc' },
+                unitName: 'USDC',
+                decimals: 6,
+            },
+            assetOut: {
+                assetId: 'native',
+                ref: { ...ETH_SCOPE, assetId: 'native' },
+                unitName: 'ETH',
+                decimals: 18,
+            },
+            sourceAccount: { scope: ETH_SCOPE, address: '0xeth2' },
+        } as unknown as SwapHistoryItem
+        mockHistory.mockReturnValue(historyOf([ethSwap]))
+
+        const { result } = render()
+
+        expect(result.current.swaps).toHaveLength(1)
+        expect(result.current.swaps[0].accountName).toBe('Second')
+    })
+
+    it('shows each row\'s chain only when the wallet swaps on more than one', () => {
+        expect(render().result.current.isChainShown).toBe(true)
+
+        wallet.sourceChainIds = ['algorand']
+
+        expect(render().result.current.isChainShown).toBe(false)
     })
 
     it('rounds amounts through the shared formatter and shows a dash for a missing one', () => {

@@ -20,6 +20,7 @@ import {
     useSwapAccountsAddresses,
     useSwapHistoryInfiniteQuery,
     useSwapSigningAccounts,
+    useSwapSourceChainsByAccount,
     type SwapAsset,
     type SwapHistoryItem,
 } from '@perawallet/wallet-core-swaps'
@@ -77,6 +78,8 @@ export type UseSwapHistoryListResult = {
     shouldShowEmptyState: boolean
     /** Nothing is visible yet but older pages remain, after the automatic reading stopped. */
     shouldShowLoadMore: boolean
+    /** The wallet can swap on more than one chain, so each row's chain is worth showing. */
+    isChainShown: boolean
 }
 
 export const useSwapHistoryList = ({
@@ -84,6 +87,7 @@ export const useSwapHistoryList = ({
 }: UseSwapHistoryListParams): UseSwapHistoryListResult => {
     const { t } = useLanguage()
     const signingAccounts = useSwapSigningAccounts()
+    const { sourceChainIds } = useSwapSourceChainsByAccount()
     const addresses = useSwapAccountsAddresses(signingAccounts)
     const [pickedAccountId, setPickedAccountId] =
         useState<Nullable<string>>(null)
@@ -246,6 +250,7 @@ export const useSwapHistoryList = ({
         !isFetchingNextPage
 
     return {
+        isChainShown: sourceChainIds.length > 1,
         swaps,
         isLoading,
         isError,
