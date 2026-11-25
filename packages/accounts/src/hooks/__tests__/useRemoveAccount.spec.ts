@@ -152,6 +152,26 @@ describe('useRemoveAccount', () => {
         )
     })
 
+    test('clamps a revocation cutoff left ahead of a clock corrected backwards when the account is re-added', () => {
+        const removed = ledgerAccount('REMOVED', 0)
+        const correctedNow = 1_000
+        useAccountsStore.setState({
+            connectionRevokedThrough: { removed: 5_000, other: 5_000 },
+        })
+        vi.spyOn(Date, 'now').mockReturnValue(correctedNow)
+
+        try {
+            useAccountsStore.getState().setAccounts([removed])
+        } finally {
+            vi.mocked(Date.now).mockRestore()
+        }
+
+        expect(useAccountsStore.getState().connectionRevokedThrough).toEqual({
+            removed: correctedNow,
+            other: 5_000,
+        })
+    })
+
     test('removes the child key and sweeps the seed when no other account references it', async () => {
         parentMap.set('kp-alice-ed25519', 'kp-alice')
         const a = buildTestAccount(

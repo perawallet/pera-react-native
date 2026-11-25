@@ -1021,25 +1021,33 @@ export const useAccountsStore: UseBoundStore<
                 const currentSelected = get().selectedAccountId
                 const currentManualOrder = get().manualAccountOrder
                 const revokedThrough = get().connectionRevokedThrough
-                const removedAt = Date.now()
+                const now = Date.now()
+                // A cutoff ahead of a clock since corrected backwards would
+                // revoke the re-added account's fresh grants.
+                const clampedConnections = accounts
+                    .flatMap(chainAddressesOf)
+                    .map(({ address }) => address.toLowerCase())
+                    .filter(address => (revokedThrough[address] ?? 0) > now)
+                    .map(address => [address, now] as const)
                 const revokedConnections =
                     revokedConnectionAddresses?.map(address => {
                         const normalized = address.toLowerCase()
                         return [
                             normalized,
-                            Math.max(
-                                removedAt,
-                                revokedThrough[normalized] ?? 0,
-                            ),
+                            Math.max(now, revokedThrough[normalized] ?? 0),
                         ] as const
                     }) ?? []
+                const connectionChanges = [
+                    ...clampedConnections,
+                    ...revokedConnections,
+                ]
                 set({
                     accounts,
                     connectionRevokedThrough:
-                        revokedConnections.length > 0
+                        connectionChanges.length > 0
                             ? {
                                   ...revokedThrough,
-                                  ...Object.fromEntries(revokedConnections),
+                                  ...Object.fromEntries(connectionChanges),
                               }
                             : revokedThrough,
                 })
