@@ -13,6 +13,7 @@
 // @vitest-environment node
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { generatePasskeyMainKey } from '@perawallet/wallet-core-kms'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
@@ -45,6 +46,20 @@ describe('runPasskeyAutofillBootstrap', () => {
         await runPasskeyAutofillBootstrap()
 
         expect(mocks.bootstrapPasskeyAutofill).toHaveBeenCalledTimes(1)
+    })
+
+    it('mints the main key on the provider keystore', async () => {
+        await runPasskeyAutofillBootstrap()
+        const [{ mintPasskeyMainKey }] =
+            mocks.bootstrapPasskeyAutofill.mock.calls[0]
+
+        await mintPasskeyMainKey('wallet', 'wallet/entropy')
+
+        expect(generatePasskeyMainKey).toHaveBeenCalledWith(
+            getProvider().key.store,
+            'wallet',
+            'wallet/entropy',
+        )
     })
 
     it('refreshes registration approval again if the wallet changes during bootstrap', async () => {

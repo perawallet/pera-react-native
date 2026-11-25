@@ -254,6 +254,7 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     withSecret: vi.fn(async () => null),
     hasSecret: vi.fn(() => false),
     removeSecret: vi.fn(async () => {}),
+    generatePasskeyMainKey: vi.fn(),
     uniformIntBelow: (max: number) =>
         max <= 0 ? 0 : Math.floor(Math.random() * max),
     pickDistinctIndexes: (count: number, poolSize: number) => {

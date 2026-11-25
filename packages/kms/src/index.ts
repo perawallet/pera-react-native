@@ -86,6 +86,7 @@ export {
 } from './utils'
 export {
     findPasskeyMainKey,
+    generatePasskeyMainKey,
     passkeyMainKeyId,
     usePasskeyMainKey,
     PASSKEY_MAIN_KEY_SCHEME,

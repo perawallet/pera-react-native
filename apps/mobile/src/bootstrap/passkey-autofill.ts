@@ -16,6 +16,7 @@ import {
     getPasskeyAnchorSeedIds,
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
+import { generatePasskeyMainKey } from '@perawallet/wallet-core-kms'
 import {
     bootstrapPasskeyAutofill,
     passkeysQueryKeyRoot,
@@ -64,6 +65,12 @@ const configurePasskeyAutofill = async (): Promise<void> => {
         service,
         intentActions: PASSKEY_INTENT_ACTIONS,
         getPasskeyAnchorSeedIds,
+        mintPasskeyMainKey: (seedKeyId, entropyChildId) =>
+            generatePasskeyMainKey(
+                getProvider().key.store,
+                seedKeyId,
+                entropyChildId,
+            ),
     })
 }
 

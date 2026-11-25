@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { Key, KeyId } from '@algorandfoundation/keystore-core'
+import type { Key, KeyId, KeyStoreAPI } from '@algorandfoundation/keystore-core'
 import {
     getKeystoreStore,
     PASSKEY_MAIN_KEY_SCHEME,
@@ -39,6 +39,25 @@ export const isPasskeyMainKey = (key: Key): boolean =>
 export const findPasskeyMainKey = (): Nullable<Key> =>
     getKeystoreStore().state.keys.find(isPasskeyMainKey) ?? null
 
+/** Mints `seedKeyId`'s main key from its BIP39 entropy child, without the device-wide short-circuit. */
+export const generatePasskeyMainKey = (
+    keyStore: KeyStoreAPI,
+    seedKeyId: KeyId,
+    entropyChildId: KeyId,
+): Promise<KeyId> =>
+    keyStore.generate({
+        // `algorithm: 'P256'` is what routes this to `generateDP256Main`
+        // rather than the XHD `generateHDRoot` — both are `hd-root-key`.
+        type: 'hd-root-key',
+        algorithm: 'P256',
+        extractable: false,
+        keyUsages: ['deriveBits', 'deriveKey'],
+        params: {
+            parentKeyId: entropyChildId,
+            id: passkeyMainKeyId(seedKeyId),
+        },
+    })
+
 export type UsePasskeyMainKeyResult = {
     ensurePasskeyMainKey: (seedKeyId: KeyId) => Promise<KeyId>
 }
@@ -63,18 +82,7 @@ export const usePasskeyMainKey = (): UsePasskeyMainKeyResult => {
             )
         }
 
-        return keyStore.generate({
-            // `algorithm: 'P256'` is what routes this to `generateDP256Main`
-            // rather than the XHD `generateHDRoot` — both are `hd-root-key`.
-            type: 'hd-root-key',
-            algorithm: 'P256',
-            extractable: false,
-            keyUsages: ['deriveBits', 'deriveKey'],
-            params: {
-                parentKeyId: entropyChildId,
-                id: passkeyMainKeyId(seedKeyId),
-            },
-        })
+        return generatePasskeyMainKey(keyStore, seedKeyId, entropyChildId)
     }
 
     return { ensurePasskeyMainKey }
