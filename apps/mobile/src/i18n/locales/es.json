@@ -347,6 +347,14 @@
         "my_accounts": "Cuentas",
         "no_accounts_found": "No se encontraron cuentas",
         "no_accounts_body": "No hay cuentas que coincidan",
+        "invalid_address": {
+            "title": "Dirección no válida",
+            "body": "Esta no es una dirección de {{network}} válida. Revísala e inténtalo de nuevo."
+        },
+        "name_not_found": {
+            "title": "Nombre no encontrado",
+            "body": "{{name}} no existe o no tiene una dirección de {{network}}."
+        },
         "search_placeholder": "Dirección de cuenta, nombre NFD o nombre corto",
         "search_placeholder_evm": "Dirección 0x, nombre ENS o nombre de cuenta",
         "search_placeholder_neutral": "Dirección o nombre de cuenta",

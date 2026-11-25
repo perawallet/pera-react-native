@@ -14,6 +14,7 @@ import {
     addressCodecs,
     CHAIN_FAMILIES,
     type AddressCodec,
+    type AddressShape,
     type ChainFamily,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
@@ -69,6 +70,17 @@ export const addressFamilyOf = (
         }
     }
     return undefined
+}
+
+/** The strongest shape any registered family's codec reads `input` as. */
+export const addressShapeOf = (input: string): AddressShape => {
+    let shape: AddressShape = 'none'
+    for (const codec of familyCodecs().values()) {
+        const familyShape = codec.addressShape(input)
+        if (familyShape === 'complete') return familyShape
+        if (familyShape === 'partial') shape = familyShape
+    }
+    return shape
 }
 
 /**

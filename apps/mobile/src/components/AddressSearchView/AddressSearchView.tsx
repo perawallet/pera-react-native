@@ -66,7 +66,8 @@ export const AddressSearchView = ({
         matchingItems,
         hasResults,
         isNameSearchLoading,
-        wrongNetworkMessage,
+        emptyStateMessage,
+        searchNotice,
         searchPlaceholder,
         chainBadgeName,
     } = useAddressSearchView({
@@ -86,6 +87,7 @@ export const AddressSearchView = ({
         renderSeparator,
         keyExtractor,
         emptyComponent,
+        searchAccessory,
     } = useAddressSearchList({
         scope,
         onSelected,
@@ -94,7 +96,8 @@ export const AddressSearchView = ({
         showAccountBalance,
         hideBackupBadge,
         showAddIcon,
-        wrongNetworkMessage,
+        emptyStateMessage,
+        searchNotice,
     })
 
     // An excluded address (the send's own account) can leave nothing to list
@@ -122,6 +125,7 @@ export const AddressSearchView = ({
                 onSearchChange={setValue}
                 SearchInputComponent={SearchInput}
                 ListEmptyComponent={listEmptyComponent}
+                searchAccessory={searchAccessory}
                 ItemSeparatorComponent={renderSeparator}
                 style={styles.list}
             />

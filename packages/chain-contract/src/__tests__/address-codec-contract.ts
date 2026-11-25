@@ -27,6 +27,12 @@ export interface AddressCodecContractFixtures {
      */
     nearMissPair: readonly [string, string]
     invalid: readonly string[]
+    /** Invalid input at or near full length, such as an address a character short. */
+    malformed: readonly string[]
+    /** The start of an address, as typed while searching. */
+    partial: readonly string[]
+    /** Input a name or account search means, which must not read as an address. */
+    notAddressShaped: readonly string[]
     /** A payment URI of another scheme, which the codec must decline. */
     foreignUri: string
     paymentUriOpts: PaymentUriOpts
@@ -135,6 +141,32 @@ export const addressCodecContractTests = (
 
             for (const address of ['', ...fixtures.invalid]) {
                 expect(codec.isValid(address)).toBe(false)
+            }
+        })
+
+        it('reads a valid address and near-full-length malformed input as complete', () => {
+            const codec = makeCodec()
+
+            expect(codec.addressShape(derive(codec))).toBe('complete')
+            for (const input of fixtures.malformed) {
+                expect(codec.isValid(input)).toBe(false)
+                expect(codec.addressShape(input)).toBe('complete')
+            }
+        })
+
+        it('reads the start of an address as partial', () => {
+            const codec = makeCodec()
+
+            for (const input of fixtures.partial) {
+                expect(codec.addressShape(input)).toBe('partial')
+            }
+        })
+
+        it('does not read names or search terms as an address', () => {
+            const codec = makeCodec()
+
+            for (const input of ['', ...fixtures.notAddressShaped]) {
+                expect(codec.addressShape(input)).toBe('none')
             }
         })
 

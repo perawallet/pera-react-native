@@ -32,6 +32,7 @@ export const fakeCodec = (
         isValid: () => true,
         normalize: address => address,
         areEqual,
+        addressShape: () => 'none' as const,
         truncate: shortForm,
         resembles: (a, b) =>
             !areEqual(a, b) && fold(shortForm(a)) === fold(shortForm(b)),

@@ -85,6 +85,18 @@ describe('useNameSearchQuery', () => {
         expect(mockFetchNameSearch).toHaveBeenCalledTimes(1)
     })
 
+    it('reports a failed lookup apart from a name with no match', async () => {
+        mockFetchNameSearch.mockRejectedValue(new Error('503'))
+
+        const { result } = renderHook(
+            () => useNameSearchQuery(ETHEREUM_SEPOLIA, 'vitalik.eth'),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(result.current.data).toEqual([])
+    })
+
     it('does not fetch while the nameService capability is off', () => {
         nameService.isEnabled = false
 

@@ -990,6 +990,7 @@ describe('useLedgerVerifyScreen', () => {
                     normalize: (address: string) => address.toLowerCase(),
                     areEqual: (a: string, b: string) =>
                         a.toLowerCase() === b.toLowerCase(),
+                    addressShape: () => 'none' as const,
                     truncate: (address: string) => address,
                     resembles: () => false,
                     toPaymentUri: (address: string) => address,

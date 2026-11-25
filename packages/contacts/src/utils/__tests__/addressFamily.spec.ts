@@ -16,6 +16,7 @@ import { fixtureCodec } from '@perawallet/wallet-core-chain-contract/testing'
 import {
     addressFamilyOf,
     findContactByAddress,
+    addressShapeOf,
     isSameFamilyAddress,
     isValidFamilyAddress,
 } from '../addressFamily'
@@ -44,6 +45,12 @@ beforeEach(() => {
             ...fixtureCodec,
             chainId: chainId as never,
             isValid: isEvm,
+            addressShape: (input: string) => {
+                if (!/^0x[^.]*$/i.test(input)) return 'none' as const
+                return input.length >= 40
+                    ? ('complete' as const)
+                    : ('partial' as const)
+            },
             normalize: (address: string) => address.toUpperCase(),
             areEqual: (a: string, b: string) =>
                 a.toLowerCase() === b.toLowerCase(),
@@ -53,6 +60,28 @@ beforeEach(() => {
 
 afterEach(() => {
     addressCodecs.reset()
+})
+
+describe('addressShapeOf', () => {
+    test('reads near-full-length input as complete', () => {
+        expect(addressShapeOf(`fx${'a'.repeat(39)}`)).toBe('complete')
+        expect(addressShapeOf(`0x${'a'.repeat(39)}`)).toBe('complete')
+    })
+
+    test('reads the start of an address as partial', () => {
+        expect(addressShapeOf('0x1234')).toBe('partial')
+    })
+
+    test('reads a name or search term as none', () => {
+        expect(addressShapeOf('vitalik.eth')).toBe('none')
+        expect(addressShapeOf('savings')).toBe('none')
+    })
+
+    test('ignores a family with no registered chain', () => {
+        chains.list = [{ id: 'algorand', family: 'algorand' }]
+
+        expect(addressShapeOf('0x1234')).toBe('none')
+    })
 })
 
 describe('addressFamilyOf', () => {

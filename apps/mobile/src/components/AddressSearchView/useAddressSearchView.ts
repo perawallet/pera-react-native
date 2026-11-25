@@ -18,9 +18,13 @@ import {
     i18nKey,
     type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
-import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
+import {
+    getChainDescriptor,
+    useChainCapability,
+} from '@perawallet/wallet-core-chain-shared'
 import {
     addressFamilyOf,
+    addressShapeOf,
     useContacts,
     type Contact,
 } from '@perawallet/wallet-core-contacts'
@@ -58,6 +62,11 @@ export type AddressSearchItem =
     | { type: 'name'; result: NameSearchResult; key: string }
     | { type: 'address'; address: string; key: string }
     | { type: 'paste'; address: string; key: string }
+
+export type AddressSearchNotice = {
+    titleKey: I18nKey
+    params: Record<string, string>
+}
 
 /** A family's copy for an address entered where another family's is expected. */
 export type WrongNetworkAddressCopy = {
@@ -106,8 +115,17 @@ type UseAddressSearchViewResult = {
     isNameSearchLoading: boolean
     /** Set when `value` is a valid address of a family other than the scope's. */
     mismatchedFamily: Optional<ChainFamily>
-    /** Unset when either family registers no wrong-network copy. */
-    wrongNetworkMessage: Optional<{ title: string; body: string }>
+    /**
+     * Replaces the generic search miss when there are no rows: the address is
+     * on the wrong network, is a malformed address, or is a name that didn't
+     * resolve. Unset for a plain search miss.
+     */
+    emptyStateMessage: Optional<{ title: string; body: string }>
+    /**
+     * Pinned under the search field when a near-full-length address is invalid
+     * yet rows still match it, so a broken paste isn't hidden behind them.
+     */
+    searchNotice: Optional<AddressSearchNotice>
     /** Search copy from the picker override or the chain family's name service. */
     searchPlaceholder: string
     /** Set when rows should name the scope's chain; see {@link useChainNameWhenMultiChain}. */
@@ -131,7 +149,12 @@ export const useAddressSearchView = ({
     const { findContacts } = useContacts()
     const { readText } = useClipboard()
     const allAccounts = useAllAccounts()
-    const chainFamily = getChainDescriptor(scope.chainId).family
+    const { family: chainFamily, displayName: networkName } =
+        getChainDescriptor(scope.chainId)
+    const isNameServiceEnabled = useChainCapability(
+        scope.chainId,
+        'nameService',
+    )
     const chainBadgeName = useChainNameWhenMultiChain(scope.chainId)
     const searchPlaceholder = t(
         searchPlaceholderKey ??
@@ -180,7 +203,7 @@ export const useAddressSearchView = ({
                     : expectedCopy.sendBodyKey,
                 {
                     asset: sendingAssetLabel,
-                    network: getChainDescriptor(scope.chainId).displayName,
+                    network: networkName,
                     family: chainFamilyDisplay(mismatchedFamily, t).label,
                 },
             ),
@@ -190,9 +213,16 @@ export const useAddressSearchView = ({
         chainFamily,
         sendingAssetLabel,
         isSendingMultiChainAsset,
-        scope.chainId,
+        networkName,
         t,
     ])
+
+    // Without this, a mistyped or cut-off address reads as a search miss.
+    const malformedShape = useMemo(
+        () => (isAddress || !value ? 'none' : addressShapeOf(value)),
+        [isAddress, value],
+    )
+    const isMalformedAddress = malformedShape !== 'none'
 
     // Re-read on focus rather than once on mount: the user leaves to copy an
     // address and comes back, which is the whole point of the affordance. Mirrors
@@ -217,11 +247,21 @@ export const useAddressSearchView = ({
 
     const debouncedValue = useDebouncedValue(value, SEARCH_DEBOUNCE_TIME)
     const shouldSearchNames = debouncedValue.includes('.') && !addressIsValid
-    const { data: nameData, isLoading: isNameSearchLoading } =
-        useNameSearchQuery(scope, debouncedValue, {
-            enabled: shouldSearchNames,
-        })
+    const {
+        data: nameData,
+        isLoading: isNameSearchLoading,
+        isError: isNameSearchError,
+    } = useNameSearchQuery(scope, debouncedValue, {
+        enabled: shouldSearchNames,
+    })
     const nameResults = useMemo(() => nameData ?? [], [nameData])
+    const isNameMiss =
+        isNameServiceEnabled &&
+        shouldSearchNames &&
+        debouncedValue === value &&
+        !isNameSearchLoading &&
+        !isNameSearchError &&
+        nameResults.length === 0
 
     const matchingAccounts = useMemo(
         () =>
@@ -377,6 +417,55 @@ export const useAddressSearchView = ({
 
     const hasResults = matchingItems.length > 0
 
+    // A row holding the input in other letter case is the same address (an
+    // EIP-55 checksum slip), so it needs no warning.
+    const searchNotice = useMemo(() => {
+        if (malformedShape !== 'complete' || !hasResults) return undefined
+        const typed = value.toLowerCase()
+        const holdsTypedAddress = matchingItems.some(item => {
+            if (item.type === 'contact')
+                return item.address.toLowerCase() === typed
+            if (item.type === 'account') {
+                return addressOn(item.account, scope)?.toLowerCase() === typed
+            }
+            return false
+        })
+        if (holdsTypedAddress) return undefined
+        return {
+            titleKey: i18nKey('address_entry.invalid_address.body'),
+            params: { network: networkName },
+        }
+    }, [malformedShape, hasResults, matchingItems, value, scope, networkName])
+
+    const emptyStateMessage = useMemo(() => {
+        if (wrongNetworkMessage) return wrongNetworkMessage
+        if (isMalformedAddress) {
+            return {
+                title: t('address_entry.invalid_address.title'),
+                body: t('address_entry.invalid_address.body', {
+                    network: networkName,
+                }),
+            }
+        }
+        if (isNameMiss) {
+            return {
+                title: t('address_entry.name_not_found.title'),
+                body: t('address_entry.name_not_found.body', {
+                    name: value,
+                    network: networkName,
+                }),
+            }
+        }
+        return undefined
+    }, [
+        wrongNetworkMessage,
+        isMalformedAddress,
+        isNameMiss,
+        networkName,
+        value,
+        t,
+    ])
+
     return {
         value,
         setValue,
@@ -384,7 +473,8 @@ export const useAddressSearchView = ({
         hasResults,
         isNameSearchLoading,
         mismatchedFamily,
-        wrongNetworkMessage,
+        emptyStateMessage,
+        searchNotice,
         searchPlaceholder,
         chainBadgeName,
     }

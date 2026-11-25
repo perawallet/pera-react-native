@@ -16,11 +16,25 @@ import { createChainAdapterRegistry } from '../registry'
 
 export type ParsedPaymentUri = PaymentUriOpts & { address: string }
 
+/**
+ * How input reads as a chain's address, valid or not. `partial` starts like
+ * one, as a prefix being typed does; `complete` is at or near full length, so a
+ * paste or typo gone wrong rather than a search in progress; `none` is a name
+ * or any other search term.
+ */
+export type AddressShape = 'none' | 'partial' | 'complete'
+
 // Synchronous throughout: validation runs in render paths and needs no I/O.
 export interface AddressCodec {
     readonly chainId: ChainId
     fromPublicKey(publicKey: Uint8Array, opts: DeriveOpts): string
     isValid(address: string, networkId?: NetworkId): boolean
+    /**
+     * Lets a search field call a malformed address invalid rather than a name
+     * with no match. `complete` for every valid address; `none` for anything a
+     * name or account search could mean.
+     */
+    addressShape(input: string): AddressShape
     /** Only defined for input that passes `isValid`. */
     normalize(address: string): string
     /**

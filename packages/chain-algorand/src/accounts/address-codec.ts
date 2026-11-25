@@ -12,6 +12,7 @@
 
 import type {
     AddressCodec,
+    AddressShape,
     ParsedPaymentUri,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -31,6 +32,18 @@ import { readArc90Uri, writeArc90PaymentUri } from '../deeplinks/arc90'
 // only the character beside the ellipsis still reads as the same address.
 const RESEMBLING_END_LENGTH = (SHORT_ADDRESS_LENGTH - 1) / 2 - 1
 
+// Valid addresses are 58 base32 characters; this also catches a few characters
+// short or long, lower-cased, or with a non-base32 typo such as 0 or 1. Names
+// and account names don't run to 40 characters without a space or a dot.
+const ALGORAND_ADDRESS_START = /^[A-Za-z0-9]{40,}$/
+// Within three of the 58 characters: a paste gone wrong, not a prefix being typed.
+const NEAR_FULL_LENGTH = 55
+
+const algorandAddressShape = (input: string): AddressShape => {
+    if (!ALGORAND_ADDRESS_START.test(input)) return 'none'
+    return input.length >= NEAR_FULL_LENGTH ? 'complete' : 'partial'
+}
+
 // Algorand addresses are upper-case base32 with a checksum, and a lower-case
 // spelling fails the checksum, so there is exactly one valid spelling.
 export const algorandAddressCodec: AddressCodec = {
@@ -40,6 +53,7 @@ export const algorandAddressCodec: AddressCodec = {
             ? deriveQuantumAddress(publicKey)
             : encodeAlgorandAddress(publicKey),
     isValid: address => isValidAlgorandAddress(address),
+    addressShape: algorandAddressShape,
     normalize: address => address,
     areEqual: (a, b) => a === b,
     truncate: address => truncateAlgorandAddress(address),
