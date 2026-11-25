@@ -95,6 +95,10 @@ const legacyLookupAddress = (registryAppId: number, name: string): string => {
     return new LogicSigAccount(program).address().toString()
 }
 
+/**
+ * The V1 lookup account holds the registry's name mapping for domains
+ * registered before box storage that have not migrated.
+ */
 const fetchLegacyRegistryRecord = async (
     registryAppId: number,
     { name, scope, signal }: RegistryLookup,
@@ -126,10 +130,7 @@ const fetchLegacyRegistryRecord = async (
     return appId === 0n ? null : { appId, storage: 'global' }
 }
 
-/**
- * The V1 lookup account holds the registry's name mapping for domains
- * registered before box storage that have not migrated.
- */
+/** Reads the registry's name box first, then the V1 lookup account. */
 export const fetchNfdRegistryRecord = async ({
     name,
     scope,
