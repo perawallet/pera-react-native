@@ -147,9 +147,7 @@ const entropyChildIdOf = (
     })?.id
 
 /** Seed ids an account still uses; an unclaimed import seed is never among them. */
-type PasskeyAnchorSeedResolver = (
-    keys: readonly Key[],
-) => ReadonlySet<string>
+type PasskeyAnchorSeedResolver = (keys: readonly Key[]) => ReadonlySet<string>
 
 /**
  * Finds the persisted `pbkdf2-p256` main key, or derives one from the
