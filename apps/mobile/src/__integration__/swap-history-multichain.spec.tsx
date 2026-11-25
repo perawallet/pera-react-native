@@ -212,14 +212,8 @@ const HistoryHost = () => (
     </>
 )
 
-const chipOrder = async () => {
-    const chips = await screen.findAllByTestId(
-        /^swap-pair-chip-/,
-        {},
-        FORM_TIMEOUT,
-    )
-    return chips
-}
+const chipOrder = () =>
+    screen.findAllByTestId(/^swap-pair-chip-/, {}, FORM_TIMEOUT)
 
 describe('Flow: Swap History across chains', () => {
     setSuiteUnhandledRequestMode('bypass')
@@ -283,6 +277,9 @@ describe('Flow: Swap History across chains', () => {
         expect(rows.map(row => row.getAttribute('data-testid'))).toEqual(
             ORDERS.map(item => `swap-history-item-${item.order_id}`),
         )
+        expect(
+            within(rows[0]).getByTestId('chain_avatar_badge_ethereum'),
+        ).toBeTruthy()
         expect(
             requestedAccounts.some(accounts =>
                 accounts.some(id => id.startsWith('eip155:1:')),

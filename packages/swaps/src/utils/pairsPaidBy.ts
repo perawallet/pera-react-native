@@ -28,13 +28,7 @@ export const swapAccountKey = ({
 }: SwapAccountAddress): string =>
     `${toScopeKey(scope)}|${address.toLowerCase()}`
 
-/**
- * The pairs one of `payers` paid for, each tagged with that account. The
- * source leg must be on the payer's network and the destination on a network
- * one of the payers is on, so a cross-chain pair is kept while one into a
- * network the wallet doesn't use is left out, as is one its payer can no
- * longer pay on.
- */
+/** Source leg on the payer's network, destination on a network some payer is on. */
 export const pairsPaidBy = (
     pairs: readonly SwapDistinctPairItem[],
     payers: readonly SwapAccountAddressWithId[],
