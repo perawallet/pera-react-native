@@ -3967,10 +3967,10 @@
             "completed": "Terminée",
             "failed": "Échouée",
             "pending": "En attente",
-            "raw_transaction": "Transaction brute"
+            "raw_transaction": "Transaction brute",
+            "via_project": "via {{name}}"
         },
         "notice": {
-            "confirming": "Confirmation en cours",
             "pending": "En attente depuis {{since}}",
             "failed": "Échouée",
             "replaced": "Remplacée par une autre transaction",

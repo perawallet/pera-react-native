@@ -3967,10 +3967,10 @@
             "completed": "Completada",
             "failed": "Fallida",
             "pending": "Pendiente",
-            "raw_transaction": "Transacción en bruto"
+            "raw_transaction": "Transacción en bruto",
+            "via_project": "vía {{name}}"
         },
         "notice": {
-            "confirming": "Confirmando",
             "pending": "Pendiente desde {{since}}",
             "failed": "Fallida",
             "replaced": "Reemplazada por otra transacción",

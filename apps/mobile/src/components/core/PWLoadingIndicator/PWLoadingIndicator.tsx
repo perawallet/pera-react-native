@@ -19,8 +19,8 @@ import { useStyles } from './styles'
 import { tintSpinner } from './tintSpinner'
 
 export type PWLoadingIndicatorProps = {
-    /** `xl` is for a loader that fills the whole screen. */
-    size?: 'sm' | 'lg' | 'xl'
+    /** `xs` sits inline with a line of text; `xl` is for a loader that fills the whole screen. */
+    size?: 'xs' | 'sm' | 'lg' | 'xl'
     color?: string
     style?: StyleProp<ViewStyle>
     testID?: string

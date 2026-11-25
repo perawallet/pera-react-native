@@ -255,6 +255,8 @@ export const useEthereumRecordLayout = (
                     presentation?.iconName ??
                     transactionIconName(recordSummary.icon),
                 title: heroTitle(titleKey ? { key: titleKey } : title),
+                projectName: recordSummary.projectName,
+                projectLogoUrl: recordSummary.projectLogoUrl,
                 status: STATUS[record.status],
                 amount,
                 isAmountLoading,

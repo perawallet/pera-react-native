@@ -58,6 +58,10 @@ export const useStyles = makeStyles(theme => {
         notice: {
             marginTop: theme.spacing.xs,
         },
+        pendingBadge: {
+            marginTop: theme.spacing.xs,
+            alignSelf: 'flex-start',
+        },
         amount,
         amountMuted: {
             ...amount,

@@ -3959,10 +3959,10 @@
             "completed": "Abgeschlossen",
             "failed": "Fehlgeschlagen",
             "pending": "Ausstehend",
-            "raw_transaction": "Rohtransaktion"
+            "raw_transaction": "Rohtransaktion",
+            "via_project": "über {{name}}"
         },
         "notice": {
-            "confirming": "Wird bestätigt",
             "pending": "Ausstehend seit {{since}}",
             "failed": "Fehlgeschlagen",
             "replaced": "Durch eine andere Transaktion ersetzt",

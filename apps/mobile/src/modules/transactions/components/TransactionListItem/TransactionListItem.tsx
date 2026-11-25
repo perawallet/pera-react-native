@@ -22,6 +22,7 @@ import { ChainNotice } from '@components/ChainNotice'
 import { CurrencyAmount } from '@components/CurrencyAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { TransactionLeadingIcon } from '@components/TransactionLeadingIcon'
+import { TransactionStatusBadge } from '@components/TransactionStatusBadge'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { rowAmountPrecision } from './amounts'
@@ -50,6 +51,7 @@ const TransactionListItemView = (props: TransactionListItemProps) => {
         amountsOverflowCount,
         fee,
         feeLabel,
+        isPending,
         notice,
         handlePress,
         handleLongPress,
@@ -74,7 +76,7 @@ const TransactionListItemView = (props: TransactionListItemProps) => {
             testID={`transaction_row_${id}`}
             style={[styles.container, isSuspicious && styles.suspicious]}
             // A title alone sits centred against its stacked amounts.
-            align={subtitle || notice ? 'top' : 'center'}
+            align={subtitle || notice || isPending ? 'top' : 'center'}
             rightMaxWidthRatio={AMOUNT_MAX_WIDTH_RATIO}
             onPress={handlePress}
             onLongPress={handleLongPress}
@@ -170,6 +172,13 @@ const TransactionListItemView = (props: TransactionListItemProps) => {
                     >
                         {subtitle}
                     </PWText>
+                )}
+                {isPending && (
+                    <TransactionStatusBadge
+                        status='pending'
+                        style={styles.pendingBadge}
+                        testID={`transaction_row_pending_${id}`}
+                    />
                 )}
                 {notice && (
                     <ChainNotice

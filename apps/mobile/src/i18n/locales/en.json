@@ -3967,10 +3967,10 @@
             "completed": "Completed",
             "failed": "Failed",
             "pending": "Pending",
-            "raw_transaction": "Raw Transaction"
+            "raw_transaction": "Raw Transaction",
+            "via_project": "via {{name}}"
         },
         "notice": {
-            "confirming": "Confirming",
             "pending": "Pending since {{since}}",
             "failed": "Failed",
             "replaced": "Replaced by another transaction",

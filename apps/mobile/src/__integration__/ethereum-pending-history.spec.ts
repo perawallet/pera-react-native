@@ -225,13 +225,7 @@ describe('Flow: an Ethereum send in history', () => {
         await reconcile()
         const confirmed = await recordOf()
 
-        expect(confirming).toMatchObject({
-            id: hash,
-            status: 'pending',
-            summary: {
-                notice: { title: { key: 'transactions.notice.confirming' } },
-            },
-        })
+        expect(confirming).toMatchObject({ id: hash, status: 'pending' })
         expect(confirmed).toMatchObject({ id: hash, status: 'confirmed' })
     })
 

@@ -65,7 +65,6 @@ export type { TransactionDetailLayoutProps } from './transactions/TransactionDet
 export { TransactionDetailCard } from './transactions/TransactionDetailCard'
 export { TransactionDetailAddress } from './transactions/TransactionDetailAddress'
 export { TransactionDetailHero } from './transactions/TransactionDetailLayout/TransactionDetailHero'
-export { TransactionStatusBadge } from './transactions/TransactionStatusBadge'
 export type {
     DetailBodyProps,
     RecordDetailBodyProps,

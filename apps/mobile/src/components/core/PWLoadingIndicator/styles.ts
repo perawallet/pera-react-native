@@ -12,10 +12,11 @@
 
 import { makeStyles } from '@rneui/themed'
 
-type StyleProps = { size: 'sm' | 'lg' | 'xl' }
+type StyleProps = { size: 'xs' | 'sm' | 'lg' | 'xl' }
 
 export const useStyles = makeStyles((theme, { size }: StyleProps) => {
     const side = {
+        xs: theme.spacing.lg,
         sm: theme.spacing.xl,
         lg: theme.spacing['3xl'],
         xl: theme.spacing['4xl'],

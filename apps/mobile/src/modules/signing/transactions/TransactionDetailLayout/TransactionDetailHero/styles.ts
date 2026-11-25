@@ -23,4 +23,20 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textGray,
         textAlign: 'center',
     },
+    // The secondary badge's pill, which can't hold an image.
+    project: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
+        maxWidth: '100%',
+        backgroundColor: theme.colors.layerGrayLighter,
+        borderRadius: theme.spacing['3xl'],
+        paddingHorizontal: theme.spacing.sm,
+        paddingVertical: theme.spacing.xxs,
+    },
+    projectLogo: {
+        width: theme.spacing.lg,
+        height: theme.spacing.lg,
+        borderRadius: theme.borderRadius.full,
+    },
 }))

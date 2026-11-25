@@ -448,12 +448,40 @@ export const classifyEvmHistoryCall = (
 /** The subtitle naming a well-known contract; a proper noun, never translated. */
 export const knownContractSubtitle = (
     contract: Pick<KnownEvmContract, 'name' | 'projectName'>,
-): Pick<TransactionSummary, 'subtitle' | 'subtitleEllipsis'> => ({
+): Pick<
+    TransactionSummary,
+    'subtitle' | 'subtitleEllipsis' | 'projectName'
+> => {
+    const projectName = contract.projectName ?? contract.name
+    return {
+        subtitle: { key: INTERPRETED_TITLE, params: { title: projectName } },
+        subtitleEllipsis: 'tail',
+        projectName,
+    }
+}
+
+const spenderNaming = (
+    name: string,
+    isUnlimited: boolean,
+): Pick<
+    TransactionSummary,
+    'subtitle' | 'subtitleEllipsis' | 'projectName'
+> => ({
     subtitle: {
-        key: INTERPRETED_TITLE,
-        params: { title: contract.projectName ?? contract.name },
+        key: isUnlimited ? UNLIMITED_APPROVAL_FOR : APPROVAL_FOR,
+        params: { spender: name },
     },
     subtitleEllipsis: 'tail',
+    projectName: name,
+})
+
+/** Names an approval row's spender after the fact, keeping whether the grant was unlimited. */
+export const withApprovalSpenderName = (
+    summary: TransactionSummary,
+    name: string,
+): TransactionSummary => ({
+    ...summary,
+    ...spenderNaming(name, summary.subtitle?.key === UNLIMITED_APPROVAL_FOR),
 })
 
 type ApprovalAction = Extract<EvmHistoryAction, { kind: 'approval' }>
@@ -507,27 +535,20 @@ const grantPartyOf = (
     'counterparty' | 'subtitle' | 'subtitleEllipsis'
 > => {
     const counterparty = normalizeEvmAddress(grant.spender)
-    if (grant.isUnlimited && !grant.isRevocation) {
+    const isUnlimited = grant.isUnlimited && !grant.isRevocation
+    if (grant.spenderName) {
         return {
             counterparty,
-            subtitle: {
-                key: UNLIMITED_APPROVAL_FOR,
-                params: {
-                    spender:
-                        grant.spenderName ?? truncateEvmAddress(grant.spender),
-                },
-            },
-            ...(grant.spenderName && { subtitleEllipsis: 'tail' as const }),
+            ...spenderNaming(grant.spenderName, isUnlimited),
         }
     }
-    if (!grant.spenderName) return { counterparty }
+    if (!isUnlimited) return { counterparty }
     return {
         counterparty,
         subtitle: {
-            key: APPROVAL_FOR,
-            params: { spender: grant.spenderName },
+            key: UNLIMITED_APPROVAL_FOR,
+            params: { spender: truncateEvmAddress(grant.spender) },
         },
-        subtitleEllipsis: 'tail',
     }
 }
 
@@ -564,6 +585,7 @@ export const historyActionSummary = (
             const {
                 subtitle: _protocol,
                 subtitleEllipsis: _cut,
+                projectName: _tokenProject,
                 ...granted
             } = approval
             return {

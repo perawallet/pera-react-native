@@ -33,6 +33,8 @@ export type EvmContractMetadata = {
     /** The project alone ("Aave"): a history row has room only for this. */
     projectName: string
     projectUrl: string
+    /** A PNG; absent when the project has none. */
+    projectLogoUrl?: string
 }
 
 export type EvmVerifiedAbi = Extract<

@@ -263,7 +263,12 @@ describe('useTransactionListItem against the history summary goldens', () => {
                 Math.max(0, expected.length - 2),
             )
 
-            expect(row.notice?.kind).toBe(summary.notice?.kind)
+            // A pending row shows the pending badge in place of its notice.
+            const isPending = golden.item.status === 'pending'
+            expect(row.isPending).toBe(isPending)
+            expect(row.notice?.kind).toBe(
+                isPending ? undefined : summary.notice?.kind,
+            )
             if (row.notice) {
                 const copy = t(row.notice.titleKey, row.notice.params)
                 expect(copy).not.toBe(row.notice.titleKey)

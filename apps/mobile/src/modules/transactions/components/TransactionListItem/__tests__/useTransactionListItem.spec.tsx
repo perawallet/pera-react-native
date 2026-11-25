@@ -282,20 +282,20 @@ describe('useTransactionListItem', () => {
 
     describe('status notices', () => {
         it.each([
-            ['pending payment', 'warning', 'transactions.notice.pending'],
             ['failed payment', 'error', 'transactions.notice.failed'],
             ['replaced payment', 'warning', 'transactions.notice.replaced'],
         ] as const)('flags a %s', (name, kind, titleKey) => {
-            expect(renderRow(golden(name)).notice).toMatchObject({
-                kind,
-                titleKey,
-            })
+            const row = renderRow(golden(name))
+
+            expect(row.notice).toMatchObject({ kind, titleKey })
+            expect(row.isPending).toBe(false)
         })
 
-        it('says since when a pending row has been waiting', () => {
-            expect(
-                renderRow(golden('pending payment')).notice?.params?.since,
-            ).toBeTruthy()
+        it('shows a pending row as pending, with no notice', () => {
+            const row = renderRow(golden('pending payment'))
+
+            expect(row.isPending).toBe(true)
+            expect(row.notice).toBeNull()
         })
 
         it('has no notice on a confirmed row', () => {
@@ -475,17 +475,44 @@ describe('useTransactionListItem with a record', () => {
     const noAmountRecord: TransactionRecord = {
         ...record,
         summary: {
-            kind: 'approval',
-            title: { key: i18nKey('transactions.list_item.approval') },
+            kind: 'contract-call',
+            title: {
+                key: i18nKey('transactions.list_item.contract_interaction'),
+            },
             direction: 'none',
             balanceChanges: [],
-            icon: 'approval',
+            icon: 'contract-call',
         } as TransactionRecord['summary'],
         fee: new Decimal('6200000000000'),
         initiator: '0xALICE',
     }
 
     describe('fee', () => {
+        it('Given an own approval, then fee is null, pending or not', () => {
+            const approval = {
+                ...noAmountRecord,
+                summary: {
+                    ...noAmountRecord.summary,
+                    kind: 'approval',
+                    title: { key: i18nKey('transactions.list_item.approval') },
+                    icon: 'approval',
+                },
+            } satisfies TransactionRecord
+
+            expect(renderRecord({}, approval).fee).toBeNull()
+            expect(
+                renderRecord(
+                    {},
+                    {
+                        ...approval,
+                        status: 'pending',
+                        initiator: undefined,
+                        isFeeMaximum: true,
+                    },
+                ).fee,
+            ).toBeNull()
+        })
+
         it('Given an own record with a fee and no amounts, then fee is the native fee', () => {
             const row = renderRecord({}, noAmountRecord)
 
@@ -572,14 +599,37 @@ describe('useTransactionListItem with a record', () => {
         mockReplace.isBlocked = false
     })
 
-    it('says a send stuck behind an earlier one is waiting on it', () => {
+    it('says a send stuck behind an earlier one is waiting on it, in place of the pending badge', () => {
         mockReplace.canReplace = true
         mockReplace.isBlocked = true
 
-        expect(renderRecord().notice).toMatchObject({
+        const row = renderRecord({}, { ...record, status: 'pending' })
+
+        expect(row.notice).toMatchObject({
             kind: 'warning',
             titleKey: 'transactions.notice.waiting_on_earlier',
         })
+        expect(row.isPending).toBe(false)
+    })
+
+    it('shows a pending record as pending in place of its status notice', () => {
+        const row = renderRecord(
+            {},
+            {
+                ...record,
+                status: 'pending',
+                summary: {
+                    ...record.summary,
+                    notice: {
+                        kind: 'warning',
+                        title: { key: i18nKey('transactions.notice.pending') },
+                    },
+                },
+            },
+        )
+
+        expect(row.isPending).toBe(true)
+        expect(row.notice).toBeNull()
     })
 
     it("renders the record's own summary without a history adapter", () => {

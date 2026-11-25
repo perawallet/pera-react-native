@@ -497,6 +497,30 @@ describe('useTransactionDetailsScreen', () => {
             })
         })
 
+        it('leaves a pending record to its status badge, with no notice', () => {
+            routeParams.current = {
+                scope: ETHEREUM_SCOPE,
+                transactionId: record.id,
+                historyRecord: {
+                    ...record,
+                    status: 'pending',
+                    summary: {
+                        ...record.summary,
+                        notice: {
+                            kind: 'warning',
+                            title: {
+                                key: i18nKey('transactions.notice.pending'),
+                            },
+                        },
+                    },
+                },
+            }
+
+            const { result } = renderHook(() => useTransactionDetailsScreen())
+
+            expect(result.current.notice).toBeNull()
+        })
+
         it('reports the transaction unknown on a chain whose UI has no record body', () => {
             routeParams.current = {
                 scope: ALGORAND_SCOPE,

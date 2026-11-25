@@ -21,7 +21,6 @@ import {
     guardedPersist,
     logger,
     registerStore,
-    type Maybe,
     type Nullable,
     type Optional,
     type WithPersist,
@@ -30,7 +29,7 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 import { eip155ChainIdOfNetwork } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
 import { fetchEvmContractMetadata } from '../contracts/api/endpoints'
-import { knownContractSubtitle } from './action'
+import { knownContractSubtitle, withApprovalSpenderName } from './action'
 
 const STORE_NAME = 'evm-contract-names-store'
 
@@ -38,9 +37,13 @@ const STORE_NAME = 'evm-contract-names-store'
 // kept as long as the names; a contract Pera starts curating shows within this.
 export const CONTRACT_NAME_TTL_MS = 7 * 24 * 60 * 60_000
 
-type ContractNameEntry = {
+type ContractProject = {
     /** The project's name; null for a contract Pera doesn't vouch for. */
     name: Nullable<string>
+    logoUrl?: string
+}
+
+type ContractNameEntry = ContractProject & {
     /** Unix ms. */
     checkedAt: number
 }
@@ -48,7 +51,7 @@ type ContractNameEntry = {
 type EvmContractNamesState = {
     /** Keyed by `{eip155 chain id}:{lowercase address}`. */
     entries: Record<string, ContractNameEntry>
-    remember: (names: Record<string, Nullable<string>>, now: number) => void
+    remember: (projects: Record<string, ContractProject>, now: number) => void
     resetState: () => void
 }
 
@@ -62,7 +65,7 @@ export const useEvmContractNamesStore: UseBoundStore<
             entries: {},
             // Expired entries are dropped on every write, so the map holds at
             // most a week of distinct counterparties.
-            remember: (names, now) =>
+            remember: (projects, now) =>
                 set(({ entries }) => ({
                     entries: {
                         ...Object.fromEntries(
@@ -72,9 +75,9 @@ export const useEvmContractNamesStore: UseBoundStore<
                             ),
                         ),
                         ...Object.fromEntries(
-                            Object.entries(names).map(([key, name]) => [
+                            Object.entries(projects).map(([key, project]) => [
                                 key,
-                                { name, checkedAt: now },
+                                { ...project, checkedAt: now },
                             ]),
                         ),
                     },
@@ -104,30 +107,49 @@ registerStore({
 const keyOf = (eip155ChainId: number, address: string): string =>
     `${eip155ChainId}:${address}`
 
-/** Lowercase; set only on a row the bundled registry left unnamed. */
-const unnamedCounterparty = ({
+/**
+ * Lowercase; set on a row the bundled registry left unnamed, or named by its
+ * project, whose logo only the backend has. An approval's counterparty is its
+ * spender, whose unnamed row may still carry a subtitle.
+ */
+const askedCounterparty = ({
+    kind,
     subtitle,
+    projectName,
     counterparty,
-}: TransactionSummary): Optional<string> =>
-    subtitle === undefined &&
-    counterparty !== undefined &&
-    isAddress(counterparty, { strict: false })
+}: TransactionSummary): Optional<string> => {
+    const isUnnamed =
+        (kind === 'approval' ? projectName : subtitle) === undefined
+    return (isUnnamed || projectName !== undefined) &&
+        counterparty !== undefined &&
+        isAddress(counterparty, { strict: false })
         ? counterparty.toLowerCase()
         : undefined
+}
 
-/** Null when Pera doesn't vouch for the contract; undefined when the lookup failed, which is never cached. */
-const lookUpName = async (
+const named = (summary: TransactionSummary, name: string): TransactionSummary =>
+    summary.kind === 'approval'
+        ? withApprovalSpenderName(summary, name)
+        : { ...summary, ...knownContractSubtitle({ name }) }
+
+/** Undefined when the lookup failed, which is never cached. */
+const lookUpProject = async (
     scope: ChainScope,
     chain: EvmChain,
     address: string,
-): Promise<Maybe<string>> => {
+): Promise<Optional<ContractProject>> => {
     try {
         const metadata = await fetchEvmContractMetadata(
             scope,
             chain,
             getAddress(address),
         )
-        return metadata?.projectName ?? null
+        if (!metadata) return { name: null }
+        const { projectName, projectLogoUrl } = metadata
+        return {
+            name: projectName,
+            ...(projectLogoUrl && { logoUrl: projectLogoUrl }),
+        }
     } catch (error) {
         logger.warn('evm history: contract name lookup failed', {
             error,
@@ -139,9 +161,10 @@ const lookUpName = async (
 
 /**
  * Names each counterparty Pera curates that the bundled registry doesn't, as
- * the bundled names are: by project. Every unnamed counterparty on the page
- * is asked at once, and only when the cache holds no answer younger than
- * `CONTRACT_NAME_TTL_MS`; a failed lookup isn't cached, so the next read asks again.
+ * the bundled names are: by project, and adds the project's logo to either. A
+ * bundled name stands, since it also drives decoding. Every counterparty on
+ * the page is asked at once, and only when the cache holds no answer younger
+ * than `CONTRACT_NAME_TTL_MS`; a failed lookup isn't cached, so the next read asks again.
  */
 export const withContractNames = async (
     records: TransactionRecord[],
@@ -155,9 +178,7 @@ export const withContractNames = async (
     const { entries, remember } = useEvmContractNamesStore.getState()
     const unasked = [
         ...new Set(
-            records.flatMap(
-                ({ summary }) => unnamedCounterparty(summary) ?? [],
-            ),
+            records.flatMap(({ summary }) => askedCounterparty(summary) ?? []),
         ),
     ].filter(address => {
         const entry = entries[keyOf(eip155ChainId, address)]
@@ -166,10 +187,10 @@ export const withContractNames = async (
     if (unasked.length > 0) {
         const answers = await Promise.all(
             unasked.map(async address => {
-                const name = await lookUpName(scope, chain, address)
-                return name === undefined
-                    ? []
-                    : [[keyOf(eip155ChainId, address), name] as const]
+                const project = await lookUpProject(scope, chain, address)
+                return project
+                    ? [[keyOf(eip155ChainId, address), project] as const]
+                    : []
             }),
         )
         const answered = answers.flat()
@@ -178,16 +199,18 @@ export const withContractNames = async (
 
     const known = useEvmContractNamesStore.getState().entries
     return records.map(record => {
-        const address = unnamedCounterparty(record.summary)
-        const name = address && known[keyOf(eip155ChainId, address)]?.name
-        return name
-            ? {
-                  ...record,
-                  summary: {
-                      ...record.summary,
-                      ...knownContractSubtitle({ name }),
-                  },
-              }
-            : record
+        const address = askedCounterparty(record.summary)
+        const entry = address ? known[keyOf(eip155ChainId, address)] : undefined
+        if (!entry?.name) return record
+        const summary =
+            record.summary.projectName === undefined
+                ? named(record.summary, entry.name)
+                : record.summary
+        return {
+            ...record,
+            summary: entry.logoUrl
+                ? { ...summary, projectLogoUrl: entry.logoUrl }
+                : summary,
+        }
     })
 }

@@ -192,6 +192,7 @@ describe('summarizeEthereumHistoryItem with the row calldata', () => {
                 key: 'transactions.list_item.approval_for',
                 params: { spender: 'Uniswap' },
             })
+            expect(summary.projectName).toBe('Uniswap')
             expect(summary.amount).toBeUndefined()
         })
 
@@ -428,6 +429,7 @@ describe('summarizeEthereumHistoryItem with the row calldata', () => {
                     params: { from: 'USDC', to: 'WETH' },
                 },
                 subtitle: { params: { title: 'Uniswap' } },
+                projectName: 'Uniswap',
             })
             expect(summary.isInferred).toBeUndefined()
         })

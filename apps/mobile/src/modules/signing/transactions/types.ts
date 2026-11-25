@@ -22,6 +22,7 @@ import type {
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { IconName } from '@components/core'
 import type { LeadingAsset } from '@components/TransactionLeadingIcon'
+import type { TransactionStatus } from '@components/TransactionStatusBadge'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 
@@ -48,7 +49,7 @@ export type RecordDetailBodyProps = {
     record: TransactionRecord
 }
 
-export type TransactionDetailStatus = 'completed' | 'pending' | 'failed'
+export type TransactionDetailStatus = TransactionStatus
 
 export type TransactionDetailAmount = {
     asset: MinimalAsset
@@ -70,6 +71,9 @@ export type TransactionDetailSummary = {
     leadingAssets?: LeadingAsset[]
     /** Already translated by the chain. */
     title: string
+    /** The project behind the contract dealt with, such as the dApp a swap went through. */
+    projectName?: string
+    projectLogoUrl?: string
     /** Unset before signing: a transaction not yet sent has no status to report. */
     status?: TransactionDetailStatus
     /** Unset when the transaction moves no single amount, or while the asset it moves is still being read. */

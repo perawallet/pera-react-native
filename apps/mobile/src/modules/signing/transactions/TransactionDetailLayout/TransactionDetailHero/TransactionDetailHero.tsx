@@ -10,11 +10,12 @@
  limitations under the License
  */
 
-import { PWText, PWView } from '@components/core'
+import { PWImage, PWText, PWView } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
 import { TransactionLeadingIcon } from '@components/TransactionLeadingIcon'
+import { TransactionStatusBadge } from '@components/TransactionStatusBadge'
+import { useLanguage } from '@hooks/useLanguage'
 import type { TransactionDetailSummary } from '../../types'
-import { TransactionStatusBadge } from '../../TransactionStatusBadge'
 import { TransactionDetailHeroAmount } from './TransactionDetailHeroAmount'
 import { useStyles } from './styles'
 
@@ -26,11 +27,14 @@ export const TransactionDetailHero = ({
     summary,
 }: TransactionDetailHeroProps) => {
     const styles = useStyles()
+    const { t } = useLanguage()
     const {
         scope,
         iconName,
         leadingAssets,
         title,
+        projectName,
+        projectLogoUrl,
         status,
         amount,
         isAmountLoading,
@@ -51,6 +55,26 @@ export const TransactionDetailHero = ({
             >
                 {title}
             </PWText>
+            {!!projectName && (
+                <PWView
+                    style={styles.project}
+                    testID='transaction_detail_project'
+                >
+                    {!!projectLogoUrl && (
+                        <PWImage
+                            source={{ uri: projectLogoUrl }}
+                            style={styles.projectLogo}
+                            showLoadingIndicator={false}
+                            testID='transaction_detail_project_logo'
+                        />
+                    )}
+                    <PWText truncate>
+                        {t('transactions.common.via_project', {
+                            name: projectName,
+                        })}
+                    </PWText>
+                </PWView>
+            )}
             {!!amount && (
                 <TransactionDetailHeroAmount
                     amount={amount}

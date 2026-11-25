@@ -3984,10 +3984,10 @@
             "completed": "Concluída",
             "failed": "Falhou",
             "pending": "Pendente",
-            "raw_transaction": "Transação bruta"
+            "raw_transaction": "Transação bruta",
+            "via_project": "via {{name}}"
         },
         "notice": {
-            "confirming": "Confirmando",
             "pending": "Pendente desde {{since}}",
             "failed": "Falhou",
             "replaced": "Substituída por outra transação",

@@ -811,7 +811,7 @@ describe('Flow: History on an Ethereum account', () => {
                 ).toBeNull()
             })
 
-            it("Given the QA account's rows, when History lists them, then each says what it did with its own amounts and the approval carries a fee instead of a red ETH line", async () => {
+            it("Given the QA account's rows, when History lists them, then each says what it did with its own amounts and the approval shows neither a fee nor a red ETH line", async () => {
                 serveActionRows()
 
                 renderHistory()
@@ -831,7 +831,7 @@ describe('Flow: History on an Ethereum account', () => {
                 expect(approve).toContain(
                     'transactions.list_item.approve_asset',
                 )
-                expect(approve).toContain('transactions.common.fee')
+                expect(approve).not.toContain('transactions.common.fee')
                 expect(approve).not.toContain('-')
                 expect(
                     within(
@@ -839,7 +839,7 @@ describe('Flow: History on an Ethereum account', () => {
                             `transaction_row_${USDT_APPROVE_HASH}`,
                         ),
                     ).queryByText(/ETH/),
-                ).not.toBeNull()
+                ).toBeNull()
 
                 const supply = await rowText(SUPPLY_HASH)
                 expect(supply).toContain('transactions.list_item.supply')
@@ -1005,7 +1005,7 @@ describe('Flow: History on an Ethereum account', () => {
                 server.events.removeListener('request:start', countHistoryRead)
             })
 
-            it('Given a named swap row, when it is opened, then the page carries the same title', async () => {
+            it('Given a named swap row, when it is opened, then the page carries the same title and names the contract it went through', async () => {
                 serveActionRows()
                 renderHistory()
                 await rowText(ROUTER_SWAP_HASH)
@@ -1023,6 +1023,9 @@ describe('Flow: History on an Ethereum account', () => {
                     screen.queryByText('transactions.list_item.contract_call'),
                 ).toBeNull()
                 expect(screen.queryByTestId('ethereum_record_asset')).toBeNull()
+                expect(
+                    screen.getByText('transactions.common.via_project'),
+                ).toBeTruthy()
             })
 
             // A received NFT as the backend sends it: transfer log only, sender's gas still reported.
@@ -1508,7 +1511,6 @@ describe('Flow: History on an Ethereum account', () => {
                 expect(approve).toContain(
                     'transactions.list_item.approve_asset',
                 )
-                expect(approve).toContain('transactions.common.fee')
 
                 const swap = await rowText(ROUTER_SWAP_HASH)
                 expect(swap).toContain(
@@ -1766,7 +1768,7 @@ describe('Flow: History on an Ethereum account', () => {
         describe('a send the chain has not listed yet', () => {
             const PENDING_HASH = hashOf(41)
 
-            it('Given an approval the wallet broadcast, when History lists it and its row is opened, then its fee reads as the most it can be charged', async () => {
+            it('Given an approval the wallet broadcast, when History lists it and its row is opened, then the row shows it pending with no fee, and the detail shows its fee as the most it can be charged', async () => {
                 server.use(
                     ...peraEvmHistoryHandlers({
                         history: {
@@ -1796,8 +1798,9 @@ describe('Flow: History on an Ethereum account', () => {
                 })
                 renderHistory()
 
-                const row = await rowText(PENDING_HASH, /ETH/)
-                expect(row).toContain('send_funds.fee.max_fee')
+                const row = await rowText(PENDING_HASH)
+                expect(row).toContain('transactions.common.pending')
+                expect(row).not.toContain('send_funds.fee.max_fee')
                 expect(row).not.toContain('transactions.common.fee')
 
                 await openRow(PENDING_HASH)

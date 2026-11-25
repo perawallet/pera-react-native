@@ -50,9 +50,18 @@ const MAINNET: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const POOL = '0x87870bca3f3fd6335c3f4ce8392d69350b4fa4e2'
 const WALLET = '0x1111111111111111111111111111111111111111'
 const UNVERIFIED = '0x2222222222222222222222222222222222222222'
+const ROUTER = '0x3333333333333333333333333333333333333333'
+const UNISWAP_LOGO = 'https://pera.test/uniswap.png'
 
 const server = setupServer()
 const requested: string[] = []
+
+const withLogo = (
+    response: ReturnType<typeof contractMetadataResponse>,
+): ReturnType<typeof contractMetadataResponse> => ({
+    ...response,
+    project: { ...response.project, logo_png: UNISWAP_LOGO },
+})
 
 const serveMetadata = (): void => {
     server.use(
@@ -69,6 +78,13 @@ const serveMetadata = (): void => {
                     'Lookalike',
                     'https://example.com',
                     'unverified',
+                ),
+                [ROUTER]: withLogo(
+                    contractMetadataResponse(
+                        'Universal Router',
+                        'Uniswap',
+                        'https://uniswap.org',
+                    ),
                 ),
             },
         }),
@@ -133,30 +149,93 @@ describe('withContractNames', () => {
             undefined,
         ])
         expect(named[0]?.summary.subtitleEllipsis).toBe('tail')
+        expect(named.map(r => r.summary.projectName)).toEqual([
+            'Aave',
+            'Aave',
+            undefined,
+            undefined,
+        ])
         expect([...requested].sort()).toEqual(
             [POOL, WALLET, UNVERIFIED].map(a => contractPath(1, a)).sort(),
         )
     })
 
-    it('leaves a row the bundled registry already named, and one without a counterparty, unasked', async () => {
+    it("keeps a bundled name, adding only the project's logo, and leaves a row without a counterparty unasked", async () => {
         serveMetadata()
-        const bundled = record('a', {
-            counterparty: POOL,
-            subtitle: {
-                key: 'transactions.list_item.interpreted_title',
-                params: { title: 'Uniswap' },
-            },
-        })
+        const bundled = (counterparty: string) =>
+            record(counterparty, {
+                counterparty,
+                subtitle: {
+                    key: 'transactions.list_item.interpreted_title',
+                    params: { title: 'Uniswap' },
+                },
+                projectName: 'Uniswap',
+            })
         const anonymous = record('b', {})
 
         const named = await withContractNames(
-            [bundled, anonymous],
+            [bundled(ROUTER), bundled(POOL), anonymous],
             MAINNET,
             ETHEREUM,
         )
 
-        expect(named).toEqual([bundled, anonymous])
-        expect(requested).toEqual([])
+        expect(named).toEqual([
+            {
+                ...bundled(ROUTER),
+                summary: {
+                    ...bundled(ROUTER).summary,
+                    projectLogoUrl: UNISWAP_LOGO,
+                },
+            },
+            bundled(POOL),
+            anonymous,
+        ])
+        expect([...requested].sort()).toEqual(
+            [ROUTER, POOL].map(a => contractPath(1, a)).sort(),
+        )
+    })
+
+    it('carries the logo of a project it names', async () => {
+        serveMetadata()
+
+        const [named] = await withContractNames(
+            [record('a', { counterparty: ROUTER })],
+            MAINNET,
+            ETHEREUM,
+        )
+
+        expect(named?.summary).toMatchObject({
+            projectName: 'Uniswap',
+            projectLogoUrl: UNISWAP_LOGO,
+        })
+    })
+
+    it("names an approval's spender as the bundled names do, keeping an unlimited grant unlimited", async () => {
+        serveMetadata()
+        const approval = { kind: 'approval' as const, counterparty: POOL }
+        const unlimited = {
+            key: 'transactions.list_item.unlimited_approval_for',
+            params: { spender: '0x8787…a4e2' },
+        }
+
+        const named = await withContractNames(
+            [
+                record('a', approval),
+                record('b', { ...approval, subtitle: unlimited }),
+            ],
+            MAINNET,
+            ETHEREUM,
+        )
+
+        expect(named.map(subtitleOf)).toEqual([
+            {
+                key: 'transactions.list_item.approval_for',
+                params: { spender: 'Aave' },
+            },
+            { ...unlimited, params: { spender: 'Aave' } },
+        ])
+        expect(named.map(r => r.summary.projectName)).toEqual(['Aave', 'Aave'])
+        expect(requested).toEqual([contractPath(1, POOL)])
     })
 
     it('answers a later page from the cache, misses included, until an entry is a week old', async () => {

@@ -10,4 +10,7 @@
  limitations under the License
  */
 
-export { TransactionStatusBadge } from './TransactionStatusBadge'
+export {
+    TransactionStatusBadge,
+    type TransactionStatus,
+} from './TransactionStatusBadge'
