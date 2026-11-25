@@ -136,9 +136,6 @@ export const usePendingSignaturesContent =
         const openedChainId = usePendingSignaturesSheetStore(
             state => state.chainId,
         )
-        const closeSheet = usePendingSignaturesSheetStore(
-            state => state.closeSheet,
-        )
         const { dismiss } = useBottomSheetResult<void>()
         const { request: requestBottomSheet } = useBottomSheet()
 
@@ -294,9 +291,8 @@ export const usePendingSignaturesContent =
             trackEvent(MultisigEvent.CloseForNow, {
                 [AnalyticsMetadataKey.ChainId]: scope.chainId,
             })
-            closeSheet()
             dismiss()
-        }, [closeSheet, dismiss, scope.chainId])
+        }, [dismiss, scope.chainId])
 
         const canSign = localKeyUnsignedSigners.length > 0
 
@@ -414,16 +410,8 @@ export const usePendingSignaturesContent =
             })
             if (!confirmed) return
             await cancelMutationCall()
-            closeSheet()
             dismiss()
-        }, [
-            requestBottomSheet,
-            t,
-            cancelMutationCall,
-            closeSheet,
-            dismiss,
-            scope.chainId,
-        ])
+        }, [requestBottomSheet, t, cancelMutationCall, dismiss, scope.chainId])
 
         return {
             isLoading,

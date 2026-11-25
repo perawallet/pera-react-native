@@ -2423,6 +2423,8 @@
             "load_error": "Bu işlem yüklenemedi. Süresi dolmuş veya kaldırılmış olabilir.",
             "cosign_rejected_title": "Bu işlem imzalanamıyor",
             "cosign_rejected_body": "Bu istek, paylaşılan hesabın yetkilendirmediği bir işlem içeriyor. Gönderen, paylaşılan hesaba rekey edilmiş bir hesapsa onu cüzdanına ekle ve tekrar dene.",
+            "request_open_title": "Önce açık isteği kapat",
+            "request_open_body": "İmza isteğini tamamla veya kapat, ardından bağlantıyı yeniden aç.",
             "retry": "Tekrar dene",
             "canceled": "İşlem iptal edildi.",
             "declined": "İşlem reddedildi.",

@@ -421,7 +421,7 @@ describe('usePendingSignaturesContent', () => {
         })
     })
 
-    it('handleClose clears the signRequestId in the store and dismisses the sheet', () => {
+    it('handleClose dismisses the current sheet for the driver to advance', () => {
         usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
         mockQueryReturn(buildSignRequest())
 
@@ -429,9 +429,9 @@ describe('usePendingSignaturesContent', () => {
 
         result.current.handleClose()
 
-        expect(
-            usePendingSignaturesSheetStore.getState().signRequestId,
-        ).toBeNull()
+        expect(usePendingSignaturesSheetStore.getState().signRequestId).toBe(
+            'sr-1',
+        )
         expect(mockDismiss).toHaveBeenCalledTimes(1)
     })
 

@@ -2423,6 +2423,8 @@
             "load_error": "Impossible de charger cette transaction. Elle a peut-être expiré ou été supprimée.",
             "cosign_rejected_title": "Impossible de signer cette transaction",
             "cosign_rejected_body": "Cette demande contient une transaction que le compte partagé n’autorise pas. Si l’expéditeur est un compte ayant fait l’objet d’un rekey vers le compte partagé, ajoutez-le à votre wallet et réessayez.",
+            "request_open_title": "Ferme d’abord la demande ouverte",
+            "request_open_body": "Termine ou ferme la demande de signature, puis rouvre le lien.",
             "retry": "Réessayer",
             "canceled": "Transaction annulée.",
             "declined": "Transaction refusée.",

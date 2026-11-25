@@ -2423,6 +2423,8 @@
             "load_error": "Couldn't load this transaction. It may have expired or been removed.",
             "cosign_rejected_title": "Can't sign this transaction",
             "cosign_rejected_body": "This request includes a transaction the shared account doesn't authorize. If the sender is an account rekeyed to the shared account, add it to your wallet and try again.",
+            "request_open_title": "Close the open request first",
+            "request_open_body": "Finish or close the signing request, then open the link again.",
             "retry": "Try Again",
             "canceled": "Transaction canceled.",
             "declined": "Transaction declined.",

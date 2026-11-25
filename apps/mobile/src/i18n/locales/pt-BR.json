@@ -2427,6 +2427,8 @@
             "load_error": "Não foi possível carregar esta transação. Ela pode ter expirado ou sido removida.",
             "cosign_rejected_title": "Não é possível assinar esta transação",
             "cosign_rejected_body": "Esta solicitação inclui uma transação que a conta compartilhada não autoriza. Se o remetente for uma conta com rekey feito para a conta compartilhada, adicione-a à sua wallet e tente novamente.",
+            "request_open_title": "Feche a solicitação aberta primeiro",
+            "request_open_body": "Conclua ou feche a solicitação de assinatura e abra o link novamente.",
             "retry": "Tentar novamente",
             "canceled": "Transação cancelada.",
             "declined": "Transação recusada.",
