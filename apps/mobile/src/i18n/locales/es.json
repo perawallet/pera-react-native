@@ -4385,6 +4385,7 @@
             "no_results_title": "No hay activos coincidentes",
             "no_results_body": "Ningún activo coincide con tu búsqueda",
             "no_chain_results_body": "No hay activos disponibles en esta red",
+            "no_account_results_body": "Esta cuenta no tiene activos para intercambiar",
             "cross_network_empty_title": "No se puede intercambiar {{asset}} a {{network}}",
             "cross_network_empty_body": "{{asset}} en {{payNetwork}} aún no se puede intercambiar por activos en {{network}}. Para obtenerlos, paga con un activo en {{network}}.",
             "cross_network_empty_body_other_account": "{{asset}} en {{payNetwork}} aún no se puede intercambiar por activos en {{network}}. Para obtenerlos, cambia a una cuenta en {{network}} y paga con uno de sus activos.",
@@ -4527,10 +4528,6 @@
         "receiving_account": {
             "title": "Cuenta receptora",
             "label": "Recibir en"
-        },
-        "source_account": {
-            "title": "Selecciona una cuenta",
-            "subtitle": "Tienes <0>{{accounts}} cuentas</0> con este activo. Elige una para continuar."
         }
     },
     "onramp": {

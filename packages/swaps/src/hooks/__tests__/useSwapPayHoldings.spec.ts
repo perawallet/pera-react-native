@@ -189,7 +189,14 @@ describe('swaps/useSwapPayHoldings', () => {
     test('keeps a transfer-blocked holding with a balance, with its restriction', () => {
         const restriction = { reason: 'frozen' }
         mocks.holdings = [
-            holding('first', 'frozen', 3, ALGO, { name: 'frozen' }, restriction),
+            holding(
+                'first',
+                'frozen',
+                3,
+                ALGO,
+                { name: 'frozen' },
+                restriction,
+            ),
         ]
 
         const { result } = renderHook(() => useSwapPayHoldings(FIRST))
