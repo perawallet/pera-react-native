@@ -19,8 +19,10 @@ export const useStyles = makeStyles(theme => ({
     label: {
         color: theme.colors.textGray,
     },
-    address: {
-        color: theme.colors.textMain,
+    groups: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        columnGap: theme.spacing.sm,
     },
     difference: {
         color: theme.colors.suspiciousBannerContent,

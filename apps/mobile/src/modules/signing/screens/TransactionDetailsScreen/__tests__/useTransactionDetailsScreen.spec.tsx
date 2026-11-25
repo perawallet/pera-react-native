@@ -43,13 +43,14 @@ const ALGORAND_SCOPE = { chainId: 'algorand', networkId: 'testnet' }
 const ETHEREUM_SCOPE = { chainId: ETHEREUM_CHAIN_ID, networkId: 'sepolia' }
 
 const mockPush = vi.fn()
+const mockGoBack = vi.fn()
 const routeParams: { current: Record<string, unknown> } = { current: {} }
 
 // Partial: importing `@modules/algorand` loads components that read other
 // navigation exports at module scope.
 vi.mock('@react-navigation/native', async importOriginal => ({
     ...(await importOriginal<typeof import('@react-navigation/native')>()),
-    useNavigation: () => ({ push: mockPush }),
+    useNavigation: () => ({ push: mockPush, goBack: mockGoBack }),
     useRoute: () => ({ params: routeParams.current }),
 }))
 
@@ -775,6 +776,21 @@ describe('useTransactionDetailsScreen', () => {
                 ),
             ).resolves.toBe(true)
             expect(mockRequestSheet).not.toHaveBeenCalled()
+        })
+
+        it('leaves the screen once when the user dismisses the notice', () => {
+            routeParams.current = {
+                scope: ALGORAND_SCOPE,
+                transactionId: 'TX123',
+                historyTransaction: historyItem,
+                suspectedPoisoning,
+            }
+            const { result } = renderHook(() => useTransactionDetailsScreen())
+
+            act(() => result.current.handleClose())
+
+            expect(mockGoBack).toHaveBeenCalledTimes(1)
+            expect(mockPush).not.toHaveBeenCalled()
         })
     })
 })
