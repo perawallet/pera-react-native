@@ -16,6 +16,14 @@ export const useStyles = makeStyles(theme => ({
     container: {
         flex: 1,
     },
+    // A horizontal ScrollView grows by default; this wrapper keeps the chip row
+    // at its own height so it doesn't split the sheet with the list.
+    filterBar: {
+        flexShrink: 0,
+    },
+    list: {
+        flex: 1,
+    },
     listContent: {
         paddingHorizontal: theme.spacing.xl,
     },
@@ -34,7 +42,8 @@ export const useStyles = makeStyles(theme => ({
     },
     filterContent: {
         paddingHorizontal: theme.spacing.xl,
-        paddingBottom: theme.spacing.sm,
+        paddingTop: theme.spacing.sm,
+        paddingBottom: theme.spacing.md,
     },
     loadMore: {
         alignItems: 'center',
