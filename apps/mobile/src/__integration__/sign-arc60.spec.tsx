@@ -153,6 +153,63 @@ describe('Flow: ARC-60 (SIWA) signing review', () => {
         expect(reject).not.toHaveBeenCalled()
     })
 
+    it('Given a grant covering only the auth account, when a SIWA request signs in as an account rekeyed to it, then the wallet rejects it without opening a review', async () => {
+        const authSigner = await seedAlgo25Signer()
+        const rekeyedAccount: WalletAccount = {
+            id: 'ungranted-rekeyed-account',
+            custody: { kind: 'watch' },
+            chains: { algorand: { address: REKEYED_SIGNER_ADDRESS } },
+            name: 'Ungranted rekeyed account',
+        }
+        seedAuthority(REKEYED_SIGNER_ADDRESS, AUTH_ADDRESS)
+        useAccountsStore.getState().setAccounts([rekeyedAccount, authSigner])
+        const { request } = buildArc60SignRequest({
+            signer: AUTH_ADDRESS,
+            accountAddress: REKEYED_SIGNER_ADDRESS,
+        })
+        const addSignRequest = vi.fn<(request: SignRequest) => void>()
+        const respond = vi.fn(async () => {})
+        const reject = vi.fn(async () => {})
+
+        enqueueInboundRequest(
+            {
+                kind: 'request',
+                connectionId: 'arc60-connection',
+                correlationId: 'arc60-ungranted-subject',
+                chainId: request.chainId,
+                sourceType: 'webview',
+                authorizedAccounts: [AUTH_ADDRESS],
+                peer: { name: 'ARC-60', url: 'https://arc60.io' },
+                verifiedOrigin: 'https://arc60.io/login',
+                operation: {
+                    type: 'sign-data',
+                    payload: {
+                        type: 'auth-data',
+                        authData: request.authData,
+                        metadata: request.metadata,
+                    },
+                },
+                respond,
+                reject,
+            },
+            {
+                accounts: useAccountsStore.getState().accounts,
+                transactionSigning: new Map(),
+                pendingRequests: new Map(),
+                addSignRequest,
+                removeSignRequest: vi.fn(),
+                isSignRequestPending: () => true,
+                isSignRequestPastApproval: () => false,
+            },
+        )
+
+        await waitFor(() => {
+            expect(reject).toHaveBeenCalled()
+        })
+        expect(addSignRequest).not.toHaveBeenCalled()
+        expect(respond).not.toHaveBeenCalled()
+    })
+
     it('shows the origin-mismatch warning when the verified origin differs from the SIWA domain', async () => {
         const { request, reject } = buildArc60SignRequest({
             domain: 'trusted-exchange.com',
