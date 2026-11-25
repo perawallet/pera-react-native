@@ -20,17 +20,17 @@ import type {
 export const swapPairKey = (assetIn: SwapAsset, assetOut: SwapAsset): string =>
     `${assetRefKey(assetIn.ref)}|${assetRefKey(assetOut.ref)}`
 
-/** Completed swaps with both assets known, newest first, one per pair. */
+/** Completed swaps with both assets known, newest first, one per pair; every pair when `limit` is omitted. */
 export const distinctSwapPairs = (
     items: SwapHistoryItem[],
-    limit: number,
+    limit?: number,
 ): SwapDistinctPairItem[] => {
     const newestFirst = [...items].sort(
         (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt),
     )
     const pairs = new Map<string, SwapDistinctPairItem>()
     for (const item of newestFirst) {
-        if (pairs.size >= limit) break
+        if (limit !== undefined && pairs.size >= limit) break
         if (item.status !== 'completed') continue
         if (!item.assetIn || !item.assetOut) continue
         const pairKey = swapPairKey(item.assetIn, item.assetOut)

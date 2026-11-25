@@ -18,6 +18,8 @@ import { useDistinctPairsHistoryQuery } from './useDistinctPairsHistoryQuery'
 import { useSwapAccountsAddresses } from './useSwapAccountsAddresses'
 import { useSwapSourceChainsByAccount } from './useSwapSourceChainsByAccount'
 
+const RECENT_PAIRS_LIMIT = 10
+
 export type UseRecentSwapPairsQueryResult = {
     pairs: SwapHistoryPair[]
     isLoading: boolean
@@ -47,7 +49,11 @@ export const useRecentSwapPairsQuery = (): UseRecentSwapPairsQueryResult => {
     )
 
     const pairs = useMemo(
-        () => pairsPaidBy(data ?? [], payers, canPayOn),
+        () =>
+            pairsPaidBy(data ?? [], payers, canPayOn).slice(
+                0,
+                RECENT_PAIRS_LIMIT,
+            ),
         [data, payers, canPayOn],
     )
 

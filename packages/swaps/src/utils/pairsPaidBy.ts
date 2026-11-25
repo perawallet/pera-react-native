@@ -29,9 +29,11 @@ export const swapAccountKey = ({
     `${toScopeKey(scope)}|${address.toLowerCase()}`
 
 /**
- * The pairs one of `payers` paid for, each tagged with that account. A pair
- * refills a single chain's swap, so one with a leg on another chain is left
- * out, as is one its payer can no longer pay on.
+ * The pairs one of `payers` paid for, each tagged with that account. The
+ * source leg must be on the payer's network and the destination on a network
+ * one of the payers is on, so a cross-chain pair is kept while one into a
+ * network the wallet doesn't use is left out, as is one its payer can no
+ * longer pay on.
  */
 export const pairsPaidBy = (
     pairs: readonly SwapDistinctPairItem[],
@@ -39,16 +41,16 @@ export const pairsPaidBy = (
     canPayOn: (accountId: string, chainId: ChainId) => boolean,
 ): SwapHistoryPair[] => {
     const byKey = new Map(payers.map(payer => [swapAccountKey(payer), payer]))
+    const payerScopeKeys = new Set(payers.map(payer => toScopeKey(payer.scope)))
     return pairs.flatMap(pair => {
         const payer = pair.sourceAccount
             ? byKey.get(swapAccountKey(pair.sourceAccount))
             : undefined
         if (!payer) return []
-        const payKey = toScopeKey(payer.scope)
-        const isOnPayScope =
-            toScopeKey(pair.assetIn.ref) === payKey &&
-            toScopeKey(pair.assetOut.ref) === payKey
-        return isOnPayScope && canPayOn(payer.accountId, payer.scope.chainId)
+        const isRestorable =
+            toScopeKey(pair.assetIn.ref) === toScopeKey(payer.scope) &&
+            payerScopeKeys.has(toScopeKey(pair.assetOut.ref))
+        return isRestorable && canPayOn(payer.accountId, payer.scope.chainId)
             ? [{ ...pair, accountId: payer.accountId }]
             : []
     })

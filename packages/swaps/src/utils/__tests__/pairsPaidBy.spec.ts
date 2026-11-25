@@ -52,17 +52,56 @@ describe('swaps/pairsPaidBy', () => {
         ])
     })
 
-    test('leaves out a cross-chain pair, an unknown payer and a pair with no payer', () => {
+    test('keeps a cross-chain pair whose destination network is a payer\'s, tagged with the source payer', () => {
         const crossChain = pair({ scope: ALGO, address: 'MAIN' }, [ALGO, ETH])
+
+        expect(pairsPaidBy([crossChain], PAYERS, canPayAnywhere)).toEqual([
+            { ...crossChain, accountId: 'main' },
+        ])
+    })
+
+    test('leaves out a cross-chain pair into a network no payer is on', () => {
+        const sepolia = { chainId: 'ethereum', networkId: 'sepolia' } as const
+        const intoSepolia = pair({ scope: ALGO, address: 'MAIN' }, [
+            ALGO,
+            sepolia as unknown as typeof ETH,
+        ])
+
+        expect(pairsPaidBy([intoSepolia], PAYERS, canPayAnywhere)).toEqual([])
+    })
+
+    test('leaves out a pair whose source leg is off the payer\'s network', () => {
+        const wrongSource = pair({ scope: ALGO, address: 'MAIN' }, [ETH, ALGO])
+
+        expect(pairsPaidBy([wrongSource], PAYERS, canPayAnywhere)).toEqual([])
+    })
+
+    test('keeps a same-chain Base pair paid by an EVM payer', () => {
+        const BASE = { chainId: 'base', networkId: 'mainnet' } as const
+        const payers = [
+            ...PAYERS,
+            { scope: BASE, address: '0xBase', accountId: 'evm', isOnDevice: true },
+        ]
+        const onBase = pair({
+            scope: BASE as unknown as typeof ETH,
+            address: '0xbase',
+        })
+
+        expect(pairsPaidBy([onBase], payers, canPayAnywhere)).toEqual([
+            { ...onBase, accountId: 'evm' },
+        ])
+    })
+
+    test('leaves out an unknown payer and a pair with no payer', () => {
         const stranger = pair({ scope: ALGO, address: 'STRANGER' })
         const unpaid = {
             ...pair({ scope: ALGO, address: 'MAIN' }),
             sourceAccount: null,
         }
 
-        expect(
-            pairsPaidBy([crossChain, stranger, unpaid], PAYERS, canPayAnywhere),
-        ).toEqual([])
+        expect(pairsPaidBy([stranger, unpaid], PAYERS, canPayAnywhere)).toEqual(
+            [],
+        )
     })
 
     test('leaves out a pair its payer can no longer pay on', () => {
