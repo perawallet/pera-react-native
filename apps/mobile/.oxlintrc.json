@@ -215,6 +215,10 @@
                 "name": "react-native",
                 "importNames": ["ActivityIndicator"],
                 "message": "Use PWLoadingIndicator from @components/core."
+              },
+              {
+                "name": "react-native-vision-camera-barcode-scanner",
+                "message": "Only QRScannerView/QRCameraScanner.tsx (Android) may import this. The package is not linked on iOS and creates its native object at import time, so an import that reaches iOS throws on device."
               }
             ],
             "patterns": [
@@ -263,6 +267,10 @@
                 "message": "Use PWLoadingIndicator from @components/core."
               },
               {
+                "name": "react-native-vision-camera-barcode-scanner",
+                "message": "Only QRScannerView/QRCameraScanner.tsx (Android) may import this. The package is not linked on iOS and creates its native object at import time, so an import that reaches iOS throws on device."
+              },
+              {
                 "name": "@tanstack/react-query",
                 "importNames": ["useQuery", "useQueries", "useInfiniteQuery", "useSuspenseQuery", "useSuspenseQueries", "useSuspenseInfiniteQuery", "useMutation"],
                 "message": "Put this query or mutation in its domain package as a named use…Query/use…Mutation hook with a declared result type, and call that hook here. useQueryClient stays allowed."
@@ -304,6 +312,47 @@
                 "name": "react-native",
                 "importNames": ["ActivityIndicator"],
                 "message": "Use PWLoadingIndicator from @components/core."
+              },
+              {
+                "name": "react-native-vision-camera-barcode-scanner",
+                "message": "Only QRScannerView/QRCameraScanner.tsx (Android) may import this. The package is not linked on iOS and creates its native object at import time, so an import that reaches iOS throws on device."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/components/QRScannerView/QRCameraScanner.tsx"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "zustand/middleware",
+                "importNames": ["persist", "createJSONStorage"],
+                "message": "Persist through guardedPersist from @perawallet/wallet-core-shared, which quarantines state it cannot restore instead of letting the next write erase it."
+              },
+              {
+                "name": "decimal.js",
+                "importNames": ["default"],
+                "message": "Import the named { Decimal } from decimal.js."
+              },
+              {
+                "name": "expo-haptics",
+                "message": "Call a semantic method on useHaptics() from @hooks/useHaptics; it applies the Haptic feedback setting and swallows unsupported-device failures."
+              },
+              {
+                "name": "react-native",
+                "importNames": ["ActivityIndicator"],
+                "message": "Use PWLoadingIndicator from @components/core."
+              }
+            ],
+            "patterns": [
+              {
+                "regex": "^@components/core/",
+                "message": "Import from the @components/core barrel, adding any name it lacks to that component's index.ts. Only files inside components/core use subpaths, since the barrel re-exports them."
               }
             ]
           }
