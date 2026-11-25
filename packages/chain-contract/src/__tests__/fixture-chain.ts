@@ -36,6 +36,8 @@ export const FIXTURE_CHAIN_ID = 'fixturehex' as ChainId
 
 const PREFIXES: Record<NetworkId, string> = { mainnet: 'fx', testnet: 'tfx' }
 const ADDRESS = /^(fx|tfx)[0-9a-f]{40}$/
+const ADDRESS_START = /^t?fx[0-9a-z]{8,}$/i
+const NEAR_FULL_BODY_LENGTH = 38
 const SCHEME = 'fixturehex:'
 const GAP_LIMIT = 5
 
@@ -52,6 +54,12 @@ export const fixtureCodec: AddressCodec = {
             match !== null &&
             (networkId === undefined || match[1] === PREFIXES[networkId])
         )
+    },
+    addressShape: input => {
+        if (!ADDRESS_START.test(input)) return 'none'
+        return input.replace(/^t?fx/i, '').length >= NEAR_FULL_BODY_LENGTH
+            ? 'complete'
+            : 'partial'
     },
     normalize: address => address.toLowerCase(),
     areEqual: (a, b) => a.toLowerCase() === b.toLowerCase(),

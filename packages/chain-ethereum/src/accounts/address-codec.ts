@@ -14,6 +14,7 @@ import { checksumAddress, getAddress, isAddress, keccak256 } from 'viem'
 import {
     isNativeAsset,
     type AddressCodec,
+    type AddressShape,
     type ParsedPaymentUri,
 } from '@perawallet/wallet-core-chain-contract'
 import type { EvmChain } from '../chains/types'
@@ -21,6 +22,17 @@ import { parseEvmPaymentUri, toEip681Uri } from '../deeplinks/adapter'
 
 const UNCOMPRESSED_KEY_LENGTH = 65
 const UNCOMPRESSED_KEY_PREFIX = 0x04
+
+// `0x` and four characters is a deliberate address attempt (a truncated paste
+// like `0x1234`); fewer is someone starting to type. A dot makes it an ENS name.
+const EVM_ADDRESS_START = /^0x[^\s.]{4,}$/i
+// `0x` and 38 of the 40 hex digits: a few short is a paste gone wrong, not a prefix being typed.
+const NEAR_FULL_LENGTH = 40
+
+const evmAddressShape = (input: string): AddressShape => {
+    if (!EVM_ADDRESS_START.test(input)) return 'none'
+    return input.length >= NEAR_FULL_LENGTH ? 'complete' : 'partial'
+}
 
 export const normalizeEvmAddress = (address: string): string =>
     getAddress(address)
@@ -79,6 +91,7 @@ export const createEvmAddressCodec = (chain: EvmChain): AddressCodec => ({
     chainId: chain.row.id,
     fromPublicKey: evmAddressFromPublicKey,
     isValid: address => isAddress(address),
+    addressShape: evmAddressShape,
     normalize: normalizeEvmAddress,
     areEqual: areEvmAddressesEqual,
     truncate: truncateEvmAddress,

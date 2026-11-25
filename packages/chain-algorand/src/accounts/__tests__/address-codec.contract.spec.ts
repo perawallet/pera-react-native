@@ -34,6 +34,15 @@ addressCodecContractTests(() => algorandAddressCodec, {
         VALID.slice(1),
         '0x52908400098527886E0F7030069857D2E4169EE7',
     ],
+    malformed: [
+        VALID.toLowerCase(),
+        `${VALID.slice(0, -1)}A`,
+        VALID.slice(1),
+        `${VALID}A`,
+        `${VALID.slice(0, -1)}0`,
+    ],
+    partial: [VALID.slice(0, 45)],
+    notAddressShaped: ['alice.algo', 'My main account', 'savings', '0x1234'],
     foreignUri: `ethereum:0x52908400098527886E0F7030069857D2E4169EE7`,
     paymentUriOpts: {
         assetRef: { chainId: ALGORAND_CHAIN_ID, assetId: '31566704' },

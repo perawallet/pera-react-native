@@ -25,6 +25,7 @@ const SCOPE = { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' } as const
 
 vi.mock('@perawallet/wallet-core-contacts', () => ({
     addressFamilyOf: vi.fn(),
+    addressShapeOf: vi.fn(() => 'none'),
     useContacts: vi.fn(),
 }))
 
@@ -53,6 +54,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     getChainDescriptor: () => ({ family: 'algorand' }),
+    useChainCapability: () => true,
 }))
 
 // The real registry loads every chain's UI; the copy is the hook spec's concern.

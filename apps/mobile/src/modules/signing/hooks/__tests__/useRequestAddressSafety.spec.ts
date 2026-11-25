@@ -88,6 +88,7 @@ const fakeCodec = (chainId: ChainId): AddressCodec => {
         isValid: () => true,
         normalize: address => address,
         areEqual,
+        addressShape: () => 'none' as const,
         truncate: shortForm,
         resembles: (a, b) =>
             !areEqual(a, b) &&

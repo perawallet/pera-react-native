@@ -350,6 +350,14 @@
         "my_accounts": "Comptes",
         "no_accounts_found": "Aucun compte trouvé",
         "no_accounts_body": "Aucun compte correspondant",
+        "invalid_address": {
+            "title": "Adresse invalide",
+            "body": "Ce n'est pas une adresse {{network}} valide. Vérifiez-la et réessayez."
+        },
+        "name_not_found": {
+            "title": "Nom introuvable",
+            "body": "{{name}} n'existe pas ou n'a pas d'adresse {{network}}."
+        },
         "search_placeholder": "Adresse du compte, nom NFD ou nom court",
         "search_placeholder_evm": "Adresse 0x, nom ENS ou nom du compte",
         "search_placeholder_neutral": "Adresse ou nom du compte",

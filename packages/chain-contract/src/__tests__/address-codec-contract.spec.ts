@@ -27,6 +27,9 @@ addressCodecContractTests(() => fixtureCodec, {
         `tfxcde${'0'.repeat(33)}edcd`,
     ],
     invalid: [`fx${'ab'.repeat(19)}`, `fx${'zz'.repeat(20)}`, 'not-an-address'],
+    malformed: [`fx${'ab'.repeat(19)}`, `fx${'zz'.repeat(20)}`],
+    partial: ['fxabcdef12'],
+    notAddressShaped: ['alice', 'alice.fx', 'not-an-address'],
     foreignUri: `otherchain:fx${'ab'.repeat(20)}`,
     paymentUriOpts: {
         amount: new Decimal('1.5'),

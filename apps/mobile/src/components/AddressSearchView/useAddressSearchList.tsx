@@ -14,6 +14,7 @@ import { useCallback, useMemo, type ReactElement } from 'react'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { PWView } from '@components/core'
 import { ChainBadge } from '@components/ChainBadge'
+import { ChainNotice } from '@components/ChainNotice'
 import { EmptyView } from '@components/EmptyView'
 import type { SearchableListSearchProps } from '@components/SearchableList'
 import { useLanguage } from '@hooks/useLanguage'
@@ -21,7 +22,10 @@ import type { Optional } from '@perawallet/wallet-core-shared'
 import { AddressSearchInput } from './AddressSearchInput'
 import { AddressSearchRow } from './AddressSearchRow'
 import { useStyles } from './styles'
-import type { AddressSearchItem } from './useAddressSearchView'
+import type {
+    AddressSearchItem,
+    AddressSearchNotice,
+} from './useAddressSearchView'
 
 export type UseAddressSearchListProps = {
     scope: ChainScope
@@ -31,7 +35,8 @@ export type UseAddressSearchListProps = {
     showAccountBalance: boolean
     hideBackupBadge?: boolean
     showAddIcon: boolean
-    wrongNetworkMessage: Optional<{ title: string; body: string }>
+    emptyStateMessage: Optional<{ title: string; body: string }>
+    searchNotice: Optional<AddressSearchNotice>
 }
 
 export type UseAddressSearchListResult = {
@@ -40,6 +45,7 @@ export type UseAddressSearchListResult = {
     renderSeparator: () => ReactElement
     keyExtractor: (item: AddressSearchItem) => string
     emptyComponent: () => ReactElement
+    searchAccessory: Optional<ReactElement>
 }
 
 export const useAddressSearchList = ({
@@ -50,7 +56,8 @@ export const useAddressSearchList = ({
     showAccountBalance,
     hideBackupBadge,
     showAddIcon,
-    wrongNetworkMessage,
+    emptyStateMessage,
+    searchNotice,
 }: UseAddressSearchListProps): UseAddressSearchListResult => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -106,10 +113,10 @@ export const useAddressSearchList = ({
 
     const emptyComponent = useCallback(
         () =>
-            wrongNetworkMessage ? (
+            emptyStateMessage ? (
                 <EmptyView
-                    title={wrongNetworkMessage.title}
-                    body={wrongNetworkMessage.body}
+                    title={emptyStateMessage.title}
+                    body={emptyStateMessage.body}
                     shouldTruncateBody={false}
                 />
             ) : (
@@ -118,7 +125,19 @@ export const useAddressSearchList = ({
                     body={t('address_entry.no_accounts_body')}
                 />
             ),
-        [t, wrongNetworkMessage],
+        [t, emptyStateMessage],
+    )
+
+    const searchAccessory = useMemo(
+        () =>
+            searchNotice ? (
+                <ChainNotice
+                    kind='warning'
+                    titleKey={searchNotice.titleKey}
+                    params={searchNotice.params}
+                />
+            ) : undefined,
+        [searchNotice],
     )
 
     return {
@@ -127,5 +146,6 @@ export const useAddressSearchList = ({
         renderSeparator,
         keyExtractor,
         emptyComponent,
+        searchAccessory,
     }
 }

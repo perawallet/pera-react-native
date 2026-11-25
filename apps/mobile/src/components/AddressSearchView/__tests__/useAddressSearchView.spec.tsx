@@ -25,6 +25,7 @@ import {
 } from '../useAddressSearchView'
 import {
     addressFamilyOf,
+    addressShapeOf,
     useContacts,
     type ContactAddresses,
 } from '@perawallet/wallet-core-contacts'
@@ -38,10 +39,12 @@ import {
     nameServiceOf,
     useNameSearchQuery,
 } from '@perawallet/wallet-core-names'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 vi.mock('@perawallet/wallet-core-contacts', () => ({
     addressFamilyOf: vi.fn(),
+    addressShapeOf: vi.fn(),
     useContacts: vi.fn(),
 }))
 
@@ -68,6 +71,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
         family: chainId === 'ethereum' ? 'evm' : 'algorand',
         displayName: chainId === 'ethereum' ? 'Ethereum' : 'Algorand',
     }),
+    useChainCapability: vi.fn(() => true),
 }))
 
 // Echo params so a test can see what reaches the copy.
@@ -195,6 +199,8 @@ describe('useAddressSearchView', () => {
         } as unknown as ReturnType<typeof useNameSearchQuery>)
         mockFindContacts.mockReturnValue([])
         vi.mocked(addressFamilyOf).mockReturnValue(undefined)
+        vi.mocked(addressShapeOf).mockReturnValue('none')
+        vi.mocked(useChainCapability).mockReturnValue(true)
     })
 
     it('initializes with empty value and no results', () => {
@@ -1118,7 +1124,7 @@ describe('useAddressSearchView', () => {
                 act(() => {
                     result.current.setValue(EVM_ADDRESS)
                 })
-                return result.current.wrongNetworkMessage
+                return result.current.emptyStateMessage
             }
 
             afterEach(() => {
@@ -1246,5 +1252,161 @@ describe('useAddressSearchView', () => {
         expect(itemsOfType(result.current.matchingItems, 'account')).toEqual([
             expect.objectContaining({ account: sender }),
         ])
+    })
+    describe('empty state message', () => {
+        const search = (value: string, scope: ChainScope = ETHEREUM_SCOPE) => {
+            const { result } = renderHook(() => useAddressSearchView({ scope }))
+            act(() => {
+                result.current.setValue(value)
+            })
+            return result.current
+        }
+
+        // Which inputs are address-shaped is each codec's contract; this
+        // only checks the hook turns the shape check into the message.
+        it('calls address-shaped input that is no valid address invalid on the scope network', () => {
+            vi.mocked(addressShapeOf).mockReturnValue('complete')
+
+            const view = search('0x1234')
+
+            expect(view.hasResults).toBe(false)
+            expect(view.emptyStateMessage).toEqual({
+                title: 'address_entry.invalid_address.title',
+                body: `address_entry.invalid_address.body ${JSON.stringify({ network: 'Ethereum' })}`,
+            })
+        })
+
+        it('still lists own accounts an address prefix matches, with no notice', () => {
+            vi.mocked(addressShapeOf).mockReturnValue('partial')
+            vi.mocked(useAllAccounts).mockReturnValue([
+                {
+                    chains: {
+                        ethereum: {
+                            address:
+                                '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed',
+                        },
+                    },
+                    name: 'Main',
+                },
+            ] as unknown as ReturnType<typeof useAllAccounts>)
+
+            const view = search('0x5aae')
+
+            expect(itemsOfType(view.matchingItems, 'account')).toHaveLength(1)
+            expect(view.searchNotice).toBeUndefined()
+        })
+
+        describe('search notice', () => {
+            const CONTACT_ADDRESS = '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed'
+
+            beforeEach(() => {
+                vi.mocked(addressShapeOf).mockReturnValue('complete')
+                mockFindContacts.mockReturnValue([
+                    {
+                        name: 'QA Test',
+                        addresses: { evm: CONTACT_ADDRESS },
+                    },
+                ])
+            })
+
+            it('flags a near-complete invalid address that still matches a contact', () => {
+                const view = search(CONTACT_ADDRESS.slice(0, -1))
+
+                expect(itemsOfType(view.matchingItems, 'contact')).toHaveLength(
+                    1,
+                )
+                expect(view.searchNotice).toEqual({
+                    titleKey: 'address_entry.invalid_address.body',
+                    params: { network: 'Ethereum' },
+                })
+            })
+
+            it('does not flag the matched address typed in other letter case', () => {
+                const view = search(
+                    `${CONTACT_ADDRESS.slice(0, -1)}${CONTACT_ADDRESS.slice(-1).toUpperCase()}`,
+                )
+
+                expect(view.searchNotice).toBeUndefined()
+            })
+
+            it('does not flag the start of an address being typed', () => {
+                vi.mocked(addressShapeOf).mockReturnValue('partial')
+
+                expect(search('0x5aAeb6').searchNotice).toBeUndefined()
+            })
+
+            it('leaves a near-complete address with no match to the empty state', () => {
+                mockFindContacts.mockReturnValue([])
+
+                const view = search(CONTACT_ADDRESS.slice(0, -1))
+
+                expect(view.searchNotice).toBeUndefined()
+                expect(view.emptyStateMessage?.title).toBe(
+                    'address_entry.invalid_address.title',
+                )
+            })
+        })
+
+        it('prefers the wrong-network message over the invalid one', () => {
+            vi.mocked(addressShapeOf).mockReturnValue('complete')
+            vi.mocked(addressFamilyOf).mockReturnValue({
+                family: 'algorand',
+                address: 'ALGO',
+            })
+
+            expect(search('ALGO').emptyStateMessage?.title).toBe(
+                'title.algorand',
+            )
+        })
+
+        it('says a name that resolved to nothing was not found', () => {
+            vi.mocked(useNameSearchQuery).mockReturnValue({
+                data: [],
+                isLoading: false,
+                isSuccess: true,
+            } as unknown as ReturnType<typeof useNameSearchQuery>)
+
+            const view = search('vitalik.eth')
+
+            expect(view.emptyStateMessage).toEqual({
+                title: 'address_entry.name_not_found.title',
+                body: `address_entry.name_not_found.body ${JSON.stringify({ name: 'vitalik.eth', network: 'Ethereum' })}`,
+            })
+        })
+
+        it('has no name message while the lookup is running', () => {
+            vi.mocked(useNameSearchQuery).mockReturnValue({
+                data: [],
+                isLoading: true,
+            } as unknown as ReturnType<typeof useNameSearchQuery>)
+
+            expect(search('vitalik.eth').emptyStateMessage).toBeUndefined()
+        })
+
+        // A failed lookup and one paused while offline both look like this.
+        it('has no name message when the lookup never completed', () => {
+            vi.mocked(useNameSearchQuery).mockReturnValue({
+                data: [],
+                isLoading: false,
+                isSuccess: false,
+            } as unknown as ReturnType<typeof useNameSearchQuery>)
+
+            expect(search('vitalik.eth').emptyStateMessage).toBeUndefined()
+        })
+
+        it('has no name message on a chain without a name service', () => {
+            vi.mocked(useChainCapability).mockReturnValue(false)
+            vi.mocked(useNameSearchQuery).mockReturnValue({
+                data: [],
+                isLoading: false,
+                isSuccess: true,
+            } as unknown as ReturnType<typeof useNameSearchQuery>)
+
+            expect(search('vitalik.eth').emptyStateMessage).toBeUndefined()
+        })
+
+        it('leaves a plain search miss to the generic empty state', () => {
+            expect(search('savings').emptyStateMessage).toBeUndefined()
+        })
     })
 })

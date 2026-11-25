@@ -66,6 +66,21 @@ for (const chain of EVM_TEST_CHAINS) {
             '0x' + 'g'.repeat(40),
             'EV37KES2XMAYPUQ5YT5T62RUC5LHNKERPH5QCAJFQF3735U7SE6BU5UQWM',
         ],
+        malformed: [
+            '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAeD',
+            '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAe',
+            '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAedd',
+            '0x' + 'g'.repeat(40),
+        ],
+        partial: ['0x1234', '0x5aAeb6053F'],
+        notAddressShaped: [
+            '0x',
+            '0x123',
+            'vitalik.eth',
+            '0xabc.base.eth',
+            'My main account',
+            'EV37KES2XMAYPUQ5YT5T62RUC5LHNKERPH5QCAJFQF3735U7SE6BU5UQWM',
+        ],
         foreignUri:
             'algorand://EV37KES2XMAYPUQ5YT5T62RUC5LHNKERPH5QCAJFQF3735U7SE6BU5UQWM',
         paymentUriOpts: {

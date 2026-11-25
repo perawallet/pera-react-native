@@ -350,6 +350,14 @@
         "my_accounts": "Hesaplar",
         "no_accounts_found": "Hesap bulunamadı",
         "no_accounts_body": "Eşleşen hesap yok",
+        "invalid_address": {
+            "title": "Geçersiz adres",
+            "body": "Bu geçerli bir {{network}} adresi değil. Kontrol edip tekrar dene."
+        },
+        "name_not_found": {
+            "title": "Ad bulunamadı",
+            "body": "{{name}} yok ya da {{network}} adresi yok."
+        },
         "search_placeholder": "Hesap adresi, NFD adı veya kısa ad",
         "search_placeholder_evm": "0x adresi, ENS adı veya hesap adı",
         "search_placeholder_neutral": "Adres veya hesap adı",

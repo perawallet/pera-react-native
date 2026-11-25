@@ -350,6 +350,14 @@
         "my_accounts": "Contas",
         "no_accounts_found": "Nenhuma conta encontrada",
         "no_accounts_body": "Não há contas correspondentes",
+        "invalid_address": {
+            "title": "Endereço inválido",
+            "body": "Este não é um endereço {{network}} válido. Verifique e tente novamente."
+        },
+        "name_not_found": {
+            "title": "Nome não encontrado",
+            "body": "{{name}} não existe ou não tem um endereço {{network}}."
+        },
         "search_placeholder": "Endereço da conta, nome NFD ou nome curto",
         "search_placeholder_evm": "Endereço 0x, nome ENS ou nome da conta",
         "search_placeholder_neutral": "Endereço ou nome da conta",

@@ -204,6 +204,7 @@ const createFakeAddressCodec = (): AddressCodec => ({
     isValid: vi.fn((address: string) => BASE32_ADDRESS.test(address)),
     normalize: (address: string) => address,
     areEqual: (a: string, b: string) => a === b,
+    addressShape: () => 'none' as const,
     truncate: (address: string) =>
         address.length > 8
             ? `${address.slice(0, 3)}~${address.slice(-3)}`
