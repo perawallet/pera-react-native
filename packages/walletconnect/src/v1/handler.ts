@@ -140,8 +140,6 @@ export const createWalletConnectV1Handler = (
         sessionKeys,
         answeredRequests,
         bindHandlers,
-        forgetSession,
-        shouldRevokeForAccountRemoval,
     })
 
     const disconnect = async (id: ConnectionId): Promise<void> => {
@@ -162,7 +160,7 @@ export const createWalletConnectV1Handler = (
     }
 
     // v1 sessions never expire and each holds a bridge socket, so an abandoned
-    // one is ended here. Revived first, because only a live connector can tell
+    // one, or one granted an account since removed, is ended here. Revived first, because only a live connector can tell
     // the dApp; that opens its socket, so a request the bridge queued can replay
     // and briefly prompt for a session about to end. The client's `killSession`
     // only encrypts and queues the frame today; the bound keeps a client that
@@ -171,22 +169,28 @@ export const createWalletConnectV1Handler = (
         await restoreWhen?.()
         const sessions = await restoreSessions()
         const now = Date.now()
-        const idle = sessions.filter(session => isIdleSession(session, now))
+        const ending = sessions.filter(
+            session =>
+                isIdleSession(session, now) ||
+                shouldRevokeForAccountRemoval?.(session),
+        )
         await withTimeout(
             Promise.allSettled(
-                idle.map(({ id }) => {
-                    logger.warn('[WC v1] ending an idle session', {
+                ending.map(({ id }) => {
+                    logger.warn('[WC v1] ending an idle or revoked session', {
                         connectionId: id,
                     })
                     return disconnect(id)
                 }),
             ),
             IDLE_END_TIMEOUT_MS,
-            'ending idle WalletConnect v1 sessions',
+            'ending idle or revoked WalletConnect v1 sessions',
         ).catch((error: unknown) => {
-            logger.warn('[WC v1] idle sessions are still ending', { error })
+            logger.warn('[WC v1] idle or revoked sessions are still ending', {
+                error,
+            })
         })
-        return sessions.filter(session => !idle.includes(session))
+        return sessions.filter(session => !ending.includes(session))
     }
 
     return {

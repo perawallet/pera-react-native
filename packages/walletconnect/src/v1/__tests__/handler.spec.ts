@@ -1175,6 +1175,10 @@ describe('walletconnect v1 handler behaviour', () => {
         const restored = await handler.restore()
 
         expect(restored.map(({ id }) => id)).toEqual(['c2'])
+        expect(
+            wc.FakeConnector.instances.find(({ clientId }) => clientId === 'c1')
+                ?.killSession,
+        ).toHaveBeenCalled()
         expect(getConnector('c1')).toBeUndefined()
         expect(keys.has('c1')).toBe(false)
         expect(getConnector('c2')).toBeDefined()
