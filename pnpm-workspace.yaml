@@ -294,10 +294,13 @@ patchedDependencies:
   # master key that later reads prefer; the StrongBox copy is never removed.
   # Needs the react-native-keychain patch's TEE storage. `destroyMasterKey`
   # deletes both copies for a wipe; deleting only `app-secret` would leave reads
-  # serving the old key from the TEE. Drop once upstream can keep a key out of
-  # StrongBox.
+  # serving the old key from the TEE. A generation counter makes any read or
+  # mint that straddles a wipe throw instead of handing back or re-saving the
+  # destroyed key. The wipe depends on `destroyMasterKey` and the counter, so a
+  # version bump must keep both even after upstream can keep a key out of
+  # StrongBox, which is when the TEE copy can go.
   "@algorandfoundation/react-native-keystore@1.0.0-canary.21": patches/@algorandfoundation__react-native-keystore@1.0.0-canary.21.patch
-  # Six unrelated reasons, none configurable through plugin options:
+  # Seven unrelated reasons, none configurable through plugin options:
   # - The Android credential provider keeps the legacy native app's service
   #   class name, so Credential Manager carries the user's enablement across
   #   the upgrade.
@@ -318,6 +321,10 @@ patchedDependencies:
   #   cipher the user unlocked. Upstream re-derives any key it cannot open.
   # - expo-modules-core 58 removed `AppContext.hostingRuntimeContext`, the
   #   module's fallback after `reactContext`; the Android build fails on it.
+  # - Android `clearCredentials` also deletes the provider's own copy of the
+  #   master key (its Keystore wrapping key and encrypted mirror) and rejects
+  #   when it could not, so a wipe reports a key it left behind. Upstream keeps
+  #   the copy and swallows errors.
   "@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.29": patches/@algorandfoundation__react-native-passkey-autofill@1.0.0-canary.29.patch
   # The CJS build's Emscripten glue reads a bare `__filename`, which a Metro web
   # bundle never defines, so evaluating it throws a ReferenceError. The value
