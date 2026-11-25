@@ -82,10 +82,34 @@ export interface Connection {
     status: 'active' | 'inactive'
     createdAt: number
     lastActiveAt: number
+    /**
+     * When each address was last granted, keyed by lowercased address, in epoch
+     * ms. Approval and an account switch stamp it; `createdAt` stands in for an
+     * address with no stamp.
+     */
+    accountsGrantedAt?: Record<string, number>
     /** Kind-specific data. Narrowed by consumers via the `kind` discriminant. */
     metadata?: Record<string, unknown>
     /** Recorded once at approval time; absent for a connection that predates it. */
     origin?: ConnectionOrigin
+}
+
+/** `previous` with each of `granted` stamped as granted at `at`. */
+export const withAccountsGranted = (
+    previous: Optional<Record<string, number>>,
+    granted: readonly string[],
+    at: number,
+): Record<string, number> => ({
+    ...previous,
+    ...Object.fromEntries(granted.map(address => [address.toLowerCase(), at])),
+})
+
+export const accountGrantedAt = (
+    connection: Pick<Connection, 'accountsGrantedAt' | 'createdAt'>,
+    address: string,
+): number => {
+    const grantedAt = connection.accountsGrantedAt?.[address.toLowerCase()]
+    return typeof grantedAt === 'number' ? grantedAt : connection.createdAt
 }
 
 /** Minimal synchronous KV surface the store persists through. */

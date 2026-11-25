@@ -203,6 +203,41 @@ describe('disconnectConnectionsOfRemovedAccounts', () => {
         expect(disconnect.mock.calls).toEqual([['old']])
     })
 
+    it('keeps an older session switched to the account after it came back', async () => {
+        revokeThrough({
+            aaaa: 10,
+            '0xabcd00000000000000000000000000000000000b': 10,
+        })
+        const store = {
+            list: async () => [
+                {
+                    ...connection('switched', ['AAAA']),
+                    accountsGrantedAt: { aaaa: 11 },
+                },
+                {
+                    ...connection('evm-switched', [
+                        '0xAbCd00000000000000000000000000000000000B',
+                    ]),
+                    accountsGrantedAt: {
+                        '0xabcd00000000000000000000000000000000000b': 11,
+                    },
+                },
+                {
+                    ...connection('switched-away', ['AAAA', 'BBBB']),
+                    createdAt: 20,
+                    accountsGrantedAt: { aaaa: 5, bbbb: 20 },
+                },
+            ],
+        }
+        const disconnect = vi.fn<ConnectionRegistryClient['disconnect']>(
+            async () => {},
+        )
+
+        await disconnectConnectionsOfRemovedAccounts({ disconnect }, store)
+
+        expect(disconnect.mock.calls).toEqual([['switched-away']])
+    })
+
     it('keeps going when one disconnect fails', async () => {
         revokeThrough({ aaaa: 10, cccc: 10 })
         const store = {

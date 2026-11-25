@@ -13,9 +13,10 @@
 import type WalletConnect from '@perawallet/walletconnect'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
-import type {
-    Connection,
-    ConnectionPeer,
+import {
+    withAccountsGranted,
+    type Connection,
+    type ConnectionPeer,
 } from '@perawallet/wallet-extension-connections'
 import type { ConnectionProposal } from '@perawallet/wallet-core-connections'
 import {
@@ -128,6 +129,11 @@ export const createV1ProposalHandlers = (deps: {
             secretRef,
             createdAt: existing?.createdAt ?? now,
             lastActiveAt: now,
+            accountsGrantedAt: withAccountsGranted(
+                undefined,
+                input.accounts,
+                now,
+            ),
             origin,
             metadata: {
                 bridge: connector.bridge,

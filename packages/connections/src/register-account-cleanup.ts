@@ -19,9 +19,10 @@ import {
     registerAccountCleanup,
     type AccountCleanupContext,
 } from '@perawallet/wallet-core-shared'
-import type {
-    Connection,
-    ConnectionStoreAPI,
+import {
+    accountGrantedAt,
+    type Connection,
+    type ConnectionStoreAPI,
 } from '@perawallet/wallet-extension-connections'
 import {
     getActiveConnectionRegistry,
@@ -29,14 +30,21 @@ import {
 } from './activeRegistry'
 import type { ConnectionRegistryClient } from './registry'
 
-export const isConnectionRevokedForAccountRemoval = ({
-    accounts,
-    createdAt,
-}: Pick<Connection, 'accounts' | 'createdAt'>): boolean => {
+// Judged per address by its own grant time: a session switched to a
+// re-imported account after its removal holds a fresh grant for it.
+export const isConnectionRevokedForAccountRemoval = (
+    connection: Pick<
+        Connection,
+        'accounts' | 'createdAt' | 'accountsGrantedAt'
+    >,
+): boolean => {
     const revokedThrough = useAccountsStore.getState().connectionRevokedThrough
-    return accounts.some(address => {
+    return connection.accounts.some(address => {
         const cutoff = revokedThrough?.[address.toLowerCase()]
-        return typeof cutoff === 'number' && createdAt <= cutoff
+        return (
+            typeof cutoff === 'number' &&
+            accountGrantedAt(connection, address) <= cutoff
+        )
     })
 }
 
@@ -67,7 +75,7 @@ export const disconnectConnectionsForAccount = async ({
                 connection =>
                     !isWalletConnect(connection) ||
                     cutoff === undefined ||
-                    connection.createdAt <= cutoff,
+                    accountGrantedAt(connection, removed) <= cutoff,
             )
             .map(({ id }) => registry.disconnect(id)),
     )

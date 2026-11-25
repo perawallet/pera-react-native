@@ -12,6 +12,10 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MemoryKeyValueStorage } from '@perawallet/wallet-extension-platform/test-utils'
+import {
+    accountGrantedAt,
+    type Connection,
+} from '@perawallet/wallet-extension-connections'
 import { memoryStore } from '@perawallet/wallet-core-connections/testing'
 import {
     ConnectionsError,
@@ -1519,6 +1523,55 @@ describe('changeAccount', () => {
         signable.clear()
         signable.add(NEW_ETH)
         signable.add(ETH)
+    })
+
+    it('keeps an older session switched to an account re-imported after its removal', async () => {
+        // NEW_ETH was removed at 10, after this session (createdAt 1) began.
+        const removedAt: Record<string, number> = {
+            [NEW_ETH.toLowerCase()]: 10,
+        }
+        const isRevoked = (
+            connection: Pick<
+                Connection,
+                'accounts' | 'createdAt' | 'accountsGrantedAt'
+            >,
+        ): boolean =>
+            connection.accounts.some(address => {
+                const cutoff = removedAt[address.toLowerCase()]
+                return (
+                    cutoff !== undefined &&
+                    accountGrantedAt(connection, address) <= cutoff
+                )
+            })
+        const walletKit = createFakeWalletKit({
+            [TOPIC]: liveSession(TOPIC, BOTH_ETHEREUM_NETWORKS),
+        })
+        const { handler, store, context } = await open(
+            [
+                recordFor(TOPIC, {
+                    accounts: [ADDRESS, ETH],
+                    chains: [MAINNET_CHAIN_ID, ETH_MAINNET, ETH_SEPOLIA],
+                }),
+            ],
+            walletKit,
+            {
+                canSignWith: (chainId, address) =>
+                    chainId === 'ethereum' && signable.has(address),
+                shouldRevokeForAccountRemoval: isRevoked,
+            },
+        )
+
+        await handler.changeAccount?.(TOPIC, 'ethereum', NEW_ETH)
+        walletKit.emit('session_request', makeRequest())
+        await flush()
+
+        const [stored] = await store.list()
+        expect(stored.createdAt).toBe(1)
+        expect(isRevoked(stored)).toBe(false)
+        expect(context.onMessage).toHaveBeenCalledWith(
+            expect.objectContaining({ connectionId: TOPIC }),
+        )
+        expect((await handler.restore()).map(({ id }) => id)).toEqual([TOPIC])
     })
 
     it('narrows the eip155 namespace to the new address on every chain it holds', async () => {

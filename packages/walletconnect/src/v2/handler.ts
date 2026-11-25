@@ -43,11 +43,12 @@ import {
     type DappRequestFailure,
     type WalletConnectV2ChainSupport,
 } from '@perawallet/wallet-core-connections/dappRequest'
-import type {
-    Connection,
-    ConnectionId,
-    ConnectionOrigin,
-    ConnectionPeer,
+import {
+    withAccountsGranted,
+    type Connection,
+    type ConnectionId,
+    type ConnectionOrigin,
+    type ConnectionPeer,
 } from '@perawallet/wallet-extension-connections'
 import {
     WalletConnectError,
@@ -238,7 +239,10 @@ export type CreateWalletConnectV2HandlerOptions = {
      */
     startWhen?: () => Promise<void>
     shouldRevokeForAccountRemoval?: (
-        connection: Pick<Connection, 'accounts' | 'createdAt'>,
+        connection: Pick<
+            Connection,
+            'accounts' | 'createdAt' | 'accountsGrantedAt'
+        >,
     ) => boolean
     /**
      * Whether a held account can sign for `address` on `chainId`; the handler
@@ -1322,9 +1326,15 @@ export const createWalletConnectV2Handler = (
                     'The approved session names no account this wallet can sign for',
                 )
             }
+            const approvedAt = Date.now()
             const approved: WalletConnectV2Connection = {
                 ...record,
-                lastActiveAt: Date.now(),
+                lastActiveAt: approvedAt,
+                accountsGrantedAt: withAccountsGranted(
+                    record.accountsGrantedAt,
+                    record.accounts,
+                    approvedAt,
+                ),
             }
             await store().upsert(approved)
             pendingOrigins.forget(pairingId)
@@ -1669,6 +1679,9 @@ export const createWalletConnectV2Handler = (
             // stored record so the settings list does not reorder every boot.
             createdAt: existing?.createdAt ?? now,
             lastActiveAt: existing?.lastActiveAt ?? now,
+            ...(existing?.accountsGrantedAt
+                ? { accountsGrantedAt: existing.accountsGrantedAt }
+                : {}),
             metadata: {
                 topic: session.topic,
                 // A namespace's `chains` is absent, or empty, when its key is
@@ -1722,6 +1735,7 @@ export const createWalletConnectV2Handler = (
             const removed = shouldRevokeForAccountRemoval?.({
                 accounts,
                 createdAt: stored.get(id)?.createdAt ?? 0,
+                accountsGrantedAt: stored.get(id)?.accountsGrantedAt,
             })
             if (!removed) return true
             revoked.add(id)
@@ -2172,6 +2186,11 @@ export const createWalletConnectV2Handler = (
                 ),
                 normalized,
             ],
+            accountsGrantedAt: withAccountsGranted(
+                current.accountsGrantedAt,
+                [normalized],
+                Date.now(),
+            ),
             metadata: {
                 ...current.metadata,
                 chains: current.metadata.chains.filter(

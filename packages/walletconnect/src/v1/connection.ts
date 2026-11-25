@@ -57,6 +57,7 @@ export type BuildWalletConnectV1ConnectionInput = {
     createdAt: number
     /** Epoch milliseconds. */
     lastActiveAt: number
+    accountsGrantedAt?: Record<string, number>
     origin?: ConnectionOrigin
     metadata: WalletConnectV1Metadata
 }
@@ -80,6 +81,9 @@ export const buildWalletConnectV1Connection = (
         status: 'active',
         createdAt: input.createdAt,
         lastActiveAt: input.lastActiveAt,
+        ...(input.accountsGrantedAt
+            ? { accountsGrantedAt: input.accountsGrantedAt }
+            : {}),
         ...(input.origin ? { origin: input.origin } : {}),
         metadata: {
             bridge: metadata.bridge,
