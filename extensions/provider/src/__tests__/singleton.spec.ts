@@ -17,6 +17,8 @@ const keystoreMocks = vi.hoisted(() => ({
     decode: vi.fn(),
     storageGetAllKeys: vi.fn(() => [] as string[]),
     storageGetString: vi.fn(),
+    storageClearAll: vi.fn(),
+    storageTrim: vi.fn(),
 }))
 
 const resealMocks = vi.hoisted(() => ({
@@ -43,6 +45,8 @@ vi.mock('@algorandfoundation/react-native-keystore', () => ({
     storage: {
         getAllKeys: keystoreMocks.storageGetAllKeys,
         getString: keystoreMocks.storageGetString,
+        clearAll: keystoreMocks.storageClearAll,
+        trim: keystoreMocks.storageTrim,
     },
 }))
 
@@ -103,6 +107,7 @@ describe('provider singleton', () => {
         keystoreMocks.decode.mockReset()
         keystoreMocks.storageGetAllKeys.mockReset()
         keystoreMocks.storageGetString.mockReset()
+        keystoreMocks.storageClearAll.mockReset()
         keystoreMocks.storageGetAllKeys.mockReturnValue([])
         resetKeystoreStateForTest()
     })
@@ -119,6 +124,22 @@ describe('provider singleton', () => {
         await clearKeystore()
 
         expect(keystoreMocks.clear).toHaveBeenCalled()
+        expect(keystoreMocks.storageClearAll).not.toHaveBeenCalled()
+    })
+
+    test('clearKeystore empties storage directly when the engine cannot clear', async () => {
+        keystoreMocks.clear.mockRejectedValue(new Error('hydration failed'))
+
+        await clearKeystore()
+
+        expect(keystoreMocks.storageClearAll).toHaveBeenCalled()
+    })
+
+    test('clearKeystore rejects while records survive the direct clear', async () => {
+        keystoreMocks.clear.mockRejectedValue(new Error('hydration failed'))
+        keystoreMocks.storageGetAllKeys.mockReturnValue(['m/seed-1'])
+
+        await expect(clearKeystore()).rejects.toThrow('hydration failed')
     })
 
     // Bootstrap awaits this rather than a hand-rolled hydrate: the engine loads
