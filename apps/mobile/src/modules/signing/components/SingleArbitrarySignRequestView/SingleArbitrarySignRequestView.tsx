@@ -59,6 +59,18 @@ export const SingleArbitrarySignRequestView = ({
                     {t('signing.arbitrary_data_view.body')}
                 </PWText>
 
+                {!!account && (
+                    <PWView style={styles.accountContainer}>
+                        <PWText style={styles.onBehalfOf}>
+                            {t('signing.arbitrary_data_view.on_behalf_of')}
+                        </PWText>
+                        <AccountDisplay
+                            account={account}
+                            showChevron={false}
+                        />
+                    </PWView>
+                )}
+
                 <PWView style={styles.section}>
                     <PWText
                         variant='captionMedium'
@@ -92,18 +104,6 @@ export const SingleArbitrarySignRequestView = ({
                         >
                             {request.message}
                         </PWText>
-                    </PWView>
-                )}
-
-                {!!account && (
-                    <PWView style={styles.accountContainer}>
-                        <PWText style={styles.onBehalfOf}>
-                            {t('signing.arbitrary_data_view.on_behalf_of')}
-                        </PWText>
-                        <AccountDisplay
-                            account={account}
-                            showChevron={false}
-                        />
                     </PWView>
                 )}
             </PWView>

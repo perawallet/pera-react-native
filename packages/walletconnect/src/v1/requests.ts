@@ -35,6 +35,7 @@ import {
 import {
     WalletConnectInvalidNetworkError,
     WalletConnectInvalidSessionError,
+    WalletConnectPermissionError,
     WalletConnectSignRequestError,
 } from '../shared/errors'
 import {
@@ -43,11 +44,14 @@ import {
     type GateRejectionCode,
     type GateResult,
 } from '../validation/inboundRequestGate'
+import { AlgorandPermission } from '../models'
 import type { WalletConnectV1AnsweredRequests } from './answeredRequests'
 import {
+    grantedMethodsOf,
     isWalletConnectV1Connection,
     type WalletConnectV1Connection,
 } from './connection'
+import { v1PeerError } from './deliver'
 import {
     asWcRequest,
     legacyItemChainIdsAcceptable,
@@ -209,7 +213,10 @@ export const createV1RequestHandlers = (deps: {
         void connectors
             .ensureReady(clientId, WC_DELIVERY_TIMEOUT_MS)
             .then(connector => {
-                connector.rejectRequest({ id: requestId, error })
+                connector.rejectRequest({
+                    id: requestId,
+                    error: v1PeerError(error, getScope().chainId),
+                })
                 markAnswered(clientId, requestId)
             })
             .catch((deliveryError: unknown) => {
@@ -248,7 +255,8 @@ export const createV1RequestHandlers = (deps: {
         }
 
         // The gate already required a registered adapter for this network.
-        const support = walletConnectSupportFor(getScope())
+        const scope = getScope()
+        const support = walletConnectSupportFor(scope)
         if (!support) {
             const unsupported = new WalletConnectInvalidNetworkError()
             rejectToPeer(connection.id, requestId, unsupported)
@@ -258,7 +266,7 @@ export const createV1RequestHandlers = (deps: {
 
         requireContext().onMessage({
             kind: 'request',
-            chainId: getScope().chainId,
+            chainId: scope.chainId,
             connectionId: connection.id,
             correlationId: String(requestId),
             sourceType: 'walletconnect',
@@ -278,7 +286,10 @@ export const createV1RequestHandlers = (deps: {
             // RETRY. A failed `reject` is the request's last answer.
             reject: error =>
                 deliver(connector =>
-                    connector.rejectRequest({ id: requestId, error }),
+                    connector.rejectRequest({
+                        id: requestId,
+                        error: v1PeerError(error, scope.chainId),
+                    }),
                 ).catch((deliveryError: unknown) => {
                     releaseClaim(connection.id, requestId)
                     throw deliveryError
@@ -329,12 +340,19 @@ export const createV1RequestHandlers = (deps: {
             reportError(notFound, connectionScope(clientId))
             return null
         }
+        if (grantedMethodsOf(connection).length === 0) {
+            const refusal = new WalletConnectPermissionError(
+                'This dApp must connect again before it can request signatures',
+            )
+            rejectToPeer(clientId, request.id, refusal)
+            reportError(refusal, connectionScope(clientId))
+            return null
+        }
 
         return { request, connection }
     }
 
-    // The gate's `reason` is developer English that reaches the peer; the code
-    // is what picks the class, and with it the copy the user is shown.
+    // The code picks the user-facing copy while the reason stays in wallet logs.
     const rejectionFor = (reason: string, code: GateRejectionCode): Error => {
         if (code === 'invalid-network')
             return new WalletConnectInvalidNetworkError(reason)
@@ -353,6 +371,23 @@ export const createV1RequestHandlers = (deps: {
         reportError(rejection, connectionScope(clientId))
     }
 
+    const isGranted = (
+        connection: WalletConnectV1Connection,
+        method: AlgorandPermission,
+    ): boolean => grantedMethodsOf(connection).includes(method)
+
+    const refuseUngranted = (
+        clientId: string,
+        requestId: number,
+        method: AlgorandPermission,
+    ): void => {
+        const refusal = new WalletConnectPermissionError(
+            `${method} was not granted to this session`,
+        )
+        rejectToPeer(clientId, requestId, refusal)
+        reportError(refusal, connectionScope(clientId))
+    }
+
     const handleSignTxn: V1ConnectorEventHandler = async (
         connector,
         error,
@@ -367,6 +402,14 @@ export const createV1RequestHandlers = (deps: {
         if (!opened) return
         const { request, connection } = opened
         if (!claimRequest(connection.id, request.id, 'algo_signTxn')) return
+        if (!isGranted(connection, AlgorandPermission.TX_PERMISSION)) {
+            refuseUngranted(
+                connection.id,
+                request.id,
+                AlgorandPermission.TX_PERMISSION,
+            )
+            return
+        }
 
         const verdict = gateSignTxnRequest({
             payload,
@@ -404,6 +447,14 @@ export const createV1RequestHandlers = (deps: {
         if (!opened) return
         const { request, connection } = opened
         if (!claimRequest(connection.id, request.id, 'algo_signData')) return
+        if (!isGranted(connection, AlgorandPermission.DATA_PERMISSION)) {
+            refuseUngranted(
+                connection.id,
+                request.id,
+                AlgorandPermission.DATA_PERMISSION,
+            )
+            return
+        }
         const scope = getScope()
 
         // `gateSignDataRequest` rejects the legacy array shape outright, so that

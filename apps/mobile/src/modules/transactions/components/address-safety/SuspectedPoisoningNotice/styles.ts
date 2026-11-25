@@ -29,7 +29,4 @@ export const useStyles = makeStyles(theme => ({
         flexShrink: 1,
         color: theme.colors.suspiciousBannerContent,
     },
-    body: {
-        color: theme.colors.suspiciousBannerContent,
-    },
 }))

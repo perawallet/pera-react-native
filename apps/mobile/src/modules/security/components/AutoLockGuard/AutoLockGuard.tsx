@@ -10,10 +10,11 @@
  limitations under the License
  */
 
-import React, { type PropsWithChildren } from 'react'
+import React, { type PropsWithChildren, type ReactNode } from 'react'
 import { useAutoLockListener } from './useAutoLockListener'
 import { useStyles } from './styles'
-import { PWView, PWLoadingOverlay } from '@components/core'
+import { PWButton, PWLoadingOverlay, PWView } from '@components/core'
+import { EmptyView } from '@components/EmptyView'
 import { PinEntry } from '../PinEntry'
 import { useLanguage } from '@hooks/useLanguage'
 import { LockOverlayProvider } from '@hooks/useIsLockOverlayVisible'
@@ -23,9 +24,21 @@ import { useLockScreen } from './useLockScreen'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
 
-export const AutoLockGuard = ({ children }: PropsWithChildren) => {
-    const { isLocked, isChecking, unlock, handleResetData } =
-        useAutoLockListener()
+type AutoLockGuardProps = PropsWithChildren<{ afterInitialization?: ReactNode }>
+
+export const AutoLockGuard = ({
+    children,
+    afterInitialization,
+}: AutoLockGuardProps) => {
+    const {
+        isLocked,
+        isInitialized,
+        isChecking,
+        isWipeRecoveryRequired,
+        unlock,
+        handleResetData,
+        retryWipeRecovery,
+    } = useAutoLockListener()
     const {
         hasError,
         isLockedOut,
@@ -40,11 +53,14 @@ export const AutoLockGuard = ({ children }: PropsWithChildren) => {
     const { t } = useLanguage()
 
     const showLoadingOverlay = isChecking
-    const showLockOverlay = isLocked && !isChecking
-    const isGuardActive = showLoadingOverlay || showLockOverlay
+    const showRecoveryOverlay = isWipeRecoveryRequired && !isChecking
+    const showLockOverlay = isLocked && !isChecking && !showRecoveryOverlay
+    const isGuardActive =
+        showLoadingOverlay || showLockOverlay || showRecoveryOverlay
 
     return (
         <>
+            {isInitialized && !isWipeRecoveryRequired && afterInitialization}
             <PWView
                 // Both props toggled below (opacity, pointerEvents) are in
                 // Fabric's formsStackingContext set, so without this the guard
@@ -71,6 +87,19 @@ export const AutoLockGuard = ({ children }: PropsWithChildren) => {
             {showLoadingOverlay && (
                 <PWView style={styles.loadingOverlay}>
                     <FullScreenLoadingView />
+                </PWView>
+            )}
+            {showRecoveryOverlay && (
+                <PWView style={[styles.lockOverlay, styles.recoveryContent]}>
+                    <EmptyView
+                        title={t('common.error.title')}
+                        body={t('common.error.body')}
+                    />
+                    <PWButton
+                        title={t('common.retry.label')}
+                        variant='primary'
+                        onPress={retryWipeRecovery}
+                    />
                 </PWView>
             )}
             {showLockOverlay && (

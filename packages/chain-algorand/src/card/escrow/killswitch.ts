@@ -19,7 +19,7 @@ import { FALLBACK_MIN_TXN_FEE } from '../../blockchain'
 import { type UnsignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import { cardAlgorandClient } from '../client'
 import { algorandCardConfig } from '../config'
-import { isAlgodNotFoundError } from './algod'
+import { isAlgodNotFoundError } from '../../blockchain/utils/algodErrors'
 import killswitchArc56 from './killswitch-arc56.json'
 import { algorandScope, type AlgorandNetworkId } from '../../network-id'
 

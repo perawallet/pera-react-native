@@ -81,7 +81,9 @@ export const createTransportSelector = (
         // external-callback rule below so multisig wins over source type.
         if (
             hasCustody(account, 'multisig') &&
-            (source.type === 'local' || isExternalCallbackSource(source.type))
+            (source.type === 'local' ||
+                source.type === 'local-fee-review' ||
+                isExternalCallbackSource(source.type))
         ) {
             if (!options.proposeSignRequest) {
                 throw new Error(

@@ -19,15 +19,18 @@ const GENERIC_REJECT_REASON = 'The user rejected the connection'
 /**
  * Errors whose `message` may be relayed verbatim to untrusted web content.
  * Deny-by-default: anything not named here or by the caller gets
- * {@link GENERIC_ERROR_MESSAGE}. `UserCancelledError` is a fixed literal with no
- * interpolation; each chain adapter names its own protocol errors on top.
+ * {@link GENERIC_ERROR_MESSAGE}. The user-rejection errors are fixed literals
+ * with no interpolation; each chain adapter names its own protocol errors on top.
  *
  * Matched by name rather than `instanceof` deliberately. Importing the classes
  * would pull chain packages into this module, which is bundled into content
  * scripts running on every https page. A rename fails CLOSED (generic copy, no
  * leak), and each chain adapter's spec pins its names to the real classes.
  */
-const WEBVIEW_SAFE_ERROR_NAMES: readonly string[] = ['UserCancelledError']
+const WEBVIEW_SAFE_ERROR_NAMES: readonly string[] = [
+    'UserCancelledError',
+    'DappRequestRejectedError',
+]
 
 /**
  * This is a JSON-RPC protocol surface exposed to untrusted web content, and is

@@ -17,7 +17,9 @@ import {
     CardUserUnavailableError,
     fetchFundingAddressLink,
 } from '../api/card-creation'
+import { CardOwnerMismatchError } from '../api/escrow'
 import { fetchUser } from '../api/user'
+import { cardAdapterFor } from '../chain-adapter'
 import { useCardStore } from '../store'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
@@ -71,14 +73,25 @@ export const useRestoreEscrowCardMutation = (
             const cardAddress = links[index]?.cardAddress ?? null
             if (cardAddress === null) return null
 
+            const ownerAddress = addresses[index]
+            // The backend's link is only a claim; a restored card exists on
+            // chain, so its owner there must be the address it was linked to.
+            const owner = await cardAdapterFor(scope).cardOwnerOf(
+                scope,
+                cardAddress,
+            )
+            if (owner !== ownerAddress) {
+                throw new CardOwnerMismatchError()
+            }
+
             useCardStore.getState().restoreEscrowCard({
                 cardAddress,
-                ownerAddress: addresses[index],
+                ownerAddress,
                 scope,
             })
             return cardAddress
         },
-        // The caller falls back to the setup checklist on failure.
+        // Only CardOwnerMismatchError means no card; other failures are retryable.
         throwOnError: false,
     })
 

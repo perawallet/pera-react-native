@@ -22,6 +22,7 @@ import {
     MAX_TRANSACTION_SIGN_REQUESTS,
     NoLocalParticipantsError,
     SourceError,
+    StaleSignRequestError,
     TransportError,
     UserCancelledError,
 } from '@perawallet/wallet-core-signing'
@@ -341,6 +342,15 @@ describe('algorandDappRequestAdapter', () => {
                 new Arc0001Error(Arc0001ErrorCode.InvalidInput, 'x').name,
             ).toBe('Arc0001Error')
             expect(adapter.relayableErrorNames).toContain('Arc0001Error')
+        })
+
+        it('names the stale-group decline, whose copy is written for the dApp', () => {
+            expect(new StaleSignRequestError().name).toBe(
+                'StaleSignRequestError',
+            )
+            expect(adapter.relayableErrorNames).toContain(
+                'StaleSignRequestError',
+            )
         })
 
         it('leaves out the cancel error, which the transport relays itself', () => {

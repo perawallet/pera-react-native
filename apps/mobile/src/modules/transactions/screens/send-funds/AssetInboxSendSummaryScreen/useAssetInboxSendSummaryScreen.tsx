@@ -10,7 +10,14 @@
  limitations under the License
  */
 
-import { type FC, useCallback, useEffect, useMemo, useState } from 'react'
+import {
+    type FC,
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react'
 import { Decimal } from 'decimal.js'
 import { useFocusEffect, useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
@@ -31,6 +38,7 @@ import {
     useSingleAssetDetailsQuery,
 } from '@perawallet/wallet-core-assets'
 import {
+    displayUnitsToBaseUnitsBigInt,
     generateOrderedUniqueId,
     isIntegrityRequiredError,
     type Nullable,
@@ -87,31 +95,42 @@ export const useAssetInboxSendSummaryScreen =
 
         const assetId = selectedAssetId ?? ''
         const receiverAddress = destination ?? ''
+        const senderAddress = selectedAccount
+            ? chainAccountOf(selectedAccount, scope.chainId)?.address
+            : undefined
         const recipientSafety = useRecipientSafety({
             recipient: destination,
-            senderAddress: selectedAccount
-                ? chainAccountOf(selectedAccount, scope.chainId)?.address
-                : undefined,
+            senderAddress,
             scope,
         })
 
+        const { data: asset, isLoading: assetLoading } =
+            useSingleAssetDetailsQuery(assetId, scope)
+        const amountBaseUnits =
+            amount && asset
+                ? displayUnitsToBaseUnitsBigInt(amount, asset.decimals)
+                : undefined
         const {
             data: summaryData,
             isLoading: summaryLoading,
             isError: isSummaryError,
             error: summaryError,
             isUnavailableOnNetwork,
-        } = useAssetInboxSendSummaryQuery(scope, receiverAddress, assetId)
+            refresh,
+        } = useAssetInboxSendSummaryQuery(
+            scope,
+            senderAddress ?? '',
+            receiverAddress,
+            assetId,
+            amountBaseUnits,
+        )
         const isIntegrityBlocked =
             isSummaryError && isIntegrityRequiredError(summaryError)
         // Query data is Maybe<T> (null while unavailable); this screen only
         // distinguishes "have a summary" from "don't", so collapse to undefined.
         const summary = summaryData ?? undefined
 
-        const { data: asset, isLoading: assetLoading } =
-            useSingleAssetDetailsQuery(assetId, scope)
-
-        // No fee: the inbox quote's funding amount already covers the group.
+        // No fee: the inbox quote's network fee is added to the funding below.
         const spendableInput = useMemo(
             () =>
                 selectedAccount
@@ -135,9 +154,11 @@ export const useAssetInboxSendSummaryScreen =
         useEffect(() => {
             if (!summary || !spendable) return
 
-            // Gate on the amount actually signed, not any other fee the
+            // Gate on what the group actually pays, not any other fee the
             // backend quotes.
-            const required = new Decimal(summary.fundingAmount.toString())
+            const required = new Decimal(
+                (summary.fundingAmount + summary.networkFee).toString(),
+            )
 
             if (spendable.max.lt(required)) {
                 navigation.replace('InsufficientBalance', {
@@ -149,46 +170,60 @@ export const useAssetInboxSendSummaryScreen =
             }
         }, [summary, spendable, navigation, nativeAsset])
 
-        useEffect(() => {
-            if (summary) {
-                setAssetInboxQuote(summary.quote)
-            }
-        }, [summary, setAssetInboxQuote])
-
         const fee = summary
-            ? toWholeUnits(summary.fundingAmount, nativeAsset)
+            ? toWholeUnits(
+                  summary.fundingAmount + summary.networkFee,
+                  nativeAsset,
+              )
             : null
 
         const [isProcessing, setIsProcessing] = useState(false)
 
-        // Returning to this screen (e.g. after the send fails on the processing
-        // screen) unlocks the slider so the user can try again.
+        // Returning after a failed send lets the user accept a refreshed quote.
+        const hasFocused = useRef(false)
         useFocusEffect(
             useCallback(() => {
                 setIsProcessing(false)
-            }, []),
+                if (hasFocused.current) refresh()
+                hasFocused.current = true
+            }, [refresh]),
         )
 
-        const showWarningSheet = useCallback(async () => {
+        const handleSend = useCallback(() => {
+            if (
+                recipientSafety.isConfirmBlocked ||
+                !summary ||
+                !spendable ||
+                spendable.max.lt(
+                    (summary.fundingAmount + summary.networkFee).toString(),
+                )
+            ) {
+                return
+            }
+
             // Hold the slider in its slid/loading state while the warning sheet
             // is open and through to the processing screen; only return it to
             // idle if the user backs out (dismisses the warning).
             setIsProcessing(true)
-            const result = await requestBottomSheet<'confirm'>({
+            void requestBottomSheet<'confirm'>({
                 contents: <AssetInboxWarningContent />,
                 options: { size: 'auto', enablePanDownToClose: true },
+            }).then(result => {
+                if (result === 'confirm') {
+                    setAssetInboxQuote(summary.quote)
+                    navigation.navigate('TransactionProcessing')
+                } else {
+                    setIsProcessing(false)
+                }
             })
-            if (result === 'confirm') {
-                navigation.navigate('TransactionProcessing')
-            } else {
-                setIsProcessing(false)
-            }
-        }, [requestBottomSheet, navigation])
-
-        const handleSend = useCallback(() => {
-            if (recipientSafety.isConfirmBlocked) return
-            void showWarningSheet()
-        }, [recipientSafety.isConfirmBlocked, showWarningSheet])
+        }, [
+            recipientSafety.isConfirmBlocked,
+            summary,
+            spendable,
+            requestBottomSheet,
+            setAssetInboxQuote,
+            navigation,
+        ])
 
         const handleReadMore = useCallback(() => {
             pushWebView({

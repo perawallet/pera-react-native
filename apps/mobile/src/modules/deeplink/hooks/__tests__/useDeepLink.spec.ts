@@ -402,7 +402,7 @@ vi.mock('@modules/bottom-sheet', () => ({
 
 const { mockShowSignRequest, mockIsPeraCardEnabled, mockIsGiftCardsEnabled } =
     vi.hoisted(() => ({
-        mockShowSignRequest: vi.fn(),
+        mockShowSignRequest: vi.fn(() => true),
         mockIsPeraCardEnabled: vi.fn(() => true),
         mockIsGiftCardsEnabled: vi.fn(() => true),
     }))
@@ -2428,6 +2428,29 @@ describe('useDeepLink', () => {
         })
 
         expect(mockShowSignRequest).toHaveBeenCalledWith('req-123')
+        expect(mockInfoToast).not.toHaveBeenCalled()
+    })
+
+    it('tells the user to finish their draft when a SIGN_REQUEST deeplink arrives over one', async () => {
+        mockShowSignRequest.mockReturnValueOnce(false)
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.SIGN_REQUEST,
+            signRequestId: 'req-123',
+        })
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app/sign-request/?signRequestId=req-123',
+                false,
+                'deeplink',
+            )
+        })
+
+        expect(mockInfoToast).toHaveBeenCalledWith(
+            'multisig.pending_signatures.request_open_title',
+            'multisig.pending_signatures.request_open_body',
+        )
     })
 
     it('should open Bidali bottom sheet for SELL deeplink', async () => {

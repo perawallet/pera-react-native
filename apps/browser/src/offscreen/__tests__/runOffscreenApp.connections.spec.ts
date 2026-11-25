@@ -60,7 +60,7 @@ const {
     lockState,
     createOffscreenLockState,
     chainCapabilities,
-    importLegacyDappPermissions,
+    clearLegacyDappPermissions,
     registerChainAdapters,
     initializeSyncService,
     startOffscreenKvAuth,
@@ -127,7 +127,7 @@ const {
         lockState,
         createOffscreenLockState: vi.fn(() => lockState),
         chainCapabilities: vi.fn((_chainId: string) => ({ dappConnect: true })),
-        importLegacyDappPermissions: vi.fn(async () => ({ imported: 0 })),
+        clearLegacyDappPermissions: vi.fn(async () => {}),
         registerChainAdapters: vi.fn(),
         initializeSyncService: vi.fn(),
         startOffscreenKvAuth: vi.fn(async (_lockState: unknown) => () => {}),
@@ -238,7 +238,7 @@ vi.mock('@perawallet/wallet-core-site-safety', () => siteSafety)
 vi.mock('@perawallet/wallet-core-dapp', () => ({
     createDappConnectionHandler,
     createEip1193ConnectionHandler,
-    importLegacyDappPermissions,
+    clearLegacyDappPermissions,
 }))
 vi.mock('@perawallet/wallet-core-chain-algorand', () => ({
     ALGORAND_CHAIN_ID: 'algorand',
@@ -550,16 +550,12 @@ describe('runOffscreenApp connections wiring', () => {
             store: connectionStore,
             sessionKeys,
         })
-        expect(importLegacyDappPermissions).toHaveBeenCalledWith({
-            area: chromeStorageLocal,
-            store: connectionStore,
-        })
+        expect(clearLegacyDappPermissions).toHaveBeenCalledWith(
+            chromeStorageLocal,
+        )
     })
 
-    // bootConnections only catches at the `importLegacy` boundary, so a
-    // WalletConnect record that keeps throwing would otherwise strand the
-    // dapp grants unmigrated on this boot and every later one.
-    it('still imports legacy dapp grants when the walletconnect import throws', async () => {
+    it('still clears legacy dApp permissions when the WalletConnect import throws', async () => {
         importLegacyConnections.mockRejectedValueOnce(new Error('bad record'))
         await boot()
 
@@ -567,7 +563,7 @@ describe('runOffscreenApp connections wiring', () => {
             importLegacy: () => Promise<unknown>
         }
         await expect(options.importLegacy()).resolves.toBeUndefined()
-        expect(importLegacyDappPermissions).toHaveBeenCalledTimes(1)
+        expect(clearLegacyDappPermissions).toHaveBeenCalledTimes(1)
     })
 
     it('subscribes the control handler only once the registry is live', async () => {

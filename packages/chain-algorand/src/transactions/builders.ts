@@ -16,15 +16,17 @@ import {
     createWalletAlgorandClient,
     decodeTransaction,
     encodeTransaction,
+    groupTransactions,
 } from '../blockchain'
 
-import type {
-    AssetOptInTxsParams,
-    AssetOptOutTxsParams,
-    ExpressTransferTxsParams,
-    KeyRegistrationTxParams,
-    DelegationTxParams,
-    TransferTxsParams,
+import {
+    FeeAboveShownError,
+    type AssetOptInTxsParams,
+    type AssetOptOutTxsParams,
+    type ExpressTransferTxsParams,
+    type KeyRegistrationTxParams,
+    type DelegationTxParams,
+    type TransferTxsParams,
 } from '@perawallet/wallet-core-transactions'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { isAlgorandNativeAssetId } from '../descriptor'
@@ -36,18 +38,39 @@ import type { PeraTransaction } from '../blockchain/models/algosdk-shapes'
 const clientFor = (scope: ChainScope) =>
     createWalletAlgorandClient(algorandNetworkOf(scope))
 
-type Composer = ReturnType<ReturnType<typeof clientFor>['newGroup']>
+type Client = ReturnType<typeof clientFor>
+type Composer = ReturnType<Client['newGroup']>
 
-const buildGroup = async (composer: Composer): Promise<PeraTransaction[]> => {
+/**
+ * AlgoKit auto-sizes fees from the node's per-byte price. Callers that
+ * accept a higher fee must arrange review of the assembled transaction group.
+ * Other callers retain a per-transaction minimum-fee cap.
+ */
+const buildGroup = async (
+    client: Client,
+    composer: Composer,
+    explicitFees: Array<Optional<bigint>>,
+    allowFeeReview: Optional<boolean>,
+): Promise<PeraTransaction[]> => {
     const { transactions } = await composer.build()
-    return transactions.map(t => t.txn)
+    const txns = transactions.map(t => t.txn)
+    if (allowFeeReview) return txns
+
+    const minFee = BigInt((await client.getSuggestedParams()).minFee)
+    for (const [index, txn] of txns.entries()) {
+        const fee = txn.fee ?? 0n
+        const explicitFee = explicitFees[index] ?? 0n
+        const limit = explicitFee > minFee ? explicitFee : minFee
+        if (fee > limit) throw new FeeAboveShownError(fee, limit)
+    }
+    return txns
 }
 
 // staticFee only overrides AlgoKit's auto-sizing when the caller passes one.
 const feeOverride = (fee: Optional<bigint>) =>
     fee === undefined ? {} : { staticFee: microAlgo(fee) }
 
-export const buildTransferTxs = ({
+export const buildTransferTxs = async ({
     scope,
     sender,
     receiver,
@@ -56,8 +79,10 @@ export const buildTransferTxs = ({
     note,
     isCloseAccount,
     fee,
+    allowFeeReview,
 }: TransferTxsParams): Promise<PeraTransaction[]> => {
-    const composer = clientFor(scope).newGroup()
+    const client = clientFor(scope)
+    const composer = client.newGroup()
     if (isAlgorandNativeAssetId(assetId)) {
         composer.addPayment({
             sender,
@@ -65,7 +90,7 @@ export const buildTransferTxs = ({
             amount: microAlgo(isCloseAccount ? 0n : amount),
             ...(isCloseAccount && { closeRemainderTo: receiver }),
             note,
-            ...feeOverride(fee),
+            ...feeOverride(allowFeeReview ? undefined : fee),
         })
     } else {
         composer.addAssetTransfer({
@@ -74,10 +99,19 @@ export const buildTransferTxs = ({
             amount,
             assetId: BigInt(assetId),
             note,
-            ...feeOverride(fee),
+            ...feeOverride(allowFeeReview ? undefined : fee),
         })
     }
-    return buildGroup(composer)
+    const txns = await buildGroup(client, composer, [fee], allowFeeReview)
+    if (allowFeeReview && fee !== undefined && fee > txns[0].fee) {
+        const txn = txns[0]
+        txn.fee = fee
+        if (txn.group) {
+            txn.group = undefined
+            groupTransactions(txns)
+        }
+    }
+    return txns
 }
 
 export const buildExpressTransferTxs = ({
@@ -90,7 +124,8 @@ export const buildExpressTransferTxs = ({
     senderFee,
     receiverFee,
 }: ExpressTransferTxsParams): Promise<PeraTransaction[]> => {
-    const composer = clientFor(scope).newGroup()
+    const client = clientFor(scope)
+    const composer = client.newGroup()
 
     if (funding > 0n) {
         composer.addPayment({
@@ -115,21 +150,32 @@ export const buildExpressTransferTxs = ({
             ...feeOverride(senderFee),
         })
 
-    return buildGroup(composer)
+    // Express always reviews the assembled group, so its fee is never capped.
+    return buildGroup(client, composer, [], true)
 }
 
 export const buildOptInTxs = ({
     scope,
     sender,
     assetId,
-}: AssetOptInTxsParams): Promise<PeraTransaction[]> =>
-    buildGroup(clientFor(scope).newGroup().addAssetOptIn({ sender, assetId }))
+    allowFeeReview,
+}: AssetOptInTxsParams): Promise<PeraTransaction[]> => {
+    const client = clientFor(scope)
+    return buildGroup(
+        client,
+        client.newGroup().addAssetOptIn({ sender, assetId }),
+        [],
+        allowFeeReview,
+    )
+}
 
 export const buildOptOutTxs = ({
     scope,
     optOuts,
+    allowFeeReview,
 }: AssetOptOutTxsParams): Promise<PeraTransaction[]> => {
-    const composer = clientFor(scope).newGroup()
+    const client = clientFor(scope)
+    const composer = client.newGroup()
     for (const { sender, assetId, creator } of optOuts) {
         composer.addAssetTransfer({
             sender,
@@ -139,7 +185,7 @@ export const buildOptOutTxs = ({
             closeAssetTo: creator,
         })
     }
-    return buildGroup(composer)
+    return buildGroup(client, composer, [], allowFeeReview)
 }
 
 export const buildRekeyTx = async ({

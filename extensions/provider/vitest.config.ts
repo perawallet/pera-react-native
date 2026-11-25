@@ -10,12 +10,23 @@
  limitations under the License
  */
 
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 import { coverageConfig } from '@perawallet/wallet-core-devtools/vitest/coverage'
 import {
     poolConfig,
     vmGlobalsSetup,
 } from '@perawallet/wallet-core-devtools/vitest/pool'
+
+// The keystore package is inlined so specs can load its real migrations and
+// crypto off device; its native Keychain and MMKV imports resolve to a stub
+// (MMKV's mock in vitest.setup.ts then applies to both copies).
+const nativeStub = fileURLToPath(
+    new URL(
+        './src/keystore/migrations/__fixtures__/nativeStub.ts',
+        import.meta.url,
+    ),
+)
 
 export default defineConfig({
     test: {
@@ -24,8 +35,15 @@ export default defineConfig({
         globals: true,
         environment: 'node',
         setupFiles: [vmGlobalsSetup, './vitest.setup.ts'],
+        server: {
+            deps: { inline: [/react-native-keystore/] },
+        },
     },
     resolve: {
         conditions: ['default'],
+        alias: {
+            'react-native-keychain': nativeStub,
+            'react-native-mmkv': nativeStub,
+        },
     },
 })

@@ -303,6 +303,9 @@ const run = async (
         return true
     }
 
+    const isApprovalExpired = () =>
+        Date.now() - batch.createdAt > REVIEW_APPROVAL_TTL_MS
+
     // Runs under the batch's sign lock. Saving the row as it stands first lands only
     // while no other context has moved it, so a context that waited out an
     // unlock or the lock cannot sign a call another one already signed.
@@ -344,6 +347,13 @@ const run = async (
                 position,
                 error,
             })
+            await save(reached, position, 'failed')
+            return undefined
+        }
+        // Signing waits behind any request ahead of it in the queue, for as long
+        // as that one stays open, and the pipeline auto-approves a native send
+        // without reading the approval's age.
+        if (isApprovalExpired()) {
             await save(reached, position, 'failed')
             return undefined
         }
@@ -438,11 +448,16 @@ const run = async (
             // Checked here, not left to the signing pipeline: it reads the
             // approval only for calls the chain won't auto-approve, so a
             // transfer would otherwise sign on an approval of any age.
-            if (Date.now() - batch.createdAt > REVIEW_APPROVAL_TTL_MS) {
+            if (isApprovalExpired()) {
                 await save(reached, position, 'failed')
                 break
             }
             await whenUnlocked()
+            // The lock can be up for any length of time.
+            if (isApprovalExpired()) {
+                await save(reached, position, 'failed')
+                break
+            }
             // Not held across the unlock above: the offscreen document never
             // unlocks, and would pin the lock for every context.
             const next = await withLockIfFree(
@@ -460,10 +475,7 @@ const run = async (
             unsent = undefined
             // Nothing reached the node, so failing it is safe; without the cap a
             // ledger that never recovers keeps the dApp's request pending forever.
-            if (
-                sent === 'deferred' &&
-                Date.now() - batch.createdAt <= REVIEW_APPROVAL_TTL_MS
-            ) {
+            if (sent === 'deferred' && !isApprovalExpired()) {
                 break
             }
             if (sent !== 'sent') {

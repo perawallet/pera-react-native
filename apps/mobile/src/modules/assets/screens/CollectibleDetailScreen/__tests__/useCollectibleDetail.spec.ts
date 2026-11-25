@@ -338,7 +338,7 @@ describe('useCollectibleDetail', () => {
         mockUseAccountAssetBalanceQuery.mockReturnValue({
             data: { amount: new Decimal(0), nativeValue: new Decimal(0) },
         })
-        mockRequestBottomSheet.mockResolvedValueOnce('confirm')
+        mockRequestBottomSheet.mockResolvedValueOnce(1000n)
         mockOptOut.mockResolvedValueOnce({ txIds: ['TX1'] })
 
         const { result } = renderHook(() =>
@@ -351,6 +351,7 @@ describe('useCollectibleDetail', () => {
             sender: 'ACCOUNT_ADDRESS',
             assetId: BigInt('12345'),
             creator: 'CREATOR_ADDRESS',
+            maxFee: 1000n,
         })
         expect(mockShowToast).toHaveBeenCalledWith(
             expect.objectContaining({ type: 'success' }),
@@ -362,7 +363,7 @@ describe('useCollectibleDetail', () => {
         mockUseAccountAssetBalanceQuery.mockReturnValue({
             data: { amount: new Decimal(0), nativeValue: new Decimal(0) },
         })
-        mockRequestBottomSheet.mockResolvedValueOnce('confirm')
+        mockRequestBottomSheet.mockResolvedValueOnce(1000n)
         const optOutError = new Error('signing rejected')
         mockOptOut.mockRejectedValueOnce(optOutError)
 
@@ -383,7 +384,7 @@ describe('useCollectibleDetail', () => {
         mockUseAccountAssetBalanceQuery.mockReturnValue({
             data: { amount: new Decimal(0), nativeValue: new Decimal(0) },
         })
-        mockRequestBottomSheet.mockResolvedValueOnce('confirm')
+        mockRequestBottomSheet.mockResolvedValueOnce(1000n)
         mockOptOut.mockRejectedValueOnce(new UserRejectedSigningError())
 
         const { result } = renderHook(() =>

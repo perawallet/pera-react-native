@@ -10,11 +10,15 @@
  limitations under the License
  */
 
-// A missing box is algod's HTTP 404 ("box not found"). Both the wallet's
-// TimeoutHttpClient and algosdk's own client implement BaseHTTPClientError
-// (`.response.status`); tolerate a bare `.status` too for robustness.
-export const isAlgodNotFoundError = (error: unknown): boolean => {
-    if (typeof error !== 'object' || error == null) return false
-    const err = error as { status?: number; response?: { status?: number } }
-    return err.response?.status === 404 || err.status === 404
-}
+import {
+    isAddressInBackup,
+    useBackupSyncStateStore,
+} from '@perawallet/wallet-core-backup'
+
+/** Whether the backup holds any of the account's items, restorable or not.
+ *  Read directly rather than through `useBackupAccountReview`, which re-renders
+ *  on every account and sync-state change. */
+export const useIsAccountInBackup = (address: string): boolean =>
+    useBackupSyncStateStore(state =>
+        isAddressInBackup(state.syncState, address),
+    )

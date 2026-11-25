@@ -18,6 +18,9 @@ import { usePlannerHook } from './usePlannerHook'
 const NO_MIN_FEE: MinFeeForSenderResult = {
     minFee: undefined,
     isPending: false,
+    error: null,
+    isRetrying: false,
+    refresh: () => {},
 }
 
 /**

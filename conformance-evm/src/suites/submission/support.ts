@@ -196,9 +196,11 @@ export const signedRevertingCall = async (
 }
 
 /** Records and broadcasts as the app's transport does, into the session's ledger. */
+/** `replacesTxId` names the send a speed-up or cancel re-prices, as the wallet's replacement flow does. */
 export const submitAndRecord = async (
     env: EvmConformanceEnv,
     raw: Hex,
+    replacesTxId?: Hex,
 ): Promise<Hex> => {
     const [hash] = await submitAndRecordEthereumTransactions({
         client: appClient(env),
@@ -213,6 +215,7 @@ export const submitAndRecord = async (
                 env.scope,
             ),
         ],
+        replacesTxId,
         db: env.db,
     })
     return hash as Hex

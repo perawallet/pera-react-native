@@ -143,7 +143,7 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
         vi.mocked(Notifier.showNotification).mockClear()
 
         server.use(
-            mockAlgodTransactionParams({ response: { fee: 1000 } }),
+            mockAlgodTransactionParams({ response: { fee: 0 } }),
             mockAlgodAccountInformation({
                 address: ALGO25_TEST_ADDRESS,
                 response: {

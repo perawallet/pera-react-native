@@ -66,7 +66,7 @@ import {
     useRevealPrivateKeyFlow,
     useViewPassphraseFlow,
 } from '@modules/view-passphrase'
-import { useIsAccountBackedUp } from '@modules/cloud-backup'
+import { useIsAccountInBackup } from '@modules/cloud-backup'
 import { useIsCloudBackupAvailable } from '@hooks/useIsCloudBackupAvailable'
 import { ExportShareAccountContent } from '@modules/multisig'
 import {
@@ -149,7 +149,7 @@ export const useAccountOptions = ({
     const canToggleNotifications = notificationsAddress !== undefined
     const sheetTitle = getAccountDisplayName(account, accountChainId)
     const address = addressOn(account, scope) ?? ''
-    const isBackedUp = useIsAccountBackedUp(address)
+    const isInBackup = useIsAccountInBackup(address)
     const isCoveredByCloudBackup = useIsAccountCoveredByCloudBackup(account)
     const requiresMnemonicBackup = useRequiresMnemonicBackup(account)
     const launchBackupFlow = useBackupFlowLauncher()
@@ -409,7 +409,7 @@ export const useAccountOptions = ({
             onClose()
             return
         }
-        if (isCloudBackupAvailable && isBackedUp) {
+        if (isCloudBackupAvailable && isInBackup) {
             setRemoveConfirmView('cloud-backup-delete')
             return
         }
@@ -417,7 +417,7 @@ export const useAccountOptions = ({
     }, [
         blockedByRekeyedDependents,
         isCloudBackupAvailable,
-        isBackedUp,
+        isInBackup,
         onClose,
         finishRemove,
     ])

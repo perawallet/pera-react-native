@@ -34,6 +34,7 @@ import { WalletConnectError } from '../shared/errors'
 import { createV1ConnectorBinding } from './binding'
 import {
     bridgeUrlFromV1Uri,
+    grantedMethodsOf,
     isSecureBridgeUrl,
     isV1PairingUri,
     isWalletConnectV1Connection,
@@ -108,7 +109,11 @@ export const createWalletConnectV1Handler = (
     const connectors = createConnectorRegistry({
         bindHandlers: connector => bindHandlers(connector),
     })
-    const delivery = createWalletConnectV1Delivery(connectors, answeredRequests)
+    const delivery = createWalletConnectV1Delivery(
+        connectors,
+        answeredRequests,
+        chainId,
+    )
 
     const requests = createV1RequestHandlers({
         kit,
@@ -169,26 +174,35 @@ export const createWalletConnectV1Handler = (
         await restoreWhen?.()
         const sessions = await restoreSessions()
         const now = Date.now()
+        // An ungranted session has no re-consent path in v1, so it is ended
+        // and the dApp offers its connect button again.
         const ending = sessions.filter(
             session =>
                 isIdleSession(session, now) ||
+                grantedMethodsOf(session).length === 0 ||
                 shouldRevokeForAccountRemoval?.(session),
         )
         await withTimeout(
             Promise.allSettled(
                 ending.map(({ id }) => {
-                    logger.warn('[WC v1] ending an idle or revoked session', {
-                        connectionId: id,
-                    })
+                    logger.warn(
+                        '[WC v1] ending an idle, ungranted or revoked session',
+                        {
+                            connectionId: id,
+                        },
+                    )
                     return disconnect(id)
                 }),
             ),
             IDLE_END_TIMEOUT_MS,
-            'ending idle or revoked WalletConnect v1 sessions',
+            'ending idle, ungranted or revoked WalletConnect v1 sessions',
         ).catch((error: unknown) => {
-            logger.warn('[WC v1] idle or revoked sessions are still ending', {
-                error,
-            })
+            logger.warn(
+                '[WC v1] idle, ungranted or revoked sessions are still ending',
+                {
+                    error,
+                },
+            )
         })
         return sessions.filter(session => !ending.includes(session))
     }
@@ -274,7 +288,7 @@ export const createWalletConnectV1Handler = (
 
         methodsFor: connection =>
             isWalletConnectV1Connection(connection)
-                ? (connection.metadata.permissions ?? [])
+                ? [...grantedMethodsOf(connection)]
                 : [],
     }
 }

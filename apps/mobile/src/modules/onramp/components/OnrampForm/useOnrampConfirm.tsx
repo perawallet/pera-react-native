@@ -160,7 +160,7 @@ export const useOnrampConfirm = ({
                 scope,
                 assetId: destinationAsset.assetId,
                 confirm: async ({ assetId, isSponsored }) => {
-                    const result = await requestBottomSheet<'confirm'>({
+                    const result = await requestBottomSheet<bigint>({
                         contents: (
                             <OptInConfirmationContent
                                 assetId={assetId}
@@ -171,7 +171,7 @@ export const useOnrampConfirm = ({
                         ),
                         options: { size: 'auto', enablePanDownToClose: true },
                     })
-                    return result === 'confirm'
+                    return result ?? false
                 },
             })
             if (!canReceive) {

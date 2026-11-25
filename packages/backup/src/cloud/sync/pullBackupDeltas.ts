@@ -11,11 +11,11 @@
  */
 
 import { logger } from '@perawallet/wallet-core-shared'
-import { fetchManifest, readItems } from '../api'
+import { readItems } from '../api'
 import { decryptItemPayload } from '../crypto/itemPayload'
 import { isLegacyItemKey, type SyncState } from '../models'
 import { applyDeltas } from './applyDeltas'
-import { fetchDeltaOrRebuild } from './rebuildFromManifest'
+import { fetchDeltaOrRebuild, fetchManifestOrNull } from './rebuildFromManifest'
 import { reconcileLocalSettings } from './reconcileSettings'
 import { BackupSyncAbortedError } from './types'
 import type { SyncEngineDeps } from './types'
@@ -41,10 +41,12 @@ export const pullBackupDeltas = async (
     state: SyncState,
     now: number = Date.now(),
 ): Promise<SyncState> => {
-    const { deltas, rebuiltThroughSeq } = await fetchDeltaOrRebuild(
+    // Fetched up front: it is the only bound on the seqs the deltas carry.
+    const manifest = await fetchManifestOrNull(deps)
+    const { deltas, state: fetchedState } = await fetchDeltaOrRebuild(
         deps,
         state,
-        () => fetchManifest(deps.backupId, deps.deviceId),
+        manifest,
     )
 
     /* The socket has to refuse what `syncBackup` refuses, or an `itemsUpdated`
@@ -62,7 +64,7 @@ export const pullBackupDeltas = async (
 
     if (deps.isAborted()) throw new BackupSyncAbortedError()
     const applied = await applyDeltas({
-        state,
+        state: fetchedState,
         deltas,
         deps: {
             backupId: deps.backupId,
@@ -84,7 +86,6 @@ export const pullBackupDeltas = async (
     // so without this it reads as never-synced with a full account list.
     return {
         ...next,
-        lastSyncedSeq: Math.max(next.lastSyncedSeq, rebuiltThroughSeq),
         lastSyncedAt: now,
         lastSyncResult: 'SUCCESS',
     }

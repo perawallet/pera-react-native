@@ -100,6 +100,26 @@ describe('useSignAndSubmitGroup', () => {
         })
     })
 
+    it('requires interactive approval of the exact repriced group', async () => {
+        mockSubmitAndAutoRefresh.mockResolvedValueOnce(['tx1'])
+        const { result } = renderHook(() => useSignAndSubmitGroup())
+        const pending = result.current.submit({
+            scope: SCOPE,
+            unsignedTxs: [fakeTxn],
+            source: { name: 'opt-in', description: 'test' },
+            reviewFee: true,
+        })
+        const [[request]] = mockAddSignRequest.mock.calls
+        expect(request).toMatchObject({
+            sourceType: 'local-fee-review',
+            transport: 'callback',
+            txs: [fakeTxn],
+        })
+        expect(mockSubmitAndAutoRefresh).not.toHaveBeenCalled()
+        await request.approve([signedTxn(1)])
+        await expect(pending).resolves.toEqual({ txIds: ['tx1'] })
+    })
+
     it('submits only the signed slots when the pipeline pads with null', async () => {
         mockSubmitAndAutoRefresh.mockResolvedValue(['tx1'])
         let captured: Optional<UnsignedTransactionSignRequest>

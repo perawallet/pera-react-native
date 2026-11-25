@@ -11,21 +11,54 @@
  */
 
 import type { Extension } from '@algorandfoundation/wallet-provider'
-import type { MigrationsApi } from '@algorandfoundation/provider-migrations'
+import type {
+    Migration,
+    MigrationLedger,
+    MigrationsApi,
+} from '@algorandfoundation/provider-migrations'
 import {
     readMasterKey,
     storage as defaultStorage,
     type KeychainStorage,
 } from '@algorandfoundation/react-native-keystore'
 import {
+    AppError,
+    ErrorCategory,
+    ErrorSeverity,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
+import {
     PREFLIGHT_MODULE_ID,
     preflightMigrations,
 } from './migrations/preflight'
 import { createDeclinedRegister } from './migrations/declined'
 import { peraMigrationNoteStore } from './migrationsLedger'
+import { REPAIRS_MODULE_ID } from './migrations/repairs'
+import { UPSTREAM_KEYSTORE_MODULE_ID } from './keystoreMigrationModules'
 
 type PreflightOptions = {
     keystore?: { storage?: KeychainStorage }
+    migrations?: { ledger: MigrationLedger }
+}
+
+const ADOPT_FLAT_RECORDS = 'adopt-flat-records'
+
+/**
+ * A keystore migration was held back because one it depends on did not finish
+ * this launch: adoption waits for preflight, repairs wait for adoption. All
+ * retry together on the next launch.
+ */
+export class KeystorePreflightIncompleteError extends AppError {
+    constructor(module: string) {
+        super(
+            `keystore migration ${module} held back: an earlier keystore migration did not finish`,
+            {
+                category: ErrorCategory.KMS,
+                severity: ErrorSeverity.HIGH,
+                retryable: true,
+            },
+        )
+    }
 }
 
 /**
@@ -45,11 +78,14 @@ export const WithPeraKeystorePreflight: Extension<object> = (
     provider: { migrations?: MigrationsApi },
     options: PreflightOptions = {},
 ) => {
+    const migrations = provider.migrations
+    if (!migrations) return {}
+
     // Same resolution as `WithKeyStore`, so the two can never end up pointed at
     // different MMKV instances.
     const storage = options.keystore?.storage ?? defaultStorage
 
-    provider.migrations?.register({
+    migrations.register({
         module: PREFLIGHT_MODULE_ID,
         // Resolved lazily, only when a revision is pending. `react-native-quick
         // -crypto` is imported here rather than at module scope so composing the
@@ -71,6 +107,74 @@ export const WithPeraKeystorePreflight: Extension<object> = (
         },
         migrations: preflightMigrations,
     })
+
+    const ledger = options.migrations?.ledger
+    if (!ledger) return {}
+
+    // The runner starts upstream even when preflight failed this launch, and a
+    // second master-key read that succeeds would let adoption copy a nested
+    // root key into plaintext `k/`. Only that upstream revision is held, and only while
+    // preflight is behind — which means it already failed this launch, so the
+    // hold never blocks a boot that would otherwise succeed.
+    const requiredRevision = preflightMigrations.at(-1)!.id
+    const holdUntilPreflight = <Ctx>(
+        migration: Migration<Ctx>,
+    ): Migration<Ctx> => ({
+        ...migration,
+        up: async (context, utils) => {
+            const state = await ledger.read()
+            if ((state[PREFLIGHT_MODULE_ID]?.id ?? 0) < requiredRevision) {
+                throw new KeystorePreflightIncompleteError(
+                    utils.revision.module,
+                )
+            }
+            return migration.up(context, utils)
+        },
+    })
+
+    // Repairs rewrite the records adoption produces. Run against a store
+    // adoption has not reached, they would ledger as done and never see them.
+    // Failing the context ledgers none of them, and leaves later modules alone.
+    let adoptRevision: Optional<number>
+    const holdUntilAdopted = <Ctx>(
+        context: () => Ctx | Promise<Ctx>,
+    ): (() => Promise<Ctx>) => {
+        return async () => {
+            const state = await ledger.read()
+            if (
+                adoptRevision !== undefined &&
+                (state[UPSTREAM_KEYSTORE_MODULE_ID]?.id ?? 0) < adoptRevision
+            ) {
+                throw new KeystorePreflightIncompleteError(REPAIRS_MODULE_ID)
+            }
+            return context()
+        }
+    }
+
+    const register = migrations.register
+    migrations.register = entry => {
+        if (entry.module === UPSTREAM_KEYSTORE_MODULE_ID) {
+            adoptRevision = entry.migrations.find(
+                migration => migration.name === ADOPT_FLAT_RECORDS,
+            )?.id
+            register.call(migrations, {
+                ...entry,
+                migrations: entry.migrations.map(migration =>
+                    migration.name === ADOPT_FLAT_RECORDS
+                        ? holdUntilPreflight(migration)
+                        : migration,
+                ),
+            })
+        } else if (entry.module === REPAIRS_MODULE_ID) {
+            migrations.register = register
+            register.call(migrations, {
+                ...entry,
+                context: holdUntilAdopted(entry.context),
+            })
+        } else {
+            register.call(migrations, entry)
+        }
+    }
 
     return {}
 }

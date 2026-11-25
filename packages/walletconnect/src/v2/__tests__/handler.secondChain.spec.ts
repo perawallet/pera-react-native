@@ -773,37 +773,72 @@ describe('a request’s answer', () => {
         chainId: ETH_MAINNET,
     }
 
+    const GENERIC = 'An error occurred during signing'
+
     it.each([
-        ['a user rejection', new DappRequestRejectedError(), 4001],
+        [
+            'a user rejection',
+            new DappRequestRejectedError(),
+            4001,
+            'User rejected',
+        ],
         [
             'an unauthorized account',
             new ConnectionsError('unauthorized-account', 'not held'),
             4100,
+            GENERIC,
         ],
         [
             'an invalid payload',
             new ConnectionsError('invalid-payload', 'bad params'),
             -32_602,
+            GENERIC,
         ],
-        ['a plain failure', new Error('node down'), JSON_RPC_SERVER_ERROR],
+        [
+            'a plain failure',
+            new Error('node down'),
+            JSON_RPC_SERVER_ERROR,
+            GENERIC,
+        ],
         [
             'a refusal in the chain’s own code',
             new DappRequestCodedError(5720, 'Duplicate id'),
             5720,
+            'Duplicate id',
         ],
-    ])('sends eip155 %s as its code', async (_, error, code) => {
-        const { walletKit, message } = await delivered(ETH_SEND)
+        [
+            'an internal error with a numeric wire code',
+            Object.assign(new Error('RPC unavailable'), { wireCode: 5720 }),
+            5720,
+            GENERIC,
+        ],
+    ])('sends eip155 %s as its code', async (_, error, code, message) => {
+        const { walletKit, message: request } = await delivered(ETH_SEND)
 
-        await message.reject(error)
+        await request.reject(error)
 
         expect(walletKit.respondSessionRequest).toHaveBeenCalledWith({
             topic: TOPIC,
             response: {
                 id: REQUEST_ID,
                 jsonrpc: '2.0',
-                error: { code, message: error.message },
+                error: { code, message },
             },
         })
+    })
+
+    it('never relays a node error’s URL to the dApp', async () => {
+        const { walletKit, message } = await delivered(ETH_SEND)
+        const nodeUrl = 'https://eth.example/v2/secret-provider-key'
+
+        await message.reject(
+            new Error(
+                `[evm:rpc] HTTP request failed.\n\nURL: ${nodeUrl}\nRequest body: {}`,
+            ),
+        )
+
+        const [[{ response }]] = walletKit.respondSessionRequest.mock.calls
+        expect(JSON.stringify(response)).not.toContain(nodeUrl)
     })
 
     it('sends the result the chain’s toWireResult makes', async () => {

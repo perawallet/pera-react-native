@@ -22,7 +22,7 @@ vi.mock('../../api', async importOriginal => ({
     readItems: (...a: unknown[]) => readItems(...a),
 }))
 
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, PeraNetworkError } from '@perawallet/wallet-core-shared'
 import { FromSeqTooOldError } from '../../api'
 import { createItemKeyHasher } from '../../crypto/itemKeyHash'
 import {
@@ -67,6 +67,11 @@ describe('pullBackupDeltas', () => {
         fetchDelta.mockReset()
         fetchManifest.mockReset()
         readItems.mockReset()
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'g',
+            lastSeq: 9,
+            items: {},
+        })
     })
 
     it('fetches deltas from the cursor, applies them, and advances lastSyncedSeq', async () => {
@@ -114,6 +119,29 @@ describe('pullBackupDeltas', () => {
         expect(stoppable.importAccounts).not.toHaveBeenCalled()
     })
 
+    it('applies deltas on a backup that has no manifest yet', async () => {
+        fetchManifest.mockRejectedValue(
+            new PeraNetworkError('client', { status: 404 }),
+        )
+        fetchDelta.mockResolvedValue([
+            {
+                seq: 1,
+                key: ACCOUNT_KEY,
+                type: BackupItemType.ACCOUNT,
+                ver: 1,
+                status: BackupItemStatus.ACTIVE,
+                op: DeltaOperation.UPSERT,
+                hash: 'h',
+            },
+        ])
+        readItems.mockResolvedValue([])
+
+        const next = await pullBackupDeltas(deps(), createEmptySyncState('b'))
+
+        expect(next.lastSyncedSeq).toBe(1)
+        expect(next.lastSyncResult).toBe('SUCCESS')
+    })
+
     it('is a no-op (no error) when there are no deltas', async () => {
         fetchDelta.mockResolvedValue([])
         const next = await pullBackupDeltas(deps(), createEmptySyncState('b'))
@@ -148,6 +176,52 @@ describe('pullBackupDeltas', () => {
 
         expect(next.lastSyncedSeq).toBe(100)
         expect(next.lastSyncResult).toBe('SUCCESS')
+        expect(next.items[ACCOUNT_KEY].knownVer).toBe(1)
+    })
+
+    it('never moves the cursor past the manifest, whatever seq a delta carries', async () => {
+        fetchDelta.mockResolvedValue([
+            {
+                seq: Number.MAX_SAFE_INTEGER,
+                key: ACCOUNT_KEY,
+                type: BackupItemType.ACCOUNT,
+                ver: 1,
+                status: BackupItemStatus.ACTIVE,
+                op: DeltaOperation.UPSERT,
+                hash: 'h',
+            },
+        ])
+        readItems.mockResolvedValue([])
+
+        const next = await pullBackupDeltas(deps(), createEmptySyncState('b'))
+
+        expect(next.lastSyncedSeq).toBe(9)
+    })
+
+    it('rebuilds from the manifest when the cursor is already past it', async () => {
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'g',
+            lastSeq: 100,
+            items: {
+                [ACCOUNT_KEY]: {
+                    type: BackupItemType.ACCOUNT,
+                    ver: 1,
+                    status: BackupItemStatus.ACTIVE,
+                    hash: 'h',
+                    lastSeq: 97,
+                },
+            },
+        })
+        readItems.mockResolvedValue([])
+
+        const next = await pullBackupDeltas(deps(), {
+            ...createEmptySyncState('b'),
+            lastSyncedSeq: Number.MAX_SAFE_INTEGER,
+        })
+
+        expect(fetchDelta).not.toHaveBeenCalled()
+        expect(readItems).toHaveBeenCalledWith('b', 'dev', [ACCOUNT_KEY])
+        expect(next.lastSyncedSeq).toBe(100)
         expect(next.items[ACCOUNT_KEY].knownVer).toBe(1)
     })
 

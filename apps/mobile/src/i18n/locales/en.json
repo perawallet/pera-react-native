@@ -269,7 +269,10 @@
         "empty_title": "No open approvals",
         "empty_body": "No open token or collection approvals were found for this account.",
         "error_title": "Couldn't load approvals",
-        "error_body": "Check your connection and try again.",
+        "error_body": "Something went wrong while loading them. Try again in a moment.",
+        "offline_body": "Check your connection and try again.",
+        "unavailable_title": "Approvals aren't available on this network yet",
+        "unavailable_body": "Pera can't look up this account's token approvals on this network yet.",
         "revoke_error_title": "Revoke not confirmed",
         "revoke_error_body": "Check the list for the approval's current status before trying again."
     },
@@ -1538,6 +1541,10 @@
             "asset_frozen": {
                 "title": "Asset frozen",
                 "body": "Asset {{assetId}} is frozen, so this transfer can't be completed. The asset's freeze manager must unfreeze it first."
+            },
+            "fee_above_shown": {
+                "title": "Network fee changed",
+                "body": "The network now asks for a higher fee than the one you saw, so nothing was signed. Try again to see the current fee."
             }
         },
         "kms": {
@@ -2419,6 +2426,8 @@
             "load_error": "Couldn't load this transaction. It may have expired or been removed.",
             "cosign_rejected_title": "Can't sign this transaction",
             "cosign_rejected_body": "This request includes a transaction the shared account doesn't authorize. If the sender is an account rekeyed to the shared account, add it to your wallet and try again.",
+            "request_open_title": "Close the open request first",
+            "request_open_body": "Finish or close the signing request, then open the link again.",
             "retry": "Try Again",
             "canceled": "Transaction canceled.",
             "declined": "Transaction declined.",
@@ -2813,6 +2822,14 @@
                 "fetch_failed_title": "Could not load backup",
                 "decrypt_failed_title": "Backup could not be unlocked"
             },
+            "review": {
+                "title": "Review accounts",
+                "body_one": "This code imports {{count}} account. Check it is yours before importing.",
+                "body_other": "This code imports {{count}} accounts. Check they are yours before importing.",
+                "body": "This code imports {{count}} accounts. Check they are yours before importing.",
+                "confirm": "Import accounts",
+                "interrupted": "The import was interrupted. Scan the QR code again to continue."
+            },
             "result": {
                 "success_title": "Accounts imported",
                 "success_body_one": "{{count}} account was added to your wallet.",
@@ -3190,6 +3207,7 @@
             "verify_title": "Enter your PIN",
             "unlock_title": "Enter your PIN",
             "change_old_title": "Enter your old\n6-digit PIN",
+            "matches_duress_pin": "Your new PIN must be different from your duress PIN.",
             "logging_in": "Logging in"
         },
         "lockout": {
@@ -4163,12 +4181,14 @@
         "suspected_poisoning": {
             "marker": "Suspected address poisoning",
             "title": "Suspected address poisoning",
-            "body": "This transfer moved nothing of value and comes from an address made to look like one you know. Scammers send these so their address shows up in your history and gets copied later. Don't copy it or send to it.",
+            "body": "This transfer moved nothing of value and comes from an address made to look like one you know. Scammers send these so their address shows up in your history and gets copied later.",
+            "do_not_reuse": "Don't copy this address or send to it.",
             "sender_label": "This address",
             "reuse_title": "This address imitates one you know",
             "reuse_body": "It starts and ends like an address you know, but it isn't the same. Compare the full addresses before you use it.",
             "reuse_confirm": "Continue anyway",
-            "reuse_cancel": "Cancel"
+            "reuse_cancel": "Cancel",
+            "dismiss": "Got it"
         },
         "suspicious_token": {
             "marker": "Suspicious token"

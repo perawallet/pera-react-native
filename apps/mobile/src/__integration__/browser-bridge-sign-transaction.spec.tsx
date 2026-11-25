@@ -66,20 +66,22 @@ import {
     waitFor,
 } from '@test-utils/signing-review'
 
+import type { BridgeHandler } from '@modules/webview/hooks/bridge/types'
+
 const PAGE_URL = 'https://discover-mobile.perawallet.app/'
 // The in-memory keystore signs with 64 zero bytes, which the canonical
 // encoding drops; a visible signature survives delivery.
 const VISIBLE_SIGNATURE = new Uint8Array(64).fill(7)
 
-type BridgeHandle = { current: (message: unknown) => void }
+type BridgeHandle = { current: BridgeHandler }
 
 const renderBrowserBridge = (webview: MockWebview) => {
     const handle: BridgeHandle = { current: () => {} }
     const Host = () => {
         const { setPreference } = usePreferences()
-        const handler = useTransactionSigningHandler(webview, PAGE_URL)
+        const handler = useTransactionSigningHandler(webview)
         const prepared = useRef(false)
-        handle.current = handler as BridgeHandle['current']
+        handle.current = handler
         useEffect(() => {
             if (prepared.current) return
             prepared.current = true
@@ -153,6 +155,7 @@ describe('Flow: in-app browser sign bridge → review → signed answer', () => 
                 txns: [{ txn: requested }],
                 metadata: { name: 'Test page' },
             }),
+            { securedConnection: true, sourceUrl: PAGE_URL },
         )
 
         await waitFor(

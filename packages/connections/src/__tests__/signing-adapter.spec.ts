@@ -64,6 +64,7 @@ const mockRemoveSignRequest = vi.fn()
 const mockIsSignRequestPending = vi.fn((_id: string) => true)
 const mockIsSignRequestPastApproval = vi.fn((_id: string) => false)
 const mockPlan = vi.fn()
+const mockParseAuthData = vi.fn()
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: () => ({
@@ -88,7 +89,12 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
         (kind === 'authData'
             ? account.canArc60 === true
             : account.canSignData === true),
-    messageSignerChainAdapters: { get: () => ({ plan: mockPlan }) },
+    messageSignerChainAdapters: {
+        get: () => ({
+            plan: mockPlan,
+            authData: { parseAuthDataForDisplay: mockParseAuthData },
+        }),
+    },
     // Mirrors the real predicate: the class name, or the marker the
     // WalletConnect rewrap keeps in the message.
     isFeeAdjustmentDeliveryError: (error: Error) =>
@@ -262,6 +268,8 @@ describe('useConnectionSigningAdapter', () => {
         mockIsSignRequestPastApproval.mockReturnValue(false)
         mockEnqueue.mockClear()
         mockEnqueue.mockResolvedValue(null)
+        mockParseAuthData.mockReset()
+        mockParseAuthData.mockReturnValue({ type: 'error', message: '' })
         dappRequestChainAdapters.reset()
         dappRequestChainAdapters.register(fixtureAdapter())
     })
@@ -1448,6 +1456,70 @@ describe('useConnectionSigningAdapter', () => {
 
             mockSelectedNetwork.current = 'testnet'
             send(request())
+            expect(mockAddSignRequest).toHaveBeenCalledWith(
+                expect.objectContaining({ type: 'auth-data' }),
+            )
+        })
+
+        it('refuses a sign-in naming an account the session was not granted', () => {
+            mockAccounts = [
+                mockAccount(REKEYED_SIGNER, { authority: PRIMARY_SIGNER }),
+                mockAccount(PRIMARY_SIGNER, { canArc60: true }),
+            ]
+            mockParseAuthData.mockReturnValue({
+                type: 'siwx',
+                siwx: { address: REKEYED_SIGNER },
+            })
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+
+            const message = signDataMessage(
+                {
+                    type: 'auth-data',
+                    authData: {
+                        data: 'ZGF0YQ==',
+                        signer: PRIMARY_SIGNER,
+                        domain: 'example.com',
+                        authenticatorData: new Uint8Array([1, 2, 3]),
+                    },
+                    metadata: { scope: 1, encoding: 'base64' },
+                },
+                [PRIMARY_SIGNER],
+            )
+            send(message)
+
+            expect(message.reject).toHaveBeenCalled()
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+        })
+
+        it('accepts a sign-in naming the granted account its auth address signs for', () => {
+            mockAccounts = [
+                mockAccount(REKEYED_SIGNER, { authority: PRIMARY_SIGNER }),
+                mockAccount(PRIMARY_SIGNER, { canArc60: true }),
+            ]
+            mockParseAuthData.mockReturnValue({
+                type: 'siwx',
+                siwx: { address: REKEYED_SIGNER },
+            })
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+
+            send(
+                signDataMessage(
+                    {
+                        type: 'auth-data',
+                        authData: {
+                            data: 'ZGF0YQ==',
+                            signer: PRIMARY_SIGNER,
+                            domain: 'example.com',
+                            authenticatorData: new Uint8Array([1, 2, 3]),
+                        },
+                        metadata: { scope: 1, encoding: 'base64' },
+                    },
+                    [REKEYED_SIGNER],
+                ),
+            )
+
             expect(mockAddSignRequest).toHaveBeenCalledWith(
                 expect.objectContaining({ type: 'auth-data' }),
             )

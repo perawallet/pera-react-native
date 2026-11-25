@@ -476,4 +476,80 @@ describe('algorandReviewerAdapter review parts', () => {
             true,
         )
     })
+
+    it.each([
+        ['within', 500_000n, true],
+        ['over', 500_001n, false],
+    ])(
+        'auto-approves a local group whose fee is %s the group budget only then',
+        async (_kind, fee, isAutoApproved) => {
+            const charged = transaction({
+                type: TransactionType.pay,
+                sender: WALLET,
+                paymentParams: { receiver: OTHER, amount: 1n },
+                suggestedParams: {
+                    ...TEST_SUGGESTED_PARAMS,
+                    fee,
+                    flatFee: true,
+                },
+            })
+
+            const analysis = await review(transactionsGroup([charged]))
+
+            expect(
+                algorandReviewerAdapter.policy.autoApproveLocal(analysis),
+            ).toBe(isAutoApproved)
+        },
+    )
+
+    // An inbox claim pools its fee onto one app call: its own outer legs plus
+    // each inner transaction, all priced from the node's min fee.
+    it.each([
+        ['claim', 4n, 1000n, true],
+        ['reject', 3n, 1000n, true],
+        ['claim', 4n, 1_000_000_000n, false],
+        ['reject', 3n, 1_000_000_000n, false],
+    ])(
+        'auto-approves an inbox %s pooling %i min fees of %i only when within budget',
+        async (_kind, pooledFees, minFee, isAutoApproved) => {
+            const pooledCall = transaction({
+                type: TransactionType.appl,
+                sender: WALLET,
+                appCallParams: {
+                    appIndex: 99n,
+                    onComplete: OnApplicationComplete.NoOpOC,
+                },
+                suggestedParams: {
+                    ...TEST_SUGGESTED_PARAMS,
+                    fee: pooledFees * minFee,
+                    flatFee: true,
+                },
+            })
+
+            const analysis = await review(transactionsGroup([pooledCall]))
+
+            expect(
+                algorandReviewerAdapter.policy.autoApproveLocal(analysis),
+            ).toBe(isAutoApproved)
+        },
+    )
+
+    it("doesn't count a fee another sender pays against the group budget", async () => {
+        const foreign = transaction({
+            type: TransactionType.pay,
+            sender: OTHER,
+            paymentParams: { receiver: WALLET, amount: 1n },
+            suggestedParams: {
+                ...TEST_SUGGESTED_PARAMS,
+                fee: 5_000_000n,
+                flatFee: true,
+            },
+        })
+
+        const analysis = await review(transactionsGroup([payment, foreign]))
+
+        expect(algorandReviewerAdapter.policy.autoApproveLocal(analysis)).toBe(
+            true,
+        )
+    })
 })

@@ -1209,7 +1209,10 @@ describe('session requests', () => {
             response: {
                 id: REQUEST_ID,
                 jsonrpc: '2.0',
-                error: { code: -32_000, message: 'user declined' },
+                error: {
+                    code: -32_000,
+                    message: 'An error occurred during signing',
+                },
             },
         })
     })
@@ -2314,27 +2317,81 @@ describe('approving a proposal', () => {
         await registry.teardown()
     })
 
-    it('clears the pairing origin once a session is approved', async () => {
+    it('keeps the pairing origin for a later proposal on an approved pairing', async () => {
         const walletKit = createFakeWalletKit()
+        const origin: ConnectionOrigin = {
+            ...ORIGIN,
+            requesterOrigin: 'https://dapp.example',
+        }
         const { propose, requireProposal, registry } = await openProposal({
             walletKit,
-            origin: ORIGIN,
+            origin,
         })
         const first = await requireProposal().approve([ADDRESS])
-        expect(first.origin).toEqual(ORIGIN)
+        expect(first.origin).toEqual(origin)
 
-        // A second session on the same pairing has no origin of its own, and
-        // no stored record to carry one off either.
         walletKit.approveSession.mockImplementationOnce(
             async ({ namespaces }) =>
                 makeSession({ topic: OTHER_TOPIC, namespaces }),
         )
         await propose(makeNextProposal())
+        expect(requireProposal().requesterOrigin).toBe('https://dapp.example')
         const second = await requireProposal().approve([ADDRESS])
 
         expect(second.id).toBe(OTHER_TOPIC)
-        expect(second.origin).toBeUndefined()
+        expect(second.origin).toEqual(origin)
         await registry.teardown()
+    })
+
+    it('recovers the pairing origin from its live session after a restart', async () => {
+        const origin: ConnectionOrigin = {
+            ...ORIGIN,
+            requesterOrigin: 'https://dapp.example',
+        }
+        const { walletKit, requireProposal, registry, store } =
+            await openProposal({ origin })
+        await requireProposal().approve([ADDRESS])
+        await registry.teardown()
+
+        const { handler } = makeHandler({ walletKit })
+        const context = makeContext(store)
+        await handler.initialize(context)
+        walletKit.emit('session_proposal', makeNextProposal())
+        await flush()
+
+        expect(walletKit.rejectSession).not.toHaveBeenCalled()
+        expect(context.onProposal).toHaveBeenCalledWith(
+            expect.objectContaining({
+                proposalId: String(NEXT_PROPOSAL_ID),
+                requesterOrigin: 'https://dapp.example',
+            }),
+        )
+        await handler.teardown()
+    })
+
+    it('refuses, reports and releases a restored pairing whose origin is gone', async () => {
+        const { handler, walletKit } = makeHandler({
+            walletKit: createFakeWalletKit({ [TOPIC]: makeSession() }),
+        })
+        const context = makeContext()
+        await handler.initialize(context)
+
+        walletKit.emit('session_proposal', makeProposal())
+        await flush()
+
+        expect(context.onProposal).not.toHaveBeenCalled()
+        expect(walletKit.rejectSession).toHaveBeenCalledWith({
+            id: PROPOSAL_ID,
+            reason: expect.objectContaining({ code: expect.any(Number) }),
+        })
+        expect(walletKit.pairingDisconnect).toHaveBeenCalledWith({
+            topic: PAIRING_TOPIC,
+        })
+        expect(context.onError).toHaveBeenCalledWith(
+            expect.any(WalletConnectError),
+            { pairingId: PAIRING_TOPIC },
+        )
+        await handler.teardown()
     })
 
     it('clears the pairing origin when the proposal expires', async () => {

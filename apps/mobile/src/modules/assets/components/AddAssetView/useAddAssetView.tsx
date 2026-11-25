@@ -288,7 +288,7 @@ export const useAddAssetView = (
             if (!sender || !canAdd(result) || optingInKeys.has(key)) return
             const { assetId, unitName, name } = result.asset
 
-            const confirmation = await requestByType<'asset-opt-in', 'confirm'>(
+            const maxFee = await requestByType<'asset-opt-in', bigint>(
                 'asset-opt-in',
                 { assetId, accountAddress: sender, scope: addScope },
                 {
@@ -297,7 +297,7 @@ export const useAddAssetView = (
                     autoCreateContainer: false,
                 },
             )
-            if (confirmation !== 'confirm') return
+            if (maxFee === undefined) return
 
             const assetDisplayName = unitName ?? name ?? null
             setOptingInKeys(prev => withKey(prev, key))
@@ -306,6 +306,7 @@ export const useAddAssetView = (
                 await optIn({
                     sender,
                     assetId: BigInt(assetId),
+                    maxFee,
                 })
                 setRecentlyOptedInKeys(prev => withKey(prev, key))
                 playSuccess()

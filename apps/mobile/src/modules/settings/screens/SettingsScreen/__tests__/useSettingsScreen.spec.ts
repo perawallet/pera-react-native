@@ -241,6 +241,19 @@ describe('useSettingsScreen', () => {
             })
         })
 
+        it('drops to onboarding without the success sheet when the wipe reports a failure', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce(true)
+            mockDeleteAllData.mockRejectedValueOnce(new Error('keystore busy'))
+            const { result } = renderHook(() => useSettingsScreen())
+
+            await act(async () => {
+                await result.current.openDeleteConfirm()
+            })
+
+            expect(clearAccountsStore).toHaveBeenCalledTimes(1)
+            expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+        })
+
         it('clears the account store without a success sheet or navigation when the capability is off', async () => {
             routeCapabilities.deleteAllDataSuccessSheet = false
             mockRequestBottomSheet.mockResolvedValueOnce(true)

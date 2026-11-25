@@ -72,7 +72,7 @@ describe('useAssetOptInDeeplink', () => {
     })
 
     it('uses the link address, skips the picker, confirms, and opts in', async () => {
-        mockRequestByType.mockResolvedValueOnce('confirm') // confirmation sheet
+        mockRequestByType.mockResolvedValueOnce(1000n) // confirmation sheet
 
         const { result } = renderHook(() => useAssetOptInDeeplink())
 
@@ -98,6 +98,7 @@ describe('useAssetOptInDeeplink', () => {
         expect(mockOptIn).toHaveBeenCalledWith({
             sender: LINK_ADDRESS,
             assetId: BigInt(ASSET_ID),
+            maxFee: 1000n,
         })
         expect(mockShowToast).toHaveBeenCalledWith(
             expect.objectContaining({ type: 'success' }),
@@ -107,7 +108,7 @@ describe('useAssetOptInDeeplink', () => {
     it('prompts for an account when the link carries no address, then opts in with the chosen account', async () => {
         mockRequestByType
             .mockResolvedValueOnce(PICKED_ADDRESS) // account selection
-            .mockResolvedValueOnce('confirm') // confirmation
+            .mockResolvedValueOnce(1000n) // confirmation
 
         const { result } = renderHook(() => useAssetOptInDeeplink())
 
@@ -124,6 +125,7 @@ describe('useAssetOptInDeeplink', () => {
         expect(mockOptIn).toHaveBeenCalledWith({
             sender: PICKED_ADDRESS,
             assetId: BigInt(ASSET_ID),
+            maxFee: 1000n,
         })
     })
 
@@ -157,7 +159,7 @@ describe('useAssetOptInDeeplink', () => {
     })
 
     it('surfaces a readable error when the opt-in mutation throws (e.g. already opted in)', async () => {
-        mockRequestByType.mockResolvedValueOnce('confirm')
+        mockRequestByType.mockResolvedValueOnce(1000n)
         const optInError = new Error(
             'Account is already opted in to this asset',
         )
@@ -181,7 +183,7 @@ describe('useAssetOptInDeeplink', () => {
     })
 
     it('plays the success haptic with the success toast', async () => {
-        mockRequestByType.mockResolvedValueOnce('confirm')
+        mockRequestByType.mockResolvedValueOnce(1000n)
         const { result } = renderHook(() => useAssetOptInDeeplink())
 
         await act(async () => {
@@ -198,7 +200,7 @@ describe('useAssetOptInDeeplink', () => {
 
     it('hands a failed opt-in to the submit-error haptic, but not a cancelled one', async () => {
         const optInError = new Error('refused')
-        mockRequestByType.mockResolvedValue('confirm')
+        mockRequestByType.mockResolvedValue(1000n)
         mockOptIn
             .mockRejectedValueOnce(optInError)
             .mockRejectedValueOnce(new UserRejectedSigningError())
@@ -238,7 +240,7 @@ describe('useAssetOptInDeeplink', () => {
     })
 
     it('stays silent when the user rejects signing', async () => {
-        mockRequestByType.mockResolvedValueOnce('confirm')
+        mockRequestByType.mockResolvedValueOnce(1000n)
         mockOptIn.mockRejectedValueOnce(new UserRejectedSigningError())
 
         const { result } = renderHook(() => useAssetOptInDeeplink())

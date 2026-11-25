@@ -13,7 +13,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePinCode, useSecurityStore } from '@perawallet/wallet-core-security'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
-import { clearAccountsStore, useDeleteAllData } from '@hooks/useDeleteAllData'
+import {
+    clearAccountsStore,
+    readPendingWipe,
+    useDeleteAllData,
+} from '@hooks/useDeleteAllData'
+import { useWipeRecoveryStore } from '@hooks/useWipeRecoveryStore'
+import { useDuressWipe } from '@modules/security/hooks/useDuressWipe'
 import { AppState, Keyboard, type AppStateStatus } from 'react-native'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import {
@@ -25,9 +31,12 @@ import { useIsMounted } from '@hooks/useIsMounted'
 
 type UseAutoLockListenerResult = {
     isLocked: boolean
+    isInitialized: boolean
+    isWipeRecoveryRequired: boolean
     isChecking: boolean
     unlock: () => void
     handleResetData: () => void
+    retryWipeRecovery: () => void
 }
 
 export const useAutoLockListener = (): UseAutoLockListenerResult => {
@@ -38,6 +47,8 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
         checkPinEnabled,
     } = usePinCode()
     const { deleteAllData } = useDeleteAllData()
+    const { performDuressWipe } = useDuressWipe()
+    const isWipeRecoveryRequired = useWipeRecoveryStore()
     const isMounted = useIsMounted()
     const lockRequestVersion = useSecurityStore(
         state => state.lockRequestVersion,
@@ -49,14 +60,15 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
 
     const [isLocked, setIsLocked] = useState(false)
     const [isInitialized, setIsInitialized] = useState(false)
-    const [isChecking, setIsChecking] = useState(false)
+    const [isChecking, setIsChecking] = useState(true)
 
     // Mirror the guard overlay outward: the bottom-sheet hold is what keeps
     // ALL sheets from painting into the covered layer and "popping in" the
     // moment the PIN is accepted — BottomSheetManager reads it
     // directly. The security-store flag stays mirrored for any non-sheet
     // consumer.
-    const isGuardActive = isLocked || isChecking || !isInitialized
+    const isGuardActive =
+        isLocked || isChecking || !isInitialized || isWipeRecoveryRequired
     useEffect(() => {
         setAppLockActive(isGuardActive)
         setPresentationHeld(isGuardActive, 'app-lock')
@@ -154,7 +166,12 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
     }, [clearAutoLockTimer])
 
     const handleResetData = useCallback(async () => {
-        await deleteAllData()
+        try {
+            await deleteAllData()
+        } catch (error) {
+            // Staying locked would strand the user on a wallet with no PIN.
+            logger.error('Lock-screen reset did not complete', { error })
+        }
         // deleteAllData skips the accounts store so the settings-flow success
         // modal can render before the route tree switches to Onboarding.
         // On the lock screen there is no success modal — clearing it here is
@@ -166,11 +183,42 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
         clearAutoLockTimer()
     }, [deleteAllData, clearAutoLockTimer])
 
+    // A wipe the process died in has already removed the PIN record, so the
+    // check below would unlock straight onto whatever it had not deleted yet.
+    // Finished here first, behind the overlay. Shared, so an effect re-run
+    // while it is in flight cannot start a second wipe.
+    const pendingWipeRef = useRef<Nullable<Promise<void>>>(null)
+    const finishPendingWipe = useCallback(async (): Promise<void> => {
+        const pending = readPendingWipe()
+        // A failed duress wipe never shows recovery; its marker retries it.
+        useWipeRecoveryStore.setState(pending === 'delete-all')
+        if (pending === 'duress') {
+            await performDuressWipe()
+        } else if (pending) {
+            await deleteAllData()
+            clearAccountsStore()
+        }
+    }, [performDuressWipe, deleteAllData])
+
+    const retryWipeRecovery = useCallback(() => {
+        pendingWipeRef.current = null
+        setIsInitialized(false)
+        setIsChecking(true)
+    }, [])
+
     useEffect(() => {
         if (!isInitialized) {
             setIsChecking(true)
 
-            void checkPinEnabled()
+            pendingWipeRef.current ??= finishPendingWipe()
+            void pendingWipeRef.current
+                .catch(error => {
+                    useWipeRecoveryStore.setState(true)
+                    logger.error('Resuming an interrupted wipe failed', {
+                        error,
+                    })
+                })
+                .then(checkPinEnabled)
                 .then(enabled => {
                     if (!isMounted()) {
                         return
@@ -200,7 +248,7 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
                     setIsChecking(false)
                 })
         }
-    }, [checkPinEnabled, isInitialized, isMounted])
+    }, [checkPinEnabled, isInitialized, isMounted, finishPendingWipe])
 
     // Honour explicit lock requests (emitted by the shake-to-lock listener and
     // by the migration flow once it finishes writing the PIN; see
@@ -264,8 +312,11 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
 
     return {
         isLocked,
+        isInitialized,
+        isWipeRecoveryRequired,
         isChecking: isChecking || !isInitialized,
         unlock,
         handleResetData: () => void handleResetData(),
+        retryWipeRecovery,
     }
 }

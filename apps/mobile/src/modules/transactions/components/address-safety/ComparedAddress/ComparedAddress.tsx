@@ -11,7 +11,10 @@
  */
 
 import { PWText, PWView } from '@components/core'
-import type { AddressSegment } from '@modules/transactions/utils/diffAddresses'
+import {
+    groupAddressSegments,
+    type AddressSegment,
+} from '@modules/transactions/utils/diffAddresses'
 import { useStyles } from './styles'
 
 export type ComparedAddressProps = {
@@ -35,24 +38,33 @@ export const ComparedAddress = ({
             >
                 {label}
             </PWText>
-            <PWText
-                style={styles.address}
+            <PWView
+                style={styles.groups}
                 testID={testID}
+                accessible
+                accessibilityLabel={segments.map(({ text }) => text).join('')}
             >
-                {segments.map((segment, index) => (
+                {groupAddressSegments(segments).map((group, groupIndex) => (
                     <PWText
-                        key={index}
-                        weight={segment.isDifferent ? 700 : undefined}
-                        style={
-                            segment.isDifferent
-                                ? styles.difference
-                                : styles.address
-                        }
+                        key={groupIndex}
+                        variant='mono'
                     >
-                        {segment.text}
+                        {group.map((segment, index) =>
+                            segment.isDifferent ? (
+                                <PWText
+                                    key={index}
+                                    variant='mono'
+                                    style={styles.difference}
+                                >
+                                    {segment.text}
+                                </PWText>
+                            ) : (
+                                segment.text
+                            ),
+                        )}
                     </PWText>
                 ))}
-            </PWText>
+            </PWView>
         </PWView>
     )
 }
