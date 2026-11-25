@@ -27,7 +27,10 @@ const resealMocks = vi.hoisted(() => ({
 vi.mock('react-native-quick-crypto', () => ({ subtle: {} }))
 
 const wipeKeystoreStorage = vi.hoisted(() => vi.fn())
-vi.mock('../keystore/wipeKeystoreStorage', () => ({ wipeKeystoreStorage }))
+vi.mock('../keystore/maintenance', async importOriginal => ({
+    ...(await importOriginal<typeof import('../keystore/maintenance')>()),
+    wipeKeystoreStorage,
+}))
 
 vi.mock('../keystore/resealLegacyMaterial', () => ({
     resealLegacyMaterialWith: resealMocks.resealLegacyMaterialWith,

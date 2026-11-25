@@ -15,6 +15,7 @@ import {
     MATERIAL_PREFIX,
     METADATA_PREFIX,
     decode,
+    destroyMasterKey,
     readMasterKey,
     storage as keystoreStorage,
 } from '@algorandfoundation/react-native-keystore'
@@ -132,4 +133,29 @@ export const writePasskeyCredential = async (
         id,
         split,
     )
+}
+
+/**
+ * Empties the keystore's MMKV instance and deletes every copy of its master key, so
+ * nothing sealed before a wipe can be opened after it. The engine's own
+ * `clear()` removes only `m/` and `k/` records and keeps the key, leaving
+ * flat records a layout migration declined to adopt readable.
+ *
+ * Records go first: the engine mints a new master key only while this MMKV is
+ * empty, so a deleted key over a surviving record would fail every later
+ * write.
+ */
+export const wipeKeystoreStorage = async (): Promise<void> => {
+    keystoreStorage.clearAll()
+    if (keystoreStorage.getAllKeys().length > 0) {
+        throw new Error('Keystore records remain after clearing storage')
+    }
+    try {
+        await destroyMasterKey()
+        // A write that landed during the await is sealed by the destroyed key.
+        if (keystoreStorage.getAllKeys().length > 0) keystoreStorage.clearAll()
+    } finally {
+        // MMKV appends rather than overwrites; compacting drops the old bytes.
+        keystoreStorage.trim()
+    }
 }

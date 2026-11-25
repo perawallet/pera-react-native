@@ -28,6 +28,7 @@ import {
     readPersistedKeys,
     runMaterialRepair,
     runPasskeyCredentialSplit,
+    wipeKeystoreStorage,
 } from './keystore/maintenance'
 import type { PasskeySplitResult } from './keystore/passkeyCredentials/splitFlatPasskeyCredentials'
 import type { QuantumMaterialRepairResult } from './keystore/repairQuantumMaterial'
@@ -47,7 +48,6 @@ import {
     PQ_DERIVATION_CANONICAL,
 } from './keystore/pqDerivation'
 import { createPeraMigrationLedger } from './keystore/migrationsLedger'
-import { wipeKeystoreStorage } from './keystore/wipeKeystoreStorage'
 import { safeErrorMessage, safeWarn } from './keystore/migrations/safeLog'
 import { PeraProvider } from './pera-provider'
 

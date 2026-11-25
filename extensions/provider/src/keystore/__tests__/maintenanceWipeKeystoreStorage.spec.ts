@@ -36,12 +36,14 @@ const mocks = vi.hoisted(() => {
     }
 })
 
+vi.mock('react-native-quick-crypto', () => ({ subtle: {} }))
+
 vi.mock('@algorandfoundation/react-native-keystore', () => ({
     storage: mocks.storage,
     destroyMasterKey: mocks.destroyMasterKey,
 }))
 
-import { wipeKeystoreStorage } from '../wipeKeystoreStorage'
+import { wipeKeystoreStorage } from '../maintenance'
 
 describe('wipeKeystoreStorage', () => {
     beforeEach(() => {
