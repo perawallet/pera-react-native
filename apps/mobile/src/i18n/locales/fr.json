@@ -2819,7 +2819,7 @@
                 "body_other": "Ce code importe {{count}} comptes. Vérifiez qu’ils vous appartiennent avant de les importer.",
                 "body": "Ce code importe {{count}} comptes. Vérifiez qu’ils vous appartiennent avant de les importer.",
                 "confirm": "Importer les comptes",
-                "interrupted": "L’importation a été interrompue. Scanne à nouveau le code QR pour continuer."
+                "interrupted": "L’importation a été interrompue. Scannez à nouveau le code QR pour continuer."
             },
             "result": {
                 "success_title": "Comptes importés",
