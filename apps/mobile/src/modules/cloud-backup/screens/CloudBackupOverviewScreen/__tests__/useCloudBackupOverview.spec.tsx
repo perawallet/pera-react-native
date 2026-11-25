@@ -310,7 +310,9 @@ describe('useCloudBackupOverview', () => {
         syncState.items = {
             // Dirty but still backed up (local edits not yet pushed).
             [accountKey('A')]: uploaded('A'),
+            [secretsKey('A')]: uploaded('A'),
             [accountKey('B')]: uploaded('B', { isDirty: true }),
+            [secretsKey('B')]: uploaded('B'),
             // IGNORED = not backed up.
             [accountKey('C')]: uploaded('C', { status: 'IGNORED' }),
         }
@@ -406,7 +408,24 @@ describe('useCloudBackupOverview', () => {
                 [recordKey('A')]: uploaded('A', {
                     addresses: ['A', '0xeth'],
                     knownVer,
+                    record: {
+                        formatVersion: 2,
+                        updatedAt: 1,
+                        chains: [
+                            {
+                                chain: 'algorand',
+                                type: 'standaloneKey',
+                                address: 'A',
+                            },
+                            {
+                                chain: 'ethereum',
+                                type: 'standaloneKey',
+                                address: '0xeth',
+                            },
+                        ],
+                    },
                 }),
+                [secretsKey('A')]: uploaded('A', { knownVer }),
             }
             mockStores({
                 backupId: 'did:pera:abc',

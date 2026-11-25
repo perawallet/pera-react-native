@@ -87,8 +87,8 @@ const { mockToggleAccountNotification, mockIsTogglePending } = vi.hoisted(
         mockIsTogglePending: vi.fn(() => false),
     }),
 )
-const { mockIsBackedUp } = vi.hoisted(() => ({
-    mockIsBackedUp: vi.fn((_address: string) => true),
+const { mockIsInBackup } = vi.hoisted(() => ({
+    mockIsInBackup: vi.fn((_address: string) => true),
 }))
 const { mockIsCoveredByCloudBackup, mockRequiresMnemonicBackup } = vi.hoisted(
     () => ({
@@ -182,7 +182,7 @@ vi.mock('@perawallet/wallet-core-messages', async importOriginal => ({
 }))
 
 vi.mock('@modules/cloud-backup', () => ({
-    useIsAccountBackedUp: (address: string) => mockIsBackedUp(address),
+    useIsAccountInBackup: (address: string) => mockIsInBackup(address),
     DeleteFromBackupSheet: () => null,
 }))
 
@@ -327,7 +327,7 @@ describe('useAccountOptions', () => {
         seedAuthority('REKEYEDWATCHADDRESS', 'ALGO25ADDRESS')
         useRemoteConfigStore.getState().resetState()
         mockIsAccountEnabled.mockReturnValue(true)
-        mockIsBackedUp.mockReturnValue(false)
+        mockIsInBackup.mockReturnValue(false)
         mockIsCloudBackupEnabled.mockReturnValue(true)
         mockIsCoveredByCloudBackup.mockReturnValue(false)
         mockRequiresMnemonicBackup.mockReturnValue(true)
@@ -709,7 +709,7 @@ describe('useAccountOptions', () => {
         })
 
         it('reads and deletes backup state at its own address', async () => {
-            mockIsBackedUp.mockReturnValue(true)
+            mockIsInBackup.mockReturnValue(true)
             const { result } = render(ethWatchAccount)
 
             await act(async () => {
@@ -727,7 +727,7 @@ describe('useAccountOptions', () => {
                 await result.current.handleDeleteFromBackup()
             })
 
-            expect(mockIsBackedUp).toHaveBeenCalledWith(ETH_ADDRESS)
+            expect(mockIsInBackup).toHaveBeenCalledWith(ETH_ADDRESS)
             expect(mockDeleteAccountFromBackup).toHaveBeenCalledWith(
                 ETH_ADDRESS,
             )
@@ -1036,7 +1036,7 @@ describe('useAccountOptions', () => {
         })
 
         it('removes a backed-up account without the backup choice when cloud backup is off on every chain', async () => {
-            mockIsBackedUp.mockReturnValue(true)
+            mockIsInBackup.mockReturnValue(true)
             setCapabilityOverrides({ cloudBackup: false })
             const { result } = renderHook(() =>
                 useAccountOptions({
@@ -1369,7 +1369,7 @@ describe('useAccountOptions', () => {
         })
 
         it('asks about the cloud backup before removing a backed-up account', async () => {
-            mockIsBackedUp.mockReturnValue(true)
+            mockIsInBackup.mockReturnValue(true)
             const { result } = renderHook(() =>
                 useAccountOptions({
                     account: algo25Account,
@@ -1400,7 +1400,7 @@ describe('useAccountOptions', () => {
         })
 
         it('deletes from the backup, then removes locally', async () => {
-            mockIsBackedUp.mockReturnValue(true)
+            mockIsInBackup.mockReturnValue(true)
             const { result } = renderHook(() =>
                 useAccountOptions({
                     account: algo25Account,
@@ -1425,7 +1425,7 @@ describe('useAccountOptions', () => {
         })
 
         it('ignores a second choice while the first is still being recorded', async () => {
-            mockIsBackedUp.mockReturnValue(true)
+            mockIsInBackup.mockReturnValue(true)
             let release: (outcome: BackupActionOutcome) => void = () => {}
             mockDeleteAccountFromBackup.mockImplementationOnce(
                 () =>
@@ -1460,7 +1460,7 @@ describe('useAccountOptions', () => {
         })
 
         it('keeps the backup copy, then removes locally', async () => {
-            mockIsBackedUp.mockReturnValue(true)
+            mockIsInBackup.mockReturnValue(true)
             const { result } = renderHook(() =>
                 useAccountOptions({
                     account: algo25Account,
@@ -1486,7 +1486,7 @@ describe('useAccountOptions', () => {
         })
 
         it('reports a refused keep as a device removal failure', async () => {
-            mockIsBackedUp.mockReturnValue(true)
+            mockIsInBackup.mockReturnValue(true)
             mockKeepAccountInBackup.mockResolvedValueOnce(false)
             const { result } = renderHook(() =>
                 useAccountOptions({
@@ -1509,7 +1509,7 @@ describe('useAccountOptions', () => {
         })
 
         it('removes locally even when the cloud delete is only queued', async () => {
-            mockIsBackedUp.mockReturnValue(true)
+            mockIsInBackup.mockReturnValue(true)
             mockDeleteAccountFromBackup.mockResolvedValueOnce('queued')
             const { result } = renderHook(() =>
                 useAccountOptions({
@@ -1528,7 +1528,7 @@ describe('useAccountOptions', () => {
         })
 
         it('does not remove locally when the backup refused the choice', async () => {
-            mockIsBackedUp.mockReturnValue(true)
+            mockIsInBackup.mockReturnValue(true)
             mockDeleteAccountFromBackup.mockResolvedValueOnce('refused')
             const { result } = renderHook(() =>
                 useAccountOptions({
@@ -1551,7 +1551,7 @@ describe('useAccountOptions', () => {
         })
 
         it('does not remove locally when the backup choice throws', async () => {
-            mockIsBackedUp.mockReturnValue(true)
+            mockIsInBackup.mockReturnValue(true)
             mockGetBackupSyncManager.mockImplementationOnce(() => {
                 throw new Error('Backup sync manager is not initialised')
             })
@@ -1752,7 +1752,7 @@ describe('useAccountOptions', () => {
         })
 
         it('blocks a rekeyed-to account before touching the backup', async () => {
-            mockIsBackedUp.mockReturnValue(true)
+            mockIsInBackup.mockReturnValue(true)
             const rekeyedToAlgo25: WalletAccount = {
                 id: 'acc-rekeyed',
                 name: '',
