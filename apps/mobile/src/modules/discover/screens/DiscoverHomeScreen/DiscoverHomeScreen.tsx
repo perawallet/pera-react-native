@@ -60,6 +60,9 @@ export const DiscoverHomeScreen = () => {
     useAccountDrawerPickerKind('portfolio')
     const { topDapps, news } = home
 
+    const isChainEmpty =
+        !topDapps.isLoading && !topDapps.isError && topDapps.count === 0
+
     const renderTopDapps = () => {
         if (topDapps.isLoading) {
             return (
@@ -190,10 +193,16 @@ export const DiscoverHomeScreen = () => {
                             />
                         </PWView>
                     ) : null}
-                    <PWView style={styles.dappPreview}>
+                    <PWView
+                        // Keeps a list's height while it loads, so the section never jumps; a chain
+                        // with nothing listed shows only its empty copy.
+                        style={isChainEmpty ? undefined : styles.dappPreview}
+                        testID='discover_home_dapp_preview'
+                    >
                         {renderTopDapps()}
                     </PWView>
-                    {home.selectedChainId && (
+                    {/* The directory would be just as empty on a chain with nothing listed. */}
+                    {home.selectedChainId && !isChainEmpty && (
                         <PWButton
                             variant='secondary'
                             title={
