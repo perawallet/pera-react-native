@@ -11,7 +11,6 @@
  */
 
 import type {
-    ChainId,
     ChainScope,
     TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
@@ -43,8 +42,6 @@ export type TransactionRow = {
     transaction: TransactionHistoryItem
     /** The chain and network the row's history was read on. */
     scope: ChainScope
-    /** Set on a list that mixes networks, so the row names its own. */
-    networkChainId?: ChainId
 }
 
 /** A row on a chain that keeps no cached history rows: already summarised. */
@@ -53,8 +50,6 @@ export type TransactionRecordRow = {
     /** Transaction id; also the row key. */
     key: string
     record: TransactionRecord
-    /** See {@link TransactionRow.networkChainId}. */
-    networkChainId?: ChainId
 }
 
 export type TransactionEntryRow = TransactionRow | TransactionRecordRow

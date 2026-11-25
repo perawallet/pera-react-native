@@ -16,19 +16,4 @@ export const useStyles = makeStyles(theme => ({
     filterRows: {
         gap: theme.spacing.xl,
     },
-    filterRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    filterRowDisabled: {
-        opacity: 0.5,
-    },
-    filterTextColumn: {
-        flex: 1,
-        marginRight: theme.spacing.md,
-    },
-    filterDescription: {
-        color: theme.colors.textGray,
-    },
 }))

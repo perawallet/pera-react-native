@@ -22,6 +22,7 @@ export * from './useInvalidateAssetPrices'
 export * from './useToggleAssetFavoriteMutation'
 export * from './useToggleAssetPriceAlertMutation'
 export * from './useAssetSearchAcrossScopesQuery'
+export * from './useStoredAssetsAcrossScopesQuery'
 export * from './useNativeAsset'
 export * from './useIsNativeAssetId'
 

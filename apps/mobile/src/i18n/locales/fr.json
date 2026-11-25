@@ -459,8 +459,7 @@
             "search_paused_body": "Aucune transaction trouvée dans l’historique récent.",
             "search_older": "Rechercher les plus anciennes",
             "filter": "Filtrer",
-            "csv": "CSV",
-            "csv_on_network": "CSV {{network}}"
+            "csv": "CSV"
         },
         "collectible": {
             "description": "Description",
@@ -493,7 +492,7 @@
         },
         "token_warning": {
             "suspicious_title": "Jeton suspect",
-            "body": "Pera a signalé ce jeton comme suspect. Vous ne l’avez pas demandé et il pourrait s’agir d’une arnaque. N’interagissez pas avec les sites web ou les liens qui s’y rapportent."
+            "body": "Pera a signalé ce jeton comme suspect. Vous ne l’avez pas demandé et il pourrait s’agir d’une arnaque. Soyez prudent avec ce jeton et avec les sites web ou les liens qui s’y rapportent."
         },
         "copy_full_amount_hint": "Appuyez longuement pour copier le montant complet",
         "toggle_amount_hint": "Appuyez pour basculer entre la valeur et le montant de l’actif"
@@ -3990,6 +3989,7 @@
             "approval_for": "Pour {{spender}}",
             "unlimited_approval_for": "Illimité · pour {{spender}}",
             "swap_pair": "Swap {{from}} → {{to}}",
+            "swap_assets": "{{from}} → {{to}}",
             "add_liquidity": "Ajout de liquidité",
             "remove_liquidity": "Retrait de liquidité",
             "collect_fees": "Collecte des frais",
@@ -4006,7 +4006,9 @@
             "nft_batch_subtitle": "{{collection}} · {{count}} éléments",
             "inner_transaction_count": "{{innerCount}} transactions internes",
             "cancel_transaction": "Annulation",
-            "not_sent_by_you": "Non envoyé par vous"
+            "send_by_approval": "Envoi (autorisé)",
+            "spoofed_send": "Faux envoi",
+            "contract_call_named": "Contrat : {{method}}"
         },
         "record_detail": {
             "read_failed": "Impossible de lire depuis le réseau les détails de l’appel de cette transaction.",
@@ -4156,6 +4158,8 @@
             "title": "Filtre",
             "all_time": "Toute la période",
             "today": "Aujourd’hui",
+            "hide_suspicious": "Masquer les transactions suspectes",
+            "hide_suspicious_description": "Masque les faux envois, les jetons d'imitation ou de spam et les empoisonnements d'adresse présumés.",
             "yesterday": "Hier",
             "last_week": "Semaine dernière",
             "last_month": "Mois dernier",
@@ -4178,8 +4182,11 @@
             "blocked_body": "Une transaction antérieure de ce compte n’a jamais atteint le réseau, donc celle-ci ne peut pas être confirmée tant que rien ne prend sa place. Débloquer envoie à sa place un transfert vide vers vous-même, qui coûte des frais de réseau.",
             "unblock": "Débloquer"
         },
+        "suspected_fake_transfer": {
+            "title": "Faux transfert présumé",
+            "body": "Votre compte n'a pas signé ce transfert, et il n'a rien déplacé. N'importe qui peut faire passer un transfert de 0 jeton pour un envoi depuis votre compte, sans aucune autorisation. Les escrocs le font pour que leur adresse apparaisse dans votre historique et soit copiée plus tard. Ne copiez aucune adresse depuis ce transfert."
+        },
         "suspected_poisoning": {
-            "marker": "Empoisonnement d’adresse suspecté",
             "title": "Empoisonnement d’adresse suspecté",
             "body": "Ce transfert n’a rien transféré de valeur et provient d’une adresse conçue pour ressembler à une adresse que vous connaissez. Les escrocs envoient ce type de transfert pour que leur adresse apparaisse dans votre historique et soit copiée plus tard.",
             "do_not_reuse": "Ne copiez pas cette adresse et n’y envoyez rien.",
@@ -4189,9 +4196,6 @@
             "reuse_confirm": "Continuer quand même",
             "reuse_cancel": "Annuler",
             "dismiss": "J’ai compris"
-        },
-        "suspicious_token": {
-            "marker": "Jeton suspect"
         }
     },
     "tabbar": {
@@ -5316,6 +5320,8 @@
             "gwei": "Gwei",
             "nonce": "Nonce",
             "gas_limit": "Limite de gas",
+            "gas_used": "Gaz utilisé",
+            "gas_price": "Prix du gaz",
             "max_fee_per_gas": "Frais max. par gas",
             "max_priority_fee_per_gas": "Frais de priorité max. par gas"
         },

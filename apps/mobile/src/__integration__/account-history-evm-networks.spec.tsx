@@ -195,7 +195,7 @@ describe('Flow: History on an account with every EVM network', () => {
         useAccountsStore.getState().setAccounts([])
     })
 
-    it('Given activity on every network, when History opens on All, then it lists the rows of each network, labelled with it', async () => {
+    it('Given activity on every network, when History opens on All, then it lists the rows of each network, each led by its icon', async () => {
         renderWithNavigation(AccountHistory, 'AccountHistory')
 
         await waitFor(() => expect(rowIds()).toHaveLength(NETWORKS.length), {
@@ -205,7 +205,7 @@ describe('Flow: History on an account with every EVM network', () => {
             expect(
                 within(
                     screen.getByTestId(`transaction_row_${hashOf(chainId)}`),
-                ).getByTestId(`chain_label_${chainId}`),
+                ).getByTestId(/^transaction_kind_badge_/),
             ).toBeTruthy()
         }
         expect(screen.queryByTestId('history_network_failed')).toBeNull()

@@ -459,8 +459,7 @@
             "search_paused_body": "Yakın geçmişte işlem bulunamadı.",
             "search_older": "Daha eskileri ara",
             "filter": "Filtrele",
-            "csv": "CSV",
-            "csv_on_network": "{{network}} CSV"
+            "csv": "CSV"
         },
         "collectible": {
             "description": "Açıklama",
@@ -493,7 +492,7 @@
         },
         "token_warning": {
             "suspicious_title": "Şüpheli token",
-            "body": "Pera bu tokenı şüpheli olarak işaretledi. Bunu sen istemedin ve bir dolandırıcılık olabilir. Bununla ilgili web siteleriyle veya bağlantılarla etkileşime girme."
+            "body": "Pera bu tokenı şüpheli olarak işaretledi. Bunu sen istemedin ve bir dolandırıcılık olabilir. Onunla veya ilgili web siteleri ve bağlantılarla etkileşime girerken dikkatli ol."
         },
         "copy_full_amount_hint": "Tam tutarı kopyalamak için basılı tutun",
         "toggle_amount_hint": "Değer ile varlık miktarı arasında geçiş yapmak için dokun"
@@ -3990,6 +3989,7 @@
             "approval_for": "Harcayan: {{spender}}",
             "unlimited_approval_for": "Sınırsız · Harcayan: {{spender}}",
             "swap_pair": "Swap {{from}} → {{to}}",
+            "swap_assets": "{{from}} → {{to}}",
             "add_liquidity": "Likidite ekle",
             "remove_liquidity": "Likidite çek",
             "collect_fees": "Ücretleri topla",
@@ -4006,7 +4006,9 @@
             "nft_batch_subtitle": "{{collection}} · {{count}} öğe",
             "inner_transaction_count": "{{innerCount}} iç işlem",
             "cancel_transaction": "İşlem iptali",
-            "not_sent_by_you": "Sizin göndermediğiniz"
+            "send_by_approval": "Gönderim (onaylı)",
+            "spoofed_send": "Sahte gönderim",
+            "contract_call_named": "Sözleşme: {{method}}"
         },
         "record_detail": {
             "read_failed": "Bu işlemin çağrı ayrıntıları ağdan okunamadı.",
@@ -4156,6 +4158,8 @@
             "title": "Filtre",
             "all_time": "Tüm zamanlar",
             "today": "Bugün",
+            "hide_suspicious": "Şüpheli işlemleri gizle",
+            "hide_suspicious_description": "Sahte gönderimleri, taklit ve spam tokenleri ve şüpheli adres zehirlemelerini gizler.",
             "yesterday": "Dün",
             "last_week": "Geçen hafta",
             "last_month": "Geçen ay",
@@ -4178,8 +4182,11 @@
             "blocked_body": "Bu hesaptan yapılan önceki bir işlem ağa hiç ulaşmadı, bu yüzden onun yerini bir şey almadan bu işlem onaylanamaz. Engeli kaldır, onun yerine kendine boş bir transfer gönderir; bu da bir ağ ücreti gerektirir.",
             "unblock": "Engeli kaldır"
         },
+        "suspected_fake_transfer": {
+            "title": "Sahte transfer şüphesi",
+            "body": "Hesabınız bu transferi imzalamadı ve transfer hiçbir şey taşımadı. Herkes, hiçbir onay olmadan 0 tokenlik bir transferi hesabınızdan gelmiş gibi gösterebilir. Dolandırıcılar bunu, adreslerinin geçmişinizde görünüp daha sonra kopyalanması için yapar. Buradan adres kopyalamayın."
+        },
         "suspected_poisoning": {
-            "marker": "Şüpheli adres zehirlenmesi",
             "title": "Şüpheli adres zehirlenmesi",
             "body": "Bu transfer değerli hiçbir şey taşımadı ve tanıdığın bir adrese benzeyecek şekilde oluşturulmuş bir adresten geliyor. Dolandırıcılar bunu, adresleri geçmişinde görünsün ve daha sonra kopyalansın diye gönderir.",
             "do_not_reuse": "Bu adresi kopyalama ve ona gönderim yapma.",
@@ -4189,9 +4196,6 @@
             "reuse_confirm": "Yine de devam et",
             "reuse_cancel": "İptal",
             "dismiss": "Anladım"
-        },
-        "suspicious_token": {
-            "marker": "Şüpheli token"
         }
     },
     "tabbar": {
@@ -5316,6 +5320,8 @@
             "gwei": "Gwei",
             "nonce": "Nonce",
             "gas_limit": "Gas limiti",
+            "gas_used": "Kullanılan gas",
+            "gas_price": "Gas fiyatı",
             "max_fee_per_gas": "Gas başına maks. ücret",
             "max_priority_fee_per_gas": "Gas başına maks. öncelik ücreti"
         },

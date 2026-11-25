@@ -21,12 +21,15 @@ import { useEthereumRecordAmountRow } from './useEthereumRecordAmountRow'
 type EthereumRecordAmountRowProps = {
     change: BalanceChange
     scope: ChainScope
+    /** Replaces the row's own title, such as a swap leg's side. */
+    title?: string
     testID: string
 }
 
 export const EthereumRecordAmountRow = ({
     change,
     scope,
+    title: titleOverride,
     testID,
 }: EthereumRecordAmountRowProps) => {
     const { title, asset, value, isLoading, showSymbol } =
@@ -35,7 +38,7 @@ export const EthereumRecordAmountRow = ({
     return (
         <KeyValueRow
             testID={testID}
-            title={title}
+            title={titleOverride ?? title}
         >
             <AssetAmount
                 chainId={scope.chainId}

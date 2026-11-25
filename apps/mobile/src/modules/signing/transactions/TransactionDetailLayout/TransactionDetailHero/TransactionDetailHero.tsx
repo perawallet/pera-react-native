@@ -12,7 +12,7 @@
 
 import { PWText, PWView } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
-import { TransactionIcon } from '@components/TransactionIcon'
+import { TransactionLeadingIcon } from '@components/TransactionLeadingIcon'
 import type { TransactionDetailSummary } from '../../types'
 import { TransactionStatusBadge } from '../../TransactionStatusBadge'
 import { TransactionDetailHeroAmount } from './TransactionDetailHeroAmount'
@@ -26,13 +26,23 @@ export const TransactionDetailHero = ({
     summary,
 }: TransactionDetailHeroProps) => {
     const styles = useStyles()
-    const { scope, iconName, title, status, amount, isAmountLoading } = summary
+    const {
+        scope,
+        iconName,
+        leadingAssets,
+        title,
+        status,
+        amount,
+        isAmountLoading,
+    } = summary
 
     return (
         <PWView style={styles.container}>
-            <TransactionIcon
-                size='xl'
-                name={iconName}
+            <TransactionLeadingIcon
+                size='lg'
+                iconName={iconName}
+                leadingAssets={leadingAssets ?? []}
+                chainIds={[scope.chainId]}
             />
             <PWText
                 variant='bodyLarge'

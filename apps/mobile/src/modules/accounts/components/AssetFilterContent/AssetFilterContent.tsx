@@ -14,7 +14,7 @@ import { useCallback } from 'react'
 import { PWButton, PWSheetLayout, PWView } from '@components/core'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
-import { FilterRow } from './FilterRow'
+import { FilterRow } from '../FilterRow'
 import { useAssetFilterContent } from './useAssetFilterContent'
 import { useStyles } from './styles'
 

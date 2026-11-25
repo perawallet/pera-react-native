@@ -15,6 +15,7 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     asset: {
         gap: theme.spacing.xs,
+        alignItems: 'flex-end',
     },
     // The value column is end-aligned and clips, so a row wider than it
     // overflows to the left and hides the thumbnail; cap it and let the name wrap.

@@ -115,6 +115,8 @@ export const NFT_DIMMED_OPACITY = 0.5
 // backend) — distinct from TouchableOpacity's `disabled`, which would also
 // swallow the press meant to explain why.
 export const UNAVAILABLE_CONTROL_OPACITY = 0.5
+// Dims a history row Pera suspects is a scam; it stays tappable so its badge can explain why.
+export const SUSPICIOUS_ROW_OPACITY = 0.5
 
 export const SCROLL_EVENT_THROTTLE = 16
 export const DEFAULT_SNAP_THRESHOLD = 0.25

@@ -459,8 +459,7 @@
             "search_paused_body": "No transactions found in recent history.",
             "search_older": "Search Older",
             "filter": "Filter",
-            "csv": "CSV",
-            "csv_on_network": "{{network}} CSV"
+            "csv": "CSV"
         },
         "collectible": {
             "description": "Description",
@@ -493,7 +492,7 @@
         },
         "token_warning": {
             "suspicious_title": "Suspicious token",
-            "body": "Pera has flagged this token as suspicious. You didn't request it, and it may be a scam. Don't interact with websites or links related to it."
+            "body": "Pera has flagged this token as suspicious. You didn't request it, and it may be a scam. Be careful interacting with it or with websites and links related to it."
         },
         "copy_full_amount_hint": "Long press to copy the full amount",
         "toggle_amount_hint": "Tap to switch between the value and the asset amount"
@@ -3990,6 +3989,7 @@
             "approval_for": "For {{spender}}",
             "unlimited_approval_for": "Unlimited · for {{spender}}",
             "swap_pair": "Swap {{from}} → {{to}}",
+            "swap_assets": "{{from}} → {{to}}",
             "add_liquidity": "Add liquidity",
             "remove_liquidity": "Remove liquidity",
             "collect_fees": "Collect fees",
@@ -4006,7 +4006,9 @@
             "nft_batch_subtitle": "{{collection}} · {{count}} items",
             "inner_transaction_count": "{{innerCount}} inner txns",
             "cancel_transaction": "Cancel transaction",
-            "not_sent_by_you": "Not sent by you"
+            "send_by_approval": "Send (approved)",
+            "spoofed_send": "Spoofed send",
+            "contract_call_named": "Contract: {{method}}"
         },
         "record_detail": {
             "read_failed": "Couldn't read this transaction's call details from the network.",
@@ -4156,6 +4158,8 @@
             "title": "Filter",
             "all_time": "All Time",
             "today": "Today",
+            "hide_suspicious": "Hide suspicious transactions",
+            "hide_suspicious_description": "Hides spoofed sends, look-alike and spam tokens, and suspected address poisoning.",
             "yesterday": "Yesterday",
             "last_week": "Last Week",
             "last_month": "Last Month",
@@ -4178,8 +4182,11 @@
             "blocked_body": "An earlier transaction from this account never reached the network, so this one can't confirm until something takes its place. Unblock sends an empty transfer to yourself in its place, which costs a network fee.",
             "unblock": "Unblock"
         },
+        "suspected_fake_transfer": {
+            "title": "Suspected fake transfer",
+            "body": "Your account didn't sign this transfer, and it moved nothing. Anyone can make a transfer of 0 tokens look like it came from your account, without any approval. Scammers do this so their address shows up in your history and gets copied later. Don't copy addresses from it."
+        },
         "suspected_poisoning": {
-            "marker": "Suspected address poisoning",
             "title": "Suspected address poisoning",
             "body": "This transfer moved nothing of value and comes from an address made to look like one you know. Scammers send these so their address shows up in your history and gets copied later.",
             "do_not_reuse": "Don't copy this address or send to it.",
@@ -4189,9 +4196,6 @@
             "reuse_confirm": "Continue anyway",
             "reuse_cancel": "Cancel",
             "dismiss": "Got it"
-        },
-        "suspicious_token": {
-            "marker": "Suspicious token"
         }
     },
     "tabbar": {
@@ -5316,6 +5320,8 @@
             "gwei": "Gwei",
             "nonce": "Nonce",
             "gas_limit": "Gas limit",
+            "gas_used": "Gas used",
+            "gas_price": "Gas price",
             "max_fee_per_gas": "Max fee per gas",
             "max_priority_fee_per_gas": "Max priority fee per gas"
         },

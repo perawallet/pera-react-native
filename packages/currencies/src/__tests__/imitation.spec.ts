@@ -11,7 +11,11 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { imitatedCurrencyOf, imitatedNativeTickerOf } from '../imitation'
+import {
+    imitatedCurrencyOf,
+    imitatedNativeTickerOf,
+    imitatedTickerOf,
+} from '../imitation'
 
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
     ...(await importOriginal<
@@ -119,4 +123,24 @@ describe('imitatedCurrencyOf', () => {
         expect(imitatedCurrencyOf(unknown, 'USD')).toBe('USD')
         expect(imitatedCurrencyOf(unknown, 'ALGO')).toBeNull()
     })
+})
+
+describe('imitatedTickerOf', () => {
+    const ethereum = (assetId: string) => ({ chainId: 'ethereum', assetId })
+
+    it('names the ticker a look-alike spelling imitates', () => {
+        expect(imitatedTickerOf(ethereum('0xfake'), 'USDꓚ')).toBe('USDC')
+    })
+
+    it('still names a native or fiat imitation first', () => {
+        expect(imitatedTickerOf(ethereum('0xfake'), 'ЕΤН')).toBe('ETH')
+        expect(imitatedTickerOf(ethereum('0xfake'), 'usd')).toBe('USD')
+    })
+
+    it.each(['USDC', 'WETH', undefined])(
+        'leaves the plain ticker %j alone',
+        unitName => {
+            expect(imitatedTickerOf(ethereum('0xreal'), unitName)).toBeNull()
+        },
+    )
 })

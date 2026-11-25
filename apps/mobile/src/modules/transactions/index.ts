@@ -54,6 +54,13 @@ export type {
 } from './types/send-confirmation-display'
 export { diffAddresses, type AddressSegment } from './utils/diffAddresses'
 export {
+    useWithoutSuspiciousRows,
+    type UseWithoutSuspiciousRowsParams,
+} from './hooks/history/useWithoutSuspiciousRows'
+export { assessHistoryEntry } from './utils/historySuspicion'
+export { leadingAssetsOf } from './utils/leadingAssets'
+export { visibleAssetIdsOf } from './utils/summaryAmounts'
+export {
     getTransactionRowKey,
     getTransactionRowType,
     type TransactionListRow,

@@ -459,8 +459,7 @@
             "search_paused_body": "No se encontraron transacciones en el historial reciente.",
             "search_older": "Buscar más antiguas",
             "filter": "Filtrar",
-            "csv": "CSV",
-            "csv_on_network": "CSV de {{network}}"
+            "csv": "CSV"
         },
         "collectible": {
             "description": "Descripción",
@@ -493,7 +492,7 @@
         },
         "token_warning": {
             "suspicious_title": "Token sospechoso",
-            "body": "Pera ha marcado este token como sospechoso. No lo solicitaste y podría ser una estafa. No interactúes con sitios web ni enlaces relacionados con él."
+            "body": "Pera ha marcado este token como sospechoso. No lo solicitaste y podría ser una estafa. Ten cuidado al interactuar con él o con sitios web y enlaces relacionados."
         },
         "copy_full_amount_hint": "Mantén pulsado para copiar el importe completo",
         "toggle_amount_hint": "Toca para alternar entre el valor y la cantidad del activo"
@@ -3990,6 +3989,7 @@
             "approval_for": "Para {{spender}}",
             "unlimited_approval_for": "Ilimitado · para {{spender}}",
             "swap_pair": "Swap {{from}} → {{to}}",
+            "swap_assets": "{{from}} → {{to}}",
             "add_liquidity": "Añadir liquidez",
             "remove_liquidity": "Retirar liquidez",
             "collect_fees": "Cobrar comisiones",
@@ -4006,7 +4006,9 @@
             "nft_batch_subtitle": "{{collection}} · {{count}} elementos",
             "inner_transaction_count": "{{innerCount}} transacciones internas",
             "cancel_transaction": "Cancelar transacción",
-            "not_sent_by_you": "No enviado por ti"
+            "send_by_approval": "Envío (aprobado)",
+            "spoofed_send": "Envío falsificado",
+            "contract_call_named": "Contrato: {{method}}"
         },
         "record_detail": {
             "read_failed": "No se pudieron leer de la red los detalles de la llamada de esta transacción.",
@@ -4156,6 +4158,8 @@
             "title": "Filtrar",
             "all_time": "Todo el tiempo",
             "today": "Hoy",
+            "hide_suspicious": "Ocultar transacciones sospechosas",
+            "hide_suspicious_description": "Oculta envíos falsificados, tokens de imitación o spam y posibles envenenamientos de direcciones.",
             "yesterday": "Ayer",
             "last_week": "Última semana",
             "last_month": "Último mes",
@@ -4178,8 +4182,11 @@
             "blocked_body": "Una transacción anterior de esta cuenta nunca llegó a la red, así que esta no puede confirmarse hasta que algo ocupe su lugar. Desbloquear envía en su lugar una transferencia vacía a ti mismo, que cuesta una comisión de red.",
             "unblock": "Desbloquear"
         },
+        "suspected_fake_transfer": {
+            "title": "Posible transferencia falsa",
+            "body": "Tu cuenta no firmó esta transferencia y no movió nada. Cualquiera puede hacer que una transferencia de 0 tokens parezca venir de tu cuenta, sin ninguna aprobación. Los estafadores lo hacen para que su dirección aparezca en tu historial y se copie más tarde. No copies direcciones de ella."
+        },
         "suspected_poisoning": {
-            "marker": "Posible envenenamiento de direcciones",
             "title": "Posible envenenamiento de direcciones",
             "body": "Esta transferencia no movió nada de valor y viene de una dirección creada para parecerse a una que conoces. Los estafadores envían esto para que su dirección aparezca en tu historial y la copies más adelante.",
             "do_not_reuse": "No copies esta dirección ni le envíes nada.",
@@ -4189,9 +4196,6 @@
             "reuse_confirm": "Continuar de todos modos",
             "reuse_cancel": "Cancelar",
             "dismiss": "Entendido"
-        },
-        "suspicious_token": {
-            "marker": "Token sospechoso"
         }
     },
     "tabbar": {
@@ -5316,6 +5320,8 @@
             "gwei": "Gwei",
             "nonce": "Nonce",
             "gas_limit": "Límite de gas",
+            "gas_used": "Gas usado",
+            "gas_price": "Precio del gas",
             "max_fee_per_gas": "Comisión máxima por gas",
             "max_priority_fee_per_gas": "Comisión de prioridad máxima por gas"
         },

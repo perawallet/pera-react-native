@@ -15,8 +15,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import type { TransactionHistoryType } from '@perawallet/wallet-core-transactions'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import {
+    PWDivider,
+    PWIcon,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { FilterSelection } from '@components/FilterSelection'
+import { FilterRow } from '../FilterRow'
 
 import { isIOS } from '@utils/platform'
 import { useStyles } from './styles'
@@ -35,12 +42,15 @@ export type TransactionsFilterContentProps = {
     initialCustomRange?: CustomDateRange
     /** Undefined hides the Type section; null is All. */
     activeHistoryType?: Nullable<TransactionHistoryType>
+    /** Undefined hides the toggle, on a list that doesn't offer it. */
+    isSuspiciousHidden?: boolean
 }
 
 export const TransactionsFilterContent = ({
     activeFilter,
     initialCustomRange,
     activeHistoryType,
+    isSuspiciousHidden,
 }: TransactionsFilterContentProps) => {
     const insets = useSafeAreaInsets()
     const styles = useStyles({ bottomInset: insets.bottom })
@@ -55,6 +65,7 @@ export const TransactionsFilterContent = ({
         isPickerVisible,
         handleFilterPress,
         handleHistoryTypePress,
+        handleToggleSuspiciousHidden,
         handleDatePress,
         handleDateValueChange,
         handlePickerDismiss,
@@ -63,6 +74,7 @@ export const TransactionsFilterContent = ({
         activeFilter,
         initialCustomRange,
         activeHistoryType,
+        isSuspiciousHidden,
     })
 
     const historyTypeOptions = useMemo(
@@ -161,6 +173,23 @@ export const TransactionsFilterContent = ({
                         testID='history-type-filter'
                     />
                 </PWView>
+            )}
+
+            {isSuspiciousHidden !== undefined && (
+                <>
+                    <PWView style={styles.suspiciousSection}>
+                        <FilterRow
+                            label={t('transactions.filter.hide_suspicious')}
+                            description={t(
+                                'transactions.filter.hide_suspicious_description',
+                            )}
+                            value={isSuspiciousHidden}
+                            onToggle={handleToggleSuspiciousHidden}
+                            testID='history_filter_hide_suspicious'
+                        />
+                    </PWView>
+                    <PWDivider style={styles.suspiciousDivider} />
+                </>
             )}
 
             {[

@@ -17,7 +17,6 @@ import {
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
-    chainDisplayNameOf,
     useChainCapability,
     useChainCapabilityCheck,
     useIsCapabilityRestricted,
@@ -42,7 +41,6 @@ export type UseAccountHistoryCsvExportParams = {
     scope: ChainScope
     /** One per network the rows can come from; `scope`'s alone off a merged history. */
     sources: HistorySource[]
-    isMerged: boolean
     /** `YYYY-MM-DD`, inclusive, UTC. */
     afterTime?: string
     /** `YYYY-MM-DD`, inclusive, UTC. */
@@ -65,7 +63,6 @@ const CHAIN_SELECTION_SHEET_OPTIONS = {
 export const useAccountHistoryCsvExport = ({
     scope,
     sources,
-    isMerged,
     afterTime,
     beforeTime,
 }: UseAccountHistoryCsvExportParams): UseAccountHistoryCsvExportResult => {
@@ -108,39 +105,30 @@ export const useAccountHistoryCsvExport = ({
     const hasCapability = useChainCapabilityCheck()
     const scopeKey = toScopeKey(scope)
     // Keyed by a string, since the checker is a new function every render.
-    const exportableKeys = sources
-        .filter(
-            source =>
-                source.transactionCount > 0 &&
-                (toScopeKey(source.scope) === scopeKey
-                    ? hasCsvExport || isCsvExportRestricted
-                    : hasCapability({
-                          chain: {
-                              chainId: source.scope.chainId,
-                              capability: 'csvExport',
-                          },
-                      })),
+    const capableKeys = sources
+        .filter(source =>
+            toScopeKey(source.scope) === scopeKey
+                ? hasCsvExport || isCsvExportRestricted
+                : hasCapability({
+                      chain: {
+                          chainId: source.scope.chainId,
+                          capability: 'csvExport',
+                      },
+                  }),
         )
         .map(source => toScopeKey(source.scope))
         .join()
-    const exportable = useMemo(
-        () =>
-            sources.filter(source =>
-                exportableKeys.split(',').includes(toScopeKey(source.scope)),
-            ),
-        [sources, exportableKeys],
-    )
+    // Shown whatever the filters leave, so the header doesn't jump as a type or
+    // range empties the list; the picker still prefers the networks with rows.
+    const exportable = useMemo(() => {
+        const capable = sources.filter(source =>
+            capableKeys.split(',').includes(toScopeKey(source.scope)),
+        )
+        const withRows = capable.filter(source => source.transactionCount > 0)
+        return withRows.length > 0 ? withRows : capable
+    }, [sources, capableKeys])
     const isCsvExportVisible = exportable.length > 0
-    // Export is per network, so on a merged history the action names the one
-    // it covers, or asks which when several have rows.
-    const csvExportTitle =
-        isMerged && exportable.length === 1
-            ? t('asset_details.transaction_list.csv_on_network', {
-                  network:
-                      chainDisplayNameOf(exportable[0].scope.chainId) ??
-                      exportable[0].scope.chainId,
-              })
-            : t('asset_details.transaction_list.csv')
+    const csvExportTitle = t('asset_details.transaction_list.csv')
 
     const isPeriodSelected = afterTime !== undefined || beforeTime !== undefined
 
