@@ -36,7 +36,10 @@ import {
     type WalletConnectV1AnsweredRequests,
 } from '../answeredRequests'
 import { createWalletConnectV1Handler } from '../handler'
-import type { WalletConnectV1Handler } from '../connection'
+import type {
+    WalletConnectV1Connection,
+    WalletConnectV1Handler,
+} from '../connection'
 import type { WalletConnectV1SessionKeyStore } from '../secrets'
 import {
     createConnectorRegistry,
@@ -542,10 +545,16 @@ describe('walletconnect v1 handler behaviour', () => {
             handshakeTopic: 'handshake-topic',
             peerId: 'peer-1',
             chainId: 416_001,
+            permissions: ['algo_getAccounts', 'algo_signTxn', 'algo_signData'],
+            permissionsApproved: true,
         },
     }
 
-    const handshake = (chainId: number, id = 42) => ({
+    const handshake = (
+        chainId: number,
+        id = 42,
+        permissions = ['algo_signTxn'],
+    ) => ({
         id,
         params: [
             {
@@ -556,7 +565,7 @@ describe('walletconnect v1 handler behaviour', () => {
                     icons: [],
                 },
                 chainId,
-                permissions: ['algo_signTxn'],
+                permissions,
             },
         ],
     })
@@ -619,11 +628,18 @@ describe('walletconnect v1 handler behaviour', () => {
         )
 
     /** Pairs, delivers a handshake and approves it for `accounts`. */
-    const connect = async (accounts: string[] = ['AAAA']) => {
+    const connect = async (
+        accounts: string[] = ['AAAA'],
+        permissions?: string[],
+    ) => {
         const harness = await setup()
         await harness.handler.pair(V1_URI)
         const connector = lastConnector()
-        connector.emit('session_request', null, handshake(4160))
+        connector.emit(
+            'session_request',
+            null,
+            handshake(4160, undefined, permissions),
+        )
         await flush()
         const proposal = harness.onProposal.mock.calls[0][0]
         await proposal.approve(accounts)
@@ -1003,7 +1019,9 @@ describe('walletconnect v1 handler behaviour', () => {
     })
 
     it('forwards the legacy arbitrary-data list, which the ARC-60 gate alone would refuse', async () => {
-        const { connector, onMessage } = await connect()
+        const { connector, onMessage } = await connect(undefined, [
+            'algo_signData',
+        ])
 
         connector.emit('algo_signData', null, {
             id: 8,
@@ -1023,7 +1041,9 @@ describe('walletconnect v1 handler behaviour', () => {
         // network), but this item claims TestNet's chain id while the
         // network store stands in at mainnet — the per-item check must
         // catch what the session-level check alone would miss.
-        const { connector, onMessage, onError } = await connect()
+        const { connector, onMessage, onError } = await connect(undefined, [
+            'algo_signData',
+        ])
 
         connector.emit('algo_signData', null, {
             id: 11,
@@ -1035,7 +1055,14 @@ describe('walletconnect v1 handler behaviour', () => {
         expect(connector.rejectRequest).toHaveBeenCalledWith(
             expect.objectContaining({ id: 11 }),
         )
-        expect(onError).toHaveBeenCalled()
+        expect(onError).toHaveBeenCalledWith(
+            expect.objectContaining({
+                metadata: expect.objectContaining({
+                    messageKey: 'errors.walletconnect.invalid_network_body',
+                }),
+            }),
+            expect.anything(),
+        )
     })
 
     it('declines a wrong-network request with the wrong-network copy, not the generic signing one', async () => {
@@ -1063,6 +1090,153 @@ describe('walletconnect v1 handler behaviour', () => {
             expect.anything(),
         )
     })
+
+    it.each([
+        ['algo_signTxn', ['algo_signData'], SIGN_TXN_FRAME],
+        [
+            'algo_signData',
+            ['algo_signTxn'],
+            {
+                id: 7,
+                params: [{ data: 'ZGF0YQ==', signer: 'AAAA', chainId: 4160 }],
+            },
+        ],
+    ])(
+        'refuses %s on a session that was not granted it',
+        async (method, permissions, frame) => {
+            keys.set('c1', 'restored-key')
+            const { onError, onMessage } = await setupRestored([
+                {
+                    ...SEEDED,
+                    metadata: {
+                        ...SEEDED.metadata,
+                        chainId: 4160,
+                        permissions,
+                    },
+                },
+            ])
+            const connector = lastConnector()
+
+            connector.emit(method, null, frame)
+            await flush()
+
+            expect(onMessage).not.toHaveBeenCalled()
+            expect(connector.rejectRequest).toHaveBeenCalledWith(
+                expect.objectContaining({ id: 7 }),
+            )
+            expect(onError).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    metadata: expect.objectContaining({
+                        messageKey: 'errors.walletconnect.permission_body',
+                    }),
+                }),
+                expect.anything(),
+            )
+        },
+    )
+
+    it.each([
+        ['missing', undefined],
+        ['empty', []],
+        // Also catches a genuinely approved full grant that kept no origin:
+        // the record cannot tell it apart, so it is asked to connect again.
+        [
+            'origin-less every-method',
+            ['algo_getAccounts', 'algo_signTxn', 'algo_signData'],
+        ],
+    ])(
+        'ends a legacy session with a %s method list with the dApp, then pairs afresh',
+        async (_, permissions) => {
+            keys.set('c1', 'restored-key')
+            const legacy = {
+                ...SEEDED,
+                metadata: {
+                    ...SEEDED.metadata,
+                    chainId: 4160,
+                    permissions,
+                    permissionsApproved: undefined,
+                },
+            } as WalletConnectV1Connection
+            const { handler, records, onProposal } = await setupRestored([
+                legacy,
+            ])
+
+            expect(lastConnector().killSession).toHaveBeenCalled()
+            expect(getConnector('c1')).toBeUndefined()
+            expect(keys.has('c1')).toBe(false)
+            expect(await records()).toEqual([])
+            expect(handler.methodsFor(legacy)).toEqual([])
+
+            await handler.pair(V1_URI)
+            lastConnector().emit('session_request', null, handshake(4160))
+            await flush()
+            const [[proposal]] = onProposal.mock.calls
+            const approved = await proposal.approve(['AAAA'])
+
+            expect(approved.metadata).toMatchObject({
+                permissionsApproved: true,
+            })
+            expect(handler.methodsFor(approved)).toEqual(['algo_signTxn'])
+        },
+    )
+
+    it.each([
+        {
+            name: 'a scoped grant',
+            permissions: ['algo_signTxn'],
+            origin: undefined,
+        },
+        {
+            name: 'a full grant with an origin',
+            permissions: ['algo_getAccounts', 'algo_signTxn', 'algo_signData'],
+            origin: { source: 'qr' } as const,
+        },
+    ])(
+        'restores historical approval with $name',
+        async ({ permissions, origin }) => {
+            keys.set('c1', 'restored-key')
+            const approvedBefore = {
+                ...SEEDED,
+                origin,
+                metadata: {
+                    ...SEEDED.metadata,
+                    permissions,
+                    permissionsApproved: undefined,
+                },
+            }
+            const { handler } = await setupRestored([approvedBefore])
+
+            expect(getConnector('c1')).toBeDefined()
+            expect(handler.methodsFor(approvedBefore)).toEqual(permissions)
+        },
+    )
+
+    it.each([[[]], [['sign_transaction']]])(
+        'rejects a handshake whose permissions %j name no Algorand method',
+        async permissions => {
+            const { handler, onProposal, onError } = await setup()
+            await handler.pair(V1_URI)
+            const connector = lastConnector()
+
+            connector.emit(
+                'session_request',
+                null,
+                handshake(4160, undefined, permissions),
+            )
+            await flush()
+
+            expect(connector.rejectSession).toHaveBeenCalled()
+            expect(onProposal).not.toHaveBeenCalled()
+            expect(onError).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    metadata: expect.objectContaining({
+                        messageKey: 'errors.walletconnect.permission_body',
+                    }),
+                }),
+                expect.anything(),
+            )
+        },
+    )
 
     it('does not restore inside initialize; the registry runs restore', async () => {
         keys.set('c1', 'restored-key')

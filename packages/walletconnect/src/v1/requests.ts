@@ -35,6 +35,7 @@ import {
 import {
     WalletConnectInvalidNetworkError,
     WalletConnectInvalidSessionError,
+    WalletConnectPermissionError,
     WalletConnectSignRequestError,
 } from '../shared/errors'
 import {
@@ -43,8 +44,10 @@ import {
     type GateRejectionCode,
     type GateResult,
 } from '../validation/inboundRequestGate'
+import { AlgorandPermission } from '../models'
 import type { WalletConnectV1AnsweredRequests } from './answeredRequests'
 import {
+    grantedMethodsOf,
     isWalletConnectV1Connection,
     type WalletConnectV1Connection,
 } from './connection'
@@ -322,6 +325,14 @@ export const createV1RequestHandlers = (deps: {
             reportError(notFound, connectionScope(clientId))
             return null
         }
+        if (grantedMethodsOf(connection).length === 0) {
+            const refusal = new WalletConnectPermissionError(
+                'This dApp must connect again before it can request signatures',
+            )
+            rejectToPeer(clientId, request.id, refusal)
+            reportError(refusal, connectionScope(clientId))
+            return null
+        }
 
         return { request, connection }
     }
@@ -345,6 +356,23 @@ export const createV1RequestHandlers = (deps: {
         reportError(rejection, connectionScope(clientId))
     }
 
+    const isGranted = (
+        connection: WalletConnectV1Connection,
+        method: AlgorandPermission,
+    ): boolean => grantedMethodsOf(connection).includes(method)
+
+    const refuseUngranted = (
+        clientId: string,
+        requestId: number,
+        method: AlgorandPermission,
+    ): void => {
+        const refusal = new WalletConnectPermissionError(
+            `${method} was not granted to this session`,
+        )
+        rejectToPeer(clientId, requestId, refusal)
+        reportError(refusal, connectionScope(clientId))
+    }
+
     const handleSignTxn: V1ConnectorEventHandler = async (
         connector,
         error,
@@ -359,6 +387,14 @@ export const createV1RequestHandlers = (deps: {
         if (!opened) return
         const { request, connection } = opened
         if (!claimRequest(connection.id, request.id, 'algo_signTxn')) return
+        if (!isGranted(connection, AlgorandPermission.TX_PERMISSION)) {
+            refuseUngranted(
+                connection.id,
+                request.id,
+                AlgorandPermission.TX_PERMISSION,
+            )
+            return
+        }
 
         const verdict = gateSignTxnRequest({
             payload,
@@ -396,6 +432,14 @@ export const createV1RequestHandlers = (deps: {
         if (!opened) return
         const { request, connection } = opened
         if (!claimRequest(connection.id, request.id, 'algo_signData')) return
+        if (!isGranted(connection, AlgorandPermission.DATA_PERMISSION)) {
+            refuseUngranted(
+                connection.id,
+                request.id,
+                AlgorandPermission.DATA_PERMISSION,
+            )
+            return
+        }
         const scope = getScope()
 
         // `gateSignDataRequest` rejects the legacy array shape outright, so that
