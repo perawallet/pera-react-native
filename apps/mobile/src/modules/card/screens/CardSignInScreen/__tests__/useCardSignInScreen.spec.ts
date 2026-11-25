@@ -376,6 +376,44 @@ describe('useCardSignInScreen', () => {
 
         expect(mockNavigate).not.toHaveBeenCalled()
         expect(mockErrorToast).toHaveBeenCalled()
+        expect(mockSuccessToast).not.toHaveBeenCalled()
+    })
+
+    it('retries only the card lookup after it failed, without signing in again', async () => {
+        mockEscrowCardAddress.value = null
+        mockRestoreMutateAsync
+            .mockRejectedValueOnce(new Error('network'))
+            .mockResolvedValueOnce('RESTORED_CARD')
+        mockMutateAsync.mockResolvedValue({
+            accessToken: 'token',
+            userId: 'user-1',
+            isOtpRequired: false,
+            phase: null,
+            verificationState: null,
+            isLinked: true,
+        })
+        const { result } = renderHook(() => useCardSignInScreen())
+        act(() => {
+            Object.assign(result.current.control._formValues, {
+                email: 'user@example.com',
+                password: 'hunter2hunter22!',
+            })
+        })
+        await act(async () => {
+            result.current.handleSignIn()
+        })
+
+        await act(async () => {
+            result.current.handleSignIn()
+        })
+
+        expect(mockMutateAsync).toHaveBeenCalledTimes(1)
+        expect(mockRestoreMutateAsync).toHaveBeenCalledTimes(2)
+        expect(mockSuccessToast).toHaveBeenCalledTimes(1)
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+            screen: 'Home',
+            params: { screen: 'PeraCardAccount' },
+        })
     })
 
     it('keeps the OTP submit gated until the code is complete', () => {

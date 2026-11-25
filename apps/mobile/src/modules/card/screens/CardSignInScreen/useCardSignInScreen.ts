@@ -126,6 +126,7 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
     const [otpUserId, setOtpUserId] = useState<Nullable<string>>(null)
     const [otpCode, setOtpCode] = useState('')
     const [hasOtpError, setHasOtpError] = useState(false)
+    const [isEscrowLookupPending, setIsEscrowLookupPending] = useState(false)
     const { secondsRemaining, isActive, restart } = useCountdown(
         RESEND_COOLDOWN_SECONDS,
     )
@@ -161,6 +162,70 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
     )
 
     const restoreEscrowCardAsync = restoreEscrowCard.mutateAsync
+
+    // Fully onboarded: a real access token is issued only once onboarding
+    // completes and is persisted in the login mutation's `onSuccess`. Honor it
+    // before any (possibly stale) `phase` so a completed account always lands
+    // on Home rather than being sent back into the onboarding stack.
+    //
+    // Registration complete is not setup complete: the on-chain card is created
+    // only through the checklist's signing steps, which a returning account may
+    // never have run. Without an escrow card, resume the checklist so the card
+    // gets created and bound, unless the backend already holds one made on
+    // another device.
+    const finishSignIn = useCallback(async () => {
+        let hasEscrowCard = isEscrowCardCreated()
+        if (!hasEscrowCard) {
+            try {
+                hasEscrowCard =
+                    (await restoreEscrowCardAsync(
+                        accounts.flatMap(
+                            account =>
+                                chainAccountOf(account, ALGORAND_CHAIN_ID)
+                                    ?.address ?? [],
+                        ),
+                    )) !== null
+            } catch (error) {
+                // A failed lookup learned nothing; sending a returning user
+                // into card creation could mint a second card. The session is
+                // already stored, so a retry repeats only this lookup.
+                if (!(error instanceof CardOwnerMismatchError)) {
+                    setIsEscrowLookupPending(true)
+                    errorToast(
+                        t('peraCard.sign_in.error_title'),
+                        t('peraCard.sign_in.error_body'),
+                    )
+                    return
+                }
+            }
+        }
+        setIsEscrowLookupPending(false)
+        successToast(
+            t('peraCard.sign_in.success_title'),
+            t('peraCard.sign_in.success_body'),
+        )
+        if (!hasEscrowCard) {
+            navigation.navigate('PeraCard', {
+                screen: 'CardOnboarding',
+                params: {
+                    screen: 'CardOnboardingStatus',
+                    params: {},
+                },
+            })
+            return
+        }
+        navigation.navigate('TabBar', {
+            screen: 'Home',
+            params: { screen: 'PeraCardAccount' },
+        })
+    }, [
+        restoreEscrowCardAsync,
+        accounts,
+        navigation,
+        errorToast,
+        successToast,
+        t,
+    ])
 
     // The login call handles both passes: the first (no `otp`) may come back
     // `isOtpRequired`, which triggers the OTP send and reveals the code input;
@@ -203,57 +268,7 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
                 // completed account always lands on Home rather than being sent
                 // back into the onboarding stack.
                 if (result.accessToken) {
-                    successToast(
-                        t('peraCard.sign_in.success_title'),
-                        t('peraCard.sign_in.success_body'),
-                    )
-                    // Registration complete is not setup complete: the
-                    // on-chain card is created only through the checklist's
-                    // signing steps, which a returning account may never have
-                    // run (e.g. registration finished on a call whose response
-                    // was lost). Without an escrow card, resume the checklist
-                    // so the card gets created and bound, unless the backend
-                    // already holds one made on another device.
-                    let hasEscrowCard = isEscrowCardCreated()
-                    if (!hasEscrowCard) {
-                        try {
-                            hasEscrowCard =
-                                (await restoreEscrowCardAsync(
-                                    accounts.flatMap(
-                                        account =>
-                                            chainAccountOf(
-                                                account,
-                                                ALGORAND_CHAIN_ID,
-                                            )?.address ?? [],
-                                    ),
-                                )) !== null
-                        } catch (error) {
-                            // A failed lookup learned nothing; sending a
-                            // returning user into card creation could mint a
-                            // second card, so let them retry instead.
-                            if (!(error instanceof CardOwnerMismatchError)) {
-                                errorToast(
-                                    t('peraCard.sign_in.error_title'),
-                                    t('peraCard.sign_in.error_body'),
-                                )
-                                return
-                            }
-                        }
-                    }
-                    if (!hasEscrowCard) {
-                        navigation.navigate('PeraCard', {
-                            screen: 'CardOnboarding',
-                            params: {
-                                screen: 'CardOnboardingStatus',
-                                params: {},
-                            },
-                        })
-                        return
-                    }
-                    navigation.navigate('TabBar', {
-                        screen: 'Home',
-                        params: { screen: 'PeraCardAccount' },
-                    })
+                    await finishSignIn()
                     return
                 }
 
@@ -331,12 +346,10 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
             login,
             finishesRegistration,
             onboardingEmail,
-            restoreEscrowCardAsync,
-            accounts,
+            finishSignIn,
             navigation,
             setError,
             errorToast,
-            successToast,
             requestOtpCode,
             t,
         ],
@@ -344,6 +357,10 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
 
     const handleSignIn = useCallback(
         (submittedOtp?: string) => {
+            if (isEscrowLookupPending) {
+                void finishSignIn()
+                return
+            }
             if (isOtpRequired) {
                 const code = (submittedOtp ?? otpCode).trim()
                 if (code.length !== CARD_VERIFICATION_CODE_LENGTH) return
@@ -356,7 +373,15 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
                 performLogin(email, password),
             )()
         },
-        [isOtpRequired, otpCode, getValues, handleSubmit, performLogin],
+        [
+            isEscrowLookupPending,
+            finishSignIn,
+            isOtpRequired,
+            otpCode,
+            getValues,
+            handleSubmit,
+            performLogin,
+        ],
     )
 
     const handleResendOtp = useCallback(() => {
