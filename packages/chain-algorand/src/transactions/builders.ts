@@ -150,11 +150,8 @@ export const buildExpressTransferTxs = ({
             ...feeOverride(senderFee),
         })
 
-    const fees =
-        funding > 0n
-            ? [senderFee, receiverFee, senderFee]
-            : [receiverFee, senderFee]
-    return buildGroup(client, composer, fees, false)
+    // Express always reviews the assembled group, so its fee is never capped.
+    return buildGroup(client, composer, [], true)
 }
 
 export const buildOptInTxs = ({
