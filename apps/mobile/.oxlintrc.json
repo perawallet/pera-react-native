@@ -229,6 +229,13 @@
       }
     },
     {
+      "files": ["src/**/*.{ts,tsx}"],
+      "excludeFiles": ["src/**/__tests__/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}", "src/**/*.web.{ts,tsx}"],
+      "rules": {
+        "pera/no-native-modal-presentation": "error"
+      }
+    },
+    {
       "files": ["src/modules/**"],
       "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
       "rules": {
