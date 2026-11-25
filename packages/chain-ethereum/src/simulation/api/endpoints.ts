@@ -20,6 +20,7 @@ import {
 import { eip155ChainIdOf } from '../../blockchain/utils/caip19'
 import type { EvmChain } from '../../chains/types'
 import type { EvmSimulationRequest, EvmTransactionSimulation } from '../types'
+import { rememberPrediction } from '../predictions'
 import { evmSimulationResponseSchema } from './schema'
 import { toEvmTransactionSimulation } from './transformers'
 
@@ -72,9 +73,11 @@ export const fetchEvmTransactionSimulation = async (
         }
         throw error
     }
-    return toEvmTransactionSimulation(
+    const simulation = toEvmTransactionSimulation(
         evmSimulationResponseSchema.parse(data),
         scope,
         chain,
     )
+    rememberPrediction(scope, request, simulation)
+    return simulation
 }

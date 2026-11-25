@@ -49,10 +49,16 @@ export const evmAddressFromPublicKey: AddressCodec['fromPublicKey'] = (
 export const areEvmAddressesEqual = (a: string, b: string): boolean =>
     a.toLowerCase() === b.toLowerCase()
 
-export const truncateEvmAddress = (address: string): string =>
-    address.length <= TRUNCATED_HEAD + TRUNCATED_TAIL
-        ? address
-        : `${address.slice(0, TRUNCATED_HEAD)}...${address.slice(-TRUNCATED_TAIL)}`
+// Checksummed first: a backend's lowercase address would otherwise read
+// differently from the same address on every other screen.
+export const truncateEvmAddress = (address: string): string => {
+    const shown = isAddress(address, { strict: false })
+        ? getAddress(address)
+        : address
+    return shown.length <= TRUNCATED_HEAD + TRUNCATED_TAIL
+        ? shown
+        : `${shown.slice(0, TRUNCATED_HEAD)}...${shown.slice(-TRUNCATED_TAIL)}`
+}
 
 // One character short of each end the short form shows, so a poisoner missing
 // only the character beside the ellipsis still reads as the same address.

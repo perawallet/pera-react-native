@@ -27,6 +27,7 @@ import type {
     TransactionNative,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { eip155ChainIdOfNetwork } from '../blockchain/utils/caip19'
 import { createEvmClient } from '../blockchain/utils/createEvmClient'
 import type { EvmChain } from '../chains/types'
 import { ethereumMinedViewOf } from '../signing/review'
@@ -90,6 +91,7 @@ export const readEvmTransactionDetail = async (
                 value: tx.value,
             },
             feePaid,
+            eip155ChainIdOfNetwork(chain, scope.networkId),
         ),
     )
 }

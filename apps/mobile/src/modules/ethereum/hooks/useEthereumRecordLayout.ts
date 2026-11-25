@@ -22,7 +22,10 @@ import {
     type TransactionRecord,
     type TransactionSummary,
 } from '@perawallet/wallet-core-chain-contract'
-import { toEvmNftAssetId } from '@perawallet/wallet-core-chain-ethereum'
+import {
+    knownEvmContractLabelOf,
+    toEvmNftAssetId,
+} from '@perawallet/wallet-core-chain-ethereum'
 import {
     baseUnitsToDisplayUnits,
     type Nullable,
@@ -43,12 +46,15 @@ import {
 } from '@modules/signing'
 import { useResolvedSummaryTitle } from '@modules/transactions'
 import { isEvmTransactionHash } from '../utils/isEvmTransactionHash'
+import { callTargetOf } from '../utils/callTargetOf'
+import { headlineFiatOf, headlineLegOf } from '../utils/headlineLegOf'
 import { recordAmountsOf } from '../utils/recordAmountsOf'
 import { recordPartiesOf } from '../utils/recordPartiesOf'
 import {
     CONTRACT_CALL_TITLE_KEY,
     REVOKE_APPROVAL_TITLE_KEY,
 } from '../utils/recordTitleKeys'
+import { useEthereumContractLabel } from './useEthereumContractLabel'
 import type { EthereumTransactionPresentation } from './useEthereumTransactionPresentation'
 
 export type UseEthereumRecordLayoutResult = {
@@ -114,9 +120,15 @@ const isReadTitleBetter = (
         !standardCall.isRevocation) ||
     (!!row.isActionUnknown && titleKey !== CONTRACT_CALL_TITLE_KEY)
 
+export type UseEthereumRecordLayoutOptions = {
+    /** The node read is still loading, and a read call names its contract in its own section. */
+    isReadPending?: boolean
+}
+
 export const useEthereumRecordLayout = (
     record: TransactionRecord,
     presentation?: Nullable<EthereumTransactionPresentation>,
+    { isReadPending = false }: UseEthereumRecordLayoutOptions = {},
 ): UseEthereumRecordLayoutResult => {
     const { t } = useLanguage()
     const heroTitle = useTransactionHeroTitle()
@@ -133,11 +145,35 @@ export const useEthereumRecordLayout = (
         !recordSummary.balanceChanges
             ? recordSummary.amount
             : undefined
+    const contractAddress = isReadPending
+        ? undefined
+        : callTargetOf(record, ownAddress, presentation)
+    const bundledContract = useMemo(
+        () =>
+            contractAddress
+                ? knownEvmContractLabelOf(scope, contractAddress)
+                : undefined,
+        [scope, contractAddress],
+    )
+    const contractLabel = useEthereumContractLabel(
+        scope,
+        contractAddress,
+        bundledContract,
+        !!contractAddress,
+    )
+
     // From the local store only, as the list row does: a page that makes no
     // node read of its own must not trigger one by naming a token.
+    const headlineLeg = leading
+        ? undefined
+        : headlineLegOf(recordSummary.balanceChanges, nativeAsset.assetId)
     const { data: storedAssets, isPending: isAssetsPending } = useAssetsQuery(
         scope,
-        leading ? [leading.assetRef.assetId] : [],
+        [leading, headlineLeg].flatMap(leg =>
+            leg && leg.assetRef.assetId !== nativeAsset.assetId
+                ? [leg.assetRef.assetId]
+                : [],
+        ),
     )
 
     return useMemo(() => {
@@ -165,6 +201,12 @@ export const useEthereumRecordLayout = (
                 }
             }
         }
+
+        const headlineFiat = headlineFiatOf(
+            headlineLeg,
+            nativeAsset,
+            storedAssets,
+        )
 
         const isNotSentByYou = isSentByOtherSigner({
             summary: recordSummary,
@@ -205,6 +247,7 @@ export const useEthereumRecordLayout = (
                 status: STATUS[record.status],
                 amount,
                 isAmountLoading,
+                headlineFiat,
                 transactionId: isEvmTransactionHash(record.id)
                     ? record.id
                     : undefined,
@@ -219,6 +262,12 @@ export const useEthereumRecordLayout = (
                 from: parties.from ?? presentation?.view.from,
                 to: RECIPIENT_KINDS.includes(recordSummary.kind)
                     ? parties.to
+                    : undefined,
+                contract: contractAddress
+                    ? {
+                          address: contractAddress,
+                          ...(contractLabel && { name: contractLabel.name }),
+                      }
                     : undefined,
                 fee:
                     record.fee && isFeePaidByAccount(record, ownAddress)
@@ -259,6 +308,7 @@ export const useEthereumRecordLayout = (
         scope,
         ownAddress,
         leading,
+        headlineLeg,
         nativeAsset,
         storedAssets,
         isAssetsPending,
@@ -266,5 +316,7 @@ export const useEthereumRecordLayout = (
         summaryTitle,
         heroTitle,
         t,
+        contractAddress,
+        contractLabel,
     ])
 }

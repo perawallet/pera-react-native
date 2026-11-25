@@ -13,6 +13,7 @@
 import { formatAssetAmount } from '@perawallet/wallet-core-assets'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { PWIcon, PWText, PWTouchableIcon, PWView } from '@components/core'
+import { KnownContractName } from '@components/KnownContractName'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { useLanguage } from '@hooks/useLanguage'
@@ -75,26 +76,13 @@ export const EthereumTechnicalSections = ({
                             <PWView style={styles.contractRow}>
                                 <PWView style={styles.identity}>
                                     {section.contractName ? (
-                                        <PWView
-                                            style={styles.nameRow}
+                                        <KnownContractName
+                                            name={section.contractName}
+                                            variant='h4'
+                                            textStyle={styles.value}
                                             testID='ethereum_known_contract'
-                                        >
-                                            <PWText
-                                                variant='h4'
-                                                style={styles.value}
-                                            >
-                                                {section.contractName}
-                                            </PWText>
-                                            <PWIcon
-                                                name='check'
-                                                size='sm'
-                                                variant='positive'
-                                                accessibilityLabel={t(
-                                                    'ethereum.known_contract.badge',
-                                                )}
-                                                testID='ethereum_known_contract_verified'
-                                            />
-                                        </PWView>
+                                            iconTestID='ethereum_known_contract_verified'
+                                        />
                                     ) : (
                                         <ReviewTarget
                                             label={section.shortAddress}

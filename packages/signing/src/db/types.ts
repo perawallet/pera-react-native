@@ -28,6 +28,10 @@ export type SubmissionHistoryEntry = {
     summary: TransactionSummary
     chainData: ChainTransactionData
     fee?: Decimal
+    /** Base units of the native asset: what the mined transaction was charged, read from its receipt. */
+    chargedFee?: Decimal
+    /** Read from the receipt with `chargedFee`. */
+    blockNumber?: number
 }
 
 /**

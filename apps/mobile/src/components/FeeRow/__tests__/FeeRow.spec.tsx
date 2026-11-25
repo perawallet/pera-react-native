@@ -30,6 +30,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
     useChainFeeModel: vi.fn(),
+    useChainHasL1DataFee: () => false,
 }))
 
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({

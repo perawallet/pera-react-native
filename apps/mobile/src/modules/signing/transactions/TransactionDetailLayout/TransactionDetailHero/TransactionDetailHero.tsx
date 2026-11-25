@@ -26,7 +26,15 @@ export const TransactionDetailHero = ({
     summary,
 }: TransactionDetailHeroProps) => {
     const styles = useStyles()
-    const { scope, iconName, title, status, amount, isAmountLoading } = summary
+    const {
+        scope,
+        iconName,
+        title,
+        status,
+        amount,
+        isAmountLoading,
+        headlineFiat,
+    } = summary
 
     return (
         <PWView style={styles.container}>
@@ -44,6 +52,13 @@ export const TransactionDetailHero = ({
                 <TransactionDetailHeroAmount
                     amount={amount}
                     scope={scope}
+                />
+            )}
+            {!amount && !isAmountLoading && !!headlineFiat && (
+                <TransactionDetailHeroAmount
+                    amount={headlineFiat}
+                    scope={scope}
+                    isFiatOnly
                 />
             )}
             {!amount && !!isAmountLoading && (

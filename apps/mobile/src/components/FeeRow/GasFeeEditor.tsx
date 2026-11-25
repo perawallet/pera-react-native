@@ -47,9 +47,8 @@ export const GasFeeEditor = ({
 }: GasFeeEditorProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { isExpanded, toggleExpanded, selectPreset } = useGasFeeEditor({
-        onPresetChange,
-    })
+    const { isExpanded, toggleExpanded, selectPreset, hasL1DataFee } =
+        useGasFeeEditor({ scope, onPresetChange })
 
     return (
         <PWView
@@ -143,7 +142,11 @@ export const GasFeeEditor = ({
                         testID='fee_max_info'
                         title={t('send_funds.fee.max_fee')}
                     >
-                        {t('send_funds.fee.max_fee_info')}
+                        {t(
+                            hasL1DataFee
+                                ? 'send_funds.fee.max_fee_info_l1'
+                                : 'send_funds.fee.max_fee_info',
+                        )}
                     </InfoButton>
                     {accessory}
                 </PWView>

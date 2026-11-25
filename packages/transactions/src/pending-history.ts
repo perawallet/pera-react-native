@@ -20,6 +20,7 @@ import type {
 import {
     getSubmissionAttemptsWithHistoryEntry,
     type SubmissionAttemptWithHistoryEntry,
+    type SubmissionHistoryEntry,
     type SubmissionStatus,
 } from '@perawallet/wallet-core-signing'
 import {
@@ -73,6 +74,14 @@ const isReplacementNotNeeded = (
     return false
 }
 
+const LANDED_STATUSES: ReadonlySet<SubmissionStatus> = new Set([
+    'confirming',
+    'confirmed',
+    'failed',
+])
+const NO_OUTCOME: Pick<SubmissionHistoryEntry, 'chargedFee' | 'blockNumber'> =
+    {}
+
 const noticeOf = (
     { status: attemptStatus, createdAt }: SubmissionAttemptWithHistoryEntry,
     status: TransactionHistoryStatus,
@@ -97,7 +106,8 @@ export const getPendingTransactionRecords = async ({
     scope,
 }: GetPendingTransactionRecordsParams): Promise<TransactionRecord[]> => {
     const attempts = await getSubmissionAttemptsWithHistoryEntry({ scope })
-    // A gas chain records the fee it signed for, the most the send can be charged.
+    // A gas chain records the fee it signed for, the most the send can be charged,
+    // until the reconciler reads what it was charged from the receipt.
     const isFeeMaximum =
         getChainDescriptor(scope.chainId).protocol.feeModel === 'gas'
     const byId = new Map(attempts.map(attempt => [attempt.id, attempt]))
@@ -119,6 +129,10 @@ export const getPendingTransactionRecords = async ({
         const notice = isReplacementNotNeeded(attempt, byId)
             ? replacementNotNeededNotice()
             : noticeOf(attempt, status)
+        // A reorg returns a mined attempt to `submitted`; its receipt's block is gone.
+        const { chargedFee, blockNumber } = LANDED_STATUSES.has(attempt.status)
+            ? historyEntry
+            : NO_OUTCOME
         records.push({
             id: txIds[0],
             scope,
@@ -126,8 +140,11 @@ export const getPendingTransactionRecords = async ({
             // Only a landed attempt names its signer; an unlanded one is the wallet's by definition.
             ...(status === 'confirmed' && { initiator: sender }),
             timestamp: attempt.createdAt,
-            fee: historyEntry.fee,
-            ...(isFeeMaximum && historyEntry.fee && { isFeeMaximum }),
+            ...(blockNumber !== undefined && { blockNumber }),
+            fee: chargedFee ?? historyEntry.fee,
+            ...(isFeeMaximum &&
+                !chargedFee &&
+                historyEntry.fee && { isFeeMaximum }),
             summary: { ...historyEntry.summary, ...(notice && { notice }) },
             chainData: historyEntry.chainData,
         })

@@ -21,14 +21,19 @@ import { useTransactionDetailHeroAmount } from './useTransactionDetailHeroAmount
 type TransactionDetailHeroAmountProps = {
     amount: TransactionDetailAmount
     scope: ChainScope
+    /** Shows the fiat line alone, and nothing when no price is known, for a leg the rows below already show. */
+    isFiatOnly?: boolean
 }
 
 export const TransactionDetailHeroAmount = ({
     amount,
     scope,
+    isFiatOnly = false,
 }: TransactionDetailHeroAmountProps) => {
     const styles = useStyles()
     const { isFiatLeading } = useTransactionDetailHeroAmount(amount, scope)
+
+    if (!isFiatLeading && isFiatOnly) return null
 
     if (!isFiatLeading) {
         return (
@@ -59,17 +64,19 @@ export const TransactionDetailHeroAmount = ({
                 ignorePrivacyMode
                 testID='transaction_detail_fiat'
             />
-            <AssetAmount
-                chainId={scope.chainId}
-                asset={amount.asset}
-                value={amount.value}
-                density='exact'
-                style={styles.secondary}
-                showSymbol
-                ignorePrivacyMode
-                truncate={false}
-                testID='transaction_detail_amount'
-            />
+            {!isFiatOnly && (
+                <AssetAmount
+                    chainId={scope.chainId}
+                    asset={amount.asset}
+                    value={amount.value}
+                    density='exact'
+                    style={styles.secondary}
+                    showSymbol
+                    ignorePrivacyMode
+                    truncate={false}
+                    testID='transaction_detail_amount'
+                />
+            )}
         </PWView>
     )
 }

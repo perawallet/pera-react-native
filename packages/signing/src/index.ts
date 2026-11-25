@@ -330,6 +330,7 @@ export {
     OPEN_SUBMISSION_STATUSES,
     pruneResolvedSubmissionAttempts,
     recordSubmissionAttempt,
+    recordSubmissionOutcome,
     resolveSubmissionAttempt,
     setOpenSubmissionStatus,
     STALE_OPEN_ATTEMPT_MS,

@@ -48,11 +48,13 @@ const USDT = '0xdac17f958d2ee523a2206206994597c13d831ec7'
 
 const presentationWith = (
     standardCall: unknown,
+    view: Record<string, unknown> = { kind: 'contract-call' },
 ): EthereumTransactionPresentation =>
     ({
         standardCall,
         signingAccount: ACCOUNT,
         scope: SCOPE,
+        view,
     }) as unknown as EthereumTransactionPresentation
 
 describe('useEthereumApprovalDetails', () => {
@@ -101,5 +103,57 @@ describe('useEthereumApprovalDetails', () => {
             undefined,
             SCOPE,
         )
+    })
+
+    describe('an approval already on chain', () => {
+        const MINED = { kind: 'contract-call', isMined: true }
+
+        it.each([
+            [
+                'a spend approval',
+                { kind: 'token-approval', contract: USDT, spendApproval: {} },
+            ],
+            [
+                'a collection-wide approval',
+                {
+                    kind: 'collection-approval',
+                    contract: USDT,
+                    isApproved: true,
+                },
+            ],
+        ])('describes %s as granted, not warned of', (_label, call) => {
+            const { result } = renderHook(() =>
+                useEthereumApprovalDetails(presentationWith(call, MINED)),
+            )
+
+            expect(result.current.isMinedGrant).toBe(true)
+        })
+
+        it('keeps the revocation view for a revocation', () => {
+            const { result } = renderHook(() =>
+                useEthereumApprovalDetails(
+                    presentationWith(
+                        { kind: 'token-approval', contract: USDT },
+                        MINED,
+                    ),
+                ),
+            )
+
+            expect(result.current.isMinedGrant).toBe(false)
+        })
+
+        it('keeps the warning while the approval is only being reviewed', () => {
+            const { result } = renderHook(() =>
+                useEthereumApprovalDetails(
+                    presentationWith({
+                        kind: 'token-approval',
+                        contract: USDT,
+                        spendApproval: {},
+                    }),
+                ),
+            )
+
+            expect(result.current.isMinedGrant).toBe(false)
+        })
     })
 })

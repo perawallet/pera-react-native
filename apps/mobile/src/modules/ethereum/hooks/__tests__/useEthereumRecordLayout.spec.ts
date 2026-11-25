@@ -54,6 +54,24 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         a.toLowerCase() === b.toLowerCase(),
 }))
 
+// The backend's curated name stands in for the bundled one when it answers; that hook has its own spec.
+const curatedName = vi.hoisted(() => ({
+    current: undefined as string | undefined,
+}))
+vi.mock('../useEthereumContractLabel', () => ({
+    useEthereumContractLabel: (
+        _scope: unknown,
+        _address: unknown,
+        bundled: { name: string } | undefined,
+        isEnabled: boolean,
+    ) =>
+        !isEnabled
+            ? null
+            : curatedName.current
+              ? { name: curatedName.current }
+              : (bundled ?? null),
+}))
+
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
@@ -89,13 +107,16 @@ const recordOf = (
 const layoutOf = (
     record: TransactionRecord,
     presentation?: EthereumTransactionPresentation,
+    isReadPending?: boolean,
 ) =>
-    renderHook(() => useEthereumRecordLayout(record, presentation)).result
-        .current
+    renderHook(() =>
+        useEthereumRecordLayout(record, presentation, { isReadPending }),
+    ).result.current
 
 describe('useEthereumRecordLayout', () => {
     beforeEach(() => {
         mockOwnAddress = ME
+        curatedName.current = undefined
         vi.mocked(useAssetsQuery).mockReturnValue({
             data: new Map(),
             isPending: false,
@@ -109,6 +130,133 @@ describe('useEthereumRecordLayout', () => {
         ['replaced', 'failed'],
     ] as const)('Given a %s record, then the pill reads %s', (status, pill) => {
         expect(layoutOf(recordOf({ status })).summary.status).toBe(pill)
+    })
+
+    describe('the fiat headline of a call that moves several assets', () => {
+        const AUSDC_REF = { chainId: 'ethereum', assetId: '0xausdc' } as const
+        const callMoving = (...balanceChanges: BalanceChange[]) =>
+            recordOf(
+                {},
+                {
+                    kind: 'contract-call',
+                    icon: 'contract-call',
+                    direction: 'none',
+                    amount: undefined,
+                    balanceChanges,
+                },
+            )
+        const leg = (
+            assetRef: BalanceChange['assetRef'],
+            value: string,
+        ): BalanceChange => ({ assetRef, value: new Decimal(value) })
+
+        it('Given a supply of ETH, then the hero leads with the ETH it spent, and every leg stays listed', () => {
+            const { summary, amountRows } = layoutOf(
+                callMoving(
+                    leg(NATIVE_REF, '-3000000000000000'),
+                    leg(AUSDC_REF, '2999000'),
+                ),
+            )
+
+            expect(summary.amount).toBeUndefined()
+            expect(summary.headlineFiat?.asset).toBe(ETHER)
+            expect(summary.headlineFiat?.value.toString()).toBe('0.003')
+            expect(amountRows).toHaveLength(2)
+        })
+
+        it('Given no native leg, then it leads with the one token spent, read from the store', () => {
+            vi.mocked(useAssetsQuery).mockReturnValue({
+                data: new Map([
+                    [
+                        '0xusdc',
+                        { assetId: '0xusdc', unitName: 'USDC', decimals: 6 },
+                    ],
+                ]),
+                isPending: false,
+            } as unknown as ReturnType<typeof useAssetsQuery>)
+
+            const { summary } = layoutOf(
+                callMoving(
+                    leg(USDC_REF, '-2500000'),
+                    leg(AUSDC_REF, '2500000'),
+                ),
+            )
+
+            expect(summary.headlineFiat?.asset.unitName).toBe('USDC')
+            expect(summary.headlineFiat?.value.toString()).toBe('2.5')
+        })
+
+        it('Given two tokens spent and no native leg, then no single leg speaks for the call', () => {
+            const { summary } = layoutOf(
+                callMoving(leg(USDC_REF, '-1'), leg(AUSDC_REF, '-1')),
+            )
+
+            expect(summary.headlineFiat).toBeUndefined()
+        })
+
+        it('Given a plain transfer, then its own amount leads instead', () => {
+            expect(layoutOf(recordOf()).summary.headlineFiat).toBeUndefined()
+        })
+    })
+
+    describe('the contract a call went to', () => {
+        const PERMIT2 = '0x000000000022D473030F116dDEE9F6B43aC78BA3'
+        const CALL = {
+            kind: 'contract-call',
+            title: { key: i18nKey('transactions.list_item.withdraw') },
+            direction: 'none',
+            icon: 'contract-call',
+            amount: undefined,
+        } as const
+
+        it('Given a call the account made to a contract Pera knows, then it is named', () => {
+            const { summary } = layoutOf(
+                recordOf({}, { ...CALL, counterparty: PERMIT2 }),
+            )
+
+            expect(summary.contract).toEqual({
+                address: PERMIT2,
+                name: 'Permit2',
+            })
+        })
+
+        it('Given a contract only the backend names, then its name is used', () => {
+            curatedName.current = 'Aave V3 Gateway'
+
+            const { summary } = layoutOf(recordOf({}, CALL))
+
+            expect(summary.contract).toEqual({
+                address: PEER,
+                name: 'Aave V3 Gateway',
+            })
+        })
+
+        it('Given an unknown contract, then its address stands alone', () => {
+            const { summary } = layoutOf(recordOf({}, CALL))
+
+            expect(summary.contract).toEqual({ address: PEER })
+        })
+
+        it("Given someone else's call, then its counterparty is no contract of the account's", () => {
+            const { summary } = layoutOf(recordOf({ initiator: PEER }, CALL))
+
+            expect(summary.contract).toBeUndefined()
+        })
+
+        it('Given the node read is still loading, then the read body will name the contract, so the summary holds it back', () => {
+            const { summary } = layoutOf(recordOf({}, CALL), undefined, true)
+
+            expect(summary.contract).toBeUndefined()
+        })
+
+        it('Given a read call, then its own section names the contract instead', () => {
+            const { summary } = layoutOf(
+                recordOf({}, CALL),
+                {} as EthereumTransactionPresentation,
+            )
+
+            expect(summary.contract).toBeUndefined()
+        })
     })
 
     it('Given a mined transfer, then it carries the id, block, time, parties and fee', () => {

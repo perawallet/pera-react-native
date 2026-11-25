@@ -16,7 +16,8 @@ import type {
     SpendApproval,
 } from '@perawallet/wallet-core-chain-contract'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
-import { PWIcon, PWText, PWView } from '@components/core'
+import { PWText, PWView } from '@components/core'
+import { KnownContractName } from '@components/KnownContractName'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { PanelButton } from '@components/PanelButton'
@@ -113,18 +114,10 @@ export const SpendApprovalWarning = ({
             >
                 <PWView style={styles.spender}>
                     {!!knownSpenderName && (
-                        <PWView style={styles.spenderName}>
-                            <PWText>{knownSpenderName}</PWText>
-                            <PWIcon
-                                testID='message-signing-spend-approval-spender-verified'
-                                name='check'
-                                size='sm'
-                                variant='positive'
-                                accessibilityLabel={t(
-                                    'ethereum.known_contract.badge',
-                                )}
-                            />
-                        </PWView>
+                        <KnownContractName
+                            name={knownSpenderName}
+                            iconTestID='message-signing-spend-approval-spender-verified'
+                        />
                     )}
                     <AddressDisplay
                         address={approval.spender}

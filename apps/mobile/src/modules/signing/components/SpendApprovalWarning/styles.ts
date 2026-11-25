@@ -26,11 +26,6 @@ export const useStyles = makeStyles(theme => ({
     spender: {
         gap: theme.spacing.xs,
     },
-    spenderName: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.xs,
-    },
     note: {
         color: theme.colors.textGray,
     },

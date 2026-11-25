@@ -26,7 +26,7 @@ import type { AssetAmountProps } from '@components/AssetAmount'
 import { useLanguage } from '@hooks/useLanguage'
 
 export type UseEthereumRecordAmountRowResult = {
-    /** The NFT itself for an NFT leg, so several legs can be told apart; Amount otherwise. */
+    /** The NFT itself for an NFT leg, so several legs can be told apart; which way it moved otherwise. */
     title: string
     asset: AssetAmountProps['asset']
     /** Display units when the asset is known; the raw leg otherwise. */
@@ -34,6 +34,14 @@ export type UseEthereumRecordAmountRowResult = {
     isLoading: boolean
     /** Off for an NFT, whose symbol is its collection's raw ticker, not a unit. */
     showSymbol: boolean
+}
+
+// A call that moves several assets lists each leg; "Amount" twice can't say
+// which one left the account.
+const amountTitleKeyOf = (value: Decimal) => {
+    if (value.isNegative()) return 'transactions.record_detail.you_sent'
+    if (value.isPositive()) return 'transactions.record_detail.you_received'
+    return 'transactions.common.amount'
 }
 
 /**
@@ -71,7 +79,7 @@ export const useEthereumRecordAmountRow = (
                       // A uint256 token id can run to 78 digits.
                       tokenId: truncateAlgorandAddress(nft.tokenId),
                   })
-                : t('transactions.common.amount'),
+                : t(amountTitleKeyOf(change.value)),
             asset: known || undefined,
             value: known
                 ? baseUnitsToDisplayUnits(change.value, known.decimals ?? 0)

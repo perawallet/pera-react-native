@@ -213,6 +213,54 @@ describe('getPendingTransactionRecords', () => {
         expect(record.isFeeMaximum).toBeUndefined()
     })
 
+    it('shows what a mined send was charged and its block once the receipt is read', async () => {
+        const { historyEntry } = attempt()
+        ledger(
+            attempt({
+                status: 'confirmed',
+                historyEntry: {
+                    ...historyEntry,
+                    chargedFee: new Decimal('126000000000'),
+                    blockNumber: 38_000_000,
+                },
+            }),
+        )
+
+        const [record] = await pendingRecords()
+
+        expect(record.fee?.toString()).toBe('126000000000')
+        expect(record.isFeeMaximum).toBeUndefined()
+        expect(record.blockNumber).toBe(38_000_000)
+    })
+
+    it('drops the outcome of a send a reorg took back, showing its max fee again', async () => {
+        const { historyEntry } = attempt()
+        ledger(
+            attempt({
+                status: 'submitted',
+                historyEntry: {
+                    ...historyEntry,
+                    chargedFee: new Decimal('126000000000'),
+                    blockNumber: 38_000_000,
+                },
+            }),
+        )
+
+        const [record] = await pendingRecords()
+
+        expect(record.fee?.toString()).toBe('420000000000000')
+        expect(record.isFeeMaximum).toBe(true)
+        expect(record.blockNumber).toBeUndefined()
+    })
+
+    it('names no block before the receipt is read', async () => {
+        ledger(attempt())
+
+        const [record] = await pendingRecords()
+
+        expect(record.blockNumber).toBeUndefined()
+    })
+
     it('matches the sender through the chain codec, not by string equality', async () => {
         ledger(attempt({ sender: '0xsender' }))
 

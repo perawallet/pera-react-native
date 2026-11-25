@@ -3306,6 +3306,7 @@
             "max_fee": "Maximale Gebühr",
             "max_fee_for_preset": "Maximale Gebühr ({{preset}})",
             "max_fee_info": "Das Maximum, das du zahlst, falls die Netzwerkgebühren steigen. Meist zahlst du weniger.",
+            "max_fee_info_l1": "Das Maximum, das du zahlst, falls die Netzwerkgebühren steigen, einschließlich der L1-Datengebühr für die Aufzeichnung deiner Transaktion auf Ethereum. Meist zahlst du weniger.",
             "wait_seconds": "~{{seconds}} Sek.",
             "wait_minutes": "~{{minutes}} Min.",
             "show_options": "Zeigt die Gebührenoptionen an"
@@ -3992,7 +3993,14 @@
             "transaction_id": "Transaktions-ID",
             "quantity": "Menge",
             "nft_collection": "{{collection}} · {{standard}}",
-            "nft_fallback": "{{collection}} · Token-ID {{tokenId}}"
+            "nft_fallback": "{{collection}} · Token-ID {{tokenId}}",
+            "contract": "Smart Contract",
+            "approval_granted_unlimited": "Unbegrenzte Freigabe an {{spender}} erteilt",
+            "approval_granted": "Freigabe an {{spender}} erteilt",
+            "collection_approval_granted": "Zugriff auf die gesamte Sammlung an {{spender}} erteilt",
+            "manage_approvals": "Token-Freigaben verwalten",
+            "you_sent": "Du hast gesendet",
+            "you_received": "Du hast erhalten"
         },
         "contract_call": {
             "warning": "Pera kann nicht erkennen, was dieser Smart-Contract-Aufruf bewirkt.",

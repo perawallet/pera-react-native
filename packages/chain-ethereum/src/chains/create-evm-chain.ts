@@ -71,6 +71,7 @@ export const createEvmDescriptor = (row: EvmChainRow): ChainDescriptor => {
         },
         protocol: {
             feeModel: 'gas',
+            ...(row.fee.kind === 'eip1559-op-stack' && { hasL1DataFee: true }),
             hasAccountNonce: true,
             supportsReplacement: true,
             supportsNativeMultisig: false,

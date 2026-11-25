@@ -14,6 +14,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { TransactionDetailCard } from '../../TransactionDetailCard'
 import type { TransactionDetailSummary } from '../../types'
 import { TransactionDetailAddressRow } from './TransactionDetailAddressRow'
+import { TransactionDetailContractRow } from './TransactionDetailContractRow'
 import { TransactionDetailFeeRow } from './TransactionDetailFeeRow'
 import { TransactionDetailNoteRow } from './TransactionDetailNoteRow'
 
@@ -25,9 +26,9 @@ export const TransactionDetailPartiesCard = ({
     summary,
 }: TransactionDetailPartiesCardProps) => {
     const { t } = useLanguage()
-    const { scope, from, to, fee, isFeeMaximum, note } = summary
+    const { scope, from, to, contract, fee, isFeeMaximum, note } = summary
 
-    if (!from && !to && !fee && !note) {
+    if (!from && !to && !contract && !fee && !note) {
         return null
     }
 
@@ -46,6 +47,12 @@ export const TransactionDetailPartiesCard = ({
                     testID='transaction_detail_to'
                     title={t('transactions.common.to')}
                     address={to}
+                    scope={scope}
+                />
+            )}
+            {!!contract && (
+                <TransactionDetailContractRow
+                    contract={contract}
                     scope={scope}
                 />
             )}

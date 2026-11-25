@@ -39,6 +39,7 @@ import {
 import {
     summarizeHistoryItem,
     TransactionDetailNotFoundError,
+    useCurrentOwnRecord,
     useTransactionRecordByIdQuery,
     type SuspectedPoisoning,
 } from '@perawallet/wallet-core-transactions'
@@ -154,17 +155,21 @@ export const useTransactionDetailsScreen =
             transactionId: transactionId ?? '',
             isEnabled: isRecordLookup,
         })
-        const historyRecord = paramRecord ?? lookup.data
+        const account = useSelectedAccount()
+        const address = account
+            ? (chainAccountOf(account, scope.chainId)?.address ?? '')
+            : ''
+        const currentRecord = useCurrentOwnRecord({
+            record: paramRecord,
+            scope,
+            accountAddress: address,
+        })
+        const historyRecord = currentRecord ?? lookup.data
 
         const { hasInternet } = useNetworkStatus()
         // The signing flow's in-memory object is authoritative (unsigned txns
         // have no on-chain id).
         const transaction = paramTransaction ?? detail.transaction
-
-        const account = useSelectedAccount()
-        const address = account
-            ? (chainAccountOf(account, scope.chainId)?.address ?? '')
-            : ''
         const notice = useMemo(() => {
             if (historyRecord)
                 return chainNoticeOf(historyRecord.summary.notice)

@@ -21,6 +21,7 @@ import {
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import {
     recordSubmissionAttempt,
+    recordSubmissionOutcome,
     resolveSubmissionAttempt,
     setOpenSubmissionStatus,
     markSubmissionUnknown,
@@ -476,6 +477,46 @@ describe('submission ledger repository', () => {
                 ).toEqual([id])
             },
         )
+
+        it('adds the charged fee and block to the entry, keeping the rest', async () => {
+            const id = await recordWithEntry()
+
+            await recordSubmissionOutcome({
+                db,
+                id,
+                chargedFee: new Decimal('126000000000'),
+                blockNumber: 38_000_000,
+            })
+
+            const [attempt] = await getSubmissionAttemptsWithHistoryEntry({
+                db,
+                scope: ETHEREUM,
+            })
+            const entry = attempt!.historyEntry
+            expect(entry.chargedFee).toBeInstanceOf(Decimal)
+            expect(entry.chargedFee!.toString()).toBe('126000000000')
+            expect(entry.blockNumber).toBe(38_000_000)
+            expect(entry.fee!.toString()).toBe('420000000000000')
+            expect(entry.summary.title).toEqual(HISTORY_ENTRY.summary.title)
+        })
+
+        it('leaves a row with no entry without one', async () => {
+            const id = await recordWithEntry({ historyEntry: undefined })
+
+            await recordSubmissionOutcome({
+                db,
+                id,
+                chargedFee: new Decimal('1'),
+                blockNumber: 1,
+            })
+
+            expect(
+                await getSubmissionAttemptsWithHistoryEntry({
+                    db,
+                    scope: ETHEREUM,
+                }),
+            ).toEqual([])
+        })
 
         it('returns entry-bearing rows of every status for the scope, newest first', async () => {
             const statuses = [
