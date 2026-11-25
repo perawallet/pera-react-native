@@ -566,6 +566,74 @@ describe('asset sync queries', () => {
         })
     })
 
+    describe('getStaleOrMissingAssetIds — chain-only recheck', () => {
+        const TWO_DAYS_AGO = Date.now() - 2 * 24 * 60 * 60 * 1000
+
+        const seedNodeOnly = () =>
+            upsertNodeAssets({
+                db,
+                items: [makeAsset()],
+                scope: MAINNET_SCOPE,
+            })
+
+        const ageRows = async () => {
+            await db.run(
+                sql`update assets_node set updated_at = ${TWO_DAYS_AGO}`,
+            )
+            await db.run(
+                sql`update assets_pera set updated_at = ${TWO_DAYS_AGO}`,
+            )
+        }
+
+        const recheck = (recheckBackendless = true) =>
+            getStaleOrMissingAssetIds({
+                db,
+                assetIds: ['31566704'],
+                scope: MAINNET_SCOPE,
+                ttlMs: 7 * 24 * 60 * 60 * 1000,
+                recheckBackendless,
+            })
+
+        it('rechecks a token stored from the chain alone once a day old', async () => {
+            await seedNodeOnly()
+            await ageRows()
+
+            expect(await recheck()).toEqual(['31566704'])
+        })
+
+        it('waits out the day after a read that stored the chain half only', async () => {
+            await seedNodeOnly()
+
+            expect(await recheck()).toEqual([])
+        })
+
+        it('leaves a token the backend described', async () => {
+            await upsertAssets({
+                db,
+                items: [
+                    makeAsset({
+                        peraMetadata: {
+                            isDeleted: false,
+                            verificationTier: 'unverified',
+                            logo: null,
+                        },
+                    }),
+                ],
+                scope: MAINNET_SCOPE,
+            })
+            await ageRows()
+
+            expect(await recheck()).toEqual([])
+        })
+
+        it('does not recheck when the caller omits the flag', async () => {
+            await seedNodeOnly()
+            await ageRows()
+
+            expect(await recheck(false)).toEqual([])
+        })
+    })
+
     describe('getStaleOrMissingAssetIds — ARC19 recheck', () => {
         // ARC19 media is mutable: the manager's acfg re-points the reserve
         // address at a new CID and the backend re-crawls, but only a re-fetch

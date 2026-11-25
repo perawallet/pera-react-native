@@ -112,6 +112,7 @@ export const SwapForm = ({ scope, initialPayAmount }: SwapFormProps) => {
                     amount={receiveAmount}
                     isLoading={isQuoteFetching && !receiveAmount}
                     onAssetPress={handleOpenReceiveAssetSelection}
+                    quote={selectedQuote}
                 />
             </PWView>
 

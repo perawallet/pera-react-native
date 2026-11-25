@@ -14,6 +14,7 @@ import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 import { formatCurrency } from '@perawallet/wallet-core-shared'
 import { useSwapAmountSection } from '../useSwapAmountSection'
 
@@ -28,10 +29,22 @@ let mockAsset = {
     totalSupply: new Decimal(10_000_000_000),
 }
 
+let mockPrices = new Map<string, { assetId: string; usdPrice: Decimal }>()
+const mockUseAssetPricesQuery = vi.fn()
+
 vi.mock('@perawallet/wallet-core-assets', () => ({
+    PeraAssetVerificationTier: {
+        verified: 'verified',
+        suspicious: 'suspicious',
+        unverified: 'unverified',
+    },
     useAssetsQuery: () => ({
         data: new Map([['0', mockAsset]]),
     }),
+    useAssetPricesQuery: (...args: unknown[]) => {
+        mockUseAssetPricesQuery(...args)
+        return { data: mockPrices }
+    },
 }))
 
 // fiat × 2 = asset units; asset ÷ 2 = fiat.
@@ -686,6 +699,174 @@ describe('useSwapAmountSection', () => {
 
             expect(result.current.displayValue).toBe('1.234567')
             expect(onAmountChange).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('receive asset metadata', () => {
+        const receiveProps = {
+            scope: SCOPE,
+            variant: 'receive' as const,
+            assetId: '0',
+            amount: new Decimal(2),
+        }
+
+        const quoteFor = (overrides: {
+            assetId?: string
+            logo?: string
+            amountOutUsdValue?: string | null
+            verificationTier?: string
+        }) =>
+            ({
+                assetOut: {
+                    assetId: overrides.assetId ?? '0',
+                    ref: {
+                        chainId: SCOPE.chainId,
+                        networkId: SCOPE.networkId,
+                        assetId: overrides.assetId ?? '0',
+                    },
+                    decimals: 6,
+                    logo: overrides.logo,
+                    verificationTier: overrides.verificationTier ?? 'verified',
+                },
+                // 2 display units.
+                amountOut: new Decimal(2_000_000),
+                amountOutUsdValue:
+                    overrides.amountOutUsdValue === undefined
+                        ? '3.00'
+                        : overrides.amountOutUsdValue,
+            }) as unknown as SwapQuote
+
+        afterEach(() => {
+            mockPrices = new Map()
+        })
+
+        it('fetches the price of a receive asset the account may not hold', () => {
+            renderHook(() => useSwapAmountSection(receiveProps))
+
+            expect(mockUseAssetPricesQuery).toHaveBeenCalledWith(
+                SCOPE,
+                ['0'],
+                true,
+                { fetchMissing: true },
+            )
+        })
+
+        it('leaves the pay asset to the stored prices', () => {
+            const { result } = renderHook(() =>
+                useSwapAmountSection({
+                    scope: SCOPE,
+                    variant: 'pay',
+                    assetId: '0',
+                    amount: null,
+                    onAmountChange: vi.fn(),
+                }),
+            )
+
+            expect(mockUseAssetPricesQuery).toHaveBeenCalledWith(
+                SCOPE,
+                ['0'],
+                false,
+                { fetchMissing: true },
+            )
+            expect(result.current.usdPrice).toBeUndefined()
+        })
+
+        it('prefers the stored price over the quote', () => {
+            mockPrices = new Map([
+                ['0', { assetId: '0', usdPrice: new Decimal('1.01') }],
+            ])
+
+            const { result } = renderHook(() =>
+                useSwapAmountSection({
+                    ...receiveProps,
+                    quote: quoteFor({}),
+                }),
+            )
+
+            expect(result.current.usdPrice).toEqual(new Decimal('1.01'))
+        })
+
+        it('prices the asset from the quote when no price is stored', () => {
+            const { result } = renderHook(() =>
+                useSwapAmountSection({
+                    ...receiveProps,
+                    quote: quoteFor({}),
+                }),
+            )
+
+            expect(result.current.usdPrice).toEqual(new Decimal('1.5'))
+        })
+
+        it.each([
+            ['has no usd value', { amountOutUsdValue: null }],
+            ['is for another asset', { assetId: '31566704' }],
+        ])('leaves the price unknown when the quote %s', (_name, overrides) => {
+            const { result } = renderHook(() =>
+                useSwapAmountSection({
+                    ...receiveProps,
+                    quote: quoteFor(overrides),
+                }),
+            )
+
+            expect(result.current.usdPrice).toBeUndefined()
+        })
+
+        it('takes the logo from the quote when the stored asset has none', () => {
+            const { result } = renderHook(() =>
+                useSwapAmountSection({
+                    ...receiveProps,
+                    quote: quoteFor({ logo: 'https://logo/usdc.png' }),
+                }),
+            )
+
+            expect(result.current.asset?.peraMetadata?.logo).toBe(
+                'https://logo/usdc.png',
+            )
+        })
+
+        it.each([
+            ['suspicious', 'suspicious'],
+            ['trusted', 'unverified'],
+        ])('takes a router tier of %s as %s', (verificationTier, expected) => {
+            const { result } = renderHook(() =>
+                useSwapAmountSection({
+                    ...receiveProps,
+                    quote: quoteFor({
+                        logo: 'https://logo/usdc.png',
+                        verificationTier,
+                    }),
+                }),
+            )
+
+            expect(result.current.asset?.peraMetadata?.verificationTier).toBe(
+                expected,
+            )
+        })
+
+        it('keeps a stored logo over the quote', () => {
+            const original = mockAsset
+            mockAsset = {
+                ...original,
+                peraMetadata: {
+                    isDeleted: false,
+                    verificationTier: 'verified',
+                    logo: 'https://logo/stored.png',
+                },
+            } as typeof original
+            try {
+                const { result } = renderHook(() =>
+                    useSwapAmountSection({
+                        ...receiveProps,
+                        quote: quoteFor({ logo: 'https://logo/usdc.png' }),
+                    }),
+                )
+
+                expect(result.current.asset?.peraMetadata?.logo).toBe(
+                    'https://logo/stored.png',
+                )
+            } finally {
+                mockAsset = original
+            }
         })
     })
 })

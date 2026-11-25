@@ -73,7 +73,9 @@ export const useAssetsQuery = (
 
             const queryHash = hashKey(queryKey)
             try {
-                await fetchAndPersistAssets(stableIds, scope)
+                await fetchAndPersistAssets(stableIds, scope, {
+                    isOnDemand: true,
+                })
                 servedAfterFailedRefresh.delete(queryHash)
             } catch (error) {
                 // A failed refresh must not hide a stored row: callers read an

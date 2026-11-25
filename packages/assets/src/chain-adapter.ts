@@ -75,6 +75,14 @@ export type PriceHistoryPoint = {
  */
 export type PriceProvider = 'pera'
 
+export type SyncAssetsOptions = {
+    /**
+     * The assets are on screen now, so a token stored without the backend's
+     * metadata (no logo, no tier) is asked about again, at most once a day.
+     */
+    isOnDemand?: boolean
+}
+
 /** The chain-specific asset and price sources; registered by the chain package. */
 export interface AssetsChainAdapter {
     chainId: ChainId
@@ -91,7 +99,11 @@ export interface AssetsChainAdapter {
      * Fetches whatever is stale or missing for `refs` and persists it. Accepts
      * the native ref and skips it. Rejects a ref or a scope on another chain.
      */
-    syncAssets(refs: AssetRef[], scope: ChainScope): Promise<void>
+    syncAssets(
+        refs: AssetRef[],
+        scope: ChainScope,
+        options?: SyncAssetsOptions,
+    ): Promise<void>
     /**
      * The asset as the chain's sources for `scope` describe it, with any
      * third-party opinion (verification tier, logo) merged in. Persists the
@@ -265,10 +277,12 @@ const assetRefOn = (scope: ChainScope, assetId: string): AssetRef => ({
 export const fetchAndPersistAssets = async (
     assetIds: string[],
     scope: ChainScope,
+    options?: SyncAssetsOptions,
 ): Promise<void> => {
     await assetsAdapterFor(scope).syncAssets(
         assetIds.map(id => assetRefOn(scope, id)),
         scope,
+        options,
     )
 }
 

@@ -30,11 +30,17 @@ export const assetItemSchema = z.object({
     unit_name: z.string().nullable(),
     fraction_decimals: z.number().int().min(0).nullable(),
     logo: z.string().nullable(),
+    // A price of a shape this client predates reads as no price; failing the
+    // row would drop its logo and name along with it.
     usd_value: z
         .string()
         .regex(/^\d+\.\d{24}$/)
-        .nullable(),
-    last_24_hours_usd_price_change_percentage: z.number().nullable(),
+        .nullable()
+        .catch(null),
+    last_24_hours_usd_price_change_percentage: z
+        .number()
+        .nullable()
+        .catch(null),
     is_verified: z.boolean(),
     verification_tier: z.enum(['unverified', 'verified', 'suspicious']),
     explorer_url: z.string().nullable(),

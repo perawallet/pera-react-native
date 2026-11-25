@@ -86,10 +86,11 @@ describe('scope wrappers', () => {
         const syncAssets = vi.fn().mockResolvedValue(undefined)
         registerFakeAssetsAdapter({ syncAssets })
 
-        await fetchAndPersistAssets(['1', '2'], {
-            chainId: 'algorand',
-            networkId: 'testnet',
-        } as const)
+        await fetchAndPersistAssets(
+            ['1', '2'],
+            { chainId: 'algorand', networkId: 'testnet' } as const,
+            { isOnDemand: true },
+        )
 
         expect(syncAssets).toHaveBeenCalledWith(
             [
@@ -97,6 +98,7 @@ describe('scope wrappers', () => {
                 { chainId: 'algorand', assetId: '2' },
             ],
             { chainId: 'algorand', networkId: 'testnet' },
+            { isOnDemand: true },
         )
     })
 

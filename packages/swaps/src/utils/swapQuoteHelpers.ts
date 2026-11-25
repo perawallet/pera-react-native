@@ -10,13 +10,19 @@
  limitations under the License
  */
 
-import type { Decimal } from 'decimal.js'
+import { Decimal } from 'decimal.js'
 
+import {
+    toScopeKey,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     baseUnitsToDisplayUnits,
     DEFAULT_PRECISION,
     formatNumber,
+    type Maybe,
     type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import type { SwapQuote } from '../models'
 
@@ -75,4 +81,35 @@ export const formatSwapRate = (quote: SwapQuote): string => {
     const inUnit = quote.assetIn.unitName ?? ''
     const outUnit = quote.assetOut.unitName ?? ''
     return `1 ${inUnit} ≈ ${sign}${integer}${fraction} ${outUnit}`
+}
+
+/** `quote` when it is for `assetId` on `scope` as its out asset; null otherwise. */
+export const quoteForAssetOut = (
+    quote: Maybe<SwapQuote>,
+    scope: ChainScope,
+    assetId: string,
+): Nullable<SwapQuote> => {
+    if (!quote) return null
+    // Built here rather than via scopeOfSwapAsset: router-ids loads the chain
+    // adapters, and this file stays importable on its own.
+    const { chainId, networkId, assetId: outAssetId } = quote.assetOut.ref
+    return outAssetId === assetId &&
+        toScopeKey({ chainId, networkId }) === toScopeKey(scope)
+        ? quote
+        : null
+}
+
+/** USD per display unit of the out asset, as the router valued `amountOut`. */
+export const quoteOutUsdPrice = (quote: SwapQuote): Optional<Decimal> => {
+    if (!quote.amountOutUsdValue) return undefined
+    const amountOut = baseUnitsToDisplayUnits(
+        quote.amountOut,
+        quote.assetOut.decimals ?? 0,
+    )
+    if (amountOut.isZero()) return undefined
+    try {
+        return new Decimal(quote.amountOutUsdValue).div(amountOut)
+    } catch {
+        return undefined
+    }
 }

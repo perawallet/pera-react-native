@@ -11,6 +11,7 @@
  */
 
 import { Fragment } from 'react'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { PWIcon, PWLoadingIndicator, PWText, PWView } from '@components/core'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { useLanguage } from '@hooks/useLanguage'
@@ -20,6 +21,8 @@ import { useStyles } from './styles'
 import { useWalletChangesCard } from './useWalletChangesCard'
 
 export type WalletChangesCardProps = {
+    /** Where the rows' assets are priced; unset prices them on the home chain. */
+    scope?: ChainScope
     spend: readonly BalanceImpactItem[]
     receive: readonly BalanceImpactItem[]
     /** Shown in place of the rows while the changes are still being worked out. */
@@ -29,6 +32,7 @@ export type WalletChangesCardProps = {
 }
 
 export const WalletChangesCard = ({
+    scope,
     spend,
     receive,
     isLoading = false,
@@ -61,6 +65,7 @@ export const WalletChangesCard = ({
                     <WalletChangeRow
                         label={label}
                         item={item}
+                        scope={scope}
                         testID={`${testID}_${item.assetId}`}
                     />
                 </Fragment>

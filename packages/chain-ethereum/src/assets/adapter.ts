@@ -30,6 +30,7 @@ import {
     type AssetsChainAdapter,
     type DisplayableAsset,
     type PeraAsset,
+    type SyncAssetsOptions,
 } from '@perawallet/wallet-core-assets'
 import {
     isChainRefusedError,
@@ -335,6 +336,7 @@ const syncTokens = async (
     tokenIds: string[],
     scope: ChainScope,
     isSpam: SpamCheck,
+    { isOnDemand = false }: SyncAssetsOptions = {},
 ): Promise<void> => {
     if (tokenIds.length === 0) return
     const stale = await getStaleOrMissingAssetIds({
@@ -342,6 +344,9 @@ const syncTokens = async (
         scope,
         ttlMs: ASSET_CACHE_TTL_MS,
         recheckUnreadGroup: true,
+        // Without the backend the recheck could only read the chain again.
+        recheckBackendless:
+            isOnDemand && hasServices(ctx, scope, ASSETS_SERVICE),
         // A verified token the backend still lacks a logo for shouldn't wait
         // out the metadata TTL once the backend adds one.
         recheckMissingLogo: true,
@@ -400,7 +405,7 @@ const syncAssets =
         chain: EvmChain,
         listedTokens: ListedTokens,
     ): AssetsChainAdapter['syncAssets'] =>
-    async (refs, scope) => {
+    async (refs, scope, options) => {
         eip155ChainIdOf(scope, chain)
         const assetIds = refs.map(ref => evmAssetIdOf(chain, ref))
         await Promise.all([
@@ -413,6 +418,7 @@ const syncAssets =
                 toTokenIds(assetIds),
                 scope,
                 spamCheck(chain, listedTokens, scope),
+                options,
             ),
         ])
     }

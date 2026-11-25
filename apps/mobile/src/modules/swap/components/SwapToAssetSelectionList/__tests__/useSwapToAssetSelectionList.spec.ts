@@ -87,7 +87,10 @@ vi.mock('@tanstack/react-query', () => ({
     useQueryClient: mockUseQueryClient,
 }))
 
-vi.mock('@perawallet/wallet-core-swaps', () => ({
+vi.mock('@perawallet/wallet-core-swaps', async () => ({
+    ...(await vi.importActual<
+        typeof import('@packages/swaps/src/utils/swapAssetMetadata')
+    >('@packages/swaps/src/utils/swapAssetMetadata')),
     useSwapPairsInfiniteQuery: mockUseSwapPairsInfiniteQuery,
     useSwapAccount: mockUseSwapAccount,
     scopeOfSwapAsset: ({

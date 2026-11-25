@@ -24,6 +24,7 @@ import { setupServer } from 'msw/node'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     isPeraServiceUnavailableError,
+    logger,
     PeraNetworkError,
 } from '@perawallet/wallet-core-shared'
 import {
@@ -147,12 +148,12 @@ describe('fetchAssetItems', () => {
         ).rejects.toBeInstanceOf(PeraNetworkError)
     })
 
-    it('answers null for a row it cannot read and keeps the rest', async () => {
+    it('answers null for a row it cannot read, logs it and keeps the rest', async () => {
+        const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
         server.use(
             http.post(`${PERA_URL}/api/v4/assets/`, () =>
                 HttpResponse.json({
                     results: [
-                        { ...usdc, usd_value: '1.5' },
                         {
                             ...unknownAssetItem(DAI_CAIP19),
                             verification_tier: 'trusted',
@@ -163,9 +164,40 @@ describe('fetchAssetItems', () => {
             ),
         )
 
-        const items = await fetchAssetItems(SCOPE, ETHEREUM, [USDC, DAI, USDC])
+        const items = await fetchAssetItems(SCOPE, ETHEREUM, [DAI, USDC])
 
-        expect(items).toEqual([null, null, usdc])
+        expect(items).toEqual([null, usdc])
+        expect(warn).toHaveBeenCalledTimes(1)
+        expect(warn).toHaveBeenCalledWith(
+            expect.any(String),
+            expect.objectContaining({
+                count: 1,
+                assetIds: [DAI_CAIP19],
+                fields: ['verification_tier'],
+            }),
+        )
+        warn.mockRestore()
+    })
+
+    it.each([
+        ['a price at another precision', { usd_value: '1.5' }],
+        [
+            'a price change of another type',
+            { last_24_hours_usd_price_change_percentage: '0.1' },
+        ],
+    ])('keeps the logo and name of a row with %s', async (_name, price) => {
+        server.use(
+            http.post(`${PERA_URL}/api/v4/assets/`, () =>
+                HttpResponse.json({ results: [{ ...usdc, ...price }] }),
+            ),
+        )
+
+        const [item] = await fetchAssetItems(SCOPE, ETHEREUM, [USDC])
+
+        expect(item).toEqual({
+            ...usdc,
+            ...Object.fromEntries(Object.keys(price).map(key => [key, null])),
+        })
     })
 
     it('rejects a row with no asset_id, since its position cannot be checked', async () => {
@@ -246,7 +278,7 @@ describe('fetchWhitelist', () => {
                         },
                         { ...usdcRow, asset_id: `eip155:10/erc20:${DAI}` },
                         { ...usdcRow, verification_tier: 'trusted' },
-                        { ...usdcRow, usd_value: '1.5' },
+                        { ...usdcRow, is_verified: 'yes' },
                         { ...usdcRow, asset_id: DAI_CAIP19, type: 'algo' },
                         usdcRow,
                     ],

@@ -17,6 +17,7 @@ import type { PriceHistoryPoint } from '@perawallet/wallet-core-assets'
 import {
     CHART_QUERY_TIMEOUT_MS,
     isPeraNetworkError,
+    logger,
     PeraServiceUnavailableError,
     queryClient,
     type HistoryPeriod,
@@ -47,6 +48,7 @@ export const TOKEN_SEARCH_SERVICE = 'tokenSearch'
 export const ASSETS_PATH = '/api/v4/assets/'
 // The backend rejects a request naming more ids than this (422).
 export const ASSETS_MAX_IDS = 500
+const UNREADABLE_LOG_SAMPLE = 5
 
 export const whitelistPath = (eip155ChainId: number | string): string =>
     `/api/v3/evm/${eip155ChainId}/tokens/`
@@ -120,10 +122,27 @@ export const fetchAssetItems = async (
             `Pera assets for ${scope.chainId}/${scope.networkId} answered out of request order`,
         )
     }
-    return results.map(row => {
+    const unreadable: string[] = []
+    const fields = new Set<string>()
+    const items = results.map(row => {
         const parsed = assetItemSchema.safeParse(row)
-        return parsed.success ? parsed.data : null
+        if (parsed.success) return parsed.data
+        unreadable.push(row.asset_id)
+        for (const issue of parsed.error.issues)
+            fields.add(issue.path.join('.'))
+        return null
     })
+    // One line per response: a field the backend changes on every row would
+    // otherwise log once per asset.
+    if (unreadable.length > 0) {
+        logger.warn('Pera asset rows unreadable; treating them as unknown', {
+            scope,
+            count: unreadable.length,
+            assetIds: unreadable.slice(0, UNREADABLE_LOG_SAMPLE),
+            fields: [...fields],
+        })
+    }
+    return items
 }
 
 export type TokenSearchPage = {

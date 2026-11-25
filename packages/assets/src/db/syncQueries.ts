@@ -330,6 +330,45 @@ async function getLogolessVerifiedAssetIds({
 }
 
 /**
+ * Rows stored from the chain alone (an unknown token, or a pass with the
+ * backend unreachable), once a day old. Opt-in for assets on screen only: the
+ * unvetted majority of an airdrop-heavy account would otherwise be re-asked
+ * daily by every background sync.
+ */
+async function getBackendlessAssetIds({
+    db,
+    assetIds,
+    scopeKey,
+}: {
+    db: Database
+    assetIds: string[]
+    scopeKey: ChainScopeKey
+}): Promise<string[]> {
+    const rows = await db
+        .select({ assetId: AssetsNodeSchema.assetId })
+        .from(AssetsNodeSchema)
+        .leftJoin(
+            AssetsPeraSchema,
+            and(
+                eq(AssetsPeraSchema.assetId, AssetsNodeSchema.assetId),
+                eq(AssetsPeraSchema.scope, AssetsNodeSchema.scope),
+            ),
+        )
+        .where(
+            and(
+                eq(AssetsNodeSchema.scope, scopeKey),
+                isNull(AssetsPeraSchema.peraMetadataJson),
+                lt(AssetsNodeSchema.updatedAt, Date.now() - LOGO_RETRY_TTL_MS),
+                idPredicate(AssetsNodeSchema.assetId, assetIds),
+            ),
+        )
+        .all()
+
+    const candidates = new Set(assetIds)
+    return rows.map(row => row.assetId).filter(id => candidates.has(id))
+}
+
+/**
  * Held collectibles whose `assets_node.url` was never resolved.
  *
  * The bulk /v2/assets/ serializer carries no url field, so rows synced
@@ -389,7 +428,9 @@ export async function getCollectibleIdsMissingUrl({
  * tokens no sync has read the cross-chain group of — see
  * `getUnreadGroupAssetIds`. `recheckMissingLogo` additionally returns verified
  * tokens stored without a logo once a day old — see
- * `getLogolessVerifiedAssetIds`.
+ * `getLogolessVerifiedAssetIds`. `recheckBackendless` additionally returns
+ * tokens stored from the chain alone once a day old — see
+ * `getBackendlessAssetIds`.
  */
 export async function getStaleOrMissingAssetIds({
     db = getDatabase(),
@@ -400,11 +441,13 @@ export async function getStaleOrMissingAssetIds({
     recheckArc19,
     recheckUnreadGroup = false,
     recheckMissingLogo = false,
+    recheckBackendless = false,
 }: GetStaleOrMissingAssetIdsParams & {
     recheckUnclassified?: UnclassifiedRecheck
     recheckArc19?: Arc19Recheck
     recheckUnreadGroup?: boolean
     recheckMissingLogo?: boolean
+    recheckBackendless?: boolean
 }): Promise<string[]> {
     const scopeKey = toScopeKey(scope)
     const staleOrMissing = await getStaleOrMissingIdsFromTable({
@@ -441,10 +484,15 @@ export async function getStaleOrMissingAssetIds({
         ? await getLogolessVerifiedAssetIds({ db, assetIds, scopeKey })
         : []
 
+    const backendless = recheckBackendless
+        ? await getBackendlessAssetIds({ db, assetIds, scopeKey })
+        : []
+
     return unclassified.length === 0 &&
         arc19.length === 0 &&
         unreadGroup.length === 0 &&
-        missingLogo.length === 0
+        missingLogo.length === 0 &&
+        backendless.length === 0
         ? staleOrMissing
         : [
               ...new Set([
@@ -453,6 +501,7 @@ export async function getStaleOrMissingAssetIds({
                   ...arc19,
                   ...unreadGroup,
                   ...missingLogo,
+                  ...backendless,
               ]),
           ]
 }
