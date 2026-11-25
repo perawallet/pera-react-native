@@ -92,7 +92,11 @@ describe('evm cancel', () => {
                     ),
                 ).toBe(true)
 
-                const cancelHash = await submitAndRecord(env, cancel.raw)
+                const cancelHash = await submitAndRecord(
+                    env,
+                    cancel.raw,
+                    originalHash,
+                )
                 // Node acceptance: the node evicted the original for the cancel.
                 expect(await pooledHashes(env.chain)).toEqual([
                     cancelHash.toLowerCase(),

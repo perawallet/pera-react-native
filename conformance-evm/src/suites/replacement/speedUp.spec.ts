@@ -101,6 +101,7 @@ describe('evm speed-up', () => {
                 const replacementHash = await submitAndRecord(
                     env,
                     replacement.raw,
+                    originalHash,
                 )
                 // Node acceptance: the node evicted the original for the replacement.
                 expect(await pooledHashes(env.chain)).toEqual([
@@ -165,7 +166,7 @@ describe('evm speed-up', () => {
             )
 
             const refusal = await rejectionOf(() =>
-                submitAndRecord(env, underBumped.raw),
+                submitAndRecord(env, underBumped.raw, originalHash),
             )
             expect(refusal).toBeInstanceOf(SubmissionError)
             expect(refusal).toMatchObject({
@@ -238,7 +239,7 @@ describe('evm speed-up', () => {
             .payload as EthereumTransactionPayload
         expect(payload.transaction.nonce).toBe(0)
         const refusal = await rejectionOf(() =>
-            submitAndRecord(env, replacement.raw),
+            submitAndRecord(env, replacement.raw, originalHash),
         )
 
         expect(refusal).toBeInstanceOf(SubmissionError)

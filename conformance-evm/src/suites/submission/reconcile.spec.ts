@@ -189,6 +189,7 @@ describe('evm submission reconcile', () => {
                             original.raw,
                         )
                     ).raw,
+                    originalHash,
                 )
                 await mine(env.chain)
                 return { originalHash, replacementHash }
@@ -258,11 +259,12 @@ describe('evm submission reconcile', () => {
                 RECIPIENT,
                 AMOUNT,
             )
-            await submitAndRecord(env, original.raw)
+            const originalHash = await submitAndRecord(env, original.raw)
             const replacementHash = await submitAndRecord(
                 env,
                 (await signedReplacement(env, sender, 'speed-up', original.raw))
                     .raw,
+                originalHash,
             )
             // The node evicted the original on the replacement; dropping the
             // replacement too leaves the nonce with nothing pooled.
