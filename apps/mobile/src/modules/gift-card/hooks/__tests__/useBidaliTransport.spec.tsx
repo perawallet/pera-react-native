@@ -284,8 +284,8 @@ describe('useBidaliTransport', () => {
             expect(Linking.openURL).not.toHaveBeenCalled()
         })
 
-        // The webview gives this channel no bridge token, so the posting
-        // frame's origin is the only thing that says the message is Bidali's.
+        // The bridge token is the first gate; the posting frame's origin is
+        // the second, so a token-bearing message from outside Bidali still drops.
         it('drops a payment request posted by a frame outside Bidali', async () => {
             const { result } = renderHook(() =>
                 useBidaliTransport(mockAccount, emptyBalances),
