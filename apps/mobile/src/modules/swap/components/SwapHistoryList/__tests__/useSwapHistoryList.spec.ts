@@ -293,7 +293,7 @@ describe('useSwapHistoryList', () => {
         ])
     })
 
-    it('lists an Ethereum swap paid by an EVM address in lowercase with its payer\'s name', () => {
+    it("lists an Ethereum swap paid by an EVM address in lowercase with its payer's name", () => {
         const ethSwap = {
             ...item,
             orderId: 'eth-swap',
@@ -319,7 +319,7 @@ describe('useSwapHistoryList', () => {
         expect(result.current.swaps[0].accountName).toBe('Second')
     })
 
-    it('shows each row\'s chain only when the wallet swaps on more than one', () => {
+    it("shows each row's chain only when the wallet swaps on more than one", () => {
         expect(render().result.current.isChainShown).toBe(true)
 
         wallet.sourceChainIds = ['algorand']

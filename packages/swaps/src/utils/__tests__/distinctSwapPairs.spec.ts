@@ -87,7 +87,13 @@ describe('distinctSwapPairs', () => {
     it('orders Ethereum and Algorand rows newest first across chains', () => {
         const pairs = distinctSwapPairs([
             row('1', ['0', '7'], '2026-10-01T10:00:00Z'),
-            row('2', ['usdc', 'eth'], '2026-10-03T10:00:00Z', 'completed', 'ethereum'),
+            row(
+                '2',
+                ['usdc', 'eth'],
+                '2026-10-03T10:00:00Z',
+                'completed',
+                'ethereum',
+            ),
             row('3', ['0', '9'], '2026-10-02T10:00:00Z'),
         ])
 

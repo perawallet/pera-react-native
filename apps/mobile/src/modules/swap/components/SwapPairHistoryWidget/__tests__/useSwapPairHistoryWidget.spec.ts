@@ -231,11 +231,13 @@ describe('useSwapPairHistoryWidget', () => {
         expect(chip.props.accountName).toBe('EVM Test 1')
     })
 
-    it('shows each chip\'s chain only when the wallet swaps on more than one', () => {
+    it("shows each chip's chain only when the wallet swaps on more than one", () => {
         const render = () =>
-            renderHook(() => useSwapPairHistoryWidget(SCOPE)).result.current.renderPair(
-                { item: pairPaidBy('main') },
-            ) as ReactElement<{ isChainShown: boolean }>
+            renderHook(() =>
+                useSwapPairHistoryWidget(SCOPE),
+            ).result.current.renderPair({
+                item: pairPaidBy('main'),
+            }) as ReactElement<{ isChainShown: boolean }>
 
         expect(render().props.isChainShown).toBe(true)
 

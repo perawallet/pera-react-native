@@ -213,7 +213,11 @@ const HistoryHost = () => (
 )
 
 const chipOrder = async () => {
-    const chips = await screen.findAllByTestId(/^swap-pair-chip-/, {}, FORM_TIMEOUT)
+    const chips = await screen.findAllByTestId(
+        /^swap-pair-chip-/,
+        {},
+        FORM_TIMEOUT,
+    )
     return chips
 }
 

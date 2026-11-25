@@ -84,7 +84,7 @@ describe('swaps/useRecentSwapPairsQuery', () => {
         expect(result.current.pairs).toEqual([{ ...paid, accountId: 'main' }])
     })
 
-    test('counts the cap after leaving out pairs that are not the wallet\'s', () => {
+    test("counts the cap after leaving out pairs that are not the wallet's", () => {
         const strangers = Array.from({ length: 3 }, (_, i) =>
             pairPaidBy(`STRANGER${i}`),
         )

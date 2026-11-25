@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { toScopeKey } from '@perawallet/wallet-core-chain-contract'
 import { PWView } from '@components/core'
 import { AssetIcon } from '@components/AssetIcon'
 import { ChainAvatarBadge } from '@modules/chain-ui/icon'
@@ -32,7 +33,7 @@ export const SwapAssetPairIcon = ({
     isChainShown = false,
 }: SwapAssetPairIconProps) => {
     const styles = useStyles({ surfaceColor })
-    const isCrossChain = assetIn.ref.chainId !== assetOut.ref.chainId
+    const isCrossChain = toScopeKey(assetIn.ref) !== toScopeKey(assetOut.ref)
 
     return (
         <PWView style={styles.container}>

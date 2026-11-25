@@ -52,7 +52,7 @@ describe('swaps/pairsPaidBy', () => {
         ])
     })
 
-    test('keeps a cross-chain pair whose destination network is a payer\'s, tagged with the source payer', () => {
+    test("keeps a cross-chain pair whose destination network is a payer's, tagged with the source payer", () => {
         const crossChain = pair({ scope: ALGO, address: 'MAIN' }, [ALGO, ETH])
 
         expect(pairsPaidBy([crossChain], PAYERS, canPayAnywhere)).toEqual([
@@ -70,7 +70,7 @@ describe('swaps/pairsPaidBy', () => {
         expect(pairsPaidBy([intoSepolia], PAYERS, canPayAnywhere)).toEqual([])
     })
 
-    test('leaves out a pair whose source leg is off the payer\'s network', () => {
+    test("leaves out a pair whose source leg is off the payer's network", () => {
         const wrongSource = pair({ scope: ALGO, address: 'MAIN' }, [ETH, ALGO])
 
         expect(pairsPaidBy([wrongSource], PAYERS, canPayAnywhere)).toEqual([])
@@ -80,7 +80,12 @@ describe('swaps/pairsPaidBy', () => {
         const BASE = { chainId: 'base', networkId: 'mainnet' } as const
         const payers = [
             ...PAYERS,
-            { scope: BASE, address: '0xBase', accountId: 'evm', isOnDevice: true },
+            {
+                scope: BASE,
+                address: '0xBase',
+                accountId: 'evm',
+                isOnDevice: true,
+            },
         ]
         const onBase = pair({
             scope: BASE as unknown as typeof ETH,
