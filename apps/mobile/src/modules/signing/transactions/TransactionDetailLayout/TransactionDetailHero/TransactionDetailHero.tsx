@@ -34,6 +34,7 @@ export const TransactionDetailHero = ({
         status,
         amount,
         isAmountLoading,
+        headlineFiat,
     } = summary
 
     return (
@@ -54,6 +55,13 @@ export const TransactionDetailHero = ({
                 <TransactionDetailHeroAmount
                     amount={amount}
                     scope={scope}
+                />
+            )}
+            {!amount && !isAmountLoading && !!headlineFiat && (
+                <TransactionDetailHeroAmount
+                    amount={headlineFiat}
+                    scope={scope}
+                    isFiatOnly
                 />
             )}
             {!amount && !!isAmountLoading && (

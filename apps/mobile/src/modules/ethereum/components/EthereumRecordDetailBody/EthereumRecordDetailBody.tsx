@@ -43,6 +43,7 @@ export const EthereumRecordDetailBody = ({ record }: RecordDetailBodyProps) => {
     return (
         <EthereumRecordSummary
             record={record}
+            isReadPending={isLoading}
             warnings={
                 <>
                     {isLoading && (

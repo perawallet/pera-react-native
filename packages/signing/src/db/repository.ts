@@ -192,6 +192,47 @@ export const resolveSubmissionAttempt = async ({
     notifySubmissionLedgerChanged()
 }
 
+export type RecordSubmissionOutcomeParams = {
+    db?: Database
+    id: string
+    /** Base units of the native asset. */
+    chargedFee: Decimal
+    blockNumber: number
+}
+
+/**
+ * Writes what a mined attempt was charged and where it landed onto its history
+ * entry, so History stops showing the most it could be charged while the
+ * chain's own history catches up. A row without an entry is left as it is.
+ */
+export const recordSubmissionOutcome = async ({
+    db = getDatabase(),
+    id,
+    chargedFee,
+    blockNumber,
+}: RecordSubmissionOutcomeParams): Promise<void> => {
+    const [row] = await db
+        .select({ historyEntryJson: SubmissionAttemptsSchema.historyEntryJson })
+        .from(SubmissionAttemptsSchema)
+        .where(eq(SubmissionAttemptsSchema.id, id))
+        .all()
+    const entry = row?.historyEntryJson
+        ? parseHistoryEntry(row.historyEntryJson)
+        : null
+    if (!entry) return
+    await db
+        .update(SubmissionAttemptsSchema)
+        .set({
+            historyEntryJson: stringifyDecimalJson({
+                v: SUBMISSION_HISTORY_ENTRY_VERSION,
+                entry: { ...entry, chargedFee, blockNumber },
+            } satisfies StoredHistoryEntry),
+        })
+        .where(eq(SubmissionAttemptsSchema.id, id))
+        .run()
+    notifySubmissionLedgerChanged()
+}
+
 export type SetOpenSubmissionStatusParams = {
     db?: Database
     id: string

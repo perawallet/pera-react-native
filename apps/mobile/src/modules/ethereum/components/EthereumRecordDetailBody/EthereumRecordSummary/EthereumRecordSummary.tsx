@@ -23,15 +23,17 @@ import { EthereumPricingSection } from '../../EthereumPricingSection'
 type EthereumRecordSummaryProps = {
     record: TransactionRecord
     warnings?: ReactNode
+    isReadPending?: boolean
 }
 
 /** The record as the backend summarised it: no calldata, so no spender or amount of an approval. */
 export const EthereumRecordSummary = ({
     record,
     warnings,
+    isReadPending,
 }: EthereumRecordSummaryProps) => {
     const { summary, amountRows, assetLabel, assetContract } =
-        useEthereumRecordLayout(record)
+        useEthereumRecordLayout(record, undefined, { isReadPending })
     const { nft, handleOpen } = useEthereumRecordNft(record)
     // Only what the history gave: with no node read there is nothing else to fill it.
     const pricing = recordPricingOf(record)

@@ -38,6 +38,7 @@ import { readEvmTransactionDetail } from '../detail'
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const USDC = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'
 const SPENDER = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
+const PERMIT2 = '0x000000000022D473030F116dDEE9F6B43aC78BA3'
 
 const approve = (amount: bigint) =>
     encodeFunctionData({
@@ -97,6 +98,26 @@ describe('readEvmTransactionDetail', () => {
             isMined: true,
             feePaid: new Decimal('21000'),
             call: { kind: 'approve', spender: SPENDER },
+        })
+    })
+
+    it('names a known spender on a mined approval, as the review before signing did', async () => {
+        const tx = await evmSignedRpcTransaction(
+            call({
+                data: encodeFunctionData({
+                    abi: erc20Abi,
+                    functionName: 'approve',
+                    args: [PERMIT2, maxUint256],
+                }),
+            }),
+        )
+        node(tx)
+
+        const view = readEthereumNative((await read(tx.hash))!)
+
+        expect(view).toMatchObject({
+            call: { kind: 'approve' },
+            knownSpender: { name: 'Permit2' },
         })
     })
 

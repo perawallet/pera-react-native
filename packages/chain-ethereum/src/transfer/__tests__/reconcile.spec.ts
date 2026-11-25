@@ -32,10 +32,17 @@ import {
     keccak256,
     type Hex,
     type RpcTransaction,
+    type RpcTransactionReceipt,
 } from 'viem'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { Decimal } from 'decimal.js'
+import {
+    i18nKey,
+    type ChainScope,
+    type TransactionSummary,
+} from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
 import {
+    getSubmissionAttemptsWithHistoryEntry,
     recordSubmissionAttempt,
     resolveSubmissionAttempt,
     SubmissionAttemptsSchema,
@@ -87,6 +94,11 @@ import {
 import { ETHEREUM, evmChainOf } from '../../__tests__/evm-chains'
 import { findEvmNonceGap } from '../replacement'
 import { submitAndRecordEthereumTransactions } from '../submission'
+import {
+    clearPredictions,
+    rememberPrediction,
+} from '../../simulation/predictions'
+import type { EvmTransactionSimulation } from '../../simulation/types'
 
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const HASH = `0x${'ab'.repeat(32)}` as Hex
@@ -215,6 +227,103 @@ describe('reconcileEthereumSubmissions', () => {
             failed: 0,
         })
         expect(await statuses()).toEqual(['confirmed'])
+    })
+
+    describe('the outcome History shows until the backend lists the send', () => {
+        const HISTORY_ENTRY = {
+            summary: {
+                kind: 'contract-call' as const,
+                title: { key: i18nKey('transactions.list_item.app_call') },
+                direction: 'none' as const,
+                icon: 'contract-call' as const,
+            },
+            chainData: { family: 'evm' as const },
+            fee: new Decimal('46000000000000'),
+        }
+        const entry = async () =>
+            (
+                await getSubmissionAttemptsWithHistoryEntry({
+                    db,
+                    scope: SCOPE,
+                })
+            )[0]!.historyEntry
+
+        it('records the fee the receipt charged and its block once mined', async () => {
+            await record({ historyEntry: HISTORY_ENTRY })
+            node({
+                eth_getTransactionReceipt: evmTransactionReceipt({
+                    transactionHash: HASH,
+                    blockNumber: '0x2a',
+                }),
+            })
+
+            await reconcile()
+
+            const { chargedFee, blockNumber, fee } = await entry()
+            // 21,000 gas at 1 gwei.
+            expect(chargedFee!.toFixed()).toBe('21000000000000')
+            expect(blockNumber).toBe(42)
+            expect(fee!.toFixed()).toBe('46000000000000')
+        })
+
+        it("adds an OP-stack receipt's L1 data fee", async () => {
+            await record({ historyEntry: HISTORY_ENTRY })
+            node({
+                eth_getTransactionReceipt: {
+                    ...evmTransactionReceipt({ transactionHash: HASH }),
+                    l1Fee: '0x2540be400',
+                } as RpcTransactionReceipt,
+            })
+
+            await reconcile()
+
+            expect((await entry()).chargedFee!.toFixed()).toBe('21010000000000')
+        })
+
+        it('records what a reverted transaction was charged, as it landed and paid gas', async () => {
+            await record({ historyEntry: HISTORY_ENTRY })
+            node({
+                eth_getTransactionReceipt: evmTransactionReceipt({
+                    transactionHash: HASH,
+                    status: '0x0',
+                    blockNumber: '0x2a',
+                }),
+            })
+
+            await reconcile()
+
+            expect(await statuses()).toEqual(['failed'])
+            const { chargedFee, blockNumber } = await entry()
+            expect(chargedFee!.toFixed()).toBe('21000000000000')
+            expect(blockNumber).toBe(42)
+        })
+
+        it('settles a receipt that leaves out its gas price, keeping the max fee', async () => {
+            await record({ historyEntry: HISTORY_ENTRY })
+            const { effectiveGasPrice: _price, ...withoutPrice } =
+                evmTransactionReceipt({ transactionHash: HASH })
+            node({
+                eth_getTransactionReceipt:
+                    withoutPrice as RpcTransactionReceipt,
+            })
+
+            await reconcile()
+
+            expect(await statuses()).toEqual(['confirmed'])
+            expect((await entry()).chargedFee).toBeUndefined()
+        })
+
+        it('records nothing while the transaction is unmined', async () => {
+            await record({ historyEntry: HISTORY_ENTRY })
+            node({
+                eth_getTransactionReceipt: null,
+                eth_getTransactionByHash: HELD_BY_NODE,
+            })
+
+            await reconcile()
+
+            expect((await entry()).chargedFee).toBeUndefined()
+        })
     })
 
     it('fails a row whose transaction reverted', async () => {
@@ -582,6 +691,119 @@ describe('reconcileEthereumSubmissions', () => {
 
         await expect(reconcile()).resolves.toMatchObject({ confirmed: 1 })
         expect(await statuses()).toEqual(['failed', 'confirmed'])
+    })
+
+    describe('the amounts a recorded send shows before it lands', () => {
+        const CALL_SUMMARY = {
+            kind: 'contract-call' as const,
+            title: { key: i18nKey('transactions.list_item.app_call') },
+            direction: 'none' as const,
+            icon: 'contract-call' as const,
+        }
+        const PREDICTED: EvmTransactionSimulation = {
+            status: 'success',
+            blockNumber: 1,
+            approvalChanges: [],
+            assetChanges: [
+                {
+                    assetId: 'native',
+                    standard: 'native',
+                    amount: new Decimal('-1000000000000000000'),
+                },
+            ],
+        }
+        // The fixture's own call: 1 ETH to 0x7099…79C8 with no calldata.
+        const SIGNED_CALL = {
+            from: SENDER,
+            to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+            value: new Decimal('1000000000000000000'),
+            data: '0x' as const,
+        }
+        const submit = (summary: TransactionSummary) =>
+            submitAndRecordEthereumTransactions({
+                client: getClient(SCOPE),
+                chain: ETHEREUM,
+                scope: SCOPE,
+                signedTransactions: [hexToBytes(VIEM_TRANSFER_NONCE_0)],
+                flow: 'pipeline',
+                historyEntries: [{ summary, chainData: { family: 'evm' } }],
+                db,
+            })
+        const recordedEntry = async () =>
+            (
+                await getSubmissionAttemptsWithHistoryEntry({
+                    db,
+                    scope: SCOPE,
+                })
+            )[0]!.historyEntry
+
+        afterEach(() => clearPredictions())
+
+        it("records the review's predicted balance changes beside a call that names none, leaving its summary as decoded", async () => {
+            rememberPrediction(SCOPE, SIGNED_CALL, PREDICTED)
+            node()
+
+            await submit(CALL_SUMMARY)
+
+            const { summary, predictedBalanceChanges } = await recordedEntry()
+            expect(summary.title).toEqual(CALL_SUMMARY.title)
+            expect(summary.balanceChanges).toBeUndefined()
+            expect(
+                predictedBalanceChanges?.map(change => change.value.toFixed()),
+            ).toEqual(['-1000000000000000000'])
+        })
+
+        it('predicts everything a payable call moves, beside its own ETH amount', async () => {
+            rememberPrediction(SCOPE, SIGNED_CALL, {
+                ...PREDICTED,
+                assetChanges: [
+                    ...PREDICTED.assetChanges,
+                    {
+                        assetId: '0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8',
+                        standard: 'erc20',
+                        amount: new Decimal('999000000000000000'),
+                    },
+                ],
+            })
+            node()
+            const amount = {
+                assetRef: { chainId: SCOPE.chainId, assetId: 'native' },
+                value: new Decimal('1000000000000000000'),
+            }
+
+            await submit({ ...CALL_SUMMARY, direction: 'out', amount })
+
+            const { summary, predictedBalanceChanges } = await recordedEntry()
+            expect(summary.amount?.value.toFixed()).toBe('1000000000000000000')
+            expect(
+                predictedBalanceChanges?.map(change => change.value.toFixed()),
+            ).toEqual(['-1000000000000000000', '999000000000000000'])
+        })
+
+        it('keeps the amount a send already names', async () => {
+            rememberPrediction(SCOPE, SIGNED_CALL, PREDICTED)
+            node()
+            const amount = {
+                assetRef: { chainId: SCOPE.chainId, assetId: 'native' },
+                value: new Decimal('1000000000000000000'),
+            }
+
+            await submit({ ...CALL_SUMMARY, kind: 'transfer', amount })
+
+            const { summary, predictedBalanceChanges } = await recordedEntry()
+            expect(predictedBalanceChanges).toBeUndefined()
+            expect(summary.amount?.value.toFixed()).toBe('1000000000000000000')
+        })
+
+        it('records the summary as built when the review predicted nothing', async () => {
+            node()
+
+            await submit(CALL_SUMMARY)
+
+            expect(
+                (await recordedEntry()).predictedBalanceChanges,
+            ).toBeUndefined()
+        })
     })
 
     describe('a replacement at the same nonce', () => {

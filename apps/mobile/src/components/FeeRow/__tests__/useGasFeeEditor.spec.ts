@@ -12,12 +12,23 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useGasFeeEditor } from '../useGasFeeEditor'
+
+const l1Chains = vi.hoisted(() => new Set(['base']))
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useChainHasL1DataFee: (chainId: string) => l1Chains.has(chainId),
+}))
+
+const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 
 describe('useGasFeeEditor', () => {
     it('starts closed', () => {
         const { result } = renderHook(() =>
-            useGasFeeEditor({ onPresetChange: vi.fn() }),
+            useGasFeeEditor({ scope: SCOPE, onPresetChange: vi.fn() }),
         )
 
         expect(result.current.isExpanded).toBe(false)
@@ -25,7 +36,7 @@ describe('useGasFeeEditor', () => {
 
     it('opens and closes as the toggle is called', () => {
         const { result } = renderHook(() =>
-            useGasFeeEditor({ onPresetChange: vi.fn() }),
+            useGasFeeEditor({ scope: SCOPE, onPresetChange: vi.fn() }),
         )
 
         act(() => result.current.toggleExpanded())
@@ -37,7 +48,9 @@ describe('useGasFeeEditor', () => {
 
     it('reports the chosen speed once and closes the list', () => {
         const onPresetChange = vi.fn()
-        const { result } = renderHook(() => useGasFeeEditor({ onPresetChange }))
+        const { result } = renderHook(() =>
+            useGasFeeEditor({ scope: SCOPE, onPresetChange }),
+        )
         act(() => result.current.toggleExpanded())
 
         act(() => result.current.selectPreset('fast'))
@@ -49,7 +62,9 @@ describe('useGasFeeEditor', () => {
 
     it('closes and reports again when the speed in use is chosen', () => {
         const onPresetChange = vi.fn()
-        const { result } = renderHook(() => useGasFeeEditor({ onPresetChange }))
+        const { result } = renderHook(() =>
+            useGasFeeEditor({ scope: SCOPE, onPresetChange }),
+        )
         act(() => result.current.toggleExpanded())
 
         act(() => result.current.selectPreset('normal'))
@@ -57,4 +72,21 @@ describe('useGasFeeEditor', () => {
         expect(onPresetChange).toHaveBeenCalledWith('normal')
         expect(result.current.isExpanded).toBe(false)
     })
+
+    it.each([
+        ['base', true],
+        ['ethereum', false],
+    ] as const)(
+        'says whether the max fee on %s includes an L1 data fee',
+        (chainId, expected) => {
+            const { result } = renderHook(() =>
+                useGasFeeEditor({
+                    scope: { chainId, networkId: 'mainnet' },
+                    onPresetChange: vi.fn(),
+                }),
+            )
+
+            expect(result.current.hasL1DataFee).toBe(expected)
+        },
+    )
 })

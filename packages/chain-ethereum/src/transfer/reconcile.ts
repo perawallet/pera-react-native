@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { Decimal } from 'decimal.js'
 import {
     BaseError,
     TransactionNotFoundError,
@@ -37,6 +38,7 @@ import {
     getOpenSubmissionAttempts,
     getSubmissionAttemptsAtNonce,
     OPEN_SUBMISSION_STATUSES,
+    recordSubmissionOutcome,
     resolveSubmissionAttempt,
     setOpenSubmissionStatus,
     type ReconcileSummary,
@@ -51,7 +53,7 @@ import {
     sendsNftFrom,
     type TokenSightings,
 } from '../accounts/token-detection'
-import { readReceipt } from './receipt'
+import { chargedFeeOf, readReceipt } from './receipt'
 import { isTransactionKnownToNode } from './submission'
 
 // A just-broadcast transaction can be briefly unknown to a load-balanced RPC.
@@ -358,6 +360,27 @@ const loserVerdict = async (
     return winner && isOlder(winner, attempt) ? 'failed' : 'replaced'
 }
 
+// History shows this until the chain's own history lists the transaction. A
+// failed write fails the probe, so the row stays open and the next pass writes
+// it again rather than settling with the max fee for good.
+const recordOutcome = async (
+    attempt: SubmissionAttempt,
+    { db, receiptOf }: ProbeContext,
+): Promise<void> => {
+    const hash = attempt.txIds[0] as Optional<Hex>
+    if (hash === undefined) return
+    const receipt = await receiptOf(hash)
+    if (!receipt) return
+    const chargedFee = chargedFeeOf(receipt)
+    if (chargedFee === undefined) return
+    await recordSubmissionOutcome({
+        db,
+        id: attempt.id,
+        chargedFee: new Decimal(chargedFee.toString()),
+        blockNumber: Number(receipt.blockNumber),
+    })
+}
+
 const notifySettled = async (
     settleHandlers: SubmissionSettledHandlers,
     attempt: SubmissionAttempt,
@@ -496,6 +519,16 @@ export const reconcileEthereumSubmissions = async ({
                 }
                 summary.probed++
                 let verdict = await probe(attempt, context)
+                // A reverted transaction landed and paid gas too; a dropped
+                // one has no receipt, so it records nothing.
+                if (
+                    (verdict === 'confirming' ||
+                        verdict === 'confirmed' ||
+                        verdict === 'failed') &&
+                    verdict !== attempt.status
+                ) {
+                    await recordOutcome(attempt, context)
+                }
                 if (
                     tokenSightings &&
                     attempt.sender !== null &&

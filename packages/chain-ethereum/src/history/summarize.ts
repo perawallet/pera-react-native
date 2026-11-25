@@ -48,6 +48,7 @@ import type {
     EvmNftTransfer,
     EvmTokenTransfer,
 } from './api/schema'
+import { spentFirst } from './spent-first'
 
 const SEND = i18nKey('transactions.list_item.send')
 const RECEIVE = i18nKey('transactions.list_item.receive')
@@ -284,7 +285,7 @@ const balanceChangesOf = (
     const native = listed.has(chain.descriptor.nativeAsset.ref.assetId)
         ? undefined
         : nativeChangeOf(item, address, chain)
-    return [...(native ? [native] : []), ...impacts, ...missing]
+    return spentFirst([...(native ? [native] : []), ...impacts, ...missing])
 }
 
 const summarizeWithdrawal = (

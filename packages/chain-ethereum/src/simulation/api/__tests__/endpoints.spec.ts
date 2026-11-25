@@ -24,6 +24,7 @@ import { setupServer } from 'msw/node'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { ETHEREUM } from '../../../__tests__/evm-chains'
 import { PERA_URL } from '../../../__tests__/pera-backend'
+import { clearPredictions, predictedBalanceChangesOf } from '../../predictions'
 import type { EvmSimulationRequest } from '../../types'
 import {
     fetchEvmTransactionSimulation,
@@ -87,6 +88,7 @@ beforeAll(() => {
     })
 })
 afterEach(() => {
+    clearPredictions()
     server.resetHandlers()
     requested.length = 0
     offered.simulations = true
@@ -134,6 +136,31 @@ describe('fetchEvmTransactionSimulation', () => {
                 amount: new Decimal('241050501'),
             },
         ])
+    })
+
+    it('remembers what a successful answer predicts, for History to show once the call is sent', async () => {
+        server.use(
+            ...peraEvmSimulationHandlers({
+                baseUrl: PERA_URL,
+                simulation: simulationSuccessResponse([
+                    {
+                        asset_id: `eip155:1/erc20:${USDC.toLowerCase()}`,
+                        standard: 'erc20',
+                        token_id: null,
+                        amount: '241050501',
+                    },
+                ]),
+            }),
+        )
+
+        await fetchEvmTransactionSimulation(MAINNET, ETHEREUM, REQUEST)
+
+        expect(
+            predictedBalanceChangesOf(MAINNET, REQUEST)?.map(change => [
+                change.assetRef.assetId,
+                change.value.toFixed(),
+            ]),
+        ).toEqual([[USDC, '241050501']])
     })
 
     it('returns a revert with its reason', async () => {

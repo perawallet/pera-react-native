@@ -12,20 +12,25 @@
 
 import { useCallback, useState } from 'react'
 import type { FeePreset } from '@perawallet/wallet-core-chain-contract'
+import { useChainHasL1DataFee } from '@perawallet/wallet-core-chain-shared'
 import type { FeeRowProps } from './types'
 
 type UseGasFeeEditorResult = {
     isExpanded: boolean
     toggleExpanded: () => void
     selectPreset: (preset: FeePreset) => void
+    /** The max fee info says the fee includes the chain's L1 data fee. */
+    hasL1DataFee: boolean
 }
 
 // Local state, not a store: each review mounts closed, while the chosen speed
 // already persists in the send-funds store.
 export const useGasFeeEditor = ({
+    scope,
     onPresetChange,
-}: Pick<FeeRowProps, 'onPresetChange'>): UseGasFeeEditorResult => {
+}: Pick<FeeRowProps, 'scope' | 'onPresetChange'>): UseGasFeeEditorResult => {
     const [isExpanded, setIsExpanded] = useState(false)
+    const hasL1DataFee = useChainHasL1DataFee(scope.chainId)
 
     const toggleExpanded = useCallback(() => {
         setIsExpanded(current => !current)
@@ -39,5 +44,5 @@ export const useGasFeeEditor = ({
         [onPresetChange],
     )
 
-    return { isExpanded, toggleExpanded, selectPreset }
+    return { isExpanded, toggleExpanded, selectPreset, hasL1DataFee }
 }

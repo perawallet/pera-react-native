@@ -48,6 +48,8 @@ export type FeeModel = 'flat' | 'gas' | 'rate'
 
 export interface ChainProtocolFacts {
     feeModel: FeeModel
+    /** The fee also pays for posting the transaction to the layer the chain settles on, such as an OP-stack chain's L1 data fee. */
+    hasL1DataFee?: boolean
     hasAccountNonce: boolean
     supportsReplacement: boolean
     supportsNativeMultisig: boolean

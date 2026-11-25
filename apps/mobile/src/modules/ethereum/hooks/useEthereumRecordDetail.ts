@@ -15,6 +15,7 @@ import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
 import type {
     TransactionNative,
     TransactionRecord,
+    TransactionSummary,
 } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { readEthereumNative } from '@perawallet/wallet-core-chain-ethereum'
@@ -43,6 +44,11 @@ const isInformative = (
     }
 }
 
+// A protocol action the history already names (Supply, Withdraw) is no standard
+// call, so the read could only end in the summary it started from, behind a spinner.
+const isNamedAction = (summary: TransactionSummary): boolean =>
+    summary.kind === 'contract-call' && !!summary.isProtocolAction
+
 /**
  * The calldata a history row lacks is read from the node only while
  * `contractDecoding` is on, and only for a mined call one of the wallet's own
@@ -69,6 +75,7 @@ export const useEthereumRecordDetail = (
         isEvmTransactionHash(record.id) &&
         !!initiator &&
         record.summary.kind !== 'transfer' &&
+        !isNamedAction(record.summary) &&
         (record.status === 'confirmed' || record.status === 'failed')
     const query = useTransactionRecordDetailQuery({
         scope: record.scope,

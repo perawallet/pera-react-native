@@ -129,8 +129,11 @@ const { setCapabilityOverrides } =
     await import('@test-utils/capability-overrides')
 const { TransactionDetailsScreen } = await import('@modules/signing/routes')
 const { useWebViewStore } = await import('@modules/webview')
-const { recordSubmissionAttempt } =
-    await import('@perawallet/wallet-core-signing')
+const {
+    recordSubmissionAttempt,
+    recordSubmissionOutcome,
+    resolveSubmissionAttempt,
+} = await import('@perawallet/wallet-core-signing')
 const { i18nKey } = await import('@perawallet/wallet-core-chain-contract')
 const { closestPressable, waitPastDoublePressGuard } =
     await import('@test-utils/rnw')
@@ -711,27 +714,35 @@ describe('Flow: History on an Ethereum account', () => {
                 expect(nodeReads).toEqual([])
             })
 
-            it('Given an unlimited USDC approval, when its row is opened, then it reads as an approval to its spender marked Unlimited, with its gas still shown', async () => {
+            it('Given an unlimited USDC approval, when its row is opened, then it says the unlimited approval was granted to its spender, with no signing warning and its gas still shown', async () => {
                 serveApprovals()
                 renderHistory()
 
                 await openRow(APPROVE_HASH)
 
-                await waitFor(
-                    () =>
-                        expect(
-                            screen.getAllByTestId(
-                                'message-signing-spend-approval-warning',
-                            ),
-                        ).not.toHaveLength(0),
+                const grant = await screen.findByTestId(
+                    'ethereum_mined_approval_text',
+                    undefined,
                     { timeout: SLOW_WAIT_TIMEOUT_MS },
                 )
+                expect(grant.textContent).toContain(
+                    'transactions.record_detail.approval_granted_unlimited',
+                )
+                expect(
+                    screen.queryByTestId(
+                        'message-signing-spend-approval-warning',
+                    ),
+                ).toBeNull()
                 expect(
                     screen.getAllByText('transactions.list_item.approve_asset'),
                 ).not.toHaveLength(0)
                 expect(
-                    screen.getAllByText('signing.spend_approval.unlimited'),
-                ).not.toHaveLength(0)
+                    screen.getByTestId('ethereum_approval_spender'),
+                ).toBeTruthy()
+                // An address no registry lists stands alone, with no name or check mark.
+                expect(
+                    screen.queryByTestId('ethereum_approval_spender_name'),
+                ).toBeNull()
                 expect(
                     screen.getByTestId('transaction_detail_fee'),
                 ).toBeTruthy()
@@ -836,6 +847,36 @@ describe('Flow: History on an Ethereum account', () => {
                     'transactions.list_item.more_impacts',
                 )
                 expect(supply).not.toContain('transactions.common.fee')
+            })
+
+            it('Given an Aave supply, when its row is opened, then it names the pool it went to and says which leg was sent and which received, with no node read behind a spinner', async () => {
+                serveActionRows()
+                renderHistory()
+
+                await openRow(SUPPLY_HASH)
+
+                const contract = await screen.findByTestId(
+                    'transaction_detail_contract',
+                    undefined,
+                    { timeout: SLOW_WAIT_TIMEOUT_MS },
+                )
+                expect(contract.textContent).toContain('Aave V3 Pool')
+                expect(contract.textContent).toContain('0x8787')
+                expect(
+                    screen.getAllByText('transactions.record_detail.you_sent'),
+                ).toHaveLength(1)
+                expect(
+                    screen.getAllByText(
+                        'transactions.record_detail.you_received',
+                    ),
+                ).toHaveLength(1)
+                expect(
+                    screen.queryAllByText('transactions.common.amount'),
+                ).toHaveLength(0)
+                expect(
+                    screen.queryByTestId('ethereum_record_loading'),
+                ).toBeNull()
+                expect(nodeReads).not.toContain(SUPPLY_HASH)
             })
 
             it("Given the QA account's rows, when a type is picked in the filter, then only that type's rows list, read from the page already loaded", async () => {
@@ -1694,6 +1735,60 @@ describe('Flow: History on an Ethereum account', () => {
                 )
                 expect(fee.textContent).toContain('send_funds.fee.max_fee')
                 expect(fee.textContent).not.toContain('transactions.common.fee')
+            })
+
+            it('Given an approval that landed before the backend lists it, when History lists it and its row is opened, then it shows the fee it was charged and its block', async () => {
+                server.use(
+                    ...peraEvmHistoryHandlers({
+                        history: {
+                            [ETH_ADDRESS]: [
+                                [received(1, '2026-01-01T00:00:00Z')],
+                            ],
+                        },
+                    }),
+                )
+                const id = await recordSubmissionAttempt({
+                    scope: SCOPE,
+                    txIds: [PENDING_HASH],
+                    flow: 'pipeline',
+                    sender: ETH_ADDRESS,
+                    historyEntry: {
+                        summary: {
+                            kind: 'approval',
+                            title: {
+                                key: i18nKey('transactions.list_item.approval'),
+                            },
+                            direction: 'none',
+                            icon: 'approval',
+                        },
+                        chainData: { family: 'evm' },
+                        fee: new Decimal('46000000000000'),
+                    },
+                })
+                await recordSubmissionOutcome({
+                    id,
+                    chargedFee: new Decimal('21000000000000'),
+                    blockNumber: 19_000_123,
+                })
+                await resolveSubmissionAttempt({ id, status: 'confirmed' })
+                renderHistory()
+
+                const row = await rowText(PENDING_HASH, /ETH/)
+                expect(row).toContain('transactions.common.fee')
+                expect(row).not.toContain('send_funds.fee.max_fee')
+                expect(row).toMatch(/0\.000021/)
+
+                await openRow(PENDING_HASH)
+
+                const block = await screen.findByTestId(
+                    'transaction_detail_block',
+                    undefined,
+                    { timeout: SLOW_WAIT_TIMEOUT_MS },
+                )
+                expect(block.textContent).toContain('19000123')
+                const fee = screen.getByTestId('transaction_detail_fee')
+                expect(fee.textContent).not.toContain('send_funds.fee.max_fee')
+                expect(fee.textContent).toMatch(/0\.000021/)
             })
         })
     })

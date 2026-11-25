@@ -3331,6 +3331,7 @@
             "max_fee": "Maksimum ücret",
             "max_fee_for_preset": "Maksimum ücret ({{preset}})",
             "max_fee_info": "Ağ ücretleri artarsa ödeyeceğin en yüksek tutar. Genellikle daha az ödersin.",
+            "max_fee_info_l1": "Ağ ücretleri artarsa ödeyeceğin en yüksek tutar; işlemini Ethereum'a kaydetmek için alınan L1 veri ücreti de buna dahil. Genellikle daha az ödersin.",
             "wait_seconds": "~{{seconds}} sn",
             "wait_minutes": "~{{minutes}} dk",
             "show_options": "Ücret seçeneklerini gösterir"
@@ -4020,7 +4021,14 @@
             "transaction_id": "İşlem Kimliği",
             "quantity": "Adet",
             "nft_collection": "{{collection}} · {{standard}}",
-            "nft_fallback": "{{collection}} · Token ID {{tokenId}}"
+            "nft_fallback": "{{collection}} · Token ID {{tokenId}}",
+            "contract": "Sözleşme",
+            "approval_granted_unlimited": "{{spender}} için sınırsız onay verildi",
+            "approval_granted": "{{spender}} için onay verildi",
+            "collection_approval_granted": "{{spender}} için tüm koleksiyona erişim izni verildi",
+            "manage_approvals": "Token onaylarını yönet",
+            "you_sent": "Gönderdin",
+            "you_received": "Aldın"
         },
         "contract_call": {
             "warning": "Pera bu sözleşme çağrısının ne yaptığını anlayamıyor.",

@@ -3331,6 +3331,7 @@
             "max_fee": "Frais maximum",
             "max_fee_for_preset": "Frais maximum ({{preset}})",
             "max_fee_info": "Le maximum que vous paierez si les frais du réseau augmentent. Vous payez généralement moins.",
+            "max_fee_info_l1": "Le maximum que vous paierez si les frais du réseau augmentent, y compris les frais de données L1 pour enregistrer votre transaction sur Ethereum. Vous payez généralement moins.",
             "wait_seconds": "~{{seconds}} s",
             "wait_minutes": "~{{minutes}} min",
             "show_options": "Affiche les options de frais"
@@ -4020,7 +4021,14 @@
             "transaction_id": "ID de transaction",
             "quantity": "Quantité",
             "nft_collection": "{{collection}} · {{standard}}",
-            "nft_fallback": "{{collection}} · ID du token {{tokenId}}"
+            "nft_fallback": "{{collection}} · ID du token {{tokenId}}",
+            "contract": "Contrat",
+            "approval_granted_unlimited": "Autorisation illimitée accordée à {{spender}}",
+            "approval_granted": "Autorisation accordée à {{spender}}",
+            "collection_approval_granted": "Accès à toute la collection accordé à {{spender}}",
+            "manage_approvals": "Gérer les autorisations des jetons",
+            "you_sent": "Vous avez envoyé",
+            "you_received": "Vous avez reçu"
         },
         "contract_call": {
             "warning": "Pera ne peut pas déterminer ce que fait cet appel de contrat.",

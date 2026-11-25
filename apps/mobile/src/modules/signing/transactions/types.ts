@@ -56,6 +56,12 @@ export type TransactionDetailAmount = {
     value: Decimal
 }
 
+export type TransactionDetailContract = {
+    address: string
+    /** Set when Pera knows the contract. */
+    name?: string
+}
+
 /** What every chain tells the shared detail layout; none of it names a chain. */
 export type TransactionDetailSummary = {
     scope: ChainScope
@@ -70,6 +76,8 @@ export type TransactionDetailSummary = {
     amount?: TransactionDetailAmount
     /** The asset the amount is in is still being read, so the hero holds its place. */
     isAmountLoading?: boolean
+    /** Without an `amount`, one leg of a call that moves several assets, shown in the hero as fiat alone; the rows below carry every leg. */
+    headlineFiat?: TransactionDetailAmount
     /** Unset before signing, or when no explorer can open the id. */
     transactionId?: string
     /** Unix ms. */
@@ -79,6 +87,8 @@ export type TransactionDetailSummary = {
     from?: string
     /** Unset without a single recipient, such as an application or contract call. */
     to?: string
+    /** The contract a call went to; unset where another section of the screen already names it. */
+    contract?: TransactionDetailContract
     /** In the native asset. Unset when the chain's history or signing flow gave none. */
     fee?: TransactionDetailAmount
     /** `fee` is the most the transaction can be charged, not what it paid. */

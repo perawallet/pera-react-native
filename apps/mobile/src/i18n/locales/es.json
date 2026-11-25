@@ -3331,6 +3331,7 @@
             "max_fee": "Comisión máxima",
             "max_fee_for_preset": "Comisión máxima ({{preset}})",
             "max_fee_info": "Lo máximo que pagarás si suben las comisiones de la red. Normalmente pagas menos.",
+            "max_fee_info_l1": "Lo máximo que pagarás si suben las comisiones de la red, incluida la comisión de datos de L1 por registrar tu transacción en Ethereum. Normalmente pagas menos.",
             "wait_seconds": "~{{seconds}} s",
             "wait_minutes": "~{{minutes}} min",
             "show_options": "Muestra las opciones de comisión"
@@ -4020,7 +4021,14 @@
             "transaction_id": "ID de transacción",
             "quantity": "Cantidad",
             "nft_collection": "{{collection}} · {{standard}}",
-            "nft_fallback": "{{collection}} · ID del token {{tokenId}}"
+            "nft_fallback": "{{collection}} · ID del token {{tokenId}}",
+            "contract": "Contrato",
+            "approval_granted_unlimited": "Aprobación ilimitada concedida a {{spender}}",
+            "approval_granted": "Aprobación concedida a {{spender}}",
+            "collection_approval_granted": "Acceso a toda la colección concedido a {{spender}}",
+            "manage_approvals": "Gestionar aprobaciones de tokens",
+            "you_sent": "Enviaste",
+            "you_received": "Recibiste"
         },
         "contract_call": {
             "warning": "Pera no puede saber qué hace esta llamada a contrato.",

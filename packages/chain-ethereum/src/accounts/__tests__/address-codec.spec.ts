@@ -138,6 +138,12 @@ describe('truncate', () => {
         expect(codec.truncate(HARDHAT_ADDRESS)).toBe('0xf39F...2266')
     })
 
+    it('checksums a lowercase address, as a backend sends it, before shortening it', () => {
+        expect(codec.truncate(HARDHAT_ADDRESS.toLowerCase())).toBe(
+            '0xf39F...2266',
+        )
+    })
+
     it('leaves a string already that short as it is', () => {
         expect(codec.truncate('0x1234abcd')).toBe('0x1234abcd')
     })

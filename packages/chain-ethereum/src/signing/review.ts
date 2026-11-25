@@ -385,8 +385,8 @@ const viewOf = (
     ...(action && { action }),
 })
 
-// `eip155ChainId` is unset where the network is unknown or a history row is
-// read: with no chain there is no registry to look the target up in.
+// `eip155ChainId` is unset where the network is unknown: with no chain there is
+// no registry to look the target up in.
 const contractCallView = (
     call: Call,
     eip155ChainId?: number,
@@ -579,17 +579,19 @@ export const ethereumViewOf = (
 /**
  * A transaction already on chain, read as a detail screen shows it: a native
  * transfer when there is a `to` and no calldata, else a contract call with
- * the standard call its calldata decodes to exactly, if any. `feePaid` is wei.
+ * the standard call its calldata decodes to exactly, if any, and the known
+ * contract and spender it names on `eip155ChainId`. `feePaid` is wei.
  */
 export const ethereumMinedViewOf = (
     call: { from: Address; to?: Address; data: Hex; value: bigint },
     feePaid?: Decimal,
     onChain?: EthereumOnChainPricing,
+    eip155ChainId?: number,
 ): EthereumTransactionView => {
     const mined = { ...call, mined: { feePaid, onChain } }
     return call.to && size(call.data) === 0
         ? viewOf(mined, 'transfer')
-        : contractCallView(mined)
+        : contractCallView(mined, eip155ChainId)
 }
 
 /** A native transfer when there is a `to` and no calldata, else a contract call. */

@@ -56,6 +56,7 @@ import {
 } from '../blockchain/utils/nodeVerdict'
 import type { EvmChain } from '../chains/types'
 import { readDecodedCallSummary } from '../history/decoded-call-summary'
+import { predictedBalanceChangesOf } from '../simulation/predictions'
 import { SURCHARGE_HEADROOM, readEvmSurcharge } from './fees'
 import { meetsReplacementBump, readReplaceableTransaction } from './replacement'
 
@@ -337,6 +338,34 @@ export const historyEntryOfSigned = async (
     }
 }
 
+// A dApp call's decoded summary names the action but at most the ETH it sends;
+// the review's simulation also has what comes back, so History shows that
+// while the call is pending. A transfer or approval keeps its own amount.
+const withPrediction = (
+    entry: SubmissionHistoryEntry,
+    scope: ChainScope,
+    sender: string,
+    { to, value, data }: ReturnType<typeof parseTransaction>,
+): SubmissionHistoryEntry => {
+    const { summary } = entry
+    if (
+        to == null ||
+        summary.kind !== 'contract-call' ||
+        summary.balanceChanges
+    ) {
+        return entry
+    }
+    const predictedBalanceChanges = predictedBalanceChangesOf(scope, {
+        from: sender,
+        to,
+        value: new Decimal((value ?? 0n).toString()),
+        data: data ?? '0x',
+    })
+    return predictedBalanceChanges
+        ? { ...entry, predictedBalanceChanges }
+        : entry
+}
+
 /** Refused before broadcast: the ledger read may pass on a retry, and nothing reached the node. */
 export class SubmissionLedgerUnreadableError extends TransportError {
     constructor(originalError?: Error) {
@@ -410,6 +439,7 @@ export const submitAndRecordEthereumTransactions = async ({
             throw underpricedReplacement(hash)
         }
         const fee = maxFeeOf(parsed, surcharge)
+        const predicted = entry && withPrediction(entry, scope, sender, parsed)
         let attemptId: Optional<string>
         await bestEffort('record', async () => {
             attemptId = await recordSubmissionAttempt({
@@ -420,7 +450,10 @@ export const submitAndRecordEthereumTransactions = async ({
                 sender,
                 nonce,
                 maxFee: fee,
-                historyEntry: entry && { ...entry, ...(fee && { fee }) },
+                historyEntry: predicted && {
+                    ...predicted,
+                    ...(fee && { fee }),
+                },
                 rawTransaction: serializedTransaction,
                 replacesAttemptId: replaced?.id,
                 chainData: { family: 'evm' },

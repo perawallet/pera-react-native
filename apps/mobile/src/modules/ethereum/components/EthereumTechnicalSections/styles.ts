@@ -30,11 +30,6 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'flex-start',
         gap: theme.spacing.xxs,
     },
-    nameRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.xs,
-    },
     copy: {
         padding: theme.spacing.sm,
         borderRadius: theme.borderRadius.full,

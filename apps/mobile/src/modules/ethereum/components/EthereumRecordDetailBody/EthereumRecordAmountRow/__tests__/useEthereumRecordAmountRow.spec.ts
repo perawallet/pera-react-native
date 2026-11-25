@@ -96,15 +96,25 @@ describe('useEthereumRecordAmountRow', () => {
         expect(rowOf(leg).title).toContain(`"collection":"0xBC`)
     })
 
-    it('Given a token, then the row reads Amount with its symbol', () => {
+    it('Given a token the account sent, then the row says so, with its symbol', () => {
         const row = rowOf({
             assetRef: { chainId: 'ethereum', assetId: '0xusdc' },
             value: new Decimal(-5_000_000),
             display: { symbol: 'USDC', decimals: 6 },
         })
 
-        expect(row.title).toBe('transactions.common.amount')
+        expect(row.title).toBe('transactions.record_detail.you_sent')
         expect(row.showSymbol).toBe(true)
         expect(row.value.toString()).toBe('-5')
+    })
+
+    it('Given a token the account received, then the row says so', () => {
+        const row = rowOf({
+            assetRef: { chainId: 'ethereum', assetId: '0xausdc' },
+            value: new Decimal(4_999_000),
+            display: { symbol: 'aUSDC', decimals: 6 },
+        })
+
+        expect(row.title).toBe('transactions.record_detail.you_received')
     })
 })

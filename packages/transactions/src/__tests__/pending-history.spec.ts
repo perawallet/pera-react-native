@@ -213,6 +213,153 @@ describe('getPendingTransactionRecords', () => {
         expect(record.isFeeMaximum).toBeUndefined()
     })
 
+    it('shows what a mined send was charged and its block once the receipt is read', async () => {
+        const { historyEntry } = attempt()
+        ledger(
+            attempt({
+                status: 'confirmed',
+                historyEntry: {
+                    ...historyEntry,
+                    chargedFee: new Decimal('126000000000'),
+                    blockNumber: 38_000_000,
+                },
+            }),
+        )
+
+        const [record] = await pendingRecords()
+
+        expect(record.fee?.toString()).toBe('126000000000')
+        expect(record.isFeeMaximum).toBeUndefined()
+        expect(record.blockNumber).toBe(38_000_000)
+    })
+
+    it('drops the outcome of a send a reorg took back, showing its max fee again', async () => {
+        const { historyEntry } = attempt()
+        ledger(
+            attempt({
+                status: 'submitted',
+                historyEntry: {
+                    ...historyEntry,
+                    chargedFee: new Decimal('126000000000'),
+                    blockNumber: 38_000_000,
+                },
+            }),
+        )
+
+        const [record] = await pendingRecords()
+
+        expect(record.fee?.toString()).toBe('420000000000000')
+        expect(record.isFeeMaximum).toBe(true)
+        expect(record.blockNumber).toBeUndefined()
+    })
+
+    it('names the sender of a reverted send that landed, so its fee reads as paid', async () => {
+        const { historyEntry } = attempt()
+        ledger(
+            attempt({
+                status: 'failed',
+                historyEntry: {
+                    ...historyEntry,
+                    chargedFee: new Decimal('126000000000'),
+                    blockNumber: 38_000_000,
+                },
+            }),
+        )
+
+        const [record] = await pendingRecords()
+
+        expect(record.status).toBe('failed')
+        expect(record.initiator).toBe(ADDRESS)
+        expect(record.fee?.toString()).toBe('126000000000')
+    })
+
+    describe("a dApp call's predicted balance changes", () => {
+        const PREDICTED = [
+            {
+                assetRef: { chainId: SCOPE.chainId, assetId: 'native' },
+                value: new Decimal('-1000000000000000000'),
+            },
+        ]
+        const predictedCall = (
+            status: SubmissionStatus,
+            overrides: Partial<
+                SubmissionAttemptWithHistoryEntry['historyEntry']
+            > = {},
+        ) => {
+            const { historyEntry } = attempt()
+            return attempt({
+                status,
+                historyEntry: {
+                    ...historyEntry,
+                    summary: { ...historyEntry.summary, kind: 'contract-call' },
+                    predictedBalanceChanges: PREDICTED,
+                    ...overrides,
+                },
+            })
+        }
+
+        it.each(['submitted', 'unknown', 'confirming'] as const)(
+            'shows them on a %s call',
+            async status => {
+                ledger(predictedCall(status))
+
+                const [record] = await pendingRecords()
+
+                expect(record.summary.balanceChanges).toBe(PREDICTED)
+            },
+        )
+
+        it.each(['failed', 'confirmed', 'replaced'] as const)(
+            'drops them once the call is %s, since they never moved or the chain has the real ones',
+            async status => {
+                ledger(
+                    predictedCall(status, {
+                        chargedFee: new Decimal('126000000000'),
+                    }),
+                )
+
+                const [record] = await pendingRecords()
+
+                expect(record.summary.balanceChanges).toBeUndefined()
+            },
+        )
+
+        it('keeps the balance changes the summary already names', async () => {
+            const named = [
+                {
+                    assetRef: { chainId: SCOPE.chainId, assetId: 'native' },
+                    value: new Decimal('-5'),
+                },
+            ]
+            const { historyEntry } = predictedCall('submitted')
+            ledger(
+                predictedCall('submitted', {
+                    summary: { ...historyEntry.summary, balanceChanges: named },
+                }),
+            )
+
+            const [record] = await pendingRecords()
+
+            expect(record.summary.balanceChanges).toBe(named)
+        })
+    })
+
+    it('names no sender for a failed send that never landed', async () => {
+        ledger(attempt({ status: 'failed' }))
+
+        const [record] = await pendingRecords()
+
+        expect(record.initiator).toBeUndefined()
+    })
+
+    it('names no block before the receipt is read', async () => {
+        ledger(attempt())
+
+        const [record] = await pendingRecords()
+
+        expect(record.blockNumber).toBeUndefined()
+    })
+
     it('matches the sender through the chain codec, not by string equality', async () => {
         ledger(attempt({ sender: '0xsender' }))
 

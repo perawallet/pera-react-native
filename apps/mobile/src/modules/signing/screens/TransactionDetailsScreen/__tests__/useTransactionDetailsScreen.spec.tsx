@@ -63,9 +63,11 @@ vi.mock('@analytics', async importOriginal => ({
 
 const mockUseTransactionDetailQuery = vi.fn()
 
-const { mockUseTransactionRecordByIdQuery } = vi.hoisted(() => ({
-    mockUseTransactionRecordByIdQuery: vi.fn(),
-}))
+const { mockUseTransactionRecordByIdQuery, mockUseCurrentOwnRecord } =
+    vi.hoisted(() => ({
+        mockUseCurrentOwnRecord: vi.fn(),
+        mockUseTransactionRecordByIdQuery: vi.fn(),
+    }))
 
 // The record lookup needs a query client this spec doesn't mount.
 vi.mock('@perawallet/wallet-core-transactions', async importOriginal => ({
@@ -73,6 +75,7 @@ vi.mock('@perawallet/wallet-core-transactions', async importOriginal => ({
         typeof import('@perawallet/wallet-core-transactions')
     >()),
     useTransactionRecordByIdQuery: mockUseTransactionRecordByIdQuery,
+    useCurrentOwnRecord: mockUseCurrentOwnRecord,
 }))
 
 const { mockRequestSheet } = vi.hoisted(() => ({ mockRequestSheet: vi.fn() }))
@@ -131,6 +134,9 @@ describe('useTransactionDetailsScreen', () => {
         vi.clearAllMocks()
         mockUseTransactionDetailQuery.mockReturnValue(queryResult({}))
         mockUseTransactionRecordByIdQuery.mockReturnValue(queryResult({}))
+        mockUseCurrentOwnRecord.mockImplementation(
+            ({ record }: { record?: unknown }) => record,
+        )
         routeParams.current = { scope: ALGORAND_SCOPE }
         useNetworkStatusStore.getState().setHasInternet(true)
         historyChainAdapters.reset()
@@ -454,6 +460,26 @@ describe('useTransactionDetailsScreen', () => {
                 record,
             })
             expect(mockUseTransactionDetailQuery).not.toHaveBeenCalled()
+        })
+
+        it('renders the current version of a send opened before it landed', () => {
+            const landed = { ...record, blockNumber: 42 }
+            mockUseCurrentOwnRecord.mockReturnValue(landed)
+            routeParams.current = {
+                scope: ETHEREUM_SCOPE,
+                transactionId: record.id,
+                historyRecord: record,
+            }
+
+            const { result } = renderHook(() => useTransactionDetailsScreen())
+
+            expect(result.current.renderState).toMatchObject({
+                kind: 'record',
+                record: landed,
+            })
+            expect(mockUseCurrentOwnRecord).toHaveBeenCalledWith(
+                expect.objectContaining({ record, scope: ETHEREUM_SCOPE }),
+            )
         })
 
         it("flags the record's own status", () => {

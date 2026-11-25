@@ -112,6 +112,20 @@ describe('the EVM chain table', () => {
         )
     })
 
+    it.each([
+        ['base', true],
+        ['optimism', true],
+        ['ethereum', undefined],
+        ['arbitrum', undefined],
+    ] as const)(
+        'says whether %s charges an L1 data fee on top of gas',
+        (chainId, expected) => {
+            expect(evmChainOf(chainId).descriptor.protocol.hasL1DataFee).toBe(
+                expected,
+            )
+        },
+    )
+
     it('prices Optimism as an OP-stack chain at the shared oracle and links Sepolia to its explorer', () => {
         const { row, descriptor } = evmChainOf('optimism')
 

@@ -21,13 +21,22 @@ import type { EthereumTransactionPresentation } from '../../hooks/useEthereumTra
 export type UseEthereumApprovalDetailsResult = {
     /** The signer's holding of the token a spend approval covers; null when it holds none Pera has found. */
     tokenBalance: Nullable<AssetWithAccountBalance>
+    /** An approval already on chain that grants something: it is described as done, not warned of. */
+    isMinedGrant: boolean
 }
 
 export const useEthereumApprovalDetails = ({
     standardCall,
     signingAccount,
     scope,
+    view,
 }: EthereumTransactionPresentation): UseEthereumApprovalDetailsResult => {
+    const isMined = 'isMined' in view && !!view.isMined
+    const isGrant =
+        (standardCall?.kind === 'token-approval' &&
+            !!standardCall.spendApproval) ||
+        (standardCall?.kind === 'collection-approval' &&
+            standardCall.isApproved)
     const isSpend =
         standardCall?.kind === 'token-approval' && !!standardCall.spendApproval
     // Holdings are keyed by checksummed address; the calldata's may be any case.
@@ -39,5 +48,5 @@ export const useEthereumApprovalDetails = ({
         assetId,
         scope,
     )
-    return { tokenBalance: data }
+    return { tokenBalance: data, isMinedGrant: isMined && isGrant }
 }

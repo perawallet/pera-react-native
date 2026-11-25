@@ -12,6 +12,7 @@
 
 import { Trans } from 'react-i18next'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { useChainHasL1DataFee } from '@perawallet/wallet-core-chain-shared'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { feeAssetAmountPropsOf } from '@components/FeeRow'
 import { InfoButton } from '@components/InfoButton'
@@ -32,6 +33,7 @@ export const EthereumReviewFeeRow = ({
 }: EthereumReviewFeeRowProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const hasL1DataFee = useChainHasL1DataFee(scope.chainId)
     const expected = feeAssetAmountPropsOf(
         scope,
         reviewFee.estimate?.amount ?? reviewFee.maxAmount,
@@ -46,7 +48,11 @@ export const EthereumReviewFeeRow = ({
                     testID='ethereum_review_fee_info'
                     title={t('send_funds.fee.max_fee')}
                 >
-                    {t('send_funds.fee.max_fee_info')}
+                    {t(
+                        hasL1DataFee
+                            ? 'send_funds.fee.max_fee_info_l1'
+                            : 'send_funds.fee.max_fee_info',
+                    )}
                 </InfoButton>
             }
             expected={

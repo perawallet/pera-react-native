@@ -193,6 +193,24 @@ describe('useEthereumRecordDetail', () => {
         expect(lastParams().isEnabled).toBe(true)
     })
 
+    it('reads nothing for a protocol action the history already names, which no read could name better', () => {
+        renderHook(() =>
+            useEthereumRecordDetail(
+                record({
+                    summary: {
+                        ...record().summary,
+                        title: {
+                            key: i18nKey('transactions.list_item.withdraw'),
+                        },
+                        isProtocolAction: true,
+                    },
+                }),
+            ),
+        )
+
+        expect(lastParams().isEnabled).toBe(false)
+    })
+
     it('reads nothing for a plain value transfer, which has no calldata', () => {
         renderHook(() =>
             useEthereumRecordDetail(

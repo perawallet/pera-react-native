@@ -28,6 +28,7 @@ export {
     markSubmissionUnknown,
     pruneResolvedSubmissionAttempts,
     recordSubmissionAttempt,
+    recordSubmissionOutcome,
     resolveSubmissionAttempt,
     setOpenSubmissionStatus,
     type SetOpenSubmissionStatusParams,

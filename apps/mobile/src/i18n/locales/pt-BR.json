@@ -3347,6 +3347,7 @@
             "max_fee": "Taxa máxima",
             "max_fee_for_preset": "Taxa máxima ({{preset}})",
             "max_fee_info": "O máximo que você vai pagar se as taxas da rede subirem. Normalmente você paga menos.",
+            "max_fee_info_l1": "O máximo que você vai pagar se as taxas da rede subirem, incluindo a taxa de dados da L1 para registrar sua transação no Ethereum. Normalmente você paga menos.",
             "wait_seconds": "~{{seconds}} s",
             "wait_minutes": "~{{minutes}} min",
             "show_options": "Mostra as opções de taxa"
@@ -4037,7 +4038,14 @@
             "transaction_id": "ID da transação",
             "quantity": "Quantidade",
             "nft_collection": "{{collection}} · {{standard}}",
-            "nft_fallback": "{{collection}} · ID do token {{tokenId}}"
+            "nft_fallback": "{{collection}} · ID do token {{tokenId}}",
+            "contract": "Contrato",
+            "approval_granted_unlimited": "Aprovação ilimitada concedida a {{spender}}",
+            "approval_granted": "Aprovação concedida a {{spender}}",
+            "collection_approval_granted": "Acesso a toda a coleção concedido a {{spender}}",
+            "manage_approvals": "Gerenciar aprovações de tokens",
+            "you_sent": "Você enviou",
+            "you_received": "Você recebeu"
         },
         "contract_call": {
             "warning": "Não foi possível identificar o que esta chamada de contrato faz.",

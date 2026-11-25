@@ -20,6 +20,7 @@ import {
     SpendApprovalWarning,
 } from '@modules/signing'
 import type { EthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
+import { EthereumMinedApproval } from './EthereumMinedApproval'
 import { GrantRows } from './GrantRows'
 import { useStyles } from './styles'
 import { useEthereumApprovalDetails } from './useEthereumApprovalDetails'
@@ -39,10 +40,40 @@ export const EthereumApprovalDetails = ({
     const styles = useStyles()
     const { t } = useLanguage()
     const { standardCall, scope } = presentation
-    const { tokenBalance } = useEthereumApprovalDetails(presentation)
+    const { tokenBalance, isMinedGrant } =
+        useEthereumApprovalDetails(presentation)
 
     let content = null
-    if (standardCall?.kind === 'token-approval') {
+    if (isMinedGrant && standardCall?.kind === 'token-approval') {
+        content = (
+            <>
+                <EthereumMinedApproval presentation={presentation} />
+                <GrantRows
+                    spenderTitle={t('signing.spend_approval.spender_label')}
+                    spender={standardCall.spender}
+                    spenderName={standardCall.spendApproval?.knownSpender?.name}
+                    contract={standardCall.contract}
+                    isRevocation={false}
+                    scope={scope}
+                />
+            </>
+        )
+    } else if (isMinedGrant && standardCall?.kind === 'collection-approval') {
+        content = (
+            <>
+                <EthereumMinedApproval presentation={presentation} />
+                <GrantRows
+                    spenderTitle={t(
+                        'signing.collection_approval.operator_label',
+                    )}
+                    spender={standardCall.operator}
+                    contract={standardCall.contract}
+                    isRevocation={false}
+                    scope={scope}
+                />
+            </>
+        )
+    } else if (standardCall?.kind === 'token-approval') {
         content = standardCall.spendApproval ? (
             <>
                 <SpendApprovalWarning

@@ -117,6 +117,23 @@ describe('recordPartiesOf', () => {
         ).toBeUndefined()
     })
 
+    it('Given a pending dApp call the wallet sent, which names no direction or initiator, then the account is the sender', () => {
+        expect(
+            recordPartiesOf(
+                recordOf(
+                    {
+                        kind: 'contract-call',
+                        direction: 'none',
+                        counterparty: PEER,
+                    },
+                    undefined,
+                    'pending',
+                ),
+                ME,
+            ),
+        ).toEqual({ from: ME, to: PEER })
+    })
+
     it('Given no account address, then an inbound record names no recipient', () => {
         expect(
             recordPartiesOf(
