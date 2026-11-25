@@ -143,6 +143,10 @@ export const algorandCardAdapter: CardChainAdapter = {
         }
         return null
     },
+    cardOwnerOf: async (scope, cardAddress) =>
+        isValidAddress(cardAddress)
+            ? getAlgorandCardOwner(algorandNetworkOf(scope), cardAddress)
+            : null,
     useAutoDraw: useAlgorandCardAutoDraw,
     withdrawal: {
         buildRequest: async ({ scope, ...params }) =>

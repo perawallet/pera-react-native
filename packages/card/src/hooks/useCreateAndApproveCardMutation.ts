@@ -22,6 +22,11 @@ import {
     createCard,
 } from '../api/card-creation'
 import { postDelegationApproval } from '../api/delegation'
+import {
+    CardOwnerMismatchError,
+    CardOwnerUnconfirmedError,
+} from '../api/escrow'
+import { cardAdapterFor } from '../chain-adapter'
 import { fetchUser } from '../api/user'
 import { DEFAULT_CARD_CURRENCY } from '../models'
 import { useCardStore } from '../store'
@@ -82,6 +87,7 @@ export const useCreateAndApproveCardMutation = (
             let cardAddress = sameOwnerScope ? store.escrowCardAddress : null
             let txId = sameOwnerScope ? store.escrowCardTxId : null
             let approved = sameOwnerScope ? store.escrowCardApproved : false
+            const needsCreation = !cardAddress || !txId
 
             if (!cardAddress || !txId) {
                 if (!canCallIntegrityGuardedRoute()) {
@@ -106,9 +112,9 @@ export const useCreateAndApproveCardMutation = (
                 })
                 cardAddress = created.cardAddress
                 txId = created.txId
-                // Durable from here — the card exists on-chain, bound to
-                // the account that proved ownership and to this scope,
-                // even if the approval call below fails.
+                // Durable from here, so a retry never asks the backend for a
+                // second card. Left unapproved until its on-chain owner checks
+                // out below.
                 useCardStore.getState().setEscrowCard({
                     cardAddress,
                     ownerAddress: address,
@@ -116,6 +122,19 @@ export const useCreateAndApproveCardMutation = (
                     txId,
                 })
                 approved = false
+            }
+
+            const adapter = cardAdapterFor(scope)
+            let owner = await adapter.cardOwnerOf(scope, cardAddress)
+            if (needsCreation && owner === null) {
+                // The wallet's node may not have caught up with the mint yet.
+                await adapter.awaitConfirmation(scope, txId)
+                owner = await adapter.cardOwnerOf(scope, cardAddress)
+            }
+            if (owner === null) throw new CardOwnerUnconfirmedError()
+            if (owner !== address) {
+                useCardStore.getState().setEscrowCard(null)
+                throw new CardOwnerMismatchError()
             }
 
             if (!approved) {

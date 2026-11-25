@@ -81,4 +81,7 @@ export {
     CardUserUnavailableError,
 } from './api/card-creation'
 export { CardOrderNotVerifiedError } from './api/card'
-export { CardEscrowNotConfiguredError } from './api/escrow'
+export {
+    CardEscrowNotConfiguredError,
+    CardOwnerMismatchError,
+} from './api/escrow'
