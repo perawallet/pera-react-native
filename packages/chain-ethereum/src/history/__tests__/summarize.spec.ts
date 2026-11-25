@@ -610,10 +610,31 @@ describe('summarizeEthereumHistoryItem', () => {
                     c.value.toFixed(),
                 ]),
             ).toEqual([
-                ['native', '850'],
                 [APE, '-1'],
+                ['native', '850'],
             ])
         })
+    })
+
+    it('lists what left the account first, whatever order the backend gives', () => {
+        const summary = summarize(
+            row({
+                from: ME,
+                to: CONTRACT,
+                value: '0',
+                method: 'withdraw',
+                token_transfers: [leg(CONTRACT, ME, '299')],
+                balance_impacts: [
+                    { asset_id: ETH_ID, amount: '300' },
+                    { asset_id: USDC_ID, amount: '-299' },
+                ],
+            }),
+        )
+
+        expect(summary.balanceChanges?.map(c => c.value.toFixed())).toEqual([
+            '-299',
+            '300',
+        ])
     })
 
     describe('internal transfers', () => {

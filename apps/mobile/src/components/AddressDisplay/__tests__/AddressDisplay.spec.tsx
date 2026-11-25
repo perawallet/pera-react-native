@@ -120,7 +120,7 @@ describe('AddressDisplay', () => {
         )
     })
 
-    it("shortens an EVM address with its own chain's rule", () => {
+    it("shortens an EVM address with its own chain's rule, checksummed as every other screen shows it", () => {
         registerEthereumChain()
         onTestFinished(restoreAlgorandOnlyChains)
 
@@ -131,7 +131,7 @@ describe('AddressDisplay', () => {
             />,
         )
 
-        expect(screen.getByText('0xf39f...2266')).toBeTruthy()
+        expect(screen.getByText('0xf39F...2266')).toBeTruthy()
     })
 
     describe('names on an Ethereum scope', () => {

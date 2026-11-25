@@ -17,6 +17,7 @@ import { useEthereumMinedApproval } from '../useEthereumMinedApproval'
 
 const navigate = vi.hoisted(() => vi.fn())
 const canList = vi.hoisted(() => ({ current: true }))
+const isServed = vi.hoisted(() => ({ current: true }))
 
 vi.mock('@perawallet/wallet-core-chain-contract', async importOriginal => ({
     ...(await importOriginal<
@@ -28,6 +29,9 @@ vi.mock('@perawallet/wallet-core-chain-contract', async importOriginal => ({
                 `${address.slice(0, 6)}...${address.slice(-4)}`,
         }),
     },
+}))
+vi.mock('@perawallet/wallet-core-chain-ethereum', () => ({
+    hasEvmApprovalsService: () => isServed.current,
 }))
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({ navigate }),
@@ -70,6 +74,7 @@ describe('useEthereumMinedApproval', () => {
     beforeEach(() => {
         navigate.mockReset()
         canList.current = true
+        isServed.current = true
     })
 
     it('says an unlimited approval was granted to the spender Pera knows', () => {
@@ -146,6 +151,17 @@ describe('useEthereumMinedApproval', () => {
             useEthereumMinedApproval(presentationWith(spendApproval())),
         )
 
+        expect(result.current.handleOpenTokenApprovals).toBeUndefined()
+    })
+
+    it('offers no approvals link where Pera serves no approvals, as the list could only say so', () => {
+        isServed.current = false
+
+        const { result } = renderHook(() =>
+            useEthereumMinedApproval(presentationWith(spendApproval())),
+        )
+
+        expect(result.current.grantText).toBeDefined()
         expect(result.current.handleOpenTokenApprovals).toBeUndefined()
     })
 })

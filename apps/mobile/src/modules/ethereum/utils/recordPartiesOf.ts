@@ -39,11 +39,6 @@ export const recordPartiesOf = (
         (!!initiator && counterparty?.toLowerCase() === initiator.toLowerCase())
 
     if (isInbound) return { from: counterparty, to: own }
-    return {
-        from:
-            direction === 'out'
-                ? recordSignerOf(record, ownAddress)
-                : initiator,
-        to: counterparty,
-    }
+    // An unsettled send is the wallet's own, a dApp call with no direction too.
+    return { from: recordSignerOf(record, ownAddress), to: counterparty }
 }

@@ -19,6 +19,13 @@ export const useStyles = makeStyles(theme => ({
     asset: {
         gap: theme.spacing.xs,
     },
+    spender: {
+        alignItems: 'flex-end',
+        gap: theme.spacing.xs,
+    },
+    spenderName: {
+        flexShrink: 1,
+    },
     note: {
         color: theme.colors.textGray,
     },

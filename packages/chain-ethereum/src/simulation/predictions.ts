@@ -17,6 +17,7 @@ import type {
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import { spentFirst } from '../history/spent-first'
 import type { EvmTransactionSimulation } from './types'
 
 /** A call as both the review simulates it and the signed bytes carry it. */
@@ -56,12 +57,14 @@ export const rememberPrediction = (
     simulation: EvmTransactionSimulation,
 ): void => {
     if (simulation.status !== 'success') return
-    const changes = simulation.assetChanges
-        .filter(change => !change.amount.isZero())
-        .map(change => ({
-            assetRef: { chainId: scope.chainId, assetId: change.assetId },
-            value: change.amount,
-        }))
+    const changes = spentFirst(
+        simulation.assetChanges
+            .filter(change => !change.amount.isZero())
+            .map(change => ({
+                assetRef: { chainId: scope.chainId, assetId: change.assetId },
+                value: change.amount,
+            })),
+    )
     if (changes.length === 0) return
     const key = keyOf(scope, call)
     predictions.delete(key)

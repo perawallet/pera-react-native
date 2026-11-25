@@ -739,6 +739,10 @@ describe('Flow: History on an Ethereum account', () => {
                 expect(
                     screen.getByTestId('ethereum_approval_spender'),
                 ).toBeTruthy()
+                // An address no registry lists stands alone, with no name or check mark.
+                expect(
+                    screen.queryByTestId('ethereum_approval_spender_name'),
+                ).toBeNull()
                 expect(
                     screen.getByTestId('transaction_detail_fee'),
                 ).toBeTruthy()

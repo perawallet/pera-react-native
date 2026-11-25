@@ -64,6 +64,8 @@ export {
 } from './simulation/hooks/useEvmTransactionSimulationQuery'
 export { simulationRequestOf } from './simulation/request'
 export { knownEvmContractLabelOf } from './signing/known-contract-label'
+export { hasEvmApprovalsService } from './approvals/service'
+export { spentFirst } from './history/spent-first'
 export type {
     EvmApprovalChange,
     EvmAssetChange,

@@ -51,6 +51,7 @@ export const EthereumApprovalDetails = ({
                 <GrantRows
                     spenderTitle={t('signing.spend_approval.spender_label')}
                     spender={standardCall.spender}
+                    spenderName={standardCall.spendApproval?.knownSpender?.name}
                     contract={standardCall.contract}
                     isRevocation={false}
                     scope={scope}

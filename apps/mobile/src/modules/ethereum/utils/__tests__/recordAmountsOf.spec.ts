@@ -31,20 +31,21 @@ const summary = (
 })
 
 describe('recordAmountsOf', () => {
-    it("keeps the summary's balance changes as they are, ahead of its amount", () => {
-        const changes = [
-            { assetRef: REF, value: new Decimal(-5) },
-            { assetRef: { ...REF, assetId: 'native' }, value: new Decimal(2) },
-        ]
+    it("takes the summary's balance changes ahead of its amount, what left the account first", () => {
+        const received = {
+            assetRef: { ...REF, assetId: 'native' },
+            value: new Decimal(2),
+        }
+        const spent = { assetRef: REF, value: new Decimal(-5) }
 
         expect(
             recordAmountsOf(
                 summary({
-                    balanceChanges: changes,
+                    balanceChanges: [received, spent],
                     amount: { assetRef: REF, value: new Decimal(9) },
                 }),
             ),
-        ).toBe(changes)
+        ).toEqual([spent, received])
     })
 
     it.each([

@@ -49,7 +49,7 @@ describe('simulation predictions', () => {
         clearPredictions()
     })
 
-    it('gives back the non-zero changes a successful simulation predicted', () => {
+    it('gives back the non-zero changes a successful simulation predicted, spent first', () => {
         rememberPrediction(SCOPE, CALL, WITHDRAW)
 
         const changes = predictedBalanceChangesOf(SCOPE, CALL)
@@ -61,8 +61,8 @@ describe('simulation predictions', () => {
                 value.toFixed(),
             ]),
         ).toEqual([
-            ['base', 'native', '3000'],
             ['base', '0xA0d9C1e9F4bB0C7aA7E1e2b6c7b7F4a6E0dDfC24', '-2990'],
+            ['base', 'native', '3000'],
         ])
     })
 

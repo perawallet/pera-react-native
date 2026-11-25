@@ -137,8 +137,12 @@ export const getPendingTransactionRecords = async ({
             id: txIds[0],
             scope,
             status,
-            // Only a landed attempt names its signer; an unlanded one is the wallet's by definition.
-            ...(status === 'confirmed' && { initiator: sender }),
+            // Only a landed attempt names its signer; an unlanded one is the wallet's
+            // by definition. A reverted one landed too, and paid its fee.
+            ...((status === 'confirmed' ||
+                (status === 'failed' && chargedFee !== undefined)) && {
+                initiator: sender,
+            }),
             timestamp: attempt.createdAt,
             ...(blockNumber !== undefined && { blockNumber }),
             fee: chargedFee ?? historyEntry.fee,

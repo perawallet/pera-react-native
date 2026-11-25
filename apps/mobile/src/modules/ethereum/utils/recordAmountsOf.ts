@@ -14,16 +14,18 @@ import type {
     BalanceChange,
     TransactionSummary,
 } from '@perawallet/wallet-core-chain-contract'
+import { spentFirst } from '@perawallet/wallet-core-chain-ethereum'
 
 /**
- * What a history record did to the account's balances, signed. A summary's own
- * `balanceChanges` win; a single `amount` is unsigned, so its sign comes from
- * the direction.
+ * What a history record did to the account's balances, signed, spent first.
+ * A summary's own `balanceChanges` win; a single `amount` is unsigned, so its
+ * sign comes from the direction.
  */
 export const recordAmountsOf = (
     summary: TransactionSummary,
 ): BalanceChange[] => {
-    if (summary.balanceChanges) return summary.balanceChanges
+    // Rows the ledger recorded before legs were sorted where they are built still read spent first.
+    if (summary.balanceChanges) return spentFirst(summary.balanceChanges)
     if (!summary.amount) return []
     const { assetRef, value, display } = summary.amount
     return [

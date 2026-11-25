@@ -12,6 +12,7 @@
 
 import { useCallback } from 'react'
 import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
+import { hasEvmApprovalsService } from '@perawallet/wallet-core-chain-ethereum'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCapability } from '@hooks/useCapability'
@@ -21,7 +22,7 @@ import type { EthereumTransactionPresentation } from '@modules/ethereum/hooks/us
 export type UseEthereumMinedApprovalResult = {
     /** Null for a call that grants nothing, such as a revocation. */
     grantText: Optional<string>
-    /** Unset where the account's approvals can't be listed: no account, or a chain without the list. */
+    /** Unset where the account's approvals can't be listed: no account, or a scope Pera serves no approvals for. */
     handleOpenTokenApprovals: Optional<() => void>
 }
 
@@ -33,9 +34,12 @@ export const useEthereumMinedApproval = ({
 }: EthereumTransactionPresentation): UseEthereumMinedApprovalResult => {
     const { t } = useLanguage()
     const navigation = useAppNavigation()
-    const canListApprovals = useCapability({
-        chain: { chainId: scope.chainId, capability: 'tokenApprovals' },
-    })
+    // The capability is on for every EVM chain, but a scope Pera serves no
+    // approvals for opens a screen that can only say so.
+    const canListApprovals =
+        useCapability({
+            chain: { chainId: scope.chainId, capability: 'tokenApprovals' },
+        }) && hasEvmApprovalsService(scope)
     const nameOf = (spender: string, knownName?: string) =>
         knownName ?? addressCodecs.get(scope.chainId).truncate(spender)
 

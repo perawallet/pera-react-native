@@ -253,6 +253,34 @@ describe('getPendingTransactionRecords', () => {
         expect(record.blockNumber).toBeUndefined()
     })
 
+    it('names the sender of a reverted send that landed, so its fee reads as paid', async () => {
+        const { historyEntry } = attempt()
+        ledger(
+            attempt({
+                status: 'failed',
+                historyEntry: {
+                    ...historyEntry,
+                    chargedFee: new Decimal('126000000000'),
+                    blockNumber: 38_000_000,
+                },
+            }),
+        )
+
+        const [record] = await pendingRecords()
+
+        expect(record.status).toBe('failed')
+        expect(record.initiator).toBe(ADDRESS)
+        expect(record.fee?.toString()).toBe('126000000000')
+    })
+
+    it('names no sender for a failed send that never landed', async () => {
+        ledger(attempt({ status: 'failed' }))
+
+        const [record] = await pendingRecords()
+
+        expect(record.initiator).toBeUndefined()
+    })
+
     it('names no block before the receipt is read', async () => {
         ledger(attempt())
 

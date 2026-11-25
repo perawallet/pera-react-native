@@ -13,6 +13,7 @@
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { PWText, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
+import { KnownContractName } from '@components/KnownContractName'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
@@ -20,6 +21,8 @@ import { useStyles } from './styles'
 type GrantRowsProps = {
     spenderTitle: string
     spender: string
+    /** The spender's name when Pera knows the contract, shown over its address. */
+    spenderName?: string
     assetText?: string
     contract: string
     isRevocation: boolean
@@ -29,6 +32,7 @@ type GrantRowsProps = {
 export const GrantRows = ({
     spenderTitle,
     spender,
+    spenderName,
     assetText,
     contract,
     isRevocation,
@@ -42,12 +46,22 @@ export const GrantRows = ({
             <KeyValueRow
                 testID='ethereum_approval_spender'
                 title={spenderTitle}
+                verticalAlignment={spenderName ? 'top' : undefined}
             >
-                <AddressDisplay
-                    address={spender}
-                    displayType='address-only'
-                    scope={scope}
-                />
+                <PWView style={styles.spender}>
+                    {!!spenderName && (
+                        <KnownContractName
+                            name={spenderName}
+                            style={styles.spenderName}
+                            testID='ethereum_approval_spender_name'
+                        />
+                    )}
+                    <AddressDisplay
+                        address={spender}
+                        displayType='address-only'
+                        scope={scope}
+                    />
+                </PWView>
             </KeyValueRow>
             <KeyValueRow
                 testID='ethereum_approval_asset'
