@@ -11,6 +11,7 @@
  */
 
 import { useMemo, useState } from 'react'
+import type { ChainAssetBalance } from '@perawallet/wallet-core-accounts'
 import { nativeAssetFor } from '@perawallet/wallet-core-assets'
 import {
     assetRefKey,
@@ -18,10 +19,13 @@ import {
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { useDebouncedValue } from '@perawallet/wallet-core-shared'
 import {
+    useDebouncedValue,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
+import {
+    useSwapAccount,
     useSwapPayHoldings,
-    type SwapPayHolding,
 } from '@perawallet/wallet-core-swaps'
 import { useLanguage } from '@hooks/useLanguage'
 import { useChainNetworkLabel } from '@modules/chain-ui/icon'
@@ -31,8 +35,10 @@ import {
 } from '../../hooks/useSwapChainFilter'
 import { swapAssetSearchPlaceholderKey } from '../../utils/swapAssetSearchPlaceholderKey'
 
+export type SwapFromEmptyState = 'search' | 'network' | 'account'
+
 export type UseSwapFromAssetSelectionListResult = UseSwapChainFilterResult & {
-    holdings: SwapPayHolding[]
+    holdings: ChainAssetBalance[]
     isLoading: boolean
     isError: boolean
     searchFilter: string
@@ -41,12 +47,13 @@ export type UseSwapFromAssetSelectionListResult = UseSwapChainFilterResult & {
     isChainShown: boolean
     searchPlaceholder: string
     networkLabelOf: (chainId: ChainId) => string
+    emptyState: Nullable<SwapFromEmptyState>
 }
 
-const isNative = (holding: SwapPayHolding): boolean =>
+const isNative = (holding: ChainAssetBalance): boolean =>
     holding.assetId === nativeAssetFor(holding.scope.chainId).assetId
 
-const matchesSearch = (holding: SwapPayHolding, term: string): boolean =>
+const matchesSearch = (holding: ChainAssetBalance, term: string): boolean =>
     holding.assetId.toLowerCase().includes(term) ||
     !!holding.asset?.name?.toLowerCase().includes(term) ||
     !!holding.asset?.unitName?.toLowerCase().includes(term)
@@ -57,12 +64,13 @@ export const useSwapFromAssetSelectionList = (
 ): UseSwapFromAssetSelectionListResult => {
     const { t } = useLanguage()
     const networkLabelOf = useChainNetworkLabel()
+    const account = useSwapAccount()
     const {
         holdings: payHoldings,
         sourceChainIds,
         isPending,
         isError,
-    } = useSwapPayHoldings()
+    } = useSwapPayHoldings(account)
     const chainIds = useMemo(
         () =>
             sourceChainIds.includes(scope.chainId)
@@ -97,6 +105,14 @@ export const useSwapFromAssetSelectionList = (
         filter.visibleChainIds,
     ])
 
+    // With no chips there is no other network to switch to, so the empty list is about the network.
+    const isNetworkEmpty =
+        filter.selectedChainId !== null || filter.chainOptions.length === 0
+    let emptyState: Nullable<SwapFromEmptyState> = 'account'
+    if (debouncedSearchFilter) emptyState = 'search'
+    else if (isError) emptyState = null
+    else if (isNetworkEmpty) emptyState = 'network'
+
     return {
         ...filter,
         holdings,
@@ -111,5 +127,6 @@ export const useSwapFromAssetSelectionList = (
             swapAssetSearchPlaceholderKey(filter.visibleChainIds),
         ),
         networkLabelOf,
+        emptyState,
     }
 }
