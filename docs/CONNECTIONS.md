@@ -102,9 +102,9 @@ addresses before approving, because any extension page can send on the control s
   adapter.
 - Extension offscreen: `apps/browser/src/offscreen/runOffscreenApp.ts` registers the WalletConnect
   v1 and `dapp` handlers, imports legacy WalletConnect sessions, clears the legacy dApp grant blob
-  without importing it (those grants were never verified, so each site asks again), does the same
-  boot and starts
-  `connectionsHost.ts`, which holds pending proposals and requests while the service worker collects
+  without importing it (a leftover blob can hold grants the user has since revoked, so clearing it
+  keeps them from being imported again; a site without a current grant asks again), does the same
+  boot and starts `connectionsHost.ts`, which holds pending proposals and requests while the service worker collects
   the user's decision.
 - Extension UI: `useConnectionsProvider.web.ts` builds the remote client, constructs the `dapp`
   handler over the no-op transport so its descriptors are answered locally, and mirrors the store
