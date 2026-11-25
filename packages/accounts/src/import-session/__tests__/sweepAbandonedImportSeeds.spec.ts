@@ -194,6 +194,55 @@ describe('sweepAbandonedImportSeeds', () => {
         expect(getPasskeyAnchorSeedIds(keys).has('older-unmarked')).toBe(false)
     })
 
+    it.each([
+        ['Algo25', { kind: 'local', seed: null }],
+        ['quantum', { kind: 'local', seed: 'quantum' }],
+    ])(
+        'lets an %s-only wallet anchor passkey registration on its seed',
+        (_label, custody) => {
+            state.keys = [
+                { id: 'wallet-seed' },
+                {
+                    id: 'wallet-seed/sign',
+                    metadata: { parentKeyId: 'wallet-seed' },
+                },
+            ]
+            state.accounts = [
+                {
+                    id: 'acc-1',
+                    custody,
+                    chains: {
+                        algorand: {
+                            address: 'acc-1',
+                            keyPairId: 'wallet-seed/sign',
+                        },
+                    },
+                } as WalletAccount,
+            ]
+
+            const keys = state.keys as Parameters<
+                typeof getPasskeyAnchorSeedIds
+            >[0]
+            expect(getPasskeyAnchorSeedIds(keys).has('wallet-seed')).toBe(true)
+        },
+    )
+
+    it('never anchors on a key a non-local account references', () => {
+        state.keys = [{ id: 'device-key' }]
+        state.accounts = [
+            {
+                id: 'acc-1',
+                custody: { kind: 'watch' },
+                chains: {
+                    algorand: { address: 'acc-1', keyPairId: 'device-key' },
+                },
+            } as WalletAccount,
+        ]
+
+        const keys = state.keys as Parameters<typeof getPasskeyAnchorSeedIds>[0]
+        expect(getPasskeyAnchorSeedIds(keys).size).toBe(0)
+    })
+
     it('waits for the accounts to load before judging any seed', async () => {
         state.provisional = ['abandoned']
         state.keys = [{ id: 'abandoned' }]

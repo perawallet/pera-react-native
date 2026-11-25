@@ -360,6 +360,21 @@ describe('bootstrapPasskeyAutofill', () => {
         )
     })
 
+    it('authorizes the seed of an Algo25-only wallet for registration', async () => {
+        const service = makeService()
+        await seedKeystore({ id: 'algo25-seed', type: 'seed' }, ROOT_SEED)
+
+        await bootstrapPasskeyAutofill({
+            service: service as never,
+            intentActions,
+            getPasskeyAnchorSeedIds: () => new Set(['algo25-seed']),
+        })
+
+        expect(service.setRegistrationParentKeyId).toHaveBeenCalledWith(
+            'algo25-seed',
+        )
+    })
+
     it('revokes registration approval without clearing an existing assertion parent', async () => {
         const service = makeService()
         await seedHdRoot()

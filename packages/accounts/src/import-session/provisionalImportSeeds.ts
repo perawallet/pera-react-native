@@ -53,9 +53,7 @@ export const getPasskeyAnchorSeedIds = (
                   useAccountsStore
                       .getState()
                       .accounts.filter(
-                          account =>
-                              account?.custody?.kind === 'local' &&
-                              account.custody.seed === 'bip39',
+                          account => account?.custody?.kind === 'local',
                       ),
               ),
               keys,
