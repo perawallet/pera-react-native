@@ -14,14 +14,17 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
-import type { AccountChainAssetBalance } from '@perawallet/wallet-core-accounts'
+import type {
+    AccountChainAssetBalance,
+    WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useSwapPayHoldings } from '../useSwapPayHoldings'
 
 const mocks = vi.hoisted(() => ({
     sourceChains: {} as Record<string, string[]>,
     holdings: [] as unknown[],
-    isPending: false,
+    pendingAccountIds: [] as string[],
     hidden: {} as Record<string, string[]>,
 }))
 
@@ -29,11 +32,17 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-accounts')
     >()),
-    useAccountsHoldingsAcrossChainsQuery: () => ({
-        assetBalances: mocks.holdings,
-        isPending: mocks.isPending,
-        isError: false,
-    }),
+    // Only the rows of the accounts asked for, so a read across accounts leaks into the result.
+    useAccountsHoldingsAcrossChainsQuery: (accounts: { id: string }[]) => {
+        const ids = accounts.map(({ id }) => id)
+        return {
+            assetBalances: (
+                mocks.holdings as AccountChainAssetBalance[]
+            ).filter(row => ids.includes(row.accountId)),
+            isPending: ids.some(id => mocks.pendingAccountIds.includes(id)),
+            isError: false,
+        }
+    },
     useHiddenTokensStore: (select: (state: unknown) => unknown) =>
         select({ hiddenTokens: {} }),
     canHideHolding: () => true,
@@ -41,15 +50,11 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
         mocks.hidden[address] ?? [],
 }))
 
-vi.mock('../useSwapScope', () => ({
-    useSwapSigningAccounts: () =>
-        Object.keys(mocks.sourceChains).map(id => ({ id })),
-}))
-
-vi.mock('../useSwapSourceChainsResolver', () => ({
-    useSwapSourceChainsResolver: () => (account: { id: string }) =>
-        mocks.sourceChains[account.id] ?? [],
-}))
+vi.mock('../useSwapSourceChainsResolver', () => {
+    const resolver = (account: { id: string }) =>
+        mocks.sourceChains[account.id] ?? []
+    return { useSwapSourceChainsResolver: () => resolver }
+})
 
 vi.mock('../../utils/isSwappableAsset', () => ({
     isSwappableAsset: (asset?: { isCollectible?: boolean }) =>
@@ -59,12 +64,17 @@ vi.mock('../../utils/isSwappableAsset', () => ({
 const ALGO = { chainId: 'algorand', networkId: 'mainnet' } as const
 const ETH = { chainId: 'ethereum', networkId: 'mainnet' } as const
 
+const account = (id: string) => ({ id }) as WalletAccount
+const FIRST = account('first')
+const SECOND = account('second')
+
 const holding = (
     accountId: string,
     assetId: string,
     amount: number,
     scope: { chainId: ChainId; networkId: string } = ALGO,
     asset: object = { name: assetId },
+    restriction: unknown = null,
 ): AccountChainAssetBalance =>
     ({
         accountId,
@@ -75,68 +85,116 @@ const holding = (
         amount: new Decimal(amount),
         nativeValue: new Decimal(amount),
         fiatValue: new Decimal(amount),
-        restriction: null,
+        restriction,
     }) as AccountChainAssetBalance
 
 describe('swaps/useSwapPayHoldings', () => {
     beforeEach(() => {
         mocks.sourceChains = { first: ['algorand'], second: ['algorand'] }
         mocks.holdings = []
-        mocks.isPending = false
+        mocks.pendingAccountIds = []
         mocks.hidden = {}
     })
 
-    test('lists an asset several accounts hold once, totalled, largest holder first', () => {
+    test("lists only the account's own rows at its own amount, without another account's holdings", () => {
         mocks.holdings = [
             holding('first', 'usdc', 2),
             holding('second', 'usdc', 5),
+            holding('second', 'native', 9),
+            holding('second', 'asa', 3),
         ]
 
-        const { result } = renderHook(() => useSwapPayHoldings())
+        const { result } = renderHook(() => useSwapPayHoldings(FIRST))
 
         expect(result.current.holdings).toHaveLength(1)
-        expect(result.current.holdings[0].amount).toEqual(new Decimal(7))
-        expect(
-            result.current.holdings[0].holders.map(h => h.accountId),
-        ).toEqual(['second', 'first'])
+        expect(result.current.holdings[0].assetId).toBe('usdc')
+        expect(result.current.holdings[0].amount).toEqual(new Decimal(2))
+        expect(result.current.holdings[0]).not.toHaveProperty('accountId')
+        expect(result.current.holdings[0]).not.toHaveProperty('address')
     })
 
-    test("leaves out a holding on a chain its account can't pay from, a hidden token and a collectible", () => {
+    test('lists nothing for an account with no holdings while another account holds ALGO and ASAs', () => {
+        mocks.holdings = [
+            holding('first', 'native', 0),
+            holding('second', 'native', 2.35),
+            holding('second', 'asa', 4),
+        ]
+
+        const { result } = renderHook(() => useSwapPayHoldings(FIRST))
+
+        expect(result.current.holdings).toEqual([])
+    })
+
+    test("leaves out a holding on a chain the account can't pay from, a hidden token, a collectible and a zero-amount asset", () => {
         mocks.hidden = { 'second-address': ['hidden'] }
         mocks.holdings = [
-            holding('first', 'native', 1, ETH),
+            holding('second', 'native', 1, ETH),
             holding('second', 'hidden', 1),
             holding('second', 'nft', 1, ALGO, { isCollectible: true }),
+            holding('second', 'opted-in', 0),
             holding('second', 'kept', 1),
         ]
 
-        const { result } = renderHook(() => useSwapPayHoldings())
+        const { result } = renderHook(() => useSwapPayHoldings(SECOND))
 
         expect(result.current.holdings.map(h => h.assetId)).toEqual(['kept'])
     })
 
-    test('names every chain some account can pay from, once', () => {
+    test("names the account's source chains only, and nothing for a null account or one that can't sign", () => {
         mocks.sourceChains = {
             first: ['algorand', 'ethereum'],
-            second: ['ethereum', 'base'],
+            second: ['base'],
+            watch: [],
         }
+        mocks.holdings = [holding('second', 'usdc', 1, ALGO)]
 
-        const { result } = renderHook(() => useSwapPayHoldings())
+        const first = renderHook(() => useSwapPayHoldings(FIRST))
+        const none = renderHook(() => useSwapPayHoldings(null))
+        const watch = renderHook(() => useSwapPayHoldings(account('watch')))
 
-        expect(result.current.sourceChainIds).toEqual([
+        expect(first.result.current.sourceChainIds).toEqual([
             'algorand',
             'ethereum',
-            'base',
         ])
+        expect(none.result.current).toMatchObject({
+            holdings: [],
+            sourceChainIds: [],
+        })
+        expect(watch.result.current).toMatchObject({
+            holdings: [],
+            sourceChainIds: [],
+        })
     })
 
-    test("lists nothing until every account's holdings are read", () => {
-        mocks.holdings = [holding('first', 'usdc', 1)]
-        mocks.isPending = true
+    test("lists only the new account's rows after the account changes, and nothing while its read is pending", () => {
+        mocks.holdings = [
+            holding('first', 'a-only', 1),
+            holding('second', 'b-only', 1),
+        ]
+        const { result, rerender } = renderHook(
+            ({ who }) => useSwapPayHoldings(who),
+            { initialProps: { who: FIRST } },
+        )
+        expect(result.current.holdings.map(h => h.assetId)).toEqual(['a-only'])
 
-        const { result } = renderHook(() => useSwapPayHoldings())
+        rerender({ who: SECOND })
+        expect(result.current.holdings.map(h => h.assetId)).toEqual(['b-only'])
 
+        mocks.pendingAccountIds = ['first']
+        rerender({ who: FIRST })
         expect(result.current.holdings).toEqual([])
         expect(result.current.isPending).toBe(true)
+    })
+
+    test('keeps a transfer-blocked holding with a balance, with its restriction', () => {
+        const restriction = { reason: 'frozen' }
+        mocks.holdings = [
+            holding('first', 'frozen', 3, ALGO, { name: 'frozen' }, restriction),
+        ]
+
+        const { result } = renderHook(() => useSwapPayHoldings(FIRST))
+
+        expect(result.current.holdings).toHaveLength(1)
+        expect(result.current.holdings[0].restriction).toBe(restriction)
     })
 })

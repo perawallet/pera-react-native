@@ -17,7 +17,7 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { swapAdapterFor } from '../chain-adapter'
-import type { SwapAccountPair, SwapCrossChainFlip } from '../models'
+import type { SwapCrossChainFlip } from '../models'
 import { useSwapsStore } from '../store'
 
 type UseSwapsResult = {
@@ -30,7 +30,6 @@ type UseSwapsResult = {
     setFromAsset: (fromAsset: string) => void
     setToAsset: (toAsset: string, toAssetScope?: Nullable<ChainScope>) => void
     setSourceAsset: (chainId: ChainId, fromAsset: string) => void
-    setAccountPair: (pair: SwapAccountPair) => void
     flipAcrossChains: (flip: SwapCrossChainFlip) => void
     takeFlippedPayAmount: (
         chainId: ChainId,
@@ -59,7 +58,6 @@ export const useSwaps = (scope: ChainScope): UseSwapsResult => {
     const setToAsset = useSwapsStore(state => state.setToAsset)
     const setSourceAsset = useSwapsStore(state => state.setSourceAsset)
     const pairAccountId = useSwapsStore(state => state.pairAccountId)
-    const setAccountPair = useSwapsStore(state => state.setAccountPair)
     const flipAcrossChains = useSwapsStore(state => state.flipAcrossChains)
     const takeFlippedPayAmount = useSwapsStore(
         state => state.takeFlippedPayAmount,
@@ -79,7 +77,6 @@ export const useSwaps = (scope: ChainScope): UseSwapsResult => {
         setFromAsset,
         setToAsset,
         setSourceAsset,
-        setAccountPair,
         flipAcrossChains,
         takeFlippedPayAmount,
         setSlippage,
