@@ -34,9 +34,10 @@ import {
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
-import type {
-    ConnectionId,
-    ConnectionPeer,
+import {
+    withAccountsGranted,
+    type ConnectionId,
+    type ConnectionPeer,
 } from '@perawallet/wallet-extension-connections'
 import {
     jsonRpcError,
@@ -532,6 +533,11 @@ export const createEip1193ConnectionHandler = (
                     status: 'active',
                     createdAt: existing?.createdAt ?? now(),
                     lastActiveAt: now(),
+                    accountsGrantedAt: withAccountsGranted(
+                        undefined,
+                        granted,
+                        now(),
+                    ),
                     metadata: {
                         chainId: chain.scope.chainId,
                         // Read now, not at proposal time: a network added from
@@ -1313,7 +1319,15 @@ export const createEip1193ConnectionHandler = (
         if (isSameList(connection.accounts, [address])) return
         // Store first, then withdraw: a request read before the write would
         // be raised for the account being replaced.
-        await store().upsert({ ...connection, accounts: [address] })
+        await store().upsert({
+            ...connection,
+            accounts: [address],
+            accountsGrantedAt: withAccountsGranted(
+                connection.accountsGrantedAt,
+                [address],
+                now(),
+            ),
+        })
         withdrawSiteQueue(id)
         await notifyOrigin(
             connection.origin.requesterOrigin,

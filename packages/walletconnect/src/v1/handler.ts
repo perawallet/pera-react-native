@@ -40,6 +40,7 @@ import {
     isWalletConnectV1Connection,
     WALLET_CONNECT_V1_KIND,
     type WalletConnectV1Handler,
+    type WalletConnectV1Connection,
 } from './connection'
 import {
     createStorageAnsweredRequests,
@@ -66,13 +67,22 @@ export type CreateWalletConnectV1HandlerOptions = {
     sessionKeys?: WalletConnectV1SessionKeyStore
     /** Defaults to the provider's key-value storage. */
     answeredRequests?: WalletConnectV1AnsweredRequests
+    restoreWhen?: () => Promise<void>
+    shouldRevokeForAccountRemoval?: (
+        connection: WalletConnectV1Connection,
+    ) => boolean
 }
 
 // v1 is one bridge WebSocket per session, so this handler owns N connectors rather than one relay.
 export const createWalletConnectV1Handler = (
     options: CreateWalletConnectV1HandlerOptions,
 ): WalletConnectV1Handler => {
-    const { chainId, getNetworkId } = options
+    const {
+        chainId,
+        getNetworkId,
+        restoreWhen,
+        shouldRevokeForAccountRemoval,
+    } = options
     const getScope = (): ChainScope => ({
         chainId,
         networkId: getNetworkId(chainId),
@@ -110,6 +120,7 @@ export const createWalletConnectV1Handler = (
         connectors,
         getScope,
         answeredRequests,
+        shouldRevokeForAccountRemoval,
     })
     const proposals = createV1ProposalHandlers({
         kit,
@@ -154,36 +165,46 @@ export const createWalletConnectV1Handler = (
     }
 
     // v1 sessions never expire and each holds a bridge socket, so an abandoned
-    // one is ended here. Revived first, because only a live connector can tell
+    // one, or one granted an account since removed, is ended here. Revived first, because only a live connector can tell
     // the dApp; that opens its socket, so a request the bridge queued can replay
     // and briefly prompt for a session about to end. The client's `killSession`
     // only encrypts and queues the frame today; the bound keeps a client that
     // waits for an ack from hanging the boot, at the cost of a lingering key.
     const restore = async () => {
+        await restoreWhen?.()
         const sessions = await restoreSessions()
         const now = Date.now()
         // An ungranted session has no re-consent path in v1, so it is ended
         // and the dApp offers its connect button again.
-        const ended = sessions.filter(
+        const ending = sessions.filter(
             session =>
                 isIdleSession(session, now) ||
-                grantedMethodsOf(session).length === 0,
+                grantedMethodsOf(session).length === 0 ||
+                shouldRevokeForAccountRemoval?.(session),
         )
         await withTimeout(
             Promise.allSettled(
-                ended.map(({ id }) => {
-                    logger.warn('[WC v1] ending an idle or ungranted session', {
-                        connectionId: id,
-                    })
+                ending.map(({ id }) => {
+                    logger.warn(
+                        '[WC v1] ending an idle, ungranted or revoked session',
+                        {
+                            connectionId: id,
+                        },
+                    )
                     return disconnect(id)
                 }),
             ),
             IDLE_END_TIMEOUT_MS,
-            'ending idle WalletConnect v1 sessions',
+            'ending idle, ungranted or revoked WalletConnect v1 sessions',
         ).catch((error: unknown) => {
-            logger.warn('[WC v1] idle sessions are still ending', { error })
+            logger.warn(
+                '[WC v1] idle, ungranted or revoked sessions are still ending',
+                {
+                    error,
+                },
+            )
         })
-        return sessions.filter(session => !ended.includes(session))
+        return sessions.filter(session => !ending.includes(session))
     }
 
     return {

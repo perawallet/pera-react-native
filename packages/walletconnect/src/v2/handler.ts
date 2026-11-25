@@ -48,11 +48,12 @@ import {
     MAX_ERROR_LENGTH,
     sanitizeErrorForWebview,
 } from '@perawallet/wallet-core-dapp/wire'
-import type {
-    Connection,
-    ConnectionId,
-    ConnectionOrigin,
-    ConnectionPeer,
+import {
+    withAccountsGranted,
+    type Connection,
+    type ConnectionId,
+    type ConnectionOrigin,
+    type ConnectionPeer,
 } from '@perawallet/wallet-extension-connections'
 import {
     WalletConnectError,
@@ -242,6 +243,12 @@ export type CreateWalletConnectV2HandlerOptions = {
      * client itself.
      */
     startWhen?: () => Promise<void>
+    shouldRevokeForAccountRemoval?: (
+        connection: Pick<
+            Connection,
+            'accounts' | 'createdAt' | 'accountsGrantedAt'
+        >,
+    ) => boolean
     /**
      * Whether a held account can sign for `address` on `chainId`; the handler
      * holds no wallet accounts itself. Without it no session's account can be
@@ -454,6 +461,7 @@ export const createWalletConnectV2Handler = (
         keyValueStorage,
         createWalletKit = createWalletKitClient,
         startWhen,
+        shouldRevokeForAccountRemoval,
         canSignWith,
     } = options
 
@@ -687,7 +695,11 @@ export const createWalletConnectV2Handler = (
         const stored = await store().get(topic)
         const record =
             stored && isWalletConnectV2Connection(stored) ? stored : null
-        if (!record) {
+        if (
+            !record ||
+            readRevokedTopics().has(topic) ||
+            shouldRevokeForAccountRemoval?.(record)
+        ) {
             refuseRequest(
                 topic,
                 id,
@@ -1334,9 +1346,15 @@ export const createWalletConnectV2Handler = (
                     'The approved session names no account this wallet can sign for',
                 )
             }
+            const approvedAt = Date.now()
             const approved: WalletConnectV2Connection = {
                 ...record,
-                lastActiveAt: Date.now(),
+                lastActiveAt: approvedAt,
+                accountsGrantedAt: withAccountsGranted(
+                    record.accountsGrantedAt,
+                    record.accounts,
+                    approvedAt,
+                ),
             }
             // Kept until the pairing is released: an approved pairing stays
             // live, and a later proposal on it must still name its page.
@@ -1722,6 +1740,9 @@ export const createWalletConnectV2Handler = (
             // stored record so the settings list does not reorder every boot.
             createdAt: existing?.createdAt ?? now,
             lastActiveAt: existing?.lastActiveAt ?? now,
+            ...(existing?.accountsGrantedAt
+                ? { accountsGrantedAt: existing.accountsGrantedAt }
+                : {}),
             metadata: {
                 topic: session.topic,
                 // A namespace's `chains` is absent, or empty, when its key is
@@ -1763,6 +1784,29 @@ export const createWalletConnectV2Handler = (
         )
     }
 
+    const restorableConnections = (
+        records: WalletConnectV2Connection[],
+        revoked: Set<string>,
+        stored: ReadonlyMap<string, WalletConnectV2Connection>,
+    ): WalletConnectV2Connection[] => {
+        const revokedCount = revoked.size
+        const kept = records.filter(({ id, accounts }) => {
+            if (revoked.has(id)) return false
+            // A WalletKit-only row has no wallet-recorded approval time.
+            const removed = shouldRevokeForAccountRemoval?.({
+                accounts,
+                createdAt: stored.get(id)?.createdAt ?? 0,
+                accountsGrantedAt: stored.get(id)?.accountsGrantedAt,
+            })
+            if (!removed) return true
+            revoked.add(id)
+            return false
+        })
+        // The relay may not have started when a cached connection is dropped.
+        if (revoked.size !== revokedCount) writeRevokedTopics(revoked)
+        return kept
+    }
+
     /**
      * WalletKit's active sessions ARE the answer: it expires sessions while the
      * app is closed, so one missing from `getActiveSessions()` must disappear
@@ -1772,7 +1816,16 @@ export const createWalletConnectV2Handler = (
      */
     const restore = async (): Promise<WalletConnectV2Connection[]> => {
         // Reporting no sessions here would read as "prune every v2 row".
-        if (isBootStartPending) return [...(await storedById()).values()]
+        if (isBootStartPending) {
+            const stored = await storedById()
+            if (isBootStartPending) {
+                return restorableConnections(
+                    [...stored.values()],
+                    readRevokedTopics(),
+                    stored,
+                )
+            }
+        }
         const walletKit = client
         // No client means v2 is unavailable, so it claims no connections and
         // reconciliation prunes whatever v2 rows are left over.
@@ -1794,19 +1847,24 @@ export const createWalletConnectV2Handler = (
         const restored: WalletConnectV2Connection[] = []
         const idle: WalletConnectV2Connection[] = []
         const sessions = walletKit.getActiveSessions()
-        const revoked = [...readRevokedTopics()].filter(
-            topic => topic in sessions,
-        )
-        for (const session of Object.values(sessions)) {
-            if (revoked.includes(session.topic)) continue
+        const revokedTopics = readRevokedTopics()
+        const candidates = Object.values(sessions).flatMap(session => {
+            if (revokedTopics.has(session.topic)) return []
             const record = toConnection(
                 session,
                 existing.get(session.topic) ?? null,
             )
-            if (!record) continue
+            return record ? [record] : []
+        })
+        for (const record of restorableConnections(
+            candidates,
+            revokedTopics,
+            existing,
+        )) {
             if (isIdleSession(record, now)) idle.push(record)
             else restored.push(record)
         }
+        const revoked = [...revokedTopics].filter(topic => topic in sessions)
         // Omitting a record deletes it, so one the relay did not take is kept:
         // WalletKit would otherwise hand the live session back next launch with
         // no stored dates, restarting its idle clock. Bounded so a dead relay
@@ -2189,6 +2247,11 @@ export const createWalletConnectV2Handler = (
                 ),
                 normalized,
             ],
+            accountsGrantedAt: withAccountsGranted(
+                current.accountsGrantedAt,
+                [normalized],
+                Date.now(),
+            ),
             metadata: {
                 ...current.metadata,
                 chains: current.metadata.chains.filter(

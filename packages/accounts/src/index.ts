@@ -36,6 +36,7 @@ export * from './import-session'
 
 export {
     rehydrateAccountsStore,
+    whenAccountsHydrationSettled,
     backfillAccountRecords,
     useAccountsStore,
     useAccountChainStateStore,

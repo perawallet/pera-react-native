@@ -109,6 +109,21 @@ describe('cleanupRemovedAccountData', () => {
         expect(handler).toHaveBeenCalledWith({ db, accountAddress: 'ADDR1' })
     })
 
+    it('still runs registered cleanup handlers when deleting the rows fails', async () => {
+        const handler = vi.fn().mockResolvedValue(undefined)
+        registerAccountCleanup(handler)
+        const broken = {} as Database
+
+        await expect(
+            cleanupRemovedAccountData({ db: broken, accountAddress: 'ADDR1' }),
+        ).rejects.toThrow()
+
+        expect(handler).toHaveBeenCalledWith({
+            db: broken,
+            accountAddress: 'ADDR1',
+        })
+    })
+
     it('finishes the cleanup when a stored network is not a known scope', async () => {
         const handler = vi.fn().mockResolvedValue(undefined)
         registerAccountCleanup(handler)

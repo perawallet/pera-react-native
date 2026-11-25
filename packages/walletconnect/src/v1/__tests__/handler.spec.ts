@@ -50,6 +50,7 @@ import {
     IDLE_END_TIMEOUT_MS,
     IDLE_SESSION_TIMEOUT_MS,
 } from '../../shared/idleSession'
+import { WalletConnectInvalidSessionError } from '../../shared/errors'
 import { toPeer } from '../../shared/peer'
 
 // Spied, not replaced: the point is proving the handler reaches the one
@@ -574,7 +575,11 @@ describe('walletconnect v1 handler behaviour', () => {
         seed: Connection[] = [],
         {
             answeredRequests,
-        }: { answeredRequests?: WalletConnectV1AnsweredRequests } = {},
+            shouldRevokeForAccountRemoval,
+        }: {
+            answeredRequests?: WalletConnectV1AnsweredRequests
+            shouldRevokeForAccountRemoval?: (connection: Connection) => boolean
+        } = {},
     ) => {
         const store = memoryStore(seed)
         const onProposal = vi.fn<(proposal: ConnectionProposal) => void>()
@@ -596,6 +601,7 @@ describe('walletconnect v1 handler behaviour', () => {
             getNetworkId: testGetNetworkId,
             sessionKeys,
             answeredRequests,
+            shouldRevokeForAccountRemoval,
         })
         await handler.initialize(context)
         return {
@@ -1326,6 +1332,57 @@ describe('walletconnect v1 handler behaviour', () => {
             bridge: 'https://b.example',
             peerId: 'peer-1',
         })
+    })
+
+    it('restores only grants issued after an account was removed and re-added', async () => {
+        keys.set('c1', 'old-key')
+        keys.set('c2', 'new-key')
+        const fresh = {
+            ...SEEDED,
+            id: 'c2',
+            secretRef: 'wc1-session-key:c2',
+            createdAt: 11,
+        }
+        const { handler } = await setup([SEEDED, fresh], {
+            shouldRevokeForAccountRemoval: ({ createdAt }) => createdAt <= 10,
+        })
+
+        const restored = await handler.restore()
+
+        expect(restored.map(({ id }) => id)).toEqual(['c2'])
+        expect(
+            wc.FakeConnector.instances.find(({ clientId }) => clientId === 'c1')
+                ?.killSession,
+        ).toHaveBeenCalled()
+        expect(getConnector('c1')).toBeUndefined()
+        expect(keys.has('c1')).toBe(false)
+        expect(getConnector('c2')).toBeDefined()
+    })
+
+    it('refuses a request on a live session that came to hold a removed account', async () => {
+        keys.set('c1', 'restored-key')
+        let isRevoked = false
+        const { handler, onMessage, onError } = await setup([SEEDED], {
+            shouldRevokeForAccountRemoval: () => isRevoked,
+        })
+        await handler.restore()
+        const connector = lastConnector()
+        isRevoked = true
+
+        connector.emit('algo_signTxn', null, {
+            id: 9,
+            params: [[{ txn: 'dHhu' }]],
+        })
+        await flush()
+
+        expect(onMessage).not.toHaveBeenCalled()
+        expect(connector.rejectRequest).toHaveBeenCalledWith(
+            expect.objectContaining({ id: 9 }),
+        )
+        expect(onError).toHaveBeenCalledWith(
+            expect.any(WalletConnectInvalidSessionError),
+            expect.objectContaining({ connectionId: 'c1' }),
+        )
     })
 
     it('rebinds a surviving connector when the handler is re-initialised', async () => {

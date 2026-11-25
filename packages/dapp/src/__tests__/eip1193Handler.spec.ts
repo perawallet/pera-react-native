@@ -26,7 +26,10 @@ import {
 import { memoryStore } from '@perawallet/wallet-core-connections/testing'
 import { logger } from '@perawallet/wallet-core-shared'
 import type { ChainId, NetworkId } from '@perawallet/wallet-core-chain-contract'
-import type { Connection } from '@perawallet/wallet-extension-connections'
+import {
+    accountGrantedAt,
+    type Connection,
+} from '@perawallet/wallet-extension-connections'
 import type { JsonRpcResponse } from '../codec'
 import { createEip1193ConnectionHandler } from '../eip1193Handler'
 import {
@@ -1667,6 +1670,24 @@ describe('createEip1193ConnectionHandler', () => {
             ])
         })
 
+        it('stamps a re-approval of a connected site as a fresh grant of every chosen account', async () => {
+            const { transport, registry, proposals, store } = setup([
+                connectedOn('ethereum'),
+            ])
+            await registry.initialize()
+            const pending = ask(transport)
+            await flush()
+
+            await proposals[0].approve([ADDR_Y])
+            await pending
+
+            const reapproved = await store.get(ID)
+            expect(reapproved?.createdAt).toBe(1)
+            expect(reapproved?.accountsGrantedAt).toEqual({
+                [ADDR_Y.toLowerCase()]: 1_000_000,
+            })
+        })
+
         it('reports chainChanged when the site’s chain moved while the sheet was open', async () => {
             const { transport, registry, proposals, store } = setup([
                 connectedOn('ethereum'),
@@ -2521,6 +2542,20 @@ describe('createEip1193ConnectionHandler', () => {
         })
 
         describe('changeAccount', () => {
+            // A removal cutoff is judged against this, so switching an older
+            // site to a re-imported account must not read as its old grant.
+            it('stamps the new account as granted now and keeps the first approval date', async () => {
+                const { handler, store } = await connected()
+
+                await handler.changeAccount?.(ID, 'ethereum', ADDR_Y)
+
+                const switched = await store.get(ID)
+                expect(switched?.createdAt).toBe(1)
+                expect(switched && accountGrantedAt(switched, ADDR_Y)).toBe(
+                    1_000_000,
+                )
+            })
+
             it('narrows the site to the new account and tells its tabs', async () => {
                 const { handler, store, transport } = await connected([
                     siteOn(ORIGIN, [ADDR_X, ADDR_GONE]),

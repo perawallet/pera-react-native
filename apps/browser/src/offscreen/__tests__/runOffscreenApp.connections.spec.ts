@@ -246,6 +246,8 @@ vi.mock('@perawallet/wallet-core-chain-algorand', () => ({
 vi.mock('@perawallet/wallet-core-connections', () => ({
     createConnectionRegistry,
     bootConnections,
+    isConnectionRevokedForAccountRemoval: () => false,
+    waitForAccountsHydration: async () => {},
     watchWalletNotices,
     watchLockNotices,
 }))
@@ -320,6 +322,8 @@ describe('runOffscreenApp connections wiring', () => {
             chainId: 'algorand',
             getNetworkId: expect.any(Function),
             sessionKeys,
+            restoreWhen: expect.any(Function),
+            shouldRevokeForAccountRemoval: expect.any(Function),
         })
         expect(registry.register).toHaveBeenCalledWith(v1Handler)
     })

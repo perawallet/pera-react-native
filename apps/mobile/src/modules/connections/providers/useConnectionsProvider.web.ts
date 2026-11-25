@@ -66,7 +66,7 @@ export const useConnectionsProvider = (): ConnectionRegistryClient => {
     const registry = registryRef.current
 
     useEffect(() => {
-        setActiveConnectionRegistry(registry)
+        setActiveConnectionRegistry(registry, getProvider().connections.store)
         return () => setActiveConnectionRegistry(null)
     }, [registry])
 
