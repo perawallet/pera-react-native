@@ -154,6 +154,19 @@ const serveEthereumHistory = () =>
         }),
     )
 
+let stopRecordingRequests: (() => void) | undefined
+
+const recordRequests = () => {
+    const requests: string[] = []
+    const record = ({ request }: { request: Request }) => {
+        requests.push(`${request.method} ${request.url}`)
+    }
+    server.events.on('request:start', record)
+    stopRecordingRequests = () =>
+        server.events.removeListener('request:start', record)
+    return requests
+}
+
 const rowIds = () =>
     screen
         .queryAllByTestId(/^transaction_row_(0x|ALGOTX)[0-9A-Za-z]+$/)
@@ -183,6 +196,8 @@ describe('Flow: History on an account with Algorand and Ethereum', () => {
     })
 
     afterEach(() => {
+        stopRecordingRequests?.()
+        stopRecordingRequests = undefined
         server.resetHandlers()
         useAccountsStore.getState().setAccounts([])
     })
@@ -216,18 +231,12 @@ describe('Flow: History on an account with Algorand and Ethereum', () => {
     })
 
     it('Given rows on both networks, when CSV is tapped on All and Ethereum picked, then it shares a file built from the stored Ethereum rows without asking the export route', async () => {
-        const exportRequests: string[] = []
-        const recordExportRequest = ({ request }: { request: Request }) => {
-            if (request.url.includes('export-history')) {
-                exportRequests.push(request.url)
-            }
-        }
-        server.events.on('request:start', recordExportRequest)
         renderWithNavigation(AccountHistory, 'AccountHistory')
         await waitFor(() => expect(rowIds()).toHaveLength(4), {
             timeout: SLOW_WAIT_TIMEOUT_MS,
         })
 
+        const requestsAfterTap = recordRequests()
         fireEvent.click(screen.getByText('asset_details.transaction_list.csv'))
         fireEvent.click(
             await screen.findByTestId('chain_selection_ethereum', undefined, {
@@ -246,8 +255,7 @@ describe('Flow: History on an account with Algorand and Ethereum', () => {
         expect(content).toContain(hashOf(3))
         expect(content).toContain(hashOf(1))
         expect(content).not.toContain(ALGO_TX.id)
-        server.events.removeListener('request:start', recordExportRequest)
-        expect(exportRequests).toEqual([])
+        expect(requestsAfterTap).toEqual([])
     })
 
     it('Given rows on Ethereum alone, when History opens on All, then the export names Ethereum', async () => {
@@ -316,13 +324,6 @@ describe('Flow: History on an account with Algorand and Ethereum', () => {
     })
 
     it('Given History narrowed to Ethereum, when CSV is tapped, then it shares the stored Ethereum rows without asking the export route', async () => {
-        const exportRequests: string[] = []
-        const recordExportRequest = ({ request }: { request: Request }) => {
-            if (request.url.includes('export-history')) {
-                exportRequests.push(request.url)
-            }
-        }
-        server.events.on('request:start', recordExportRequest)
         renderWithNavigation(AccountHistory, 'AccountHistory')
         await waitFor(() => expect(rowIds()).toHaveLength(4), {
             timeout: SLOW_WAIT_TIMEOUT_MS,
@@ -340,6 +341,7 @@ describe('Flow: History on an account with Algorand and Ethereum', () => {
         expect(
             screen.queryByText('asset_details.transaction_list.csv_on_network'),
         ).toBeNull()
+        const requestsAfterTap = recordRequests()
         fireEvent.click(screen.getByText('asset_details.transaction_list.csv'))
 
         await waitFor(() => expect(shared.shareFile).toHaveBeenCalledTimes(1), {
@@ -354,8 +356,7 @@ describe('Flow: History on an account with Algorand and Ethereum', () => {
         expect(content).toContain(hashOf(3))
         expect(content).toContain(hashOf(1))
         expect(content).not.toContain(ALGO_TX.id)
-        server.events.removeListener('request:start', recordExportRequest)
-        expect(exportRequests).toEqual([])
+        expect(requestsAfterTap).toEqual([])
     })
 
     describe('when the Algorand address was never funded', () => {
