@@ -273,6 +273,7 @@ export const useBidaliTransport = (
                         assetId: currencyInfo.assetId,
                         amount: baseAmount,
                         note,
+                        allowFeeReview: true,
                     })
 
                 addSignRequest({

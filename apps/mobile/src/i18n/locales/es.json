@@ -1538,6 +1538,10 @@
             "asset_frozen": {
                 "title": "Activo congelado",
                 "body": "El activo {{assetId}} está congelado, por lo que esta transferencia no se puede completar. El gestor de congelación del activo debe descongelarlo primero."
+            },
+            "fee_above_shown": {
+                "title": "La comisión de red cambió",
+                "body": "La red ahora pide una comisión más alta que la que viste, así que no se firmó nada. Inténtalo de nuevo para ver la comisión actual."
             }
         },
         "kms": {

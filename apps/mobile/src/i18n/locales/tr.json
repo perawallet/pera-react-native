@@ -1538,6 +1538,10 @@
             "asset_frozen": {
                 "title": "Varlık donduruldu",
                 "body": "{{assetId}} ID’li varlık dondurulmuş, bu yüzden bu transfer tamamlanamıyor. Önce varlığın dondurma yöneticisinin dondurmayı kaldırması gerekir."
+            },
+            "fee_above_shown": {
+                "title": "Ağ ücreti değişti",
+                "body": "Ağ artık gösterilenden daha yüksek bir ücret istiyor, bu yüzden hiçbir şey imzalanmadı. Güncel ücreti görmek için tekrar dene."
             }
         },
         "kms": {

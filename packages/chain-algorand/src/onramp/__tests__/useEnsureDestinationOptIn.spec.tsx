@@ -61,6 +61,10 @@ vi.mock('../../blockchain', async () => ({
     useMinimumFeeConfig: () => useMinimumFeeConfigMock(),
 }))
 
+vi.mock('../../transactions/transfer-fees', () => ({
+    resolveAlgorandSenderFee: (_sender: string, minFee: bigint) => minFee,
+}))
+
 vi.mock('../../fee-delegation', async () => ({
     ...(await vi.importActual<object>('../../fee-delegation')),
     useFeeDelegation: () => ({
@@ -167,6 +171,7 @@ describe('onramp/useEnsureDestinationOptIn', () => {
         expect(optInMock).toHaveBeenCalledWith({
             sender: ADDRESS,
             assetId: ASSET_ID,
+            maxFee: 1000n,
         })
         expect(submitWithFeeDelegationMock).not.toHaveBeenCalled()
     })

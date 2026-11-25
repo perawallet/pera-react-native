@@ -1538,6 +1538,10 @@
             "asset_frozen": {
                 "title": "Actif gelé",
                 "body": "L’actif {{assetId}} est gelé, ce transfert ne peut donc pas aboutir. Le gestionnaire de gel de l’actif doit d’abord le dégeler."
+            },
+            "fee_above_shown": {
+                "title": "Frais de réseau modifiés",
+                "body": "Le réseau demande maintenant des frais plus élevés que ceux affichés, donc rien n’a été signé. Réessayez pour voir les frais actuels."
             }
         },
         "kms": {

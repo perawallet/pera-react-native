@@ -22,6 +22,7 @@ import {
 import type { Optional } from '@perawallet/wallet-core-shared'
 import type { SigningStackParamList } from '@modules/signing/routes'
 import { useSignRequestScope } from '@modules/signing/hooks/useSignRequestScope'
+import { requesterSourceOf } from '@modules/signing/utils/requesterSource'
 
 type NavigationProp = StackNavigationProp<
     SigningStackParamList,
@@ -72,7 +73,7 @@ export const useTransactionListScreen = () => {
         listItems,
         reviewScope,
         transactionCount: allTransactions.length,
-        sourceMetadata: request?.sourceMetadata,
+        sourceMetadata: requesterSourceOf(request),
         verifiedOrigin: request?.verifiedOrigin,
         handleTransactionPress,
         handleGroupPress,

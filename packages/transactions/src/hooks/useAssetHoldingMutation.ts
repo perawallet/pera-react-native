@@ -33,7 +33,10 @@ export type AssetHoldingMutationContext = {
     assignFees: (
         unsignedTxs: UnsignedTransaction[],
     ) => Promise<UnsignedTransaction[]>
-    submit: (unsignedTxs: UnsignedTransaction[]) => Promise<{ txIds: string[] }>
+    submit: (
+        unsignedTxs: UnsignedTransaction[],
+        reviewFee?: boolean,
+    ) => Promise<{ txIds: string[] }>
 }
 
 export type AssetHoldingMutationOutcome = {
@@ -88,11 +91,12 @@ export const useAssetHoldingMutation = <TParams>({
                     assignFees: async unsignedTxs =>
                         (await assignFeeToGroup({ transactions: unsignedTxs }))
                             .transactions,
-                    submit: unsignedTxs =>
+                    submit: (unsignedTxs, reviewFee) =>
                         submit({
                             scope,
                             unsignedTxs,
                             source,
+                            ...(reviewFee ? { reviewFee } : {}),
                         }),
                 })
                 // Not balances-only: account reads (holdings page, NFT

@@ -135,6 +135,8 @@ export type TransferTxsParams = {
      * caller passes it only when its PQ-aware minimum exceeds that.
      */
     fee?: bigint
+    /** Allow the caller to review a fee above the network minimum. */
+    allowFeeReview?: boolean
 }
 
 export type ExpressTransferTxsParams = {
@@ -156,11 +158,15 @@ export type AssetOptInTxsParams = {
     scope: ChainScope
     sender: string
     assetId: bigint
+    /** Allow the caller to review a fee above the network minimum. */
+    allowFeeReview?: boolean
 }
 
 export type AssetOptOutTxsParams = {
     scope: ChainScope
     optOuts: Array<{ sender: string; assetId: bigint; creator: string }>
+    /** Allow the caller to review a fee above the network minimum. */
+    allowFeeReview?: boolean
 }
 
 export type DelegationTxParams = {

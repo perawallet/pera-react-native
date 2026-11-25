@@ -1538,6 +1538,10 @@
             "asset_frozen": {
                 "title": "Ativo congelado",
                 "body": "O ativo {{assetId}} está congelado, então esta transferência não pode ser concluída. O gestor de congelamento do ativo precisa descongelá-lo primeiro."
+            },
+            "fee_above_shown": {
+                "title": "Taxa de rede alterada",
+                "body": "A rede agora pede uma taxa maior do que a exibida, então nada foi assinado. Tente novamente para ver a taxa atual."
             }
         },
         "kms": {

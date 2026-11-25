@@ -466,6 +466,7 @@ describe('useBidaliTransport', () => {
                 assetId: '0',
                 amount: 1_500_000n,
                 note: undefined,
+                allowFeeReview: true,
             })
             expect(mockAddSignRequest).not.toHaveBeenCalledWith(
                 expect.objectContaining({ chainId: expect.anything() }),

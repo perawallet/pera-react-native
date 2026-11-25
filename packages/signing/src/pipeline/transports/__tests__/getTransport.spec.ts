@@ -218,6 +218,23 @@ describe('createTransportSelector', () => {
         )
     })
 
+    test('multisig account + local-fee-review source uses the propose transport', () => {
+        const selector = createTransportSelector({
+            ...baseOptions(),
+            proposeSignRequest: vi.fn(),
+        })
+
+        const transport = selector(
+            {
+                type: 'local-fee-review',
+                transport: 'callback',
+            } as SourceMetadata,
+            multisigAccount,
+        )
+
+        expect(transport).toBe(proposeTransport)
+    })
+
     test.each(['walletconnect', 'webview', 'deeplink'] as const)(
         'multisig account + %s source uses the propose transport (sync handoff)',
         sourceType => {

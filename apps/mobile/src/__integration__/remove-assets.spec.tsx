@@ -130,7 +130,7 @@ describe('Flow: Remove assets', () => {
                     ],
                 },
             }),
-            mockAlgodTransactionParams({ response: { fee: 1000 } }),
+            mockAlgodTransactionParams({ response: { fee: 0 } }),
             mockAlgodStatus({ response: { 'last-round': 100 } }),
         )
     })
