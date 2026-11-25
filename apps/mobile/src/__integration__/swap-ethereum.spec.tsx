@@ -54,6 +54,15 @@ vi.mock(
     }),
 )
 
+// The integration harness has no i18next instance, so <Trans> renders nothing;
+// echoing its components lets the spec read the Balance line's amount.
+vi.mock('react-i18next', async importOriginal => ({
+    ...(await importOriginal<typeof import('react-i18next')>()),
+    Trans: ({ components }: { components?: React.ReactNode[] }) => (
+        <>{components}</>
+    ),
+}))
+
 vi.mock('@perawallet/wallet-core-config', async importOriginal => {
     const withBackend = await (
         await import('@packages/chain-ethereum/src/__tests__/pera-backend')
@@ -769,6 +778,9 @@ describe('Flow: Swap from an Ethereum account', () => {
             expect(useSwapsStore.getState().fromAsset).toBe(TOKEN),
         )
         await settleRender()
+        expect(
+            (await screen.findByTestId('swap-pay-balance')).textContent,
+        ).toContain('100')
         expect(useSwapsStore.getState().accountId).toBeNull()
         expect(useAccountsStore.getState().selectedAccountId).toBe(
             ETHEREUM_SENDER.id,

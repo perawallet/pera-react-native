@@ -35,8 +35,6 @@ ${NOTHING_TO_SWAP_TOAST}            xpath=//*[(starts-with(@text,'Nothing to swa
 ${ASSET_SEARCH_INPUT}               tid=searchable-list-search-input
 ${PAY_ASSET_ROW_ANY}                xpath=//*[starts-with(@content-desc,'asset-list-item-') or starts-with(@resource-id,'asset-list-item-') or starts-with(@name,'asset-list-item-')]
 ${PAY_ASSET_ROW_PREFIX}             asset-list-item-
-${SOURCE_ACCOUNT_HEADER}            tid=swap_source_account_header
-${SOURCE_ACCOUNT_ROW_ANY}           xpath=//*[(starts-with(@content-desc,'swap_source_account_') or starts-with(@resource-id,'swap_source_account_') or starts-with(@name,'swap_source_account_')) and not(contains(concat(@content-desc,@resource-id,@name),'header'))]
 ${RECEIVE_ASSET_ROW_ANY}            xpath=//*[starts-with(@content-desc,'swap-asset-item-') or starts-with(@resource-id,'swap-asset-item-') or starts-with(@name,'swap-asset-item-')]
 ${NO_MATCHING_ASSETS}               xpath=//*[@text='No Matching Assets' or @label='No Matching Assets']
 ${NO_MATCH_SEARCH}                  ZZQXNOMATCH9999

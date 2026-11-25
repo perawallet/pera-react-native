@@ -105,7 +105,7 @@ export const useSwapFromAssetSelectionList = (
         filter.visibleChainIds,
     ])
 
-    // Without chips (one network or none can pay), the list would otherwise be blank.
+    // With no chips there is no other network to switch to, so the empty list is about the network.
     const isNetworkEmpty =
         filter.selectedChainId !== null || filter.chainOptions.length === 0
     let emptyState: Nullable<SwapFromEmptyState> = 'account'
