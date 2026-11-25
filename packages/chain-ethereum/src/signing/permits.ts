@@ -269,50 +269,92 @@ const parsePermit2 = (
     }
 }
 
-const parseTypedData = (typedData: TypedDataDefinition): Optional<Parsed> => {
+// viem hashes only the fields a declared `EIP712Domain` lists, so a
+// verifyingContract it leaves out, or types as other than an address, binds the
+// signature to no token; undeclared, viem derives an address field from the value.
+const boundVerifyingContractOf = (
+    domain: Optional<Record<string, unknown>>,
+    declared: Optional<readonly TypedDataParameter[]>,
+): Optional<string> =>
+    declared === undefined ||
+    declared.some(
+        ({ name, type }) => name === 'verifyingContract' && type === 'address',
+    )
+        ? toAddress(domain?.verifyingContract)
+        : undefined
+
+// An unbound permit is still a permit: the typehash is a real token's, and the
+// signature is valid on any token whose domain has no verifyingContract.
+type Recognised = { isBound: false } | { isBound: true; parsed: Parsed }
+
+const recogniseTypedData = (
+    typedData: TypedDataDefinition,
+): Optional<Recognised> => {
     const { primaryType, message, domain } = typedData as {
         primaryType: string
         message: Record<string, unknown>
         domain?: Record<string, unknown>
     }
     const types = typedData.types as Types
-    const verifyingContract = domain?.verifyingContract
+    const verifyingContract = boundVerifyingContractOf(
+        domain,
+        types.EIP712Domain,
+    )
 
     if (primaryType === 'Permit') {
-        // The token is the contract that verifies the signature.
         const permit = PERMIT_SHAPES.find(({ fields }) =>
             matches(types.Permit, fields),
         )
-        return permit && toAddress(verifyingContract) !== undefined
-            ? permit.parse(message, verifyingContract)
-            : undefined
+        if (!permit) return undefined
+        // The token is the contract that verifies the signature.
+        return verifyingContract === undefined
+            ? { isBound: false }
+            : {
+                  isBound: true,
+                  parsed: permit.parse(message, verifyingContract),
+              }
     }
 
     const shape = PERMIT2_SHAPES[primaryType]
-    if (
-        !shape ||
-        typeof verifyingContract !== 'string' ||
-        !areEvmAddressesEqual(verifyingContract, PERMIT2_ADDRESS)
-    ) {
-        return undefined
-    }
+    if (!shape) return undefined
     const struct =
         shape.key === 'details' ? 'PermitDetails' : 'TokenPermissions'
     const head: Field = [shape.key, shape.isBatch ? `${struct}[]` : struct]
     const tail = shape.key === 'details' ? SIGNED_TAIL : TRANSFER_TAIL
-    return matches(
-        types[primaryType],
-        [head, ...tail],
-        shape.hasWitness ? 1 : 0,
-    ) && matches(types[struct], STRUCTS[struct])
-        ? parsePermit2(shape, message)
+    if (
+        !matches(
+            types[primaryType],
+            [head, ...tail],
+            shape.hasWitness ? 1 : 0,
+        ) ||
+        !matches(types[struct], STRUCTS[struct])
+    ) {
+        return undefined
+    }
+    if (verifyingContract === undefined) return { isBound: false }
+    return areEvmAddressesEqual(verifyingContract, PERMIT2_ADDRESS)
+        ? { isBound: true, parsed: parsePermit2(shape, message) }
         : undefined
 }
 
-/** EIP-2612, DAI-style or ERC-721 `Permit`, or Permit2 typed data, complete or not. Never throws. */
+/** EIP-2612, DAI-style or ERC-721 `Permit`, or Permit2 typed data, complete or not, bound to a token or not. Never throws. */
 export const isPermitTypedData = (typedData: unknown): boolean => {
     try {
-        return parseTypedData(typedData as TypedDataDefinition) !== undefined
+        return (
+            recogniseTypedData(typedData as TypedDataDefinition) !== undefined
+        )
+    } catch {
+        return false
+    }
+}
+
+/** A permit whose signed domain binds no verifyingContract, so no token it names is the one it spends. Never throws. */
+export const isUnboundPermitTypedData = (typedData: unknown): boolean => {
+    try {
+        return (
+            recogniseTypedData(typedData as TypedDataDefinition)?.isBound ===
+            false
+        )
     } catch {
         return false
     }
@@ -330,7 +372,8 @@ export const spendApprovalOf = (
     eip155ChainId?: number,
 ): Optional<SpendApproval> => {
     try {
-        const parsed = parseTypedData(typedData)
+        const recognised = recogniseTypedData(typedData)
+        const parsed = recognised?.isBound ? recognised.parsed : undefined
         const spender = parsed && toAddress(parsed.spender)
         if (
             !parsed ||

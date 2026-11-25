@@ -49,6 +49,11 @@ import { ETHEREUM } from '../../__tests__/evm-chains'
 const MAINNET: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const DAY_MS = 24 * 60 * 60 * 1000
 const USDC = getAddress(PERMIT_USDC)
+const UNBOUND_DOMAIN = [
+    { name: 'name', type: 'string' },
+    { name: 'version', type: 'string' },
+    { name: 'chainId', type: 'uint256' },
+]
 const WETH = getAddress(PERMIT_WETH)
 
 const describeTyped = (typedData: unknown) =>
@@ -465,6 +470,30 @@ describe('spend approval recognition', () => {
                 }),
             ],
             [
+                'a Permit whose declared domain leaves verifyingContract out',
+                edit(EIP2612_PERMIT_TYPED_DATA, copy => {
+                    copy.types.EIP712Domain = UNBOUND_DOMAIN
+                }),
+            ],
+            [
+                'a Permit whose declared domain types verifyingContract as string',
+                edit(EIP2612_PERMIT_TYPED_DATA, copy => {
+                    copy.types.EIP712Domain = [
+                        ...UNBOUND_DOMAIN,
+                        { name: 'verifyingContract', type: 'string' },
+                    ]
+                }),
+            ],
+            [
+                'a PermitSingle whose declared domain leaves verifyingContract out',
+                edit(PERMIT2_SINGLE_TYPED_DATA, copy => {
+                    copy.types.EIP712Domain = [
+                        { name: 'name', type: 'string' },
+                        { name: 'chainId', type: 'uint256' },
+                    ]
+                }),
+            ],
+            [
                 'Mail on the Permit2 domain',
                 {
                     ...MAIL_TYPED_DATA,
@@ -481,6 +510,32 @@ describe('spend approval recognition', () => {
                 expect(summary.kind).toBe('typed-data')
                 expect(summary).not.toHaveProperty('spendApproval')
             },
+        )
+    })
+
+    it('reads a Permit whose declared domain binds verifyingContract as an address', () => {
+        const typed = edit(EIP2612_PERMIT_TYPED_DATA, copy => {
+            copy.types.EIP712Domain = [
+                ...UNBOUND_DOMAIN,
+                { name: 'verifyingContract', type: 'address' },
+            ]
+        })
+
+        expect(describeTyped(typed).spendApproval?.allowances).toEqual([
+            asset(USDC, '1000000'),
+        ])
+    })
+
+    it('signs the same digest with or without an undeclared verifyingContract', () => {
+        const declared = edit(EIP2612_PERMIT_TYPED_DATA, copy => {
+            copy.types.EIP712Domain = UNBOUND_DOMAIN
+        })
+        const withoutContract = edit(declared, copy => {
+            delete copy.domain.verifyingContract
+        })
+
+        expect(hashTypedData(declared as never)).toBe(
+            hashTypedData(withoutContract as never),
         )
     })
 
