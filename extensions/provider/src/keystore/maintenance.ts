@@ -15,9 +15,11 @@ import {
     MATERIAL_PREFIX,
     METADATA_PREFIX,
     decode,
+    destroyMasterKey,
     readMasterKey,
     storage as keystoreStorage,
 } from '@algorandfoundation/react-native-keystore'
+import { logger } from '@perawallet/wallet-core-shared'
 import {
     repairQuantumMaterial,
     type QuantumMaterialRepairResult,
@@ -143,4 +145,28 @@ export const clearKeystoreStorage = (): boolean => {
     // MMKV appends rather than overwrites; compacting drops the old bytes.
     keystoreStorage.trim()
     return keystoreStorage.getAllKeys().length === 0
+}
+
+/**
+ * Empties the keystore's MMKV instance and deletes every copy of its master key, so
+ * nothing sealed before a wipe can be opened after it. The engine's own
+ * `clear()` removes only `m/` and `k/` records and keeps the key, leaving
+ * flat records a layout migration declined to adopt readable.
+ *
+ * Records go first: the engine mints a new master key only while this MMKV is
+ * empty, so a deleted key over a surviving record would fail every later
+ * write. A key that outlives its records seals nothing, so failing to delete
+ * it is logged rather than failing the wipe for good.
+ */
+export const wipeKeystoreStorage = async (): Promise<void> => {
+    if (!clearKeystoreStorage()) {
+        throw new Error('Keystore records remain after clearing storage')
+    }
+    try {
+        await destroyMasterKey()
+    } catch (error) {
+        logger.warn('Keystore master key outlived the wipe', { error })
+    }
+    // A write that landed during the await is sealed by the destroyed key.
+    if (keystoreStorage.getAllKeys().length > 0) clearKeystoreStorage()
 }

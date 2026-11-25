@@ -108,6 +108,20 @@ const abortStep = (step: string, err: unknown): never => {
 }
 
 let activeBootstrap: Nullable<Promise<PasskeyBootstrapOutcome>> = null
+let bootstrapPauseCount = 0
+
+export const withPasskeyAutofillPaused = async <T>(
+    operation: () => Promise<T>,
+): Promise<T> => {
+    bootstrapPauseCount += 1
+    try {
+        // A native bridge write already in flight must settle before cleanup.
+        await activeBootstrap?.catch(() => undefined)
+        return await operation()
+    } finally {
+        bootstrapPauseCount -= 1
+    }
+}
 
 /**
  * Bootstraps the native passkey autofill subsystem. Idempotent, and overlapping
@@ -120,6 +134,7 @@ let activeBootstrap: Nullable<Promise<PasskeyBootstrapOutcome>> = null
 export const bootstrapPasskeyAutofill = (
     options: BootstrapPasskeyAutofillOptions,
 ): Promise<PasskeyBootstrapOutcome> => {
+    if (bootstrapPauseCount > 0) return Promise.resolve('skipped')
     if (activeBootstrap) return activeBootstrap
 
     activeBootstrap = runBootstrap(options).finally(() => {

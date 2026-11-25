@@ -461,6 +461,7 @@ describe('useDeleteAllData', () => {
 
         expect(readPendingWipe()).toBe('delete-all')
         expect(mockClearKeystore).toHaveBeenCalledTimes(1)
+        expect(mockClearPasskeyCredentials).toHaveBeenCalledTimes(1)
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
     })
 

@@ -29,6 +29,7 @@ import {
     readPersistedKeys,
     runMaterialRepair,
     runPasskeyCredentialSplit,
+    wipeKeystoreStorage,
 } from './keystore/maintenance'
 import type { PasskeySplitResult } from './keystore/passkeyCredentials/splitFlatPasskeyCredentials'
 import type { QuantumMaterialRepairResult } from './keystore/repairQuantumMaterial'
@@ -139,8 +140,9 @@ export const getKeystore = (): ReactNativeKeyStore => keystore
 export const getKeystoreHooks = (): HookCollection<any> => keystoreHooks
 
 /**
- * Clears all keys from the keystore's persistent storage and reactive store.
- * Used during "delete all data" flows as a safety net after individual key deletion.
+ * Clears all keys from the keystore's persistent storage and reactive store,
+ * then the storage's leftovers and master key. Used during "delete all data"
+ * flows as a safety net after individual key deletion.
  */
 export const clearKeystore = async (): Promise<void> => {
     try {
@@ -153,6 +155,7 @@ export const clearKeystore = async (): Promise<void> => {
             error,
         })
     }
+    await wipeKeystoreStorage()
 }
 
 /**

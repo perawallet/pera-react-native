@@ -17,7 +17,7 @@ import type { PasskeySplitResult } from './passkeyCredentials/splitFlatPasskeyCr
 import type { FlatProviderCredential } from './passkeyCredentials/splitProviderCredential'
 
 /**
- * Web build of the keystore maintenance surface. Both operations are
+ * Web build of the keystore maintenance surface. These operations are
  * native-only and no-op here, each for its own reason — not merely because the
  * MMKV primitives are missing:
  *
@@ -30,6 +30,8 @@ import type { FlatProviderCredential } from './passkeyCredentials/splitProviderC
  * - **Passkey credential split and material lookups** serve the Android
  *   credential provider's records. The extension's passkeys live in
  *   keystore-web and hold no material of their own.
+ * - **Storage wipe** deletes the MMKV records and master-key copies. Web keeps
+ *   its engine key in the vault, which `destroyVault` removes.
  *
  * Returning a zeroed result rather than throwing is deliberate: the bootstrap
  * calls this unconditionally and only logs when a count is non-zero, so web
@@ -71,3 +73,5 @@ export const writePasskeyCredential = async (
 
 /** keystore-web's IndexedDB is reachable only through its engine. */
 export const clearKeystoreStorage = (): boolean => false
+
+export const wipeKeystoreStorage = async (): Promise<void> => {}

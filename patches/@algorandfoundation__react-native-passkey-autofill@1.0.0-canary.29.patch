@@ -455,7 +455,7 @@ index 57f9b7c6f01682b537cd0b5b8c188f025965586d..bbf4400076c7675c195f9efa1d03d542
                  biometricPrompt.authenticate(promptInfo)
              }
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt b/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt
-index c0b23c0c1c5de2e32ed94b442125c56f7660b347..fa56c15b7c1476d6517f2d63e43794b80cad39d7 100644
+index c0b23c0c1c5de2e32ed94b442125c56f7660b347..977080110824e6b18dd16c3cdb11ab934b75f126 100644
 --- a/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt
 +++ b/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt
 @@ -4,7 +4,10 @@ import expo.modules.kotlin.exception.CodedException
@@ -537,8 +537,9 @@ index c0b23c0c1c5de2e32ed94b442125c56f7660b347..fa56c15b7c1476d6517f2d63e43794b8
  
      AsyncFunction("clearCredentials") {
 -      val context = (appContext.reactContext ?: appContext.hostingRuntimeContext) as? Context
+-        ?: return@AsyncFunction Unit
 +      val context = appContext.reactContext
-         ?: return@AsyncFunction Unit
++        ?: throw MasterKeyException("Could not get context to clear master key")
        credentialRepository.clearCredentials(context)
      }
  
@@ -799,7 +800,7 @@ index e1b86733f4537225cfb079a594c10b28308762bf..231eb4a21b3f5fd967c234d66e08b228
 +    val biometricIv: String? = null,
 +)
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt b/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt
-index fab158d8d072a437ce1518e038cf2479664018a6..2e9ca2832d67bdb9eb1e775c114c9b07ce048eb8 100644
+index fab158d8d072a437ce1518e038cf2479664018a6..6e1bfd2de0f7c29541ea5a829c7810ddeac4afe0 100644
 --- a/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt
 +++ b/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt
 @@ -4,6 +4,7 @@ import android.content.Context
@@ -1247,9 +1248,9 @@ index fab158d8d072a437ce1518e038cf2479664018a6..2e9ca2832d67bdb9eb1e775c114c9b07
 +                AndroidBase64.decode(it, AndroidBase64.DEFAULT)
 +            } catch (e: IllegalArgumentException) {
 +                throw IllegalStateException("Stored biometric IV is not valid base64", e)
-             }
++            }
 +            return AssertionUnlock.UnwrapCipher(iv)
-         }
++        }
 +        val needsProof = includePrfSecret || !hasStoredMaterial(context, candidate)
 +        return if (needsProof && BiometricRequirement.resolve(context).isCryptoBound) {
 +            AssertionUnlock.AuthenticatedCipher
@@ -1257,10 +1258,7 @@ index fab158d8d072a437ce1518e038cf2479664018a6..2e9ca2832d67bdb9eb1e775c114c9b07
 +            AssertionUnlock.None
 +        }
 +    }
- 
--        val payload = mmkv.decodeString(id) ?: run {
--            PasskeyLog.w(CredentialRepository.TAG, "No payload found for credential id")
--            return null
++
 +    override fun openAssertionKeys(
 +        context: Context,
 +        credentialId: ByteArray,
@@ -1277,19 +1275,12 @@ index fab158d8d072a437ce1518e038cf2479664018a6..2e9ca2832d67bdb9eb1e775c114c9b07
 +            // The wrapped key is the credential's only copy; re-deriving would
 +            // sign without the unwrap that proves the user.
 +            throw IllegalStateException("Biometric-wrapped passkey has no stored material")
-         }
--        val masterKey = getMasterKey(context) ?: run {
--            PasskeyLog.e(CredentialRepository.TAG, "Master key not found")
--            return null
++        }
 +        // A wrapped key's unwrap is its own proof; everything else that reaches
 +        // the parent secret proves the user with a separate Keystore operation.
 +        if (!wrapped && (includePrfSecret || !hasMaterial)) {
 +            proveUserAuthentication(biometricCipher, requirement)
-         }
--        return try {
--            val json = KeystoreRecords.decodeLegacyRecord(payload, masterKey)
--            credentialFromLegacyRecord(json, biometricCipher, includeMaterial)
--        } catch (e: Exception) {
++        }
 +
 +        val keyPair = if (hasMaterial) {
 +            val material = readCredentialMaterial(context, candidate, credential.biometricIv, biometricCipher)
@@ -1304,9 +1295,12 @@ index fab158d8d072a437ce1518e038cf2479664018a6..2e9ca2832d67bdb9eb1e775c114c9b07
 +                createDomainKeyPair(context, credential.origin, credential.userHandle, pinnedScheme).keyPair
 +            } else {
 +                deriveDomainKeyPair(context, credential.origin, credential.userHandle, pinnedScheme, parentKeyId).keyPair
-+            }
-+        }
-+
+             }
+         }
+ 
+-        val payload = mmkv.decodeString(id) ?: run {
+-            PasskeyLog.w(CredentialRepository.TAG, "No payload found for credential id")
+-            return null
 +        val prfParentSecret = if (includePrfSecret) {
 +            val parentKeyId = credential.parentKeyId
 +            val resolved = if (parentKeyId == null) {
@@ -1322,13 +1316,14 @@ index fab158d8d072a437ce1518e038cf2479664018a6..2e9ca2832d67bdb9eb1e775c114c9b07
 +                }
 +            }
 +        } else {
-             null
++            null
          }
+-        val masterKey = getMasterKey(context) ?: run {
+-            PasskeyLog.e(CredentialRepository.TAG, "Master key not found")
+-            return null
 +        return AssertionKeys(keyPair, prfParentSecret)
-     }
- 
--    override fun getCredentialByOrigin(context: Context, origin: String): Credential? {
--        return getAllCredentials(context).find { it.origin == origin }
++    }
++
 +    /**
 +     * Throws unless [cipher] completes an operation on the biometric key, which
 +     * the Keystore allows only once the user has authenticated. Only an
@@ -1339,15 +1334,21 @@ index fab158d8d072a437ce1518e038cf2479664018a6..2e9ca2832d67bdb9eb1e775c114c9b07
 +        if (!requirement.isCryptoBound) return
 +        if (cipher == null) {
 +            throw UserAuthenticationRequiredException("Opening this passkey needs a biometric cipher the user unlocked")
-+        }
+         }
+-        return try {
+-            val json = KeystoreRecords.decodeLegacyRecord(payload, masterKey)
+-            credentialFromLegacyRecord(json, biometricCipher, includeMaterial)
 +        val output = try {
 +            cipher.doFinal(ByteArray(PROOF_PROBE_LENGTH))
-+        } catch (e: Exception) {
+         } catch (e: Exception) {
+-            null
 +            throw UserAuthenticationRequiredException("The biometric cipher did not prove user authentication", e)
-+        }
+         }
 +        output.fill(0)
-+    }
-+
+     }
+ 
+-    override fun getCredentialByOrigin(context: Context, origin: String): Credential? {
+-        return getAllCredentials(context).find { it.origin == origin }
 +    /**
 +     * PERA LOCAL PATCH — the only place a credential's sealed material is opened.
 +     *
@@ -1572,7 +1573,56 @@ index fab158d8d072a437ce1518e038cf2479664018a6..2e9ca2832d67bdb9eb1e775c114c9b07
      override fun getMainKeyId(context: Context): String? {
          val mmkv = getAutofillMMKV(context)
          @Suppress("DEPRECATION")
-@@ -952,26 +1031,28 @@ class Repository() : CredentialRepository {
+@@ -913,21 +992,36 @@ class Repository() : CredentialRepository {
+ 
+     override fun clearCredentials(context: Context) {
+         try {
+-            val mmkvAutofill = getAutofillMMKV(context)
+-            mmkvAutofill.clearAll()
++            getAutofillMMKV(context).clearAll()
+ 
+-            // The passkeys instance is the WALLET's key store: it also holds the
+-            // seed, the roots and every account key, so clearing it wholesale
+-            // would destroy the wallet. Only this module's own credentials go.
++            // The passkeys instance also holds the wallet's keys.
+             val mmkvPasskeys = getPasskeysMMKV(context)
+             val masterKey = getMasterKey(context)
+-            val removable = KeystoreRecords.keysToRemoveForClear(
+-                allKeys = mmkvPasskeys.allKeys() ?: emptyArray(),
+-                masterKey = masterKey,
+-            ) { mmkvPasskeys.decodeString(it) }
+-            removable.forEach { mmkvPasskeys.removeValueForKey(it) }
+-        } catch (e: Exception) {
+-            PasskeyLog.e(CredentialRepository.TAG, "Error clearing credentials and secrets", e)
++            try {
++                val removable = KeystoreRecords.keysToRemoveForClear(
++                    allKeys = mmkvPasskeys.allKeys() ?: emptyArray(),
++                    masterKey = masterKey,
++                ) { mmkvPasskeys.decodeString(it) }
++                removable.forEach { mmkvPasskeys.removeValueForKey(it) }
++            } finally {
++                masterKey?.fill(0)
++            }
++        } finally {
++            clearMasterKey(context)
++        }
++    }
++
++    private fun clearMasterKey(context: Context) {
++        try {
++            // Destroy the wrapping key before dropping the encrypted mirror.
++            val keyStore = KeyStore.getInstance("AndroidKeyStore")
++            keyStore.load(null)
++            keyStore.deleteEntry(CredentialRepository.MASTER_KEY_ALIAS)
++        } finally {
++            val prefs = context.getSharedPreferences(CredentialRepository.KEYCHAIN_STORAGE_NAME, Context.MODE_PRIVATE)
++            check(prefs.edit().remove("iv").remove("content").commit()) {
++                "Could not clear the encrypted passkey master key"
++            }
+         }
+     }
+ 
+@@ -952,26 +1046,28 @@ class Repository() : CredentialRepository {
          }
      }
  
@@ -1616,7 +1666,7 @@ index fab158d8d072a437ce1518e038cf2479664018a6..2e9ca2832d67bdb9eb1e775c114c9b07
          }
      }
  
-@@ -1012,7 +1093,8 @@ class Repository() : CredentialRepository {
+@@ -1012,7 +1108,8 @@ class Repository() : CredentialRepository {
      private fun getBiometricSecretKey(context: Context, requirement: BiometricRequirement): SecretKey {
          // The key's auth binding is fixed at creation. If a new build changed the configured
          // level, regenerate the key so the prompt's allowed authenticators stay compatible.
@@ -1626,7 +1676,7 @@ index fab158d8d072a437ce1518e038cf2479664018a6..2e9ca2832d67bdb9eb1e775c114c9b07
          val mmkv = getAutofillMMKV(context)
          val storedLevel = mmkv.decodeString(CredentialRepository.BIOMETRIC_KEY_LEVEL_KEY)
          if (keyStore.containsAlias(CredentialRepository.BIOMETRIC_KEY_ALIAS) &&
-@@ -1079,7 +1161,16 @@ class Repository() : CredentialRepository {
+@@ -1079,7 +1176,16 @@ class Repository() : CredentialRepository {
  
      override fun getBiometricCipherForEncryption(context: Context, requirement: BiometricRequirement): Cipher {
          val cipher = newAndroidKeyStoreAesGcmCipher()

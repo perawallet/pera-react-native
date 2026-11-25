@@ -43,7 +43,15 @@ export const useForgotPasswordView = ({
         setIsResetting(true)
         setHasError(false)
         try {
-            await wipeAllUserData()
+            try {
+                await wipeAllUserData()
+            } catch (error) {
+                // Raised after every step ran and keeps the pending-wipe marker,
+                // which onboarding finishes before a new wallet is made.
+                logger.error('Forgot-password reset did not complete', {
+                    error,
+                })
+            }
             // The wipe keeps the accounts store for the settings flow's success
             // modal; there is none here, so drop it as the native lockout does.
             clearAccountsStore()

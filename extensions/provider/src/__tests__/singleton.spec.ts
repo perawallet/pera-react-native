@@ -28,6 +28,12 @@ const resealMocks = vi.hoisted(() => ({
 
 vi.mock('react-native-quick-crypto', () => ({ subtle: {} }))
 
+const wipeKeystoreStorage = vi.hoisted(() => vi.fn())
+vi.mock('../keystore/maintenance', async importOriginal => ({
+    ...(await importOriginal<typeof import('../keystore/maintenance')>()),
+    wipeKeystoreStorage,
+}))
+
 vi.mock('../keystore/resealLegacyMaterial', () => ({
     resealLegacyMaterialWith: resealMocks.resealLegacyMaterialWith,
     checkLegacyMaterialWith: vi.fn(),
@@ -104,6 +110,7 @@ const resetKeystoreStateForTest = (): void => {
 describe('provider singleton', () => {
     beforeEach(() => {
         keystoreMocks.clear.mockReset()
+        wipeKeystoreStorage.mockReset()
         keystoreMocks.decode.mockReset()
         keystoreMocks.storageGetAllKeys.mockReset()
         keystoreMocks.storageGetString.mockReset()
@@ -140,6 +147,27 @@ describe('provider singleton', () => {
         keystoreMocks.storageGetAllKeys.mockReturnValue(['m/seed-1'])
 
         await expect(clearKeystore()).rejects.toThrow('hydration failed')
+
+        expect(wipeKeystoreStorage).not.toHaveBeenCalled()
+    })
+
+    test('clearKeystore then empties the keystore storage and drops its master key', async () => {
+        keystoreMocks.clear.mockResolvedValue(undefined)
+
+        await clearKeystore()
+
+        expect(wipeKeystoreStorage).toHaveBeenCalledTimes(1)
+        expect(keystoreMocks.clear.mock.invocationCallOrder[0]).toBeLessThan(
+            wipeKeystoreStorage.mock.invocationCallOrder[0],
+        )
+    })
+
+    test('clearKeystore still drops the master key when the engine clear fails', async () => {
+        keystoreMocks.clear.mockRejectedValue(new Error('engine clear failed'))
+
+        await clearKeystore()
+
+        expect(wipeKeystoreStorage).toHaveBeenCalledTimes(1)
     })
 
     // Bootstrap awaits this rather than a hand-rolled hydrate: the engine loads

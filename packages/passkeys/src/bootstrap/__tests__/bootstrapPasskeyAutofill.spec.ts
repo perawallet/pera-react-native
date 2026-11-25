@@ -97,6 +97,7 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
 
 import {
     bootstrapPasskeyAutofill,
+    withPasskeyAutofillPaused,
     __resetBootstrapForTests,
 } from '../bootstrapPasskeyAutofill'
 
@@ -803,5 +804,55 @@ describe('bootstrapPasskeyAutofill', () => {
         await first
 
         expect(mocks.readMasterKey).toHaveBeenCalledOnce()
+    })
+
+    it('drains an active native write before wipe and skips refreshes during it', async () => {
+        const service = makeService()
+        let finishWrite = () => {}
+        service.setMasterKey.mockReturnValueOnce(
+            new Promise<void>(resolve => {
+                finishWrite = resolve
+            }),
+        )
+        const options = { service: service as never, intentActions }
+        const writing = bootstrapPasskeyAutofill(options)
+        await vi.waitFor(() =>
+            expect(service.setMasterKey).toHaveBeenCalledOnce(),
+        )
+
+        const clearCredentials = vi.fn(async () => {
+            await expect(bootstrapPasskeyAutofill(options)).resolves.toBe(
+                'skipped',
+            )
+        })
+        const wipe = withPasskeyAutofillPaused(clearCredentials)
+
+        await expect(bootstrapPasskeyAutofill(options)).resolves.toBe('skipped')
+        expect(clearCredentials).not.toHaveBeenCalled()
+        finishWrite()
+        await writing
+        await wipe
+
+        expect(clearCredentials).toHaveBeenCalledOnce()
+        await expect(bootstrapPasskeyAutofill(options)).resolves.toBe('ready')
+        expect(service.setMasterKey).toHaveBeenCalledTimes(2)
+    })
+
+    it('still runs the wipe when the active bootstrap rejects unexpectedly', async () => {
+        mocks.readMasterKey.mockRejectedValueOnce(new Error('keychain failed'))
+        mocks.error.mockImplementationOnce(() => {
+            throw new Error('logger failed')
+        })
+        const bootstrap = bootstrapPasskeyAutofill({
+            service: makeService() as never,
+            intentActions,
+        })
+        const onRejection = expect(bootstrap).rejects.toThrow('logger failed')
+        const wipe = vi.fn(async () => {})
+
+        await withPasskeyAutofillPaused(wipe)
+        await onRejection
+
+        expect(wipe).toHaveBeenCalledOnce()
     })
 })

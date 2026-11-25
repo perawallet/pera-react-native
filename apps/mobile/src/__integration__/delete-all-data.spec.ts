@@ -35,6 +35,10 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { usePinCode } from '@perawallet/wallet-core-security'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import {
+    getMasterKeyDestroyCount,
+    storage as keystoreStorage,
+} from '@test-utils/algorand-keystore-test'
 import { createQueryClientWrapper } from '@test-utils/render'
 import {
     setupTestDatabase,
@@ -120,6 +124,18 @@ describe('delete-all-data', () => {
         await wipe()
 
         expect(useBottomSheetStore.getState().hostCount).toBe(1)
+    })
+
+    it('Given a sealed record and a flat record a migration left behind, when delete-all-data runs, then both are gone and the master key is destroyed', async () => {
+        const sealed = JSON.stringify({ iv: 'AAAA', content: 'AAAA' })
+        keystoreStorage.set('m/seed-1', sealed)
+        keystoreStorage.set('flat-leftover', sealed)
+        const destroyedBefore = getMasterKeyDestroyCount()
+
+        await wipe()
+
+        expect(keystoreStorage.getAllKeys()).toEqual([])
+        expect(getMasterKeyDestroyCount() - destroyedBefore).toBe(1)
     })
 
     it('Given a wipe the process died in after the keystore went, when the app relaunches, then the wipe finishes before the lock check and no account is left', async () => {
