@@ -1291,6 +1291,48 @@ describe('disconnecting', () => {
         expect(await handler.restore()).toEqual([])
     })
 
+    it('refuses a request on a session whose disconnect was killed while the relay waited', async () => {
+        const walletKit = createFakeWalletKit({ [TOPIC]: makeSession() })
+        walletKit.disconnectSession.mockImplementation(
+            () => new Promise(() => {}),
+        )
+        const keyValueStorage = new MemoryKeyValueStorage()
+        const store = memoryStore([storedV2Record()])
+        const first = makeHandler({ walletKit, keyValueStorage })
+        await first.handler.initialize(makeContext(store))
+        void first.handler.disconnect(TOPIC)
+        await flush()
+
+        let open: () => void = () => undefined
+        const unlocked = new Promise<void>(resolve => {
+            open = resolve
+        })
+        const { handler } = makeHandler({
+            walletKit,
+            keyValueStorage,
+            startWhen: () => unlocked,
+        })
+        const context = makeContext(store)
+        await handler.initialize(context)
+        expect(await handler.restore()).toEqual([])
+
+        open()
+        await flush()
+        walletKit.emit('session_request', makeRequest())
+        await flush()
+
+        expect(context.onMessage).not.toHaveBeenCalled()
+        expect(walletKit.respondSessionRequest).toHaveBeenCalledWith({
+            topic: TOPIC,
+            response: {
+                id: REQUEST_ID,
+                jsonrpc: '2.0',
+                error: expect.objectContaining({ code: 6000 }),
+            },
+        })
+        await handler.teardown()
+    })
+
     it('keeps a revoked session out of every restore until the relay takes the end', async () => {
         const walletKit = createFakeWalletKit({ [TOPIC]: makeSession() })
         walletKit.disconnectSession.mockRejectedValue(new Error('relay down'))

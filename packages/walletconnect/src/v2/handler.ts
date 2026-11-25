@@ -1435,14 +1435,22 @@ export const createWalletConnectV2Handler = (
         else keyValueStorage.setJSON(REVOKED_TOPICS_KEY, [...topics])
     }
 
-    // Persist before sending the end: a crash during delivery must not
-    // restore a session the user already disconnected.
-    const revokeSession = async (topic: string): Promise<void> => {
+    const markRevoked = (topic: string): void => {
         writeRevokedTopics(readRevokedTopics().add(topic))
+    }
+
+    const endRevokedSession = async (topic: string): Promise<void> => {
         if (!(await endSession(topic))) return
         const revoked = readRevokedTopics()
         revoked.delete(topic)
         writeRevokedTopics(revoked)
+    }
+
+    // Persist before sending the end: a crash during delivery must not
+    // restore a session the user already disconnected.
+    const revokeSession = async (topic: string): Promise<void> => {
+        markRevoked(topic)
+        await endRevokedSession(topic)
     }
 
     const handleProposal = async (
@@ -2205,11 +2213,15 @@ export const createWalletConnectV2Handler = (
             })
     }
 
-    // The record goes whatever the relay says: a dApp the user removed must
-    // not reappear in settings because the peer was unreachable.
+    // The record goes whatever the relay says, and before the relay wait: a
+    // kill during it must leave no row for boot restore or a queued request.
     const disconnect = async (id: ConnectionId): Promise<void> => {
-        await revokeSession(id)
-        await store().remove(id)
+        markRevoked(id)
+        try {
+            await store().remove(id)
+        } finally {
+            await endRevokedSession(id)
+        }
     }
 
     return {
