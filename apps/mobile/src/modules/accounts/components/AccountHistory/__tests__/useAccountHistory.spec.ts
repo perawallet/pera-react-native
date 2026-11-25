@@ -1454,7 +1454,6 @@ describe('useAccountHistory', () => {
 
         const arrangeEthereumHistory = (records: TransactionRecord[]) => {
             registerEthereumChain()
-            vi.mocked(useChainCapability).mockReturnValue(false)
             vi.mocked(useSelectedAccount).mockReturnValue({
                 id: 'eth',
                 custody: { kind: 'watch' },
@@ -1504,12 +1503,12 @@ describe('useAccountHistory', () => {
             expect(result.current.isCsvExportVisible).toBe(false)
         })
 
-        it('hides the export action on an Ethereum account until its History lists a record', () => {
+        it('shows the export action on an Ethereum account before its History lists a record, so the header does not move', () => {
             arrangeEthereumHistory([])
 
             const { result } = renderHook(() => useAccountHistory())
 
-            expect(result.current.isCsvExportVisible).toBe(false)
+            expect(result.current.isCsvExportVisible).toBe(true)
         })
 
         it.each(['betanet', 'custom'])(
