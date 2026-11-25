@@ -73,13 +73,15 @@ export const SwapHistoryList = ({
 
     const accountFilter =
         accountOptions.length > 0 ? (
-            <FilterSelection<Nullable<string>>
-                options={accountOptions}
-                selectedValue={selectedAccountId}
-                onSelect={handleSelectAccount}
-                contentContainerStyle={styles.filterContent}
-                testID='swap_history_account_filter'
-            />
+            <PWView style={styles.filterBar}>
+                <FilterSelection<Nullable<string>>
+                    options={accountOptions}
+                    selectedValue={selectedAccountId}
+                    onSelect={handleSelectAccount}
+                    contentContainerStyle={styles.filterContent}
+                    testID='swap_history_account_filter'
+                />
+            </PWView>
         ) : null
 
     if (shouldShowNotOnDeviceState) {
@@ -129,6 +131,7 @@ export const SwapHistoryList = ({
             {accountFilter}
             <PWFlatList
                 pauseSyncOnInteraction
+                style={styles.list}
                 data={swaps}
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}
