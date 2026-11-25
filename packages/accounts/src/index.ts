@@ -71,6 +71,7 @@ export {
     syncAndEnrichNewAccount,
     type AccountSyncResult,
 } from './sync/account-syncer'
+export { getPasskeyAnchorSeedIds } from './import-session/provisionalImportSeeds'
 
 export {
     setPendingAccountRollback,

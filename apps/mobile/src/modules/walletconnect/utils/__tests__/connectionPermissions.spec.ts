@@ -40,6 +40,13 @@ describe('toConnectionPermissions', () => {
         ])
     })
 
+    it('lists wallet_watchAsset as adding tokens', () => {
+        expect(toConnectionPermissions(['wallet_watchAsset'])).toEqual([
+            'view-accounts',
+            'add-tokens',
+        ])
+    })
+
     it('lists signing messages for unversioned eth_signTypedData alone', () => {
         expect(toConnectionPermissions(['eth_signTypedData'])).toEqual([
             'view-accounts',

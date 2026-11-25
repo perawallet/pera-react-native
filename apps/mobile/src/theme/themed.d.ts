@@ -46,6 +46,11 @@ declare module '@rneui/themed' {
             xl: number
             full: number
         }
+        controlHeight: {
+            sm: number
+            md: number
+            lg: number
+        }
         borders: {
             none: number
             sm: number

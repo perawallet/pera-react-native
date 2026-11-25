@@ -16,7 +16,9 @@ import type {
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    clearProvisionalSeed,
     handOffSecret,
+    markSeedProvisional,
     prepareHDMasterKey,
     useKMS,
 } from '@perawallet/wallet-core-kms'
@@ -26,6 +28,10 @@ import {
 } from '@perawallet/wallet-core-chain-shared'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { useHDImportSessionStore } from '../import-session'
+import {
+    discardUnclaimedImportSeed,
+    getPasskeyAnchorSeedIds,
+} from '../import-session/provisionalImportSeeds'
 import {
     discoverAccounts,
     discoverWalletCandidates,
@@ -79,17 +85,25 @@ export const useHDImportSession = (
     scope: ChainScope,
 ): UseHDImportSessionResult => {
     const { persistHDMasterKey, mintPasskeyMainKey, removeKeyAndChildren } =
-        useKMS()
+        useKMS({ getPasskeyAnchorSeedIds })
     const setAccounts = useAccountsStore(state => state.setAccounts)
+
+    // Not surfaced: a failed removal keeps the provisional mark, so the launch
+    // sweep (`sweepAbandonedImportSeeds`) retries it.
+    const discardSeed = useCallback(
+        (walletKeyId: string) =>
+            discardUnclaimedImportSeed(walletKeyId, removeKeyAndChildren).catch(
+                () => false,
+            ),
+        [removeKeyAndChildren],
+    )
 
     const prepareImport = useCallback(
         async ({ mnemonicIndices }: { mnemonicIndices?: Uint16Array }) => {
             const prepared = await prepareHDMasterKey({ mnemonicIndices })
             const previous = useHDImportSessionStore.getState().pending
             if (previous?.isSeedPersisted) {
-                void removeKeyAndChildren(previous.walletKeyId).catch(
-                    () => undefined,
-                )
+                void discardSeed(previous.walletKeyId)
             }
             useHDImportSessionStore.getState().start({
                 walletKeyId: prepared.keyId,
@@ -99,7 +113,7 @@ export const useHDImportSession = (
             })
             return { walletKeyId: prepared.keyId }
         },
-        [removeKeyAndChildren],
+        [discardSeed],
     )
 
     const discoverImportAccounts = useCallback(
@@ -136,6 +150,8 @@ export const useHDImportSession = (
                     // session's bytes are still needed. The passkey main key
                     // waits for commit: a seed the user never confirms must
                     // not anchor it, as an app kill here would leave it there.
+                    // Marked first, so a kill after the save leaves it found.
+                    await markSeedProvisional(pending.walletKeyId)
                     await persistHDMasterKey(
                         {
                             keyId: pending.walletKeyId,
@@ -150,9 +166,7 @@ export const useHDImportSession = (
                         useHDImportSessionStore.getState().pending
                             ?.walletKeyId !== pending.walletKeyId
                     ) {
-                        void removeKeyAndChildren(pending.walletKeyId).catch(
-                            () => undefined,
-                        )
+                        void discardSeed(pending.walletKeyId)
                         throw new HDImportSessionNotFoundError(walletKeyId)
                     }
                     useHDImportSessionStore
@@ -192,9 +206,7 @@ export const useHDImportSession = (
                     useHDImportSessionStore.getState().pending?.walletKeyId !==
                     pending.walletKeyId
                 ) {
-                    void removeKeyAndChildren(pending.walletKeyId).catch(
-                        () => undefined,
-                    )
+                    void discardSeed(pending.walletKeyId)
                     throw new HDImportSessionNotFoundError(walletKeyId)
                 }
             } else {
@@ -238,7 +250,7 @@ export const useHDImportSession = (
                 reachedLimits,
             }
         },
-        [scope, persistHDMasterKey, removeKeyAndChildren],
+        [scope, persistHDMasterKey, discardSeed],
     )
 
     // NOTE: `persistHDMasterKey`'s identity is unstable across renders, so the
@@ -257,24 +269,33 @@ export const useHDImportSession = (
                 throw new HDImportSessionNotFoundError(walletKeyId)
             }
 
-            // A seed saved during discovery skipped its passkey main key. The
-            // save gets copies, as `persistHDMasterKey` zeroes what it is
-            // given: the walk below and a retry after a failed commit still
-            // read the session's bytes.
-            if (pending.isSeedPersisted) {
-                await mintPasskeyMainKey(pending.walletKeyId)
-            } else {
-                await persistHDMasterKey({
-                    keyId: pending.walletKeyId,
-                    rootKey: new Uint8Array(pending.rootKey),
-                    entropy: new Uint8Array(pending.entropy),
-                })
+            if (selectedAccounts.length === 0) {
+                useHDImportSessionStore.getState().resetState()
+                if (pending.isSeedPersisted) await discardSeed(walletKeyId)
+                return []
+            }
+
+            // Use copies because persisting zeroes the bytes it receives.
+            if (!pending.isSeedPersisted) {
+                await markSeedProvisional(pending.walletKeyId)
+                await persistHDMasterKey(
+                    {
+                        keyId: pending.walletKeyId,
+                        rootKey: new Uint8Array(pending.rootKey),
+                        entropy: new Uint8Array(pending.entropy),
+                    },
+                    { shouldMintPasskeyMainKey: false },
+                )
+                useHDImportSessionStore
+                    .getState()
+                    .markSeedPersisted(walletKeyId)
             }
 
             // A single discovery chain derives on the caller's scope, as before.
             const isMultiChain = hdDiscoveryChains().length > 1
+            let committed: LocalAccount[]
             try {
-                await Promise.all(
+                const derived = await Promise.allSettled(
                     selectedAccounts.map(async acc => {
                         const index = hdIndexOf(acc)
                         if (!index) {
@@ -308,29 +329,33 @@ export const useHDImportSession = (
                         }
                     }),
                 )
+                const failure = derived.find(
+                    result => result.status === 'rejected',
+                )
+                if (failure) throw failure.reason
+                committed = await Promise.all(
+                    selectedAccounts.map(withDefaultChains),
+                )
             } catch (e) {
-                // Roll back the seed + any successfully-derived children so
-                // the keystore doesn't end up with a half-imported wallet.
-                // Seed ids are deterministic, but partial state would still
-                // shadow a future retry's view of which children exist.
-                try {
-                    await removeKeyAndChildren(pending.walletKeyId)
-                    // A retry must save the seed again.
+                if (await discardSeed(walletKeyId)) {
                     useHDImportSessionStore
                         .getState()
-                        .markSeedRemoved(pending.walletKeyId)
-                } catch {
-                    // Best-effort cleanup; surface the original failure.
+                        .markSeedRemoved(walletKeyId)
                 }
                 throw e
             }
 
-            const committed = await Promise.all(
-                selectedAccounts.map(withDefaultChains),
-            )
+            if (
+                useHDImportSessionStore.getState().pending?.walletKeyId !==
+                walletKeyId
+            ) {
+                await discardSeed(walletKeyId)
+                throw new HDImportSessionNotFoundError(walletKeyId)
+            }
             const existing = useAccountsStore.getState().accounts
             const next = [...existing, ...committed]
             setAccounts(next)
+            clearProvisionalSeed(pending.walletKeyId)
             // The store named each account on the way in.
             const stored = useAccountsStore.getState().accounts
             const saved = committed.map(account => ({
@@ -360,13 +385,14 @@ export const useHDImportSession = (
                 })
 
             useHDImportSessionStore.getState().resetState()
+            await mintPasskeyMainKey(walletKeyId)
 
             return saved
         },
         [
             persistHDMasterKey,
             mintPasskeyMainKey,
-            removeKeyAndChildren,
+            discardSeed,
             scope,
             setAccounts,
         ],
@@ -376,11 +402,9 @@ export const useHDImportSession = (
         const pending = useHDImportSessionStore.getState().pending
         useHDImportSessionStore.getState().resetState()
         if (pending?.isSeedPersisted) {
-            void removeKeyAndChildren(pending.walletKeyId).catch(
-                () => undefined,
-            )
+            void discardSeed(pending.walletKeyId)
         }
-    }, [removeKeyAndChildren])
+    }, [discardSeed])
 
     return {
         prepareImport,

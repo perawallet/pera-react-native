@@ -20,6 +20,7 @@ import { useAccountsStore, withDefaultChains } from '../store'
 import type { WalletAccount } from '../models'
 import { NoHdSeedError } from '../errors'
 import { buildAccount } from '../credentials'
+import { getPasskeyAnchorSeedIds } from '../import-session/provisionalImportSeeds'
 import {
     accountsChainAdapters,
     deriveHdAccount,
@@ -33,7 +34,9 @@ import {
 
 export const useCreateAccount = (scope: ChainScope) => {
     const setAccounts = useAccountsStore(state => state.setAccounts)
-    const { getKey, createHDWalletKey, removeKeyAndChildren } = useKMS()
+    const { getKey, createHDWalletKey, removeKeyAndChildren } = useKMS({
+        getPasskeyAnchorSeedIds,
+    })
 
     // Returns the stored record, which the store named if `newAccount` had no name.
     const saveAndUpdateAccounts = async (

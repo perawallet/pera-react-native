@@ -112,6 +112,7 @@ const makeService = () => ({
     setMasterKey: vi.fn().mockResolvedValue(undefined),
     setHdRootKeyId: vi.fn().mockResolvedValue(undefined),
     setMainKeyId: vi.fn().mockResolvedValue(undefined),
+    setRegistrationParentKeyId: vi.fn().mockResolvedValue(undefined),
     getHdRootKeyId: vi.fn().mockResolvedValue(null),
     configureIntentActions: vi.fn().mockResolvedValue(undefined),
     isProviderActive: vi.fn().mockResolvedValue(true),
@@ -162,13 +163,13 @@ const seedHdRoot = (id = 'root-id') =>
     seedKeystore({ id, type: 'hd-root-key', algorithm: 'raw' }, ROOT_SEED)
 
 /** The dp256 main key, distinguished from the XHD root only by its scheme. */
-const seedPasskeyMainKey = (id = 'main-id') =>
+const seedPasskeyMainKey = (id = 'main-id', parentKeyId?: string) =>
     seedKeystore(
         {
             id,
             type: 'hd-root-key',
             algorithm: 'P256',
-            metadata: { storage: 'bytes', scheme: 'pbkdf2-p256' },
+            metadata: { storage: 'bytes', scheme: 'pbkdf2-p256', parentKeyId },
         },
         new Uint8Array(64).fill(6),
     )
@@ -319,6 +320,176 @@ describe('bootstrapPasskeyAutofill', () => {
         })
 
         expect(service.setMainKeyId).toHaveBeenCalledWith('main-id')
+    })
+
+    it('keeps the existing assertion parent and authorizes an account-backed root for registration', async () => {
+        const service = makeService()
+        await seedHdRoot('unclaimed')
+        await seedPasskeyMainKey('existing-main', 'unclaimed/entropy')
+        await seedHdRoot('wallet-root')
+
+        await bootstrapPasskeyAutofill({
+            service: service as never,
+            intentActions,
+            getPasskeyAnchorSeedIds: () => new Set(['wallet-root']),
+        })
+
+        expect(service.setMainKeyId).toHaveBeenCalledWith('existing-main')
+        expect(service.setRegistrationParentKeyId).toHaveBeenCalledWith(
+            'wallet-root',
+        )
+    })
+
+    it('authorizes a main key through the entropy of an account-backed root', async () => {
+        const service = makeService()
+        await seedHdRoot()
+        await seedKeystore({
+            id: 'entropy',
+            type: 'secret-key',
+            metadata: { parentKeyId: 'root-id', entropyKey: true },
+        })
+        await seedPasskeyMainKey('main-id', 'entropy')
+
+        await bootstrapPasskeyAutofill({
+            service: service as never,
+            intentActions,
+            getPasskeyAnchorSeedIds: () => new Set(['root-id']),
+        })
+
+        expect(service.setRegistrationParentKeyId).toHaveBeenCalledWith(
+            'main-id',
+        )
+    })
+
+    describe('when no main key is account-backed', () => {
+        const seedOrphanedMainKey = async () => {
+            await seedHdRoot('a-orphan')
+            await seedKeystore({
+                id: 'a-orphan/entropy',
+                type: 'secret-key',
+                metadata: { parentKeyId: 'a-orphan', entropyKey: true },
+            })
+            await seedPasskeyMainKey(
+                'a-orphan-passkey-main',
+                'a-orphan/entropy',
+            )
+        }
+
+        const seedAnchoredRoot = async (id: string) => {
+            await seedHdRoot(id)
+            await seedKeystore({
+                id: `${id}/entropy`,
+                type: 'secret-key',
+                metadata: { parentKeyId: id, entropyKey: true },
+            })
+        }
+
+        const mintInto =
+            () => async (seedKeyId: string, entropyChildId: string) => {
+                const id = `${seedKeyId}-passkey-main`
+                await seedPasskeyMainKey(id, entropyChildId)
+                return id
+            }
+
+        it('mints one on the lowest anchored root with entropy and authorizes it', async () => {
+            const service = makeService()
+            await seedOrphanedMainKey()
+            await seedAnchoredRoot('wallet-b')
+            await seedAnchoredRoot('wallet-a')
+            const mintPasskeyMainKey = vi.fn(mintInto())
+
+            await bootstrapPasskeyAutofill({
+                service: service as never,
+                intentActions,
+                getPasskeyAnchorSeedIds: () =>
+                    new Set(['wallet-a', 'wallet-b']),
+                mintPasskeyMainKey,
+            })
+
+            expect(mintPasskeyMainKey).toHaveBeenCalledExactlyOnceWith(
+                'wallet-a',
+                'wallet-a/entropy',
+            )
+            expect(service.setRegistrationParentKeyId).toHaveBeenCalledWith(
+                'wallet-a-passkey-main',
+            )
+            expect(service.setMainKeyId).toHaveBeenCalledWith(
+                'a-orphan-passkey-main',
+            )
+            expect(mocks.error).not.toHaveBeenCalled()
+        })
+
+        it('does not mint when an anchored main key already exists', async () => {
+            await seedOrphanedMainKey()
+            await seedAnchoredRoot('wallet-a')
+            await seedPasskeyMainKey(
+                'wallet-a-passkey-main',
+                'wallet-a/entropy',
+            )
+            const mintPasskeyMainKey = vi.fn(mintInto())
+
+            await bootstrapPasskeyAutofill({
+                service: makeService() as never,
+                intentActions,
+                getPasskeyAnchorSeedIds: () => new Set(['wallet-a']),
+                mintPasskeyMainKey,
+            })
+
+            expect(mintPasskeyMainKey).not.toHaveBeenCalled()
+        })
+
+        it('authorizes the anchored root and still finishes when minting fails', async () => {
+            const service = makeService()
+            await seedOrphanedMainKey()
+            await seedAnchoredRoot('wallet-a')
+            const failure = new Error('mint failed')
+
+            await expect(
+                bootstrapPasskeyAutofill({
+                    service: service as never,
+                    intentActions,
+                    getPasskeyAnchorSeedIds: () => new Set(['wallet-a']),
+                    mintPasskeyMainKey: vi.fn().mockRejectedValue(failure),
+                }),
+            ).resolves.toBe('ready')
+
+            expect(service.setRegistrationParentKeyId).toHaveBeenCalledWith(
+                'wallet-a',
+            )
+            expect(mocks.error).toHaveBeenCalledWith(failure, {
+                step: 'mintPasskeyMainKey',
+            })
+        })
+    })
+
+    it('authorizes the seed of an Algo25-only wallet for registration', async () => {
+        const service = makeService()
+        await seedKeystore({ id: 'algo25-seed', type: 'seed' }, ROOT_SEED)
+
+        await bootstrapPasskeyAutofill({
+            service: service as never,
+            intentActions,
+            getPasskeyAnchorSeedIds: () => new Set(['algo25-seed']),
+        })
+
+        expect(service.setRegistrationParentKeyId).toHaveBeenCalledWith(
+            'algo25-seed',
+        )
+    })
+
+    it('revokes registration approval without clearing an existing assertion parent', async () => {
+        const service = makeService()
+        await seedHdRoot()
+        await seedPasskeyMainKey()
+
+        await bootstrapPasskeyAutofill({
+            service: service as never,
+            intentActions,
+            getPasskeyAnchorSeedIds: () => new Set(),
+        })
+
+        expect(service.setMainKeyId).toHaveBeenCalledWith('main-id')
+        expect(service.setRegistrationParentKeyId).toHaveBeenCalledWith('')
     })
 
     it('falls back to the XHD root when no main key exists yet', async () => {

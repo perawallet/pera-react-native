@@ -436,6 +436,9 @@ const pairTopic = async (
     }
 }
 
+// Outside WalletKit's `wc2:` namespace, which it enumerates as its own.
+const REVOKED_TOPICS_KEY = 'wallet-connect-v2:revoked-topics'
+
 /**
  * WalletConnect v2 as one implementation of {@link ConnectionHandler}. Unlike
  * v1's socket per session, v2 is a single relay connection multiplexing every
@@ -1350,7 +1353,7 @@ export const createWalletConnectV2Handler = (
             // The session settled, so the dApp believes it is connected: left
             // alive it would be a session with no record — invisible in
             // settings and unanswerable when it sends a request.
-            await endSession(session.topic)
+            await revokeSession(session.topic)
             throw error
         }
     }
@@ -1436,6 +1439,40 @@ export const createWalletConnectV2Handler = (
             })
             return false
         }
+    }
+
+    const readRevokedTopics = (): Set<string> => {
+        const raw = keyValueStorage.getJSON<unknown>(REVOKED_TOPICS_KEY)
+        return new Set(
+            Array.isArray(raw)
+                ? raw.filter(
+                      (topic): topic is string => typeof topic === 'string',
+                  )
+                : [],
+        )
+    }
+
+    const writeRevokedTopics = (topics: Set<string>): void => {
+        if (topics.size === 0) keyValueStorage.removeItem(REVOKED_TOPICS_KEY)
+        else keyValueStorage.setJSON(REVOKED_TOPICS_KEY, [...topics])
+    }
+
+    const markRevoked = (topic: string): void => {
+        writeRevokedTopics(readRevokedTopics().add(topic))
+    }
+
+    const endRevokedSession = async (topic: string): Promise<void> => {
+        if (!(await endSession(topic))) return
+        const revoked = readRevokedTopics()
+        revoked.delete(topic)
+        writeRevokedTopics(revoked)
+    }
+
+    // Persist before sending the end: a crash during delivery must not
+    // restore a session the user already disconnected.
+    const revokeSession = async (topic: string): Promise<void> => {
+        markRevoked(topic)
+        await endRevokedSession(topic)
     }
 
     // Pending origins die with the process while WalletKit keeps the pairing;
@@ -1756,7 +1793,12 @@ export const createWalletConnectV2Handler = (
         const now = Date.now()
         const restored: WalletConnectV2Connection[] = []
         const idle: WalletConnectV2Connection[] = []
-        for (const session of Object.values(walletKit.getActiveSessions())) {
+        const sessions = walletKit.getActiveSessions()
+        const revoked = [...readRevokedTopics()].filter(
+            topic => topic in sessions,
+        )
+        for (const session of Object.values(sessions)) {
+            if (revoked.includes(session.topic)) continue
             const record = toConnection(
                 session,
                 existing.get(session.topic) ?? null,
@@ -1784,7 +1826,26 @@ export const createWalletConnectV2Handler = (
         idle.forEach((record, index) => {
             if (!ended[index]) restored.push(record)
         })
-        return restored
+        const revokedEnded = await Promise.all(
+            revoked.map(topic =>
+                withTimeout(
+                    endSession(topic),
+                    IDLE_END_TIMEOUT_MS,
+                    'ending a revoked WalletConnect v2 session',
+                ).catch(() => false),
+            ),
+        )
+        // Re-read: a disconnect may have revoked another topic meanwhile.
+        const live = walletKit.getActiveSessions()
+        const stillRevoked = readRevokedTopics()
+        for (const topic of stillRevoked) {
+            if (!(topic in live)) stillRevoked.delete(topic)
+        }
+        revoked.forEach((topic, index) => {
+            if (revokedEnded[index]) stillRevoked.delete(topic)
+        })
+        writeRevokedTopics(stillRevoked)
+        return restored.filter(({ id }) => id in live && !stillRevoked.has(id))
     }
 
     /**
@@ -1854,15 +1915,28 @@ export const createWalletConnectV2Handler = (
         for (const id of (await storedById()).keys()) {
             if (!liveIds.has(id)) await store().remove(id)
         }
-        for (const connection of live) await store().upsert(connection)
+        for (const connection of live) {
+            // A disconnect may have settled while the other rows were pruned.
+            if (
+                client?.getActiveSessions()[connection.id] &&
+                !readRevokedTopics().has(connection.id)
+            ) {
+                await store().upsert(connection)
+            }
+        }
     }
 
     const startAtBoot = async (startedIn: number): Promise<void> => {
         try {
             await startWhen?.()
             if (startedIn !== generation) return
-            // A wallet with no v2 sessions loads the SDK on its first pairing.
-            if ((await storedById()).size === 0) return
+            // Without active sessions or pending revocations, wait for pairing.
+            if (
+                (await storedById()).size === 0 &&
+                readRevokedTopics().size === 0
+            ) {
+                return
+            }
             await startClient()
         } finally {
             if (startedIn === generation) isBootStartPending = false
@@ -2200,11 +2274,15 @@ export const createWalletConnectV2Handler = (
             })
     }
 
-    // The record goes whatever the relay says: a dApp the user removed must
-    // not reappear in settings because the peer was unreachable.
+    // The record goes whatever the relay says, and before the relay wait: a
+    // kill during it must leave no row for boot restore or a queued request.
     const disconnect = async (id: ConnectionId): Promise<void> => {
-        await endSession(id)
-        await store().remove(id)
+        markRevoked(id)
+        try {
+            await store().remove(id)
+        } finally {
+            await endRevokedSession(id)
+        }
     }
 
     return {

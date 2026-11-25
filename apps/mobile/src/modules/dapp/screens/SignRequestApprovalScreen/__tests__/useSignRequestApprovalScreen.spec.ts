@@ -37,6 +37,7 @@ const mocks = vi.hoisted(() => {
         encodeWalletOperationResult: vi.fn(),
         useAllAccounts: vi.fn(),
         confirmNetworkSwitch: vi.fn(),
+        confirmWatchAsset: vi.fn(),
         useSigningEvent: vi.fn(),
         markConnectionRequestApproved: vi.fn(async () => undefined),
     }
@@ -61,6 +62,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 
 vi.mock('@modules/connections/web', () => ({
     useNetworkSwitchPrompt: () => mocks.confirmNetworkSwitch,
+    useWatchAssetPrompt: () => mocks.confirmWatchAsset,
 }))
 
 vi.mock('@perawallet/wallet-core-connections', () => ({
@@ -270,6 +272,28 @@ describe('useSignRequestApprovalScreen', () => {
             expect(mocks.enqueueInboundRequest).toHaveBeenCalledTimes(1)
         })
 
+        it('holds a watch-asset request until the database is ready', () => {
+            useDatabaseReadinessStore.getState().setReadiness('pending')
+            mocks.useDappRequest.mockReturnValue({
+                requestId: 'cr1',
+                approval: {
+                    ...SEND_APPROVAL,
+                    operation: { type: 'watch-asset', assetId: '0xToken' },
+                },
+                isLoading: false,
+            })
+
+            renderHook(() => useSignRequestApprovalScreen())
+
+            expect(mocks.enqueueInboundRequest).not.toHaveBeenCalled()
+
+            act(() => {
+                useDatabaseReadinessStore.getState().setReadiness('ready')
+            })
+
+            expect(mocks.enqueueInboundRequest).toHaveBeenCalledTimes(1)
+        })
+
         it('does not hold a request that never reads the database', () => {
             useDatabaseReadinessStore.getState().setReadiness('pending')
 
@@ -367,6 +391,13 @@ describe('useSignRequestApprovalScreen', () => {
 
             const [, deps] = mocks.enqueueInboundRequest.mock.calls[0]
             expect(deps.confirmNetworkSwitch).toBe(mocks.confirmNetworkSwitch)
+        })
+
+        it('hands the adapter the watch-asset prompt', () => {
+            renderHook(() => useSignRequestApprovalScreen())
+
+            const [, deps] = mocks.enqueueInboundRequest.mock.calls[0]
+            expect(deps.confirmWatchAsset).toBe(mocks.confirmWatchAsset)
         })
 
         it('enqueues a switch request from a wallet holding only EVM accounts', () => {

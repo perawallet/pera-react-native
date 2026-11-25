@@ -11,14 +11,13 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { StyleSheet } from 'react-native'
 import { defaultTheme } from '@rneui/base'
 
 type StyleProps = { color?: string }
 
 export const useStyles = makeStyles((theme, { color }: StyleProps) => ({
     divider: {
-        height: StyleSheet.hairlineWidth,
+        height: theme.borders.sm,
         width: '100%',
         backgroundColor: color ?? defaultTheme.colors.divider,
     },

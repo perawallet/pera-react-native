@@ -22,13 +22,13 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.sm,
     },
     requirementText: {
-        color: theme.colors.textGrayLighter,
+        color: theme.colors.textGray,
     },
     requirementMet: {
         color: theme.colors.positive,
     },
     hint: {
-        color: theme.colors.textGrayLighter,
+        color: theme.colors.textGray,
         marginTop: theme.spacing.xs,
     },
 }))

@@ -36,6 +36,7 @@ export const useStyles = makeStyles(theme => ({
     amountInputInnerContainer: {
         borderBottomWidth: 0,
         paddingHorizontal: 0,
+        minHeight: theme.controlHeight.sm,
         backgroundColor: 'transparent',
     },
     amountInput: {

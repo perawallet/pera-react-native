@@ -59,8 +59,4 @@ export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
         gap: theme.spacing.sm,
         marginTop: theme.spacing.xl,
     },
-    actionButton: {
-        minHeight: theme.spacing['3xl'],
-        borderRadius: theme.borderRadius.xs,
-    },
 }))

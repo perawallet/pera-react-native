@@ -14,7 +14,7 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     versionText: {
-        color: theme.colors.textGrayLighter,
+        color: theme.colors.textGray,
         paddingTop: theme.spacing.sm,
         textAlign: 'center',
         width: '100%',

@@ -24,6 +24,7 @@ export {
     PASSKEY_MAIN_KEY_SCHEME,
     passkeyMainKeyId,
 } from './keystore/passkeyMainKey'
+export { setKeystorePasskeyAnchorResolver } from './keystore/migrations/passkeyAnchorSeedResolver'
 export {
     setEngineKeySource,
     type EngineKeySource,

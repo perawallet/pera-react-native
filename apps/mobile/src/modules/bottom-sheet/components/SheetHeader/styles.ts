@@ -27,6 +27,6 @@ export const useStyles = makeStyles(theme => ({
     subtitle: {
         width: '100%',
         textAlign: 'center',
-        color: theme.colors.textGrayLighter,
+        color: theme.colors.textGray,
     },
 }))

@@ -43,6 +43,21 @@ const makeNative = (
     }) as PasskeyAutofillNativeAPI
 
 describe('PasskeyAutofillService', () => {
+    it('forwards the authorized parent for new registrations', async () => {
+        const setRegistrationParentKeyId = vi.fn().mockResolvedValue(undefined)
+        const service = new PasskeyAutofillService(
+            makeNative({ setRegistrationParentKeyId }),
+        )
+
+        await service.setRegistrationParentKeyId('wallet-root')
+        await service.setRegistrationParentKeyId('')
+
+        expect(setRegistrationParentKeyId.mock.calls).toEqual([
+            ['wallet-root'],
+            [''],
+        ])
+    })
+
     beforeEach(() => setPlatform('ios'))
     afterEach(() => vi.clearAllMocks())
 

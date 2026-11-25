@@ -163,6 +163,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
             address,
             name: address,
         })),
+    useAddTokenMutation: () => ({ addToken: vi.fn() }),
 }))
 
 const mockCreateV2 = vi.fn((options: V2Options) => ({
@@ -461,7 +462,7 @@ describe('useConnectionsProvider', () => {
         ])
     })
 
-    it('hands the signing adapter the network-switch prompt and the transaction view', () => {
+    it('hands the signing adapter the network-switch and watch-asset prompts and the transaction view', () => {
         renderHook(() => useConnectionsProvider())
 
         expect(mockUseSigningAdapter).toHaveBeenCalledWith(
@@ -469,6 +470,7 @@ describe('useConnectionsProvider', () => {
             'algorand',
             {
                 confirmNetworkSwitch: expect.any(Function),
+                confirmWatchAsset: expect.any(Function),
                 showTransaction: expect.any(Function),
             },
         )

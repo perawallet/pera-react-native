@@ -98,6 +98,37 @@ describe('readErc20', () => {
         ).rejects.toThrow()
     })
 
+    it.each([
+        ['a 503 from the node', () => new HttpResponse(null, { status: 503 })],
+        ['a failed connection', () => HttpResponse.error()],
+    ])(
+        'rejects with a transient network error on %s, so it never reads as no token',
+        async (_label, respond) => {
+            server.use(http.post(TEST_RPC_URL, respond))
+
+            const error = await readErc20(
+                testChainContext(),
+                ETHEREUM,
+                USDC,
+                SCOPE,
+            ).catch((reason: unknown) => reason)
+
+            expect(isTransientNetworkError(error)).toBe(true)
+        },
+    )
+
+    it('rejects a contract that reverts as it is, not as a transient failure', async () => {
+        const error = await readErc20(
+            testChainContext(),
+            ETHEREUM,
+            '0x00000000000000000000000000000000000000cc',
+            SCOPE,
+        ).catch((reason: unknown) => reason)
+
+        expect(error).toBeInstanceOf(Error)
+        expect(isTransientNetworkError(error)).toBe(false)
+    })
+
     // MKR and SAI declare name() and symbol() as bytes32.
     it('reads a token whose name and symbol are right-padded bytes32', async () => {
         const MKR = '0x00000000000000000000000000000000000000dd'
