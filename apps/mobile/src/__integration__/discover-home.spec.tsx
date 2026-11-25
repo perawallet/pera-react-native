@@ -349,13 +349,28 @@ describe('Flow: Discover home', () => {
         )
         // Two sentences: the 3-line cap would ellipsize the instruction.
         expect(body.style.webkitLineClamp).toBe('')
-        const directory = screen.getByTestId(
-            'discover_home_top_dapps_directory',
-        )
-        expect(directory.textContent).toContain('discover.home.see_chain_dapps')
-        expect(directory.textContent).not.toContain(
-            'discover.home.see_chain_dapps_count',
-        )
+        // The directory would be just as empty, so there is no link to it.
+        expect(
+            screen.queryByTestId('discover_home_top_dapps_directory'),
+        ).toBeNull()
+        // Nor the four rows' worth of height a list keeps, which left a gap above the copy.
+        expect(
+            screen.getByTestId('discover_home_dapp_preview').className,
+        ).not.toContain('r-minHeight')
+        await flush()
+    })
+
+    it('Given Algorand lists dApps, then the preview keeps its height and links to the directory', async () => {
+        useHandlers()
+        renderHome()
+        await screen.findByTestId(rowOf('Tinyman'))
+
+        expect(
+            screen.getByTestId('discover_home_dapp_preview').className,
+        ).toContain('r-minHeight')
+        expect(
+            screen.getByTestId('discover_home_top_dapps_directory'),
+        ).toBeTruthy()
         await flush()
     })
 
