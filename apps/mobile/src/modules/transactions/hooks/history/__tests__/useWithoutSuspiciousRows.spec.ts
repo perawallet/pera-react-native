@@ -31,6 +31,7 @@ import {
     TRANSACTION_ROW_TYPES,
     type TransactionListRow,
 } from '../../../utils/transactionListRows'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useWithoutSuspiciousRows } from '../useWithoutSuspiciousRows'
 
 const ME = '0xme'
@@ -72,7 +73,7 @@ const send = (
 
 const receive = (
     id: string,
-    initiator: string,
+    initiator: Optional<string>,
     assetId: string,
 ): TransactionListRow => ({
     kind: TRANSACTION_ROW_TYPES.record,
@@ -130,6 +131,7 @@ describe('useWithoutSuspiciousRows', () => {
             receive('own-swap', ME, '0xnew'),
             receive('listed', OTHER, '0xverified'),
             receive('unknown', OTHER, '0xunstored'),
+            receive('unsigned', undefined, '0xnew'),
         ]
 
         beforeEach(() => {
@@ -158,12 +160,13 @@ describe('useWithoutSuspiciousRows', () => {
                 }),
             ).result.current.map(row => row.key)
 
-        it("drops someone else's transfer of it, and keeps the account's own", () => {
+        it("drops someone else's transfer of it, and keeps the account's own and one with no named signer", () => {
             expect(keysOf()).toEqual([
                 '2026-11-25',
                 'own-swap',
                 'listed',
                 'unknown',
+                'unsigned',
             ])
         })
 

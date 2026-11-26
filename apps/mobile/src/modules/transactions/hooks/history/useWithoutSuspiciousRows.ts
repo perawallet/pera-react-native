@@ -59,15 +59,17 @@ type Entry = {
 
 /**
  * Someone else's transaction that moved a token waiting in the inbox: an
- * airdrop or a spoofed transfer. The account's own stays, whatever it moved.
- * A token with no stored row is left in, since nothing says it's unwanted.
+ * airdrop or a spoofed transfer. The account's own stays, whatever it moved,
+ * and so does one whose signer the history doesn't name. A token with no
+ * stored row is left in too, since nothing says it's unwanted.
  */
 const movesUnapprovedToken = (
     entry: Entry,
     storedAssets: Optional<ReadonlyMap<string, PeraAsset>>,
     keptTokens: KeptTokens,
 ): boolean =>
-    entry.signer?.toLowerCase() !== entry.accountAddress.toLowerCase() &&
+    !!entry.signer &&
+    entry.signer.toLowerCase() !== entry.accountAddress.toLowerCase() &&
     summaryAmountsOf(entry.summary).some(({ assetRef: { assetId } }) => {
         const asset = storedAssets?.get(assetId)
         return (

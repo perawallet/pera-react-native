@@ -40,6 +40,7 @@ import { useStyles } from './styles'
 import { useAccountHistoryCsvExport } from './useAccountHistoryCsvExport'
 import { useAccountHistoryFilter } from './useAccountHistoryFilter'
 import { useAccountHistoryRows } from './useAccountHistoryRows'
+import { useWalkPastHiddenRows } from './useWalkPastHiddenRows'
 import { emptyBodyCopy } from './utils'
 
 export type UseAccountHistoryResult = {
@@ -134,7 +135,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         isError,
         error,
         hasNextPage,
-        isSearchPaused,
+        isSearchPaused: isTypeSearchPaused,
         retry: handleRetry,
         isRetrying,
         isLoadFailed,
@@ -151,7 +152,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         failedNetworkNames,
         unavailableNetworkNames,
         handleLoadMore,
-        handleSearchOlder,
+        handleSearchOlder: handleTypeSearchOlder,
         handleRefresh,
         isRefreshing,
         scopeOf,
@@ -161,6 +162,19 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         suspectedPoisoningById,
         isEnabled: !isSuspiciousShown,
     })
+    const hiddenWalk = useWalkPastHiddenRows({
+        isAllHidden: rows.length === 0 && allRows.length > 0,
+        hasNextPage,
+        isFetchingNextPage,
+        loadedCount: allRows.length,
+        loadMore: handleLoadMore,
+    })
+    // Both stop reading and wait for Search Older: the type filter's scan and
+    // the walk past a run of pages the suspicious filter hides entirely.
+    const isSearchPaused = isTypeSearchPaused || hiddenWalk.isPaused
+    const handleSearchOlder = isTypeSearchPaused
+        ? handleTypeSearchOlder
+        : hiddenWalk.resume
 
     // The event needs one chain, so on All it names the account's own; a
     // filter there covers every network.
