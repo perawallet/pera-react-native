@@ -760,7 +760,8 @@
             "text_with_cloud_backup": "Bu hesabı yedeklemen gerekiyor",
             "cta_passphrase": "Kurtarma passphrase’ini yedekle",
             "cta_turn_on_cloud_backup": "Bulut yedeklemeyi etkinleştir",
-            "cta_fix_cloud_backup": "Bulut yedeklemeyi düzelt"
+            "cta_fix_cloud_backup": "Bulut yedeklemeyi düzelt",
+            "cta_confirm_cloud_backup": "Bulut yedeklemeyi onayla"
         },
         "status": {
             "cloud_backup": "Yedeklendi · Bulut yedekleme"

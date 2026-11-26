@@ -760,7 +760,8 @@
             "text_with_cloud_backup": "You need to back up this account",
             "cta_passphrase": "Back Up Passphrase",
             "cta_turn_on_cloud_backup": "Turn On Cloud Backup",
-            "cta_fix_cloud_backup": "Fix Cloud Backup"
+            "cta_fix_cloud_backup": "Fix Cloud Backup",
+            "cta_confirm_cloud_backup": "Confirm Cloud Backup"
         },
         "status": {
             "cloud_backup": "Backed up · Cloud Backup"

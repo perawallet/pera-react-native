@@ -760,7 +760,8 @@
             "text_with_cloud_backup": "Debes hacer una copia de seguridad de esta cuenta",
             "cta_passphrase": "Respaldar passphrase de recuperación",
             "cta_turn_on_cloud_backup": "Activar copia de seguridad en la nube",
-            "cta_fix_cloud_backup": "Corregir copia de seguridad en la nube"
+            "cta_fix_cloud_backup": "Corregir copia de seguridad en la nube",
+            "cta_confirm_cloud_backup": "Confirmar copia de seguridad en la nube"
         },
         "status": {
             "cloud_backup": "Con copia de seguridad · Copia de seguridad en la nube"

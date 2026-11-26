@@ -18,7 +18,10 @@ import {
     useAccountScope,
 } from '@perawallet/wallet-core-accounts'
 
-import { useShouldPromptMnemonicBackup } from '@perawallet/wallet-core-backup'
+import {
+    useCloudBackupStore,
+    useShouldPromptMnemonicBackup,
+} from '@perawallet/wallet-core-backup'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import { useIsCloudBackupAvailableFor } from '@hooks/useIsCloudBackupAvailable'
@@ -50,6 +53,9 @@ export const useBackupReminderBanner = (
     const navigation = useAppNavigation()
     const isCloudBackupAvailable = useIsCloudBackupAvailableFor(account)
     const cloudBackupRoute = useCloudBackupInitialRoute()
+    const needsCredentialsConfirmation = useCloudBackupStore(state =>
+        state.needsCredentialsConfirmation(),
+    )
 
     const onBackUpPassphrase = useCallback(
         () => launch(account),
@@ -65,14 +71,18 @@ export const useBackupReminderBanner = (
         [navigation, cloudBackupRoute],
     )
 
-    // A configured backup that doesn't cover this account has something to fix
-    // (unconfirmed credentials, a failed sync); otherwise Cloud Backup is not on yet.
+    // Unconfirmed credentials only need confirming, since the sync may be fine;
+    // any other configured backup that doesn't cover the account has something
+    // to fix, such as a failed sync.
     let cloudBackupCtaLabel: Optional<string>
     if (isCloudBackupAvailable) {
-        cloudBackupCtaLabel =
-            cloudBackupRoute === 'CloudBackupOverview'
-                ? t('backup.banner.cta_fix_cloud_backup')
-                : t('backup.banner.cta_turn_on_cloud_backup')
+        if (cloudBackupRoute !== 'CloudBackupOverview') {
+            cloudBackupCtaLabel = t('backup.banner.cta_turn_on_cloud_backup')
+        } else if (needsCredentialsConfirmation) {
+            cloudBackupCtaLabel = t('backup.banner.cta_confirm_cloud_backup')
+        } else {
+            cloudBackupCtaLabel = t('backup.banner.cta_fix_cloud_backup')
+        }
     }
 
     return {

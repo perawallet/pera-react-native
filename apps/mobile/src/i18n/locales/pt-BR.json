@@ -760,7 +760,8 @@
             "text_with_cloud_backup": "Você precisa fazer backup desta conta",
             "cta_passphrase": "Fazer backup da passphrase de recuperação",
             "cta_turn_on_cloud_backup": "Ativar backup na nuvem",
-            "cta_fix_cloud_backup": "Corrigir backup na nuvem"
+            "cta_fix_cloud_backup": "Corrigir backup na nuvem",
+            "cta_confirm_cloud_backup": "Confirmar backup na nuvem"
         },
         "status": {
             "cloud_backup": "Backup feito · Backup na nuvem"
