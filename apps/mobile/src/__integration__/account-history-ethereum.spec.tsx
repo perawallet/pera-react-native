@@ -1814,7 +1814,7 @@ describe('Flow: History on an Ethereum account', () => {
                 expect(fee.textContent).not.toContain('transactions.common.fee')
             })
 
-            it('Given an approval that landed before the backend lists it, when History lists it and its row is opened, then it shows the fee it was charged and its block', async () => {
+            it('Given an approval that landed before the backend lists it, when History lists it and its row is opened, then its row shows no fee, as no approval row does, and its detail shows the fee it was charged and its block', async () => {
                 server.use(
                     ...peraEvmHistoryHandlers({
                         history: {
@@ -1850,10 +1850,9 @@ describe('Flow: History on an Ethereum account', () => {
                 await resolveSubmissionAttempt({ id, status: 'confirmed' })
                 renderHistory()
 
-                const row = await rowText(PENDING_HASH, /ETH/)
-                expect(row).toContain('transactions.common.fee')
-                expect(row).not.toContain('send_funds.fee.max_fee')
-                expect(row).toMatch(/0\.000021/)
+                const row = await rowText(PENDING_HASH)
+                expect(row).toContain('transactions.list_item.approval')
+                expect(row).not.toContain('transactions.common.fee')
 
                 await openRow(PENDING_HASH)
 
