@@ -664,6 +664,7 @@
         "name_taken": "Vous avez déjà un compte portant ce nom. Choisissez un autre nom pour pouvoir les distinguer.",
         "type_universal_wallet": "Universal Wallet",
         "type_algo25": "Compte Algo25",
+        "type_private_key": "Compte à clé privée",
         "type_watch": "Compte de suivi",
         "type_ledger": "Compte Ledger",
         "ledger_usb_device": "Ledger (USB)",
@@ -703,6 +704,9 @@
         "multisig_no_auth_description": "Il s’agit d’un compte partagé, mais aucun de ses comptes signataires ne figure dans votre wallet. Vous ne pouvez pas signer de transactions pour ce compte. Pour signer, ajoutez l’un de ses comptes signataires à votre wallet.",
         "quantum_title": "Compte quantique",
         "quantum_description": "Un compte standard protégé par une cryptographie post-quantique, conçu pour garder vos actifs en sécurité même face aux futurs ordinateurs quantiques.",
+        "private_key_title": "Compte à clé privée",
+        "private_key_description": "Votre compte a été ajouté à votre wallet avec sa clé privée. Il n’a pas de passphrase de récupération : conservez donc une copie de la clé privée dans un endroit sûr.",
+        "unknown_description": "Pera ne peut pas déterminer le type de ce compte.",
         "learn_more": "En savoir plus"
     },
     "min_balance_info": {

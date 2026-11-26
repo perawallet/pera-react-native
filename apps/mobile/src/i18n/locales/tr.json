@@ -664,6 +664,7 @@
         "name_taken": "Bu isimde bir hesabın zaten var. Birbirinden ayırt edebilmek için farklı bir isim seç.",
         "type_universal_wallet": "Universal Wallet",
         "type_algo25": "Algo25 hesabı",
+        "type_private_key": "Özel anahtarlı hesap",
         "type_watch": "İzleme hesabı",
         "type_ledger": "Ledger hesabı",
         "ledger_usb_device": "Ledger (USB)",
@@ -703,6 +704,9 @@
         "multisig_no_auth_description": "Bu paylaşılan bir hesap, ancak imzalayan hesaplarından hiçbiri cüzdanında değil. Bu hesap için işlem imzalayamazsın. İmzalamak için imzalayan hesaplardan birini cüzdanına ekle.",
         "quantum_title": "Quantum hesabı",
         "quantum_description": "Gelecekteki kuantum bilgisayarlara karşı bile varlıklarını güvende tutmak için tasarlanmış, kuantum sonrası kriptografiyle korunan standart bir hesap.",
+        "private_key_title": "Özel anahtarlı hesap",
+        "private_key_description": "Hesabın cüzdanına özel anahtarıyla eklendi. Kurtarma passphrase’i yoktur, bu yüzden özel anahtarın bir kopyasını güvenli bir yerde sakla.",
+        "unknown_description": "Pera bu hesabın ne tür bir hesap olduğunu belirleyemiyor.",
         "learn_more": "Daha fazla bilgi"
     },
     "min_balance_info": {

@@ -11,7 +11,9 @@
  */
 
 import {
+    accountPresentationChainAdapters,
     accountsChainAdapters,
+    type AccountPresentationChainAdapter,
     type AccountsChainAdapter,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -80,6 +82,7 @@ import {
 import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     createEthereumAccountsAdapter,
+    createEvmAccountPresentation,
     createEvmAddressCodec,
     createEvmKeyDerivation,
 } from './accounts'
@@ -116,6 +119,7 @@ type EvmChainAdapters = {
     localKeySigner: LocalKeySignerChainAdapter
     messageSigner: MessageSignerChainAdapter
     accounts: AccountsChainAdapter
+    accountPresentation: AccountPresentationChainAdapter
     assets: AssetsChainAdapter
     transfer: TransferChainAdapter
     broadcaster: BroadcasterChainAdapter
@@ -157,6 +161,7 @@ const buildAdapters = (
             listedTokens,
             tokenSightings,
         ),
+        accountPresentation: createEvmAccountPresentation(chain),
         assets: createEthereumAssetsAdapter(ctx, chain, listedTokens),
         transfer: createEvmTransferAdapter(ctx, chain),
         broadcaster: createEvmBroadcasterAdapter(ctx, chain, {
@@ -201,6 +206,7 @@ export const createEvmChainRegistration = (
         localKeySignerChainAdapters.register(adapters.localKeySigner)
         messageSignerChainAdapters.register(adapters.messageSigner)
         accountsChainAdapters.register(adapters.accounts)
+        accountPresentationChainAdapters.register(adapters.accountPresentation)
         assetsChainAdapters.register(adapters.assets)
         transferChainAdapters.register(adapters.transfer)
         broadcasterChainAdapters.register(adapters.broadcaster)

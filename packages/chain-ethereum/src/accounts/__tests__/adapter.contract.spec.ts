@@ -18,12 +18,16 @@ import {
     accountStateContractTests,
     type AccountStateContractFixtures,
 } from '@perawallet/wallet-core-accounts/testing/account-state'
-import { accountsContractTests } from '@perawallet/wallet-core-accounts/testing'
+import {
+    accountPresentationContractTests,
+    accountsContractTests,
+} from '@perawallet/wallet-core-accounts/testing'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { createEthereumAccountStateOps } from '../account-state'
 import { createEthereumAccountsAdapter } from '../adapter'
 import { createEvmAddressCodec } from '../address-codec'
+import { createEvmAccountPresentation } from '../presentation'
 import {
     erc20CallResponder,
     evmRpcHandlers,
@@ -196,6 +200,12 @@ const suites = (chain: EvmChain): void => {
                 },
             },
         },
+    )
+
+    accountPresentationContractTests(
+        () => createEvmAccountPresentation(chain),
+        () => createEthereumAccountsAdapter(testChainContext({ chain }), chain),
+        { signers: { signing, watch } },
     )
 
     accountStateContractTests(

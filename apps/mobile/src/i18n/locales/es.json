@@ -664,6 +664,7 @@
         "name_taken": "Ya tienes una cuenta con este nombre. Elige otro nombre para poder distinguirlas.",
         "type_universal_wallet": "Wallet universal",
         "type_algo25": "Cuenta Algo25",
+        "type_private_key": "Cuenta con clave privada",
         "type_watch": "Cuenta de observación",
         "type_ledger": "Cuenta Ledger",
         "ledger_usb_device": "Ledger (USB)",
@@ -703,6 +704,9 @@
         "multisig_no_auth_description": "Esta es una cuenta compartida, pero ninguna de sus cuentas firmantes está en tu wallet. No puedes firmar transacciones para ella. Para poder firmar, añade una de sus cuentas firmantes a tu wallet.",
         "quantum_title": "Cuenta cuántica",
         "quantum_description": "Una cuenta estándar protegida con criptografía post-cuántica, diseñada para mantener tus activos seguros incluso frente a la futura computación cuántica.",
+        "private_key_title": "Cuenta con clave privada",
+        "private_key_description": "Tu cuenta se añadió a tu wallet con su clave privada. No tiene passphrase de recuperación, así que guarda una copia de la clave privada en un lugar seguro.",
+        "unknown_description": "Pera no puede identificar qué tipo de cuenta es.",
         "learn_more": "Más información"
     },
     "min_balance_info": {
