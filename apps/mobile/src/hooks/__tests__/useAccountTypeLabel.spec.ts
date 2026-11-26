@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { useAccountTypeLabel } from '@hooks/useAccountTypeLabel'
@@ -26,6 +26,14 @@ import {
     registerAlgorandAccountsAdapter,
     seedAuthority,
 } from '@test-utils/algorandAccountsAdapter'
+import {
+    registerEthereumAccountPresentation,
+    registerEthereumAccountsAdapter,
+} from '@test-utils/ethereumAccountsAdapter'
+import {
+    registerEthereumChain,
+    restoreAlgorandOnlyChains,
+} from '@test-utils/chain-fixtures'
 import {
     accountForType,
     type AlgorandAccountKind,
@@ -198,6 +206,88 @@ describe('useAccountTypeLabel', () => {
             label: 'account_info.type_no_auth',
             main: 'account_info.type_no_auth',
             qualifier: null,
+        })
+    })
+
+    describe('an account with no Algorand entry', () => {
+        const ethAccount = (
+            custody: WalletAccount['custody'],
+        ): WalletAccount => ({
+            id: 'eth',
+            name: '',
+            chains: {
+                ethereum: {
+                    address: '0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed',
+                },
+            },
+            custody,
+        })
+
+        beforeEach(() => {
+            registerEthereumChain()
+            registerEthereumAccountsAdapter()
+            registerEthereumAccountPresentation()
+        })
+        afterEach(restoreAlgorandOnlyChains)
+
+        it.each([
+            [
+                'a private-key',
+                { kind: 'local', seed: null },
+                'account_info.type_private_key',
+            ],
+            [
+                'an HD',
+                {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
+                'account_info.type_universal_wallet',
+            ],
+            [
+                'a Ledger',
+                {
+                    kind: 'hardware',
+                    device: {
+                        manufacturer: 'ledger',
+                        deviceId: 'device',
+                        deviceName: 'Ledger Nano X',
+                        transportType: 'ble',
+                    },
+                    accountIndex: 0,
+                },
+                'account_info.type_ledger',
+            ],
+        ] as const)(
+            'labels %s account with the EVM copy, never Algo25',
+            (_, custody, expected) => {
+                const { result } = renderHook(() =>
+                    useAccountTypeLabel(ethAccount(custody)),
+                )
+
+                expect(result.current.label).toBe(expected)
+            },
+        )
+
+        it('labels it unknown, not as an Algorand account, when no adapter reads its chain', () => {
+            registerAlgorandAccountsAdapter()
+
+            const { result } = renderHook(() =>
+                useAccountTypeLabel(ethAccount({ kind: 'local', seed: null })),
+            )
+
+            expect(result.current.label).toBe('account_info.type_unknown')
+        })
+
+        it('labels a watch account as a watch account, not No Auth, when nothing signs for it', () => {
+            mockUseCanSignWith.mockReturnValue(false)
+
+            const { result } = renderHook(() =>
+                useAccountTypeLabel(ethAccount({ kind: 'watch' })),
+            )
+
+            expect(result.current.label).toBe('account_info.type_watch')
         })
     })
 })

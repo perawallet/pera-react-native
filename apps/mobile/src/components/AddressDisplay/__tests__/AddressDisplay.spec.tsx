@@ -52,6 +52,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         scope: { chainId: string },
     ) => account.chains[scope.chainId]?.address,
     useAccountPresentation: () => null,
+    useAccountChainId: () => 'algorand',
+    accountsChainAdapters: { has: () => true },
     useAllAccounts: () => mockUseAllAccounts(),
     useCanSignWith: () => true,
     useDelegatedAccount: () => null,

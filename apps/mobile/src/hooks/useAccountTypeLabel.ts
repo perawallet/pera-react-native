@@ -15,7 +15,6 @@ import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import {
     addressOn,
     authorityTransitionLabel,
-    useAccountPresentation,
     useAuthorityOf,
     useCanSignWith,
     useDelegatedTransition,
@@ -24,7 +23,8 @@ import {
 import type { Nullable, Maybe } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { splitAccountTypeLabel } from '@utils/rekeyLabels'
-import { useHomeChainScope } from '@hooks/useHomeChainScope'
+import { useAccountPresentationScope } from '@hooks/useAccountPresentationScope'
+import { useOwnAccountPresentation } from '@hooks/useOwnAccountPresentation'
 
 export type AccountTypeLabel = {
     /** Full single-line label, e.g. "Rekeyed (Signed by a Ledger account)". */
@@ -56,14 +56,14 @@ export const useAccountTypeLabel = (
     account: Maybe<WalletAccount>,
 ): AccountTypeLabel => {
     const { t } = useLanguage()
-    const scope = useHomeChainScope()
+    const scope = useAccountPresentationScope(account)
     const canSign = useCanSignWith(account, scope.chainId)
     const delegateTransition = useDelegatedTransition(
         account ? addressOn(account, scope) : undefined,
         scope.chainId,
     )
     const authority = useAuthorityOf(account, scope)
-    const presentation = useAccountPresentation(account, scope)
+    const presentation = useOwnAccountPresentation(account, scope)
 
     return useMemo(() => {
         if (!account) return plain('')
