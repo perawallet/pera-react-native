@@ -10,10 +10,8 @@
  limitations under the License
  */
 
-import { toScopeKey } from '@perawallet/wallet-core-chain-contract'
 import { PWView } from '@components/core'
 import { AssetIcon } from '@components/AssetIcon'
-import { ChainAvatarBadge } from '@modules/chain-ui/icon'
 import { swapAssetToDisplayable } from '@modules/swap/utils/swapAssetToDisplayable'
 import type { SwapAsset } from '@perawallet/wallet-core-swaps'
 import { useStyles } from './styles'
@@ -22,43 +20,29 @@ export type SwapAssetPairIconProps = {
     assetIn: SwapAsset
     assetOut: SwapAsset
     surfaceColor: string
-    /** Pins each leg's network to its icon; the source leg's only when the swap crosses chains. */
-    isChainShown?: boolean
 }
 
 export const SwapAssetPairIcon = ({
     assetIn,
     assetOut,
     surfaceColor,
-    isChainShown = false,
 }: SwapAssetPairIconProps) => {
     const styles = useStyles({ surfaceColor })
-    const isCrossChain = toScopeKey(assetIn.ref) !== toScopeKey(assetOut.ref)
 
     return (
         <PWView style={styles.container}>
-            <PWView style={styles.assetInIcon}>
-                <AssetIcon
-                    chainId={assetIn.ref.chainId}
-                    asset={swapAssetToDisplayable(assetIn)}
-                    size='md'
-                />
-                {isChainShown && isCrossChain && (
-                    <ChainAvatarBadge
-                        chainId={assetIn.ref.chainId}
-                        corner='left'
-                    />
-                )}
-            </PWView>
+            <AssetIcon
+                chainId={assetIn.ref.chainId}
+                asset={swapAssetToDisplayable(assetIn)}
+                size='md'
+                style={styles.assetInIcon}
+            />
             <PWView style={styles.assetOutIcon}>
                 <AssetIcon
                     chainId={assetOut.ref.chainId}
                     asset={swapAssetToDisplayable(assetOut)}
                     size='md'
                 />
-                {isChainShown && (
-                    <ChainAvatarBadge chainId={assetOut.ref.chainId} />
-                )}
             </PWView>
         </PWView>
     )

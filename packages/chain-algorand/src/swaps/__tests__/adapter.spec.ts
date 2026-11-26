@@ -14,7 +14,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type {
     ExecuteSwapParams,
     SwapExecutionContext,
-    SwapHistoryItem,
 } from '@perawallet/wallet-core-swaps'
 import { Decimal } from 'decimal.js'
 import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
@@ -23,7 +22,6 @@ import { algorandDescriptor } from '../../descriptor'
 import { algorandSwapAdapter } from '../adapter'
 
 const mocks = vi.hoisted(() => ({
-    explorerUrl: 'https://explorer.test' as string | undefined,
     isQuantumSwapEnabled: vi.fn(),
     executeAlgorandSwap: vi.fn(),
     getAlgorandClient: vi.fn(),
@@ -42,12 +40,6 @@ vi.mock('../../blockchain', () => ({
 }))
 vi.mock('../quantumSwapGate', () => ({
     isAlgorandQuantumSwapEnabled: mocks.isQuantumSwapEnabled,
-}))
-vi.mock('@perawallet/wallet-core-config', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-config')
-    >()),
-    getAlgorandChainConfig: () => ({ explorerUrl: mocks.explorerUrl }),
 }))
 
 const params = { quote: { quoteId: 'q' } } as unknown as ExecuteSwapParams
@@ -73,14 +65,9 @@ const caip2Of = (networkId: string): string => {
     return caip2
 }
 
-const historyItem = (
-    transactions: SwapHistoryItem['transactions'],
-): SwapHistoryItem => ({ transactions }) as SwapHistoryItem
-
 describe('algorandSwapAdapter', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mocks.explorerUrl = 'https://explorer.test'
         mocks.isQuantumSwapEnabled.mockReturnValue(true)
         mocks.getAlgorandClient.mockImplementation((target: unknown) => ({
             target,
@@ -159,32 +146,6 @@ describe('algorandSwapAdapter', () => {
         expect(algorandSwapAdapter.holdingReserve(scope)).toEqual(
             new Decimal(250_000),
         )
-    })
-
-    it('links a history item to its swap transaction on the explorer', () => {
-        expect(
-            algorandSwapAdapter.swapExplorerUrl(
-                scope,
-                historyItem([
-                    { scope, txHash: 'OPTIN', role: 'opt_in' },
-                    { scope, txHash: 'SWAP', role: 'swap' },
-                ]),
-            ),
-        ).toBe('https://explorer.test/tx/SWAP/')
-    })
-
-    it('has no history link without a swap transaction or an explorer', () => {
-        expect(
-            algorandSwapAdapter.swapExplorerUrl(scope, historyItem([])),
-        ).toBeUndefined()
-
-        mocks.explorerUrl = undefined
-        expect(
-            algorandSwapAdapter.swapExplorerUrl(
-                scope,
-                historyItem([{ scope, txHash: 'SWAP', role: 'swap' }]),
-            ),
-        ).toBeUndefined()
     })
 
     it("executes with a client built from the context's scope, resolving the asset MBR and quantum gate itself", async () => {

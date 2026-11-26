@@ -11,7 +11,6 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import type { SwapHistoryItem } from '@perawallet/wallet-core-swaps'
 import { testChainContext } from '../../__tests__/context'
 import { BASE, BSC, ETHEREUM, evmScopeOf } from '../../__tests__/evm-chains'
 import { createEvmSwapAdapter } from '../adapter'
@@ -66,31 +65,5 @@ describe('createEvmSwapAdapter', () => {
         expect(adapter.holdingReserve(scope).isZero()).toBe(true)
         expect(adapter.supportsCosignedSwaps).toBe(false)
         expect(adapter.useEnsureReceivable).toBeUndefined()
-    })
-
-    it("links the item's swap transaction on this chain", () => {
-        const swapTx = { role: 'swap', scope, txHash: '0xabc' }
-        const url = adapter.swapExplorerUrl(scope, {
-            transactions: [
-                { role: 'approval', scope, txHash: '0xdef' },
-                swapTx,
-            ],
-        } as unknown as SwapHistoryItem)
-
-        expect(url).toContain('0xabc')
-    })
-
-    it('links nowhere when no swap transaction is on this chain', () => {
-        const url = adapter.swapExplorerUrl(scope, {
-            transactions: [
-                {
-                    role: 'swap',
-                    scope: { chainId: 'algorand', networkId: 'mainnet' },
-                    txHash: 'ALGO',
-                },
-            ],
-        } as unknown as SwapHistoryItem)
-
-        expect(url).toBeUndefined()
     })
 })

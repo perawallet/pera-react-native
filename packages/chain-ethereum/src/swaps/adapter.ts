@@ -40,19 +40,6 @@ export const createEvmSwapAdapter = (
             scope,
         }),
     holdingReserve: () => new Decimal(0),
-    swapExplorerUrl: (scope, item) => {
-        const swapTransaction = item.transactions.find(
-            transaction =>
-                transaction.role === 'swap' &&
-                transaction.scope?.chainId === chain.row.id,
-        )
-        return swapTransaction
-            ? chain.descriptor.explorer.transactionUrl(
-                  scope.networkId,
-                  swapTransaction.txHash,
-              )
-            : undefined
-    },
     estimateSourceCost: ({ quote, scope }) =>
         estimateEvmSwapSourceCost({
             client: createEvmClient(scope, ctx, chain),
