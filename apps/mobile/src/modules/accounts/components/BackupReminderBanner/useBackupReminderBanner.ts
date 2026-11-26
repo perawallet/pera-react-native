@@ -71,9 +71,9 @@ export const useBackupReminderBanner = (
         [navigation, cloudBackupRoute],
     )
 
-    // Unconfirmed credentials only need confirming, since the sync may be fine;
-    // any other configured backup that doesn't cover the account has something
-    // to fix, such as a failed sync.
+    // Confirming comes first: unconfirmed credentials keep the backup from
+    // counting whatever the last sync did; otherwise a configured backup that
+    // misses the account has something to fix.
     let cloudBackupCtaLabel: Optional<string>
     if (isCloudBackupAvailable) {
         if (cloudBackupRoute !== 'CloudBackupOverview') {
