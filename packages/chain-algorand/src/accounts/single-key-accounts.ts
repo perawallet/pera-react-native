@@ -317,5 +317,13 @@ export const algorandSingleKeyAccounts: SingleKeyAccountOps = {
             ? importQuantum(mnemonicIndices, isHeld, scope, save)
             : importAlgo25(mnemonicIndices, scope, save)
     },
+    // Standalone and quantum phrases share the algo25 encoding.
+    isValidMnemonic: (_seed, mnemonicIndices) => {
+        try {
+            return withAlgo25Entropy(mnemonicIndices, () => true)
+        } catch {
+            return false
+        }
+    },
     findAlternateImportKinds,
 }

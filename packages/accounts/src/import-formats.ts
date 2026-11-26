@@ -14,10 +14,16 @@ import {
     isPostQuantumScheme,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
-import type { SeedScheme } from '@perawallet/wallet-core-kms'
+import {
+    indicesToEntropy,
+    mnemonicWordsToIndices,
+    zeroBytes,
+    type SeedScheme,
+} from '@perawallet/wallet-core-kms'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     accountsChainAdapters,
+    requireSingleKeyAccounts,
     type LocalKeyKind,
     type LocalKeySeed,
 } from './chain-adapter'
@@ -55,6 +61,56 @@ export const detectImportKind = (
     return kind
         ? { success: true, seed: kind.seed, wordCount }
         : { success: false, wordCount }
+}
+
+export type RecoveryPhraseRejection = 'word-count' | 'unknown-word' | 'checksum'
+
+export type RecoveryPhraseCheck =
+    | ({ success: true } & MnemonicImportFormat)
+    | { success: false; reason: RecoveryPhraseRejection }
+
+/**
+ * Whether `words` (lower-case) would import on `chainId`: a count a kind takes,
+ * only wordlist words, and the checksum that kind enforces. Reports the first
+ * failure, in that order.
+ */
+export const checkRecoveryPhrase = (
+    chainId: ChainId,
+    words: string[],
+): RecoveryPhraseCheck => {
+    const detected = detectImportKind(chainId, words.join(' '))
+    if (!detected.success) return { success: false, reason: 'word-count' }
+
+    const indices = mnemonicWordsToIndices(words)
+    if (!indices) return { success: false, reason: 'unknown-word' }
+
+    try {
+        const isValid = isChecksumValid(chainId, detected.seed, indices)
+        return isValid ? detected : { success: false, reason: 'checksum' }
+    } finally {
+        zeroBytes(indices)
+    }
+}
+
+const isChecksumValid = (
+    chainId: ChainId,
+    seed: LocalKeySeed,
+    indices: Uint16Array,
+): boolean => {
+    if (localKeyKindOf(chainId, seed)?.isHd) {
+        let entropy: Optional<Uint8Array>
+        try {
+            entropy = indicesToEntropy(indices)
+            return true
+        } catch {
+            return false
+        } finally {
+            zeroBytes(entropy)
+        }
+    }
+    return requireSingleKeyAccounts(
+        accountsChainAdapters.get(chainId),
+    ).isValidMnemonic(seed, indices)
 }
 
 /**

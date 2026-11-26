@@ -276,6 +276,9 @@ const singleKeyAccounts: SingleKeyAccountOps = {
         await save(minted)
         return minted.account
     },
+    // The fixture phrase is all-zero indices; any other word breaks its checksum.
+    isValidMnemonic: (_seed, mnemonicIndices) =>
+        mnemonicIndices.every(index => index === 0),
     findAlternateImportKinds: async () => [],
 }
 
