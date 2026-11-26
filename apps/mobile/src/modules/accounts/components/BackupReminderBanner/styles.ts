@@ -60,6 +60,9 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'center',
         alignItems: 'center',
     },
+    ctaButtonStacked: {
+        flexGrow: 1,
+    },
     ctaText: {
         ...getTypography(theme, 'body'),
         color: theme.colors.textWhite,

@@ -63,6 +63,7 @@ const BackupReminderBannerComponent = ({
         onBackUpPassphrase,
         onOpenCloudBackup,
     } = useBackupReminderBanner(account)
+    const hasCloudBackupCta = cloudBackupCtaLabel !== undefined
     // The reveal-delay timer starts only after the parent finishes its initial
     // load, so the banner animates in as a second beat instead of riding the
     // skeleton-to-content swap.
@@ -87,14 +88,14 @@ const BackupReminderBannerComponent = ({
             <PWView
                 style={[
                     styles.container,
-                    !cloudBackupCtaLabel && styles.containerInline,
+                    !hasCloudBackupCta && styles.containerInline,
                 ]}
                 testID='backup_reminder_banner'
             >
                 <PWView
                     style={[
                         styles.messageRow,
-                        !cloudBackupCtaLabel && styles.messageRowInline,
+                        !hasCloudBackupCta && styles.messageRowInline,
                     ]}
                 >
                     <PWIcon
@@ -105,9 +106,9 @@ const BackupReminderBannerComponent = ({
                     <PWText style={styles.text}>{message}</PWText>
                 </PWView>
                 <PWView style={styles.actions}>
-                    {cloudBackupCtaLabel ? (
+                    {hasCloudBackupCta ? (
                         <PWTouchableOpacity
-                            style={styles.ctaButton}
+                            style={[styles.ctaButton, styles.ctaButtonStacked]}
                             onPress={onOpenCloudBackup}
                             testID='backup_reminder_banner_cloud_backup_cta'
                         >
@@ -117,7 +118,10 @@ const BackupReminderBannerComponent = ({
                         </PWTouchableOpacity>
                     ) : null}
                     <PWTouchableOpacity
-                        style={styles.ctaButton}
+                        style={[
+                            styles.ctaButton,
+                            hasCloudBackupCta && styles.ctaButtonStacked,
+                        ]}
                         onPress={onBackUpPassphrase}
                         testID='backup_reminder_banner_cta'
                     >
