@@ -39,8 +39,17 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         state.signChainIds.includes(chainId),
     canSignWith: (_account: unknown, _accounts: unknown, chainId: string) =>
         state.signChainIds.includes(chainId),
-    chainAccountOf: (account: WalletAccount, chainId: string) =>
-        account.chains[chainId as keyof WalletAccount['chains']],
+    accountChainOptions: (
+        account: WalletAccount,
+        isOn: (chainId: string) => boolean,
+    ) =>
+        Object.entries(account.chains)
+            .filter(([chainId]) => isOn(chainId))
+            .map(([chainId, entry]) => ({
+                chainId,
+                isEnabled: true,
+                address: entry?.address,
+            })),
     isMultisigAccount: () => state.isMultisig,
     useAccountHoldingsAcrossChainsQuery: () => ({
         assetBalances: state.balances,
@@ -133,7 +142,6 @@ describe('useSwapForNativeRoute', () => {
             receive: {
                 scope: { chainId: 'base', networkId: 'mainnet' },
                 assetId: 'native',
-                accountId: 'a',
             },
         })
     })

@@ -16,7 +16,6 @@ import { Decimal } from 'decimal.js'
 import {
     useAccountAssetBalanceQuery,
     addressOn,
-    ownAddressOf,
     useAccountBalancesInvalidator,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -65,7 +64,6 @@ import {
     SwapAssetSelectionContent,
     type SwapAssetSelection,
 } from '../SwapAssetSelectionContent'
-import { SwapReceivingAccountContent } from '../SwapReceivingAccountContent'
 import { SwapConfigurationContent } from '../SwapConfigurationContent'
 import {
     SwapConfirmationContent,
@@ -85,11 +83,11 @@ type UseSwapFormResult = {
     receiveAssetId: string
     /** Where the receive asset lives: the swap scope, or another chain's. */
     receiveScope: ChainScope
-    receivingAccount: Nullable<WalletAccount>
     /** Why the pair can't flip, shown on press and read by screen readers; null when it can. */
     flipUnavailableReason: Nullable<string>
     isChainShown: boolean
-    isReceivingAccountShown: boolean
+    /** Names the network the swap enables on the account; null when it is already on it. */
+    enableNetworkNote: Nullable<string>
     payAmount: Nullable<Decimal>
     receiveAmount: Nullable<Decimal>
     payBalance: Nullable<Decimal>
@@ -115,7 +113,6 @@ type UseSwapFormResult = {
     handleMaxPress: () => void
     handleOpenPayAssetSelection: () => void
     handleOpenReceiveAssetSelection: () => void
-    handleOpenReceivingAccount: () => void
     handleOpenConfig: () => void
     handleOpenProvider: () => void
     handleOpenConfirm: () => void
@@ -187,13 +184,11 @@ export const useSwapForm = (
     const {
         receiveScope,
         isCrossChain,
-        receivingAccount,
         receivingAddress,
-        receivingAccounts,
-        selectReceivingAccount,
+        shouldEnableReceiveChain,
     } = useSwapReceiveTarget(scope)
     const { data: receiveAssetBalance } = useAccountAssetBalanceQuery(
-        receivingAccount ?? undefined,
+        swapAccount ?? undefined,
         toAsset,
         receiveScope,
     )
@@ -702,34 +697,6 @@ export const useSwapForm = (
         applyPaySelection,
     ])
 
-    const handleOpenReceivingAccount = useCallback(async () => {
-        await requestBottomSheet<string>({
-            contents: (
-                <SwapReceivingAccountContent
-                    accounts={receivingAccounts}
-                    chainId={receiveScope.chainId}
-                    selectedAddress={
-                        receivingAccount
-                            ? (ownAddressOf(receivingAccount) ?? null)
-                            : null
-                    }
-                    onSelect={selectReceivingAccount}
-                />
-            ),
-            options: {
-                size: 'modal',
-                enablePanDownToClose: true,
-                autoCreateContainer: false,
-            },
-        })
-    }, [
-        requestBottomSheet,
-        receivingAccounts,
-        receiveScope.chainId,
-        receivingAccount,
-        selectReceivingAccount,
-    ])
-
     const handleOpenProvider = useCallback(async () => {
         if (!canChooseProvider) return
 
@@ -942,10 +909,15 @@ export const useSwapForm = (
         payAssetId: fromAsset,
         receiveAssetId: toAsset,
         receiveScope,
-        receivingAccount,
         flipUnavailableReason,
         isChainShown: isCrossChain || sourceChainIds.length > 1,
-        isReceivingAccountShown: isCrossChain,
+        enableNetworkNote: shouldEnableReceiveChain
+            ? t('swap.form.enable_network_note', {
+                  network:
+                      chainDisplayNameOf(receiveScope.chainId) ??
+                      receiveScope.chainId,
+              })
+            : null,
         payAmount,
         receiveAmount,
         payBalance: payAssetBalance?.amount ?? null,
@@ -969,7 +941,6 @@ export const useSwapForm = (
         handleOpenPayAssetSelection: () => void handleOpenPayAssetSelection(),
         handleOpenReceiveAssetSelection: () =>
             void handleOpenReceiveAssetSelection(),
-        handleOpenReceivingAccount: () => void handleOpenReceivingAccount(),
         handleOpenConfig: () => void handleOpenConfig(),
         handleOpenProvider: () => void handleOpenProvider(),
         handleOpenConfirm: () => void handleOpenConfirm(),

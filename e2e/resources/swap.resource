@@ -84,7 +84,6 @@ ${CONFIRM_SLIDE}                    tid=swap-confirm-slide
 ${CONFIRM_WARNING}                  tid=swap-confirm-warning
 ${CONFIRM_CLOSE}                    tid=swap-confirm-close
 ${CONFIRM_ROUTE}                    tid=swap-confirm-route
-${CONFIRM_RECEIVE_ACCOUNT}          tid=swap-confirm-receive-account
 ${CONFIRM_CROSS_CHAIN_NOTE}         tid=swap-confirm-cross-chain-note
 ${CONFIRM_NETWORK_FEE}              tid=swap-confirm-network-fee
 ${CONFIRM_PROVIDER_FEE}             tid=swap-confirm-provider-fee

@@ -11,12 +11,13 @@
  */
 
 import {
+    accountChainOptions,
     canSignWith,
-    chainAccountOf,
     isMultisigAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 /**
  * A shared account's swap finishes later, through the co-sign flow, with no
@@ -25,12 +26,22 @@ import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 export const canSwapCrossChain = (account: WalletAccount): boolean =>
     !isMultisigAccount(account)
 
-/** Whether `candidate` can be paid a cross-chain swap's output on `chainId`. */
-export const canReceiveCrossChain = (
-    candidate: WalletAccount,
+/**
+ * The address a cross-chain swap from `account` pays out to on `chainId`. An
+ * enabled chain gives its own address; a not-enabled chain in a family the
+ * account already holds gives the family address, which enabling it gives the
+ * account.
+ */
+export const swapPayoutAddressOn = (
+    account: WalletAccount,
     accounts: WalletAccount[],
     chainId: ChainId,
-): boolean =>
-    // canSignWith can pass with no entry on the chain, leaving no address to pay.
-    !!chainAccountOf(candidate, chainId) &&
-    canSignWith(candidate, accounts, chainId)
+): Optional<string> => {
+    const option = accountChainOptions(account, id => id === chainId).at(0)
+    if (option?.address === undefined) return undefined
+    // canSignWith can pass with no entry on the chain, so only an enabled one is checked.
+    if (option.isEnabled && !canSignWith(account, accounts, chainId)) {
+        return undefined
+    }
+    return option.address
+}

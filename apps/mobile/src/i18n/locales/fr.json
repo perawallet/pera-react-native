@@ -4384,7 +4384,8 @@
             "select_asset": "Choisir",
             "flip": "Inverser payer et recevoir",
             "flip_unavailable_title": "Impossible d’inverser ce swap",
-            "flip_unavailable_body": "Ce compte ne peut pas payer depuis le réseau {{network}}."
+            "flip_unavailable_body": "Ce compte ne peut pas payer depuis le réseau {{network}}.",
+            "enable_network_note": "Ce swap activera le réseau {{network}} sur votre compte."
         },
         "asset_selection": {
             "swap_from_title": "Échanger depuis",
@@ -4463,6 +4464,7 @@
             "unsupported_order_body": "Pera ne peut pas finaliser l’ordre de ce fournisseur, rien n’a donc été signé. Choisissez un autre fournisseur.",
             "unsupported_order_single_body": "Pera ne peut pas finaliser l’ordre de ce fournisseur, rien n’a donc été signé. Veuillez réessayer plus tard.",
             "signing_failed_body": "La transaction n’a pas pu être signée, elle n’a donc pas été envoyée. Veuillez réessayer.",
+            "enable_network_failed_body": "Impossible d’activer le réseau {{network}} sur votre compte : le swap n’a pas été lancé. Veuillez réessayer.",
             "order_insufficient_balance_body": "Votre solde ne couvre pas ce montant et les frais de réseau. Essayez un montant plus faible ou ajoutez des fonds pour les frais.",
             "insufficient_native_body": "Ce compte a besoin d’au moins {{amount}} {{symbol}} supplémentaires pour couvrir ce swap, ses frais et le solde minimum. Ajoutez des fonds en {{symbol}}, puis réessayez.",
             "success_title": "Swap effectué",
@@ -4533,10 +4535,6 @@
             "refunded": "Le swap a été remboursé. Vos fonds en {{fromAsset}} sont de retour sur votre compte.",
             "expired": "Le swap a expiré avant de commencer. Si vos fonds ont quitté votre compte, le statut peut encore changer pendant 7 jours maximum.",
             "cancelled": "Le swap a été annulé avant de commencer. Si vos fonds ont quitté votre compte, le statut peut encore changer pendant 7 jours maximum."
-        },
-        "receiving_account": {
-            "title": "Compte de réception",
-            "label": "Recevoir sur"
         }
     },
     "onramp": {

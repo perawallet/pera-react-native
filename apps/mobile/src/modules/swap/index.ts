@@ -17,5 +17,6 @@ export {
     useSwapForNativeRoute,
     type UseSwapForNativeRouteResult,
 } from './hooks/useSwapForNativeRoute'
+export { swapPayoutAddressOn } from './utils/crossChainEligibility'
 export { formatSwapFee, formatSwapSlippage } from './utils/formatSwapFee'
 export type { SwapScreenParams } from './routes/types'

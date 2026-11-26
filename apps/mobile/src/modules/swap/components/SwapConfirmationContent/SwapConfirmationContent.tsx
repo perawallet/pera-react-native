@@ -56,7 +56,7 @@ export const SwapConfirmationContent = ({
 
     const {
         swapAccount,
-        receiveTarget,
+        receiveScope,
         inAsset,
         outAsset,
         isProcessing,
@@ -183,7 +183,7 @@ export const SwapConfirmationContent = ({
             <SwapDetailsSection
                 quote={quote}
                 sourceChainId={scope.chainId}
-                receiveTarget={receiveTarget}
+                receiveScope={receiveScope}
                 rateDisplay={rateDisplay}
                 minimumReceivedDisplay={minimumReceivedDisplay}
                 peraFeeDisplay={peraFeeDisplay}

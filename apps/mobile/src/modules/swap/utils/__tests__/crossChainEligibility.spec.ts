@@ -10,15 +10,17 @@
  limitations under the License
  */
 
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+    accountChainOptions,
     canSignWith,
     isMultisigAccount,
+    type AccountChainOption,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
-    canReceiveCrossChain,
     canSwapCrossChain,
+    swapPayoutAddressOn,
 } from '../crossChainEligibility'
 
 const account = (chains: WalletAccount['chains']): WalletAccount => ({
@@ -28,41 +30,44 @@ const account = (chains: WalletAccount['chains']): WalletAccount => ({
     chains,
 })
 
-describe('canReceiveCrossChain', () => {
-    it('needs an address on the chain even when custody could sign there', () => {
-        vi.mocked(canSignWith).mockReturnValue(true)
+const offering = (...options: AccountChainOption[]) =>
+    vi.mocked(accountChainOptions).mockReturnValue(options)
 
-        expect(
-            canReceiveCrossChain(
-                account({ algorand: { address: 'A', keyPairId: 'k' } }),
-                [],
-                'ethereum',
-            ),
-        ).toBe(false)
+describe('swapPayoutAddressOn', () => {
+    beforeEach(() => {
+        vi.mocked(canSignWith).mockReturnValue(true)
     })
 
-    it('needs a signer on the chain', () => {
+    it('pays an enabled chain at its own address when a signer holds it', () => {
+        offering({ chainId: 'ethereum', isEnabled: true, address: '0x1' })
+
+        expect(swapPayoutAddressOn(account({}), [], 'ethereum')).toBe('0x1')
+    })
+
+    it('pays a chain not enabled yet at the family address, without asking for a signer', () => {
+        offering({ chainId: 'base', isEnabled: false, address: '0x1' })
         vi.mocked(canSignWith).mockReturnValue(false)
 
-        expect(
-            canReceiveCrossChain(
-                account({ ethereum: { address: '0x1' } }),
-                [],
-                'ethereum',
-            ),
-        ).toBe(false)
+        expect(swapPayoutAddressOn(account({}), [], 'base')).toBe('0x1')
     })
 
-    it('accepts an account with an address and a signer there', () => {
-        vi.mocked(canSignWith).mockReturnValue(true)
+    it('has no address for a chain the account holds no family on', () => {
+        offering({ chainId: 'base', isEnabled: false })
 
-        expect(
-            canReceiveCrossChain(
-                account({ ethereum: { address: '0x1', keyPairId: 'k' } }),
-                [],
-                'ethereum',
-            ),
-        ).toBe(true)
+        expect(swapPayoutAddressOn(account({}), [], 'base')).toBeUndefined()
+    })
+
+    it('has no address for a chain the account cannot be offered', () => {
+        offering()
+
+        expect(swapPayoutAddressOn(account({}), [], 'base')).toBeUndefined()
+    })
+
+    it('has no address for an enabled chain nothing signs for', () => {
+        offering({ chainId: 'ethereum', isEnabled: true, address: '0x1' })
+        vi.mocked(canSignWith).mockReturnValue(false)
+
+        expect(swapPayoutAddressOn(account({}), [], 'ethereum')).toBeUndefined()
     })
 })
 

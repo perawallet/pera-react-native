@@ -10,88 +10,67 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useMemo } from 'react'
 import {
     addressOn,
+    chainAccountOf,
     useAllAccounts,
-    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
     toScopeKey,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useSwapsStore, useSwapAccount } from '@perawallet/wallet-core-swaps'
-import { canReceiveCrossChain } from '../utils/crossChainEligibility'
+import { swapPayoutAddressOn } from '../utils/crossChainEligibility'
 
 export type UseSwapReceiveTargetResult = {
     receiveScope: ChainScope
     isCrossChain: boolean
-    receivingAccount: Nullable<WalletAccount>
     receivingAddress: Nullable<string>
-    /** The user's own accounts that can receive on `receiveScope`. */
-    receivingAccounts: WalletAccount[]
-    selectReceivingAccount: (account: WalletAccount) => void
+    /** The swap account has no entry on `receiveScope` yet; the swap enables it. */
+    shouldEnableReceiveChain: boolean
 }
 
 /**
- * Who receives the swap's output. On the swap scope it is the swapper; on
- * another chain it is one of the user's own accounts that can sign there:
- * the one they picked, else the swap account, else the first eligible.
+ * Where the swap's output lands: always the swap account, at its address on
+ * the destination network.
  */
 export const useSwapReceiveTarget = (
     scope: ChainScope,
 ): UseSwapReceiveTargetResult => {
     const toAssetScope = useSwapsStore(state => state.toAssetScope)
-    const receivingAccountId = useSwapsStore(state => state.receivingAccountId)
-    const setReceivingAccountId = useSwapsStore(
-        state => state.setReceivingAccountId,
-    )
     const swapAccount = useSwapAccount()
     const accounts = useAllAccounts()
 
     const receiveScope = toAssetScope ?? scope
     const isCrossChain = toScopeKey(receiveScope) !== toScopeKey(scope)
 
-    const receivingAccounts = useMemo(
-        () =>
-            isCrossChain
-                ? accounts.filter(candidate =>
-                      canReceiveCrossChain(
-                          candidate,
-                          accounts,
-                          receiveScope.chainId,
-                      ),
+    return useMemo(() => {
+        if (!swapAccount) {
+            return {
+                receiveScope,
+                isCrossChain,
+                receivingAddress: null,
+                shouldEnableReceiveChain: false,
+            }
+        }
+        const receivingAddress =
+            (isCrossChain
+                ? swapPayoutAddressOn(
+                      swapAccount,
+                      accounts,
+                      receiveScope.chainId,
                   )
-                : [],
-        [isCrossChain, accounts, receiveScope],
-    )
-
-    const receivingAccount = useMemo<Nullable<WalletAccount>>(() => {
-        if (!isCrossChain) return swapAccount
-        const findEligible = (id: Maybe<string>) =>
-            receivingAccounts.find(candidate => candidate.id === id)
-        return (
-            findEligible(receivingAccountId) ??
-            findEligible(swapAccount?.id) ??
-            receivingAccounts.at(0) ??
-            null
-        )
-    }, [isCrossChain, swapAccount, receivingAccounts, receivingAccountId])
-
-    const selectReceivingAccount = useCallback(
-        (account: WalletAccount) => setReceivingAccountId(account.id),
-        [setReceivingAccountId],
-    )
-
-    return {
-        receiveScope,
-        isCrossChain,
-        receivingAccount,
-        receivingAddress: receivingAccount
-            ? (addressOn(receivingAccount, receiveScope) ?? null)
-            : null,
-        receivingAccounts,
-        selectReceivingAccount,
-    }
+                : addressOn(swapAccount, receiveScope)) ?? null
+        return {
+            receiveScope,
+            isCrossChain,
+            receivingAddress,
+            shouldEnableReceiveChain:
+                isCrossChain &&
+                receivingAddress !== null &&
+                chainAccountOf(swapAccount, receiveScope.chainId) === undefined,
+        }
+    }, [swapAccount, accounts, receiveScope, isCrossChain])
 }

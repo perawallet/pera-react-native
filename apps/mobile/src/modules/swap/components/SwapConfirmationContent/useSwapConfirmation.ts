@@ -14,11 +14,7 @@ import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import { type Nullable, type Optional } from '@perawallet/wallet-core-shared'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import {
-    addressOn,
-    useAllAccounts,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     useAssetsQuery,
     formatAssetAmount,
@@ -50,17 +46,10 @@ type UseSwapConfirmationParams = {
     swapStatus: SwapExecutionStatus
 }
 
-export type SwapReceiveTarget = {
-    /** Null when no account in the wallet holds `address`. */
-    account: Nullable<WalletAccount>
-    address: string
-    scope: ChainScope
-}
-
 type UseSwapConfirmationResult = {
     swapAccount: Nullable<WalletAccount>
-    /** Where a cross-chain payout lands; null on a same-chain swap, which pays the swapper. */
-    receiveTarget: Nullable<SwapReceiveTarget>
+    /** The destination network of a cross-chain swap, paid to the swap account; null on a same-chain swap. */
+    receiveScope: Nullable<ChainScope>
     inAsset: Optional<PeraAsset>
     outAsset: Optional<PeraAsset>
     isProcessing: boolean
@@ -101,7 +90,6 @@ export const useSwapConfirmation = ({
     const { t } = useLanguage()
     const haptics = useHaptics()
     const swapAccount = useSwapAccount()
-    const accounts = useAllAccounts()
     const { usdToPreferred } = useCurrency(scope)
     const { sourceCost, isLoading: isSourceCostLoading } =
         useSwapSourceCostQuery({ quote, scope })
@@ -113,20 +101,13 @@ export const useSwapConfirmation = ({
         scopeOfSwapAsset(quote.assetOut.ref),
         [assetOutId],
     )
-    const receiveTarget = useMemo<Nullable<SwapReceiveTarget>>(() => {
-        if (quote.routeKind !== 'cross-chain') return null
-        const { destinationAddress, destinationAsset } = quote.request
-        const receiveScope = scopeOfSwapAsset(destinationAsset)
-        return {
-            account:
-                accounts.find(
-                    account =>
-                        addressOn(account, receiveScope) === destinationAddress,
-                ) ?? null,
-            address: destinationAddress,
-            scope: receiveScope,
-        }
-    }, [quote, accounts])
+    const receiveScope = useMemo<Nullable<ChainScope>>(
+        () =>
+            quote.routeKind === 'cross-chain'
+                ? scopeOfSwapAsset(quote.request.destinationAsset)
+                : null,
+        [quote],
+    )
 
     const inAsset = inAssets?.get(assetInId)
     const outAsset = outAssets?.get(assetOutId)
@@ -244,17 +225,17 @@ export const useSwapConfirmation = ({
     }, [quote.priceImpact, styles])
 
     const crossChainNote = useMemo(() => {
-        if (!receiveTarget) return null
-        const { chainId } = receiveTarget.scope
+        if (!receiveScope) return null
+        const { chainId } = receiveScope
         return t('swap.quote.cross_chain_note', {
             asset: quote.assetOut.unitName ?? quote.assetOut.assetId,
             network: chainDisplayNameOf(chainId) ?? chainId,
         })
-    }, [receiveTarget, quote.assetOut, t])
+    }, [receiveScope, quote.assetOut, t])
 
     return {
         swapAccount,
-        receiveTarget,
+        receiveScope,
         inAsset,
         outAsset,
         isProcessing,

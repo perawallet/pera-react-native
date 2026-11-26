@@ -4384,7 +4384,8 @@
             "select_asset": "Select",
             "flip": "Flip pay and receive",
             "flip_unavailable_title": "Can't flip this swap",
-            "flip_unavailable_body": "This account can't pay from the {{network}} network."
+            "flip_unavailable_body": "This account can't pay from the {{network}} network.",
+            "enable_network_note": "This swap will enable {{network}} on your account."
         },
         "asset_selection": {
             "swap_from_title": "Swap From",
@@ -4463,6 +4464,7 @@
             "unsupported_order_body": "Pera can't complete this provider's order, so nothing was signed. Choose another provider.",
             "unsupported_order_single_body": "Pera can't complete this provider's order, so nothing was signed. Try again later.",
             "signing_failed_body": "The transaction couldn't be signed, so it wasn't sent. Try again.",
+            "enable_network_failed_body": "Couldn't enable {{network}} on your account, so the swap didn't start. Try again.",
             "order_insufficient_balance_body": "Your balance can't cover this amount and the network fee. Try a smaller amount or add funds for the fee.",
             "insufficient_native_body": "This account needs at least {{amount}} more {{symbol}} to cover this swap, its fees, and the minimum balance. Add more {{symbol}} and try again.",
             "success_title": "Swap Complete",
@@ -4533,10 +4535,6 @@
             "refunded": "The swap was refunded. Your {{fromAsset}} is back in your account.",
             "expired": "The swap expired before it started. If your funds left your account, the status can still change for up to 7 days.",
             "cancelled": "The swap was cancelled before it started. If your funds left your account, the status can still change for up to 7 days."
-        },
-        "receiving_account": {
-            "title": "Receiving account",
-            "label": "Receive to"
         }
     },
     "onramp": {

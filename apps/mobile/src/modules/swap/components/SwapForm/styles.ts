@@ -37,6 +37,11 @@ export const useStyles = makeStyles(theme => {
             gap: theme.spacing.xl,
             marginHorizontal: -theme.spacing.sm,
         },
+        enableNetworkNote: {
+            padding: theme.spacing.md,
+            backgroundColor: theme.colors.layerGrayLighter,
+            borderRadius: theme.spacing.sm,
+        },
         controlsRow: {
             position: 'absolute',
             top: '50%',

@@ -26,6 +26,7 @@ import {
     logger,
     type Optional,
 } from '@perawallet/wallet-core-shared'
+import { SwapDestinationChainError } from '@packages/swaps/src/errors'
 import {
     useSwapExecution,
     type SwapExecutionOutcome,
@@ -58,6 +59,9 @@ vi.mock('@perawallet/wallet-core-swaps', async () => ({
     ...(await vi.importActual<
         typeof import('@packages/swaps/src/execution/failureStep')
     >('@packages/swaps/src/execution/failureStep')),
+    ...(await vi.importActual<typeof import('@packages/swaps/src/errors')>(
+        '@packages/swaps/src/errors',
+    )),
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
@@ -271,6 +275,21 @@ describe('useSwapExecution', () => {
             expect(mockExecuteSwap).not.toHaveBeenCalled()
             expect(outcome).toMatchObject({ kind: 'error', phase: 'prepare' })
             expect(result.current.status).toBe('error')
+        })
+
+        it('names the network in the prepare error when it cannot be enabled', async () => {
+            const { result } = renderHook(() => useSwapExecution())
+
+            const outcome = await run(async () => {
+                throw new SwapDestinationChainError('ethereum')
+            }, result.current)
+
+            expect(mockExecuteSwap).not.toHaveBeenCalled()
+            expect(outcome).toMatchObject({
+                kind: 'error',
+                phase: 'prepare',
+                message: 'swap.execution.enable_network_failed_body',
+            })
         })
 
         it.each([

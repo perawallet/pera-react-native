@@ -4384,7 +4384,8 @@
             "select_asset": "Elegir",
             "flip": "Invertir pagar y recibir",
             "flip_unavailable_title": "No se puede invertir este swap",
-            "flip_unavailable_body": "Esta cuenta no puede pagar desde la red de {{network}}."
+            "flip_unavailable_body": "Esta cuenta no puede pagar desde la red de {{network}}.",
+            "enable_network_note": "Este swap activará la red {{network}} en tu cuenta."
         },
         "asset_selection": {
             "swap_from_title": "Intercambiar desde",
@@ -4463,6 +4464,7 @@
             "unsupported_order_body": "Pera no puede completar la orden de este proveedor, así que no se firmó nada. Elige otro proveedor.",
             "unsupported_order_single_body": "Pera no puede completar la orden de este proveedor, así que no se firmó nada. Inténtalo más tarde.",
             "signing_failed_body": "No se pudo firmar la transacción, así que no se envió. Inténtalo de nuevo.",
+            "enable_network_failed_body": "No se pudo activar la red {{network}} en tu cuenta, así que el swap no se inició. Inténtalo de nuevo.",
             "order_insufficient_balance_body": "Tu saldo no cubre esta cantidad y la comisión de red. Prueba con una cantidad menor o añade fondos para la comisión.",
             "insufficient_native_body": "Esta cuenta necesita al menos {{amount}} {{symbol}} más para cubrir este swap, sus comisiones y el saldo mínimo. Añade más {{symbol}} y vuelve a intentarlo.",
             "success_title": "Swap completado",
@@ -4533,10 +4535,6 @@
             "refunded": "El swap fue reembolsado. Tu {{fromAsset}} ha vuelto a tu cuenta.",
             "expired": "El swap caducó antes de empezar. Si tus fondos salieron de tu cuenta, el estado aún puede cambiar durante un máximo de 7 días.",
             "cancelled": "El swap se canceló antes de empezar. Si tus fondos salieron de tu cuenta, el estado aún puede cambiar durante un máximo de 7 días."
-        },
-        "receiving_account": {
-            "title": "Cuenta receptora",
-            "label": "Recibir en"
         }
     },
     "onramp": {

@@ -4384,7 +4384,8 @@
             "select_asset": "Seç",
             "flip": "Ödenen ve alınanı değiştir",
             "flip_unavailable_title": "Bu takas ters çevrilemiyor",
-            "flip_unavailable_body": "Bu hesap {{network}} ağından ödeme yapamıyor."
+            "flip_unavailable_body": "Bu hesap {{network}} ağından ödeme yapamıyor.",
+            "enable_network_note": "Bu swap işlemi hesabında {{network}} ağını etkinleştirecek."
         },
         "asset_selection": {
             "swap_from_title": "Kaynak varlık",
@@ -4463,6 +4464,7 @@
             "unsupported_order_body": "Pera bu sağlayıcının siparişini tamamlayamıyor, bu yüzden hiçbir şey imzalanmadı. Başka bir sağlayıcı seç.",
             "unsupported_order_single_body": "Pera bu sağlayıcının siparişini tamamlayamıyor, bu yüzden hiçbir şey imzalanmadı. Daha sonra tekrar dene.",
             "signing_failed_body": "İşlem imzalanamadı, bu yüzden gönderilmedi. Tekrar dene.",
+            "enable_network_failed_body": "Hesabında {{network}} ağı etkinleştirilemediği için swap işlemi başlatılmadı. Tekrar dene.",
             "order_insufficient_balance_body": "Bakiyen bu tutarı ve ağ ücretini karşılamıyor. Daha küçük bir tutar dene veya ücret için bakiye ekle.",
             "insufficient_native_body": "Bu hesapta bu swap işlemini, ücretleri ve minimum bakiyeyi karşılamak için en az {{amount}} {{symbol}} daha gerekiyor. Daha fazla {{symbol}} ekle ve tekrar dene.",
             "success_title": "Swap tamamlandı",
@@ -4533,10 +4535,6 @@
             "refunded": "Swap iade edildi. {{fromAsset}} varlığın hesabına geri döndü.",
             "expired": "Swap başlamadan süresi doldu. Varlıkların hesabından çıktıysa durum 7 güne kadar değişebilir.",
             "cancelled": "Swap başlamadan iptal edildi. Varlıkların hesabından çıktıysa durum 7 güne kadar değişebilir."
-        },
-        "receiving_account": {
-            "title": "Alıcı hesap",
-            "label": "Alınacak hesap"
         }
     },
     "onramp": {

@@ -10,23 +10,22 @@
  limitations under the License
  */
 
-import { act, renderHook } from '@testing-library/react'
+import { renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+    accountChainOptions,
     canSignWith,
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type {
-    ChainId,
-    ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useSwapAccount, useSwapsStore } from '@perawallet/wallet-core-swaps'
 import { useSwapReceiveTarget } from '../useSwapReceiveTarget'
 
 const ALGO_SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 const ETH_SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
+const BASE_SCOPE = { chainId: 'base', networkId: 'mainnet' } as const
 
 const account = (
     id: string,
@@ -43,62 +42,60 @@ const SELECTED = account('selected', {
     ethereum: { address: '0xSELECTED', keyPairId: 'k2' },
 })
 const OTHER = account('other', {
-    ethereum: { address: '0xOTHER', keyPairId: 'k3' },
-})
-const ALGO_ONLY = account('algo-only', {
-    algorand: { address: 'ALGO_ONLY', keyPairId: 'k4' },
+    base: { address: '0xOTHER', keyPairId: 'k3' },
 })
 
-const store = {
-    toAssetScope: null as Nullable<ChainScope>,
-    receivingAccountId: null as Nullable<string>,
-    setReceivingAccountId: vi.fn(),
-}
+const store = { toAssetScope: null as Nullable<ChainScope> }
 
 describe('useSwapReceiveTarget', () => {
     beforeEach(() => {
         store.toAssetScope = ETH_SCOPE
-        store.receivingAccountId = null
-        store.setReceivingAccountId.mockReset()
         vi.mocked(useSwapsStore).mockImplementation(((
             selector: (state: typeof store) => unknown,
         ) => selector(store)) as never)
         vi.mocked(useSwapAccount).mockReturnValue(SELECTED)
-        vi.mocked(useAllAccounts).mockReturnValue([SELECTED, OTHER, ALGO_ONLY])
-        vi.mocked(canSignWith).mockImplementation(
-            (candidate: WalletAccount, _accounts, chainId: ChainId) =>
-                !!candidate.chains[chainId]?.keyPairId,
-        )
+        vi.mocked(useAllAccounts).mockReturnValue([SELECTED, OTHER])
+        vi.mocked(canSignWith).mockReturnValue(true)
+        vi.mocked(accountChainOptions).mockReturnValue([
+            { chainId: 'ethereum', isEnabled: true, address: '0xSELECTED' },
+        ])
     })
 
-    it("defaults to the selected account's address on the destination chain", () => {
+    it("pays a cross-chain swap into the swap account's address on the destination chain", () => {
+        const { result } = renderHook(() => useSwapReceiveTarget(ALGO_SCOPE))
+
+        expect(result.current).toEqual({
+            receiveScope: ETH_SCOPE,
+            isCrossChain: true,
+            receivingAddress: '0xSELECTED',
+            shouldEnableReceiveChain: false,
+        })
+    })
+
+    it('enables a destination chain the account is only eligible for', () => {
+        store.toAssetScope = BASE_SCOPE
+        vi.mocked(accountChainOptions).mockReturnValue([
+            { chainId: 'base', isEnabled: false, address: '0xSELECTED' },
+        ])
+
         const { result } = renderHook(() => useSwapReceiveTarget(ALGO_SCOPE))
 
         expect(result.current).toMatchObject({
-            receiveScope: ETH_SCOPE,
-            isCrossChain: true,
-            receivingAccount: SELECTED,
             receivingAddress: '0xSELECTED',
+            shouldEnableReceiveChain: true,
         })
-        expect(result.current.receivingAccounts).toEqual([SELECTED, OTHER])
     })
 
-    it('uses the stored account while it can still receive there', () => {
-        store.receivingAccountId = 'other'
+    it('never pays another account that holds the destination chain', () => {
+        store.toAssetScope = BASE_SCOPE
+        vi.mocked(accountChainOptions).mockReturnValue([])
 
         const { result } = renderHook(() => useSwapReceiveTarget(ALGO_SCOPE))
 
-        expect(result.current.receivingAddress).toBe('0xOTHER')
-    })
-
-    it('falls back when the stored account can no longer receive there', () => {
-        store.receivingAccountId = 'removed'
-        vi.mocked(useSwapAccount).mockReturnValue(ALGO_ONLY)
-
-        const { result } = renderHook(() => useSwapReceiveTarget(ALGO_SCOPE))
-
-        expect(result.current.receivingAccount).toBe(SELECTED)
-        expect(result.current.receivingAddress).toBe('0xSELECTED')
+        expect(result.current).toMatchObject({
+            receivingAddress: null,
+            shouldEnableReceiveChain: false,
+        })
     })
 
     it('receives into the swapper on its own scope', () => {
@@ -106,19 +103,19 @@ describe('useSwapReceiveTarget', () => {
 
         const { result } = renderHook(() => useSwapReceiveTarget(ALGO_SCOPE))
 
-        expect(result.current).toMatchObject({
+        expect(result.current).toEqual({
             receiveScope: ALGO_SCOPE,
             isCrossChain: false,
-            receivingAccount: SELECTED,
             receivingAddress: 'ALGO_SELECTED',
+            shouldEnableReceiveChain: false,
         })
     })
 
-    it('remembers the account the user picks', () => {
+    it('has no address without a swap account', () => {
+        vi.mocked(useSwapAccount).mockReturnValue(null)
+
         const { result } = renderHook(() => useSwapReceiveTarget(ALGO_SCOPE))
 
-        act(() => result.current.selectReceivingAccount(OTHER))
-
-        expect(store.setReceivingAccountId).toHaveBeenCalledWith('other')
+        expect(result.current.receivingAddress).toBeNull()
     })
 })

@@ -19,15 +19,16 @@ import {
 import { getSurface } from '@perawallet/wallet-extension-platform-chrome'
 import {
     findAccountByAddressOn,
+    isSameAddress,
     useAccountChainOptionsResolver,
     useAllAccounts,
-    useCanSignWithCheck,
     useSelectedAccountId,
 } from '@perawallet/wallet-core-accounts'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { isChainId } from '@perawallet/wallet-core-chain-contract'
 import { useSwapsStore } from '@perawallet/wallet-core-swaps'
 import { useSendFundsDeeplink } from '@modules/deeplink'
+import { swapPayoutAddressOn } from '@modules/swap'
 import { useCapability } from '@hooks/useCapability'
 import { useToast } from '@hooks/useToast'
 import type { TabResumeIntent } from '@utils/tabResumeIntent'
@@ -103,7 +104,6 @@ export const useTabResume = (
     const swapChainOptionsOf = useAccountChainOptionsResolver('swap', {
         isSignerRequired: true,
     })
-    const canSignOn = useCanSignWithCheck()
 
     return useCallback(() => {
         void (async () => {
@@ -124,19 +124,18 @@ export const useTabResume = (
             )
             if (!account) return
             const receive = intent.flow === 'swap' ? intent.receive : undefined
-            const receivingAccount =
-                receive &&
-                findAccountByAddressOn(
-                    accounts,
-                    receive.scope.chainId,
-                    receive.accountAddress,
-                )
-            // Reopening with another receiver would pay an account other than
-            // the one the user confirmed.
+            const payoutAddress = receive
+                ? swapPayoutAddressOn(account, accounts, receive.scope.chainId)
+                : undefined
+            // Reopening must pay the address the user confirmed.
             if (
                 receive &&
-                (!receivingAccount ||
-                    !canSignOn(receivingAccount, receive.scope.chainId))
+                (payoutAddress === undefined ||
+                    !isSameAddress(
+                        receive.scope.chainId,
+                        payoutAddress,
+                        receive.accountAddress,
+                    ))
             ) {
                 return
             }
@@ -163,12 +162,11 @@ export const useTabResume = (
                     screen: 'Swap',
                     params: {
                         assetIn: { chainId, assetId: intent.assetInId },
-                        ...(receive && receivingAccount
+                        ...(receive
                             ? {
                                   receive: {
                                       scope: receive.scope,
                                       assetId: intent.assetOutId,
-                                      accountId: receivingAccount.id,
                                   },
                               }
                             : {
@@ -199,7 +197,6 @@ export const useTabResume = (
         openSendFunds,
         canSwap,
         swapChainOptionsOf,
-        canSignOn,
     ])
 }
 

@@ -16,6 +16,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useRunAfterDelay } from '@hooks/useRunAfterDelay'
 import { useToast } from '@hooks/useToast'
 import { useTransactionOutcomeHaptics } from '@hooks/useTransactionOutcomeHaptics'
+import { useEnableSwapDestinationChain } from '../../hooks/useEnableSwapDestinationChain'
 import {
     useSwapExecution,
     type SwapExecutionStatus,
@@ -91,6 +92,7 @@ export const useSwapConfirmationActions = ({
     const { playSuccess } = useTransactionOutcomeHaptics()
     const destinationScope = scopeOfSwapAsset(quote.request.destinationAsset)
     const { ensureReceivable } = useEnsureSwapDestination(destinationScope)
+    const { enableDestinationChain } = useEnableSwapDestinationChain()
 
     const { execute, cancel, reset, status: swapStatus } = swapExecution
     const handleSlideConfirm = useCallback(async () => {
@@ -104,13 +106,14 @@ export const useSwapConfirmationActions = ({
             // steps; only another chain needs it done here.
             const outcome =
                 quote.routeKind === 'cross-chain'
-                    ? await execute(quote, () =>
-                          ensureReceivable({
+                    ? await execute(quote, async () => {
+                          await enableDestinationChain(quote)
+                          return ensureReceivable({
                               address: quote.request.destinationAddress,
                               scope: destinationScope,
                               assetId: quote.assetOut.assetId,
-                          }),
-                      )
+                          })
+                      })
                     : await execute(quote)
             if (hasFinishedRef.current) {
                 if (outcome.kind !== 'cancelled') {
@@ -194,6 +197,7 @@ export const useSwapConfirmationActions = ({
         quote,
         execute,
         ensureReceivable,
+        enableDestinationChain,
         destinationScope,
         successCloseTimer,
         resolve,

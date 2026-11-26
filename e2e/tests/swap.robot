@@ -526,13 +526,11 @@ Confirmation States Its Network And Provider Fees
     ...    message=A swap within one network shows a cross-network route.
     Tap    ${CONFIRM_CLOSE}
 
-Cross Chain Confirmation Names The Receiving Account
-    [Documentation]    A cross-network quote's confirmation names the receiving account, shows the route and explains where the asset arrives.
-    [Tags]    id:swap.confirm.cross-chain-receiver    swap-exec    p1    needs-funded    excludefromci
+Cross Chain Confirmation Shows Its Route
+    [Documentation]    A cross-network quote's confirmation shows the route and explains where the asset arrives.
+    [Tags]    id:swap.confirm.cross-chain-route    swap-exec    p1    needs-funded    excludefromci
     Open Cross Chain Confirmation
     Page Should Contain Element    ${CONFIRM_ROUTE}
-    ${account}=    Text Under    ${CONFIRM_RECEIVE_ACCOUNT}
-    Should Not Be Empty    ${account.strip()}    The cross-network confirmation names no receiving account.
     ${note}=    Text Under    ${CONFIRM_CROSS_CHAIN_NOTE}
     Should Not Be Empty    ${note.strip()}    The cross-network note is empty.
     Tap    ${CONFIRM_CLOSE}

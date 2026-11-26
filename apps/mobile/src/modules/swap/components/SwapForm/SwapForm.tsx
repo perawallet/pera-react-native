@@ -17,7 +17,6 @@ import { SwapAccountPill } from '../SwapAccountPill'
 import { SwapAmountSection } from '../SwapAmountSection'
 import { SwapPairHistoryWidget } from '../SwapPairHistoryWidget'
 import { SwapProviderRow } from '../SwapProviderRow'
-import { SwapReceivingAccountRow } from '../SwapReceivingAccountRow'
 import { SwapFormControls } from './SwapFormControls'
 import { SwapQuoteError } from './SwapQuoteError'
 import { useSwapForm, type SwapFormInitialPayAmount } from './useSwapForm'
@@ -37,10 +36,9 @@ export const SwapForm = ({ scope, initialPayAmount }: SwapFormProps) => {
         payAssetId,
         receiveAssetId,
         receiveScope,
-        receivingAccount,
         flipUnavailableReason,
         isChainShown,
-        isReceivingAccountShown,
+        enableNetworkNote,
         payAmount,
         receiveAmount,
         payBalance,
@@ -63,7 +61,6 @@ export const SwapForm = ({ scope, initialPayAmount }: SwapFormProps) => {
         handleMaxPress,
         handleOpenPayAssetSelection,
         handleOpenReceiveAssetSelection,
-        handleOpenReceivingAccount,
         handleOpenConfig,
         handleOpenProvider,
         handleOpenConfirm,
@@ -113,12 +110,13 @@ export const SwapForm = ({ scope, initialPayAmount }: SwapFormProps) => {
                 />
             </PWView>
 
-            {isReceivingAccountShown && receivingAccount && (
-                <SwapReceivingAccountRow
-                    account={receivingAccount}
-                    scope={receiveScope}
-                    onPress={handleOpenReceivingAccount}
-                />
+            {enableNetworkNote && (
+                <PWView
+                    style={styles.enableNetworkNote}
+                    testID='swap_enable_network_note'
+                >
+                    <PWText variant='caption'>{enableNetworkNote}</PWText>
+                </PWView>
             )}
 
             {selectedQuote && (

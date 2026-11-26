@@ -251,27 +251,18 @@ vi.mock('../../SwapAssetSelectionContent', () => ({
     SwapAssetSelectionContent: () => null,
 }))
 
-vi.mock('../../SwapReceivingAccountContent', () => ({
-    SwapReceivingAccountContent: () => null,
-}))
-
 const ETH_SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
-const ETH_ACCOUNT = { id: 'eth', chains: { ethereum: { address: '0xETH' } } }
 type MockReceiveTarget = {
     receiveScope: { chainId: string; networkId: string }
     isCrossChain: boolean
-    receivingAccount: unknown
     receivingAddress: Nullable<string>
-    receivingAccounts: unknown[]
-    selectReceivingAccount: () => void
+    shouldEnableReceiveChain: boolean
 }
 const sameScopeTarget = (): MockReceiveTarget => ({
     receiveScope: SCOPE,
     isCrossChain: false,
-    receivingAccount: mockSwapAccount,
     receivingAddress: 'TESTADDRESS123',
-    receivingAccounts: [mockSwapAccount],
-    selectReceivingAccount: vi.fn(),
+    shouldEnableReceiveChain: false,
 })
 let mockReceiveTarget: MockReceiveTarget
 vi.mock('../../../hooks/useSwapReceiveTarget', () => ({
@@ -426,10 +417,21 @@ describe('useSwapForm', () => {
                 ...sameScopeTarget(),
                 receiveScope: ETH_SCOPE,
                 isCrossChain: true,
-                receivingAccount: ETH_ACCOUNT,
                 receivingAddress: '0xETH',
-                receivingAccounts: [ETH_ACCOUNT],
             }
+        })
+
+        it('notes the network the swap will enable on the account', () => {
+            mockReceiveTarget = {
+                ...mockReceiveTarget,
+                shouldEnableReceiveChain: true,
+            }
+
+            const { result } = renderHook(() => useSwapForm(SCOPE))
+
+            expect(result.current.enableNetworkNote).toBe(
+                'swap.form.enable_network_note',
+            )
         })
 
         it('disables the flip and says why when the account cannot pay on the receive chain', () => {
@@ -441,7 +443,7 @@ describe('useSwapForm', () => {
                 'swap.form.flip_unavailable_body',
             )
             expect(result.current.isChainShown).toBe(true)
-            expect(result.current.isReceivingAccountShown).toBe(true)
+            expect(result.current.enableNetworkNote).toBeNull()
             expect(mockInfoToast).toHaveBeenCalledWith(
                 'swap.form.flip_unavailable_title',
                 'swap.form.flip_unavailable_body',
@@ -574,7 +576,7 @@ describe('useSwapForm', () => {
 
         expect(result.current.flipUnavailableReason).toBeNull()
         expect(result.current.isChainShown).toBe(false)
-        expect(result.current.isReceivingAccountShown).toBe(false)
+        expect(result.current.enableNetworkNote).toBeNull()
     })
 
     it('names the chains once the account can pay from more than one', () => {
@@ -583,7 +585,7 @@ describe('useSwapForm', () => {
         const { result } = renderHook(() => useSwapForm(SCOPE))
 
         expect(result.current.isChainShown).toBe(true)
-        expect(result.current.isReceivingAccountShown).toBe(false)
+        expect(result.current.enableNetworkNote).toBeNull()
     })
 
     it('moves the swap to the chain of a pay asset picked there', async () => {
@@ -1631,7 +1633,7 @@ describe('useSwapForm', () => {
             )
         })
 
-        it('registers a cross-chain resume with where the output lands and who receives it', async () => {
+        it('registers a cross-chain resume with where the output lands and its address', async () => {
             mockReceiveTarget = {
                 ...sameScopeTarget(),
                 receiveScope: ETH_SCOPE,

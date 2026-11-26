@@ -22,12 +22,12 @@ const {
     mockSuccessToast,
     surfaceState,
     swapOptionsState,
-    signerState,
+    payoutState,
 } = vi.hoisted(() => ({
     swapOptionsState: {
         current: [] as { chainId: string; isEnabled: boolean }[],
     },
-    signerState: { canSign: true },
+    payoutState: { address: '0xETH_ADDR' as string | undefined },
     mockTakeTabResumeIntent: vi.fn(),
     mockTakeTabResumeResult: vi.fn(),
     mockSetSelectedAccountId: vi.fn(),
@@ -81,9 +81,13 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             setSelectedAccountId: mockSetSelectedAccountId,
         }),
         useAccountChainOptionsResolver: () => () => swapOptionsState.current,
-        useCanSignWithCheck: () => () => signerState.canSign,
+        isSameAddress: (_chainId: string, a: string, b: string) => a === b,
     }
 })
+
+vi.mock('@modules/swap', () => ({
+    swapPayoutAddressOn: () => payoutState.address,
+}))
 
 vi.mock('@modules/deeplink', () => ({
     useSendFundsDeeplink: () => mockOpenSendFunds,
@@ -104,7 +108,7 @@ describe('useTabResume (web)', () => {
         vi.clearAllMocks()
         capabilityState.reset()
         swapOptionsState.current = [{ chainId: 'algorand', isEnabled: true }]
-        signerState.canSign = true
+        payoutState.address = '0xETH_ADDR'
     })
 
     it('does not reopen a swap for an account with no swap chain', async () => {
@@ -238,7 +242,7 @@ describe('useTabResume (web)', () => {
 
     describe('a cross-chain swap', () => {
         const RECEIVE_SCOPE = { chainId: 'ethereum', networkId: 'mainnet' }
-        const crossChainIntent = (receivingAddress = '0xETH_ADDR') => ({
+        const crossChainIntent = (payoutAddress = '0xETH_ADDR') => ({
             flow: 'swap',
             chainId: 'algorand',
             accountAddress: 'LEDGER_ADDR',
@@ -246,13 +250,13 @@ describe('useTabResume (web)', () => {
             assetOutId: 'native',
             receive: {
                 scope: RECEIVE_SCOPE,
-                accountAddress: receivingAddress,
+                accountAddress: payoutAddress,
             },
             payAmount: '2.5',
             createdAt: Date.now(),
         })
 
-        it('reopens on both chains with the chosen receiving account', async () => {
+        it('reopens on both chains, paying the swap account', async () => {
             mockTakeTabResumeIntent.mockResolvedValue(crossChainIntent())
             const navigate = vi.fn()
             const { result } = renderHook(() => useTabResume(navigate))
@@ -267,7 +271,6 @@ describe('useTabResume (web)', () => {
                         receive: {
                             scope: RECEIVE_SCOPE,
                             assetId: 'native',
-                            accountId: 'eth-id',
                         },
                         payAmount: '2.5',
                     },
@@ -276,8 +279,8 @@ describe('useTabResume (web)', () => {
             expect(mockSetSelectedAccountId).toHaveBeenCalledWith('ledger-id')
         })
 
-        it('does not reopen once the receiving account can no longer sign', async () => {
-            signerState.canSign = false
+        it('does not reopen when the swap account no longer pays out there', async () => {
+            payoutState.address = undefined
             mockTakeTabResumeIntent.mockResolvedValue(crossChainIntent())
             const navigate = vi.fn()
 
@@ -289,10 +292,9 @@ describe('useTabResume (web)', () => {
             expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
         })
 
-        it('does not reopen once the receiving account has left the wallet', async () => {
-            mockTakeTabResumeIntent.mockResolvedValue(
-                crossChainIntent('0xREMOVED_ADDR'),
-            )
+        it('does not reopen when the swap account pays out to another address', async () => {
+            payoutState.address = '0xOTHER_ADDR'
+            mockTakeTabResumeIntent.mockResolvedValue(crossChainIntent())
             const navigate = vi.fn()
 
             const { result } = renderHook(() => useTabResume(navigate))

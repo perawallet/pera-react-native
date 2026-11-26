@@ -28,7 +28,7 @@ export {
     type SwapChainAdapter,
     type SwapSourceCost,
 } from './chain-adapter'
-export { SwapQuoteMismatchError } from './errors'
+export { SwapDestinationChainError, SwapQuoteMismatchError } from './errors'
 export {
     useSwapsStore,
     useSwapHandoffStore,

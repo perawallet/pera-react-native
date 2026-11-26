@@ -4406,7 +4406,8 @@
             "select_asset": "Selecionar",
             "flip": "Inverter pagar e receber",
             "flip_unavailable_title": "Não é possível inverter esta conversão",
-            "flip_unavailable_body": "Esta conta não pode pagar pela rede {{network}}."
+            "flip_unavailable_body": "Esta conta não pode pagar pela rede {{network}}.",
+            "enable_network_note": "Esta conversão vai ativar a rede {{network}} na sua conta."
         },
         "asset_selection": {
             "swap_from_title": "Converter de",
@@ -4485,6 +4486,7 @@
             "unsupported_order_body": "A Pera não consegue concluir o pedido deste provedor, então nada foi assinado. Escolha outro provedor.",
             "unsupported_order_single_body": "A Pera não consegue concluir o pedido deste provedor, então nada foi assinado. Tente novamente mais tarde.",
             "signing_failed_body": "Não foi possível assinar a transação, então ela não foi enviada. Tente novamente.",
+            "enable_network_failed_body": "Não foi possível ativar a rede {{network}} na sua conta, então a conversão não foi iniciada. Tente novamente.",
             "order_insufficient_balance_body": "Seu saldo não cobre este valor e a taxa de rede. Tente um valor menor ou adicione fundos para a taxa.",
             "insufficient_native_body": "Esta conta precisa de pelo menos {{amount}} {{symbol}} a mais para cobrir esta conversão, as taxas e o saldo mínimo. Adicione mais {{symbol}} e tente novamente.",
             "success_title": "Conversão concluída",
@@ -4555,10 +4557,6 @@
             "refunded": "A conversão foi reembolsada. Seu {{fromAsset}} voltou para sua conta.",
             "expired": "A conversão expirou antes de começar. Se seus fundos saíram da sua conta, o status ainda pode mudar por até 7 dias.",
             "cancelled": "A conversão foi cancelada antes de começar. Se seus fundos saíram da sua conta, o status ainda pode mudar por até 7 dias."
-        },
-        "receiving_account": {
-            "title": "Conta de recebimento",
-            "label": "Receber em"
         }
     },
     "onramp": {

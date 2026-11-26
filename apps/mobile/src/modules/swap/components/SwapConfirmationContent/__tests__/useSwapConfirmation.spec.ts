@@ -14,10 +14,6 @@ import { renderHook } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { formatNumber } from '@perawallet/wallet-core-shared'
-import {
-    useAllAccounts,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
     useSwapAccount,
@@ -181,13 +177,8 @@ describe('useSwapConfirmation', () => {
         })
     })
 
-    describe('receiveTarget', () => {
+    describe('receiveScope', () => {
         const ETH_SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
-        const RECEIVER = {
-            id: 'receiver',
-            chains: { ethereum: { address: '0xRECEIVER' } },
-        } as unknown as WalletAccount
-
         const crossChainQuote = (destinationAddress: string) =>
             makeQuote({
                 routeKind: 'cross-chain',
@@ -198,28 +189,10 @@ describe('useSwapConfirmation', () => {
                 },
             } as unknown as Partial<SwapQuote>)
 
-        it('names the account the payout goes to, on the receive chain', () => {
-            vi.mocked(useAllAccounts).mockReturnValue([RECEIVER])
-
+        it('names the destination network of a cross-chain swap', () => {
             const { result } = renderConfirmation(crossChainQuote('0xRECEIVER'))
 
-            expect(result.current.receiveTarget).toEqual({
-                account: RECEIVER,
-                address: '0xRECEIVER',
-                scope: ETH_SCOPE,
-            })
-        })
-
-        it('still gives the address when no account holds it', () => {
-            vi.mocked(useAllAccounts).mockReturnValue([RECEIVER])
-
-            const { result } = renderConfirmation(crossChainQuote('0xOTHER'))
-
-            expect(result.current.receiveTarget).toEqual({
-                account: null,
-                address: '0xOTHER',
-                scope: ETH_SCOPE,
-            })
+            expect(result.current.receiveScope).toEqual(ETH_SCOPE)
         })
 
         it('notes where the payout lands', () => {
@@ -237,7 +210,7 @@ describe('useSwapConfirmation', () => {
         it('is null on a same-chain swap', () => {
             const { result } = renderConfirmation(makeQuote())
 
-            expect(result.current.receiveTarget).toBeNull()
+            expect(result.current.receiveScope).toBeNull()
         })
     })
 

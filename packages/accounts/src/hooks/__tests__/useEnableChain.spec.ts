@@ -22,6 +22,7 @@ import {
     EVM_KEY_ADDRESS,
     registerChainFamilies,
 } from '../../__tests__/chainFamilies'
+import { AddressMismatchError } from '../../errors'
 import { useAccountsStore } from '../../store'
 import { useEnableChain } from '../useEnableChain'
 
@@ -62,5 +63,23 @@ describe('useEnableChain', () => {
 
         expect(account?.chains[BASE]?.enabledBy).toBe('user')
         expect(syncAndEnrichNewAccount).not.toHaveBeenCalled()
+    })
+
+    test('passes the options through, so an unexpected address is refused before anything is written', async () => {
+        const { result } = renderHook(() => useEnableChain(), { wrapper })
+
+        await act(async () => {
+            await expect(
+                result.current('watch', BASE, 'user', {
+                    expectedAddress:
+                        '0x0000000000000000000000000000000000000001',
+                }),
+            ).rejects.toBeInstanceOf(AddressMismatchError)
+        })
+
+        const watch = useAccountsStore
+            .getState()
+            .accounts.find(({ id }) => id === 'watch')
+        expect(watch?.chains[BASE]).toBeUndefined()
     })
 })
