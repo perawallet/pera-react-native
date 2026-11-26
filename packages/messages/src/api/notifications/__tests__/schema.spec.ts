@@ -146,23 +146,33 @@ describe('notificationResponseSchema', () => {
         expect(result.type).toBeNull()
     })
 
-    test('keeps a counterparty_address', () => {
-        const input = {
+    test('keeps argument text and address, dropping keys it does not know', () => {
+        const result = notificationResponseSchema.parse({
             ...validNotification,
-            counterparty_address: '0x70997970c51812dc3a010c7d01b50e0d17dc79c8',
-        }
-        const result = notificationResponseSchema.parse(input)
-        expect(result.counterparty_address).toBe(input.counterparty_address)
+            arguments: {
+                amount_display: { text: '250' },
+                sender_address_display: {
+                    text: '0x7099…79c8',
+                    address: '0x70997970c51812dc3a010c7d01b50e0d17dc79c8',
+                    ens: 'later.eth',
+                },
+            },
+        })
+        expect(result.arguments).toEqual({
+            amount_display: { text: '250' },
+            sender_address_display: {
+                text: '0x7099…79c8',
+                address: '0x70997970c51812dc3a010c7d01b50e0d17dc79c8',
+            },
+        })
     })
 
-    test('parses a null or absent counterparty_address', () => {
-        const withNull = notificationResponseSchema.parse({
+    test('rejects an argument without text', () => {
+        const parsed = notificationResponseSchema.safeParse({
             ...validNotification,
-            counterparty_address: null,
+            arguments: { amount_display: { address: '0xabc' } },
         })
-        const without = notificationResponseSchema.parse(validNotification)
-        expect(withNull.counterparty_address).toBeNull()
-        expect(without.counterparty_address).toBeUndefined()
+        expect(parsed.success).toBe(false)
     })
 
     test('rejects rows without creation_datetime', () => {

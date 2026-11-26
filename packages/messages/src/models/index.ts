@@ -43,6 +43,12 @@ export type NotificationIcon = {
     shape: 'circle' | 'rectangle'
 }
 
+/** `address`, when set, is the full address `text` was made from, on a party the backend trusts. */
+export type NotificationArgument = {
+    text: string
+    address?: string
+}
+
 export const MULTISIG_NEW_SIGN_REQUEST_NOTIFICATION_TYPE =
     'multisig-new-sign-request'
 export const MULTISIG_IMPORT_ACCOUNT_NOTIFICATION_TYPE =
@@ -57,9 +63,10 @@ export type PeraNotification = {
     id: string
     type?: Maybe<string>
     accountAddress: Maybe<string>
+    /** `messageTemplate` filled with each argument's backend text. */
     message: Maybe<string>
-    /** The full address whose shortened form `message` shows as the transfer's other party; the backend sets it on transfer rows only. */
-    counterpartyAddress?: Maybe<string>
+    messageTemplate?: Maybe<string>
+    messageArguments?: Record<string, NotificationArgument>
     url: Maybe<string>
     createdAt: Date
     isUnread?: Maybe<boolean>

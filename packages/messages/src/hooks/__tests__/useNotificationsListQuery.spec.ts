@@ -84,6 +84,8 @@ describe('useNotificationsListQuery', () => {
                 id: '1',
                 accountAddress: 'TESTADDR123',
                 message: 'Test Message',
+                messageTemplate: 'Test Message',
+                messageArguments: {},
                 url: 'perawallet://account-detail?address=TESTADDR123',
                 createdAt: mockDate,
                 icon: {
@@ -105,7 +107,7 @@ describe('useNotificationsListQuery', () => {
                     type: null,
                     account_address: null,
                     message: null,
-                    counterparty_address: null,
+                    arguments: null,
                     url: null,
                     creation_datetime: '2023-01-01T00:00:00Z',
                     is_unread: null,
@@ -126,7 +128,8 @@ describe('useNotificationsListQuery', () => {
                 type: null,
                 accountAddress: null,
                 message: null,
-                counterpartyAddress: null,
+                messageTemplate: null,
+                messageArguments: {},
                 url: null,
                 createdAt: new Date('2023-01-01T00:00:00Z'),
                 isUnread: null,
@@ -135,18 +138,23 @@ describe('useNotificationsListQuery', () => {
         ])
     })
 
-    it('maps counterparty_address to counterpartyAddress', async () => {
+    it('fills the template with the argument texts and keeps both', async () => {
+        const args = {
+            amount: { text: '1' },
+            sender: {
+                text: '0x7099…79c8',
+                address: '0x70997970c51812dc3a010c7d01b50e0d17dc79c8',
+            },
+        }
         vi.mocked(fetchNotificationList).mockResolvedValue({
-            count: 1,
             next: null,
             previous: null,
             results: [
                 {
                     id: '6',
                     type: 'evm-transfer-received',
-                    message: '1 ETH received from 0x7099…79c8',
-                    counterparty_address:
-                        '0x70997970c51812dc3a010c7d01b50e0d17dc79c8',
+                    message: '{{amount}} ETH received from {{sender}}',
+                    arguments: args,
                     creation_datetime: '2023-01-01T00:00:00Z',
                 },
             ],
@@ -158,9 +166,11 @@ describe('useNotificationsListQuery', () => {
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
-        expect(result.current.data[0].counterpartyAddress).toBe(
-            '0x70997970c51812dc3a010c7d01b50e0d17dc79c8',
-        )
+        expect(result.current.data[0]).toMatchObject({
+            message: '1 ETH received from 0x7099…79c8',
+            messageTemplate: '{{amount}} ETH received from {{sender}}',
+            messageArguments: args,
+        })
     })
 
     it('maps a response with no icon to icon: null', async () => {

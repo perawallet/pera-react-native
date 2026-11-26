@@ -23,23 +23,30 @@ import {
     type NotificationsListResponse,
 } from '../api/notifications'
 import type { PeraNotification } from '../models'
+import { renderNotificationMessage } from '../messageTemplate'
 import { getNotificationsListQueryKey } from './querykeys'
 import { getQueryRenderState } from '@perawallet/wallet-core-shared'
 import type { Maybe, Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 const mapNotificationResponseToNotification = (
     response: NotificationResponse,
-): PeraNotification => ({
-    id: response.id,
-    type: response.type,
-    accountAddress: response.account_address,
-    message: response.message,
-    counterpartyAddress: response.counterparty_address,
-    url: response.url,
-    createdAt: new Date(response.creation_datetime),
-    isUnread: response.is_unread,
-    icon: response.icon ?? null,
-})
+): PeraNotification => {
+    const templated = {
+        type: response.type,
+        messageTemplate: response.message,
+        messageArguments: response.arguments ?? {},
+    }
+    return {
+        ...templated,
+        id: response.id,
+        accountAddress: response.account_address,
+        message: renderNotificationMessage(templated),
+        url: response.url,
+        createdAt: new Date(response.creation_datetime),
+        isUnread: response.is_unread,
+        icon: response.icon ?? null,
+    }
+}
 
 const extractCursor = (url: Nullable<string>): Maybe<string> => {
     if (!url) return undefined
