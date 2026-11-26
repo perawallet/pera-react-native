@@ -9,133 +9,271 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
-
-import { useCallback, useEffect, type ReactElement } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
-import { receivesUnaskedAssets } from '@perawallet/wallet-core-accounts'
+import type { Decimal } from 'decimal.js'
 import {
-    i18nKey,
+    assetFromHoldingLiteRow,
+    receivesUnaskedAssets,
+    useAccountHoldingSources,
+    useAllAccounts,
+    useRegisteredChainIds,
+    useTokenInboxQuery,
+    settleInboxTokens,
+} from '@perawallet/wallet-core-accounts'
+import {
+    PeraAssetVerificationTier,
+    toWholeUnits,
+    type PeraAsset,
+} from '@perawallet/wallet-core-assets'
+import {
+    toScopeKey,
+    type ChainId,
     type ChainScope,
-    type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import {
+    isIntegrityRequiredError,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import {
     useAssetInboxRequestsQuery,
     type AssetInboxRequest,
 } from '@perawallet/wallet-core-transactions'
-import { isIntegrityRequiredError } from '@perawallet/wallet-core-shared'
-import { PWDivider } from '@components/core'
-import { AssetTransferRequestItem } from '@modules/transactions/components/claim-assets/AssetTransferRequestItem'
-import { useStyles } from './styles'
-import {
-    useClaimAssets,
-    useTokenInboxRequests,
-} from '@modules/transactions/hooks'
+import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useLanguage } from '@hooks/useLanguage'
+import { useToast } from '@hooks/useToast'
+import { useBottomSheet } from '@modules/bottom-sheet'
 import type { MessagesStackParamList } from '@modules/messages'
+import { useClaimAssets } from '@modules/transactions/hooks'
 
-type UseAssetTransferRequestsScreenResult = {
-    scope: ChainScope
-    assetRequests: AssetInboxRequest[]
+export type InboxRequestRow =
+    | { kind: 'header'; key: string; chainId: ChainId }
+    /** A request the inbox backend holds, claimed or rejected by transaction. */
+    | {
+          kind: 'claim'
+          key: string
+          scope: ChainScope
+          request: AssetInboxRequest
+          index: number
+      }
+    /** A token waiting on the device, accepted or rejected without one. */
+    | {
+          kind: 'token'
+          key: string
+          scope: ChainScope
+          address: string
+          asset: PeraAsset
+          /** Display units. */
+          amount: Decimal
+          usdPrice: Nullable<Decimal>
+      }
+
+type TokenRow = Extract<InboxRequestRow, { kind: 'token' }>
+
+export type UseAssetTransferRequestsScreenResult = {
+    rows: InboxRequestRow[]
     isPending: boolean
-    isUnavailableOnNetwork: boolean
     isIntegrityBlocked: boolean
-    infoBodyKey: I18nKey
-    emptyBodyKey: I18nKey
-    handleItemPress: (index: number) => void
-    renderItem: (params: {
-        item: AssetInboxRequest
-        index: number
-    }) => ReactElement
-    renderSeparator: () => ReactElement
-    keyExtractor: (item: AssetInboxRequest, index: number) => string
+    /** Accept All and Reject All act on the tokens waiting on the device. */
+    canSettleAll: boolean
+    handleRowPress: (row: InboxRequestRow) => void
+    handleAcceptAll: () => void
+    handleRejectAll: () => void
 }
 
 export const useAssetTransferRequestsScreen =
     (): UseAssetTransferRequestsScreenResult => {
+        const { t } = useLanguage()
         const { push } = useAppNavigation()
-        const styles = useStyles()
-        const route =
+        const { showToast } = useToast()
+        const { request: requestBottomSheet } = useBottomSheet()
+        const { setAccountAddress, setAssetRequests } = useClaimAssets()
+        const { accountId } =
             useRoute<
                 RouteProp<MessagesStackParamList, 'AssetTransferRequests'>
-            >()
-        const { scope } = route.params
-        const address = route.params.item.address
-        // Tokens nobody asked for arrive straight in the account, so their
-        // inbox is kept on the device instead of the inbox backend.
-        const isTokenInbox = receivesUnaskedAssets(scope.chainId)
-        const { setAccountAddress, setAssetRequests } = useClaimAssets()
+            >().params
+        const account = useAllAccounts().find(each => each.id === accountId)
+        const sources = useAccountHoldingSources(account)
 
-        useEffect(() => {
-            setAccountAddress(route.params.item.address)
-        }, [route.params.item.address, setAccountAddress])
-        const backendInbox = useAssetInboxRequestsQuery(
-            scope,
-            isTokenInbox ? null : address,
+        // The inbox backend serves the account's address on a chain that
+        // requires an opt-in; the query is off without one.
+        const backendSource = sources.find(
+            ({ scope }) => !receivesUnaskedAssets(scope.chainId),
         )
-        const tokenInbox = useTokenInboxRequests(
-            scope,
-            isTokenInbox ? address : null,
+        const fallbackScope = useSelectedScope(useRegisteredChainIds()[0]!)
+        const backendScope = backendSource?.scope ?? fallbackScope
+        const backend = useAssetInboxRequestsQuery(
+            backendScope,
+            backendSource?.address ?? null,
         )
-        const { data: assetRequests, isPending } = isTokenInbox
-            ? tokenInbox
-            : backendInbox
-        const isUnavailableOnNetwork =
-            !isTokenInbox && backendInbox.isUnavailableOnNetwork
-        const isIntegrityBlocked =
-            backendInbox.isError && isIntegrityRequiredError(backendInbox.error)
+        const tokenInbox = useTokenInboxQuery(sources)
 
-        const handleItemPress = useCallback(
-            (index: number) => {
-                if (!assetRequests) return
-                setAssetRequests(assetRequests)
-                push('Messages', {
-                    screen: 'AssetClaimDetail',
-                    params: {
-                        assetIndex: index,
-                        scope,
+        const tokenRows = useMemo(
+            () =>
+                tokenInbox.holdings.flatMap((holding): TokenRow[] => {
+                    const asset = assetFromHoldingLiteRow(
+                        holding,
+                        holding.scope.chainId,
+                    )
+                    if (!asset) return []
+                    return [
+                        {
+                            kind: 'token',
+                            key: `token|${toScopeKey(holding.scope)}|${holding.assetId}`,
+                            scope: holding.scope,
+                            address: holding.address,
+                            asset,
+                            amount: toWholeUnits(holding.amount, asset),
+                            usdPrice: holding.usdPrice,
+                        },
+                    ]
+                }),
+            [tokenInbox.holdings],
+        )
+
+        const rows = useMemo<InboxRequestRow[]>(() => {
+            const claimRows = backend.data.map(
+                (request, index): InboxRequestRow => ({
+                    kind: 'claim',
+                    key: `claim|${request.asset.assetId}|${index}`,
+                    scope: backendScope,
+                    request,
+                    index,
+                }),
+            )
+            const sections: InboxRequestRow[][] = [
+                claimRows,
+                ...sources.map(({ scope }) =>
+                    tokenRows.filter(
+                        row => toScopeKey(row.scope) === toScopeKey(scope),
+                    ),
+                ),
+            ]
+            const scopeOf = (section: InboxRequestRow[]) =>
+                (section[0] as Exclude<InboxRequestRow, { kind: 'header' }>)
+                    .scope
+            return sections
+                .filter(section => section.length > 0)
+                .flatMap(section => [
+                    {
+                        kind: 'header' as const,
+                        key: `header|${toScopeKey(scopeOf(section))}`,
+                        chainId: scopeOf(section).chainId,
                     },
+                    ...section,
+                ])
+        }, [backend.data, backendScope, sources, tokenRows])
+
+        const handleRowPress = useCallback(
+            (row: InboxRequestRow) => {
+                if (row.kind === 'claim') {
+                    setAccountAddress(backendSource?.address ?? null)
+                    setAssetRequests(backend.data)
+                    push('Messages', {
+                        screen: 'AssetClaimDetail',
+                        params: { assetIndex: row.index, scope: row.scope },
+                    })
+                } else if (row.kind === 'token') {
+                    push('Messages', {
+                        screen: 'TokenRequestDetail',
+                        params: {
+                            accountId,
+                            scope: row.scope,
+                            assetId: row.asset.assetId,
+                        },
+                    })
+                }
+            },
+            [
+                accountId,
+                backend.data,
+                backendSource?.address,
+                push,
+                setAccountAddress,
+                setAssetRequests,
+            ],
+        )
+
+        const settleAll = useCallback(
+            async (isAccepted: boolean) => {
+                const count = tokenRows.length
+                const suspiciousCount = tokenRows.filter(
+                    row =>
+                        row.asset.peraMetadata?.verificationTier ===
+                        PeraAssetVerificationTier.suspicious,
+                ).length
+                const notes = [
+                    isAccepted
+                        ? t('asset_inbox.requests.accept_all_body', { count })
+                        : t('asset_inbox.requests.reject_all_body', { count }),
+                    ...(isAccepted && suspiciousCount > 0
+                        ? [
+                              t('asset_inbox.requests.accept_all_suspicious', {
+                                  count: suspiciousCount,
+                              }),
+                          ]
+                        : []),
+                    ...(backend.data.length > 0
+                        ? [t('asset_inbox.requests.settle_all_skips_claims')]
+                        : []),
+                ]
+                const isConfirmed = await requestBottomSheet<boolean>({
+                    contents: (
+                        <ConfirmActionContent
+                            icon={isAccepted ? 'check' : 'warning'}
+                            iconVariant={isAccepted ? 'primary' : 'error'}
+                            title={t(
+                                isAccepted
+                                    ? 'asset_inbox.requests.accept_all_title'
+                                    : 'asset_inbox.requests.reject_all_title',
+                            )}
+                            message={notes.join('\n\n')}
+                            confirmLabel={t(
+                                isAccepted
+                                    ? 'asset_inbox.requests.accept_all'
+                                    : 'asset_inbox.requests.reject_all',
+                            )}
+                            cancelLabel={t('common.cancel.label')}
+                            buttonPaddingStyle='dense'
+                            testID='asset_inbox_settle_all_sheet'
+                            confirmTestID='asset_inbox_settle_all_confirm'
+                        />
+                    ),
+                    options: { size: 'auto', enablePanDownToClose: true },
+                })
+                if (!isConfirmed) return
+                settleInboxTokens(
+                    tokenRows.map(row => ({
+                        address: row.address,
+                        scope: row.scope,
+                        assetId: row.asset.assetId,
+                    })),
+                    isAccepted,
+                )
+                showToast({
+                    title: t(
+                        isAccepted
+                            ? 'asset_inbox.requests.accepted_all_toast'
+                            : 'asset_inbox.requests.rejected_all_toast',
+                        { count },
+                    ),
+                    body: '',
+                    type: 'success',
                 })
             },
-            [push, assetRequests, setAssetRequests, scope],
-        )
-
-        const renderItem = useCallback(
-            ({ item, index }: { item: AssetInboxRequest; index: number }) => (
-                <AssetTransferRequestItem
-                    item={item}
-                    scope={scope}
-                    onPress={() => handleItemPress(index)}
-                />
-            ),
-            [handleItemPress, scope],
-        )
-
-        const renderSeparator = useCallback(
-            () => <PWDivider style={styles.separator} />,
-            [styles.separator],
-        )
-
-        const keyExtractor = useCallback(
-            (item: AssetInboxRequest, index: number) =>
-                String(item.id ?? '' + index),
-            [],
+            [tokenRows, backend.data.length, requestBottomSheet, showToast, t],
         )
 
         return {
-            scope,
-            assetRequests: assetRequests ?? [],
-            isPending,
-            isUnavailableOnNetwork,
-            isIntegrityBlocked,
-            infoBodyKey: isTokenInbox
-                ? i18nKey('asset_inbox.requests.token_info_body')
-                : i18nKey('asset_inbox.requests.info_body'),
-            emptyBodyKey: isTokenInbox
-                ? i18nKey('asset_inbox.requests.token_empty_body')
-                : i18nKey('asset_inbox.requests.empty_body'),
-            handleItemPress,
-            renderItem,
-            renderSeparator,
-            keyExtractor,
+            rows,
+            isPending: backend.isPending || tokenInbox.isPending,
+            isIntegrityBlocked:
+                backend.isError && isIntegrityRequiredError(backend.error),
+            canSettleAll: tokenRows.length > 0,
+            handleRowPress,
+            handleAcceptAll: () => void settleAll(true),
+            handleRejectAll: () => void settleAll(false),
         }
     }

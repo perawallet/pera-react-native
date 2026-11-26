@@ -2256,33 +2256,42 @@ describe('useDeepLink', () => {
         })
     })
 
-    it('should handle ASSET_INBOX deeplink', async () => {
-        ;(parseDeeplink as Mock).mockReturnValue({
-            type: DeeplinkType.ASSET_INBOX,
-            address: 'addr1',
-            target: { chainId: 'algorand' },
-        })
-        const { result } = renderHook(() => useDeepLink())
+    it('opens the inbox of the account an ASSET_INBOX link names, and nothing for an address outside the wallet', async () => {
+        accountsState.accounts = [
+            {
+                id: 'linked',
+                custody: { kind: 'local', seed: null },
+                chains: { algorand: { address: 'addr1' } },
+            } as never,
+        ]
+        const open = async (address: string) => {
+            ;(parseDeeplink as Mock).mockReturnValue({
+                type: DeeplinkType.ASSET_INBOX,
+                address,
+                target: { chainId: 'algorand' },
+            })
+            const { result } = renderHook(() => useDeepLink())
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    'perawallet://app/asset-inbox',
+                    false,
+                    'deeplink',
+                )
+            })
+        }
 
-        await act(async () => {
-            await result.current.handleDeepLink(
-                'perawallet://app/asset-inbox',
-                false,
-                'deeplink',
-            )
-        })
-
+        await open('addr1')
         expect(mockNavigate).toHaveBeenCalledWith('Messages', {
             screen: 'AssetTransferRequests',
-            params: {
-                item: {
-                    address: 'addr1',
-                    inboxAddress: 'addr1',
-                    requestCount: 1,
-                },
-                scope: { chainId: 'algorand', networkId: 'mainnet' },
-            },
+            params: { accountId: 'linked' },
         })
+
+        mockNavigate.mockClear()
+        await open('stranger')
+        expect(mockNavigate).not.toHaveBeenCalledWith(
+            'Messages',
+            expect.anything(),
+        )
     })
 
     it('navigates to Pera Card for a CARDS deeplink when enabled', async () => {

@@ -387,17 +387,36 @@
             "empty_title": "Bekleyen varlık transfer isteği yok",
             "empty_body": "Bir varlık transfer isteğin olduğunda burada görüntüleyebilirsin. Bu özellik hakkında daha fazla bilgi için dokun.",
             "info_title": "Varlık transfer istekleri",
-            "info_body": "Bu özellik, hesabın için bir gelen kutusudur. Başkaları, sen açıkça eklememiş olsan bile sana varlık ve NFT gönderebilir. Buradan varlık transfer isteklerini kabul etmeyi veya reddetmeyi seçebilirsin.",
-            "token_info_body": "Pera’nın doğrulamadığı token’lar bu hesaba geldiğinde burada bekler. Varlıklarında görünmesi ve bakiyene dahil edilmesi için birini kabul et ya da gizlemek için reddet. Seçimin bu cihazda kalır; ağa hiçbir şey gönderilmez.",
-            "token_empty_body": "Pera’nın doğrulamadığı token’lar, sen kabul edene ya da reddedene kadar burada bekler."
+            "info_body": "Bu, hesabının gelen kutusu. Opt-in yapmadan önce Algorand’da gönderilen varlıklar burada talep edilmeyi ya da reddedilmeyi bekler; Ethereum gibi ağlarda Pera’nın doğrulamadığı token’lar da öyle. Kabul ettiğin token varlıklarında görünür, reddettiğin token gizlenir.",
+            "accept_all": "Tümünü kabul et",
+            "reject_all": "Tümünü reddet",
+            "accept_all_title": "Tüm token’lar kabul edilsin mi?",
+            "reject_all_title": "Tüm token’lar reddedilsin mi?",
+            "accept_all_body_one": "{{count}} token varlıklarında görünecek ve bakiyene dahil edilecek.",
+            "accept_all_body_other": "{{count}} token varlıklarında görünecek ve bakiyene dahil edilecek.",
+            "reject_all_body_one": "{{count}} token varlıklarından ve geçmişinden gizlenecek ve gelen kutuna geri dönmeyecek.",
+            "reject_all_body_other": "{{count}} token varlıklarından ve geçmişinden gizlenecek ve gelen kutuna geri dönmeyecek.",
+            "accept_all_suspicious_one": "Bunlardan {{count}} tanesi şüpheli olarak işaretli.",
+            "accept_all_suspicious_other": "Bunlardan {{count}} tanesi şüpheli olarak işaretli.",
+            "settle_all_skips_claims": "İşlem gerektiren istekler, tek tek talep etmen ya da reddetmen için gelen kutunda kalır.",
+            "accepted_all_toast_one": "{{count}} token varlıklarına eklendi",
+            "accepted_all_toast_other": "{{count}} token varlıklarına eklendi",
+            "rejected_all_toast_one": "{{count}} token reddedildi",
+            "rejected_all_toast_other": "{{count}} token reddedildi"
         },
         "claim": {
             "reject": "Reddet",
             "native_gain": "Opt-in masraflarını karşılamak için {{amount}} alacaksın.",
-            "token_reject_title": "Token’ı reddet",
-            "token_reject_body": "Token varlıklarından ve geçmişinden gizlenir ve gelen kutuna geri dönmez. Varlıkları yönet > Tokenları gizle bölümünden yeniden gösterebilirsin.",
             "token_accepted_toast": "{{assetName}} varlıklarına eklendi",
             "token_rejected_toast": "{{assetName}} reddedildi"
+        },
+        "token_request": {
+            "screen_title": "Gelen token",
+            "accept": "Kabul et",
+            "reject": "Reddet",
+            "network": "Ağ",
+            "question": "Bu token varlıklarına eklensin mi?",
+            "explanation": "Bu hesaba sen istemeden geldi. Varlıklarında görünmesi ve bakiyene dahil edilmesi için kabul et. Gizlemek için reddet; gelen kutuna geri dönmez. Her iki durumda da ağa hiçbir şey gönderilmez."
         }
     },
     "asset": {
@@ -2317,11 +2336,13 @@
             "processing_subtitle": "İşlemin Algorand ağı tarafından işleniyor",
             "success_title": "İşlem tamamlandı",
             "success_subtitle": "İşlemin Algorand ağı tarafından başarıyla alındı",
-            "sender_count_more": "+{{count}} daha",
             "insufficient_native_title": "Yeterli {{symbol}} yok",
             "insufficient_native_claim": "Bu varlığı talep etmek için yeterli {{symbol}} yok. Minimum bakiye gereksinimini karşılamak için fon ekle.",
             "insufficient_native_reject": "Bu varlığı reddetmek için yeterli {{symbol}} yok. İşlem ücretlerini karşılamak için fon ekle.",
-            "insufficient_native_cta": "Bakiye ekle"
+            "insufficient_native_cta": "Bakiye ekle",
+            "from_sender": "Gönderen: {{sender}}",
+            "from_senders_one": "Gönderen: {{sender}} ve {{count}} kişi daha",
+            "from_senders_other": "Gönderen: {{sender}} ve {{count}} kişi daha"
         }
     },
     "multisig": {

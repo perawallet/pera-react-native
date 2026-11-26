@@ -54,8 +54,8 @@ import { AccountOverviewModalContext } from '@modules/accounts/components/Accoun
 import { AccountAssetList } from '@modules/accounts/components/AccountAssetList'
 import { useAssetListViewStore } from '@modules/accounts/hooks/useAssetListViewStore'
 import {
-    AssetClaimDetailScreen,
     AssetTransferRequestsScreen,
+    TokenRequestDetailScreen,
 } from '@modules/transactions/routes'
 import { ETH_ADDRESS, ETH_SCOPE } from './__fixtures__/multichainHoldings'
 
@@ -162,7 +162,7 @@ const RequestsHost = () => {
 
 const DetailHost = () => {
     useHiddenTokensInvalidation()
-    return <AssetClaimDetailScreen />
+    return <TokenRequestDetailScreen />
 }
 
 // The detail screen pushes onto the Messages stack; forward to the flat
@@ -185,23 +185,16 @@ const MessagesDispatcher = () => {
 
 const openInbox = () =>
     renderWithNavigation(RequestsHost, 'AssetTransferRequests', {
-        initialParams: {
-            item: {
-                address: ETH_ADDRESS,
-                inboxAddress: null,
-                requestCount: 2,
-            },
-            scope: ETH_SCOPE,
-        },
+        initialParams: { accountId: ACCOUNT.id },
         additionalScreens: [
             { name: 'Messages', component: MessagesDispatcher },
-            { name: 'AssetClaimDetail', component: DetailHost },
+            { name: 'TokenRequestDetail', component: DetailHost },
         ],
     })
 
-const openRequest = async (name: string) => {
-    fireEvent.click(await screen.findByText(name))
-    await screen.findByTestId('asset_inbox_claim_confirm_slide')
+const openRequest = async (assetId: string) => {
+    fireEvent.click(await screen.findByTestId(`asset_row_${assetId}`))
+    await screen.findByTestId('token_request_detail_screen')
 }
 
 const nonNativeUsd = async () =>
@@ -256,15 +249,18 @@ describe('Flow: tokens an Ethereum account never asked for wait in its inbox', (
 
     it('Given the inbox, when the user accepts the unvetted token, then it leaves the inbox, the asset list shows it and the total counts it', async () => {
         openInbox()
-        await openRequest('Airdrop Coin')
-        expect(screen.queryByTestId('asset_inbox_claim_suspicious')).toBeNull()
+        await openRequest(AIRDROP)
+        expect(
+            screen.getByText('asset_inbox.token_request.question'),
+        ).toBeTruthy()
+        expect(screen.queryByTestId('token_request_suspicious')).toBeNull()
 
-        fireEvent.click(screen.getByTestId('asset_inbox_claim_confirm_slide'))
+        fireEvent.click(screen.getByTestId('token_request_accept'))
 
         await waitFor(() =>
-            expect(screen.queryByText('Airdrop Coin')).toBeNull(),
+            expect(screen.queryByTestId(`asset_row_${AIRDROP}`)).toBeNull(),
         )
-        expect(screen.getByText('Free Airdrop')).toBeTruthy()
+        expect(screen.getByTestId(`asset_row_${SPAM}`)).toBeTruthy()
         cleanup()
         renderWithNavigation(ListHost, 'AccountAssetListHost')
         expect(await screen.findByTestId(`asset_row_${AIRDROP}`)).toBeTruthy()
@@ -273,16 +269,15 @@ describe('Flow: tokens an Ethereum account never asked for wait in its inbox', (
 
     it('Given the inbox, when the user rejects the flagged token, then it is hidden and never comes back to the inbox', async () => {
         openInbox()
-        await openRequest('Free Airdrop')
-        expect(screen.getByTestId('asset_inbox_claim_suspicious')).toBeTruthy()
+        await openRequest(SPAM)
+        expect(screen.getByTestId('token_request_suspicious')).toBeTruthy()
 
-        fireEvent.click(screen.getByText('asset_inbox.claim.reject'))
-        fireEvent.click(await screen.findByText('messages.claim.reject'))
+        fireEvent.click(screen.getByTestId('token_request_reject'))
 
         await waitFor(() =>
-            expect(screen.queryByText('Free Airdrop')).toBeNull(),
+            expect(screen.queryByTestId(`asset_row_${SPAM}`)).toBeNull(),
         )
-        expect(screen.getByText('Airdrop Coin')).toBeTruthy()
+        expect(screen.getByTestId(`asset_row_${AIRDROP}`)).toBeTruthy()
         expect(
             hiddenAssetIdsOf(
                 useHiddenTokensStore.getState().hiddenTokens,
@@ -290,5 +285,45 @@ describe('Flow: tokens an Ethereum account never asked for wait in its inbox', (
                 ETH_SCOPE,
             ),
         ).toEqual([SPAM])
+    })
+
+    it('Given the inbox, when the user confirms Accept All, then every waiting token is listed and counted', async () => {
+        openInbox()
+        fireEvent.click(await screen.findByTestId('asset_inbox_accept_all'))
+        fireEvent.click(
+            await screen.findByTestId('asset_inbox_settle_all_confirm'),
+        )
+
+        await waitFor(() =>
+            expect(screen.queryByTestId(`asset_row_${AIRDROP}`)).toBeNull(),
+        )
+        expect(screen.queryByTestId(`asset_row_${SPAM}`)).toBeNull()
+        cleanup()
+        renderWithNavigation(ListHost, 'AccountAssetListHost')
+        expect(await screen.findByTestId(`asset_row_${AIRDROP}`)).toBeTruthy()
+        expect(await screen.findByTestId(`asset_row_${SPAM}`)).toBeTruthy()
+        // A kept token Pera flags suspicious is listed but never counted.
+        expect(await nonNativeUsd()).toBeCloseTo(15, 6)
+    })
+
+    it('Given the inbox, when the user confirms Reject All, then every waiting token is hidden', async () => {
+        openInbox()
+        fireEvent.click(await screen.findByTestId('asset_inbox_reject_all'))
+        fireEvent.click(
+            await screen.findByTestId('asset_inbox_settle_all_confirm'),
+        )
+
+        await waitFor(() =>
+            expect(
+                hiddenAssetIdsOf(
+                    useHiddenTokensStore.getState().hiddenTokens,
+                    ETH_ADDRESS,
+                    ETH_SCOPE,
+                ),
+            ).toEqual([AIRDROP, SPAM].sort()),
+        )
+        expect(
+            await screen.findByText('asset_inbox.requests.empty_title'),
+        ).toBeTruthy()
     })
 })

@@ -43,7 +43,6 @@ export const InboxScreen = () => {
         ({ item: entry }: { item: InboxEntry }) => (
             <InboxItem
                 item={entry.item}
-                chainId={entry.scope.chainId}
                 chainBadgeName={entry.chainBadgeName}
                 onPress={() => handleInboxItemPress(entry)}
             />

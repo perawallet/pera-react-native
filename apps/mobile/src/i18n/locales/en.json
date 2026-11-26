@@ -387,17 +387,36 @@
             "empty_title": "No Pending Asset Transfer Requests",
             "empty_body": "When you have an asset transfer request, you can view it here. Tap to learn more about this feature.",
             "info_title": "Asset Transfer Requests",
-            "info_body": "This feature is an inbox for your account. Others can send you assets and NFTs, even if you have not explicitly opted in to receive them. From here, you can choose to accept or reject the asset transfer requests.",
-            "token_info_body": "Tokens Pera hasn’t verified wait here when they arrive in this account. Accept one to list it in your assets and count it toward your balance, or reject it to hide it. Either choice stays on this device; nothing is sent to the network.",
-            "token_empty_body": "Tokens Pera hasn’t verified wait here until you accept or reject them."
+            "info_body": "This is your account's inbox. Assets sent to it on Algorand before it opted in wait here to be claimed or rejected, and so do tokens on networks like Ethereum that Pera hasn’t verified. Accepting a token lists it in your assets; rejecting one hides it.",
+            "accept_all": "Accept all",
+            "reject_all": "Reject all",
+            "accept_all_title": "Accept all tokens?",
+            "reject_all_title": "Reject all tokens?",
+            "accept_all_body_one": "{{count}} token will be listed in your assets and counted in your balance.",
+            "accept_all_body_other": "{{count}} tokens will be listed in your assets and counted in your balance.",
+            "reject_all_body_one": "{{count}} token will be hidden from your assets and history, and won’t come back to your inbox.",
+            "reject_all_body_other": "{{count}} tokens will be hidden from your assets and history, and won’t come back to your inbox.",
+            "accept_all_suspicious_one": "{{count}} of them is flagged as suspicious.",
+            "accept_all_suspicious_other": "{{count}} of them are flagged as suspicious.",
+            "settle_all_skips_claims": "Requests that need a transaction stay in your inbox, to claim or reject one at a time.",
+            "accepted_all_toast_one": "{{count}} token added to your assets",
+            "accepted_all_toast_other": "{{count}} tokens added to your assets",
+            "rejected_all_toast_one": "{{count}} token rejected",
+            "rejected_all_toast_other": "{{count}} tokens rejected"
         },
         "claim": {
             "reject": "Reject",
             "native_gain": "You will receive {{amount}} in order to compensate the opt-in expenses.",
-            "token_reject_title": "Reject token",
-            "token_reject_body": "The token will be hidden from your assets and history and won’t come back to your inbox. You can unhide it from Manage Assets > Hide Tokens.",
             "token_accepted_toast": "{{assetName}} added to your assets",
             "token_rejected_toast": "{{assetName}} rejected"
+        },
+        "token_request": {
+            "screen_title": "Incoming Token",
+            "accept": "Accept",
+            "reject": "Reject",
+            "network": "Network",
+            "question": "Add this token to your assets?",
+            "explanation": "It arrived in this account without you asking for it. Accept it to list it in your assets and count it in your balance. Reject it to hide it; it won’t come back to your inbox. Nothing is sent to the network either way."
         }
     },
     "asset": {
@@ -2317,11 +2336,13 @@
             "processing_subtitle": "Your transaction is being processed by the Algorand network",
             "success_title": "Operation completed",
             "success_subtitle": "Your transaction was successfully received by the Algorand network",
-            "sender_count_more": "+{{count}} more",
             "insufficient_native_title": "Not enough {{symbol}}",
             "insufficient_native_claim": "You don't have enough {{symbol}} to claim this asset. Add funds to cover the minimum balance requirement.",
             "insufficient_native_reject": "You don't have enough {{symbol}} to reject this asset. Add funds to cover the transaction fees.",
-            "insufficient_native_cta": "Add funds"
+            "insufficient_native_cta": "Add funds",
+            "from_sender": "From {{sender}}",
+            "from_senders_one": "From {{sender}} and {{count}} other",
+            "from_senders_other": "From {{sender}} and {{count}} others"
         }
     },
     "multisig": {

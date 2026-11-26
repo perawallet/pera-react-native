@@ -14,6 +14,7 @@ import { Trans } from 'react-i18next'
 import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
 import { PWIcon, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { isPendingAction } from '../isPendingAction'
 import { InboxItemShell } from '../InboxItemShell'
 import { useStyles } from './styles'
 import { useMultisigSignInboxItem } from './useMultisigSignInboxItem'
@@ -54,7 +55,7 @@ export const MultisigSignInboxItem = ({
 
     return (
         <InboxItemShell
-            item={item}
+            isUnread={isPendingAction(item)}
             chainBadgeName={chainBadgeName}
             align='top'
             onPress={onPress}

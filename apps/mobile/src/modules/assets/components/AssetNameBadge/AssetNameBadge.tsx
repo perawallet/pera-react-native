@@ -12,8 +12,11 @@
 
 import { useMemo } from 'react'
 import type { StyleProp, TextStyle } from 'react-native'
+import { PeraAssetVerificationTier } from '@perawallet/wallet-core-assets'
 
-import { PWIcon, PWText, PWView } from '@components/core'
+import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import { useLanguage } from '@hooks/useLanguage'
+import { useSuspiciousTokenInfo } from '../../hooks/useSuspiciousTokenInfo'
 import type { TypographyVariant } from '@theme/typography'
 import { getVerificationIcon } from '../../utils/verification'
 import { useStyles } from './styles'
@@ -36,6 +39,10 @@ export const AssetNameBadge = ({
     numberOfLines = 1,
 }: AssetNameBadgeProps) => {
     const styles = useStyles()
+    const { t } = useLanguage()
+    const handleSuspiciousPress = useSuspiciousTokenInfo()
+    const isSuspicious =
+        verificationTier === PeraAssetVerificationTier.suspicious
 
     const verificationIconName = useMemo(() => {
         return verificationTier ? getVerificationIcon(verificationTier) : null
@@ -57,7 +64,23 @@ export const AssetNameBadge = ({
                     variant='favorite'
                 />
             ) : null}
-            {verificationIconName ? (
+            {verificationIconName && isSuspicious ? (
+                <PWTouchableOpacity
+                    onPress={handleSuspiciousPress}
+                    hitSlop={styles.badgeHitSlop}
+                    accessibilityRole='button'
+                    accessibilityLabel={t(
+                        'asset_details.token_warning.suspicious_title',
+                    )}
+                    testID='asset_name_suspicious'
+                >
+                    <PWIcon
+                        name={verificationIconName}
+                        size='xs'
+                    />
+                </PWTouchableOpacity>
+            ) : null}
+            {verificationIconName && !isSuspicious ? (
                 <PWIcon
                     name={verificationIconName}
                     size='xs'

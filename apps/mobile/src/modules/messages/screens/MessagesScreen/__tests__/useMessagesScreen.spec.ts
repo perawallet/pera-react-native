@@ -23,12 +23,12 @@ import { InboxInfoContent } from '@modules/messages/components/InboxInfoContent'
 import { useMessagesScreen } from '../useMessagesScreen'
 
 const mockRequest = vi.fn()
-const { mockTokenInboxes } = vi.hoisted(() => ({
-    mockTokenInboxes: vi.fn((): unknown[] => []),
+const { mockAssetInboxes } = vi.hoisted(() => ({
+    mockAssetInboxes: vi.fn((): unknown[] => []),
 }))
 
-vi.mock('../../../hooks/useTokenInboxes', () => ({
-    useTokenInboxes: () => mockTokenInboxes(),
+vi.mock('../../../hooks/useAccountAssetInboxes', () => ({
+    useAccountAssetInboxes: () => mockAssetInboxes(),
 }))
 
 vi.mock('@react-navigation/native', () => ({
@@ -180,7 +180,7 @@ describe('useMessagesScreen', () => {
     })
 
     it('opens on the Inbox and badges it from elsewhere while tokens wait there', () => {
-        mockTokenInboxes.mockReturnValue([{}])
+        mockAssetInboxes.mockReturnValue([{ backendItem: undefined }])
         mockInbox([])
         mockStatus({ isUnavailableOnNetwork: true })
 
@@ -192,7 +192,7 @@ describe('useMessagesScreen', () => {
             useMessagesScreen(),
         )
         expect(fromNotifications.current.showInboxBadge).toBe(true)
-        mockTokenInboxes.mockReturnValue([])
+        mockAssetInboxes.mockReturnValue([])
     })
 
     it('opens the inbox explainer as a modal sheet', () => {

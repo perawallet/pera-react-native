@@ -387,17 +387,36 @@
             "empty_title": "Nenhuma solicitação de transferência de ativos pendente",
             "empty_body": "Quando você tiver uma solicitação de transferência de ativos, ela aparecerá aqui. Toque para saber mais sobre este recurso.",
             "info_title": "Solicitações de transferência de ativos",
-            "info_body": "Este recurso é uma caixa de entrada para sua conta. Outras pessoas podem enviar ativos e NFTs para você, mesmo que você não os tenha adicionado explicitamente. Aqui, você pode aceitar ou recusar as solicitações de transferência de ativos.",
-            "token_info_body": "Os tokens que a Pera não verificou aguardam aqui quando chegam a esta conta. Aceite um para que ele apareça nos seus ativos e conte no seu saldo, ou recuse-o para ocultá-lo. A sua escolha fica neste dispositivo; nada é enviado à rede.",
-            "token_empty_body": "Os tokens que a Pera não verificou aguardam aqui até você aceitá-los ou recusá-los."
+            "info_body": "Esta é a caixa de entrada da sua conta. Os ativos enviados a ela na Algorand antes do opt-in aguardam aqui para serem resgatados ou recusados, assim como os tokens em redes como Ethereum que a Pera não verificou. Aceitar um token faz com que ele apareça nos seus ativos; recusar um o oculta.",
+            "accept_all": "Aceitar todos",
+            "reject_all": "Recusar todos",
+            "accept_all_title": "Aceitar todos os tokens?",
+            "reject_all_title": "Recusar todos os tokens?",
+            "accept_all_body_one": "{{count}} token vai aparecer nos seus ativos e contar no seu saldo.",
+            "accept_all_body_other": "{{count}} tokens vão aparecer nos seus ativos e contar no seu saldo.",
+            "reject_all_body_one": "{{count}} token ficará oculto nos seus ativos e no seu histórico e não voltará à sua caixa de entrada.",
+            "reject_all_body_other": "{{count}} tokens ficarão ocultos nos seus ativos e no seu histórico e não voltarão à sua caixa de entrada.",
+            "accept_all_suspicious_one": "{{count}} deles está marcado como suspeito.",
+            "accept_all_suspicious_other": "{{count}} deles estão marcados como suspeitos.",
+            "settle_all_skips_claims": "As solicitações que precisam de uma transação ficam na sua caixa de entrada, para resgatar ou recusar uma de cada vez.",
+            "accepted_all_toast_one": "{{count}} token adicionado aos seus ativos",
+            "accepted_all_toast_other": "{{count}} tokens adicionados aos seus ativos",
+            "rejected_all_toast_one": "{{count}} token recusado",
+            "rejected_all_toast_other": "{{count}} tokens recusados"
         },
         "claim": {
             "reject": "Recusar",
             "native_gain": "Você receberá {{amount}} para compensar os custos do opt-in.",
-            "token_reject_title": "Recusar token",
-            "token_reject_body": "O token ficará oculto nos seus ativos e no seu histórico e não voltará à sua caixa de entrada. Você pode mostrá-lo de novo em Gerenciar ativos > Ocultar tokens.",
             "token_accepted_toast": "{{assetName}} adicionado aos seus ativos",
             "token_rejected_toast": "{{assetName}} recusado"
+        },
+        "token_request": {
+            "screen_title": "Token recebido",
+            "accept": "Aceitar",
+            "reject": "Recusar",
+            "network": "Rede",
+            "question": "Adicionar este token aos seus ativos?",
+            "explanation": "Ele chegou a esta conta sem que você pedisse. Aceite-o para que apareça nos seus ativos e conte no seu saldo. Recuse-o para ocultá-lo; ele não voltará à sua caixa de entrada. Nada é enviado à rede em nenhum dos casos."
         }
     },
     "asset": {
@@ -2320,11 +2339,13 @@
             "processing_subtitle": "Sua transação está sendo processada pela rede Algorand",
             "success_title": "Operação concluída",
             "success_subtitle": "Sua transação foi recebida com sucesso pela rede Algorand",
-            "sender_count_more": "+{{count}} mais",
             "insufficient_native_title": "{{symbol}} insuficiente",
             "insufficient_native_claim": "Você não tem {{symbol}} suficiente para receber este ativo. Adicione fundos para cobrir o saldo mínimo exigido.",
             "insufficient_native_reject": "Você não tem {{symbol}} suficiente para recusar este ativo. Adicione fundos para cobrir as taxas da transação.",
-            "insufficient_native_cta": "Adicionar fundos"
+            "insufficient_native_cta": "Adicionar fundos",
+            "from_sender": "De {{sender}}",
+            "from_senders_one": "De {{sender}} e mais {{count}}",
+            "from_senders_other": "De {{sender}} e mais {{count}}"
         }
     },
     "multisig": {

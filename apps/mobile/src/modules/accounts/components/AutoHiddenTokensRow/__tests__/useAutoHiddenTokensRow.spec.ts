@@ -30,7 +30,11 @@ vi.mock('@react-navigation/native', async importOriginal => ({
     useNavigation: () => ({ navigate: mocks.navigate }),
 }))
 
-const account = { id: 'a' } as WalletAccount
+const account = {
+    id: 'a',
+    custody: { kind: 'local', seed: null },
+    chains: {},
+} as unknown as WalletAccount
 
 describe('useAutoHiddenTokensRow', () => {
     beforeEach(() => {
@@ -72,14 +76,25 @@ describe('useAutoHiddenTokensRow', () => {
         expect(result.current.isVisible).toBe(false)
     })
 
-    it('opens the inbox', () => {
+    it("opens the account's inbox", () => {
         const { result } = renderHook(() => useAutoHiddenTokensRow(account))
 
         act(() => result.current.handlePress())
 
         expect(mocks.navigate).toHaveBeenCalledWith('Messages', {
-            screen: 'MessagesHome',
-            params: { initialTab: 'Inbox' },
+            screen: 'AssetTransferRequests',
+            params: { accountId: 'a' },
         })
+    })
+
+    it('is not shown on a watch account, which has no inbox', () => {
+        const watched = {
+            ...account,
+            custody: { kind: 'watch' },
+        } as unknown as WalletAccount
+
+        const { result } = renderHook(() => useAutoHiddenTokensRow(watched))
+
+        expect(result.current.isVisible).toBe(false)
     })
 })

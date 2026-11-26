@@ -9,34 +9,31 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
-
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
-import { AsaInboxItem } from './AsaInboxItem'
+import type { AccountAssetsInboxItem as AccountAssetsInboxItemModel } from '../../hooks/useAccountAssetInboxes'
+import { AccountAssetsInboxItem } from './AccountAssetsInboxItem'
 import { MultisigInvitationInboxItem } from './MultisigInvitationInboxItem'
 import { MultisigSignInboxItem } from './MultisigSignInboxItem'
 
 export type InboxItemProps = {
-    item: InboxItemModel
-    /** The chain the item belongs to. */
-    chainId: ChainId
+    /** The backend's per-address asset rows are listed per account instead. */
+    item:
+        | Exclude<InboxItemModel, { type: 'asa_inbox' }>
+        | AccountAssetsInboxItemModel
     chainBadgeName?: string
     onPress?: () => void
 }
 
 export const InboxItem = ({
     item,
-    chainId,
     chainBadgeName,
     onPress,
 }: InboxItemProps) => {
     switch (item.type) {
-        case 'asa_inbox': {
+        case 'account_assets': {
             return (
-                <AsaInboxItem
+                <AccountAssetsInboxItem
                     item={item}
-                    chainId={chainId}
-                    chainBadgeName={chainBadgeName}
                     onPress={onPress}
                 />
             )

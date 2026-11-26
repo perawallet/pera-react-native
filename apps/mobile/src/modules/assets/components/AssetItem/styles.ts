@@ -15,6 +15,12 @@ import { getFontWeightVariant } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => {
     return {
+        badgeHitSlop: {
+            top: theme.spacing.sm,
+            bottom: theme.spacing.sm,
+            left: theme.spacing.sm,
+            right: theme.spacing.sm,
+        },
         amountContainer: {
             alignItems: 'flex-end',
         },

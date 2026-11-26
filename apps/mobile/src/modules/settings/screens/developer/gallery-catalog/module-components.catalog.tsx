@@ -88,7 +88,6 @@ import {
     mockTransaction,
     MOCK_ASSET_ID,
     MOCK_ADDRESS,
-    mockAsaInbox,
 } from '@perawallet/wallet-core-dev-fixtures'
 
 import { registerPreview } from './registry'
@@ -562,31 +561,25 @@ registerPreview({
 })
 
 registerPreview({
-    id: 'comp-inbox-item-asa',
+    id: 'comp-inbox-item-account-assets',
     render: () => (
         <InboxItem
             item={{
-                type: 'asa_inbox',
-                data: mockAsaInbox,
-                createdAt: new Date(),
+                type: 'account_assets',
+                data: {
+                    account: {
+                        id: 'gallery-inbox-account',
+                        name: 'Main account',
+                        custody: { kind: 'watch' },
+                        chains: {
+                            [ALGORAND_CHAIN_ID]: { address: MOCK_ADDRESS },
+                        },
+                    },
+                    backendItem: undefined,
+                    tokenCount: 3,
+                    requestCount: 3,
+                },
             }}
-            chainId={ALGORAND_CHAIN_ID}
-            onPress={() => undefined}
-        />
-    ),
-})
-
-registerPreview({
-    id: 'comp-inbox-item-asa-chain-badge',
-    render: () => (
-        <InboxItem
-            item={{
-                type: 'asa_inbox',
-                data: mockAsaInbox,
-                createdAt: new Date(),
-            }}
-            chainId={ALGORAND_CHAIN_ID}
-            chainBadgeName='Algorand'
             onPress={() => undefined}
         />
     ),
@@ -1160,13 +1153,8 @@ export const getModuleComponentSections = (): GallerySection[] => [
         title: 'Messages (module)',
         items: [
             {
-                id: 'comp-inbox-item-asa',
-                label: 'InboxItem (asa_inbox)',
-                launch: { kind: 'preview' },
-            },
-            {
-                id: 'comp-inbox-item-asa-chain-badge',
-                label: 'InboxItem (asa_inbox, chain badge)',
+                id: 'comp-inbox-item-account-assets',
+                label: 'InboxItem (an account’s incoming assets)',
                 launch: { kind: 'preview' },
             },
             {

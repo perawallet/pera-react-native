@@ -21,7 +21,7 @@ import { useAccountValueBasis } from '@perawallet/wallet-core-accounts'
 import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 
 const mockHandleInboxItemPress = vi.fn()
-const mockTokenInboxes = vi.fn((): unknown[] => [])
+const mockAssetInboxes = vi.fn((): unknown[] => [])
 
 vi.mock('@perawallet/wallet-core-messages', () => ({
     useInboxQuery: vi.fn(),
@@ -48,11 +48,8 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
 
 vi.mock('@modules/messages/hooks', () => ({
     useHandleInboxItemPress: () => mockHandleInboxItemPress,
-    useTokenInboxes: () => mockTokenInboxes(),
+    useAccountAssetInboxes: () => mockAssetInboxes(),
 }))
-
-const ALGORAND_SCOPE = { chainId: 'algorand', networkId: 'mainnet' }
-const BASE_SCOPE = { chainId: 'base', networkId: 'mainnet' }
 
 describe('useInboxScreen', () => {
     beforeEach(() => {
@@ -69,7 +66,7 @@ describe('useInboxScreen', () => {
         vi.mocked(chainDisplayNameOf).mockImplementation(chainId =>
             chainId === 'base' ? 'Base' : 'Algorand',
         )
-        mockTokenInboxes.mockReturnValue([])
+        mockAssetInboxes.mockReturnValue([])
     })
 
     const signItem = {
@@ -77,13 +74,16 @@ describe('useInboxScreen', () => {
         data: { id: 'sign-1', multisigAccount: { address: 'MSIG_ADDR' } },
         createdAt: new Date(0),
     }
-    const tokenInbox = {
-        scope: BASE_SCOPE,
-        item: {
-            type: 'asa_inbox' as const,
-            data: { address: '0xabc', inboxAddress: null, requestCount: 2 },
-            createdAt: new Date(0),
-        },
+    const assetInbox = {
+        account: { id: 'acct-1' },
+        backendItem: undefined,
+        tokenCount: 2,
+        requestCount: 2,
+    }
+    const asaItem = {
+        type: 'asa_inbox' as const,
+        data: { address: 'ALGO_ADDR', inboxAddress: null, requestCount: 1 },
+        createdAt: new Date(0),
     }
     const withBackendItem = () =>
         vi.mocked(useInboxQuery).mockReturnValue({
@@ -110,43 +110,46 @@ describe('useInboxScreen', () => {
         expect(result.current.inboxEntries[0]?.chainBadgeName).toBeUndefined()
     })
 
-    it('lists the device token inboxes after the backend items, each under its own network', () => {
-        withBackendItem()
-        mockTokenInboxes.mockReturnValue([tokenInbox])
+    it("lists each account's incoming assets in place of the backend's per-address rows", () => {
+        vi.mocked(useInboxQuery).mockReturnValue({
+            data: [signItem, asaItem],
+            isPending: false,
+            isRefetching: false,
+            refetch: vi.fn(),
+        } as unknown as ReturnType<typeof useInboxQuery>)
+        mockAssetInboxes.mockReturnValue([assetInbox])
 
         const { result } = renderHook(() => useInboxScreen())
 
         expect(result.current.inboxEntries).toEqual([
+            { item: signItem, chainBadgeName: undefined },
             {
-                item: signItem,
-                scope: ALGORAND_SCOPE,
+                item: { type: 'account_assets', data: assetInbox },
                 chainBadgeName: undefined,
             },
-            {
-                item: tokenInbox.item,
-                scope: BASE_SCOPE,
-                chainBadgeName: 'Base',
-            },
         ])
+        expect(
+            result.current.keyExtractor(result.current.inboxEntries[1]!),
+        ).toBe('assets-acct-1')
     })
 
-    it('opens a token inbox on its own scope', () => {
-        mockTokenInboxes.mockReturnValue([tokenInbox])
+    it("opens an account's incoming assets through the shared handler", () => {
+        mockAssetInboxes.mockReturnValue([assetInbox])
 
         const { result } = renderHook(() => useInboxScreen())
         act(() => {
             result.current.handleInboxItemPress(result.current.inboxEntries[0]!)
         })
 
-        expect(mockHandleInboxItemPress).toHaveBeenCalledWith(
-            tokenInbox.item,
-            BASE_SCOPE,
-        )
+        expect(mockHandleInboxItemPress).toHaveBeenCalledWith({
+            type: 'account_assets',
+            data: assetInbox,
+        })
     })
 
-    it('is not awaiting registration while a token inbox is listed', () => {
+    it('is not awaiting registration while an account has incoming assets', () => {
         vi.mocked(useIsDeviceRegistrationPending).mockReturnValue(true)
-        mockTokenInboxes.mockReturnValue([tokenInbox])
+        mockAssetInboxes.mockReturnValue([assetInbox])
 
         const { result } = renderHook(() => useInboxScreen())
 
@@ -167,7 +170,7 @@ describe('useInboxScreen', () => {
         expect(result.current.isPending).toBe(true)
     })
 
-    it('delegates a backend item press to the shared handler on the inbox scope', () => {
+    it('delegates a backend item press to the shared handler', () => {
         withBackendItem()
 
         const { result } = renderHook(() => useInboxScreen())
@@ -177,7 +180,6 @@ describe('useInboxScreen', () => {
 
         expect(mockHandleInboxItemPress).toHaveBeenCalledWith(
             signItem as unknown as InboxItem,
-            ALGORAND_SCOPE,
         )
     })
 

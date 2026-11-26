@@ -40,7 +40,8 @@ export const useStyles = makeStyles((theme, props: PWBadgeProps) => {
 
     return {
         container: {
-            paddingHorizontal: isAlert ? 0 : theme.spacing.sm,
+            // A count past 9 ("9+") needs room inside the alert circle.
+            paddingHorizontal: isAlert ? theme.spacing.xs : theme.spacing.sm,
             minWidth: isAlert ? theme.spacing.xl : undefined,
             // RNEUI's Badge hardcodes `height: 18` under badgeStyle, and Yoga
             // never grows a definite height from content — so it has to be

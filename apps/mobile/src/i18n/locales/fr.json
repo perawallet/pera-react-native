@@ -387,17 +387,36 @@
             "empty_title": "Aucune demande de transfert d’actifs en attente",
             "empty_body": "Lorsque vous recevrez une demande de transfert d’actif, vous pourrez la consulter ici. Appuyez pour en savoir plus sur cette fonctionnalité.",
             "info_title": "Demandes de transfert d’actifs",
-            "info_body": "Cette fonctionnalité est une boîte de réception pour votre compte. D’autres personnes peuvent vous envoyer des actifs et des NFT, même si vous ne les avez pas explicitement ajoutés. Depuis cet écran, vous pouvez choisir d’accepter ou de refuser les demandes de transfert d’actifs.",
-            "token_info_body": "Les tokens que Pera n’a pas vérifiés attendent ici lorsqu’ils arrivent sur ce compte. Acceptez-en un pour qu’il apparaisse dans vos actifs et compte dans votre solde, ou refusez-le pour le masquer. Votre choix reste sur cet appareil ; rien n’est envoyé au réseau.",
-            "token_empty_body": "Les tokens que Pera n’a pas vérifiés attendent ici jusqu’à ce que vous les acceptiez ou les refusiez."
+            "info_body": "Voici la boîte de réception de votre compte. Les actifs qui lui sont envoyés sur Algorand avant l’opt-in y attendent d’être réclamés ou refusés, tout comme les tokens sur des réseaux comme Ethereum que Pera n’a pas vérifiés. Un token accepté apparaît dans vos actifs ; un token refusé est masqué.",
+            "accept_all": "Tout accepter",
+            "reject_all": "Tout refuser",
+            "accept_all_title": "Accepter tous les tokens ?",
+            "reject_all_title": "Refuser tous les tokens ?",
+            "accept_all_body_one": "{{count}} token apparaîtra dans vos actifs et comptera dans votre solde.",
+            "accept_all_body_other": "{{count}} tokens apparaîtront dans vos actifs et compteront dans votre solde.",
+            "reject_all_body_one": "{{count}} token sera masqué de vos actifs et de votre historique, et ne reviendra pas dans votre boîte de réception.",
+            "reject_all_body_other": "{{count}} tokens seront masqués de vos actifs et de votre historique, et ne reviendront pas dans votre boîte de réception.",
+            "accept_all_suspicious_one": "{{count}} d’entre eux est signalé comme suspect.",
+            "accept_all_suspicious_other": "{{count}} d’entre eux sont signalés comme suspects.",
+            "settle_all_skips_claims": "Les demandes qui nécessitent une transaction restent dans votre boîte de réception, à réclamer ou refuser une par une.",
+            "accepted_all_toast_one": "{{count}} token ajouté à vos actifs",
+            "accepted_all_toast_other": "{{count}} tokens ajoutés à vos actifs",
+            "rejected_all_toast_one": "{{count}} token refusé",
+            "rejected_all_toast_other": "{{count}} tokens refusés"
         },
         "claim": {
             "reject": "Refuser",
             "native_gain": "Vous recevrez {{amount}} afin de compenser les frais d’opt-in.",
-            "token_reject_title": "Refuser le token",
-            "token_reject_body": "Le token sera masqué de vos actifs et de votre historique et ne reviendra pas dans votre boîte de réception. Vous pouvez l’afficher de nouveau depuis Gérer les actifs > Masquer des jetons.",
             "token_accepted_toast": "{{assetName}} ajouté à vos actifs",
             "token_rejected_toast": "{{assetName}} refusé"
+        },
+        "token_request": {
+            "screen_title": "Token entrant",
+            "accept": "Accepter",
+            "reject": "Refuser",
+            "network": "Réseau",
+            "question": "Ajouter ce token à vos actifs ?",
+            "explanation": "Il est arrivé sur ce compte sans que vous l’ayez demandé. Acceptez-le pour qu’il apparaisse dans vos actifs et compte dans votre solde. Refusez-le pour le masquer ; il ne reviendra pas dans votre boîte de réception. Rien n’est envoyé au réseau dans un cas comme dans l’autre."
         }
     },
     "asset": {
@@ -2317,11 +2336,13 @@
             "processing_subtitle": "Votre transaction est en cours de traitement par le réseau Algorand",
             "success_title": "Opération terminée",
             "success_subtitle": "Votre transaction a bien été reçue par le réseau Algorand",
-            "sender_count_more": "+{{count}} de plus",
             "insufficient_native_title": "{{symbol}} insuffisant",
             "insufficient_native_claim": "Vous n’avez pas assez de {{symbol}} pour réclamer cet actif. Ajoutez des fonds pour couvrir le solde minimum requis.",
             "insufficient_native_reject": "Vous n’avez pas assez de {{symbol}} pour refuser cet actif. Ajoutez des fonds pour couvrir les frais de transaction.",
-            "insufficient_native_cta": "Ajouter des fonds"
+            "insufficient_native_cta": "Ajouter des fonds",
+            "from_sender": "De {{sender}}",
+            "from_senders_one": "De {{sender}} et {{count}} autre",
+            "from_senders_other": "De {{sender}} et {{count}} autres"
         }
     },
     "multisig": {

@@ -14,6 +14,7 @@ import { useCallback, useMemo } from 'react'
 import { type ParamListBase, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
+    isWatchAccount,
     useAccountHoldingSources,
     useTokenInboxQuery,
     type WalletAccount,
@@ -23,12 +24,12 @@ import { useSelectedNetworkSource } from '../../hooks/useSelectedNetworkSource'
 
 export type UseAutoHiddenTokensRowResult = {
     count: number
-    /** Off while the list already shows suspicious assets, or none wait in the inbox. */
+    /** Off while the list already shows suspicious assets, none wait in the inbox, or the account is watched (it has no inbox). */
     isVisible: boolean
     handlePress: () => void
 }
 
-/** The tokens waiting in the inbox on the network the list shows; tapping opens the inbox. */
+/** The tokens waiting in the inbox on the network the list shows; tapping opens the account's inbox. */
 export const useAutoHiddenTokensRow = (
     account: WalletAccount,
 ): UseAutoHiddenTokensRowResult => {
@@ -46,14 +47,15 @@ export const useAutoHiddenTokensRow = (
     const handlePress = useCallback(
         () =>
             navigation.navigate('Messages', {
-                screen: 'MessagesHome',
-                params: { initialTab: 'Inbox' },
+                screen: 'AssetTransferRequests',
+                params: { accountId: account.id },
             }),
-        [navigation],
+        [navigation, account.id],
     )
     return {
         count: holdings.length,
-        isVisible: !showSuspicious && holdings.length > 0,
+        isVisible:
+            !showSuspicious && !isWatchAccount(account) && holdings.length > 0,
         handlePress,
     }
 }

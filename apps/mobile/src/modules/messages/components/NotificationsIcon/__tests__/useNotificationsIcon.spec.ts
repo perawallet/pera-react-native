@@ -21,16 +21,17 @@ import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 
 const mockNavigate = vi.fn()
-const { mockTokenInboxes } = vi.hoisted(() => ({
-    mockTokenInboxes: vi.fn((): unknown[] => []),
+const { mockAssetInboxes } = vi.hoisted(() => ({
+    mockAssetInboxes: vi.fn((): unknown[] => []),
 }))
 
-vi.mock('../../../hooks/useTokenInboxes', () => ({
-    useTokenInboxes: () => mockTokenInboxes(),
+vi.mock('../../../hooks/useAccountAssetInboxes', () => ({
+    useAccountAssetInboxes: () => mockAssetInboxes(),
 }))
 
 vi.mock('@perawallet/wallet-core-messages', () => ({
     useInboxStatus: vi.fn(),
+    useInboxQuery: () => ({ data: [] }),
 }))
 
 vi.mock('@perawallet/wallet-core-banners', () => ({
@@ -120,9 +121,13 @@ describe('useNotificationsIcon', () => {
         expect(result.current.showDotBadge).toBe(false)
     })
 
-    it("counts the device's token inboxes, even where the inbox backend is unavailable", () => {
+    it('adds accounts whose incoming assets all wait on the device, even where the inbox backend is unavailable', () => {
         mockStatus({ unreadInboxCount: 3, isUnavailableOnNetwork: true })
-        mockTokenInboxes.mockReturnValueOnce([{}, {}])
+        mockAssetInboxes.mockReturnValueOnce([
+            { backendItem: undefined },
+            { backendItem: undefined },
+            { backendItem: { type: 'asa_inbox' } },
+        ])
 
         const { result } = renderHook(() => useNotificationsIcon())
 

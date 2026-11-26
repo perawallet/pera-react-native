@@ -387,17 +387,36 @@
             "empty_title": "Keine ausstehenden Asset-Übertragungsanfragen",
             "empty_body": "Sobald eine Asset-Übertragungsanfrage vorliegt, kannst du sie hier einsehen. Tippe hier, um mehr über diese Funktion zu erfahren.",
             "info_title": "Asset-Übertragungsanfragen",
-            "info_body": "Diese Funktion ist ein Posteingang für dein Konto. Andere können dir Assets und NFTs senden, auch wenn du dich nicht ausdrücklich dafür angemeldet hast, sie zu empfangen. Von hier aus kannst du die Asset-Übertragungsanfragen annehmen oder ablehnen.",
-            "token_info_body": "Tokens, die Pera nicht verifiziert hat, warten hier, wenn sie auf diesem Konto ankommen. Nimm ein Token an, damit es in deinen Assets erscheint und zu deinem Guthaben zählt, oder lehne es ab, um es auszublenden. Deine Wahl bleibt auf diesem Gerät; an das Netzwerk wird nichts gesendet.",
-            "token_empty_body": "Tokens, die Pera nicht verifiziert hat, warten hier, bis du sie annimmst oder ablehnst."
+            "info_body": "Das ist der Posteingang deines Kontos. Hier warten Assets, die ihm auf Algorand gesendet wurden, bevor es sich für sie angemeldet hat, darauf, dass du sie annimmst oder ablehnst, ebenso Tokens in Netzwerken wie Ethereum, die Pera nicht verifiziert hat. Ein angenommenes Token erscheint in deinen Assets, ein abgelehntes wird ausgeblendet.",
+            "accept_all": "Alle annehmen",
+            "reject_all": "Alle ablehnen",
+            "accept_all_title": "Alle Tokens annehmen?",
+            "reject_all_title": "Alle Tokens ablehnen?",
+            "accept_all_body_one": "{{count}} Token erscheint in deinen Assets und zählt zu deinem Guthaben.",
+            "accept_all_body_other": "{{count}} Tokens erscheinen in deinen Assets und zählen zu deinem Guthaben.",
+            "reject_all_body_one": "{{count}} Token wird in deinen Assets und deinem Verlauf ausgeblendet und kehrt nicht in deinen Posteingang zurück.",
+            "reject_all_body_other": "{{count}} Tokens werden in deinen Assets und deinem Verlauf ausgeblendet und kehren nicht in deinen Posteingang zurück.",
+            "accept_all_suspicious_one": "{{count}} davon ist als verdächtig markiert.",
+            "accept_all_suspicious_other": "{{count}} davon sind als verdächtig markiert.",
+            "settle_all_skips_claims": "Anfragen, die eine Transaktion brauchen, bleiben in deinem Posteingang, damit du sie einzeln annimmst oder ablehnst.",
+            "accepted_all_toast_one": "{{count}} Token zu deinen Assets hinzugefügt",
+            "accepted_all_toast_other": "{{count}} Tokens zu deinen Assets hinzugefügt",
+            "rejected_all_toast_one": "{{count}} Token abgelehnt",
+            "rejected_all_toast_other": "{{count}} Tokens abgelehnt"
         },
         "claim": {
             "reject": "Ablehnen",
             "native_gain": "Du erhältst {{amount}} als Ausgleich für die Anmeldekosten.",
-            "token_reject_title": "Token ablehnen",
-            "token_reject_body": "Das Token wird in deinen Assets und deinem Verlauf ausgeblendet und kehrt nicht in deinen Posteingang zurück. Du kannst es unter Assets verwalten > Tokens ausblenden wieder einblenden.",
             "token_accepted_toast": "{{assetName}} zu deinen Assets hinzugefügt",
             "token_rejected_toast": "{{assetName}} abgelehnt"
+        },
+        "token_request": {
+            "screen_title": "Eingehendes Token",
+            "accept": "Annehmen",
+            "reject": "Ablehnen",
+            "network": "Netzwerk",
+            "question": "Dieses Token zu deinen Assets hinzufügen?",
+            "explanation": "Es ist auf diesem Konto angekommen, ohne dass du es angefordert hast. Nimm es an, damit es in deinen Assets erscheint und zu deinem Guthaben zählt. Lehne es ab, um es auszublenden; es kehrt nicht in deinen Posteingang zurück. In keinem Fall wird etwas an das Netzwerk gesendet."
         }
     },
     "asset": {
@@ -2309,11 +2328,13 @@
             "processing_subtitle": "Deine Transaktion wird vom Algorand-Netzwerk verarbeitet",
             "success_title": "Vorgang abgeschlossen",
             "success_subtitle": "Deine Transaktion wurde erfolgreich vom Algorand-Netzwerk empfangen",
-            "sender_count_more": "+{{count}} weitere",
             "insufficient_native_title": "Nicht genügend {{symbol}}",
             "insufficient_native_claim": "Du hast nicht genügend {{symbol}}, um dieses Asset zu beanspruchen. Füge Guthaben hinzu, um das Mindestguthaben abzudecken.",
             "insufficient_native_reject": "Du hast nicht genügend {{symbol}}, um dieses Asset abzulehnen. Füge Guthaben hinzu, um die Transaktionsgebühren abzudecken.",
-            "insufficient_native_cta": "Guthaben hinzufügen"
+            "insufficient_native_cta": "Guthaben hinzufügen",
+            "from_sender": "Von {{sender}}",
+            "from_senders_one": "Von {{sender}} und {{count}} weiteren",
+            "from_senders_other": "Von {{sender}} und {{count}} weiteren"
         }
     },
     "multisig": {

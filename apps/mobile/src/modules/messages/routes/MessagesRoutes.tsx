@@ -27,6 +27,7 @@ import {
     AssetClaimDetailScreen,
     TransactionSuccessScreen,
     ClaimProcessingScreen,
+    TokenRequestDetailScreen,
 } from '@modules/transactions/routes'
 import type { MessagesStackParamList } from './types'
 import { MessagesScreen } from '../screens/MessagesScreen'
@@ -66,12 +67,22 @@ export const MessagesStackNavigator = () => {
                 />
             )}
 
-            {(canUseAssetInbox || canUseTokenInbox) && (
+            {canUseAssetInbox && (
                 <MessagesStack.Screen
                     name='AssetClaimDetail'
                     component={AssetClaimDetailScreen}
                     options={{
                         title: 'messages.claim.asset_transfer_request_title',
+                    }}
+                />
+            )}
+
+            {canUseTokenInbox && (
+                <MessagesStack.Screen
+                    name='TokenRequestDetail'
+                    component={TokenRequestDetailScreen}
+                    options={{
+                        title: 'asset_inbox.token_request.screen_title',
                     }}
                 />
             )}

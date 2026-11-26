@@ -48,7 +48,6 @@ export const AssetClaimDetailScreen = () => {
         isClaimBlocked,
         isRejectBlocked,
         imitatedCurrency,
-        isTokenInbox,
         isSuspicious,
         handleClaim,
         canBuy,
@@ -236,43 +235,39 @@ export const AssetClaimDetailScreen = () => {
                 )}
             </PWView>
 
-            {!isTokenInbox && (
-                <>
-                    <PWDivider style={styles.separator} />
+            <PWDivider style={styles.separator} />
 
-                    <PWView style={styles.sendersSection}>
-                        <PWView style={styles.sendersHeader}>
-                            <PWText style={styles.headerLabelText}>
-                                {t('messages.claim.senders')}
-                            </PWText>
-                            <PWText style={styles.headerLabelText}>
-                                {t('messages.claim.amount')}
-                            </PWText>
-                        </PWView>
-                        {request.senders.results.map((senderItem, index) => (
-                            <PWView
-                                key={`${senderItem.sender.address}-${index}`}
-                                style={styles.senderRow}
-                            >
-                                <AddressDisplay
-                                    address={senderItem.sender.address}
-                                    showCopy={false}
-                                />
-                                <AssetAmount
-                                    chainId={chainId}
-                                    value={baseUnitsToDisplayUnits(
-                                        senderItem.amount,
-                                        request.asset.decimals,
-                                    )}
-                                    asset={request.asset}
-                                    prefix={'+'}
-                                    style={styles.senderAmountText}
-                                />
-                            </PWView>
-                        ))}
+            <PWView style={styles.sendersSection}>
+                <PWView style={styles.sendersHeader}>
+                    <PWText style={styles.headerLabelText}>
+                        {t('messages.claim.senders')}
+                    </PWText>
+                    <PWText style={styles.headerLabelText}>
+                        {t('messages.claim.amount')}
+                    </PWText>
+                </PWView>
+                {request.senders.results.map((senderItem, index) => (
+                    <PWView
+                        key={`${senderItem.sender.address}-${index}`}
+                        style={styles.senderRow}
+                    >
+                        <AddressDisplay
+                            address={senderItem.sender.address}
+                            showCopy={false}
+                        />
+                        <AssetAmount
+                            chainId={chainId}
+                            value={baseUnitsToDisplayUnits(
+                                senderItem.amount,
+                                request.asset.decimals,
+                            )}
+                            asset={request.asset}
+                            prefix={'+'}
+                            style={styles.senderAmountText}
+                        />
                     </PWView>
-                </>
-            )}
+                ))}
+            </PWView>
         </PWScreen>
     )
 }

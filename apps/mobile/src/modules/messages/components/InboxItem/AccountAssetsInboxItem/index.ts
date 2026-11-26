@@ -9,6 +9,5 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
-
-export { AsaInboxItem } from './AsaInboxItem'
-export type { AsaInboxItemProps } from './AsaInboxItem'
+export { AccountAssetsInboxItem } from './AccountAssetsInboxItem'
+export type { AccountAssetsInboxItemProps } from './AccountAssetsInboxItem'

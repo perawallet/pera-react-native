@@ -10,28 +10,57 @@
  limitations under the License
  */
 
-import { renderHook, act } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { useAssetTransferRequestsScreen } from '../useAssetTransferRequestsScreen'
-import { useAssetInboxRequestsQuery } from '@perawallet/wallet-core-transactions'
+import { act, renderHook } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { Decimal } from 'decimal.js'
+import {
+    settleInboxTokens,
+    useTokenInboxQuery,
+} from '@perawallet/wallet-core-accounts'
 import { IntegrityRequiredError } from '@perawallet/wallet-core-shared'
-import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
-import { ETHEREUM_CHAIN_ID } from '@test-utils/chain-fixtures'
+import { useAssetInboxRequestsQuery } from '@perawallet/wallet-core-transactions'
+import { useAssetTransferRequestsScreen } from '../useAssetTransferRequestsScreen'
 
-const ALGORAND_SCOPE = { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' }
-const { routeParams } = vi.hoisted(() => ({
-    routeParams: {
-        current: {} as Record<string, unknown>,
-    },
+const ALGORAND = { chainId: 'algorand', networkId: 'mainnet' }
+const ETHEREUM = { chainId: 'ethereum', networkId: 'mainnet' }
+const BASE = { chainId: 'base', networkId: 'mainnet' }
+const ACCOUNT = { id: 'acct-1', custody: { kind: 'local', seed: null } }
+
+const mocks = vi.hoisted(() => ({
+    push: vi.fn(),
+    showToast: vi.fn(),
+    request: vi.fn(),
+    setAccountAddress: vi.fn(),
+    setAssetRequests: vi.fn(),
 }))
 
-const mockPush = vi.fn()
-const mockTokenInboxRequests = vi.fn((_scope: unknown, _address: unknown) => ({
-    data: [] as unknown[],
-    isPending: false,
+vi.mock('@react-navigation/native', () => ({
+    useRoute: () => ({ params: { accountId: 'acct-1' } }),
 }))
-const mockSetAccountAddress = vi.fn()
-const mockSetAssetRequests = vi.fn()
+
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useAllAccounts: () => [ACCOUNT],
+    useAccountHoldingSources: () => [
+        { address: 'ALGO_ADDR', scope: ALGORAND },
+        { address: '0xabc', scope: ETHEREUM },
+        { address: '0xabc', scope: BASE },
+    ],
+    receivesUnaskedAssets: (chainId: string) => chainId !== 'algorand',
+    useRegisteredChainIds: () => ['algorand'],
+    useTokenInboxQuery: vi.fn(),
+    assetFromHoldingLiteRow: (row: { assetId: string; tier?: string }) => ({
+        assetId: row.assetId,
+        name: row.assetId,
+        decimals: 0,
+        peraMetadata: row.tier ? { verificationTier: row.tier } : undefined,
+    }),
+    settleInboxTokens: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
+}))
 
 vi.mock('@perawallet/wallet-core-transactions', () => ({
     useAssetInboxRequestsQuery: vi.fn(),
@@ -39,127 +68,153 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
 
 vi.mock('@modules/transactions/hooks', () => ({
     useClaimAssets: () => ({
-        accountAddress: undefined,
-        setAccountAddress: mockSetAccountAddress,
-        setAssetRequests: mockSetAssetRequests,
+        setAccountAddress: mocks.setAccountAddress,
+        setAssetRequests: mocks.setAssetRequests,
     }),
-    useTokenInboxRequests: (scope: unknown, address: unknown) =>
-        mockTokenInboxRequests(scope, address),
 }))
-
-vi.mock(
-    '@modules/transactions/components/claim-assets/AssetTransferRequestItem',
-    () => ({
-        AssetTransferRequestItem: () => null,
-    }),
-)
 
 vi.mock('@hooks/useAppNavigation', () => ({
-    useAppNavigation: () => ({ push: mockPush }),
+    useAppNavigation: () => ({ push: mocks.push }),
 }))
 
-vi.mock('@react-navigation/native', () => ({
-    useRoute: () => ({ params: routeParams.current }),
+vi.mock('@hooks/useToast', () => ({
+    useToast: () => ({ showToast: mocks.showToast }),
 }))
 
-const mockAssetRequests = (
-    data: unknown[] | undefined,
-    overrides: {
-        isPending?: boolean
-        isUnavailableOnNetwork?: boolean
-        isError?: boolean
-        error?: Error
-    } = {},
-) =>
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({ request: mocks.request }),
+}))
+
+const holding = (scope: typeof ETHEREUM, assetId: string, tier?: string) => ({
+    address: '0xabc',
+    scope,
+    assetId,
+    amount: new Decimal(5),
+    usdPrice: null,
+    tier,
+})
+
+const claim = { asset: { assetId: '77' } }
+
+const setInbox = ({
+    claims = [] as unknown[],
+    tokens = [] as unknown[],
+    error = null as Error | null,
+} = {}) => {
     vi.mocked(useAssetInboxRequestsQuery).mockReturnValue({
-        data,
+        data: claims,
         isPending: false,
-        isError: false,
-        error: null,
+        isError: error !== null,
+        error,
         isUnavailableOnNetwork: false,
-        ...overrides,
     } as unknown as ReturnType<typeof useAssetInboxRequestsQuery>)
+    vi.mocked(useTokenInboxQuery).mockReturnValue({
+        holdings: tokens,
+        isPending: false,
+    } as unknown as ReturnType<typeof useTokenInboxQuery>)
+}
+
+const render = () => renderHook(() => useAssetTransferRequestsScreen())
 
 describe('useAssetTransferRequestsScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        routeParams.current = {
-            item: { address: 'ACCOUNT_ADDR' },
-            scope: ALGORAND_SCOPE,
-        }
-        mockAssetRequests([])
+        setInbox({
+            claims: [claim],
+            tokens: [
+                holding(BASE, '0xb'),
+                holding(ETHEREUM, '0xe', 'suspicious'),
+            ],
+        })
     })
 
-    it('returns an empty array when data is undefined', () => {
-        mockAssetRequests(undefined)
+    it("lists the account's requests under a header per chain, the backend's first, then each network in source order", () => {
+        const { result } = render()
 
-        const { result } = renderHook(() => useAssetTransferRequestsScreen())
-
-        expect(result.current.assetRequests).toEqual([])
-    })
-
-    it("reads the account's requests from the inbox backend on an opt-in chain", () => {
-        const { result } = renderHook(() => useAssetTransferRequestsScreen())
-
+        expect(
+            result.current.rows.map(row =>
+                row.kind === 'header' ? `# ${row.chainId}` : row.key,
+            ),
+        ).toEqual([
+            '# algorand',
+            'claim|77|0',
+            '# ethereum',
+            'token|ethereum/mainnet|0xe',
+            '# base',
+            'token|base/mainnet|0xb',
+        ])
         expect(useAssetInboxRequestsQuery).toHaveBeenCalledWith(
-            ALGORAND_SCOPE,
-            'ACCOUNT_ADDR',
+            ALGORAND,
+            'ALGO_ADDR',
         )
-        expect(mockTokenInboxRequests).toHaveBeenCalledWith(
-            ALGORAND_SCOPE,
-            null,
-        )
-        expect(result.current.scope).toBe(ALGORAND_SCOPE)
     })
 
-    describe('on a chain that receives tokens unasked', () => {
-        const ETHEREUM_SCOPE = {
-            chainId: ETHEREUM_CHAIN_ID,
-            networkId: 'sepolia',
-        }
+    it('opens a backend request in the claim flow', () => {
+        const { result } = render()
 
-        beforeEach(() => {
-            routeParams.current = {
-                item: { address: 'ACCOUNT_ADDR' },
-                scope: ETHEREUM_SCOPE,
-            }
-        })
+        act(() => result.current.handleRowPress(result.current.rows[1]!))
 
-        it("lists the account's token inbox kept on the device", () => {
-            const requests = [{ asset: { assetId: '0x1' } }]
-            mockTokenInboxRequests.mockReturnValueOnce({
-                data: requests,
-                isPending: false,
-            })
-            mockAssetRequests([], { isUnavailableOnNetwork: true })
-
-            const { result } = renderHook(() =>
-                useAssetTransferRequestsScreen(),
-            )
-
-            expect(useAssetInboxRequestsQuery).toHaveBeenCalledWith(
-                ETHEREUM_SCOPE,
-                null,
-            )
-            expect(result.current.assetRequests).toEqual(requests)
-            expect(result.current.isUnavailableOnNetwork).toBe(false)
-            expect(result.current.infoBodyKey).toBe(
-                'asset_inbox.requests.token_info_body',
-            )
+        expect(mocks.setAccountAddress).toHaveBeenCalledWith('ALGO_ADDR')
+        expect(mocks.setAssetRequests).toHaveBeenCalledWith([claim])
+        expect(mocks.push).toHaveBeenCalledWith('Messages', {
+            screen: 'AssetClaimDetail',
+            params: { assetIndex: 0, scope: ALGORAND },
         })
     })
 
-    it('forwards isUnavailableOnNetwork from the asset requests query', () => {
-        mockAssetRequests([], { isUnavailableOnNetwork: true })
+    it('opens a waiting token on its own screen', () => {
+        const { result } = render()
 
-        const { result } = renderHook(() => useAssetTransferRequestsScreen())
+        act(() => result.current.handleRowPress(result.current.rows[3]!))
 
-        expect(result.current.isUnavailableOnNetwork).toBe(true)
+        expect(mocks.push).toHaveBeenCalledWith('Messages', {
+            screen: 'TokenRequestDetail',
+            params: { accountId: 'acct-1', scope: ETHEREUM, assetId: '0xe' },
+        })
+    })
+
+    it('accepts every waiting token once confirmed, naming the suspicious ones and the claims it leaves', async () => {
+        mocks.request.mockResolvedValueOnce(true)
+        const { result } = render()
+
+        await act(async () => result.current.handleAcceptAll())
+
+        const sheet = mocks.request.mock.calls[0]![0].contents
+        expect(sheet.props.message).toContain(
+            'asset_inbox.requests.accept_all_suspicious',
+        )
+        expect(sheet.props.message).toContain(
+            'asset_inbox.requests.settle_all_skips_claims',
+        )
+        expect(settleInboxTokens).toHaveBeenCalledWith(
+            [
+                { address: '0xabc', scope: BASE, assetId: '0xb' },
+                { address: '0xabc', scope: ETHEREUM, assetId: '0xe' },
+            ],
+            true,
+        )
+        expect(mocks.showToast).toHaveBeenCalled()
+    })
+
+    it('leaves every token waiting when Reject All is cancelled', async () => {
+        mocks.request.mockResolvedValueOnce(false)
+        const { result } = render()
+
+        await act(async () => result.current.handleRejectAll())
+
+        expect(settleInboxTokens).not.toHaveBeenCalled()
+    })
+
+    it('offers Accept All and Reject All only while tokens wait on the device', () => {
+        expect(render().result.current.canSettleAll).toBe(true)
+
+        setInbox({ claims: [claim] })
+
+        expect(render().result.current.canSettleAll).toBe(false)
     })
 
     it('flags a refusal for want of an integrity token', () => {
-        mockAssetRequests(undefined, {
-            isError: true,
+        setInbox({
             error: new IntegrityRequiredError({
                 code: 'APP_INTEGRITY_TOKEN_REQUIRED',
                 status: 403,
@@ -167,36 +222,6 @@ describe('useAssetTransferRequestsScreen', () => {
             }),
         })
 
-        const { result } = renderHook(() => useAssetTransferRequestsScreen())
-
-        expect(result.current.isIntegrityBlocked).toBe(true)
-    })
-
-    it('does not flag any other failure as an integrity refusal', () => {
-        mockAssetRequests(undefined, {
-            isError: true,
-            error: new Error('boom'),
-        })
-
-        const { result } = renderHook(() => useAssetTransferRequestsScreen())
-
-        expect(result.current.isIntegrityBlocked).toBe(false)
-    })
-
-    it('pushes to AssetClaimDetail with the pressed index on item press', () => {
-        const requests = [{ id: '1' }, { id: '2' }]
-        mockAssetRequests(requests)
-
-        const { result } = renderHook(() => useAssetTransferRequestsScreen())
-
-        act(() => {
-            result.current.handleItemPress(1)
-        })
-
-        expect(mockSetAssetRequests).toHaveBeenCalledWith(requests)
-        expect(mockPush).toHaveBeenCalledWith('Messages', {
-            screen: 'AssetClaimDetail',
-            params: { assetIndex: 1, scope: ALGORAND_SCOPE },
-        })
+        expect(render().result.current.isIntegrityBlocked).toBe(true)
     })
 })

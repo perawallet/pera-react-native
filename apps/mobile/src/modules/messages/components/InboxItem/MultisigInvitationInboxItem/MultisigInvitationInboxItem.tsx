@@ -24,6 +24,7 @@ import {
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
+import { isPendingAction } from '../isPendingAction'
 import { InboxItemShell } from '../InboxItemShell'
 import { useStyles } from './styles'
 
@@ -56,7 +57,7 @@ export const MultisigInvitationInboxItem = ({
 
     return (
         <InboxItemShell
-            item={item}
+            isUnread={isPendingAction(item)}
             chainBadgeName={chainBadgeName}
             align='top'
             onPress={onPress}

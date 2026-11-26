@@ -11,7 +11,11 @@
  */
 
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { useInboxStatus } from '@perawallet/wallet-core-messages'
+import {
+    useInboxQuery,
+    useInboxStatus,
+    type InboxItem,
+} from '@perawallet/wallet-core-messages'
 import { useSpotBannersQuery } from '@perawallet/wallet-core-banners'
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { type ParamListBase, useNavigation } from '@react-navigation/native'
@@ -19,7 +23,9 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { trackEvent, HomeEvent } from '@analytics'
 import { useCapabilityCheck } from '@hooks/useCapability'
 import { MESSAGES_REQUIREMENTS } from '@hooks/capabilityRequirements'
-import { useTokenInboxes } from '../../hooks/useTokenInboxes'
+import { useAccountAssetInboxes } from '../../hooks/useAccountAssetInboxes'
+
+const NO_ITEMS: readonly InboxItem[] = []
 
 const MAX_INBOX_COUNT_DISPLAY = 9
 
@@ -41,11 +47,19 @@ export const useNotificationsIcon = (): UseNotificationsIconResult => {
         hasUnreadNotifications,
         isUnavailableOnNetwork,
     } = useInboxStatus(scope)
-    // A token inbox row is kept on the device, so the inbox backend's network
-    // being unavailable doesn't hide it.
-    const tokenInboxCount = useTokenInboxes().length
+    const { data: backendItems } = useInboxQuery(scope)
+    const assetInboxes = useAccountAssetInboxes({
+        backendItems: backendItems ?? NO_ITEMS,
+        backendScope: scope,
+    })
+    // The backend counts the rows it serves; an account whose incoming assets
+    // all wait on the device is a row only this count adds, and it shows
+    // whether or not the backend is reachable on this network.
+    const deviceOnlyCount = assetInboxes.filter(
+        inbox => !inbox.backendItem,
+    ).length
     const unreadInboxCount =
-        (isUnavailableOnNetwork ? 0 : backendInboxCount) + tokenInboxCount
+        (isUnavailableOnNetwork ? 0 : backendInboxCount) + deviceOnlyCount
     // Spot banners live on the Messages screen above the tabs, so any
     // outstanding spot banner is also an "unread" signal the icon should
     // surface. Left ungated deliberately: banners are a separate Pera-backed

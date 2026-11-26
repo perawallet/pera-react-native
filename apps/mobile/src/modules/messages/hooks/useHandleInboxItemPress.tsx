@@ -11,7 +11,11 @@
  */
 
 import { useCallback } from 'react'
-import { receivesUnaskedAssets } from '@perawallet/wallet-core-accounts'
+import {
+    findAccountByAddressOn,
+    isWatchAccount,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { ASAInbox, InboxItem } from '@perawallet/wallet-core-messages'
 import type { MultiSigAccount } from '@perawallet/wallet-core-multisig'
@@ -25,6 +29,7 @@ import {
     type MultisigInvitationDetailContentResult,
 } from '@modules/messages/components/MultisigInvitationDetailContent'
 import type { MultisigInvitationParam } from '../routes/types'
+import type { AccountAssetsInboxItem } from './useAccountAssetInboxes'
 
 const toInvitationParam = (
     invitation: MultiSigAccount,
@@ -37,10 +42,8 @@ const toInvitationParam = (
     participantAddresses: invitation.participantAddresses,
 })
 
-/** `itemScope` defaults to the scope the hook was given; a token inbox row passes its own. */
 export type UseHandleInboxItemPressResult = (
-    item: InboxItem,
-    itemScope?: ChainScope,
+    item: InboxItem | AccountAssetsInboxItem,
 ) => void
 
 /**
@@ -63,6 +66,7 @@ export const useHandleInboxItemPress = (
     const { request: requestBottomSheet } = useBottomSheet()
     const canUseAssetInbox = useCapability({ anyChain: 'assetInbox' })
     const canUseMultisig = useCapability({ anyChain: 'multisig' })
+    const accounts = useAllAccounts()
 
     const openInvitationDetail = useCallback(
         async (invitation: MultisigInvitationParam) => {
@@ -93,19 +97,28 @@ export const useHandleInboxItemPress = (
     )
 
     return useCallback(
-        (item: InboxItem, itemScope: ChainScope = scope) => {
+        (item: InboxItem | AccountAssetsInboxItem) => {
             switch (item.type) {
-                case 'asa_inbox': {
-                    if (
-                        !canUseAssetInbox &&
-                        !receivesUnaskedAssets(itemScope.chainId)
-                    ) {
-                        return
-                    }
-                    const asaInbox = item.data as ASAInbox
+                case 'account_assets': {
                     pushScreen('Messages', {
                         screen: 'AssetTransferRequests',
-                        params: { item: asaInbox, scope: itemScope },
+                        params: { accountId: item.data.account.id },
+                    })
+                    return
+                }
+                case 'asa_inbox': {
+                    if (!canUseAssetInbox) return
+                    const asaInbox = item.data as ASAInbox
+                    const account = findAccountByAddressOn(
+                        accounts,
+                        scope.chainId,
+                        asaInbox.address,
+                    )
+                    // Only an account that can claim has an inbox to open.
+                    if (!account || isWatchAccount(account)) return
+                    pushScreen('Messages', {
+                        screen: 'AssetTransferRequests',
+                        params: { accountId: account.id },
                     })
                     return
                 }
@@ -134,6 +147,7 @@ export const useHandleInboxItemPress = (
             canUseAssetInbox,
             canUseMultisig,
             scope,
+            accounts,
         ],
     )
 }

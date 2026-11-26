@@ -93,6 +93,7 @@ export const AssetItemView = ({
         verificationIcon,
         iconShape,
         onCopyAssetId,
+        handleSuspiciousPress,
     } = useAssetItemView(asset, { copyableAssetId, chainId })
 
     const isFavorited = showFavorite && asset.peraMetadata?.isFavorited === true
@@ -176,7 +177,23 @@ export const AssetItemView = ({
                             testID='favorite-star-icon'
                         />
                     ) : null}
-                    {verificationIcon ? (
+                    {verificationIcon && isSuspicious ? (
+                        <PWTouchableOpacity
+                            onPress={handleSuspiciousPress}
+                            hitSlop={styles.badgeHitSlop}
+                            accessibilityRole='button'
+                            accessibilityLabel={t(
+                                'asset_details.token_warning.suspicious_title',
+                            )}
+                            testID={`asset_row_suspicious_${asset.assetId}`}
+                        >
+                            <PWIcon
+                                name={verificationIcon}
+                                size='xs'
+                            />
+                        </PWTouchableOpacity>
+                    ) : null}
+                    {verificationIcon && !isSuspicious ? (
                         <PWIcon
                             name={verificationIcon}
                             size='xs'

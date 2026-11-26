@@ -29,6 +29,7 @@ import {
     getVerificationIcon,
     unvettedTierOf,
 } from '@modules/assets/utils/verification'
+import { useSuspiciousTokenInfo } from '../../hooks/useSuspiciousTokenInfo'
 
 type UseAssetItemViewOptions = {
     copyableAssetId?: boolean
@@ -50,6 +51,8 @@ type UseAssetItemViewResult = {
     /** Row-level long-press copy. Undefined when copying is off or the asset
      *  is its chain's native coin — that id is never what the user wants on the clipboard. */
     onCopyAssetId: Optional<() => void>
+    /** Explains the suspicious badge in a sheet, as a history row's does. */
+    handleSuspiciousPress: () => void
 }
 
 export const useAssetItemView = (
@@ -58,6 +61,7 @@ export const useAssetItemView = (
 ): UseAssetItemViewResult => {
     const { chainId } = options
     const { copyToClipboard } = useClipboard()
+    const handleSuspiciousPress = useSuspiciousTokenInfo()
     const meta = asset.peraMetadata
     const nativeInfo = nativeAssetInfoOf({ chainId, assetId: asset.assetId })
     const isNativeAsset = nativeInfo !== undefined
@@ -138,5 +142,6 @@ export const useAssetItemView = (
         iconShape: isCollectible ? 'square' : 'circle',
         onCopyAssetId:
             options.copyableAssetId && !isNativeAsset ? copyAssetId : undefined,
+        handleSuspiciousPress,
     }
 }

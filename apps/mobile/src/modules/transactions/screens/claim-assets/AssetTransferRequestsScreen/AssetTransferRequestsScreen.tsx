@@ -9,29 +9,42 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
-
-import { PWFlatList, PWScreen, PWText } from '@components/core'
+import { useCallback } from 'react'
+import {
+    PWButton,
+    PWFlatList,
+    PWScreen,
+    PWText,
+    PWView,
+} from '@components/core'
 import { EmptyView } from '@components/EmptyView'
+import { InfoButton } from '@components/InfoButton'
 import { OfflineTolerantView } from '@components/OfflineTolerantView'
 import { useLanguage } from '@hooks/useLanguage'
-import { useStyles } from './styles'
-import { useAssetTransferRequestsScreen } from './useAssetTransferRequestsScreen'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
-import { InfoButton } from '@components/InfoButton'
+import { ChainLabel } from '@modules/chain-ui/icon'
+import { AssetTransferRequestItem } from '@modules/transactions/components/claim-assets/AssetTransferRequestItem'
+import { InboxAssetRow } from '@modules/transactions/components/claim-assets/InboxAssetRow'
+import { useStyles } from './styles'
+import {
+    useAssetTransferRequestsScreen,
+    type InboxRequestRow,
+} from './useAssetTransferRequestsScreen'
+
+const keyOf = (row: InboxRequestRow): string => row.key
+const typeOf = (row: InboxRequestRow): string => row.kind
 
 export const AssetTransferRequestsScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const {
-        assetRequests,
+        rows,
         isPending,
-        isUnavailableOnNetwork,
         isIntegrityBlocked,
-        infoBodyKey,
-        emptyBodyKey,
-        renderItem,
-        renderSeparator,
-        keyExtractor,
+        canSettleAll,
+        handleRowPress,
+        handleAcceptAll,
+        handleRejectAll,
     } = useAssetTransferRequestsScreen()
 
     useNavigationHeader({
@@ -41,10 +54,46 @@ export const AssetTransferRequestsScreen = () => {
                 size='md'
                 variant='primary'
             >
-                <PWText>{t(infoBodyKey)}</PWText>
+                <PWText>{t('asset_inbox.requests.info_body')}</PWText>
             </InfoButton>
         ),
     })
+
+    const renderItem = useCallback(
+        ({ item: row }: { item: InboxRequestRow }) => {
+            switch (row.kind) {
+                case 'header': {
+                    return (
+                        <ChainLabel
+                            chainId={row.chainId}
+                            style={styles.sectionHeader}
+                        />
+                    )
+                }
+                case 'claim': {
+                    return (
+                        <AssetTransferRequestItem
+                            item={row.request}
+                            scope={row.scope}
+                            onPress={() => handleRowPress(row)}
+                        />
+                    )
+                }
+                case 'token': {
+                    return (
+                        <InboxAssetRow
+                            asset={row.asset}
+                            scope={row.scope}
+                            amount={row.amount}
+                            usdPrice={row.usdPrice}
+                            onPress={() => handleRowPress(row)}
+                        />
+                    )
+                }
+            }
+        },
+        [handleRowPress, styles.sectionHeader],
+    )
 
     return (
         <PWScreen
@@ -52,15 +101,36 @@ export const AssetTransferRequestsScreen = () => {
             horizontalPadding='none'
         >
             <PWFlatList
-                data={assetRequests}
+                data={rows}
                 renderItem={renderItem}
+                keyExtractor={keyOf}
+                getItemType={typeOf}
                 contentContainerStyle={styles.contentContainer}
-                keyExtractor={keyExtractor}
-                ItemSeparatorComponent={renderSeparator}
+                ListHeaderComponent={
+                    canSettleAll ? (
+                        <PWView style={styles.settleAll}>
+                            <PWButton
+                                variant='secondary'
+                                paddingStyle='dense'
+                                title={t('asset_inbox.requests.reject_all')}
+                                onPress={handleRejectAll}
+                                style={styles.settleAllButton}
+                                testID='asset_inbox_reject_all'
+                            />
+                            <PWButton
+                                variant='primary'
+                                paddingStyle='dense'
+                                title={t('asset_inbox.requests.accept_all')}
+                                onPress={handleAcceptAll}
+                                style={styles.settleAllButton}
+                                testID='asset_inbox_accept_all'
+                            />
+                        </PWView>
+                    ) : null
+                }
                 ListEmptyComponent={
                     <OfflineTolerantView
                         isOffline={false}
-                        isUnavailable={isUnavailableOnNetwork}
                         isIntegrityBlocked={isIntegrityBlocked}
                     >
                         <EmptyView
@@ -69,7 +139,7 @@ export const AssetTransferRequestsScreen = () => {
                             style={styles.emptyView}
                             icon='inbox'
                             title={t('asset_inbox.requests.empty_title')}
-                            body={t(emptyBodyKey)}
+                            body={t('asset_inbox.requests.empty_body')}
                         />
                     </OfflineTolerantView>
                 }

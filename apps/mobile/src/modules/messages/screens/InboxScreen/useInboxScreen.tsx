@@ -12,7 +12,6 @@
 
 import { useCallback, useMemo } from 'react'
 import { useAccountValueBasis } from '@perawallet/wallet-core-accounts'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     chainDisplayNameOf,
     useSelectedScope,
@@ -29,18 +28,20 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import {
+    useAccountAssetInboxes,
     useHandleInboxItemPress,
-    useTokenInboxes,
+    type AccountAssetsInboxItem,
 } from '@modules/messages/hooks'
 import { useNetworkStatus } from '@modules/network'
 
-/** An inbox row with the scope its item belongs to. */
 export type InboxEntry = {
-    item: InboxItem
-    scope: ChainScope
-    /** Set when the row names its chain: a token inbox always does, the backend's once the wallet spans chains. */
+    /** A backend item, or an account's incoming assets in place of the backend's per-address rows. */
+    item: Exclude<InboxItem, { type: 'asa_inbox' }> | AccountAssetsInboxItem
+    /** Names the chain a backend item serves once the wallet spans chains; an account's assets span them, so none. */
     chainBadgeName: Optional<string>
 }
+
+const NO_ITEMS: readonly InboxItem[] = []
 
 export type UseInboxScreenResult = {
     inboxEntries: InboxEntry[]
@@ -52,11 +53,11 @@ export type UseInboxScreenResult = {
     isAwaitingRegistration: boolean
     isUnavailableOnNetwork: boolean
     refetch: () => void
-    keyExtractor: (entry: InboxEntry, index: number) => string
+    keyExtractor: (entry: InboxEntry) => string
     handleInboxItemPress: (entry: InboxEntry) => void
 }
 
-const getItemKey = ({ item, scope }: InboxEntry, index: number): string => {
+const getItemKey = ({ item }: InboxEntry): string => {
     switch (item.type) {
         case 'multisig_import': {
             return `import-${item.data.customId}-${item.data.address}`
@@ -64,8 +65,8 @@ const getItemKey = ({ item, scope }: InboxEntry, index: number): string => {
         case 'multisig_sign': {
             return `sign-${item.data.id}`
         }
-        case 'asa_inbox': {
-            return `asa-${scope.chainId}-${scope.networkId}-${item.data.address}-${index}`
+        case 'account_assets': {
+            return `assets-${item.data.account.id}`
         }
     }
 }
@@ -87,28 +88,35 @@ export const useInboxScreen = (): UseInboxScreenResult => {
     const isRegistrationPending = useIsDeviceRegistrationPending()
     const { hasInternet } = useNetworkStatus()
     const isMultiChain = useAccountValueBasis(scope.chainId) === 'fiat'
-    const tokenInboxes = useTokenInboxes()
+    const backendItems = inboxItems ?? NO_ITEMS
+    const assetInboxes = useAccountAssetInboxes({
+        backendItems,
+        backendScope: scope,
+    })
     const handleEntryPress = useCallback(
-        (entry: InboxEntry) => handleInboxItemPress(entry.item, entry.scope),
+        (entry: InboxEntry) => handleInboxItemPress(entry.item),
         [handleInboxItemPress],
     )
 
     const inboxEntries = useMemo<InboxEntry[]>(
         () => [
-            ...(inboxItems ?? []).map(item => ({
-                item,
-                scope,
-                chainBadgeName: isMultiChain
-                    ? chainDisplayNameOf(scope.chainId)
-                    : undefined,
-            })),
-            ...tokenInboxes.map(({ item, scope: tokenScope }) => ({
-                item,
-                scope: tokenScope,
-                chainBadgeName: chainDisplayNameOf(tokenScope.chainId),
+            ...backendItems
+                .filter(
+                    (item): item is Exclude<InboxItem, { type: 'asa_inbox' }> =>
+                        item.type !== 'asa_inbox',
+                )
+                .map(item => ({
+                    item,
+                    chainBadgeName: isMultiChain
+                        ? chainDisplayNameOf(scope.chainId)
+                        : undefined,
+                })),
+            ...assetInboxes.map(data => ({
+                item: { type: 'account_assets' as const, data },
+                chainBadgeName: undefined,
             })),
         ],
-        [inboxItems, tokenInboxes, scope, isMultiChain],
+        [backendItems, assetInboxes, scope.chainId, isMultiChain],
     )
 
     // Offline wins over a stale error: a paused, uncached fetch means there is

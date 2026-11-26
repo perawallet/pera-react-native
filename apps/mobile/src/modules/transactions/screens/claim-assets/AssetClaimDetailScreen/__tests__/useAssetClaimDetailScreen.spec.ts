@@ -34,13 +34,7 @@ const { routeParams, mockRequestBottomSheet } = vi.hoisted(() => ({
 
 const mockPush = vi.fn()
 const mockNavigate = vi.fn()
-const mockGoBack = vi.fn()
 const mockErrorToast = vi.fn()
-const mockShowToast = vi.fn()
-const { mockSetTokenKept, mockSetTokenHidden } = vi.hoisted(() => ({
-    mockSetTokenKept: vi.fn(),
-    mockSetTokenHidden: vi.fn(),
-}))
 
 let mockAssetRequests: unknown[] = []
 
@@ -67,23 +61,10 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
         chainId: string,
         address: string,
     ) => accounts.find(a => a.chains[chainId]?.address === address),
-    receivesUnaskedAssets: (chainId: string) => chainId === 'ethereum',
-    useKeptTokensStore: (
-        selector: (state: { setTokenKept: typeof mockSetTokenKept }) => unknown,
-    ) => selector({ setTokenKept: mockSetTokenKept }),
-    useHiddenTokensStore: (
-        selector: (state: {
-            setTokenHidden: typeof mockSetTokenHidden
-        }) => unknown,
-    ) => selector({ setTokenHidden: mockSetTokenHidden }),
 }))
 
 vi.mock('@hooks/useAppNavigation', () => ({
-    useAppNavigation: () => ({
-        push: mockPush,
-        navigate: mockNavigate,
-        goBack: mockGoBack,
-    }),
+    useAppNavigation: () => ({ push: mockPush, navigate: mockNavigate }),
 }))
 
 vi.mock('@react-navigation/native', () => ({
@@ -99,10 +80,7 @@ vi.mock('@modules/bottom-sheet', () => ({
 }))
 
 vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({
-        errorToast: mockErrorToast,
-        showToast: mockShowToast,
-    }),
+    useToast: () => ({ errorToast: mockErrorToast }),
 }))
 
 const buildRequest = (
@@ -118,7 +96,6 @@ const buildRequest = (
             decimals: number
             name: string
             unitName?: string
-            peraMetadata?: { verificationTier: string }
         }
     } = {},
 ) => ({
@@ -143,6 +120,24 @@ describe('useAssetClaimDetailScreen', () => {
         registerAlgorandRampAdapter()
         routeParams.current = { assetIndex: 0, scope: ALGORAND_SCOPE }
         mockAssetRequests = [buildRequest()]
+    })
+
+    it('flags an asset Pera marks suspicious', () => {
+        mockAssetRequests = [
+            {
+                ...buildRequest(),
+                asset: {
+                    assetId: '123',
+                    decimals: 0,
+                    name: 'Claim rewards',
+                    peraMetadata: { verificationTier: 'suspicious' },
+                },
+            },
+        ]
+
+        const { result } = renderHook(() => useAssetClaimDetailScreen())
+
+        expect(result.current.isSuspicious).toBe(true)
     })
 
     describe('imitated currency', () => {
@@ -365,106 +360,28 @@ describe('useAssetClaimDetailScreen', () => {
 
                 expect(result.current.claimGainLabel).toBeNull()
             })
+
+            it('carries the scope into a confirmed reject', async () => {
+                mockRequestBottomSheet.mockResolvedValueOnce(true)
+                mockAssetRequests = [
+                    buildRequest({ nativeGainOnReject: gainBaseUnits }),
+                ]
+
+                const { result } = renderHook(() => useAssetClaimDetailScreen())
+                await act(async () => {
+                    result.current.handleRejectPress()
+                })
+
+                expect(mockPush).toHaveBeenCalledWith('Messages', {
+                    screen: 'ClaimProcessing',
+                    params: {
+                        mode: 'reject',
+                        assetIndex: 0,
+                        shouldClaimAlgo: false,
+                        scope,
+                    },
+                })
+            })
         },
     )
-
-    it('carries the scope into a confirmed reject', async () => {
-        mockRequestBottomSheet.mockResolvedValueOnce(true)
-        mockAssetRequests = [
-            buildRequest({ nativeGainOnReject: new Decimal(1_500_000) }),
-        ]
-
-        const { result } = renderHook(() => useAssetClaimDetailScreen())
-        await act(async () => {
-            result.current.handleRejectPress()
-        })
-
-        expect(mockPush).toHaveBeenCalledWith('Messages', {
-            screen: 'ClaimProcessing',
-            params: {
-                mode: 'reject',
-                assetIndex: 0,
-                shouldClaimAlgo: false,
-                scope: ALGORAND_SCOPE,
-            },
-        })
-    })
-
-    describe('a token on a chain without opt-in', () => {
-        const token = {
-            address: 'ACCOUNT_ADDR',
-            scope: ETHEREUM_SCOPE,
-            assetId: '123',
-        }
-
-        beforeEach(() => {
-            routeParams.current = { assetIndex: 0, scope: ETHEREUM_SCOPE }
-        })
-
-        it('accepts the token on the device, with no transaction', () => {
-            const { result } = renderHook(() => useAssetClaimDetailScreen())
-
-            act(() => result.current.handleClaim())
-
-            expect(result.current.isTokenInbox).toBe(true)
-            expect(mockSetTokenKept).toHaveBeenCalledWith({
-                ...token,
-                isKept: true,
-            })
-            expect(mockShowToast).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    title: expect.stringContaining(
-                        'asset_inbox.claim.token_accepted_toast',
-                    ),
-                }),
-            )
-            expect(mockGoBack).toHaveBeenCalled()
-            expect(mockPush).not.toHaveBeenCalled()
-        })
-
-        it('hides the token once the user confirms the reject', async () => {
-            mockRequestBottomSheet.mockResolvedValueOnce(true)
-
-            const { result } = renderHook(() => useAssetClaimDetailScreen())
-            await act(async () => {
-                result.current.handleRejectPress()
-            })
-
-            expect(mockSetTokenHidden).toHaveBeenCalledWith({
-                ...token,
-                isHidden: true,
-            })
-            expect(mockGoBack).toHaveBeenCalled()
-            expect(mockPush).not.toHaveBeenCalled()
-        })
-
-        it('leaves the token waiting when the reject is cancelled', async () => {
-            mockRequestBottomSheet.mockResolvedValueOnce(false)
-
-            const { result } = renderHook(() => useAssetClaimDetailScreen())
-            await act(async () => {
-                result.current.handleRejectPress()
-            })
-
-            expect(mockSetTokenHidden).not.toHaveBeenCalled()
-            expect(mockGoBack).not.toHaveBeenCalled()
-        })
-
-        it('flags a token Pera marks suspicious', () => {
-            mockAssetRequests = [
-                buildRequest({
-                    asset: {
-                        assetId: '123',
-                        decimals: 0,
-                        name: 'Claim rewards',
-                        peraMetadata: { verificationTier: 'suspicious' },
-                    },
-                }),
-            ]
-
-            const { result } = renderHook(() => useAssetClaimDetailScreen())
-
-            expect(result.current.isSuspicious).toBe(true)
-        })
-    })
 })
