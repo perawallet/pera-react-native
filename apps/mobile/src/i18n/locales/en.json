@@ -861,7 +861,7 @@
     },
     "cloud_backup": {
         "encryption_key_label": "Encryption Key",
-        "deleted_remotely": "Cloud backup was deleted on another device",
+        "deleted_remotely": "Cloud Backup was turned off on another device. These accounts aren't backed up anymore.",
         "main": {
             "title": "Cloud Backup",
             "subtitle": "Choose an option to proceed",

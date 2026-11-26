@@ -861,7 +861,7 @@
     },
     "cloud_backup": {
         "encryption_key_label": "Clé de chiffrement",
-        "deleted_remotely": "La sauvegarde cloud a été supprimée sur un autre appareil",
+        "deleted_remotely": "La sauvegarde cloud a été désactivée sur un autre appareil. Ces comptes ne sont plus sauvegardés.",
         "main": {
             "title": "Sauvegarde cloud",
             "subtitle": "Choisissez une option pour continuer",

@@ -108,8 +108,9 @@ export const unreadAccountDeltas = (
         }))
 
 /** A registered backup has no manifest until its first item lands, so the very
- *  first sync of a new backup 404s. Destroying a backup drops its auth key, so
- *  a wiped backup fails with 401 instead — a 404 can only mean "still empty".
+ *  first sync of a new backup 404s. A wiped backup answers a signed request with
+ *  the deleted-backup status (`isBackupDeletedError`), which is rethrown — a 404
+ *  can only mean "still empty".
  *  Warns because that is only true once: a 404 that keeps coming back leaves
  *  `lastKnownBackupHash` pinned, which silently disables the sync short-circuit
  *  and makes every sync a full delta + read + push. */

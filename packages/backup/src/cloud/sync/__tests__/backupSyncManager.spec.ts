@@ -214,6 +214,7 @@ import {
     secretsItemKey,
     type SyncState,
 } from '../../models'
+import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 import { createItemKeyHasher } from '../../crypto/itemKeyHash'
 import { BackupPushIncompleteError, BackupSyncAbortedError } from '../types'
 import type { BackupSyncSources, BackupSyncStatePort } from '../types'
@@ -712,6 +713,183 @@ describe('BackupSyncManager', () => {
         expect(mockResetSyncState).toHaveBeenCalledTimes(1)
         expect(mockResetSyncActivity).toHaveBeenCalledTimes(1)
         expect(onBackupDeleted).toHaveBeenCalledTimes(1)
+    })
+
+    describe('a backup deleted on another device', () => {
+        const deletedError = () =>
+            new PeraNetworkError('client', {
+                status: 410,
+                backendCode: 'BACKUP_DELETED',
+            })
+
+        const expectCleared = (onBackupDeleted: () => void) => {
+            expect(mockDeleteBackupKeys).toHaveBeenCalledTimes(1)
+            expect(mockResetCloudBackup).toHaveBeenCalledTimes(1)
+            expect(mockResetSyncState).toHaveBeenCalledTimes(1)
+            expect(mockResetSyncActivity).toHaveBeenCalledTimes(1)
+            expect(onBackupDeleted).toHaveBeenCalledTimes(1)
+        }
+
+        const expectKept = (onBackupDeleted: () => void) => {
+            expect(mockDeleteBackupKeys).not.toHaveBeenCalled()
+            expect(mockResetCloudBackup).not.toHaveBeenCalled()
+            expect(mockResetSyncState).not.toHaveBeenCalled()
+            expect(mockResetSyncActivity).not.toHaveBeenCalled()
+            expect(onBackupDeleted).not.toHaveBeenCalled()
+        }
+
+        // reset() nulls the id the way the real stores do.
+        const resettablePort = (initialId: string | null = 'backup-123') => {
+            let backupId = initialId
+            const port: BackupSyncStatePort = {
+                getBackupId: () => backupId,
+                getDeviceId: () => 'dev-id',
+                getSyncState: () => null,
+                setSyncState: mockSetSyncState,
+                setIsSyncing: vi.fn(),
+                setBusyItems: vi.fn(),
+                reset: vi.fn(() => {
+                    backupId = null
+                }),
+            }
+            return {
+                port,
+                replaceBackup: (id: string) => {
+                    backupId = id
+                },
+            }
+        }
+
+        it('clears the local backup, notifies once and records no failure when a sync gets the deleted status', async () => {
+            const onBackupDeleted = vi.fn()
+            mockSyncBackup.mockRejectedValueOnce(deletedError())
+            const mgr = new BackupSyncManager({
+                ...makeDeps(),
+                onBackupDeleted,
+            })
+
+            await mgr.syncNow()
+
+            expectCleared(onBackupDeleted)
+            expect(mockSetSyncState).not.toHaveBeenCalled()
+        })
+
+        it('clears the same way when only the push reports it', async () => {
+            const onBackupDeleted = vi.fn()
+            mockSyncBackup.mockRejectedValueOnce(
+                new BackupPushIncompleteError(
+                    { backupId: 'backup-123', lastSyncResult: 'NONE' } as never,
+                    deletedError(),
+                ),
+            )
+            const mgr = new BackupSyncManager({
+                ...makeDeps(),
+                onBackupDeleted,
+            })
+
+            await mgr.syncNow()
+
+            expectCleared(onBackupDeleted)
+            expect(mockSetSyncState).not.toHaveBeenCalled()
+        })
+
+        it('clears when a pull gets the deleted status', async () => {
+            const onBackupDeleted = vi.fn()
+            mockPullBackupDeltas.mockRejectedValueOnce(deletedError())
+            const mgr = new BackupSyncManager({
+                ...makeDeps(),
+                onBackupDeleted,
+            })
+
+            await mgr.handleSocketEvent({
+                kind: 'itemsUpdated',
+                fromSeq: 1,
+                toSeq: 2,
+            })
+
+            expectCleared(onBackupDeleted)
+        })
+
+        it.each([
+            [
+                'a plain 401',
+                () =>
+                    new PeraNetworkError('client', {
+                        status: 401,
+                        backendCode: 'AUTH_FAILED',
+                    }),
+            ],
+            ['an uncoded 410', () => new PeraNetworkError('client', { status: 410 })],
+        ])('records %s as a failed sync and keeps the backup', async (_label, makeError) => {
+            const onBackupDeleted = vi.fn()
+            mockSyncBackup.mockRejectedValueOnce(makeError())
+            const mgr = new BackupSyncManager({
+                ...makeDeps(),
+                onBackupDeleted,
+            })
+
+            await mgr.syncNow()
+
+            expectKept(onBackupDeleted)
+            expect(mockSetSyncState).toHaveBeenCalledWith(
+                expect.objectContaining({ lastSyncResult: 'FAILED' }),
+            )
+        })
+
+        it('leaves no socket or periodic sync behind when the first sync of start() finds it', async () => {
+            mockSyncBackup.mockRejectedValueOnce(deletedError())
+            const mgr = new BackupSyncManager(makeDeps())
+
+            await mgr.start()
+            await vi.advanceTimersByTimeAsync(PERIODIC_SYNC_MS)
+
+            expect(mockConnect).not.toHaveBeenCalled()
+            expect(mockSyncBackup).toHaveBeenCalledTimes(1)
+        })
+
+        it('clears and notifies once when a socket event and a failing sync report the same deletion', async () => {
+            const onBackupDeleted = vi.fn()
+            const { port } = resettablePort()
+            let rejectSync: (error: unknown) => void = () => {}
+            mockSyncBackup.mockImplementationOnce(
+                () =>
+                    new Promise((_resolve, reject) => {
+                        rejectSync = reject
+                    }),
+            )
+            const mgr = new BackupSyncManager({
+                ...makeDeps(),
+                onBackupDeleted,
+                state: port,
+            })
+
+            const syncing = mgr.syncNow()
+            await mgr.handleSocketEvent({ kind: 'backupDeleted' })
+            rejectSync(deletedError())
+            await syncing
+
+            expect(port.reset).toHaveBeenCalledTimes(1)
+            expect(mockDeleteBackupKeys).toHaveBeenCalledTimes(1)
+            expect(onBackupDeleted).toHaveBeenCalledTimes(1)
+        })
+
+        it('leaves a newer backup alone when the answer was about the old one', async () => {
+            const onBackupDeleted = vi.fn()
+            const { port, replaceBackup } = resettablePort()
+            const mgr = new BackupSyncManager({
+                ...makeDeps(),
+                onBackupDeleted,
+                state: port,
+            })
+            mockSyncBackup.mockImplementationOnce(async () => {
+                replaceBackup('newer-backup')
+                throw deletedError()
+            })
+            await mgr.syncNow()
+
+            expectKept(onBackupDeleted)
+            expect(port.reset).not.toHaveBeenCalled()
+        })
     })
 
     it('keepAccountInBackup persists the reviewed state', async () => {

@@ -861,7 +861,7 @@
     },
     "cloud_backup": {
         "encryption_key_label": "Şifreleme anahtarı",
-        "deleted_remotely": "Bulut yedeklemesi başka bir cihazda silindi",
+        "deleted_remotely": "Bulut yedekleme başka bir cihazda kapatıldı. Bu hesaplar artık yedeklenmiyor.",
         "main": {
             "title": "Bulut yedekleme",
             "subtitle": "Devam etmek için bir seçenek seç",

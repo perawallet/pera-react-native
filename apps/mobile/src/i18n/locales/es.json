@@ -861,7 +861,7 @@
     },
     "cloud_backup": {
         "encryption_key_label": "Clave de cifrado",
-        "deleted_remotely": "La copia de seguridad en la nube se eliminó en otro dispositivo",
+        "deleted_remotely": "La copia de seguridad en la nube se desactivó en otro dispositivo. Estas cuentas ya no tienen copia de seguridad.",
         "main": {
             "title": "Copia de seguridad en la nube",
             "subtitle": "Elige una opción para continuar",
