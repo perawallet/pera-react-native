@@ -75,6 +75,13 @@ const receive = (
     id: string,
     initiator: Optional<string>,
     assetId: string,
+    {
+        isSignedElsewhere,
+        kind = 'token-transfer',
+    }: {
+        isSignedElsewhere?: boolean
+        kind?: TransactionRecord['summary']['kind']
+    } = {},
 ): TransactionListRow => ({
     kind: TRANSACTION_ROW_TYPES.record,
     key: id,
@@ -83,9 +90,10 @@ const receive = (
         scope: SCOPE,
         status: 'confirmed',
         initiator,
+        isSignedElsewhere,
         chainData: { family: 'evm' },
         summary: {
-            kind: 'token-transfer',
+            kind,
             title: { key: i18nKey('transactions.list_item.receive') },
             icon: 'receive',
             direction: 'in',
@@ -132,6 +140,10 @@ describe('useWithoutSuspiciousRows', () => {
             receive('listed', OTHER, '0xverified'),
             receive('unknown', OTHER, '0xunstored'),
             receive('unsigned', undefined, '0xnew'),
+            receive('log-only', undefined, '0xnew', {
+                isSignedElsewhere: true,
+            }),
+            receive('unstored-nft', OTHER, '0xnft', { kind: 'nft-transfer' }),
         ]
 
         beforeEach(() => {
@@ -160,13 +172,13 @@ describe('useWithoutSuspiciousRows', () => {
                 }),
             ).result.current.map(row => row.key)
 
-        it("drops someone else's transfer of it, and keeps the account's own and one with no named signer", () => {
+        it("drops someone else's transfer of it, log-only and unsynced ones included, and keeps the account's own, one with no named signer and an unsynced NFT", () => {
             expect(keysOf()).toEqual([
                 '2026-11-25',
                 'own-swap',
                 'listed',
-                'unknown',
                 'unsigned',
+                'unstored-nft',
             ])
         })
 

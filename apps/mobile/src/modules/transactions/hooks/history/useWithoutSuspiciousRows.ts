@@ -60,29 +60,33 @@ type Entry = {
 /**
  * Someone else's transaction that moved a token waiting in the inbox: an
  * airdrop or a spoofed transfer. The account's own stays, whatever it moved,
- * and so does one whose signer the history doesn't name. A token with no
- * stored row is left in too, since nothing says it's unwanted.
+ * and so does one whose signer the history doesn't name unless it's marked
+ * signed elsewhere (a transfer-log-only row, how most airdrops arrive). A
+ * token with no stored row isn't verified yet, so it counts as unapproved, as
+ * it does in the asset list.
  */
 const movesUnapprovedToken = (
     entry: Entry,
     storedAssets: Optional<ReadonlyMap<string, PeraAsset>>,
     keptTokens: KeptTokens,
 ): boolean =>
-    !!entry.signer &&
-    entry.signer.toLowerCase() !== entry.accountAddress.toLowerCase() &&
+    (entry.isSignedElsewhere === true ||
+        (!!entry.signer &&
+            entry.signer.toLowerCase() !==
+                entry.accountAddress.toLowerCase())) &&
     summaryAmountsOf(entry.summary).some(({ assetRef: { assetId } }) => {
         const asset = storedAssets?.get(assetId)
-        return (
-            !!asset &&
-            isUnapprovedHolding(
-                {
-                    address: entry.accountAddress,
-                    scope: entry.scope,
-                    assetId,
-                    asset,
-                },
-                keptTokens,
-            )
+        // Without a stored row only the summary says it's an NFT, and NFTs
+        // keep the suspicious-only rule, which an unstored one can't fail.
+        if (!asset && entry.summary.kind === 'nft-transfer') return false
+        return isUnapprovedHolding(
+            {
+                address: entry.accountAddress,
+                scope: entry.scope,
+                assetId,
+                asset,
+            },
+            keptTokens,
         )
     })
 
