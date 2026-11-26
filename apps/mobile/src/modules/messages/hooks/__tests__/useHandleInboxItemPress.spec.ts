@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { InboxItem } from '@perawallet/wallet-core-messages'
@@ -88,7 +89,10 @@ describe('useHandleInboxItemPress', () => {
 
     it("opens a token inbox on its own network, with the backend inbox's capability off", () => {
         setCapabilityOverrides({ assetInbox: false })
-        const ethereum = { chainId: 'ethereum', networkId: 'mainnet' }
+        const ethereum = {
+            chainId: 'ethereum',
+            networkId: 'mainnet',
+        } as ChainScope
         const tokenItem = {
             type: 'asa_inbox' as const,
             data: { address: '0xabc', inboxAddress: null, requestCount: 2 },

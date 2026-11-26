@@ -9,6 +9,7 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
@@ -23,7 +24,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     assetFromHoldingLiteRow: vi.fn(),
 }))
 
-const SCOPE = { chainId: 'ethereum', networkId: 'mainnet' }
+const SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as ChainScope
 
 describe('useTokenInboxRequests', () => {
     it('reads nothing until it has an address', () => {

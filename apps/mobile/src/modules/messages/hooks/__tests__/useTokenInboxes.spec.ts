@@ -9,6 +9,7 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import {
@@ -17,10 +18,10 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useTokenInboxes } from '../useTokenInboxes'
 
-const ETHEREUM = { chainId: 'ethereum', networkId: 'mainnet' }
-const BASE = { chainId: 'base', networkId: 'mainnet' }
+const ETHEREUM = { chainId: 'ethereum', networkId: 'mainnet' } as ChainScope
+const BASE = { chainId: 'base', networkId: 'mainnet' } as ChainScope
 
-const row = (address: string, scope: typeof ETHEREUM, assetId: string) => ({
+const row = (address: string, scope: ChainScope, assetId: string) => ({
     address,
     scope,
     assetId,
