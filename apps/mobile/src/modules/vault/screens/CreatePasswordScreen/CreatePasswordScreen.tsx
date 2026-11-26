@@ -43,9 +43,11 @@ export const CreatePasswordScreen = ({
         passwordScore,
         validationError,
         canSubmit,
+        confirmationRef,
         setPassword,
         setConfirmation,
         handleSubmit,
+        handlePasswordSubmitEditing,
     } = useCreatePasswordScreen({ onDone })
 
     const passwordErrorOf = () => {
@@ -103,11 +105,14 @@ export const CreatePasswordScreen = ({
                         renderErrorMessage={passwordError !== undefined}
                         isSensitive
                         autoComplete='new-password'
+                        blurOnSubmit={false}
+                        onSubmitEditing={handlePasswordSubmitEditing}
                     />
                     {password.length > 0 && (
                         <PasswordStrengthMeter score={passwordScore} />
                     )}
                     <PWInput
+                        ref={confirmationRef}
                         testID='create-password-confirm-input'
                         placeholder={t(
                             'vault.create_password.confirm_placeholder',
@@ -120,6 +125,8 @@ export const CreatePasswordScreen = ({
                         renderErrorMessage={validationError === 'mismatch'}
                         isSensitive
                         autoComplete='new-password'
+                        blurOnSubmit={false}
+                        onSubmitEditing={() => void handleSubmit()}
                     />
                     {hasError && (
                         <PWText

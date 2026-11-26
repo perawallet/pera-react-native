@@ -134,6 +134,42 @@ describe('useCreatePasswordScreen', () => {
         expect(mocks.createVault).toHaveBeenCalledTimes(1)
     })
 
+    describe('Enter in the password field', () => {
+        const renderWithConfirmation = () => {
+            const rendered = renderHook(() =>
+                useCreatePasswordScreen({ onDone }),
+            )
+            const focus = vi.fn()
+            rendered.result.current.confirmationRef.current = {
+                focus,
+                blur: vi.fn(),
+            }
+            return { ...rendered, focus }
+        }
+
+        it('moves to the confirmation field while the form cannot submit', () => {
+            const { result, focus } = renderWithConfirmation()
+            act(() => result.current.setPassword(STRONG_PASSWORD))
+
+            act(() => result.current.handlePasswordSubmitEditing())
+
+            expect(focus).toHaveBeenCalledTimes(1)
+            expect(mocks.createVault).not.toHaveBeenCalled()
+        })
+
+        it('submits when both fields are already valid', async () => {
+            const { result, focus } = renderWithConfirmation()
+            act(() => result.current.setPassword(STRONG_PASSWORD))
+            act(() => result.current.setConfirmation(STRONG_PASSWORD))
+
+            await act(async () => result.current.handlePasswordSubmitEditing())
+
+            expect(mocks.createVault).toHaveBeenCalledWith(STRONG_PASSWORD)
+            expect(onDone).toHaveBeenCalledTimes(1)
+            expect(focus).not.toHaveBeenCalled()
+        })
+    })
+
     describe('passkey setup step', () => {
         const renderReady = async () => {
             const rendered = renderHook(() =>
