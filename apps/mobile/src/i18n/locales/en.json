@@ -863,7 +863,7 @@
     },
     "cloud_backup": {
         "encryption_key_label": "Encryption Key",
-        "deleted_remotely": "Cloud backup was deleted on another device",
+        "deleted_remotely": "Cloud Backup was turned off on another device. These accounts aren't backed up anymore.",
         "main": {
             "title": "Cloud Backup",
             "subtitle": "Choose an option to proceed",
@@ -896,7 +896,8 @@
             "confirm": "Confirm",
             "error_words": "Some of the selected words are incorrect. Please try again.",
             "error_key": "This encryption key doesn’t match your backup.",
-            "error_both": "The selected words and the encryption key are both incorrect.",
+            "hint_words": "Select a word for each number to continue.",
+            "hint_key": "Enter your encryption key to continue.",
             "success": "Backup key confirmed"
         },
         "store_encryption_key": {

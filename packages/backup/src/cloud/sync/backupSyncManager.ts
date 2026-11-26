@@ -61,6 +61,7 @@ import {
     type BackupSocketFactory,
     type BackupWebSocketEvent,
 } from './webSocketClient'
+import { isBackupDeletedError } from '../api/backupDeleted'
 import { BackupPushIncompleteError, BackupSyncAbortedError } from './types'
 import type {
     BackupActionOutcome,
@@ -80,6 +81,11 @@ import type {
 
 const PERIODIC_SYNC_MS = 5 * 60 * 1000
 const LOCAL_CHANGE_DEBOUNCE_MS = 2000
+
+const isBackupDeletedFailure = (error: unknown): boolean =>
+    isBackupDeletedError(error) ||
+    (error instanceof BackupPushIncompleteError &&
+        isBackupDeletedError(error.cause))
 
 export type BackupSyncManagerDeps = {
     /** The chain whose account entries the backup carries; its items record none. */
@@ -688,6 +694,20 @@ export class BackupSyncManager {
         }
     }
 
+    /** The socket event, a sync and a pull all land here. The id guard makes
+     *  the second report of one deletion a no-op, and keeps a late answer about
+     *  an old backup from wiping a newer one set up meanwhile. */
+    private async handleBackupDeleted(
+        backupId: Nullable<string>,
+    ): Promise<void> {
+        if (backupId === null || this.state.getBackupId() !== backupId) return
+        logger.warn(
+            'BackupSyncManager: backup deleted on the server, clearing local backup',
+        )
+        await this.clearLocalBackup()
+        this.deps.onBackupDeleted?.()
+    }
+
     async syncNow(): Promise<void> {
         if (this.isSyncing() || this.deps.isLocked()) return
         const ctx = this.context()
@@ -718,6 +738,10 @@ export class BackupSyncManager {
         } catch (error) {
             // A stop mid-run is deliberate, not a failed sync.
             if (error instanceof BackupSyncAbortedError) return
+            if (isBackupDeletedFailure(error)) {
+                await this.handleBackupDeleted(ctx.backupId)
+                return
+            }
             logger.warn('BackupSyncManager: sync failed', {
                 error: toError(error).message,
             })
@@ -754,6 +778,10 @@ export class BackupSyncManager {
                 if (next) this.commitSyncState(next)
             } catch (error) {
                 if (error instanceof BackupSyncAbortedError) return
+                if (isBackupDeletedFailure(error)) {
+                    await this.handleBackupDeleted(ctx.backupId)
+                    return
+                }
                 logger.warn('BackupSyncManager: pull failed', {
                     error: toError(error).message,
                 })
@@ -784,8 +812,7 @@ export class BackupSyncManager {
                 break
             }
             case 'backupDeleted': {
-                await this.clearLocalBackup()
-                this.deps.onBackupDeleted?.()
+                await this.handleBackupDeleted(this.state.getBackupId())
                 break
             }
             default: {

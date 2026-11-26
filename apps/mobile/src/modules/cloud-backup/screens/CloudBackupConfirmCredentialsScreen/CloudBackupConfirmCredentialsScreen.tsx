@@ -31,19 +31,33 @@ export const CloudBackupConfirmCredentialsScreen = () => {
         passphraseStatus,
         canConfirm,
         handleConfirm,
+        wordsError,
+        keyError,
+        confirmHint,
     } = useCloudBackupConfirmCredentialsScreen()
 
     return (
         <PWScreen
             testID='cloud_backup_confirm_credentials_screen'
             footer={
-                <PWButton
-                    variant='primary'
-                    title={t('cloud_backup.confirm_credentials.confirm')}
-                    isDisabled={!canConfirm}
-                    onPress={handleConfirm}
-                    testID='cloud_backup_confirm_credentials_button'
-                />
+                <PWView style={styles.footer}>
+                    <PWButton
+                        variant='primary'
+                        title={t('cloud_backup.confirm_credentials.confirm')}
+                        isDisabled={!canConfirm}
+                        onPress={handleConfirm}
+                        testID='cloud_backup_confirm_credentials_button'
+                    />
+                    {confirmHint && (
+                        <PWText
+                            variant='caption'
+                            style={styles.hint}
+                            testID='cloud_backup_confirm_credentials_hint'
+                        >
+                            {confirmHint}
+                        </PWText>
+                    )}
+                </PWView>
             }
         >
             <PWView style={styles.content}>
@@ -62,17 +76,28 @@ export const CloudBackupConfirmCredentialsScreen = () => {
                     </PWText>
                 )}
                 {passphraseStatus === 'ready' && (
-                    <PWView style={styles.quizList}>
-                        {items.map((item, index) => (
-                            <BackupQuizItem
-                                key={`${item.position}-${index}`}
-                                position={item.position}
-                                options={item.options}
-                                selectedWord={item.selectedWord}
-                                onSelect={word => onSelect(index, word)}
-                                testID={`cloud_backup_confirm_credentials_item_${index}`}
-                            />
-                        ))}
+                    <PWView style={styles.quizSection}>
+                        <PWView style={styles.quizList}>
+                            {items.map((item, index) => (
+                                <BackupQuizItem
+                                    key={`${item.position}-${index}`}
+                                    position={item.position}
+                                    options={item.options}
+                                    selectedWord={item.selectedWord}
+                                    onSelect={word => onSelect(index, word)}
+                                    testID={`cloud_backup_confirm_credentials_item_${index}`}
+                                />
+                            ))}
+                        </PWView>
+                        {wordsError && (
+                            <PWText
+                                variant='caption'
+                                style={styles.errorText}
+                                testID='cloud_backup_confirm_credentials_words_error'
+                            >
+                                {wordsError}
+                            </PWText>
+                        )}
                     </PWView>
                 )}
 
@@ -94,6 +119,15 @@ export const CloudBackupConfirmCredentialsScreen = () => {
                         )}
                         isSensitive
                     />
+                    {keyError && (
+                        <PWText
+                            variant='caption'
+                            style={styles.errorText}
+                            testID='cloud_backup_confirm_credentials_key_error'
+                        >
+                            {keyError}
+                        </PWText>
+                    )}
                 </PWView>
             </PWView>
         </PWScreen>

@@ -863,7 +863,7 @@
     },
     "cloud_backup": {
         "encryption_key_label": "Clé de chiffrement",
-        "deleted_remotely": "La sauvegarde cloud a été supprimée sur un autre appareil",
+        "deleted_remotely": "La sauvegarde cloud a été désactivée sur un autre appareil. Ces comptes ne sont plus sauvegardés.",
         "main": {
             "title": "Sauvegarde cloud",
             "subtitle": "Choisissez une option pour continuer",
@@ -896,7 +896,8 @@
             "confirm": "Confirmer",
             "error_words": "Certains des mots sélectionnés sont incorrects. Veuillez réessayer.",
             "error_key": "Cette clé de chiffrement ne correspond pas à votre sauvegarde.",
-            "error_both": "Les mots sélectionnés et la clé de chiffrement sont tous deux incorrects.",
+            "hint_words": "Sélectionnez un mot pour chaque numéro pour continuer.",
+            "hint_key": "Saisissez votre clé de chiffrement pour continuer.",
             "success": "Clé de sauvegarde confirmée"
         },
         "store_encryption_key": {

@@ -863,7 +863,7 @@
     },
     "cloud_backup": {
         "encryption_key_label": "Şifreleme anahtarı",
-        "deleted_remotely": "Bulut yedeklemesi başka bir cihazda silindi",
+        "deleted_remotely": "Bulut yedekleme başka bir cihazda kapatıldı. Bu hesaplar artık yedeklenmiyor.",
         "main": {
             "title": "Bulut yedekleme",
             "subtitle": "Devam etmek için bir seçenek seç",
@@ -896,7 +896,8 @@
             "confirm": "Onayla",
             "error_words": "Seçilen kelimelerden bazıları yanlış. Lütfen tekrar dene.",
             "error_key": "Bu şifreleme anahtarı yedeğinle eşleşmiyor.",
-            "error_both": "Seçilen kelimeler ve şifreleme anahtarı yanlış.",
+            "hint_words": "Devam etmek için her numara için bir kelime seç.",
+            "hint_key": "Devam etmek için şifreleme anahtarını gir.",
             "success": "Yedekleme anahtarı onaylandı"
         },
         "store_encryption_key": {

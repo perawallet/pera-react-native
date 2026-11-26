@@ -863,7 +863,7 @@
     },
     "cloud_backup": {
         "encryption_key_label": "Chave de criptografia",
-        "deleted_remotely": "O backup na nuvem foi excluído em outro dispositivo",
+        "deleted_remotely": "O backup na nuvem foi desativado em outro dispositivo. Estas contas não têm mais backup.",
         "main": {
             "title": "Backup na nuvem",
             "subtitle": "Escolha uma opção para continuar",
@@ -896,7 +896,8 @@
             "confirm": "Confirmar",
             "error_words": "Algumas das palavras selecionadas estão incorretas. Tente novamente.",
             "error_key": "Esta chave de criptografia não corresponde ao seu backup.",
-            "error_both": "As palavras selecionadas e a chave de criptografia estão incorretas.",
+            "hint_words": "Selecione uma palavra para cada número para continuar.",
+            "hint_key": "Insira sua chave de criptografia para continuar.",
             "success": "Chave do backup confirmada"
         },
         "store_encryption_key": {

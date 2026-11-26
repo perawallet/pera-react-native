@@ -29,6 +29,7 @@ import {
 } from '../models'
 import type { BackupId, BackupItemKey } from '../models'
 import { API_PREFIX, backupRoot } from './constants'
+import { BACKUP_DELETED_CODE, BACKUP_DELETED_STATUS } from './backupDeleted'
 
 /** Host-agnostic match for one backup's routes: the handlers are mounted against
  *  whatever base URL the caller's client uses. */
@@ -357,7 +358,8 @@ type SyncRouteContext = {
     root: string
     backupId: BackupId
     backend: FakeBackend
-    /** Verifies the request and records its sender; every route runs it first. */
+    /** Verifies the request and records its sender; every route runs it first.
+     *  Throws the response a deleted or auth-failing backup answers with. */
     receive: (request: Request) => Promise<void>
 }
 
@@ -529,6 +531,11 @@ export type SyncHandlerHandle = {
     pushFromOtherDevice: (key: string, payload: string) => void
     /** `x-device-id` of every request served, in order. */
     seenDeviceIds: () => string[]
+    /** From now on every request that passes signature verification answers
+     *  the deleted-backup status; verification runs first, as on the server. */
+    deleteFromOtherDevice: () => void
+    /** From now on every request answers 401 before verification. */
+    failAuth: () => void
 }
 
 export const buildSyncHandlers = ({
@@ -539,13 +546,28 @@ export const buildSyncHandlers = ({
     const backend = createFakeBackend(initial)
     const verify = createAuthorizer(backupId, verifySignatures)
     const deviceIds: string[] = []
+    let isDeleted = false
+    let isAuthFailing = false
 
     const context: SyncRouteContext = {
         root: backupRootPattern(backupId),
         backupId,
         backend,
         receive: async request => {
+            // msw serves a thrown Response as the reply, so the routes stay untouched.
+            if (isAuthFailing) {
+                throw HttpResponse.json(
+                    { error: 'AUTH_FAILED', code: 'AUTH_FAILED' },
+                    { status: 401 },
+                )
+            }
             await verify(request)
+            if (isDeleted) {
+                throw HttpResponse.json(
+                    { error: BACKUP_DELETED_CODE, code: BACKUP_DELETED_CODE },
+                    { status: BACKUP_DELETED_STATUS },
+                )
+            }
             deviceIds.push(request.headers.get('x-device-id') ?? '')
         },
     }
@@ -564,5 +586,11 @@ export const buildSyncHandlers = ({
         pushFromOtherDevice: (key, payload) =>
             void backend.putItem(key, payload),
         seenDeviceIds: () => [...deviceIds],
+        deleteFromOtherDevice: () => {
+            isDeleted = true
+        },
+        failAuth: () => {
+            isAuthFailing = true
+        },
     }
 }

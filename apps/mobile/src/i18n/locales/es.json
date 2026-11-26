@@ -863,7 +863,7 @@
     },
     "cloud_backup": {
         "encryption_key_label": "Clave de cifrado",
-        "deleted_remotely": "La copia de seguridad en la nube se eliminó en otro dispositivo",
+        "deleted_remotely": "La copia de seguridad en la nube se desactivó en otro dispositivo. Estas cuentas ya no tienen copia de seguridad.",
         "main": {
             "title": "Copia de seguridad en la nube",
             "subtitle": "Elige una opción para continuar",
@@ -896,7 +896,8 @@
             "confirm": "Confirmar",
             "error_words": "Algunas de las palabras seleccionadas son incorrectas. Vuelve a intentarlo.",
             "error_key": "Esta clave de cifrado no coincide con tu copia de seguridad.",
-            "error_both": "Las palabras seleccionadas y la clave de cifrado son incorrectas.",
+            "hint_words": "Selecciona una palabra para cada número para continuar.",
+            "hint_key": "Introduce tu clave de cifrado para continuar.",
             "success": "Clave de la copia confirmada"
         },
         "store_encryption_key": {

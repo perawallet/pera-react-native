@@ -29,6 +29,7 @@ import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 import {
+    buildBackupCredentialsFile,
     deleteBackupKeys,
     persistBackupKeys,
     useCloudBackupStore,
@@ -119,6 +120,21 @@ const answerQuiz = (): void => {
     })
 }
 
+const answerQuizIncorrectly = (): void => {
+    quizItems().forEach((item, index) => {
+        const label = within(item).getByText(/^Select word #\d+$/)
+        const position = Number(/#(\d+)/.exec(label.textContent ?? '')![1]) - 1
+        const option = within(item)
+            .getAllByTestId(
+                new RegExp(
+                    `^cloud_backup_confirm_credentials_item_${index}_option_`,
+                ),
+            )
+            .find(candidate => candidate.textContent !== PHRASE[position])
+        fireEvent.click(option!)
+    })
+}
+
 const openConfirmScreen = async (): Promise<void> => {
     await seedPin()
     renderOverview()
@@ -171,13 +187,22 @@ afterEach(async () => {
 
 describe('confirming the backup credentials', () => {
     it(
-        'shows one warning, then clears it once the words and the encryption key are right',
+        'shows one warning, then clears it once the words are right and the key is pasted as the credentials file exports it',
         async () => {
             configure(false)
             await openConfirmScreen()
 
             answerQuiz()
-            typeKey(SALT)
+            expect(
+                screen.getByTestId('cloud_backup_confirm_credentials_hint')
+                    .textContent,
+            ).toBe('Enter your encryption key to continue.')
+            const exported = (
+                JSON.parse(buildBackupCredentialsFile(SALT)) as {
+                    salt: string
+                }
+            ).salt
+            typeKey(` ${exported.slice(0, 10)} ${exported.slice(10)}\u200B `)
             fireEvent.click(
                 screen.getByTestId('cloud_backup_confirm_credentials_button'),
             )
@@ -215,16 +240,53 @@ describe('confirming the backup credentials', () => {
             )
 
             await waitFor(() =>
-                expect(toastTitles()).toContain(
-                    'This encryption key doesn’t match your backup.',
-                ),
+                expect(
+                    screen.getByTestId(
+                        'cloud_backup_confirm_credentials_key_error',
+                    ).textContent,
+                ).toBe('This encryption key doesn’t match your backup.'),
             )
+            expect(toastTitles()).not.toContain(
+                'This encryption key doesn’t match your backup.',
+            )
+            expect(quizItems().length).toBeGreaterThan(0)
             expect(useCloudBackupStore.getState().credentialsConfirmed).toBe(
                 false,
             )
+        },
+        PIN_FLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'keeps the credentials unconfirmed and shows a words error under the quiz when the key is right and the words are wrong',
+        async () => {
+            configure(false)
+            await openConfirmScreen()
+
+            answerQuizIncorrectly()
+            typeKey(SALT)
+            fireEvent.click(
+                screen.getByTestId('cloud_backup_confirm_credentials_button'),
+            )
+
             expect(
-                screen.getByTestId('cloud_backup_confirm_credentials_screen'),
-            ).toBeTruthy()
+                (
+                    await screen.findByTestId(
+                        'cloud_backup_confirm_credentials_words_error',
+                    )
+                ).textContent,
+            ).toBe(
+                'Some of the selected words are incorrect. Please try again.',
+            )
+            expect(
+                screen.queryByTestId(
+                    'cloud_backup_confirm_credentials_key_error',
+                ),
+            ).toBeNull()
+            expect(toastTitles()).toEqual([])
+            expect(useCloudBackupStore.getState().credentialsConfirmed).toBe(
+                false,
+            )
         },
         PIN_FLOW_TEST_TIMEOUT_MS,
     )
