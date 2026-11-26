@@ -27,12 +27,6 @@ const mocks = vi.hoisted(() => ({
     useApprovalArming: vi.fn(),
     useProjectByUrlQuery: vi.fn(),
     selectedNetworks: {} as Record<string, string>,
-    pickAccount: vi.fn(),
-}))
-
-vi.mock('@modules/walletconnect', async importOriginal => ({
-    ...(await importOriginal<typeof import('@modules/walletconnect')>()),
-    useConnectAccountPicker: () => ({ pickAccount: mocks.pickAccount }),
 }))
 
 const NETWORKS: Record<string, { id: string; displayName: string }[]> = {
@@ -156,7 +150,6 @@ describe('useWcConnectScreen', () => {
         mocks.selectedNetworks = {}
         mocks.allAccounts = [ACCOUNT_A]
         mocks.firstUnreachableChainsNote.mockReturnValue(null)
-        mocks.pickAccount.mockResolvedValue(null)
     })
 
     describe('an EVM proposal', () => {
@@ -190,54 +183,69 @@ describe('useWcConnectScreen', () => {
             })
         })
 
-        // The empty row is what keeps a decoy under Connect from granting.
+        // The empty selection is what keeps a decoy under Connect from granting.
         it('starts a page-opened window with no account, so Connect waits for a pick', () => {
             const { result } = render(
                 evmProposal({ requesterOrigin: 'https://dapp.example' }),
             )
 
             expect(result.current.isEvm).toBe(true)
-            expect(result.current.evmAccount).toBeNull()
+            expect(result.current.selected.size).toBe(0)
             expect(result.current.canConnect).toBe(false)
         })
 
-        it('approves exactly the one account picked', async () => {
-            mocks.pickAccount.mockResolvedValueOnce('evm-a')
+        it('approves exactly the one account pressed', () => {
             const { result } = render(
                 evmProposal({ requesterOrigin: 'https://dapp.example' }),
             )
 
-            await act(() => result.current.handleEvmAccountPress())
+            act(() => result.current.handleAccountPress('evm-a'))
             act(() => result.current.handleConnect())
 
-            expect(result.current.evmAccount?.id).toBe('evm-a')
+            expect([...result.current.selected]).toEqual(['evm-a'])
             expect(mocks.approve).toHaveBeenCalledWith(['0xAAAA'])
+        })
+
+        it('swaps to the account pressed next, since the chain grants one', () => {
+            const { result } = render(
+                evmProposal({ requesterOrigin: 'https://dapp.example' }),
+            )
+
+            act(() => result.current.handleAccountPress('evm-a'))
+            act(() => result.current.handleAccountPress('evm-b'))
+            act(() => result.current.handleConnect())
+
+            expect([...result.current.selected]).toEqual(['evm-b'])
+            expect(mocks.approve).toHaveBeenCalledWith(['0xBBBB'])
+        })
+
+        it('keeps the account picked when it is pressed again', () => {
+            const { result } = render(
+                evmProposal({ requesterOrigin: 'https://dapp.example' }),
+            )
+
+            act(() => result.current.handleAccountPress('evm-a'))
+            act(() => result.current.handleAccountPress('evm-a'))
+
+            expect([...result.current.selected]).toEqual(['evm-a'])
         })
 
         it('preselects the active account for a pairing the user started', () => {
             const { result } = render(evmProposal())
 
-            expect(result.current.evmAccount?.id).toBe('evm-b')
+            expect([...result.current.selected]).toEqual(['evm-b'])
             expect(result.current.canConnect).toBe(true)
         })
 
-        it('does not open the picker before the window is armed', async () => {
+        it('ignores a press before the window is armed', () => {
             mocks.useApprovalArming.mockReturnValue(false)
             const { result } = render(
                 evmProposal({ requesterOrigin: 'https://dapp.example' }),
             )
 
-            await act(() => result.current.handleEvmAccountPress())
+            act(() => result.current.handleAccountPress('evm-a'))
 
-            expect(mocks.pickAccount).not.toHaveBeenCalled()
-        })
-
-        it('keeps the pick when the picker is dismissed', async () => {
-            const { result } = render(evmProposal())
-
-            await act(() => result.current.handleEvmAccountPress())
-
-            expect(result.current.evmAccount?.id).toBe('evm-b')
+            expect(result.current.selected.size).toBe(0)
         })
     })
 
@@ -245,7 +253,6 @@ describe('useWcConnectScreen', () => {
         const { result } = render()
 
         expect(result.current.isEvm).toBe(false)
-        expect(result.current.evmAccount).toBeNull()
     })
 
     it("explains an empty account list with the kind's note for the requested chain", () => {
@@ -440,7 +447,7 @@ describe('useWcConnectScreen', () => {
         expect(result.current.canConnect).toBe(false)
 
         act(() => {
-            result.current.toggle('account-b')
+            result.current.handleAccountPress('account-b')
         })
         expect(result.current.canConnect).toBe(true)
 
@@ -469,7 +476,7 @@ describe('useWcConnectScreen', () => {
             }),
         )
 
-        act(() => result.current.toggle('account-a'))
+        act(() => result.current.handleAccountPress('account-a'))
         act(() => result.current.handleConnect())
 
         expect(mocks.approve).toHaveBeenCalledWith(['0xAAAA'])
@@ -478,8 +485,8 @@ describe('useWcConnectScreen', () => {
     it('approves several accounts in the order they were picked', () => {
         const { result } = render()
 
-        act(() => result.current.toggle('account-b'))
-        act(() => result.current.toggle('account-a'))
+        act(() => result.current.handleAccountPress('account-b'))
+        act(() => result.current.handleAccountPress('account-a'))
         act(() => result.current.handleConnect())
 
         expect(mocks.approve).toHaveBeenCalledWith(['BBBB', 'AAAA'])
@@ -487,8 +494,8 @@ describe('useWcConnectScreen', () => {
 
     it('does not approve a picked account that stopped being offered', () => {
         const { result, rerender } = render()
-        act(() => result.current.toggle('account-a'))
-        act(() => result.current.toggle('account-b'))
+        act(() => result.current.handleAccountPress('account-a'))
+        act(() => result.current.handleAccountPress('account-b'))
 
         mocks.useSigningAccountsOn.mockReturnValue([ACCOUNT_B])
         rerender()
@@ -498,7 +505,7 @@ describe('useWcConnectScreen', () => {
 
     it('sends no grant when every picked account stopped being offered', () => {
         const { result, rerender } = render()
-        act(() => result.current.toggle('account-a'))
+        act(() => result.current.handleAccountPress('account-a'))
 
         mocks.useSigningAccountsOn.mockReturnValue([])
         rerender()
@@ -537,7 +544,7 @@ describe('useWcConnectScreen', () => {
             const { result } = render()
 
             act(() => {
-                result.current.toggle('account-b')
+                result.current.handleAccountPress('account-b')
             })
             act(() => {
                 result.current.handleConnect()
@@ -575,7 +582,7 @@ describe('useWcConnectScreen', () => {
 
         it('swaps the spinner for the confirmed state', () => {
             const { result } = render()
-            act(() => result.current.toggle('account-b'))
+            act(() => result.current.handleAccountPress('account-b'))
             act(() => result.current.handleConnect())
             expect(result.current.isConnecting).toBe(true)
 
@@ -587,7 +594,7 @@ describe('useWcConnectScreen', () => {
 
         it('does not approve a second time from the confirmed button', () => {
             const { result } = render()
-            act(() => result.current.toggle('account-b'))
+            act(() => result.current.handleAccountPress('account-b'))
             act(() => result.current.handleConnect())
             act(() => useApprovalConfirmedStore.getState().setConfirmed())
 
@@ -611,10 +618,10 @@ describe('useWcConnectScreen', () => {
         const { result } = render()
 
         act(() => {
-            result.current.toggle('account-a')
+            result.current.handleAccountPress('account-a')
         })
         act(() => {
-            result.current.toggle('account-a')
+            result.current.handleAccountPress('account-a')
         })
 
         expect(result.current.canConnect).toBe(false)
@@ -655,6 +662,15 @@ describe('useWcConnectScreen', () => {
 
         expect(result.current.selected.size).toBe(0)
         expect(result.current.canConnect).toBe(false)
+    })
+
+    it('ignores a press on an account before the window is armed', () => {
+        mocks.useApprovalArming.mockReturnValue(false)
+        const { result } = render()
+
+        act(() => result.current.handleAccountPress('account-a'))
+
+        expect(result.current.selected.size).toBe(0)
     })
 
     it('cannot connect before the window is armed, even with an account picked', () => {

@@ -256,24 +256,20 @@ export const selectAccountAndArmConnect = async (
 }
 
 /**
- * Picks the first offered account into the EVM connect row, then arms
- * Connect. A page-opened window starts the row empty, and the row waits for
- * the same arming as Connect before it opens the picker.
+ * Picks the first account in an EVM connect list, then arms Connect. A
+ * page-opened window starts with none picked, and the rows wait for the same
+ * arming as Connect. The radio's checked state is not exposed on web, so
+ * Connect enabling is what shows the pick landed.
  */
 export const selectEvmAccountAndArmConnect = async (
     approvalPage: Page,
     connectButton: Locator,
 ): Promise<Locator> => {
-    const row = approvalPage.getByTestId('wc_evm_account_row')
+    const row = approvalPage.getByRole('radio').first()
     await expect(row).toBeVisible({ timeout: 20_000 })
     await armApprovalAction(approvalPage, row)
     await row.click()
-    const option = approvalPage
-        .locator('[data-testid^="connect_account_picker-"]')
-        .first()
-    await expect(option).toBeVisible({ timeout: 20_000 })
-    await option.click()
-    await expect(option).toBeHidden()
+    // Connect enables only once an account is picked.
     await armApprovalAction(approvalPage, connectButton)
     return row
 }

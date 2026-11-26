@@ -52,7 +52,6 @@ import { useLanguage } from '@hooks/useLanguage'
 import { toPeerDisplayText, toPeerHostLabel } from '@utils/peerDisplay'
 import {
     toConnectionPermissions,
-    useConnectAccountPicker,
     type ConnectionPermission,
 } from '@modules/walletconnect'
 import { useHomeChainScope } from '@hooks/useHomeChainScope'
@@ -79,15 +78,13 @@ type UseWcConnectScreenResult = {
     verificationTier?: VerificationTier
     /** Accounts with an address on `chainId` that something held can sign for. */
     accounts: WalletAccount[]
-    /** Account ids; each approves with its address on `chainId`. Unused on an EVM chain. */
+    /** Account ids; each approves with its address on `chainId`. At most one on an EVM chain. */
     selected: Set<string>
-    toggle: (accountId: string) => void
-    /** An EVM chain grants exactly one account, picked from a row instead of the list. */
+    /** Picks the account on an EVM chain, toggles it on any other; ignored until armed. */
+    handleAccountPress: (accountId: string) => void
+    /** An EVM chain grants exactly one account, so its list picks one rather than several. */
     isEvm: boolean
-    /** `null` until picked; always `null` off an EVM chain. */
-    evmAccount: Nullable<WalletAccount>
-    handleEvmAccountPress: () => Promise<void>
-    /** The window has seen local input; the EVM row stays disabled until then. */
+    /** The window has seen local input; the account rows stay disabled until then. */
     isArmed: boolean
     canConnect: boolean
     isLoading: boolean
@@ -204,42 +201,42 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
               !!proposal?.requesterOrigin,
           )
         : null
-    const evmAccount = accounts.find(({ id }) => id === evmAccountId) ?? null
-    const { pickAccount } = useConnectAccountPicker()
 
-    // Gated like Connect: a decoy must not chain open-picker, pick, Connect.
-    const handleEvmAccountPress = useCallback(async (): Promise<void> => {
-        if (!isArmed || !isEvm) return
-        const picked = await pickAccount({
-            accounts,
-            chainId,
-            selectedAccountId: evmAccountId,
-            title: t('walletconnect.request.account_picker_title'),
-        })
-        if (picked) setPickedEvmAccountId(picked)
-    }, [isArmed, isEvm, pickAccount, accounts, chainId, evmAccountId, t])
-
-    const toggle = useCallback((accountId: string): void => {
-        setSelected(prev => {
-            const next = new Set(prev)
-            if (next.has(accountId)) {
-                next.delete(accountId)
-            } else {
-                next.add(accountId)
+    // Gated like Connect: the press that arms is swallowed, so a decoy needs a
+    // pick and Connect at two separate spots after the window is armed.
+    const handleAccountPress = useCallback(
+        (accountId: string): void => {
+            if (!isArmed) return
+            if (isEvm) {
+                setPickedEvmAccountId(accountId)
+                return
             }
-            return next
-        })
-    }, [])
+            setSelected(prev => {
+                const next = new Set(prev)
+                if (next.has(accountId)) {
+                    next.delete(accountId)
+                } else {
+                    next.add(accountId)
+                }
+                return next
+            })
+        },
+        [isArmed, isEvm],
+    )
+
+    const selectedIds = useMemo(
+        () => (isEvm ? new Set(evmAccountId ? [evmAccountId] : []) : selected),
+        [isEvm, evmAccountId, selected],
+    )
 
     // An account picked and then dropped from the list is not granted.
     const addresses = useMemo(() => {
-        const evmIds = evmAccountId ? [evmAccountId] : []
-        return (isEvm ? evmIds : [...selected]).flatMap(id => {
+        return [...selectedIds].flatMap(id => {
             const account = accounts.find(a => a.id === id)
             const address = account && chainAccountOf(account, chainId)?.address
             return address ? [address] : []
         })
-    }, [isEvm, evmAccountId, selected, accounts, chainId])
+    }, [selectedIds, accounts, chainId])
 
     const handleConnect = useCallback((): void => {
         if (!isArmed || !siteSafety.isApprovalAllowed || isConnecting) return
@@ -299,11 +296,9 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
             chainId === home.chainId ? undefined : chainNetworkOf(scope),
         verificationTier,
         accounts,
-        selected,
-        toggle,
+        selected: selectedIds,
+        handleAccountPress,
         isEvm,
-        evmAccount,
-        handleEvmAccountPress,
         isArmed,
         canConnect:
             addresses.length > 0 && isArmed && siteSafety.isApprovalAllowed,
