@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import {
+    checkRecoveryPhrase,
     detectImportKind,
     importFormatsFor,
     keyKindOptionsOf,
@@ -149,6 +150,79 @@ describe('detectImportKind', () => {
                 `  ${words(12).replace(/ /g, '\n  ')} `,
             ),
         ).toEqual({ success: true, seed: FAKE_HD_SEED, wordCount: 12 })
+    })
+})
+
+describe('checkRecoveryPhrase', () => {
+    const repeat = (word: string, count: number) =>
+        Array.from({ length: count }, () => word)
+    const TWELVE = [...repeat('abandon', 11), 'about']
+    const TWENTY_FOUR = [...repeat('abandon', 23), 'art']
+
+    it('accepts 12 and 24 words whose BIP-39 checksum holds, naming kind and count', () => {
+        registerFakeAccountsChain()
+
+        expect(checkRecoveryPhrase(FAKE_CHAIN_ID, TWELVE)).toEqual({
+            success: true,
+            seed: FAKE_HD_SEED,
+            wordCount: 12,
+        })
+        expect(checkRecoveryPhrase(FAKE_CHAIN_ID, TWENTY_FOUR)).toEqual({
+            success: true,
+            seed: FAKE_HD_SEED,
+            wordCount: 24,
+        })
+    })
+
+    it('rejects a count no kind takes', () => {
+        registerFakeAccountsChain()
+
+        expect(
+            checkRecoveryPhrase(FAKE_CHAIN_ID, [...TWELVE, 'abandon']),
+        ).toEqual({ success: false, reason: 'word-count' })
+    })
+
+    it('rejects a word outside the wordlist', () => {
+        registerFakeAccountsChain()
+
+        expect(
+            checkRecoveryPhrase(FAKE_CHAIN_ID, [
+                ...repeat('abandon', 11),
+                'notaword',
+            ]),
+        ).toEqual({ success: false, reason: 'unknown-word' })
+    })
+
+    it('rejects words whose BIP-39 checksum fails', () => {
+        registerFakeAccountsChain()
+
+        expect(
+            checkRecoveryPhrase(FAKE_CHAIN_ID, repeat('abandon', 12)),
+        ).toEqual({ success: false, reason: 'checksum' })
+    })
+
+    it("asks the chain to check a non-HD kind's checksum, with the detected seed", () => {
+        const { adapter } = registerFakeAccountsChain()
+        const isValidMnemonic = vi.mocked(
+            adapter.singleKeyAccounts!.isValidMnemonic,
+        )
+        const phrase = repeat('abandon', 25)
+
+        expect(checkRecoveryPhrase(FAKE_CHAIN_ID, phrase)).toEqual({
+            success: true,
+            seed: FAKE_SINGLE_SEED,
+            wordCount: 25,
+        })
+        expect(isValidMnemonic).toHaveBeenCalledWith(
+            FAKE_SINGLE_SEED,
+            expect.any(Uint16Array),
+        )
+
+        isValidMnemonic.mockReturnValue(false)
+        expect(checkRecoveryPhrase(FAKE_CHAIN_ID, phrase)).toEqual({
+            success: false,
+            reason: 'checksum',
+        })
     })
 })
 

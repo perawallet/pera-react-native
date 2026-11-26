@@ -17,6 +17,7 @@ import { mnemonicFromSeed } from 'algosdk'
 import {
     consumePendingImportMnemonic,
     DuplicateAccountError,
+    setPendingImportMnemonic,
     useFindAlternateImportKinds,
     useImportAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -86,6 +87,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useImportAccount: vi.fn(),
     useFindAlternateImportKinds: vi.fn(),
     consumePendingImportMnemonic: vi.fn(),
+    setPendingImportMnemonic: vi.fn(),
     localKeyKindOf: vi.fn((_chainId: string, seed: string) => ({
         seed,
         signingScheme: seed === 'quantum' ? 'falcon-1024' : 'ed25519',
@@ -167,15 +169,11 @@ vi.mock('@hooks/useLanguage', () => ({
     })),
 }))
 
-vi.mock('@modules/deeplink', async () => ({
-    DeeplinkType: (
-        await vi.importActual<
-            typeof import('@perawallet/wallet-core-deeplinks')
-        >('@perawallet/wallet-core-deeplinks')
-    ).DeeplinkType,
-    useDeepLink: vi.fn(() => ({
-        parseDeeplink: vi.fn(),
-    })),
+const mockReadScannedRecoveryPhrase = vi.fn()
+vi.mock('../../../hooks/useScannedRecoveryPhrase', () => ({
+    useScannedRecoveryPhrase: () => ({
+        readScannedRecoveryPhrase: mockReadScannedRecoveryPhrase,
+    }),
 }))
 
 const { mockRequestBottomSheet } = vi.hoisted(() => ({
@@ -436,17 +434,85 @@ describe('useImportAccountScreen', () => {
         },
     )
 
-    it('shows error toast when handleQRScannerSuccess is called with invalid QR content', () => {
-        const { result } = renderHook(() => useImportAccountScreen())
-
-        act(() => {
-            result.current.handleQRScannerSuccess('invalid-url')
+    describe('a scanned recovery phrase', () => {
+        const phrase = (count: number, seed: 'bip39' | null) => ({
+            seed,
+            wordCount: count,
+            mnemonic: new Array(count).fill('abandon').join(' '),
         })
 
-        expect(mockErrorToast).toHaveBeenCalledWith(
-            'onboarding.import_account.invalid_mnemonic_title',
-            'onboarding.import_account.invalid_mnemonic_body',
-        )
+        it('fills the entry in place when it has the entry length', async () => {
+            mockReadScannedRecoveryPhrase.mockReturnValue(phrase(24, 'bip39'))
+            mockRequestBottomSheet.mockResolvedValueOnce('scan')
+            const { result } = renderHook(() => useImportAccountScreen())
+            await act(async () => {
+                result.current.handleOpenSupportOptions()
+            })
+            expect(result.current.isQRScannerVisible).toBe(true)
+
+            act(() => {
+                result.current.handleQRScannerSuccess('scanned')
+            })
+
+            expect(mockReadScannedRecoveryPhrase).toHaveBeenCalledWith(
+                'scanned',
+            )
+            expect(result.current.words.every(w => w === 'abandon')).toBe(true)
+            expect(result.current.isQRScannerVisible).toBe(false)
+            expect(mockReplace).not.toHaveBeenCalled()
+            expect(setPendingImportMnemonic).not.toHaveBeenCalled()
+        })
+
+        it('keeps the entry when 25 words arrive on the quantum entry', () => {
+            vi.mocked(useRoute).mockReturnValue({
+                params: { accountType: 'quantum', wordCount: 25 },
+            } as never)
+            mockReadScannedRecoveryPhrase.mockReturnValue(phrase(25, null))
+            const { result } = renderHook(() => useImportAccountScreen())
+
+            act(() => {
+                result.current.handleQRScannerSuccess('scanned')
+            })
+
+            expect(result.current.words).toHaveLength(25)
+            expect(result.current.words.every(w => w === 'abandon')).toBe(true)
+            expect(mockReplace).not.toHaveBeenCalled()
+        })
+
+        it("reopens the entry for the phrase's own kind through the pending store when the length differs", () => {
+            const scanned = phrase(12, 'bip39')
+            mockReadScannedRecoveryPhrase.mockReturnValue(scanned)
+            const { result } = renderHook(() => useImportAccountScreen())
+
+            act(() => {
+                result.current.handleQRScannerSuccess('scanned')
+            })
+
+            expect(setPendingImportMnemonic).toHaveBeenCalledWith(
+                scanned.mnemonic,
+            )
+            expect(mockReplace).toHaveBeenCalledWith('ImportAccount', {
+                accountType: 'bip39',
+                wordCount: 12,
+            })
+            expect(mockReplace).not.toHaveBeenCalledWith(
+                'ImportAccount',
+                expect.objectContaining({ mnemonic: expect.anything() }),
+            )
+        })
+
+        it('changes nothing when the scan is refused', () => {
+            mockReadScannedRecoveryPhrase.mockReturnValue(undefined)
+            const { result } = renderHook(() => useImportAccountScreen())
+
+            act(() => {
+                result.current.handleQRScannerSuccess('scanned')
+            })
+
+            expect(result.current.words.every(w => w === '')).toBe(true)
+            expect(mockReplace).not.toHaveBeenCalled()
+            expect(setPendingImportMnemonic).not.toHaveBeenCalled()
+        })
     })
 
     describe('suggestions', () => {

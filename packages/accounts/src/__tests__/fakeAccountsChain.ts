@@ -292,6 +292,7 @@ const createFakeAccountsAdapter = (): AccountsChainAdapter => ({
     singleKeyAccounts: {
         create: vi.fn(),
         importMnemonic: vi.fn(),
+        isValidMnemonic: vi.fn(() => true),
         findAlternateImportKinds: vi.fn(async () => []),
     },
     resolveSigner: vi.fn((account, _accounts, _scope) =>

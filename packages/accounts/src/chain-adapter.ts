@@ -301,6 +301,15 @@ export type SingleKeyAccountOps = {
         save: (minted: MintedAccount) => Promise<void>,
     ): Promise<WalletAccount | WalletAccount[]>
     /**
+     * Whether the words decode as a `seed` phrase, checksum included. Asked
+     * only for this chain's non-HD kinds. Never throws.
+     */
+    isValidMnemonic(
+        seed: LocalKeySeed,
+        /** Wordlist indices; the caller zeroes them. */
+        mnemonicIndices: Uint16Array,
+    ): boolean
+    /**
      * Two kinds can share a word count, so an import that detected `seed`
      * may have meant another. Returns the on-chain accounts the same words
      * control under the other kinds. Advisory, so it never blocks an import:

@@ -607,6 +607,30 @@ export const accountsContractTests = (
             )
         })
 
+        it('accepts the words of its single-key phrase and rejects a broken checksum', () => {
+            const adapter = makeAdapter()
+            if (!adapter.singleKeyAccounts || !fixtures.singleKey) return
+            const { mnemonicIndices } = fixtures.singleKey
+            const broken = Uint16Array.from(mnemonicIndices)
+            const last = broken.length - 1
+            broken[last] = (broken[last] + 1) % 2048
+
+            for (const kind of singleKeyKinds) {
+                expect(
+                    adapter.singleKeyAccounts.isValidMnemonic(
+                        kind.seed,
+                        mnemonicIndices,
+                    ),
+                ).toBe(true)
+                expect(
+                    adapter.singleKeyAccounts.isValidMnemonic(
+                        kind.seed,
+                        broken,
+                    ),
+                ).toBe(false)
+            }
+        })
+
         it('finds the accounts the same words control as another kind, or none', async () => {
             const adapter = makeAdapter()
             if (!adapter.singleKeyAccounts || !fixtures.singleKey) return

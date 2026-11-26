@@ -13,7 +13,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { type RouteProp, useRoute } from '@react-navigation/native'
 import {
-    detectImportKind,
     keyKindOptionsOf,
     setPendingImportMnemonic,
 } from '@perawallet/wallet-core-accounts'
@@ -34,11 +33,7 @@ import { useModalState } from '@hooks/useModalState'
 import { useTabHandoff } from '@hooks/useTabHandoff'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
-import {
-    ChainSelectionContent,
-    useDeepLink,
-    DeeplinkType,
-} from '@modules/deeplink'
+import { ChainSelectionContent } from '@modules/deeplink'
 import type { AccountOption } from '@modules/onboarding/types'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useRestoreBackupOptions } from '@modules/cloud-backup'
@@ -52,6 +47,7 @@ import {
     type LedgerTransportOptionsContentResult,
 } from '../../components/LedgerTransportOptionsContent'
 import { useIsOnboarding } from '../../hooks/useOnboardingStore'
+import { useScannedRecoveryPhrase } from '../../hooks/useScannedRecoveryPhrase'
 import { usePrivateKeyImportChainId } from '../../hooks/usePrivateKeyImportChainId'
 import type { ImportFlowParamList } from '../../routes/types'
 import { trackChainOnboardingEvent } from '../../utils'
@@ -73,7 +69,8 @@ export const useImportAccountOptionsScreen =
         const navigation = useAppNavigation()
         const { errorToast } = useToast()
         const { t } = useLanguage()
-        const { parseDeeplink } = useDeepLink()
+        const { readScannedRecoveryPhrase } =
+            useScannedRecoveryPhrase(ALGORAND_CHAIN_ID)
         const { request: requestBottomSheet } = useBottomSheet()
         const { chooseRestoreRoute, isReadingCredentials } =
             useRestoreBackupOptions()
@@ -223,33 +220,11 @@ export const useImportAccountOptionsScreen =
         ])
 
         const handleQRScannerSuccess = useCallback(
-            (url: string, restartScanning?: () => void) => {
+            (scanned: string, restartScanning?: () => void) => {
                 closeQRScanner()
 
-                const parsedDeeplink = parseDeeplink(url)
-
-                if (parsedDeeplink?.type !== DeeplinkType.RECOVER_ADDRESS) {
-                    errorToast(
-                        t('onboarding.add_account.qr_scan_invalid_title'),
-                        t('onboarding.add_account.qr_scan_invalid_body'),
-                    )
-                    restartScanning?.()
-                    return
-                }
-
-                const resolved = detectImportKind(
-                    ALGORAND_CHAIN_ID,
-                    parsedDeeplink.mnemonic,
-                )
-                if (!resolved.success) {
-                    errorToast(
-                        t(
-                            'onboarding.add_account.qr_scan_invalid_mnemonic_title',
-                        ),
-                        t(
-                            'onboarding.add_account.qr_scan_invalid_mnemonic_body',
-                        ),
-                    )
+                const phrase = readScannedRecoveryPhrase(scanned)
+                if (!phrase) {
                     restartScanning?.()
                     return
                 }
@@ -259,13 +234,13 @@ export const useImportAccountOptionsScreen =
                 // later names the account) before importing. The mnemonic is
                 // passed via an in-memory store, not a route param, so the
                 // secret never enters the navigation state tree.
-                setPendingImportMnemonic(parsedDeeplink.mnemonic)
+                setPendingImportMnemonic(phrase.mnemonic)
                 navigation.push('ImportAccount', {
-                    accountType: resolved.seed,
-                    wordCount: resolved.wordCount,
+                    accountType: phrase.seed,
+                    wordCount: phrase.wordCount,
                 })
             },
-            [closeQRScanner, parseDeeplink, navigation, errorToast, t],
+            [closeQRScanner, readScannedRecoveryPhrase, navigation],
         )
 
         const handleImportAsb = useCallback(() => {

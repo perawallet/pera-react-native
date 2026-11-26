@@ -11,8 +11,15 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
+import {
+    act,
+    cleanup,
+    fireEvent,
+    screen,
+    waitFor,
+} from '@testing-library/react'
 import { Notifier } from 'react-native-notifier'
+import { useBarcodeScannerOutput } from 'react-native-vision-camera-barcode-scanner'
 
 import {
     chainAccountOf,
@@ -21,7 +28,10 @@ import {
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
 import { evmRpcHandlers } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
-import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-chain-algorand/test-handlers'
+import {
+    mockAlgodAccountInformation,
+    mockIndexerSearchForAccounts,
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { mockAccountFastLookup } from '@perawallet/wallet-core-shared/test-handlers'
 import {
     deleteBackupKeys,
@@ -53,8 +63,12 @@ import {
     deriveTestHDAddress,
     HD_12_ETHEREUM_ADDRESS_0,
     HD_12_ETHEREUM_ADDRESS_1,
+    ALGO25_TEST_ADDRESS,
+    ALGO25_TEST_MNEMONIC,
     HD_TEST_MNEMONIC_12,
     HD_TEST_MNEMONIC_12_WORDS,
+    HD_TEST_MNEMONIC_24,
+    HD_TEST_MNEMONIC_24_WORDS,
     INVALID_HD_MNEMONIC_12_WORDS,
 } from './__fixtures__/onboarding'
 import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
@@ -479,5 +493,177 @@ describe('Flow: Onboarding → Import a 12-word seed', () => {
         render(<ViewPassphraseHost address={imported[1].algorand!} />)
         await advanceToDisplayedWords()
         expect(readMnemonicWordsFromGrid()).toEqual(HD_TEST_MNEMONIC_12_WORDS)
+    })
+})
+
+const ethereumActivityHandlers = () =>
+    evmRpcHandlers({
+        rpcUrl: ETHEREUM_RPC_URL,
+        responses: {
+            eth_getTransactionCount: params =>
+                String(params[0]).toLowerCase() ===
+                HD_12_ETHEREUM_ADDRESS_0.toLowerCase()
+                    ? '0x2'
+                    : '0x0',
+        },
+    })
+
+// Enters through the real scanner: the barcode callback the camera output is
+// built with is what a frame hands the screen.
+const scanQr = async (rawValue: string) => {
+    await waitFor(() =>
+        expect(vi.mocked(useBarcodeScannerOutput)).toHaveBeenCalled(),
+    )
+    const { onBarcodeScanned } = vi.mocked(useBarcodeScannerOutput).mock
+        .lastCall![0]
+    act(() => onBarcodeScanned([{ rawValue }] as never))
+}
+
+const openRecoverFromQr = async () => {
+    renderImport()
+    fireEvent.click(screen.getByTestId('onboarding_import_account_button'))
+    await waitFor(() =>
+        screen.getByTestId('import_account_options_see_other_options_button'),
+    )
+    fireEvent.click(
+        screen.getByTestId('import_account_options_see_other_options_button'),
+    )
+    await waitFor(() =>
+        screen.getByTestId('import_account_options_recover_qr_button'),
+    )
+    fireEvent.click(
+        screen.getByTestId('import_account_options_recover_qr_button'),
+    )
+}
+
+const enteredWords = (count: number): string[] =>
+    Array.from(
+        { length: count },
+        (_, idx) =>
+            (
+                screen.getByTestId(
+                    `import_account_word_input_${idx}`,
+                ) as HTMLInputElement
+            ).value,
+    )
+
+describe('Flow: Onboarding → Recover from a recovery phrase QR', () => {
+    beforeEach(() => {
+        resetTestKeystore()
+        useAccountsStore.getState().setAccounts([])
+        useOnboardingStore.getState().reset()
+        vi.mocked(Notifier.showNotification).mockClear()
+        vi.mocked(useBarcodeScannerOutput).mockClear()
+        server.use(
+            mockAccountFastLookup({
+                address: ':any',
+                response: { account_exists: false },
+            }),
+            mockIndexerSearchForAccounts(),
+            ...ethereumActivityHandlers(),
+        )
+    })
+
+    it('Given a QR holding a plain 12-word phrase, when the user scans it and recovers, then the words fill in and the same Universal Wallet account is imported as when typed', async () => {
+        // The walk the import leaves running derives keys until it ends, so the
+        // next test's empty keystore must wait for it.
+        const walk = vi.spyOn(
+            useAccountsStore.getState(),
+            'discoverWalletAccounts',
+        )
+        await openRecoverFromQr()
+        await scanQr(HD_TEST_MNEMONIC_12)
+
+        await waitFor(() => screen.getByTestId('import_account_word_input_11'))
+        expect(screen.queryByTestId('import_account_word_input_12')).toBeNull()
+        expect(enteredWords(12)).toEqual(HD_TEST_MNEMONIC_12_WORDS)
+
+        fireEvent.click(screen.getByTestId('import_account_import_button'))
+        await waitFor(
+            () =>
+                expect(
+                    screen.getByTestId(
+                        'import_select_addresses_continue_button',
+                    ),
+                ).toBeTruthy(),
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+        fireEvent.click(
+            screen.getByTestId('import_select_addresses_continue_button'),
+        )
+        await waitFor(
+            () =>
+                expect(
+                    useAccountsStore.getState().accounts.length,
+                ).toBeGreaterThan(0),
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+        const [account] = useAccountsStore.getState().accounts
+        expect(account.custody).toMatchObject({ kind: 'local', seed: 'bip39' })
+        expect(chainAccountOf(account, 'ethereum')?.address).toBe(
+            HD_12_ETHEREUM_ADDRESS_0,
+        )
+        await waitFor(() => expect(walk).toHaveBeenCalledOnce())
+        await walk.mock.results[0].value
+    })
+
+    it('Given a QR holding a plain 24-word phrase, when the user scans it, then the 24 words fill in', async () => {
+        await openRecoverFromQr()
+        await scanQr(HD_TEST_MNEMONIC_24)
+
+        await waitFor(() => screen.getByTestId('import_account_word_input_23'))
+        expect(enteredWords(24)).toEqual(HD_TEST_MNEMONIC_24_WORDS)
+    })
+
+    it('Given a QR holding a plain 25-word Algorand phrase, when the user scans it and recovers, then it imports as a standalone account', async () => {
+        server.use(
+            mockAlgodAccountInformation({
+                address: ':any',
+                response: {},
+            }),
+        )
+        await openRecoverFromQr()
+        await scanQr(ALGO25_TEST_MNEMONIC)
+
+        await waitFor(() => screen.getByTestId('import_account_word_input_24'))
+        fireEvent.click(screen.getByTestId('import_account_import_button'))
+
+        await waitFor(
+            () => expect(useAccountsStore.getState().accounts).toHaveLength(1),
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+        const [account] = useAccountsStore.getState().accounts
+        expect(account.custody).toMatchObject({ kind: 'local', seed: null })
+        expect(chainAccountOf(account, 'algorand')?.address).toBe(
+            ALGO25_TEST_ADDRESS,
+        )
+    })
+
+    it("Given Pera's own recovery link in a QR, when the user scans it, then the words fill in", async () => {
+        await openRecoverFromQr()
+        await scanQr(
+            `perawallet://app/recover-address?mnemonic=${HD_TEST_MNEMONIC_12_WORDS.join(',')}`,
+        )
+
+        await waitFor(() => screen.getByTestId('import_account_word_input_11'))
+        expect(enteredWords(12)).toEqual(HD_TEST_MNEMONIC_12_WORDS)
+    })
+
+    it('Given a QR of 12 words whose checksum is wrong, when the user scans it, then the checksum error is toasted and nothing is entered or imported', async () => {
+        await openRecoverFromQr()
+        await scanQr(INVALID_HD_MNEMONIC_12_WORDS.join(' '))
+
+        await waitFor(() =>
+            expect(vi.mocked(Notifier.showNotification)).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    title: 'onboarding.add_account.qr_scan_invalid_mnemonic_title',
+                    description:
+                        'onboarding.add_account.qr_scan_invalid_checksum_body',
+                }),
+            ),
+        )
+        expect(screen.queryByTestId('import_account_word_input_0')).toBeNull()
+        expect(useAccountsStore.getState().accounts).toHaveLength(0)
+        expect(getKeystoreStore().state.keys).toHaveLength(0)
     })
 })
