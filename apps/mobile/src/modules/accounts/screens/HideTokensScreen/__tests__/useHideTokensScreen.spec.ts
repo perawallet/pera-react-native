@@ -50,10 +50,10 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     useAccountHoldingSources: () => mocks.sources,
     useAccountAssetsQuery: (
         _sources: unknown,
-        options: { filters?: { hideSuspicious?: boolean } },
+        options: { filters?: { hideUnapproved?: boolean } },
     ) => {
         mocks.queryOptions.push(options)
-        const isListRead = options.filters?.hideSuspicious === true
+        const isListRead = options.filters?.hideUnapproved === true
         return {
             holdings: isListRead
                 ? (mocks.listed ?? mocks.holdings)
@@ -140,7 +140,7 @@ describe('useHideTokensScreen', () => {
         )
     })
 
-    describe('a token the suspicious filter keeps out', () => {
+    describe('a token the default filter keeps out for the inbox', () => {
         beforeEach(() => {
             mocks.holdings = [holding('0x1'), holding('0xspam')]
             mocks.listed = [holding('0x1')]

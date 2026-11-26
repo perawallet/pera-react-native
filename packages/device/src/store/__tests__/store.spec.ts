@@ -223,6 +223,45 @@ describe('device/store', () => {
         ).toEqual([])
     })
 
+    test('setRegisteredAccounts keeps each deployment apart and is never persisted', async () => {
+        const { useDeviceStore } = await import('../index')
+        const live = [
+            {
+                chainId: 'ethereum' as const,
+                address: '0xabc',
+                accountType: 'hdWallet',
+                rank: 0,
+                receiveNotifications: true,
+            },
+        ]
+
+        act(() => {
+            useDeviceStore.getState().setRegisteredAccounts('live', live)
+            useDeviceStore.getState().setRegisteredAccounts('developer', [])
+        })
+
+        expect(useDeviceStore.getState().registeredAccounts).toEqual({
+            live,
+            developer: [],
+        })
+        const { partialize } = useDeviceStore.persist.getOptions()
+        expect(partialize?.(useDeviceStore.getState())).not.toHaveProperty(
+            'registeredAccounts',
+        )
+    })
+
+    test('setRegisteredAccounts writes a new object even for an equal list, and resetState clears it', async () => {
+        const { useDeviceStore } = await import('../index')
+        act(() => useDeviceStore.getState().setRegisteredAccounts('live', []))
+        const first = useDeviceStore.getState().registeredAccounts
+
+        act(() => useDeviceStore.getState().setRegisteredAccounts('live', []))
+        expect(useDeviceStore.getState().registeredAccounts).not.toBe(first)
+
+        act(() => useDeviceStore.getState().resetState())
+        expect(useDeviceStore.getState().registeredAccounts).toEqual({})
+    })
+
     test('setChainMuted adds a chain once and removes it', async () => {
         const { useDeviceStore } = await import('../index')
 

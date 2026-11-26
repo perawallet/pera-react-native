@@ -15,7 +15,11 @@ import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { AccountWithBalance } from '@components/AccountWithBalance'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import {
+    PWBottomSheetView,
+    PWButton,
+    PWIcon,
     PWLoadingIndicator,
+    PWSheetLayout,
     PWText,
     PWView,
     type IconName,
@@ -85,17 +89,21 @@ export const ConfirmTurnOffBackupSheet = ({
     } = useConfirmTurnOffBackupSheet(copy.checkboxKey != null)
     const isAtRisk = accountsAtRisk.length > 0
 
+    // Opened without gorhom's container so the at-risk body can scroll;
+    // plain panels need its measuring view or the sheet can't size to them.
     if (isCheckingAccounts) {
         return (
-            <PWView
-                style={styles.loading}
-                testID='confirm_turn_off_backup_sheet'
-            >
-                <PWLoadingIndicator
-                    size='lg'
-                    testID='confirm_turn_off_backup_checking'
-                />
-            </PWView>
+            <PWBottomSheetView>
+                <PWView
+                    style={styles.loading}
+                    testID='confirm_turn_off_backup_sheet'
+                >
+                    <PWLoadingIndicator
+                        size='lg'
+                        testID='confirm_turn_off_backup_checking'
+                    />
+                </PWView>
+            </PWBottomSheetView>
         )
     }
 
@@ -110,49 +118,80 @@ export const ConfirmTurnOffBackupSheet = ({
 
     if (!isAtRisk) {
         return (
-            <ConfirmActionContent<ConfirmTurnOffBackupResult>
-                icon={copy.icon}
-                iconVariant='error'
-                title={t(copy.titleKey)}
-                message={t(copy.bodyKey)}
-                isMessageCentered
-                confirmLabel={t(copy.confirmKey)}
-                confirmVariant={copy.confirmVariant}
-                onConfirm={handleTurnOff}
-                isConfirmDisabled={isTurnOffDisabled}
-                cancelLabel={t('common.cancel.label')}
-                onCancel={handleCancel}
-                testID='confirm_turn_off_backup_sheet'
-                confirmTestID='confirm_turn_off_backup_confirm'
-                cancelTestID='confirm_turn_off_backup_cancel'
-            >
-                {checkbox}
-            </ConfirmActionContent>
+            <PWBottomSheetView>
+                <ConfirmActionContent<ConfirmTurnOffBackupResult>
+                    icon={copy.icon}
+                    iconVariant='error'
+                    title={t(copy.titleKey)}
+                    message={t(copy.bodyKey)}
+                    isMessageCentered
+                    confirmLabel={t(copy.confirmKey)}
+                    confirmVariant={copy.confirmVariant}
+                    onConfirm={handleTurnOff}
+                    isConfirmDisabled={isTurnOffDisabled}
+                    cancelLabel={t('common.cancel.label')}
+                    onCancel={handleCancel}
+                    testID='confirm_turn_off_backup_sheet'
+                    confirmTestID='confirm_turn_off_backup_confirm'
+                    cancelTestID='confirm_turn_off_backup_cancel'
+                >
+                    {checkbox}
+                </ConfirmActionContent>
+            </PWBottomSheetView>
         )
     }
 
     return (
-        <ConfirmActionContent<ConfirmTurnOffBackupResult>
-            icon={copy.icon}
-            iconVariant='error'
-            title={t(copy.titleKey)}
-            message={t(copy.bodyKey)}
-            isMessageCentered
-            confirmLabel={t('cloud_backup.turn_off_at_risk.back_up_first')}
-            confirmVariant='primary'
-            onConfirm={handleBackUpFirst}
-            cancelLabel={t('cloud_backup.turn_off_at_risk.turn_off_anyway')}
-            cancelVariant={copy.confirmVariant}
-            onCancel={handleTurnOff}
-            isCancelDisabled={isTurnOffDisabled}
-            tertiaryLabel={t('common.cancel.label')}
-            tertiaryVariant='linkNeutral'
-            onTertiary={handleCancel}
+        <PWSheetLayout
             testID='confirm_turn_off_backup_sheet'
-            confirmTestID='confirm_turn_off_backup_back_up_first'
-            cancelTestID='confirm_turn_off_backup_turn_off_anyway'
-            tertiaryTestID='confirm_turn_off_backup_cancel'
+            footer={
+                <PWView style={styles.footer}>
+                    {checkbox}
+                    <PWButton
+                        variant='primary'
+                        title={t('cloud_backup.turn_off_at_risk.back_up_first')}
+                        titleLines={2}
+                        onPress={handleBackUpFirst}
+                        testID='confirm_turn_off_backup_back_up_first'
+                    />
+                    <PWButton
+                        variant={copy.confirmVariant}
+                        title={t(
+                            'cloud_backup.turn_off_at_risk.turn_off_anyway',
+                        )}
+                        titleLines={2}
+                        isDisabled={isTurnOffDisabled}
+                        onPress={handleTurnOff}
+                        testID='confirm_turn_off_backup_turn_off_anyway'
+                    />
+                    <PWButton
+                        variant='linkNeutral'
+                        title={t('common.cancel.label')}
+                        titleLines={2}
+                        onPress={handleCancel}
+                        testID='confirm_turn_off_backup_cancel'
+                    />
+                </PWView>
+            }
         >
+            <PWIcon
+                name={copy.icon}
+                variant='error'
+                size='xxl'
+                style={styles.icon}
+            />
+            <PWText
+                variant='h3'
+                style={styles.title}
+            >
+                {t(copy.titleKey)}
+            </PWText>
+            <PWText
+                variant='body'
+                style={styles.message}
+            >
+                {t(copy.bodyKey)}
+            </PWText>
             <PWText
                 variant='body'
                 style={styles.summary}
@@ -180,7 +219,6 @@ export const ConfirmTurnOffBackupSheet = ({
                     />
                 ))}
             </PWView>
-            {checkbox}
-        </ConfirmActionContent>
+        </PWSheetLayout>
     )
 }

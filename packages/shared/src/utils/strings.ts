@@ -223,20 +223,18 @@ export const formatDatetime = (
     return Intl.DateTimeFormat(locale, options).format(date)
 }
 
-export const getInitials = (label: string, maxLetters: number = 2): string => {
-    const words = label.trim().split(/\s+/)
-    if (words.length >= maxLetters) {
-        return words
-            .slice(0, maxLetters)
-            .map(w => w[0])
-            .join('')
-            .toUpperCase()
-    }
-    if (words.length === 1 && words[0].length > 0) {
-        return words[0][0].toUpperCase()
-    }
-    return '?'
-}
+// Letters and digits only: a word's first UTF-16 unit can be half an emoji,
+// which renders as a broken glyph in an icon.
+const INITIAL = /[\p{L}\p{N}]/u
+
+export const getInitials = (label: string, maxLetters: number = 2): string =>
+    label
+        .trim()
+        .split(/\s+/)
+        .flatMap(word => word.match(INITIAL)?.[0] ?? [])
+        .slice(0, maxLetters)
+        .join('')
+        .toUpperCase() || '?'
 
 export const formatTime = (totalSeconds: number): string => {
     const hours = Math.floor(totalSeconds / 3600)

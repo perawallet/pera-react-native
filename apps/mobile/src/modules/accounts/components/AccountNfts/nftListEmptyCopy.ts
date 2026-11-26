@@ -12,31 +12,34 @@
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import type { useLanguage } from '@hooks/useLanguage'
 
-// A failed refresh comes first, then the user's hidden NFTs, then suspicious: a
+// A failed load comes first, then the user's hidden NFTs, then suspicious: a
 // search or chip that only matched filtered-out NFTs should say how to show
 // them, not that nothing matched.
 export const nftListEmptyCopy = ({
     t,
-    isRefreshFailed,
+    loadFailedChainNames,
     isUserHidden,
     isSuspiciousHidden,
     isNetworkEmpty,
     selectedChainId,
 }: {
     t: ReturnType<typeof useLanguage>['t']
-    isRefreshFailed: boolean
+    /** Set when the picked networks failed to load and nothing stored is shown. */
+    loadFailedChainNames: Optional<string>
     isUserHidden: boolean
     isSuspiciousHidden: boolean
     isNetworkEmpty: boolean
     selectedChainId: Nullable<ChainId>
 }): { title: string; body: string } => {
-    if (isRefreshFailed) {
+    if (loadFailedChainNames) {
         return {
-            title: t('account_details.nfts.refresh_error_title'),
-            body: t('account_details.nfts.refresh_error_body'),
+            title: t('account_details.nfts.load_error_title'),
+            body: t('account_details.nfts.load_error_body', {
+                chains: loadFailedChainNames,
+            }),
         }
     }
     if (isUserHidden) {

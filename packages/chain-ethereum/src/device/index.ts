@@ -11,3 +11,8 @@
  */
 
 export { createEvmDeviceAdapter, EVM_DEVICE_ACCOUNT_TYPES } from './adapter'
+export {
+    followedTokenAccountsOf,
+    startFollowedTokensSync,
+    type FollowedTokenAccount,
+} from './followed-tokens'

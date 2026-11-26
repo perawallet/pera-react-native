@@ -24,4 +24,10 @@ export const useStyles = makeStyles(theme => ({
         flexShrink: 1,
         minWidth: 0,
     },
+    badgeHitSlop: {
+        top: theme.spacing.sm,
+        bottom: theme.spacing.sm,
+        left: theme.spacing.sm,
+        right: theme.spacing.sm,
+    },
 }))

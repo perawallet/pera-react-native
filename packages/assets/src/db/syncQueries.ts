@@ -329,6 +329,58 @@ async function getLogolessVerifiedAssetIds({
     return rows.map(row => row.assetId).filter(id => candidates.has(id))
 }
 
+// A token the backend hasn't verified can be marked suspicious, or lose a tier,
+// at any refresh, so it is asked about again after this; a verified one stays
+// on the metadata TTL.
+const NON_VERIFIED_RECHECK_TTL_MS = 24 * 60 * 60 * 1000
+
+/**
+ * Tokens whose stored Pera row isn't verified and whose last sync was over a
+ * day ago. Keyed on the node half's timestamp, which every sync write moves,
+ * so a token the backend now answers blank for (stored from the chain alone,
+ * leaving the Pera row untouched) waits a day again instead of coming back on
+ * every pass. A token stored without a Pera row carries no tier from the
+ * backend, so it stays on the normal TTL.
+ */
+async function getStaleNonVerifiedAssetIds({
+    db,
+    assetIds,
+    scopeKey,
+}: {
+    db: Database
+    assetIds: string[]
+    scopeKey: ChainScopeKey
+}): Promise<string[]> {
+    const rows = await db
+        .select({ assetId: AssetsNodeSchema.assetId })
+        .from(AssetsNodeSchema)
+        .innerJoin(
+            AssetsPeraSchema,
+            and(
+                eq(AssetsPeraSchema.assetId, AssetsNodeSchema.assetId),
+                eq(AssetsPeraSchema.scope, AssetsNodeSchema.scope),
+            ),
+        )
+        .where(
+            and(
+                eq(AssetsNodeSchema.scope, scopeKey),
+                ne(
+                    AssetsPeraSchema.verificationTier,
+                    PeraAssetVerificationTier.verified,
+                ),
+                lt(
+                    AssetsNodeSchema.updatedAt,
+                    Date.now() - NON_VERIFIED_RECHECK_TTL_MS,
+                ),
+                idPredicate(AssetsNodeSchema.assetId, assetIds),
+            ),
+        )
+        .all()
+
+    const candidates = new Set(assetIds)
+    return rows.map(row => row.assetId).filter(id => candidates.has(id))
+}
+
 /**
  * Rows stored from the chain alone (an unknown token, or a pass with the
  * backend unreachable), once a day old. Opt-in for assets on screen only: the
@@ -430,7 +482,9 @@ export async function getCollectibleIdsMissingUrl({
  * tokens stored without a logo once a day old — see
  * `getLogolessVerifiedAssetIds`. `recheckBackendless` additionally returns
  * tokens stored from the chain alone once a day old — see
- * `getBackendlessAssetIds`.
+ * `getBackendlessAssetIds`. `recheckNonVerified` additionally returns
+ * tokens whose tier isn't verified once a day old — see
+ * `getStaleNonVerifiedAssetIds`.
  */
 export async function getStaleOrMissingAssetIds({
     db = getDatabase(),
@@ -442,12 +496,14 @@ export async function getStaleOrMissingAssetIds({
     recheckUnreadGroup = false,
     recheckMissingLogo = false,
     recheckBackendless = false,
+    recheckNonVerified = false,
 }: GetStaleOrMissingAssetIdsParams & {
     recheckUnclassified?: UnclassifiedRecheck
     recheckArc19?: Arc19Recheck
     recheckUnreadGroup?: boolean
     recheckMissingLogo?: boolean
     recheckBackendless?: boolean
+    recheckNonVerified?: boolean
 }): Promise<string[]> {
     const scopeKey = toScopeKey(scope)
     const staleOrMissing = await getStaleOrMissingIdsFromTable({
@@ -488,11 +544,16 @@ export async function getStaleOrMissingAssetIds({
         ? await getBackendlessAssetIds({ db, assetIds, scopeKey })
         : []
 
+    const nonVerified = recheckNonVerified
+        ? await getStaleNonVerifiedAssetIds({ db, assetIds, scopeKey })
+        : []
+
     return unclassified.length === 0 &&
         arc19.length === 0 &&
         unreadGroup.length === 0 &&
         missingLogo.length === 0 &&
-        backendless.length === 0
+        backendless.length === 0 &&
+        nonVerified.length === 0
         ? staleOrMissing
         : [
               ...new Set([
@@ -502,6 +563,7 @@ export async function getStaleOrMissingAssetIds({
                   ...unreadGroup,
                   ...missingLogo,
                   ...backendless,
+                  ...nonVerified,
               ]),
           ]
 }

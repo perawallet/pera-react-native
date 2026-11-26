@@ -77,6 +77,8 @@ import {
 import { NATIVE_ASSET_ID } from '../chains/create-evm-chain'
 
 // Token metadata rarely changes; the same window as Algorand's asset cache.
+// A token that isn't verified is re-read daily on top of this (the backend
+// re-derives tiers at least daily), so it isn't a reason to shorten this.
 const ASSET_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000
 
 const evmAssetIdOf = (chain: EvmChain, ref: AssetRef): string => {
@@ -350,6 +352,8 @@ const syncTokens = async (
         // A verified token the backend still lacks a logo for shouldn't wait
         // out the metadata TTL once the backend adds one.
         recheckMissingLogo: true,
+        // A newly suspicious token must be hidden within a day, not a week.
+        recheckNonVerified: true,
     })
     await reflagStored(
         tokenIds.filter(id => !stale.includes(id)),

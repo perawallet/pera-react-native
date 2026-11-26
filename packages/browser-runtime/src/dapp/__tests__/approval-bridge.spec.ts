@@ -615,7 +615,7 @@ describe('ApprovalWindowBridge', () => {
         })
     })
 
-    it('get-current-approval returns nothing while the popup attempt is still pending (no false advertisement before openPopup settles)', async () => {
+    it('get-current-approval returns nothing to a page other than the toolbar popup while the popup attempt is still pending', async () => {
         const { chromeLike, fireMessage, resolveOpenPopup } = makeChrome(
             undefined,
             'manual',
@@ -1930,6 +1930,86 @@ describe('decision/approval kind matching', () => {
             trustedSender,
         )
 
+        expect(await decision).toBeNull()
+    })
+})
+
+// Chrome settles openPopup() only after the popup's first load stops, so the
+// popup's own get-current-approval can land first.
+describe('the toolbar popup asking before openPopup settles', () => {
+    const popupSender = {
+        id: 'ext-id',
+        url: 'chrome-extension://ext-id/popup.html',
+    }
+
+    const startProposal = async (requestId: string) => {
+        const chrome = makeChrome(undefined, 'manual')
+        const bridge = new ApprovalWindowBridge(chrome.chromeLike)
+        bridge.listen()
+        const decision = bridge.openConnectionProposal(
+            proposalCtx(requestId, 'https://dapp.example'),
+        )
+        // Up to the attempt's await on openPopup, still unsettled.
+        await Promise.resolve()
+        await Promise.resolve()
+        return { ...chrome, decision }
+    }
+
+    it('gets the approval: the popup asking is the proof it opened', async () => {
+        const { fireMessage, resolveOpenPopup } = await startProposal('early-1')
+
+        const current = await fireMessage(
+            { scope: DAPP_APPROVAL_SCOPE, kind: 'get-current-approval' },
+            popupSender,
+        )
+
+        expect(current).toMatchObject({
+            kind: 'connection-proposal',
+            requestId: 'early-1',
+        })
+        resolveOpenPopup()
+        await flush()
+    })
+
+    it('keeps the approval through the unclaimed sweep once openPopup settles', async () => {
+        vi.useFakeTimers()
+        try {
+            const { decision, fireMessage, resolveOpenPopup } =
+                await startProposal('early-2')
+            await fireMessage(
+                { scope: DAPP_APPROVAL_SCOPE, kind: 'get-current-approval' },
+                popupSender,
+            )
+
+            resolveOpenPopup()
+            await vi.advanceTimersByTimeAsync(60_000)
+
+            let settled = false
+            void decision.then(() => (settled = true))
+            await Promise.resolve()
+            expect(settled).toBe(false)
+        } finally {
+            vi.useRealTimers()
+        }
+    })
+
+    it('opens no approval window when openPopup then fails, and the popup closing rejects', async () => {
+        const { decision, created, connectPort, fireMessage, rejectOpenPopup } =
+            await startProposal('early-3')
+        await fireMessage(
+            { scope: DAPP_APPROVAL_SCOPE, kind: 'get-current-approval' },
+            popupSender,
+        )
+        const port = connectPort(
+            `${APPROVAL_POPUP_PORT_PREFIX}early-3`,
+            popupSender,
+        )
+
+        rejectOpenPopup(new Error('Popup closed before it finished loading'))
+        await flush()
+        expect(created).toHaveLength(0)
+
+        port.disconnect()
         expect(await decision).toBeNull()
     })
 })

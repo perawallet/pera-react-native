@@ -236,9 +236,31 @@ describe('Flow: the backup warning follows Cloud Backup coverage', () => {
             await waitFor(() =>
                 expect(screen.queryByTestId('cloud_backup_status')).toBeNull(),
             )
+            await screen.findByText('Confirm Cloud Backup', undefined, {
+                timeout: 3000,
+            })
+            expect(screen.queryByText('Fix Cloud Backup')).toBeNull()
+        })
+
+        it('Given a confirmed backup whose last sync failed, then the banner offers fixing Cloud Backup', async () => {
+            await backUpAndSync()
+            const { syncState } = useBackupSyncStateStore.getState()
+            if (syncState === null) {
+                throw new Error('no sync state after backUpAndSync')
+            }
+            await act(async () => {
+                useBackupSyncStateStore
+                    .getState()
+                    .setSyncState({ ...syncState, lastSyncResult: 'FAILED' })
+            })
+
+            renderHost()
+
             await screen.findByText('Fix Cloud Backup', undefined, {
                 timeout: 3000,
             })
+            expect(screen.queryByText('Confirm Cloud Backup')).toBeNull()
+            expect(screen.queryByTestId('cloud_backup_status')).toBeNull()
         })
     })
 })

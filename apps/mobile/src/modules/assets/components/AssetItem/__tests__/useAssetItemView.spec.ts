@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
 import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -21,6 +21,11 @@ import {
 import { useAssetItemView } from '../useAssetItemView'
 
 const mockCopyToClipboard = vi.fn()
+const { mockRequest } = vi.hoisted(() => ({ mockRequest: vi.fn() }))
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({ request: mockRequest }),
+}))
 
 vi.mock('@hooks/useClipboard', () => ({
     useClipboard: () => ({ copyToClipboard: mockCopyToClipboard }),
@@ -62,6 +67,18 @@ describe('useAssetItemView', () => {
             useView(make({ peraMetadata: { verificationTier: 'verified' } })),
         )
         expect(result.current.verificationIcon).toBe('assets/verified')
+    })
+
+    it('explains the suspicious badge in a sheet', () => {
+        const { result } = renderHook(() => useView(make()))
+
+        act(() => result.current.handleSuspiciousPress())
+
+        expect(mockRequest).toHaveBeenCalledWith(
+            expect.objectContaining({
+                options: expect.objectContaining({ size: 'auto' }),
+            }),
+        )
     })
 
     it('marks suspicious assets', () => {

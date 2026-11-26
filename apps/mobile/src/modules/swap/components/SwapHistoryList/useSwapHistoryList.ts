@@ -11,25 +11,32 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useNavigation } from '@react-navigation/native'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { formatAssetAmount } from '@perawallet/wallet-core-assets'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import {
     swapAccountKey,
-    swapExplorerUrlFor,
+    swapTransactionOf,
     useSwapAccountNames,
     useSwapAccountsAddresses,
     useSwapHistoryInfiniteQuery,
     useSwapSigningAccounts,
-    useSwapSourceChainsByAccount,
     type SwapAsset,
     type SwapHistoryItem,
+    type SwapTransactionRef,
 } from '@perawallet/wallet-core-swaps'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 import type { FilterOption } from '@components/FilterSelection'
 import { useLanguage } from '@hooks/useLanguage'
-import { openExplorerUrl } from '@modules/webview'
+import type { AppStackParamList } from '@routes/types'
 
 import { VISIBLE_SWAP_STATUSES } from '../../constants'
+
+export type SwapTransactionDetailsTarget = SwapTransactionRef & {
+    /** The payer's address as the wallet stores it on `scope`, which the details screen reads history from. */
+    accountAddress: string
+}
 
 /** A row the list can draw: rows naming an asset this wallet can't resolve are left out. */
 export type ListedSwapHistoryItem = SwapHistoryItem & {
@@ -40,8 +47,8 @@ export type ListedSwapHistoryItem = SwapHistoryItem & {
     amountOutLabel: string
     /** The wallet account that paid; absent when it isn't one of this wallet's swap accounts. */
     accountName: Optional<string>
-    /** Absent until the router lists the swap's own transaction. */
-    explorerUrl: Optional<string>
+    /** Absent until the router lists the swap's own transaction, or when the payer isn't one of the wallet's swap accounts. */
+    detailsTarget: Optional<SwapTransactionDetailsTarget>
 }
 
 const hasAssets = (
@@ -78,8 +85,6 @@ export type UseSwapHistoryListResult = {
     shouldShowEmptyState: boolean
     /** Nothing is visible yet but older pages remain, after the automatic reading stopped. */
     shouldShowLoadMore: boolean
-    /** The wallet can swap on more than one chain, so each row's chain is worth showing. */
-    isChainShown: boolean
 }
 
 export const useSwapHistoryList = ({
@@ -87,7 +92,8 @@ export const useSwapHistoryList = ({
 }: UseSwapHistoryListParams): UseSwapHistoryListResult => {
     const { t } = useLanguage()
     const signingAccounts = useSwapSigningAccounts()
-    const { sourceChainIds } = useSwapSourceChainsByAccount()
+    const navigation =
+        useNavigation<NativeStackNavigationProp<AppStackParamList>>()
     const addresses = useSwapAccountsAddresses(signingAccounts)
     const [pickedAccountId, setPickedAccountId] =
         useState<Nullable<string>>(null)
@@ -148,17 +154,17 @@ export const useSwapHistoryList = ({
     } = useSwapHistoryInfiniteQuery(accounts, VISIBLE_SWAP_STATUSES)
 
     const swaps = useMemo(() => {
-        const accountIdByKey = new Map(
-            addresses.map(entry => [swapAccountKey(entry), entry.accountId]),
+        const payerByKey = new Map(
+            addresses.map(entry => [swapAccountKey(entry), entry]),
         )
         const nameById = new Map(
             namedAccounts.map(({ accountId, name }) => [accountId, name]),
         )
         return loaded.filter(hasAssets).map(item => {
-            const payerId = item.sourceAccount
-                ? accountIdByKey.get(swapAccountKey(item.sourceAccount))
+            const payer = item.sourceAccount
+                ? payerByKey.get(swapAccountKey(item.sourceAccount))
                 : undefined
-            const { chainId, networkId } = item.assetIn.ref
+            const transaction = swapTransactionOf(item)
             return {
                 ...item,
                 amountInLabel: item.amountIn
@@ -169,8 +175,13 @@ export const useSwapHistoryList = ({
                     : NO_AMOUNT,
                 // A wallet with one account has nothing to tell apart.
                 accountName:
-                    canFilter && payerId ? nameById.get(payerId) : undefined,
-                explorerUrl: swapExplorerUrlFor({ chainId, networkId }, item),
+                    canFilter && payer
+                        ? nameById.get(payer.accountId)
+                        : undefined,
+                detailsTarget:
+                    transaction && payer
+                        ? { ...transaction, accountAddress: payer.address }
+                        : undefined,
             }
         })
     }, [loaded, addresses, namedAccounts, canFilter])
@@ -187,16 +198,16 @@ export const useSwapHistoryList = ({
 
     const handleItemPress = useCallback(
         (item: ListedSwapHistoryItem) => {
-            const url = item.explorerUrl
-            if (!url) return
+            const target = item.detailsTarget
+            if (!target) return
             trackEvent(SwapEvent.SelectHistoryInSeeAll, {
                 [AnalyticsMetadataKey.ChainId]: item.assetIn.ref.chainId,
                 [AnalyticsMetadataKey.SwapPairing]: `${item.assetIn.unitName}/${item.assetOut.unitName}`,
             })
             onClose()
-            openExplorerUrl(url)
+            navigation.navigate('TransactionDetails', target)
         },
-        [onClose],
+        [onClose, navigation],
     )
 
     const handleEndReached = useCallback(() => {
@@ -250,7 +261,6 @@ export const useSwapHistoryList = ({
         !isFetchingNextPage
 
     return {
-        isChainShown: sourceChainIds.length > 1,
         swaps,
         isLoading,
         isError,

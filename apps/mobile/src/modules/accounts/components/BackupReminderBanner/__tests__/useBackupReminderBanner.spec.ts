@@ -45,9 +45,19 @@ vi.mock('@hooks/useLanguage', () => ({
 // The visibility rule itself is owned and tested by
 // useShouldPromptMnemonicBackup in wallet-core-backup.
 const mockShouldPrompt = vi.fn()
+const mockNeedsCredentialsConfirmation = vi.fn()
 vi.mock('@perawallet/wallet-core-backup', () => ({
     useShouldPromptMnemonicBackup: (...args: unknown[]) =>
         mockShouldPrompt(...args),
+    useCloudBackupStore: (
+        selector: (state: {
+            needsCredentialsConfirmation: () => boolean
+        }) => unknown,
+    ) =>
+        selector({
+            needsCredentialsConfirmation: () =>
+                mockNeedsCredentialsConfirmation(),
+        }),
 }))
 
 import { useBackupReminderBanner } from '../useBackupReminderBanner'
@@ -66,6 +76,7 @@ describe('useBackupReminderBanner', () => {
         mockNavigate.mockReset()
         mockIsCloudBackupAvailable.mockReset().mockReturnValue(false)
         mockInitialRoute.mockReset().mockReturnValue('CloudBackupHome')
+        mockNeedsCredentialsConfirmation.mockReset().mockReturnValue(false)
     })
 
     test('isVisible mirrors the shared backup-prompt rule', () => {
@@ -129,7 +140,26 @@ describe('useBackupReminderBanner', () => {
         )
     })
 
-    test('offers fixing a configured Cloud Backup that does not cover the account', () => {
+    test('offers confirming a configured Cloud Backup whose credentials are unconfirmed', () => {
+        mockShouldPrompt.mockReturnValue(true)
+        mockIsCloudBackupAvailable.mockReturnValue(true)
+        mockInitialRoute.mockReturnValue('CloudBackupOverview')
+        mockNeedsCredentialsConfirmation.mockReturnValue(true)
+
+        const { result } = renderHook(() => useBackupReminderBanner(accountHD))
+
+        expect(result.current.cloudBackupCtaLabel).toBe(
+            'backup.banner.cta_confirm_cloud_backup',
+        )
+        expect(result.current.message).toBe(
+            'backup.banner.text_with_cloud_backup',
+        )
+        expect(result.current.passphraseCtaLabel).toBe(
+            'backup.banner.cta_passphrase',
+        )
+    })
+
+    test('offers fixing a configured Cloud Backup with confirmed credentials that does not cover the account', () => {
         mockShouldPrompt.mockReturnValue(true)
         mockIsCloudBackupAvailable.mockReturnValue(true)
         mockInitialRoute.mockReturnValue('CloudBackupOverview')
@@ -151,6 +181,21 @@ describe('useBackupReminderBanner', () => {
         expect(mockNavigate).toHaveBeenCalledWith('Settings', {
             screen: 'CloudBackupSettings',
             params: { screen: 'CloudBackupHome' },
+        })
+    })
+
+    test('onOpenCloudBackup still opens the overview when the label asks to confirm', () => {
+        mockShouldPrompt.mockReturnValue(true)
+        mockIsCloudBackupAvailable.mockReturnValue(true)
+        mockInitialRoute.mockReturnValue('CloudBackupOverview')
+        mockNeedsCredentialsConfirmation.mockReturnValue(true)
+
+        const { result } = renderHook(() => useBackupReminderBanner(accountHD))
+        act(() => result.current.onOpenCloudBackup())
+
+        expect(mockNavigate).toHaveBeenCalledWith('Settings', {
+            screen: 'CloudBackupSettings',
+            params: { screen: 'CloudBackupOverview' },
         })
     })
 

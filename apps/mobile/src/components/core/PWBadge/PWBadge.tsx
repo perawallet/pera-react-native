@@ -32,8 +32,10 @@ export const PWBadge = ({
             textStyle={[styles.text, textStyle]}
             // RNEUI renders the label through a bare RN Text, so nothing bounds
             // OS font scaling here the way PWText does for every other string.
+            // A badge is a one-line pill: a label that wraps stacks inside it.
             textProps={{
                 maxFontSizeMultiplier: MAX_FONT_SIZE_MULTIPLIER,
+                numberOfLines: 1,
                 ...textProps,
             }}
             {...rest}

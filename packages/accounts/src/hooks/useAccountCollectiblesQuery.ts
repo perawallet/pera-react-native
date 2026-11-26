@@ -10,8 +10,13 @@
  limitations under the License
  */
 
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { toScopeKey } from '@perawallet/wallet-core-chain-contract'
+import {
+    isChainId,
+    toScopeKey,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     getAccountCollectiblesLite,
     type AccountCollectibleLiteRow,
@@ -40,8 +45,8 @@ export type UseAccountCollectiblesQueryResult = {
     isRefetching: boolean
     isError: boolean
     isPaused: boolean
-    /** True while any source's last sync left some of its holdings unrefreshed. */
-    hasUnrefreshedHoldings: boolean
+    /** Chains whose last sync left this account's collectibles unrefreshed. */
+    unrefreshedChainIds: ReadonlySet<ChainId>
 }
 
 const sourcesSignature = (sources: readonly unknown[]): string =>
@@ -111,11 +116,24 @@ export const useAccountCollectiblesQuery = (
         },
     })
 
-    const hasUnrefreshedHoldings = useHoldingsRefreshStore(state =>
-        sources.some(
-            ({ address, scope }) =>
-                state.failed[toScopeKey(scope)]?.[address] === true,
-        ),
+    // A string, so the set keeps its identity until a chain's flag changes.
+    const unrefreshedChainList = useHoldingsRefreshStore(state =>
+        [
+            ...new Set(
+                sources
+                    .filter(
+                        ({ address, scope }) =>
+                            state.collectiblesFailed[toScopeKey(scope)]?.[
+                                address
+                            ] === true,
+                    )
+                    .map(({ scope }) => scope.chainId),
+            ),
+        ].join(','),
+    )
+    const unrefreshedChainIds = useMemo(
+        () => new Set(unrefreshedChainList.split(',').filter(isChainId)),
+        [unrefreshedChainList],
     )
 
     return {
@@ -125,6 +143,6 @@ export const useAccountCollectiblesQuery = (
         isRefetching: query.isRefetching,
         isError: query.isError,
         isPaused: query.isPaused,
-        hasUnrefreshedHoldings,
+        unrefreshedChainIds,
     }
 }

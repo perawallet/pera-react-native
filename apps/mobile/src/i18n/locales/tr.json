@@ -173,7 +173,7 @@
         "display_opted_in_nfts": "Opt-in olduğun NFT’leri göster",
         "display_opted_in_nfts_description": "Opt-in olduğun ama sana ait olmayan NFT’leri gösterebilir veya gizleyebilirsin",
         "show_suspicious": "Şüpheli varlıkları göster",
-        "show_suspicious_description": "Pera’nın olası spam veya dolandırıcılık olarak işaretlediği token’ları gösterir. Bakiyene asla dahil edilmezler"
+        "show_suspicious_description": "Gelen kutunda bekleyen token’ları ve Pera’nın olası spam veya dolandırıcılık olarak işaretlediği token’ları da gösterir. Bakiyene asla dahil edilmezler"
     },
     "add_asset": {
         "title": "Varlık ekle",
@@ -291,11 +291,8 @@
         "hidden_toast_body": "Varlıklarında görünmez ve bakiyene dahil edilmez. Varlıkları yönet > Tokenları gizle bölümünden yeniden gösterebilirsin.",
         "hidden_swipe_toast_body": "Geri almak için dokun. Varlıklarında görünmez ve bakiyene dahil edilmez.",
         "shown_toast_title": "{{assetName}} gösterildi",
-        "filtered_note": "Pera bu tokenı şüpheli olarak işaretledi, bu yüzden varlıklarında görünmez. Varlıklarının sonundaki “Gizli tokenlar” bölümünden gösterebilirsin.",
-        "auto_hidden_row_title": "Gizli tokenlar ({{total}})",
-        "auto_hidden_title": "Gizli tokenlar",
-        "auto_hidden_description": "Pera bu tokenları spam veya dolandırıcılık gibi göründükleri için gizledi. İçlerinde adı geçen web sitelerini ziyaret etme. Bir tokenı yeniden listelemek için göster; yine de bakiyene dahil edilmez.",
-        "auto_hidden_empty_title": "Gizli token yok"
+        "filtered_note": "Bu token gelen kutunda bekliyor. Varlıklarında görünmesi için onu orada kabul et.",
+        "inbox_row_title": "Gelen kutundaki token’lar ({{total}})"
     },
     "deeplink": {
         "error": {
@@ -390,11 +387,28 @@
             "empty_title": "Bekleyen varlık transfer isteği yok",
             "empty_body": "Bir varlık transfer isteğin olduğunda burada görüntüleyebilirsin. Bu özellik hakkında daha fazla bilgi için dokun.",
             "info_title": "Varlık transfer istekleri",
-            "info_body": "Bu özellik, hesabın için bir gelen kutusudur. Başkaları, sen açıkça eklememiş olsan bile sana varlık ve NFT gönderebilir. Buradan varlık transfer isteklerini kabul etmeyi veya reddetmeyi seçebilirsin."
+            "info_body": "Bu, hesabının gelen kutusu. Opt-in yapmadan önce Algorand’da gönderilen varlıklar burada talep edilmeyi ya da reddedilmeyi bekler; Ethereum gibi ağlarda Pera’nın doğrulamadığı token’lar da öyle. Kabul ettiğin token varlıklarında görünür, reddettiğin token gizlenir.",
+            "reject_all": "Tümünü reddet",
+            "reject_all_title": "Tüm token’lar reddedilsin mi?",
+            "reject_all_body_one": "{{count}} token varlıklarından ve geçmişinden gizlenecek ve gelen kutuna geri dönmeyecek.",
+            "reject_all_body_other": "{{count}} token varlıklarından ve geçmişinden gizlenecek ve gelen kutuna geri dönmeyecek.",
+            "reject_all_skips_claims": "İşlem gerektiren istekler, tek tek talep etmen ya da reddetmen için gelen kutunda kalır.",
+            "rejected_all_toast_one": "{{count}} token reddedildi",
+            "rejected_all_toast_other": "{{count}} token reddedildi"
         },
         "claim": {
             "reject": "Reddet",
-            "native_gain": "Opt-in masraflarını karşılamak için {{amount}} alacaksın."
+            "native_gain": "Opt-in masraflarını karşılamak için {{amount}} alacaksın.",
+            "token_accepted_toast": "{{assetName}} varlıklarına eklendi",
+            "token_rejected_toast": "{{assetName}} reddedildi"
+        },
+        "token_request": {
+            "screen_title": "Gelen token",
+            "accept": "Kabul et",
+            "reject": "Reddet",
+            "network": "Ağ",
+            "question": "Bu token varlıklarına eklensin mi?",
+            "explanation": "Bu hesaba sen istemeden geldi. Varlıklarında görünmesi ve bakiyene dahil edilmesi için kabul et. Gizlemek için reddet; gelen kutuna geri dönmez. Her iki durumda da ağa hiçbir şey gönderilmez."
         }
     },
     "asset": {
@@ -545,8 +559,10 @@
             "nomatch_body": "Arama terimiyle eşleşen NFT bulunamadı",
             "network_empty_title": "NFT yok",
             "network_empty_body": "{{chain}} ağında hiç NFT’n yok.",
-            "refresh_error_title": "NFT’ler güncellenemedi",
+            "refresh_error_title": "NFT’ler güncellenemedi: {{chains}}",
             "refresh_error_body": "Tekrar denemek için aşağı çek.",
+            "load_error_title": "NFT’ler yüklenemedi",
+            "load_error_body": "NFT’lerin yüklenemedi: {{chains}}",
             "suspicious_hidden_title": "Şüpheli NFT’ler gizlendi",
             "suspicious_hidden_body": "Pera bu NFT’leri olası spam veya dolandırıcılık olarak işaretledi. Görmek için Yönet > Filtrele’de Şüpheli NFT’leri göster seçeneğini aç.",
             "user_hidden_title": "Gizlenen NFT’ler",
@@ -760,7 +776,8 @@
             "text_with_cloud_backup": "Bu hesabı yedeklemen gerekiyor",
             "cta_passphrase": "Kurtarma passphrase’ini yedekle",
             "cta_turn_on_cloud_backup": "Bulut yedeklemeyi etkinleştir",
-            "cta_fix_cloud_backup": "Bulut yedeklemeyi düzelt"
+            "cta_fix_cloud_backup": "Bulut yedeklemeyi düzelt",
+            "cta_confirm_cloud_backup": "Bulut yedeklemeyi onayla"
         },
         "status": {
             "cloud_backup": "Yedeklendi · Bulut yedekleme"
@@ -894,7 +911,8 @@
             "confirm": "Onayla",
             "error_words": "Seçilen kelimelerden bazıları yanlış. Lütfen tekrar dene.",
             "error_key": "Bu şifreleme anahtarı yedeğinle eşleşmiyor.",
-            "error_both": "Seçilen kelimeler ve şifreleme anahtarı yanlış.",
+            "hint_words": "Devam etmek için her numara için bir kelime seç.",
+            "hint_key": "Devam etmek için şifreleme anahtarını gir.",
             "success": "Yedekleme anahtarı onaylandı"
         },
         "store_encryption_key": {
@@ -2276,7 +2294,7 @@
         },
         "inbox": {
             "empty_title": "Bekleyen mesaj yok",
-            "empty_body": "Gelen kutusu, opt-in olmadan önce sana gönderilen Algorand varlıklarını, paylaşılan hesap davetlerini ve imza isteklerini tutar. Diğer ağlardaki token’lar doğrudan bakiyene gelir.",
+            "empty_body": "Gelen kutusu, kabul etmeni bekleyen varlıkları tutar: opt-in olmadan önce sana gönderilen Algorand varlıkları ve Ethereum gibi ağlarda Pera’nın doğrulamadığı token’lar. Paylaşılan hesap davetleri ve imza istekleri de buraya gelir.",
             "asa_requests_one": "1 gelen varlık",
             "asa_requests_other": "{{count}} gelen varlık",
             "multisig_sign": {
@@ -2294,8 +2312,7 @@
                 "algorand_title": "Algorand",
                 "algorand_body": "Bir Algorand hesabının bir varlığı tutabilmesi için önce o varlığa opt-in olması gerekir. Opt-in olmadan önce sana gönderilen varlıklar, sen talep edene ya da reddedene kadar burada, gelen kutusunda bekler. Paylaşılan hesap davetleri ve imza istekleri de buraya gelir.",
                 "other_networks_title": "Diğer ağlar",
-                "other_networks_body": "Ethereum ve Base gibi ağlarda opt-in yoktur. Bu ağlarda sana gönderilen token’lar doğrudan bakiyene gelir ve gelen kutusunda hiç görünmez.",
-                "find_tokens_body": "Onları görmek için hesabı aç ve o ağdaki varlıklarına bak.",
+                "other_networks_body": "Ethereum ve Base gibi ağlarda opt-in yoktur, bu yüzden herkes sana token gönderebilir. Pera’nın doğrulamadığı token’lar, sen kabul edene ya da reddedene kadar burada bekler. Kabul ettiğin token varlıklarında görünür, reddettiğin token gizlenir.",
                 "learn_more": "Daha fazla bilgi"
             }
         },
@@ -2314,11 +2331,13 @@
             "processing_subtitle": "İşlemin Algorand ağı tarafından işleniyor",
             "success_title": "İşlem tamamlandı",
             "success_subtitle": "İşlemin Algorand ağı tarafından başarıyla alındı",
-            "sender_count_more": "+{{count}} daha",
             "insufficient_native_title": "Yeterli {{symbol}} yok",
             "insufficient_native_claim": "Bu varlığı talep etmek için yeterli {{symbol}} yok. Minimum bakiye gereksinimini karşılamak için fon ekle.",
             "insufficient_native_reject": "Bu varlığı reddetmek için yeterli {{symbol}} yok. İşlem ücretlerini karşılamak için fon ekle.",
-            "insufficient_native_cta": "Bakiye ekle"
+            "insufficient_native_cta": "Bakiye ekle",
+            "from_sender": "Gönderen: {{sender}}",
+            "from_senders_one": "Gönderen: {{sender}} ve {{count}} kişi daha",
+            "from_senders_other": "Gönderen: {{sender}} ve {{count}} kişi daha"
         }
     },
     "multisig": {
@@ -4184,8 +4203,8 @@
             "title": "Filtre",
             "all_time": "Tüm zamanlar",
             "today": "Bugün",
-            "hide_suspicious": "Şüpheli işlemleri gizle",
-            "hide_suspicious_description": "Sahte gönderimleri, taklit ve spam tokenleri ve şüpheli adres zehirlemelerini gizler.",
+            "show_suspicious": "Şüpheli işlemleri göster",
+            "show_suspicious_description": "Sahte gönderimleri, taklit ve spam token’ları, şüpheli adres zehirlemelerini ve gelen kutunda bekleyen token’ların transferlerini gösterir.",
             "yesterday": "Dün",
             "last_week": "Geçen hafta",
             "last_month": "Geçen ay",

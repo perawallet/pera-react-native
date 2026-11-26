@@ -16,7 +16,6 @@ import {
     scopeOfSwapAsset,
     useSwapAccountNames,
     useSwapSigningAccounts,
-    useSwapSourceChainsByAccount,
     useSwapsStore,
     type SwapHistoryPair,
 } from '@perawallet/wallet-core-swaps'
@@ -56,8 +55,6 @@ export const useSwapPairHistoryWidget = (
         () => new Map(names.map(({ accountId, name }) => [accountId, name])),
         [names],
     )
-    const { sourceChainIds } = useSwapSourceChainsByAccount()
-    const isChainShown = sourceChainIds.length > 1
     const { request: requestBottomSheet } = useBottomSheet()
     const styles = useStyles()
 
@@ -107,11 +104,10 @@ export const useSwapPairHistoryWidget = (
                 accountName={
                     isMultiAccount ? nameById.get(item.accountId) : undefined
                 }
-                isChainShown={isChainShown}
                 onPress={() => handlePairPress(item)}
             />
         ),
-        [handlePairPress, nameById, isMultiAccount, isChainShown],
+        [handlePairPress, nameById, isMultiAccount],
     )
 
     const keyExtractor = useCallback(

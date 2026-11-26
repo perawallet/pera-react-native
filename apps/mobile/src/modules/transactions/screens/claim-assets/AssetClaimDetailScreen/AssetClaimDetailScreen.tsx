@@ -48,6 +48,7 @@ export const AssetClaimDetailScreen = () => {
         isClaimBlocked,
         isRejectBlocked,
         imitatedCurrency,
+        isSuspicious,
         handleClaim,
         canBuy,
         handleAddFunds,
@@ -171,6 +172,19 @@ export const AssetClaimDetailScreen = () => {
                     usdPrice={request.usdValue ?? undefined}
                 />
             </PWView>
+
+            {isSuspicious && (
+                <InfoCallout
+                    icon='warning'
+                    iconVariant='error'
+                    iconSize='sm'
+                    titleVariant='bodySemibold'
+                    title={t('asset_details.token_warning.suspicious_title')}
+                    body={t('asset_details.token_warning.body')}
+                    style={styles.imitatedCurrencyCallout}
+                    testID='asset_inbox_claim_suspicious'
+                />
+            )}
 
             {imitatedCurrency !== null && (
                 <InfoCallout

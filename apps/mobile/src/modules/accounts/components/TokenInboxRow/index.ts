@@ -10,7 +10,4 @@
  limitations under the License
  */
 
-export {
-    AutoHiddenTokensRow,
-    type AutoHiddenTokensRowProps,
-} from './AutoHiddenTokensRow'
+export { TokenInboxRow, type TokenInboxRowProps } from './TokenInboxRow'

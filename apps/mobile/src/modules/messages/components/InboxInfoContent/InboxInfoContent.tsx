@@ -59,9 +59,6 @@ export const InboxInfoContent = () => {
                     <PWText style={styles.paragraph}>
                         {t('messages.inbox.info.other_networks_body')}
                     </PWText>
-                    <PWText style={styles.paragraph}>
-                        {t('messages.inbox.info.find_tokens_body')}
-                    </PWText>
                 </PWView>
             </PWView>
         </PWSheetLayout>

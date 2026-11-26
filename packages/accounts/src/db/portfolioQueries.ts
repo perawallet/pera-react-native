@@ -31,7 +31,7 @@ import {
 import { AccountAssetHoldingsSchema } from './schema'
 import { holdingJoin } from './holdingJoin'
 import { isNotSuspiciousSql } from './holdingSuspicion'
-import { hiddenHoldingSql } from './holdingVisibility'
+import { countedHoldingSql, hiddenHoldingSql } from './holdingVisibility'
 
 export type AccountPortfolioTotals = {
     /**
@@ -41,7 +41,7 @@ export type AccountPortfolioTotals = {
     nativeAmount: Decimal
     /** USD per whole unit of the native asset; null until its price syncs. */
     nativeUsdPrice: Nullable<Decimal>
-    /** USD value of all non-native holdings; rows without a price, that Pera flags suspicious, or that the user hid, contribute 0. */
+    /** USD value of all non-native holdings; rows without a price, that aren't counted (see `countedHoldingSql`), or that the user hid, contribute 0. */
     nonNativeUsdValue: Decimal
     /** Number of holdings rows (includes the native holding). */
     holdingsCount: number
@@ -70,9 +70,10 @@ export async function getAccountPortfolioTotals({
 }): Promise<AccountPortfolioTotals> {
     const scopeKey = toScopeKey(scope)
     const native = nativeAssetFor(scope.chainId)
+    const sources = [{ address: accountAddress, scope }]
     const isCounted = and(
-        isNotSuspiciousSql(),
-        not(hiddenHoldingSql([{ address: accountAddress, scope }])),
+        countedHoldingSql(sources),
+        not(hiddenHoldingSql(sources)),
     )!
     const rows = await db
         .select({

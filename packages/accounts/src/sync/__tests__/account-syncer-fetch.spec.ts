@@ -116,10 +116,9 @@ describe('fetchAndPersistAccount', () => {
             assetId: '0',
             scope: MAINNET_SCOPE,
         })
-        expect(
-            useHoldingsRefreshStore.getState().failed['algorand/mainnet']
-                ?.ADDR1,
-        ).toBe(true)
+        const refresh = useHoldingsRefreshStore.getState()
+        expect(refresh.failed['algorand/mainnet']?.ADDR1).toBe(true)
+        expect(refresh.collectiblesFailed['algorand/mainnet']?.ADDR1).toBe(true)
     })
 
     it('still rejects with the read error when the seed itself fails', async () => {

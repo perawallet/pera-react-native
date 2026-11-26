@@ -11,7 +11,6 @@
  */
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import type { ASAInbox } from '@perawallet/wallet-core-messages'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import type { StackScreenProps } from '@react-navigation/stack'
 
@@ -26,11 +25,15 @@ export type MultisigInvitationParam = {
 
 export type MessagesStackParamList = {
     MessagesHome: Optional<{ initialTab?: 'Inbox' | 'Notifications' }>
-    AssetTransferRequests: {
-        item: ASAInbox
-        scope: ChainScope
-    }
+    /** One account's incoming assets on every chain it holds. */
+    AssetTransferRequests: { accountId: string }
     AssetClaimDetail: { assetIndex: number; scope: ChainScope }
+    /** A token waiting on a chain that receives tokens unasked. */
+    TokenRequestDetail: {
+        accountId: string
+        scope: ChainScope
+        assetId: string
+    }
     ClaimProcessing: {
         mode: 'claim' | 'reject'
         assetIndex: number

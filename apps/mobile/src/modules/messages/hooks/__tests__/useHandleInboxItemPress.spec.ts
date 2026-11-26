@@ -15,7 +15,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { InboxItem } from '@perawallet/wallet-core-messages'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
+import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useHandleInboxItemPress } from '../useHandleInboxItemPress'
+import type { AccountAssetsInboxItem } from '../useAccountAssetInboxes'
 
 const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 
@@ -86,6 +88,29 @@ describe('useHandleInboxItemPress', () => {
         expect(mockPush).not.toHaveBeenCalled()
     })
 
+    it("opens an account's incoming assets, with the backend inbox's capability off", () => {
+        setCapabilityOverrides({ assetInbox: false })
+        const item = {
+            type: 'account_assets' as const,
+            data: {
+                account: { id: 'acct-1' },
+                backendItem: undefined,
+                tokenCount: 2,
+                requestCount: 2,
+            },
+        } as unknown as AccountAssetsInboxItem
+
+        const { result } = renderHook(() => useHandleInboxItemPress(SCOPE))
+        act(() => {
+            result.current(item)
+        })
+
+        expect(mockPush).toHaveBeenCalledWith('Messages', {
+            screen: 'AssetTransferRequests',
+            params: { accountId: 'acct-1' },
+        })
+    })
+
     it.each(['multisig_sign', 'multisig_import'] as const)(
         'ignores a %s item while the multisig capability is off',
         type => {
@@ -103,7 +128,19 @@ describe('useHandleInboxItemPress', () => {
         },
     )
 
-    it('navigates to AssetTransferRequests for asa_inbox', () => {
+    it("opens the account an asa_inbox item's address belongs to, and nothing for a watch account", () => {
+        vi.mocked(useAllAccounts).mockReturnValue([
+            {
+                id: 'signer',
+                custody: { kind: 'local', seed: null },
+                chains: { algorand: { address: 'ADDR1' } },
+            },
+            {
+                id: 'watched',
+                custody: { kind: 'watch' },
+                chains: { algorand: { address: 'ADDR2' } },
+            },
+        ] as unknown as ReturnType<typeof useAllAccounts>)
         const asaItem = {
             type: 'asa_inbox' as const,
             data: { address: 'ADDR1', inboxAddress: 'INBOX1', requestCount: 3 },
@@ -118,8 +155,19 @@ describe('useHandleInboxItemPress', () => {
 
         expect(mockPush).toHaveBeenCalledWith('Messages', {
             screen: 'AssetTransferRequests',
-            params: { item: asaItem.data, scope: SCOPE },
+            params: { accountId: 'signer' },
         })
+
+        mockPush.mockClear()
+        act(() => {
+            result.current(
+                asInboxItem({
+                    ...asaItem,
+                    data: { ...asaItem.data, address: 'ADDR2' },
+                }),
+            )
+        })
+        expect(mockPush).not.toHaveBeenCalled()
     })
 
     it('requests the multisig invitation bottom sheet for multisig_import', async () => {

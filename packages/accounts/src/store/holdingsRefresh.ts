@@ -24,8 +24,15 @@ export type HoldingsRefreshFailures = Partial<
 >
 
 export type HoldingsRefreshStore = {
+    /** Balances and fungible tokens. */
     failed: HoldingsRefreshFailures
+    collectiblesFailed: HoldingsRefreshFailures
     setHoldingsRefreshFailed(
+        scope: ChainScope,
+        address: string,
+        hasFailed: boolean,
+    ): void
+    setCollectiblesRefreshFailed(
         scope: ChainScope,
         address: string,
         hasFailed: boolean,
@@ -33,28 +40,48 @@ export type HoldingsRefreshStore = {
     resetState(): void
 }
 
+// An unchanged flag keeps every reference, so a quiet sync tick gives
+// subscribers nothing new.
+const withFlag = (
+    failures: HoldingsRefreshFailures,
+    scope: ChainScope,
+    address: string,
+    hasFailed: boolean,
+): HoldingsRefreshFailures => {
+    const key = toScopeKey(scope)
+    const held = failures[key]
+    if ((held?.[address] === true) === hasFailed) return failures
+    const { [address]: _previous, ...rest } = held ?? {}
+    return {
+        ...failures,
+        [key]: hasFailed ? { ...rest, [address]: true } : rest,
+    }
+}
+
 // In memory only: it describes the last sync of this process, and the next
 // sync after a restart answers again.
-export const useHoldingsRefreshStore = create<HoldingsRefreshStore>(
-    (set, get) => ({
-        failed: {},
-        // An unchanged flag keeps every reference, so a quiet sync tick gives
-        // subscribers nothing new.
-        setHoldingsRefreshFailed: (scope, address, hasFailed) => {
-            const key = toScopeKey(scope)
-            const held = get().failed[key]
-            if ((held?.[address] === true) === hasFailed) return
-            const { [address]: _previous, ...rest } = held ?? {}
-            set(prev => ({
-                failed: {
-                    ...prev.failed,
-                    [key]: hasFailed ? { ...rest, [address]: true } : rest,
-                },
-            }))
-        },
-        resetState: () => set({ failed: {} }),
-    }),
-)
+export const useHoldingsRefreshStore = create<HoldingsRefreshStore>(set => ({
+    failed: {},
+    collectiblesFailed: {},
+    setHoldingsRefreshFailed: (scope, address, hasFailed) =>
+        set(prev => {
+            const failed = withFlag(prev.failed, scope, address, hasFailed)
+            return failed === prev.failed ? prev : { failed }
+        }),
+    setCollectiblesRefreshFailed: (scope, address, hasFailed) =>
+        set(prev => {
+            const collectiblesFailed = withFlag(
+                prev.collectiblesFailed,
+                scope,
+                address,
+                hasFailed,
+            )
+            return collectiblesFailed === prev.collectiblesFailed
+                ? prev
+                : { collectiblesFailed }
+        }),
+    resetState: () => set({ failed: {}, collectiblesFailed: {} }),
+}))
 
 registerStore({
     name: 'holdings-refresh-store',

@@ -222,7 +222,7 @@ describe('Flow: an Ethereum account with NFTs', () => {
                 amount: '3',
             },
         })
-        expect(result.current.showRefreshNotice).toBe(false)
+        expect(result.current.refreshNoticeChainNames).toBeUndefined()
     })
 
     it('Given a synced ERC-1155, when its detail opens, then it shows the contract, token id, standard, traits and an Etherscan link that opens in the system browser', async () => {
@@ -363,7 +363,7 @@ describe('Flow: an Ethereum account with NFTs', () => {
     })
 
     it.each([502, 503])(
-        'Given both NFTs synced, when a refresh gets a %s, then both stay with the refresh notice, never the empty state',
+        'Given both NFTs synced, when a refresh gets a %s, then both stay with a refresh notice naming the network, never the empty state',
         async status => {
             serveHoldings({
                 nftHoldings: { [SENDER.toLowerCase()]: [[ape()], [swords()]] },
@@ -377,7 +377,7 @@ describe('Flow: an Ethereum account with NFTs', () => {
             const { result } = await readGallery()
 
             await waitFor(() =>
-                expect(result.current.showRefreshNotice).toBe(true),
+                expect(result.current.refreshNoticeChainNames).toBe('Ethereum'),
             )
             expect(result.current.collectibleCount).toBe(2)
             expect(result.current.showEmptyState).toBe(false)
@@ -388,7 +388,7 @@ describe('Flow: an Ethereum account with NFTs', () => {
         },
     )
 
-    it('Given the first sync gets a 503, when the gallery opens, then it shows the refresh error, never "no NFTs yet"', async () => {
+    it('Given the first sync gets a 503, when the gallery opens, then it shows the load error with Retry, never "no NFTs yet"', async () => {
         serveHoldings({ nftHoldings: 503 })
 
         await sync()
@@ -396,10 +396,11 @@ describe('Flow: an Ethereum account with NFTs', () => {
 
         await waitFor(() =>
             expect(result.current.listEmptyTitle).toBe(
-                'account_details.nfts.refresh_error_title',
+                'account_details.nfts.load_error_title',
             ),
         )
+        expect(result.current.isLoadFailed).toBe(true)
         expect(result.current.showEmptyState).toBe(false)
-        expect(result.current.showRefreshNotice).toBe(false)
+        expect(result.current.refreshNoticeChainNames).toBeUndefined()
     })
 })

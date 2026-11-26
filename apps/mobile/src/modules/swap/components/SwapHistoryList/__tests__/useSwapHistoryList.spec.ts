@@ -23,32 +23,28 @@ const { SCOPE, ETH_SCOPE } = vi.hoisted(() => ({
 }))
 
 const {
-    mockExplorerUrlFor,
-    mockOpenExplorerUrl,
+    mockTransactionOf,
+    mockNavigate,
     mockTrackEvent,
     mockHistory,
     mockFormatAssetAmount,
     wallet,
 } = vi.hoisted(() => ({
-    mockExplorerUrlFor: vi.fn(),
-    mockOpenExplorerUrl: vi.fn(),
+    mockTransactionOf: vi.fn(),
+    mockNavigate: vi.fn(),
     mockTrackEvent: vi.fn(),
     mockHistory: vi.fn(),
     mockFormatAssetAmount: vi.fn(),
     wallet: {
         accounts: [] as { id: string; name: string }[],
         addresses: [] as unknown[],
-        sourceChainIds: ['algorand', 'ethereum'] as string[],
     },
 }))
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
-    swapExplorerUrlFor: mockExplorerUrlFor,
+    swapTransactionOf: mockTransactionOf,
     useSwapHistoryInfiniteQuery: mockHistory,
     useSwapSigningAccounts: () => wallet.accounts,
-    useSwapSourceChainsByAccount: () => ({
-        sourceChainIds: wallet.sourceChainIds,
-    }),
     useSwapAccountNames: (accounts: { id: string; name: string }[]) => {
         const names = accounts
             .filter(account =>
@@ -73,8 +69,8 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     formatAssetAmount: mockFormatAssetAmount,
 }))
 
-vi.mock('@modules/webview', () => ({
-    openExplorerUrl: mockOpenExplorerUrl,
+vi.mock('@react-navigation/native', () => ({
+    useNavigation: () => ({ navigate: mockNavigate }),
 }))
 
 vi.mock('@analytics', async importOriginal => ({
@@ -123,12 +119,11 @@ describe('useSwapHistoryList', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockHistory.mockReturnValue(historyOf([]))
-        mockExplorerUrlFor.mockReturnValue(undefined)
+        mockTransactionOf.mockReturnValue(undefined)
         mockFormatAssetAmount.mockImplementation(
             (amount: Decimal, asset: { unitName: string }) =>
                 `${amount.toString()} ${asset.unitName}`,
         )
-        wallet.sourceChainIds = ['algorand', 'ethereum']
         wallet.accounts = [
             { id: 'one', name: 'First' },
             { id: 'two', name: 'Second' },
@@ -317,14 +312,6 @@ describe('useSwapHistoryList', () => {
 
         expect(result.current.swaps).toHaveLength(1)
         expect(result.current.swaps[0].accountName).toBe('Second')
-    })
-
-    it("shows each row's chain only when the wallet swaps on more than one", () => {
-        expect(render().result.current.isChainShown).toBe(true)
-
-        wallet.sourceChainIds = ['algorand']
-
-        expect(render().result.current.isChainShown).toBe(false)
     })
 
     it('rounds amounts through the shared formatter and shows a dash for a missing one', () => {
@@ -545,7 +532,7 @@ describe('useSwapHistoryList', () => {
         )
     })
 
-    it("opens the swap on its own chain's explorer", () => {
+    it("opens the swap's transaction details for the account that paid", () => {
         const ethSwap = {
             ...item,
             orderId: 'eth',
@@ -554,20 +541,29 @@ describe('useSwapHistoryList', () => {
                 ref: { ...ETH_SCOPE, assetId: 'native' },
                 unitName: 'ETH',
             },
+            sourceAccount: { scope: ETH_SCOPE, address: '0xeth2' },
         } as unknown as SwapHistoryItem
         mockHistory.mockReturnValue(historyOf([ethSwap]))
-        mockExplorerUrlFor.mockReturnValue('https://explorer.test/tx/0x1')
+        mockTransactionOf.mockReturnValue({
+            scope: ETH_SCOPE,
+            transactionId: '0x1',
+        })
         const onClose = vi.fn()
         const { result } = render(onClose)
 
         const [listed] = result.current.swaps
-        expect(mockExplorerUrlFor).toHaveBeenCalledWith(ETH_SCOPE, ethSwap)
-        expect(listed.explorerUrl).toBe('https://explorer.test/tx/0x1')
+        expect(mockTransactionOf).toHaveBeenCalledWith(ethSwap)
+        expect(listed.detailsTarget).toEqual({
+            scope: ETH_SCOPE,
+            transactionId: '0x1',
+            accountAddress: '0xETH2',
+        })
         result.current.handleItemPress(listed)
 
         expect(onClose).toHaveBeenCalled()
-        expect(mockOpenExplorerUrl).toHaveBeenCalledWith(
-            'https://explorer.test/tx/0x1',
+        expect(mockNavigate).toHaveBeenCalledWith(
+            'TransactionDetails',
+            listed.detailsTarget,
         )
         expect(mockTrackEvent).toHaveBeenCalledWith(
             'swapscr_swap_history_see_all_select',
@@ -575,17 +571,31 @@ describe('useSwapHistoryList', () => {
         )
     })
 
-    it('does nothing when the swap has nothing to link to', () => {
-        mockHistory.mockReturnValue(historyOf([item]))
+    it.each([
+        {
+            name: 'the router has not listed the swap transaction',
+            transaction: undefined,
+            sourceAccount: { scope: SCOPE, address: 'ADDR1' },
+        },
+        {
+            name: 'the payer is not one of the wallet accounts',
+            transaction: { scope: SCOPE, transactionId: 'TX' },
+            sourceAccount: { scope: SCOPE, address: 'STRANGER' },
+        },
+    ])('does nothing when $name', ({ transaction, sourceAccount }) => {
+        mockHistory.mockReturnValue(
+            historyOf([{ ...item, sourceAccount } as SwapHistoryItem]),
+        )
+        mockTransactionOf.mockReturnValue(transaction)
         const onClose = vi.fn()
         const { result } = render(onClose)
 
         const [listed] = result.current.swaps
-        expect(listed.explorerUrl).toBeUndefined()
+        expect(listed.detailsTarget).toBeUndefined()
         result.current.handleItemPress(listed)
 
         expect(onClose).not.toHaveBeenCalled()
-        expect(mockOpenExplorerUrl).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
         expect(mockTrackEvent).not.toHaveBeenCalled()
     })
 })

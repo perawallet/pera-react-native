@@ -11,7 +11,6 @@
  */
 
 import { useCallback } from 'react'
-import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
 
 import { EmptyView } from '@components/EmptyView'
 import { ListItemDivider } from '@components/ListItemDivider'
@@ -20,14 +19,14 @@ import { PWFlatList, PWRefreshControl, PWScreen } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { InboxItem } from '@modules/messages/components/InboxItem/InboxItem'
 import { useStyles } from './styles'
-import { useInboxScreen } from './useInboxScreen'
+import { useInboxScreen, type InboxEntry } from './useInboxScreen'
 
 export const InboxScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
 
     const {
-        inboxItems,
+        inboxEntries,
         isPending,
         isRefetching,
         isError,
@@ -35,21 +34,20 @@ export const InboxScreen = () => {
         isIntegrityBlocked,
         isAwaitingRegistration,
         isUnavailableOnNetwork,
-        chainBadgeName,
         refetch,
         keyExtractor,
         handleInboxItemPress,
     } = useInboxScreen()
 
     const renderItem = useCallback(
-        ({ item }: { item: InboxItemModel }) => (
+        ({ item: entry }: { item: InboxEntry }) => (
             <InboxItem
-                item={item}
-                chainBadgeName={chainBadgeName}
-                onPress={() => handleInboxItemPress(item)}
+                item={entry.item}
+                chainBadgeName={entry.chainBadgeName}
+                onPress={() => handleInboxItemPress(entry)}
             />
         ),
-        [handleInboxItemPress, chainBadgeName],
+        [handleInboxItemPress],
     )
 
     return (
@@ -58,7 +56,7 @@ export const InboxScreen = () => {
             testID='inbox_screen'
         >
             <PWFlatList
-                data={inboxItems}
+                data={inboxEntries}
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}
                 ItemSeparatorComponent={ListItemDivider}

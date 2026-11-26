@@ -51,6 +51,10 @@ export {
     type PeraEvmAssetFixtures,
 } from './assets/api/msw-handlers'
 export {
+    followedTokensHandler,
+    type FollowedTokensHandlerOptions,
+} from './device/api/msw-handlers'
+export {
     evmHistoryItem,
     evmNftTransferLeg,
     type PeraEvmHistoryFixtures,

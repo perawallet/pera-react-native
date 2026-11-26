@@ -102,8 +102,10 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         ...actual,
         useSelectedAccount: (...args: unknown[]) =>
             mockUseSelectedAccount(...args),
-        useAccountCollectiblesQuery: (...args: unknown[]) =>
-            mockUseAccountCollectiblesQuery(...args),
+        useAccountCollectiblesQuery: (...args: unknown[]) => ({
+            unrefreshedChainIds: new Set(),
+            ...mockUseAccountCollectiblesQuery(...args),
+        }),
         useCanSignWith: (...args: unknown[]) => mockUseCanSignWith(...args),
         useHoldingAcquisitionOrderQuery: (...args: unknown[]) =>
             mockUseHoldingAcquisitionOrderQuery(...args),
@@ -1056,69 +1058,101 @@ describe('useAccountNfts', () => {
         })
     })
 
-    describe('a failed holdings refresh', () => {
-        it('keeps the stored NFTs and shows the notice, never the empty state', () => {
+    describe('a failed NFT refresh', () => {
+        const ETH_ADDRESS = `0x${'a'.repeat(40)}`
+        const twoChainAccount = {
+            ...mockAccount,
+            chains: {
+                algorand: { address: ACCOUNT_ADDRESS },
+                ethereum: { address: ETH_ADDRESS },
+            },
+        }
+        const algorandRow = makeRow('100', 'Algo NFT')
+        const ethereumRow = makeRow('0xabc:1', 'Eth NFT', ETHEREUM_MAINNET)
+        const failedOn = (
+            collectibles: ReturnType<typeof makeRow>[],
+            ...chainIds: string[]
+        ) =>
             mockUseAccountCollectiblesQuery.mockReturnValue({
-                collectibles: [makeRow('100', 'Cool NFT')],
+                collectibles,
                 isPending: false,
-                hasUnrefreshedHoldings: true,
+                unrefreshedChainIds: new Set(chainIds),
             })
 
-            const { result } = renderHook(() => useAccountNfts())
-
-            expect(result.current.showRefreshNotice).toBe(true)
-            expect(result.current.showEmptyState).toBe(false)
-            expect(result.current.collectibles).toHaveLength(1)
+        beforeEach(() => {
+            registerEthereumChain()
+            registerEthereumAccountsAdapter()
+            mockUseSelectedAccount.mockReturnValue(twoChainAccount)
         })
 
-        it('reads the refresh error, not "no NFTs yet", when nothing was ever stored', () => {
-            mockUseAccountCollectiblesQuery.mockReturnValue({
-                collectibles: [],
-                isPending: false,
-                hasUnrefreshedHoldings: true,
-            })
+        it('names the failed network on All and keeps the NFTs that loaded', () => {
+            failedOn([algorandRow, ethereumRow], 'ethereum')
 
             const { result } = renderHook(() => useAccountNfts())
 
-            expect(result.current.showRefreshNotice).toBe(false)
+            expect(result.current.refreshNoticeChainNames).toBe('Ethereum')
+            expect(result.current.isLoadFailed).toBe(false)
             expect(result.current.showEmptyState).toBe(false)
+            expect(result.current.collectibles).toHaveLength(2)
+        })
+
+        it("shows nothing on another network's chip", () => {
+            failedOn([algorandRow, ethereumRow], 'ethereum')
+
+            const { result } = renderHook(() => useAccountNfts())
+            act(() => result.current.setSelectedChainId('algorand'))
+
+            expect(result.current.refreshNoticeChainNames).toBeUndefined()
+            expect(result.current.isLoadFailed).toBe(false)
+        })
+
+        it('reads a load error with Retry, never "No NFTs", on the failed network with nothing stored', () => {
+            failedOn([algorandRow], 'ethereum')
+
+            const { result } = renderHook(() => useAccountNfts())
+            act(() => result.current.setSelectedChainId('ethereum'))
+
+            expect(result.current.isLoadFailed).toBe(true)
+            expect(result.current.refreshNoticeChainNames).toBeUndefined()
             expect(result.current.listEmptyTitle).toBe(
-                'account_details.nfts.refresh_error_title',
+                'account_details.nfts.load_error_title',
             )
             expect(result.current.listEmptyBody).toBe(
-                'account_details.nfts.refresh_error_body',
+                'account_details.nfts.load_error_body',
             )
+        })
+
+        it('reads the load error, not the welcome empty state, when nothing was ever stored', () => {
+            failedOn([], 'ethereum')
+
+            const { result } = renderHook(() => useAccountNfts())
+
+            expect(result.current.showEmptyState).toBe(false)
+            expect(result.current.isLoadFailed).toBe(true)
         })
 
         it('reads a search that matches nothing as no match, and keeps the notice', () => {
-            mockUseAccountCollectiblesQuery.mockReturnValue({
-                collectibles: [],
-                isPending: false,
-                hasUnrefreshedHoldings: true,
-            })
+            failedOn([], 'ethereum')
 
             const { result } = renderHook(() => useAccountNfts())
             act(() => {
                 result.current.setSearchFilter('nothing')
             })
 
-            expect(result.current.showRefreshNotice).toBe(true)
+            expect(result.current.isLoadFailed).toBe(false)
+            expect(result.current.refreshNoticeChainNames).toBe('Ethereum')
             expect(result.current.listEmptyTitle).toBe(
                 'account_details.nfts.nomatch_title',
             )
         })
 
         it('shows no notice when every network refreshed', () => {
-            mockUseAccountCollectiblesQuery.mockReturnValue({
-                collectibles: [makeRow('100', 'Cool NFT')],
-                isPending: false,
-                hasUnrefreshedHoldings: false,
-            })
+            failedOn([algorandRow, ethereumRow])
 
             const { result } = renderHook(() => useAccountNfts())
 
-            expect(result.current.showRefreshNotice).toBe(false)
-            expect(result.current.showEmptyState).toBe(false)
+            expect(result.current.refreshNoticeChainNames).toBeUndefined()
+            expect(result.current.isLoadFailed).toBe(false)
         })
     })
 })

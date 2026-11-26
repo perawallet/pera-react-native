@@ -26,6 +26,7 @@ import {
     getAssetsByIds,
 } from '../metadataRepository'
 import { upsertAssetPrices, recordPriceMisses } from '../pricesRepository'
+import { AssetsPeraSchema } from '../schema'
 import {
     getCollectibleIdsMissingUrl,
     getStaleOrMissingAssetIds,
@@ -453,6 +454,99 @@ describe('asset sync queries', () => {
         it('does not recheck when the caller omits the flag', async () => {
             await seed()
             await ageRow()
+
+            expect(await recheck(false)).toEqual([])
+        })
+    })
+
+    describe('getStaleOrMissingAssetIds — non-verified recheck', () => {
+        const withTier = (tier: 'verified' | 'unverified' | 'suspicious') =>
+            makeAsset({
+                peraMetadata: { isDeleted: false, verificationTier: tier },
+            })
+
+        const seedPera = (asset: PeraAsset) =>
+            upsertAssets({ db, items: [asset], scope: MAINNET_SCOPE })
+
+        // Older than the day, younger than the metadata TTL, so only the
+        // non-verified recheck can return it.
+        const ageRows = async (days = 2) => {
+            const aged = Date.now() - days * 24 * 60 * 60 * 1000
+            await db.run(sql`update assets_node set updated_at = ${aged}`)
+            await db.run(sql`update assets_pera set updated_at = ${aged}`)
+        }
+
+        const recheck = (recheckNonVerified = true) =>
+            getStaleOrMissingAssetIds({
+                db,
+                assetIds: ['31566704'],
+                scope: MAINNET_SCOPE,
+                ttlMs: 7 * 24 * 60 * 60 * 1000,
+                recheckNonVerified,
+            })
+
+        it.each(['unverified', 'suspicious'] as const)(
+            'rechecks a %s token once its row is a day old',
+            async tier => {
+                await seedPera(withTier(tier))
+                await ageRows()
+
+                expect(await recheck()).toEqual(['31566704'])
+            },
+        )
+
+        it('leaves a verified token on the metadata TTL', async () => {
+            await seedPera(withTier('verified'))
+            await ageRows()
+
+            expect(await recheck()).toEqual([])
+        })
+
+        it('waits out the day after a fresh read', async () => {
+            await seedPera(withTier('unverified'))
+
+            expect(await recheck()).toEqual([])
+        })
+
+        it('waits out the day again once a blank backend answer stores the token from the chain alone', async () => {
+            await seedPera(withTier('unverified'))
+            await ageRows()
+            expect(await recheck()).toEqual(['31566704'])
+
+            // What a sync does for a token the backend no longer describes: the
+            // node half only, so the Pera row keeps its old timestamp.
+            await upsertNodeAssets({
+                db,
+                items: [makeAsset()],
+                scope: MAINNET_SCOPE,
+            })
+
+            expect(await recheck()).toEqual([])
+            const [pera] = await db
+                .select({ updatedAt: AssetsPeraSchema.updatedAt })
+                .from(AssetsPeraSchema)
+                .all()
+            expect(pera!.updatedAt).toBeLessThan(
+                Date.now() - 24 * 60 * 60 * 1000,
+            )
+        })
+
+        it('leaves a token stored without a Pera row on the normal TTL', async () => {
+            await upsertNodeAssets({
+                db,
+                items: [makeAsset()],
+                scope: MAINNET_SCOPE,
+            })
+            await db.run(
+                sql`update assets_node set updated_at = ${Date.now() - 2 * 24 * 60 * 60 * 1000}`,
+            )
+
+            expect(await recheck()).toEqual([])
+        })
+
+        it('does not recheck when the caller omits the flag', async () => {
+            await seedPera(withTier('unverified'))
+            await ageRows()
 
             expect(await recheck(false)).toEqual([])
         })

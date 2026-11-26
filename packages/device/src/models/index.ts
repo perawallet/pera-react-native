@@ -124,9 +124,21 @@ export type DeviceState = BaseStoreState & {
     deviceIdOrigins: Partial<Record<ChainScopeKey, DeviceIdOrigin>>
     /** Chains the user turned push notifications off for on this device. */
     mutedChainIds: ChainId[]
+    /**
+     * What the last accepted registration on each deployment carried, after any
+     * chain narrowing. Not persisted: the first registration of a launch fills it.
+     */
+    registeredAccounts: Partial<
+        Record<WalletMode, readonly DeviceAccountRegistration[]>
+    >
     setPushToken: (token: Nullable<string>) => void
     setDeviceID: (deployment: WalletMode, id: Nullable<string>) => void
     setRegistrationPending: (deployment: WalletMode, isPending: boolean) => void
     setDeviceIdOrigin: (deployment: WalletMode, origin: DeviceIdOrigin) => void
     setChainMuted: (chainId: ChainId, isMuted: boolean) => void
+    /** Always writes a new object, so a subscriber sees every accepted registration. */
+    setRegisteredAccounts: (
+        deployment: WalletMode,
+        accounts: readonly DeviceAccountRegistration[],
+    ) => void
 }

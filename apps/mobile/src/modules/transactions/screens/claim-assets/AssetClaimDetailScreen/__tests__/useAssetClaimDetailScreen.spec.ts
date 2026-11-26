@@ -122,6 +122,24 @@ describe('useAssetClaimDetailScreen', () => {
         mockAssetRequests = [buildRequest()]
     })
 
+    it('flags an asset Pera marks suspicious', () => {
+        mockAssetRequests = [
+            {
+                ...buildRequest(),
+                asset: {
+                    assetId: '123',
+                    decimals: 0,
+                    name: 'Claim rewards',
+                    peraMetadata: { verificationTier: 'suspicious' },
+                },
+            },
+        ]
+
+        const { result } = renderHook(() => useAssetClaimDetailScreen())
+
+        expect(result.current.isSuspicious).toBe(true)
+    })
+
     describe('imitated currency', () => {
         it('reports the code the claimed asset imitates', () => {
             vi.mocked(imitatedCurrencyOf).mockReturnValueOnce('USD')

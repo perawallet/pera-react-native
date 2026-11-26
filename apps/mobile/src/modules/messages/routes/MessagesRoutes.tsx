@@ -11,6 +11,10 @@
  */
 
 import type { NativeStackHeaderProps } from '@react-navigation/native-stack'
+import {
+    receivesUnaskedAssets,
+    useRegisteredChainIds,
+} from '@perawallet/wallet-core-accounts'
 import { createAppStackNavigator } from '@routes/createAppStackNavigator'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { NavigationHeader } from '@components/NavigationHeader'
@@ -23,6 +27,7 @@ import {
     AssetClaimDetailScreen,
     TransactionSuccessScreen,
     ClaimProcessingScreen,
+    TokenRequestDetailScreen,
 } from '@modules/transactions/routes'
 import type { MessagesStackParamList } from './types'
 import { MessagesScreen } from '../screens/MessagesScreen'
@@ -32,6 +37,8 @@ const MessagesStack = createAppStackNavigator<MessagesStackParamList>()
 
 export const MessagesStackNavigator = () => {
     const canUseAssetInbox = useCapability({ anyChain: 'assetInbox' })
+    // A chain that receives tokens unasked lists them in the same screens.
+    const canUseTokenInbox = useRegisteredChainIds().some(receivesUnaskedAssets)
     return (
         <MessagesStack.Navigator
             initialRouteName='MessagesHome'
@@ -50,7 +57,7 @@ export const MessagesStackNavigator = () => {
                 options={{ title: 'screens.messages' }}
                 component={MessagesScreen}
             />
-            {canUseAssetInbox && (
+            {(canUseAssetInbox || canUseTokenInbox) && (
                 <MessagesStack.Screen
                     name='AssetTransferRequests'
                     component={AssetTransferRequestsScreen}
@@ -66,6 +73,16 @@ export const MessagesStackNavigator = () => {
                     component={AssetClaimDetailScreen}
                     options={{
                         title: 'messages.claim.asset_transfer_request_title',
+                    }}
+                />
+            )}
+
+            {canUseTokenInbox && (
+                <MessagesStack.Screen
+                    name='TokenRequestDetail'
+                    component={TokenRequestDetailScreen}
+                    options={{
+                        title: 'asset_inbox.token_request.screen_title',
                     }}
                 />
             )}

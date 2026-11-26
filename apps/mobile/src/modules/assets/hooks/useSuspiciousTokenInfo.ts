@@ -9,13 +9,15 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
+import { useInfoButton } from '@components/InfoButton'
+import { useLanguage } from '@hooks/useLanguage'
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    description: {
-        color: theme.colors.textGray,
-        paddingTop: theme.spacing.md,
-        paddingBottom: theme.spacing.sm,
-    },
-}))
+/** Opens the sheet a history row's suspicious badge opens, from an asset's own badge. */
+export const useSuspiciousTokenInfo = (): (() => void) => {
+    const { t } = useLanguage()
+    const { openInfo } = useInfoButton({
+        title: t('asset_details.token_warning.suspicious_title'),
+        children: t('asset_details.token_warning.body'),
+    })
+    return openInfo
+}

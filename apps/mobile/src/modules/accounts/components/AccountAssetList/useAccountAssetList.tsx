@@ -245,7 +245,7 @@ export const useAccountAssetList = ({
             keepZeroNative: selectedChainId !== null,
             hideNfts: !displayNfts,
             hideZeroBalanceNfts: !effectiveDisplayOptedInNfts,
-            hideSuspicious: !showSuspicious,
+            hideUnapproved: !showSuspicious,
             // A token the user hid stays out whatever the switch above says.
             excludeHidden: true,
         }),

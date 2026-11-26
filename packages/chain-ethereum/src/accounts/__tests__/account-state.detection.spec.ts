@@ -40,6 +40,7 @@ import type { EvmHistoryItemResponse } from '../../history/api/schema'
 import { peraEvmHandlers } from '../msw-handlers'
 import {
     erc20CallResponder,
+    EvmAggregateFailure,
     EvmCallBurnsGas,
     EvmRpcErrorFixture,
     evmRpcHandlers,
@@ -134,13 +135,17 @@ afterEach(() => {
 })
 afterAll(() => server.close())
 
-// A token whose call burns the gas of any aggregate that names it.
+// By default a token whose call burns the gas of any aggregate that names it.
 const failingOn =
-    (hostile: string, answer: ReturnType<typeof erc20CallResponder>) =>
+    (
+        hostile: string,
+        answer: ReturnType<typeof erc20CallResponder>,
+        failure: () => EvmAggregateFailure = () => new EvmCallBurnsGas(),
+    ) =>
     (params: readonly unknown[]) => {
         const { to } = params[0] as { to: string }
         return to.toLowerCase() === hostile.toLowerCase()
-            ? new EvmCallBurnsGas()
+            ? failure()
             : answer(params)
     }
 
@@ -148,6 +153,7 @@ const serve = (
     history: EvmHistoryItemResponse[][] | number,
     balances: Record<string, Erc20Fixture> = { [TSLAX]: token(5n) },
     listed: string[] = [],
+    hostileFailure?: () => EvmAggregateFailure,
 ) =>
     server.use(
         ...evmRpcHandlers({
@@ -155,7 +161,11 @@ const serve = (
             responses: {
                 eth_blockNumber: '0x64',
                 eth_getBalance: '0x1',
-                eth_call: failingOn(HOSTILE, erc20CallResponder(balances)),
+                eth_call: failingOn(
+                    HOSTILE,
+                    erc20CallResponder(balances),
+                    hostileFailure,
+                ),
             },
         }),
         ...peraEvmHandlers({
@@ -402,6 +412,32 @@ describe('fetchAccountState received-token detection', () => {
         expect(state.unrefreshedHoldings?.includes(HOSTILE)).toBe(true)
         expect(state.unrefreshedHoldings?.includes(TSLAX)).toBe(false)
         expect(state.unrefreshedHoldings?.includes('native')).toBe(false)
+        // The node refused it, so every read would: kept, but not stale.
+        expect(state.unrefreshedHoldings?.fungibles).toBeUndefined()
+    })
+
+    it('marks balances stale for an off-list token the node never answered for', async () => {
+        serve(
+            [],
+            { [TSLAX]: token(5n) },
+            [],
+            () => new EvmAggregateFailure(-32_603, 'internal error'),
+        )
+        storedHoldings.ids = [HOSTILE, TSLAX]
+
+        const state = await opsWith(SERVICES).fetchAccountState(
+            ADDRESS,
+            SCOPE,
+            HINT,
+        )
+
+        expect(state.unrefreshedHoldings?.includes(HOSTILE)).toBe(true)
+        expect(state.unrefreshedHoldings?.fungibles?.includes(HOSTILE)).toBe(
+            true,
+        )
+        expect(state.unrefreshedHoldings?.fungibles?.includes(TSLAX)).toBe(
+            false,
+        )
     })
 
     it('does not hold the refresh in a failed state for a sighted token that cannot be read', async () => {

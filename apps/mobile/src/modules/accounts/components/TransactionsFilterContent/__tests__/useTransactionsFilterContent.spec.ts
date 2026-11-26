@@ -104,17 +104,17 @@ describe('useTransactionsFilterContent', () => {
                 activeFilter: TransactionFilter.CustomRange,
                 initialCustomRange: customRange,
                 activeHistoryType: 'swaps',
-                isSuspiciousHidden: false,
+                isSuspiciousShown: false,
             }),
         )
 
-        act(() => result.current.handleToggleSuspiciousHidden())
+        act(() => result.current.handleToggleSuspiciousShown())
 
         expect(mocks.resolve).toHaveBeenCalledWith({
             filter: TransactionFilter.CustomRange,
             customRange,
             historyType: 'swaps',
-            isSuspiciousHidden: true,
+            isSuspiciousShown: true,
         })
     })
 
@@ -122,15 +122,15 @@ describe('useTransactionsFilterContent', () => {
         const { result } = renderHook(() =>
             useTransactionsFilterContent({
                 activeFilter: TransactionFilter.LastWeek,
-                isSuspiciousHidden: true,
+                isSuspiciousShown: true,
             }),
         )
 
-        act(() => result.current.handleToggleSuspiciousHidden())
+        act(() => result.current.handleToggleSuspiciousShown())
 
         expect(mocks.resolve).toHaveBeenCalledWith({
             filter: TransactionFilter.LastWeek,
-            isSuspiciousHidden: false,
+            isSuspiciousShown: false,
         })
     })
 

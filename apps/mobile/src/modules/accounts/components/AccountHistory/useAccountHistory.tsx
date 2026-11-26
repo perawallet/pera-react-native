@@ -40,6 +40,7 @@ import { useStyles } from './styles'
 import { useAccountHistoryCsvExport } from './useAccountHistoryCsvExport'
 import { useAccountHistoryFilter } from './useAccountHistoryFilter'
 import { useAccountHistoryRows } from './useAccountHistoryRows'
+import { useWalkPastHiddenRows } from './useWalkPastHiddenRows'
 import { emptyBodyCopy } from './utils'
 
 export type UseAccountHistoryResult = {
@@ -120,7 +121,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         afterTime,
         beforeTime,
         historyType,
-        isSuspiciousHidden,
+        isSuspiciousShown,
         openFilter,
     } = useAccountHistoryFilter()
 
@@ -134,7 +135,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         isError,
         error,
         hasNextPage,
-        isSearchPaused,
+        isSearchPaused: isTypeSearchPaused,
         retry: handleRetry,
         isRetrying,
         isLoadFailed,
@@ -151,7 +152,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         failedNetworkNames,
         unavailableNetworkNames,
         handleLoadMore,
-        handleSearchOlder,
+        handleSearchOlder: handleTypeSearchOlder,
         handleRefresh,
         isRefreshing,
         scopeOf,
@@ -159,8 +160,21 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     const rows = useWithoutSuspiciousRows({
         rows: allRows,
         suspectedPoisoningById,
-        isEnabled: isSuspiciousHidden,
+        isEnabled: !isSuspiciousShown,
     })
+    const hiddenWalk = useWalkPastHiddenRows({
+        isAllHidden: rows.length === 0 && allRows.length > 0,
+        hasNextPage,
+        isFetchingNextPage,
+        loadedCount: allRows.length,
+        loadMore: handleLoadMore,
+    })
+    // Both stop reading and wait for Search Older: the type filter's scan and
+    // the walk past a run of pages the suspicious filter hides entirely.
+    const isSearchPaused = isTypeSearchPaused || hiddenWalk.isPaused
+    const handleSearchOlder = isTypeSearchPaused
+        ? handleTypeSearchOlder
+        : hiddenWalk.resume
 
     // The event needs one chain, so on All it names the account's own; a
     // filter there covers every network.
@@ -217,8 +231,10 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     // queued behind it, and calling that empty would flash the wrong
     // answer for the length of one request.
     // A failed read is never empty, even while it is re-read.
+    // Suspicious rows are hidden by default, so a history of nothing else
+    // has rows read and none to show.
     const isEmpty =
-        isFetched && !isLoadFailed && !hasNextPage && transactionCount === 0
+        isFetched && !isLoadFailed && !hasNextPage && rows.length === 0
     const isOfflineEmpty = isEmpty && !hasInternet
     // The failed read happened offline, so it gets the offline copy, not the error one.
     const isLoadOffline = isLoadFailed && !hasInternet
@@ -232,7 +248,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         isFiltered:
             activeFilter !== TransactionFilter.AllTime ||
             (canFilterByType && historyType !== null) ||
-            isSuspiciousHidden,
+            transactionCount > 0,
         networkChainId,
     })
     const emptyBody = t(emptyCopy.key, emptyCopy.params)

@@ -38,8 +38,7 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 import { describeHolding } from '../chain-adapter'
 import type { HoldingRestriction } from '../models'
 import { isEqualChainData } from '../store/accountChainState'
-import { isNotSuspiciousSql } from './holdingSuspicion'
-import { hiddenHoldingSql } from './holdingVisibility'
+import { countedHoldingSql, hiddenHoldingSql } from './holdingVisibility'
 import { AccountAddedTokensSchema, AccountAssetHoldingsSchema } from './schema'
 
 export type HoldingRow = {
@@ -328,21 +327,22 @@ export type AccountHoldingsFilters = {
     /** Asset types to exclude regardless of holding amount. */
     excludeAssetTypes?: string[]
     /**
-     * When true, rows whose asset Pera flags suspicious are excluded; rows with no metadata yet stay.
-     * The list read keeps the ones their address kept; the single-account read, which feeds totals, doesn't.
+     * When true, only approved rows stay (see `approvedHoldingSql`). The list
+     * read keeps a suspicious token its address kept; the single-account read,
+     * which feeds totals, never counts a suspicious one.
      */
-    hideSuspicious?: boolean
+    hideUnapproved?: boolean
     /** Leaves out holdings the user hid, whatever the other filters keep. */
     excludeHidden?: boolean
-    /** Only the holdings `hideSuspicious` drops: suspicious, neither kept nor hidden. Read by the multi-source holdings query only. */
-    onlyAutoHidden?: boolean
+    /** Only the holdings `hideUnapproved` drops that the user hasn't hidden and whose metadata has synced: the token inbox. Read by the multi-source holdings query only. */
+    onlyUnapproved?: boolean
 }
 
 type GetAccountHoldingsParams = {
     db?: Database
     accountAddress: string
     scope: ChainScope
-} & Omit<AccountHoldingsFilters, 'onlyAutoHidden' | 'keepZeroNative'>
+} & Omit<AccountHoldingsFilters, 'onlyUnapproved' | 'keepZeroNative'>
 
 export async function getAccountHoldings({
     db = getDatabase(),
@@ -352,14 +352,14 @@ export async function getAccountHoldings({
     hideNfts,
     hideZeroBalanceNfts,
     excludeAssetTypes,
-    hideSuspicious,
+    hideUnapproved,
     excludeHidden,
 }: GetAccountHoldingsParams): Promise<HoldingRow[]> {
     const scopeKey = toScopeKey(scope)
     const needsAssetJoin =
         hideNfts === true ||
         hideZeroBalanceNfts === true ||
-        hideSuspicious === true ||
+        hideUnapproved === true ||
         !!excludeAssetTypes?.length
 
     const baseConditions = [
@@ -430,8 +430,10 @@ export async function getAccountHoldings({
         )
     }
 
-    if (hideSuspicious) {
-        joinConditions.push(isNotSuspiciousSql())
+    if (hideUnapproved) {
+        joinConditions.push(
+            countedHoldingSql([{ address: accountAddress, scope }]),
+        )
     }
 
     const rows = await db

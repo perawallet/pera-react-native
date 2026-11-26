@@ -676,16 +676,15 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 }
 
                 case DeeplinkType.ASSET_INBOX: {
+                    const account = findLinkedAccount(
+                        parsedData.target.chainId,
+                        parsedData.address,
+                    )
+                    // The inbox lists one of the wallet's own accounts.
+                    if (!account) break
                     navigateToScreen(false, 'Messages', {
                         screen: 'AssetTransferRequests',
-                        params: {
-                            item: {
-                                address: parsedData.address,
-                                inboxAddress: parsedData.address,
-                                requestCount: 1,
-                            },
-                            scope: getSelectedScope(parsedData.target.chainId),
-                        },
+                        params: { accountId: account.id },
                     })
                     break
                 }

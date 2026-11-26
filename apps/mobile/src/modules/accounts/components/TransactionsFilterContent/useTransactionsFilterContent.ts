@@ -23,8 +23,8 @@ export type TransactionsFilterResult = {
     customRange?: CustomDateRange
     /** Null is All. Absent when the sheet offered no types. */
     historyType?: Nullable<TransactionHistoryType>
-    /** Set only when the hide-suspicious toggle was the change. */
-    isSuspiciousHidden?: boolean
+    /** Set only when the show-suspicious toggle was the change. */
+    isSuspiciousShown?: boolean
 }
 
 export type UseTransactionsFilterContentProps = {
@@ -32,7 +32,7 @@ export type UseTransactionsFilterContentProps = {
     initialCustomRange?: CustomDateRange
     /** Undefined hides the Type section; null is All. */
     activeHistoryType?: Nullable<TransactionHistoryType>
-    isSuspiciousHidden?: boolean
+    isSuspiciousShown?: boolean
 }
 
 export type UseTransactionsFilterContentResult = {
@@ -44,8 +44,8 @@ export type UseTransactionsFilterContentResult = {
     handleFilterPress: (filter: TransactionFilter) => void
     /** Applies the type with the date range already in force. */
     handleHistoryTypePress: (type: Nullable<TransactionHistoryType>) => void
-    /** Flips hiding suspicious transactions, keeping the date range and type. */
-    handleToggleSuspiciousHidden: () => void
+    /** Flips showing suspicious transactions, keeping the date range and type. */
+    handleToggleSuspiciousShown: () => void
     handleDatePress: (input: 'from' | 'to') => void
     handleDateValueChange: (
         event: DateTimePickerChangeEvent,
@@ -59,7 +59,7 @@ export const useTransactionsFilterContent = ({
     activeFilter,
     initialCustomRange,
     activeHistoryType,
-    isSuspiciousHidden,
+    isSuspiciousShown,
 }: UseTransactionsFilterContentProps): UseTransactionsFilterContentResult => {
     const { resolve } = useBottomSheetResult<TransactionsFilterResult>()
 
@@ -102,11 +102,11 @@ export const useTransactionsFilterContent = ({
         resolve({ ...rangeResult, historyType })
     }
 
-    const handleToggleSuspiciousHidden = () => {
+    const handleToggleSuspiciousShown = () => {
         resolve({
             ...rangeResult,
             ...typeResult,
-            isSuspiciousHidden: !isSuspiciousHidden,
+            isSuspiciousShown: !isSuspiciousShown,
         })
     }
 
@@ -156,7 +156,7 @@ export const useTransactionsFilterContent = ({
         isPickerVisible,
         handleFilterPress,
         handleHistoryTypePress,
-        handleToggleSuspiciousHidden,
+        handleToggleSuspiciousShown,
         handleDatePress,
         handleDateValueChange,
         handlePickerDismiss,

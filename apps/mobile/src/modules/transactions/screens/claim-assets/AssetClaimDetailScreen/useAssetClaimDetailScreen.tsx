@@ -31,6 +31,7 @@ import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     formatAssetAmount,
+    PeraAssetVerificationTier,
     useNativeAsset,
     toWholeUnits,
 } from '@perawallet/wallet-core-assets'
@@ -51,6 +52,7 @@ type UseAssetClaimDetailScreenResult = {
     isRejectBlocked: boolean
     /** Code the claimed asset's unit name imitates (the chain's native ticker or a fiat code), or null. */
     imitatedCurrency: Nullable<string>
+    isSuspicious: boolean
     handleClaim: () => void
     handleRejectPress: () => void
     canBuy: boolean
@@ -231,6 +233,9 @@ export const useAssetClaimDetailScreen =
             isClaimBlocked,
             isRejectBlocked,
             imitatedCurrency,
+            isSuspicious:
+                request?.asset.peraMetadata?.verificationTier ===
+                PeraAssetVerificationTier.suspicious,
             handleClaim,
             canBuy,
             handleAddFunds,

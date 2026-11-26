@@ -21,6 +21,7 @@ import { useAccountValueBasis } from '@perawallet/wallet-core-accounts'
 import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 
 const mockHandleInboxItemPress = vi.fn()
+const mockAssetInboxes = vi.fn((): unknown[] => [])
 
 vi.mock('@perawallet/wallet-core-messages', () => ({
     useInboxQuery: vi.fn(),
@@ -47,6 +48,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
 
 vi.mock('@modules/messages/hooks', () => ({
     useHandleInboxItemPress: () => mockHandleInboxItemPress,
+    useAccountAssetInboxes: () => mockAssetInboxes(),
 }))
 
 describe('useInboxScreen', () => {
@@ -61,22 +63,97 @@ describe('useInboxScreen', () => {
         } as unknown as ReturnType<typeof useInboxQuery>)
         vi.mocked(useIsDeviceRegistrationPending).mockReturnValue(false)
         vi.mocked(useAccountValueBasis).mockReturnValue('native')
-        vi.mocked(chainDisplayNameOf).mockReturnValue('Algorand')
+        vi.mocked(chainDisplayNameOf).mockImplementation(chainId =>
+            chainId === 'base' ? 'Base' : 'Algorand',
+        )
+        mockAssetInboxes.mockReturnValue([])
     })
 
+    const signItem = {
+        type: 'multisig_sign' as const,
+        data: { id: 'sign-1', multisigAccount: { address: 'MSIG_ADDR' } },
+        createdAt: new Date(0),
+    }
+    const assetInbox = {
+        account: { id: 'acct-1' },
+        backendItem: undefined,
+        tokenCount: 2,
+        requestCount: 2,
+    }
+    const asaItem = {
+        type: 'asa_inbox' as const,
+        data: { address: 'ALGO_ADDR', inboxAddress: null, requestCount: 1 },
+        createdAt: new Date(0),
+    }
+    const withBackendItem = () =>
+        vi.mocked(useInboxQuery).mockReturnValue({
+            data: [signItem],
+            isPending: false,
+            isRefetching: false,
+            refetch: vi.fn(),
+        } as unknown as ReturnType<typeof useInboxQuery>)
+
     it('names the inbox chain for the row badge once the wallet spans chains', () => {
+        withBackendItem()
         vi.mocked(useAccountValueBasis).mockReturnValue('fiat')
 
         const { result } = renderHook(() => useInboxScreen())
 
-        expect(result.current.chainBadgeName).toBe('Algorand')
-        expect(chainDisplayNameOf).toHaveBeenCalledWith('algorand')
+        expect(result.current.inboxEntries[0]?.chainBadgeName).toBe('Algorand')
     })
 
-    it('leaves the rows unbadged while the wallet is on one chain', () => {
+    it('leaves the backend rows unbadged while the wallet is on one chain', () => {
+        withBackendItem()
+
         const { result } = renderHook(() => useInboxScreen())
 
-        expect(result.current.chainBadgeName).toBeUndefined()
+        expect(result.current.inboxEntries[0]?.chainBadgeName).toBeUndefined()
+    })
+
+    it("lists each account's incoming assets in place of the backend's per-address rows", () => {
+        vi.mocked(useInboxQuery).mockReturnValue({
+            data: [signItem, asaItem],
+            isPending: false,
+            isRefetching: false,
+            refetch: vi.fn(),
+        } as unknown as ReturnType<typeof useInboxQuery>)
+        mockAssetInboxes.mockReturnValue([assetInbox])
+
+        const { result } = renderHook(() => useInboxScreen())
+
+        expect(result.current.inboxEntries).toEqual([
+            { item: signItem, chainBadgeName: undefined },
+            {
+                item: { type: 'account_assets', data: assetInbox },
+                chainBadgeName: undefined,
+            },
+        ])
+        expect(
+            result.current.keyExtractor(result.current.inboxEntries[1]!),
+        ).toBe('assets-acct-1')
+    })
+
+    it("opens an account's incoming assets through the shared handler", () => {
+        mockAssetInboxes.mockReturnValue([assetInbox])
+
+        const { result } = renderHook(() => useInboxScreen())
+        act(() => {
+            result.current.handleInboxItemPress(result.current.inboxEntries[0]!)
+        })
+
+        expect(mockHandleInboxItemPress).toHaveBeenCalledWith({
+            type: 'account_assets',
+            data: assetInbox,
+        })
+    })
+
+    it('is not awaiting registration while an account has incoming assets', () => {
+        vi.mocked(useIsDeviceRegistrationPending).mockReturnValue(true)
+        mockAssetInboxes.mockReturnValue([assetInbox])
+
+        const { result } = renderHook(() => useInboxScreen())
+
+        expect(result.current.isAwaitingRegistration).toBe(false)
     })
 
     it('returns empty inbox array when data is undefined', () => {
@@ -89,34 +166,21 @@ describe('useInboxScreen', () => {
 
         const { result } = renderHook(() => useInboxScreen())
 
-        expect(result.current.inboxItems).toEqual([])
+        expect(result.current.inboxEntries).toEqual([])
         expect(result.current.isPending).toBe(true)
     })
 
-    it('exposes inbox items and delegates presses to the shared handler', () => {
-        const signItem = {
-            type: 'multisig_sign' as const,
-            data: { id: 'sign-1', multisigAccount: { address: 'MSIG_ADDR' } },
-            createdAt: new Date(0),
-        }
-        vi.mocked(useInboxQuery).mockReturnValue({
-            data: [signItem],
-            isPending: false,
-            isRefetching: false,
-            refetch: vi.fn(),
-        } as unknown as ReturnType<typeof useInboxQuery>)
+    it('delegates a backend item press to the shared handler', () => {
+        withBackendItem()
 
         const { result } = renderHook(() => useInboxScreen())
-
-        expect(result.current.inboxItems).toEqual([signItem])
-
         act(() => {
-            result.current.handleInboxItemPress(
-                signItem as unknown as InboxItem,
-            )
+            result.current.handleInboxItemPress(result.current.inboxEntries[0]!)
         })
 
-        expect(mockHandleInboxItemPress).toHaveBeenCalledWith(signItem)
+        expect(mockHandleInboxItemPress).toHaveBeenCalledWith(
+            signItem as unknown as InboxItem,
+        )
     })
 
     it('refetches the inbox when refresh is triggered', () => {
@@ -159,17 +223,7 @@ describe('useInboxScreen', () => {
     })
 
     it('is not awaiting registration when items are present, even if registration is pending', () => {
-        const signItem = {
-            type: 'multisig_sign' as const,
-            data: { id: 'sign-1', multisigAccount: { address: 'MSIG_ADDR' } },
-            createdAt: new Date(0),
-        }
-        vi.mocked(useInboxQuery).mockReturnValue({
-            data: [signItem],
-            isPending: false,
-            isRefetching: false,
-            refetch: vi.fn(),
-        } as unknown as ReturnType<typeof useInboxQuery>)
+        withBackendItem()
         vi.mocked(useIsDeviceRegistrationPending).mockReturnValue(true)
 
         const { result } = renderHook(() => useInboxScreen())

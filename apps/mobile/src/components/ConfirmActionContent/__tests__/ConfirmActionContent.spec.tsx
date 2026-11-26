@@ -136,28 +136,6 @@ describe('ConfirmActionContent', () => {
         await expect(promise).resolves.toBeUndefined()
     })
 
-    it('does not dismiss while the cancel button is disabled', async () => {
-        const onCancel = vi.fn()
-        const promise = useBottomSheetStore
-            .getState()
-            .request<boolean>({ id: 'sheet-1', contents: null })
-        render(
-            <BottomSheetIdContext.Provider value='sheet-1'>
-                <ConfirmActionContent
-                    {...baseProps}
-                    isCancelDisabled
-                    onCancel={onCancel}
-                />
-            </BottomSheetIdContext.Provider>,
-        )
-
-        fireEvent.click(screen.getByText(baseProps.cancelLabel))
-
-        expect(onCancel).not.toHaveBeenCalled()
-        useBottomSheetStore.getState().remove('sheet-1')
-        await expect(promise).resolves.toBeUndefined()
-    })
-
     it('does not resolve any action while one is pending', async () => {
         const promise = useBottomSheetStore
             .getState()

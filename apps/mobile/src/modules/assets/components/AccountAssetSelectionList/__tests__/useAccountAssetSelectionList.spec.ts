@@ -42,7 +42,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useKeptTokensStore: (
         selector: (state: { keptTokens: unknown }) => unknown,
     ) => selector({ keptTokens: {} }),
-    isAutoHiddenHolding: (holding: {
+    isUnapprovedHolding: (holding: {
         asset?: { peraMetadata?: { verificationTier?: string } }
     }) => holding.asset?.peraMetadata?.verificationTier === 'suspicious',
     chainAccountOf: (

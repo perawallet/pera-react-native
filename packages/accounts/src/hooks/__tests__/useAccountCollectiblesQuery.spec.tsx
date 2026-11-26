@@ -60,7 +60,7 @@ describe('useAccountCollectiblesQuery', () => {
         useHoldingsRefreshStore.getState().resetState()
     })
 
-    it('flags unrefreshed holdings for its own sources only', async () => {
+    it('names the chains whose collectibles went unrefreshed, for its own sources only', async () => {
         mockGetAccountCollectiblesLite.mockResolvedValue([])
         const { result } = renderHook(
             () => useAccountCollectiblesQuery(sourcesOf('ADDR1')),
@@ -71,23 +71,30 @@ describe('useAccountCollectiblesQuery', () => {
         act(() =>
             useHoldingsRefreshStore
                 .getState()
-                .setHoldingsRefreshFailed(SCOPE, 'ADDR2', true),
+                .setCollectiblesRefreshFailed(SCOPE, 'ADDR2', true),
         )
-        expect(result.current.hasUnrefreshedHoldings).toBe(false)
+        expect(result.current.unrefreshedChainIds.size).toBe(0)
 
         act(() =>
             useHoldingsRefreshStore
                 .getState()
                 .setHoldingsRefreshFailed(SCOPE, 'ADDR1', true),
         )
-        expect(result.current.hasUnrefreshedHoldings).toBe(true)
+        expect(result.current.unrefreshedChainIds.size).toBe(0)
 
         act(() =>
             useHoldingsRefreshStore
                 .getState()
-                .setHoldingsRefreshFailed(SCOPE, 'ADDR1', false),
+                .setCollectiblesRefreshFailed(SCOPE, 'ADDR1', true),
         )
-        expect(result.current.hasUnrefreshedHoldings).toBe(false)
+        expect([...result.current.unrefreshedChainIds]).toEqual([SCOPE.chainId])
+
+        act(() =>
+            useHoldingsRefreshStore
+                .getState()
+                .setCollectiblesRefreshFailed(SCOPE, 'ADDR1', false),
+        )
+        expect(result.current.unrefreshedChainIds.size).toBe(0)
     })
 
     it('reads the rows SQL sorted for the requested mode', async () => {

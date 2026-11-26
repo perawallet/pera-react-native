@@ -22,13 +22,11 @@ import { useStyles } from './styles'
 
 export type SwapHistoryListItemProps = {
     item: ListedSwapHistoryItem
-    isChainShown?: boolean
     onPress: (item: ListedSwapHistoryItem) => void
 }
 
 export const SwapHistoryListItem = ({
     item,
-    isChainShown,
     onPress,
 }: SwapHistoryListItemProps) => {
     const styles = useStyles()
@@ -50,14 +48,13 @@ export const SwapHistoryListItem = ({
         <PWTouchableOpacity
             style={styles.item}
             onPress={() => onPress(item)}
-            disabled={!item.explorerUrl}
+            disabled={!item.detailsTarget}
             testID={`swap-history-item-${item.orderId}`}
         >
             <SwapAssetPairIcon
                 assetIn={item.assetIn}
                 assetOut={item.assetOut}
                 surfaceColor={theme.colors.background}
-                isChainShown={isChainShown}
             />
             <PWView style={styles.itemBody}>
                 <PWText
@@ -94,9 +91,9 @@ export const SwapHistoryListItem = ({
                     </PWText>
                 )}
             </PWView>
-            {!!item.explorerUrl && (
+            {!!item.detailsTarget && (
                 <PWIcon
-                    name='arrow-up-right'
+                    name='chevron-right'
                     size='sm'
                 />
             )}

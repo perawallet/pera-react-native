@@ -173,7 +173,7 @@
         "display_opted_in_nfts": "Mostrar NFT añadidos",
         "display_opted_in_nfts_description": "Puedes mostrar u ocultar los NFT que has añadido pero no posees",
         "show_suspicious": "Mostrar activos sospechosos",
-        "show_suspicious_description": "Muestra los tokens que Pera ha marcado como posible spam o estafa. Nunca se incluyen en tu saldo"
+        "show_suspicious_description": "También muestra los tokens que esperan en tu bandeja y los que Pera ha marcado como posible spam o estafa. Nunca se incluyen en tu saldo"
     },
     "add_asset": {
         "title": "Añadir un activo",
@@ -291,11 +291,8 @@
         "hidden_toast_body": "Ya no aparecerá en tus activos ni se contará en tu saldo. Vuelve a mostrarlo desde Gestionar activos > Ocultar tokens.",
         "hidden_swipe_toast_body": "Toca para deshacer. Ya no aparecerá en tus activos ni se contará en tu saldo.",
         "shown_toast_title": "Se mostró {{assetName}}",
-        "filtered_note": "Pera marcó este token como sospechoso, por eso no aparece en tus activos. Puedes mostrarlo desde «Tokens ocultos», al final de tus activos.",
-        "auto_hidden_row_title": "Tokens ocultos ({{total}})",
-        "auto_hidden_title": "Tokens ocultos",
-        "auto_hidden_description": "Pera ocultó estos tokens porque parecen spam o estafas. No visites los sitios web que mencionan. Muestra un token para volver a verlo en la lista; seguirá sin contarse en tu saldo.",
-        "auto_hidden_empty_title": "No hay tokens ocultos"
+        "filtered_note": "Este token está esperando en tu bandeja. Acéptalo allí para que aparezca en tus activos.",
+        "inbox_row_title": "Tokens en tu bandeja ({{total}})"
     },
     "deeplink": {
         "error": {
@@ -390,11 +387,28 @@
             "empty_title": "No hay solicitudes de transferencia de activos pendientes",
             "empty_body": "Cuando tengas una solicitud de transferencia de activos, podrás verla aquí. Toca para saber más sobre esta función.",
             "info_title": "Solicitudes de transferencia de activos",
-            "info_body": "Esta función es una bandeja de entrada para tu cuenta. Otras personas pueden enviarte activos y NFT, incluso si no los has añadido explícitamente a tu cuenta. Desde aquí puedes aceptar o rechazar las solicitudes de transferencia de activos."
+            "info_body": "Esta es la bandeja de tu cuenta. Aquí esperan los activos que te envían en Algorand antes de que los hayas añadido, para que los reclames o rechaces, y también los tokens de redes como Ethereum que Pera no ha verificado. Al aceptar un token, aparece en tus activos; al rechazarlo, se oculta.",
+            "reject_all": "Rechazar todos",
+            "reject_all_title": "¿Rechazar todos los tokens?",
+            "reject_all_body_one": "{{count}} token se ocultará de tus activos y tu historial, y no volverá a tu bandeja.",
+            "reject_all_body_other": "{{count}} tokens se ocultarán de tus activos y tu historial, y no volverán a tu bandeja.",
+            "reject_all_skips_claims": "Las solicitudes que necesitan una transacción se quedan en tu bandeja para reclamarlas o rechazarlas de una en una.",
+            "rejected_all_toast_one": "{{count}} token rechazado",
+            "rejected_all_toast_other": "{{count}} tokens rechazados"
         },
         "claim": {
             "reject": "Rechazar",
-            "native_gain": "Recibirás {{amount}} para compensar los gastos de añadir el activo."
+            "native_gain": "Recibirás {{amount}} para compensar los gastos de añadir el activo.",
+            "token_accepted_toast": "{{assetName}} añadido a tus activos",
+            "token_rejected_toast": "{{assetName}} rechazado"
+        },
+        "token_request": {
+            "screen_title": "Token entrante",
+            "accept": "Aceptar",
+            "reject": "Rechazar",
+            "network": "Red",
+            "question": "¿Añadir este token a tus activos?",
+            "explanation": "Llegó a esta cuenta sin que lo pidieras. Acéptalo para que aparezca en tus activos y cuente en tu saldo. Recházalo para ocultarlo; no volverá a tu bandeja. En ningún caso se envía nada a la red."
         }
     },
     "asset": {
@@ -545,8 +559,10 @@
             "nomatch_body": "Ningún NFT coincide con tu búsqueda",
             "network_empty_title": "Sin NFT",
             "network_empty_body": "No tienes ningún NFT en {{chain}}.",
-            "refresh_error_title": "No se pudieron actualizar los NFT",
+            "refresh_error_title": "No se pudieron actualizar los NFT en {{chains}}",
             "refresh_error_body": "Desliza hacia abajo para intentarlo de nuevo.",
+            "load_error_title": "No se pudieron cargar los NFT",
+            "load_error_body": "No se pudieron cargar tus NFT en {{chains}}.",
             "suspicious_hidden_title": "NFT sospechosos ocultos",
             "suspicious_hidden_body": "Pera ha marcado estos NFT como posible spam o estafa. Para verlos, activa Mostrar NFT sospechosos en Gestionar > Filtrar.",
             "user_hidden_title": "NFT ocultos",
@@ -760,7 +776,8 @@
             "text_with_cloud_backup": "Debes hacer una copia de seguridad de esta cuenta",
             "cta_passphrase": "Respaldar passphrase de recuperación",
             "cta_turn_on_cloud_backup": "Activar copia de seguridad en la nube",
-            "cta_fix_cloud_backup": "Corregir copia de seguridad en la nube"
+            "cta_fix_cloud_backup": "Corregir copia de seguridad en la nube",
+            "cta_confirm_cloud_backup": "Confirmar copia de seguridad en la nube"
         },
         "status": {
             "cloud_backup": "Con copia de seguridad · Copia de seguridad en la nube"
@@ -894,7 +911,8 @@
             "confirm": "Confirmar",
             "error_words": "Algunas de las palabras seleccionadas son incorrectas. Vuelve a intentarlo.",
             "error_key": "Esta clave de cifrado no coincide con tu copia de seguridad.",
-            "error_both": "Las palabras seleccionadas y la clave de cifrado son incorrectas.",
+            "hint_words": "Selecciona una palabra para cada número para continuar.",
+            "hint_key": "Introduce tu clave de cifrado para continuar.",
             "success": "Clave de la copia confirmada"
         },
         "store_encryption_key": {
@@ -2276,7 +2294,7 @@
         },
         "inbox": {
             "empty_title": "No hay mensajes pendientes",
-            "empty_body": "La bandeja guarda los activos de Algorand que te envían antes de que los hayas añadido, además de las invitaciones a cuentas compartidas y las solicitudes de firma. Los tokens de otras redes llegan directamente a tu saldo.",
+            "empty_body": "La bandeja guarda los activos que esperan a que los aceptes: activos de Algorand que te envían antes de que los hayas añadido y tokens de redes como Ethereum que Pera no ha verificado. Las invitaciones a cuentas compartidas y las solicitudes de firma también llegan aquí.",
             "asa_requests_one": "1 activo entrante",
             "asa_requests_other": "{{count}} activos entrantes",
             "multisig_sign": {
@@ -2294,8 +2312,7 @@
                 "algorand_title": "Algorand",
                 "algorand_body": "Una cuenta de Algorand debe añadir un activo antes de poder tenerlo. Los activos que te envían antes de que los hayas añadido esperan aquí, en la bandeja, hasta que los reclames o los rechaces. Las invitaciones a cuentas compartidas y las solicitudes de firma también llegan aquí.",
                 "other_networks_title": "Otras redes",
-                "other_networks_body": "En redes como Ethereum y Base no hace falta añadir los tokens. Los que te envían allí llegan directamente a tu saldo y nunca aparecen en la bandeja.",
-                "find_tokens_body": "Para verlos, abre la cuenta y revisa sus activos en esa red.",
+                "other_networks_body": "En redes como Ethereum y Base no hace falta añadir los tokens, así que cualquiera puede enviarte uno. Los tokens que Pera no ha verificado esperan aquí hasta que los aceptes o rechaces. Al aceptar uno, aparece en tus activos; al rechazarlo, se oculta.",
                 "learn_more": "Más información"
             }
         },
@@ -2314,11 +2331,13 @@
             "processing_subtitle": "La red de Algorand está procesando tu transacción",
             "success_title": "Operación completada",
             "success_subtitle": "La red de Algorand recibió tu transacción correctamente",
-            "sender_count_more": "+{{count}} más",
             "insufficient_native_title": "{{symbol}} insuficiente",
             "insufficient_native_claim": "No tienes suficiente {{symbol}} para reclamar este activo. Añade fondos para cubrir el requisito de saldo mínimo.",
             "insufficient_native_reject": "No tienes suficiente {{symbol}} para rechazar este activo. Añade fondos para cubrir las comisiones de la transacción.",
-            "insufficient_native_cta": "Añadir fondos"
+            "insufficient_native_cta": "Añadir fondos",
+            "from_sender": "De {{sender}}",
+            "from_senders_one": "De {{sender}} y {{count}} más",
+            "from_senders_other": "De {{sender}} y {{count}} más"
         }
     },
     "multisig": {
@@ -4184,8 +4203,8 @@
             "title": "Filtrar",
             "all_time": "Todo el tiempo",
             "today": "Hoy",
-            "hide_suspicious": "Ocultar transacciones sospechosas",
-            "hide_suspicious_description": "Oculta envíos falsificados, tokens de imitación o spam y posibles envenenamientos de direcciones.",
+            "show_suspicious": "Mostrar transacciones sospechosas",
+            "show_suspicious_description": "Incluye envíos falsificados, tokens de imitación y spam, posible envenenamiento de direcciones y transferencias de tokens que esperan en tu bandeja.",
             "yesterday": "Ayer",
             "last_week": "Última semana",
             "last_month": "Último mes",

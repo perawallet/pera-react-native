@@ -10,5 +10,19 @@
  limitations under the License
  */
 
-export { AsaInboxItem } from './AsaInboxItem'
-export type { AsaInboxItemProps } from './AsaInboxItem'
+import { makeStyles } from '@rneui/themed'
+import { getFontWeightVariant } from '@theme/typography'
+
+// The account asset list's row spacing and type, so the inbox reads the same.
+export const useStyles = makeStyles(theme => ({
+    row: {
+        marginVertical: theme.spacing.lg,
+    },
+    amount: {
+        color: theme.colors.textGray,
+    },
+    value: {
+        ...getFontWeightVariant(theme, 'h4', 500),
+        textAlign: 'right',
+    },
+}))

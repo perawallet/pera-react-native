@@ -31,10 +31,18 @@ export type SetTokenHiddenParams = {
     isHidden: boolean
 }
 
+export type HideTokensParams = {
+    address: string
+    scope: ChainScope
+    assetIds: readonly string[]
+}
+
 type HiddenTokensData = { hiddenTokens: HiddenTokens }
 
 type HiddenTokensActions = BaseStoreState & {
     setTokenHidden: (params: SetTokenHiddenParams) => void
+    /** Hides several at once, so persisting and the reads it refreshes run once. */
+    hideTokens: (params: HideTokensParams) => void
     replaceHiddenTokens: (hiddenTokens: HiddenTokens) => void
 }
 
@@ -70,6 +78,17 @@ export const useHiddenTokensStore: UseBoundStore<
             setTokenHidden: params => {
                 set(state => {
                     const hiddenTokens = withToken(state.hiddenTokens, params)
+                    return hiddenTokens === state.hiddenTokens
+                        ? state
+                        : { hiddenTokens }
+                })
+            },
+            hideTokens: params => {
+                set(state => {
+                    const hiddenTokens = withAssetIds(state.hiddenTokens, {
+                        ...params,
+                        isIncluded: true,
+                    })
                     return hiddenTokens === state.hiddenTokens
                         ? state
                         : { hiddenTokens }

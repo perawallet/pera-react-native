@@ -546,6 +546,33 @@ describe('syncAssets', () => {
         expect(full[0]?.peraMetadata?.crossChainAssetGroup).toBeUndefined()
     })
 
+    it('re-reads a token that is not verified daily, and leaves the metadata TTL at a week', async () => {
+        const { persistence } = memoryPersistence(() => [])
+        const ops = createEthereumAssetsAdapter(
+            testChainContext({ services: ['assets'] }),
+            ETHEREUM,
+        )
+        const weekMs = 7 * 24 * 60 * 60 * 1000
+
+        await ops.syncAssets(
+            [USDC, ETHEREUM_NATIVE_ASSET.assetId].map(ref),
+            SCOPE,
+        )
+
+        const calls = vi
+            .mocked(persistence.getStaleOrMissingAssetIds)
+            .mock.calls.map(([params]) => params)
+        expect(calls.find(call => call.assetIds.includes(USDC))).toMatchObject({
+            ttlMs: weekMs,
+            recheckNonVerified: true,
+        })
+        const native = calls.find(call =>
+            call.assetIds.includes(ETHEREUM_NATIVE_ASSET.assetId),
+        )
+        expect(native).toMatchObject({ ttlMs: weekMs })
+        expect(native).not.toHaveProperty('recheckNonVerified')
+    })
+
     it('checks staleness under the checksummed id', async () => {
         const { persistence } = memoryPersistence(() => [])
         const ops = createEthereumAssetsAdapter(

@@ -28,6 +28,7 @@ import {
     upsertAccountChainState,
     useAccountsStore,
     type WalletAccount,
+    useKeptTokensStore,
 } from '@perawallet/wallet-core-accounts'
 import {
     nativeAssetFor,
@@ -171,13 +172,23 @@ describe('Flow: tokens an Ethereum account received', () => {
             selectedChainId: null,
             expandedGroupIds: [],
         })
+        useKeptTokensStore.getState().resetState()
         useAccountsStore.getState().setAccounts([ACCOUNT])
         await seedReceivedTokens()
     })
 
+    // An unvetted token is listed once the user accepts it from the inbox.
+    const accept = (assetId: string) =>
+        useKeptTokensStore.getState().keepTokens({
+            address: ETH_ADDRESS,
+            scope: ETH_SCOPE,
+            assetIds: [assetId],
+        })
+
     afterEach(() => {
         useAccountsStore.getState().setAccounts([])
         useAssetPreferencesStore.getState().resetState()
+        useKeptTokensStore.getState().resetState()
     })
 
     it('Given a token received from a swap that Pera has vetted, when the list renders, then it is listed with its name, amount and fiat value and no contract address', async () => {
@@ -192,7 +203,8 @@ describe('Flow: tokens an Ethereum account received', () => {
         expect(row.textContent).not.toContain('0x8aD3')
     })
 
-    it('Given a token Pera has not vetted, when the list renders, then it is listed with its contract address, its symbol on the amount and no fiat value', async () => {
+    it('Given a token Pera has not vetted that the user accepted, when the list renders, then it is listed with its contract address, its symbol on the amount and no fiat value', async () => {
+        accept(UNKNOWN)
         renderList()
 
         const row = await screen.findByTestId(`asset_row_${UNKNOWN}`)
@@ -203,7 +215,8 @@ describe('Flow: tokens an Ethereum account received', () => {
         expect(row.textContent).not.toContain('---')
     })
 
-    it('Given a priced token Pera has not vetted, when the list renders, then it shows its fiat value and the account total counts it', async () => {
+    it('Given a priced token Pera has not vetted that the user accepted, when the list renders, then it shows its fiat value and the account total counts it', async () => {
+        accept(PRICED_UNVERIFIED)
         renderList()
 
         const row = await screen.findByTestId(`asset_row_${PRICED_UNVERIFIED}`)

@@ -14,12 +14,19 @@ import type { MessagesStackParamList } from '@modules/messages/routes'
 import { type RouteProp, useRoute } from '@react-navigation/native'
 import { useCallback, useMemo, useState } from 'react'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { useInboxQuery, useInboxStatus } from '@perawallet/wallet-core-messages'
+import {
+    useInboxQuery,
+    useInboxStatus,
+    type InboxItem,
+} from '@perawallet/wallet-core-messages'
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { InboxInfoContent } from '@modules/messages/components/InboxInfoContent'
 import { NotificationSettingsContent } from '@modules/messages/components/NotificationSettingsContent'
+import { useAccountAssetInboxes } from '../../hooks/useAccountAssetInboxes'
 import type { MessagesTabsParamsList } from './MessagesScreen'
+
+const NO_ITEMS: readonly InboxItem[] = []
 
 export const useMessagesScreen = () => {
     const route = useRoute<RouteProp<MessagesStackParamList, 'MessagesHome'>>()
@@ -32,6 +39,12 @@ export const useMessagesScreen = () => {
         isUnavailableOnNetwork,
     } = useInboxStatus(scope)
     const { data: inboxItems } = useInboxQuery(scope)
+    // Waiting tokens are kept on the device, so the backend's unread state
+    // doesn't cover an account whose only incoming assets are those.
+    const hasTokenInbox = useAccountAssetInboxes({
+        backendItems: inboxItems ?? NO_ITEMS,
+        backendScope: scope,
+    }).some(inbox => !inbox.backendItem)
 
     // Decided once at mount: the navigator only reads initialRouteName on its
     // first render, and the inbox query is subscribed session-long via
@@ -39,6 +52,7 @@ export const useMessagesScreen = () => {
     // cache is already settled by the time this screen mounts.
     const [initialRouteName] = useState<keyof MessagesTabsParamsList>(() => {
         if (initialTab) return initialTab
+        if (hasTokenInbox) return 'Inbox'
         if (!inboxItems?.length) return 'Notifications'
         if (!hasUnreadInboxItems && hasUnreadNotifications) {
             return 'Notifications'
@@ -73,10 +87,10 @@ export const useMessagesScreen = () => {
 
     const showInboxBadge = useMemo(
         () =>
-            !isUnavailableOnNetwork &&
-            hasUnreadInboxItems &&
+            ((!isUnavailableOnNetwork && hasUnreadInboxItems) ||
+                hasTokenInbox) &&
             activeTab !== 'Inbox',
-        [isUnavailableOnNetwork, hasUnreadInboxItems, activeTab],
+        [isUnavailableOnNetwork, hasUnreadInboxItems, hasTokenInbox, activeTab],
     )
     const showNotificationsBadge = useMemo(
         () =>

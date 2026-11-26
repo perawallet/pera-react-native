@@ -62,7 +62,8 @@ vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({ goBack: goBackMock }),
 }))
 
-vi.mock('@perawallet/wallet-core-backup', () => ({
+vi.mock('@perawallet/wallet-core-backup', async importOriginal => ({
+    ...(await importOriginal<object>()),
     BackupMnemonicParseError: MockParseError,
     withBackupMnemonicIndices: withIndicesMock,
     useCloudBackupStore: (
@@ -78,7 +79,8 @@ vi.mock('@perawallet/wallet-core-backup', () => ({
 }))
 
 // Advances one position per call so a re-sample is observable.
-vi.mock('@perawallet/wallet-core-kms', () => ({
+vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
+    ...(await importOriginal<object>()),
     MNEMONIC_WORDLIST: ['alpha', 'bravo', 'charlie', 'delta'],
     mnemonicIndexToWord: (index: number) => MNEMONIC[index],
     pickDistinctIndexes: (count: number) =>
@@ -224,9 +226,13 @@ describe('useCloudBackupConfirmCredentialsScreen', () => {
         expect(goBackMock).toHaveBeenCalledTimes(1)
     })
 
-    test('accepts a key pasted with surrounding spaces', async () => {
+    test('accepts a key wrapped across lines', async () => {
         const { result } = await renderReady()
-        act(() => result.current.handleKeyChange(`  ${SALT} `))
+        act(() =>
+            result.current.handleKeyChange(
+                `\n${SALT.slice(0, 8)}\n${SALT.slice(8)}\n`,
+            ),
+        )
 
         act(() => quizCall()[2]())
 
@@ -234,34 +240,36 @@ describe('useCloudBackupConfirmCredentialsScreen', () => {
         expect(confirmCredentialsMock).toHaveBeenCalledTimes(1)
     })
 
-    test('reports the key and confirms nothing when the words are right and the key is wrong', async () => {
+    test('shows the key error and confirms nothing when the words are right and the key is wrong', async () => {
         const { result } = await renderReady()
         act(() => result.current.handleKeyChange('d3Jvbmc='))
         const before = quizCall()[0]
 
         act(() => quizCall()[2]())
 
-        expect(errorToastMock).toHaveBeenCalledWith(
+        expect(result.current.keyError).toBe(
             'cloud_backup.confirm_credentials.error_key',
-            '',
         )
+        expect(result.current.wordsError).toBeNull()
+        expect(errorToastMock).not.toHaveBeenCalled()
         expect(errorHapticMock).toHaveBeenCalled()
         expect(confirmCredentialsMock).not.toHaveBeenCalled()
         expect(goBackMock).not.toHaveBeenCalled()
         expect(quizCall()[0]).toEqual(before)
     })
 
-    test('reports the words and re-samples positions when the key is right and the words are wrong', async () => {
+    test('shows the words error and re-samples positions when the key is right and the words are wrong', async () => {
         const { result } = await renderReady()
         act(() => result.current.handleKeyChange(SALT))
         const before = quizCall()[0]
 
         act(() => quizCall()[3]())
 
-        expect(errorToastMock).toHaveBeenCalledWith(
+        expect(result.current.wordsError).toBe(
             'cloud_backup.confirm_credentials.error_words',
-            '',
         )
+        expect(result.current.keyError).toBeNull()
+        expect(errorToastMock).not.toHaveBeenCalled()
         expect(confirmCredentialsMock).not.toHaveBeenCalled()
         await waitFor(() => expect(quizCall()[0]).not.toEqual(before))
     })
@@ -298,17 +306,85 @@ describe('useCloudBackupConfirmCredentialsScreen', () => {
         expect(result.current.canConfirm).toBe(true)
     })
 
-    test('reports both when the words and the key are wrong', async () => {
+    test('shows both errors when the words and the key are wrong', async () => {
         const { result } = await renderReady()
         act(() => result.current.handleKeyChange('d3Jvbmc='))
 
         act(() => quizCall()[3]())
 
-        expect(errorToastMock).toHaveBeenCalledWith(
-            'cloud_backup.confirm_credentials.error_both',
-            '',
-        )
+        expect(result.current.wordsError).not.toBeNull()
+        expect(result.current.keyError).not.toBeNull()
+        expect(errorToastMock).not.toHaveBeenCalled()
         expect(confirmCredentialsMock).not.toHaveBeenCalled()
+    })
+
+    test('editing the key clears only the key error', async () => {
+        const { result } = await renderReady()
+        act(() => result.current.handleKeyChange('d3Jvbmc='))
+        act(() => quizCall()[3]())
+
+        act(() => result.current.handleKeyChange(SALT))
+
+        expect(result.current.keyError).toBeNull()
+        expect(result.current.wordsError).not.toBeNull()
+    })
+
+    test('picking a word clears only the words error and reaches the quiz', async () => {
+        const quizOnSelect = vi.fn()
+        ;(useBackupQuiz as Mock).mockReturnValue({
+            items: [],
+            onSelect: quizOnSelect,
+            onSubmit: vi.fn(),
+            isFilled: false,
+            hasError: false,
+        })
+        const { result } = await renderReady()
+        act(() => result.current.handleKeyChange('d3Jvbmc='))
+        act(() => quizCall()[3]())
+
+        act(() => result.current.onSelect(0, 'alpha'))
+
+        expect(result.current.wordsError).toBeNull()
+        expect(result.current.keyError).not.toBeNull()
+        expect(quizOnSelect).toHaveBeenCalledWith(0, 'alpha')
+    })
+
+    test('hints at the words while any is unpicked, then at the key, then nothing', async () => {
+        const { result, rerender } = await renderReady()
+
+        expect(result.current.confirmHint).toBe(
+            'cloud_backup.confirm_credentials.hint_words',
+        )
+
+        ;(useBackupQuiz as Mock).mockReturnValue({
+            items: [],
+            onSelect: vi.fn(),
+            onSubmit: vi.fn(),
+            isFilled: true,
+            hasError: false,
+        })
+        rerender()
+
+        expect(result.current.confirmHint).toBe(
+            'cloud_backup.confirm_credentials.hint_key',
+        )
+
+        act(() => result.current.handleKeyChange(SALT))
+
+        expect(result.current.confirmHint).toBeNull()
+    })
+
+    test('shows no hint when the phrase is unavailable', async () => {
+        withIndicesMock.mockResolvedValue(null)
+
+        const { result } = renderHook(() =>
+            useCloudBackupConfirmCredentialsScreen(),
+        )
+        await waitFor(() =>
+            expect(result.current.passphraseStatus).toBe('unavailable'),
+        )
+
+        expect(result.current.confirmHint).toBeNull()
     })
 
     test('is unavailable and cannot confirm when nothing is stored', async () => {

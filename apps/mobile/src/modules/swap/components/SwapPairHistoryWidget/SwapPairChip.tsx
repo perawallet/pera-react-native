@@ -20,7 +20,6 @@ export type SwapPairChipProps = {
     assetIn: SwapAsset
     assetOut: SwapAsset
     accountName?: string
-    isChainShown?: boolean
     onPress: () => void
 }
 
@@ -28,7 +27,6 @@ export const SwapPairChip = ({
     assetIn,
     assetOut,
     accountName,
-    isChainShown,
     onPress,
 }: SwapPairChipProps) => {
     const styles = useStyles()
@@ -45,7 +43,6 @@ export const SwapPairChip = ({
                 assetIn={assetIn}
                 assetOut={assetOut}
                 surfaceColor={theme.colors.layerGrayLightest}
-                isChainShown={isChainShown}
             />
             <PWView style={styles.chipLabels}>
                 <PWText variant='body'>{label}</PWText>

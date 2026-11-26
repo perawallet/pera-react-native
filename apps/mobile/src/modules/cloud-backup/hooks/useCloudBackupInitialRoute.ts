@@ -25,7 +25,7 @@ export type UseCloudBackupInitialRouteResult = Extract<
 /**
  * As the navigator's `initialRouteName` it is read once per mount, so a later
  * change here never redirects an open flow. The warning banner also reads it
- * to pick its Turn on / Fix label and the route it opens.
+ * to choose its Turn on label over the Confirm / Fix ones, and the route it opens.
  */
 export const useCloudBackupInitialRoute =
     (): UseCloudBackupInitialRouteResult => {

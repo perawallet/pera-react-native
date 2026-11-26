@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
 import {
     decodeSignedTransaction,
     decodeTransaction,
@@ -56,18 +55,6 @@ export const algorandSwapAdapter: SwapChainAdapter = {
     maxAmountFeeReserve: async () =>
         new Decimal(MAX_AMOUNT_FEE_RESERVE_MICRO_ALGO),
     holdingReserve: algorandHoldingReserve,
-    // The router keeps no group id, so the link opens the swap transaction.
-    swapExplorerUrl: (scope, item) => {
-        const { explorerUrl } = getAlgorandChainConfig(scope)
-        const swapTransaction = item.transactions.find(
-            transaction =>
-                transaction.role === 'swap' &&
-                transaction.scope?.chainId === ALGORAND_CHAIN_ID,
-        )
-        return swapTransaction && explorerUrl
-            ? `${explorerUrl}/tx/${swapTransaction.txHash}/`
-            : undefined
-    },
     estimateSourceCost: async () => null,
     useEnsureReceivable: useEnsureSwapAssetOptIn,
     executeSwap: (params, { scope, ...context }) =>

@@ -12,6 +12,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
+    normalizeBackupEncryptionKey,
     readCloudBackupImportedKey,
     useCloudBackupRestoreDraftStore,
     type BackupEncryptionKey,
@@ -112,7 +113,8 @@ export const useCloudBackupRestoreEncryptionKeyScreen =
         )
 
         const handleKeyChange = useCallback(
-            (value: string) => setEncryptionKey(value.trim()),
+            (value: string) =>
+                setEncryptionKey(normalizeBackupEncryptionKey(value)),
             [],
         )
 
