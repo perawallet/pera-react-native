@@ -88,6 +88,7 @@ const initialState = {
     pendingRegistrationDeployments: [] as WalletMode[],
     deviceIdOrigins: {} as Partial<Record<ChainScopeKey, DeviceIdOrigin>>,
     mutedChainIds: [] as ChainId[],
+    registeredAccounts: {} as DeviceState['registeredAccounts'],
 }
 
 export const useDeviceStore: UseBoundStore<
@@ -136,12 +137,20 @@ export const useDeviceStore: UseBoundStore<
                         : current.filter(muted => muted !== chainId),
                 })
             },
+            setRegisteredAccounts: (deployment, accounts) =>
+                set({
+                    registeredAccounts: {
+                        ...get().registeredAccounts,
+                        [deployment]: accounts,
+                    },
+                }),
             resetState: () =>
                 set({
                     ...initialState,
                     deviceIDs: new Map(),
                     deviceIdOrigins: {},
                     mutedChainIds: [],
+                    registeredAccounts: {},
                 }),
         }),
         {

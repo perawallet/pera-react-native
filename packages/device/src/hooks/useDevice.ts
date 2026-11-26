@@ -36,7 +36,11 @@ import {
     useDeviceStore,
 } from '../store'
 import { logEvent } from '../analytics'
-import { registerDevice as registerDeviceEndpoint } from './endpoints'
+import {
+    isOnV3DevicesApi,
+    registerDevice as registerDeviceEndpoint,
+} from './endpoints'
+import { isDeviceRegistrationV4Enabled } from './registrationApi'
 import { registrationChainOf } from '../registrations/registrationChain'
 import { withoutNewestChain } from '../registrations/withoutNewestChain'
 import type {
@@ -65,11 +69,13 @@ const isPushTokenClaimedError = (error: unknown): boolean =>
 type RegisterDeviceResult = { createdNew: boolean }
 
 /**
+ * `accounts` is what the accepted request carried, after chain narrowing.
  * `refusal` is set when the backend accepted a create only with no accounts:
  * the device exists, but nothing was registered on it.
  */
 type SubmitRegistrationResult = {
     response: DeviceResponse
+    accounts: DeviceAccountRegistration[]
     refusal?: unknown
 }
 
@@ -255,6 +261,11 @@ export const useDevice = () => {
             )
             let lastDropped: ReadonlySet<ChainId> = new Set()
             let emptyCreateRefusal: unknown
+            // The v3 serializer drops every chain its API never carried.
+            const carried = (sent: DeviceAccountRegistration[]) =>
+                isDeviceRegistrationV4Enabled()
+                    ? sent
+                    : sent.filter(account => isOnV3DevicesApi(account.chainId))
             for (;;) {
                 try {
                     const response = await submitOnce(targetDeployment, {
@@ -264,7 +275,11 @@ export const useDevice = () => {
                     if (emptyCreateRefusal !== undefined) {
                         // An accepted empty create proves nothing about its
                         // last chain, so that chain is tried again next time.
-                        return { response, refusal: emptyCreateRefusal }
+                        return {
+                            response,
+                            accounts: carried(accounts),
+                            refusal: emptyCreateRefusal,
+                        }
                     }
                     if (lastDropped.size > 0) {
                         refusedChainsByDeployment.set(
@@ -272,7 +287,7 @@ export const useDevice = () => {
                             new Set([...refused, ...lastDropped]),
                         )
                     }
-                    return { response }
+                    return { response, accounts: carried(accounts) }
                 } catch (error) {
                     // One refused chain rejects the whole registration, so it
                     // would otherwise keep every other chain's accounts
@@ -312,7 +327,11 @@ export const useDevice = () => {
             targetDeployment: WalletMode,
             accounts: DeviceAccountRegistration[],
         ): Promise<string> => {
-            const { response: result, refusal } = await submitRegistration(
+            const {
+                response: result,
+                accounts: registered,
+                refusal,
+            } = await submitRegistration(
                 targetDeployment,
                 buildPayload(accounts),
             )
@@ -323,6 +342,9 @@ export const useDevice = () => {
                 throw new Error('Device create response carried no id')
             }
             setDeviceID(targetDeployment, result.id)
+            useDeviceStore
+                .getState()
+                .setRegisteredAccounts(targetDeployment, registered)
             // The id is kept, but nothing was registered on it: fail the
             // attempt so the registration stays pending and the retry, now an
             // update, sends the accounts again.
@@ -340,10 +362,13 @@ export const useDevice = () => {
             accounts: DeviceAccountRegistration[],
         ): Promise<RegisterDeviceResult> => {
             try {
-                await submitRegistration(targetDeployment, {
-                    ...buildPayload(accounts),
-                    id,
-                })
+                const { accounts: registered } = await submitRegistration(
+                    targetDeployment,
+                    { ...buildPayload(accounts), id },
+                )
+                useDeviceStore
+                    .getState()
+                    .setRegisteredAccounts(targetDeployment, registered)
                 return { createdNew: false }
             } catch (error) {
                 // Anything that isn't a stale id — 422 validation, 401, an

@@ -32,9 +32,17 @@ vi.mock('../useRegisterDeviceMutation', () => ({
     }),
 }))
 
+const mockedIsRegistrationV4 = vi.fn(() => true)
+
 vi.mock('../endpoints', () => ({
     registerDevice: (...args: unknown[]) =>
         mockedRegisterDeviceEndpoint(...args),
+    // The v3 API carries only Algorand here.
+    isOnV3DevicesApi: (chainId: string) => chainId === 'algorand',
+}))
+
+vi.mock('../registrationApi', () => ({
+    isDeviceRegistrationV4Enabled: () => mockedIsRegistrationV4(),
 }))
 
 vi.mock('../../registrations/registrationChain', () => ({
@@ -147,6 +155,7 @@ describe('services/device/hooks', () => {
         mockedRegisterDeviceMutation.mockResolvedValue({ id: 'new-device-id' })
         mockedRegisterDeviceEndpoint.mockResolvedValue({ id: 'cleared' })
         mockedIsChainServed.mockImplementation(() => true)
+        mockedIsRegistrationV4.mockReturnValue(true)
     })
 
     test('useFcmToken exposes fcmToken and setter', async () => {
@@ -1061,6 +1070,156 @@ describe('services/device/hooks', () => {
         expect(deviceIdForDeployment(useDeviceStore.getState(), 'live')).toBe(
             'new-device-id',
         )
+    })
+
+    describe('registeredAccounts', () => {
+        const registered = async (deployment: WalletMode = 'live') => {
+            const { useDeviceStore } = await import('../../store')
+            return useDeviceStore.getState().registeredAccounts[deployment]
+        }
+
+        test('an update records the accounts it carried', async () => {
+            vi.resetModules()
+            const { useDeviceStore } = await import('../../store')
+            const useDevice = await importUseDevice()
+            useDeviceStore.getState().resetState()
+            await seedDeviceId('live', 'DEV-1')
+            const { result } = renderHook(() => useDevice(), {
+                wrapper: createWrapper(),
+            })
+
+            await act(async () => {
+                await result.current.registerDevice(multiChainAccounts)
+            })
+
+            expect(await registered()).toEqual(multiChainAccounts)
+        })
+
+        test('a create records the accounts it carried', async () => {
+            vi.resetModules()
+            const { useDeviceStore } = await import('../../store')
+            const useDevice = await importUseDevice()
+            useDeviceStore.getState().resetState()
+            const { result } = renderHook(() => useDevice(), {
+                wrapper: createWrapper(),
+            })
+
+            await act(async () => {
+                await result.current.registerDevice(multiChainAccounts)
+            })
+
+            expect(await registered()).toEqual(multiChainAccounts)
+        })
+
+        test('records the narrowed list after a chain refusal', async () => {
+            vi.resetModules()
+            const { useDeviceStore } = await import('../../store')
+            const useDevice = await importUseDevice()
+            useDeviceStore.getState().resetState()
+            await seedDeviceId('live', 'DEV-1')
+            mockedRegisterDeviceMutation.mockRejectedValueOnce(
+                new PeraNetworkError('client', {
+                    status: 422,
+                    backendCode: 'unknown_chain',
+                }),
+            )
+            const { result } = renderHook(() => useDevice(), {
+                wrapper: createWrapper(),
+            })
+
+            await act(async () => {
+                await result.current.registerDevice(multiChainAccounts)
+            })
+
+            expect(await registered()).toEqual(accounts)
+        })
+
+        test('records nothing for a chain the deployment does not serve', async () => {
+            vi.resetModules()
+            const { useDeviceStore } = await import('../../store')
+            const useDevice = await importUseDevice()
+            useDeviceStore.getState().resetState()
+            await seedDeviceId('live', 'DEV-1')
+            mockedIsChainServed.mockImplementation(
+                chainId => chainId !== 'ethereum',
+            )
+            const { result } = renderHook(() => useDevice(), {
+                wrapper: createWrapper(),
+            })
+
+            await act(async () => {
+                await result.current.registerDevice(multiChainAccounts)
+            })
+
+            expect(await registered()).toEqual(accounts)
+        })
+
+        test('a create refused on its only chain records an empty list', async () => {
+            vi.resetModules()
+            const { useDeviceStore } = await import('../../store')
+            const useDevice = await importUseDevice()
+            useDeviceStore.getState().resetState()
+            mockedRegisterDeviceMutation.mockRejectedValueOnce(
+                new PeraNetworkError('client', {
+                    status: 422,
+                    backendCode: 'chain_not_enabled',
+                }),
+            )
+            const { result } = renderHook(() => useDevice(), {
+                wrapper: createWrapper(),
+            })
+
+            await expect(
+                act(async () => {
+                    await result.current.registerDevice([multiChainAccounts[1]])
+                }),
+            ).rejects.toMatchObject({ status: 422 })
+
+            expect(await registered()).toEqual([])
+        })
+
+        test('the v3 API leaves out the chains it does not carry', async () => {
+            vi.resetModules()
+            mockedIsRegistrationV4.mockReturnValue(false)
+            const { useDeviceStore } = await import('../../store')
+            const useDevice = await importUseDevice()
+            useDeviceStore.getState().resetState()
+            await seedDeviceId('live', 'DEV-1')
+            const { result } = renderHook(() => useDevice(), {
+                wrapper: createWrapper(),
+            })
+
+            await act(async () => {
+                await result.current.registerDevice(multiChainAccounts)
+            })
+
+            expect(await registered()).toEqual(accounts)
+        })
+
+        test('a failed registration keeps the previous value', async () => {
+            vi.resetModules()
+            const { useDeviceStore } = await import('../../store')
+            const useDevice = await importUseDevice()
+            useDeviceStore.getState().resetState()
+            await seedDeviceId('live', 'DEV-1')
+            const { result } = renderHook(() => useDevice(), {
+                wrapper: createWrapper(),
+            })
+            await act(async () => {
+                await result.current.registerDevice(accounts)
+            })
+            mockedRegisterDeviceMutation.mockRejectedValueOnce(
+                new PeraNetworkError('client', { status: 422 }),
+            )
+
+            await expect(
+                act(async () => {
+                    await result.current.registerDevice(multiChainAccounts)
+                }),
+            ).rejects.toThrow()
+
+            expect(await registered()).toEqual(accounts)
+        })
     })
 
     test('sends the chain again after a create that went through with no accounts', async () => {

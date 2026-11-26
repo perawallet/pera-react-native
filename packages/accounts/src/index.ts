@@ -46,6 +46,8 @@ export {
     useKeptTokensStore,
     keptAssetIdsOf,
     isAutoHiddenHolding,
+    useHeldListedTokensStore,
+    assetIdsIn,
     unionTokenSets,
     hydrateAccountChainStates,
     recordAuthority,
@@ -64,6 +66,9 @@ export {
     type KeptTokens,
     type SetTokenKeptParams,
     type KeepTokensParams,
+    type HeldListedTokens,
+    type AddHeldListedTokensParams,
+    type HeldListedTokensState,
 } from './store'
 export {
     fetchAndPersistAccount,

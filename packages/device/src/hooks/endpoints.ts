@@ -39,7 +39,7 @@ const REGISTER_DEVICE_PATH = 'api/v4/devices/'
 /** No trailing slash — the v3 routes differ from v1 and v4 in this. */
 const V3_DEVICES_PATH = 'api/v3/devices'
 
-const isOnV3DevicesApi = (chainId: ChainId): boolean =>
+export const isOnV3DevicesApi = (chainId: ChainId): boolean =>
     deviceChainAdapters.has(chainId) &&
     deviceChainAdapters.get(chainId).isOnV3DevicesApi === true
 
