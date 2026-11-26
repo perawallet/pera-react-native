@@ -11,9 +11,9 @@
  */
 
 // The Swap History chips and See all across chains: Ethereum same-chain and
-// cross-chain swaps sit beside Algorand ones, newest first, each pair carrying
-// its network. EVM-only swaps are readable only when device registration sends
-// the wallet's EVM addresses.
+// cross-chain swaps sit beside Algorand ones, newest first. A See all row opens
+// its swap's transaction details. EVM-only swaps are readable only when device
+// registration sends the wallet's EVM addresses.
 
 import {
     afterAll,
@@ -63,6 +63,16 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
 // setup is listening on.
 vi.resetModules()
 vi.doMock('@test-utils/msw-server', () => ({ server }))
+// The setup's navigator mocks were evaluated before the reset, so left alone
+// a row's `navigate` reaches a different copy of the navigator state.
+vi.doMock(
+    '@react-navigation/native',
+    () => import('@test-utils/test-navigator'),
+)
+vi.doMock('@react-navigation/native-stack', async () => ({
+    createNativeStackNavigator: (await import('@test-utils/test-navigator'))
+        .createNativeStackNavigator,
+}))
 const { setTestTheme } = await import('@test-utils/test-theme')
 const { getTheme } = await import('@theme/theme')
 setTestTheme(getTheme('light'))
@@ -77,6 +87,11 @@ const { resetTestDatabase, setupTestDatabase, teardownTestDatabase } =
     await import('@test-utils/database-setup')
 const { renderWithNavigation } =
     await import('@test-utils/renderWithNavigation')
+const { TransactionDetailsScreen } = await import('@modules/signing/routes')
+const { evmHistoryItem } =
+    await import('@perawallet/wallet-core-chain-ethereum/test-handlers')
+const { peraEvmHistoryHandlers } =
+    await import('@packages/chain-ethereum/src/history/api/msw-handlers')
 const { useBottomSheetStore } = await import('@modules/bottom-sheet')
 const { SwapPairHistoryWidget } =
     await import('@modules/swap/components/SwapPairHistoryWidget')
@@ -107,6 +122,8 @@ const ETH_ID = 'eip155:1/slip44:60'
 const USDC_ETH_ID = 'eip155:1/erc20:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'
 const ALGO_ID = `${ALGORAND_MAINNET_CAIP2}/asa:0`
 const USDC_ALGO_ID = `${ALGORAND_MAINNET_CAIP2}/asa:31566704`
+const SWAP_HASH = `0x${'aa'.repeat(32)}`
+const COUNTERPARTY = '0x1111111111111111111111111111111111111111'
 
 const routerAsset = (assetId: string, unitName: string, decimals: number) => ({
     asset_id: assetId,
@@ -129,6 +146,7 @@ const order = (
     sourceAccount: string,
     source: ReturnType<typeof routerAsset>,
     destination: ReturnType<typeof routerAsset>,
+    transactions: { chain: string; tx_hash: string; role: string }[] = [],
 ) => ({
     order_id: orderId,
     aggregator: 'xo-v4',
@@ -145,7 +163,7 @@ const order = (
     destination_amount_received: '2000000',
     source_amount_usd_value: null,
     destination_amount_usd_value: null,
-    transactions: [],
+    transactions,
     created_at: createdAt,
     updated_at: createdAt,
     expires_at: null,
@@ -159,6 +177,7 @@ const ORDERS = [
         ETH_CAIP10,
         USDC_ETH_ASSET,
         ETH_ASSET,
+        [{ chain: 'eip155:1', tx_hash: SWAP_HASH, role: 'swap' }],
     ),
     order(
         'eth-eth-to-usdc',
@@ -244,7 +263,7 @@ describe('Flow: Swap History across chains', () => {
         useRemoteConfigStore.getState().resetState()
     })
 
-    it('Given device registration sends EVM addresses, when the Swap screen loads, then the chips and See all list every chain newest first, each with its network and payer', async () => {
+    it('Given device registration sends EVM addresses, when the Swap screen loads, then the chips and See all list every chain newest first, each with its payer and no network badge', async () => {
         useRemoteConfigStore
             .getState()
             .setConfigOverride('enable_device_registration_v4', true)
@@ -256,17 +275,8 @@ describe('Flow: Swap History across chains', () => {
         const [usdcToEth, ethToUsdc, crossChain, savings] = chips
         expect(within(usdcToEth).getByText('USDC to ETH')).toBeTruthy()
         expect(within(usdcToEth).getByText('Main')).toBeTruthy()
-        expect(
-            within(usdcToEth).getByTestId('chain_avatar_badge_ethereum'),
-        ).toBeTruthy()
         expect(within(ethToUsdc).getByText('ETH to USDC')).toBeTruthy()
         expect(within(crossChain).getByText('ALGO to ETH')).toBeTruthy()
-        expect(
-            within(crossChain).getByTestId('chain_avatar_badge_ethereum'),
-        ).toBeTruthy()
-        expect(
-            within(crossChain).getByTestId('chain_avatar_badge_algorand'),
-        ).toBeTruthy()
         expect(within(savings).getByText('Savings')).toBeTruthy()
 
         const rows = await screen.findAllByTestId(
@@ -277,14 +287,69 @@ describe('Flow: Swap History across chains', () => {
         expect(rows.map(row => row.getAttribute('data-testid'))).toEqual(
             ORDERS.map(item => `swap-history-item-${item.order_id}`),
         )
-        expect(
-            within(rows[0]).getByTestId('chain_avatar_badge_ethereum'),
-        ).toBeTruthy()
+        for (const element of [...chips, ...rows]) {
+            expect(
+                within(element).queryByTestId(/^chain_avatar_badge_/),
+            ).toBeNull()
+        }
         expect(
             requestedAccounts.some(accounts =>
                 accounts.some(id => id.startsWith('eip155:1:')),
             ),
         ).toBe(true)
+    })
+
+    it('Given an EVM swap the router lists with its transaction, when its See all row is pressed, then the real details screen shows that transaction, read from the history of the account that paid', async () => {
+        useRemoteConfigStore
+            .getState()
+            .setConfigOverride('enable_device_registration_v4', true)
+        server.use(
+            ...peraEvmHistoryHandlers({
+                history: {
+                    [ETH_ADDRESS]: [
+                        [
+                            evmHistoryItem({
+                                hash: SWAP_HASH,
+                                block_time: '2026-11-25T21:50:00Z',
+                                from: ETH_ADDRESS,
+                                to: COUNTERPARTY,
+                                value: '1000000000000000000',
+                            }),
+                        ],
+                    ],
+                },
+            }),
+        )
+        renderWithNavigation(HistoryHost, 'Swap', {
+            additionalScreens: [
+                {
+                    name: 'TransactionDetails',
+                    component: TransactionDetailsScreen,
+                },
+            ],
+        })
+
+        const listed = await screen.findByTestId(
+            'swap-history-item-eth-usdc-to-eth',
+            {},
+            FORM_TIMEOUT,
+        )
+        const unlisted = await screen.findByTestId(
+            'swap-history-item-eth-eth-to-usdc',
+            {},
+            FORM_TIMEOUT,
+        )
+        expect(unlisted.getAttribute('aria-disabled')).toBe('true')
+        fireEvent.click(listed)
+
+        const sender = await screen.findByTestId(
+            'transaction_detail_from',
+            {},
+            FORM_TIMEOUT,
+        )
+        expect(sender.textContent).toContain('Main')
+        expect(screen.getByText('Ethereum')).toBeTruthy()
+        expect(screen.getByText('0xaaa...aaaaa')).toBeTruthy()
     })
 
     it('Given a cross-chain pair, when its chip is pressed, then the swap form restores the destination network too', async () => {

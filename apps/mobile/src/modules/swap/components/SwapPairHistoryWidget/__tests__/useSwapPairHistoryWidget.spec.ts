@@ -42,7 +42,6 @@ const {
             isError: false,
             isEnabled: true,
         },
-        sourceChainIds: ['algorand', 'ethereum'] as string[],
     },
 }))
 
@@ -57,9 +56,6 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
     useRecentSwapPairsQuery: () => state.recent,
     useSwapSigningAccounts: () => [],
     useSwapAccountNames: () => state.names,
-    useSwapSourceChainsByAccount: () => ({
-        sourceChainIds: state.sourceChainIds,
-    }),
     scopeOfSwapAsset: (ref: { chainId: string; networkId: string }) => ({
         chainId: ref.chainId,
         networkId: ref.networkId,
@@ -114,7 +110,6 @@ describe('useSwapPairHistoryWidget', () => {
             isError: false,
             isEnabled: true,
         }
-        state.sourceChainIds = ['algorand', 'ethereum']
     })
 
     it('passes through the recent pairs and their state', () => {
@@ -229,21 +224,6 @@ describe('useSwapPairHistoryWidget', () => {
         }) as ReactElement<{ accountName: string }>
 
         expect(chip.props.accountName).toBe('EVM Test 1')
-    })
-
-    it("shows each chip's chain only when the wallet swaps on more than one", () => {
-        const render = () =>
-            renderHook(() =>
-                useSwapPairHistoryWidget(SCOPE),
-            ).result.current.renderPair({
-                item: pairPaidBy('main'),
-            }) as ReactElement<{ isChainShown: boolean }>
-
-        expect(render().props.isChainShown).toBe(true)
-
-        state.sourceChainIds = ['algorand']
-
-        expect(render().props.isChainShown).toBe(false)
     })
 
     it('leaves the account name off the chips of a wallet with one swap account', () => {
