@@ -30,7 +30,7 @@ import {
     type AssetGroupMemberIdentity,
 } from './ExpandableAssetGroup'
 import { SwipeableAssetItem } from './SwipeableAssetItem'
-import { AutoHiddenTokensRow } from '../AutoHiddenTokensRow'
+import { TokenInboxRow } from '../TokenInboxRow'
 import { BackupReminderBanner } from '../BackupReminderBanner'
 import { CloudBackupStatus } from '../CloudBackupStatus'
 import { LegacyQuantumNotice } from '../LegacyQuantumNotice'
@@ -216,7 +216,7 @@ export const AccountAssetList = ({
                 ListHeaderComponent={listHeader}
                 ListFooterComponent={
                     <>
-                        <AutoHiddenTokensRow account={account} />
+                        <TokenInboxRow account={account} />
                         {fundingChainId !== null && (
                             <NetworkFundingState
                                 account={account}

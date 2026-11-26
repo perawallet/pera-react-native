@@ -115,6 +115,16 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => {
     }
 })
 
+const mockWithoutSuspiciousRows = vi.fn(
+    ({ rows }: { rows: unknown[]; isEnabled: boolean }) => rows,
+)
+vi.mock('@modules/transactions/hooks/history/useWithoutSuspiciousRows', () => ({
+    useWithoutSuspiciousRows: (params: {
+        rows: unknown[]
+        isEnabled: boolean
+    }) => mockWithoutSuspiciousRows(params),
+}))
+
 vi.mock('@modules/transactions/hooks/address-safety/useKnownAddresses', () => ({
     useKnownAddresses: () => ({
         knownAddresses: [],
@@ -310,6 +320,26 @@ describe('useAccountHistory', () => {
 
             expect(result.current.rows).toHaveLength(0)
             expect(result.current.isEmpty).toBe(true)
+        })
+
+        it('says nothing matches when every transaction is hidden as suspicious', () => {
+            vi.mocked(useTransactionHistoryQuery).mockReturnValue({
+                transactions: [
+                    { id: '1', roundTime: 1_704_067_200, sender: 'A' },
+                ],
+                isLoading: false,
+                isFetched: true,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
+            mockWithoutSuspiciousRows.mockImplementation(() => [])
+
+            const { result } = renderHook(() => useAccountHistory())
+
+            expect(result.current.isEmpty).toBe(true)
+            expect(result.current.emptyBody).toBe(
+                'asset_details.transaction_list.empty_filtered_body',
+            )
+            mockWithoutSuspiciousRows.mockImplementation(({ rows }) => rows)
         })
 
         it('reports an empty online history as a genuine empty history', () => {
@@ -593,6 +623,25 @@ describe('useAccountHistory', () => {
 
             expect(result.current.emptyBody).toBe(
                 'asset_details.transaction_list.empty_filtered_body',
+            )
+        })
+
+        it('hides suspicious rows until the filter shows them', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce({
+                filter: TransactionFilter.AllTime,
+                isSuspiciousShown: true,
+            })
+            const { result } = renderHook(() => useAccountHistory())
+            expect(mockWithoutSuspiciousRows).toHaveBeenLastCalledWith(
+                expect.objectContaining({ isEnabled: true }),
+            )
+
+            await act(async () => {
+                await result.current.handleOpenFilter()
+            })
+
+            expect(mockWithoutSuspiciousRows).toHaveBeenLastCalledWith(
+                expect.objectContaining({ isEnabled: false }),
             )
         })
 

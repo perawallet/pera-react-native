@@ -107,7 +107,6 @@ export const ALGORAND_ONLY_FEATURES: readonly AlgorandOnlyFeature[] = [
         'apps/mobile/src/modules/messages/screens/MultisigInvitationNameScreen/useMultisigInvitationNameScreen.ts',
     ]),
     ...entries(INBOX, [
-        'apps/mobile/src/modules/messages/components/InboxItem/AsaInboxItem/AsaInboxItem.tsx',
         'apps/mobile/src/modules/messages/components/NotificationsIcon/useNotificationsIcon.ts',
         'apps/mobile/src/modules/messages/screens/InboxScreen/useInboxScreen.tsx',
         'apps/mobile/src/modules/messages/screens/MessagesScreen/useMessagesScreen.tsx',

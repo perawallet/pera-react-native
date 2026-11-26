@@ -11,15 +11,14 @@
  */
 
 import type { ReactNode } from 'react'
-import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
 import { ChainBadge } from '@components/ChainBadge'
 import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { UnreadIndicator } from '../UnreadIndicator'
-import { isPendingAction } from './isPendingAction'
 import { useStyles } from './styles'
 
 export type InboxItemShellProps = {
-    item: InboxItemModel
+    /** The row waits on the user, so it carries the unread dot. */
+    isUnread: boolean
     icon: ReactNode
     title: ReactNode
     /**
@@ -45,7 +44,7 @@ export type InboxItemShellProps = {
 }
 
 export const InboxItemShell = ({
-    item,
+    isUnread,
     icon,
     title,
     subtitle,
@@ -58,7 +57,7 @@ export const InboxItemShell = ({
     const styles = useStyles()
 
     const isTop = align === 'top'
-    const indicator = <UnreadIndicator isUnread={isPendingAction(item)} />
+    const indicator = <UnreadIndicator isUnread={isUnread} />
     const titleRow = (
         <PWView style={styles.titleRow}>
             <PWText style={styles.titleText}>{title}</PWText>

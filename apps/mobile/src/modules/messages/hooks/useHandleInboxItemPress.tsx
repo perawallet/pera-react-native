@@ -11,6 +11,11 @@
  */
 
 import { useCallback } from 'react'
+import {
+    findAccountByAddressOn,
+    isWatchAccount,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { ASAInbox, InboxItem } from '@perawallet/wallet-core-messages'
 import type { MultiSigAccount } from '@perawallet/wallet-core-multisig'
@@ -24,6 +29,7 @@ import {
     type MultisigInvitationDetailContentResult,
 } from '@modules/messages/components/MultisigInvitationDetailContent'
 import type { MultisigInvitationParam } from '../routes/types'
+import type { AccountAssetsInboxItem } from './useAccountAssetInboxes'
 
 const toInvitationParam = (
     invitation: MultiSigAccount,
@@ -36,7 +42,9 @@ const toInvitationParam = (
     participantAddresses: invitation.participantAddresses,
 })
 
-export type UseHandleInboxItemPressResult = (item: InboxItem) => void
+export type UseHandleInboxItemPressResult = (
+    item: InboxItem | AccountAssetsInboxItem,
+) => void
 
 /**
  * Returns the canonical handler for acting on an inbox item. This is the
@@ -58,6 +66,7 @@ export const useHandleInboxItemPress = (
     const { request: requestBottomSheet } = useBottomSheet()
     const canUseAssetInbox = useCapability({ anyChain: 'assetInbox' })
     const canUseMultisig = useCapability({ anyChain: 'multisig' })
+    const accounts = useAllAccounts()
 
     const openInvitationDetail = useCallback(
         async (invitation: MultisigInvitationParam) => {
@@ -88,14 +97,28 @@ export const useHandleInboxItemPress = (
     )
 
     return useCallback(
-        (item: InboxItem) => {
+        (item: InboxItem | AccountAssetsInboxItem) => {
             switch (item.type) {
+                case 'account_assets': {
+                    pushScreen('Messages', {
+                        screen: 'AssetTransferRequests',
+                        params: { accountId: item.data.account.id },
+                    })
+                    return
+                }
                 case 'asa_inbox': {
                     if (!canUseAssetInbox) return
                     const asaInbox = item.data as ASAInbox
+                    const account = findAccountByAddressOn(
+                        accounts,
+                        scope.chainId,
+                        asaInbox.address,
+                    )
+                    // Only an account that can claim has an inbox to open.
+                    if (!account || isWatchAccount(account)) return
                     pushScreen('Messages', {
                         screen: 'AssetTransferRequests',
-                        params: { item: asaInbox, scope },
+                        params: { accountId: account.id },
                     })
                     return
                 }
@@ -124,6 +147,7 @@ export const useHandleInboxItemPress = (
             canUseAssetInbox,
             canUseMultisig,
             scope,
+            accounts,
         ],
     )
 }

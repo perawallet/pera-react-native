@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useCallback, useMemo } from 'react'
 import { useAccountValueBasis } from '@perawallet/wallet-core-accounts'
 import {
     chainDisplayNameOf,
@@ -26,11 +27,24 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
-import { useHandleInboxItemPress } from '@modules/messages/hooks'
+import {
+    useAccountAssetInboxes,
+    useHandleInboxItemPress,
+    type AccountAssetsInboxItem,
+} from '@modules/messages/hooks'
 import { useNetworkStatus } from '@modules/network'
 
+export type InboxEntry = {
+    /** A backend item, or an account's incoming assets in place of the backend's per-address rows. */
+    item: Exclude<InboxItem, { type: 'asa_inbox' }> | AccountAssetsInboxItem
+    /** Names the chain a backend item serves once the wallet spans chains; an account's assets span them, so none. */
+    chainBadgeName: Optional<string>
+}
+
+const NO_ITEMS: readonly InboxItem[] = []
+
 export type UseInboxScreenResult = {
-    inboxItems: InboxItem[]
+    inboxEntries: InboxEntry[]
     isPending: boolean
     isRefetching: boolean
     isError: boolean
@@ -38,14 +52,12 @@ export type UseInboxScreenResult = {
     isIntegrityBlocked: boolean
     isAwaitingRegistration: boolean
     isUnavailableOnNetwork: boolean
-    /** Set once the wallet spans chains, so rows say which chain the inbox serves. */
-    chainBadgeName: Optional<string>
     refetch: () => void
-    keyExtractor: (item: InboxItem, index: number) => string
-    handleInboxItemPress: (item: InboxItem) => void
+    keyExtractor: (entry: InboxEntry) => string
+    handleInboxItemPress: (entry: InboxEntry) => void
 }
 
-const getItemKey = (item: InboxItem, index: number): string => {
+const getItemKey = ({ item }: InboxEntry): string => {
     switch (item.type) {
         case 'multisig_import': {
             return `import-${item.data.customId}-${item.data.address}`
@@ -53,8 +65,8 @@ const getItemKey = (item: InboxItem, index: number): string => {
         case 'multisig_sign': {
             return `sign-${item.data.id}`
         }
-        case 'asa_inbox': {
-            return `asa-${item.data.address}-${index}`
+        case 'account_assets': {
+            return `assets-${item.data.account.id}`
         }
     }
 }
@@ -76,6 +88,36 @@ export const useInboxScreen = (): UseInboxScreenResult => {
     const isRegistrationPending = useIsDeviceRegistrationPending()
     const { hasInternet } = useNetworkStatus()
     const isMultiChain = useAccountValueBasis(scope.chainId) === 'fiat'
+    const backendItems = inboxItems ?? NO_ITEMS
+    const assetInboxes = useAccountAssetInboxes({
+        backendItems,
+        backendScope: scope,
+    })
+    const handleEntryPress = useCallback(
+        (entry: InboxEntry) => handleInboxItemPress(entry.item),
+        [handleInboxItemPress],
+    )
+
+    const inboxEntries = useMemo<InboxEntry[]>(
+        () => [
+            ...backendItems
+                .filter(
+                    (item): item is Exclude<InboxItem, { type: 'asa_inbox' }> =>
+                        item.type !== 'asa_inbox',
+                )
+                .map(item => ({
+                    item,
+                    chainBadgeName: isMultiChain
+                        ? chainDisplayNameOf(scope.chainId)
+                        : undefined,
+                })),
+            ...assetInboxes.map(data => ({
+                item: { type: 'account_assets' as const, data },
+                chainBadgeName: undefined,
+            })),
+        ],
+        [backendItems, assetInboxes, scope.chainId, isMultiChain],
+    )
 
     // Offline wins over a stale error: a paused, uncached fetch means there is
     // nothing to show yet, and an error surfacing while genuinely offline is
@@ -88,10 +130,10 @@ export const useInboxScreen = (): UseInboxScreenResult => {
     const isAwaitingRegistration =
         !isUnavailableOnNetwork &&
         isRegistrationPending &&
-        (inboxItems?.length ?? 0) === 0
+        inboxEntries.length === 0
 
     return {
-        inboxItems: inboxItems ?? [],
+        inboxEntries,
         isPending,
         isRefetching,
         isError,
@@ -99,11 +141,8 @@ export const useInboxScreen = (): UseInboxScreenResult => {
         isIntegrityBlocked,
         isAwaitingRegistration,
         isUnavailableOnNetwork,
-        chainBadgeName: isMultiChain
-            ? chainDisplayNameOf(scope.chainId)
-            : undefined,
         refetch: () => void refetch(),
         keyExtractor: getItemKey,
-        handleInboxItemPress,
+        handleInboxItemPress: handleEntryPress,
     }
 }

@@ -67,6 +67,7 @@ import * as Clipboard from 'expo-clipboard'
 import { closestPressable, longPress } from '@test-utils/rnw'
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { addressOf } from './__fixtures__/accounts'
+import { showSuspiciousTransactions } from './__fixtures__/historyFilters'
 
 const MAINNET_SCOPE = {
     chainId: ALGORAND_CHAIN_ID,
@@ -611,6 +612,7 @@ describe('Flow: View transactions → tap into details', () => {
         })
 
         renderWithNavigation(AccountHistory, 'AccountHistory')
+        await showSuspiciousTransactions()
 
         const row = await screen.findByTestId(
             `transaction_row_${TX_SPOOF_TRANSFER.id}`,

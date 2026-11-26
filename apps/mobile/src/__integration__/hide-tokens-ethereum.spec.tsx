@@ -57,7 +57,6 @@ import {
 import { AccountOverviewModalContext } from '@modules/accounts/components/AccountOverview/AccountOverviewModalContext'
 import { AccountAssetList } from '@modules/accounts/components/AccountAssetList'
 import { HideTokensScreen } from '@modules/accounts/screens/HideTokensScreen'
-import { AutoHiddenTokensScreen } from '@modules/accounts/screens/AutoHiddenTokensScreen'
 import { useAssetListViewStore } from '@modules/accounts/hooks/useAssetListViewStore'
 import { ETH_ADDRESS, ETH_SCOPE } from './__fixtures__/multichainHoldings'
 
@@ -104,7 +103,7 @@ const token = (
 })
 
 // A priced token from a swap, an airdrop Pera hasn't vetted that the account
-// holds a million of, and one it flags as spam.
+// holds a million of and has accepted from its inbox, and one Pera flags as spam.
 const seed = async () => {
     const ether = nativeAssetFor('ethereum')
     await upsertAssets({
@@ -142,6 +141,11 @@ const seed = async () => {
         ],
         scope: ETH_SCOPE,
     })
+    useKeptTokensStore.getState().keepTokens({
+        address: ETH_ADDRESS,
+        scope: ETH_SCOPE,
+        assetIds: [PVC],
+    })
 }
 
 // What the app shell mounts beside its screens.
@@ -172,14 +176,6 @@ const ListHost = () => {
 }
 
 const renderList = () => renderWithNavigation(ListHost, 'AccountAssetListHost')
-
-const AutoHiddenHost = () => {
-    useHiddenTokensInvalidation()
-    return <AutoHiddenTokensScreen />
-}
-
-const renderAutoHidden = () =>
-    renderWithNavigation(AutoHiddenHost, 'AutoHiddenTokensHost')
 
 const setHidden = (assetId: string, isHidden: boolean): void => {
     act(() => {
@@ -346,41 +342,21 @@ describe('Flow: hiding a token an Ethereum account holds', () => {
         expect(screen.queryByTestId(`asset_row_${PVC}`)).toBeNull()
     })
 
-    it('Given a token Pera flags suspicious, when the asset list opens, then a Hidden tokens row counts it in place of its row', async () => {
+    it('Given a token Pera flags suspicious, when the asset list opens, then the inbox row counts it in place of its row', async () => {
         renderList()
 
-        const row = await screen.findByTestId('auto_hidden_tokens_row')
+        const row = await screen.findByTestId('token_inbox_row')
 
-        expect(row.textContent).toContain(
-            'token_visibility.auto_hidden_row_title',
-        )
+        expect(row.textContent).toContain('token_visibility.inbox_row_title')
         expect(screen.queryByTestId(`asset_row_${SPAM}`)).toBeNull()
     })
 
-    it('Given the Hidden tokens screen, when the user unhides the flagged token, then the list shows it for good, the row goes, and the total still leaves it out', async () => {
-        const before = await nonNativeUsd()
-        renderAutoHidden()
-
-        fireEvent.click(await screen.findByTestId(`hide_tokens_toggle_${SPAM}`))
-
-        await waitFor(() =>
-            expect(
-                screen.queryByTestId(`hide_tokens_toggle_${SPAM}`),
-            ).toBeNull(),
-        )
-        cleanup()
-        renderList()
-        expect(await screen.findByTestId(`asset_row_${SPAM}`)).toBeTruthy()
-        expect(screen.queryByTestId('auto_hidden_tokens_row')).toBeNull()
-        expect(await nonNativeUsd()).toBe(before)
-    })
-
-    it('Given suspicious assets are switched on, when the asset list opens, then it lists the flagged token and shows no Hidden tokens row', async () => {
+    it('Given suspicious assets are switched on, when the asset list opens, then it lists the flagged token and shows no inbox row', async () => {
         act(() => useAssetPreferencesStore.getState().setShowSuspicious(true))
 
         renderList()
 
         expect(await screen.findByTestId(`asset_row_${SPAM}`)).toBeTruthy()
-        expect(screen.queryByTestId('auto_hidden_tokens_row')).toBeNull()
+        expect(screen.queryByTestId('token_inbox_row')).toBeNull()
     })
 })

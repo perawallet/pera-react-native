@@ -18,6 +18,7 @@ import {
     ne,
     not,
     or,
+    isNotNull,
     isNull,
     like,
     sql,
@@ -50,8 +51,7 @@ import {
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { AccountAssetHoldingsSchema } from './schema'
 import { holdingJoin } from './holdingJoin'
-import { isNotSuspiciousSql, isSuspiciousSql } from './holdingSuspicion'
-import { hiddenHoldingSql, keptHoldingSql } from './holdingVisibility'
+import { approvedHoldingSql, hiddenHoldingSql } from './holdingVisibility'
 import type { AccountHoldingsFilters } from './holdingsRepository'
 
 export type AccountHoldingsPageRow = {
@@ -170,9 +170,9 @@ async function queryHoldingRows<ExtraColumns extends SelectedFields>(
         hideNfts,
         hideZeroBalanceNfts,
         excludeAssetTypes,
-        hideSuspicious,
+        hideUnapproved,
         excludeHidden,
-        onlyAutoHidden,
+        onlyUnapproved,
         limit,
         offset,
     }: GetAccountHoldingsLiteParams,
@@ -223,17 +223,21 @@ async function queryHoldingRows<ExtraColumns extends SelectedFields>(
             )!,
         )
     }
-    if (hideSuspicious) {
-        conditions.push(or(isNotSuspiciousSql(), keptHoldingSql(sources))!)
+    if (hideUnapproved) {
+        conditions.push(approvedHoldingSql(sources))
     }
     if (excludeHidden) {
         conditions.push(not(hiddenHoldingSql(sources)))
     }
-    if (onlyAutoHidden) {
+    if (onlyUnapproved) {
+        // Only a token whose metadata has synced: without its decimals the
+        // inbox can't show the amount, and a row it couldn't list would
+        // still count toward the inbox's badges.
         conditions.push(
-            isSuspiciousSql(),
-            not(keptHoldingSql(sources)),
+            not(approvedHoldingSql(sources)),
             not(hiddenHoldingSql(sources)),
+            isNotNull(AssetsNodeSchema.decimals),
+            isNotNull(AssetsNodeSchema.totalSupply),
         )
     }
     const term = search?.trim()
@@ -286,6 +290,7 @@ async function queryHoldingRows<ExtraColumns extends SelectedFields>(
     let query = db
         .select({
             assetId: AccountAssetHoldingsSchema.assetId,
+            address: AccountAssetHoldingsSchema.accountAddress,
             scope: AccountAssetHoldingsSchema.scope,
             amount: AccountAssetHoldingsSchema.amount,
             ...peraAssetJoinColumns(),
@@ -338,6 +343,8 @@ export async function getAccountHoldingsPage({
 
 /** Raw holdings row that defers `PeraAsset` materialization to the consumer. */
 export type AccountHoldingsLiteRow = PeraAssetJoinRow & {
+    /** The address the holding was read from. */
+    address: string
     /** The scope the holding was read from. */
     scope: ChainScope
     /** Amount in base units. */

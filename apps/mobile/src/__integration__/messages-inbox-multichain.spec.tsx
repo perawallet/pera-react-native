@@ -30,7 +30,7 @@ import { InboxScreen } from '@modules/messages/screens/InboxScreen/InboxScreen'
 import { useMessagesScreen } from '@modules/messages/screens/MessagesScreen/useMessagesScreen'
 import { useWebViewStore } from '@modules/webview'
 
-import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
+import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 
 // The integration setup registers whichever chains config enables.
 vi.mock('@perawallet/wallet-core-config', async importOriginal => {
@@ -72,7 +72,7 @@ const ASA_INBOX = {
     joint_account_import_requests: [],
     joint_account_sign_requests: [],
     asa_inboxes: [
-        { address: HD_TEST_ADDRESS, inbox_address: null, request_count: 2 },
+        { address: ALGO25_TEST_ADDRESS, inbox_address: null, request_count: 2 },
     ],
 }
 
@@ -114,24 +114,26 @@ describe('Flow: Messages — inbox across chains', () => {
         server.use(mockInbox({ deviceID: DEVICE_ID, response: ASA_INBOX }))
     })
 
-    it('Given a wallet on Algorand and Ethereum, when the inbox lists an ASA request, then the row carries the Algorand badge', async () => {
+    it("Given a wallet on Algorand and Ethereum, when the inbox lists an ASA request, then it shows as the account's row, naming the account and no one chain", async () => {
         useAccountsStore.getState().setAccounts([SIGNER, ETHEREUM_ACCOUNT])
         useAccountsStore.getState().setSelectedAccountId(SIGNER.id)
 
         renderWithNavigation(InboxScreen, 'Inbox')
 
-        const row = await screen.findByTestId('asa_inbox_item')
-        expect(row.textContent).toContain('Algorand')
+        const row = await screen.findByTestId('account_assets_inbox_item')
+        expect(row.textContent).toContain('Trading')
+        expect(row.textContent).not.toContain('Algorand')
     })
 
-    it('Given an Algorand-only wallet, when the inbox lists an ASA request, then the row carries no chain badge', async () => {
-        useAccountsStore.getState().setAccounts([SIGNER])
-        useAccountsStore.getState().setSelectedAccountId(SIGNER.id)
+    it('Given the backend lists a request for a watch account, when the inbox renders, then it shows no row for it', async () => {
+        useAccountsStore
+            .getState()
+            .setAccounts([{ ...SIGNER, custody: { kind: 'watch' } }])
 
         renderWithNavigation(InboxScreen, 'Inbox')
 
-        const row = await screen.findByTestId('asa_inbox_item')
-        expect(row.textContent).not.toContain('Algorand')
+        expect(await screen.findByTestId('inbox_empty_state')).toBeTruthy()
+        expect(screen.queryByTestId('account_assets_inbox_item')).toBeNull()
     })
 
     it('Given the inbox explainer, when it opens, then it covers Algorand and other networks and links to the help article', async () => {

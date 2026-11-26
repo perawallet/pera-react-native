@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { hiddenAssetIdsOf, useHiddenTokensStore } from '../hiddenTokens'
 
@@ -22,6 +22,26 @@ const state = () => useHiddenTokensStore.getState()
 
 beforeEach(() => {
     state().resetState()
+})
+
+describe('hideTokens', () => {
+    it('hides every id given on one scope in one write', () => {
+        const listener = vi.fn()
+        const unsubscribe = useHiddenTokensStore.subscribe(listener)
+
+        state().hideTokens({
+            address: ADDRESS,
+            scope: ETH,
+            assetIds: ['0xa', '0xb'],
+        })
+        unsubscribe()
+
+        expect(hiddenAssetIdsOf(state().hiddenTokens, ADDRESS, ETH)).toEqual([
+            '0xa',
+            '0xb',
+        ])
+        expect(listener).toHaveBeenCalledTimes(1)
+    })
 })
 
 describe('setTokenHidden', () => {

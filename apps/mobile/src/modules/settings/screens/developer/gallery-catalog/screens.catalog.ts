@@ -18,11 +18,15 @@ import {
     MOCK_IMPORT_RESULT,
     MOCK_MULTISIG_INVITATION,
     MOCK_TX_ID,
-    mockAsaInbox,
 } from '@perawallet/wallet-core-dev-fixtures'
+import {
+    getAllAccounts,
+    isWatchAccount,
+} from '@perawallet/wallet-core-accounts'
 import { type ChainId } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
+import { pushScreen } from '@modules/deeplink/core'
 
 import type {
     GalleryEntry,
@@ -849,20 +853,19 @@ export const getScreenSections = (): GallerySection[] => [
             {
                 id: 'scr-asset-transfer-requests',
                 label: 'Asset transfer requests',
+                // The screen lists one account's inbox, so it opens on the
+                // wallet's first account that can accept or claim.
                 launch: {
-                    kind: 'navigate',
-                    target: {
-                        name: 'Messages',
-                        params: {
+                    kind: 'action',
+                    run: () => {
+                        const account = getAllAccounts().find(
+                            each => !isWatchAccount(each),
+                        )
+                        if (!account) return
+                        pushScreen('Messages', {
                             screen: 'AssetTransferRequests',
-                            params: {
-                                item: mockAsaInbox,
-                                scope: {
-                                    chainId: ALGORAND_CHAIN_ID,
-                                    networkId: 'testnet',
-                                },
-                            },
-                        },
+                            params: { accountId: account.id },
+                        })
                     },
                 },
             },

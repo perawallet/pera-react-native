@@ -668,20 +668,31 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             resetState: () => set({ keptTokens: {} }),
         }
     })
-    const isAutoHiddenHolding = (
+    const isUnapprovedHolding = (
         holding: {
             address: string
             scope: ChainScope
             assetId: string
-            asset?: { peraMetadata?: { verificationTier?: string } } | null
+            asset?: {
+                peraMetadata?: { verificationTier?: string; type?: string }
+            } | null
         },
         keptTokens: Record<string, Record<string, string[]>>,
-    ) =>
-        holding.asset?.peraMetadata?.verificationTier === 'suspicious' &&
-        canHideHolding(holding.scope.chainId, holding.assetId) &&
-        !keptAssetIdsOf(keptTokens, holding.address, holding.scope).includes(
-            holding.assetId,
-        )
+    ) => {
+        if (!canHideHolding(holding.scope.chainId, holding.assetId))
+            return false
+        if (
+            keptAssetIdsOf(keptTokens, holding.address, holding.scope).includes(
+                holding.assetId,
+            )
+        ) {
+            return false
+        }
+        const metadata = holding.asset?.peraMetadata
+        return metadata?.type === 'collectible'
+            ? metadata.verificationTier === 'suspicious'
+            : metadata?.verificationTier !== 'verified'
+    }
     // Pure re-implementations of the accessors: an account is its custody and
     // its per-chain entries.
     const entriesOf = (account: any): any[] =>
@@ -764,7 +775,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         assetIdsIn,
         useHeldListedTokensStore,
         useKeptTokensStore,
-        isAutoHiddenHolding,
+        isUnapprovedHolding,
         useHiddenTokensInvalidation: vi.fn(),
         accountChainIdOf: vi.fn(accountChainIdOf),
         secondaryChainIdsOf: vi.fn(secondaryChainIdsOf),
@@ -1066,6 +1077,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         ),
         getPasskeyAnchorSeedIds: vi.fn(() => new Set()),
         useWalletHoldingSources: vi.fn(() => []),
+        useTokenInboxQuery: vi.fn(() => ({ holdings: [], isPending: false })),
         rehydrateAccountsStore: vi.fn(async () => {}),
         whenAccountsHydrationSettled: vi.fn(async () => {}),
         // Subclassed at module load by chain packages' own account errors.

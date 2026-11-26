@@ -252,10 +252,10 @@ const renderClaimFlow = (
         {
             name: 'AssetTransferRequests',
             component: AssetTransferRequestsScreen,
-            // The list is scoped to the *claimer* (receiver) account — the one
-            // whose key we hold and whose inbox the ARC-59 requests endpoint is
+            // The list is the *claimer* (receiver) account's — the one whose
+            // key we hold and whose address the ARC-59 requests endpoint is
             // keyed by. Senders live inside each request's `senders` list.
-            params: { item: { address: ALGO25_TEST_ADDRESS }, scope },
+            params: { accountId: 'claimer-1' },
         },
         {
             name: 'AssetClaimDetail',

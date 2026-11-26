@@ -9,12 +9,19 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
-
 import { makeStyles } from '@rneui/themed'
 
+// The account asset list's inset, so the inbox rows line up the same way.
 export const useStyles = makeStyles(theme => ({
     contentContainer: {
-        flex: 1,
+        paddingHorizontal: theme.spacing.xl,
+        paddingBottom: theme.spacing.xl,
+    },
+    rejectAll: {
+        marginTop: theme.spacing.md,
+    },
+    sectionHeader: {
+        marginTop: theme.spacing.xl,
     },
     loadingView: {
         justifyContent: 'flex-start',
@@ -23,10 +30,5 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-    },
-    separator: {
-        marginTop: theme.spacing.lg,
-        marginLeft: theme.spacing['4xl'],
-        marginRight: theme.spacing.xl,
     },
 }))

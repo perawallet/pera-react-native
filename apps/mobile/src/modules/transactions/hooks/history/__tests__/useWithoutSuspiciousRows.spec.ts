@@ -13,10 +13,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import { useStoredAssetsAcrossScopesQuery } from '@perawallet/wallet-core-assets'
+import {
+    useKeptTokensStore,
+    useSelectedAccount,
+} from '@perawallet/wallet-core-accounts'
+import {
+    useStoredAssetsAcrossScopesQuery,
+    type PeraAsset,
+} from '@perawallet/wallet-core-assets'
 import {
     i18nKey,
+    toScopeKey,
     type TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
 import type { SuspectedPoisoning } from '@perawallet/wallet-core-transactions'
@@ -24,6 +31,7 @@ import {
     TRANSACTION_ROW_TYPES,
     type TransactionListRow,
 } from '../../../utils/transactionListRows'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useWithoutSuspiciousRows } from '../useWithoutSuspiciousRows'
 
 const ME = '0xme'
@@ -63,6 +71,41 @@ const send = (
     } as TransactionRecord,
 })
 
+const receive = (
+    id: string,
+    initiator: Optional<string>,
+    assetId: string,
+): TransactionListRow => ({
+    kind: TRANSACTION_ROW_TYPES.record,
+    key: id,
+    record: {
+        id,
+        scope: SCOPE,
+        status: 'confirmed',
+        initiator,
+        chainData: { family: 'evm' },
+        summary: {
+            kind: 'token-transfer',
+            title: { key: i18nKey('transactions.list_item.receive') },
+            icon: 'receive',
+            direction: 'in',
+            amount: {
+                assetRef: { chainId: 'ethereum', assetId },
+                value: new Decimal(5),
+                display: { symbol: 'TKN', decimals: 0 },
+            },
+        },
+    } as TransactionRecord,
+})
+
+const storedToken = (assetId: string, verificationTier: string) =>
+    ({
+        assetId,
+        name: 'Token',
+        unitName: 'TKN',
+        peraMetadata: { verificationTier },
+    }) as unknown as PeraAsset
+
 const ROWS: TransactionListRow[] = [
     header('2026-11-25'),
     send('own', ME, 5),
@@ -78,6 +121,64 @@ describe('useWithoutSuspiciousRows', () => {
             chains: { ethereum: { address: ME } },
         } as unknown as ReturnType<typeof useSelectedAccount>)
         vi.mocked(useStoredAssetsAcrossScopesQuery).mockClear()
+        useKeptTokensStore.getState().resetState()
+    })
+
+    describe('a token waiting in the inbox', () => {
+        const rows = [
+            header('2026-11-25'),
+            receive('airdrop', OTHER, '0xnew'),
+            receive('own-swap', ME, '0xnew'),
+            receive('listed', OTHER, '0xverified'),
+            receive('unknown', OTHER, '0xunstored'),
+            receive('unsigned', undefined, '0xnew'),
+        ]
+
+        beforeEach(() => {
+            vi.mocked(useStoredAssetsAcrossScopesQuery).mockReturnValue(
+                new Map([
+                    [
+                        toScopeKey(SCOPE),
+                        new Map([
+                            ['0xnew', storedToken('0xnew', 'unverified')],
+                            [
+                                '0xverified',
+                                storedToken('0xverified', 'verified'),
+                            ],
+                        ]),
+                    ],
+                ]),
+            )
+        })
+
+        const keysOf = () =>
+            renderHook(() =>
+                useWithoutSuspiciousRows({
+                    rows,
+                    suspectedPoisoningById: new Map(),
+                    isEnabled: true,
+                }),
+            ).result.current.map(row => row.key)
+
+        it("drops someone else's transfer of it, and keeps the account's own and one with no named signer", () => {
+            expect(keysOf()).toEqual([
+                '2026-11-25',
+                'own-swap',
+                'listed',
+                'unknown',
+                'unsigned',
+            ])
+        })
+
+        it('keeps every transfer once the account accepts it', () => {
+            useKeptTokensStore.getState().keepTokens({
+                address: ME,
+                scope: SCOPE,
+                assetIds: ['0xnew'],
+            })
+
+            expect(keysOf()).toContain('airdrop')
+        })
     })
 
     it('returns the rows as given, and reads no assets, while off', () => {

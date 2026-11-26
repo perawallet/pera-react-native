@@ -43,14 +43,14 @@ export type TransactionsFilterContentProps = {
     /** Undefined hides the Type section; null is All. */
     activeHistoryType?: Nullable<TransactionHistoryType>
     /** Undefined hides the toggle, on a list that doesn't offer it. */
-    isSuspiciousHidden?: boolean
+    isSuspiciousShown?: boolean
 }
 
 export const TransactionsFilterContent = ({
     activeFilter,
     initialCustomRange,
     activeHistoryType,
-    isSuspiciousHidden,
+    isSuspiciousShown,
 }: TransactionsFilterContentProps) => {
     const insets = useSafeAreaInsets()
     const styles = useStyles({ bottomInset: insets.bottom })
@@ -65,7 +65,7 @@ export const TransactionsFilterContent = ({
         isPickerVisible,
         handleFilterPress,
         handleHistoryTypePress,
-        handleToggleSuspiciousHidden,
+        handleToggleSuspiciousShown,
         handleDatePress,
         handleDateValueChange,
         handlePickerDismiss,
@@ -74,7 +74,7 @@ export const TransactionsFilterContent = ({
         activeFilter,
         initialCustomRange,
         activeHistoryType,
-        isSuspiciousHidden,
+        isSuspiciousShown,
     })
 
     const historyTypeOptions = useMemo(
@@ -175,17 +175,17 @@ export const TransactionsFilterContent = ({
                 </PWView>
             )}
 
-            {isSuspiciousHidden !== undefined && (
+            {isSuspiciousShown !== undefined && (
                 <>
                     <PWView style={styles.suspiciousSection}>
                         <FilterRow
-                            label={t('transactions.filter.hide_suspicious')}
+                            label={t('transactions.filter.show_suspicious')}
                             description={t(
-                                'transactions.filter.hide_suspicious_description',
+                                'transactions.filter.show_suspicious_description',
                             )}
-                            value={isSuspiciousHidden}
-                            onToggle={handleToggleSuspiciousHidden}
-                            testID='history_filter_hide_suspicious'
+                            value={isSuspiciousShown}
+                            onToggle={handleToggleSuspiciousShown}
+                            testID='history_filter_show_suspicious'
                         />
                     </PWView>
                     <PWDivider style={styles.suspiciousDivider} />

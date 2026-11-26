@@ -341,6 +341,11 @@ describe('utils/strings - getInitials', () => {
     test('returns ? when there are no usable words', () => {
         expect(getInitials('   ')).toBe('?')
     })
+
+    test('skips emoji and symbols for the first letter or digit of each word', () => {
+        expect(getInitials('🎁 Claim $REWARD')).toBe('CR')
+        expect(getInitials('🚀🚀')).toBe('?')
+    })
 })
 
 describe('utils/strings - formatTime', () => {

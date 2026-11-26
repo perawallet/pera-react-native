@@ -55,6 +55,7 @@ import { AccountHistory } from '@modules/accounts/components/AccountHistory/Acco
 import { TransactionDetailsScreen } from '@modules/signing/routes'
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
+import { showSuspiciousTransactions } from './__fixtures__/historyFilters'
 
 const MAINNET_SCOPE = {
     chainId: ALGORAND_CHAIN_ID,
@@ -181,6 +182,7 @@ describe('Flow: suspected address poisoning in Algorand history', () => {
 
     it('Given a zero-value payment from a look-alike of a contact, then its row is marked in place and a stranger is not', async () => {
         renderWithNavigation(AccountHistory, 'AccountHistory')
+        await showSuspiciousTransactions()
 
         await screen.findByTestId(
             `transaction_row_suspicious_${TX_POISON.id}`,
@@ -212,6 +214,7 @@ describe('Flow: suspected address poisoning in Algorand history', () => {
                 },
             ],
         })
+        await showSuspiciousTransactions()
         await screen.findByTestId(
             `transaction_row_suspicious_${TX_POISON.id}`,
             undefined,
@@ -299,6 +302,7 @@ describe('Flow: suspected address poisoning in Algorand history', () => {
 
         it('Given two 1 microAlgo payments from it, when its contact is saved, then both rows are marked in place', async () => {
             renderWithNavigation(AccountHistory, 'AccountHistory')
+            await showSuspiciousTransactions()
             await screen.findByTestId(
                 `transaction_row_${TX_NEWER.id}`,
                 undefined,
@@ -361,6 +365,7 @@ describe('Flow: suspected address poisoning in Algorand history', () => {
                     },
                 ],
             })
+            await showSuspiciousTransactions()
             await screen.findByTestId(
                 `transaction_row_suspicious_${TX_NEWER.id}`,
                 undefined,

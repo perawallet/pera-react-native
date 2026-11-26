@@ -30,7 +30,7 @@ import {
 import { InboxScreen } from '@modules/messages/screens/InboxScreen/InboxScreen'
 import { NotificationsScreen } from '@modules/messages/screens/NotificationsScreen/NotificationsScreen'
 
-import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
+import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 
 const DEVICE_ID = 'test-device-id'
 
@@ -103,7 +103,7 @@ describe('Flow: Messages — inbox & notifications lists', () => {
                     ...EMPTY_INBOX,
                     asa_inboxes: [
                         {
-                            address: HD_TEST_ADDRESS,
+                            address: ALGO25_TEST_ADDRESS,
                             inbox_address: null,
                             request_count: 3,
                         },
@@ -114,7 +114,7 @@ describe('Flow: Messages — inbox & notifications lists', () => {
 
         renderWithNavigation(InboxScreen, 'Inbox')
 
-        // AsaInboxItem titles the row with `messages.inbox.asa_requests`;
+        // The account's row titles itself with `messages.inbox.asa_requests`;
         // i18n falls back to the raw key under the integration setup.
         await waitFor(() => {
             expect(
