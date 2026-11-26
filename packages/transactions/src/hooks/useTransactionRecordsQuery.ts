@@ -115,7 +115,12 @@ type RecordsPage = {
     reads?: number
 }
 
-type RecordsRead = { page: RecordsPage; hasReachedLoadedPages: boolean }
+type RecordsRead = {
+    page: RecordsPage
+    hasReachedLoadedPages: boolean
+    /** A refresh's re-read of rows already loaded, which replace them in place. */
+    reread?: TransactionRecord[]
+}
 
 // Pages a page-one refresh rebuilt, served to TanStack's re-read of the loaded
 // pages without a network call. Keyed by the previous page's `next` object,
@@ -133,15 +138,20 @@ const mergedPagesByCursor = new WeakMap<PageRef, RecordsPage>()
 const failedFirstPageErrors = new WeakMap<Query, Error>()
 
 // A record that leaves page one without a replacement stays until a full
-// re-read. `next` is never touched, so every cursor holds.
+// re-read. `next` is never touched, so every cursor holds. A loaded row takes
+// its re-read version: the backend attaches a swap order or a token leg after
+// it first lists a transaction, and the first version would otherwise stay.
 const mergeRefreshedFirstPage = (
     loaded: RecordsPage[],
     refreshed: RecordsPage,
+    reread: readonly TransactionRecord[] = [],
 ): RecordsPage[] => {
     const loadedIds = new Set(
         loaded.flatMap(page => page.records.map(r => r.id)),
     )
-    const refreshedById = new Map(refreshed.records.map(r => [r.id, r]))
+    const refreshedById = new Map(
+        [...reread, ...refreshed.records].map(r => [r.id, r]),
+    )
     const added = refreshed.records.filter(r => !loadedIds.has(r.id))
     return loaded.map((page, index) => ({
         ...page,
@@ -337,11 +347,10 @@ export const useTransactionRecordsQuery = ({
                     : minedItems.findIndex(r => r.id === loadedNewestMinedId)
             const hasReachedLoadedPages = loadedAt !== -1
             // Records from the loaded newest on are already loaded.
-            const loadedIds = new Set(
-                hasReachedLoadedPages
-                    ? minedItems.slice(loadedAt).map(r => r.id)
-                    : [],
-            )
+            const reread = hasReachedLoadedPages
+                ? minedItems.slice(loadedAt)
+                : []
+            const loadedIds = new Set(reread.map(r => r.id))
             const isPastRange =
                 fromMs !== undefined &&
                 minedItems.some(
@@ -368,6 +377,7 @@ export const useTransactionRecordsQuery = ({
                         reads: read,
                     },
                     hasReachedLoadedPages,
+                    reread: reread.filter(isInScope),
                 }
             }
             page = nextPage
@@ -457,10 +467,10 @@ export const useTransactionRecordsQuery = ({
             if (cachedQuery && !signal.aborted) {
                 failedFirstPageErrors.delete(cachedQuery)
             }
-            const { page, hasReachedLoadedPages } = read
+            const { page, hasReachedLoadedPages, reread } = read
             if (!loaded || !hasReachedLoadedPages) return page
 
-            const pages = mergeRefreshedFirstPage(loaded, page)
+            const pages = mergeRefreshedFirstPage(loaded, page, reread)
             pages.forEach(({ next }, index) => {
                 if (next && pages[index + 1]) {
                     mergedPagesByCursor.set(next, pages[index + 1])

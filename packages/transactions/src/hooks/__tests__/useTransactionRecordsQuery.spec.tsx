@@ -1082,6 +1082,42 @@ describe('useTransactionRecordsQuery', () => {
             expect(result.current.hasNextPage).toBe(false)
         })
 
+        test('takes the re-read version of a loaded row, as when the backend links its swap order after first listing it', async () => {
+            const backend: Backend = {
+                head: {
+                    items: [record('LEG', JAN_10), record('A', JAN_10 - 1)],
+                    next: { cursor: 'c1' },
+                },
+                c1: { items: [record('Z', JAN_10 - DAY_MS)] },
+            }
+            serve(backend)
+            const { result } = mount()
+            await loadPages(result, 2)
+            const leg = record('LEG', JAN_10)
+            backend.head = {
+                items: [
+                    {
+                        ...leg,
+                        summary: { ...leg.summary, kind: 'swap' },
+                        swapLeg: { orderId: 'o1', role: 'source' },
+                    },
+                    record('A', JAN_10 - 1),
+                    record('OLDER_BEYOND_LOADED', JAN_10 - 2),
+                ],
+                next: { cursor: 'c1' },
+            }
+
+            await invalidate()
+
+            expect(result.current.records.map(r => r.id)).toEqual([
+                'LEG',
+                'A',
+                'Z',
+            ])
+            expect(result.current.records[0].summary.kind).toBe('swap')
+            expect(result.current.records[0].swapLeg?.orderId).toBe('o1')
+        })
+
         test('re-reads the loaded pages when the head no longer reaches them', async () => {
             serve(threePages())
             const { result } = mount()
