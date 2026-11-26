@@ -37,6 +37,8 @@ type UseNftGalleryRowsParams = {
 type UseNftGalleryRowsResult = {
     /** Rows on the picked network that pass both filters, in gallery order. */
     collectibles: AccountCollectibleLiteRow[]
+    /** Rows on the picked network before the hidden and suspicious filters. */
+    networkRowCount: number
     /** The network has NFTs, and the user hid every one. */
     isUserHidden: boolean
     /** What the user didn't hide is all suspicious. */
@@ -105,6 +107,7 @@ export const useNftGalleryRows = ({
 
     return {
         collectibles,
+        networkRowCount: networkRows.length,
         isUserHidden: unhiddenRows.length === 0 && networkRows.length > 0,
         isSuspiciousHidden: visibleRows.length === 0 && unhiddenRows.length > 0,
     }

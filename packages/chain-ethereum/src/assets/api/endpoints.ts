@@ -212,6 +212,8 @@ export type NftHoldingsListing = {
     items: NftItemSchemaOutput[]
     /** Epoch ms of the full read the items came from. */
     readAt: number
+    /** The read stopped at `NFT_HOLDINGS_MAX_PAGES`: `items` is a prefix. */
+    isTruncated?: boolean
 }
 
 export type NftHoldingsOptions = {
@@ -235,7 +237,9 @@ export const NFT_LISTING_REUSE_MS = 10 * 60_000
  * page-one cache and `prior`, for a refresh the user asked for. Rejects on a
  * failed page, so a partial list never stands in for the whole: with a
  * `PeraServiceUnavailableError` when the chain has no NFT reads, and a plain
- * `Error` on a malformed `next`.
+ * `Error` on a malformed `next`. A collection past `NFT_HOLDINGS_MAX_PAGES`
+ * answers what was read, marked `isTruncated`: failing it would fail every
+ * read of that account.
  */
 export const fetchNftHoldings = async (
     scope: ChainScope,
@@ -292,9 +296,13 @@ export const fetchNftHoldings = async (
         }
         params = { cursor: nftCursorOf(next) }
     }
-    throw new Error(
-        `Pera NFT holdings for ${scope.chainId}/${scope.networkId} ran past ${NFT_HOLDINGS_MAX_PAGES} pages`,
-    )
+    logger.warn('NFT holdings ran past the page cap; using the pages read', {
+        scope,
+        address,
+        pages: NFT_HOLDINGS_MAX_PAGES,
+        items: items.size,
+    })
+    return { pageOne, items: [...items.values()], readAt, isTruncated: true }
 }
 
 /**

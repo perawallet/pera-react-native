@@ -419,7 +419,7 @@ describe('fetchNftHoldings', () => {
         expect(isPeraServiceUnavailableError(error)).toBe(true)
     })
 
-    it('rejects a cursor that never ends', async () => {
+    it('answers the pages read, marked truncated, when the cursor runs past the cap', async () => {
         let requests = 0
         server.use(
             http.get(`${PERA_URL}/api/v3/evm/1/accounts/:address/nfts/`, () => {
@@ -431,10 +431,11 @@ describe('fetchNftHoldings', () => {
             }),
         )
 
-        await expect(
-            fetchNftHoldings(SCOPE, ETHEREUM, HOLDER),
-        ).rejects.toThrow()
+        const listing = await fetchNftHoldings(SCOPE, ETHEREUM, HOLDER)
+
         expect(requests).toBe(NFT_HOLDINGS_MAX_PAGES)
+        expect(listing.isTruncated).toBe(true)
+        expect(listing.items).toEqual([])
     })
 
     it('rejects a next that is not a URL with a cursor', async () => {

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { type ParamListBase, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { PWFlatList } from '@components/core'
@@ -27,10 +27,9 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
-import {
-    useCollectiblePreferencesStore,
-    type CollectibleSortMode,
-    type GalleryLayout,
+import type {
+    CollectibleSortMode,
+    GalleryLayout,
 } from '@perawallet/wallet-core-assets'
 import {
     useDebouncedValue,
@@ -42,15 +41,20 @@ import type { FilterOption } from '@components/FilterSelection'
 import { useCapability } from '@hooks/useCapability'
 import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import { useLanguage } from '@hooks/useLanguage'
-import { useSyncRefreshAll } from '@hooks/useSyncRefresh'
 import { useAccountChainFilterOptions } from '../../hooks/useAccountChainFilterOptions'
 import { useAssetListViewStore } from '../../hooks/useAssetListViewStore'
 import { useNftHoldingSources } from '../../hooks/useNftHoldingSources'
 import { useSelectedNetworkSource } from '../../hooks/useSelectedNetworkSource'
 import { nftListEmptyCopy } from './nftListEmptyCopy'
-import { useGalleryScrollReset } from './useGalleryScrollReset'
+import { useHoldingSourcesRefresh } from './useHoldingSourcesRefresh'
+import {
+    galleryViewRequestKey,
+    useGalleryScrollReset,
+} from './useGalleryScrollReset'
 import { useNftGallerySheets } from './useNftGallerySheets'
+import { useNftGalleryPreferences } from './useNftGalleryPreferences'
 import { useNftGalleryRows } from './useNftGalleryRows'
+import { useNftRefreshFailure } from './useNftRefreshFailure'
 
 type UseAccountNftsResult = {
     collectibles: AccountCollectibleLiteRow[]
@@ -65,8 +69,12 @@ type UseAccountNftsResult = {
     unsupportedNetworkNames: Optional<string>
     /** No NFTs on any network: an active network chip, search or suspicious filter doesn't count. */
     showEmptyState: boolean
-    /** The last refresh failed and the gallery is showing stored NFTs. */
-    showRefreshNotice: boolean
+    /** Networks whose last refresh failed while stored NFTs are shown, named; unset hides the notice. */
+    refreshNoticeChainNames: Optional<string>
+    /** The picked networks failed to load and nothing stored is shown, so the list offers Retry. */
+    isLoadFailed: boolean
+    handleRetry: () => void
+    isRetrying: boolean
     /** Each NFT names its network: several networks are listed together. */
     shouldShowNetwork: boolean
     listEmptyTitle: string
@@ -135,34 +143,18 @@ export const useAccountNfts = (): UseAccountNftsResult => {
     )
     const [searchFilter, setSearchFilter] = useState('')
 
-    const sortMode = useCollectiblePreferencesStore(
-        state => state.collectibleSortMode,
-    )
-    const galleryLayout = useCollectiblePreferencesStore(
-        state => state.galleryLayout,
-    )
-    const showOptedIn = useCollectiblePreferencesStore(
-        state => state.showOptedIn,
-    )
-    const showWatchAccounts = useCollectiblePreferencesStore(
-        state => state.showWatchAccounts,
-    )
-    const showSuspicious = useCollectiblePreferencesStore(
-        state => state.showSuspicious,
-    )
-    const showHidden = useCollectiblePreferencesStore(state => state.showHidden)
-    const setSortMode = useCollectiblePreferencesStore(
-        state => state.setCollectibleSortMode,
-    )
-    const setGalleryLayout = useCollectiblePreferencesStore(
-        state => state.setGalleryLayout,
-    )
-    const setShowOptedIn = useCollectiblePreferencesStore(
-        state => state.setShowOptedIn,
-    )
-    const setShowWatchAccounts = useCollectiblePreferencesStore(
-        state => state.setShowWatchAccounts,
-    )
+    const {
+        sortMode,
+        galleryLayout,
+        showOptedIn,
+        showWatchAccounts,
+        showSuspicious,
+        showHidden,
+        setSortMode,
+        setGalleryLayout,
+        setShowOptedIn,
+        setShowWatchAccounts,
+    } = useNftGalleryPreferences()
 
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { openAddNftSheet, openManageSheet } = useNftGallerySheets({
@@ -177,18 +169,8 @@ export const useAccountNfts = (): UseAccountNftsResult => {
     )
 
     // Every network the gallery shows, not only the one opt-ins act on.
-    const refreshSources = useMemo(
-        () =>
-            sources.map(({ address, scope }) => ({
-                addresses: [address],
-                scope,
-            })),
-        [sources],
-    )
-    const { isRefreshing, refresh: handleRefresh } = useSyncRefreshAll(
-        refreshSources,
-        { isUserRefresh: true },
-    )
+    const { isRefreshing, refresh: handleRefresh } =
+        useHoldingSourcesRefresh(sources)
 
     useEffect(() => {
         setSearchFilter('')
@@ -208,14 +190,14 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         collectibles: rows,
         isPending,
         isPlaceholderData,
-        hasUnrefreshedHoldings,
+        unrefreshedChainIds,
     } = useAccountCollectiblesQuery(sources, {
         sortMode: sqlSortMode,
         search: debouncedSearchFilter || undefined,
         includeZeroBalance: showOptedIn,
     })
 
-    const { collectibles, isUserHidden, isSuspiciousHidden } =
+    const { collectibles, networkRowCount, isUserHidden, isSuspiciousHidden } =
         useNftGalleryRows({
             rows,
             selectedChainId,
@@ -236,25 +218,16 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         [navigation],
     )
 
-    // Reordering or narrowing the gallery has to land the user on the first row.
-    // Keyed on the *request* rather than on the rows it produces: a new sort is
-    // a new query key, so the rows go through a gap — empty while cold, or the
-    // previous order held as placeholder data — before the reordered ones land.
-    // Deriving the trigger from the rows read that gap as "nothing changed" and
-    // skipped the reset exactly when it was needed, which is how sorting a
-    // freshly imported account dropped the user mid-list.
-    const viewRequestKey = [
-        sources.map(source => source.address).join(','),
-        selectedChainId ?? '',
+    const viewRequestKey = galleryViewRequestKey({
+        addresses: sources.map(source => source.address),
+        selectedChainId,
         sortMode,
-        debouncedSearchFilter,
+        search: debouncedSearchFilter,
         showOptedIn,
         showSuspicious,
         showHidden,
-        // recentlyAdded is ordered by a separate query, whose order arrives
-        // after the rows: the map landing is its own reorder.
-        sortMode === 'recentlyAdded' ? acquisitionOrder.size : '',
-    ].join('|')
+        acquisitionOrderSize: acquisitionOrder.size,
+    })
     const flatListRef = useGalleryScrollReset({
         viewRequestKey,
         hasRowsForRequest: collectibles.length > 0 && !isPlaceholderData,
@@ -263,16 +236,17 @@ export const useAccountNfts = (): UseAccountNftsResult => {
 
     const isNetworkEmpty =
         selectedChainId !== null && !debouncedSearchFilter.length
-    // A failed refresh keeps the stored NFTs, so the rows are stale, not gone;
-    // with none stored it must not read as "no NFTs yet". Rows are already
-    // search-filtered, so a search that matches nothing is not a failed refresh.
-    const isRefreshFailed =
-        hasUnrefreshedHoldings &&
-        rows.length === 0 &&
-        !debouncedSearchFilter.length
+    const { failedChainNames, isLoadFailed, handleRetry, isRetrying } =
+        useNftRefreshFailure({
+            sources,
+            unrefreshedChainIds,
+            selectedChainId,
+            networkRowCount,
+            isSearching: debouncedSearchFilter.length > 0,
+        })
     const { title: listEmptyTitle, body: listEmptyBody } = nftListEmptyCopy({
         t,
-        isRefreshFailed,
+        loadFailedChainNames: isLoadFailed ? failedChainNames : undefined,
         isUserHidden,
         isSuspiciousHidden,
         isNetworkEmpty,
@@ -292,8 +266,11 @@ export const useAccountNfts = (): UseAccountNftsResult => {
             !isPending &&
             rows.length === 0 &&
             !searchFilter.length &&
-            !hasUnrefreshedHoldings,
-        showRefreshNotice: hasUnrefreshedHoldings && !isRefreshFailed,
+            unrefreshedChainIds.size === 0,
+        refreshNoticeChainNames: isLoadFailed ? undefined : failedChainNames,
+        isLoadFailed,
+        handleRetry,
+        isRetrying,
         shouldShowNetwork: isMultiChain && selectedChainId === null,
         listEmptyTitle,
         listEmptyBody,

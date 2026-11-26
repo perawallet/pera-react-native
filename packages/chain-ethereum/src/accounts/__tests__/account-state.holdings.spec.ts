@@ -23,7 +23,7 @@ import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import { getAddress, type Hex } from 'viem'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { PeraNetworkError } from '@perawallet/wallet-core-shared'
+import { logger, PeraNetworkError } from '@perawallet/wallet-core-shared'
 import { createEthereumAccountStateOps } from '../account-state'
 import type { WhitelistItemResponse } from '../../assets/api/schema'
 import {
@@ -509,6 +509,7 @@ describe('fetchAccountState holdings the read had no source for', () => {
         expect(state.unrefreshedHoldings?.error).toMatchObject({
             service: 'assets',
         })
+        expect(state.unrefreshedHoldings?.fungibles?.includes(USDC)).toBe(true)
     })
 
     it('reads the balance of a stored token without the token list, so a send made while the backend is off shows', async () => {
@@ -572,6 +573,8 @@ describe('fetchAccountState holdings the read had no source for', () => {
         expect(state.unrefreshedHoldings?.error).not.toMatchObject({
             service: expect.anything(),
         })
+        expect(state.unrefreshedHoldings?.fungibles).toBeUndefined()
+        expect(state.unrefreshedHoldings?.collectibles).toBeUndefined()
     })
 
     it('keeps a stored off-list token whose balance call reverts inside a passing aggregate, with the token list on', async () => {
@@ -588,6 +591,37 @@ describe('fetchAccountState holdings the read had no source for', () => {
         const state = await ops.fetchAccountState(ADDRESS, SCOPE, HINT)
 
         expect(state.unrefreshedHoldings?.includes(BROKEN)).toBe(true)
+        // Kept, but a contract that fails every read must not hold the account stale.
+        expect(state.unrefreshedHoldings?.fungibles).toBeUndefined()
+    })
+
+    it('warns once per token whose balance call keeps failing, naming its chain', async () => {
+        storedHoldings.ids = [BROKEN]
+        server.use(
+            ...rpcAtBlock('0x64', erc20CallResponder({ [USDC]: token(1n) })),
+            ...whitelist(USDC),
+        )
+        const warn = vi.spyOn(logger, 'warn')
+        const ops = createEthereumAccountStateOps(
+            testChainContext({ services: ['assets', 'nfts'] }),
+            ETHEREUM,
+        )
+
+        await ops.fetchAccountState(ADDRESS, SCOPE, HINT)
+        await ops.fetchAccountState(ADDRESS, SCOPE, {
+            ...HINT,
+            isUserRefresh: true,
+        })
+
+        const unreadable = warn.mock.calls.filter(
+            ([message]) =>
+                message === 'Token balance unreadable; keeping its stored row',
+        )
+        expect(unreadable).toHaveLength(1)
+        expect(unreadable[0]![1]).toMatchObject({
+            chainId: SCOPE.chainId,
+            tokenId: getAddress(BROKEN),
+        })
     })
 
     it('does not keep a listed token it never stored when its balance call reverts', async () => {
@@ -619,6 +653,10 @@ describe('fetchAccountState holdings the read had no source for', () => {
         expect(state.unrefreshedHoldings?.error).toMatchObject({
             service: 'nfts',
         })
+        expect(
+            state.unrefreshedHoldings?.collectibles?.includes(`${USDC}/1`),
+        ).toBe(true)
+        expect(state.unrefreshedHoldings?.fungibles).toBeUndefined()
     })
 
     it('reports nothing unrefreshed while the scope has the token list and the NFT service', async () => {

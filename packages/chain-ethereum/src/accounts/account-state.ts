@@ -28,6 +28,7 @@ import {
     type AccountsChainAdapter,
     type AccountStateSnapshot,
     type UnrefreshedHoldings,
+    type UnrefreshedHoldingsPart,
 } from '@perawallet/wallet-core-accounts'
 import { upsertAssets } from '@perawallet/wallet-core-assets'
 import {
@@ -118,6 +119,20 @@ type NftRead = Optional<PromiseSettledResult<NftHoldingsRead>>
 const backfillKey = (scope: ChainScope, address: string): string =>
     `${scope.chainId}/${scope.networkId}/${address.toLowerCase()}`
 
+// A genuine failure outranks a service the scope never had.
+const mergeMisses = (
+    missed: readonly UnrefreshedHoldingsPart[],
+): Optional<UnrefreshedHoldingsPart> => {
+    const cause =
+        missed.find(m => !isPeraServiceUnavailableError(m.error)) ?? missed[0]
+    return cause
+        ? {
+              includes: assetId => missed.some(m => m.includes(assetId)),
+              error: cause.error,
+          }
+        : undefined
+}
+
 const unrefreshedOf = (
     scope: ChainScope,
     services: ReadonlySet<string>,
@@ -126,19 +141,31 @@ const unrefreshedOf = (
     nfts: NftRead,
     storedReadError: Optional<unknown>,
     unreadTokens: ReadonlyMap<string, unknown>,
+    unansweredTokens: ReadonlyMap<string, unknown>,
 ): Optional<UnrefreshedHoldings> => {
-    const missed: UnrefreshedHoldings[] = []
-    // A failed read says nothing about the balance, so the row stays as it is.
+    const missedTokens: UnrefreshedHoldingsPart[] = []
+    const missedNfts: UnrefreshedHoldingsPart[] = []
+    const quietlyKept: UnrefreshedHoldingsPart[] = []
+    // A failed call says nothing about the balance, so the row stays as it is.
+    // The node answered and refused it, so the failure is that contract's and
+    // every read repeats it: it must not hold the account stale.
     if (unreadTokens.size > 0) {
-        missed.push({
+        quietlyKept.push({
             includes: assetId =>
                 isAddress(assetId) && unreadTokens.has(getAddress(assetId)),
             error: unreadTokens.values().next().value,
         })
     }
+    if (unansweredTokens.size > 0) {
+        missedTokens.push({
+            includes: assetId =>
+                isAddress(assetId) && unansweredTokens.has(getAddress(assetId)),
+            error: unansweredTokens.values().next().value,
+        })
+    }
     // Without the stored ids, a token held off the list was not read at all.
     if (storedReadError !== undefined) {
-        missed.push({
+        missedTokens.push({
             includes: assetId =>
                 assetId !== nativeAssetId &&
                 !isEvmNftAssetId(assetId) &&
@@ -149,7 +176,7 @@ const unrefreshedOf = (
         })
     }
     if (!services.has(ASSETS_SERVICE)) {
-        missed.push({
+        missedTokens.push({
             includes: assetId =>
                 assetId !== nativeAssetId &&
                 !isEvmNftAssetId(assetId) &&
@@ -160,24 +187,32 @@ const unrefreshedOf = (
         })
     }
     if (!services.has(NFTS_SERVICE)) {
-        missed.push({
+        missedNfts.push({
             includes: isEvmNftAssetId,
             error: new PeraServiceUnavailableError(scope, NFTS_SERVICE),
         })
     } else if (nfts?.status === 'rejected') {
         // A failed NFT read keeps the stored NFTs rather than emptying the
         // gallery; ERC-20 rows still follow this read.
-        missed.push({ includes: isEvmNftAssetId, error: nfts.reason })
+        missedNfts.push({ includes: isEvmNftAssetId, error: nfts.reason })
+    } else if (nfts?.status === 'fulfilled' && nfts.value.listing.isTruncated) {
+        // Past the page cap every read stops at the same place, so the NFTs it
+        // didn't reach stay as stored without marking the gallery stale.
+        quietlyKept.push({
+            includes: isEvmNftAssetId,
+            error: new Error('NFT holdings ran past the page cap'),
+        })
     }
-    // A genuine failure outranks a service the scope never had.
-    const cause =
-        missed.find(m => !isPeraServiceUnavailableError(m.error)) ?? missed[0]
-    return cause
-        ? {
-              includes: assetId => missed.some(m => m.includes(assetId)),
-              error: cause.error,
-          }
-        : undefined
+    const fungibles = mergeMisses(missedTokens)
+    const collectibles = mergeMisses(missedNfts)
+    const all = mergeMisses([...missedTokens, ...missedNfts, ...quietlyKept])
+    return (
+        all && {
+            ...all,
+            ...(fungibles && { fungibles }),
+            ...(collectibles && { collectibles }),
+        }
+    )
 }
 
 type StoredTokenIds = { ids: string[]; error: Optional<unknown> }
@@ -287,6 +322,8 @@ type Detection = {
     nftListings: Map<string, NftHoldingsListing>
     /** When each account whose NFT read failed is read again, by `backfillKey`. */
     nftRetryAt: Map<string, number>
+    /** Accounts' tokens whose balance call failed, as `backfillKey/token`, so each is logged once. */
+    reportedUnreadTokens: Set<string>
 }
 
 const isScanDue = (detection: Detection, key: string): boolean => {
@@ -672,10 +709,18 @@ const readBatch = async (
             ),
             nftReads,
         ])
-    const unreadKept = new Map<string, unknown>()
+    // A token whose lone retry the node refused (a revert, out of gas) is
+    // refused every read; one the node never answered may read next time.
+    const refusedKept = new Map<string, unknown>()
+    const unansweredKept = new Map<string, unknown>()
     offListRead.unread.forEach((error, id) => {
-        if (keptIds.has(id)) unreadKept.set(id, error)
-        else logger.debug('Sighted token unreadable; leaving it out', { id })
+        if (!keptIds.has(id)) {
+            logger.debug('Sighted token unreadable; leaving it out', { id })
+        } else if (isNodeReply(error)) {
+            refusedKept.set(id, error)
+        } else {
+            unansweredKept.set(id, error)
+        }
     })
     const isWholeList = (index: number): boolean =>
         isPassDue[index]! && wholeListRead.isWholeList
@@ -705,12 +750,23 @@ const readBatch = async (
         ).get(getAddress(read.address))!
         const offList = offListRead.balances.get(getAddress(read.address))
         offList?.tokens.forEach((balance, id) => holder.tokens.set(id, balance))
-        const unreadTokens = new Map(unreadKept)
+        const unreadTokens = new Map(refusedKept)
         for (const id of [...holder.unread, ...(offList?.unread ?? [])]) {
             if (keptIds.has(id)) {
                 unreadTokens.set(id, new Error(`balanceOf unreadable: ${id}`))
             }
         }
+        unreadTokens.forEach((error, id) => {
+            const reportKey = `${key}/${id}`
+            if (detection.reportedUnreadTokens.has(reportKey)) return
+            detection.reportedUnreadTokens.add(reportKey)
+            logger.warn('Token balance unreadable; keeping its stored row', {
+                chainId: scope.chainId,
+                networkId: scope.networkId,
+                tokenId: id,
+                error,
+            })
+        })
         read.resolve(
             toSnapshot(
                 chain.nativeAsset.assetId,
@@ -729,6 +785,7 @@ const readBatch = async (
                     nfts[index],
                     stored.error,
                     unreadTokens,
+                    unansweredKept,
                 ),
                 scanEnds[index],
             ),
@@ -953,6 +1010,7 @@ export const createEthereumAccountStateOps = (
         owedListedPasses: new Set(),
         nftListings: new Map(),
         nftRetryAt: new Map(),
+        reportedUnreadTokens: new Set(),
     }
     return {
         chainId: chain.row.id,
