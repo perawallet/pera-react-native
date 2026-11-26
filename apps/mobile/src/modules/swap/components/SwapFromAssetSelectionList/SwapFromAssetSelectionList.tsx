@@ -60,6 +60,7 @@ export const SwapFromAssetSelectionList = ({
         handleSelectChain,
         searchPlaceholder,
         networkLabelOf,
+        holderLabelOf,
     } = useSwapFromAssetSelectionList(scope, excludeAsset)
 
     const renderItem = useCallback(
@@ -71,10 +72,18 @@ export const SwapFromAssetSelectionList = ({
                 scope={item.scope}
                 subtitle={
                     <PWText
-                        style={styles.networkLabel}
+                        style={styles.secondaryLabel}
                         numberOfLines={1}
                     >
                         {networkLabelOf(item.scope.chainId)}
+                    </PWText>
+                }
+                footer={
+                    <PWText
+                        style={styles.secondaryLabel}
+                        numberOfLines={1}
+                    >
+                        {holderLabelOf(item)}
                     </PWText>
                 }
                 // A restricted holding can't be transferred: it stays listed so
@@ -89,7 +98,7 @@ export const SwapFromAssetSelectionList = ({
                 }
             />
         ),
-        [isChainShown, onAssetSelected, networkLabelOf, styles],
+        [isChainShown, onAssetSelected, networkLabelOf, holderLabelOf, styles],
     )
 
     const renderListEmpty = () => {

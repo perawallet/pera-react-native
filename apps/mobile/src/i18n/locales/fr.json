@@ -4414,6 +4414,7 @@
             "no_results_title": "Aucun actif correspondant",
             "no_results_body": "Aucun actif ne correspond à votre recherche",
             "no_chain_results_body": "Aucun actif disponible sur ce réseau",
+            "total_across_accounts": "Total sur {{accounts}} comptes",
             "cross_network_empty_title": "Échange de {{asset}} vers {{network}} impossible",
             "cross_network_empty_body": "{{asset}} sur {{payNetwork}} ne peut pas encore être échangé contre des actifs sur {{network}}. Pour en obtenir, payez avec un actif sur {{network}}.",
             "cross_network_empty_body_other_account": "{{asset}} sur {{payNetwork}} ne peut pas encore être échangé contre des actifs sur {{network}}. Pour en obtenir, passez à un compte sur {{network}} et payez avec l’un de ses actifs.",

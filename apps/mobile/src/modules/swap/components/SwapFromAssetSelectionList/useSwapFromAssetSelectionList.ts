@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
+import {
+    getAccountDisplayName,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
 import { nativeAssetFor } from '@perawallet/wallet-core-assets'
 import {
     assetRefKey,
@@ -41,6 +45,7 @@ export type UseSwapFromAssetSelectionListResult = UseSwapChainFilterResult & {
     isChainShown: boolean
     searchPlaceholder: string
     networkLabelOf: (chainId: ChainId) => string
+    holderLabelOf: (holding: SwapPayHolding) => string
 }
 
 const isNative = (holding: SwapPayHolding): boolean =>
@@ -57,6 +62,11 @@ export const useSwapFromAssetSelectionList = (
 ): UseSwapFromAssetSelectionListResult => {
     const { t } = useLanguage()
     const networkLabelOf = useChainNetworkLabel()
+    const accounts = useAllAccounts()
+    const accountsById = useMemo(
+        () => new Map(accounts.map(account => [account.id, account])),
+        [accounts],
+    )
     const {
         holdings: payHoldings,
         sourceChainIds,
@@ -97,6 +107,19 @@ export const useSwapFromAssetSelectionList = (
         filter.visibleChainIds,
     ])
 
+    const holderLabelOf = useCallback(
+        (holding: SwapPayHolding) =>
+            holding.holders.length === 1
+                ? getAccountDisplayName(
+                      accountsById.get(holding.holders[0].accountId) ?? null,
+                      holding.scope.chainId,
+                  )
+                : t('swap.asset_selection.total_across_accounts', {
+                      accounts: holding.holders.length,
+                  }),
+        [accountsById, t],
+    )
+
     return {
         ...filter,
         holdings,
@@ -111,5 +134,6 @@ export const useSwapFromAssetSelectionList = (
             swapAssetSearchPlaceholderKey(filter.visibleChainIds),
         ),
         networkLabelOf,
+        holderLabelOf,
     }
 }

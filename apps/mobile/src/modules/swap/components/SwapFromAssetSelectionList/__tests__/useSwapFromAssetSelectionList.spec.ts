@@ -24,6 +24,20 @@ const mocks = vi.hoisted(() => ({
     holdings: [] as unknown[],
     sourceChainIds: [] as string[],
     isPending: false,
+    accounts: [] as unknown[],
+}))
+
+const mockT = vi.hoisted(() => vi.fn((key: string) => key))
+
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({ t: mockT }),
+}))
+
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-accounts')
+    >()),
+    useAllAccounts: () => mocks.accounts,
 }))
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
@@ -65,13 +79,14 @@ const holding = (
     chainId: ChainId = 'algorand',
     name = `Asset ${assetId}`,
     unitName = `A${assetId}`,
+    holders: unknown[] = [],
 ): SwapPayHolding =>
     ({
         assetId,
         asset: { name, unitName },
         scope: { chainId, networkId: 'mainnet' },
         amount: new Decimal(1),
-        holders: [],
+        holders,
     }) as unknown as SwapPayHolding
 
 describe('useSwapFromAssetSelectionList', () => {
@@ -79,6 +94,43 @@ describe('useSwapFromAssetSelectionList', () => {
         mocks.holdings = []
         mocks.sourceChainIds = ['algorand', 'ethereum']
         mocks.isPending = false
+        mocks.accounts = []
+        mockT.mockClear()
+    })
+
+    it('names the one account that holds a row', () => {
+        mocks.accounts = [{ id: 'second', name: 'Second', chains: {} }]
+        const { result } = renderHook(() =>
+            useSwapFromAssetSelectionList(SCOPE),
+        )
+
+        const label = result.current.holderLabelOf(
+            holding('1', 'algorand', 'Asset 1', 'A1', [
+                { accountId: 'second' },
+            ]),
+        )
+
+        expect(label).toBe('Second')
+    })
+
+    it('labels a row several accounts hold as their total', () => {
+        const { result } = renderHook(() =>
+            useSwapFromAssetSelectionList(SCOPE),
+        )
+
+        const label = result.current.holderLabelOf(
+            holding('1', 'algorand', 'Asset 1', 'A1', [
+                { accountId: 'a' },
+                { accountId: 'b' },
+                { accountId: 'c' },
+            ]),
+        )
+
+        expect(label).toBe('swap.asset_selection.total_across_accounts')
+        expect(mockT).toHaveBeenCalledWith(
+            'swap.asset_selection.total_across_accounts',
+            { accounts: 3 },
+        )
     })
 
     it('lists every source chain and names each row on All', () => {
