@@ -90,7 +90,7 @@ import { createEvmNodeEndpointAdapter } from './blockchain/node-endpoint'
 import type { EvmChain } from './chains/types'
 import { createEthereumDappRequestAdapter } from './connect/dappRequestAdapter'
 import { createEvmDeeplinkAdapter } from './deeplinks/adapter'
-import { createEvmDeviceAdapter } from './device'
+import { createEvmDeviceAdapter, startFollowedTokensSync } from './device'
 import { createEvmHistoryAdapter } from './history'
 import { createEvmLedgerAppDriver } from './ledger/driver'
 import { createEvmNameServiceAdapter } from './names/adapter'
@@ -193,6 +193,7 @@ export const createEvmChainRegistration = (
     let adapters: Optional<EvmChainAdapters>
     return ctx => {
         adapters ??= buildAdapters(ctx, chain)
+        startFollowedTokensSync()
         addressCodecs.register(adapters.addressCodec)
         keyDerivations.register(adapters.keyDerivation)
         transactionPlanners.register(adapters.planner)

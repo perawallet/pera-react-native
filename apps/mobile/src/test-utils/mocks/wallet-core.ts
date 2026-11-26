@@ -570,6 +570,35 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         resetState: () => set({ hiddenTokens: {} }),
     }))
     const keptAssetIdsOf = hiddenAssetIdsOf
+    const assetIdsIn = hiddenAssetIdsOf
+    const useHeldListedTokensStore = create<{
+        heldListedTokens: Record<string, Record<string, string[]>>
+        addHeldListedTokens: (params: {
+            address: string
+            scope: ChainScope
+            assetIds: readonly string[]
+        }) => void
+        resetState: () => void
+    }>(set => ({
+        heldListedTokens: {},
+        addHeldListedTokens: ({ address, scope, assetIds }) =>
+            set(state => {
+                const key = hiddenScopeKey(scope)
+                const held = state.heldListedTokens[key]?.[address] ?? []
+                const next = [...new Set([...held, ...assetIds])].sort()
+                if (next.length === held.length) return state
+                return {
+                    heldListedTokens: {
+                        ...state.heldListedTokens,
+                        [key]: {
+                            ...state.heldListedTokens[key],
+                            [address]: next,
+                        },
+                    },
+                }
+            }),
+        resetState: () => set({ heldListedTokens: {} }),
+    }))
     const useKeptTokensStore = create<{
         keptTokens: Record<string, Record<string, string[]>>
         setTokenKept: (params: {
@@ -731,6 +760,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         hiddenAssetIdsOf,
         useHiddenTokensStore,
         keptAssetIdsOf,
+        assetIdsIn,
+        useHeldListedTokensStore,
         useKeptTokensStore,
         isAutoHiddenHolding,
         useHiddenTokensInvalidation: vi.fn(),
