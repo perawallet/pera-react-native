@@ -181,6 +181,35 @@ describe('useTransactionDetailsScreen', () => {
         expect(result.current.renderState).toEqual({ kind: 'offline' })
     })
 
+    it("hands on a cross-chain swap's payout from Swap History, and none otherwise", () => {
+        const swapPayout = {
+            scope: { chainId: 'ethereum', networkId: 'mainnet' },
+            transactionId: '0xpayout',
+        }
+        mockUseTransactionDetailQuery.mockReturnValue(
+            queryResult({ isPaused: true }),
+        )
+        routeParams.current = {
+            scope: ALGORAND_SCOPE,
+            transactionId: 'TX123',
+            historyTransaction: historyItem,
+            swapPayout,
+        }
+
+        const { result, rerender } = renderHook(() =>
+            useTransactionDetailsScreen(),
+        )
+        expect(result.current.swapPayout).toEqual(swapPayout)
+
+        routeParams.current = {
+            scope: ALGORAND_SCOPE,
+            transactionId: 'TX123',
+            historyTransaction: historyItem,
+        }
+        rerender()
+        expect(result.current.swapPayout).toBeUndefined()
+    })
+
     it('shows typed error copy when the fetch fails', () => {
         routeParams.current = {
             scope: ALGORAND_SCOPE,

@@ -3990,6 +3990,8 @@
             "send_network": "Gönderim ağı",
             "block": "Blok",
             "view_in_explorer": "{{explorer}} üzerinde görüntüle",
+            "view_swap_payout_in": "Ödemeyi {{explorer}} üzerinde görüntüle",
+            "swap_payout_on": "{{chain}} ağındaki ödeme",
             "view_asset_url": "Varlık URL’sini görüntüle",
             "view_note": "Notu görüntüle",
             "view_metadata": "Metadata’yı görüntüle",

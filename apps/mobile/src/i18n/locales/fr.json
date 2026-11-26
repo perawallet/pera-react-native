@@ -3990,6 +3990,8 @@
             "send_network": "Réseau d'envoi",
             "block": "Bloc",
             "view_in_explorer": "Voir dans {{explorer}}",
+            "view_swap_payout_in": "Voir le versement dans {{explorer}}",
+            "swap_payout_on": "Versement sur {{chain}}",
             "view_asset_url": "Voir l’URL de l’actif",
             "view_note": "Voir la note",
             "view_metadata": "Voir les métadonnées",

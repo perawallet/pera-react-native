@@ -43,6 +43,7 @@ import {
     useTransactionRecordByIdQuery,
     type SuspectedPoisoning,
 } from '@perawallet/wallet-core-transactions'
+import type { SwapPayoutRef } from '@perawallet/wallet-core-swaps'
 import {
     trackScreen,
     AnalyticsScreenName,
@@ -86,6 +87,7 @@ type UseTransactionDetailsScreenResult = {
     /** Only a history row carries a status, so a signing-flow transaction has none. */
     notice: Nullable<ChainNoticeContent>
     suspectedPoisoning: Optional<SuspectedPoisoning>
+    swapPayout: Optional<SwapPayoutRef>
     addressReuseGuard: AddressReuseGuard
     handleRelatedTransactionPress: (related: TransactionNative) => void
     handleRetry: () => void
@@ -107,6 +109,7 @@ export const useTransactionDetailsScreen =
             historyRecord: paramRecord,
             accountAddress,
             suspectedPoisoning,
+            swapPayout,
         } = route.params
         const addressReuseGuard = useSuspectedAddressReuseGuard({
             suspectedPoisoning,
@@ -301,6 +304,7 @@ export const useTransactionDetailsScreen =
             isExternal: isExternal ?? false,
             notice,
             suspectedPoisoning,
+            swapPayout,
             addressReuseGuard,
             handleRelatedTransactionPress,
             handleRetry,

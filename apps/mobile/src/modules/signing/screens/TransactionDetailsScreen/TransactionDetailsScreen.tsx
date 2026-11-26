@@ -20,6 +20,7 @@ import { ExternalTransactionCallout } from '@modules/signing/components/External
 import { SuspectedPoisoningNotice } from '@modules/transactions'
 import { RelatedTransactions } from '@modules/signing/transactions/RelatedTransactions'
 import { TransactionDetailBody } from '@modules/signing/transactions/TransactionDetailBody'
+import { SwapPayoutCard } from './SwapPayoutCard'
 import { useTransactionDetailsScreen } from './useTransactionDetailsScreen'
 
 export const TransactionDetailsScreen = () => {
@@ -32,6 +33,7 @@ export const TransactionDetailsScreen = () => {
         isExternal,
         notice,
         suspectedPoisoning,
+        swapPayout,
         addressReuseGuard,
         handleRelatedTransactionPress,
         handleRetry,
@@ -73,6 +75,7 @@ export const TransactionDetailsScreen = () => {
                             handleRelatedTransactionPress
                         }
                     />
+                    {swapPayout && <SwapPayoutCard payout={swapPayout} />}
                     {isExternal && <ExternalTransactionCallout />}
                     <RelatedTransactions
                         groupId={groupId}
@@ -107,6 +110,7 @@ export const TransactionDetailsScreen = () => {
                         />
                     )}
                     <RecordDetailBody record={record} />
+                    {swapPayout && <SwapPayoutCard payout={swapPayout} />}
                 </PWScreen>
             </AddressReuseGuardProvider>
         )

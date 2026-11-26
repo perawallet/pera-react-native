@@ -4007,6 +4007,8 @@
             "send_network": "Rede de envio",
             "block": "Bloco",
             "view_in_explorer": "Ver em {{explorer}}",
+            "view_swap_payout_in": "Ver o pagamento em {{explorer}}",
+            "swap_payout_on": "Pagamento na {{chain}}",
             "view_asset_url": "Ver URL do ativo",
             "view_note": "Ver nota",
             "view_metadata": "Ver metadados",
