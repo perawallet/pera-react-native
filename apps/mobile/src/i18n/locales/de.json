@@ -4407,7 +4407,7 @@
             "no_results_title": "Keine passenden Assets",
             "no_results_body": "Keine Assets entsprechen deinem Suchbegriff",
             "no_chain_results_body": "Keine Assets in diesem Netzwerk verfügbar",
-            "no_account_results_body": "Dieses Konto hat keine Assets zum Tauschen",
+            "total_across_accounts": "Summe aus {{accounts}} Konten",
             "cross_network_empty_title": "Tausch von {{asset}} zu {{network}} nicht möglich",
             "cross_network_empty_body": "{{asset}} auf {{payNetwork}} kann noch nicht gegen Assets auf {{network}} getauscht werden. Um sie zu erhalten, zahle stattdessen mit einem Asset auf {{network}}.",
             "cross_network_empty_body_other_account": "{{asset}} auf {{payNetwork}} kann noch nicht gegen Assets auf {{network}} getauscht werden. Um sie zu erhalten, wechsle zu einem Konto auf {{network}} und zahle mit einem seiner Assets.",
@@ -4546,6 +4546,10 @@
             "refunded": "Der Tausch wurde erstattet. Dein {{fromAsset}} ist wieder auf deinem Konto.",
             "expired": "Der Tausch ist abgelaufen, bevor er begonnen hat. Falls dein Guthaben dein Konto verlassen hat, kann sich der Status noch bis zu 7 Tage ändern.",
             "cancelled": "Der Tausch wurde abgebrochen, bevor er begonnen hat. Falls dein Guthaben dein Konto verlassen hat, kann sich der Status noch bis zu 7 Tage ändern."
+        },
+        "source_account": {
+            "title": "Konto auswählen",
+            "subtitle": "Du hast <0>{{accounts}} Konten</0> mit diesem Asset. Wähle eines aus, um fortzufahren."
         }
     },
     "onramp": {

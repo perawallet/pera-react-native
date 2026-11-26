@@ -4415,7 +4415,7 @@
             "no_results_title": "Aucun actif correspondant",
             "no_results_body": "Aucun actif ne correspond à votre recherche",
             "no_chain_results_body": "Aucun actif disponible sur ce réseau",
-            "no_account_results_body": "Ce compte n’a aucun actif à échanger",
+            "total_across_accounts": "Total sur {{accounts}} comptes",
             "cross_network_empty_title": "Échange de {{asset}} vers {{network}} impossible",
             "cross_network_empty_body": "{{asset}} sur {{payNetwork}} ne peut pas encore être échangé contre des actifs sur {{network}}. Pour en obtenir, payez avec un actif sur {{network}}.",
             "cross_network_empty_body_other_account": "{{asset}} sur {{payNetwork}} ne peut pas encore être échangé contre des actifs sur {{network}}. Pour en obtenir, passez à un compte sur {{network}} et payez avec l’un de ses actifs.",
@@ -4554,6 +4554,10 @@
             "refunded": "Le swap a été remboursé. Vos fonds en {{fromAsset}} sont de retour sur votre compte.",
             "expired": "Le swap a expiré avant de commencer. Si vos fonds ont quitté votre compte, le statut peut encore changer pendant 7 jours maximum.",
             "cancelled": "Le swap a été annulé avant de commencer. Si vos fonds ont quitté votre compte, le statut peut encore changer pendant 7 jours maximum."
+        },
+        "source_account": {
+            "title": "Sélectionner un compte",
+            "subtitle": "Vous avez <0>{{accounts}} comptes</0> avec cet actif. Choisissez-en un pour continuer."
         }
     },
     "onramp": {

@@ -17,6 +17,7 @@ import {
     useAccountAssetBalanceQuery,
     addressOn,
     useAccountBalancesInvalidator,
+    useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -29,9 +30,11 @@ import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 import { useSpendableBalanceQuery } from '@perawallet/wallet-core-transactions'
 import {
+    canSwapCrossChain,
     peraFeeInSourceAsset,
     pickBestByAmountOut,
     swapAdapterFor,
+    swapPayoutAddressOn,
     useSwapAccount,
     useSwapFeeReservesQuery,
     useSwaps,
@@ -142,6 +145,7 @@ export const useSwapForm = (
         setFromAsset,
         setToAsset,
         setSourceAsset,
+        setAccountPair,
         flipAcrossChains,
         takeFlippedPayAmount,
         setSlippage,
@@ -154,6 +158,7 @@ export const useSwapForm = (
         useState<Nullable<string>>(null)
     const { request: requestBottomSheet } = useBottomSheet()
     const swapAccount = useSwapAccount()
+    const accounts = useAllAccounts()
     const selectedAddress = swapAccount
         ? addressOn(swapAccount, scope)
         : undefined
@@ -606,6 +611,37 @@ export const useSwapForm = (
 
     const applyPaySelection = useCallback(
         (selection: SwapAssetSelection) => {
+            if (
+                selection.accountId &&
+                selection.accountId !== swapAccount?.id
+            ) {
+                // The receive side survives an account switch on the same
+                // network, as it does a new pay asset on the same account,
+                // unless the swap couldn't pay the new account out on it.
+                const nextAccount = accounts.find(
+                    ({ id }) => id === selection.accountId,
+                )
+                const canKeepReceive =
+                    toScopeKey(selection.scope) === toScopeKey(scope) &&
+                    (!isCrossChain ||
+                        (nextAccount !== undefined &&
+                            canSwapCrossChain(nextAccount) &&
+                            swapPayoutAddressOn(
+                                nextAccount,
+                                accounts,
+                                receiveScope.chainId,
+                            ) !== undefined))
+                setAccountPair({
+                    accountId: selection.accountId,
+                    chainId: selection.scope.chainId,
+                    fromAsset: selection.assetId,
+                    ...(canKeepReceive && {
+                        toAsset,
+                        toAssetScope: isCrossChain ? receiveScope : null,
+                    }),
+                })
+                return
+            }
             if (toScopeKey(selection.scope) !== toScopeKey(scope)) {
                 setSourceAsset(selection.scope.chainId, selection.assetId)
                 return
@@ -619,7 +655,19 @@ export const useSwapForm = (
             // too so no frame shows the old amount against the new asset.
             resetAmounts()
         },
-        [scope, setSourceAsset, fromAsset, setFromAsset, resetAmounts],
+        [
+            scope,
+            toAsset,
+            isCrossChain,
+            receiveScope,
+            swapAccount?.id,
+            accounts,
+            setAccountPair,
+            setSourceAsset,
+            fromAsset,
+            setFromAsset,
+            resetAmounts,
+        ],
     )
 
     const handleOpenPayAssetSelection = useCallback(async () => {

@@ -14,34 +14,39 @@ import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import type { ChainAssetBalance } from '@perawallet/wallet-core-accounts'
+import type { SwapPayHolding } from '@perawallet/wallet-core-swaps'
 import {
     useSwapFromAssetSelectionList,
     type UseSwapFromAssetSelectionListResult,
 } from '../useSwapFromAssetSelectionList'
 
 const mocks = vi.hoisted(() => ({
-    account: { id: 'first' } as { id: string } | null,
-    holdingsByAccount: {} as Record<string, unknown[]>,
+    holdings: [] as unknown[],
     sourceChainIds: [] as string[],
     isPending: false,
-    isError: false,
-    askedFor: [] as unknown[],
+    accounts: [] as unknown[],
+}))
+
+const mockT = vi.hoisted(() => vi.fn((key: string) => key))
+
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({ t: mockT }),
+}))
+
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-accounts')
+    >()),
+    useAllAccounts: () => mocks.accounts,
 }))
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
-    useSwapAccount: () => mocks.account,
-    useSwapPayHoldings: (account: { id: string } | null) => {
-        mocks.askedFor.push(account)
-        return {
-            holdings: account
-                ? (mocks.holdingsByAccount[account.id] ?? [])
-                : [],
-            sourceChainIds: mocks.sourceChainIds,
-            isPending: mocks.isPending,
-            isError: mocks.isError,
-        }
-    },
+    useSwapPayHoldings: () => ({
+        holdings: mocks.holdings,
+        sourceChainIds: mocks.sourceChainIds,
+        isPending: mocks.isPending,
+        isError: false,
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
@@ -74,27 +79,59 @@ const holding = (
     chainId: ChainId = 'algorand',
     name = `Asset ${assetId}`,
     unitName = `A${assetId}`,
-): ChainAssetBalance =>
+    holders: unknown[] = [],
+): SwapPayHolding =>
     ({
         assetId,
         asset: { name, unitName },
         scope: { chainId, networkId: 'mainnet' },
         amount: new Decimal(1),
-    }) as unknown as ChainAssetBalance
+        holders,
+    }) as unknown as SwapPayHolding
 
 describe('useSwapFromAssetSelectionList', () => {
     beforeEach(() => {
-        mocks.account = { id: 'first' }
-        mocks.holdingsByAccount = {}
+        mocks.holdings = []
         mocks.sourceChainIds = ['algorand', 'ethereum']
         mocks.isPending = false
-        mocks.isError = false
-        mocks.askedFor = []
+        mocks.accounts = []
+        mockT.mockClear()
     })
 
-    const setHoldings = (holdings: unknown[]) => {
-        mocks.holdingsByAccount = { first: holdings }
-    }
+    it('names the one account that holds a row', () => {
+        mocks.accounts = [{ id: 'second', name: 'Second', chains: {} }]
+        const { result } = renderHook(() =>
+            useSwapFromAssetSelectionList(SCOPE),
+        )
+
+        const label = result.current.holderLabelOf(
+            holding('1', 'algorand', 'Asset 1', 'A1', [
+                { accountId: 'second' },
+            ]),
+        )
+
+        expect(label).toBe('Second')
+    })
+
+    it('labels a row several accounts hold as their total', () => {
+        const { result } = renderHook(() =>
+            useSwapFromAssetSelectionList(SCOPE),
+        )
+
+        const label = result.current.holderLabelOf(
+            holding('1', 'algorand', 'Asset 1', 'A1', [
+                { accountId: 'a' },
+                { accountId: 'b' },
+                { accountId: 'c' },
+            ]),
+        )
+
+        expect(label).toBe('swap.asset_selection.total_across_accounts')
+        expect(mockT).toHaveBeenCalledWith(
+            'swap.asset_selection.total_across_accounts',
+            { accounts: 3 },
+        )
+    })
 
     it('lists every source chain and names each row on All', () => {
         const { result } = renderHook(() =>
@@ -107,7 +144,7 @@ describe('useSwapFromAssetSelectionList', () => {
     })
 
     it('stops naming rows once a chain is picked, and lists only its holdings', () => {
-        setHoldings([holding('1'), holding('native', 'ethereum')])
+        mocks.holdings = [holding('1'), holding('native', 'ethereum')]
         const { result } = renderHook(() =>
             useSwapFromAssetSelectionList(SCOPE),
         )
@@ -119,7 +156,7 @@ describe('useSwapFromAssetSelectionList', () => {
         expect(result.current.holdings.map(h => h.assetId)).toEqual(['native'])
     })
 
-    it('has no chips when the account pays from one chain', () => {
+    it('has no chips when every account pays from one chain', () => {
         mocks.sourceChainIds = ['algorand']
 
         const { result } = renderHook(() =>
@@ -143,7 +180,7 @@ describe('useSwapFromAssetSelectionList', () => {
         ])
     })
 
-    it("omits the swap chain when the account can't pay from it", () => {
+    it('omits the swap chain when no account can pay from it', () => {
         mocks.sourceChainIds = ['ethereum', 'base']
 
         const { result } = renderHook(() =>
@@ -177,7 +214,7 @@ describe('useSwapFromAssetSelectionList', () => {
     })
 
     it('leaves out the asset the swap receives and puts the native coin first', () => {
-        setHoldings([holding('1'), holding('2'), holding('0')])
+        mocks.holdings = [holding('1'), holding('2'), holding('0')]
 
         const { result } = renderHook(() =>
             useSwapFromAssetSelectionList(SCOPE, {
@@ -187,72 +224,6 @@ describe('useSwapFromAssetSelectionList', () => {
         )
 
         expect(result.current.holdings.map(h => h.assetId)).toEqual(['0', '1'])
-    })
-
-    it('reads the swap account', () => {
-        renderHook(() => useSwapFromAssetSelectionList(SCOPE))
-
-        expect(mocks.askedFor.at(-1)).toBe(mocks.account)
-    })
-
-    it("lists only the new account's rows once the swap account changes", () => {
-        mocks.holdingsByAccount = {
-            first: [holding('a-only')],
-            second: [holding('b-only')],
-        }
-        const { result, rerender } = renderHook(() =>
-            useSwapFromAssetSelectionList(SCOPE),
-        )
-        expect(result.current.holdings.map(h => h.assetId)).toEqual(['a-only'])
-
-        mocks.account = { id: 'second' }
-        rerender()
-
-        expect(result.current.holdings.map(h => h.assetId)).toEqual(['b-only'])
-    })
-
-    describe('emptyState', () => {
-        it('is search while a search term is set', () => {
-            const { result } = renderHook(() =>
-                useSwapFromAssetSelectionList(SCOPE),
-            )
-
-            act(() => result.current.setSearchFilter('nothing'))
-
-            expect(result.current.emptyState).toBe('search')
-        })
-
-        it('is null when a read failed', () => {
-            mocks.isError = true
-
-            const { result } = renderHook(() =>
-                useSwapFromAssetSelectionList(SCOPE),
-            )
-
-            expect(result.current.emptyState).toBeNull()
-        })
-
-        it('is network when a chip is picked, or when only one chain can pay', () => {
-            const { result } = renderHook(() =>
-                useSwapFromAssetSelectionList(SCOPE),
-            )
-            act(() => result.current.handleSelectChain('ethereum'))
-            expect(result.current.emptyState).toBe('network')
-
-            mocks.sourceChainIds = ['algorand']
-            const single = renderHook(() =>
-                useSwapFromAssetSelectionList(SCOPE),
-            )
-            expect(single.result.current.emptyState).toBe('network')
-        })
-
-        it('is account on All with chips', () => {
-            const { result } = renderHook(() =>
-                useSwapFromAssetSelectionList(SCOPE),
-            )
-
-            expect(result.current.emptyState).toBe('account')
-        })
     })
 
     describe('searching across networks', () => {
@@ -277,7 +248,7 @@ describe('useSwapFromAssetSelectionList', () => {
         }
 
         beforeEach(() => {
-            setHoldings(holdingsOnEveryNetwork())
+            mocks.holdings = holdingsOnEveryNetwork()
             mocks.sourceChainIds = ['algorand', 'ethereum', 'base']
         })
 

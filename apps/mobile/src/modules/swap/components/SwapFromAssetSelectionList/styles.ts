@@ -17,7 +17,7 @@ export const useStyles = makeStyles(theme => ({
         width: '100%',
         paddingHorizontal: theme.spacing.lg,
     },
-    networkLabel: {
+    secondaryLabel: {
         color: theme.colors.textGray,
     },
 }))

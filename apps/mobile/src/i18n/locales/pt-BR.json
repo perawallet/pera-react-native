@@ -4437,7 +4437,7 @@
             "no_results_title": "Nenhum ativo encontrado",
             "no_results_body": "Nenhum ativo corresponde à sua busca",
             "no_chain_results_body": "Nenhum ativo disponível nesta rede",
-            "no_account_results_body": "Esta conta não tem ativos para converter",
+            "total_across_accounts": "Total em {{accounts}} contas",
             "cross_network_empty_title": "Não é possível converter {{asset}} para {{network}}",
             "cross_network_empty_body": "{{asset}} em {{payNetwork}} ainda não pode ser convertido em ativos em {{network}}. Para obtê-los, pague com um ativo em {{network}}.",
             "cross_network_empty_body_other_account": "{{asset}} em {{payNetwork}} ainda não pode ser convertido em ativos em {{network}}. Para obtê-los, troque para uma conta em {{network}} e pague com um dos ativos dela.",
@@ -4576,6 +4576,10 @@
             "refunded": "A conversão foi reembolsada. Seu {{fromAsset}} voltou para sua conta.",
             "expired": "A conversão expirou antes de começar. Se seus fundos saíram da sua conta, o status ainda pode mudar por até 7 dias.",
             "cancelled": "A conversão foi cancelada antes de começar. Se seus fundos saíram da sua conta, o status ainda pode mudar por até 7 dias."
+        },
+        "source_account": {
+            "title": "Selecione uma conta",
+            "subtitle": "Você tem <0>{{accounts}} contas</0> com este ativo. Escolha uma para continuar."
         }
     },
     "onramp": {
