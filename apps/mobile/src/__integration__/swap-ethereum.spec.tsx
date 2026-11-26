@@ -97,6 +97,7 @@ const { useQueryClient } = await import('@tanstack/react-query')
 const { act, fireEvent, renderHook, screen, waitFor, within } =
     await import('@testing-library/react')
 const { Decimal } = await import('decimal.js')
+const { addressCodecs } = await import('@perawallet/wallet-core-chain-contract')
 const { insertAssetHolding, useAccountChainStateStore, useAccountsStore } =
     await import('@perawallet/wallet-core-accounts')
 const { getAccountBalancesQueryKey } =
@@ -427,6 +428,20 @@ const startHost = async (): Promise<HostApi> => {
     await waitFor(() => expect(host).not.toBeNull())
     return host!
 }
+
+const renderConfirmation = (quote: SwapQuote) =>
+    renderWithNavigation(
+        () => (
+            <BottomSheetIdContext.Provider value='swap-confirmation'>
+                <SwapConfirmationContent
+                    scope={ETH_SCOPE}
+                    quote={quote}
+                    canChooseProvider={false}
+                />
+            </BottomSheetIdContext.Provider>
+        ),
+        'SwapConfirmation',
+    )
 
 /** Takes a token swap from the real form as far as the open confirmation. */
 const openConfirmation = async (offer = tokenToEtherOffer) => {
@@ -1121,24 +1136,32 @@ describe('Flow: Swap from an Ethereum account', () => {
         useSwapsStore.getState().setSourceChainId('ethereum')
         await seedSenderEther('10000000000000000000')
         fakeNode()
-        const quote = etherToAlgoQuote(account.chains.algorand?.address ?? '')
-
-        renderWithNavigation(
-            () => (
-                <BottomSheetIdContext.Provider value='swap-confirmation'>
-                    <SwapConfirmationContent
-                        scope={ETH_SCOPE}
-                        quote={quote}
-                        canChooseProvider={false}
-                    />
-                </BottomSheetIdContext.Provider>
-            ),
-            'SwapConfirmation',
+        renderConfirmation(
+            etherToAlgoQuote(account.chains.algorand?.address ?? ''),
         )
 
         expect(await screen.findByTestId('swap-confirm-route')).toBeTruthy()
         expect(screen.getByTestId('swap-confirm-cross-chain-note')).toBeTruthy()
         expect(screen.queryByTestId('swap-confirm-provider-fee')).toBeNull()
+    })
+
+    it('Given an account on two chains swapping from Ethereum, when the confirmation opens, then the header shows its Ethereum address, not its Algorand one', async () => {
+        const account = await selectTwoChainAccount()
+        useSwapsStore.getState().setSourceChainId('ethereum')
+        await seedSenderEther('10000000000000000000')
+        fakeNode()
+        const algorandAddress = account.chains.algorand?.address ?? ''
+        renderConfirmation(etherToAlgoQuote(algorandAddress))
+
+        const header = await screen.findByTestId('swap-confirm')
+        await within(header).findByText(
+            addressCodecs.get(ETH_SCOPE.chainId).truncate(SENDER),
+        )
+        expect(
+            within(header).queryByText(
+                addressCodecs.get('algorand').truncate(algorandAddress),
+            ),
+        ).toBeNull()
     })
 
     it('Given no override, then an Ethereum account can reach swap', () => {
