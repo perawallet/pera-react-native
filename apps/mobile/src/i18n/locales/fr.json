@@ -894,7 +894,8 @@
             "confirm": "Confirmer",
             "error_words": "Certains des mots sélectionnés sont incorrects. Veuillez réessayer.",
             "error_key": "Cette clé de chiffrement ne correspond pas à votre sauvegarde.",
-            "error_both": "Les mots sélectionnés et la clé de chiffrement sont tous deux incorrects.",
+            "hint_words": "Sélectionnez un mot pour chaque numéro pour continuer.",
+            "hint_key": "Saisissez votre clé de chiffrement pour continuer.",
             "success": "Clé de sauvegarde confirmée"
         },
         "store_encryption_key": {

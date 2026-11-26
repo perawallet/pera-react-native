@@ -12,7 +12,10 @@
 
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { CloudBackupRestoreError } from '@perawallet/wallet-core-backup'
+import {
+    CloudBackupRestoreError,
+    buildBackupCredentialsFile,
+} from '@perawallet/wallet-core-backup'
 
 const prepare = vi.fn()
 const navigate = vi.fn()
@@ -108,6 +111,29 @@ describe('useCloudBackupRestoreEncryptionKeyScreen', () => {
             salt: 'c2FsdA==',
             credentialsConfirmed: true,
         })
+    })
+
+    it('restores with a key typed across a line break and an invisible character', async () => {
+        const { result } = renderScreen()
+        act(() => result.current.handleKeyChange('c2Fs\n\u200BdA=='))
+        await pressRestore(result)
+
+        expect(prepare).toHaveBeenCalledWith({
+            salt: 'c2FsdA==',
+            credentialsConfirmed: true,
+        })
+    })
+
+    it('reduces a pasted credentials file to its salt', () => {
+        const { result } = renderScreen()
+
+        act(() =>
+            result.current.handleKeyChange(
+                buildBackupCredentialsFile(IMPORTED_KEY.salt),
+            ),
+        )
+
+        expect(result.current.encryptionKey).toBe(IMPORTED_KEY.salt)
     })
 
     it('does not restore when the PIN is not verified', async () => {

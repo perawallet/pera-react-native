@@ -91,6 +91,10 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     const { percentChange } = await vi.importActual<
         typeof import('@packages/shared/src/utils/percent-change')
     >('@packages/shared/src/utils/percent-change')
+    // No imports; a stub would make every salt or byte comparison under test pass or fail blindly.
+    const { bytesEqual } = await vi.importActual<
+        typeof import('@packages/shared/src/utils/arrays')
+    >('@packages/shared/src/utils/arrays')
     // No runtime imports; the real accounts and signing stores persist through it.
     const { gateWritesOnHydration } = await vi.importActual<
         typeof import('@packages/shared/src/utils/hydration-gate')
@@ -634,6 +638,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         ErrorCategory,
         useClearAllData: vi.fn(() => vi.fn().mockResolvedValue(undefined)),
         registerStore: vi.fn(),
+        bytesEqual,
         gateWritesOnHydration,
         guardedPersist,
         readQuarantinedStates,
