@@ -173,7 +173,7 @@ describe('useAssetTransferRequestsScreen', () => {
         })
     })
 
-    it('rejects every waiting token once confirmed, saying the claims stay', async () => {
+    it('rejects every waiting token once confirmed, leaving the backend request alone and saying it stays', async () => {
         mocks.request.mockResolvedValueOnce(true)
         const { result } = render()
 
@@ -191,6 +191,10 @@ describe('useAssetTransferRequestsScreen', () => {
             false,
         )
         expect(mocks.showToast).toHaveBeenCalled()
+        // The ARC-59 request is left for the claim flow: nothing opens it or
+        // hands it to the claim store.
+        expect(mocks.push).not.toHaveBeenCalled()
+        expect(mocks.setAssetRequests).not.toHaveBeenCalled()
     })
 
     it('leaves every token waiting when Reject All is cancelled', async () => {
