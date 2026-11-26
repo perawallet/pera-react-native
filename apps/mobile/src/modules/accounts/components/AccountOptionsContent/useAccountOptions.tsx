@@ -15,6 +15,7 @@ import {
     getAccountDisplayName,
     type WalletAccount,
     accountChainIdOf,
+    accountsChainAdapters,
     addressOn,
     authorityOf,
     chainAccountOf,
@@ -68,7 +69,10 @@ import {
     useViewPassphraseFlow,
 } from '@modules/view-passphrase'
 import { useIsAccountInBackup } from '@modules/cloud-backup'
-import { useIsCloudBackupAvailable } from '@hooks/useIsCloudBackupAvailable'
+import {
+    useIsCloudBackupAvailable,
+    useIsCloudBackupAvailableFor,
+} from '@hooks/useIsCloudBackupAvailable'
 import { ExportShareAccountContent } from '@modules/multisig'
 import {
     SharedAccountDetailsContent,
@@ -80,6 +84,7 @@ import {
     AccountOptionsEvent,
     AnalyticsMetadataKey,
 } from '@analytics'
+import { backupWarningCopyFor } from './backupWarningCopy'
 import { RenameAccountContent } from './RenameAccountContent'
 import {
     useAccountNetworks,
@@ -108,7 +113,8 @@ export type UseAccountOptionsResult = {
     /** Offered on a Cloud Backup-covered account that still has no written-down passphrase; never required. */
     writeDownPassphraseOption: Optional<SheetOption>
     networks: UseAccountNetworksResult
-    isCloudBackupAvailable: boolean
+    /** The remove flow's backup warning, already translated. */
+    backupWarningMessage: string
     isRekeyed: boolean
     canUndoRekey: boolean
     authAccount: Optional<WalletAccount>
@@ -146,6 +152,7 @@ export const useAccountOptions = ({
     const { openViewPassphraseFlow } = useViewPassphraseFlow()
     const { openRevealPrivateKeyFlow } = useRevealPrivateKeyFlow()
     const isCloudBackupAvailable = useIsCloudBackupAvailable()
+    const canCloudBackupAccount = useIsCloudBackupAvailableFor(account)
     const registeredChainIds = useRegisteredChainIds()
     const accountChainId = accountChainIdOf(account, registeredChainIds)
     const scope = useSelectedScope(accountChainId)
@@ -178,6 +185,11 @@ export const useAccountOptions = ({
         canBackUpMnemonic &&
         hasRecoverySeed(account) &&
         passphraseAddress !== undefined
+    // The chain supporting an Auth Account, not the remote switch on rekey
+    // entry points: the warning is about what can manage the account.
+    const canChainDelegate =
+        accountsChainAdapters.has(scope.chainId) &&
+        accountsChainAdapters.get(scope.chainId).authority !== undefined
     const canUndoRekey = canRekey && isRekeyed && canSign
     const privateKeyScope = useAccountCapabilityScope(account, 'privateKeys')
     const showPrivateKey =
@@ -622,13 +634,23 @@ export const useAccountOptions = ({
         handleWriteDownPassphrase,
     ])
 
+    const backupWarningCopy = backupWarningCopyFor({
+        isPrivateKey: standaloneSecretOf(account) === 'privateKey',
+        canHaveAuthAccount: canChainDelegate || isRekeyed,
+    })
+    const backupWarningMessage = t(
+        canCloudBackupAccount
+            ? backupWarningCopy.withCloudBackup
+            : backupWarningCopy.plain,
+    )
+
     return {
         sheetTitle,
         topActions,
         sharedAccountOptions,
         writeDownPassphraseOption,
         networks,
-        isCloudBackupAvailable,
+        backupWarningMessage,
         isRekeyed,
         canUndoRekey,
         authAccount: authAccount ?? undefined,

@@ -411,4 +411,35 @@ describe('Flow: the account options sheet lists the account on each network', ()
             ),
         )
     })
+
+    it('Given an account imported from an Ethereum private key, when the user opens its options and starts removing it, then it reads as a private-key account and the warning is about the private key', async () => {
+        const account: WalletAccount = {
+            id: 'eth-private-key',
+            name: 'Imported key',
+            custody: { kind: 'local', seed: null },
+            chains: {
+                ethereum: {
+                    address: '0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed',
+                    keyPairId: 'eth-private-key-pair',
+                },
+            },
+        }
+        useAccountsStore.getState().setAccounts([account])
+
+        render(<AccountOptionsHost account={account} />)
+
+        const typeLabel = await screen.findByTestId('account_type_label')
+        expect(typeLabel.textContent).toBe('account_info.type_private_key')
+
+        fireEvent.click(screen.getByTestId('account_option_remove-account'))
+
+        expect(
+            await screen.findByText(
+                'account_options.backup_warning_private_key_message',
+            ),
+        ).toBeTruthy()
+        expect(
+            screen.queryByText('account_options.backup_warning_message'),
+        ).toBeNull()
+    })
 })
