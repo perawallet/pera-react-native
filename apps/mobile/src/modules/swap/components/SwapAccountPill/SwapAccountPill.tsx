@@ -19,7 +19,7 @@ export type SwapAccountPillProps = {
     account: WalletAccount
 }
 
-// Display-only: the account changes through the pay asset picker, never here.
+// Display-only: the account changes through the pay asset picker or a recent pair chip, never here.
 export const SwapAccountPill = ({ account }: SwapAccountPillProps) => {
     const styles = useStyles()
 

@@ -134,6 +134,7 @@ const { resetTestKeystore } = await import('@test-utils/algorand-keystore-test')
 const {
     resetTestDatabase,
     seedAlgoAsset,
+    seedAlgorandAccountState,
     setupTestDatabase,
     teardownTestDatabase,
 } = await import('@test-utils/database-setup')
@@ -868,6 +869,53 @@ describe('Flow: Swap from an Ethereum account', () => {
         expect(useAccountsStore.getState().selectedAccountId).toBe(
             ETHEREUM_SENDER.id,
         )
+    })
+
+    it("Given an account with no ALGO while another account holds ALGO, when Swap From opens, then the ALGO row names that account, and picking it moves the swap there at that account's ALGO balance while Home keeps its account", async () => {
+        const algoHolder = await selectTwoChainAccount()
+        const second = ETHEREUM_SECOND
+        const algoAddress = algoHolder.chains.algorand!.address
+        await seedAlgorandAccountState({
+            accountAddress: algoAddress,
+            scope: ALGO_SCOPE,
+            nativeBalance: new Decimal(2_353_100),
+        })
+        await insertAssetHolding({
+            accountAddress: algoAddress,
+            assetId: '0',
+            scope: ALGO_SCOPE,
+            amount: new Decimal(2_353_100),
+        })
+        await seedEtherAt(RECEIVER, '10000000000000000000')
+        useAccountsStore.getState().setAccounts([algoHolder, second])
+        useAccountsStore.getState().setSelectedAccountId(second.id)
+        fakeNode()
+        useSwapsStore.getState().setFromAsset(ETH_ASSET)
+        useSwapsStore.getState().setToAsset(ETH_ASSET)
+        renderWithNavigation(SwapScreen, 'Swap')
+
+        fireEvent.click(await screen.findByTestId('swap-pay-asset-selector'))
+        const row = await screen.findByTestId('asset-list-item-algorand-0')
+        expect(row.textContent).toContain('2.3531')
+        expect(row.textContent).toContain(algoHolder.name)
+        expect(row.textContent).not.toContain('total_across_accounts')
+        fireEvent.click(row)
+
+        await waitFor(() =>
+            expect(useSwapsStore.getState()).toMatchObject({
+                accountId: algoHolder.id,
+                sourceChainId: 'algorand',
+                fromAsset: '0',
+            }),
+        )
+        await settleRender()
+        expect(
+            (await screen.findByTestId('swap-pay-balance')).textContent,
+        ).toContain('2.3531')
+        expect(screen.getByTestId('swap_account_pill').textContent).toContain(
+            algoHolder.name,
+        )
+        expect(useAccountsStore.getState().selectedAccountId).toBe(second.id)
     })
 
     it('Given an account on two chains swapping ALGO into ETH on its own Ethereum address, when it taps flip, then the swap pays ETH on Ethereum into ALGO on Algorand and quotes the carried amount', async () => {
