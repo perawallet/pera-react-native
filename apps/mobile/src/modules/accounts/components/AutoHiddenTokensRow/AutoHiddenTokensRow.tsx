@@ -29,7 +29,7 @@ export const AutoHiddenTokensRow = ({ account }: AutoHiddenTokensRowProps) => {
 
     return (
         <PWListItem
-            icon='assets/suspicious'
+            icon='inbox'
             title={t('token_visibility.auto_hidden_row_title', {
                 total: count,
             })}
