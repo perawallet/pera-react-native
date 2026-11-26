@@ -23,7 +23,9 @@ import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapabilityCheck } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
+    canSwapCrossChain,
     isSwapChain,
+    swapPayoutAddressOn,
     useSwapFeeReservesQuery,
     useSwapScope,
 } from '@perawallet/wallet-core-swaps'
@@ -32,10 +34,6 @@ import {
     type SpendableBalanceInput,
 } from '@perawallet/wallet-core-transactions'
 import type { SwapScreenParams } from '../routes/types'
-import {
-    canSwapCrossChain,
-    swapPayoutAddressOn,
-} from '../utils/crossChainEligibility'
 import { rankSwapPayAssets } from '../utils/rankSwapPayAssets'
 
 export type UseSwapForNativeRouteResult = {

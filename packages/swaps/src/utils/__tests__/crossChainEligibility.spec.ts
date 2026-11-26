@@ -14,6 +14,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
     accountChainOptions,
     canSignWith,
+    findAccountByAddressOn,
     isMultisigAccount,
     type AccountChainOption,
     type WalletAccount,
@@ -22,6 +23,13 @@ import {
     canSwapCrossChain,
     swapPayoutAddressOn,
 } from '../crossChainEligibility'
+
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    accountChainOptions: vi.fn(),
+    canSignWith: vi.fn(),
+    findAccountByAddressOn: vi.fn(),
+    isMultisigAccount: vi.fn(),
+}))
 
 const account = (chains: WalletAccount['chains']): WalletAccount => ({
     id: 'a',
@@ -36,6 +44,7 @@ const offering = (...options: AccountChainOption[]) =>
 describe('swapPayoutAddressOn', () => {
     beforeEach(() => {
         vi.mocked(canSignWith).mockReturnValue(true)
+        vi.mocked(findAccountByAddressOn).mockReturnValue(undefined)
     })
 
     it('pays an enabled chain at its own address when a signer holds it', () => {
@@ -49,6 +58,21 @@ describe('swapPayoutAddressOn', () => {
         vi.mocked(canSignWith).mockReturnValue(false)
 
         expect(swapPayoutAddressOn(account({}), [], 'base')).toBe('0x1')
+    })
+
+    it('has no address for a chain not enabled yet when another account holds the family address there', () => {
+        offering({ chainId: 'base', isEnabled: false, address: '0x1' })
+        const holder = { ...account({}), id: 'watch' }
+        vi.mocked(findAccountByAddressOn).mockReturnValue(holder)
+
+        expect(
+            swapPayoutAddressOn(account({}), [holder], 'base'),
+        ).toBeUndefined()
+        expect(findAccountByAddressOn).toHaveBeenCalledWith(
+            [holder],
+            'base',
+            '0x1',
+        )
     })
 
     it('has no address for a chain the account holds no family on', () => {

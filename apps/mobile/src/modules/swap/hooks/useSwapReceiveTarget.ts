@@ -21,8 +21,11 @@ import {
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { useSwapsStore, useSwapAccount } from '@perawallet/wallet-core-swaps'
-import { swapPayoutAddressOn } from '../utils/crossChainEligibility'
+import {
+    swapPayoutAddressOn,
+    useSwapsStore,
+    useSwapAccount,
+} from '@perawallet/wallet-core-swaps'
 
 export type UseSwapReceiveTargetResult = {
     receiveScope: ChainScope

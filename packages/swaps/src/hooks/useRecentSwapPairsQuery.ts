@@ -11,8 +11,16 @@
  */
 
 import { useCallback, useMemo } from 'react'
+import {
+    useAccountChainStateStore,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { SwapHistoryPair } from '../models'
+import {
+    canSwapCrossChain,
+    swapPayoutAddressOn,
+} from '../utils/crossChainEligibility'
 import { pairsPaidBy } from '../utils/pairsPaidBy'
 import { useDistinctPairsHistoryQuery } from './useDistinctPairsHistoryQuery'
 import { useSwapAccountsAddresses } from './useSwapAccountsAddresses'
@@ -41,6 +49,8 @@ export const useRecentSwapPairsQuery = (): UseRecentSwapPairsQueryResult => {
     )
     const { data, isLoading, isError } =
         useDistinctPairsHistoryQuery(historyAccounts)
+    const allAccounts = useAllAccounts()
+    const chainStates = useAccountChainStateStore(state => state.states)
 
     const canPayOn = useCallback(
         (accountId: string, chainId: ChainId) =>
@@ -48,13 +58,26 @@ export const useRecentSwapPairsQuery = (): UseRecentSwapPairsQueryResult => {
         [sourceChainsByAccount],
     )
 
+    const canBePaidOn = useCallback(
+        (accountId: string, chainId: ChainId) => {
+            const account = accounts.find(({ id }) => id === accountId)
+            return (
+                account !== undefined &&
+                canSwapCrossChain(account) &&
+                swapPayoutAddressOn(account, allAccounts, chainId) !== undefined
+            )
+        },
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- chainStates re-runs it: swapPayoutAddressOn reads the chain-state store, not its arguments
+        [accounts, allAccounts, chainStates],
+    )
+
     const pairs = useMemo(
         () =>
-            pairsPaidBy(data ?? [], payers, canPayOn).slice(
+            pairsPaidBy(data ?? [], payers, canPayOn, canBePaidOn).slice(
                 0,
                 RECENT_PAIRS_LIMIT,
             ),
-        [data, payers, canPayOn],
+        [data, payers, canPayOn, canBePaidOn],
     )
 
     return { pairs, isLoading, isError, isEnabled: payers.length > 0 }

@@ -4464,7 +4464,7 @@
             "unsupported_order_body": "Pera can't complete this provider's order, so nothing was signed. Choose another provider.",
             "unsupported_order_single_body": "Pera can't complete this provider's order, so nothing was signed. Try again later.",
             "signing_failed_body": "The transaction couldn't be signed, so it wasn't sent. Try again.",
-            "enable_network_failed_body": "Couldn't enable {{network}} on your account, so the swap didn't start. Try again.",
+            "enable_network_failed_body": "Couldn't enable {{network}} on your account, so the swap didn't start.",
             "order_insufficient_balance_body": "Your balance can't cover this amount and the network fee. Try a smaller amount or add funds for the fee.",
             "insufficient_native_body": "This account needs at least {{amount}} more {{symbol}} to cover this swap, its fees, and the minimum balance. Add more {{symbol}} and try again.",
             "success_title": "Swap Complete",

@@ -26,9 +26,11 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { isChainId } from '@perawallet/wallet-core-chain-contract'
-import { useSwapsStore } from '@perawallet/wallet-core-swaps'
+import {
+    swapPayoutAddressOn,
+    useSwapsStore,
+} from '@perawallet/wallet-core-swaps'
 import { useSendFundsDeeplink } from '@modules/deeplink'
-import { swapPayoutAddressOn } from '@modules/swap'
 import { useCapability } from '@hooks/useCapability'
 import { useToast } from '@hooks/useToast'
 import type { TabResumeIntent } from '@utils/tabResumeIntent'

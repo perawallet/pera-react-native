@@ -22,11 +22,11 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScopes } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { isSwapChain } from '@perawallet/wallet-core-swaps'
 import {
     canSwapCrossChain,
+    isSwapChain,
     swapPayoutAddressOn,
-} from '../utils/crossChainEligibility'
+} from '@perawallet/wallet-core-swaps'
 
 /**
  * Where a swap from `account` on `scope` may pay out: `scope`, plus the

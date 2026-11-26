@@ -4456,7 +4456,7 @@
             "unsupported_order_body": "Pera kann die Bestellung dieses Anbieters nicht abschließen, deshalb wurde nichts signiert. Wähle einen anderen Anbieter.",
             "unsupported_order_single_body": "Pera kann die Bestellung dieses Anbieters nicht abschließen, deshalb wurde nichts signiert. Versuche es später erneut.",
             "signing_failed_body": "Die Transaktion konnte nicht signiert werden, deshalb wurde sie nicht gesendet. Versuche es erneut.",
-            "enable_network_failed_body": "{{network}} konnte auf deinem Konto nicht aktiviert werden, daher wurde der Tausch nicht gestartet. Versuche es erneut.",
+            "enable_network_failed_body": "{{network}} konnte auf deinem Konto nicht aktiviert werden, daher wurde der Tausch nicht gestartet.",
             "order_insufficient_balance_body": "Dein Guthaben reicht für diesen Betrag und die Netzwerkgebühr nicht aus. Versuche einen kleineren Betrag oder füge Guthaben für die Gebühr hinzu.",
             "insufficient_native_body": "Dieses Konto benötigt mindestens {{amount}} {{symbol}} mehr, um diesen Tausch, die Gebühren und das Mindestguthaben zu decken. Füge mehr {{symbol}} hinzu und versuche es erneut.",
             "success_title": "Tausch abgeschlossen",

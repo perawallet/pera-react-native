@@ -4464,7 +4464,7 @@
             "unsupported_order_body": "Pera no puede completar la orden de este proveedor, así que no se firmó nada. Elige otro proveedor.",
             "unsupported_order_single_body": "Pera no puede completar la orden de este proveedor, así que no se firmó nada. Inténtalo más tarde.",
             "signing_failed_body": "No se pudo firmar la transacción, así que no se envió. Inténtalo de nuevo.",
-            "enable_network_failed_body": "No se pudo activar la red {{network}} en tu cuenta, así que el swap no se inició. Inténtalo de nuevo.",
+            "enable_network_failed_body": "No se pudo activar la red {{network}} en tu cuenta, así que el swap no se inició.",
             "order_insufficient_balance_body": "Tu saldo no cubre esta cantidad y la comisión de red. Prueba con una cantidad menor o añade fondos para la comisión.",
             "insufficient_native_body": "Esta cuenta necesita al menos {{amount}} {{symbol}} más para cubrir este swap, sus comisiones y el saldo mínimo. Añade más {{symbol}} y vuelve a intentarlo.",
             "success_title": "Swap completado",

@@ -22,6 +22,16 @@ const mocks = vi.hoisted(() => ({
     payers: [] as unknown[],
     sourceChains: {} as Record<string, string[]>,
     history: vi.fn(),
+    payoutAddress: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useAllAccounts: () => [],
+    useAccountChainStateStore: () => ({}),
+}))
+vi.mock('../../utils/crossChainEligibility', () => ({
+    canSwapCrossChain: () => true,
+    swapPayoutAddressOn: mocks.payoutAddress,
 }))
 
 vi.mock('../useSwapScope', () => ({
@@ -59,6 +69,8 @@ describe('swaps/useRecentSwapPairsQuery', () => {
                 isOnDevice: true,
             },
         ]
+        mocks.payoutAddress.mockReset()
+        mocks.payoutAddress.mockReturnValue('0xMain')
         mocks.history.mockReset()
         mocks.history.mockReturnValue({
             data: undefined,
@@ -158,6 +170,38 @@ describe('swaps/useRecentSwapPairsQuery', () => {
             { scope: ALGO, address: 'MAIN' },
         ])
         expect(result.current.isEnabled).toBe(true)
+    })
+
+    test("leaves out a cross-chain pair into a chain the swap account can't be paid on", () => {
+        const ETH = { chainId: 'ethereum', networkId: 'mainnet' } as const
+        mocks.payers = [
+            ...mocks.payers,
+            {
+                scope: ETH,
+                address: '0xOther',
+                accountId: 'other',
+                isOnDevice: true,
+            },
+        ]
+        const crossChain = {
+            ...pairPaidBy('MAIN'),
+            assetOut: { assetId: 'eth', ref: { ...ETH, assetId: 'eth' } },
+        } as unknown as SwapDistinctPairItem
+        mocks.history.mockReturnValue({
+            data: [crossChain],
+            isLoading: false,
+            isError: false,
+        })
+        mocks.payoutAddress.mockReturnValue(undefined)
+
+        const { result } = renderHook(() => useRecentSwapPairsQuery())
+
+        expect(result.current.pairs).toEqual([])
+        expect(mocks.payoutAddress).toHaveBeenCalledWith(
+            { id: 'main' },
+            [],
+            'ethereum',
+        )
     })
 
     test('is off when no account can sign a swap', () => {

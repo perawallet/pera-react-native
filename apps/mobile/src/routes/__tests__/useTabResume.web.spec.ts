@@ -85,14 +85,11 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
     }
 })
 
-vi.mock('@modules/swap', () => ({
-    swapPayoutAddressOn: () => payoutState.address,
-}))
-
 vi.mock('@modules/deeplink', () => ({
     useSendFundsDeeplink: () => mockOpenSendFunds,
 }))
 
+import { swapPayoutAddressOn } from '@perawallet/wallet-core-swaps'
 import { capabilityState } from '@test-utils/capability-mock'
 import {
     TAB_RESUME_MAX_AGE_MS,
@@ -109,6 +106,9 @@ describe('useTabResume (web)', () => {
         capabilityState.reset()
         swapOptionsState.current = [{ chainId: 'algorand', isEnabled: true }]
         payoutState.address = '0xETH_ADDR'
+        vi.mocked(swapPayoutAddressOn).mockImplementation(
+            () => payoutState.address,
+        )
     })
 
     it('does not reopen a swap for an account with no swap chain', async () => {

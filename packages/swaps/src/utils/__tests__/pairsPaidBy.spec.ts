@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import type { SwapDistinctPairItem } from '../../models'
 import { pairsPaidBy } from '../pairsPaidBy'
 
@@ -42,22 +42,28 @@ const PAYERS = [
     { scope: ETH, address: '0xAbC', accountId: 'other', isOnDevice: true },
 ]
 const canPayAnywhere = () => true
+const canBePaidAnywhere = () => true
 
 describe('swaps/pairsPaidBy', () => {
     test('tags each pair with its payer, matching an EVM address in any casing', () => {
         const paid = pair({ scope: ETH, address: '0xabc' })
 
-        expect(pairsPaidBy([paid], PAYERS, canPayAnywhere)).toEqual([
-            { ...paid, accountId: 'other' },
-        ])
+        expect(
+            pairsPaidBy([paid], PAYERS, canPayAnywhere, canBePaidAnywhere),
+        ).toEqual([{ ...paid, accountId: 'other' }])
     })
 
     test("keeps a cross-chain pair whose destination network is a payer's, tagged with the source payer", () => {
         const crossChain = pair({ scope: ALGO, address: 'MAIN' }, [ALGO, ETH])
 
-        expect(pairsPaidBy([crossChain], PAYERS, canPayAnywhere)).toEqual([
-            { ...crossChain, accountId: 'main' },
-        ])
+        expect(
+            pairsPaidBy(
+                [crossChain],
+                PAYERS,
+                canPayAnywhere,
+                canBePaidAnywhere,
+            ),
+        ).toEqual([{ ...crossChain, accountId: 'main' }])
     })
 
     test('leaves out a cross-chain pair into a network no payer is on', () => {
@@ -67,13 +73,27 @@ describe('swaps/pairsPaidBy', () => {
             sepolia as unknown as typeof ETH,
         ])
 
-        expect(pairsPaidBy([intoSepolia], PAYERS, canPayAnywhere)).toEqual([])
+        expect(
+            pairsPaidBy(
+                [intoSepolia],
+                PAYERS,
+                canPayAnywhere,
+                canBePaidAnywhere,
+            ),
+        ).toEqual([])
     })
 
     test("leaves out a pair whose source leg is off the payer's network", () => {
         const wrongSource = pair({ scope: ALGO, address: 'MAIN' }, [ETH, ALGO])
 
-        expect(pairsPaidBy([wrongSource], PAYERS, canPayAnywhere)).toEqual([])
+        expect(
+            pairsPaidBy(
+                [wrongSource],
+                PAYERS,
+                canPayAnywhere,
+                canBePaidAnywhere,
+            ),
+        ).toEqual([])
     })
 
     test('keeps a same-chain Base pair paid by an EVM payer', () => {
@@ -92,9 +112,9 @@ describe('swaps/pairsPaidBy', () => {
             address: '0xbase',
         })
 
-        expect(pairsPaidBy([onBase], payers, canPayAnywhere)).toEqual([
-            { ...onBase, accountId: 'evm' },
-        ])
+        expect(
+            pairsPaidBy([onBase], payers, canPayAnywhere, canBePaidAnywhere),
+        ).toEqual([{ ...onBase, accountId: 'evm' }])
     })
 
     test('leaves out an unknown payer and a pair with no payer', () => {
@@ -104,14 +124,41 @@ describe('swaps/pairsPaidBy', () => {
             sourceAccount: null,
         }
 
-        expect(pairsPaidBy([stranger, unpaid], PAYERS, canPayAnywhere)).toEqual(
-            [],
-        )
+        expect(
+            pairsPaidBy(
+                [stranger, unpaid],
+                PAYERS,
+                canPayAnywhere,
+                canBePaidAnywhere,
+            ),
+        ).toEqual([])
     })
 
     test('leaves out a pair its payer can no longer pay on', () => {
         const paid = pair({ scope: ALGO, address: 'MAIN' })
 
-        expect(pairsPaidBy([paid], PAYERS, () => false)).toEqual([])
+        expect(
+            pairsPaidBy([paid], PAYERS, () => false, canBePaidAnywhere),
+        ).toEqual([])
+    })
+
+    test("leaves out a cross-chain pair whose payer can't be paid on the destination chain", () => {
+        const crossChain = pair({ scope: ALGO, address: 'MAIN' }, [ALGO, ETH])
+        const canBePaidOn = vi.fn(() => false)
+
+        expect(
+            pairsPaidBy([crossChain], PAYERS, canPayAnywhere, canBePaidOn),
+        ).toEqual([])
+        expect(canBePaidOn).toHaveBeenCalledWith('main', 'ethereum')
+    })
+
+    test('keeps a same-chain pair without asking where its payer can be paid', () => {
+        const paid = pair({ scope: ALGO, address: 'MAIN' })
+        const canBePaidOn = vi.fn(() => false)
+
+        expect(
+            pairsPaidBy([paid], PAYERS, canPayAnywhere, canBePaidOn),
+        ).toEqual([{ ...paid, accountId: 'main' }])
+        expect(canBePaidOn).not.toHaveBeenCalled()
     })
 })

@@ -142,6 +142,9 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
     const { resolveRouterErrorBody } = await vi.importActual<
         typeof import('@packages/swaps/src/api/router-error')
     >('@packages/swaps/src/api/router-error')
+    const { canSwapCrossChain, swapPayoutAddressOn } = await vi.importActual<
+        typeof import('@packages/swaps/src/utils/crossChainEligibility')
+    >('@packages/swaps/src/utils/crossChainEligibility')
     // Chain adapters subclass it at load, so it must exist before any spec runs.
     const { SwapDestinationChainError, SwapQuoteMismatchError } =
         await vi.importActual<typeof import('@packages/swaps/src/errors')>(
@@ -170,6 +173,8 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
         swapNetworkFeeSharePercent,
         HIGH_NETWORK_FEE_SHARE_PERCENT,
         isSwapOrderSettled,
+        canSwapCrossChain,
+        swapPayoutAddressOn: vi.fn(swapPayoutAddressOn),
         scopeOfSwapAsset: ({
             chainId,
             networkId,

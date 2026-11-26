@@ -13,6 +13,7 @@
 import {
     accountChainOptions,
     canSignWith,
+    findAccountByAddressOn,
     isMultisigAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -30,7 +31,8 @@ export const canSwapCrossChain = (account: WalletAccount): boolean =>
  * The address a cross-chain swap from `account` pays out to on `chainId`. An
  * enabled chain gives its own address; a not-enabled chain in a family the
  * account already holds gives the family address, which enabling it gives the
- * account.
+ * account, unless another account already holds that address there, since
+ * enabling then fails with `DuplicateAccountError`.
  */
 export const swapPayoutAddressOn = (
     account: WalletAccount,
@@ -40,8 +42,12 @@ export const swapPayoutAddressOn = (
     const option = accountChainOptions(account, id => id === chainId).at(0)
     if (option?.address === undefined) return undefined
     // canSignWith can pass with no entry on the chain, so only an enabled one is checked.
-    if (option.isEnabled && !canSignWith(account, accounts, chainId)) {
-        return undefined
+    if (option.isEnabled) {
+        return canSignWith(account, accounts, chainId)
+            ? option.address
+            : undefined
     }
-    return option.address
+    return findAccountByAddressOn(accounts, chainId, option.address)
+        ? undefined
+        : option.address
 }

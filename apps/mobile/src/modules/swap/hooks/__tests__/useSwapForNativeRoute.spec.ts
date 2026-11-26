@@ -60,7 +60,12 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 
 vi.mock('@perawallet/wallet-core-swaps', async () => {
     const { Decimal } = await import('decimal.js')
+    const { canSwapCrossChain, swapPayoutAddressOn } = await vi.importActual<
+        typeof import('@packages/swaps/src/utils/crossChainEligibility')
+    >('@packages/swaps/src/utils/crossChainEligibility')
     return {
+        canSwapCrossChain,
+        swapPayoutAddressOn,
         isSwapChain: () => true,
         useSwapFeeReservesQuery: (scopes: { chainId: string }[]) => ({
             reserves: scopes.map(({ chainId }) =>
