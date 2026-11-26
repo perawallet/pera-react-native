@@ -93,6 +93,7 @@ export const SwapConfirmationContent = ({
                             {swapAccount && (
                                 <AccountDisplay
                                     account={swapAccount}
+                                    chainId={scope.chainId}
                                     iconProps={{ size: 'sm' }}
                                     textProps={{ variant: 'caption' }}
                                     showChevron={false}
