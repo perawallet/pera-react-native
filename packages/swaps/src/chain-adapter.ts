@@ -20,7 +20,6 @@ import {
     AppError,
     ErrorCategory,
     type Nullable,
-    type Optional,
 } from '@perawallet/wallet-core-shared'
 import { submitSignedGroup } from '@perawallet/wallet-core-signing'
 import type {
@@ -28,7 +27,7 @@ import type {
     ExecuteSwapResult,
     SwapExecutionContext,
 } from './execution'
-import type { SwapHistoryItem, SwapQuote } from './models'
+import type { SwapQuote } from './models'
 
 /** What a swap costs on its source chain beyond the amount paid. */
 export type SwapSourceCost = {
@@ -70,8 +69,6 @@ export interface SwapChainAdapter {
     maxAmountFeeReserve(scope: ChainScope): Promise<Decimal>
     /** Base units of the native asset a first holding of an asset locks; zero where holdings lock nothing. */
     holdingReserve(scope: ChainScope): Decimal
-    /** Undefined when the item has nothing to link to or the network has no explorer. */
-    swapExplorerUrl(scope: ChainScope, item: SwapHistoryItem): Optional<string>
     /** Null for a chain with nothing to show before the order. */
     estimateSourceCost(params: {
         quote: SwapQuote
@@ -130,11 +127,6 @@ export const isSwapChain = (chainId: ChainId): boolean =>
 
 export const swapAdapterFor = (scope: ChainScope): SwapChainAdapter =>
     swapChainAdapters.get(scope.chainId)
-
-export const swapExplorerUrlFor = (
-    scope: ChainScope,
-    item: SwapHistoryItem,
-): Optional<string> => swapAdapterFor(scope).swapExplorerUrl(scope, item)
 
 /** Throws {@link SwapCosignUnsupportedError} when the chain can't finish a co-signed group. */
 export const submitCosignedSwapGroup = (

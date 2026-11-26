@@ -28,7 +28,6 @@ export const fakeSwapAdapter = (
     chainId: 'algorand',
     nativeAssetId: FAKE_NATIVE_ASSET_ID,
     defaultReceiveAssetId: FAKE_RECEIVE_ASSET_ID,
-    swapExplorerUrl: vi.fn(),
     executeSwap: vi.fn(),
     supportsCosignedSwaps: true,
     toRouterAssetId: (assetId, scope) => fakeRouterAssetId(scope, assetId),

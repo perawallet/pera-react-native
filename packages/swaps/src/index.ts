@@ -21,7 +21,6 @@ export {
     isSwapChain,
     swapAdapterFor,
     swapChainAdapters,
-    swapExplorerUrlFor,
     SwapAccountUnsupportedError,
     SwapCosignUnsupportedError,
     type EnsureSwapReceivable,
