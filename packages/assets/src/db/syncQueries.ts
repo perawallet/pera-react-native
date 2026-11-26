@@ -335,9 +335,12 @@ async function getLogolessVerifiedAssetIds({
 const NON_VERIFIED_RECHECK_TTL_MS = 24 * 60 * 60 * 1000
 
 /**
- * Tokens whose stored Pera row isn't verified and was read over a day ago. A
- * token stored without a Pera row carries no tier from the backend, so it
- * stays on the normal TTL.
+ * Tokens whose stored Pera row isn't verified and whose last sync was over a
+ * day ago. Keyed on the node half's timestamp, which every sync write moves,
+ * so a token the backend now answers blank for (stored from the chain alone,
+ * leaving the Pera row untouched) waits a day again instead of coming back on
+ * every pass. A token stored without a Pera row carries no tier from the
+ * backend, so it stays on the normal TTL.
  */
 async function getStaleNonVerifiedAssetIds({
     db,
@@ -349,20 +352,27 @@ async function getStaleNonVerifiedAssetIds({
     scopeKey: ChainScopeKey
 }): Promise<string[]> {
     const rows = await db
-        .select({ assetId: AssetsPeraSchema.assetId })
-        .from(AssetsPeraSchema)
+        .select({ assetId: AssetsNodeSchema.assetId })
+        .from(AssetsNodeSchema)
+        .innerJoin(
+            AssetsPeraSchema,
+            and(
+                eq(AssetsPeraSchema.assetId, AssetsNodeSchema.assetId),
+                eq(AssetsPeraSchema.scope, AssetsNodeSchema.scope),
+            ),
+        )
         .where(
             and(
-                eq(AssetsPeraSchema.scope, scopeKey),
+                eq(AssetsNodeSchema.scope, scopeKey),
                 ne(
                     AssetsPeraSchema.verificationTier,
                     PeraAssetVerificationTier.verified,
                 ),
                 lt(
-                    AssetsPeraSchema.updatedAt,
+                    AssetsNodeSchema.updatedAt,
                     Date.now() - NON_VERIFIED_RECHECK_TTL_MS,
                 ),
-                idPredicate(AssetsPeraSchema.assetId, assetIds),
+                idPredicate(AssetsNodeSchema.assetId, assetIds),
             ),
         )
         .all()

@@ -26,6 +26,7 @@ import {
     getAssetsByIds,
 } from '../metadataRepository'
 import { upsertAssetPrices, recordPriceMisses } from '../pricesRepository'
+import { AssetsPeraSchema } from '../schema'
 import {
     getCollectibleIdsMissingUrl,
     getStaleOrMissingAssetIds,
@@ -469,10 +470,11 @@ describe('asset sync queries', () => {
 
         // Older than the day, younger than the metadata TTL, so only the
         // non-verified recheck can return it.
-        const ageRows = (days = 2) =>
-            db.run(
-                sql`update assets_pera set updated_at = ${Date.now() - days * 24 * 60 * 60 * 1000}`,
-            )
+        const ageRows = async (days = 2) => {
+            const aged = Date.now() - days * 24 * 60 * 60 * 1000
+            await db.run(sql`update assets_node set updated_at = ${aged}`)
+            await db.run(sql`update assets_pera set updated_at = ${aged}`)
+        }
 
         const recheck = (recheckNonVerified = true) =>
             getStaleOrMissingAssetIds({
@@ -484,7 +486,7 @@ describe('asset sync queries', () => {
             })
 
         it.each(['unverified', 'suspicious'] as const)(
-            'rechecks a %s token once its Pera row is a day old',
+            'rechecks a %s token once its row is a day old',
             async tier => {
                 await seedPera(withTier(tier))
                 await ageRows()
@@ -504,6 +506,29 @@ describe('asset sync queries', () => {
             await seedPera(withTier('unverified'))
 
             expect(await recheck()).toEqual([])
+        })
+
+        it('waits out the day again once a blank backend answer stores the token from the chain alone', async () => {
+            await seedPera(withTier('unverified'))
+            await ageRows()
+            expect(await recheck()).toEqual(['31566704'])
+
+            // What a sync does for a token the backend no longer describes: the
+            // node half only, so the Pera row keeps its old timestamp.
+            await upsertNodeAssets({
+                db,
+                items: [makeAsset()],
+                scope: MAINNET_SCOPE,
+            })
+
+            expect(await recheck()).toEqual([])
+            const [pera] = await db
+                .select({ updatedAt: AssetsPeraSchema.updatedAt })
+                .from(AssetsPeraSchema)
+                .all()
+            expect(pera!.updatedAt).toBeLessThan(
+                Date.now() - 24 * 60 * 60 * 1000,
+            )
         })
 
         it('leaves a token stored without a Pera row on the normal TTL', async () => {
