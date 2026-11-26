@@ -26,9 +26,13 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         justifyContent: 'center',
     },
+    // Yoga caps an absolute child's width at its parent's (the icon), which
+    // clips "9+"; a wider box, right-aligned, lets the badge grow leftward.
     countBadgePosition: {
         position: 'absolute',
         top: -theme.spacing.sm,
         right: -theme.spacing.sm,
+        width: theme.spacing['3xl'],
+        alignItems: 'flex-end',
     },
 }))
