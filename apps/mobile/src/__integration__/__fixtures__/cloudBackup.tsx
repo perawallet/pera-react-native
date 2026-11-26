@@ -190,7 +190,9 @@ export const runRestoreFlow = async (groups?: string[]) => {
 /** The sync singleton with every real dependency the app injects, so a wiring
  *  gap between the engine and the mobile hooks fails here rather than on a
  *  device. */
-export const startRealSyncManager = () => {
+export const startRealSyncManager = (options?: {
+    onBackupDeleted?: () => void
+}) => {
     const importHook = renderQueryHook(() =>
         useCloudBackupImport(useSelectedScope(ALGORAND_CHAIN_ID)),
     )
@@ -228,6 +230,7 @@ export const startRealSyncManager = () => {
         importPasskeys: passkeyImportHook.current.importPasskeys,
         isLocked: () => false,
         subscribePasskeyChanges: () => () => {},
+        onBackupDeleted: options?.onBackupDeleted,
     })
 }
 

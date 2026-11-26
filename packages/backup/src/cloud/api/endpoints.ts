@@ -54,6 +54,7 @@ import {
 import { parseBackupResponse } from './responseParsers'
 import { signedBackupRequest } from './signedRequest'
 import { API_PREFIX } from './constants'
+import { isBackupDeletedError } from './backupDeleted'
 
 export const registerBackup = async (
     request: RegisterBackupRequest,
@@ -120,8 +121,9 @@ export const fetchDelta = async (
             params: { from_seq: fromSeq },
         })
     } catch (error) {
-        // 410 is FROM_SEQ_TOO_OLD and nothing else: it is the only Gone the
-        // backup API returns, and only this route returns it.
+        // `/delta` answers 410 for a pruned changelog and for a deleted backup;
+        // only the latter carries BACKUP_DELETED, and it is not a rebuild.
+        if (isBackupDeletedError(error)) throw error
         if (isPeraNetworkError(error) && error.status === HTTP_GONE) {
             throw new FromSeqTooOldError(fromSeq)
         }

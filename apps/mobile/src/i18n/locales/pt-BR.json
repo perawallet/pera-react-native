@@ -861,7 +861,7 @@
     },
     "cloud_backup": {
         "encryption_key_label": "Chave de criptografia",
-        "deleted_remotely": "O backup na nuvem foi excluído em outro dispositivo",
+        "deleted_remotely": "O backup na nuvem foi desativado em outro dispositivo. Estas contas não têm mais backup.",
         "main": {
             "title": "Backup na nuvem",
             "subtitle": "Escolha uma opção para continuar",

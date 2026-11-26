@@ -853,7 +853,7 @@
     },
     "cloud_backup": {
         "encryption_key_label": "Backup-Schlüssel",
-        "deleted_remotely": "Das Cloud-Backup wurde auf einem anderen Gerät gelöscht",
+        "deleted_remotely": "Das Cloud-Backup wurde auf einem anderen Gerät deaktiviert. Diese Konten sind nicht mehr gesichert.",
         "main": {
             "title": "Cloud-Backup",
             "subtitle": "Wähle eine Option, um fortzufahren",

@@ -10,7 +10,15 @@
  limitations under the License
  */
 
-import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
+import {
+    describe,
+    it,
+    expect,
+    beforeAll,
+    afterAll,
+    afterEach,
+    vi,
+} from 'vitest'
 import { setupServer } from 'msw/node'
 import type { HttpHandler } from 'msw'
 import { buildRestoreHandlers, itemTypeOf } from '../msw-handlers'
@@ -260,6 +268,39 @@ describe('buildSyncHandlers', () => {
         })
         expect(typeof res.results[0].current_ver).toBe('number')
         expect(typeof res.results[0].current_hash).toBe('string')
+    })
+
+    describe('a backup that answers with a failure', () => {
+        const OWN_BACKUP_ID = 'did:pera:sync-failing'
+        afterEach(() => syncServer.resetHandlers())
+
+        it('deleteFromOtherDevice answers the deleted-backup status with its code', async () => {
+            const own = buildSyncHandlers({
+                backupId: OWN_BACKUP_ID,
+                verifySignatures: false,
+            })
+            syncServer.use(...own.handlers)
+            own.deleteFromOtherDevice()
+
+            const res = await fetch(url(OWN_BACKUP_ID, '/manifest'))
+
+            expect(res.status).toBe(410)
+            expect(await res.json()).toMatchObject({ code: 'BACKUP_DELETED' })
+        })
+
+        it('failAuth answers 401 AUTH_FAILED', async () => {
+            const own = buildSyncHandlers({
+                backupId: OWN_BACKUP_ID,
+                verifySignatures: false,
+            })
+            syncServer.use(...own.handlers)
+            own.failAuth()
+
+            const res = await fetch(url(OWN_BACKUP_ID, '/manifest'))
+
+            expect(res.status).toBe(401)
+            expect(await res.json()).toMatchObject({ code: 'AUTH_FAILED' })
+        })
     })
 })
 

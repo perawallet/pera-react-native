@@ -14,6 +14,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 import type { BatchUpsertRequest, UpsertItemRequest } from '../types'
 import { BackupResponseParseError } from '../responseParsers'
+import { isBackupDeletedError } from '../backupDeleted'
 
 const signedBackupRequestMock = vi.fn()
 const queryClientMock = vi.fn().mockResolvedValue({ data: {} })
@@ -88,6 +89,21 @@ describe('fetchDelta', () => {
         await expect(
             fetchDelta('did:pera:ADDR', 'device-1', 42),
         ).rejects.toMatchObject({ name: 'FromSeqTooOldError', fromSeq: 42 })
+    })
+
+    it('lets a deleted-backup answer through as itself, not as a pruned changelog', async () => {
+        const deleted = new PeraNetworkError('client', {
+            status: 410,
+            backendCode: 'BACKUP_DELETED',
+        })
+        signedBackupRequestMock.mockRejectedValueOnce(deleted)
+
+        const error = await fetchDelta('did:pera:ADDR', 'device-1', 42).catch(
+            (caught: unknown) => caught,
+        )
+
+        expect(error).toBe(deleted)
+        expect(isBackupDeletedError(error)).toBe(true)
     })
 
     it('leaves any other failure alone', async () => {
