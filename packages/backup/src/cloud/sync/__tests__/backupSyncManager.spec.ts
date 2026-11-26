@@ -819,22 +819,28 @@ describe('BackupSyncManager', () => {
                         backendCode: 'AUTH_FAILED',
                     }),
             ],
-            ['an uncoded 410', () => new PeraNetworkError('client', { status: 410 })],
-        ])('records %s as a failed sync and keeps the backup', async (_label, makeError) => {
-            const onBackupDeleted = vi.fn()
-            mockSyncBackup.mockRejectedValueOnce(makeError())
-            const mgr = new BackupSyncManager({
-                ...makeDeps(),
-                onBackupDeleted,
-            })
+            [
+                'an uncoded 410',
+                () => new PeraNetworkError('client', { status: 410 }),
+            ],
+        ])(
+            'records %s as a failed sync and keeps the backup',
+            async (_label, makeError) => {
+                const onBackupDeleted = vi.fn()
+                mockSyncBackup.mockRejectedValueOnce(makeError())
+                const mgr = new BackupSyncManager({
+                    ...makeDeps(),
+                    onBackupDeleted,
+                })
 
-            await mgr.syncNow()
+                await mgr.syncNow()
 
-            expectKept(onBackupDeleted)
-            expect(mockSetSyncState).toHaveBeenCalledWith(
-                expect.objectContaining({ lastSyncResult: 'FAILED' }),
-            )
-        })
+                expectKept(onBackupDeleted)
+                expect(mockSetSyncState).toHaveBeenCalledWith(
+                    expect.objectContaining({ lastSyncResult: 'FAILED' }),
+                )
+            },
+        )
 
         it('leaves no socket or periodic sync behind when the first sync of start() finds it', async () => {
             mockSyncBackup.mockRejectedValueOnce(deletedError())

@@ -29,7 +29,10 @@ describe('isBackupDeletedError', () => {
         ['a 410 with no code', networkError(410)],
         ['a 410 for a pruned changelog', networkError(410, 'FROM_SEQ_TOO_OLD')],
         ['a 401 auth failure', networkError(401, 'AUTH_FAILED')],
-        ['a 401 that carries the deleted code', networkError(401, 'BACKUP_DELETED')],
+        [
+            'a 401 that carries the deleted code',
+            networkError(401, 'BACKUP_DELETED'),
+        ],
         ['a plain Error', new Error('boom')],
         ['a FromSeqTooOldError', new FromSeqTooOldError(3)],
         [
