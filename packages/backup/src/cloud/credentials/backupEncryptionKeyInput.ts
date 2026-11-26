@@ -12,10 +12,7 @@
 
 import { bytesEqual, type Nullable } from '@perawallet/wallet-core-shared'
 import { decodeBase64Salt } from '../crypto/argon2idConfig'
-import {
-    isBackupCredentialsFileContents,
-    parseBackupCredentialsFile,
-} from './backupCredentialsFile'
+import { parseBackupCredentialsFile } from './backupCredentialsFile'
 
 // Base64 contains none of these, so dropping them can't turn a wrong key into a right one.
 const NON_BASE64_CHARACTERS =
@@ -28,8 +25,13 @@ const NON_BASE64_CHARACTERS =
  */
 export const normalizeBackupEncryptionKey = (input: string): string => {
     const trimmed = input.trim()
-    if (isBackupCredentialsFileContents(trimmed)) {
-        return parseBackupCredentialsFile(trimmed).salt
+    // Only a JSON object can be a credentials file; skipping the parse keeps ordinary keystrokes off the throw path.
+    if (trimmed.startsWith('{')) {
+        try {
+            return parseBackupCredentialsFile(trimmed).salt
+        } catch {
+            // not a credentials file: fall through to character stripping
+        }
     }
     return input.replace(NON_BASE64_CHARACTERS, '')
 }
