@@ -202,8 +202,8 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
           )
         : null
 
-    // Gated like Connect: the press that arms is swallowed, so a decoy needs a
-    // pick and Connect at two separate spots after the window is armed.
+    // Gated like Connect, so after arming a decoy still needs a pick and Connect
+    // at two separate spots.
     const handleAccountPress = useCallback(
         (accountId: string): void => {
             if (!isArmed) return
