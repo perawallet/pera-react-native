@@ -124,6 +124,9 @@ const capacityKeyFor = (approval: PendingApproval): string =>
 // map serves every approval kind; the cast back happens in that method's executor.
 type Settle = (decision: unknown) => void
 
+// The manifest's action.default_popup.
+const TOOLBAR_POPUP_PAGE = 'popup.html'
+
 // How long a toolbar-popup approval may go unclaimed before it counts as dismissed:
 // longer than first paint plus one round-trip, far shorter than a user deliberating.
 const POPUP_CLAIM_TIMEOUT_MS = 5000
@@ -445,7 +448,7 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
         }
         // Reserve the slot without marking `surface: 'popup'` yet: openPopup()
         // resolves only after the popup's first load and rejects if dismissed
-        // before, so until then get-current-approval must not advertise a popup.
+        // before, so until then only the popup itself may take the approval.
         this.popupAttemptRequestId = requestId
         let usedPopup = false
         try {
@@ -462,14 +465,19 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
                 // The toolbar popup emits no windows.onRemoved, so a dismissal
                 // before the popup claims the approval would orphan the request and
                 // burn the popup slot for the worker's life. Unclaimed settles as a rejection.
-                entry.unclaimedTimer = setTimeout(() => {
-                    if (this.pending.get(requestId) !== entry) return
-                    if (entry.claimed) return
-                    this.finish(requestId, null)
-                }, POPUP_CLAIM_TIMEOUT_MS)
+                if (!entry.claimed) {
+                    entry.unclaimedTimer = setTimeout(() => {
+                        if (this.pending.get(requestId) !== entry) return
+                        if (entry.claimed) return
+                        this.finish(requestId, null)
+                    }, POPUP_CLAIM_TIMEOUT_MS)
+                }
             }
             return
         }
+        // A popup that took the approval while openPopup was settling is showing
+        // it; its port closing settles it, so a window would be a second surface.
+        if (this.pending.get(requestId)?.surface === 'popup') return
         // openPopup needs no user gesture (it resolved when called from the SW
         // with none); a rejection means dismissed before first load, or an older
         // Chrome without it.
@@ -594,6 +602,7 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
             return true
         }
         if (msg.kind === 'get-current-approval') {
+            this.adoptPopupAttempt(sender)
             // No requestId: the popup takes whichever popup-surface approval is
             // pending (at most one exists); entries routed to the window must be skipped.
             let current: Nullable<PendingApproval> = null
@@ -719,6 +728,25 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
                 return true
             }
         }
+    }
+
+    // Chrome settles openPopup() only once the popup's first load stops, and the
+    // popup asks for its approval as soon as it mounts, which can be earlier. Told
+    // there is none, it shows the wallet and the unclaimed sweep rejects the dApp.
+    private adoptPopupAttempt(
+        sender: Optional<chrome.runtime.MessageSender>,
+    ): void {
+        const requestId = this.popupAttemptRequestId
+        if (requestId === null || !this.isToolbarPopupSender(sender)) return
+        const entry = this.pending.get(requestId)
+        if (entry && entry.surface === undefined) entry.surface = 'popup'
+    }
+
+    private isToolbarPopupSender(
+        sender: Optional<chrome.runtime.MessageSender>,
+    ): boolean {
+        const page = sender?.url?.split(/[?#]/)[0]
+        return page === this.chromeLike.runtime.getURL(TOOLBAR_POPUP_PAGE)
     }
 
     private handlePopupPort = (port: chrome.runtime.Port): void => {
