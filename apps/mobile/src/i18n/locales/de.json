@@ -886,7 +886,8 @@
             "confirm": "Bestätigen",
             "error_words": "Einige der ausgewählten Wörter sind falsch. Bitte versuche es erneut.",
             "error_key": "Dieser Backup-Schlüssel passt nicht zu deinem Backup.",
-            "error_both": "Die ausgewählten Wörter und der Backup-Schlüssel sind beide falsch.",
+            "hint_words": "Wähle für jede Nummer ein Wort aus, um fortzufahren.",
+            "hint_key": "Gib deinen Backup-Schlüssel ein, um fortzufahren.",
             "success": "Backup-Zugangsdaten bestätigt"
         },
         "store_encryption_key": {

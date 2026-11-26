@@ -894,7 +894,8 @@
             "confirm": "Onayla",
             "error_words": "Seçilen kelimelerden bazıları yanlış. Lütfen tekrar dene.",
             "error_key": "Bu şifreleme anahtarı yedeğinle eşleşmiyor.",
-            "error_both": "Seçilen kelimeler ve şifreleme anahtarı yanlış.",
+            "hint_words": "Devam etmek için her numara için bir kelime seç.",
+            "hint_key": "Devam etmek için şifreleme anahtarını gir.",
             "success": "Yedekleme anahtarı onaylandı"
         },
         "store_encryption_key": {

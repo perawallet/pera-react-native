@@ -15,15 +15,16 @@ import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
     BackupMnemonicParseError,
+    matchesBackupEncryptionKey,
+    normalizeBackupEncryptionKey,
     useCloudBackupStore,
     withBackupMnemonicIndices,
 } from '@perawallet/wallet-core-backup'
-import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import {
     MNEMONIC_WORDLIST,
     type MnemonicWordAtPosition,
 } from '@perawallet/wallet-core-kms'
-import { logger, toError } from '@perawallet/wallet-core-shared'
+import { logger, toError, type Nullable } from '@perawallet/wallet-core-shared'
 import { useBackupQuiz, type BackupQuizQuestion } from '@modules/backup'
 import { useHaptics } from '@hooks/useHaptics'
 import { useLanguage } from '@hooks/useLanguage'
@@ -32,14 +33,6 @@ import { usePinGatedScreen } from '@modules/security'
 import type { PassphraseStatus } from '../../components/BackupCredentialsSheet'
 import type { CloudBackupStackParamList } from '../../routes/types'
 import { pickVerificationPairs } from '../../utils/verificationPairs'
-
-type WrongCredentialsPart = 'words' | 'key' | 'both'
-
-const WRONG_CREDENTIALS_MESSAGE = {
-    words: i18nKey('cloud_backup.confirm_credentials.error_words'),
-    key: i18nKey('cloud_backup.confirm_credentials.error_key'),
-    both: i18nKey('cloud_backup.confirm_credentials.error_both'),
-} satisfies Record<WrongCredentialsPart, I18nKey>
 
 const NO_PAIRS: MnemonicWordAtPosition[] = []
 
@@ -51,6 +44,9 @@ type UseCloudBackupConfirmCredentialsScreenResult = {
     passphraseStatus: PassphraseStatus
     canConfirm: boolean
     handleConfirm: () => void
+    wordsError: Nullable<string>
+    keyError: Nullable<string>
+    confirmHint: Nullable<string>
 }
 
 type StoredPairs = {
@@ -105,6 +101,20 @@ const useStoredPairs = (isPinGateResolved: boolean): StoredPairs => {
     }
 }
 
+const getConfirmHint = (
+    passphraseStatus: PassphraseStatus,
+    isFilled: boolean,
+    encryptionKey: string,
+    t: ReturnType<typeof useLanguage>['t'],
+): Nullable<string> => {
+    if (passphraseStatus !== 'ready') return null
+    if (!isFilled) return t('cloud_backup.confirm_credentials.hint_words')
+    if (encryptionKey.length === 0) {
+        return t('cloud_backup.confirm_credentials.hint_key')
+    }
+    return null
+}
+
 export const useCloudBackupConfirmCredentialsScreen =
     (): UseCloudBackupConfirmCredentialsScreenResult => {
         const { t } = useLanguage()
@@ -115,7 +125,7 @@ export const useCloudBackupConfirmCredentialsScreen =
                     'CloudBackupConfirmCredentials'
                 >
             >()
-        const { errorToast, successToast } = useToast()
+        const { successToast } = useToast()
         const haptics = useHaptics()
         const salt = useCloudBackupStore(state => state.salt)
         const confirmCredentials = useCloudBackupStore(
@@ -128,21 +138,16 @@ export const useCloudBackupConfirmCredentialsScreen =
         const { correctPairs, passphraseStatus, reroll } =
             useStoredPairs(isPinGateResolved)
         const [encryptionKey, setEncryptionKey] = useState('')
+        const [areWordsWrong, setAreWordsWrong] = useState(false)
+        const [isKeyWrong, setIsKeyWrong] = useState(false)
         const hasConfirmedRef = useRef(false)
 
-        const isKeyCorrect = salt != null && encryptionKey === salt
-
-        const showWrong = useCallback(
-            (part: WrongCredentialsPart) => {
-                haptics.error()
-                errorToast(t(WRONG_CREDENTIALS_MESSAGE[part]), '')
-            },
-            [errorToast, haptics, t],
-        )
+        const isKeyCorrect = matchesBackupEncryptionKey(encryptionKey, salt)
 
         const onWordsCorrect = useCallback(() => {
             if (!isKeyCorrect) {
-                showWrong('key')
+                haptics.error()
+                setIsKeyWrong(true)
                 return
             }
             // Confirm stays tappable while the screen pops; a second tap must not toast or pop again.
@@ -155,7 +160,7 @@ export const useCloudBackupConfirmCredentialsScreen =
             navigation.goBack()
         }, [
             isKeyCorrect,
-            showWrong,
+            haptics,
             confirmCredentials,
             successToast,
             t,
@@ -164,19 +169,41 @@ export const useCloudBackupConfirmCredentialsScreen =
 
         const onWordsWrong = useCallback(() => {
             reroll()
-            showWrong(isKeyCorrect ? 'words' : 'both')
-        }, [reroll, showWrong, isKeyCorrect])
+            haptics.error()
+            setAreWordsWrong(true)
+            setIsKeyWrong(!isKeyCorrect)
+        }, [reroll, haptics, isKeyCorrect])
 
-        const { items, onSelect, onSubmit, isFilled } = useBackupQuiz(
+        const {
+            items,
+            onSelect: onQuizSelect,
+            onSubmit,
+            isFilled,
+        } = useBackupQuiz(
             correctPairs,
             MNEMONIC_WORDLIST,
             onWordsCorrect,
             onWordsWrong,
         )
 
-        const handleKeyChange = useCallback(
-            (value: string) => setEncryptionKey(value.trim()),
-            [],
+        const handleKeyChange = useCallback((value: string) => {
+            setEncryptionKey(normalizeBackupEncryptionKey(value))
+            setIsKeyWrong(false)
+        }, [])
+
+        const onSelect = useCallback(
+            (questionIndex: number, word: string) => {
+                setAreWordsWrong(false)
+                onQuizSelect(questionIndex, word)
+            },
+            [onQuizSelect],
+        )
+
+        const confirmHint = getConfirmHint(
+            passphraseStatus,
+            isFilled,
+            encryptionKey,
+            t,
         )
 
         return {
@@ -190,5 +217,12 @@ export const useCloudBackupConfirmCredentialsScreen =
                 isFilled &&
                 encryptionKey.length > 0,
             handleConfirm: onSubmit,
+            wordsError: areWordsWrong
+                ? t('cloud_backup.confirm_credentials.error_words')
+                : null,
+            keyError: isKeyWrong
+                ? t('cloud_backup.confirm_credentials.error_key')
+                : null,
+            confirmHint,
         }
     }

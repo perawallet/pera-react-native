@@ -19,6 +19,19 @@ export const useStyles = makeStyles(theme => ({
     quizList: {
         gap: theme.spacing.xxl,
     },
+    quizSection: {
+        gap: theme.spacing.md,
+    },
+    errorText: {
+        color: theme.colors.negative,
+    },
+    footer: {
+        gap: theme.spacing.sm,
+    },
+    hint: {
+        color: theme.colors.textGray,
+        textAlign: 'center',
+    },
     keySection: {
         gap: theme.spacing.sm,
     },

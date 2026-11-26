@@ -894,7 +894,8 @@
             "confirm": "Confirm",
             "error_words": "Some of the selected words are incorrect. Please try again.",
             "error_key": "This encryption key doesn’t match your backup.",
-            "error_both": "The selected words and the encryption key are both incorrect.",
+            "hint_words": "Select a word for each number to continue.",
+            "hint_key": "Enter your encryption key to continue.",
             "success": "Backup key confirmed"
         },
         "store_encryption_key": {
