@@ -27,6 +27,7 @@ import {
     type AccountChangeSignal,
     type AccountsChainAdapter,
     type AccountStateSnapshot,
+    useHeldListedTokensStore,
     type UnrefreshedHoldings,
 } from '@perawallet/wallet-core-accounts'
 import { upsertAssets } from '@perawallet/wallet-core-assets'
@@ -703,6 +704,20 @@ const readBatch = async (
         const holder = (
             isPassDue[index] ? wholeListRead.balances : heldListedBalances
         ).get(getAddress(read.address))!
+        // Recorded before the off-list merge, so an airdrop never counts. A
+        // preview of an address the wallet doesn't hold records nothing.
+        if (read.isPersisted) {
+            const heldListedIds = [...holder.tokens]
+                .filter(([, balance]) => balance > 0n)
+                .map(([id]) => id)
+            if (heldListedIds.length > 0) {
+                useHeldListedTokensStore.getState().addHeldListedTokens({
+                    address: read.address,
+                    scope,
+                    assetIds: heldListedIds,
+                })
+            }
+        }
         const offList = offListRead.balances.get(getAddress(read.address))
         offList?.tokens.forEach((balance, id) => holder.tokens.set(id, balance))
         const unreadTokens = new Map(unreadKept)

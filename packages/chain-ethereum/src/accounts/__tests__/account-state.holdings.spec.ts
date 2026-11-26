@@ -24,6 +24,7 @@ import { setupServer } from 'msw/node'
 import { getAddress, type Hex } from 'viem'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { PeraNetworkError } from '@perawallet/wallet-core-shared'
+import { useHeldListedTokensStore } from '@perawallet/wallet-core-accounts'
 import { createEthereumAccountStateOps } from '../account-state'
 import type { WhitelistItemResponse } from '../../assets/api/schema'
 import {
@@ -133,6 +134,7 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => {
     server.resetHandlers()
     storedHoldings.ids = []
+    useHeldListedTokensStore.getState().resetState()
 })
 afterAll(() => server.close())
 
@@ -631,5 +633,57 @@ describe('fetchAccountState holdings the read had no source for', () => {
         const state = await ops.fetchAccountState(ADDRESS, SCOPE, HINT)
 
         expect(state.unrefreshedHoldings).toBeUndefined()
+    })
+})
+
+describe('fetchAccountState held listed tokens', () => {
+    const heldOf = () =>
+        useHeldListedTokensStore.getState().heldListedTokens[
+            'ethereum/mainnet'
+        ]?.[ADDRESS] ?? []
+
+    const read = (hint: Record<string, unknown>) =>
+        createEthereumAccountStateOps(
+            testChainContext({ services: ['assets'] }),
+            ETHEREUM,
+        ).fetchAccountState(ADDRESS, SCOPE, { ...HINT, ...hint })
+
+    it('records a listed token with a balance and not one at zero', async () => {
+        server.use(
+            ...rpcAtBlock(
+                '0x64',
+                erc20CallResponder({ [USDC]: token(5n), [DAI]: token(0n) }),
+            ),
+            ...whitelist(USDC, DAI),
+        )
+
+        await read({ isPersisted: true })
+
+        expect(heldOf()).toEqual([USDC])
+    })
+
+    it('never records an off-list token, however it was found', async () => {
+        server.use(
+            ...rpcAtBlock(
+                '0x64',
+                erc20CallResponder({ [USDC]: token(0n), [DAI]: token(7n) }),
+            ),
+            ...whitelist(USDC),
+        )
+
+        await read({ isPersisted: true, addedTokenIds: [DAI] })
+
+        expect(heldOf()).toEqual([])
+    })
+
+    it('records nothing for a read the syncer does not persist', async () => {
+        server.use(
+            ...rpcAtBlock('0x64', erc20CallResponder({ [USDC]: token(5n) })),
+            ...whitelist(USDC),
+        )
+
+        await read({})
+
+        expect(heldOf()).toEqual([])
     })
 })
