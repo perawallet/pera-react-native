@@ -38,7 +38,10 @@ import {
     screen,
     within,
 } from '@test-utils/render'
-import { registerEthereumChain } from '@test-utils/chain-fixtures'
+import {
+    registerEthereumChain,
+    registerEvmChain,
+} from '@test-utils/chain-fixtures'
 import { registerEthereumAccountsAdapter } from '@test-utils/ethereumAccountsAdapter'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
@@ -110,7 +113,10 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
         ...actual,
         config: {
             ...actual.config,
-            chains: { enabled: ['algorand', 'ethereum'], capabilities: {} },
+            chains: {
+                enabled: ['algorand', 'ethereum', 'base'],
+                capabilities: {},
+            },
         },
     }
 })
@@ -118,6 +124,7 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
 const ALGO_ID = `${ALGORAND_MAINNET_CAIP2}/asa:0`
 const ETH_ID = 'eip155:1/slip44:60'
 const ETH_ASSET = evmChainOf('ethereum').nativeAsset.assetId
+const BASE_ETH_ID = 'eip155:8453/slip44:60'
 
 const routerAsset = (assetId: string, unitName: string, decimals: number) => ({
     asset_id: assetId,
@@ -266,6 +273,12 @@ describe('Flow: Cross-chain swap (Algorand into an own Ethereum address)', () =>
     beforeEach(async () => {
         registerEthereumChain()
         registerEthereumAccountsAdapter()
+        registerEvmChain('base')
+        if (!swapChainAdapters.has('base')) {
+            swapChainAdapters.register(
+                createEvmSwapAdapter({} as ChainContext, evmChainOf('base')),
+            )
+        }
         if (!swapChainAdapters.has('ethereum')) {
             swapChainAdapters.register(
                 // Only ever the payout side here, so it reads no node.
@@ -435,9 +448,43 @@ describe('Flow: Cross-chain swap (Algorand into an own Ethereum address)', () =>
                 }),
             )
 
-        const openPicker = async (account: WalletAccount) => {
+        const servePairsWithBase = () =>
+            server.use(
+                mockSwapPairs({
+                    response: {
+                        results: [
+                            {
+                                kind: 'token',
+                                asset: routerAsset(BASE_ETH_ID, 'ETH', 18),
+                            },
+                            {
+                                kind: 'token',
+                                asset: routerAsset(
+                                    `${ALGORAND_MAINNET_CAIP2}/asa:31566704`,
+                                    'USDC',
+                                    6,
+                                ),
+                            },
+                        ],
+                    },
+                }),
+            )
+
+        const asHd = (account: WalletAccount): WalletAccount => ({
+            ...account,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
+        })
+
+        const openPicker = async (
+            account: WalletAccount,
+            serve: () => void = servePairs,
+        ) => {
             selectAccount(account)
-            servePairs()
+            serve()
             const { result } = renderHook(
                 () =>
                     useSwapToAssetSelectionList({
@@ -475,6 +522,25 @@ describe('Flow: Cross-chain swap (Algorand into an own Ethereum address)', () =>
 
         it('Given no account on Ethereum, when the picker lists pairs, then ETH is not offered and no chips show', async () => {
             const picker = await openPicker(await seedAlgo25Signer())
+
+            expect(chainsOf(picker)).toEqual(['algorand'])
+            expect(picker.current.chainOptions).toEqual([])
+        })
+
+        it('Given a passphrase account on Ethereum but not Base, when the picker lists pairs, then Base ETH is offered at its enabling', async () => {
+            const picker = await openPicker(
+                asHd(withEthereum(await seedAlgo25Signer())),
+                servePairsWithBase,
+            )
+
+            expect(chainsOf(picker)).toEqual(['base', 'algorand'])
+        })
+
+        it('Given a passphrase account on Algorand alone, when the picker lists pairs, then no EVM pair is offered and no chips show', async () => {
+            const picker = await openPicker(
+                asHd(await seedAlgo25Signer()),
+                servePairsWithBase,
+            )
 
             expect(chainsOf(picker)).toEqual(['algorand'])
             expect(picker.current.chainOptions).toEqual([])

@@ -133,7 +133,11 @@ vi.mock('@perawallet/wallet-core-swaps', async () => ({
         return { reserves: scopes.map(() => mockFeeReserve), isPending: false }
     },
     useSwapAccount: () => mockSwapAccount,
+    canSwapCrossChain: () => true,
+    swapPayoutAddressOn: (...args: unknown[]) => mockPayoutAddressOn(...args),
 }))
+const mockPayoutAddressOn = vi.fn()
+let mockAccounts: unknown[] = []
 
 const accountAt = (address: string, id = 'account-1') => ({
     id,
@@ -160,6 +164,7 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useAllAccounts: () => mockAccounts,
     addressOn: (account: { chains: { algorand?: { address: string } } }) =>
         account.chains.algorand?.address,
     useSelectedAccountId: () => ({
@@ -253,27 +258,18 @@ vi.mock('../../SwapAssetSelectionContent', () => ({
     SwapAssetSelectionContent: () => null,
 }))
 
-vi.mock('../../SwapReceivingAccountContent', () => ({
-    SwapReceivingAccountContent: () => null,
-}))
-
 const ETH_SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
-const ETH_ACCOUNT = { id: 'eth', chains: { ethereum: { address: '0xETH' } } }
 type MockReceiveTarget = {
     receiveScope: { chainId: string; networkId: string }
     isCrossChain: boolean
-    receivingAccount: unknown
     receivingAddress: Nullable<string>
-    receivingAccounts: unknown[]
-    selectReceivingAccount: () => void
+    shouldEnableReceiveChain: boolean
 }
 const sameScopeTarget = (): MockReceiveTarget => ({
     receiveScope: SCOPE,
     isCrossChain: false,
-    receivingAccount: mockSwapAccount,
     receivingAddress: 'TESTADDRESS123',
-    receivingAccounts: [mockSwapAccount],
-    selectReceivingAccount: vi.fn(),
+    shouldEnableReceiveChain: false,
 })
 let mockReceiveTarget: MockReceiveTarget
 vi.mock('../../../hooks/useSwapReceiveTarget', () => ({
@@ -332,6 +328,8 @@ describe('useSwapForm', () => {
         mockPairAccountId = null
         mockSourceChainIds = ['algorand']
         mockSwapAccount = accountAt('TESTADDRESS123')
+        mockAccounts = []
+        mockPayoutAddressOn.mockReset()
         mockPayBalance = new Decimal('5000000')
         mockSpendableMax = new Decimal('5000000')
         mockFeeReserve = new Decimal(100_000)
@@ -428,10 +426,21 @@ describe('useSwapForm', () => {
                 ...sameScopeTarget(),
                 receiveScope: ETH_SCOPE,
                 isCrossChain: true,
-                receivingAccount: ETH_ACCOUNT,
                 receivingAddress: '0xETH',
-                receivingAccounts: [ETH_ACCOUNT],
             }
+        })
+
+        it('notes the network the swap will enable on the account', () => {
+            mockReceiveTarget = {
+                ...mockReceiveTarget,
+                shouldEnableReceiveChain: true,
+            }
+
+            const { result } = renderHook(() => useSwapForm(SCOPE))
+
+            expect(result.current.enableNetworkNote).toBe(
+                'swap.form.enable_network_note',
+            )
         })
 
         it('disables the flip and says why when the account cannot pay on the receive chain', () => {
@@ -443,7 +452,7 @@ describe('useSwapForm', () => {
                 'swap.form.flip_unavailable_body',
             )
             expect(result.current.isChainShown).toBe(true)
-            expect(result.current.isReceivingAccountShown).toBe(true)
+            expect(result.current.enableNetworkNote).toBeNull()
             expect(mockInfoToast).toHaveBeenCalledWith(
                 'swap.form.flip_unavailable_title',
                 'swap.form.flip_unavailable_body',
@@ -576,7 +585,7 @@ describe('useSwapForm', () => {
 
         expect(result.current.flipUnavailableReason).toBeNull()
         expect(result.current.isChainShown).toBe(false)
-        expect(result.current.isReceivingAccountShown).toBe(false)
+        expect(result.current.enableNetworkNote).toBeNull()
     })
 
     it('names the chains once the account can pay from more than one', () => {
@@ -585,7 +594,7 @@ describe('useSwapForm', () => {
         const { result } = renderHook(() => useSwapForm(SCOPE))
 
         expect(result.current.isChainShown).toBe(true)
-        expect(result.current.isReceivingAccountShown).toBe(false)
+        expect(result.current.enableNetworkNote).toBeNull()
     })
 
     it('moves the swap to the chain of a pay asset picked there', async () => {
@@ -770,6 +779,63 @@ describe('useSwapForm', () => {
             accountId: 'account-2',
             chainId: 'ethereum',
             fromAsset: 'native',
+        })
+    })
+
+    describe("another account's pick while receiving on another chain", () => {
+        const second = accountAt('SECOND', 'account-2')
+
+        beforeEach(() => {
+            mockAccounts = [mockSwapAccount, second]
+            mockReceiveTarget = {
+                ...sameScopeTarget(),
+                receiveScope: ETH_SCOPE,
+                isCrossChain: true,
+                receivingAddress: '0xETH',
+            }
+            mockRequestBottomSheet.mockResolvedValueOnce({
+                assetId: '123',
+                scope: SCOPE,
+                side: 'pay',
+                accountId: second.id,
+            })
+        })
+
+        it('keeps the receive side when the picked account can be paid out there', async () => {
+            mockPayoutAddressOn.mockReturnValue('0xSECOND')
+            const { result } = renderHook(() => useSwapForm(SCOPE))
+
+            await act(async () => {
+                await result.current.handleOpenPayAssetSelection()
+            })
+
+            expect(mockPayoutAddressOn).toHaveBeenCalledWith(
+                second,
+                mockAccounts,
+                'ethereum',
+            )
+            expect(mockSetAccountPair).toHaveBeenCalledWith({
+                accountId: second.id,
+                chainId: SCOPE.chainId,
+                fromAsset: '123',
+                toAsset: '31566704',
+                toAssetScope: ETH_SCOPE,
+            })
+        })
+
+        it("drops the receive side when the picked account can't be paid out there", async () => {
+            mockPayoutAddressOn.mockReturnValue(undefined)
+            const { result } = renderHook(() => useSwapForm(SCOPE))
+
+            await act(async () => {
+                await result.current.handleOpenPayAssetSelection()
+            })
+
+            expect(mockSetAccountPair).toHaveBeenCalledWith({
+                accountId: second.id,
+                chainId: SCOPE.chainId,
+                fromAsset: '123',
+            })
         })
     })
 
@@ -1695,7 +1761,7 @@ describe('useSwapForm', () => {
             )
         })
 
-        it('registers a cross-chain resume with where the output lands and who receives it', async () => {
+        it('registers a cross-chain resume with where the output lands and its address', async () => {
             mockReceiveTarget = {
                 ...sameScopeTarget(),
                 receiveScope: ETH_SCOPE,

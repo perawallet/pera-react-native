@@ -4395,7 +4395,8 @@
             "select_asset": "Auswählen",
             "flip": "Zahlen und Erhalten tauschen",
             "flip_unavailable_title": "Tausch lässt sich nicht umkehren",
-            "flip_unavailable_body": "Dein Konto kann nicht über das {{network}}-Netzwerk bezahlen."
+            "flip_unavailable_body": "Dein Konto kann nicht über das {{network}}-Netzwerk bezahlen.",
+            "enable_network_note": "Dieser Tausch aktiviert {{network}} auf deinem Konto."
         },
         "asset_selection": {
             "swap_from_title": "Tauschen von",
@@ -4474,6 +4475,7 @@
             "unsupported_order_body": "Pera kann die Bestellung dieses Anbieters nicht abschließen, deshalb wurde nichts signiert. Wähle einen anderen Anbieter.",
             "unsupported_order_single_body": "Pera kann die Bestellung dieses Anbieters nicht abschließen, deshalb wurde nichts signiert. Versuche es später erneut.",
             "signing_failed_body": "Die Transaktion konnte nicht signiert werden, deshalb wurde sie nicht gesendet. Versuche es erneut.",
+            "enable_network_failed_body": "{{network}} konnte auf deinem Konto nicht aktiviert werden, daher wurde der Tausch nicht gestartet.",
             "order_insufficient_balance_body": "Dein Guthaben reicht für diesen Betrag und die Netzwerkgebühr nicht aus. Versuche einen kleineren Betrag oder füge Guthaben für die Gebühr hinzu.",
             "insufficient_native_body": "Dieses Konto benötigt mindestens {{amount}} {{symbol}} mehr, um diesen Tausch, die Gebühren und das Mindestguthaben zu decken. Füge mehr {{symbol}} hinzu und versuche es erneut.",
             "success_title": "Tausch abgeschlossen",
@@ -4544,10 +4546,6 @@
             "refunded": "Der Tausch wurde erstattet. Dein {{fromAsset}} ist wieder auf deinem Konto.",
             "expired": "Der Tausch ist abgelaufen, bevor er begonnen hat. Falls dein Guthaben dein Konto verlassen hat, kann sich der Status noch bis zu 7 Tage ändern.",
             "cancelled": "Der Tausch wurde abgebrochen, bevor er begonnen hat. Falls dein Guthaben dein Konto verlassen hat, kann sich der Status noch bis zu 7 Tage ändern."
-        },
-        "receiving_account": {
-            "title": "Empfangskonto",
-            "label": "Empfangen auf"
         },
         "source_account": {
             "title": "Konto auswählen",

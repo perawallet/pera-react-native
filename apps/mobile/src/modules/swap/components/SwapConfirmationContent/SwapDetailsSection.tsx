@@ -11,22 +11,22 @@
  */
 
 import { PWIcon, PWText, PWView } from '@components/core'
-import { AccountDisplay } from '@components/AccountDisplay'
-import { AddressDisplay } from '@components/AddressDisplay'
 import { useLanguage } from '@hooks/useLanguage'
 import { ChainLabel } from '@modules/chain-ui/icon'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainId,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 import { SwapProviderDisplay } from '../SwapProviderDisplay'
 import { DetailRow } from './DetailRow'
 import { useStyles } from './styles'
-import type { SwapReceiveTarget } from './useSwapConfirmation'
 
 type SwapDetailsSectionProps = {
     quote: SwapQuote
     sourceChainId: ChainId
-    receiveTarget: Nullable<SwapReceiveTarget>
+    receiveScope: Nullable<ChainScope>
     rateDisplay: Nullable<string>
     minimumReceivedDisplay: Nullable<string>
     peraFeeDisplay: Nullable<string>
@@ -40,7 +40,7 @@ type SwapDetailsSectionProps = {
 export const SwapDetailsSection = ({
     quote,
     sourceChainId,
-    receiveTarget,
+    receiveScope,
     rateDisplay,
     minimumReceivedDisplay,
     peraFeeDisplay,
@@ -55,28 +55,7 @@ export const SwapDetailsSection = ({
 
     return (
         <PWView style={styles.detailsSection}>
-            {receiveTarget && (
-                <DetailRow label={t('swap.receiving_account.label')}>
-                    {receiveTarget.account ? (
-                        <AccountDisplay
-                            account={receiveTarget.account}
-                            chainId={receiveTarget.scope.chainId}
-                            showChainBadge
-                            showChevron={false}
-                            iconProps={{ size: 'lg' }}
-                            textProps={{ variant: 'caption' }}
-                            testID='swap-confirm-receive-account'
-                        />
-                    ) : (
-                        <AddressDisplay
-                            address={receiveTarget.address}
-                            scope={receiveTarget.scope}
-                            addressFormat='full'
-                        />
-                    )}
-                </DetailRow>
-            )}
-            {receiveTarget && (
+            {receiveScope && (
                 <DetailRow label={t('swap.quote.route')}>
                     <PWView
                         style={styles.rateValueRow}
@@ -87,7 +66,7 @@ export const SwapDetailsSection = ({
                             name='chevron-right'
                             size='xs'
                         />
-                        <ChainLabel chainId={receiveTarget.scope.chainId} />
+                        <ChainLabel chainId={receiveScope.chainId} />
                     </PWView>
                 </DetailRow>
             )}

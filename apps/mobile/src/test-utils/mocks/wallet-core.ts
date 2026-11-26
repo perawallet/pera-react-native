@@ -142,10 +142,14 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
     const { resolveRouterErrorBody } = await vi.importActual<
         typeof import('@packages/swaps/src/api/router-error')
     >('@packages/swaps/src/api/router-error')
+    const { canSwapCrossChain, swapPayoutAddressOn } = await vi.importActual<
+        typeof import('@packages/swaps/src/utils/crossChainEligibility')
+    >('@packages/swaps/src/utils/crossChainEligibility')
     // Chain adapters subclass it at load, so it must exist before any spec runs.
-    const { SwapQuoteMismatchError } = await vi.importActual<
-        typeof import('@packages/swaps/src/errors')
-    >('@packages/swaps/src/errors')
+    const { SwapDestinationChainError, SwapQuoteMismatchError } =
+        await vi.importActual<typeof import('@packages/swaps/src/errors')>(
+            '@packages/swaps/src/errors',
+        )
     const swapsState = { accountId: null, setAccountId: vi.fn() }
     return {
         useSwaps: vi.fn(),
@@ -155,6 +159,7 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
         swapQuoteFailureOf,
         isSwapQuoteGoneError,
         resolveRouterErrorBody,
+        SwapDestinationChainError,
         SwapQuoteMismatchError,
         formatSwapRate,
         swapRate,
@@ -168,6 +173,8 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
         swapNetworkFeeSharePercent,
         HIGH_NETWORK_FEE_SHARE_PERCENT,
         isSwapOrderSettled,
+        canSwapCrossChain,
+        swapPayoutAddressOn: vi.fn(swapPayoutAddressOn),
         scopeOfSwapAsset: ({
             chainId,
             networkId,
@@ -815,6 +822,18 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             (account: any, kind: string) => kindOf(account) === kind,
         ),
         chainAccountOf: vi.fn(chainAccountOf),
+        // Only the enabled chains: a spec that needs a not-enabled option mocks it.
+        accountChainOptions: vi.fn(
+            (account: any, isOn: (chainId: string) => boolean) =>
+                REGISTRY_ORDER.filter(
+                    chainId =>
+                        chainAccountOf(account, chainId) && isOn(chainId),
+                ).map(chainId => ({
+                    chainId,
+                    isEnabled: true,
+                    address: chainAccountOf(account, chainId).address,
+                })),
+        ),
         addressOn: vi.fn(
             (account: any, scope: { chainId: string }) =>
                 chainAccountOf(account, scope.chainId)?.address,

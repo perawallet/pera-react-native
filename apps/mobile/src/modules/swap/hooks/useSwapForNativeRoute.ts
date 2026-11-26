@@ -23,7 +23,9 @@ import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapabilityCheck } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
+    canSwapCrossChain,
     isSwapChain,
+    swapPayoutAddressOn,
     useSwapFeeReservesQuery,
     useSwapScope,
 } from '@perawallet/wallet-core-swaps'
@@ -32,10 +34,6 @@ import {
     type SpendableBalanceInput,
 } from '@perawallet/wallet-core-transactions'
 import type { SwapScreenParams } from '../routes/types'
-import {
-    canReceiveCrossChain,
-    canSwapCrossChain,
-} from '../utils/crossChainEligibility'
 import { rankSwapPayAssets } from '../utils/rankSwapPayAssets'
 
 export type UseSwapForNativeRouteResult = {
@@ -66,7 +64,7 @@ export const useSwapForNativeRoute = (
         () =>
             receiveScope &&
             canSwapCrossChain(account) &&
-            canReceiveCrossChain(account, accounts, chainId)
+            swapPayoutAddressOn(account, accounts, chainId) !== undefined
                 ? rankSwapPayAssets(
                       assetBalances,
                       receiveScope,
@@ -81,7 +79,7 @@ export const useSwapForNativeRoute = (
                           canSignOn(account, payChainId),
                   )
                 : [],
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- chainStates re-runs the memo: canReceiveCrossChain reads the chain-state store, not its arguments
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- chainStates re-runs the memo: swapPayoutAddressOn reads the chain-state store, not its arguments
         [
             receiveScope,
             account,
@@ -140,10 +138,9 @@ export const useSwapForNativeRoute = (
             receive: {
                 scope: receiveScope,
                 assetId: nativeAssetFor(chainId).assetId,
-                accountId: account.id,
             },
         }
-    }, [pricedCandidates, spendables, receiveScope, chainId, account.id])
+    }, [pricedCandidates, spendables, receiveScope, chainId])
 
     return {
         params,

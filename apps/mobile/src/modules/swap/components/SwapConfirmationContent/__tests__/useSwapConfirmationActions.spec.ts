@@ -100,6 +100,14 @@ vi.mock('@hooks/useTransactionOutcomeHaptics', () => ({
 
 vi.mock('@hooks/useLanguage')
 
+const mockEnableDestinationChain = vi.fn<(quote: SwapQuote) => Promise<void>>()
+
+vi.mock('../../../hooks/useEnableSwapDestinationChain', () => ({
+    useEnableSwapDestinationChain: () => ({
+        enableDestinationChain: mockEnableDestinationChain,
+    }),
+}))
+
 const mockUseSwapExecution = vi.fn()
 
 vi.mock('../../../hooks/useSwapExecution', () => ({
@@ -119,6 +127,7 @@ vi.mock('../../../hooks/useSwapExecution', () => ({
 describe('useSwapConfirmationActions', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockEnableDestinationChain.mockResolvedValue(undefined)
     })
 
     it.each([true, false])(
@@ -157,6 +166,7 @@ describe('useSwapConfirmationActions', () => {
         })
 
         expect(mockExecute).toHaveBeenCalledWith(quote)
+        expect(mockEnableDestinationChain).not.toHaveBeenCalled()
     })
 
     it('readies the destination of a cross-chain swap through execute', async () => {
@@ -191,6 +201,94 @@ describe('useSwapConfirmationActions', () => {
             scope: SCOPE,
             assetId: '31566704',
         })
+    })
+
+    it('enables the destination network before readying the destination', async () => {
+        const calls: string[] = []
+        const ensureReceivable = vi.fn(async () => {
+            calls.push('ensure')
+            return true
+        })
+        vi.mocked(useEnsureSwapDestination).mockReturnValue({
+            ensureReceivable,
+        })
+        mockEnableDestinationChain.mockImplementation(async () => {
+            calls.push('enable')
+        })
+        mockExecute.mockResolvedValueOnce({
+            kind: 'success',
+            isPaidOutLater: false,
+        })
+        const quote = {
+            ...makeQuote(),
+            routeKind: 'cross-chain',
+        } as SwapQuote
+
+        const { result } = renderHook(() =>
+            useSwapConfirmationActions({
+                scope: SCOPE,
+                quote,
+                canChooseProvider: false,
+            }),
+        )
+        await act(async () => {
+            await result.current.handleSlideConfirm()
+        })
+        await mockExecute.mock.calls[0][1]?.()
+
+        expect(mockEnableDestinationChain).toHaveBeenCalledWith(quote)
+        expect(calls).toEqual(['enable', 'ensure'])
+    })
+
+    it('does not ready the destination when enabling the network fails', async () => {
+        const ensureReceivable = vi.fn(async () => true)
+        vi.mocked(useEnsureSwapDestination).mockReturnValue({
+            ensureReceivable,
+        })
+        mockEnableDestinationChain.mockRejectedValue(new Error('derive failed'))
+        mockExecute.mockResolvedValueOnce({
+            kind: 'success',
+            isPaidOutLater: false,
+        })
+        const quote = {
+            ...makeQuote(),
+            routeKind: 'cross-chain',
+        } as SwapQuote
+
+        const { result } = renderHook(() =>
+            useSwapConfirmationActions({
+                scope: SCOPE,
+                quote,
+                canChooseProvider: false,
+            }),
+        )
+        await act(async () => {
+            await result.current.handleSlideConfirm()
+        })
+
+        await expect(mockExecute.mock.calls[0][1]?.()).rejects.toThrow(
+            'derive failed',
+        )
+        expect(ensureReceivable).not.toHaveBeenCalled()
+    })
+
+    it('enables no network when the sheet closes before the slide', () => {
+        const quote = {
+            ...makeQuote(),
+            routeKind: 'cross-chain',
+        } as SwapQuote
+
+        const { result } = renderHook(() =>
+            useSwapConfirmationActions({
+                scope: SCOPE,
+                quote,
+                canChooseProvider: false,
+            }),
+        )
+        act(() => result.current.handleClose())
+
+        expect(mockEnableDestinationChain).not.toHaveBeenCalled()
+        expect(mockExecute).not.toHaveBeenCalled()
     })
 
     it('reports a completed swap with its chain, keeping the existing properties', async () => {

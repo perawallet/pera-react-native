@@ -10,13 +10,18 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
     AppError,
     ErrorCategory,
     isExpectedError,
 } from '@perawallet/wallet-core-shared'
-import { SwapQuoteMismatchError } from '../errors'
+import { SwapDestinationChainError, SwapQuoteMismatchError } from '../errors'
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    chainDisplayNameOf: (chainId: string) =>
+        chainId === 'ethereum' ? 'Ethereum' : undefined,
+}))
 
 describe('swap domain errors', () => {
     it('SwapQuoteMismatchError is a classified AppError', () => {
@@ -26,5 +31,19 @@ describe('swap domain errors', () => {
         expect(error.name).toBe('SwapQuoteMismatchError')
         expect(error.metadata.category).toBe(ErrorCategory.TRANSACTIONS)
         expect(isExpectedError(error)).toBe(false)
+    })
+
+    it('SwapDestinationChainError keeps the chain, the copy key and the cause', () => {
+        const cause = new Error('address mismatch')
+
+        const error = new SwapDestinationChainError('ethereum', cause)
+
+        expect(error).toBeInstanceOf(AppError)
+        expect(error.chainId).toBe('ethereum')
+        expect(error.originalError).toBe(cause)
+        expect(error.metadata.messageKey).toBe(
+            'swap.execution.enable_network_failed_body',
+        )
+        expect(error.metadata.params).toEqual({ network: 'Ethereum' })
     })
 })

@@ -13,11 +13,12 @@
 import { renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+    accountChainOptions,
     canSignWith,
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { CHAIN_IDS, type ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useSwapDestinationScopes } from '../useSwapDestinationScopes'
 
 const ALGO_SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
@@ -36,14 +37,19 @@ const TWO_CHAIN = account('both', {
     algorand: { address: 'ALGO_ADDR', keyPairId: 'k1' },
     ethereum: { address: '0xETH', keyPairId: 'k2' },
 })
-const ETH_WATCH = account(
-    'watch',
-    { ethereum: { address: '0xWATCH' } },
-    { kind: 'watch' },
-)
 
 describe('useSwapDestinationScopes', () => {
     beforeEach(() => {
+        // The chains an account is enabled on, as the real resolver gives first.
+        vi.mocked(accountChainOptions).mockImplementation((candidate, isOn) =>
+            CHAIN_IDS.filter(
+                chainId => candidate.chains[chainId] && isOn(chainId),
+            ).map(chainId => ({
+                chainId,
+                isEnabled: true,
+                address: candidate.chains[chainId]?.address,
+            })),
+        )
         // Signs on a chain where it holds a key there.
         vi.mocked(canSignWith).mockImplementation(
             (candidate: WalletAccount, _accounts, chainId: ChainId) =>
@@ -51,7 +57,7 @@ describe('useSwapDestinationScopes', () => {
         )
     })
 
-    it('skips a chain the accounts have no address on, even where their custody could sign', () => {
+    it('skips a chain the account has no address on, even where its custody could sign', () => {
         vi.mocked(canSignWith).mockReturnValue(true)
         vi.mocked(useAllAccounts).mockReturnValue([ALGO_ONLY])
 
@@ -62,24 +68,45 @@ describe('useSwapDestinationScopes', () => {
         expect(result.current).toEqual([ALGO_SCOPE])
     })
 
-    it('keeps the swap scope alone when no account can receive on another chain', () => {
-        vi.mocked(useAllAccounts).mockReturnValue([ALGO_ONLY])
+    it("adds Ethereum's selected network when the swap account is enabled there", () => {
+        vi.mocked(useAllAccounts).mockReturnValue([TWO_CHAIN])
 
         const { result } = renderHook(() =>
-            useSwapDestinationScopes(ALGO_ONLY, ALGO_SCOPE),
+            useSwapDestinationScopes(TWO_CHAIN, ALGO_SCOPE),
         )
 
-        expect(result.current).toEqual([ALGO_SCOPE])
+        expect(result.current).toEqual([ALGO_SCOPE, ETH_SCOPE])
     })
 
-    it("adds Ethereum's selected network when an own account signs there", () => {
-        vi.mocked(useAllAccounts).mockReturnValue([ALGO_ONLY, TWO_CHAIN])
+    it('adds a network the swap account is not enabled on but holds the family of', () => {
+        vi.mocked(useAllAccounts).mockReturnValue([ALGO_ONLY])
+        vi.mocked(accountChainOptions).mockImplementation((_account, isOn) =>
+            isOn('ethereum')
+                ? [
+                      {
+                          chainId: 'ethereum',
+                          isEnabled: false,
+                          address: '0xFAMILY',
+                      },
+                  ]
+                : [],
+        )
 
         const { result } = renderHook(() =>
             useSwapDestinationScopes(ALGO_ONLY, ALGO_SCOPE),
         )
 
         expect(result.current).toEqual([ALGO_SCOPE, ETH_SCOPE])
+    })
+
+    it('drops a network only another account is enabled on', () => {
+        vi.mocked(useAllAccounts).mockReturnValue([ALGO_ONLY, TWO_CHAIN])
+
+        const { result } = renderHook(() =>
+            useSwapDestinationScopes(ALGO_ONLY, ALGO_SCOPE),
+        )
+
+        expect(result.current).toEqual([ALGO_SCOPE])
     })
 
     it('keeps a shared source account on its own chain', () => {
@@ -90,16 +117,6 @@ describe('useSwapDestinationScopes', () => {
 
         const { result } = renderHook(() =>
             useSwapDestinationScopes(shared, ALGO_SCOPE),
-        )
-
-        expect(result.current).toEqual([ALGO_SCOPE])
-    })
-
-    it('does not count a watch-only Ethereum account', () => {
-        vi.mocked(useAllAccounts).mockReturnValue([ALGO_ONLY, ETH_WATCH])
-
-        const { result } = renderHook(() =>
-            useSwapDestinationScopes(ALGO_ONLY, ALGO_SCOPE),
         )
 
         expect(result.current).toEqual([ALGO_SCOPE])

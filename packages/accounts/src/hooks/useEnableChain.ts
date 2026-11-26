@@ -11,7 +11,11 @@
  */
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import type { ChainEnabledBy, WalletAccount } from '../models'
+import type {
+    ChainEnabledBy,
+    EnableChainOptions,
+    WalletAccount,
+} from '../models'
 import { useAccountsStore } from '../store'
 
 /**
@@ -22,4 +26,5 @@ export const useEnableChain = (): ((
     accountId: string,
     chainId: ChainId,
     enabledBy: ChainEnabledBy,
+    options?: EnableChainOptions,
 ) => Promise<WalletAccount>) => useAccountsStore(state => state.enableChain)

@@ -31,7 +31,6 @@ const initialState = {
     fromAsset: null as Nullable<string>,
     toAsset: null as Nullable<string>,
     toAssetScope: null as Nullable<ChainScope>,
-    receivingAccountId: null as Nullable<string>,
     sourceChainId: null as Nullable<ChainId>,
     accountId: null as Nullable<string>,
     pairAccountId: null as Nullable<string>,
@@ -51,8 +50,6 @@ export const useSwapsStore: UseBoundStore<
                 toAsset: string,
                 toAssetScope: Nullable<ChainScope> = null,
             ) => set({ toAsset, toAssetScope }),
-            setReceivingAccountId: (receivingAccountId: Nullable<string>) =>
-                set({ receivingAccountId }),
             setAccountId: (accountId: Nullable<string>) => set({ accountId }),
             setSourceChainId: (sourceChainId: Nullable<ChainId>) =>
                 set({
@@ -60,7 +57,6 @@ export const useSwapsStore: UseBoundStore<
                     fromAsset: null,
                     toAsset: null,
                     toAssetScope: null,
-                    receivingAccountId: null,
                     pairAccountId: null,
                     flippedPayAmount: null,
                 }),
@@ -70,7 +66,6 @@ export const useSwapsStore: UseBoundStore<
                     fromAsset,
                     toAsset: null,
                     toAssetScope: null,
-                    receivingAccountId: null,
                     pairAccountId: null,
                     flippedPayAmount: null,
                 }),
@@ -86,7 +81,6 @@ export const useSwapsStore: UseBoundStore<
                     fromAsset,
                     toAsset: toAsset ?? null,
                     toAssetScope: toAssetScope ?? null,
-                    receivingAccountId: null,
                     accountId,
                     pairAccountId: accountId,
                     flippedPayAmount: null,
@@ -97,7 +91,6 @@ export const useSwapsStore: UseBoundStore<
                     fromAsset: flip.fromAsset,
                     toAsset: flip.toAsset,
                     toAssetScope: flip.toAssetScope,
-                    receivingAccountId: null,
                     flippedPayAmount: flip.payAmount
                         ? {
                               chainId: flip.sourceChainId,

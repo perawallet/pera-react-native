@@ -28,11 +28,16 @@ export const swapAccountKey = ({
 }: SwapAccountAddress): string =>
     `${toScopeKey(scope)}|${address.toLowerCase()}`
 
-/** Source leg on the payer's network, destination on a network some payer is on. */
+/**
+ * Source leg on the payer's network, destination on a network some payer is
+ * on. A cross-chain pair also needs `canBePaidOn` for its destination chain,
+ * since its output lands in the payer's own account there.
+ */
 export const pairsPaidBy = (
     pairs: readonly SwapDistinctPairItem[],
     payers: readonly SwapAccountAddressWithId[],
     canPayOn: (accountId: string, chainId: ChainId) => boolean,
+    canBePaidOn: (accountId: string, chainId: ChainId) => boolean,
 ): SwapHistoryPair[] => {
     const byKey = new Map(payers.map(payer => [swapAccountKey(payer), payer]))
     const payerScopeKeys = new Set(payers.map(payer => toScopeKey(payer.scope)))
@@ -41,11 +46,14 @@ export const pairsPaidBy = (
             ? byKey.get(swapAccountKey(pair.sourceAccount))
             : undefined
         if (!payer) return []
+        const isCrossChain =
+            toScopeKey(pair.assetOut.ref) !== toScopeKey(payer.scope)
         const isRestorable =
             toScopeKey(pair.assetIn.ref) === toScopeKey(payer.scope) &&
-            payerScopeKeys.has(toScopeKey(pair.assetOut.ref))
-        return isRestorable && canPayOn(payer.accountId, payer.scope.chainId)
-            ? [{ ...pair, accountId: payer.accountId }]
-            : []
+            payerScopeKeys.has(toScopeKey(pair.assetOut.ref)) &&
+            canPayOn(payer.accountId, payer.scope.chainId) &&
+            (!isCrossChain ||
+                canBePaidOn(payer.accountId, pair.assetOut.ref.chainId))
+        return isRestorable ? [{ ...pair, accountId: payer.accountId }] : []
     })
 }

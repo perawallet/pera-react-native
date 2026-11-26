@@ -22,16 +22,17 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScopes } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { isSwapChain } from '@perawallet/wallet-core-swaps'
 import {
-    canReceiveCrossChain,
     canSwapCrossChain,
-} from '../utils/crossChainEligibility'
+    isSwapChain,
+    swapPayoutAddressOn,
+} from '@perawallet/wallet-core-swaps'
 
 /**
  * Where a swap from `account` on `scope` may pay out: `scope`, plus the
- * selected network of each other swap chain one of the user's own accounts can
- * sign on. A shared account stays on `scope`: its swap finishes later, through
+ * selected network of each other swap chain `account` itself can be paid on,
+ * whether it is enabled there or only in a family the account already holds.
+ * A shared account stays on `scope`: its swap finishes later, through
  * the co-sign flow, with no order to track.
  */
 export const useSwapDestinationScopes = (
@@ -47,16 +48,11 @@ export const useSwapDestinationScopes = (
                 ? CHAIN_IDS.filter(
                       chainId =>
                           isSwapChain(chainId) &&
-                          accounts.some(candidate =>
-                              canReceiveCrossChain(
-                                  candidate,
-                                  accounts,
-                                  chainId,
-                              ),
-                          ),
+                          swapPayoutAddressOn(account, accounts, chainId) !==
+                              undefined,
                   )
                 : [],
-        [isEligible, accounts],
+        [isEligible, account, accounts],
     )
     const receivingScopes = useSelectedScopes(receivingChainIds)
 

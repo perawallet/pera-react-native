@@ -52,9 +52,6 @@ export const useSwapScreen = (): UseSwapScreenResult => {
         useNavigation<NavigationProp<{ Swap: Optional<SwapScreenParams> }>>()
     const setFromAsset = useSwapsStore(state => state.setFromAsset)
     const setToAsset = useSwapsStore(state => state.setToAsset)
-    const setReceivingAccountId = useSwapsStore(
-        state => state.setReceivingAccountId,
-    )
     const sourceChainId = useSwapsStore(state => state.sourceChainId)
     const setSourceChainId = useSwapsStore(state => state.setSourceChainId)
     const pairAccountId = useSwapsStore(state => state.pairAccountId)
@@ -137,18 +134,10 @@ export const useSwapScreen = (): UseSwapScreenResult => {
         setFromAsset(assetInId)
         if (routeReceive) {
             setToAsset(routeReceive.assetId, routeReceive.scope)
-            setReceivingAccountId(routeReceive.accountId)
             return
         }
         if (assetOutId) setToAsset(assetOutId)
-    }, [
-        assetInId,
-        assetOutId,
-        routeReceive,
-        setFromAsset,
-        setToAsset,
-        setReceivingAccountId,
-    ])
+    }, [assetInId, assetOutId, routeReceive, setFromAsset, setToAsset])
 
     const payAmount = route.params?.payAmount
     // The form reads this once on mount, which can be before the chain is pinned.

@@ -16,8 +16,8 @@ import { Decimal } from 'decimal.js'
 import {
     useAccountAssetBalanceQuery,
     addressOn,
-    ownAddressOf,
     useAccountBalancesInvalidator,
+    useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -30,9 +30,11 @@ import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 import { useSpendableBalanceQuery } from '@perawallet/wallet-core-transactions'
 import {
+    canSwapCrossChain,
     peraFeeInSourceAsset,
     pickBestByAmountOut,
     swapAdapterFor,
+    swapPayoutAddressOn,
     useSwapAccount,
     useSwapFeeReservesQuery,
     useSwaps,
@@ -65,7 +67,6 @@ import {
     SwapAssetSelectionContent,
     type SwapAssetSelection,
 } from '../SwapAssetSelectionContent'
-import { SwapReceivingAccountContent } from '../SwapReceivingAccountContent'
 import { SwapConfigurationContent } from '../SwapConfigurationContent'
 import {
     SwapConfirmationContent,
@@ -85,11 +86,11 @@ type UseSwapFormResult = {
     receiveAssetId: string
     /** Where the receive asset lives: the swap scope, or another chain's. */
     receiveScope: ChainScope
-    receivingAccount: Nullable<WalletAccount>
     /** Why the pair can't flip, shown on press and read by screen readers; null when it can. */
     flipUnavailableReason: Nullable<string>
     isChainShown: boolean
-    isReceivingAccountShown: boolean
+    /** Names the network the swap enables on the account; null when it is already on it. */
+    enableNetworkNote: Nullable<string>
     payAmount: Nullable<Decimal>
     receiveAmount: Nullable<Decimal>
     payBalance: Nullable<Decimal>
@@ -115,7 +116,6 @@ type UseSwapFormResult = {
     handleMaxPress: () => void
     handleOpenPayAssetSelection: () => void
     handleOpenReceiveAssetSelection: () => void
-    handleOpenReceivingAccount: () => void
     handleOpenConfig: () => void
     handleOpenProvider: () => void
     handleOpenConfirm: () => void
@@ -158,6 +158,7 @@ export const useSwapForm = (
         useState<Nullable<string>>(null)
     const { request: requestBottomSheet } = useBottomSheet()
     const swapAccount = useSwapAccount()
+    const accounts = useAllAccounts()
     const selectedAddress = swapAccount
         ? addressOn(swapAccount, scope)
         : undefined
@@ -188,13 +189,11 @@ export const useSwapForm = (
     const {
         receiveScope,
         isCrossChain,
-        receivingAccount,
         receivingAddress,
-        receivingAccounts,
-        selectReceivingAccount,
+        shouldEnableReceiveChain,
     } = useSwapReceiveTarget(scope)
     const { data: receiveAssetBalance } = useAccountAssetBalanceQuery(
-        receivingAccount ?? undefined,
+        swapAccount ?? undefined,
         toAsset,
         receiveScope,
     )
@@ -617,14 +616,26 @@ export const useSwapForm = (
                 selection.accountId !== swapAccount?.id
             ) {
                 // The receive side survives an account switch on the same
-                // network, as it does a new pay asset on the same account.
-                const isSameScope =
-                    toScopeKey(selection.scope) === toScopeKey(scope)
+                // network, as it does a new pay asset on the same account,
+                // unless the swap couldn't pay the new account out on it.
+                const nextAccount = accounts.find(
+                    ({ id }) => id === selection.accountId,
+                )
+                const canKeepReceive =
+                    toScopeKey(selection.scope) === toScopeKey(scope) &&
+                    (!isCrossChain ||
+                        (nextAccount !== undefined &&
+                            canSwapCrossChain(nextAccount) &&
+                            swapPayoutAddressOn(
+                                nextAccount,
+                                accounts,
+                                receiveScope.chainId,
+                            ) !== undefined))
                 setAccountPair({
                     accountId: selection.accountId,
                     chainId: selection.scope.chainId,
                     fromAsset: selection.assetId,
-                    ...(isSameScope && {
+                    ...(canKeepReceive && {
                         toAsset,
                         toAssetScope: isCrossChain ? receiveScope : null,
                     }),
@@ -650,6 +661,7 @@ export const useSwapForm = (
             isCrossChain,
             receiveScope,
             swapAccount?.id,
+            accounts,
             setAccountPair,
             setSourceAsset,
             fromAsset,
@@ -731,34 +743,6 @@ export const useSwapForm = (
         toAsset,
         resetQuotes,
         applyPaySelection,
-    ])
-
-    const handleOpenReceivingAccount = useCallback(async () => {
-        await requestBottomSheet<string>({
-            contents: (
-                <SwapReceivingAccountContent
-                    accounts={receivingAccounts}
-                    chainId={receiveScope.chainId}
-                    selectedAddress={
-                        receivingAccount
-                            ? (ownAddressOf(receivingAccount) ?? null)
-                            : null
-                    }
-                    onSelect={selectReceivingAccount}
-                />
-            ),
-            options: {
-                size: 'modal',
-                enablePanDownToClose: true,
-                autoCreateContainer: false,
-            },
-        })
-    }, [
-        requestBottomSheet,
-        receivingAccounts,
-        receiveScope.chainId,
-        receivingAccount,
-        selectReceivingAccount,
     ])
 
     const handleOpenProvider = useCallback(async () => {
@@ -973,10 +957,15 @@ export const useSwapForm = (
         payAssetId: fromAsset,
         receiveAssetId: toAsset,
         receiveScope,
-        receivingAccount,
         flipUnavailableReason,
         isChainShown: isCrossChain || sourceChainIds.length > 1,
-        isReceivingAccountShown: isCrossChain,
+        enableNetworkNote: shouldEnableReceiveChain
+            ? t('swap.form.enable_network_note', {
+                  network:
+                      chainDisplayNameOf(receiveScope.chainId) ??
+                      receiveScope.chainId,
+              })
+            : null,
         payAmount,
         receiveAmount,
         payBalance: payAssetBalance?.amount ?? null,
@@ -1000,7 +989,6 @@ export const useSwapForm = (
         handleOpenPayAssetSelection: () => void handleOpenPayAssetSelection(),
         handleOpenReceiveAssetSelection: () =>
             void handleOpenReceiveAssetSelection(),
-        handleOpenReceivingAccount: () => void handleOpenReceivingAccount(),
         handleOpenConfig: () => void handleOpenConfig(),
         handleOpenProvider: () => void handleOpenProvider(),
         handleOpenConfirm: () => void handleOpenConfirm(),

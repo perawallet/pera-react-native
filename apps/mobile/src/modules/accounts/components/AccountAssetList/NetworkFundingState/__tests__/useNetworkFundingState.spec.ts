@@ -36,7 +36,6 @@ const SWAP_PARAMS = {
     receive: {
         scope: { chainId: 'base', networkId: 'mainnet' },
         assetId: 'native',
-        accountId: 'a',
     },
 }
 

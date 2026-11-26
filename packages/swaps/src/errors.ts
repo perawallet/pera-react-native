@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { i18nKey, type ChainId } from '@perawallet/wallet-core-chain-contract'
+import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
 
 /** What the router answered or prepared spends more, or differently, than the app asked for. */
@@ -17,5 +19,26 @@ export class SwapQuoteMismatchError extends AppError {
     constructor(message: string) {
         super(message, { category: ErrorCategory.TRANSACTIONS })
         this.name = 'SwapQuoteMismatchError'
+    }
+}
+
+/** The swap account's destination network couldn't be enabled, so the swap never started. */
+export class SwapDestinationChainError extends AppError {
+    readonly chainId: ChainId
+
+    constructor(chainId: ChainId, originalError?: Error) {
+        super(
+            `Could not enable ${chainId} for the swap payout`,
+            {
+                category: ErrorCategory.ACCOUNTS,
+                messageKey: i18nKey(
+                    'swap.execution.enable_network_failed_body',
+                ),
+                params: { network: chainDisplayNameOf(chainId) ?? chainId },
+            },
+            originalError,
+        )
+        this.chainId = chainId
+        this.name = 'SwapDestinationChainError'
     }
 }
