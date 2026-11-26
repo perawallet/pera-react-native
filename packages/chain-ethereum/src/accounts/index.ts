@@ -17,6 +17,7 @@ export {
 } from './account-state'
 export { createEvmAddressCodec } from './address-codec'
 export { createEvmKeyDerivation } from './key-derivation'
+export { createEvmAccountPresentation } from './presentation'
 export {
     InvalidPrivateKeyError,
     parseEthereumPrivateKey,

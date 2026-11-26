@@ -103,6 +103,9 @@ const { mockIsCoveredByCloudBackup, mockRequiresMnemonicBackup } = vi.hoisted(
         mockRequiresMnemonicBackup: vi.fn(() => true),
     }),
 )
+const { mockHasBackupChains } = vi.hoisted(() => ({
+    mockHasBackupChains: vi.fn((_account: unknown) => true),
+}))
 const { mockLaunchBackupFlow } = vi.hoisted(() => ({
     mockLaunchBackupFlow: vi.fn(),
 }))
@@ -199,6 +202,7 @@ vi.mock('@hooks/useIsCloudBackupEnabled', () => ({
 
 vi.mock('@perawallet/wallet-core-backup', () => ({
     getBackupSyncManager: mockGetBackupSyncManager,
+    hasBackupChains: (account: unknown) => mockHasBackupChains(account),
     useIsAccountCoveredByCloudBackup: () => mockIsCoveredByCloudBackup(),
     useRequiresMnemonicBackup: () => mockRequiresMnemonicBackup(),
 }))
@@ -337,6 +341,7 @@ describe('useAccountOptions', () => {
         mockIsInBackup.mockReturnValue(false)
         mockIsCloudBackupEnabled.mockReturnValue(true)
         mockIsCoveredByCloudBackup.mockReturnValue(false)
+        mockHasBackupChains.mockReturnValue(true)
         mockRequiresMnemonicBackup.mockReturnValue(true)
         mockDeleteAccountFromBackup.mockResolvedValue('settled')
         mockKeepAccountInBackup.mockResolvedValue(true)
@@ -560,6 +565,51 @@ describe('useAccountOptions', () => {
             )
         })
 
+        it('warns about losing the private key, never a passphrase or Auth Account', () => {
+            setCapabilityOverrides({ cloudBackup: false })
+            setCapabilityOverrides({ cloudBackup: false }, ETHEREUM_CHAIN_ID)
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: privateKeyAccount,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            expect(result.current.backupWarningMessage).toBe(
+                'account_options.backup_warning_private_key_message',
+            )
+        })
+
+        it('leaves Cloud Backup out of the warning when none of the account chains can be backed up', () => {
+            mockHasBackupChains.mockReturnValue(false)
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: privateKeyAccount,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            expect(result.current.backupWarningMessage).toBe(
+                'account_options.backup_warning_private_key_message',
+            )
+        })
+
+        it('names Cloud Backup in the private-key warning when it is available', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: privateKeyAccount,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            expect(result.current.backupWarningMessage).toBe(
+                'account_options.backup_warning_private_key_message_with_cloud_backup',
+            )
+        })
+
         it('offers no view-passphrase, since a raw key has no phrase', () => {
             expect(idsFor(privateKeyAccount)).not.toContain('view-passphrase')
         })
@@ -652,6 +702,25 @@ describe('useAccountOptions', () => {
             registerEthereumAccountsAdapter()
         })
         afterEach(restoreAlgorandOnlyChains)
+
+        it('warns about the passphrase without an Auth Account, since its chain cannot rekey', () => {
+            setCapabilityOverrides({ cloudBackup: false })
+            setCapabilityOverrides({ cloudBackup: false }, ETHEREUM_CHAIN_ID)
+
+            const { result } = render(ethHdAccount)
+
+            expect(result.current.backupWarningMessage).toBe(
+                'account_options.backup_warning_passphrase_message',
+            )
+        })
+
+        it('names Cloud Backup in the passphrase warning when it is available', () => {
+            const { result } = render(ethHdAccount)
+
+            expect(result.current.backupWarningMessage).toBe(
+                'account_options.backup_warning_passphrase_message_with_cloud_backup',
+            )
+        })
 
         it('keeps the notifications row while they are off for its chain, since v4 registration still sends its address', () => {
             registerEthereumDeviceAdapter()
@@ -1018,7 +1087,26 @@ describe('useAccountOptions', () => {
             expect(result.current.isRekeyed).toBe(true)
             expect(result.current.authAddress).toBe('AUTHADDRESS')
             expect(result.current.canUndoRekey).toBe(false)
+            expect(result.current.backupWarningMessage).toBe(
+                'account_options.backup_warning_message_with_cloud_backup',
+            )
             expect(mockUseCanSignWith).toHaveReturnedWith(true)
+        })
+
+        it('keeps the Auth Account wording on an Algorand account while the rekey switch is off, since the chain still supports it', () => {
+            setCapabilityOverrides({ rekey: false, cloudBackup: false })
+
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            expect(result.current.backupWarningMessage).toBe(
+                'account_options.backup_warning_message',
+            )
         })
 
         it('hides the shared-account rows when multisig is off', () => {
@@ -1053,7 +1141,9 @@ describe('useAccountOptions', () => {
                 }),
             )
 
-            expect(result.current.isCloudBackupAvailable).toBe(false)
+            expect(result.current.backupWarningMessage).toBe(
+                'account_options.backup_warning_message',
+            )
             await act(async () => {
                 await sheetOptionsOf(result.current)
                     .find(o => o.id === 'remove-account')

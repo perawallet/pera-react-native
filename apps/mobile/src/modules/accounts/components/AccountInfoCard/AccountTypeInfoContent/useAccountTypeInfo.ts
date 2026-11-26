@@ -15,15 +15,14 @@ import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import {
     addressOn,
     authorityTransitionLabel,
-    useAccountPresentation,
     useAuthorityOf,
     useCanSignWith,
     useDelegatedTransition,
     type WalletAccount,
-    useAccountScope,
 } from '@perawallet/wallet-core-accounts'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { useHomeChainScope } from '@hooks/useHomeChainScope'
+import { useAccountPresentationScope } from '@hooks/useAccountPresentationScope'
+import { useOwnAccountPresentation } from '@hooks/useOwnAccountPresentation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview'
 import { splitAccountTypeLabel } from '@utils/rekeyLabels'
@@ -40,12 +39,19 @@ type UseAccountTypeInfoResult = {
      */
     titleQualifier: Nullable<string>
     description: string
+    /** False when there is no support article for the account's kind, or for its signer when rekeyed. */
+    hasLearnMore: boolean
     handleLearnMore: () => void
 }
 
 const REKEYED_UNSIGNABLE_I18N = {
     title: i18nKey('account_type_info.no_auth_title'),
     description: i18nKey('account_type_info.no_auth_description'),
+}
+
+const UNKNOWN_KIND_I18N = {
+    title: i18nKey('account_info.type_unknown'),
+    description: i18nKey('account_type_info.unknown_description'),
 }
 
 const REKEYED_SIGNABLE_I18N = {
@@ -58,14 +64,14 @@ export const useAccountTypeInfo = ({
 }: UseAccountTypeInfoParams): UseAccountTypeInfoResult => {
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
-    const scope = useAccountScope(account, useHomeChainScope().chainId)
+    const scope = useAccountPresentationScope(account)
     const canSign = useCanSignWith(account, scope.chainId)
     const delegateTransition = useDelegatedTransition(
         addressOn(account, scope),
         scope.chainId,
     )
     const authority = useAuthorityOf(account, scope)
-    const presentation = useAccountPresentation(account, scope)
+    const presentation = useOwnAccountPresentation(account, scope)
     const transitionLabel = useMemo(
         () =>
             delegateTransition
@@ -98,29 +104,28 @@ export const useAccountTypeInfo = ({
         }
 
         return {
-            title: t(
-                presentation?.infoTitleKey ?? REKEYED_UNSIGNABLE_I18N.title,
-            ),
+            title: t(presentation?.infoTitleKey ?? UNKNOWN_KIND_I18N.title),
             titleQualifier: null,
             description: t(
-                presentation?.infoBodyKey ??
-                    REKEYED_UNSIGNABLE_I18N.description,
+                presentation?.infoBodyKey ?? UNKNOWN_KIND_I18N.description,
             ),
         }
     }, [authority, canSign, transitionLabel, presentation, t])
 
+    // A rekeyed account's sheet copy describes its signer, not its own
+    // kind, so the article has to follow the signer too.
+    const supportUrl = transitionLabel?.supportUrl ?? presentation?.supportUrl
+
     const handleLearnMore = useCallback(() => {
-        // A rekeyed account's sheet copy describes its signer, not its own
-        // kind, so the article has to follow the signer too.
-        const url = transitionLabel?.supportUrl ?? presentation?.supportUrl
         // oxlint-disable-next-line pera/no-unvalidated-open-url -- account presentation support URLs are config.* values
-        if (url) pushWebView({ url })
-    }, [pushWebView, transitionLabel, presentation])
+        if (supportUrl) pushWebView({ url: supportUrl })
+    }, [pushWebView, supportUrl])
 
     return {
         title,
         titleQualifier,
         description,
+        hasLearnMore: !!supportUrl,
         handleLearnMore,
     }
 }

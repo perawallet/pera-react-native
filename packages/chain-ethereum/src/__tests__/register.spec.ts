@@ -14,6 +14,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
+    accountPresentationChainAdapters,
     accountsChainAdapters,
     buildAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -59,6 +60,7 @@ const resetRegistries = () => {
     reviewerChainAdapters.reset()
     localKeySignerChainAdapters.reset()
     accountsChainAdapters.reset()
+    accountPresentationChainAdapters.reset()
     assetsChainAdapters.reset()
     transferChainAdapters.reset()
     historyChainAdapters.reset()
@@ -99,6 +101,7 @@ describe('createEvmChainRegistration', () => {
             expect(reviewerChainAdapters.get(id).chainId).toBe(id)
             expect(localKeySignerChainAdapters.get(id).chainId).toBe(id)
             expect(accountsChainAdapters.get(id).chainId).toBe(id)
+            expect(accountPresentationChainAdapters.get(id).chainId).toBe(id)
             expect(assetsChainAdapters.get(id).getNativeAsset()).toBe(
                 chain.nativeAsset,
             )

@@ -26,10 +26,15 @@ export const AccountTypeInfoContent = ({
 }: AccountTypeInfoContentProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { title, titleQualifier, description, handleLearnMore } =
-        useAccountTypeInfo({
-            account,
-        })
+    const {
+        title,
+        titleQualifier,
+        description,
+        hasLearnMore,
+        handleLearnMore,
+    } = useAccountTypeInfo({
+        account,
+    })
 
     return (
         <PWView style={styles.container}>
@@ -60,24 +65,26 @@ export const AccountTypeInfoContent = ({
 
             <PWText style={styles.description}>{description}</PWText>
 
-            <PWTouchableOpacity
-                style={styles.learnMoreRow}
-                onPress={handleLearnMore}
-                testID='account-type-info-learn-more-button'
-            >
-                <PWIcon
-                    name='info'
-                    size='sm'
-                    variant='link'
-                />
-                <PWText
-                    variant='link'
-                    style={styles.learnMoreText}
-                    truncate
+            {hasLearnMore ? (
+                <PWTouchableOpacity
+                    style={styles.learnMoreRow}
+                    onPress={handleLearnMore}
+                    testID='account-type-info-learn-more-button'
                 >
-                    {t('account_type_info.learn_more')}
-                </PWText>
-            </PWTouchableOpacity>
+                    <PWIcon
+                        name='info'
+                        size='sm'
+                        variant='link'
+                    />
+                    <PWText
+                        variant='link'
+                        style={styles.learnMoreText}
+                        truncate
+                    >
+                        {t('account_type_info.learn_more')}
+                    </PWText>
+                </PWTouchableOpacity>
+            ) : null}
         </PWView>
     )
 }

@@ -633,6 +633,10 @@
         "backup_warning_title": "Have you backed up your account?",
         "backup_warning_message": "If you don't have a copy of this account's recovery passphrase or the account is not backed up with a Ledger device or managed by an Auth Account, access to this account and its funds will be lost forever.",
         "backup_warning_message_with_cloud_backup": "If you don't have a copy of this account's recovery passphrase, the account is not in Cloud Backup or backed up with a Ledger device, and it is not managed by an Auth Account, access to this account and its funds will be lost forever.",
+        "backup_warning_passphrase_message": "If you don't have a copy of this account's recovery passphrase, access to this account and its funds will be lost forever.",
+        "backup_warning_passphrase_message_with_cloud_backup": "If you don't have a copy of this account's recovery passphrase and the account is not in Cloud Backup, access to this account and its funds will be lost forever.",
+        "backup_warning_private_key_message": "If you don't have a copy of this account's private key, access to this account and its funds will be lost forever.",
+        "backup_warning_private_key_message_with_cloud_backup": "If you don't have a copy of this account's private key and the account is not in Cloud Backup, access to this account and its funds will be lost forever.",
         "backup_warning_continue": "Yes, continue",
         "backup_warning_cancel": "No, keep account",
         "remove_rekey_error_title": "Cannot remove account",
@@ -664,6 +668,7 @@
         "name_taken": "You already have an account with this name. Choose a different name so you can tell them apart.",
         "type_universal_wallet": "Universal Wallet",
         "type_algo25": "Algo25 Account",
+        "type_private_key": "Private Key Account",
         "type_watch": "Watch Account",
         "type_ledger": "Ledger Account",
         "ledger_usb_device": "Ledger (USB)",
@@ -703,6 +708,9 @@
         "multisig_no_auth_description": "This is a shared account, but none of its signer accounts are in your wallet. You can't sign transactions for it. To sign, add one of its signer accounts to your wallet.",
         "quantum_title": "Quantum Account",
         "quantum_description": "A standard account protected with post-quantum cryptography, designed to keep your assets secure even against future quantum computers.",
+        "private_key_title": "Private Key Account",
+        "private_key_description": "Your account was added to your wallet with its private key. It has no recovery passphrase, so keep a copy of the private key somewhere safe.",
+        "unknown_description": "Pera can't tell what type of account this is.",
         "learn_more": "Learn More"
     },
     "min_balance_info": {

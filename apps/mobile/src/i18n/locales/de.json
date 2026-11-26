@@ -633,6 +633,10 @@
         "backup_warning_title": "Hast du dein Konto gesichert?",
         "backup_warning_message": "Wenn du keine Kopie der Wiederherstellungsphrase dieses Kontos hast und das Konto weder mit einem Ledger-Gerät gesichert noch von einem Auth-Konto verwaltet wird, geht der Zugriff auf dieses Konto und sein Guthaben unwiderruflich verloren.",
         "backup_warning_message_with_cloud_backup": "Wenn du keine Kopie der Wiederherstellungsphrase dieses Kontos hast, das Konto weder im Cloud-Backup noch mit einem Ledger-Gerät gesichert ist und auch nicht von einem Auth-Konto verwaltet wird, geht der Zugriff auf dieses Konto und sein Guthaben unwiderruflich verloren.",
+        "backup_warning_passphrase_message": "Wenn du keine Kopie der Wiederherstellungsphrase dieses Kontos hast, geht der Zugriff auf dieses Konto und sein Guthaben unwiderruflich verloren.",
+        "backup_warning_passphrase_message_with_cloud_backup": "Wenn du keine Kopie der Wiederherstellungsphrase dieses Kontos hast und das Konto nicht im Cloud-Backup ist, geht der Zugriff auf dieses Konto und sein Guthaben unwiderruflich verloren.",
+        "backup_warning_private_key_message": "Wenn du keine Kopie des privaten Schlüssels dieses Kontos hast, geht der Zugriff auf dieses Konto und sein Guthaben unwiderruflich verloren.",
+        "backup_warning_private_key_message_with_cloud_backup": "Wenn du keine Kopie des privaten Schlüssels dieses Kontos hast und das Konto nicht im Cloud-Backup ist, geht der Zugriff auf dieses Konto und sein Guthaben unwiderruflich verloren.",
         "backup_warning_continue": "Ja, fortfahren",
         "backup_warning_cancel": "Nein, Konto behalten",
         "remove_rekey_error_title": "Konto kann nicht entfernt werden",
@@ -664,6 +668,7 @@
         "name_taken": "Du hast bereits ein Konto mit diesem Namen. Wähle einen anderen Namen, damit du sie unterscheiden kannst.",
         "type_universal_wallet": "Universal Wallet",
         "type_algo25": "Algo25-Konto",
+        "type_private_key": "Konto mit privatem Schlüssel",
         "type_watch": "Beobachtungskonto",
         "type_ledger": "Ledger-Konto",
         "ledger_usb_device": "Ledger (USB)",
@@ -703,6 +708,9 @@
         "multisig_no_auth_description": "Dies ist ein Gemeinschaftskonto, aber keines seiner Signier-Konten befindet sich in deinem Wallet. Du kannst keine Transaktionen dafür signieren. Um zu signieren, füge eines seiner Signier-Konten zu deinem Wallet hinzu.",
         "quantum_title": "Quantum-Konto",
         "quantum_description": "Ein Standardkonto, das mit Post-Quanten-Kryptografie geschützt ist und deine Assets auch gegen zukünftige Quantencomputer sicher halten soll.",
+        "private_key_title": "Konto mit privatem Schlüssel",
+        "private_key_description": "Dein Konto wurde mit seinem privaten Schlüssel zu deiner Wallet hinzugefügt. Es hat keine Wiederherstellungsphrase, bewahre daher eine Kopie des privaten Schlüssels an einem sicheren Ort auf.",
+        "unknown_description": "Pera kann nicht erkennen, um welche Art von Konto es sich handelt.",
         "learn_more": "Mehr erfahren"
     },
     "min_balance_info": {

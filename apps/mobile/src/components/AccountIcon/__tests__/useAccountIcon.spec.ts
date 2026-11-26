@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
@@ -30,6 +30,7 @@ import {
     useAuthorityOf,
     useCanSignWith,
     useDelegatedAccount,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { accountGlyphFor, useAccountIcon } from '../useAccountIcon'
 import {
@@ -40,6 +41,14 @@ import {
     registerAlgorandAccountsAdapter,
     seedAuthority,
 } from '@test-utils/algorandAccountsAdapter'
+import {
+    registerEthereumAccountPresentation,
+    registerEthereumAccountsAdapter,
+} from '@test-utils/ethereumAccountsAdapter'
+import {
+    registerEthereumChain,
+    restoreAlgorandOnlyChains,
+} from '@test-utils/chain-fixtures'
 
 const account = (type: AlgorandAccountKind) => accountForType(type, 'ADDR')
 
@@ -251,6 +260,60 @@ describe('accountGlyphFor', () => {
         expect(accountGlyphFor(undefined)).toEqual({
             name: 'accounts/glyph/unknown-account',
             variant: 'accountNeutral',
+        })
+    })
+
+    describe('an account with no Algorand entry', () => {
+        const ethHdAccount: WalletAccount = {
+            id: 'eth-hd',
+            name: '',
+            chains: {
+                ethereum: {
+                    address: '0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed',
+                    keyPairId: 'key',
+                },
+            },
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
+        }
+
+        beforeEach(() => {
+            registerEthereumChain()
+            registerEthereumAccountsAdapter()
+            registerEthereumAccountPresentation()
+        })
+        afterEach(restoreAlgorandOnlyChains)
+
+        it('shows the glyph its own chain gives the kind, not the unknown one', () => {
+            const { result } = renderHook(() => useAccountIcon(ethHdAccount))
+
+            expect(result.current).toEqual({
+                name: 'accounts/glyph/hdwallet-account',
+                variant: 'accountTurquoise',
+            })
+        })
+
+        it('shows the neutral glyph, not an Algorand one, when no adapter reads its chain', () => {
+            registerAlgorandAccountsAdapter()
+
+            const { result } = renderHook(() => useAccountIcon(ethHdAccount))
+
+            expect(result.current).toEqual({
+                name: 'accounts/glyph/unknown-account',
+                variant: 'accountNeutral',
+            })
+        })
+
+        it('reads rekey state on its own chain', () => {
+            renderHook(() => useAccountIcon(ethHdAccount))
+
+            expect(useAuthorityOf).toHaveBeenCalledWith(
+                ethHdAccount,
+                expect.objectContaining({ chainId: 'ethereum' }),
+            )
         })
     })
 })

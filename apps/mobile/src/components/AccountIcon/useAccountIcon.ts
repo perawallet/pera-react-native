@@ -21,7 +21,8 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 import type { IconName, PWRoundIconVariant } from '@components/core'
-import { useHomeChainScope } from '@hooks/useHomeChainScope'
+import { useAccountPresentationScope } from '@hooks/useAccountPresentationScope'
+import { useOwnAccountPresentation } from '@hooks/useOwnAccountPresentation'
 
 export type AccountDisplayState =
     | 'base'
@@ -94,14 +95,14 @@ export const useAccountIcon = (
     options: UseAccountIconOptions = {},
 ): Nullable<AccountGlyph> => {
     const { ignoreRekey, displayState, authAccount } = options
-    const scope = useHomeChainScope()
+    const scope = useAccountPresentationScope(account)
     const rekeyAccount = useDelegatedAccount(
         account ? addressOn(account, scope) : undefined,
         scope.chainId,
     )
     const canSign = useCanSignWith(account, scope.chainId)
     const authority = useAuthorityOf(account, scope)
-    const presentation = useAccountPresentation(account, scope)
+    const presentation = useOwnAccountPresentation(account, scope)
     // Keyed off the auth account (what it's rekeyed *to*), not the account
     // itself: a standard account rekeyed to a Ledger shows the ledger glyph.
     const authPresentation = useAccountPresentation(

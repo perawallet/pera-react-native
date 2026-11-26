@@ -633,6 +633,10 @@
         "backup_warning_title": "Hesabını yedekledin mi?",
         "backup_warning_message": "Bu hesabın kurtarma passphrase’inin bir kopyası sende yoksa ya da hesap bir Ledger cihazıyla yedeklenmemiş veya bir Auth Account tarafından yönetilmiyorsa, bu hesaba ve içindeki fonlara erişim kalıcı olarak kaybolur.",
         "backup_warning_message_with_cloud_backup": "Bu hesabın kurtarma passphrase’inin bir kopyası sende yoksa, hesap bulut yedeklemede veya bir Ledger cihazında yedekli değilse ve bir Auth Account tarafından yönetilmiyorsa, bu hesaba ve içindeki fonlara erişim kalıcı olarak kaybolur.",
+        "backup_warning_passphrase_message": "Bu hesabın kurtarma passphrase’inin bir kopyası sende yoksa, bu hesaba ve içindeki fonlara erişim kalıcı olarak kaybolur.",
+        "backup_warning_passphrase_message_with_cloud_backup": "Bu hesabın kurtarma passphrase’inin bir kopyası sende yoksa ve hesap bulut yedeklemede değilse, bu hesaba ve içindeki fonlara erişim kalıcı olarak kaybolur.",
+        "backup_warning_private_key_message": "Bu hesabın özel anahtarının bir kopyası sende yoksa, bu hesaba ve içindeki fonlara erişim kalıcı olarak kaybolur.",
+        "backup_warning_private_key_message_with_cloud_backup": "Bu hesabın özel anahtarının bir kopyası sende yoksa ve hesap bulut yedeklemede değilse, bu hesaba ve içindeki fonlara erişim kalıcı olarak kaybolur.",
         "backup_warning_continue": "Evet, devam et",
         "backup_warning_cancel": "Hayır, hesabı koru",
         "remove_rekey_error_title": "Hesap kaldırılamıyor",
@@ -664,6 +668,7 @@
         "name_taken": "Bu isimde bir hesabın zaten var. Birbirinden ayırt edebilmek için farklı bir isim seç.",
         "type_universal_wallet": "Universal Wallet",
         "type_algo25": "Algo25 hesabı",
+        "type_private_key": "Özel anahtarlı hesap",
         "type_watch": "İzleme hesabı",
         "type_ledger": "Ledger hesabı",
         "ledger_usb_device": "Ledger (USB)",
@@ -703,6 +708,9 @@
         "multisig_no_auth_description": "Bu paylaşılan bir hesap, ancak imzalayan hesaplarından hiçbiri cüzdanında değil. Bu hesap için işlem imzalayamazsın. İmzalamak için imzalayan hesaplardan birini cüzdanına ekle.",
         "quantum_title": "Quantum hesabı",
         "quantum_description": "Gelecekteki kuantum bilgisayarlara karşı bile varlıklarını güvende tutmak için tasarlanmış, kuantum sonrası kriptografiyle korunan standart bir hesap.",
+        "private_key_title": "Özel anahtarlı hesap",
+        "private_key_description": "Hesabın cüzdanına özel anahtarıyla eklendi. Kurtarma passphrase’i yoktur, bu yüzden özel anahtarın bir kopyasını güvenli bir yerde sakla.",
+        "unknown_description": "Pera bu hesabın ne tür bir hesap olduğunu belirleyemiyor.",
         "learn_more": "Daha fazla bilgi"
     },
     "min_balance_info": {

@@ -820,6 +820,12 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             has: vi.fn(() => false),
             reset: vi.fn(),
         },
+        accountPresentationChainAdapters: {
+            register: vi.fn(),
+            get: vi.fn(),
+            has: vi.fn(() => false),
+            reset: vi.fn(),
+        },
         authorityOf,
         useAuthorityOf: vi.fn((account: any, scope?: any) =>
             account ? authorityOf(account, scope) : null,

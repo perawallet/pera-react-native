@@ -10,10 +10,11 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useAccountTypeInfo } from '../useAccountTypeInfo'
 import {
+    accountPresentationChainAdapters,
     useAccountChainStateStore,
     useAccountsStore,
     type DelegateTransition,
@@ -23,6 +24,14 @@ import {
     registerAlgorandAccountsAdapter,
     seedAuthority,
 } from '@test-utils/algorandAccountsAdapter'
+import {
+    registerEthereumAccountPresentation,
+    registerEthereumAccountsAdapter,
+} from '@test-utils/ethereumAccountsAdapter'
+import {
+    registerEthereumChain,
+    restoreAlgorandOnlyChains,
+} from '@test-utils/chain-fixtures'
 import {
     accountForType,
     type AlgorandAccountKind,
@@ -366,5 +375,93 @@ describe('useAccountTypeInfo', () => {
         expect(mockPushWebView).toHaveBeenCalledWith({
             url: 'https://support.perawallet.app/en/article/how-to-rekey-an-algorand-account-with-pera-mobile-13ykjxs/',
         })
+    })
+
+    describe('an account with no Algorand entry', () => {
+        const ethAccount = (
+            custody: WalletAccount['custody'],
+        ): WalletAccount => ({
+            id: 'eth',
+            name: '',
+            chains: {
+                ethereum: {
+                    address: '0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed',
+                },
+            },
+            custody,
+        })
+
+        beforeEach(() => {
+            registerEthereumChain()
+            registerEthereumAccountsAdapter()
+            registerEthereumAccountPresentation()
+        })
+        afterEach(restoreAlgorandOnlyChains)
+
+        it('describes a private-key account with its own copy and no article', () => {
+            const { result } = renderHook(() =>
+                useAccountTypeInfo({
+                    account: ethAccount({ kind: 'local', seed: null }),
+                }),
+            )
+
+            expect(result.current.title).toBe(
+                'account_type_info.private_key_title',
+            )
+            expect(result.current.description).toBe(
+                'account_type_info.private_key_description',
+            )
+            expect(result.current.hasLearnMore).toBe(false)
+        })
+
+        it('describes a watch account as a watch account, never No Auth, even when nothing can sign', () => {
+            mockUseCanSignWith.mockReturnValue(false)
+
+            const { result } = renderHook(() =>
+                useAccountTypeInfo({ account: ethAccount({ kind: 'watch' }) }),
+            )
+
+            expect(result.current.title).toBe('account_type_info.watch_title')
+            expect(result.current.description).toBe(
+                'account_type_info.watch_description',
+            )
+        })
+
+        it('falls back to the unknown-account copy, not Algorand copy, when no adapter reads its chain', () => {
+            registerAlgorandAccountsAdapter()
+
+            const { result } = renderHook(() =>
+                useAccountTypeInfo({
+                    account: ethAccount({ kind: 'local', seed: null }),
+                }),
+            )
+
+            expect(result.current.title).toBe('account_info.type_unknown')
+            expect(result.current.hasLearnMore).toBe(false)
+        })
+
+        it('falls back to the unknown-account copy when its chain has no presentation', () => {
+            accountPresentationChainAdapters.reset()
+
+            const { result } = renderHook(() =>
+                useAccountTypeInfo({
+                    account: ethAccount({ kind: 'local', seed: null }),
+                }),
+            )
+
+            expect(result.current.title).toBe('account_info.type_unknown')
+            expect(result.current.description).toBe(
+                'account_type_info.unknown_description',
+            )
+            expect(result.current.hasLearnMore).toBe(false)
+        })
+    })
+
+    it('offers learn more for an Algorand account, which has an article', () => {
+        const { result } = renderHook(() =>
+            useAccountTypeInfo({ account: accountOfType('standalone') }),
+        )
+
+        expect(result.current.hasLearnMore).toBe(true)
     })
 })

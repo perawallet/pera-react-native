@@ -10,10 +10,14 @@
  limitations under the License
  */
 
-import { accountsChainAdapters } from '@perawallet/wallet-core-accounts'
+import {
+    accountPresentationChainAdapters,
+    accountsChainAdapters,
+} from '@perawallet/wallet-core-accounts'
 import type { ChainContext } from '@perawallet/wallet-core-chain-contract'
 import { deviceChainAdapters } from '@perawallet/wallet-core-device'
 import { createEthereumAccountsAdapter } from '@packages/chain-ethereum/src/accounts/adapter'
+import { createEvmAccountPresentation } from '@packages/chain-ethereum/src/accounts/presentation'
 import { evmChainOf } from '@packages/chain-ethereum/src/chains/table'
 import { createEvmDeviceAdapter } from '@packages/chain-ethereum/src/device'
 
@@ -37,6 +41,19 @@ export const registerEthereumDeviceAdapter = (): void => {
     if (!deviceChainAdapters.has('ethereum')) {
         deviceChainAdapters.register(
             createEvmDeviceAdapter(evmChainOf('ethereum')),
+        )
+    }
+}
+
+/**
+ * Adds Ethereum's account presentation next to the Algorand one a spec
+ * registered; call it after `registerAlgorandAccountsAdapter`, which resets
+ * that registry.
+ */
+export const registerEthereumAccountPresentation = (): void => {
+    if (!accountPresentationChainAdapters.has('ethereum')) {
+        accountPresentationChainAdapters.register(
+            createEvmAccountPresentation(evmChainOf('ethereum')),
         )
     }
 }
