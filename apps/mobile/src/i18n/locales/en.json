@@ -3959,6 +3959,8 @@
             "note": "Transaction Note",
             "view_raw_transaction": "View JSON",
             "network": "Network",
+            "receive_network": "Receive network",
+            "send_network": "Send network",
             "block": "Block",
             "view_in_explorer": "View in {{explorer}}",
             "view_asset_url": "View Asset URL",

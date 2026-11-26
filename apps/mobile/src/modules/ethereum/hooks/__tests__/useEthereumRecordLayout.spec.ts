@@ -447,6 +447,11 @@ describe('useEthereumRecordLayout', () => {
 
         expect(summary.amount).toBeUndefined()
         expect(amountRows).toEqual(legs)
+        expect(summary.isNetworkOnLegs).toBe(true)
+    })
+
+    it('Given anything but a swap, then the network leads the facts', () => {
+        expect(layoutOf(recordOf()).summary.isNetworkOnLegs).toBe(false)
     })
 
     it('Given an approval, then its amount is listed rather than led with', () => {

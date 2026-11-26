@@ -74,6 +74,8 @@ export type TransactionDetailSummary = {
     /** The project behind the contract dealt with, such as the dApp a swap went through. */
     projectName?: string
     projectLogoUrl?: string
+    /** Each amount below names its own network, as a swap's legs do, so no single network row leads. */
+    isNetworkOnLegs?: boolean
     /** Unset before signing: a transaction not yet sent has no status to report. */
     status?: TransactionDetailStatus
     /** Unset when the transaction moves no single amount, or while the asset it moves is still being read. */

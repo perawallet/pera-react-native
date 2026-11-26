@@ -132,6 +132,35 @@ describe('mergeHistoryFeeds', () => {
             expect(entryKeys(merged.rows)).toEqual(['0xSOURCE'])
         })
 
+        it('lists only the swap from a network read for it, without paging or failing on its behalf', () => {
+            const merged = mergeHistoryFeeds(
+                [
+                    feed(BASE, buildRecordListRows([payout()])),
+                    feed(
+                        ETHEREUM,
+                        buildRecordListRows([
+                            source,
+                            ethAt('0xOTHER', JAN_1 + 3 * HOUR),
+                        ]),
+                        {
+                            onlySwapOrderIds: new Set(['o1']),
+                            hasNextPage: true,
+                            isError: true,
+                            isRefreshFailed: true,
+                        },
+                    ),
+                ],
+                new Map([['0xpayout', { orderId: 'o1', role: 'payout' }]]),
+            )
+
+            expect(entryKeys(merged.rows)).toEqual(['0xSOURCE'])
+            expect(merged.scopeByTransactionId.get('0xSOURCE')).toEqual(
+                ETHEREUM,
+            )
+            expect(merged.hasNextPage).toBe(false)
+            expect(merged.failedChainIds).toEqual([])
+        })
+
         it('keeps the payout where its source is not listed', () => {
             const merged = mergeHistoryFeeds([
                 feed(

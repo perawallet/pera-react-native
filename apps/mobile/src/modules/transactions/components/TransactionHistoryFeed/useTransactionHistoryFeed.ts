@@ -27,7 +27,7 @@ export const useTransactionHistoryFeed = ({
     typedScanShare,
     onChange,
 }: HistoryFeedProps): void => {
-    const { scope, address } = source
+    const { scope, address, onlySwapOrderIds } = source
     const history = useTransactionHistoryRows({
         accountAddress: address,
         scope,
@@ -93,6 +93,7 @@ export const useTransactionHistoryFeed = ({
                 isRetrying,
                 isRefreshing,
                 suspectedPoisoningById,
+                ...(onlySwapOrderIds && { onlySwapOrderIds }),
             },
             actions,
         )
@@ -117,6 +118,7 @@ export const useTransactionHistoryFeed = ({
         isRetrying,
         isRefreshing,
         suspectedPoisoningById,
+        onlySwapOrderIds,
     ])
 
     useEffect(

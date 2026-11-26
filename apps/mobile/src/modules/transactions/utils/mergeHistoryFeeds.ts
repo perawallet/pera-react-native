@@ -48,6 +48,12 @@ export type HistoryFeedSnapshot = {
     isRetrying: boolean
     isRefreshing: boolean
     suspectedPoisoningById: ReadonlyMap<string, SuspectedPoisoning>
+    /**
+     * Set on a network read only for the swaps it paid into the shown one: it
+     * lists those orders' source rows alone, never pages and never reports a
+     * failure, since the list isn't that network's history.
+     */
+    onlySwapOrderIds?: ReadonlySet<string>
 }
 
 export type MergedHistory = {
@@ -110,11 +116,35 @@ export type KnownSwapLegs = ReadonlyMap<string, TransactionSwapLeg>
  * names legs the history backend hasn't linked to their order yet.
  */
 export const mergeHistoryFeeds = (
-    feeds: readonly Optional<HistoryFeedSnapshot>[],
+    allFeeds: readonly Optional<HistoryFeedSnapshot>[],
     knownSwapLegs?: KnownSwapLegs,
 ): MergedHistory => {
-    const entriesByFeed = feeds.map(feed =>
-        (feed?.rows ?? []).filter(isEntryRow),
+    const legOf = (row: TransactionEntryRow) =>
+        (row.kind === TRANSACTION_ROW_TYPES.record
+            ? row.record.swapLeg
+            : undefined) ?? knownSwapLegs?.get(row.key.toLowerCase())
+    const entriesByFeed = allFeeds.map(feed => {
+        const entries = (feed?.rows ?? []).filter(isEntryRow)
+        const orderIds = feed?.onlySwapOrderIds
+        if (!orderIds) return entries
+        return entries.filter(row => {
+            const leg = legOf(row)
+            return leg?.role === 'source' && orderIds.has(leg.orderId)
+        })
+    })
+    // A swaps-only feed lists rows, but its paging and failures aren't this list's.
+    const feeds = allFeeds.map(feed =>
+        feed?.onlySwapOrderIds
+            ? {
+                  ...feed,
+                  hasNextPage: false,
+                  isSearchPaused: false,
+                  isError: false,
+                  isLoadFailed: false,
+                  isRefreshFailed: false,
+                  isRetrying: false,
+              }
+            : feed,
     )
 
     // A feed that loaded nothing or paused holds nothing back. One whose later
@@ -143,10 +173,7 @@ export const mergeHistoryFeeds = (
 
     const visible = withoutListedSwapPayoutsBy(
         entriesByFeed.flat().filter(row => entryRowTimestampOf(row) >= cutoff),
-        row =>
-            (row.kind === TRANSACTION_ROW_TYPES.record
-                ? row.record.swapLeg
-                : undefined) ?? knownSwapLegs?.get(row.key.toLowerCase()),
+        legOf,
     )
     const rows = buildMergedListRows(visible)
 
@@ -164,7 +191,11 @@ export const mergeHistoryFeeds = (
     )
     const failed = erroredFeeds.map(index => feeds[index]!)
     const loadFailed = failed.filter(feed => feed.isLoadFailed)
-    const isLoadFailed = feeds.length > 0 && loadFailed.length === feeds.length
+    const historyFeedCount = feeds.filter(
+        feed => !feed?.onlySwapOrderIds,
+    ).length
+    const isLoadFailed =
+        historyFeedCount > 0 && loadFailed.length === historyFeedCount
     const isLoadUnavailable =
         isLoadFailed && loadFailed.every(feed => feed.isLoadUnavailable)
     const chainIdsOf = (list: HistoryFeedSnapshot[]): ChainId[] => [
@@ -187,14 +218,15 @@ export const mergeHistoryFeeds = (
 
     const scopeByTransactionId = new Map<string, ChainScope>()
     const suspectedPoisoningById = new Map<string, SuspectedPoisoning>()
-    for (const feed of reported) {
-        for (const row of feed.rows) {
-            if (isEntryRow(row)) scopeByTransactionId.set(row.key, feed.scope)
+    reported.forEach(feed => {
+        const index = feeds.indexOf(feed)
+        for (const row of entriesByFeed[index] ?? []) {
+            scopeByTransactionId.set(row.key, feed.scope)
         }
         for (const [id, suspected] of feed.suspectedPoisoningById) {
             suspectedPoisoningById.set(id, suspected)
         }
-    }
+    })
 
     return {
         rows,

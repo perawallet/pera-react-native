@@ -43,10 +43,6 @@ export const EthereumRecordAmountCard = ({
     isSwap = false,
 }: EthereumRecordAmountCardProps) => {
     const { t } = useLanguage()
-    // A cross-chain swap's legs are on different networks, so each names its own.
-    const isCrossChain =
-        isSwap &&
-        new Set(changes.map(change => change.assetRef.chainId)).size > 1
 
     if (changes.length === 0 && !assetLabel && !assetContract) {
         return null
@@ -90,10 +86,15 @@ export const EthereumRecordAmountCard = ({
                         }
                         testID={`ethereum_record_amount_${index}`}
                     />
-                    {isCrossChain && (
+                    {/* A swap's legs can be on different networks, so each names its own. */}
+                    {isSwap && (
                         <KeyValueRow
                             testID={`ethereum_record_amount_network_${index}`}
-                            title={t('transactions.common.network')}
+                            title={t(
+                                change.value.isNegative()
+                                    ? 'transactions.common.send_network'
+                                    : 'transactions.common.receive_network',
+                            )}
                         >
                             <ChainChip
                                 chainId={change.assetRef.chainId}

@@ -31,19 +31,22 @@ export const TransactionDetailFactsCard = ({
     isAmountShown = false,
 }: TransactionDetailFactsCardProps) => {
     const { t } = useLanguage()
-    const { scope, transactionId, timestamp, block, amount } = summary
+    const { scope, transactionId, timestamp, block, amount, isNetworkOnLegs } =
+        summary
 
     return (
         <TransactionDetailCard testID='transaction_detail_facts'>
-            <KeyValueRow
-                testID='transaction_detail_network'
-                title={t('transactions.common.network')}
-            >
-                <ChainChip
-                    chainId={scope.chainId}
-                    isBare
-                />
-            </KeyValueRow>
+            {!isNetworkOnLegs && (
+                <KeyValueRow
+                    testID='transaction_detail_network'
+                    title={t('transactions.common.network')}
+                >
+                    <ChainChip
+                        chainId={scope.chainId}
+                        isBare
+                    />
+                </KeyValueRow>
+            )}
             {isAmountShown && !!amount && (
                 <KeyValueRow
                     testID='transaction_detail_amount'

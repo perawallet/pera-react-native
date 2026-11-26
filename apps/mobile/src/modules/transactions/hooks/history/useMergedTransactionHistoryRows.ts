@@ -27,6 +27,8 @@ import {
 export type HistoryFeedSource = {
     scope: ChainScope
     address: string
+    /** Lists only these swap orders' source rows; see `HistoryFeedSnapshot`. */
+    onlySwapOrderIds?: ReadonlySet<string>
 }
 
 export type HistoryFeedActions = {

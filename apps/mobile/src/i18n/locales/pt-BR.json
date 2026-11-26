@@ -3976,6 +3976,8 @@
             "note": "Nota da transação",
             "view_raw_transaction": "Ver JSON",
             "network": "Rede",
+            "receive_network": "Rede de recebimento",
+            "send_network": "Rede de envio",
             "block": "Bloco",
             "view_in_explorer": "Ver em {{explorer}}",
             "view_asset_url": "Ver URL do ativo",

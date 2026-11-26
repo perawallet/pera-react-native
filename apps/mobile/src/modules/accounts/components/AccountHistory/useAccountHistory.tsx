@@ -13,10 +13,7 @@
 import { useCallback, type ReactElement } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import type {
-    ChainId,
-    ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     historyItemGroupToOpen,
     type SuspectedPoisoning,
@@ -78,8 +75,6 @@ export type UseAccountHistoryResult = {
     isEmpty: boolean
     /** The network the history is narrowed to by the network chip; null is All. */
     networkChainId: Nullable<ChainId>
-    /** Unlike `networkChainId` (the chip), the full scope the rows come from; null on a merged history. */
-    shownScope: Nullable<ChainScope>
     /** Empty when the account is on one network, so no chips show. */
     chainFilterOptions: FilterOption<Nullable<ChainId>>[]
     /** Shared with the Assets chips, so both tabs show the same network. */
@@ -306,7 +301,6 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         handleFilterPress,
         isEmpty,
         networkChainId,
-        shownScope: isMerged ? null : scope,
         chainFilterOptions,
         handleSelectChain,
         isMerged,

@@ -3959,6 +3959,8 @@
             "note": "İşlem notu",
             "view_raw_transaction": "JSON’u görüntüle",
             "network": "Ağ",
+            "receive_network": "Alım ağı",
+            "send_network": "Gönderim ağı",
             "block": "Blok",
             "view_in_explorer": "{{explorer}} üzerinde görüntüle",
             "view_asset_url": "Varlık URL’sini görüntüle",
