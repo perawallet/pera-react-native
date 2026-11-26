@@ -458,6 +458,75 @@ describe('asset sync queries', () => {
         })
     })
 
+    describe('getStaleOrMissingAssetIds — non-verified recheck', () => {
+        const withTier = (tier: 'verified' | 'unverified' | 'suspicious') =>
+            makeAsset({
+                peraMetadata: { isDeleted: false, verificationTier: tier },
+            })
+
+        const seedPera = (asset: PeraAsset) =>
+            upsertAssets({ db, items: [asset], scope: MAINNET_SCOPE })
+
+        // Older than the day, younger than the metadata TTL, so only the
+        // non-verified recheck can return it.
+        const ageRows = (days = 2) =>
+            db.run(
+                sql`update assets_pera set updated_at = ${Date.now() - days * 24 * 60 * 60 * 1000}`,
+            )
+
+        const recheck = (recheckNonVerified = true) =>
+            getStaleOrMissingAssetIds({
+                db,
+                assetIds: ['31566704'],
+                scope: MAINNET_SCOPE,
+                ttlMs: 7 * 24 * 60 * 60 * 1000,
+                recheckNonVerified,
+            })
+
+        it.each(['unverified', 'suspicious'] as const)(
+            'rechecks a %s token once its Pera row is a day old',
+            async tier => {
+                await seedPera(withTier(tier))
+                await ageRows()
+
+                expect(await recheck()).toEqual(['31566704'])
+            },
+        )
+
+        it('leaves a verified token on the metadata TTL', async () => {
+            await seedPera(withTier('verified'))
+            await ageRows()
+
+            expect(await recheck()).toEqual([])
+        })
+
+        it('waits out the day after a fresh read', async () => {
+            await seedPera(withTier('unverified'))
+
+            expect(await recheck()).toEqual([])
+        })
+
+        it('leaves a token stored without a Pera row on the normal TTL', async () => {
+            await upsertNodeAssets({
+                db,
+                items: [makeAsset()],
+                scope: MAINNET_SCOPE,
+            })
+            await db.run(
+                sql`update assets_node set updated_at = ${Date.now() - 2 * 24 * 60 * 60 * 1000}`,
+            )
+
+            expect(await recheck()).toEqual([])
+        })
+
+        it('does not recheck when the caller omits the flag', async () => {
+            await seedPera(withTier('unverified'))
+            await ageRows()
+
+            expect(await recheck(false)).toEqual([])
+        })
+    })
+
     describe('getStaleOrMissingAssetIds — missing logo recheck', () => {
         const withLogo = (
             logo: string | null,
