@@ -184,6 +184,12 @@ Choosing A Pay Asset Returns To The Form
     Wait Until Page Contains Element    ${PAY_ASSET_ROW_ANY}    timeout=15s
     Tap    ${PAY_ASSET_ROW_ANY}
     Wait Until Page Does Not Contain Element    ${ASSET_SEARCH_INPUT}    timeout=15s
+    # An asset several accounts hold asks which account pays before returning.
+    ${ask}=    Run Keyword And Return Status    Page Should Contain Element    ${SOURCE_ACCOUNT_HEADER}
+    IF    ${ask}
+        Tap    ${SOURCE_ACCOUNT_ROW_ANY}
+        Wait Until Page Does Not Contain Element    ${SOURCE_ACCOUNT_HEADER}    timeout=15s
+    END
     Wait Until Page Contains Element    ${SWAP_PAY_INPUT}    timeout=15s
 
 Flip Swaps Pay And Receive And Flips Back

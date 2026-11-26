@@ -10,14 +10,16 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import type {
+    AccountChainAssetBalance,
     AssetWithAccountBalance,
-    ChainAssetBalance,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
+import type { SwapPayHolding } from '@perawallet/wallet-core-swaps'
 
 /** The picked asset, on the scope it lives on. */
 export type SwapAssetSelection = {
@@ -25,6 +27,8 @@ export type SwapAssetSelection = {
     scope: ChainScope
     /** `pay` also comes from Swap To when the user moves the swap onto another network. */
     side: 'pay' | 'receive'
+    /** The account to pay from, when the pick named one; unset keeps the selected account. */
+    accountId?: string
 }
 
 type UseSwapAssetSelectionContentResult = {
@@ -32,7 +36,11 @@ type UseSwapAssetSelectionContentResult = {
         asset: AssetWithAccountBalance,
         assetScope: ChainScope,
     ) => void
-    handleFromAssetSelected: (holding: ChainAssetBalance) => void
+    /** The asset held by several accounts, while the user picks which one pays. */
+    pendingPayHolding: Nullable<SwapPayHolding>
+    handleFromAssetSelected: (holding: SwapPayHolding) => void
+    handleSourceAccountSelected: (holder: AccountChainAssetBalance) => void
+    handleBackToAssets: () => void
     handleSwitchPayAsset: (assetId: string, payScope: ChainScope) => void
 }
 
@@ -56,6 +64,8 @@ export const useSwapAssetSelectionContent = (
     variant: 'from' | 'to',
 ): UseSwapAssetSelectionContentResult => {
     const { resolve } = useBottomSheetResult<SwapAssetSelection>()
+    const [pendingPayHolding, setPendingPayHolding] =
+        useState<Nullable<SwapPayHolding>>(null)
 
     const handleAssetSelected = useCallback(
         (asset: AssetWithAccountBalance, assetScope: ChainScope) => {
@@ -69,17 +79,31 @@ export const useSwapAssetSelectionContent = (
         [resolve, variant],
     )
 
-    const handleFromAssetSelected = useCallback(
-        (holding: ChainAssetBalance) => {
-            trackAssetPick('from', holding, holding.scope)
+    const handleSourceAccountSelected = useCallback(
+        (holder: AccountChainAssetBalance) =>
             resolve({
-                assetId: holding.assetId,
-                scope: holding.scope,
+                assetId: holder.assetId,
+                scope: holder.scope,
                 side: 'pay',
-            })
-        },
+                accountId: holder.accountId,
+            }),
         [resolve],
     )
+
+    const handleFromAssetSelected = useCallback(
+        (holding: SwapPayHolding) => {
+            trackAssetPick('from', holding, holding.scope)
+            const [onlyHolder, ...others] = holding.holders
+            if (others.length > 0) {
+                setPendingPayHolding(holding)
+                return
+            }
+            handleSourceAccountSelected(onlyHolder)
+        },
+        [handleSourceAccountSelected],
+    )
+
+    const handleBackToAssets = useCallback(() => setPendingPayHolding(null), [])
 
     const handleSwitchPayAsset = useCallback(
         (assetId: string, payScope: ChainScope) =>
@@ -89,7 +113,10 @@ export const useSwapAssetSelectionContent = (
 
     return {
         handleAssetSelected,
+        pendingPayHolding,
         handleFromAssetSelected,
+        handleSourceAccountSelected,
+        handleBackToAssets,
         handleSwitchPayAsset,
     }
 }

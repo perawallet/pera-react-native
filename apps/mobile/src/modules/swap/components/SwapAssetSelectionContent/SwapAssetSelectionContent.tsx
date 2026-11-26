@@ -18,6 +18,7 @@ import { PWView } from '@components/core'
 import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { SwapFromAssetSelectionList } from '../SwapFromAssetSelectionList'
+import { SwapSourceAccountList } from '../SwapSourceAccountList'
 import { SwapToAssetSelectionList } from '../SwapToAssetSelectionList'
 import { useStyles } from './styles'
 import { useSwapAssetSelectionContent } from './useSwapAssetSelectionContent'
@@ -38,9 +39,30 @@ export const SwapAssetSelectionContent = (
     const styles = useStyles()
     const {
         handleAssetSelected,
+        pendingPayHolding,
         handleFromAssetSelected,
+        handleSourceAccountSelected,
+        handleBackToAssets,
         handleSwitchPayAsset,
     } = useSwapAssetSelectionContent(variant)
+
+    if (pendingPayHolding) {
+        return (
+            <>
+                <SheetHeader
+                    title={t('swap.source_account.title')}
+                    onBack={handleBackToAssets}
+                    testID='swap_source_account_header'
+                />
+                <PWView style={styles.body}>
+                    <SwapSourceAccountList
+                        holding={pendingPayHolding}
+                        onSelect={handleSourceAccountSelected}
+                    />
+                </PWView>
+            </>
+        )
+    }
 
     const title =
         variant === 'from'
@@ -83,9 +105,6 @@ export const SwapAssetSelectionContent = (
                         )}
                         emptyChainResultBody={t(
                             'swap.asset_selection.no_chain_results_body',
-                        )}
-                        emptyAccountResultBody={t(
-                            'swap.asset_selection.no_account_results_body',
                         )}
                     />
                 )}

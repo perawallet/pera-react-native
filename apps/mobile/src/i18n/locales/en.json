@@ -4414,7 +4414,7 @@
             "no_results_title": "No Matching Assets",
             "no_results_body": "No assets matched your search term",
             "no_chain_results_body": "No assets available on this network",
-            "no_account_results_body": "This account has no assets to swap",
+            "total_across_accounts": "Total across {{accounts}} accounts",
             "cross_network_empty_title": "Can't swap {{asset}} to {{network}}",
             "cross_network_empty_body": "{{asset}} on {{payNetwork}} can't be swapped for assets on {{network}} yet. To get them, pay with an asset on {{network}} instead.",
             "cross_network_empty_body_other_account": "{{asset}} on {{payNetwork}} can't be swapped for assets on {{network}} yet. To get them, switch to an account on {{network}} and pay with one of its assets.",
@@ -4556,6 +4556,10 @@
         "receiving_account": {
             "title": "Receiving account",
             "label": "Receive to"
+        },
+        "source_account": {
+            "title": "Select account",
+            "subtitle": "You have <0>{{accounts}} accounts</0> with this asset. Choose one to continue."
         }
     },
     "onramp": {
