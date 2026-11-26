@@ -20,12 +20,20 @@ export const notificationStatusResponseSchema = z.object({
 // `creation_datetime` may be null or absent depending on the notification
 // type (e.g. rekey notifications carry no deeplink target), so only reject
 // rows that can't be keyed or sorted.
+// `address` is the full address the backend made `text` from, set only where it
+// trusts that party; any other key an argument gains later is dropped.
+export const notificationArgumentSchema = z.object({
+    text: z.string(),
+    address: z.string().optional(),
+})
+
 export const notificationResponseSchema = z.object({
     id: z.coerce.string(),
     type: z.string().nullish(),
     account_address: z.string().nullish(),
+    /** A server-translated template with `{{name}}` placeholders, one per `arguments` entry. */
     message: z.string().nullish(),
-    counterparty_address: z.string().nullish(),
+    arguments: z.record(z.string(), notificationArgumentSchema).nullish(),
     url: z.string().nullish(),
     creation_datetime: z.string(),
     is_unread: z.boolean().nullish(),
@@ -52,6 +60,9 @@ export const notificationsListResponseSchema = z.object({
 
 export type NotificationStatusResponse = z.infer<
     typeof notificationStatusResponseSchema
+>
+export type NotificationArgumentResponse = z.infer<
+    typeof notificationArgumentSchema
 >
 export type NotificationResponse = z.infer<typeof notificationResponseSchema>
 export type NotificationsListResponse = z.infer<

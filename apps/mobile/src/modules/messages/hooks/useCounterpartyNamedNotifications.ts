@@ -20,11 +20,13 @@ import {
     useContactsStore,
 } from '@perawallet/wallet-core-contacts'
 import {
-    nameNotificationCounterparty,
-    notificationCounterpartyAddress,
+    hasNameableAddress,
+    renderNotificationMessage,
     type PeraNotification,
 } from '@perawallet/wallet-core-messages'
 
+// Matches the full address through each chain's codec, never the shortened
+// text: a look-alike address shortens to the same thing.
 export const useCounterpartyNamedNotifications = (
     notifications: PeraNotification[],
 ): PeraNotification[] => {
@@ -32,22 +34,17 @@ export const useCounterpartyNamedNotifications = (
     const contacts = useContactsStore(state => state.contacts)
 
     return useMemo(() => {
+        const nameOf = (address: string) =>
+            findAccountByAnyChainAddress(accounts, address)?.name ||
+            findContactByAddress(contacts, address)?.name
+
         let hasNamedRow = false
         const named = notifications.map(notification => {
-            const address = notificationCounterpartyAddress(notification)
-            if (!address) return notification
-
-            const accountName = findAccountByAnyChainAddress(
-                accounts,
-                address,
-            )?.name
-            const name =
-                accountName || findContactByAddress(contacts, address)?.name
-            if (!name) return notification
-
-            const result = nameNotificationCounterparty(notification, name)
-            if (result !== notification) hasNamedRow = true
-            return result
+            if (!hasNameableAddress(notification)) return notification
+            const message = renderNotificationMessage(notification, nameOf)
+            if (message === notification.message) return notification
+            hasNamedRow = true
+            return { ...notification, message }
         })
         return hasNamedRow ? named : notifications
     }, [notifications, accounts, contacts])

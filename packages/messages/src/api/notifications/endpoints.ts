@@ -11,6 +11,7 @@
  */
 
 import { z } from 'zod'
+import { buildIntegrityHeadersWhenReady } from '@perawallet/wallet-core-app-integrity'
 import type { WalletMode } from '@perawallet/wallet-core-chain-contract'
 import { queryClient } from '@perawallet/wallet-core-shared'
 import {
@@ -27,7 +28,7 @@ const getNotificationStatusEndpoint = (deviceID: string) =>
     `/v1/devices/${deviceID}/notification-status/`
 
 const getNotificationListEndpoint = (deviceID: string) =>
-    `/v2/devices/${deviceID}/notifications/`
+    `/api/v4/devices/${deviceID}/notifications/`
 
 // Pagination envelope parsed separately from the rows so a single malformed
 // notification can be dropped instead of failing the whole page — parity with
@@ -77,6 +78,7 @@ export const fetchNotificationList = async (
         method: 'GET',
         url: getNotificationListEndpoint(deviceID),
         params: { cursor },
+        headers: await buildIntegrityHeadersWhenReady(),
     })
 
     return parseNotificationsListResponse(response.data)

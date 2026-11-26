@@ -22,6 +22,12 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     queryClient: vi.fn(),
 }))
 
+vi.mock('@perawallet/wallet-core-app-integrity', () => ({
+    buildIntegrityHeadersWhenReady: vi.fn(async () => ({
+        'x-app-integrity-token': 'token',
+    })),
+}))
+
 const DEVICE_ID = 'test-device-id'
 
 describe('fetchNotificationStatus', () => {
@@ -88,7 +94,7 @@ describe('fetchNotificationList', () => {
         vi.clearAllMocks()
     })
 
-    test('calls queryClient with correct v2 endpoint', async () => {
+    test('calls the integrity-guarded v4 endpoint', async () => {
         ;(queryClient as Mock).mockResolvedValue({ data: validResponse })
 
         await fetchNotificationList('developer', DEVICE_ID)
@@ -97,8 +103,9 @@ describe('fetchNotificationList', () => {
             backend: 'pera',
             deployment: 'developer',
             method: 'GET',
-            url: `/v2/devices/${DEVICE_ID}/notifications/`,
+            url: `/api/v4/devices/${DEVICE_ID}/notifications/`,
             params: { cursor: undefined },
+            headers: { 'x-app-integrity-token': 'token' },
         })
     })
 

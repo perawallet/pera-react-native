@@ -79,7 +79,7 @@ export const mockNotificationList = ({
         response,
         'mockNotificationList',
     )
-    return http.get(`*/v2/devices/${deviceID}/notifications/`, () =>
+    return http.get(`*/api/v4/devices/${deviceID}/notifications/`, () =>
         HttpResponse.json(response, { status }),
     )
 }

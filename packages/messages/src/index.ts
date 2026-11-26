@@ -16,7 +16,8 @@ export * from './api'
 export * from './hooks'
 export * from './models'
 export {
-    notificationCounterpartyAddress,
-    nameNotificationCounterparty,
-} from './counterparty'
+    hasNameableAddress,
+    renderNotificationMessage,
+    type NotificationAddressNamer,
+} from './messageTemplate'
 export { useNotificationsStore } from './store'

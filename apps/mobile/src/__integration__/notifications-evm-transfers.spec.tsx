@@ -347,7 +347,7 @@ describe('Flow: Ethereum transfer notifications', () => {
         })
     })
 
-    describe('Given transfer rows carry a counterparty address', () => {
+    describe('Given v4 rows mark the addresses in their arguments', () => {
         // Hardhat accounts #1 to #3; the backend sends addresses lowercase.
         const SAVINGS_ADDRESS = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
         const ALICE_ADDRESS = '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC'
@@ -368,15 +368,21 @@ describe('Flow: Ethereum transfer notifications', () => {
             name: 'Savings',
         } as WalletAccount
 
-        const counterpartyRow = (
+        const RECEIVED = '{{amount}} ETH received from {{party}} on Ethereum'
+
+        // A v4 row: `party` carries `address` only where the backend marks it.
+        const templatedRow = (
             id: string,
             type: string,
             message: string,
-            counterpartyAddress: Optional<string>,
+            amount: string,
+            party: { text: string; address?: string },
         ) => ({
             ...evmRow(id, type, message, RECEIVED_URL),
-            counterparty_address: counterpartyAddress?.toLowerCase(),
+            arguments: { amount: { text: amount }, party },
         })
+
+        const SAVINGS_SHORT = '0x7099…79c8'
 
         beforeEach(() => {
             useAccountsStore
@@ -398,45 +404,68 @@ describe('Flow: Ethereum transfer notifications', () => {
                         next: null,
                         previous: null,
                         results: [
-                            counterpartyRow(
+                            templatedRow(
                                 '401',
                                 'evm-transfer-received',
-                                '2 ETH received from 0x7099…79c8 on Ethereum',
-                                SAVINGS_ADDRESS,
+                                RECEIVED,
+                                '2',
+                                {
+                                    text: SAVINGS_SHORT,
+                                    address: SAVINGS_ADDRESS.toLowerCase(),
+                                },
                             ),
-                            counterpartyRow(
+                            templatedRow(
                                 '402',
                                 'evm-transfer-sent',
-                                'Transaction successful: 5 USDC to 0x3c44…93bc on Ethereum',
-                                ALICE_ADDRESS,
+                                'Transaction successful: {{amount}} USDC to {{party}} on Ethereum',
+                                '5',
+                                {
+                                    text: '0x3c44…93bc',
+                                    address: ALICE_ADDRESS.toLowerCase(),
+                                },
                             ),
-                            counterpartyRow(
+                            templatedRow(
                                 '403',
                                 'evm-transfer-received',
-                                '3 ETH received from 0x90f7…b906 on Ethereum',
-                                UNKNOWN_ADDRESS,
+                                RECEIVED,
+                                '3',
+                                {
+                                    text: '0x90f7…b906',
+                                    address: UNKNOWN_ADDRESS.toLowerCase(),
+                                },
                             ),
-                            counterpartyRow(
+                            templatedRow(
                                 '404',
                                 'evm-transfer-received',
-                                '4 ETH received from 0x7099…79c8 on Ethereum',
-                                LOOK_ALIKE_ADDRESS,
+                                RECEIVED,
+                                '4',
+                                {
+                                    text: SAVINGS_SHORT,
+                                    address: LOOK_ALIKE_ADDRESS,
+                                },
                             ),
-                            counterpartyRow(
+                            // A received NFT's `from`: its contract chose it, so it is never marked.
+                            templatedRow(
                                 '405',
                                 'evm-transfer-received',
-                                '5 ETH received from 0x7099…79c8 on Ethereum',
-                                undefined,
+                                RECEIVED,
+                                '5',
+                                { text: SAVINGS_SHORT },
                             ),
                             {
                                 ...evmRow(
                                     '406',
                                     'transaction-received',
-                                    '6 ALGO received from 0x7099…79c8',
+                                    '{{amount}} ALGO received from {{party}}',
                                     ALGORAND_LEGACY_URL,
                                 ),
-                                counterparty_address:
-                                    SAVINGS_ADDRESS.toLowerCase(),
+                                arguments: {
+                                    amount: { text: '6' },
+                                    party: {
+                                        text: 'ZZZZ…ZZZZ',
+                                        address: ALGO25_TEST_ADDRESS,
+                                    },
+                                },
                             },
                         ],
                     },
@@ -474,10 +503,9 @@ describe('Flow: Ethereum transfer notifications', () => {
                 '4 ETH received from 0x7099…79c8 on Ethereum',
             ],
             [
-                'a row with no counterparty address',
+                'an address the backend left unmarked',
                 '5 ETH received from 0x7099…79c8 on Ethereum',
             ],
-            ['an Algorand row', '6 ALGO received from 0x7099…79c8'],
         ])(
             'When the row is %s, then the backend text stays',
             async (_case, message) => {
@@ -486,6 +514,14 @@ describe('Flow: Ethereum transfer notifications', () => {
                 expect(await screen.findByText(message)).toBeTruthy()
             },
         )
+
+        it('When an Algorand row marks one of the accounts, then its name replaces the address', async () => {
+            renderWithNavigation(NotificationsScreen, 'Notifications')
+
+            expect(
+                await screen.findByText('6 ALGO received from Algo'),
+            ).toBeTruthy()
+        })
     })
 
     describe('Given a push for a transfer is tapped', () => {
