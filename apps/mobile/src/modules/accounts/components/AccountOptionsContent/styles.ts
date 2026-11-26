@@ -15,9 +15,15 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     topActions: {
         flexDirection: 'row',
-        justifyContent: 'space-evenly',
+        gap: theme.spacing.md,
         paddingHorizontal: theme.spacing.xl,
         marginBottom: theme.spacing.lg,
+    },
+    // Four columns at the default gap and padding are too narrow for two-word labels, so
+    // this trades edge padding for column width.
+    topActionsFour: {
+        gap: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.sm,
     },
     topAction: {
         flex: 1,

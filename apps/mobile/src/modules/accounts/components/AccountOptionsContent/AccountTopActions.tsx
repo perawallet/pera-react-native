@@ -23,7 +23,12 @@ export const AccountTopActions = ({ actions }: AccountTopActionsProps) => {
     const styles = useStyles()
 
     return (
-        <PWView style={styles.topActions}>
+        <PWView
+            style={[
+                styles.topActions,
+                actions.length > 3 && styles.topActionsFour,
+            ]}
+        >
             {actions.map(action => (
                 <RoundButton
                     key={action.id}
