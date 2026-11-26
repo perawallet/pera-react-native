@@ -4518,7 +4518,7 @@
             "started": "Swap entre cadenas enviado",
             "same_chain_started": "Swap enviado",
             "in_progress": "En curso. Tus fondos están en camino.",
-            "completed": "Completado. Tu {{toAsset}} ha llegado.",
+            "completed": "Completado. Tu {{toAsset}} ha llegado a {{network}}.",
             "failed": "El swap no se pudo completar. Si se enviaron tus fondos, el proveedor los devolverá a tu cuenta.",
             "refunded": "El swap fue reembolsado. Tu {{fromAsset}} ha vuelto a tu cuenta.",
             "expired": "El swap caducó antes de empezar. Si tus fondos salieron de tu cuenta, el estado aún puede cambiar durante un máximo de 7 días.",

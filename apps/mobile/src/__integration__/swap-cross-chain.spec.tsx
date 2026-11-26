@@ -87,6 +87,7 @@ import {
 import { useSwapToAssetSelectionList } from '@modules/swap/components/SwapToAssetSelectionList/useSwapToAssetSelectionList'
 import { SwapToAssetSelectionList } from '@modules/swap/components/SwapToAssetSelectionList'
 import { PendingSwaps } from '@modules/swap'
+import { SwapTrackedOrders } from '@modules/swap/components/SwapTrackedOrders'
 
 import { registerChainAdapters } from '../bootstrap/chain-adapters'
 import { addressOf } from './__fixtures__/accounts'
@@ -206,6 +207,7 @@ const CrossChainHost = () => {
     return (
         <>
             <PendingSwaps shownScope={null} />
+            <SwapTrackedOrders />
             <SigningOverlays />
         </>
     )
@@ -382,6 +384,35 @@ describe('Flow: Cross-chain swap (Algorand into an own Ethereum address)', () =>
         expect(
             useSwapTrackingStore.getState().orders[SWAP_ORDER_ID].status,
         ).toBe('expired')
+    })
+
+    it('Given a cross-chain swap the router completes, when the Swap screen shows its card, then the card names both networks and badges each token with its network', async () => {
+        const { sender, api } = await startHost()
+        mockSwapOrderWithPayment({
+            sender,
+            receiver: XO_PAY_IN,
+            note: XO_DEPOSIT_TAG,
+        })
+        const { reports } = spyOnSwapSubmissionAndReports()
+        server.use(mockFetchSwapOrder({ order: routerOrder('completed') }))
+
+        const quote = await quoteFor(api, sender)
+        await api.execute(quote)
+        await waitFor(() => expect(reports).toHaveLength(1))
+        await api.queryClient.refetchQueries({ queryKey: ['swaps', 'order'] })
+
+        const card = await screen.findByTestId(
+            `swap_tracked_order_${SWAP_ORDER_ID}`,
+        )
+        expect(
+            within(card).getByText('ALGO (Algorand) → ETH (Ethereum)'),
+        ).toBeTruthy()
+        expect(
+            within(card).getByTestId('chain_avatar_badge_algorand'),
+        ).toBeTruthy()
+        expect(
+            within(card).getByTestId('chain_avatar_badge_ethereum'),
+        ).toBeTruthy()
     })
 
     it("Given a quote that names a deposit address, when the order's source leg pays another address, then nothing is broadcast and nothing is tracked", async () => {

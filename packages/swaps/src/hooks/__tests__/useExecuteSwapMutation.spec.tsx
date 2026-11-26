@@ -343,7 +343,11 @@ describe('useExecuteSwapMutation', () => {
                 destinationAddress: '0xETH',
             },
             assetIn: { ref: { ...SCOPE, assetId: '0' }, unitName: 'ALGO' },
-            assetOut: { ref: { ...ETH, assetId: 'native' }, unitName: 'ETH' },
+            assetOut: {
+                ref: { ...ETH, assetId: 'native' },
+                unitName: 'ETH',
+                logo: 'https://logo/eth.png',
+            },
         })
         vi.mocked(executeSwap).mockImplementation(async (_params, context) => {
             context.onOrderSubmitting('O')
@@ -372,7 +376,11 @@ describe('useExecuteSwapMutation', () => {
             sourceAddress: 'ALGO_ADDR',
             destinationAddress: '0xETH',
             assetIn: { ref: { ...SCOPE, assetId: '0' }, unitName: 'ALGO' },
-            assetOut: { ref: { ...ETH, assetId: 'native' }, unitName: 'ETH' },
+            assetOut: {
+                ref: { ...ETH, assetId: 'native' },
+                unitName: 'ETH',
+                logo: 'https://logo/eth.png',
+            },
             status: 'pending',
             createdAt: 1_700_000_000_000,
             checkedAt: 1_700_000_000_000,

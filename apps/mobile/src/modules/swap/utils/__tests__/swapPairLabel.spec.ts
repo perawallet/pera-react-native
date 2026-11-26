@@ -10,8 +10,21 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
-import { swapPairLabel } from '../swapPairLabel'
+import { describe, expect, it, vi } from 'vitest'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { swapPairLabel, swapPairLabelWithNetworks } from '../swapPairLabel'
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    chainDisplayNameOf: (chainId: string) =>
+        ({
+            base: 'Base',
+            arbitrum: 'Arbitrum One',
+            algorand: 'Algorand',
+        })[chainId],
+}))
 
 const ref = {
     chainId: 'algorand',
@@ -36,5 +49,48 @@ describe('swapPairLabel', () => {
                 assetOut: { ref, unitName: 'ALGO' },
             }),
         ).toBe('31566704 → ALGO')
+    })
+})
+
+describe('swapPairLabelWithNetworks', () => {
+    const on = (chainId: ChainId, unitName: string | null) => ({
+        ref: { chainId, networkId: 'mainnet', assetId: '0' } as const,
+        unitName,
+    })
+
+    it('tells a pair that shares a symbol apart by network', () => {
+        expect(
+            swapPairLabelWithNetworks({
+                assetIn: on('base', 'ETH'),
+                assetOut: on('arbitrum', 'ETH'),
+            }),
+        ).toBe('ETH (Base) → ETH (Arbitrum One)')
+    })
+
+    it('names Algorand on an Algorand to EVM pair', () => {
+        expect(
+            swapPairLabelWithNetworks({
+                assetIn: on('algorand', 'ALGO'),
+                assetOut: on('base', 'USDC'),
+            }),
+        ).toBe('ALGO (Algorand) → USDC (Base)')
+    })
+
+    it('falls back to the chain id for a chain the registry does not know', () => {
+        expect(
+            swapPairLabelWithNetworks({
+                assetIn: on('polygon', 'ETH'),
+                assetOut: on('base', 'ETH'),
+            }),
+        ).toBe('ETH (polygon) → ETH (Base)')
+    })
+
+    it('falls back to the asset id when a side has no unit name', () => {
+        expect(
+            swapPairLabelWithNetworks({
+                assetIn: on('base', null),
+                assetOut: on('arbitrum', 'ETH'),
+            }),
+        ).toBe('0 (Base) → ETH (Arbitrum One)')
     })
 })

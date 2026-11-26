@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import type {
     SwapTrackedAsset,
     SwapTrackedOrder,
@@ -24,3 +25,13 @@ export const swapPairLabel = ({
     assetOut,
 }: Pick<SwapTrackedOrder, 'assetIn' | 'assetOut'>): string =>
     `${swapAssetUnit(assetIn)} → ${swapAssetUnit(assetOut)}`
+
+export const swapNetworkName = (asset: SwapTrackedAsset): string =>
+    chainDisplayNameOf(asset.ref.chainId) ?? asset.ref.chainId
+
+/** Names each side's network, for a pair whose symbols alone can be identical. */
+export const swapPairLabelWithNetworks = ({
+    assetIn,
+    assetOut,
+}: Pick<SwapTrackedOrder, 'assetIn' | 'assetOut'>): string =>
+    `${swapAssetUnit(assetIn)} (${swapNetworkName(assetIn)}) → ${swapAssetUnit(assetOut)} (${swapNetworkName(assetOut)})`

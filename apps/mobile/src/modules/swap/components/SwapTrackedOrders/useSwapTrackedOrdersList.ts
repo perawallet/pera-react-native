@@ -11,6 +11,7 @@
  */
 
 import { useMemo } from 'react'
+import { toScopeKey } from '@perawallet/wallet-core-chain-contract'
 import {
     isSwapOrderSettled,
     useSwapTrackedOrders,
@@ -19,11 +20,20 @@ import {
 } from '@perawallet/wallet-core-swaps'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSwapAccountAddresses } from '../../hooks/useSwapAccountAddresses'
-import { swapAssetUnit, swapPairLabel } from '../../utils/swapPairLabel'
+import type { SwapIconAsset } from '../../utils/swapAssetToDisplayable'
+import {
+    swapAssetUnit,
+    swapNetworkName,
+    swapPairLabel,
+    swapPairLabelWithNetworks,
+} from '../../utils/swapPairLabel'
+import { swapTrackedIconAsset } from '../../utils/swapTrackedIconAsset'
 import { swapTrackingStatusKey } from '../../utils/swapTrackingStatusKey'
 
 export type SwapTrackedOrderRow = {
     orderId: string
+    assetIn: SwapIconAsset
+    assetOut: SwapIconAsset
     pairLabel: string
     statusText: string
     isSettled: boolean
@@ -50,12 +60,20 @@ export const useSwapTrackedOrdersList = (): UseSwapTrackedOrdersListResult => {
         return orders.map(order => {
             const fromAsset = swapAssetUnit(order.assetIn)
             const toAsset = swapAssetUnit(order.assetOut)
+            const isCrossChain =
+                toScopeKey(order.sourceScope) !==
+                toScopeKey(order.destinationScope)
             return {
                 orderId: order.orderId,
-                pairLabel: swapPairLabel(order),
+                assetIn: swapTrackedIconAsset(order.assetIn),
+                assetOut: swapTrackedIconAsset(order.assetOut),
+                pairLabel: isCrossChain
+                    ? swapPairLabelWithNetworks(order)
+                    : swapPairLabel(order),
                 statusText: t(swapTrackingStatusKey(order.status), {
                     fromAsset,
                     toAsset,
+                    network: swapNetworkName(order.assetOut),
                 }),
                 isSettled: isSwapOrderSettled(order, now),
             }

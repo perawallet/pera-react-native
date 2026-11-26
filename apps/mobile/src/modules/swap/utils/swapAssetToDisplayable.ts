@@ -12,7 +12,15 @@
 import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
 import type { SwapAsset } from '@perawallet/wallet-core-swaps'
 
-export const swapAssetToDisplayable = (asset: SwapAsset): DisplayableAsset => ({
+/** What a swap asset icon needs: its chain (`ref`) and how to draw it. */
+export type SwapIconAsset = Pick<
+    SwapAsset,
+    'ref' | 'assetId' | 'name' | 'unitName' | 'decimals' | 'logo'
+>
+
+export const swapAssetToDisplayable = (
+    asset: SwapIconAsset,
+): DisplayableAsset => ({
     assetId: asset.assetId,
     name: asset.name,
     unitName: asset.unitName,

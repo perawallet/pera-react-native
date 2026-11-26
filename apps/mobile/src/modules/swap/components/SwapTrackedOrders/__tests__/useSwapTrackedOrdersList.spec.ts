@@ -20,6 +20,26 @@ import {
 } from '@perawallet/wallet-core-swaps'
 import { useSwapTrackedOrdersList } from '../useSwapTrackedOrdersList'
 
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string, params?: unknown) =>
+            `${key}|${JSON.stringify(params ?? {})}`,
+    }),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    chainDisplayNameOf: (chainId: string) =>
+        ({
+            base: 'Base',
+            arbitrum: 'Arbitrum One',
+            algorand: 'Algorand',
+            ethereum: 'Ethereum',
+        })[chainId],
+}))
+
 vi.mock('../../../hooks/useSwapAccountAddresses', () => ({
     useSwapAccountAddresses: () => [
         {
@@ -72,12 +92,72 @@ describe('useSwapTrackedOrdersList', () => {
         const texts = result.current.rows.map(row => row.statusText)
         expect(new Set(texts).size).toBe(3)
         expect(result.current.rows[0]).toMatchObject({
-            pairLabel: 'ALGO → ETH',
+            pairLabel: 'ALGO (Algorand) → ETH (Ethereum)',
             isSettled: true,
         })
         expect(vi.mocked(useSwapTrackedOrders)).toHaveBeenCalledWith([
             'ALGO_ADDR',
         ])
+    })
+
+    it('names both networks when a swap crosses chains between same-symbol tokens', () => {
+        const base = { chainId: 'base', networkId: 'mainnet' } as const
+        const arbitrum = { chainId: 'arbitrum', networkId: 'mainnet' } as const
+        vi.mocked(useSwapTrackedOrders).mockReturnValue([
+            {
+                ...order('1', 'completed'),
+                sourceScope: base,
+                destinationScope: arbitrum,
+                assetIn: {
+                    ref: { ...base, assetId: 'native' },
+                    unitName: 'ETH',
+                    logo: 'https://in',
+                },
+                assetOut: {
+                    ref: { ...arbitrum, assetId: 'native' },
+                    unitName: 'ETH',
+                    logo: 'https://out',
+                },
+            },
+        ])
+
+        const { result } = renderHook(() => useSwapTrackedOrdersList())
+
+        const [row] = result.current.rows
+        expect(row.pairLabel).toBe('ETH (Base) → ETH (Arbitrum One)')
+        expect(row.statusText).toContain('"network":"Arbitrum One"')
+        expect(row.assetIn).toMatchObject({
+            ref: { chainId: 'base' },
+            logo: 'https://in',
+        })
+        expect(row.assetOut).toMatchObject({
+            ref: { chainId: 'arbitrum' },
+            logo: 'https://out',
+        })
+    })
+
+    it('keeps the compact label for a same-chain order and still names its network in the completion text', () => {
+        const base = { chainId: 'base', networkId: 'mainnet' } as const
+        vi.mocked(useSwapTrackedOrders).mockReturnValue([
+            {
+                ...order('1', 'completed'),
+                sourceScope: base,
+                destinationScope: base,
+                assetIn: {
+                    ref: { ...base, assetId: '0xUSDC' },
+                    unitName: 'USDC',
+                },
+                assetOut: {
+                    ref: { ...base, assetId: 'native' },
+                    unitName: 'ETH',
+                },
+            },
+        ])
+
+        const { result } = renderHook(() => useSwapTrackedOrdersList())
+
+        expect(result.current.rows[0].pairLabel).toBe('USDC → ETH')
+        expect(result.current.rows[0].statusText).toContain('"network":"Base"')
     })
 
     it('marks an order in flight as unsettled', () => {

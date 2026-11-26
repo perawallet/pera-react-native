@@ -4518,7 +4518,7 @@
             "started": "Swap inter-chaînes envoyé",
             "same_chain_started": "Swap envoyé",
             "in_progress": "En cours. Vos fonds sont en route.",
-            "completed": "Terminé. Vos fonds en {{toAsset}} sont arrivés.",
+            "completed": "Terminé. Vos fonds en {{toAsset}} sont arrivés sur {{network}}.",
             "failed": "Le swap n’a pas pu aboutir. Si vos fonds ont été envoyés, le fournisseur les restituera sur votre compte.",
             "refunded": "Le swap a été remboursé. Vos fonds en {{fromAsset}} sont de retour sur votre compte.",
             "expired": "Le swap a expiré avant de commencer. Si vos fonds ont quitté votre compte, le statut peut encore changer pendant 7 jours maximum.",

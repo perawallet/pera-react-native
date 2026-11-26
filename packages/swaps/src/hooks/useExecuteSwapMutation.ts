@@ -49,6 +49,7 @@ type ExecuteSwapMutationVariables = ExecuteSwapVariables & {
 const trackedAsset = (asset: SwapAsset) => ({
     ref: asset.ref,
     unitName: asset.unitName ?? null,
+    logo: asset.logo,
 })
 
 const toTrackedOrder = (

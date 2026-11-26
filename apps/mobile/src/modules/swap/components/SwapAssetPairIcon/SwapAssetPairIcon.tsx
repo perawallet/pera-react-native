@@ -14,13 +14,15 @@ import { toScopeKey } from '@perawallet/wallet-core-chain-contract'
 import { PWView } from '@components/core'
 import { AssetIcon } from '@components/AssetIcon'
 import { ChainAvatarBadge } from '@modules/chain-ui/icon'
-import { swapAssetToDisplayable } from '@modules/swap/utils/swapAssetToDisplayable'
-import type { SwapAsset } from '@perawallet/wallet-core-swaps'
+import {
+    swapAssetToDisplayable,
+    type SwapIconAsset,
+} from '@modules/swap/utils/swapAssetToDisplayable'
 import { useStyles } from './styles'
 
 export type SwapAssetPairIconProps = {
-    assetIn: SwapAsset
-    assetOut: SwapAsset
+    assetIn: SwapIconAsset
+    assetOut: SwapIconAsset
     surfaceColor: string
     /** Pins each leg's network to its icon; the source leg's only when the swap crosses chains. */
     isChainShown?: boolean

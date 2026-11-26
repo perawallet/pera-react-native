@@ -264,6 +264,8 @@ export type SwapAccountAddressWithId = SwapAccountAddressOnDevice & {
 export interface SwapTrackedAsset {
     ref: SwapAssetRef
     unitName: Nullable<string>
+    /** The router's logo URL from the quote; absent on orders persisted before it was stored. */
+    logo?: string
 }
 
 /** Holds no amounts: those come from the live order. */

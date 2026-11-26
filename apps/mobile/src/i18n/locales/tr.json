@@ -4518,7 +4518,7 @@
             "started": "Zincirler arası swap gönderildi",
             "same_chain_started": "Swap gönderildi",
             "in_progress": "Devam ediyor. Varlıkların yolda.",
-            "completed": "Tamamlandı. {{toAsset}} varlığın hesabına ulaştı.",
+            "completed": "Tamamlandı. {{toAsset}} varlığın {{network}} ağındaki hesabına ulaştı.",
             "failed": "Swap tamamlanamadı. Varlıkların gönderildiyse sağlayıcı onları hesabına iade edecek.",
             "refunded": "Swap iade edildi. {{fromAsset}} varlığın hesabına geri döndü.",
             "expired": "Swap başlamadan süresi doldu. Varlıkların hesabından çıktıysa durum 7 güne kadar değişebilir.",

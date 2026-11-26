@@ -10,14 +10,17 @@
  limitations under the License
  */
 
+import { useTheme } from '@rneui/themed'
 import { PWButton, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { SwapAssetPairIcon } from '../SwapAssetPairIcon'
 import { useSwapTrackedOrdersList } from './useSwapTrackedOrdersList'
 import { useStyles } from './styles'
 
 export const SwapTrackedOrders = () => {
     const { t } = useLanguage()
     const styles = useStyles()
+    const { theme } = useTheme()
     const { rows, isVisible, handleDismiss } = useSwapTrackedOrdersList()
 
     if (!isVisible) return null
@@ -33,6 +36,12 @@ export const SwapTrackedOrders = () => {
                     style={styles.row}
                     testID={`swap_tracked_order_${row.orderId}`}
                 >
+                    <SwapAssetPairIcon
+                        assetIn={row.assetIn}
+                        assetOut={row.assetOut}
+                        surfaceColor={theme.colors.background}
+                        isChainShown
+                    />
                     <PWView style={styles.texts}>
                         <PWText
                             variant='body'
