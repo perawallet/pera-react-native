@@ -194,7 +194,13 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
         const confirmation =
             await requestBottomSheet<ConfirmTurnOffBackupResult>({
                 contents: <ConfirmTurnOffBackupSheet choice={choice} />,
-                options: { size: 'auto', enablePanDownToClose: true },
+                // The at-risk list scrolls within the sheet's height, which
+                // gorhom's default container can't do.
+                options: {
+                    size: 'auto',
+                    enablePanDownToClose: true,
+                    autoCreateContainer: false,
+                },
             })
         if (confirmation?.kind === 'backUpFirst') {
             launchBackupFlow(confirmation.account)

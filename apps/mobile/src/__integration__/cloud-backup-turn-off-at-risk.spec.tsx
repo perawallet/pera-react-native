@@ -44,6 +44,7 @@ import {
     BACKUP_MNEMONIC,
     fundOnAlgorandMainnet,
     seedAlgo25Account,
+    seedHDWalletAccounts,
 } from './__fixtures__/cloudBackup'
 import { addressOf } from './__fixtures__/accounts'
 
@@ -191,5 +192,47 @@ describe('Flow: turning off Cloud Backup lists the accounts that lose their only
                     .getAttribute('aria-disabled'),
             ).not.toBe('true'),
         )
+    })
+
+    it("Given several funded accounts at risk, then the list from its first to its last row is the sheet's scroll body, with the checkbox and buttons pinned below it", async () => {
+        const { first, second } = await seedHDWalletAccounts({
+            isAdditionalWallet: true,
+        })
+        await fundOnAlgorandMainnet(addressOf(first))
+        await fundOnAlgorandMainnet(addressOf(second))
+        renderOverview()
+
+        await openTurnOffSheet('turn_off_backup_turn_off_and_remove')
+
+        const lastRow = await screen.findByTestId(
+            `confirm_turn_off_backup_at_risk_account_${second.id}`,
+        )
+        const firstRow = screen.getByTestId(
+            `confirm_turn_off_backup_at_risk_account_${account.id}`,
+        )
+        const scrollBody = document.querySelector(
+            '[data-scroll-body="confirm_turn_off_backup_sheet"]',
+        )
+        expect(scrollBody).not.toBeNull()
+        expect(scrollBody!.contains(firstRow)).toBe(true)
+        expect(scrollBody!.contains(lastRow)).toBe(true)
+        expect(
+            firstRow.compareDocumentPosition(lastRow) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy()
+
+        const footer = screen.getByTestId(
+            'confirm_turn_off_backup_sheet_footer',
+        )
+        for (const id of [
+            'confirm_turn_off_backup_checkbox',
+            'confirm_turn_off_backup_back_up_first',
+            'confirm_turn_off_backup_turn_off_anyway',
+            'confirm_turn_off_backup_cancel',
+        ]) {
+            const control = screen.getByTestId(id)
+            expect(footer.contains(control)).toBe(true)
+            expect(scrollBody!.contains(control)).toBe(false)
+        }
     })
 })

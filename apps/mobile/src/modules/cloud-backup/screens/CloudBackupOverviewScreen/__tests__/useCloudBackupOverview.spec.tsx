@@ -586,6 +586,27 @@ describe('useCloudBackupOverview', () => {
         expect(removeBackupMock).not.toHaveBeenCalled()
     })
 
+    test('opens the turn off confirmation without the default sheet container, so its at-risk list can scroll', async () => {
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState: null,
+            accounts: [],
+            contacts: [],
+        })
+        mockRequestBottomSheet
+            .mockResolvedValueOnce('turnOff')
+            .mockResolvedValueOnce(undefined)
+
+        const { result } = renderHook(() => useCloudBackupOverview())
+        await result.current.onPressTurnOff()
+
+        expect(mockRequestBottomSheet.mock.calls[1][0].options).toEqual({
+            size: 'auto',
+            enablePanDownToClose: true,
+            autoCreateContainer: false,
+        })
+    })
+
     test('removes the remote backup once turning off and removing is confirmed', async () => {
         mockStores({
             backupId: 'did:pera:abc',
