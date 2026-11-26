@@ -23,6 +23,7 @@ import {
     DuplicateAccountError,
     localKeyKindOf,
     type LocalKeySeed,
+    setPendingImportMnemonic,
     useFindAlternateImportKinds,
     useImportAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -49,9 +50,9 @@ import { useClipboard } from '@hooks/useClipboard'
 import { useCapability } from '@hooks/useCapability'
 import { useModalState } from '@hooks/useModalState'
 import { useTabHandoff } from '@hooks/useTabHandoff'
-import { useDeepLink, DeeplinkType } from '@modules/deeplink'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useMnemonicWordEntry } from '@modules/onboarding/hooks'
+import { useScannedRecoveryPhrase } from '../../hooks/useScannedRecoveryPhrase'
 import {
     ImportAccountSupportOptionsContent,
     type ImportAccountSupportOptionsContentResult,
@@ -76,7 +77,9 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     const markBackupComplete = useMarkMnemonicBackupComplete()
     const { errorToast } = useToast()
     const { t } = useLanguage()
-    const { parseDeeplink } = useDeepLink()
+    const { readScannedRecoveryPhrase } = useScannedRecoveryPhrase(
+        scope.chainId,
+    )
     const { request: requestBottomSheet } = useBottomSheet()
     const { readText } = useClipboard()
 
@@ -296,22 +299,32 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     }, [shouldHandOff, openTab, openQRScanner])
 
     const handleQRScannerSuccess = useCallback(
-        (url: string) => {
+        (scanned: string) => {
             handleCloseQRScanner()
 
-            const parsedDeeplink = parseDeeplink(url)
+            const phrase = readScannedRecoveryPhrase(scanned)
+            if (!phrase) return
 
-            if (parsedDeeplink?.type === DeeplinkType.RECOVER_ADDRESS) {
-                updateWord(parsedDeeplink.mnemonic, 0)
+            if (phrase.wordCount === mnemonicLength) {
+                updateWord(phrase.mnemonic, 0)
                 return
             }
 
-            errorToast(
-                t('onboarding.import_account.invalid_mnemonic_title'),
-                t('onboarding.import_account.invalid_mnemonic_body'),
-            )
+            // The scan is a different length than this entry (12 words on the
+            // 24-word screen), so reopen the entry for the phrase's own kind.
+            setPendingImportMnemonic(phrase.mnemonic)
+            navigation.replace('ImportAccount', {
+                accountType: phrase.seed,
+                wordCount: phrase.wordCount,
+            })
         },
-        [handleCloseQRScanner, parseDeeplink, errorToast, t, updateWord],
+        [
+            handleCloseQRScanner,
+            readScannedRecoveryPhrase,
+            mnemonicLength,
+            updateWord,
+            navigation,
+        ],
     )
 
     const handleLearnMore = useCallback(() => {

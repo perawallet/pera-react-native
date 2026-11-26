@@ -12,11 +12,7 @@
 
 import { renderHook, act } from '@test-utils/render'
 import { afterEach, describe, it, expect, vi, beforeEach } from 'vitest'
-import {
-    detectImportKind,
-    setPendingImportMnemonic,
-} from '@perawallet/wallet-core-accounts'
-import { DeeplinkType } from '@perawallet/wallet-core-deeplinks'
+import { setPendingImportMnemonic } from '@perawallet/wallet-core-accounts'
 import {
     useImportAccountOptionsScreen,
     type UseImportAccountOptionsScreenResult,
@@ -91,12 +87,10 @@ vi.mock('react-i18next', async () => {
     }
 })
 
-const mockParseDeeplink = vi.fn()
-vi.mock('@modules/deeplink/hooks/useDeepLink', () => ({
-    useDeepLink: () => ({
-        parseDeeplink: mockParseDeeplink,
-        handleDeepLink: vi.fn(),
-        isValidDeepLink: vi.fn(),
+const mockReadScannedRecoveryPhrase = vi.fn()
+vi.mock('../../../hooks/useScannedRecoveryPhrase', () => ({
+    useScannedRecoveryPhrase: () => ({
+        readScannedRecoveryPhrase: mockReadScannedRecoveryPhrase,
     }),
 }))
 
@@ -106,7 +100,6 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     )
     return {
         ...actual,
-        detectImportKind: vi.fn(),
         setPendingImportMnemonic: vi.fn(),
     }
 })
@@ -621,124 +614,51 @@ describe('useImportAccountOptionsScreen', () => {
         expect(result.current.isQRScannerVisible).toBe(false)
     })
 
-    it('handleQRScannerSuccess hands the mnemonic to the store and pushes the Import screen without it (HD path)', () => {
-        const mnemonic = new Array(24).fill('word').join(' ')
-        mockParseDeeplink.mockReturnValue({
-            type: DeeplinkType.RECOVER_ADDRESS,
-            mnemonic,
-        })
-        vi.mocked(detectImportKind).mockReturnValue({
-            success: true,
-            seed: 'bip39',
-            wordCount: 24,
-        })
+    it.each([
+        ['bip39', 12],
+        ['bip39', 24],
+        [null, 25],
+    ])(
+        'handleQRScannerSuccess hands a %s phrase of %i words to the store and pushes the Import screen without it',
+        (seed, wordCount) => {
+            const mnemonic = new Array(wordCount).fill('word').join(' ')
+            mockReadScannedRecoveryPhrase.mockReturnValue({
+                seed,
+                wordCount,
+                mnemonic,
+            })
 
-        const { result } = renderHook(() => useImportAccountOptionsScreen())
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
 
-        act(() => {
-            result.current.handleQRScannerSuccess('perawallet://recover/...')
-        })
+            act(() => {
+                result.current.handleQRScannerSuccess('scanned')
+            })
 
-        // Mnemonic goes through the in-memory store, never the route params.
-        expect(setPendingImportMnemonic).toHaveBeenCalledWith(mnemonic)
-        expect(mockPush).toHaveBeenCalledWith('ImportAccount', {
-            accountType: 'bip39',
-            wordCount: 24,
-        })
-    })
+            expect(mockReadScannedRecoveryPhrase).toHaveBeenCalledWith(
+                'scanned',
+            )
+            // Mnemonic goes through the in-memory store, never the route params.
+            expect(setPendingImportMnemonic).toHaveBeenCalledWith(mnemonic)
+            expect(mockPush).toHaveBeenCalledTimes(1)
+            expect(mockPush).toHaveBeenCalledWith('ImportAccount', {
+                accountType: seed,
+                wordCount,
+            })
+        },
+    )
 
-    it('handleQRScannerSuccess opens the 12-word entry for a 12-word wallet phrase, never the Secure Backup import', () => {
-        const mnemonic = new Array(12).fill('word').join(' ')
-        mockParseDeeplink.mockReturnValue({
-            type: DeeplinkType.RECOVER_ADDRESS,
-            mnemonic,
-        })
-        vi.mocked(detectImportKind).mockReturnValue({
-            success: true,
-            seed: 'bip39',
-            wordCount: 12,
-        })
-        mockPush.mockClear()
-
-        const { result } = renderHook(() => useImportAccountOptionsScreen())
-
-        act(() => {
-            result.current.handleQRScannerSuccess('perawallet://recover/...')
-        })
-
-        expect(setPendingImportMnemonic).toHaveBeenCalledWith(mnemonic)
-        expect(mockPush).toHaveBeenCalledTimes(1)
-        expect(mockPush).toHaveBeenCalledWith('ImportAccount', {
-            accountType: 'bip39',
-            wordCount: 12,
-        })
-    })
-
-    it('handleQRScannerSuccess hands the mnemonic to the store and pushes the Import screen without it (Algo25 path)', () => {
-        const mnemonic = new Array(25).fill('word').join(' ')
-        mockParseDeeplink.mockReturnValue({
-            type: DeeplinkType.RECOVER_ADDRESS,
-            mnemonic,
-        })
-        vi.mocked(detectImportKind).mockReturnValue({
-            success: true,
-            seed: null,
-            wordCount: 25,
-        })
-
-        const { result } = renderHook(() => useImportAccountOptionsScreen())
-
-        act(() => {
-            result.current.handleQRScannerSuccess('perawallet://recover/...')
-        })
-
-        expect(setPendingImportMnemonic).toHaveBeenCalledWith(mnemonic)
-        expect(mockPush).toHaveBeenCalledWith('ImportAccount', {
-            accountType: null,
-            wordCount: 25,
-        })
-    })
-
-    it('handleQRScannerSuccess shows an error and restarts scanning for a non-recover deeplink', () => {
-        mockParseDeeplink.mockReturnValue({ type: DeeplinkType.ACCOUNT_DETAIL })
+    it('handleQRScannerSuccess closes the scanner and restarts scanning when the scan is refused', () => {
+        mockReadScannedRecoveryPhrase.mockReturnValue(undefined)
         const restartScanning = vi.fn()
 
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
         act(() => {
-            result.current.handleQRScannerSuccess(
-                'perawallet://account/...',
-                restartScanning,
-            )
+            result.current.handleQRScannerSuccess('scanned', restartScanning)
         })
 
-        expect(mockErrorToast).toHaveBeenCalledTimes(1)
         expect(restartScanning).toHaveBeenCalledTimes(1)
-        expect(mockPush).not.toHaveBeenCalled()
-    })
-
-    it('handleQRScannerSuccess shows an error and restarts scanning for an invalid mnemonic', () => {
-        mockParseDeeplink.mockReturnValue({
-            type: DeeplinkType.RECOVER_ADDRESS,
-            mnemonic: 'too short',
-        })
-        vi.mocked(detectImportKind).mockReturnValue({
-            success: false,
-            wordCount: 2,
-        })
-        const restartScanning = vi.fn()
-
-        const { result } = renderHook(() => useImportAccountOptionsScreen())
-
-        act(() => {
-            result.current.handleQRScannerSuccess(
-                'perawallet://recover/...',
-                restartScanning,
-            )
-        })
-
-        expect(mockErrorToast).toHaveBeenCalledTimes(1)
-        expect(restartScanning).toHaveBeenCalledTimes(1)
+        expect(setPendingImportMnemonic).not.toHaveBeenCalled()
         expect(mockPush).not.toHaveBeenCalled()
     })
 
