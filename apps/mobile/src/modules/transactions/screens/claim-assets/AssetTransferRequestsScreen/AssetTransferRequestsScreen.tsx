@@ -10,13 +10,7 @@
  limitations under the License
  */
 import { useCallback } from 'react'
-import {
-    PWButton,
-    PWFlatList,
-    PWScreen,
-    PWText,
-    PWView,
-} from '@components/core'
+import { PWButton, PWFlatList, PWScreen, PWText } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { InfoButton } from '@components/InfoButton'
 import { OfflineTolerantView } from '@components/OfflineTolerantView'
@@ -41,9 +35,8 @@ export const AssetTransferRequestsScreen = () => {
         rows,
         isPending,
         isIntegrityBlocked,
-        canSettleAll,
+        canRejectAll,
         handleRowPress,
-        handleAcceptAll,
         handleRejectAll,
     } = useAssetTransferRequestsScreen()
 
@@ -107,25 +100,15 @@ export const AssetTransferRequestsScreen = () => {
                 getItemType={typeOf}
                 contentContainerStyle={styles.contentContainer}
                 ListHeaderComponent={
-                    canSettleAll ? (
-                        <PWView style={styles.settleAll}>
-                            <PWButton
-                                variant='secondary'
-                                paddingStyle='dense'
-                                title={t('asset_inbox.requests.reject_all')}
-                                onPress={handleRejectAll}
-                                style={styles.settleAllButton}
-                                testID='asset_inbox_reject_all'
-                            />
-                            <PWButton
-                                variant='primary'
-                                paddingStyle='dense'
-                                title={t('asset_inbox.requests.accept_all')}
-                                onPress={handleAcceptAll}
-                                style={styles.settleAllButton}
-                                testID='asset_inbox_accept_all'
-                            />
-                        </PWView>
+                    canRejectAll ? (
+                        <PWButton
+                            variant='secondary'
+                            paddingStyle='dense'
+                            title={t('asset_inbox.requests.reject_all')}
+                            onPress={handleRejectAll}
+                            style={styles.rejectAll}
+                            testID='asset_inbox_reject_all'
+                        />
                     ) : null
                 }
                 ListEmptyComponent={

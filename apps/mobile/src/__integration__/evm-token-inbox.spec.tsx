@@ -287,30 +287,11 @@ describe('Flow: tokens an Ethereum account never asked for wait in its inbox', (
         ).toEqual([SPAM])
     })
 
-    it('Given the inbox, when the user confirms Accept All, then every waiting token is listed and counted', async () => {
-        openInbox()
-        fireEvent.click(await screen.findByTestId('asset_inbox_accept_all'))
-        fireEvent.click(
-            await screen.findByTestId('asset_inbox_settle_all_confirm'),
-        )
-
-        await waitFor(() =>
-            expect(screen.queryByTestId(`asset_row_${AIRDROP}`)).toBeNull(),
-        )
-        expect(screen.queryByTestId(`asset_row_${SPAM}`)).toBeNull()
-        cleanup()
-        renderWithNavigation(ListHost, 'AccountAssetListHost')
-        expect(await screen.findByTestId(`asset_row_${AIRDROP}`)).toBeTruthy()
-        expect(await screen.findByTestId(`asset_row_${SPAM}`)).toBeTruthy()
-        // A kept token Pera flags suspicious is listed but never counted.
-        expect(await nonNativeUsd()).toBeCloseTo(15, 6)
-    })
-
     it('Given the inbox, when the user confirms Reject All, then every waiting token is hidden', async () => {
         openInbox()
         fireEvent.click(await screen.findByTestId('asset_inbox_reject_all'))
         fireEvent.click(
-            await screen.findByTestId('asset_inbox_settle_all_confirm'),
+            await screen.findByTestId('asset_inbox_reject_all_confirm'),
         )
 
         await waitFor(() =>

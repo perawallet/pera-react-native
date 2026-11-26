@@ -21,11 +21,7 @@ import {
     useTokenInboxQuery,
     settleInboxTokens,
 } from '@perawallet/wallet-core-accounts'
-import {
-    PeraAssetVerificationTier,
-    toWholeUnits,
-    type PeraAsset,
-} from '@perawallet/wallet-core-assets'
+import { toWholeUnits, type PeraAsset } from '@perawallet/wallet-core-assets'
 import {
     toScopeKey,
     type ChainId,
@@ -76,10 +72,9 @@ export type UseAssetTransferRequestsScreenResult = {
     rows: InboxRequestRow[]
     isPending: boolean
     isIntegrityBlocked: boolean
-    /** Accept All and Reject All act on the tokens waiting on the device. */
-    canSettleAll: boolean
+    /** Reject All acts on the tokens waiting on the device; each is accepted on its own screen. */
+    canRejectAll: boolean
     handleRowPress: (row: InboxRequestRow) => void
-    handleAcceptAll: () => void
     handleRejectAll: () => void
 }
 
@@ -196,84 +191,53 @@ export const useAssetTransferRequestsScreen =
             ],
         )
 
-        const settleAll = useCallback(
-            async (isAccepted: boolean) => {
-                const count = tokenRows.length
-                const suspiciousCount = tokenRows.filter(
-                    row =>
-                        row.asset.peraMetadata?.verificationTier ===
-                        PeraAssetVerificationTier.suspicious,
-                ).length
-                const notes = [
-                    isAccepted
-                        ? t('asset_inbox.requests.accept_all_body', { count })
-                        : t('asset_inbox.requests.reject_all_body', { count }),
-                    ...(isAccepted && suspiciousCount > 0
-                        ? [
-                              t('asset_inbox.requests.accept_all_suspicious', {
-                                  count: suspiciousCount,
-                              }),
-                          ]
-                        : []),
-                    ...(backend.data.length > 0
-                        ? [t('asset_inbox.requests.settle_all_skips_claims')]
-                        : []),
-                ]
-                const isConfirmed = await requestBottomSheet<boolean>({
-                    contents: (
-                        <ConfirmActionContent
-                            icon={isAccepted ? 'check' : 'warning'}
-                            iconVariant={isAccepted ? 'primary' : 'error'}
-                            title={t(
-                                isAccepted
-                                    ? 'asset_inbox.requests.accept_all_title'
-                                    : 'asset_inbox.requests.reject_all_title',
-                            )}
-                            message={notes.join('\n\n')}
-                            confirmLabel={t(
-                                isAccepted
-                                    ? 'asset_inbox.requests.accept_all'
-                                    : 'asset_inbox.requests.reject_all',
-                            )}
-                            cancelLabel={t('common.cancel.label')}
-                            buttonPaddingStyle='dense'
-                            testID='asset_inbox_settle_all_sheet'
-                            confirmTestID='asset_inbox_settle_all_confirm'
-                        />
-                    ),
-                    options: { size: 'auto', enablePanDownToClose: true },
-                })
-                if (!isConfirmed) return
-                settleInboxTokens(
-                    tokenRows.map(row => ({
-                        address: row.address,
-                        scope: row.scope,
-                        assetId: row.asset.assetId,
-                    })),
-                    isAccepted,
-                )
-                showToast({
-                    title: t(
-                        isAccepted
-                            ? 'asset_inbox.requests.accepted_all_toast'
-                            : 'asset_inbox.requests.rejected_all_toast',
-                        { count },
-                    ),
-                    body: '',
-                    type: 'success',
-                })
-            },
-            [tokenRows, backend.data.length, requestBottomSheet, showToast, t],
-        )
+        const handleRejectAll = useCallback(async () => {
+            const count = tokenRows.length
+            const notes = [
+                t('asset_inbox.requests.reject_all_body', { count }),
+                ...(backend.data.length > 0
+                    ? [t('asset_inbox.requests.reject_all_skips_claims')]
+                    : []),
+            ]
+            const isConfirmed = await requestBottomSheet<boolean>({
+                contents: (
+                    <ConfirmActionContent
+                        icon='warning'
+                        iconVariant='error'
+                        title={t('asset_inbox.requests.reject_all_title')}
+                        message={notes.join('\n\n')}
+                        confirmLabel={t('asset_inbox.requests.reject_all')}
+                        cancelLabel={t('common.cancel.label')}
+                        buttonPaddingStyle='dense'
+                        testID='asset_inbox_reject_all_sheet'
+                        confirmTestID='asset_inbox_reject_all_confirm'
+                    />
+                ),
+                options: { size: 'auto', enablePanDownToClose: true },
+            })
+            if (!isConfirmed) return
+            settleInboxTokens(
+                tokenRows.map(row => ({
+                    address: row.address,
+                    scope: row.scope,
+                    assetId: row.asset.assetId,
+                })),
+                false,
+            )
+            showToast({
+                title: t('asset_inbox.requests.rejected_all_toast', { count }),
+                body: '',
+                type: 'success',
+            })
+        }, [tokenRows, backend.data.length, requestBottomSheet, showToast, t])
 
         return {
             rows,
             isPending: backend.isPending || tokenInbox.isPending,
             isIntegrityBlocked:
                 backend.isError && isIntegrityRequiredError(backend.error),
-            canSettleAll: tokenRows.length > 0,
+            canRejectAll: tokenRows.length > 0,
             handleRowPress,
-            handleAcceptAll: () => void settleAll(true),
-            handleRejectAll: () => void settleAll(false),
+            handleRejectAll: () => void handleRejectAll(),
         }
     }

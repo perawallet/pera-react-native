@@ -17,13 +17,8 @@ export const useStyles = makeStyles(theme => ({
         paddingHorizontal: theme.spacing.xl,
         paddingBottom: theme.spacing.xl,
     },
-    settleAll: {
-        flexDirection: 'row',
-        gap: theme.spacing.md,
+    rejectAll: {
         marginTop: theme.spacing.md,
-    },
-    settleAllButton: {
-        flex: 1,
     },
     sectionHeader: {
         marginTop: theme.spacing.xl,

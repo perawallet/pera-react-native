@@ -173,25 +173,22 @@ describe('useAssetTransferRequestsScreen', () => {
         })
     })
 
-    it('accepts every waiting token once confirmed, naming the suspicious ones and the claims it leaves', async () => {
+    it('rejects every waiting token once confirmed, saying the claims stay', async () => {
         mocks.request.mockResolvedValueOnce(true)
         const { result } = render()
 
-        await act(async () => result.current.handleAcceptAll())
+        await act(async () => result.current.handleRejectAll())
 
         const sheet = mocks.request.mock.calls[0]![0].contents
         expect(sheet.props.message).toContain(
-            'asset_inbox.requests.accept_all_suspicious',
-        )
-        expect(sheet.props.message).toContain(
-            'asset_inbox.requests.settle_all_skips_claims',
+            'asset_inbox.requests.reject_all_skips_claims',
         )
         expect(settleInboxTokens).toHaveBeenCalledWith(
             [
                 { address: '0xabc', scope: BASE, assetId: '0xb' },
                 { address: '0xabc', scope: ETHEREUM, assetId: '0xe' },
             ],
-            true,
+            false,
         )
         expect(mocks.showToast).toHaveBeenCalled()
     })
@@ -205,12 +202,12 @@ describe('useAssetTransferRequestsScreen', () => {
         expect(settleInboxTokens).not.toHaveBeenCalled()
     })
 
-    it('offers Accept All and Reject All only while tokens wait on the device', () => {
-        expect(render().result.current.canSettleAll).toBe(true)
+    it('offers Reject All only while tokens wait on the device', () => {
+        expect(render().result.current.canRejectAll).toBe(true)
 
         setInbox({ claims: [claim] })
 
-        expect(render().result.current.canSettleAll).toBe(false)
+        expect(render().result.current.canRejectAll).toBe(false)
     })
 
     it('flags a refusal for want of an integrity token', () => {
