@@ -28,6 +28,7 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { mockTransactionHistory } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { useCurrenciesStore } from '@perawallet/wallet-core-currencies'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { useSettingsStore } from '@perawallet/wallet-core-settings'
@@ -118,6 +119,16 @@ const serveAlgorandHistory = () =>
         ),
     )
 
+// Unhandled requests reach the real staging API, whose answer decides these
+// flows; the screen reads this list whenever it opens.
+const serveEmptyTransactions = () =>
+    server.use(
+        mockTransactionHistory({
+            accountAddress: ALGO25_TEST_ADDRESS,
+            response: { results: [] },
+        }),
+    )
+
 const TabBarStub = () => {
     const route = useRoute() as unknown as { params: { screen: string } }
     return <span data-testid='tab_bar_stub'>{route.params.screen}</span>
@@ -167,6 +178,7 @@ describe('Flow: Asset details header leads with the fiat value', () => {
         useBottomSheetStore.getState().registerBottomSheetHost()
         await seedHoldings()
         serveAlgorandHistory()
+        serveEmptyTransactions()
     })
 
     afterEach(() => {
@@ -219,6 +231,9 @@ describe('Flow: Asset details header leads with the fiat value', () => {
             http.get('*/v1/currencies/ARS/', () =>
                 HttpResponse.json({}, { status: 500 }),
             ),
+            http.get('*/api/v3/currencies/history/', () =>
+                HttpResponse.json({}, { status: 500 }),
+            ),
         )
         renderDetails({
             assetId: USDC_TEST_ASSET.assetId,
@@ -242,6 +257,12 @@ describe('Flow: Asset details header leads with the fiat value', () => {
                     exchange_price: '1000',
                     usd_value: '1000',
                 }),
+            ),
+            http.get('*/api/v3/currencies/history/', () =>
+                HttpResponse.json([
+                    { datetime: '2026-10-01T00:00:00Z', price: '1000' },
+                    { datetime: '2026-10-29T00:00:00Z', price: '1000' },
+                ]),
             ),
         )
         fireEvent.click(retryBeside(unavailable))
