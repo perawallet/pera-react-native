@@ -292,7 +292,7 @@
         "hidden_swipe_toast_body": "Tap to undo. It won't show in your assets or count toward your balance.",
         "shown_toast_title": "{{assetName}} shown",
         "filtered_note": "This token is waiting in your inbox. Accept it there to list it in your assets.",
-        "auto_hidden_row_title": "Tokens in your inbox ({{total}})"
+        "inbox_row_title": "Tokens in your inbox ({{total}})"
     },
     "deeplink": {
         "error": {

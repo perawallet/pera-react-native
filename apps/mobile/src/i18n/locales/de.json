@@ -292,7 +292,7 @@
         "hidden_swipe_toast_body": "Tippe, um es rückgängig zu machen. Das Token erscheint nicht mehr in deinen Assets und zählt nicht zu deinem Guthaben.",
         "shown_toast_title": "{{assetName}} eingeblendet",
         "filtered_note": "Dieses Token wartet in deinem Posteingang. Nimm es dort an, damit es in deinen Assets erscheint.",
-        "auto_hidden_row_title": "Tokens in deinem Posteingang ({{total}})"
+        "inbox_row_title": "Tokens in deinem Posteingang ({{total}})"
     },
     "deeplink": {
         "error": {

@@ -45,7 +45,7 @@ export {
     hiddenAssetIdsOf,
     useKeptTokensStore,
     keptAssetIdsOf,
-    isAutoHiddenHolding,
+    isUnapprovedHolding,
     useHeldListedTokensStore,
     assetIdsIn,
     unionTokenSets,

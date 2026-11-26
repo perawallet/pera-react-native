@@ -345,11 +345,9 @@ describe('Flow: hiding a token an Ethereum account holds', () => {
     it('Given a token Pera flags suspicious, when the asset list opens, then the inbox row counts it in place of its row', async () => {
         renderList()
 
-        const row = await screen.findByTestId('auto_hidden_tokens_row')
+        const row = await screen.findByTestId('token_inbox_row')
 
-        expect(row.textContent).toContain(
-            'token_visibility.auto_hidden_row_title',
-        )
+        expect(row.textContent).toContain('token_visibility.inbox_row_title')
         expect(screen.queryByTestId(`asset_row_${SPAM}`)).toBeNull()
     })
 
@@ -359,6 +357,6 @@ describe('Flow: hiding a token an Ethereum account holds', () => {
         renderList()
 
         expect(await screen.findByTestId(`asset_row_${SPAM}`)).toBeTruthy()
-        expect(screen.queryByTestId('auto_hidden_tokens_row')).toBeNull()
+        expect(screen.queryByTestId('token_inbox_row')).toBeNull()
     })
 })

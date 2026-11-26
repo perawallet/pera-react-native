@@ -16,7 +16,7 @@ import {
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
-    isAutoHiddenHolding,
+    isUnapprovedHolding,
     keptAssetIdsOf,
     useKeptTokensStore,
 } from '../keptTokens'
@@ -152,7 +152,7 @@ describe('replaceKeptTokens', () => {
     })
 })
 
-describe('isAutoHiddenHolding', () => {
+describe('isUnapprovedHolding', () => {
     const TOKEN = '777'
     const holding = (
         verificationTier?: 'suspicious' | 'unverified' | 'verified',
@@ -169,7 +169,7 @@ describe('isAutoHiddenHolding', () => {
     it('hides a suspicious token nobody kept', () => {
         registerFakeNativeAsset(6)
 
-        expect(isAutoHiddenHolding(holding('suspicious'), {})).toBe(true)
+        expect(isUnapprovedHolding(holding('suspicious'), {})).toBe(true)
     })
 
     it('lists a suspicious token its address kept', () => {
@@ -181,37 +181,37 @@ describe('isAutoHiddenHolding', () => {
         })
 
         expect(
-            isAutoHiddenHolding(holding('suspicious'), state().keptTokens),
+            isUnapprovedHolding(holding('suspicious'), state().keptTokens),
         ).toBe(false)
     })
 
     it('hides an unverified token and one with no metadata yet', () => {
         registerFakeNativeAsset(6)
 
-        expect(isAutoHiddenHolding(holding('unverified'), {})).toBe(true)
-        expect(isAutoHiddenHolding(holding(), {})).toBe(true)
+        expect(isUnapprovedHolding(holding('unverified'), {})).toBe(true)
+        expect(isUnapprovedHolding(holding(), {})).toBe(true)
     })
 
     it('lists a verified token', () => {
         registerFakeNativeAsset(6)
 
-        expect(isAutoHiddenHolding(holding('verified'), {})).toBe(false)
+        expect(isUnapprovedHolding(holding('verified'), {})).toBe(false)
     })
 
     it('hides an NFT only when Pera flags it', () => {
         registerFakeNativeAsset(6)
 
         expect(
-            isAutoHiddenHolding(holding('unverified', 'collectible'), {}),
+            isUnapprovedHolding(holding('unverified', 'collectible'), {}),
         ).toBe(false)
         expect(
-            isAutoHiddenHolding(holding('suspicious', 'collectible'), {}),
+            isUnapprovedHolding(holding('suspicious', 'collectible'), {}),
         ).toBe(true)
     })
 
     it('never hides on a chain where the user opts in to each asset', () => {
         registerFakeNativeAsset(6, { requiresAssetOptIn: true })
 
-        expect(isAutoHiddenHolding(holding('suspicious'), {})).toBe(false)
+        expect(isUnapprovedHolding(holding('suspicious'), {})).toBe(false)
     })
 })

@@ -17,7 +17,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useAssetPreferencesStore } from '@perawallet/wallet-core-assets'
-import { useAutoHiddenTokensRow } from '../useAutoHiddenTokensRow'
+import { useTokenInboxRow } from '../useTokenInboxRow'
 
 const mocks = vi.hoisted(() => ({
     holdings: [] as unknown[],
@@ -36,7 +36,7 @@ const account = {
     chains: {},
 } as unknown as WalletAccount
 
-describe('useAutoHiddenTokensRow', () => {
+describe('useTokenInboxRow', () => {
     beforeEach(() => {
         mocks.holdings = [{ assetId: '0x1' }, { assetId: '0x2' }]
         mocks.showSuspicious = false
@@ -55,7 +55,7 @@ describe('useAutoHiddenTokensRow', () => {
     })
 
     it('counts the tokens waiting in the inbox', () => {
-        const { result } = renderHook(() => useAutoHiddenTokensRow(account))
+        const { result } = renderHook(() => useTokenInboxRow(account))
 
         expect(result.current).toMatchObject({ count: 2, isVisible: true })
     })
@@ -63,7 +63,7 @@ describe('useAutoHiddenTokensRow', () => {
     it('is not shown when nothing is hidden', () => {
         mocks.holdings = []
 
-        const { result } = renderHook(() => useAutoHiddenTokensRow(account))
+        const { result } = renderHook(() => useTokenInboxRow(account))
 
         expect(result.current.isVisible).toBe(false)
     })
@@ -71,13 +71,13 @@ describe('useAutoHiddenTokensRow', () => {
     it('is not shown while the list shows suspicious assets', () => {
         mocks.showSuspicious = true
 
-        const { result } = renderHook(() => useAutoHiddenTokensRow(account))
+        const { result } = renderHook(() => useTokenInboxRow(account))
 
         expect(result.current.isVisible).toBe(false)
     })
 
     it("opens the account's inbox", () => {
-        const { result } = renderHook(() => useAutoHiddenTokensRow(account))
+        const { result } = renderHook(() => useTokenInboxRow(account))
 
         act(() => result.current.handlePress())
 
@@ -93,7 +93,7 @@ describe('useAutoHiddenTokensRow', () => {
             custody: { kind: 'watch' },
         } as unknown as WalletAccount
 
-        const { result } = renderHook(() => useAutoHiddenTokensRow(watched))
+        const { result } = renderHook(() => useTokenInboxRow(watched))
 
         expect(result.current.isVisible).toBe(false)
     })

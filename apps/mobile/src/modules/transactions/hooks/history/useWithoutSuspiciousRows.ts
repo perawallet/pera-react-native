@@ -13,7 +13,7 @@
 import { useMemo } from 'react'
 import {
     chainAccountOf,
-    isAutoHiddenHolding,
+    isUnapprovedHolding,
     useKeptTokensStore,
     useSelectedAccount,
     type KeptTokens,
@@ -74,7 +74,7 @@ const movesUnapprovedToken = (
         const asset = storedAssets?.get(assetId)
         return (
             !!asset &&
-            isAutoHiddenHolding(
+            isUnapprovedHolding(
                 {
                     address: entry.accountAddress,
                     scope: entry.scope,

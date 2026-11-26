@@ -14,28 +14,28 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { PWListItem } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
-import { useAutoHiddenTokensRow } from './useAutoHiddenTokensRow'
+import { useTokenInboxRow } from './useTokenInboxRow'
 
-export type AutoHiddenTokensRowProps = {
+export type TokenInboxRowProps = {
     account: WalletAccount
 }
 
-export const AutoHiddenTokensRow = ({ account }: AutoHiddenTokensRowProps) => {
+export const TokenInboxRow = ({ account }: TokenInboxRowProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { count, isVisible, handlePress } = useAutoHiddenTokensRow(account)
+    const { count, isVisible, handlePress } = useTokenInboxRow(account)
 
     if (!isVisible) return null
 
     return (
         <PWListItem
             icon='inbox'
-            title={t('token_visibility.auto_hidden_row_title', {
+            title={t('token_visibility.inbox_row_title', {
                 total: count,
             })}
             onPress={handlePress}
             style={styles.row}
-            testID='auto_hidden_tokens_row'
+            testID='token_inbox_row'
         />
     )
 }

@@ -668,7 +668,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             resetState: () => set({ keptTokens: {} }),
         }
     })
-    const isAutoHiddenHolding = (
+    const isUnapprovedHolding = (
         holding: {
             address: string
             scope: ChainScope
@@ -775,7 +775,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         assetIdsIn,
         useHeldListedTokensStore,
         useKeptTokensStore,
-        isAutoHiddenHolding,
+        isUnapprovedHolding,
         useHiddenTokensInvalidation: vi.fn(),
         accountChainIdOf: vi.fn(accountChainIdOf),
         secondaryChainIdsOf: vi.fn(secondaryChainIdsOf),

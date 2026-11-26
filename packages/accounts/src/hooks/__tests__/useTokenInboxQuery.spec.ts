@@ -43,7 +43,7 @@ describe('useTokenInboxQuery', () => {
                 filters: {
                     hideNfts: true,
                     hideZeroBalance: true,
-                    onlyAutoHidden: true,
+                    onlyUnapproved: true,
                 },
             },
         )

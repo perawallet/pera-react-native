@@ -207,18 +207,18 @@ describe('account holdings queries', () => {
             expect(await idsOf(true)).toEqual(['0', '20', '30', '40', '50'])
         })
 
-        it('reads the unapproved tokens and flagged NFTs as auto-hidden', async () => {
+        it('reads the unapproved tokens and flagged NFTs with synced metadata as the inbox', async () => {
             registerFakeNativeAsset(6)
             const rows = await getAccountHoldingsLite({
                 db,
                 sources: [{ address: 'ADDR1', scope: MAINNET_SCOPE }],
-                onlyAutoHidden: true,
+                onlyUnapproved: true,
             })
 
+            // 40 has no metadata yet, so the inbox can't list it.
             expect(rows.map(row => row.assetId).sort()).toEqual([
                 '10',
                 '30',
-                '40',
                 '51',
             ])
             expect(rows.every(row => row.address === 'ADDR1')).toBe(true)
@@ -453,11 +453,11 @@ describe('account holdings queries', () => {
                 isHidden: true,
             })
 
-            expect(await idsOf('ADDR1', { onlyAutoHidden: true })).toEqual([
+            expect(await idsOf('ADDR1', { onlyUnapproved: true })).toEqual([
                 '10',
                 '30',
             ])
-            expect(await idsOf('ADDR2', { onlyAutoHidden: true })).toEqual([
+            expect(await idsOf('ADDR2', { onlyUnapproved: true })).toEqual([
                 '11',
                 '30',
             ])

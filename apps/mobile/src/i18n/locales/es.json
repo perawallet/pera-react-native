@@ -292,7 +292,7 @@
         "hidden_swipe_toast_body": "Toca para deshacer. Ya no aparecerá en tus activos ni se contará en tu saldo.",
         "shown_toast_title": "Se mostró {{assetName}}",
         "filtered_note": "Este token está esperando en tu bandeja. Acéptalo allí para que aparezca en tus activos.",
-        "auto_hidden_row_title": "Tokens en tu bandeja ({{total}})"
+        "inbox_row_title": "Tokens en tu bandeja ({{total}})"
     },
     "deeplink": {
         "error": {

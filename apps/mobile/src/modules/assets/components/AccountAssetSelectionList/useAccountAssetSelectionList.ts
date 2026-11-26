@@ -23,7 +23,7 @@ import {
     canHideHolding,
     chainAccountOf,
     hiddenAssetIdsOf,
-    isAutoHiddenHolding,
+    isUnapprovedHolding,
 } from '@perawallet/wallet-core-accounts'
 
 import { useDebouncedValue } from '@perawallet/wallet-core-shared'
@@ -107,7 +107,7 @@ export const useAccountAssetSelectionList = ({
                         assetId,
                     )) ||
                 (!showSuspicious &&
-                    isAutoHiddenHolding(
+                    isUnapprovedHolding(
                         { ...balance, address, scope: held },
                         keptTokens,
                     ))

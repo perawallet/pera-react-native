@@ -242,8 +242,8 @@ describe('Flow: tokens an Ethereum account never asked for wait in its inbox', (
         expect(screen.queryByTestId(`asset_row_${AIRDROP}`)).toBeNull()
         expect(screen.queryByTestId(`asset_row_${SPAM}`)).toBeNull()
         expect(
-            (await screen.findByTestId('auto_hidden_tokens_row')).textContent,
-        ).toContain('token_visibility.auto_hidden_row_title')
+            (await screen.findByTestId('token_inbox_row')).textContent,
+        ).toContain('token_visibility.inbox_row_title')
         expect(await nonNativeUsd()).toBeCloseTo(10, 6)
     })
 

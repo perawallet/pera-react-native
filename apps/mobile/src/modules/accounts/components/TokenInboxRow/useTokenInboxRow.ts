@@ -22,7 +22,7 @@ import {
 import { useAssetPreferencesStore } from '@perawallet/wallet-core-assets'
 import { useSelectedNetworkSource } from '../../hooks/useSelectedNetworkSource'
 
-export type UseAutoHiddenTokensRowResult = {
+export type UseTokenInboxRowResult = {
     count: number
     /** Off while the list already shows suspicious assets, none wait in the inbox, or the account is watched (it has no inbox). */
     isVisible: boolean
@@ -30,9 +30,9 @@ export type UseAutoHiddenTokensRowResult = {
 }
 
 /** The tokens waiting in the inbox on the network the list shows; tapping opens the account's inbox. */
-export const useAutoHiddenTokensRow = (
+export const useTokenInboxRow = (
     account: WalletAccount,
-): UseAutoHiddenTokensRowResult => {
+): UseTokenInboxRowResult => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const showSuspicious = useAssetPreferencesStore(
         state => state.showSuspicious,

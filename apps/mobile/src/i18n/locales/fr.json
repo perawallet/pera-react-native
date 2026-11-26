@@ -292,7 +292,7 @@
         "hidden_swipe_toast_body": "Touchez pour annuler. Il n’apparaîtra plus dans vos actifs et ne comptera plus dans votre solde.",
         "shown_toast_title": "{{assetName}} affiché",
         "filtered_note": "Ce token est en attente dans votre boîte de réception. Acceptez-le là-bas pour qu’il apparaisse dans vos actifs.",
-        "auto_hidden_row_title": "Tokens dans votre boîte de réception ({{total}})"
+        "inbox_row_title": "Tokens dans votre boîte de réception ({{total}})"
     },
     "deeplink": {
         "error": {

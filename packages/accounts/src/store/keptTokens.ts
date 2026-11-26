@@ -80,7 +80,7 @@ export const keptAssetIdsOf = (
  * that receives tokens unasked: a token Pera hasn't verified, or an NFT Pera
  * flags suspicious, that its address hasn't kept. Mirrors `approvedHoldingSql`.
  */
-export const isAutoHiddenHolding = (
+export const isUnapprovedHolding = (
     holding: {
         address: string
         scope: ChainScope

@@ -23,7 +23,7 @@ export type UseTokenInboxQueryResult = {
 const TOKEN_INBOX_FILTERS = {
     hideNfts: true,
     hideZeroBalance: true,
-    onlyAutoHidden: true,
+    onlyUnapproved: true,
 } as const
 
 /**
