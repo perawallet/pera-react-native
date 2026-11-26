@@ -18,6 +18,7 @@ import {
     ne,
     not,
     or,
+    isNotNull,
     isNull,
     like,
     sql,
@@ -171,7 +172,7 @@ async function queryHoldingRows<ExtraColumns extends SelectedFields>(
         excludeAssetTypes,
         hideUnapproved,
         excludeHidden,
-        onlyAutoHidden,
+        onlyUnapproved,
         limit,
         offset,
     }: GetAccountHoldingsLiteParams,
@@ -228,10 +229,15 @@ async function queryHoldingRows<ExtraColumns extends SelectedFields>(
     if (excludeHidden) {
         conditions.push(not(hiddenHoldingSql(sources)))
     }
-    if (onlyAutoHidden) {
+    if (onlyUnapproved) {
+        // Only a token whose metadata has synced: without its decimals the
+        // inbox can't show the amount, and a row it couldn't list would
+        // still count toward the inbox's badges.
         conditions.push(
             not(approvedHoldingSql(sources)),
             not(hiddenHoldingSql(sources)),
+            isNotNull(AssetsNodeSchema.decimals),
+            isNotNull(AssetsNodeSchema.totalSupply),
         )
     }
     const term = search?.trim()

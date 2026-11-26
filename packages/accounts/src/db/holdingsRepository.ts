@@ -334,15 +334,15 @@ export type AccountHoldingsFilters = {
     hideUnapproved?: boolean
     /** Leaves out holdings the user hid, whatever the other filters keep. */
     excludeHidden?: boolean
-    /** Only the holdings `hideUnapproved` drops that the user hasn't hidden: the token inbox. Read by the multi-source holdings query only. */
-    onlyAutoHidden?: boolean
+    /** Only the holdings `hideUnapproved` drops that the user hasn't hidden and whose metadata has synced: the token inbox. Read by the multi-source holdings query only. */
+    onlyUnapproved?: boolean
 }
 
 type GetAccountHoldingsParams = {
     db?: Database
     accountAddress: string
     scope: ChainScope
-} & Omit<AccountHoldingsFilters, 'onlyAutoHidden' | 'keepZeroNative'>
+} & Omit<AccountHoldingsFilters, 'onlyUnapproved' | 'keepZeroNative'>
 
 export async function getAccountHoldings({
     db = getDatabase(),
