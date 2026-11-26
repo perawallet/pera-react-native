@@ -24,6 +24,20 @@ export const useStyles = makeStyles(theme => ({
     },
     accounts: {
         gap: theme.spacing.md,
-        marginBottom: theme.spacing.lg,
+    },
+    icon: {
+        alignSelf: 'center',
+        marginBottom: theme.spacing.xl,
+    },
+    title: {
+        textAlign: 'center',
+    },
+    message: {
+        textAlign: 'center',
+        color: theme.colors.textGray,
+        paddingVertical: theme.spacing.xl,
+    },
+    footer: {
+        gap: theme.spacing.md,
     },
 }))
