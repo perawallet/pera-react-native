@@ -30,6 +30,7 @@ import {
 } from '@rneui/themed'
 import { getTypography, type TypographyVariant } from '@theme/typography'
 import { isAndroid } from '@utils/platform'
+import { PWInputLabel } from '../PWInputLabel'
 import { PWTouchableIcon } from '../PWTouchableIcon'
 import { computeFitFontSize } from './computeFitFontSize'
 import { isVisibilityToggleAlwaysMounted } from './inputPlatform'
@@ -84,7 +85,6 @@ export type PWInputProps = {
     onSubmitEditing?: () => void
     blurOnSubmit?: boolean
     label?: string
-    labelStyle?: RNEInputProps['labelStyle']
     testID?: string
     placeholderTextColor?: string
     InputComponent?: ComponentType<TextInputProps>
@@ -138,7 +138,7 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
             containerStyle,
             inputContainerStyle,
             inputStyle,
-            labelStyle,
+            label,
             testID,
             adjustsFontSizeToFit,
             minimumFontScale,
@@ -275,7 +275,15 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
                     isDisabled && styles.disabledInput,
                     inputStyle,
                 ]}
-                labelStyle={labelStyle}
+                label={
+                    label ? (
+                        <PWInputLabel
+                            testID={testID ? `${testID}-label` : undefined}
+                        >
+                            {label}
+                        </PWInputLabel>
+                    ) : undefined
+                }
             />
         )
     },

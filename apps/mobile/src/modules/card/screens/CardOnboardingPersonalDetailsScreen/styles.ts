@@ -11,7 +11,6 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { getTypography } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => ({
     content: {
@@ -24,10 +23,6 @@ export const useStyles = makeStyles(theme => ({
     fieldSkeleton: {
         height: theme.spacing['3xl'],
         borderRadius: theme.spacing.sm,
-    },
-    label: {
-        ...getTypography(theme, 'footnoteMedium'),
-        color: theme.colors.textGray,
     },
     inlineLink: {
         alignSelf: 'flex-start',

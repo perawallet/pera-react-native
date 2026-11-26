@@ -88,11 +88,8 @@ export const NameAccountForm = ({
 
                 {children}
 
-                {label ? (
-                    <PWText style={styles.secondaryText}>{label}</PWText>
-                ) : null}
-
                 <PWInput
+                    label={label}
                     containerStyle={styles.input}
                     inputContainerStyle={styles.inputContainer}
                     value={value}

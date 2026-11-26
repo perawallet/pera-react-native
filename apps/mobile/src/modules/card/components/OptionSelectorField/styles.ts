@@ -11,13 +11,8 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { getTypography } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => ({
-    label: {
-        ...getTypography(theme, 'footnoteMedium'),
-        color: theme.colors.textGray,
-    },
     errorMessage: {
         marginTop: theme.spacing.xs,
         marginBottom: 0,

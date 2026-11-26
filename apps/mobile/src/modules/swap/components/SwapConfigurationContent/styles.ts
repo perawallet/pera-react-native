@@ -19,10 +19,6 @@ export const useStyles = makeStyles(theme => ({
     section: {
         paddingHorizontal: theme.spacing.lg,
     },
-    sectionTitle: {
-        color: theme.colors.textGray,
-        marginBottom: theme.spacing.sm,
-    },
     inputContainer: {
         paddingHorizontal: 0,
     },

@@ -11,7 +11,6 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { getTypography } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => ({
     content: {
@@ -22,10 +21,6 @@ export const useStyles = makeStyles(theme => ({
         // Tight gap because the email field reserves a constant error line
         // below it (see `errorMessage`), which carries most of the spacing.
         gap: theme.spacing.sm,
-    },
-    label: {
-        ...getTypography(theme, 'footnoteMedium'),
-        color: theme.colors.textGray,
     },
     // Always-rendered error line (RNElements collapses it otherwise) with a
     // constant minHeight so showing/clearing the message never shifts the

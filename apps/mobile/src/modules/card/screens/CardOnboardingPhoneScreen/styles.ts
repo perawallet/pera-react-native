@@ -20,9 +20,6 @@ export const useStyles = makeStyles(theme => ({
     fields: {
         gap: theme.spacing.xs,
     },
-    label: {
-        color: theme.colors.textGray,
-    },
     // Sets the SMS expectation; same muted token as the label.
     helper: {
         color: theme.colors.textGray,

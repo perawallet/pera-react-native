@@ -60,7 +60,6 @@ export const OptionSelectorField = ({
             >
                 <PWInput
                     label={label}
-                    labelStyle={styles.label}
                     value={value ?? ''}
                     placeholder={placeholder}
                     // Always non-typeable (the touchable above owns the tap);

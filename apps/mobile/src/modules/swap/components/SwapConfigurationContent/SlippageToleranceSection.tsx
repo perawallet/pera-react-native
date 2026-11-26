@@ -44,13 +44,8 @@ export const SlippageToleranceSection = ({
 
     return (
         <PWView style={styles.section}>
-            <PWText
-                variant='caption'
-                style={styles.sectionTitle}
-            >
-                {t('swap.configuration.slippage_tolerance')}
-            </PWText>
             <PWInput
+                label={t('swap.configuration.slippage_tolerance')}
                 variant='body'
                 value={text}
                 onChangeText={onTextChange}

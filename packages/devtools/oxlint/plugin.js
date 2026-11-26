@@ -25,6 +25,7 @@ import { hdDeriveClaimed } from './rules/hd-derive-claimed.js'
 import { noManualUnitConversion } from './rules/no-manual-unit-conversion.js'
 import { mutationScopeInVariables } from './rules/mutation-scope-in-variables.js'
 import { sensitiveInputProps } from './rules/sensitive-input-props.js'
+import { noInputLabelStyle } from './rules/no-input-label-style.js'
 import { monotonicLockoutClock } from './rules/monotonic-lockout-clock.js'
 import { noDisplayStringIdentity } from './rules/no-display-string-identity.js'
 import { fetchHasDeadline } from './rules/fetch-has-deadline.js'
@@ -64,6 +65,7 @@ export default {
         'no-manual-unit-conversion': noManualUnitConversion,
         'mutation-scope-in-variables': mutationScopeInVariables,
         'sensitive-input-props': sensitiveInputProps,
+        'no-input-label-style': noInputLabelStyle,
         'monotonic-lockout-clock': monotonicLockoutClock,
         'no-display-string-identity': noDisplayStringIdentity,
         'fetch-has-deadline': fetchHasDeadline,

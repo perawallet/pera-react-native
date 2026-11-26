@@ -47,7 +47,6 @@ export const CardOnboardingEmailScreen = () => {
                         }) => (
                             <PWInput
                                 label={t('peraCard.create_account.email_label')}
-                                labelStyle={styles.label}
                                 value={value}
                                 onChangeText={onChange}
                                 onBlur={onBlur}

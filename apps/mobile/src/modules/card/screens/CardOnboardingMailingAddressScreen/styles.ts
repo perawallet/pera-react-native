@@ -11,7 +11,6 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { getTypography } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => ({
     content: {
@@ -23,10 +22,6 @@ export const useStyles = makeStyles(theme => ({
     },
     fields: {
         gap: theme.spacing.xl,
-    },
-    label: {
-        ...getTypography(theme, 'footnoteMedium'),
-        color: theme.colors.textGray,
     },
     errorMessage: {
         marginTop: theme.spacing.xs,

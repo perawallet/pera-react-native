@@ -15,6 +15,7 @@ import {
     PWButton,
     PWIcon,
     PWInput,
+    PWInputLabel,
     PWScreen,
     PWText,
     PWTouchableOpacity,
@@ -42,85 +43,84 @@ export const CardOnboardingPhoneScreen = () => {
         <PWScreen testID='card-onboarding-phone'>
             <PWView style={styles.content}>
                 <PWView style={styles.fields}>
-                    <PWText
-                        variant='footnoteMedium'
-                        style={styles.label}
-                    >
-                        {t('peraCard.verify_phone.phone_label')}
-                    </PWText>
+                    <PWView>
+                        <PWInputLabel>
+                            {t('peraCard.verify_phone.phone_label')}
+                        </PWInputLabel>
 
-                    <PWView style={styles.phoneRow}>
-                        {/* Compact calling-code selector; opens the country picker. */}
-                        <PWTouchableOpacity
-                            onPress={handleSelectCallingCountry}
-                            accessibilityRole='button'
-                            accessibilityLabel={t(
-                                'peraCard.verify_phone.calling_code_label',
-                            )}
-                            style={styles.callingCode}
-                            testID='card-onboarding-phone-calling-code'
-                        >
-                            <PWView
-                                pointerEvents='none'
-                                importantForAccessibility='no-hide-descendants'
-                                accessibilityElementsHidden
+                        <PWView style={styles.phoneRow}>
+                            {/* Compact calling-code selector; opens the country picker. */}
+                            <PWTouchableOpacity
+                                onPress={handleSelectCallingCountry}
+                                accessibilityRole='button'
+                                accessibilityLabel={t(
+                                    'peraCard.verify_phone.calling_code_label',
+                                )}
+                                style={styles.callingCode}
+                                testID='card-onboarding-phone-calling-code'
                             >
-                                <PWInput
-                                    value={
-                                        selectedCallingCountry
-                                            ? `${isoToFlagEmoji(selectedCallingCountry.iso3166alpha2)} +${selectedCallingCountry.callingCode}`
-                                            : ''
-                                    }
-                                    placeholder={t(
-                                        'peraCard.verify_phone.calling_code_placeholder',
-                                    )}
-                                    editable={false}
-                                    renderErrorMessage={false}
-                                    rightIcon={
-                                        <PWIcon
-                                            name='chevron-down'
-                                            variant='secondary'
-                                            size='sm'
-                                        />
-                                    }
-                                />
-                            </PWView>
-                        </PWTouchableOpacity>
+                                <PWView
+                                    pointerEvents='none'
+                                    importantForAccessibility='no-hide-descendants'
+                                    accessibilityElementsHidden
+                                >
+                                    <PWInput
+                                        value={
+                                            selectedCallingCountry
+                                                ? `${isoToFlagEmoji(selectedCallingCountry.iso3166alpha2)} +${selectedCallingCountry.callingCode}`
+                                                : ''
+                                        }
+                                        placeholder={t(
+                                            'peraCard.verify_phone.calling_code_placeholder',
+                                        )}
+                                        editable={false}
+                                        renderErrorMessage={false}
+                                        rightIcon={
+                                            <PWIcon
+                                                name='chevron-down'
+                                                variant='secondary'
+                                                size='sm'
+                                            />
+                                        }
+                                    />
+                                </PWView>
+                            </PWTouchableOpacity>
 
-                        <Controller
-                            control={control}
-                            name='phoneNumber'
-                            render={({
-                                field: { onChange, onBlur, value },
-                                fieldState: { error },
-                            }) => (
-                                <PWInput
-                                    containerStyle={styles.numberInput}
-                                    value={value}
-                                    onChangeText={onChange}
-                                    onBlur={onBlur}
-                                    placeholder={t(
-                                        'peraCard.verify_phone.phone_placeholder',
-                                    )}
-                                    keyboardType='phone-pad'
-                                    autoComplete='tel'
-                                    autoCorrect={false}
-                                    returnKeyType='done'
-                                    onSubmitEditing={handleConfirm}
-                                    showErrorOnBlur
-                                    renderErrorMessage
-                                    errorStyle={styles.errorMessage}
-                                    errorMessage={fieldErrorMessageOf(
-                                        error,
-                                        value,
-                                        t(
-                                            'peraCard.verify_phone.phone_invalid',
-                                        ),
-                                    )}
-                                    testID='card-onboarding-phone-input'
-                                />
-                            )}
-                        />
+                            <Controller
+                                control={control}
+                                name='phoneNumber'
+                                render={({
+                                    field: { onChange, onBlur, value },
+                                    fieldState: { error },
+                                }) => (
+                                    <PWInput
+                                        containerStyle={styles.numberInput}
+                                        value={value}
+                                        onChangeText={onChange}
+                                        onBlur={onBlur}
+                                        placeholder={t(
+                                            'peraCard.verify_phone.phone_placeholder',
+                                        )}
+                                        keyboardType='phone-pad'
+                                        autoComplete='tel'
+                                        autoCorrect={false}
+                                        returnKeyType='done'
+                                        onSubmitEditing={handleConfirm}
+                                        showErrorOnBlur
+                                        renderErrorMessage
+                                        errorStyle={styles.errorMessage}
+                                        errorMessage={fieldErrorMessageOf(
+                                            error,
+                                            value,
+                                            t(
+                                                'peraCard.verify_phone.phone_invalid',
+                                            ),
+                                        )}
+                                        testID='card-onboarding-phone-input'
+                                    />
+                                )}
+                            />
+                        </PWView>
                     </PWView>
 
                     <PWText

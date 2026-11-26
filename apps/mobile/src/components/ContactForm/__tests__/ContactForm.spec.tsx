@@ -38,8 +38,7 @@ const baseProps = {
     addressLabel: 'Algorand address',
 }
 
-// PWInput is mocked as a bare <input>; labels show up as HTML attributes
-// rather than rendered text. Assert on attributes/order.
+// The RNE Input mock renders a field's label as a sibling of its <input>.
 const getInputs = () => [
     screen.getByTestId('contact_name_input'),
     screen.getByTestId('contact_address_input'),
@@ -49,8 +48,10 @@ describe('ContactForm', () => {
     it('renders the name input first and a read-only address second', () => {
         render(<Harness {...baseProps} />)
         const inputs = getInputs()
-        expect(inputs[0].getAttribute('label')).toBe('Name')
-        expect(inputs[1].getAttribute('label')).toBe('Algorand address')
+        expect(inputs[0].previousElementSibling).toBe(screen.getByText('Name'))
+        expect(inputs[1].previousElementSibling).toBe(
+            screen.getByText('Algorand address'),
+        )
         expect(inputs[1].getAttribute('value')).toBe('PARTICIPANT')
     })
 

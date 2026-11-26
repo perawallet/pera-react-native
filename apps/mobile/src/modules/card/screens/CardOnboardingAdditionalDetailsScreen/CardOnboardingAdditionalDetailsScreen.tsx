@@ -99,7 +99,6 @@ export const CardOnboardingAdditionalDetailsScreen = () => {
                                 label={t(
                                     'peraCard.additional_details.tin_label',
                                 )}
-                                labelStyle={styles.label}
                                 value={value}
                                 onChangeText={onChange}
                                 onBlur={onBlur}
@@ -161,7 +160,6 @@ export const CardOnboardingAdditionalDetailsScreen = () => {
                                     label={t(
                                         'peraCard.additional_details.occupation_other_label',
                                     )}
-                                    labelStyle={styles.label}
                                     value={value}
                                     onChangeText={onChange}
                                     onBlur={onBlur}
@@ -194,7 +192,6 @@ export const CardOnboardingAdditionalDetailsScreen = () => {
                                     label={t(
                                         'peraCard.additional_details.source_of_wealth_other_label',
                                     )}
-                                    labelStyle={styles.label}
                                     value={value}
                                     onChangeText={onChange}
                                     onBlur={onBlur}

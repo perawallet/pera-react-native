@@ -102,13 +102,8 @@ export const CloudBackupConfirmCredentialsScreen = () => {
                 )}
 
                 <PWView style={styles.keySection}>
-                    <PWText
-                        variant='bodyLarge'
-                        weight={500}
-                    >
-                        {t('cloud_backup.encryption_key_label')}
-                    </PWText>
                     <PWInput
+                        label={t('cloud_backup.encryption_key_label')}
                         testID='cloud_backup_confirm_credentials_key_input'
                         inputContainerStyle={styles.inputContainer}
                         renderErrorMessage={false}
