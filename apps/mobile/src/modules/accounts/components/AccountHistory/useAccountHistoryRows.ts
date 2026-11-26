@@ -37,6 +37,7 @@ import {
     type HistoryFeedProps,
     type UseTransactionHistoryRowsResult,
 } from '@modules/transactions'
+import { useTrackedSwapLegs } from '@modules/swap'
 import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import { useAccountChainFilterOptions } from '../../hooks/useAccountChainFilterOptions'
 import { useAssetListViewStore } from '../../hooks/useAssetListViewStore'
@@ -160,11 +161,13 @@ export const useAccountHistoryRows = ({
         beforeTime,
         historyType: activeType,
     })
+    const knownSwapLegs = useTrackedSwapLegs()
     const merged = useMergedTransactionHistoryRows({
         sources: isMerged ? mergedSources : NO_SOURCES,
         afterTime,
         beforeTime,
         historyType: activeType,
+        knownSwapLegs,
     })
     const refreshAddresses = useMemo(
         () => (accountAddress && !isMerged ? [accountAddress] : []),

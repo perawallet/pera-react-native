@@ -13,9 +13,13 @@
 import type {
     ChainId,
     ChainScope,
+    TransactionSwapLeg,
 } from '@perawallet/wallet-core-chain-contract'
 import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
-import type { SuspectedPoisoning } from '@perawallet/wallet-core-transactions'
+import {
+    withoutListedSwapPayoutsBy,
+    type SuspectedPoisoning,
+} from '@perawallet/wallet-core-transactions'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import {
     TRANSACTION_ROW_TYPES,
@@ -93,13 +97,21 @@ const isUnsupportedFeed = (feed: HistoryFeedSnapshot): boolean =>
 const isEntryRow = (row: TransactionListRow): row is TransactionEntryRow =>
     row.kind !== TRANSACTION_ROW_TYPES.header
 
+/** Keyed by lowercase transaction id. */
+export type KnownSwapLegs = ReadonlyMap<string, TransactionSwapLeg>
+
 /**
  * Interleaves several networks' histories newest first. A feed with pages left
  * hides other feeds' rows older than its oldest loaded one, or its next page
  * would land above rows the user already scrolled past.
+ *
+ * A swap's payout is dropped while its source leg is listed, whichever network
+ * each is on, so the source row stands for the whole swap. `knownSwapLegs`
+ * names legs the history backend hasn't linked to their order yet.
  */
 export const mergeHistoryFeeds = (
     feeds: readonly Optional<HistoryFeedSnapshot>[],
+    knownSwapLegs?: KnownSwapLegs,
 ): MergedHistory => {
     const entriesByFeed = feeds.map(feed =>
         (feed?.rows ?? []).filter(isEntryRow),
@@ -129,9 +141,13 @@ export const mergeHistoryFeeds = (
         frontier !== null && frontier === cutoff ? [index] : [],
     )
 
-    const visible = entriesByFeed
-        .flat()
-        .filter(row => entryRowTimestampOf(row) >= cutoff)
+    const visible = withoutListedSwapPayoutsBy(
+        entriesByFeed.flat().filter(row => entryRowTimestampOf(row) >= cutoff),
+        row =>
+            (row.kind === TRANSACTION_ROW_TYPES.record
+                ? row.record.swapLeg
+                : undefined) ?? knownSwapLegs?.get(row.key.toLowerCase()),
+    )
     const rows = buildMergedListRows(visible)
 
     const reported = feeds.filter(

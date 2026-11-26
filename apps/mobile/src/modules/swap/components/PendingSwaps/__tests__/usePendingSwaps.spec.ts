@@ -48,30 +48,51 @@ const order = (orderId: string): SwapTrackedOrder => ({
     checkedAt: Date.now(),
 })
 
+const ALGORAND = { chainId: 'algorand', networkId: 'mainnet' } as const
+const ETHEREUM = { chainId: 'ethereum', networkId: 'mainnet' } as const
+
 describe('usePendingSwaps', () => {
-    it('shows each open order as an in-progress pair, in the order given', () => {
+    it('shows an order still on its way to the shown network as a swap of its pair across both networks', () => {
         vi.mocked(useOpenSwapOrders).mockReturnValue([order('a'), order('b')])
 
-        const { result } = renderHook(() => usePendingSwaps(null))
+        const { result } = renderHook(() => usePendingSwaps(ETHEREUM))
 
         expect(result.current.rows).toEqual([
             {
                 orderId: 'a',
-                pairLabel: 'ALGO → ETH',
-                statusText: 'swap.tracking.in_progress',
+                title: 'transactions.list_item.swap',
+                subtitle: 'transactions.list_item.swap_assets',
+                leadingAssets: [
+                    {
+                        chainId: 'algorand',
+                        asset: { assetId: '0', unitName: 'ALGO' },
+                    },
+                    {
+                        chainId: 'ethereum',
+                        asset: { assetId: '0', unitName: 'ETH' },
+                    },
+                ],
+                chainIds: ['algorand', 'ethereum'],
             },
             expect.objectContaining({ orderId: 'b' }),
         ])
-    })
-
-    it('narrows the orders to the shown network', () => {
-        const scope = { chainId: 'ethereum', networkId: 'mainnet' } as const
-
-        renderHook(() => usePendingSwaps(scope))
-
         expect(vi.mocked(useOpenSwapOrders)).toHaveBeenCalledWith(
             ADDRESSES,
-            scope,
+            ETHEREUM,
         )
     })
+
+    it.each([
+        ['every network', null],
+        ['the paying network', ALGORAND],
+    ])(
+        'shows nothing under %s, where the swap lists its own row',
+        (_, scope) => {
+            vi.mocked(useOpenSwapOrders).mockReturnValue([order('a')])
+
+            const { result } = renderHook(() => usePendingSwaps(scope))
+
+            expect(result.current.rows).toEqual([])
+        },
+    )
 })

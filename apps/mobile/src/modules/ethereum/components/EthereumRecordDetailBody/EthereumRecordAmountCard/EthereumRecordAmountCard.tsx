@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { Fragment } from 'react'
 import type {
     BalanceChange,
     ChainScope,
@@ -18,6 +19,7 @@ import { PWText } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { useLanguage } from '@hooks/useLanguage'
+import { ChainChip } from '@modules/chain-ui/icon'
 import { TransactionDetailCard } from '@modules/signing'
 import { EthereumRecordAmountRow } from '../EthereumRecordAmountRow'
 
@@ -41,6 +43,10 @@ export const EthereumRecordAmountCard = ({
     isSwap = false,
 }: EthereumRecordAmountCardProps) => {
     const { t } = useLanguage()
+    // A cross-chain swap's legs are on different networks, so each names its own.
+    const isCrossChain =
+        isSwap &&
+        new Set(changes.map(change => change.assetRef.chainId)).size > 1
 
     if (changes.length === 0 && !assetLabel && !assetContract) {
         return null
@@ -69,21 +75,33 @@ export const EthereumRecordAmountCard = ({
                 </KeyValueRow>
             )}
             {changes.map((change, index) => (
-                <EthereumRecordAmountRow
-                    key={`${change.assetRef.assetId}-${index}`}
-                    change={change}
-                    scope={scope}
-                    title={
-                        isSwap
-                            ? t(
-                                  change.value.isNegative()
-                                      ? 'transactions.list_item.send'
-                                      : 'transactions.list_item.receive',
-                              )
-                            : undefined
-                    }
-                    testID={`ethereum_record_amount_${index}`}
-                />
+                <Fragment key={`${change.assetRef.assetId}-${index}`}>
+                    <EthereumRecordAmountRow
+                        change={change}
+                        scope={{ ...scope, chainId: change.assetRef.chainId }}
+                        title={
+                            isSwap
+                                ? t(
+                                      change.value.isNegative()
+                                          ? 'transactions.list_item.send'
+                                          : 'transactions.list_item.receive',
+                                  )
+                                : undefined
+                        }
+                        testID={`ethereum_record_amount_${index}`}
+                    />
+                    {isCrossChain && (
+                        <KeyValueRow
+                            testID={`ethereum_record_amount_network_${index}`}
+                            title={t('transactions.common.network')}
+                        >
+                            <ChainChip
+                                chainId={change.assetRef.chainId}
+                                isBare
+                            />
+                        </KeyValueRow>
+                    )}
+                </Fragment>
             ))}
         </TransactionDetailCard>
     )

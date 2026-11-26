@@ -24,6 +24,7 @@ const SEND_TITLE_KEY = i18nKey('transactions.list_item.send')
 const NFT_SUBTITLE_KEY = i18nKey('transactions.list_item.nft_subtitle')
 const CANCEL_TITLE_KEY = i18nKey('transactions.list_item.cancel_transaction')
 const SWAP_TITLE_KEY = i18nKey('transactions.list_item.swap')
+const SWAP_PAIR_TITLE_KEY = i18nKey('transactions.list_item.swap_pair')
 const APPROVAL_TITLE_KEY = i18nKey('transactions.list_item.approval')
 
 export const nftSendSubtitle = (
@@ -67,14 +68,28 @@ export const cancelSummary = (
     title: { key: CANCEL_TITLE_KEY },
 })
 
-/** `to` is the contract the swap calls; `amount` what the swap pays. */
+type SwapSide = { assetRef: AssetRef; unitName: string }
+
+/**
+ * `to` is the contract the swap calls; `amount` what the swap pays. `pair`
+ * names both sides, as an in-app swap knows them from its quote.
+ */
 export const swapSummary = (
     _from: string,
     to: Address,
     amount: NonNullable<TransactionSummary['amount']>,
+    pair?: { from: SwapSide; to: SwapSide },
 ): TransactionSummary => ({
     kind: 'swap',
-    title: { key: SWAP_TITLE_KEY },
+    title: pair
+        ? {
+              key: SWAP_PAIR_TITLE_KEY,
+              params: { from: pair.from.unitName, to: pair.to.unitName },
+          }
+        : { key: SWAP_TITLE_KEY },
+    ...(pair && {
+        titleAssets: { from: pair.from.assetRef, to: pair.to.assetRef },
+    }),
     direction: 'out',
     icon: 'swap',
     counterparty: to,

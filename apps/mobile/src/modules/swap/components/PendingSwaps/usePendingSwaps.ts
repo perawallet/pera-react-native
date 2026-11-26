@@ -12,24 +12,43 @@
 
 import { useMemo } from 'react'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    toScopeKey,
+    type ChainId,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { useOpenSwapOrders } from '@perawallet/wallet-core-swaps'
+import {
+    useOpenSwapOrders,
+    type SwapTrackedAsset,
+} from '@perawallet/wallet-core-swaps'
+import type { LeadingAsset } from '@components/TransactionLeadingIcon'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSwapAccountAddresses } from '../../hooks/useSwapAccountAddresses'
-import { swapPairLabel } from '../../utils/swapPairLabel'
+import { swapAssetUnit } from '../../utils/swapPairLabel'
 
 export type PendingSwapRow = {
     orderId: string
-    pairLabel: string
-    statusText: string
+    title: string
+    subtitle: string
+    leadingAssets: LeadingAsset[]
+    chainIds: ChainId[]
 }
 
 export type UsePendingSwapsResult = {
     rows: PendingSwapRow[]
 }
 
-/** Only swaps placed on this device: they come from the tracked orders. */
+const leadingAssetOf = ({ ref, unitName }: SwapTrackedAsset): LeadingAsset => ({
+    chainId: ref.chainId,
+    asset: { assetId: ref.assetId, unitName: unitName ?? undefined },
+})
+
+/**
+ * Swaps placed on this device still on their way to `shownScope`, from the
+ * tracked orders. Only where History lists no row for them: under All networks
+ * or the paying network, the swap's own source row already shows it.
+ */
 export const usePendingSwaps = (
     shownScope: Nullable<ChainScope>,
 ): UsePendingSwapsResult => {
@@ -37,15 +56,28 @@ export const usePendingSwaps = (
     const accountAddresses = useSwapAccountAddresses(useSelectedAccount())
     const orders = useOpenSwapOrders(accountAddresses, shownScope)
 
-    const rows = useMemo(
-        () =>
-            orders.map(order => ({
+    const rows = useMemo(() => {
+        if (!shownScope) return []
+        const shownKey = toScopeKey(shownScope)
+        return orders
+            .filter(order => toScopeKey(order.sourceScope) !== shownKey)
+            .map(order => ({
                 orderId: order.orderId,
-                pairLabel: swapPairLabel(order),
-                statusText: t('swap.tracking.in_progress'),
-            })),
-        [orders, t],
-    )
+                title: t('transactions.list_item.swap'),
+                subtitle: t('transactions.list_item.swap_assets', {
+                    from: swapAssetUnit(order.assetIn),
+                    to: swapAssetUnit(order.assetOut),
+                }),
+                leadingAssets: [
+                    leadingAssetOf(order.assetIn),
+                    leadingAssetOf(order.assetOut),
+                ],
+                chainIds: [
+                    order.sourceScope.chainId,
+                    order.destinationScope.chainId,
+                ],
+            }))
+    }, [orders, shownScope, t])
 
     return { rows }
 }

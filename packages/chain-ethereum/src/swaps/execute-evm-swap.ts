@@ -495,19 +495,34 @@ export const executeEvmSwap = async ({
         return { kind: 'stale-quote' }
     }
 
-    const { sourceAsset, sourceAmount } = quote.request
+    const { sourceAsset, destinationAsset, sourceAmount } = quote.request
+    const sourceRef = {
+        chainId: sourceAsset.chainId,
+        assetId: sourceAsset.assetId,
+    }
     const outcome = await buildAndSign(
         client,
         chain,
         sender,
         plan.swap,
-        swapSummary(sender, plan.counterparty, {
-            assetRef: {
-                chainId: sourceAsset.chainId,
-                assetId: sourceAsset.assetId,
+        swapSummary(
+            sender,
+            plan.counterparty,
+            { assetRef: sourceRef, value: sourceAmount },
+            {
+                from: {
+                    assetRef: sourceRef,
+                    unitName: quote.assetIn.unitName ?? '',
+                },
+                to: {
+                    assetRef: {
+                        chainId: destinationAsset.chainId,
+                        assetId: destinationAsset.assetId,
+                    },
+                    unitName: quote.assetOut.unitName ?? '',
+                },
             },
-            value: sourceAmount,
-        }),
+        ),
         'swap',
         input,
         context,

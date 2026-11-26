@@ -20,8 +20,12 @@ export const useStyles = makeStyles(theme => ({
     title: {
         color: theme.colors.textMain,
     },
-    status: {
+    subtitle: {
         color: theme.colors.textGray,
         marginTop: theme.spacing.xxs,
+    },
+    pendingBadge: {
+        marginTop: theme.spacing.xs,
+        alignSelf: 'flex-start',
     },
 }))

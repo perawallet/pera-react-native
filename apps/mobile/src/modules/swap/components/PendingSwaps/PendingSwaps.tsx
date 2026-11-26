@@ -11,7 +11,9 @@
  */
 
 import { PWListItemLayout, PWText, PWView } from '@components/core'
-import { TransactionIcon } from '@components/TransactionIcon'
+import { transactionIconName } from '@components/TransactionIcon'
+import { TransactionLeadingIcon } from '@components/TransactionLeadingIcon'
+import { TransactionStatusBadge } from '@components/TransactionStatusBadge'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
@@ -22,6 +24,7 @@ export type PendingSwapsProps = {
     shownScope: Nullable<ChainScope>
 }
 
+/** Styled as History's own swap row, which stands for the swap wherever it is listed. */
 export const PendingSwaps = ({ shownScope }: PendingSwapsProps) => {
     const styles = useStyles()
     const { rows } = usePendingSwaps(shownScope)
@@ -37,9 +40,10 @@ export const PendingSwaps = ({ shownScope }: PendingSwapsProps) => {
                     style={styles.row}
                     align='top'
                     left={
-                        <TransactionIcon
-                            name='swap'
-                            size='md'
+                        <TransactionLeadingIcon
+                            iconName={transactionIconName('swap')}
+                            leadingAssets={row.leadingAssets}
+                            chainIds={row.chainIds}
                         />
                     }
                 >
@@ -47,10 +51,21 @@ export const PendingSwaps = ({ shownScope }: PendingSwapsProps) => {
                         <PWText
                             variant='h4'
                             style={styles.title}
+                            truncate
                         >
-                            {row.pairLabel}
+                            {row.title}
                         </PWText>
-                        <PWText style={styles.status}>{row.statusText}</PWText>
+                        <PWText
+                            style={styles.subtitle}
+                            truncate
+                        >
+                            {row.subtitle}
+                        </PWText>
+                        <TransactionStatusBadge
+                            status='pending'
+                            style={styles.pendingBadge}
+                            testID={`pending_swap_status_${row.orderId}`}
+                        />
                     </PWView>
                 </PWListItemLayout>
             ))}

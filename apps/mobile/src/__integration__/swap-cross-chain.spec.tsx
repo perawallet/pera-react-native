@@ -205,7 +205,7 @@ const CrossChainHost = () => {
     }, [execute, createQuotes, queryClient, setPreference])
     return (
         <>
-            <PendingSwaps shownScope={null} />
+            <PendingSwaps shownScope={ETH_SCOPE} />
             <SigningOverlays />
         </>
     )
@@ -352,7 +352,7 @@ describe('Flow: Cross-chain swap (Algorand into an own Ethereum address)', () =>
         )
     })
 
-    it('Given a sent cross-chain swap, when the router reports it in progress, then History leads with it as in progress, and once it expires the row goes', async () => {
+    it('Given a sent cross-chain swap, when the router reports it in progress, then History on the receiving network leads with it as a pending swap, and once it expires the row goes', async () => {
         const { sender, api } = await startHost()
         mockSwapOrderWithPayment({
             sender,
@@ -367,8 +367,12 @@ describe('Flow: Cross-chain swap (Algorand into an own Ethereum address)', () =>
         await waitFor(() => expect(reports).toHaveLength(1))
 
         const row = await screen.findByTestId(`pending_swap_${SWAP_ORDER_ID}`)
-        expect(within(row).getByText('ALGO → ETH')).toBeTruthy()
-        expect(within(row).getByText('swap.tracking.in_progress')).toBeTruthy()
+        expect(
+            within(row).getByText('transactions.list_item.swap_assets'),
+        ).toBeTruthy()
+        expect(
+            within(row).getByTestId(`pending_swap_status_${SWAP_ORDER_ID}`),
+        ).toBeTruthy()
 
         server.use(mockFetchSwapOrder({ order: routerOrder('expired') }))
         await api.queryClient.refetchQueries({ queryKey: ['swaps', 'order'] })

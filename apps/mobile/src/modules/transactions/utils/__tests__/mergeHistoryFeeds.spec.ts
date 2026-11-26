@@ -90,6 +90,62 @@ const entryKeys = (rows: TransactionListRow[]) =>
     rows.filter(row => row.kind !== 'header').map(row => row.key)
 
 describe('mergeHistoryFeeds', () => {
+    describe('a cross-chain swap', () => {
+        const source = {
+            ...ethAt('0xSOURCE', JAN_1 + HOUR),
+            swapLeg: { orderId: 'o1', role: 'source' },
+        } as TransactionRecord
+        const payout = (swapLeg?: TransactionRecord['swapLeg']) =>
+            ({
+                id: '0xPAYOUT',
+                scope: BASE,
+                timestamp: (JAN_1 + 2 * HOUR) * 1000,
+                ...(swapLeg && { swapLeg }),
+            }) as TransactionRecord
+
+        it('lists only its source row once the backend links the payout on the other network', () => {
+            const merged = mergeHistoryFeeds([
+                feed(ETHEREUM, buildRecordListRows([source])),
+                feed(
+                    BASE,
+                    buildRecordListRows([
+                        payout({ orderId: 'o1', role: 'payout' }),
+                    ]),
+                ),
+            ])
+
+            expect(entryKeys(merged.rows)).toEqual(['0xSOURCE'])
+        })
+
+        it('drops a payout the backend has not linked yet when the tracked order names its hash', () => {
+            const merged = mergeHistoryFeeds(
+                [
+                    feed(ETHEREUM, buildRecordListRows([ethAt('0xSOURCE')])),
+                    feed(BASE, buildRecordListRows([payout()])),
+                ],
+                new Map([
+                    ['0xsource', { orderId: 'o1', role: 'source' }],
+                    ['0xpayout', { orderId: 'o1', role: 'payout' }],
+                ]),
+            )
+
+            expect(entryKeys(merged.rows)).toEqual(['0xSOURCE'])
+        })
+
+        it('keeps the payout where its source is not listed', () => {
+            const merged = mergeHistoryFeeds([
+                feed(
+                    BASE,
+                    buildRecordListRows([
+                        payout({ orderId: 'o1', role: 'payout' }),
+                    ]),
+                ),
+            ])
+
+            expect(entryKeys(merged.rows)).toEqual(['0xPAYOUT'])
+        })
+    })
+
     it('interleaves every network newest first, each row naming its network', () => {
         const merged = mergeHistoryFeeds([
             feed(

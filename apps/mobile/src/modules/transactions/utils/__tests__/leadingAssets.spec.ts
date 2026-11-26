@@ -87,6 +87,26 @@ describe('leadingAssetsOf', () => {
         expect(leadingAssetsOf(oneSided, undefined)).toEqual([])
         expect(leadingAssetsOf(call, undefined)).toEqual([])
     })
+
+    it('leads a swap still on its way with the pair its title names', () => {
+        const inFlight = summaryOf('swap', {
+            title: {
+                key: i18nKey('transactions.list_item.swap_pair'),
+                params: { from: 'ETH', to: 'ETH' },
+            },
+            titleAssets: {
+                from: { chainId: 'ethereum', assetId: 'eth' },
+                to: { chainId: 'base', assetId: 'eth' },
+            },
+            balanceChanges: [leg('eth', -1)],
+        })
+
+        expect(leadingAssetsOf(inFlight, undefined)).toEqual([
+            { chainId: 'ethereum', asset: { assetId: 'eth', unitName: 'ETH' } },
+            { chainId: 'base', asset: { assetId: 'eth', unitName: 'ETH' } },
+        ])
+        expect(swapChainIdsOf(inFlight)).toEqual(['ethereum', 'base'])
+    })
 })
 
 describe('swapChainIdsOf', () => {

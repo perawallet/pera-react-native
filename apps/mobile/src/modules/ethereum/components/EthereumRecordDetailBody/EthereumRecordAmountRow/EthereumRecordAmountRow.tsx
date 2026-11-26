@@ -40,11 +40,12 @@ export const EthereumRecordAmountRow = ({
             testID={testID}
             title={titleOverride ?? title}
         >
+            {/* 18 exact decimals wrap the row; the explorer holds the exact figure. */}
             <AssetAmount
                 chainId={scope.chainId}
                 asset={asset}
                 value={value}
-                density='exact'
+                density='detailed'
                 isLoading={isLoading}
                 showSymbol={showSymbol}
                 ignorePrivacyMode

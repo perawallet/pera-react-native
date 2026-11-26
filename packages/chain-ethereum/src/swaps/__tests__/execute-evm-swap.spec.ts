@@ -155,6 +155,8 @@ const orderOf = (transactions: string[]): SwapOrder => ({
 const quoteOf = (assetId: string = TOKEN): SwapQuote =>
     ({
         quoteId: 'quote-1',
+        assetIn: { unitName: 'TKN' },
+        assetOut: { unitName: 'ETH' },
         fetchedAt: Date.now(),
         expiresAt: null,
         request: {
