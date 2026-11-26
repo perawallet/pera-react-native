@@ -19,6 +19,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { trackEvent, HomeEvent } from '@analytics'
 import { useCapabilityCheck } from '@hooks/useCapability'
 import { MESSAGES_REQUIREMENTS } from '@hooks/capabilityRequirements'
+import { useTokenInboxes } from '../../hooks/useTokenInboxes'
 
 const MAX_INBOX_COUNT_DISPLAY = 9
 
@@ -35,8 +36,16 @@ export const useNotificationsIcon = (): UseNotificationsIconResult => {
     const isAllowed = useCapabilityCheck()
     const canOpenMessages = MESSAGES_REQUIREMENTS.some(isAllowed)
     const scope = useSelectedScope(ALGORAND_CHAIN_ID)
-    const { unreadInboxCount, hasUnreadNotifications, isUnavailableOnNetwork } =
-        useInboxStatus(scope)
+    const {
+        unreadInboxCount: backendInboxCount,
+        hasUnreadNotifications,
+        isUnavailableOnNetwork,
+    } = useInboxStatus(scope)
+    // A token inbox row is kept on the device, so the inbox backend's network
+    // being unavailable doesn't hide it.
+    const tokenInboxCount = useTokenInboxes().length
+    const unreadInboxCount =
+        (isUnavailableOnNetwork ? 0 : backendInboxCount) + tokenInboxCount
     // Spot banners live on the Messages screen above the tabs, so any
     // outstanding spot banner is also an "unread" signal the icon should
     // surface. Left ungated deliberately: banners are a separate Pera-backed
@@ -51,7 +60,7 @@ export const useNotificationsIcon = (): UseNotificationsIconResult => {
         navigation.navigate('Messages')
     }
 
-    const showCountBadge = !isUnavailableOnNetwork && unreadInboxCount > 0
+    const showCountBadge = unreadInboxCount > 0
     const showDotBadge =
         !showCountBadge &&
         ((!isUnavailableOnNetwork && hasUnreadNotifications) || hasSpotBanners)

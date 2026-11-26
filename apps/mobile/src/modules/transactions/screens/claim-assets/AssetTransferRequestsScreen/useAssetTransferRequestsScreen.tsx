@@ -12,7 +12,12 @@
 
 import { useCallback, useEffect, type ReactElement } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { receivesUnaskedAssets } from '@perawallet/wallet-core-accounts'
+import {
+    i18nKey,
+    type ChainScope,
+    type I18nKey,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     useAssetInboxRequestsQuery,
     type AssetInboxRequest,
@@ -21,7 +26,10 @@ import { isIntegrityRequiredError } from '@perawallet/wallet-core-shared'
 import { PWDivider } from '@components/core'
 import { AssetTransferRequestItem } from '@modules/transactions/components/claim-assets/AssetTransferRequestItem'
 import { useStyles } from './styles'
-import { useClaimAssets } from '@modules/transactions/hooks'
+import {
+    useClaimAssets,
+    useTokenInboxRequests,
+} from '@modules/transactions/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import type { MessagesStackParamList } from '@modules/messages'
 
@@ -31,6 +39,8 @@ type UseAssetTransferRequestsScreenResult = {
     isPending: boolean
     isUnavailableOnNetwork: boolean
     isIntegrityBlocked: boolean
+    infoBodyKey: I18nKey
+    emptyBodyKey: I18nKey
     handleItemPress: (index: number) => void
     renderItem: (params: {
         item: AssetInboxRequest
@@ -49,19 +59,30 @@ export const useAssetTransferRequestsScreen =
                 RouteProp<MessagesStackParamList, 'AssetTransferRequests'>
             >()
         const { scope } = route.params
+        const address = route.params.item.address
+        // Tokens nobody asked for arrive straight in the account, so their
+        // inbox is kept on the device instead of the inbox backend.
+        const isTokenInbox = receivesUnaskedAssets(scope.chainId)
         const { setAccountAddress, setAssetRequests } = useClaimAssets()
 
         useEffect(() => {
             setAccountAddress(route.params.item.address)
         }, [route.params.item.address, setAccountAddress])
-        const {
-            data: assetRequests,
-            isPending,
-            isError,
-            error,
-            isUnavailableOnNetwork,
-        } = useAssetInboxRequestsQuery(scope, route.params.item.address)
-        const isIntegrityBlocked = isError && isIntegrityRequiredError(error)
+        const backendInbox = useAssetInboxRequestsQuery(
+            scope,
+            isTokenInbox ? null : address,
+        )
+        const tokenInbox = useTokenInboxRequests(
+            scope,
+            isTokenInbox ? address : null,
+        )
+        const { data: assetRequests, isPending } = isTokenInbox
+            ? tokenInbox
+            : backendInbox
+        const isUnavailableOnNetwork =
+            !isTokenInbox && backendInbox.isUnavailableOnNetwork
+        const isIntegrityBlocked =
+            backendInbox.isError && isIntegrityRequiredError(backendInbox.error)
 
         const handleItemPress = useCallback(
             (index: number) => {
@@ -106,6 +127,12 @@ export const useAssetTransferRequestsScreen =
             isPending,
             isUnavailableOnNetwork,
             isIntegrityBlocked,
+            infoBodyKey: isTokenInbox
+                ? i18nKey('asset_inbox.requests.token_info_body')
+                : i18nKey('asset_inbox.requests.info_body'),
+            emptyBodyKey: isTokenInbox
+                ? i18nKey('asset_inbox.requests.token_empty_body')
+                : i18nKey('asset_inbox.requests.empty_body'),
             handleItemPress,
             renderItem,
             renderSeparator,

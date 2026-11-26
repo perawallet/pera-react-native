@@ -625,7 +625,7 @@ describe('the adapter methods', () => {
 
         expect(getAccountHoldings).toHaveBeenLastCalledWith(
             expect.objectContaining({
-                hideSuspicious: false,
+                hideUnapproved: false,
                 excludeHidden: false,
             }),
         )
@@ -793,7 +793,7 @@ describe('the adapter methods', () => {
         expect(getAccountHoldings).toHaveBeenCalledWith(
             expect.objectContaining({
                 hideZeroBalance: true,
-                hideSuspicious: true,
+                hideUnapproved: true,
                 excludeHidden: true,
             }),
         )

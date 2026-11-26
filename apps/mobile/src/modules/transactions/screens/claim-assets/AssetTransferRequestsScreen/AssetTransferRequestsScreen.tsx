@@ -27,6 +27,8 @@ export const AssetTransferRequestsScreen = () => {
         isPending,
         isUnavailableOnNetwork,
         isIntegrityBlocked,
+        infoBodyKey,
+        emptyBodyKey,
         renderItem,
         renderSeparator,
         keyExtractor,
@@ -39,7 +41,7 @@ export const AssetTransferRequestsScreen = () => {
                 size='md'
                 variant='primary'
             >
-                <PWText>{t('asset_inbox.requests.info_body')}</PWText>
+                <PWText>{t(infoBodyKey)}</PWText>
             </InfoButton>
         ),
     })
@@ -67,7 +69,7 @@ export const AssetTransferRequestsScreen = () => {
                             style={styles.emptyView}
                             icon='inbox'
                             title={t('asset_inbox.requests.empty_title')}
-                            body={t('asset_inbox.requests.empty_body')}
+                            body={t(emptyBodyKey)}
                         />
                     </OfflineTolerantView>
                 }

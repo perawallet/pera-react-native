@@ -10,13 +10,13 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
 import {
     findAccountByAddressOn,
     getAccountDisplayName,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
-import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { PWIcon } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { AccountIcon } from '@components/AccountIcon'
@@ -26,22 +26,20 @@ type AsaInboxItemModel = Extract<InboxItemModel, { type: 'asa_inbox' }>
 
 export type AsaInboxItemProps = {
     item: AsaInboxItemModel
+    chainId: ChainId
     chainBadgeName?: string
     onPress?: () => void
 }
 
 export const AsaInboxItem = ({
     item,
+    chainId,
     chainBadgeName,
     onPress,
 }: AsaInboxItemProps) => {
     const { t } = useLanguage()
     const accounts = useAllAccounts()
-    const account = findAccountByAddressOn(
-        accounts,
-        ALGORAND_CHAIN_ID,
-        item.data.address,
-    )
+    const account = findAccountByAddressOn(accounts, chainId, item.data.address)
 
     const icon = account ? (
         <AccountIcon
@@ -66,7 +64,7 @@ export const AsaInboxItem = ({
             title={t('messages.inbox.asa_requests', {
                 count: item.data.requestCount,
             })}
-            subtitle={getAccountDisplayName(account ?? null, ALGORAND_CHAIN_ID)}
+            subtitle={getAccountDisplayName(account ?? null, chainId)}
         />
     )
 }

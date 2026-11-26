@@ -173,7 +173,7 @@
         "display_opted_in_nfts": "Angemeldete NFTs anzeigen",
         "display_opted_in_nfts_description": "Du kannst NFTs ein- oder ausblenden, für die du angemeldet bist, die du aber nicht besitzt",
         "show_suspicious": "Verdächtige Assets anzeigen",
-        "show_suspicious_description": "Zeigt Tokens an, die Pera als wahrscheinlichen Spam oder Betrug markiert hat. Sie zählen nie zu deinem Guthaben"
+        "show_suspicious_description": "Zeigt auch Tokens, die in deinem Posteingang warten, und Tokens, die Pera als wahrscheinlichen Spam oder Betrug markiert hat. Sie zählen nie zu deinem Guthaben"
     },
     "add_asset": {
         "title": "Asset hinzufügen",
@@ -291,11 +291,8 @@
         "hidden_toast_body": "Das Token erscheint nicht mehr in deinen Assets und zählt nicht zu deinem Guthaben. Du kannst es unter Assets verwalten > Tokens ausblenden wieder einblenden.",
         "hidden_swipe_toast_body": "Tippe, um es rückgängig zu machen. Das Token erscheint nicht mehr in deinen Assets und zählt nicht zu deinem Guthaben.",
         "shown_toast_title": "{{assetName}} eingeblendet",
-        "filtered_note": "Pera hat dieses Token als verdächtig markiert, daher erscheint es nicht in deinen Assets. Unter „Ausgeblendete Tokens“ am Ende deiner Assets kannst du es einblenden.",
-        "auto_hidden_row_title": "Ausgeblendete Tokens ({{total}})",
-        "auto_hidden_title": "Ausgeblendete Tokens",
-        "auto_hidden_description": "Pera hat diese Tokens ausgeblendet, weil sie nach Spam oder Betrug aussehen. Besuche keine Websites, die darin genannt werden. Blende ein Token ein, um es wieder anzuzeigen; zu deinem Guthaben zählt es weiterhin nicht.",
-        "auto_hidden_empty_title": "Keine ausgeblendeten Tokens"
+        "filtered_note": "Dieses Token wartet in deinem Posteingang. Nimm es dort an, damit es in deinen Assets erscheint.",
+        "auto_hidden_row_title": "Tokens in deinem Posteingang ({{total}})"
     },
     "deeplink": {
         "error": {
@@ -390,11 +387,17 @@
             "empty_title": "Keine ausstehenden Asset-Übertragungsanfragen",
             "empty_body": "Sobald eine Asset-Übertragungsanfrage vorliegt, kannst du sie hier einsehen. Tippe hier, um mehr über diese Funktion zu erfahren.",
             "info_title": "Asset-Übertragungsanfragen",
-            "info_body": "Diese Funktion ist ein Posteingang für dein Konto. Andere können dir Assets und NFTs senden, auch wenn du dich nicht ausdrücklich dafür angemeldet hast, sie zu empfangen. Von hier aus kannst du die Asset-Übertragungsanfragen annehmen oder ablehnen."
+            "info_body": "Diese Funktion ist ein Posteingang für dein Konto. Andere können dir Assets und NFTs senden, auch wenn du dich nicht ausdrücklich dafür angemeldet hast, sie zu empfangen. Von hier aus kannst du die Asset-Übertragungsanfragen annehmen oder ablehnen.",
+            "token_info_body": "Tokens, die Pera nicht verifiziert hat, warten hier, wenn sie auf diesem Konto ankommen. Nimm ein Token an, damit es in deinen Assets erscheint und zu deinem Guthaben zählt, oder lehne es ab, um es auszublenden. Deine Wahl bleibt auf diesem Gerät; an das Netzwerk wird nichts gesendet.",
+            "token_empty_body": "Tokens, die Pera nicht verifiziert hat, warten hier, bis du sie annimmst oder ablehnst."
         },
         "claim": {
             "reject": "Ablehnen",
-            "native_gain": "Du erhältst {{amount}} als Ausgleich für die Anmeldekosten."
+            "native_gain": "Du erhältst {{amount}} als Ausgleich für die Anmeldekosten.",
+            "token_reject_title": "Token ablehnen",
+            "token_reject_body": "Das Token wird in deinen Assets und deinem Verlauf ausgeblendet und kehrt nicht in deinen Posteingang zurück. Du kannst es unter Assets verwalten > Tokens ausblenden wieder einblenden.",
+            "token_accepted_toast": "{{assetName}} zu deinen Assets hinzugefügt",
+            "token_rejected_toast": "{{assetName}} abgelehnt"
         }
     },
     "asset": {
@@ -2269,7 +2272,7 @@
         },
         "inbox": {
             "empty_title": "Keine ausstehenden Nachrichten",
-            "empty_body": "Im Posteingang landen Algorand-Assets, die dir gesendet wurden, bevor du dich für sie angemeldet hast, sowie Einladungen zu Gemeinschaftskonten und Signaturanfragen. Tokens in anderen Netzwerken kommen direkt in deinem Guthaben an.",
+            "empty_body": "Im Posteingang warten Assets darauf, dass du sie annimmst: Algorand-Assets, die dir gesendet wurden, bevor du dich für sie angemeldet hast, und Tokens in Netzwerken wie Ethereum, die Pera nicht verifiziert hat. Auch Einladungen zu Gemeinschaftskonten und Signaturanfragen landen hier.",
             "asa_requests_one": "1 eingehendes Asset",
             "asa_requests_other": "{{count}} eingehende Assets",
             "multisig_sign": {
@@ -2287,8 +2290,7 @@
                 "algorand_title": "Algorand",
                 "algorand_body": "Ein Algorand-Konto muss sich für ein Asset anmelden, bevor es dieses halten kann. Assets, die dir vor deiner Anmeldung gesendet werden, warten hier im Posteingang, bis du sie beanspruchst oder ablehnst. Auch Einladungen zu Gemeinschaftskonten und Signaturanfragen kommen hier an.",
                 "other_networks_title": "Andere Netzwerke",
-                "other_networks_body": "Netzwerke wie Ethereum und Base kennen keine Anmeldung für Assets. Tokens, die dir dort gesendet werden, kommen direkt in deinem Guthaben an und erscheinen nie im Posteingang.",
-                "find_tokens_body": "Du findest sie, indem du das Konto öffnest und dir seine Assets in diesem Netzwerk ansiehst.",
+                "other_networks_body": "Netzwerke wie Ethereum und Base kennen keine Anmeldung für Assets, daher kann dir jeder ein Token senden. Tokens, die Pera nicht verifiziert hat, warten hier, bis du sie annimmst oder ablehnst. Ein angenommenes Token erscheint in deinen Assets, ein abgelehntes wird ausgeblendet.",
                 "learn_more": "Mehr erfahren"
             }
         },
@@ -4177,8 +4179,8 @@
             "title": "Filter",
             "all_time": "Gesamter Zeitraum",
             "today": "Heute",
-            "hide_suspicious": "Verdächtige Transaktionen ausblenden",
-            "hide_suspicious_description": "Blendet gefälschte Sendungen, nachgeahmte und Spam-Token sowie vermutete Adressvergiftung aus.",
+            "show_suspicious": "Verdächtige Transaktionen anzeigen",
+            "show_suspicious_description": "Zeigt gefälschte Sendungen, nachgeahmte und Spam-Token, vermutete Adressvergiftung sowie Übertragungen von Tokens, die in deinem Posteingang warten.",
             "yesterday": "Gestern",
             "last_week": "Letzte Woche",
             "last_month": "Letzter Monat",

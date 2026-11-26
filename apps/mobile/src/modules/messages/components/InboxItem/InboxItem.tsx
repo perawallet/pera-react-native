@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
 import { AsaInboxItem } from './AsaInboxItem'
 import { MultisigInvitationInboxItem } from './MultisigInvitationInboxItem'
@@ -17,12 +18,15 @@ import { MultisigSignInboxItem } from './MultisigSignInboxItem'
 
 export type InboxItemProps = {
     item: InboxItemModel
+    /** The chain the item belongs to. */
+    chainId: ChainId
     chainBadgeName?: string
     onPress?: () => void
 }
 
 export const InboxItem = ({
     item,
+    chainId,
     chainBadgeName,
     onPress,
 }: InboxItemProps) => {
@@ -31,6 +35,7 @@ export const InboxItem = ({
             return (
                 <AsaInboxItem
                     item={item}
+                    chainId={chainId}
                     chainBadgeName={chainBadgeName}
                     onPress={onPress}
                 />

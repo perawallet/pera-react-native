@@ -10,20 +10,25 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { type ParamListBase, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountHoldingSources,
+    useTokenInboxQuery,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { useAssetPreferencesStore } from '@perawallet/wallet-core-assets'
-import { useAutoHiddenHoldings } from '../../hooks/useAutoHiddenHoldings'
+import { useSelectedNetworkSource } from '../../hooks/useSelectedNetworkSource'
 
 export type UseAutoHiddenTokensRowResult = {
     count: number
-    /** Off while the list already shows suspicious assets, or none are hidden. */
+    /** Off while the list already shows suspicious assets, or none wait in the inbox. */
     isVisible: boolean
     handlePress: () => void
 }
 
+/** The tokens waiting in the inbox on the network the list shows; tapping opens the inbox. */
 export const useAutoHiddenTokensRow = (
     account: WalletAccount,
 ): UseAutoHiddenTokensRowResult => {
@@ -31,9 +36,19 @@ export const useAutoHiddenTokensRow = (
     const showSuspicious = useAssetPreferencesStore(
         state => state.showSuspicious,
     )
-    const { holdings } = useAutoHiddenHoldings(account)
+    const accountSources = useAccountHoldingSources(account)
+    const selected = useSelectedNetworkSource(accountSources)
+    const sources = useMemo(
+        () => (selected ? [selected] : accountSources),
+        [accountSources, selected],
+    )
+    const { holdings } = useTokenInboxQuery(sources)
     const handlePress = useCallback(
-        () => navigation.navigate('AutoHiddenTokens'),
+        () =>
+            navigation.navigate('Messages', {
+                screen: 'MessagesHome',
+                params: { initialTab: 'Inbox' },
+            }),
         [navigation],
     )
     return {

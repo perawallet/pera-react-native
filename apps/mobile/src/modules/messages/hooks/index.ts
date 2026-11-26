@@ -22,3 +22,4 @@ export {
     useHandleInboxItemPress,
     type UseHandleInboxItemPressResult,
 } from './useHandleInboxItemPress'
+export { useTokenInboxes, type TokenInbox } from './useTokenInboxes'

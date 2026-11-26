@@ -120,7 +120,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         afterTime,
         beforeTime,
         historyType,
-        isSuspiciousHidden,
+        isSuspiciousShown,
         openFilter,
     } = useAccountHistoryFilter()
 
@@ -159,7 +159,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     const rows = useWithoutSuspiciousRows({
         rows: allRows,
         suspectedPoisoningById,
-        isEnabled: isSuspiciousHidden,
+        isEnabled: !isSuspiciousShown,
     })
 
     // The event needs one chain, so on All it names the account's own; a
@@ -217,8 +217,10 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     // queued behind it, and calling that empty would flash the wrong
     // answer for the length of one request.
     // A failed read is never empty, even while it is re-read.
+    // Suspicious rows are hidden by default, so a history of nothing else
+    // has rows read and none to show.
     const isEmpty =
-        isFetched && !isLoadFailed && !hasNextPage && transactionCount === 0
+        isFetched && !isLoadFailed && !hasNextPage && rows.length === 0
     const isOfflineEmpty = isEmpty && !hasInternet
     // The failed read happened offline, so it gets the offline copy, not the error one.
     const isLoadOffline = isLoadFailed && !hasInternet
@@ -232,7 +234,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         isFiltered:
             activeFilter !== TransactionFilter.AllTime ||
             (canFilterByType && historyType !== null) ||
-            isSuspiciousHidden,
+            transactionCount > 0,
         networkChainId,
     })
     const emptyBody = t(emptyCopy.key, emptyCopy.params)

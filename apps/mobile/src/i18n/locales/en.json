@@ -173,7 +173,7 @@
         "display_opted_in_nfts": "Display opted-in NFTs",
         "display_opted_in_nfts_description": "You can show/hide NFTs that are opted-in but not owned",
         "show_suspicious": "Show suspicious assets",
-        "show_suspicious_description": "Lists tokens Pera has flagged as likely spam or scams. They are never counted in your balance"
+        "show_suspicious_description": "Also lists tokens waiting in your inbox and ones Pera has flagged as likely spam or scams. They never count toward your balance"
     },
     "add_asset": {
         "title": "Add Asset",
@@ -291,11 +291,8 @@
         "hidden_toast_body": "It won't show in your assets or count toward your balance. Unhide it from Manage Assets > Hide Tokens.",
         "hidden_swipe_toast_body": "Tap to undo. It won't show in your assets or count toward your balance.",
         "shown_toast_title": "{{assetName}} shown",
-        "filtered_note": "Pera flagged this token as suspicious, so it stays out of your assets. Unhide it from Hidden tokens at the end of your assets.",
-        "auto_hidden_row_title": "Hidden tokens ({{total}})",
-        "auto_hidden_title": "Hidden tokens",
-        "auto_hidden_description": "Pera hid these tokens because they look like spam or scams. Don't visit websites named in them. Unhide a token to list it again; it still won't count toward your balance.",
-        "auto_hidden_empty_title": "No hidden tokens"
+        "filtered_note": "This token is waiting in your inbox. Accept it there to list it in your assets.",
+        "auto_hidden_row_title": "Tokens in your inbox ({{total}})"
     },
     "deeplink": {
         "error": {
@@ -390,11 +387,17 @@
             "empty_title": "No Pending Asset Transfer Requests",
             "empty_body": "When you have an asset transfer request, you can view it here. Tap to learn more about this feature.",
             "info_title": "Asset Transfer Requests",
-            "info_body": "This feature is an inbox for your account. Others can send you assets and NFTs, even if you have not explicitly opted in to receive them. From here, you can choose to accept or reject the asset transfer requests."
+            "info_body": "This feature is an inbox for your account. Others can send you assets and NFTs, even if you have not explicitly opted in to receive them. From here, you can choose to accept or reject the asset transfer requests.",
+            "token_info_body": "Tokens Pera hasn’t verified wait here when they arrive in this account. Accept one to list it in your assets and count it toward your balance, or reject it to hide it. Either choice stays on this device; nothing is sent to the network.",
+            "token_empty_body": "Tokens Pera hasn’t verified wait here until you accept or reject them."
         },
         "claim": {
             "reject": "Reject",
-            "native_gain": "You will receive {{amount}} in order to compensate the opt-in expenses."
+            "native_gain": "You will receive {{amount}} in order to compensate the opt-in expenses.",
+            "token_reject_title": "Reject token",
+            "token_reject_body": "The token will be hidden from your assets and history and won’t come back to your inbox. You can unhide it from Manage Assets > Hide Tokens.",
+            "token_accepted_toast": "{{assetName}} added to your assets",
+            "token_rejected_toast": "{{assetName}} rejected"
         }
     },
     "asset": {
@@ -2277,7 +2280,7 @@
         },
         "inbox": {
             "empty_title": "No pending messages",
-            "empty_body": "The inbox holds Algorand assets sent to you before you’ve opted in, along with shared account invitations and signature requests. Tokens on other networks arrive directly in your balance.",
+            "empty_body": "The inbox holds assets waiting for you to accept them: Algorand assets sent to you before you’ve opted in, and tokens on networks like Ethereum that Pera hasn’t verified. Shared account invitations and signature requests arrive here too.",
             "asa_requests_one": "1 incoming asset",
             "asa_requests_other": "{{count}} incoming assets",
             "multisig_sign": {
@@ -2295,8 +2298,7 @@
                 "algorand_title": "Algorand",
                 "algorand_body": "An Algorand account must opt in to an asset before it can hold it. Assets sent to you before you’ve opted in wait here, in the inbox, until you claim or reject them. Shared account invitations and signature requests arrive here too.",
                 "other_networks_title": "Other networks",
-                "other_networks_body": "Networks such as Ethereum and Base have no opt-in. Tokens sent to you there arrive directly in your balance and never appear in the inbox.",
-                "find_tokens_body": "To see them, open the account and check its assets on that network.",
+                "other_networks_body": "Networks such as Ethereum and Base have no opt-in, so anyone can send you a token. Tokens Pera hasn’t verified wait here until you accept or reject them. Accepting one lists it in your assets; rejecting one hides it.",
                 "learn_more": "Learn more"
             }
         },
@@ -4185,8 +4187,8 @@
             "title": "Filter",
             "all_time": "All Time",
             "today": "Today",
-            "hide_suspicious": "Hide suspicious transactions",
-            "hide_suspicious_description": "Hides spoofed sends, look-alike and spam tokens, and suspected address poisoning.",
+            "show_suspicious": "Show suspicious transactions",
+            "show_suspicious_description": "Includes spoofed sends, look-alike and spam tokens, suspected address poisoning, and transfers of tokens waiting in your inbox.",
             "yesterday": "Yesterday",
             "last_week": "Last Week",
             "last_month": "Last Month",

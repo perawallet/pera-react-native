@@ -28,6 +28,7 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { EvmHistoryItemResponse } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
 import { server } from '@test-utils/msw-server'
 import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
+import { showSuspiciousTransactions } from './__fixtures__/historyFilters'
 
 vi.mock('@perawallet/wallet-core-config', async importOriginal => {
     const withBackend = await (
@@ -162,12 +163,14 @@ const UNSIGNED_UNKNOWN_TOKEN_TO_CONTACT_LOOK_ALIKE = (() => {
 const markerOf = (item: EvmHistoryItemResponse) =>
     `transaction_row_suspicious_${item.hash}`
 
-const renderHistory = () =>
+const renderHistory = async () => {
     renderWithNavigation(AccountHistory, 'AccountHistory', {
         additionalScreens: [
             { name: 'TransactionDetails', component: TransactionDetailsScreen },
         ],
     })
+    await showSuspiciousTransactions()
+}
 
 // The badge shows as soon as any check flags the row; poisoning resolves after
 // the faster spoof and look-alike checks, and names itself in the badge's label.
@@ -233,7 +236,7 @@ describe('Flow: suspected address poisoning in Ethereum history', () => {
     })
 
     it('Given worthless transfers from look-alikes of a contact and of a payee, then both are marked and real value is not', async () => {
-        renderHistory()
+        await renderHistory()
 
         await screen.findByTestId(
             markerOf(DUST_FROM_PAYEE_LOOK_ALIKE),
@@ -250,7 +253,7 @@ describe('Flow: suspected address poisoning in Ethereum history', () => {
     })
 
     it('Given a marked row, when the user presses it, then its details open under an explanation naming the address it imitates', async () => {
-        renderHistory()
+        await renderHistory()
         await screen.findByTestId(
             markerOf(DUST_FROM_PAYEE_LOOK_ALIKE),
             undefined,
@@ -275,7 +278,7 @@ describe('Flow: suspected address poisoning in Ethereum history', () => {
     })
 
     it('Given the explanation on a marked row, when the user presses Got it, then the details close', async () => {
-        renderHistory()
+        await renderHistory()
         await screen.findByTestId(
             markerOf(DUST_FROM_PAYEE_LOOK_ALIKE),
             undefined,
@@ -294,7 +297,7 @@ describe('Flow: suspected address poisoning in Ethereum history', () => {
     })
 
     it('Given an unmarked row, when the user opens it, then no explanation or Got it shows', async () => {
-        renderHistory()
+        await renderHistory()
         await screen.findByTestId(
             markerOf(DUST_FROM_PAYEE_LOOK_ALIKE),
             undefined,
@@ -316,7 +319,7 @@ describe('Flow: suspected address poisoning in Ethereum history', () => {
                 },
             }),
         )
-        renderHistory()
+        await renderHistory()
         await findPoisoningMark(UNSIGNED_UNKNOWN_TOKEN_TO_CONTACT_LOOK_ALIKE)
 
         openRow(UNSIGNED_UNKNOWN_TOKEN_TO_CONTACT_LOOK_ALIKE)
@@ -426,7 +429,7 @@ describe.each([
         })
 
         it('Given a real send and a fake one of the same amount, then the list tells them apart without opening either', async () => {
-            renderHistory()
+            await renderHistory()
             await findPoisoningMark(fakeSend)
             const unit = nativeAssetFor(chainId).unitName
 
@@ -445,7 +448,7 @@ describe.each([
         })
 
         it('Given the fake send, when the user presses it, then its details name the token contract beside the explanation and an explorer link', async () => {
-            renderHistory()
+            await renderHistory()
             await findPoisoningMark(fakeSend)
 
             openRow(fakeSend)

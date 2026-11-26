@@ -154,12 +154,15 @@ describe('replaceKeptTokens', () => {
 
 describe('isAutoHiddenHolding', () => {
     const TOKEN = '777'
-    const holding = (verificationTier?: 'suspicious' | 'unverified') => ({
+    const holding = (
+        verificationTier?: 'suspicious' | 'unverified' | 'verified',
+        type?: string,
+    ) => ({
         address: ADDRESS,
         scope: FAKE_SCOPE,
         assetId: TOKEN,
         asset: verificationTier
-            ? { peraMetadata: { verificationTier } }
+            ? { peraMetadata: { verificationTier, type } }
             : undefined,
     })
 
@@ -182,11 +185,28 @@ describe('isAutoHiddenHolding', () => {
         ).toBe(false)
     })
 
-    it('lists an unverified token and one with no metadata yet', () => {
+    it('hides an unverified token and one with no metadata yet', () => {
         registerFakeNativeAsset(6)
 
-        expect(isAutoHiddenHolding(holding('unverified'), {})).toBe(false)
-        expect(isAutoHiddenHolding(holding(), {})).toBe(false)
+        expect(isAutoHiddenHolding(holding('unverified'), {})).toBe(true)
+        expect(isAutoHiddenHolding(holding(), {})).toBe(true)
+    })
+
+    it('lists a verified token', () => {
+        registerFakeNativeAsset(6)
+
+        expect(isAutoHiddenHolding(holding('verified'), {})).toBe(false)
+    })
+
+    it('hides an NFT only when Pera flags it', () => {
+        registerFakeNativeAsset(6)
+
+        expect(
+            isAutoHiddenHolding(holding('unverified', 'collectible'), {}),
+        ).toBe(false)
+        expect(
+            isAutoHiddenHolding(holding('suspicious', 'collectible'), {}),
+        ).toBe(true)
     })
 
     it('never hides on a chain where the user opts in to each asset', () => {

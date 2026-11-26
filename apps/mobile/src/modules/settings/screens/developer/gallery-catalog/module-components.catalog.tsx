@@ -570,6 +570,7 @@ registerPreview({
                 data: mockAsaInbox,
                 createdAt: new Date(),
             }}
+            chainId={ALGORAND_CHAIN_ID}
             onPress={() => undefined}
         />
     ),
@@ -584,6 +585,7 @@ registerPreview({
                 data: mockAsaInbox,
                 createdAt: new Date(),
             }}
+            chainId={ALGORAND_CHAIN_ID}
             chainBadgeName='Algorand'
             onPress={() => undefined}
         />

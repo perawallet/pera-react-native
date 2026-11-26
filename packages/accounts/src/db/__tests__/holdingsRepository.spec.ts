@@ -632,7 +632,8 @@ describe('account holdings repository', () => {
             ])
         })
 
-        it('hideSuspicious excludes tokens Pera flags suspicious and keeps rows with no metadata', async () => {
+        it('hideUnapproved counts only NFTs Pera has not flagged on a chain that receives tokens unasked', async () => {
+            registerFakeNativeAsset(6)
             await upsertAssets({
                 db,
                 items: [
@@ -648,16 +649,14 @@ describe('account holdings repository', () => {
                 scope: MAINNET_SCOPE,
             })
 
-            expect(await idsOf({ hideSuspicious: true })).toEqual([
-                '100',
+            expect(await idsOf({ hideUnapproved: true })).toEqual([
                 '300',
                 '400',
-                '500',
             ])
             expect(await idsOf({})).toContain('200')
         })
 
-        it('hideSuspicious drops a suspicious row on a chain where the user opts in to each asset', async () => {
+        it('hideUnapproved drops only a suspicious row on a chain where the user opts in to each asset', async () => {
             registerFakeNativeAsset(6, { requiresAssetOptIn: true })
             await upsertAssets({
                 db,
@@ -674,7 +673,12 @@ describe('account holdings repository', () => {
                 scope: MAINNET_SCOPE,
             })
 
-            expect(await idsOf({ hideSuspicious: true })).not.toContain('200')
+            expect(await idsOf({ hideUnapproved: true })).toEqual([
+                '100',
+                '300',
+                '400',
+                '500',
+            ])
         })
 
         it('excludeHidden leaves out a token the user hid, whatever else is kept', async () => {

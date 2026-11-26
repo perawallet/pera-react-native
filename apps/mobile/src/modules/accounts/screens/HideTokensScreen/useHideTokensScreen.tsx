@@ -27,7 +27,7 @@ import { useLanguage } from '@hooks/useLanguage'
 
 const HIDEABLE_FILTERS = { hideNfts: true }
 // What the asset list reads while "Show suspicious assets" is off.
-const LISTED_FILTERS = { hideNfts: true, hideSuspicious: true }
+const LISTED_FILTERS = { hideNfts: true, hideUnapproved: true }
 const NO_KEYS: ReadonlySet<string> = new Set()
 
 const rowKey = ({ scope, assetId }: AccountHoldingsLiteRow): string =>

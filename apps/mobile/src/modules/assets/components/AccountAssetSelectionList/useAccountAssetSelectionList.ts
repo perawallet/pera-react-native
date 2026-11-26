@@ -93,7 +93,7 @@ export const useAccountAssetSelectionList = ({
         state => state.showSuspicious,
     )
 
-    // A token the user hid, or one the asset list leaves out as suspicious, is
+    // A token the user hid, or one the asset list leaves out for the inbox, is
     // out of this picker too, its search included.
     const balanceData = useMemo<ChainAssetBalance[]>(() => {
         const isHidden = (balance: ChainAssetBalance) => {

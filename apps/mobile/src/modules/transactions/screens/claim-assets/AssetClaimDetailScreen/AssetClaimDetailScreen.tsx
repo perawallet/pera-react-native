@@ -48,6 +48,8 @@ export const AssetClaimDetailScreen = () => {
         isClaimBlocked,
         isRejectBlocked,
         imitatedCurrency,
+        isTokenInbox,
+        isSuspicious,
         handleClaim,
         canBuy,
         handleAddFunds,
@@ -172,6 +174,19 @@ export const AssetClaimDetailScreen = () => {
                 />
             </PWView>
 
+            {isSuspicious && (
+                <InfoCallout
+                    icon='warning'
+                    iconVariant='error'
+                    iconSize='sm'
+                    titleVariant='bodySemibold'
+                    title={t('asset_details.token_warning.suspicious_title')}
+                    body={t('asset_details.token_warning.body')}
+                    style={styles.imitatedCurrencyCallout}
+                    testID='asset_inbox_claim_suspicious'
+                />
+            )}
+
             {imitatedCurrency !== null && (
                 <InfoCallout
                     icon='warning'
@@ -221,39 +236,43 @@ export const AssetClaimDetailScreen = () => {
                 )}
             </PWView>
 
-            <PWDivider style={styles.separator} />
+            {!isTokenInbox && (
+                <>
+                    <PWDivider style={styles.separator} />
 
-            <PWView style={styles.sendersSection}>
-                <PWView style={styles.sendersHeader}>
-                    <PWText style={styles.headerLabelText}>
-                        {t('messages.claim.senders')}
-                    </PWText>
-                    <PWText style={styles.headerLabelText}>
-                        {t('messages.claim.amount')}
-                    </PWText>
-                </PWView>
-                {request.senders.results.map((senderItem, index) => (
-                    <PWView
-                        key={`${senderItem.sender.address}-${index}`}
-                        style={styles.senderRow}
-                    >
-                        <AddressDisplay
-                            address={senderItem.sender.address}
-                            showCopy={false}
-                        />
-                        <AssetAmount
-                            chainId={chainId}
-                            value={baseUnitsToDisplayUnits(
-                                senderItem.amount,
-                                request.asset.decimals,
-                            )}
-                            asset={request.asset}
-                            prefix={'+'}
-                            style={styles.senderAmountText}
-                        />
+                    <PWView style={styles.sendersSection}>
+                        <PWView style={styles.sendersHeader}>
+                            <PWText style={styles.headerLabelText}>
+                                {t('messages.claim.senders')}
+                            </PWText>
+                            <PWText style={styles.headerLabelText}>
+                                {t('messages.claim.amount')}
+                            </PWText>
+                        </PWView>
+                        {request.senders.results.map((senderItem, index) => (
+                            <PWView
+                                key={`${senderItem.sender.address}-${index}`}
+                                style={styles.senderRow}
+                            >
+                                <AddressDisplay
+                                    address={senderItem.sender.address}
+                                    showCopy={false}
+                                />
+                                <AssetAmount
+                                    chainId={chainId}
+                                    value={baseUnitsToDisplayUnits(
+                                        senderItem.amount,
+                                        request.asset.decimals,
+                                    )}
+                                    asset={request.asset}
+                                    prefix={'+'}
+                                    style={styles.senderAmountText}
+                                />
+                            </PWView>
+                        ))}
                     </PWView>
-                ))}
-            </PWView>
+                </>
+            )}
         </PWScreen>
     )
 }

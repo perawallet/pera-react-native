@@ -12,7 +12,10 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { PeraAssetVerificationTier } from '@perawallet/wallet-core-assets'
+import {
+    PeraAssetType,
+    PeraAssetVerificationTier,
+} from '@perawallet/wallet-core-assets'
 import {
     guardedPersist,
     registerStore,
@@ -30,9 +33,10 @@ import {
 } from './tokenSets'
 
 /**
- * Tokens each address keeps listed although Pera flags them suspicious: ones
- * the user unhid, swapped into, bought or sent. They still never count toward
- * a total.
+ * Tokens each address approved on a chain that receives tokens unasked: ones
+ * the user accepted from the inbox, added, swapped into, bought or sent. With
+ * the tokens Pera verifies they make the list; a kept token Pera flags
+ * suspicious is listed but never counts toward a total.
  */
 export type KeptTokens = TokenSets
 
@@ -72,25 +76,34 @@ export const keptAssetIdsOf = (
 ): readonly string[] => assetIdsIn(keptTokens, address, scope)
 
 /**
- * Whether the asset list's default filter leaves this holding out: a token
- * Pera flags suspicious on a chain that receives tokens unasked, which its
- * address hasn't kept.
+ * Whether the asset list's default filter leaves this holding out, on a chain
+ * that receives tokens unasked: a token Pera hasn't verified, or an NFT Pera
+ * flags suspicious, that its address hasn't kept. Mirrors `approvedHoldingSql`.
  */
 export const isAutoHiddenHolding = (
     holding: {
         address: string
         scope: ChainScope
         assetId: string
-        asset?: Maybe<{ peraMetadata?: Maybe<{ verificationTier?: string }> }>
+        asset?: Maybe<{
+            peraMetadata?: Maybe<{ verificationTier?: string; type?: string }>
+        }>
     },
     keptTokens: KeptTokens,
-): boolean =>
-    holding.asset?.peraMetadata?.verificationTier ===
-        PeraAssetVerificationTier.suspicious &&
-    canHideHolding(holding.scope.chainId, holding.assetId) &&
-    !keptAssetIdsOf(keptTokens, holding.address, holding.scope).includes(
-        holding.assetId,
-    )
+): boolean => {
+    if (!canHideHolding(holding.scope.chainId, holding.assetId)) return false
+    if (
+        keptAssetIdsOf(keptTokens, holding.address, holding.scope).includes(
+            holding.assetId,
+        )
+    ) {
+        return false
+    }
+    const metadata = holding.asset?.peraMetadata
+    return metadata?.type === PeraAssetType.collectible
+        ? metadata.verificationTier === PeraAssetVerificationTier.suspicious
+        : metadata?.verificationTier !== PeraAssetVerificationTier.verified
+}
 
 export const useKeptTokensStore: UseBoundStore<
     WithPersist<StoreApi<KeptTokensState>, unknown>

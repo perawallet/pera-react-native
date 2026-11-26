@@ -13,10 +13,14 @@
 import { useMemo } from 'react'
 import {
     chainAccountOf,
+    isAutoHiddenHolding,
+    useKeptTokensStore,
     useSelectedAccount,
+    type KeptTokens,
 } from '@perawallet/wallet-core-accounts'
 import {
     useStoredAssetsAcrossScopesQuery,
+    type PeraAsset,
     type ScopedAssetIds,
 } from '@perawallet/wallet-core-assets'
 import {
@@ -54,9 +58,37 @@ type Entry = {
 }
 
 /**
- * The rows without the entries a history row would badge as suspicious, and
- * without a date header left over them. Judged by the same test as the row, on
- * the stored assets of every network the list mixes.
+ * Someone else's transaction that moved a token waiting in the inbox: an
+ * airdrop or a spoofed transfer. The account's own stays, whatever it moved.
+ * A token with no stored row is left in, since nothing says it's unwanted.
+ */
+const movesUnapprovedToken = (
+    entry: Entry,
+    storedAssets: Optional<ReadonlyMap<string, PeraAsset>>,
+    keptTokens: KeptTokens,
+): boolean =>
+    entry.signer?.toLowerCase() !== entry.accountAddress.toLowerCase() &&
+    summaryAmountsOf(entry.summary).some(({ assetRef: { assetId } }) => {
+        const asset = storedAssets?.get(assetId)
+        return (
+            !!asset &&
+            isAutoHiddenHolding(
+                {
+                    address: entry.accountAddress,
+                    scope: entry.scope,
+                    assetId,
+                    asset,
+                },
+                keptTokens,
+            )
+        )
+    })
+
+/**
+ * The rows without the entries a history row would badge as suspicious or
+ * that move a token waiting in the inbox, and without a date header left over
+ * them. Judged by the same test as the row, on the stored assets of every
+ * network the list mixes.
  */
 export const useWithoutSuspiciousRows = ({
     rows,
@@ -121,6 +153,7 @@ export const useWithoutSuspiciousRows = ({
         return [...byScope.values()]
     }, [entries])
     const storedByScope = useStoredAssetsAcrossScopesQuery(assetGroups)
+    const keptTokens = useKeptTokensStore(state => state.keptTokens)
 
     return useMemo(() => {
         if (!isEnabled) return rows
@@ -128,6 +161,11 @@ export const useWithoutSuspiciousRows = ({
             entries
                 .filter(
                     entry =>
+                        movesUnapprovedToken(
+                            entry,
+                            storedByScope.get(toScopeKey(entry.scope)),
+                            keptTokens,
+                        ) ||
                         assessHistoryEntry({
                             summary: entry.summary,
                             signer: entry.signer,
@@ -152,5 +190,12 @@ export const useWithoutSuspiciousRows = ({
                 (kept[index + 1] !== undefined &&
                     kept[index + 1]!.kind !== TRANSACTION_ROW_TYPES.header),
         )
-    }, [isEnabled, rows, entries, storedByScope, suspectedPoisoningById])
+    }, [
+        isEnabled,
+        rows,
+        entries,
+        storedByScope,
+        suspectedPoisoningById,
+        keptTokens,
+    ])
 }

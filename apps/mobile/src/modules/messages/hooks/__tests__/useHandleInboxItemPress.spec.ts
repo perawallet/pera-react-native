@@ -86,6 +86,26 @@ describe('useHandleInboxItemPress', () => {
         expect(mockPush).not.toHaveBeenCalled()
     })
 
+    it("opens a token inbox on its own network, with the backend inbox's capability off", () => {
+        setCapabilityOverrides({ assetInbox: false })
+        const ethereum = { chainId: 'ethereum', networkId: 'mainnet' }
+        const tokenItem = {
+            type: 'asa_inbox' as const,
+            data: { address: '0xabc', inboxAddress: null, requestCount: 2 },
+            createdAt: new Date(0),
+        }
+
+        const { result } = renderHook(() => useHandleInboxItemPress(SCOPE))
+        act(() => {
+            result.current(asInboxItem(tokenItem), ethereum)
+        })
+
+        expect(mockPush).toHaveBeenCalledWith('Messages', {
+            screen: 'AssetTransferRequests',
+            params: { item: tokenItem.data, scope: ethereum },
+        })
+    })
+
     it.each(['multisig_sign', 'multisig_import'] as const)(
         'ignores a %s item while the multisig capability is off',
         type => {

@@ -366,10 +366,10 @@ export const createEthereumBalanceHistoryOps = (
                         accountAddress,
                         scope,
                         hideZeroBalance: true,
-                        // The total leaves suspicious and hidden tokens out, so
+                        // The total leaves uncounted and hidden tokens out, so
                         // the portfolio does too; one token's own history is
                         // read by someone looking at that token.
-                        hideSuspicious: isCounted,
+                        hideUnapproved: isCounted,
                         excludeHidden: isCounted,
                     }),
                 ),

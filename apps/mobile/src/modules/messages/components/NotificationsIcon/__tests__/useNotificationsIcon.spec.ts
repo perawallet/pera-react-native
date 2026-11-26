@@ -21,6 +21,13 @@ import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 
 const mockNavigate = vi.fn()
+const { mockTokenInboxes } = vi.hoisted(() => ({
+    mockTokenInboxes: vi.fn((): unknown[] => []),
+}))
+
+vi.mock('../../../hooks/useTokenInboxes', () => ({
+    useTokenInboxes: () => mockTokenInboxes(),
+}))
 
 vi.mock('@perawallet/wallet-core-messages', () => ({
     useInboxStatus: vi.fn(),
@@ -111,6 +118,16 @@ describe('useNotificationsIcon', () => {
 
         expect(result.current.showCountBadge).toBe(false)
         expect(result.current.showDotBadge).toBe(false)
+    })
+
+    it("counts the device's token inboxes, even where the inbox backend is unavailable", () => {
+        mockStatus({ unreadInboxCount: 3, isUnavailableOnNetwork: true })
+        mockTokenInboxes.mockReturnValueOnce([{}, {}])
+
+        const { result } = renderHook(() => useNotificationsIcon())
+
+        expect(result.current.showCountBadge).toBe(true)
+        expect(result.current.countLabel).toBe('2')
     })
 
     it('still shows the dot badge for spot banners when the network is unavailable', () => {

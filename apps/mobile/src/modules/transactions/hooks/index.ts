@@ -25,6 +25,7 @@ export {
     useClaimAssetsStore,
     useClaimAssets,
 } from './claim-assets/useClaimAssets'
+export { useTokenInboxRequests } from './claim-assets/useTokenInboxRequests'
 export {
     useReceiveFundsStore,
     useReceiveFunds,

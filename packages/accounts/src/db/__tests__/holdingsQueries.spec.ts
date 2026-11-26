@@ -116,10 +116,11 @@ describe('account holdings queries', () => {
         })
     })
 
-    describe('hideSuspicious', () => {
+    describe('hideUnapproved', () => {
         const token = (
             assetId: string,
             verificationTier: 'verified' | 'unverified' | 'suspicious',
+            type: PeraAssetType = PeraAssetType.standard_asset,
         ): PeraAsset => ({
             assetId,
             decimals: 0,
@@ -130,30 +131,30 @@ describe('account holdings queries', () => {
                 verificationTier,
                 isFavorited: false,
                 isPriceAlertEnabled: false,
-                type: PeraAssetType.standard_asset,
+                type,
             },
         })
 
-        const idsOf = async (hideSuspicious?: boolean) =>
+        const idsOf = async (hideUnapproved?: boolean) =>
             (
                 await getAccountHoldingsLite({
                     db,
                     sources: [{ address: 'ADDR1', scope: MAINNET_SCOPE }],
-                    hideSuspicious,
+                    hideUnapproved,
                 })
             )
                 .map(row => row.assetId)
                 .sort()
 
         beforeEach(async () => {
+            useKeptTokensStore.getState().resetState()
             await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
                 scope: MAINNET_SCOPE,
-                holdings: ['10', '20', '30', '40'].map(assetId => ({
-                    assetId,
-                    amount: new Decimal(5),
-                })),
+                holdings: ['0', '10', '20', '30', '40', '50', '51'].map(
+                    assetId => ({ assetId, amount: new Decimal(5) }),
+                ),
             })
             await upsertAssets({
                 db,
@@ -162,22 +163,65 @@ describe('account holdings queries', () => {
                     token('10', 'suspicious'),
                     token('20', 'verified'),
                     token('30', 'unverified'),
+                    token('50', 'unverified', PeraAssetType.collectible),
+                    token('51', 'suspicious', PeraAssetType.collectible),
                 ],
             })
         })
 
-        it('drops suspicious rows and keeps verified, unverified and unenriched ones', async () => {
-            expect(await idsOf(true)).toEqual(['20', '30', '40'])
+        afterEach(() => {
+            useKeptTokensStore.getState().resetState()
+        })
+
+        it('lists only the native coin, verified tokens and NFTs Pera has not flagged', async () => {
+            registerFakeNativeAsset(6)
+            expect(await idsOf(true)).toEqual(['0', '20', '50'])
+        })
+
+        it('lists an unverified token its account kept', async () => {
+            registerFakeNativeAsset(6)
+            useKeptTokensStore.getState().keepTokens({
+                address: 'ADDR1',
+                scope: MAINNET_SCOPE,
+                assetIds: ['30'],
+            })
+
+            expect(await idsOf(true)).toEqual(['0', '20', '30', '50'])
         })
 
         it('lists every row without the filter', async () => {
-            expect(await idsOf()).toEqual(['10', '20', '30', '40'])
+            expect(await idsOf()).toEqual([
+                '0',
+                '10',
+                '20',
+                '30',
+                '40',
+                '50',
+                '51',
+            ])
         })
 
-        it('drops a suspicious row on a chain where the user opts in to each asset', async () => {
+        it('drops only suspicious rows on a chain where the user opts in to each asset', async () => {
             registerFakeNativeAsset(6, { requiresAssetOptIn: true })
 
-            expect(await idsOf(true)).toEqual(['20', '30', '40'])
+            expect(await idsOf(true)).toEqual(['0', '20', '30', '40', '50'])
+        })
+
+        it('reads the unapproved tokens and flagged NFTs as auto-hidden', async () => {
+            registerFakeNativeAsset(6)
+            const rows = await getAccountHoldingsLite({
+                db,
+                sources: [{ address: 'ADDR1', scope: MAINNET_SCOPE }],
+                onlyAutoHidden: true,
+            })
+
+            expect(rows.map(row => row.assetId).sort()).toEqual([
+                '10',
+                '30',
+                '40',
+                '51',
+            ])
+            expect(rows.every(row => row.address === 'ADDR1')).toBe(true)
         })
     })
 
@@ -243,7 +287,7 @@ describe('account holdings queries', () => {
 
             const rows = await rowsOf('ADDR1', {
                 excludeHidden: true,
-                hideSuspicious: false,
+                hideUnapproved: false,
             })
 
             expect(rows.map(row => row.assetId).sort()).toEqual(['10', '30'])
@@ -254,7 +298,7 @@ describe('account holdings queries', () => {
 
             const rows = await rowsOf('ADDR1', {
                 excludeHidden: true,
-                hideSuspicious: true,
+                hideUnapproved: true,
             })
 
             expect(rows.map(row => row.assetId)).toEqual(['20'])
@@ -301,7 +345,7 @@ describe('account holdings queries', () => {
     describe('kept tokens', () => {
         const token = (
             assetId: string,
-            verificationTier: 'verified' | 'suspicious',
+            verificationTier: 'verified' | 'unverified' | 'suspicious',
         ): PeraAsset => ({
             assetId,
             decimals: 0,
@@ -335,6 +379,7 @@ describe('account holdings queries', () => {
                 .sort()
 
         beforeEach(async () => {
+            registerFakeNativeAsset(6)
             useHiddenTokensStore.getState().resetState()
             useKeptTokensStore.getState().resetState()
             for (const address of ['ADDR1', 'ADDR2']) {
@@ -342,7 +387,7 @@ describe('account holdings queries', () => {
                     db,
                     accountAddress: address,
                     scope: MAINNET_SCOPE,
-                    holdings: ['10', '11', '20'].map(assetId => ({
+                    holdings: ['10', '11', '20', '30'].map(assetId => ({
                         assetId,
                         amount: new Decimal(5),
                     })),
@@ -355,6 +400,7 @@ describe('account holdings queries', () => {
                     token('10', 'suspicious'),
                     token('11', 'suspicious'),
                     token('20', 'verified'),
+                    token('30', 'unverified'),
                 ],
             })
         })
@@ -367,7 +413,7 @@ describe('account holdings queries', () => {
         it('lists a suspicious row its account kept', async () => {
             keep('ADDR1', '11')
 
-            expect(await idsOf('ADDR1', { hideSuspicious: true })).toEqual([
+            expect(await idsOf('ADDR1', { hideUnapproved: true })).toEqual([
                 '11',
                 '20',
             ])
@@ -376,7 +422,7 @@ describe('account holdings queries', () => {
         it('keeps a row for the account that kept it only', async () => {
             keep('ADDR1', '11')
 
-            expect(await idsOf('ADDR2', { hideSuspicious: true })).toEqual([
+            expect(await idsOf('ADDR2', { hideUnapproved: true })).toEqual([
                 '20',
             ])
         })
@@ -392,13 +438,13 @@ describe('account holdings queries', () => {
 
             expect(
                 await idsOf('ADDR1', {
-                    hideSuspicious: true,
+                    hideUnapproved: true,
                     excludeHidden: true,
                 }),
             ).toEqual(['20'])
         })
 
-        it('reads only the suspicious rows neither kept nor hidden', async () => {
+        it('reads only the unapproved rows neither kept nor hidden', async () => {
             keep('ADDR1', '11')
             useHiddenTokensStore.getState().setTokenHidden({
                 address: 'ADDR2',
@@ -409,23 +455,26 @@ describe('account holdings queries', () => {
 
             expect(await idsOf('ADDR1', { onlyAutoHidden: true })).toEqual([
                 '10',
+                '30',
             ])
             expect(await idsOf('ADDR2', { onlyAutoHidden: true })).toEqual([
                 '11',
+                '30',
             ])
         })
 
-        it('leaves a kept row out of the single-account read the balance chart counts', async () => {
+        it('counts a kept unverified row but never a kept suspicious one in the single-account read', async () => {
             keep('ADDR1', '11')
+            keep('ADDR1', '30')
 
             const rows = await getAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
                 scope: MAINNET_SCOPE,
-                hideSuspicious: true,
+                hideUnapproved: true,
             })
 
-            expect(rows.map(row => row.assetId)).toEqual(['20'])
+            expect(rows.map(row => row.assetId).sort()).toEqual(['20', '30'])
         })
     })
 

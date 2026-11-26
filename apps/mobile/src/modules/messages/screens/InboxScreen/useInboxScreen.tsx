@@ -10,7 +10,9 @@
  limitations under the License
  */
 
+import { useCallback, useMemo } from 'react'
 import { useAccountValueBasis } from '@perawallet/wallet-core-accounts'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     chainDisplayNameOf,
     useSelectedScope,
@@ -26,11 +28,22 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
-import { useHandleInboxItemPress } from '@modules/messages/hooks'
+import {
+    useHandleInboxItemPress,
+    useTokenInboxes,
+} from '@modules/messages/hooks'
 import { useNetworkStatus } from '@modules/network'
 
+/** An inbox row with the scope its item belongs to. */
+export type InboxEntry = {
+    item: InboxItem
+    scope: ChainScope
+    /** Set when the row names its chain: a token inbox always does, the backend's once the wallet spans chains. */
+    chainBadgeName: Optional<string>
+}
+
 export type UseInboxScreenResult = {
-    inboxItems: InboxItem[]
+    inboxEntries: InboxEntry[]
     isPending: boolean
     isRefetching: boolean
     isError: boolean
@@ -38,14 +51,12 @@ export type UseInboxScreenResult = {
     isIntegrityBlocked: boolean
     isAwaitingRegistration: boolean
     isUnavailableOnNetwork: boolean
-    /** Set once the wallet spans chains, so rows say which chain the inbox serves. */
-    chainBadgeName: Optional<string>
     refetch: () => void
-    keyExtractor: (item: InboxItem, index: number) => string
-    handleInboxItemPress: (item: InboxItem) => void
+    keyExtractor: (entry: InboxEntry, index: number) => string
+    handleInboxItemPress: (entry: InboxEntry) => void
 }
 
-const getItemKey = (item: InboxItem, index: number): string => {
+const getItemKey = ({ item, scope }: InboxEntry, index: number): string => {
     switch (item.type) {
         case 'multisig_import': {
             return `import-${item.data.customId}-${item.data.address}`
@@ -54,7 +65,7 @@ const getItemKey = (item: InboxItem, index: number): string => {
             return `sign-${item.data.id}`
         }
         case 'asa_inbox': {
-            return `asa-${item.data.address}-${index}`
+            return `asa-${scope.chainId}-${scope.networkId}-${item.data.address}-${index}`
         }
     }
 }
@@ -76,6 +87,29 @@ export const useInboxScreen = (): UseInboxScreenResult => {
     const isRegistrationPending = useIsDeviceRegistrationPending()
     const { hasInternet } = useNetworkStatus()
     const isMultiChain = useAccountValueBasis(scope.chainId) === 'fiat'
+    const tokenInboxes = useTokenInboxes()
+    const handleEntryPress = useCallback(
+        (entry: InboxEntry) => handleInboxItemPress(entry.item, entry.scope),
+        [handleInboxItemPress],
+    )
+
+    const inboxEntries = useMemo<InboxEntry[]>(
+        () => [
+            ...(inboxItems ?? []).map(item => ({
+                item,
+                scope,
+                chainBadgeName: isMultiChain
+                    ? chainDisplayNameOf(scope.chainId)
+                    : undefined,
+            })),
+            ...tokenInboxes.map(({ item, scope: tokenScope }) => ({
+                item,
+                scope: tokenScope,
+                chainBadgeName: chainDisplayNameOf(tokenScope.chainId),
+            })),
+        ],
+        [inboxItems, tokenInboxes, scope, isMultiChain],
+    )
 
     // Offline wins over a stale error: a paused, uncached fetch means there is
     // nothing to show yet, and an error surfacing while genuinely offline is
@@ -88,10 +122,10 @@ export const useInboxScreen = (): UseInboxScreenResult => {
     const isAwaitingRegistration =
         !isUnavailableOnNetwork &&
         isRegistrationPending &&
-        (inboxItems?.length ?? 0) === 0
+        inboxEntries.length === 0
 
     return {
-        inboxItems: inboxItems ?? [],
+        inboxEntries,
         isPending,
         isRefetching,
         isError,
@@ -99,11 +133,8 @@ export const useInboxScreen = (): UseInboxScreenResult => {
         isIntegrityBlocked,
         isAwaitingRegistration,
         isUnavailableOnNetwork,
-        chainBadgeName: isMultiChain
-            ? chainDisplayNameOf(scope.chainId)
-            : undefined,
         refetch: () => void refetch(),
         keyExtractor: getItemKey,
-        handleInboxItemPress,
+        handleInboxItemPress: handleEntryPress,
     }
 }

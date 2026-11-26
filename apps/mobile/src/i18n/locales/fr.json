@@ -173,7 +173,7 @@
         "display_opted_in_nfts": "Afficher les NFT ajoutés",
         "display_opted_in_nfts_description": "Vous pouvez afficher ou masquer les NFT ajoutés mais non détenus",
         "show_suspicious": "Afficher les actifs suspects",
-        "show_suspicious_description": "Affiche les tokens que Pera a signalés comme du spam ou une arnaque probable. Ils ne sont jamais comptés dans votre solde"
+        "show_suspicious_description": "Affiche aussi les tokens en attente dans votre boîte de réception et ceux que Pera a signalés comme du spam ou une arnaque probable. Ils ne sont jamais comptés dans votre solde"
     },
     "add_asset": {
         "title": "Ajouter un actif",
@@ -291,11 +291,8 @@
         "hidden_toast_body": "Il n’apparaîtra plus dans vos actifs et ne comptera plus dans votre solde. Affichez-le de nouveau depuis Gérer les actifs > Masquer des jetons.",
         "hidden_swipe_toast_body": "Touchez pour annuler. Il n’apparaîtra plus dans vos actifs et ne comptera plus dans votre solde.",
         "shown_toast_title": "{{assetName}} affiché",
-        "filtered_note": "Pera a signalé ce jeton comme suspect, il reste donc hors de vos actifs. Affichez-le depuis « Jetons masqués », à la fin de vos actifs.",
-        "auto_hidden_row_title": "Jetons masqués ({{total}})",
-        "auto_hidden_title": "Jetons masqués",
-        "auto_hidden_description": "Pera a masqué ces jetons, car ils ressemblent à du spam ou à des arnaques. Ne visitez pas les sites web qu’ils mentionnent. Affichez un jeton pour le voir de nouveau dans la liste ; il ne comptera toujours pas dans votre solde.",
-        "auto_hidden_empty_title": "Aucun jeton masqué"
+        "filtered_note": "Ce token est en attente dans votre boîte de réception. Acceptez-le là-bas pour qu’il apparaisse dans vos actifs.",
+        "auto_hidden_row_title": "Tokens dans votre boîte de réception ({{total}})"
     },
     "deeplink": {
         "error": {
@@ -390,11 +387,17 @@
             "empty_title": "Aucune demande de transfert d’actifs en attente",
             "empty_body": "Lorsque vous recevrez une demande de transfert d’actif, vous pourrez la consulter ici. Appuyez pour en savoir plus sur cette fonctionnalité.",
             "info_title": "Demandes de transfert d’actifs",
-            "info_body": "Cette fonctionnalité est une boîte de réception pour votre compte. D’autres personnes peuvent vous envoyer des actifs et des NFT, même si vous ne les avez pas explicitement ajoutés. Depuis cet écran, vous pouvez choisir d’accepter ou de refuser les demandes de transfert d’actifs."
+            "info_body": "Cette fonctionnalité est une boîte de réception pour votre compte. D’autres personnes peuvent vous envoyer des actifs et des NFT, même si vous ne les avez pas explicitement ajoutés. Depuis cet écran, vous pouvez choisir d’accepter ou de refuser les demandes de transfert d’actifs.",
+            "token_info_body": "Les tokens que Pera n’a pas vérifiés attendent ici lorsqu’ils arrivent sur ce compte. Acceptez-en un pour qu’il apparaisse dans vos actifs et compte dans votre solde, ou refusez-le pour le masquer. Votre choix reste sur cet appareil ; rien n’est envoyé au réseau.",
+            "token_empty_body": "Les tokens que Pera n’a pas vérifiés attendent ici jusqu’à ce que vous les acceptiez ou les refusiez."
         },
         "claim": {
             "reject": "Refuser",
-            "native_gain": "Vous recevrez {{amount}} afin de compenser les frais d’opt-in."
+            "native_gain": "Vous recevrez {{amount}} afin de compenser les frais d’opt-in.",
+            "token_reject_title": "Refuser le token",
+            "token_reject_body": "Le token sera masqué de vos actifs et de votre historique et ne reviendra pas dans votre boîte de réception. Vous pouvez l’afficher de nouveau depuis Gérer les actifs > Masquer des jetons.",
+            "token_accepted_toast": "{{assetName}} ajouté à vos actifs",
+            "token_rejected_toast": "{{assetName}} refusé"
         }
     },
     "asset": {
@@ -2277,7 +2280,7 @@
         },
         "inbox": {
             "empty_title": "Aucun message en attente",
-            "empty_body": "La boîte de réception contient les actifs Algorand qui vous ont été envoyés avant que vous n’ayez effectué l’opt-in, ainsi que les invitations à des comptes partagés et les demandes de signature. Les tokens sur les autres réseaux arrivent directement dans votre solde.",
+            "empty_body": "La boîte de réception contient les actifs en attente de votre acceptation : les actifs Algorand qui vous ont été envoyés avant que vous n’ayez effectué l’opt-in, et les tokens sur des réseaux comme Ethereum que Pera n’a pas vérifiés. Les invitations à des comptes partagés et les demandes de signature arrivent aussi ici.",
             "asa_requests_one": "1 actif entrant",
             "asa_requests_other": "{{count}} actifs entrants",
             "multisig_sign": {
@@ -2295,8 +2298,7 @@
                 "algorand_title": "Algorand",
                 "algorand_body": "Un compte Algorand doit effectuer un opt-in pour un actif avant de pouvoir le détenir. Les actifs qui vous sont envoyés avant votre opt-in attendent ici, dans la boîte de réception, jusqu’à ce que vous les réclamiez ou les refusiez. Les invitations à des comptes partagés et les demandes de signature arrivent également ici.",
                 "other_networks_title": "Autres réseaux",
-                "other_networks_body": "Les réseaux comme Ethereum et Base n’ont pas d’opt-in. Les tokens qui vous y sont envoyés arrivent directement dans votre solde et n’apparaissent jamais dans la boîte de réception.",
-                "find_tokens_body": "Pour les voir, ouvrez le compte et consultez ses actifs sur ce réseau.",
+                "other_networks_body": "Les réseaux comme Ethereum et Base n’ont pas d’opt-in : n’importe qui peut vous envoyer un token. Les tokens que Pera n’a pas vérifiés attendent ici que vous les acceptiez ou les refusiez. Un token accepté apparaît dans vos actifs ; un token refusé est masqué.",
                 "learn_more": "En savoir plus"
             }
         },
@@ -4185,8 +4187,8 @@
             "title": "Filtre",
             "all_time": "Toute la période",
             "today": "Aujourd’hui",
-            "hide_suspicious": "Masquer les transactions suspectes",
-            "hide_suspicious_description": "Masque les faux envois, les jetons d'imitation ou de spam et les empoisonnements d'adresse présumés.",
+            "show_suspicious": "Afficher les transactions suspectes",
+            "show_suspicious_description": "Inclut les envois usurpés, les tokens d’imitation et de spam, les suspicions d’empoisonnement d’adresse et les transferts de tokens en attente dans votre boîte de réception.",
             "yesterday": "Hier",
             "last_week": "Semaine dernière",
             "last_month": "Mois dernier",

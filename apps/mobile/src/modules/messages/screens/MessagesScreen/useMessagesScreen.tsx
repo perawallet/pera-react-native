@@ -19,6 +19,7 @@ import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { InboxInfoContent } from '@modules/messages/components/InboxInfoContent'
 import { NotificationSettingsContent } from '@modules/messages/components/NotificationSettingsContent'
+import { useTokenInboxes } from '../../hooks/useTokenInboxes'
 import type { MessagesTabsParamsList } from './MessagesScreen'
 
 export const useMessagesScreen = () => {
@@ -32,6 +33,7 @@ export const useMessagesScreen = () => {
         isUnavailableOnNetwork,
     } = useInboxStatus(scope)
     const { data: inboxItems } = useInboxQuery(scope)
+    const hasTokenInbox = useTokenInboxes().length > 0
 
     // Decided once at mount: the navigator only reads initialRouteName on its
     // first render, and the inbox query is subscribed session-long via
@@ -39,6 +41,7 @@ export const useMessagesScreen = () => {
     // cache is already settled by the time this screen mounts.
     const [initialRouteName] = useState<keyof MessagesTabsParamsList>(() => {
         if (initialTab) return initialTab
+        if (hasTokenInbox) return 'Inbox'
         if (!inboxItems?.length) return 'Notifications'
         if (!hasUnreadInboxItems && hasUnreadNotifications) {
             return 'Notifications'
@@ -73,10 +76,10 @@ export const useMessagesScreen = () => {
 
     const showInboxBadge = useMemo(
         () =>
-            !isUnavailableOnNetwork &&
-            hasUnreadInboxItems &&
+            ((!isUnavailableOnNetwork && hasUnreadInboxItems) ||
+                hasTokenInbox) &&
             activeTab !== 'Inbox',
-        [isUnavailableOnNetwork, hasUnreadInboxItems, activeTab],
+        [isUnavailableOnNetwork, hasUnreadInboxItems, hasTokenInbox, activeTab],
     )
     const showNotificationsBadge = useMemo(
         () =>

@@ -91,6 +91,10 @@ const twoChainAccount: WalletAccount = {
 }
 
 const makeHolding = (assetId: string, scope = ALGORAND_MAINNET) => ({
+    address:
+        scope.chainId === ALGORAND_MAINNET.chainId
+            ? 'test-address'
+            : ETH_ADDRESS,
     scope,
     assetId,
     amount: new Decimal(0),
@@ -679,7 +683,7 @@ describe('useAccountAssetList', () => {
             )
 
             expect(queriedFilters()).toEqual(
-                expect.objectContaining({ hideSuspicious: true }),
+                expect.objectContaining({ hideUnapproved: true }),
             )
         })
 
@@ -691,7 +695,7 @@ describe('useAccountAssetList', () => {
             )
 
             expect(queriedFilters()).toEqual(
-                expect.objectContaining({ hideSuspicious: false }),
+                expect.objectContaining({ hideUnapproved: false }),
             )
         })
     })
@@ -1022,7 +1026,7 @@ describe('useAccountAssetList', () => {
                 vi.mocked(useAccountAssetsQuery).mock.lastCall?.[1]?.filters,
             ).toEqual(
                 expect.objectContaining({
-                    hideSuspicious: false,
+                    hideUnapproved: false,
                     excludeHidden: true,
                 }),
             )

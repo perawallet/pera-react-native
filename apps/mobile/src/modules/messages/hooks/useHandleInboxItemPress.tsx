@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import { receivesUnaskedAssets } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { ASAInbox, InboxItem } from '@perawallet/wallet-core-messages'
 import type { MultiSigAccount } from '@perawallet/wallet-core-multisig'
@@ -36,7 +37,11 @@ const toInvitationParam = (
     participantAddresses: invitation.participantAddresses,
 })
 
-export type UseHandleInboxItemPressResult = (item: InboxItem) => void
+/** `itemScope` defaults to the scope the hook was given; a token inbox row passes its own. */
+export type UseHandleInboxItemPressResult = (
+    item: InboxItem,
+    itemScope?: ChainScope,
+) => void
 
 /**
  * Returns the canonical handler for acting on an inbox item. This is the
@@ -88,14 +93,19 @@ export const useHandleInboxItemPress = (
     )
 
     return useCallback(
-        (item: InboxItem) => {
+        (item: InboxItem, itemScope: ChainScope = scope) => {
             switch (item.type) {
                 case 'asa_inbox': {
-                    if (!canUseAssetInbox) return
+                    if (
+                        !canUseAssetInbox &&
+                        !receivesUnaskedAssets(itemScope.chainId)
+                    ) {
+                        return
+                    }
                     const asaInbox = item.data as ASAInbox
                     pushScreen('Messages', {
                         screen: 'AssetTransferRequests',
-                        params: { item: asaInbox, scope },
+                        params: { item: asaInbox, scope: itemScope },
                     })
                     return
                 }

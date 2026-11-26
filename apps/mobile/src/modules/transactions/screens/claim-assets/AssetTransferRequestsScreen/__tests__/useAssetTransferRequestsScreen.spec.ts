@@ -26,6 +26,10 @@ const { routeParams } = vi.hoisted(() => ({
 }))
 
 const mockPush = vi.fn()
+const mockTokenInboxRequests = vi.fn((_scope: unknown, _address: unknown) => ({
+    data: [] as unknown[],
+    isPending: false,
+}))
 const mockSetAccountAddress = vi.fn()
 const mockSetAssetRequests = vi.fn()
 
@@ -39,6 +43,8 @@ vi.mock('@modules/transactions/hooks', () => ({
         setAccountAddress: mockSetAccountAddress,
         setAssetRequests: mockSetAssetRequests,
     }),
+    useTokenInboxRequests: (scope: unknown, address: unknown) =>
+        mockTokenInboxRequests(scope, address),
 }))
 
 vi.mock(
@@ -92,25 +98,56 @@ describe('useAssetTransferRequestsScreen', () => {
         expect(result.current.assetRequests).toEqual([])
     })
 
-    it.each([
-        ['Algorand', ALGORAND_SCOPE],
-        ['Ethereum', { chainId: ETHEREUM_CHAIN_ID, networkId: 'sepolia' }],
-    ])(
-        "reads the account's requests on the %s scope it was opened for",
-        (_, scope) => {
-            routeParams.current = { item: { address: 'ACCOUNT_ADDR' }, scope }
+    it("reads the account's requests from the inbox backend on an opt-in chain", () => {
+        const { result } = renderHook(() => useAssetTransferRequestsScreen())
+
+        expect(useAssetInboxRequestsQuery).toHaveBeenCalledWith(
+            ALGORAND_SCOPE,
+            'ACCOUNT_ADDR',
+        )
+        expect(mockTokenInboxRequests).toHaveBeenCalledWith(
+            ALGORAND_SCOPE,
+            null,
+        )
+        expect(result.current.scope).toBe(ALGORAND_SCOPE)
+    })
+
+    describe('on a chain that receives tokens unasked', () => {
+        const ETHEREUM_SCOPE = {
+            chainId: ETHEREUM_CHAIN_ID,
+            networkId: 'sepolia',
+        }
+
+        beforeEach(() => {
+            routeParams.current = {
+                item: { address: 'ACCOUNT_ADDR' },
+                scope: ETHEREUM_SCOPE,
+            }
+        })
+
+        it("lists the account's token inbox kept on the device", () => {
+            const requests = [{ asset: { assetId: '0x1' } }]
+            mockTokenInboxRequests.mockReturnValueOnce({
+                data: requests,
+                isPending: false,
+            })
+            mockAssetRequests([], { isUnavailableOnNetwork: true })
 
             const { result } = renderHook(() =>
                 useAssetTransferRequestsScreen(),
             )
 
             expect(useAssetInboxRequestsQuery).toHaveBeenCalledWith(
-                scope,
-                'ACCOUNT_ADDR',
+                ETHEREUM_SCOPE,
+                null,
             )
-            expect(result.current.scope).toBe(scope)
-        },
-    )
+            expect(result.current.assetRequests).toEqual(requests)
+            expect(result.current.isUnavailableOnNetwork).toBe(false)
+            expect(result.current.infoBodyKey).toBe(
+                'asset_inbox.requests.token_info_body',
+            )
+        })
+    })
 
     it('forwards isUnavailableOnNetwork from the asset requests query', () => {
         mockAssetRequests([], { isUnavailableOnNetwork: true })

@@ -12,7 +12,10 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useTokenInboxQuery,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { useAssetPreferencesStore } from '@perawallet/wallet-core-assets'
 import { useAutoHiddenTokensRow } from '../useAutoHiddenTokensRow'
 
@@ -20,14 +23,6 @@ const mocks = vi.hoisted(() => ({
     holdings: [] as unknown[],
     showSuspicious: false,
     navigate: vi.fn(),
-}))
-
-vi.mock('../../../hooks/useAutoHiddenHoldings', () => ({
-    useAutoHiddenHoldings: () => ({
-        holdings: mocks.holdings,
-        isPending: false,
-        showsNetwork: false,
-    }),
 }))
 
 vi.mock('@react-navigation/native', async importOriginal => ({
@@ -42,6 +37,12 @@ describe('useAutoHiddenTokensRow', () => {
         mocks.holdings = [{ assetId: '0x1' }, { assetId: '0x2' }]
         mocks.showSuspicious = false
         mocks.navigate.mockClear()
+        vi.mocked(useTokenInboxQuery).mockImplementation(() => ({
+            holdings: mocks.holdings as ReturnType<
+                typeof useTokenInboxQuery
+            >['holdings'],
+            isPending: false,
+        }))
         vi.mocked(useAssetPreferencesStore).mockImplementation(selector =>
             selector({
                 showSuspicious: mocks.showSuspicious,
@@ -49,7 +50,7 @@ describe('useAutoHiddenTokensRow', () => {
         )
     })
 
-    it('counts the tokens the asset list hides as suspicious', () => {
+    it('counts the tokens waiting in the inbox', () => {
         const { result } = renderHook(() => useAutoHiddenTokensRow(account))
 
         expect(result.current).toMatchObject({ count: 2, isVisible: true })
@@ -71,11 +72,14 @@ describe('useAutoHiddenTokensRow', () => {
         expect(result.current.isVisible).toBe(false)
     })
 
-    it('opens the hidden tokens screen', () => {
+    it('opens the inbox', () => {
         const { result } = renderHook(() => useAutoHiddenTokensRow(account))
 
         act(() => result.current.handlePress())
 
-        expect(mocks.navigate).toHaveBeenCalledWith('AutoHiddenTokens')
+        expect(mocks.navigate).toHaveBeenCalledWith('Messages', {
+            screen: 'MessagesHome',
+            params: { initialTab: 'Inbox' },
+        })
     })
 })
