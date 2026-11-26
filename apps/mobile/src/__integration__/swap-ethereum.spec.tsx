@@ -54,15 +54,6 @@ vi.mock(
     }),
 )
 
-// The integration harness has no i18next instance, so <Trans> renders nothing;
-// echoing its components lets the spec read the Balance line's amount.
-vi.mock('react-i18next', async importOriginal => ({
-    ...(await importOriginal<typeof import('react-i18next')>()),
-    Trans: ({ components }: { components?: React.ReactNode[] }) => (
-        <>{components}</>
-    ),
-}))
-
 vi.mock('@perawallet/wallet-core-config', async importOriginal => {
     const withBackend = await (
         await import('@packages/chain-ethereum/src/__tests__/pera-backend')
@@ -759,7 +750,7 @@ describe('Flow: Swap from an Ethereum account', () => {
         expect(useSwapsStore.getState().fromAsset).toBe(TOKEN)
     })
 
-    it("Given two accounts holding the same token, when Swap From opens, then it lists only the swap account's balance, the pick keeps that account, and selecting the other account lists its balance instead", async () => {
+    it('Given two accounts holding the same token, when the user picks it and chooses the second account, then the swap pays from that account with the token and Home keeps its account', async () => {
         const second = ETHEREUM_SECOND
         useAccountsStore.getState().setAccounts([ETHEREUM_SENDER, second])
         useAccountsStore.getState().setSelectedAccountId(ETHEREUM_SENDER.id)
@@ -780,40 +771,30 @@ describe('Flow: Swap from an Ethereum account', () => {
         // Ethereum's default receive asset is the token, which the pay picker leaves out.
         useSwapsStore.getState().setFromAsset(ETH_ASSET)
         useSwapsStore.getState().setToAsset(ETH_ASSET)
-        const view = renderWithNavigation(SwapScreen, 'Swap')
+        renderWithNavigation(SwapScreen, 'Swap')
 
         fireEvent.click(await screen.findByTestId('swap-pay-asset-selector'))
-        const row = await screen.findByTestId(`asset-list-item-${TOKEN}`)
-        expect(row.textContent).toContain('100')
-        expect(row.textContent).not.toContain('250')
-        expect(row.textContent).not.toContain('350')
-        fireEvent.click(row)
+        fireEvent.click(await screen.findByTestId(`asset-list-item-${TOKEN}`))
+        expect(
+            await screen.findByTestId('swap_source_account_header-title'),
+        ).toBeTruthy()
+        fireEvent.click(
+            await screen.findByTestId(`swap_source_account_${second.id}`),
+        )
 
         await waitFor(() =>
-            expect(useSwapsStore.getState().fromAsset).toBe(TOKEN),
+            expect(useSwapsStore.getState().accountId).toBe(second.id),
         )
         await settleRender()
-        expect(
-            (await screen.findByTestId('swap-pay-balance')).textContent,
-        ).toContain('100')
-        expect(useSwapsStore.getState().accountId).toBeNull()
+        expect(useSwapsStore.getState()).toMatchObject({
+            sourceChainId: 'ethereum',
+            fromAsset: TOKEN,
+            pairAccountId: second.id,
+        })
         expect(useAccountsStore.getState().selectedAccountId).toBe(
             ETHEREUM_SENDER.id,
         )
-
-        view.unmount()
-        act(() => useAccountsStore.getState().setSelectedAccountId(second.id))
-        useSwapsStore.getState().setFromAsset(ETH_ASSET)
-        useSwapsStore.getState().setToAsset(ETH_ASSET)
-        renderWithNavigation(SwapScreen, 'Swap')
-        fireEvent.click(await screen.findByTestId('swap-pay-asset-selector'))
-        const secondRow = await screen.findByTestId(
-            `asset-list-item-${TOKEN}`,
-            {},
-            FORM_TIMEOUT,
-        )
-        expect(secondRow.textContent).toContain('250')
-        expect(secondRow.textContent).not.toContain('100')
+        expect(screen.getByTestId('swap_account_pill')).toBeTruthy()
     })
 
     it('Given an account on two chains swapping ALGO into ETH on its own Ethereum address, when it taps flip, then the swap pays ETH on Ethereum into ALGO on Algorand and quotes the carried amount', async () => {

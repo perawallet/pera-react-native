@@ -17,35 +17,30 @@ import {
     useAccountsHoldingsAcrossChainsQuery,
     useHiddenTokensStore,
     type AccountChainAssetBalance,
-    type ChainAssetBalance,
-    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import {
+    groupSwapPayHoldings,
+    type SwapPayHolding,
+} from '../utils/groupSwapPayHoldings'
 import { isSwappableAsset } from '../utils/isSwappableAsset'
-import { useSwapSourceChainsResolver } from './useSwapSourceChainsResolver'
+import { useSwapSourceChainsByAccount } from './useSwapSourceChainsByAccount'
 
 export type UseSwapPayHoldingsResult = {
-    /** Empty until every chain's read for the account lands. */
-    holdings: ChainAssetBalance[]
-    /** The chains the account can pay a swap from. */
+    /** Empty until every account's holdings are read. */
+    holdings: SwapPayHolding[]
+    /** Every chain some account can pay a swap from. */
     sourceChainIds: ChainId[]
     isPending: boolean
-    /** A chain's read failed; the other chains' holdings are still listed. */
+    /** A read failed; the other accounts' and chains' holdings are still listed. */
     isError: boolean
 }
 
-/** What `account` can pay a swap with, on the chains it can pay from. */
-export const useSwapPayHoldings = (
-    account: Nullable<WalletAccount>,
-): UseSwapPayHoldingsResult => {
-    const sourceChainsOf = useSwapSourceChainsResolver()
-    const sourceChainIds = useMemo(
-        () => (account ? sourceChainsOf(account) : []),
-        [account, sourceChainsOf],
-    )
+/** What every account that can sign a swap holds, on the chains it can pay from, one entry per asset. */
+export const useSwapPayHoldings = (): UseSwapPayHoldingsResult => {
+    const { accounts, sourceChainsByAccount, sourceChainIds } =
+        useSwapSourceChainsByAccount()
 
-    const accounts = useMemo(() => (account ? [account] : []), [account])
     const { assetBalances, isPending, isError } =
         useAccountsHoldingsAcrossChainsQuery(accounts)
     const hiddenTokens = useHiddenTokensStore(state => state.hiddenTokens)
@@ -53,8 +48,9 @@ export const useSwapPayHoldings = (
     // A token the user hid is out of every list of what the account holds; unhiding it brings it back.
     const holdings = useMemo(() => {
         const isPayable = (holding: AccountChainAssetBalance) =>
-            sourceChainIds.includes(holding.scope.chainId) &&
-            holding.amount.gt(0) &&
+            !!sourceChainsByAccount
+                .get(holding.accountId)
+                ?.includes(holding.scope.chainId) &&
             isSwappableAsset(holding.asset) &&
             !(
                 canHideHolding(holding.scope.chainId, holding.assetId) &&
@@ -64,16 +60,12 @@ export const useSwapPayHoldings = (
                     holding.scope,
                 ).includes(holding.assetId)
             )
-        return assetBalances
-            .filter(isPayable)
-            .map(
-                ({ accountId: _accountId, address: _address, ...holding }) =>
-                    holding,
-            )
-    }, [assetBalances, sourceChainIds, hiddenTokens])
+        return groupSwapPayHoldings(assetBalances.filter(isPayable))
+    }, [assetBalances, sourceChainsByAccount, hiddenTokens])
 
     return {
-        // Rows arriving chain by chain would move under a tap; show skeletons until every chain's read lands.
+        // A holding listed before every account's read lands could be picked
+        // with holders missing, skipping the account choice.
         holdings: isPending ? [] : holdings,
         sourceChainIds,
         isPending,

@@ -10,12 +10,13 @@
  limitations under the License
  */
 
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type {
+    AccountChainAssetBalance,
     AssetWithAccountBalance,
-    ChainAssetBalance,
 } from '@perawallet/wallet-core-accounts'
+import type { SwapPayHolding } from '@perawallet/wallet-core-swaps'
 import { useSwapAssetSelectionContent } from '../useSwapAssetSelectionContent'
 
 const mockResolve = vi.hoisted(() => vi.fn())
@@ -35,7 +36,20 @@ const ETH_SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
 
 const asset = { assetId: '31566704' } as AssetWithAccountBalance
 
-const holding = { ...asset, scope: ETH_SCOPE } as ChainAssetBalance
+const holdingOf = (accountIds: string[]): SwapPayHolding =>
+    ({
+        ...asset,
+        scope: ETH_SCOPE,
+        holders: accountIds.map(
+            accountId =>
+                ({
+                    ...asset,
+                    scope: ETH_SCOPE,
+                    accountId,
+                    address: `${accountId}-address`,
+                }) as AccountChainAssetBalance,
+        ),
+    }) as SwapPayHolding
 
 describe('useSwapAssetSelectionContent', () => {
     beforeEach(() => {
@@ -80,17 +94,60 @@ describe('useSwapAssetSelectionContent', () => {
         })
     })
 
-    it('resolves a pay pick on its own scope without naming an account', () => {
+    it('resolves an asset only one account holds with that account, skipping the account step', () => {
         const { result } = renderHook(() =>
             useSwapAssetSelectionContent('from'),
         )
 
-        result.current.handleFromAssetSelected(holding)
+        act(() => {
+            result.current.handleFromAssetSelected(holdingOf(['account-1']))
+        })
 
+        expect(result.current.pendingPayHolding).toBeNull()
         expect(mockResolve).toHaveBeenCalledWith({
             assetId: '31566704',
             scope: ETH_SCOPE,
             side: 'pay',
+            accountId: 'account-1',
         })
+    })
+
+    it('asks which account pays when several hold the asset', () => {
+        const { result } = renderHook(() =>
+            useSwapAssetSelectionContent('from'),
+        )
+        const holding = holdingOf(['account-1', 'account-2'])
+
+        act(() => {
+            result.current.handleFromAssetSelected(holding)
+        })
+
+        expect(mockResolve).not.toHaveBeenCalled()
+        expect(result.current.pendingPayHolding).toBe(holding)
+
+        act(() => {
+            result.current.handleSourceAccountSelected(holding.holders[1])
+        })
+
+        expect(mockResolve).toHaveBeenCalledWith(
+            expect.objectContaining({ accountId: 'account-2', side: 'pay' }),
+        )
+    })
+
+    it('goes back to the assets from the account step', () => {
+        const { result } = renderHook(() =>
+            useSwapAssetSelectionContent('from'),
+        )
+
+        act(() => {
+            result.current.handleFromAssetSelected(
+                holdingOf(['account-1', 'account-2']),
+            )
+        })
+        act(() => {
+            result.current.handleBackToAssets()
+        })
+
+        expect(result.current.pendingPayHolding).toBeNull()
     })
 })

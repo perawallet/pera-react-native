@@ -20,6 +20,7 @@ const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 
 const mockSetFromAsset = vi.fn()
 const mockSetSourceAsset = vi.fn()
+const mockSetAccountPair = vi.fn()
 const mockSetSelectedAccountId = vi.fn()
 let mockPairAccountId: string | null = null
 const mockSetToAsset = vi.fn()
@@ -111,6 +112,7 @@ vi.mock('@perawallet/wallet-core-swaps', async () => ({
         setToAsset: mockSetToAsset,
         setSourceAsset: mockSetSourceAsset,
         pairAccountId: mockPairAccountId,
+        setAccountPair: mockSetAccountPair,
         flipAcrossChains: mockFlipAcrossChains,
         takeFlippedPayAmount: mockTakeFlippedPayAmount,
         setSlippage: mockSetSlippage,
@@ -724,6 +726,68 @@ describe('useSwapForm', () => {
         expect(result.current.receiveAmount).toBeNull()
         expect(result.current.selectedQuote).toBeNull()
         expect(mockResetQuoteMutation).toHaveBeenCalled()
+    })
+
+    it('pays from the account picked with the asset, pinning the pair to it and leaving the selected account', async () => {
+        mockRequestBottomSheet.mockResolvedValueOnce({
+            assetId: '123',
+            scope: SCOPE,
+            side: 'pay',
+            accountId: 'account-2',
+        })
+        const { result } = renderHook(() => useSwapForm(SCOPE))
+
+        await act(async () => {
+            await result.current.handleOpenPayAssetSelection()
+        })
+
+        expect(mockSetAccountPair).toHaveBeenCalledWith({
+            accountId: 'account-2',
+            chainId: SCOPE.chainId,
+            fromAsset: '123',
+            toAsset: '31566704',
+            toAssetScope: null,
+        })
+        expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
+        expect(mockSetFromAsset).not.toHaveBeenCalled()
+    })
+
+    it("drops the receive side when another account's pick moves the swap to another network", async () => {
+        const ethereum = { chainId: 'ethereum', networkId: 'mainnet' } as const
+        mockRequestBottomSheet.mockResolvedValueOnce({
+            assetId: 'native',
+            scope: ethereum,
+            side: 'pay',
+            accountId: 'account-2',
+        })
+        const { result } = renderHook(() => useSwapForm(SCOPE))
+
+        await act(async () => {
+            await result.current.handleOpenPayAssetSelection()
+        })
+
+        expect(mockSetAccountPair).toHaveBeenCalledWith({
+            accountId: 'account-2',
+            chainId: 'ethereum',
+            fromAsset: 'native',
+        })
+    })
+
+    it('keeps the swap account when the asset was picked on it', async () => {
+        mockRequestBottomSheet.mockResolvedValueOnce({
+            assetId: '123',
+            scope: SCOPE,
+            side: 'pay',
+            accountId: 'account-1',
+        })
+        const { result } = renderHook(() => useSwapForm(SCOPE))
+
+        await act(async () => {
+            await result.current.handleOpenPayAssetSelection()
+        })
+
+        expect(mockSetFromAsset).toHaveBeenCalledWith('123')
+        expect(mockSetAccountPair).not.toHaveBeenCalled()
     })
 
     it('handleOpenPayAssetSelection no-ops when picker is dismissed', async () => {

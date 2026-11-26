@@ -145,6 +145,7 @@ export const useSwapForm = (
         setFromAsset,
         setToAsset,
         setSourceAsset,
+        setAccountPair,
         flipAcrossChains,
         takeFlippedPayAmount,
         setSlippage,
@@ -611,6 +612,25 @@ export const useSwapForm = (
 
     const applyPaySelection = useCallback(
         (selection: SwapAssetSelection) => {
+            if (
+                selection.accountId &&
+                selection.accountId !== swapAccount?.id
+            ) {
+                // The receive side survives an account switch on the same
+                // network, as it does a new pay asset on the same account.
+                const isSameScope =
+                    toScopeKey(selection.scope) === toScopeKey(scope)
+                setAccountPair({
+                    accountId: selection.accountId,
+                    chainId: selection.scope.chainId,
+                    fromAsset: selection.assetId,
+                    ...(isSameScope && {
+                        toAsset,
+                        toAssetScope: isCrossChain ? receiveScope : null,
+                    }),
+                })
+                return
+            }
             if (toScopeKey(selection.scope) !== toScopeKey(scope)) {
                 setSourceAsset(selection.scope.chainId, selection.assetId)
                 return
@@ -624,7 +644,18 @@ export const useSwapForm = (
             // too so no frame shows the old amount against the new asset.
             resetAmounts()
         },
-        [scope, setSourceAsset, fromAsset, setFromAsset, resetAmounts],
+        [
+            scope,
+            toAsset,
+            isCrossChain,
+            receiveScope,
+            swapAccount?.id,
+            setAccountPair,
+            setSourceAsset,
+            fromAsset,
+            setFromAsset,
+            resetAmounts,
+        ],
     )
 
     const handleOpenPayAssetSelection = useCallback(async () => {

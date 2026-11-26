@@ -19,7 +19,7 @@ export type SwapAccountPillProps = {
     account: WalletAccount
 }
 
-// Display-only: Swap pays from the selected account, or from a recent pair's account picked in Swap.
+// Display-only: the account changes through the pay asset picker, never here.
 export const SwapAccountPill = ({ account }: SwapAccountPillProps) => {
     const styles = useStyles()
 
