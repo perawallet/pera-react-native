@@ -125,7 +125,9 @@ describe('useSwapTrackedOrdersList', () => {
 
         const [row] = result.current.rows
         expect(row.pairLabel).toBe('ETH (Base) → ETH (Arbitrum One)')
-        expect(row.statusText).toContain('"network":"Arbitrum One"')
+        expect(row.statusText).toMatch(
+            /^swap\.tracking\.completed\|.*"network":"Arbitrum One"/,
+        )
         expect(row.assetIn).toMatchObject({
             ref: { chainId: 'base' },
             logo: 'https://in',
@@ -157,7 +159,9 @@ describe('useSwapTrackedOrdersList', () => {
         const { result } = renderHook(() => useSwapTrackedOrdersList())
 
         expect(result.current.rows[0].pairLabel).toBe('USDC → ETH')
-        expect(result.current.rows[0].statusText).toContain('"network":"Base"')
+        expect(result.current.rows[0].statusText).toMatch(
+            /^swap\.tracking\.completed\|.*"network":"Base"/,
+        )
     })
 
     it('marks an order in flight as unsettled', () => {

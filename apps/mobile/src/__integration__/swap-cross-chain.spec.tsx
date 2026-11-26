@@ -404,6 +404,7 @@ describe('Flow: Cross-chain swap (Algorand into an own Ethereum address)', () =>
         const card = await screen.findByTestId(
             `swap_tracked_order_${SWAP_ORDER_ID}`,
         )
+        expect(within(card).getByText('swap.tracking.completed')).toBeTruthy()
         expect(
             within(card).getByText('ALGO (Algorand) → ETH (Ethereum)'),
         ).toBeTruthy()

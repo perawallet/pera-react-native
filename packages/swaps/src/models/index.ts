@@ -264,7 +264,7 @@ export type SwapAccountAddressWithId = SwapAccountAddressOnDevice & {
 export interface SwapTrackedAsset {
     ref: SwapAssetRef
     unitName: Nullable<string>
-    /** The router's logo URL from the quote; absent on orders persisted before it was stored. */
+    /** The router's logo URL from the quote; optional so tracked orders saved without one still load. */
     logo?: string
 }
 
