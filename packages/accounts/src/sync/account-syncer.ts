@@ -26,6 +26,7 @@ import {
     isPeraServiceUnavailableError,
     logger,
     type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import {
     getAddedTokenIdsByAccount,
@@ -38,7 +39,10 @@ import {
 // Imported directly (not via the hooks barrel) to avoid a module cycle:
 // hooks/useEnsureAccountEnriched imports from this file.
 import { invalidateAccountQueriesForAddresses } from '../hooks/querykeys'
-import { accountsChainAdapters } from '../chain-adapter'
+import {
+    accountsChainAdapters,
+    type UnrefreshedHoldingsPart,
+} from '../chain-adapter'
 import {
     isEqualAccountChainState,
     useAccountChainStateStore,
@@ -191,9 +195,9 @@ async function seedUnreadNetwork(
             scope,
         })
     }
-    useHoldingsRefreshStore
-        .getState()
-        .setHoldingsRefreshFailed(scope, address, true)
+    const refreshStore = useHoldingsRefreshStore.getState()
+    refreshStore.setHoldingsRefreshFailed(scope, address, true)
+    refreshStore.setCollectiblesRefreshFailed(scope, address, true)
 }
 
 // Read before the chain call, beside the prior row, never between the chain's
@@ -224,6 +228,36 @@ async function readAddedTokenIds(
         })
         return []
     }
+}
+
+// A scope the backend doesn't serve leaves nothing stale until a row is kept;
+// a read that failed is incomplete whatever was stored. Returns that verdict.
+function reportUnrefreshed(
+    address: string,
+    scope: ChainScope,
+    kind: 'fungible' | 'collectible',
+    part: Optional<UnrefreshedHoldingsPart>,
+    hasRetainedRow: boolean,
+): boolean {
+    if (!part) return false
+    const isServiceOff = isPeraServiceUnavailableError(part.error)
+    if (isServiceOff && !hasRetainedRow) return false
+    // A backend that is off repeats this every tick; only a failed read is news.
+    const context = {
+        address,
+        scope,
+        kind,
+        error:
+            part.error instanceof Error
+                ? { message: part.error.message, stack: part.error.stack }
+                : part.error,
+    }
+    if (isServiceOff) {
+        logger.debug('Account holdings partly unrefreshed', context)
+    } else {
+        logger.warn('Account holdings partly unrefreshed', context)
+    }
+    return true
 }
 
 async function doFetchAndPersistAccount(
@@ -286,8 +320,11 @@ async function doFetchAndPersistAccount(
         .getState()
         .setAccountChainState(scope, address, chainState)
 
+    const fungibles = unrefreshedHoldings?.fungibles
+    const collectibles = unrefreshedHoldings?.collectibles
     // `retain` only sees stored rows the read left out.
-    let hasRetainedRow = false
+    let hasRetainedFungible = false
+    let hasRetainedCollectible = false
     const holdingsChanged = await refreshAccountHoldings({
         accountAddress: address,
         holdings,
@@ -295,39 +332,40 @@ async function doFetchAndPersistAccount(
         retain:
             unrefreshedHoldings &&
             (assetId => {
-                const isRetained = unrefreshedHoldings.includes(assetId)
-                hasRetainedRow ||= isRetained
-                return isRetained
+                const isCollectible = collectibles?.includes(assetId) === true
+                const isFungible = fungibles?.includes(assetId) === true
+                hasRetainedCollectible ||= isCollectible
+                hasRetainedFungible ||= isFungible
+                return (
+                    isCollectible ||
+                    isFungible ||
+                    unrefreshedHoldings.includes(assetId)
+                )
             }),
     })
-    // A scope the backend doesn't serve leaves nothing stale until a row is
-    // kept; a read that failed is incomplete whatever was stored.
-    const isReadIncomplete =
-        unrefreshedHoldings !== undefined &&
-        (hasRetainedRow ||
-            !isPeraServiceUnavailableError(unrefreshedHoldings.error))
-    useHoldingsRefreshStore
-        .getState()
-        .setHoldingsRefreshFailed(scope, address, isReadIncomplete)
-    if (unrefreshedHoldings && isReadIncomplete) {
-        // A backend that is off repeats this every tick; only a failed read is news.
-        const context = {
+    const refreshStore = useHoldingsRefreshStore.getState()
+    refreshStore.setHoldingsRefreshFailed(
+        scope,
+        address,
+        reportUnrefreshed(
             address,
             scope,
-            error:
-                unrefreshedHoldings.error instanceof Error
-                    ? {
-                          message: unrefreshedHoldings.error.message,
-                          stack: unrefreshedHoldings.error.stack,
-                      }
-                    : unrefreshedHoldings.error,
-        }
-        if (isPeraServiceUnavailableError(unrefreshedHoldings.error)) {
-            logger.debug('Account holdings partly unrefreshed', context)
-        } else {
-            logger.warn('Account holdings partly unrefreshed', context)
-        }
-    }
+            'fungible',
+            fungibles,
+            hasRetainedFungible,
+        ),
+    )
+    refreshStore.setCollectiblesRefreshFailed(
+        scope,
+        address,
+        reportUnrefreshed(
+            address,
+            scope,
+            'collectible',
+            collectibles,
+            hasRetainedCollectible,
+        ),
+    )
 
     return {
         changed: isStateChanged || holdingsChanged,

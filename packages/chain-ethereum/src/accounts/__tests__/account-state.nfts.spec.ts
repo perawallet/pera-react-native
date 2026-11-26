@@ -197,6 +197,13 @@ describe('fetchAccountState NFT holdings', () => {
         expect(state.unrefreshedHoldings?.error).toMatchObject({
             status: 502,
         })
+        // Each kind keeps its own cause, so the NFT outage doesn't flag balances.
+        expect(state.unrefreshedHoldings?.collectibles?.error).toMatchObject({
+            status: 502,
+        })
+        expect(state.unrefreshedHoldings?.fungibles?.error).toMatchObject({
+            service: 'assets',
+        })
     })
 
     it('reads every page of a cursor-paged list, including an empty page between items', async () => {
@@ -220,6 +227,32 @@ describe('fetchAccountState NFT holdings', () => {
             SWORD,
         ])
         expect(state.unrefreshedHoldings).toBeUndefined()
+    })
+
+    it('lists the pages read past the page cap and keeps the unreached NFTs without flagging the gallery', async () => {
+        server.use(
+            ...rpc(),
+            http.get(
+                `${TEST_PERA_URL}/api/v3/evm/1/accounts/${FIRST}/nfts/`,
+                () =>
+                    HttpResponse.json({
+                        next: `${TEST_PERA_URL}/api/v3/evm/1/accounts/x/nfts/?cursor=again`,
+                        results: [ape],
+                    }),
+            ),
+            ...peraEvmHandlers({ baseUrl: TEST_PERA_URL }),
+        )
+        const ops = createEthereumAccountStateOps(
+            testChainContext({ services: ['assets', 'nfts'] }),
+            ETHEREUM,
+        )
+
+        const state = await ops.fetchAccountState(FIRST, SCOPE, HINT)
+
+        expect(state.holdings.map(h => h.assetId)).toEqual(['native', APE])
+        expect(state.unrefreshedHoldings?.includes(SWORD)).toBe(true)
+        expect(state.unrefreshedHoldings?.collectibles).toBeUndefined()
+        expect(state.unrefreshedHoldings?.fungibles).toBeUndefined()
     })
 
     it.each([503, 429])(

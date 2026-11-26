@@ -11,6 +11,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { UnrefreshedHoldings } from '../../chain-adapter'
 
 const MAINNET_SCOPE = {
     chainId: 'algorand',
@@ -120,15 +121,19 @@ describe('fetchAndPersistAccount', () => {
     })
 
     describe('a read that leaves holdings unrefreshed', () => {
-        const unrefreshed = {
-            includes: (assetId: string) => assetId.startsWith('nft/'),
+        const missedTokens = {
+            includes: (assetId: string) => assetId.startsWith('token/'),
             error: new Error('upstream_unavailable'),
+        }
+        const unrefreshed: UnrefreshedHoldings = {
+            ...missedTokens,
+            fungibles: missedTokens,
         }
 
         const unrefreshedByFailure = unrefreshed
 
         const registerReads = async (
-            reads: { unrefreshedHoldings?: typeof unrefreshed }[],
+            reads: { unrefreshedHoldings?: UnrefreshedHoldings }[],
         ) => {
             const { Decimal } = await import('decimal.js')
             const queue = [...reads]
@@ -164,7 +169,7 @@ describe('fetchAndPersistAccount', () => {
 
             const { retain } = vi.mocked(refreshAccountHoldings).mock
                 .lastCall![0]
-            expect(retain?.('nft/1')).toBe(true)
+            expect(retain?.('token/1')).toBe(true)
             expect(retain?.('100')).toBe(false)
             expect(
                 useHoldingsRefreshStore.getState().failed[mainnetKey]?.A,
@@ -180,17 +185,73 @@ describe('fetchAndPersistAccount', () => {
             ).toBeUndefined()
         })
 
+        it('flags only the gallery when the NFT read failed', async () => {
+            const missedNfts = {
+                includes: (assetId: string) => assetId.startsWith('nft/'),
+                error: new Error('nft upstream down'),
+            }
+            await registerReads([
+                {
+                    unrefreshedHoldings: {
+                        ...missedNfts,
+                        collectibles: missedNfts,
+                    },
+                },
+            ])
+            const { useHoldingsRefreshStore } =
+                await import('../../store/holdingsRefresh')
+            const mainnetKey = 'algorand/mainnet' as never
+
+            await fetchAndPersistAccount('A', MAINNET_SCOPE)
+
+            const state = useHoldingsRefreshStore.getState()
+            expect(state.collectiblesFailed[mainnetKey]?.A).toBe(true)
+            expect(state.failed[mainnetKey]?.A).toBeUndefined()
+        })
+
+        it('keeps a row outside both parts without flagging the account', async () => {
+            await registerReads([
+                {
+                    unrefreshedHoldings: {
+                        includes: (assetId: string) => assetId === 'broken',
+                        error: new Error('balanceOf unreadable: broken'),
+                    },
+                },
+            ])
+            const { refreshAccountHoldings } = await import('../../db')
+            const { useHoldingsRefreshStore } =
+                await import('../../store/holdingsRefresh')
+            vi.mocked(refreshAccountHoldings).mockImplementationOnce(
+                async ({ retain }) => {
+                    expect(retain?.('broken')).toBe(true)
+                    return false
+                },
+            )
+
+            await fetchAndPersistAccount('A', MAINNET_SCOPE)
+
+            const state = useHoldingsRefreshStore.getState()
+            expect(
+                vi.mocked(refreshAccountHoldings).mock.calls.length,
+            ).toBeGreaterThan(0)
+            expect(state.failed['algorand/mainnet' as never]?.A).toBeUndefined()
+            expect(
+                state.collectiblesFailed['algorand/mainnet' as never]?.A,
+            ).toBeUndefined()
+        })
+
         describe('because the backend does not serve the scope', () => {
-            const notServed = async () => {
+            const notServed = async (): Promise<UnrefreshedHoldings> => {
                 const { PeraServiceUnavailableError } =
                     await import('@perawallet/wallet-core-shared')
-                return {
-                    includes: (assetId: string) => assetId.startsWith('nft/'),
+                const part = {
+                    includes: (assetId: string) => assetId.startsWith('token/'),
                     error: new PeraServiceUnavailableError(
                         MAINNET_SCOPE,
                         'assets',
                     ),
                 }
+                return { ...part, fungibles: part }
             }
 
             it('flags nothing while no stored row is kept, as the read vouches for what is shown', async () => {
@@ -219,7 +280,7 @@ describe('fetchAndPersistAccount', () => {
                     vi
                         .mocked(refreshAccountHoldings)
                         .mockImplementationOnce(async ({ retain }) => {
-                            retain?.('nft/1')
+                            retain?.('token/1')
                             return false
                         })
                 await registerReads([
@@ -254,7 +315,7 @@ describe('fetchAndPersistAccount', () => {
                     await import('../../store/holdingsRefresh')
                 vi.mocked(refreshAccountHoldings).mockImplementationOnce(
                     async ({ retain }) => {
-                        retain?.('nft/1')
+                        retain?.('token/1')
                         return false
                     },
                 )

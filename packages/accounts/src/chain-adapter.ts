@@ -196,11 +196,21 @@ export type HoldingBalanceHistoryPoint = {
     usdValue: Decimal
 }
 
-/** Stored holdings a read could not see; the syncer keeps their rows as they are. */
-export type UnrefreshedHoldings = {
+export type UnrefreshedHoldingsPart = {
     includes(assetId: string): boolean
     /** Why the read missed them. */
     error: unknown
+}
+
+/**
+ * Stored holdings a read could not see; the syncer keeps every row `includes`
+ * names as it is. Only the parts mark the account's view stale, split so a
+ * failed NFT read doesn't flag balances, nor a failed token read the gallery.
+ * A row outside both parts is kept quietly: a contract that fails every read.
+ */
+export type UnrefreshedHoldings = UnrefreshedHoldingsPart & {
+    fungibles?: UnrefreshedHoldingsPart
+    collectibles?: UnrefreshedHoldingsPart
 }
 
 /** One read of an account's balance, holdings and signer, as the syncer persists it. */

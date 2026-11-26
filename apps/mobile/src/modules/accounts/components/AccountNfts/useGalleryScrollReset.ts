@@ -12,8 +12,51 @@
 
 import { useEffect, useRef } from 'react'
 import type { PWFlatList } from '@components/core'
-import type { GalleryLayout } from '@perawallet/wallet-core-assets'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type {
+    CollectibleSortMode,
+    GalleryLayout,
+} from '@perawallet/wallet-core-assets'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+
+// Reordering or narrowing the gallery has to land the user on the first row.
+// Keyed on the *request* rather than on the rows it produces: a new sort is
+// a new query key, so the rows go through a gap — empty while cold, or the
+// previous order held as placeholder data — before the reordered ones land.
+// Deriving the trigger from the rows read that gap as "nothing changed" and
+// skipped the reset exactly when it was needed, which is how sorting a
+// freshly imported account dropped the user mid-list.
+export const galleryViewRequestKey = ({
+    addresses,
+    selectedChainId,
+    sortMode,
+    search,
+    showOptedIn,
+    showSuspicious,
+    showHidden,
+    acquisitionOrderSize,
+}: {
+    addresses: readonly string[]
+    selectedChainId: Nullable<ChainId>
+    sortMode: CollectibleSortMode
+    search: string
+    showOptedIn: boolean
+    showSuspicious: boolean
+    showHidden: boolean
+    acquisitionOrderSize: number
+}): string =>
+    [
+        addresses.join(','),
+        selectedChainId ?? '',
+        sortMode,
+        search,
+        showOptedIn,
+        showSuspicious,
+        showHidden,
+        // recentlyAdded is ordered by a separate query, whose order arrives
+        // after the rows: the map landing is its own reorder.
+        sortMode === 'recentlyAdded' ? acquisitionOrderSize : '',
+    ].join('|')
 
 type UseGalleryScrollResetParams = {
     /** Everything that reorders or narrows the gallery: a change scrolls it back to the top. */

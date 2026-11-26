@@ -63,7 +63,10 @@ export const AccountNfts = ({ offset, pageIndex }: AccountNftsProps) => {
         unsupportedNetworkNames,
         isMultiChain,
         showEmptyState,
-        showRefreshNotice,
+        refreshNoticeChainNames,
+        isLoadFailed,
+        handleRetry,
+        isRetrying,
         shouldShowNetwork,
         listEmptyTitle,
         listEmptyBody,
@@ -210,10 +213,11 @@ export const AccountNfts = ({ offset, pageIndex }: AccountNftsProps) => {
                                 />
                             )}
                         </PWView>
-                        {showRefreshNotice && (
+                        {refreshNoticeChainNames !== undefined && (
                             <InfoCallout
                                 title={t(
                                     'account_details.nfts.refresh_error_title',
+                                    { chains: refreshNoticeChainNames },
                                 )}
                                 body={t(
                                     'account_details.nfts.refresh_error_body',
@@ -265,6 +269,17 @@ export const AccountNfts = ({ offset, pageIndex }: AccountNftsProps) => {
                                         <GallerySkeleton isGrid={isGrid} />
                                     }
                                     isLoading={isPending}
+                                    button={
+                                        isLoadFailed ? (
+                                            <PWButton
+                                                variant='secondary'
+                                                title={t('common.retry.label')}
+                                                onPress={handleRetry}
+                                                isLoading={isRetrying}
+                                                testID='nft_load_retry'
+                                            />
+                                        ) : undefined
+                                    }
                                 />
                             }
                         />
