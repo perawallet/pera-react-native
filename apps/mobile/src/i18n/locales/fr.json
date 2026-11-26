@@ -760,7 +760,8 @@
             "text_with_cloud_backup": "Vous devez sauvegarder ce compte",
             "cta_passphrase": "Sauvegarder la passphrase de récupération",
             "cta_turn_on_cloud_backup": "Activer la sauvegarde cloud",
-            "cta_fix_cloud_backup": "Corriger la sauvegarde cloud"
+            "cta_fix_cloud_backup": "Corriger la sauvegarde cloud",
+            "cta_confirm_cloud_backup": "Confirmer la sauvegarde cloud"
         },
         "status": {
             "cloud_backup": "Sauvegardé · Sauvegarde cloud"
