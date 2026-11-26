@@ -150,6 +150,45 @@ describe('swaps/useSwapOrderTracker', () => {
         )
     })
 
+    test("keeps the order's transactions, including a payout that lands without a status change", async () => {
+        useSwapTrackingStore.getState().trackOrder(trackedOrder())
+        const deposit = { scope: SOURCE_SCOPE, txHash: 'DEP', role: 'deposit' }
+        const payout = {
+            scope: DESTINATION_SCOPE,
+            txHash: '0xPAY',
+            role: 'payout',
+        }
+        vi.mocked(fetchSwapOrder)
+            .mockResolvedValueOnce(
+                makeSwapHistoryItem({
+                    status: 'in_progress',
+                    transactions: [deposit],
+                }),
+            )
+            .mockResolvedValueOnce(
+                makeSwapHistoryItem({
+                    status: 'in_progress',
+                    transactions: [deposit, payout],
+                }),
+            )
+
+        render()
+        await flush()
+        expect(
+            useSwapTrackingStore.getState().orders['order-1']?.transactions,
+        ).toEqual([{ txHash: 'DEP', role: 'deposit' }])
+
+        await nextPoll()
+
+        const order = useSwapTrackingStore.getState().orders['order-1']
+        expect(order?.transactions).toEqual([
+            { txHash: 'DEP', role: 'deposit' },
+            { txHash: '0xPAY', role: 'payout' },
+        ])
+        expect(order?.checkedAt).toBe(NOW)
+        expect(fetchAndPersistAccount).not.toHaveBeenCalled()
+    })
+
     test('refreshes the paying account when the order is refunded', async () => {
         useSwapTrackingStore.getState().trackOrder(trackedOrder())
         routerSays('refunded')

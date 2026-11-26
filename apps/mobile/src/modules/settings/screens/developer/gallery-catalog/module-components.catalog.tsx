@@ -36,7 +36,7 @@ import { AccountAssetItemView } from '@modules/assets/components/AssetItem'
 import { TransactionDateHeader } from '@modules/transactions/components/TransactionDateHeader'
 import { TransactionIcon } from '@components/TransactionIcon'
 import { TransactionListItem } from '@modules/transactions/components/TransactionListItem'
-import { TransactionStatusBadge } from '@modules/signing'
+import { TransactionStatusBadge } from '@components/TransactionStatusBadge'
 
 import { SwapProviderDisplay } from '@modules/swap/components/SwapProviderDisplay'
 import { SwapProviderRow } from '@modules/swap/components/SwapProviderRow'

@@ -10,26 +10,41 @@
  limitations under the License
  */
 
-import { PWText, PWView } from '@components/core'
+import type { StyleProp, ViewStyle } from 'react-native'
+import { useTheme } from '@rneui/themed'
+import { PWLoadingIndicator, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import type { TransactionDetailStatus } from '../types'
 import { useStyles } from './styles'
 
+export type TransactionStatus = 'completed' | 'pending' | 'failed'
+
 type TransactionStatusBadgeProps = {
-    status: TransactionDetailStatus
+    status: TransactionStatus
+    style?: StyleProp<ViewStyle>
+    testID?: string
 }
 
 export const TransactionStatusBadge = ({
     status,
+    style,
+    testID = 'transaction_detail_status',
 }: TransactionStatusBadgeProps) => {
     const styles = useStyles(status)
+    const { theme } = useTheme()
     const { t } = useLanguage()
 
     return (
         <PWView
-            style={styles.container}
-            testID='transaction_detail_status'
+            style={[styles.container, style]}
+            testID={testID}
         >
+            {status === 'pending' && (
+                <PWLoadingIndicator
+                    size='xs'
+                    color={theme.colors.textGray}
+                    testID={`${testID}_spinner`}
+                />
+            )}
             <PWText
                 style={styles.text}
                 truncate

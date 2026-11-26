@@ -27,7 +27,9 @@ export {
     readSwapLeg,
     summarizeSwapLeg,
     swapLegOf,
+    swapLegRoleOf,
     withoutListedSwapPayouts,
+    withoutListedSwapPayoutsBy,
     type ResolveSwapAssetRef,
     type SwapLegResponse,
 } from './swapLegs'

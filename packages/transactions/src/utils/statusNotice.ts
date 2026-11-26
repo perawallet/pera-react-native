@@ -18,7 +18,6 @@ import type { Optional } from '@perawallet/wallet-core-shared'
 import type { TransactionHistoryStatus } from '../models/types'
 
 const PENDING = i18nKey('transactions.notice.pending')
-const CONFIRMING = i18nKey('transactions.notice.confirming')
 const FAILED = i18nKey('transactions.notice.failed')
 const REPLACED = i18nKey('transactions.notice.replaced')
 const REPLACEMENT_NOT_NEEDED = i18nKey(
@@ -53,10 +52,4 @@ export const transactionStatusNotice = (
 export const replacementNotNeededNotice = (): TransactionNotice => ({
     kind: 'warning',
     title: { key: REPLACEMENT_NOT_NEEDED },
-})
-
-/** On the chain but not yet final, so it can still be undone. */
-export const confirmingNotice = (): TransactionNotice => ({
-    kind: 'warning',
-    title: { key: CONFIRMING },
 })

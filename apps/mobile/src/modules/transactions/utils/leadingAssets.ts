@@ -54,7 +54,14 @@ export const leadingAssetsOf = (
         const visible = amounts.slice(0, MAX_VISIBLE_AMOUNTS)
         const from = visible.find(amount => amount.prefix === '-')
         const to = visible.find(amount => amount.prefix === '+')
-        return from && to ? [ofAmount(from), ofAmount(to)] : []
+        if (from && to) return [ofAmount(from), ofAmount(to)]
+        const { from: fromRef, to: toRef } = summary.titleAssets ?? {}
+        return fromRef && toRef
+            ? [
+                  toLeading(fromRef, summary.title.params?.from),
+                  toLeading(toRef, summary.title.params?.to),
+              ]
+            : []
     }
     if (amounts.length === 1) return [ofAmount(amounts[0]!)]
     if (amounts.length > 0) return []
@@ -69,14 +76,17 @@ const titleAssetsOf = (summary: TransactionSummary): [string, AssetRef][] =>
         ref ? [[param, ref] as [string, AssetRef]] : [],
     )
 
-/** Each network a swap's legs are on, in leg order: more than one for a cross-chain swap, none for anything else. */
+/** Each network a swap's legs are on, in leg order, then the networks its title's pair names: more than one for a cross-chain swap, none for anything else. */
 export const swapChainIdsOf = (summary: TransactionSummary): ChainId[] =>
     summary.kind === 'swap'
         ? [
-              ...new Set(
-                  summaryAmountsOf(summary).map(
+              ...new Set([
+                  ...summaryAmountsOf(summary).map(
                       amount => amount.assetRef.chainId,
                   ),
-              ),
+                  ...titleAssetsOf(summary)
+                      .filter(([param]) => param === 'from' || param === 'to')
+                      .map(([, ref]) => ref.chainId),
+              ]),
           ]
         : []

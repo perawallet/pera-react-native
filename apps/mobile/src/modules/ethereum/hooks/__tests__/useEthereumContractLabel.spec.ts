@@ -63,6 +63,7 @@ describe('useEthereumContractLabel', () => {
     it("names the contract as Pera's curated metadata does, with its project's domain", () => {
         answer({
             name: 'Aave V3 Pool',
+            projectName: 'Aave',
             projectUrl: 'https://www.aave.com/',
         })
 
@@ -84,6 +85,7 @@ describe('useEthereumContractLabel', () => {
     it('prefers the curated name over the bundled one', () => {
         answer({
             name: 'Pool V3',
+            projectName: 'Aave',
             projectUrl: 'https://aave.com',
         })
 

@@ -23,6 +23,7 @@ import { isEvmNftAssetId, toCaip19 } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
 import { fetchHistoryPage } from './api/endpoints'
 import { exportStoredEvmHistoryCsv } from './csv-export'
+import { withContractNames } from './contract-names'
 import { readEvmTransactionDetail } from './detail'
 import { evmHistoryChainData, storeEvmHistoryPage } from './history-cache'
 import { keepTokensTheAccountSent } from './kept-tokens'
@@ -100,18 +101,22 @@ export const getEvmTransactionHistory = async (
             ? storeEvmHistoryPage(items, address, scope)
             : undefined,
     ])
-    return {
-        items: items.flatMap(item =>
-            toEvmHistoryRecords(
-                item,
-                address,
-                scope,
-                chain,
-                isDecoding,
-                nftApprovals,
-                caip19AssetId !== undefined,
-            ),
+    const records = items.flatMap(item =>
+        toEvmHistoryRecords(
+            item,
+            address,
+            scope,
+            chain,
+            isDecoding,
+            nftApprovals,
+            caip19AssetId !== undefined,
         ),
+    )
+    return {
+        // Naming a contract needs decoding, as the bundled names do.
+        items: isDecoding
+            ? await withContractNames(records, scope, chain)
+            : records,
         ...(next !== null && { next: { cursor: next } }),
     }
 }

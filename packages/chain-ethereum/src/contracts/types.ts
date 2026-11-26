@@ -30,7 +30,11 @@ export type EvmContractAbiAnswer =
 export type EvmContractMetadata = {
     /** A proper noun: shown as written, never translated. */
     name: string
+    /** The project alone ("Aave"): a history row has room only for this. */
+    projectName: string
     projectUrl: string
+    /** A PNG; absent when the project has none. */
+    projectLogoUrl?: string
 }
 
 export type EvmVerifiedAbi = Extract<

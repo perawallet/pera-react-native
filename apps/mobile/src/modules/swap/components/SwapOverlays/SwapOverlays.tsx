@@ -18,10 +18,11 @@ import {
     useSwapOrderTracker,
 } from '@perawallet/wallet-core-swaps'
 import { useErrorToast } from '@hooks/useErrorToast'
+import { useSwapSettledToasts } from '../../hooks/useSwapSettledToasts'
 
 /**
  * Headless app-root mount for Swap's background work: the shared-account cosign
- * resolver, the order tracker, and dropping the account picked in Swap when
+ * resolver, the order tracker with its settled-swap toasts, and dropping the account picked in Swap when
  * the app-wide selection changes.
  *
  * Mirrors {@link MultisigOverlays}'s resolver wiring: tracks foreground state
@@ -45,6 +46,7 @@ export const SwapOverlays = (): null => {
 
     useSwapCosignResolver({ isAppActive, reportError: showError })
     useSwapOrderTracker()
+    useSwapSettledToasts()
     useSwapAccountFollowsSelection()
 
     return null

@@ -172,8 +172,12 @@ export const useTransactionDetailsScreen =
         // have no on-chain id).
         const transaction = paramTransaction ?? detail.transaction
         const notice = useMemo(() => {
-            if (historyRecord)
-                return chainNoticeOf(historyRecord.summary.notice)
+            // A record's body heads with its status badge, which shows pending itself.
+            if (historyRecord) {
+                return historyRecord.status === 'pending'
+                    ? null
+                    : chainNoticeOf(historyRecord.summary.notice)
+            }
             if (!historyTransaction) return null
             return chainNoticeOf(
                 summarizeHistoryItem(historyTransaction, address, scope.chainId)

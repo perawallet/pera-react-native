@@ -280,6 +280,14 @@ export interface SwapTrackedOrder {
     createdAt: number
     /** Epoch ms of the last status change. */
     checkedAt: number
+    /** The order's transactions as the router last listed them; absent on orders tracked before it was kept. */
+    transactions?: SwapTrackedTransaction[]
+}
+
+export interface SwapTrackedTransaction {
+    txHash: string
+    /** The router's role for it, such as `deposit` or `payout`. */
+    role: string
 }
 
 export type SwapTrackingState = BaseStoreState & {
@@ -289,6 +297,7 @@ export type SwapTrackingState = BaseStoreState & {
         orderId: string,
         status: SwapStatus,
         checkedAt: number,
+        transactions?: SwapTrackedTransaction[],
     ) => void
     removeOrder: (orderId: string) => void
     pruneSettledOrders: (now: number) => void

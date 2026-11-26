@@ -69,20 +69,41 @@ export const useSwapOrderTracker = (): void => {
     )
 
     // Read during render: TanStack re-renders only for fields read there.
-    const statuses = useQueries({
+    const reads = useQueries({
         queries: open.map(order => ({
             queryKey: swapQueryKeys.order(order.orderId, order.sourceScope),
             queryFn: () => fetchSwapOrder(order.orderId, order.sourceScope),
             refetchInterval: POLL_INTERVAL_MS,
             staleTime: 0,
         })),
-    }).map(result => result.data?.status)
+    }).map(result => result.data)
 
     useEffect(() => {
         open.forEach((order, index) => {
-            const status = statuses[index]
-            if (!status || status === order.status) return
-            updateOrderStatus(order.orderId, status, Date.now())
+            const read = reads[index]
+            if (!read) return
+            const { status } = read
+            // History reads a payout's hash here before its own backend links it to the order.
+            const transactions = read.transactions.map(({ txHash, role }) => ({
+                txHash,
+                role,
+            }))
+            const isNewTransaction = transactions.some(
+                ({ txHash }) =>
+                    !order.transactions?.some(known => known.txHash === txHash),
+            )
+            if (status === order.status) {
+                if (isNewTransaction) {
+                    updateOrderStatus(
+                        order.orderId,
+                        status,
+                        order.checkedAt,
+                        transactions,
+                    )
+                }
+                return
+            }
+            updateOrderStatus(order.orderId, status, Date.now(), transactions)
             const account = accountRefreshedOn(order, status)
             if (!account) return
             const { address, scope } = account

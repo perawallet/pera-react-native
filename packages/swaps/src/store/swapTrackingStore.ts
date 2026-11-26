@@ -43,14 +43,19 @@ export const useSwapTrackingStore: UseBoundStore<
                 set(state => ({
                     orders: { ...state.orders, [order.orderId]: order },
                 })),
-            updateOrderStatus: (orderId, status, checkedAt) =>
+            updateOrderStatus: (orderId, status, checkedAt, transactions) =>
                 set(state => {
                     const order = state.orders[orderId]
                     if (!order) return state
                     return {
                         orders: {
                             ...state.orders,
-                            [orderId]: { ...order, status, checkedAt },
+                            [orderId]: {
+                                ...order,
+                                status,
+                                checkedAt,
+                                ...(transactions && { transactions }),
+                            },
                         },
                     }
                 }),

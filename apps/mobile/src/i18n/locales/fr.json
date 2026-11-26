@@ -3967,6 +3967,8 @@
             "note": "Note de la transaction",
             "view_raw_transaction": "Voir le JSON",
             "network": "Réseau",
+            "receive_network": "Réseau de réception",
+            "send_network": "Réseau d'envoi",
             "block": "Bloc",
             "view_in_explorer": "Voir dans {{explorer}}",
             "view_asset_url": "Voir l’URL de l’actif",
@@ -3975,10 +3977,10 @@
             "completed": "Terminée",
             "failed": "Échouée",
             "pending": "En attente",
-            "raw_transaction": "Transaction brute"
+            "raw_transaction": "Transaction brute",
+            "via_project": "via {{name}}"
         },
         "notice": {
-            "confirming": "Confirmation en cours",
             "pending": "En attente depuis {{since}}",
             "failed": "Échouée",
             "replaced": "Remplacée par une autre transaction",
@@ -4003,8 +4005,8 @@
             "contract_call": "Appel de contrat",
             "approve_asset": "Autorisation {{asset}}",
             "approve_all": "Autorisation de toute la collection {{collection}}",
-            "approval_for": "Pour {{spender}}",
-            "unlimited_approval_for": "Illimité · pour {{spender}}",
+            "approval_for": "Autorisé : {{spender}}",
+            "unlimited_approval_for": "Illimité · Autorisé : {{spender}}",
             "swap_pair": "Swap {{from}} → {{to}}",
             "swap_assets": "{{from}} → {{to}}",
             "add_liquidity": "Ajout de liquidité",
@@ -4530,8 +4532,7 @@
             "failed": "Le swap n’a pas pu aboutir. Si vos fonds ont été envoyés, le fournisseur les restituera sur votre compte.",
             "refunded": "Le swap a été remboursé. Vos fonds en {{fromAsset}} sont de retour sur votre compte.",
             "expired": "Le swap a expiré avant de commencer. Si vos fonds ont quitté votre compte, le statut peut encore changer pendant 7 jours maximum.",
-            "cancelled": "Le swap a été annulé avant de commencer. Si vos fonds ont quitté votre compte, le statut peut encore changer pendant 7 jours maximum.",
-            "dismiss": "Masquer"
+            "cancelled": "Le swap a été annulé avant de commencer. Si vos fonds ont quitté votre compte, le statut peut encore changer pendant 7 jours maximum."
         },
         "receiving_account": {
             "title": "Compte de réception",

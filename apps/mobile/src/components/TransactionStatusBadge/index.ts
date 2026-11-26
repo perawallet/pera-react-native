@@ -10,4 +10,7 @@
  limitations under the License
  */
 
-export { PendingSwaps, type PendingSwapsProps } from './PendingSwaps'
+export {
+    TransactionStatusBadge,
+    type TransactionStatus,
+} from './TransactionStatusBadge'

@@ -3967,6 +3967,8 @@
             "note": "Transaction Note",
             "view_raw_transaction": "View JSON",
             "network": "Network",
+            "receive_network": "Receive network",
+            "send_network": "Send network",
             "block": "Block",
             "view_in_explorer": "View in {{explorer}}",
             "view_asset_url": "View Asset URL",
@@ -3975,10 +3977,10 @@
             "completed": "Completed",
             "failed": "Failed",
             "pending": "Pending",
-            "raw_transaction": "Raw Transaction"
+            "raw_transaction": "Raw Transaction",
+            "via_project": "via {{name}}"
         },
         "notice": {
-            "confirming": "Confirming",
             "pending": "Pending since {{since}}",
             "failed": "Failed",
             "replaced": "Replaced by another transaction",
@@ -4003,8 +4005,8 @@
             "contract_call": "Contract Call",
             "approve_asset": "Approve {{asset}}",
             "approve_all": "Approve all {{collection}}",
-            "approval_for": "For {{spender}}",
-            "unlimited_approval_for": "Unlimited · for {{spender}}",
+            "approval_for": "Spender: {{spender}}",
+            "unlimited_approval_for": "Unlimited · Spender: {{spender}}",
             "swap_pair": "Swap {{from}} → {{to}}",
             "swap_assets": "{{from}} → {{to}}",
             "add_liquidity": "Add liquidity",
@@ -4530,8 +4532,7 @@
             "failed": "The swap couldn't complete. If your funds were sent, the provider returns them to your account.",
             "refunded": "The swap was refunded. Your {{fromAsset}} is back in your account.",
             "expired": "The swap expired before it started. If your funds left your account, the status can still change for up to 7 days.",
-            "cancelled": "The swap was cancelled before it started. If your funds left your account, the status can still change for up to 7 days.",
-            "dismiss": "Dismiss"
+            "cancelled": "The swap was cancelled before it started. If your funds left your account, the status can still change for up to 7 days."
         },
         "receiving_account": {
             "title": "Receiving account",

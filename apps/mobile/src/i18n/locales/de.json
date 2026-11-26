@@ -3959,6 +3959,8 @@
             "note": "Transaktionsnotiz",
             "view_raw_transaction": "JSON anzeigen",
             "network": "Netzwerk",
+            "receive_network": "Empfangsnetzwerk",
+            "send_network": "Sendenetzwerk",
             "block": "Block",
             "view_in_explorer": "In {{explorer}} ansehen",
             "view_asset_url": "Asset-URL anzeigen",
@@ -3967,10 +3969,10 @@
             "completed": "Abgeschlossen",
             "failed": "Fehlgeschlagen",
             "pending": "Ausstehend",
-            "raw_transaction": "Rohtransaktion"
+            "raw_transaction": "Rohtransaktion",
+            "via_project": "über {{name}}"
         },
         "notice": {
-            "confirming": "Wird bestätigt",
             "pending": "Ausstehend seit {{since}}",
             "failed": "Fehlgeschlagen",
             "replaced": "Durch eine andere Transaktion ersetzt",
@@ -3995,8 +3997,8 @@
             "contract_call": "Smart-Contract-Aufruf",
             "approve_asset": "{{asset}} freigeben",
             "approve_all": "Gesamte Sammlung {{collection}} freigeben",
-            "approval_for": "Für {{spender}}",
-            "unlimited_approval_for": "Unbegrenzt · für {{spender}}",
+            "approval_for": "Berechtigt: {{spender}}",
+            "unlimited_approval_for": "Unbegrenzt · Berechtigt: {{spender}}",
             "swap_pair": "Tausch {{from}} → {{to}}",
             "swap_assets": "{{from}} → {{to}}",
             "add_liquidity": "Liquidität hinzufügen",
@@ -4522,8 +4524,7 @@
             "failed": "Der Tausch konnte nicht abgeschlossen werden. Falls dein Guthaben gesendet wurde, gibt der Anbieter es an dein Konto zurück.",
             "refunded": "Der Tausch wurde erstattet. Dein {{fromAsset}} ist wieder auf deinem Konto.",
             "expired": "Der Tausch ist abgelaufen, bevor er begonnen hat. Falls dein Guthaben dein Konto verlassen hat, kann sich der Status noch bis zu 7 Tage ändern.",
-            "cancelled": "Der Tausch wurde abgebrochen, bevor er begonnen hat. Falls dein Guthaben dein Konto verlassen hat, kann sich der Status noch bis zu 7 Tage ändern.",
-            "dismiss": "Ausblenden"
+            "cancelled": "Der Tausch wurde abgebrochen, bevor er begonnen hat. Falls dein Guthaben dein Konto verlassen hat, kann sich der Status noch bis zu 7 Tage ändern."
         },
         "receiving_account": {
             "title": "Empfangskonto",

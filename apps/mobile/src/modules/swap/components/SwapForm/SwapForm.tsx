@@ -18,7 +18,6 @@ import { SwapAmountSection } from '../SwapAmountSection'
 import { SwapPairHistoryWidget } from '../SwapPairHistoryWidget'
 import { SwapProviderRow } from '../SwapProviderRow'
 import { SwapReceivingAccountRow } from '../SwapReceivingAccountRow'
-import { SwapTrackedOrders } from '../SwapTrackedOrders'
 import { SwapFormControls } from './SwapFormControls'
 import { SwapQuoteError } from './SwapQuoteError'
 import { useSwapForm, type SwapFormInitialPayAmount } from './useSwapForm'
@@ -75,8 +74,6 @@ export const SwapForm = ({ scope, initialPayAmount }: SwapFormProps) => {
 
     return (
         <PWScrollView contentContainerStyle={styles.formContainer}>
-            <SwapTrackedOrders />
-
             {swapAccount && <SwapAccountPill account={swapAccount} />}
 
             <PWView style={styles.amountSections}>

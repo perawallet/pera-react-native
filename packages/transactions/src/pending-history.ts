@@ -33,7 +33,6 @@ import {
 } from './history-adapter'
 import type { TransactionHistoryStatus } from './models/types'
 import {
-    confirmingNotice,
     replacementNotNeededNotice,
     transactionStatusNotice,
 } from './utils/statusNotice'
@@ -82,14 +81,6 @@ const LANDED_STATUSES: ReadonlySet<SubmissionStatus> = new Set([
 const NO_OUTCOME: Pick<SubmissionHistoryEntry, 'chargedFee' | 'blockNumber'> =
     {}
 
-const noticeOf = (
-    { status: attemptStatus, createdAt }: SubmissionAttemptWithHistoryEntry,
-    status: TransactionHistoryStatus,
-) =>
-    attemptStatus === 'confirming'
-        ? confirmingNotice()
-        : transactionStatusNotice(status, createdAt)
-
 export type GetPendingTransactionRecordsParams = {
     address: string
     scope: ChainScope
@@ -128,7 +119,7 @@ export const getPendingTransactionRecords = async ({
         const status = historyStatusOf(attempt.status)
         const notice = isReplacementNotNeeded(attempt, byId)
             ? replacementNotNeededNotice()
-            : noticeOf(attempt, status)
+            : transactionStatusNotice(status, attempt.createdAt)
         // A reorg returns a mined attempt to `submitted`; its receipt's block is gone.
         const { chargedFee, blockNumber } = LANDED_STATUSES.has(attempt.status)
             ? historyEntry

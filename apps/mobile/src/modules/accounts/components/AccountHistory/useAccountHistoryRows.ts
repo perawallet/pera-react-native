@@ -37,6 +37,7 @@ import {
     type HistoryFeedProps,
     type UseTransactionHistoryRowsResult,
 } from '@modules/transactions'
+import { useSwapOrdersPaidInto, useTrackedSwapLegs } from '@modules/swap'
 import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import { useAccountChainFilterOptions } from '../../hooks/useAccountChainFilterOptions'
 import { useAssetListViewStore } from '../../hooks/useAssetListViewStore'
@@ -151,24 +152,49 @@ export const useAccountHistoryRows = ({
     const activeType = (canFilterByType && historyType) || undefined
     const mergedSources = activeType === undefined ? sources : typedSources
 
+    // Narrowed to a network a cross-chain swap paid out on, the swap's own row
+    // is on the paying network, so that network is read for those swaps alone.
+    const swapsPaidIn = useSwapOrdersPaidInto(selectedSource?.scope ?? null)
+    const swapFeedSources = useMemo(
+        () =>
+            swapsPaidIn.flatMap(({ scope: paidFrom, orderIds }) => {
+                const source = sources.find(
+                    entry => toScopeKey(entry.scope) === toScopeKey(paidFrom),
+                )
+                return source ? [{ ...source, onlySwapOrderIds: orderIds }] : []
+            }),
+        [swapsPaidIn, sources],
+    )
+    const feedSources = useMemo(() => {
+        if (isMerged) return mergedSources
+        if (selectedSource && swapFeedSources.length > 0) {
+            return [selectedSource, ...swapFeedSources]
+        }
+        return NO_SOURCES
+    }, [isMerged, mergedSources, selectedSource, swapFeedSources])
+    // Whether the rows come from the merge: All, or a narrowed list pulling in swaps.
+    const isMergedRead = feedSources.length > 0
+
     // Both stay mounted so hook order never depends on the chip; the one not
     // in use reads nothing.
     const single = useTransactionHistoryRows({
-        accountAddress: isMerged ? undefined : accountAddress,
+        accountAddress: isMergedRead ? undefined : accountAddress,
         scope,
         afterTime,
         beforeTime,
         historyType: activeType,
     })
+    const knownSwapLegs = useTrackedSwapLegs()
     const merged = useMergedTransactionHistoryRows({
-        sources: isMerged ? mergedSources : NO_SOURCES,
+        sources: feedSources,
         afterTime,
         beforeTime,
         historyType: activeType,
+        knownSwapLegs,
     })
     const refreshAddresses = useMemo(
-        () => (accountAddress && !isMerged ? [accountAddress] : []),
-        [accountAddress, isMerged],
+        () => (accountAddress && !isMergedRead ? [accountAddress] : []),
+        [accountAddress, isMergedRead],
     )
     const singleRefresh = useSyncRefresh({ addresses: refreshAddresses, scope })
 
@@ -178,22 +204,22 @@ export const useAccountHistoryRows = ({
         isSearchPaused,
         fetchNextPage,
         ...history
-    } = isMerged ? merged : single
+    } = isMergedRead ? merged : single
 
     // A paused search waits for Search Older, not for the list's end. The
     // merge queues a request itself, so a busy network mustn't drop it here.
     const handleLoadMore = useCallback(() => {
         if (!hasNextPage || isSearchPaused) return
-        if (isMerged || !isFetchingNextPage) fetchNextPage()
+        if (isMergedRead || !isFetchingNextPage) fetchNextPage()
     }, [
         hasNextPage,
         isSearchPaused,
-        isMerged,
+        isMergedRead,
         isFetchingNextPage,
         fetchNextPage,
     ])
 
-    const { failedNetworkNames, unavailableNetworkNames } = isMerged
+    const { failedNetworkNames, unavailableNetworkNames } = isMergedRead
         ? merged
         : singleFailureNamesOf(single)
 
@@ -229,8 +255,8 @@ export const useAccountHistoryRows = ({
     ])
     const scopeOf = useCallback(
         (transactionId: string) =>
-            (isMerged && scopeByTransactionId.get(transactionId)) || scope,
-        [isMerged, scopeByTransactionId, scope],
+            (isMergedRead && scopeByTransactionId.get(transactionId)) || scope,
+        [isMergedRead, scopeByTransactionId, scope],
     )
 
     return {
@@ -246,7 +272,7 @@ export const useAccountHistoryRows = ({
         isLoadIntegrityBlocked: history.isLoadIntegrityBlocked,
         isRefreshFailed:
             history.isRefreshFailed &&
-            (isMerged || !single.isRefreshUnavailable),
+            (isMergedRead || !single.isRefreshUnavailable),
         hasNextPage,
         isSearchPaused,
         retry: history.retry,
@@ -264,9 +290,9 @@ export const useAccountHistoryRows = ({
         failedNetworkNames,
         unavailableNetworkNames,
         handleLoadMore,
-        handleSearchOlder: isMerged ? merged.searchOlder : fetchNextPage,
-        handleRefresh: isMerged ? merged.refresh : singleRefresh.refresh,
-        isRefreshing: isMerged
+        handleSearchOlder: isMergedRead ? merged.searchOlder : fetchNextPage,
+        handleRefresh: isMergedRead ? merged.refresh : singleRefresh.refresh,
+        isRefreshing: isMergedRead
             ? merged.isRefreshing
             : singleRefresh.isRefreshing,
         scopeOf,

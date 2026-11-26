@@ -57,7 +57,7 @@ const nftService = vi.hoisted(() => ({ isServed: false }))
 vi.mock('@perawallet/wallet-core-config', async importOriginal => {
     const withBackend = await (
         await import('@packages/chain-ethereum/src/__tests__/pera-backend')
-    ).withEthereumPeraBackend(importOriginal)
+    ).withEthereumPeraBackend(importOriginal, ['contracts'])
     return {
         ...withBackend,
         // An entry's calldata is read from the node, which the test build has no URL for.
@@ -140,6 +140,8 @@ const { closestPressable, waitPastDoublePressGuard } =
 const { useRoute } = await import('@react-navigation/native')
 const { peraEvmHistoryHandlers } =
     await import('@packages/chain-ethereum/src/history/api/msw-handlers')
+const { contractMetadataResponse, peraEvmContractHandlers } =
+    await import('@packages/chain-ethereum/src/contracts/api/msw-handlers')
 const { evmNftItem, peraEvmAssetHandlers } =
     await import('@packages/chain-ethereum/src/assets/api/msw-handlers')
 const { renderWithNavigation } =
@@ -809,7 +811,7 @@ describe('Flow: History on an Ethereum account', () => {
                 ).toBeNull()
             })
 
-            it("Given the QA account's rows, when History lists them, then each says what it did with its own amounts and the approval carries a fee instead of a red ETH line", async () => {
+            it("Given the QA account's rows, when History lists them, then each says what it did with its own amounts and the approval shows neither a fee nor a red ETH line", async () => {
                 serveActionRows()
 
                 renderHistory()
@@ -829,7 +831,7 @@ describe('Flow: History on an Ethereum account', () => {
                 expect(approve).toContain(
                     'transactions.list_item.approve_asset',
                 )
-                expect(approve).toContain('transactions.common.fee')
+                expect(approve).not.toContain('transactions.common.fee')
                 expect(approve).not.toContain('-')
                 expect(
                     within(
@@ -837,7 +839,7 @@ describe('Flow: History on an Ethereum account', () => {
                             `transaction_row_${USDT_APPROVE_HASH}`,
                         ),
                     ).queryByText(/ETH/),
-                ).not.toBeNull()
+                ).toBeNull()
 
                 const supply = await rowText(SUPPLY_HASH)
                 expect(supply).toContain('transactions.list_item.supply')
@@ -877,6 +879,78 @@ describe('Flow: History on an Ethereum account', () => {
                     screen.queryByTestId('ethereum_record_loading'),
                 ).toBeNull()
                 expect(nodeReads).not.toContain(SUPPLY_HASH)
+            })
+
+            it('Given calls to a contract Pera curates but the app does not bundle and to an unknown address, when History lists them, then only the curated one is named by its project', async () => {
+                const CURATED = '0x00000000000000000000000000000000000000cc'
+                const UNKNOWN = '0x00000000000000000000000000000000000000dd'
+                const CURATED_HASH = hashOf(34)
+                const UNKNOWN_HASH = hashOf(35)
+                const call = (hash: string, to: string, blockTime: string) =>
+                    evmHistoryItem({
+                        hash,
+                        block_time: blockTime,
+                        from: ETH_ADDRESS,
+                        to,
+                        value: '0',
+                        method: 'stake',
+                        fee: GAS,
+                        balance_impacts: [
+                            { asset_id: ETH_ASSET_ID, amount: `-${GAS}` },
+                        ],
+                    })
+                const lookedUp: string[] = []
+                const trackLookups = ({ request }: { request: Request }) => {
+                    if (request.url.includes('/contracts/')) {
+                        lookedUp.push(new URL(request.url).pathname)
+                    }
+                }
+                server.events.on('request:start', trackLookups)
+                onTestFinished(() =>
+                    server.events.removeListener('request:start', trackLookups),
+                )
+                server.use(
+                    ...peraEvmHistoryHandlers({
+                        history: {
+                            [ETH_ADDRESS]: [
+                                [
+                                    call(
+                                        CURATED_HASH,
+                                        CURATED,
+                                        '2026-01-12T00:00:00Z',
+                                    ),
+                                    call(
+                                        UNKNOWN_HASH,
+                                        UNKNOWN,
+                                        '2026-01-11T00:00:00Z',
+                                    ),
+                                ],
+                            ],
+                        },
+                    }),
+                    ...peraEvmContractHandlers({
+                        contractMetadata: {
+                            [CURATED]: contractMetadataResponse(
+                                'Staking Pool',
+                                'Lido',
+                                'https://lido.fi',
+                            ),
+                        },
+                    }),
+                )
+
+                renderHistory()
+
+                expect(await rowText(CURATED_HASH)).toContain(
+                    'transactions.list_item.interpreted_title',
+                )
+                expect(await rowText(UNKNOWN_HASH)).not.toContain(
+                    'transactions.list_item.interpreted_title',
+                )
+                expect([...new Set(lookedUp)].sort()).toEqual([
+                    `/api/v3/evm/1/contracts/${CURATED}/`,
+                    `/api/v3/evm/1/contracts/${UNKNOWN}/`,
+                ])
             })
 
             it("Given the QA account's rows, when a type is picked in the filter, then only that type's rows list, read from the page already loaded", async () => {
@@ -931,7 +1005,7 @@ describe('Flow: History on an Ethereum account', () => {
                 server.events.removeListener('request:start', countHistoryRead)
             })
 
-            it('Given a named swap row, when it is opened, then the page carries the same title', async () => {
+            it('Given a named swap row, when it is opened, then the page carries the same title and names the contract it went through', async () => {
                 serveActionRows()
                 renderHistory()
                 await rowText(ROUTER_SWAP_HASH)
@@ -949,6 +1023,9 @@ describe('Flow: History on an Ethereum account', () => {
                     screen.queryByText('transactions.list_item.contract_call'),
                 ).toBeNull()
                 expect(screen.queryByTestId('ethereum_record_asset')).toBeNull()
+                expect(
+                    screen.getByText('transactions.common.via_project'),
+                ).toBeTruthy()
             })
 
             // A received NFT as the backend sends it: transfer log only, sender's gas still reported.
@@ -1434,7 +1511,6 @@ describe('Flow: History on an Ethereum account', () => {
                 expect(approve).toContain(
                     'transactions.list_item.approve_asset',
                 )
-                expect(approve).toContain('transactions.common.fee')
 
                 const swap = await rowText(ROUTER_SWAP_HASH)
                 expect(swap).toContain(
@@ -1692,7 +1768,7 @@ describe('Flow: History on an Ethereum account', () => {
         describe('a send the chain has not listed yet', () => {
             const PENDING_HASH = hashOf(41)
 
-            it('Given an approval the wallet broadcast, when History lists it and its row is opened, then its fee reads as the most it can be charged', async () => {
+            it('Given an approval the wallet broadcast, when History lists it and its row is opened, then the row shows it pending with no fee, and the detail shows its fee as the most it can be charged', async () => {
                 server.use(
                     ...peraEvmHistoryHandlers({
                         history: {
@@ -1722,8 +1798,9 @@ describe('Flow: History on an Ethereum account', () => {
                 })
                 renderHistory()
 
-                const row = await rowText(PENDING_HASH, /ETH/)
-                expect(row).toContain('send_funds.fee.max_fee')
+                const row = await rowText(PENDING_HASH)
+                expect(row).toContain('transactions.common.pending')
+                expect(row).not.toContain('send_funds.fee.max_fee')
                 expect(row).not.toContain('transactions.common.fee')
 
                 await openRow(PENDING_HASH)
@@ -1737,7 +1814,7 @@ describe('Flow: History on an Ethereum account', () => {
                 expect(fee.textContent).not.toContain('transactions.common.fee')
             })
 
-            it('Given an approval that landed before the backend lists it, when History lists it and its row is opened, then it shows the fee it was charged and its block', async () => {
+            it('Given an approval that landed before the backend lists it, when History lists it and its row is opened, then its row shows no fee, as no approval row does, and its detail shows the fee it was charged and its block', async () => {
                 server.use(
                     ...peraEvmHistoryHandlers({
                         history: {
@@ -1773,10 +1850,9 @@ describe('Flow: History on an Ethereum account', () => {
                 await resolveSubmissionAttempt({ id, status: 'confirmed' })
                 renderHistory()
 
-                const row = await rowText(PENDING_HASH, /ETH/)
-                expect(row).toContain('transactions.common.fee')
-                expect(row).not.toContain('send_funds.fee.max_fee')
-                expect(row).toMatch(/0\.000021/)
+                const row = await rowText(PENDING_HASH)
+                expect(row).toContain('transactions.list_item.approval')
+                expect(row).not.toContain('transactions.common.fee')
 
                 await openRow(PENDING_HASH)
 

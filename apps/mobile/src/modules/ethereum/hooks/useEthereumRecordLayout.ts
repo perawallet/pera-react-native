@@ -246,6 +246,13 @@ export const useEthereumRecordLayout = (
         const isShownByRead = (leg: BalanceChange) =>
             !!readNftAssetId &&
             leg.assetRef.assetId.toLowerCase() === readNftAssetId.toLowerCase()
+        // Keyed off what the hero resolved, so a leg it couldn't name still shows.
+        const amountRows =
+            amount || isAmountLoading
+                ? []
+                : recordAmountsOf(recordSummary).filter(
+                      leg => !isShownByRead(leg),
+                  )
 
         return {
             summary: {
@@ -255,6 +262,10 @@ export const useEthereumRecordLayout = (
                     presentation?.iconName ??
                     transactionIconName(recordSummary.icon),
                 title: heroTitle(titleKey ? { key: titleKey } : title),
+                projectName: recordSummary.projectName,
+                projectLogoUrl: recordSummary.projectLogoUrl,
+                isNetworkOnLegs:
+                    recordSummary.kind === 'swap' && amountRows.length > 0,
                 status: STATUS[record.status],
                 amount,
                 isAmountLoading,
@@ -292,13 +303,7 @@ export const useEthereumRecordLayout = (
                         : undefined,
                 isFeeMaximum: record.isFeeMaximum,
             },
-            // Keyed off what the hero resolved, so a leg it couldn't name still shows.
-            amountRows:
-                amount || isAmountLoading
-                    ? []
-                    : recordAmountsOf(recordSummary).filter(
-                          leg => !isShownByRead(leg),
-                      ),
+            amountRows,
             assetLabel:
                 recordSummary.kind === 'nft-transfer' && recordSummary.subtitle
                     ? t(

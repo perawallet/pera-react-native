@@ -286,6 +286,7 @@ describe('fetchEvmContractMetadata', () => {
             fetchEvmContractMetadata(MAINNET, ETHEREUM, ROUTER),
         ).resolves.toEqual({
             name: 'Aave V3 Pool',
+            projectName: 'Aave',
             projectUrl: 'https://aave.com',
         })
         expect(requested).toEqual([

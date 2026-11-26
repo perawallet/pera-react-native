@@ -12,6 +12,7 @@
 
 import { Decimal } from 'decimal.js'
 import type {
+    AssetRef,
     ChainScope,
     TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
@@ -22,9 +23,22 @@ import {
     swapLegOf,
 } from '@perawallet/wallet-core-transactions'
 import { evmAssetIdOfRouterId } from '../blockchain/utils/caip19'
+import { evmChainOfEip155Id } from '../chains/table'
 import type { EvmChain } from '../chains/types'
 import type { EvmHistoryItem } from './api/schema'
 import { singleNftOf, summarizeEthereumHistoryItem } from './summarize'
+
+// A cross-chain order's other side is on another EVM chain, so each asset is
+// placed by the chain its router id names, not the chain the row was read on.
+const swapAssetRefOf = (routerAssetId: string): Optional<AssetRef> => {
+    const eip155Id = /^eip155:(\d+)\//.exec(routerAssetId)?.[1]
+    const found = eip155Id && evmChainOfEip155Id(Number(eip155Id))
+    if (!found) return undefined
+    const { chain, networkId } = found
+    const scope = { chainId: chain.row.id, networkId }
+    const assetId = evmAssetIdOfRouterId(routerAssetId, scope, chain)
+    return assetId ? { chainId: scope.chainId, assetId } : undefined
+}
 
 type EvmRecordData = Extract<TransactionRecord['chainData'], { family: 'evm' }>
 
@@ -97,16 +111,7 @@ export const toEvmHistoryRecords = (
                 }),
             summary:
                 leg && swapLeg
-                    ? summarizeSwapLeg(leg, summary, status, routerAssetId => {
-                          const assetId = evmAssetIdOfRouterId(
-                              routerAssetId,
-                              scope,
-                              chain,
-                          )
-                          return assetId
-                              ? { chainId: scope.chainId, assetId }
-                              : undefined
-                      })
+                    ? summarizeSwapLeg(leg, summary, status, swapAssetRefOf)
                     : summary,
             chainData: {
                 family: 'evm',

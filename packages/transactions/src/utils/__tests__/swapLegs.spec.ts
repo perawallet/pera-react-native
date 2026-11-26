@@ -192,6 +192,33 @@ describe('summarizeSwapLeg', () => {
         ])
     })
 
+    it('names both sides of the pair by asset, for a row whose amounts carry only one', () => {
+        const anyEvm: ResolveSwapAssetRef = routerAssetId => ({
+            chainId: routerAssetId.startsWith('eip155:1/')
+                ? 'ethereum'
+                : 'base',
+            assetId: 'slip44:60',
+        })
+        const summary = summarizeSwapLeg(
+            leg('deposit', {
+                status: 'in_progress',
+                destination_asset: assetItem(
+                    'eip155:8453/slip44:60',
+                    'ETH',
+                    18,
+                ),
+            }),
+            sendSummary,
+            'confirmed',
+            anyEvm,
+        )
+
+        expect(summary.titleAssets).toEqual({
+            from: { chainId: 'ethereum', assetId: 'slip44:60' },
+            to: { chainId: 'base', assetId: 'slip44:60' },
+        })
+    })
+
     it('keeps the amount its chain reported on a payout', () => {
         const received: TransactionSummary = { ...sendSummary, direction: 'in' }
         const summary = summarizeSwapLeg(

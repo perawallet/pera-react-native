@@ -211,6 +211,10 @@ export interface TransactionSummary {
      * such as a protocol. Absent means middle, which keeps an address's or token id's end visible.
      */
     subtitleEllipsis?: 'tail'
+    /** The project behind the contract dealt with ("Uniswap", or an approval's spender "Aave"); a proper noun, never translated. */
+    projectName?: string
+    /** The project's logo, when Pera has one for it. */
+    projectLogoUrl?: string
     /** Unsigned: the sign comes from `direction`. `balanceChanges` carry their own sign. */
     amount?: { assetRef: AssetRef; value: Decimal; display?: AssetDisplayHint }
     /** Shown instead of `amount` when set. */

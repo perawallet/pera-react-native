@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { Fragment } from 'react'
 import type {
     BalanceChange,
     ChainScope,
@@ -18,6 +19,7 @@ import { PWText } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { useLanguage } from '@hooks/useLanguage'
+import { ChainChip } from '@modules/chain-ui/icon'
 import { TransactionDetailCard } from '@modules/signing'
 import { EthereumRecordAmountRow } from '../EthereumRecordAmountRow'
 
@@ -69,21 +71,38 @@ export const EthereumRecordAmountCard = ({
                 </KeyValueRow>
             )}
             {changes.map((change, index) => (
-                <EthereumRecordAmountRow
-                    key={`${change.assetRef.assetId}-${index}`}
-                    change={change}
-                    scope={scope}
-                    title={
-                        isSwap
-                            ? t(
-                                  change.value.isNegative()
-                                      ? 'transactions.list_item.send'
-                                      : 'transactions.list_item.receive',
-                              )
-                            : undefined
-                    }
-                    testID={`ethereum_record_amount_${index}`}
-                />
+                <Fragment key={`${change.assetRef.assetId}-${index}`}>
+                    <EthereumRecordAmountRow
+                        change={change}
+                        scope={{ ...scope, chainId: change.assetRef.chainId }}
+                        title={
+                            isSwap
+                                ? t(
+                                      change.value.isNegative()
+                                          ? 'transactions.list_item.send'
+                                          : 'transactions.list_item.receive',
+                                  )
+                                : undefined
+                        }
+                        testID={`ethereum_record_amount_${index}`}
+                    />
+                    {/* A swap's legs can be on different networks, so each names its own. */}
+                    {isSwap && (
+                        <KeyValueRow
+                            testID={`ethereum_record_amount_network_${index}`}
+                            title={t(
+                                change.value.isNegative()
+                                    ? 'transactions.common.send_network'
+                                    : 'transactions.common.receive_network',
+                            )}
+                        >
+                            <ChainChip
+                                chainId={change.assetRef.chainId}
+                                isBare
+                            />
+                        </KeyValueRow>
+                    )}
+                </Fragment>
             ))}
         </TransactionDetailCard>
     )

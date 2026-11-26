@@ -90,10 +90,12 @@ export type UseTransactionListItemResult = {
     fiatValue: Nullable<Decimal>
     /** Number of impacts hidden beyond {@link MAX_VISIBLE_AMOUNTS}, for "+N more". */
     amountsOverflowCount: number
-    /** The network fee in the native asset, only for a row the account paid for that shows no other amount. */
+    /** The network fee in the native asset, only for a non-approval row the account paid for that shows no other amount. */
     fee: Nullable<AmountDisplay>
     feeLabel: string
-    /** Set when the chain flags a non-final status (pending, failed, replaced). */
+    /** Not yet final: the row shows the pending badge in place of a notice. */
+    isPending: boolean
+    /** Set when the chain flags a status the pending badge doesn't cover (failed, replaced, waiting on an earlier send). */
     notice: Nullable<ChainNoticeContent>
     /** Opens the row's detail; a history item pressed without an `onPress` opens nothing, and long-press still copies. */
     handlePress: Optional<() => void>
@@ -160,13 +162,15 @@ export const useTransactionListItem = (
 
     const { canReplace, isBlocked, handleReplace } =
         useReplaceTransaction(record)
-    const notice = useMemo(
-        () =>
-            isBlocked
-                ? chainNoticeOf({ kind: 'warning', title: WAITING_ON_EARLIER })
-                : chainNoticeOf(summary.notice),
-        [isBlocked, summary],
-    )
+    // A send stuck behind an earlier one says so instead of the pending badge.
+    const isPending =
+        !isBlocked && (record ?? transaction)?.status === 'pending'
+    const notice = useMemo(() => {
+        if (isBlocked) {
+            return chainNoticeOf({ kind: 'warning', title: WAITING_ON_EARLIER })
+        }
+        return isPending ? null : chainNoticeOf(summary.notice)
+    }, [isBlocked, isPending, summary])
 
     const allAmounts = useMemo(() => summaryAmountsOf(summary), [summary])
     const visibleAmounts = useMemo(
@@ -258,8 +262,9 @@ export const useTransactionListItem = (
     }, [summary, scope.chainId])
 
     const nativeAsset = useNativeAsset(scope)
+    const isApproval = summary.kind === 'approval'
     const fee = useMemo<Nullable<AmountDisplay>>(() => {
-        if (!record?.fee || allAmounts.length > 0) return null
+        if (!record?.fee || allAmounts.length > 0 || isApproval) return null
         if (!isFeePaidByAccount(record, address)) return null
         return toAmountDisplay(
             {
@@ -271,7 +276,7 @@ export const useTransactionListItem = (
             },
             nativeAsset,
         )
-    }, [record, allAmounts, address, scope.chainId, nativeAsset])
+    }, [record, allAmounts, isApproval, address, scope.chainId, nativeAsset])
 
     const handleTransactionPress = useCallback(() => {
         if (transaction) onPress?.(transaction)
@@ -307,6 +312,7 @@ export const useTransactionListItem = (
         ),
         fee,
         feeLabel: t(record?.isFeeMaximum ? MAX_FEE_LABEL : FEE_LABEL),
+        isPending,
         notice,
         handlePress: record ? recordPress : handleTransactionPress,
         handleLongPress,

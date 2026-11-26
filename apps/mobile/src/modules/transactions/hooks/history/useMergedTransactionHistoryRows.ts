@@ -20,12 +20,15 @@ import type { TransactionHistoryType } from '@perawallet/wallet-core-transaction
 import {
     mergeHistoryFeeds,
     type HistoryFeedSnapshot,
+    type KnownSwapLegs,
     type MergedHistory,
 } from '../../utils/mergeHistoryFeeds'
 
 export type HistoryFeedSource = {
     scope: ChainScope
     address: string
+    /** Lists only these swap orders' source rows; see `HistoryFeedSnapshot`. */
+    onlySwapOrderIds?: ReadonlySet<string>
 }
 
 export type HistoryFeedActions = {
@@ -61,6 +64,8 @@ export type UseMergedTransactionHistoryRowsParams = {
     /** `YYYY-MM-DD`, inclusive. */
     beforeTime?: string
     historyType?: TransactionHistoryType
+    /** Swap legs the history backend may not have linked yet; see `mergeHistoryFeeds`. */
+    knownSwapLegs?: KnownSwapLegs
 }
 
 export type UseMergedTransactionHistoryRowsResult = Omit<
@@ -102,6 +107,7 @@ export const useMergedTransactionHistoryRows = ({
     afterTime,
     beforeTime,
     historyType,
+    knownSwapLegs,
 }: UseMergedTransactionHistoryRowsParams): UseMergedTransactionHistoryRowsResult => {
     const [snapshots, setSnapshots] = useState<
         Readonly<Record<string, HistoryFeedSnapshot>>
@@ -130,8 +136,12 @@ export const useMergedTransactionHistoryRows = ({
 
     const feedKeys = useMemo(() => sources.map(feedKeyOf), [sources])
     const merged = useMemo(
-        () => mergeHistoryFeeds(feedKeys.map(key => snapshots[key])),
-        [feedKeys, snapshots],
+        () =>
+            mergeHistoryFeeds(
+                feedKeys.map(key => snapshots[key]),
+                knownSwapLegs,
+            ),
+        [feedKeys, snapshots, knownSwapLegs],
     )
 
     const feeds = useMemo(

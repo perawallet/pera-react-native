@@ -231,9 +231,9 @@ describe('Flow: offline submission reconnect', () => {
             // The integration harness leaves i18n uninitialised, so `t`
             // returns the key rather than the English translation.
             expect(
-                screen.getByTestId(`transaction_row_notice_${txid}`),
+                screen.getByTestId(`transaction_row_pending_${txid}`),
             ).toBeTruthy()
-            expect(screen.getByText('transactions.notice.pending')).toBeTruthy()
+            expect(screen.getByText('transactions.common.pending')).toBeTruthy()
         })
 
         const signingClient = createTestQueryClient()

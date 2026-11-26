@@ -11,7 +11,8 @@
  */
 
 export { useSwapExecution, useSwapQuotes } from './hooks'
-export { PendingSwaps, type PendingSwapsProps } from './components/PendingSwaps'
+export { useSwapOrdersPaidInto } from './hooks/useSwapOrdersPaidInto'
+export { useTrackedSwapLegs } from './hooks/useTrackedSwapLegs'
 export {
     useSwapForNativeRoute,
     type UseSwapForNativeRouteResult,

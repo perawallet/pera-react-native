@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import type {
     SwapTrackedAsset,
     SwapTrackedOrder,
@@ -24,3 +26,20 @@ export const swapPairLabel = ({
     assetOut,
 }: Pick<SwapTrackedOrder, 'assetIn' | 'assetOut'>): string =>
     `${swapAssetUnit(assetIn)} → ${swapAssetUnit(assetOut)}`
+
+const onChain = (asset: SwapTrackedAsset, scope: ChainScope): string => {
+    const chain = chainDisplayNameOf(scope.chainId)
+    return chain ? `${swapAssetUnit(asset)} (${chain})` : swapAssetUnit(asset)
+}
+
+/** "ETH (Ethereum) → ETH (Base)"; a chain the app can't name is left off. */
+export const swapPairLabelWithChains = ({
+    assetIn,
+    assetOut,
+    sourceScope,
+    destinationScope,
+}: Pick<
+    SwapTrackedOrder,
+    'assetIn' | 'assetOut' | 'sourceScope' | 'destinationScope'
+>): string =>
+    `${onChain(assetIn, sourceScope)} → ${onChain(assetOut, destinationScope)}`

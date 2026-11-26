@@ -64,10 +64,15 @@ const ROLE: Readonly<Record<string, TransactionSwapLeg['role']>> = {
     refund: 'refund',
 }
 
+/** The leg role for a router transaction role; undefined for one that moves none of the user's funds. */
+export const swapLegRoleOf = (
+    routerRole: string,
+): Optional<TransactionSwapLeg['role']> => ROLE[routerRole]
+
 export const swapLegOf = (
     leg: SwapLegResponse,
 ): Optional<TransactionSwapLeg> => {
-    const role = ROLE[leg.role]
+    const role = swapLegRoleOf(leg.role)
     return role && { orderId: leg.order.order_id, role }
 }
 
@@ -132,6 +137,9 @@ export const summarizeSwapLeg = (
     const { order } = leg
     const from = order.source_asset?.unit_name
     const to = order.destination_asset?.unit_name
+    const fromRef = order.source_asset && resolve(order.source_asset.asset_id)
+    const toRef =
+        order.destination_asset && resolve(order.destination_asset.asset_id)
     const providerName = order.provider_display_name ?? order.provider
     const notice =
         chainStatus === 'failed' || chainStatus === 'replaced'
@@ -176,6 +184,13 @@ export const summarizeSwapLeg = (
                       params: { from, to },
                   }
                 : { key: i18nKey('transactions.list_item.swap') },
+        // Names both sides while the payout is still on its way and no amount carries it.
+        ...(from &&
+            to &&
+            fromRef &&
+            toRef && {
+                titleAssets: { from: fromRef, to: toRef },
+            }),
         icon: 'swap',
         direction: 'none',
         ...amounts,
@@ -197,15 +212,23 @@ export const summarizeSwapLeg = (
  */
 export const withoutListedSwapPayouts = (
     records: TransactionRecord[],
-): TransactionRecord[] => {
+): TransactionRecord[] =>
+    withoutListedSwapPayoutsBy(records, ({ swapLeg }) => swapLeg)
+
+/** {@link withoutListedSwapPayouts} over any list, reading each entry's leg with `legOf`. */
+export const withoutListedSwapPayoutsBy = <T>(
+    items: T[],
+    legOf: (item: T) => Optional<TransactionSwapLeg>,
+): T[] => {
     const listedOrders = new Set(
-        records.flatMap(({ swapLeg }) =>
-            swapLeg?.role === 'source' ? [swapLeg.orderId] : [],
-        ),
+        items.flatMap(item => {
+            const leg = legOf(item)
+            return leg?.role === 'source' ? [leg.orderId] : []
+        }),
     )
-    if (listedOrders.size === 0) return records
-    return records.filter(
-        ({ swapLeg }) =>
-            swapLeg?.role !== 'payout' || !listedOrders.has(swapLeg.orderId),
-    )
+    if (listedOrders.size === 0) return items
+    return items.filter(item => {
+        const leg = legOf(item)
+        return leg?.role !== 'payout' || !listedOrders.has(leg.orderId)
+    })
 }

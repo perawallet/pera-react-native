@@ -3967,6 +3967,8 @@
             "note": "Nota de la transacción",
             "view_raw_transaction": "Ver JSON",
             "network": "Red",
+            "receive_network": "Red de recepción",
+            "send_network": "Red de envío",
             "block": "Bloque",
             "view_in_explorer": "Ver en {{explorer}}",
             "view_asset_url": "Ver URL del activo",
@@ -3975,10 +3977,10 @@
             "completed": "Completada",
             "failed": "Fallida",
             "pending": "Pendiente",
-            "raw_transaction": "Transacción en bruto"
+            "raw_transaction": "Transacción en bruto",
+            "via_project": "vía {{name}}"
         },
         "notice": {
-            "confirming": "Confirmando",
             "pending": "Pendiente desde {{since}}",
             "failed": "Fallida",
             "replaced": "Reemplazada por otra transacción",
@@ -4003,8 +4005,8 @@
             "contract_call": "Llamada a contrato",
             "approve_asset": "Aprobar {{asset}}",
             "approve_all": "Aprobar toda la colección {{collection}}",
-            "approval_for": "Para {{spender}}",
-            "unlimited_approval_for": "Ilimitado · para {{spender}}",
+            "approval_for": "Autorizado: {{spender}}",
+            "unlimited_approval_for": "Ilimitado · Autorizado: {{spender}}",
             "swap_pair": "Swap {{from}} → {{to}}",
             "swap_assets": "{{from}} → {{to}}",
             "add_liquidity": "Añadir liquidez",
@@ -4530,8 +4532,7 @@
             "failed": "El swap no se pudo completar. Si se enviaron tus fondos, el proveedor los devolverá a tu cuenta.",
             "refunded": "El swap fue reembolsado. Tu {{fromAsset}} ha vuelto a tu cuenta.",
             "expired": "El swap caducó antes de empezar. Si tus fondos salieron de tu cuenta, el estado aún puede cambiar durante un máximo de 7 días.",
-            "cancelled": "El swap se canceló antes de empezar. Si tus fondos salieron de tu cuenta, el estado aún puede cambiar durante un máximo de 7 días.",
-            "dismiss": "Descartar"
+            "cancelled": "El swap se canceló antes de empezar. Si tus fondos salieron de tu cuenta, el estado aún puede cambiar durante un máximo de 7 días."
         },
         "receiving_account": {
             "title": "Cuenta receptora",

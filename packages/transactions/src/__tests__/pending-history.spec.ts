@@ -126,16 +126,12 @@ describe('getPendingTransactionRecords', () => {
         },
     )
 
-    it('reads a confirming attempt as pending with a confirming notice and no date', async () => {
+    it('reads a confirming attempt as pending', async () => {
         ledger(attempt({ status: 'confirming' }))
 
         const [record] = await pendingRecords()
 
         expect(record.status).toBe('pending')
-        expect(record.summary.notice).toEqual({
-            kind: 'warning',
-            title: { key: 'transactions.notice.confirming' },
-        })
     })
 
     it('dates a pending notice from when the attempt was recorded', async () => {

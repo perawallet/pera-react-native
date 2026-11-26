@@ -96,3 +96,49 @@ describe("a history record's gas", () => {
         expect(item.hash).toBe(`0x${'1'.padStart(64, '0')}`)
     })
 })
+
+describe('a cross-chain swap deposit', () => {
+    it('places the payout asset on its own network', () => {
+        const [record] = toEvmHistoryRecords(
+            send({
+                swap: {
+                    role: 'deposit',
+                    order: {
+                        order_id: 'o1',
+                        provider: 'xo',
+                        status: 'completed',
+                        source_asset: {
+                            asset_id: 'eip155:1/slip44:60',
+                            unit_name: 'ETH',
+                            fraction_decimals: 18,
+                        },
+                        destination_asset: {
+                            asset_id: 'eip155:8453/slip44:60',
+                            unit_name: 'ETH',
+                            fraction_decimals: 18,
+                        },
+                        source_amount: '1000',
+                        destination_amount_expected: '900',
+                        destination_amount_received: '950',
+                    },
+                },
+            }),
+            ME,
+            SCOPE,
+            ETHEREUM,
+            false,
+            new Set(),
+            false,
+        )
+
+        expect(
+            record?.summary.balanceChanges?.map(change => [
+                change.assetRef.chainId,
+                change.value.toString(),
+            ]),
+        ).toEqual([
+            ['ethereum', '-1000'],
+            ['base', '950'],
+        ])
+    })
+})

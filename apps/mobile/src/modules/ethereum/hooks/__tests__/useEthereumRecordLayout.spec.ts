@@ -413,6 +413,24 @@ describe('useEthereumRecordLayout', () => {
         expect(assetLabel).toBeUndefined()
     })
 
+    it('Given a swap through a dApp the history names, then the hero names its project with its logo', () => {
+        const { summary } = layoutOf(
+            recordOf(
+                {},
+                {
+                    kind: 'swap',
+                    projectName: 'Uniswap',
+                    projectLogoUrl: 'https://pera.test/uniswap.png',
+                },
+            ),
+        )
+
+        expect(summary).toMatchObject({
+            projectName: 'Uniswap',
+            projectLogoUrl: 'https://pera.test/uniswap.png',
+        })
+    })
+
     it('Given a summary that names no asset, then there is no asset label', () => {
         expect(layoutOf(recordOf()).assetLabel).toBeUndefined()
     })
@@ -429,6 +447,11 @@ describe('useEthereumRecordLayout', () => {
 
         expect(summary.amount).toBeUndefined()
         expect(amountRows).toEqual(legs)
+        expect(summary.isNetworkOnLegs).toBe(true)
+    })
+
+    it('Given anything but a swap, then the network leads the facts', () => {
+        expect(layoutOf(recordOf()).summary.isNetworkOnLegs).toBe(false)
     })
 
     it('Given an approval, then its amount is listed rather than led with', () => {
