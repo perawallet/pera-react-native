@@ -125,7 +125,7 @@ const serveEmptyTransactions = () =>
     server.use(
         mockTransactionHistory({
             accountAddress: ALGO25_TEST_ADDRESS,
-            response: { results: [] },
+            response: { results: [], current_round: 100 },
         }),
     )
 
