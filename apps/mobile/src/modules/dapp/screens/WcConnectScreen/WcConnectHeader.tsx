@@ -48,8 +48,8 @@ export type WcConnectHeaderProps = {
     peerUrlLabel?: string
     canOpenPeerUrl: boolean
     onPressUrl: () => void
-    /** Replaces the account-list heading: an EVM chain grants one account from this row. */
-    evmAccountRow?: React.ReactNode
+    /** The list grants exactly one account, as on an EVM chain. */
+    isSingleAccountGrant?: boolean
 }
 
 export const WcConnectHeader = ({
@@ -63,7 +63,7 @@ export const WcConnectHeader = ({
     peerUrlLabel,
     canOpenPeerUrl,
     onPressUrl,
-    evmAccountRow,
+    isSingleAccountGrant = false,
 }: WcConnectHeaderProps): React.JSX.Element => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -194,16 +194,18 @@ export const WcConnectHeader = ({
 
             <ConnectionPermissionsPanel permissions={permissions} />
 
-            {evmAccountRow ?? (
-                <PWView style={styles.accountSelectionContainer}>
-                    <PWText
-                        variant='h4'
-                        style={styles.permissionsTitle}
-                    >
-                        {t('walletconnect.request.accounts_title')}
-                    </PWText>
-                </PWView>
-            )}
+            <PWView style={styles.accountSelectionContainer}>
+                <PWText
+                    variant='h4'
+                    style={styles.permissionsTitle}
+                >
+                    {t(
+                        isSingleAccountGrant
+                            ? 'walletconnect.request.connect_account'
+                            : 'walletconnect.request.accounts_title',
+                    )}
+                </PWText>
+            </PWView>
         </PWView>
     )
 }

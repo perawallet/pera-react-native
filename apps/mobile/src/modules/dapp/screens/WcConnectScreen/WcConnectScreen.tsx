@@ -25,10 +25,7 @@ import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { SiteSafetyGate } from '@modules/site-safety'
-import {
-    ConnectAccountRow,
-    ConnectionApprovalAccountRow,
-} from '@modules/walletconnect'
+import { ConnectionApprovalAccountRow } from '@modules/walletconnect'
 import { useStyles } from '@components/ConnectionApproval/styles'
 import { useStyles as useLocalStyles } from './styles'
 import { WcConnectHeader } from './WcConnectHeader'
@@ -49,10 +46,8 @@ export const WcConnectScreen = (): React.JSX.Element => {
         verificationTier,
         accounts,
         selected,
-        toggle,
+        handleAccountPress,
         isEvm,
-        evmAccount,
-        handleEvmAccountPress,
         isArmed,
         canConnect,
         isLoading,
@@ -77,7 +72,9 @@ export const WcConnectScreen = (): React.JSX.Element => {
             account={item}
             chainId={chainId}
             isSelected={selected.has(item.id)}
-            onPress={toggle}
+            onPress={handleAccountPress}
+            isSingleChoice={isEvm}
+            isDisabled={!isArmed}
         />
     )
 
@@ -94,9 +91,9 @@ export const WcConnectScreen = (): React.JSX.Element => {
                 <PWFlatList
                     style={styles.container}
                     contentContainerStyle={styles.contentContainer}
-                    data={isEvm ? [] : accounts}
+                    data={accounts}
                     renderItem={renderAccountRow}
-                    extraData={{ selected }}
+                    extraData={{ selected, isArmed }}
                     ListHeaderComponent={
                         <WcConnectHeader
                             peer={peer}
@@ -111,32 +108,16 @@ export const WcConnectScreen = (): React.JSX.Element => {
                             peerUrlLabel={peerUrlLabel}
                             canOpenPeerUrl={canOpenPeerUrl}
                             onPressUrl={handlePressUrl}
-                            evmAccountRow={
-                                isEvm && accounts.length > 0 ? (
-                                    <ConnectAccountRow
-                                        account={evmAccount}
-                                        chainId={chainId}
-                                        labelKey='connect'
-                                        onPress={() =>
-                                            void handleEvmAccountPress()
-                                        }
-                                        isDisabled={!isArmed}
-                                        testID='wc_evm_account_row'
-                                    />
-                                ) : undefined
-                            }
+                            isSingleAccountGrant={isEvm}
                         />
                     }
                     ListEmptyComponent={
-                        // An EVM chain lists nothing: its accounts are in the row.
-                        isEvm && accounts.length > 0 ? null : (
-                            <PWText
-                                style={styles.noAccounts}
-                                testID='dapp_connect_no_accounts'
-                            >
-                                {noAccountsNote}
-                            </PWText>
-                        )
+                        <PWText
+                            style={styles.noAccounts}
+                            testID='dapp_connect_no_accounts'
+                        >
+                            {noAccountsNote}
+                        </PWText>
                     }
                     showsVerticalScrollIndicator={false}
                 />

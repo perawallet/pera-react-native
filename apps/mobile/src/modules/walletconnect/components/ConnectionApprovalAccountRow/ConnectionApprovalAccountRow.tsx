@@ -14,7 +14,7 @@ import { useCallback } from 'react'
 import { useTheme } from '@rneui/themed'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { getIconPixelSize, PWCheckbox } from '@components/core'
+import { getIconPixelSize, PWCheckbox, PWRadioButton } from '@components/core'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { useStyles } from '@components/ConnectionApproval/styles'
 import { ChainIcon } from '@modules/chain-ui/icon'
@@ -25,6 +25,9 @@ export type ConnectionApprovalAccountRowProps = {
     chainId: ChainId
     isSelected: boolean
     onPress: (accountId: string) => void
+    /** A radio rather than a checkbox, for a grant of exactly one account. */
+    isSingleChoice?: boolean
+    isDisabled?: boolean
 }
 
 export const ConnectionApprovalAccountRow = ({
@@ -32,6 +35,8 @@ export const ConnectionApprovalAccountRow = ({
     chainId,
     isSelected,
     onPress,
+    isSingleChoice = false,
+    isDisabled = false,
 }: ConnectionApprovalAccountRowProps) => {
     const styles = useStyles()
     const { theme } = useTheme()
@@ -40,26 +45,44 @@ export const ConnectionApprovalAccountRow = ({
         [onPress, account.id],
     )
 
-    return (
-        <PWCheckbox
-            label={
-                <AccountDisplay
-                    account={account}
+    const accountDisplay = (
+        <AccountDisplay
+            account={account}
+            chainId={chainId}
+            avatarBadge={
+                <ChainIcon
                     chainId={chainId}
-                    avatarBadge={
-                        <ChainIcon
-                            chainId={chainId}
-                            size={getIconPixelSize(theme, 'sm')}
-                        />
-                    }
-                    showChevron={false}
+                    size={getIconPixelSize(theme, 'sm')}
                 />
             }
+            showChevron={false}
+        />
+    )
+    const testID = `wc_account_row_${account.id}`
+
+    if (isSingleChoice) {
+        return (
+            <PWRadioButton
+                isSelected={isSelected}
+                onPress={handlePress}
+                isDisabled={isDisabled}
+                containerStyle={styles.accountItem}
+                testID={testID}
+            >
+                {accountDisplay}
+            </PWRadioButton>
+        )
+    }
+
+    return (
+        <PWCheckbox
+            label={accountDisplay}
             boxPosition='trailing'
             isChecked={isSelected}
             onPress={handlePress}
+            isDisabled={isDisabled}
             style={styles.accountItem}
-            testID={`wc_account_row_${account.id}`}
+            testID={testID}
         />
     )
 }
