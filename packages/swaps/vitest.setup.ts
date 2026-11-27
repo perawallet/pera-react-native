@@ -54,6 +54,7 @@ vi.mock('@perawallet/wallet-extension-provider', async () => {
 
 vi.mock('@perawallet/wallet-core-app-integrity', () => ({
     buildIntegrityHeadersWhenReady: async () => ({}),
+    hasIntegrityRegistrationFailed: () => false,
 }))
 
 // Endpoints and useSwaps resolve the native asset through the registry.
