@@ -38,6 +38,7 @@ import {
     invalidateAssetQueries,
     getAssetPricesQueryKey,
     getAssetPriceHistoryQueryKey,
+    getAssetMarketDataQueryKey,
     getAssetDetailsQueryKey,
     getRemoteAssetDetailsQueryKey,
     getAssetAuthoritiesQueryKey,
@@ -332,6 +333,19 @@ describe('detail query keys', () => {
                 } as const,
             },
         ])
+    })
+})
+
+describe('getAssetMarketDataQueryKey', () => {
+    test('sits under the prices prefix so price invalidation reaches it', () => {
+        const key = getAssetMarketDataQueryKey('123', {
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        } as const)
+
+        expect(key.slice(0, 2)).toEqual([MODULE_PREFIX, 'prices'])
+        expect(isAssetPriceHistoryQuery(key)).toBe(false)
+        expect(key.join('/').startsWith('assets/prices')).toBe(true)
     })
 })
 

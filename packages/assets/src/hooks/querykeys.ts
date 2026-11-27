@@ -77,6 +77,12 @@ export const getAssetPricesQueryKey = (
     return fetchMissing ? [...key, { fetchMissing: true }] : key
 }
 
+/** Under `prices`, so a price sync's invalidation refreshes it. */
+export const getAssetMarketDataQueryKey = (
+    assetID: string,
+    scope: ChainScope,
+) => [MODULE_PREFIX, 'prices', 'market-data', { assetID, scope }]
+
 export const getAssetPriceHistoryQueryKey = (
     assetID: string,
     period: HistoryPeriod,
