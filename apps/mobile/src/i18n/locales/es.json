@@ -3944,9 +3944,16 @@
             "changes_title": "Cambios estimados en tu billetera",
             "fee_max": "Hasta <0/> · pagado en {{symbol}}",
             "network_fee": "Comisión de red",
+            "not_detected": "No detectado",
+            "not_detected_receive_body": "Pera solo ve esta red. Lo que se envíe a otra red no aparecerá aquí.",
             "nothing": "Nada",
             "nothing_back_body": "Salen activos de tu billetera y no vuelve nada. Continúa solo si lo esperabas.",
             "nothing_back_title": "No recibes nada a cambio",
+            "nothing_detected_body": "Salen activos de tu billetera y Pera no ve que vuelva nada en esta red. Continúa solo si lo esperabas, por ejemplo al mover fondos a otra red.",
+            "nothing_detected_title": "No se detecta nada a cambio",
+            "on_network": "En {{network}}",
+            "on_other_network": "En otra red",
+            "other_network_receive_body": "Va a tu propia dirección en esa red. Pera no ve esa red, así que no se muestra la cantidad.",
             "permission_collection": "Todos tus NFT de {{collection}}",
             "permission_collection_note": "Podrá mover todos los NFT que tengas de esta colección, ahora y más adelante, hasta que retires este permiso.",
             "permission_increase": "{{spender}} podrá gastar esta cantidad más",
@@ -4061,6 +4068,7 @@
             "withdraw": "Retirar",
             "borrow": "Pedir prestado",
             "repay": "Reembolsar",
+            "bridge": "Bridge",
             "opt_in": "Añadir activo",
             "opt_out": "Eliminar activo",
             "asset_config": "Configuración de activo",
@@ -5395,6 +5403,8 @@
             "receive": "Recibes",
             "receive_at_least": "Recibes como mínimo",
             "entire_balance": "Saldo completo",
+            "destination": "Llega a",
+            "another_network": "Otra red",
             "fee": "Comisión",
             "fee_share": "{{percent}} del resultado del intercambio",
             "fee_recipient": "Pagada a",
@@ -5419,7 +5429,9 @@
         "review_warnings": {
             "high_fee_title": "Comisión de red inusualmente alta",
             "high_fee_body": "{{domain}} fijó la comisión de esta transacción en más del doble de lo que Pera usaría con su configuración Rápida. Pagarás como máximo <0/> (comisión máxima), normalmente menos.",
-            "high_fee_body_no_source": "La app que envió esto fijó su comisión en más del doble de lo que Pera usaría con su configuración Rápida. Pagarás como máximo <0/> (comisión máxima), normalmente menos."
+            "high_fee_body_no_source": "La app que envió esto fijó su comisión en más del doble de lo que Pera usaría con su configuración Rápida. Pagarás como máximo <0/> (comisión máxima), normalmente menos.",
+            "bridge_payout_title": "Pera no puede comprobar lo que llega",
+            "bridge_payout_body": "La app define el token y el importe que recibes en la otra red, y Pera no puede ver esa red para comprobarlos. Continúa solo si confías en esta app."
         },
         "simulation": {}
     }

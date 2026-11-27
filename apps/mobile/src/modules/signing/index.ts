@@ -47,7 +47,11 @@ export {
     ReviewTarget,
     type ReviewTargetStatus,
 } from './components/ReviewTarget'
-export { WalletChangesCard } from './components/WalletChangesCard'
+export {
+    WalletChangesCard,
+    RECEIVE_UNKNOWN,
+    type EmptyReceiveSide,
+} from './components/WalletChangesCard'
 export { PreviewUnavailableCard } from './components/PreviewUnavailableCard'
 export { CautionCard } from './components/CautionCard'
 export { ReviewDetailRow } from './components/ReviewDetailRow'

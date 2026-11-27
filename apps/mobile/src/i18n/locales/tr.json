@@ -3944,9 +3944,16 @@
             "changes_title": "Cüzdanındaki tahmini değişiklikler",
             "fee_max": "En fazla <0/> · ödeme birimi: {{symbol}}",
             "network_fee": "Ağ ücreti",
+            "not_detected": "Algılanmadı",
+            "not_detected_receive_body": "Pera yalnızca bu ağı görebilir. Başka bir ağa gönderilenler burada görünmez.",
             "nothing": "Hiçbir şey",
             "nothing_back_body": "Cüzdanından varlık çıkıyor ve karşılığında hiçbir şey gelmiyor. Bunu bekliyorsan devam et.",
             "nothing_back_title": "Karşılığında hiçbir şey almıyorsun",
+            "nothing_detected_body": "Cüzdanından varlık çıkıyor ve Pera bu ağda karşılığında bir şey geldiğini görmüyor. Bunu bekliyorsan devam et, örneğin fonları başka bir ağa taşırken.",
+            "nothing_detected_title": "Karşılığında bir şey algılanmadı",
+            "on_network": "Ağ: {{network}}",
+            "on_other_network": "Başka bir ağda",
+            "other_network_receive_body": "O ağdaki kendi adresine gider. Pera o ağı göremez, bu yüzden tutar gösterilmez.",
             "permission_collection": "Tüm {{collection}} NFT’lerin",
             "permission_collection_note": "Bu koleksiyondaki tüm NFT’lerini, bu izni kaldırana kadar şimdi ve daha sonra taşıyabilir.",
             "permission_increase": "Ek harcama izni verilen: {{spender}}",
@@ -4061,6 +4068,7 @@
             "withdraw": "Çek",
             "borrow": "Borçlan",
             "repay": "Geri öde",
+            "bridge": "Bridge",
             "opt_in": "Opt-in",
             "opt_out": "Opt-out",
             "asset_config": "Varlık yapılandırması",
@@ -5395,6 +5403,8 @@
             "receive": "Alırsın",
             "receive_at_least": "En az alırsın",
             "entire_balance": "Tüm bakiye",
+            "destination": "Varış ağı",
+            "another_network": "Başka bir ağ",
             "fee": "Ücret",
             "fee_share": "Swap çıktısının {{percent}} kadarı",
             "fee_recipient": "Alıcı",
@@ -5419,7 +5429,9 @@
         "review_warnings": {
             "high_fee_title": "Alışılmadık şekilde yüksek ağ ücreti",
             "high_fee_body": "{{domain}} bu işlemin ücretini, Pera’nın Hızlı ayarında kullanacağı ücretin iki katından fazlasına ayarladı. En fazla <0/> (maksimum ücret) ödersin, genellikle daha azını.",
-            "high_fee_body_no_source": "Bu isteği gönderen uygulama, ücreti Pera’nın Hızlı ayarında kullanacağı ücretin iki katından fazlasına ayarladı. En fazla <0/> (maksimum ücret) ödersin, genellikle daha azını."
+            "high_fee_body_no_source": "Bu isteği gönderen uygulama, ücreti Pera’nın Hızlı ayarında kullanacağı ücretin iki katından fazlasına ayarladı. En fazla <0/> (maksimum ücret) ödersin, genellikle daha azını.",
+            "bridge_payout_title": "Pera, ne geleceğini kontrol edemez",
+            "bridge_payout_body": "Diğer ağda alacağın token'ı ve tutarı uygulama belirler, Pera da bunları kontrol etmek için o ağı göremez. Yalnızca bu uygulamaya güveniyorsan devam et."
         },
         "simulation": {}
     }

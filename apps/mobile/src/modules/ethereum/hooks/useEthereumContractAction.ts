@@ -16,7 +16,6 @@ import { useNativeAsset, type PeraAsset } from '@perawallet/wallet-core-assets'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type {
     EthereumTransactionView,
-    EvmActionAsset,
     EvmContractAction,
     EvmLiquidityPosition,
     EvmSwapLeg,
@@ -25,9 +24,10 @@ import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import {
     baseUnitsToDisplayUnits,
     type Nullable,
-    type Optional,
 } from '@perawallet/wallet-core-shared'
 import { useBaseUnitsAmount } from '@hooks/useBaseUnitsAmount'
+import { evmMainnetNameOf } from '../utils/evmMainnetNameOf'
+import { tokenSlotsOf } from './contractActionTokenSlots'
 import {
     useEthereumContractLabel,
     type EthereumContractLabel,
@@ -76,53 +76,19 @@ export type EthereumContractActionPresentation =
       }
     | { kind: 'remove-liquidity'; tokenId: string; isClosing: boolean }
     | { kind: 'collect-fees'; tokenId: string }
+    | {
+          kind: 'bridge'
+          /** Absent when the native coin moves. */
+          assetContract?: string
+          amount: EthereumActionAmount
+          /** A proper noun from the chain table, never translated; unset unless it is a mainnet Pera carries. */
+          destinationName?: string
+      }
 
 export type UseEthereumContractActionResult = {
     contractAction: Nullable<EthereumContractActionPresentation>
     knownContract: Nullable<EthereumContractLabel>
     isLoading: boolean
-}
-
-type TokenSlot = { assetId: string; baseUnits: Optional<Decimal> }
-
-const NO_TOKEN: TokenSlot = { assetId: '', baseUnits: undefined }
-
-const tokenOf = (asset: EvmActionAsset, baseUnits: Decimal): TokenSlot =>
-    asset.kind === 'token' ? { assetId: asset.contract, baseUnits } : NO_TOKEN
-
-// The three token records an action needs, in the order `present` reads them;
-// the third is the swap's fee token, whose record sizes every fee, and a
-// liquidity add's two deposits take the first two.
-const tokenSlotsOf = (
-    action: Optional<EvmContractAction>,
-): [TokenSlot, TokenSlot, TokenSlot] => {
-    switch (action?.kind) {
-        case 'swap': {
-            const [fee] = action.fees
-            return [
-                tokenOf(action.input.asset, action.input.amount),
-                tokenOf(action.output.asset, action.output.amount),
-                { assetId: fee?.token ?? '', baseUnits: undefined },
-            ]
-        }
-        case 'supply':
-        case 'withdraw':
-        case 'borrow':
-        case 'repay': {
-            return [tokenOf(action.asset, action.amount), NO_TOKEN, NO_TOKEN]
-        }
-        case 'add-liquidity': {
-            const [first, second] = action.deposits
-            return [
-                first ? tokenOf(first.asset, first.maxAmount) : NO_TOKEN,
-                second ? tokenOf(second.asset, second.maxAmount) : NO_TOKEN,
-                NO_TOKEN,
-            ]
-        }
-        default: {
-            return [NO_TOKEN, NO_TOKEN, NO_TOKEN]
-        }
-    }
 }
 
 type TokenAmount = ReturnType<typeof useBaseUnitsAmount>
@@ -248,6 +214,20 @@ const present = (
         }
         case 'collect-fees': {
             return { kind: 'collect-fees', tokenId: action.tokenId }
+        }
+        case 'bridge': {
+            const destinationName = evmMainnetNameOf(action.destinationChainId)
+            return {
+                kind: 'bridge',
+                ...(action.asset.kind === 'token' && {
+                    assetContract: action.asset.contract,
+                }),
+                amount:
+                    action.asset.kind === 'native'
+                        ? nativeAmountOf(nativeAsset, action.amount)
+                        : tokenAmountOf(first, action.amount),
+                ...(destinationName && { destinationName }),
+            }
         }
     }
 }

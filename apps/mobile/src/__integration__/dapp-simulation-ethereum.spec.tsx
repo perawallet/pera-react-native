@@ -129,6 +129,26 @@ const ADD_LIQUIDITY_VALUE = '0x98cb8c528000'
 const ADD_LIQUIDITY_DATA =
     '0xac9650d800000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000001e0000000000000000000000000000000000000000000000000000000000000016488316456000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc200000000000000000000000000000000000000000000000000000000000001f4fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff2761a00000000000000000000000000000000000000000000000000000000000d89e600000000000000000000000000000000000000000000000000000000000566a9000000000000000000000000000000000000000000000000000098cb8c52800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266000000000000000000000000000000000000000000000000000000006b49d20000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000412210e8a00000000000000000000000000000000000000000000000000000000'
 
+const ACROSS_SPOKE_POOL = '0x5c7BCd6E7De5423a257D81B442095A1a6ced35C5'
+const word = (hex: string) => hex.replace('0x', '').padStart(64, '0')
+const ZERO_WORD = '00'.repeat(32)
+// depositV3(signer, signer, WETH, Base WETH, 0.001, 0.001, Base, no relayer, 0, 0, 0, no message) plus an integrator tag
+const ACROSS_DEPOSIT_TO_BASE_DATA = `0x7b939232${[
+    word(SENDER),
+    word(SENDER),
+    word(WETH),
+    word('0x4200000000000000000000000000000000000006'),
+    word(ONE_MILLI_ETH),
+    word(ONE_MILLI_ETH),
+    word('0x2105'),
+    ZERO_WORD,
+    ZERO_WORD,
+    ZERO_WORD,
+    ZERO_WORD,
+    word('0x180'),
+    ZERO_WORD,
+].join('')}1dc0de0041`
+
 const TRANSACTION_SLIDE = 'signing-confirm-slide'
 const CHANGES = 'review_wallet_changes'
 const CHANGES_LOADING = 'review_wallet_changes_loading'
@@ -136,6 +156,9 @@ const UNAVAILABLE = 'review_preview_unavailable'
 const FAILURE_WARNING = 'predicted_failure_warning'
 const FAILURE_ACKNOWLEDGE = 'review_warnings_acknowledge'
 const UNCHECKED_NOTICE = 'ethereum_contract_call_warning'
+const NOTHING_DETECTED_WARNING = 'ethereum_nothing_detected_warning'
+const NOTHING_BACK_WARNING = 'ethereum_nothing_back_warning'
+const BRIDGE_PAYOUT_WARNING = 'ethereum_bridge_payout_warning'
 
 const ETHEREUM_ACCOUNT = {
     id: 'eth-simulation',
@@ -195,6 +218,15 @@ const SWAP_SIMULATION = simulationSuccessResponse([
         standard: 'erc20',
         token_id: null,
         amount: '2282960',
+    },
+])
+
+const SPEND_ONLY_SIMULATION = simulationSuccessResponse([
+    {
+        asset_id: 'eip155:1/slip44:60',
+        standard: 'native',
+        token_id: null,
+        amount: '-1000000000000000',
     },
 ])
 
@@ -399,6 +431,39 @@ describe('Flow: a dApp asks to sign a call whose outcome the backend predicts', 
         ).toBeTruthy()
         expect(screen.queryByTestId(UNAVAILABLE)).toBeNull()
         expect(screen.queryByTestId(FAILURE_WARNING)).toBeNull()
+        expect(screen.queryByTestId(NOTHING_DETECTED_WARNING)).toBeNull()
+        await expectSlideEnabled()
+    })
+
+    it('Given a contract call that spends and whose simulation sees nothing come back, when it is reviewed, then the receive side reads not detected with a caution that claims only that', async () => {
+        await review(ROUTER, SWAP_DATA, SPEND_ONLY_SIMULATION, ONE_MILLI_ETH)
+
+        await waitFor(() =>
+            screen.getByTestId('review_wallet_receive_not-detected'),
+        )
+        expect(screen.getByTestId(NOTHING_DETECTED_WARNING)).toBeTruthy()
+        expect(screen.queryByTestId('review_wallet_receive_nothing')).toBeNull()
+        expect(screen.queryByTestId(NOTHING_BACK_WARNING)).toBeNull()
+        await expectSlideEnabled()
+    })
+
+    it('Given an Across deposit paying the signer on Base, when it is reviewed, then the receive side says it arrives on Base, with a caution that Pera cannot check the payout in place of one that nothing comes back', async () => {
+        await review(
+            ACROSS_SPOKE_POOL,
+            ACROSS_DEPOSIT_TO_BASE_DATA,
+            SPEND_ONLY_SIMULATION,
+            ONE_MILLI_ETH,
+        )
+
+        const receive = await waitFor(
+            () => screen.getByTestId('review_wallet_receive_other-network'),
+            { timeout: 15_000 },
+        )
+        expect(receive.textContent).toContain('signing.review.on_network')
+        expect(screen.getByTestId(BRIDGE_PAYOUT_WARNING)).toBeTruthy()
+        expect(screen.queryByTestId(NOTHING_DETECTED_WARNING)).toBeNull()
+        expect(screen.queryByTestId(NOTHING_BACK_WARNING)).toBeNull()
+        expect(screen.queryByTestId(UNCHECKED_NOTICE)).toBeNull()
         await expectSlideEnabled()
     })
 

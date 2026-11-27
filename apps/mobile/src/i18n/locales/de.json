@@ -3936,9 +3936,16 @@
             "changes_title": "Geschätzte Änderungen in deiner Wallet",
             "fee_max": "Bis zu <0/> · bezahlt in {{symbol}}",
             "network_fee": "Netzwerkgebühr",
+            "not_detected": "Nicht erkannt",
+            "not_detected_receive_body": "Pera sieht nur dieses Netzwerk. Alles, was an ein anderes Netzwerk gesendet wird, erscheint hier nicht.",
             "nothing": "Nichts",
             "nothing_back_body": "Assets verlassen deine Wallet und nichts kommt zurück. Fahre nur fort, wenn du das erwartest.",
             "nothing_back_title": "Du bekommst nichts zurück",
+            "nothing_detected_body": "Assets verlassen deine Wallet und Pera sieht in diesem Netzwerk nichts zurückkommen. Fahre nur fort, wenn du das erwartest, zum Beispiel beim Verschieben von Guthaben in ein anderes Netzwerk.",
+            "nothing_detected_title": "Keine Rückgabe erkannt",
+            "on_network": "Auf {{network}}",
+            "on_other_network": "Auf einem anderen Netzwerk",
+            "other_network_receive_body": "Es geht an deine eigene Adresse in diesem Netzwerk. Pera sieht dieses Netzwerk nicht, daher wird der Betrag nicht angezeigt.",
             "permission_collection": "Alle deine {{collection}}-NFTs",
             "permission_collection_note": "Damit kann jedes NFT dieser Sammlung in deinem Besitz bewegt werden, jetzt und später, bis du diese Berechtigung entfernst.",
             "permission_increase": "{{spender}} darf zusätzlich ausgeben",
@@ -4053,6 +4060,7 @@
             "withdraw": "Abheben",
             "borrow": "Ausleihen",
             "repay": "Zurückzahlen",
+            "bridge": "Bridge",
             "opt_in": "Opt-in",
             "opt_out": "Opt-out",
             "asset_config": "Asset-Konfiguration",
@@ -5395,6 +5403,8 @@
             "receive": "Du erhältst",
             "receive_at_least": "Du erhältst mindestens",
             "entire_balance": "Gesamtes Guthaben",
+            "destination": "Kommt an auf",
+            "another_network": "Anderes Netzwerk",
             "fee": "Gebühr",
             "fee_share": "{{percent}} der Ausgabe des Tauschs",
             "fee_recipient": "Gezahlt an",
@@ -5419,7 +5429,9 @@
         "review_warnings": {
             "high_fee_title": "Ungewöhnlich hohe Netzwerkgebühr",
             "high_fee_body": "{{domain}} hat die Gebühr dieser Transaktion auf mehr als das Doppelte dessen gesetzt, was Pera in der Einstellung „Schnell“ verwenden würde. Du zahlst höchstens <0/> (maximale Gebühr), meist weniger.",
-            "high_fee_body_no_source": "Die App, die das gesendet hat, hat die Gebühr auf mehr als das Doppelte dessen gesetzt, was Pera in der Einstellung „Schnell“ verwenden würde. Du zahlst höchstens <0/> (maximale Gebühr), meist weniger."
+            "high_fee_body_no_source": "Die App, die das gesendet hat, hat die Gebühr auf mehr als das Doppelte dessen gesetzt, was Pera in der Einstellung „Schnell“ verwenden würde. Du zahlst höchstens <0/> (maximale Gebühr), meist weniger.",
+            "bridge_payout_title": "Pera kann nicht prüfen, was ankommt",
+            "bridge_payout_body": "Die App legt fest, welchen Token und welchen Betrag du im anderen Netzwerk erhältst, und Pera kann dieses Netzwerk nicht einsehen, um sie zu prüfen. Fahre nur fort, wenn du dieser App vertraust."
         },
         "simulation": {}
     }

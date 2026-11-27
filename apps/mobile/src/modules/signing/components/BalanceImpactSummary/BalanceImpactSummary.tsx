@@ -12,7 +12,7 @@
 
 import { PWView } from '@components/core'
 import { PreviewUnavailableCard } from '../PreviewUnavailableCard'
-import { WalletChangesCard } from '../WalletChangesCard'
+import { RECEIVE_UNKNOWN, WalletChangesCard } from '../WalletChangesCard'
 import { useBalanceImpactSummary } from './useBalanceImpactSummary'
 
 /** The request's expected balance impact across all its transactions. */
@@ -46,7 +46,7 @@ export const BalanceImpactSummary = () => {
                 spend={spend}
                 receive={receive}
                 isLoading={!hasImpact && isSimulating}
-                isReceiveUnknown={isReceiveUnknown}
+                emptyReceive={isReceiveUnknown ? RECEIVE_UNKNOWN : undefined}
             />
         </PWView>
     )

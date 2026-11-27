@@ -72,7 +72,16 @@ type HistoryActionVariant =
     | { kind: 'approval'; token?: Address; grant?: EvmApprovalGrant }
     /** `pair` is absent when either side has no symbol. */
     | { kind: 'swap'; pair?: { from: SwapSide; to: SwapSide } }
-    | { kind: 'supply' | 'withdraw' | 'borrow' | 'repay' | 'wrap' | 'unwrap' }
+    | {
+          kind:
+              | 'supply'
+              | 'withdraw'
+              | 'borrow'
+              | 'repay'
+              | 'wrap'
+              | 'unwrap'
+              | 'bridge'
+      }
     | { kind: 'add-liquidity' | 'remove-liquidity' | 'collect-fees' }
     | { kind: 'send' | 'receive' }
 
@@ -154,6 +163,7 @@ const TITLE_KEYS: Record<PlainActionKind, I18nKey> = {
     repay: i18nKey('transactions.list_item.repay'),
     wrap: i18nKey('transactions.list_item.wrap'),
     unwrap: i18nKey('transactions.list_item.unwrap'),
+    bridge: i18nKey('transactions.list_item.bridge'),
     'add-liquidity': i18nKey('transactions.list_item.add_liquidity'),
     'remove-liquidity': i18nKey('transactions.list_item.remove_liquidity'),
     'collect-fees': i18nKey('transactions.list_item.collect_fees'),
@@ -284,6 +294,7 @@ const knownContractAction = (
         }
         case 'uniswap-universal-router':
         case 'uniswap-permit2':
+        case 'across-spoke-pool':
         case 'aave-v3-rewards':
         case 'aave-v3-adapter': {
             return shapeAction(facts)
@@ -402,6 +413,7 @@ const calldataAction = (
         facts.eip155ChainId === undefined
             ? undefined
             : wrappedNativeOf(facts.eip155ChainId),
+        facts.eip155ChainId,
     )
     if (!action) return undefined
     if (action.kind !== 'swap') return { kind: action.kind }

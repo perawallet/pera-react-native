@@ -414,6 +414,7 @@ const contractCallView = (
               { ...call, to },
               known,
               wrappedNativeOf(eip155ChainId),
+              eip155ChainId,
           )
     return viewOf(call, 'contract-call', {
         ...(standard && { call: standard }),

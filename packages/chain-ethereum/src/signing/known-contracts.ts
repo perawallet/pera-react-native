@@ -26,6 +26,7 @@ export type KnownEvmContractKind =
     | 'aave-v3-adapter'
     | 'uniswap-v3-position-manager'
     | 'uniswap-v4-position-manager'
+    | 'across-spoke-pool'
 
 /** A Universal Router release. Command 0x10 is Seaport before 2.0 and a V4 swap from 2.0; 2.1 adds a per-hop price to each V4 swap's parameters. */
 export type UniversalRouterVersion = '1' | '1.2' | '2.0' | '2.1'
@@ -48,6 +49,7 @@ export type KnownEvmContract = {
 
 const UNISWAP_DOMAIN = 'uniswap.org'
 const AAVE_DOMAIN = 'aave.com'
+const ACROSS_DOMAIN = 'across.to'
 
 const UNISWAP_DEPLOYMENTS =
     'https://developers.uniswap.org/docs/protocols/v3/deployments'
@@ -55,6 +57,8 @@ const UNISWAP_V4_DEPLOYMENTS =
     'https://developers.uniswap.org/docs/protocols/v4/deployments'
 const ROUTER_DEPLOYMENTS =
     'https://github.com/Uniswap/universal-router/blob/edf19bfde87e6cf5b29046f6ca2f483a4ffd6ae6/deploy-addresses'
+const ACROSS_DEPLOYMENTS =
+    'https://github.com/across-protocol/contracts/blob/08df779bcedc4a7b867494cb3e6e50ba5c57995c/broadcast/deployed-addresses.json'
 const AAVE_ADDRESS_BOOK =
     'https://github.com/bgd-labs/aave-address-book/blob/e8ae93884d30d708fad4f666b52387f7f14f9c1e/src/ts'
 
@@ -173,6 +177,15 @@ const v4Positions = (address: Address): KnownEvmContract => ({
     source: UNISWAP_V4_DEPLOYMENTS,
 })
 
+const acrossSpokePool = (address: Address): KnownEvmContract => ({
+    address,
+    kind: 'across-spoke-pool',
+    name: 'Across Bridge',
+    projectName: 'Across',
+    projectDomain: ACROSS_DOMAIN,
+    source: ACROSS_DEPLOYMENTS,
+})
+
 /**
  * Well-known contracts by EIP-155 chain id, mainnets only. Routers are every
  * version in Uniswap's `deploy-addresses` (V1, V1.2, V2, V2.1.1, V2.1.2 where
@@ -262,6 +275,7 @@ export const KNOWN_EVM_CONTRACTS: Readonly<
             'v3-ethereum-deployments',
         ),
         v4Positions('0xbD216513d74C8cf14cf4747E6AaA6420FF64ee9e'),
+        acrossSpokePool('0x5c7BCd6E7De5423a257D81B442095A1a6ced35C5'),
     ],
     8453: [
         routerListed(
@@ -309,6 +323,7 @@ export const KNOWN_EVM_CONTRACTS: Readonly<
             'v3-base-deployments',
         ),
         v4Positions('0x7C5f5A4bBd8fD63184577525326123B519429bDc'),
+        acrossSpokePool('0x09aea4b2242abC8bb4BB78D537A67a245A7bEC64'),
     ],
     56: [
         routerListed('0x5Dc88340E1c5c6366864Ee415d6034cadd1A9897', 'bsc', '1'),
@@ -357,6 +372,7 @@ export const KNOWN_EVM_CONTRACTS: Readonly<
             'v3-bnb-deployments',
         ),
         v4Positions('0x7A4a5c919aE2541AeD11041A1AEeE68f1287f95b'),
+        acrossSpokePool('0x4e8E101924eDE233C13e2D8622DC8aED2872d505'),
     ],
     42_161: [
         routerListed(
@@ -412,6 +428,7 @@ export const KNOWN_EVM_CONTRACTS: Readonly<
             'v3-arbitrum-deployments',
         ),
         v4Positions('0xd88F38F930b7952f2DB2432Cb002E7abbF3dD869'),
+        acrossSpokePool('0xe35e9842fceaCA96570B734083f4a58e8F7C5f2A'),
     ],
     43_114: [
         routerListed(
@@ -462,6 +479,7 @@ export const KNOWN_EVM_CONTRACTS: Readonly<
             'v3-avalanche-deployments',
         ),
         v4Positions('0xB74b1F14d2754AcfcbBe1a221023a5cf50Ab8ACD'),
+        acrossSpokePool('0xFE9D541c92E4e90437C7152A00244886dE37a658'),
     ],
     137: [
         routerListed(
@@ -514,6 +532,7 @@ export const KNOWN_EVM_CONTRACTS: Readonly<
             'v3-polygon-deployments',
         ),
         v4Positions('0x1Ec2eBf4F37E7363FDfe3551602425af0B3ceef9'),
+        acrossSpokePool('0x9295ee1d8C5b022Be115A2AD3c30C72E34e7F096'),
     ],
     10: [
         routerListed(
@@ -569,6 +588,7 @@ export const KNOWN_EVM_CONTRACTS: Readonly<
             'v3-optimism-deployments',
         ),
         v4Positions('0x3C3Ea4B57a46241e54610e5f022E5c45859A1017'),
+        acrossSpokePool('0x6f26Bf09B1C792e3228e5467807a900A503c0281'),
     ],
 }
 

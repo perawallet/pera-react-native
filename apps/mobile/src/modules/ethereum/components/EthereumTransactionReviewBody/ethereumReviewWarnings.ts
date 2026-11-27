@@ -21,14 +21,19 @@ import {
     type ContractCallNotice,
 } from '../../utils/contractCallNotice'
 import type { EthereumSimulationSectionState } from '../EthereumSimulationSection'
+import { ethereumEmptyReceiveOf } from './ethereumEmptyReceive'
 
 export type EthereumReviewWarning =
     | { kind: 'predicted-failure'; reason: Nullable<string> }
     /** `maxFee` is in wei. */
     | { kind: 'high-fee'; maxFee: Decimal; requesterHost: Optional<string> }
     | { kind: 'unchecked-call'; notice: ContractCallNotice }
-    /** The simulation sends assets out and brings nothing, not even a permission, back. */
+    /** A transfer that sends assets and gets nothing back. */
     | { kind: 'nothing-back' }
+    /** A contract call whose simulation sees nothing come back on this network. */
+    | { kind: 'nothing-detected' }
+    /** A decoded bridge: the dApp sets what arrives on the other network, which Pera can't see to check. */
+    | { kind: 'bridge-payout' }
 
 type EthereumReviewWarningsParams = {
     presentation: EthereumTransactionPresentation
@@ -63,6 +68,13 @@ export const ethereumReviewWarningsOf = ({
             notice: contractCallNoticeOf(source, verifiedOrigin),
         })
     }
+    const { kind: emptyReceiveKind } = ethereumEmptyReceiveOf(presentation)
+    if (
+        emptyReceiveKind === 'other-network' &&
+        simulation.status !== 'reverted'
+    ) {
+        warnings.push({ kind: 'bridge-payout' })
+    }
     // A failed simulation isn't listed: the changes card says so in its place.
     if (
         simulation.status === 'success' &&
@@ -70,7 +82,12 @@ export const ethereumReviewWarningsOf = ({
         simulation.receive.length === 0 &&
         simulation.approvals.length === 0
     ) {
-        warnings.push({ kind: 'nothing-back' })
+        if (emptyReceiveKind === 'nothing') {
+            warnings.push({ kind: 'nothing-back' })
+        }
+        if (emptyReceiveKind === 'not-detected') {
+            warnings.push({ kind: 'nothing-detected' })
+        }
     }
 
     return warnings

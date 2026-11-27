@@ -12,7 +12,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { encodeFunctionData, maxUint256, parseAbi } from 'viem'
+import { encodeFunctionData, maxUint256, parseAbi, zeroAddress } from 'viem'
 import type { Address, Hex } from 'viem'
 import { ETHEREUM } from '../../__tests__/evm-chains'
 import type { EvmContractAction } from '../contract-action-types'
@@ -23,9 +23,16 @@ import {
     decodePermit2Approval,
     hidesUnknownContractNotice,
 } from '../contract-actions'
-import { findKnownEvmContract } from '../known-contracts'
+import { findKnownEvmContract, wrappedNativeOf } from '../known-contracts'
 import { SENDER } from './fixtures'
-import { V3_EXACT_IN_PERMIT_SWEEP } from './contract-action-fixtures'
+import {
+    ACROSS_BYTES32_DEPOSIT_TAGGED,
+    ACROSS_DEPOSIT_TO_OTHER,
+    ACROSS_NATIVE_DEPOSIT_V3,
+    ACROSS_TOKEN_DEPOSIT_V3_TAGGED,
+    V3_EXACT_IN_PERMIT_SWEEP,
+} from './contract-action-fixtures'
+import type { RecordedCall } from './contract-action-fixtures'
 
 const WETH: Address = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'
 const POOL: Address = '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2'
@@ -713,6 +720,281 @@ describe('decodeEvmContractAction', () => {
     })
 })
 
+describe('Across spoke pool', () => {
+    const BASE = 8453
+    const BASE_WETH: Address = '0x4200000000000000000000000000000000000006'
+    const BASE_USDC: Address = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
+    const SPOKE_POOL: Address = '0x09aea4b2242abC8bb4BB78D537A67a245A7bEC64'
+    const ACROSS_ABI = parseAbi([
+        'function depositV3(address depositor, address recipient, address inputToken, address outputToken, uint256 inputAmount, uint256 outputAmount, uint256 destinationChainId, address exclusiveRelayer, uint32 quoteTimestamp, uint32 fillDeadline, uint32 exclusivityParameter, bytes message)',
+        'function deposit(bytes32 depositor, bytes32 recipient, bytes32 inputToken, bytes32 outputToken, uint256 inputAmount, uint256 outputAmount, uint256 destinationChainId, bytes32 exclusiveRelayer, uint32 quoteTimestamp, uint32 fillDeadline, uint32 exclusivityParameter, bytes message)',
+        'function depositNow(bytes32 depositor, bytes32 recipient, bytes32 inputToken, bytes32 outputToken, uint256 inputAmount, uint256 outputAmount, uint256 destinationChainId, bytes32 exclusiveRelayer, uint32 fillDeadlineOffset, uint32 exclusivityParameter, bytes message)',
+        'function depositV3Now(address depositor, address recipient, address inputToken, address outputToken, uint256 inputAmount, uint256 outputAmount, uint256 destinationChainId, address exclusiveRelayer, uint32 fillDeadlineOffset, uint32 exclusivityParameter, bytes message)',
+    ])
+    const word = (address: Address) =>
+        `0x${address.slice(2).toLowerCase().padStart(64, '0')}` as Hex
+
+    type V3Overrides = Partial<{
+        depositor: Address
+        recipient: Address
+        inputToken: Address
+        inputAmount: bigint
+        destinationChainId: bigint
+        message: Hex
+    }>
+    const depositV3 = (overrides: V3Overrides = {}): Hex => {
+        const {
+            depositor = SENDER,
+            recipient = SENDER,
+            inputToken = BASE_WETH,
+            inputAmount = 1_000n,
+            destinationChainId = 1n,
+            message = '0x',
+        } = overrides
+        return encodeFunctionData({
+            abi: ACROSS_ABI,
+            functionName: 'depositV3',
+            args: [
+                depositor,
+                recipient,
+                inputToken,
+                OTHER,
+                inputAmount,
+                inputAmount,
+                destinationChainId,
+                zeroAddress,
+                1,
+                2,
+                0,
+                message,
+            ],
+        })
+    }
+    const deposit = (
+        overrides: Partial<{
+            depositor: Hex
+            inputToken: Hex
+            recipient: Hex
+        }> = {},
+    ): Hex =>
+        encodeFunctionData({
+            abi: ACROSS_ABI,
+            functionName: 'deposit',
+            args: [
+                overrides.depositor ?? word(SENDER),
+                overrides.recipient ?? word(SENDER),
+                overrides.inputToken ?? word(BASE_USDC),
+                word(OTHER),
+                1_000n,
+                990n,
+                42_161n,
+                ZERO_WORD,
+                1,
+                2,
+                0,
+                '0x',
+            ],
+        })
+
+    const decodeOnBase = (
+        data: Hex,
+        value = 0n,
+        from: Address = SENDER,
+        to: Address = SPOKE_POOL,
+        eip155ChainId = BASE,
+    ) => {
+        const contract = findKnownEvmContract(BASE, to)
+        if (!contract) throw new Error(`${to} is not registered`)
+        return decodeEvmContractAction(
+            { from, to, data, value },
+            contract,
+            wrappedNativeOf(BASE),
+            eip155ChainId,
+        )
+    }
+    const decodeRecorded = (recorded: RecordedCall) =>
+        decodeOnBase(recorded.data, recorded.value, recorded.from, recorded.to)
+
+    it('reads a native deposit paid to the signer on another network', () => {
+        expect(decodeRecorded(ACROSS_NATIVE_DEPOSIT_V3)).toEqual({
+            kind: 'bridge',
+            asset: { kind: 'native' },
+            amount: new Decimal('1743581318314853'),
+            destinationChainId: 42_161,
+        })
+    })
+
+    it('reads a token deposit that carries an integrator tag', () => {
+        expect(decodeRecorded(ACROSS_TOKEN_DEPOSIT_V3_TAGGED)).toEqual({
+            kind: 'bridge',
+            asset: { kind: 'token', contract: BASE_USDC },
+            amount: new Decimal('95000000'),
+            destinationChainId: 1,
+        })
+    })
+
+    it('reads a bytes32 deposit, with a tag, by its depositor, recipient and token words', () => {
+        expect(decodeRecorded(ACROSS_BYTES32_DEPOSIT_TAGGED)).toEqual({
+            kind: 'bridge',
+            asset: { kind: 'token', contract: BASE_USDC },
+            amount: new Decimal('2041584410'),
+            destinationChainId: 42_161,
+        })
+    })
+
+    it('gives nothing for a deposit paid to another address', () => {
+        expect(decodeRecorded(ACROSS_DEPOSIT_TO_OTHER)).toBeUndefined()
+    })
+
+    it('reads the now variants', () => {
+        const now = encodeFunctionData({
+            abi: ACROSS_ABI,
+            functionName: 'depositV3Now',
+            args: [
+                SENDER,
+                SENDER,
+                BASE_USDC,
+                OTHER,
+                5n,
+                4n,
+                10n,
+                zeroAddress,
+                60,
+                0,
+                '0x',
+            ],
+        })
+        const wordsNow = encodeFunctionData({
+            abi: ACROSS_ABI,
+            functionName: 'depositNow',
+            args: [
+                word(SENDER),
+                word(SENDER),
+                word(BASE_USDC),
+                word(OTHER),
+                5n,
+                4n,
+                10n,
+                ZERO_WORD,
+                60,
+                0,
+                '0x',
+            ],
+        })
+
+        for (const data of [now, wordsNow]) {
+            expect(decodeOnBase(data)).toEqual({
+                kind: 'bridge',
+                asset: { kind: 'token', contract: BASE_USDC },
+                amount: new Decimal(5),
+                destinationChainId: 10,
+            })
+        }
+    })
+
+    it.each([
+        ['another depositor', depositV3({ depositor: OTHER }), 0n],
+        ['another recipient', depositV3({ recipient: OTHER }), 0n],
+        ['a message for the destination', depositV3({ message: '0x1234' }), 0n],
+        [
+            'ether that differs from the input amount',
+            depositV3({ inputAmount: 1_000n }),
+            999n,
+        ],
+        [
+            'native ether for an input token that is not wrapped native',
+            depositV3({ inputToken: BASE_USDC }),
+            1_000n,
+        ],
+        [
+            'ether sent with a token that is not wrapped native',
+            depositV3({ inputToken: BASE_USDC }),
+            1n,
+        ],
+        ['an input amount of zero', depositV3({ inputAmount: 0n }), 0n],
+        ['destination id 0', depositV3({ destinationChainId: 0n }), 0n],
+        [
+            'a destination that is the source network',
+            depositV3({ destinationChainId: 8453n }),
+            0n,
+        ],
+        [
+            'a destination id past a safe integer',
+            depositV3({ destinationChainId: 2n ** 64n }),
+            0n,
+        ],
+        [
+            'a bytes32 input token with dirty top bytes',
+            deposit({ inputToken: `0x${'11'.repeat(32)}` }),
+            0n,
+        ],
+        [
+            'a bytes32 depositor that is not the signer',
+            deposit({ depositor: word(OTHER) }),
+            0n,
+        ],
+        [
+            'a bytes32 recipient that is not the signer',
+            deposit({ recipient: word(OTHER) }),
+            0n,
+        ],
+    ] as const)('gives nothing for %s', (_name, data, value) => {
+        expect(decodeOnBase(data, value)).toBeUndefined()
+    })
+
+    it('gives nothing when the chain the call runs on is unknown', () => {
+        const contract = findKnownEvmContract(BASE, SPOKE_POOL)
+        if (!contract) throw new Error('not registered')
+
+        expect(
+            decodeEvmContractAction(
+                { from: SENDER, to: SPOKE_POOL, data: depositV3(), value: 0n },
+                contract,
+                wrappedNativeOf(BASE),
+            ),
+        ).toBeUndefined()
+    })
+
+    it('still reads a deposit whose payout the dApp set to 1 wei, leaving the caution to the review', () => {
+        const data = depositV3()
+        const outputAmountSlot = 10 + 64 * 5
+        const tiny =
+            `${data.slice(0, outputAmountSlot)}${'1'.padStart(64, '0')}${data.slice(outputAmountSlot + 64)}` as Hex
+
+        expect(decodeOnBase(tiny)).toMatchObject({ kind: 'bridge' })
+    })
+
+    it('reads native ether when the input token is wrapped native and the value matches', () => {
+        expect(
+            decodeOnBase(depositV3({ inputAmount: 1_000n }), 1_000n),
+        ).toMatchObject({ asset: { kind: 'native' } })
+    })
+
+    it('accepts a tag of 64 bytes and refuses 65', () => {
+        const data = depositV3()
+
+        expect(decodeOnBase(`${data}${'ab'.repeat(64)}` as Hex)).toBeDefined()
+        expect(decodeOnBase(`${data}${'ab'.repeat(65)}` as Hex)).toBeUndefined()
+    })
+
+    it('refuses dirty padding inside the arguments', () => {
+        const data = depositV3()
+        // The depositor word's top bytes sit right after the selector.
+        const dirty = `${data.slice(0, 10)}ff${data.slice(12)}` as Hex
+
+        expect(decodeOnBase(dirty)).toBeUndefined()
+    })
+
+    it('titles a bridge and hides the unknown-contract notice for it', () => {
+        const action = decodeRecorded(ACROSS_NATIVE_DEPOSIT_V3)
+
+        expect(action && contractActionTitleKeyOf(action)).toBe(
+            'transactions.list_item.bridge',
+        )
+        expect(hidesUnknownContractNotice(action)).toBe(true)
+    })
+})
+
 describe('decodePermit2Approval', () => {
     const PERMIT2_ABI = parseAbi([
         'function approve(address token, address spender, uint160 amount, uint48 expiration)',
@@ -750,6 +1032,7 @@ describe('contractActionTitleKeyOf', () => {
         ['withdraw', 'transactions.list_item.withdraw'],
         ['borrow', 'transactions.list_item.borrow'],
         ['repay', 'transactions.list_item.repay'],
+        ['bridge', 'transactions.list_item.bridge'],
         ['add-liquidity', 'transactions.list_item.add_liquidity'],
         ['remove-liquidity', 'transactions.list_item.remove_liquidity'],
         ['collect-fees', 'transactions.list_item.collect_fees'],

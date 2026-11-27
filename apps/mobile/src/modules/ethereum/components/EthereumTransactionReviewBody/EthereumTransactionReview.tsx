@@ -20,6 +20,7 @@ import { AddressDisplay } from '@components/AddressDisplay'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     PreviewUnavailableCard,
+    RECEIVE_UNKNOWN,
     ReviewActionHeader,
     ReviewDetailRow,
     ReviewFromRow,
@@ -33,6 +34,7 @@ import {
 import type { SigningStackParamList } from '@modules/signing/routes'
 import type { EthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
 import { EthereumPermissionCard } from './EthereumPermissionCard'
+import { ethereumEmptyReceiveOf } from './ethereumEmptyReceive'
 import { EthereumReviewFeeRow } from './EthereumReviewFeeRow'
 import {
     useEthereumTransactionReview,
@@ -72,6 +74,7 @@ const changesOf = ({
     isDappRequest,
 }: ChangesProps): ReactNode => {
     const { scope, isTransfer } = presentation
+    const emptyReceive = ethereumEmptyReceiveOf(presentation)
     const permissionCard = (isOnlyPermission: boolean) =>
         permissions.length > 0 ? (
             <EthereumPermissionCard
@@ -86,7 +89,11 @@ const changesOf = ({
                 scope={scope}
                 spend={actionChanges.spend}
                 receive={actionChanges.receive}
-                isReceiveUnknown={actionChanges.isReceiveUnknown}
+                emptyReceive={
+                    actionChanges.isReceiveUnknown
+                        ? RECEIVE_UNKNOWN
+                        : emptyReceive
+                }
             />
         ) : null
 
@@ -110,6 +117,7 @@ const changesOf = ({
                             scope={scope}
                             spend={simulation.spend}
                             receive={simulation.receive}
+                            emptyReceive={emptyReceive}
                         />
                     )}
                     {permissionCard(simulation.spend.length === 0)}

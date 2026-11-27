@@ -14,3 +14,4 @@ export {
     WalletChangesCard,
     type WalletChangesCardProps,
 } from './WalletChangesCard'
+export { RECEIVE_UNKNOWN, type EmptyReceiveSide } from './emptyReceive'

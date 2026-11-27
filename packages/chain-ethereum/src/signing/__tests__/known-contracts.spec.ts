@@ -36,7 +36,7 @@ const MAINNET_IDS = Object.values(EVM_CHAIN_NETWORKS).flatMap(row =>
 )
 
 describe('KNOWN_EVM_CONTRACTS', () => {
-    it('covers every mainnet chain with its routers, Permit2, wrapped native token, Aave V3 pool and Uniswap position managers', () => {
+    it('covers every mainnet chain with its routers, Permit2, wrapped native token, Aave V3 pool, Uniswap position managers and Across SpokePool', () => {
         expect(Object.keys(KNOWN_EVM_CONTRACTS).map(Number).sort()).toEqual(
             [...MAINNET_IDS].sort(),
         )
@@ -56,6 +56,7 @@ describe('KNOWN_EVM_CONTRACTS', () => {
                     'aave-v3-adapter',
                     'uniswap-v3-position-manager',
                     'uniswap-v4-position-manager',
+                    'across-spoke-pool',
                 ]),
             )
         }
@@ -126,6 +127,15 @@ describe('universalRouterVersion', () => {
 })
 
 describe('findKnownEvmContract', () => {
+    it('names the Across SpokePool on Base', () => {
+        expect(
+            findKnownEvmContract(
+                8453,
+                '0x09aea4b2242abC8bb4BB78D537A67a245A7bEC64',
+            ),
+        ).toMatchObject({ kind: 'across-spoke-pool', name: 'Across Bridge' })
+    })
+
     it.each(MAINNET_IDS)(
         'finds Permit2 and the wrapped native token on chain %i',
         chainId => {

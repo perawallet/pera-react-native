@@ -25,10 +25,12 @@ import type { Optional } from '@perawallet/wallet-core-shared'
 const SELECTOR_SIZE = 4
 
 // A lenient decoder would accept dirty padding or trailing bytes the contract
-// might read differently, so the call must re-encode to exactly its calldata.
+// might read differently, so the call must re-encode to exactly its calldata,
+// plus at most `maxTrailingBytes` the caller knows the contract never reads.
 export const readFunction = (
     functions: readonly AbiFunction[],
     data: Hex,
+    maxTrailingBytes = 0,
 ): Optional<{ name: string; args: readonly unknown[] }> => {
     if (size(data) < SELECTOR_SIZE) return undefined
     const selector = slice(data, 0, SELECTOR_SIZE).toLowerCase()
@@ -38,7 +40,9 @@ export const readFunction = (
     if (!item) return undefined
     const { args = [] } = decodeFunctionData({ abi: [item], data })
     const encoded = encodeFunctionData({ abi: [item], args })
-    return encoded.toLowerCase() === data.toLowerCase()
+    const isEncodedPrefix = data.toLowerCase().startsWith(encoded.toLowerCase())
+    const trailingBytes = size(data) - size(encoded)
+    return isEncodedPrefix && trailingBytes <= maxTrailingBytes
         ? { name: item.name, args }
         : undefined
 }

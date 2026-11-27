@@ -173,6 +173,12 @@ const ACTIONS: EvmContractAction[] = [
     },
     { kind: 'remove-liquidity', tokenId: '987654', isClosing: true },
     { kind: 'collect-fees', tokenId: '987654' },
+    {
+        kind: 'bridge',
+        asset: { kind: 'native' },
+        amount: new Decimal(10),
+        destinationChainId: 8453,
+    },
 ]
 
 const ACTION_VIEW: EthereumTransactionView = {
@@ -243,6 +249,23 @@ describe('the Ethereum transaction view', () => {
     ])('refuses a swap view with %s', (_, fees) => {
         const [swap] = ACTIONS
         const action = { ...swap, fees } as unknown as EvmContractAction
+
+        expect(() =>
+            readEthereumNative(toEthereumNative({ ...ACTION_VIEW, action })),
+        ).toThrow('malformed')
+    })
+
+    it.each([
+        ['zero', 0],
+        ['fractional', 1.5],
+        ['a string', '8453'],
+    ])('refuses a bridge view whose destination id is %s', (_, id) => {
+        const action = {
+            kind: 'bridge',
+            asset: { kind: 'native' },
+            amount: new Decimal(10),
+            destinationChainId: id,
+        } as unknown as EvmContractAction
 
         expect(() =>
             readEthereumNative(toEthereumNative({ ...ACTION_VIEW, action })),

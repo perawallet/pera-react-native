@@ -131,7 +131,7 @@ describe('ethereumReviewWarningsOf', () => {
         expect(kindsOf(unavailable)).toEqual(['high-fee', 'unchecked-call'])
     })
 
-    it('cautions when assets leave and nothing, not even a permission, comes back', () => {
+    it('cautions when a transfer sends assets and nothing, not even a permission, comes back', () => {
         const spend = [{ assetId: 'native' }] as never
         const nothingBack = ethereumReviewWarningsOf({
             presentation: presentationOf({ isTransfer: true }),
@@ -154,5 +154,77 @@ describe('ethereumReviewWarningsOf', () => {
 
         expect(kindsOf(nothingBack)).toEqual(['nothing-back'])
         expect(swap).toEqual([])
+    })
+
+    describe('a contract call whose simulation spends and sees nothing back', () => {
+        const simulation = simulationOf({
+            status: 'success',
+            spend: [{ assetId: 'native' }] as never,
+            receive: [],
+            approvals: [],
+        })
+
+        it('cautions that nothing was detected, in place of claiming nothing comes back', () => {
+            const warnings = ethereumReviewWarningsOf({
+                presentation: presentationOf(),
+                simulation,
+            })
+
+            expect(kindsOf(warnings)).toEqual([
+                'unchecked-call',
+                'nothing-detected',
+            ])
+        })
+
+        it('cautions that Pera cannot check the payout of a decoded bridge, in place of vouching for it', () => {
+            const warnings = ethereumReviewWarningsOf({
+                presentation: presentationOf({
+                    contractAction: { kind: 'bridge' },
+                    view: { action: { kind: 'bridge' } },
+                } as unknown as Partial<EthereumTransactionPresentation>),
+                simulation,
+            })
+
+            expect(kindsOf(warnings)).toEqual(['bridge-payout'])
+        })
+
+        it('does not caution when the call receives something', () => {
+            const warnings = ethereumReviewWarningsOf({
+                presentation: presentationOf(),
+                simulation: simulationOf({
+                    status: 'success',
+                    spend: [{ assetId: 'native' }] as never,
+                    receive: [{ assetId: 'usdc' }] as never,
+                    approvals: [],
+                }),
+            })
+
+            expect(kindsOf(warnings)).toEqual(['unchecked-call'])
+        })
+    })
+})
+
+describe('ethereumReviewWarningsOf for a decoded bridge', () => {
+    const bridge = presentationOf({
+        contractAction: { kind: 'bridge' },
+        view: { action: { kind: 'bridge' } },
+    } as unknown as Partial<EthereumTransactionPresentation>)
+
+    it('keeps the payout caution while the simulation is unavailable', () => {
+        const warnings = ethereumReviewWarningsOf({
+            presentation: bridge,
+            simulation: simulationOf({ status: 'unavailable' }),
+        })
+
+        expect(kindsOf(warnings)).toEqual(['bridge-payout'])
+    })
+
+    it('leaves a predicted failure to speak alone', () => {
+        const warnings = ethereumReviewWarningsOf({
+            presentation: bridge,
+            simulation: simulationOf({ status: 'reverted', reason: null }),
+        })
+
+        expect(kindsOf(warnings)).toEqual(['predicted-failure'])
     })
 })
