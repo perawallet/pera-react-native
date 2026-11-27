@@ -81,7 +81,7 @@ export type EthereumContractActionPresentation =
           /** Absent when the native coin moves. */
           assetContract?: string
           amount: EthereumActionAmount
-          /** A proper noun from the chain table, never translated; unset when Pera doesn't carry the network. */
+          /** A proper noun from the chain table, never translated; unset unless it is a mainnet Pera carries. */
           destinationName?: string
       }
 

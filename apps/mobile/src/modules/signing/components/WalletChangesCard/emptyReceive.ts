@@ -21,7 +21,7 @@ export type EmptyReceiveSide =
     | { kind: 'unknown' }
     /** Nothing seen on this network, and Pera can't see any other. */
     | { kind: 'not-detected' }
-    /** Paid to the signer on another network; `networkName` is unset when Pera doesn't carry it. */
+    /** Paid to the signer on another network; `networkName` is unset unless it is a mainnet Pera carries. */
     | { kind: 'other-network'; networkName?: string }
 
 export const NOTHING_RECEIVED: EmptyReceiveSide = { kind: 'nothing' }

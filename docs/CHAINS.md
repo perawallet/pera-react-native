@@ -197,8 +197,8 @@ Most EVM wiring reads `evm-networks.json` and the chain table, so the list is sh
       and `src/__tests__/evm-chains.ts` where they enumerate rows, and add the id to `evmChainIds` in
       `packages/chain-ethereum/vitest.setup.ts`, or the package's specs throw for it.
 - [ ] `packages/chain-ethereum/src/signing/known-contracts.ts`: the mainnet's routers, Permit2, wrapped
-      native token, Aave V3 pool, Uniswap position managers and Across SpokePool under its EIP-155 id. `known-contracts.spec.ts`
-      requires the full set for every mainnet.
+      native token, Aave V3 pool, Uniswap position managers and Across SpokePool under its EIP-155 id.
+      `known-contracts.spec.ts` requires the full set for every mainnet.
 - [ ] A fee strategy the existing kinds don't cover: `EvmFeeStrategy` in `src/chains/types.ts`,
       `src/transfer/fees.ts` and `src/transfer/submission.ts`, and [EVM fees](EVM_FEES.md).
 - [ ] `lanekeep/rules/no-chain-identity-in-shared-packages.ts`: add the id to its copy of `CHAIN_IDS`;
