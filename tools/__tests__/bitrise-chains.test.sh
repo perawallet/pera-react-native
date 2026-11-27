@@ -119,10 +119,10 @@ for source in bitrise pipelines; do
     done
 done
 
-# Production mobile reads through Pera's RPC proxy first. Staging stays on
-# public nodes so testers don't spend the proxy's provider credits, and the
-# extension can't use the proxy: it carries no API key and the proxy refuses
-# web tokens.
+# Production mobile reads its mainnets through Pera's RPC proxy first. Testnets
+# and staging stay on public nodes so they don't spend the proxy's provider
+# credits, and the extension can't use the proxy: it carries no API key and the
+# proxy refuses web tokens.
 EVM_PROXY_ROUTES="$(node -e '
     const nets = require(process.argv[1])
     for (const [chain, { networks }] of Object.entries(nets))
@@ -135,7 +135,7 @@ for source in bitrise pipelines; do
     for job in ios-staging android-staging ios-production android-production web-staging web-production; do
         while read -r rpc_env tier eip155_id; do
             list="$("$env_of" "$job" "$rpc_env")"
-            if [[ "$job" == ios-production || "$job" == android-production ]]; then
+            if [[ "$tier" == mainnet && ( "$job" == ios-production || "$job" == android-production ) ]]; then
                 check "${job} reads ${rpc_env} through the proxy first" \
                     "https://${tier}.api.perawallet.app/api/v3/evm/${eip155_id}/rpc" "${list%%,*}"
             else

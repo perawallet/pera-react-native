@@ -1206,31 +1206,31 @@ workflows:
     - CHAINS: algorand,ethereum,base,bsc,arbitrum,avalanche,polygon,optimism
     - ETHEREUM_MAINNET_RPC_URL: https://mainnet.api.perawallet.app/api/v3/evm/1/rpc,https://ethereum-rpc.publicnode.com
     - ETHEREUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,nfts,contracts,simulations,tokenSearch
-    - ETHEREUM_SEPOLIA_RPC_URL: https://testnet.api.perawallet.app/api/v3/evm/11155111/rpc,https://ethereum-sepolia-rpc.publicnode.com
+    - ETHEREUM_SEPOLIA_RPC_URL: https://ethereum-sepolia-rpc.publicnode.com,https://sepolia.gateway.tenderly.co
     - ETHEREUM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing,nfts,contracts,simulations,tokenSearch
     - BASE_MAINNET_RPC_URL: https://mainnet.api.perawallet.app/api/v3/evm/8453/rpc,https://base-rpc.publicnode.com
     - BASE_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations,tokenSearch
-    - BASE_SEPOLIA_RPC_URL: https://testnet.api.perawallet.app/api/v3/evm/84532/rpc,https://base-sepolia-rpc.publicnode.com
+    - BASE_SEPOLIA_RPC_URL: https://base-sepolia-rpc.publicnode.com,https://sepolia.base.org
     - BASE_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations,tokenSearch
     - BSC_MAINNET_RPC_URL: https://mainnet.api.perawallet.app/api/v3/evm/56/rpc,https://bsc-rpc.publicnode.com
     - BSC_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations,tokenSearch
-    - BSC_TESTNET_RPC_URL: https://testnet.api.perawallet.app/api/v3/evm/97/rpc,https://bsc-testnet-rpc.publicnode.com
+    - BSC_TESTNET_RPC_URL: https://bsc-testnet-rpc.publicnode.com,https://data-seed-prebsc-1-s1.bnbchain.org:8545
     - BSC_TESTNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations,tokenSearch
     - ARBITRUM_MAINNET_RPC_URL: https://mainnet.api.perawallet.app/api/v3/evm/42161/rpc,https://arbitrum-one-rpc.publicnode.com
     - ARBITRUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations,tokenSearch
-    - ARBITRUM_SEPOLIA_RPC_URL: https://testnet.api.perawallet.app/api/v3/evm/421614/rpc,https://arbitrum-sepolia-rpc.publicnode.com
+    - ARBITRUM_SEPOLIA_RPC_URL: https://arbitrum-sepolia-rpc.publicnode.com,https://sepolia-rollup.arbitrum.io/rpc
     - ARBITRUM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations,tokenSearch
     - AVALANCHE_MAINNET_RPC_URL: https://mainnet.api.perawallet.app/api/v3/evm/43114/rpc,https://avalanche-c-chain-rpc.publicnode.com
     - AVALANCHE_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations,tokenSearch
-    - AVALANCHE_FUJI_RPC_URL: https://testnet.api.perawallet.app/api/v3/evm/43113/rpc,https://avalanche-fuji-c-chain-rpc.publicnode.com
+    - AVALANCHE_FUJI_RPC_URL: https://avalanche-fuji-c-chain-rpc.publicnode.com,https://api.avax-test.network/ext/bc/C/rpc
     - AVALANCHE_FUJI_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations,tokenSearch
     - POLYGON_MAINNET_RPC_URL: https://mainnet.api.perawallet.app/api/v3/evm/137/rpc,https://polygon-bor-rpc.publicnode.com
     - POLYGON_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations,tokenSearch
-    - POLYGON_AMOY_RPC_URL: https://testnet.api.perawallet.app/api/v3/evm/80002/rpc,https://polygon-amoy-bor-rpc.publicnode.com
+    - POLYGON_AMOY_RPC_URL: https://polygon-amoy-bor-rpc.publicnode.com,https://polygon-amoy.gateway.tenderly.co
     - POLYGON_AMOY_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations,tokenSearch
     - OPTIMISM_MAINNET_RPC_URL: https://mainnet.api.perawallet.app/api/v3/evm/10/rpc,https://optimism-rpc.publicnode.com
     - OPTIMISM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations,tokenSearch
-    - OPTIMISM_SEPOLIA_RPC_URL: https://testnet.api.perawallet.app/api/v3/evm/11155420/rpc,https://optimism-sepolia-rpc.publicnode.com
+    - OPTIMISM_SEPOLIA_RPC_URL: https://optimism-sepolia-rpc.publicnode.com,https://sepolia.optimism.io
     - OPTIMISM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations,tokenSearch
     - ANDROID_FLAVOR: production
     - ANDROID_PACKAGE_NAME: com.algorand.android
@@ -1390,31 +1390,31 @@ workflows:
     - CHAINS: algorand,ethereum,base,bsc,arbitrum,avalanche,polygon,optimism
     - ETHEREUM_MAINNET_RPC_URL: https://mainnet.api.perawallet.app/api/v3/evm/1/rpc,https://ethereum-rpc.publicnode.com
     - ETHEREUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,nfts,contracts,simulations,tokenSearch
-    - ETHEREUM_SEPOLIA_RPC_URL: https://testnet.api.perawallet.app/api/v3/evm/11155111/rpc,https://ethereum-sepolia-rpc.publicnode.com
+    - ETHEREUM_SEPOLIA_RPC_URL: https://ethereum-sepolia-rpc.publicnode.com,https://sepolia.gateway.tenderly.co
     - ETHEREUM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing,nfts,contracts,simulations,tokenSearch
     - BASE_MAINNET_RPC_URL: https://mainnet.api.perawallet.app/api/v3/evm/8453/rpc,https://base-rpc.publicnode.com
     - BASE_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations,tokenSearch
-    - BASE_SEPOLIA_RPC_URL: https://testnet.api.perawallet.app/api/v3/evm/84532/rpc,https://base-sepolia-rpc.publicnode.com
+    - BASE_SEPOLIA_RPC_URL: https://base-sepolia-rpc.publicnode.com,https://sepolia.base.org
     - BASE_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations,tokenSearch
     - BSC_MAINNET_RPC_URL: https://mainnet.api.perawallet.app/api/v3/evm/56/rpc,https://bsc-rpc.publicnode.com
     - BSC_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations,tokenSearch
-    - BSC_TESTNET_RPC_URL: https://testnet.api.perawallet.app/api/v3/evm/97/rpc,https://bsc-testnet-rpc.publicnode.com
+    - BSC_TESTNET_RPC_URL: https://bsc-testnet-rpc.publicnode.com,https://data-seed-prebsc-1-s1.bnbchain.org:8545
     - BSC_TESTNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations,tokenSearch
     - ARBITRUM_MAINNET_RPC_URL: https://mainnet.api.perawallet.app/api/v3/evm/42161/rpc,https://arbitrum-one-rpc.publicnode.com
     - ARBITRUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations,tokenSearch
-    - ARBITRUM_SEPOLIA_RPC_URL: https://testnet.api.perawallet.app/api/v3/evm/421614/rpc,https://arbitrum-sepolia-rpc.publicnode.com
+    - ARBITRUM_SEPOLIA_RPC_URL: https://arbitrum-sepolia-rpc.publicnode.com,https://sepolia-rollup.arbitrum.io/rpc
     - ARBITRUM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations,tokenSearch
     - AVALANCHE_MAINNET_RPC_URL: https://mainnet.api.perawallet.app/api/v3/evm/43114/rpc,https://avalanche-c-chain-rpc.publicnode.com
     - AVALANCHE_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations,tokenSearch
-    - AVALANCHE_FUJI_RPC_URL: https://testnet.api.perawallet.app/api/v3/evm/43113/rpc,https://avalanche-fuji-c-chain-rpc.publicnode.com
+    - AVALANCHE_FUJI_RPC_URL: https://avalanche-fuji-c-chain-rpc.publicnode.com,https://api.avax-test.network/ext/bc/C/rpc
     - AVALANCHE_FUJI_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations,tokenSearch
     - POLYGON_MAINNET_RPC_URL: https://mainnet.api.perawallet.app/api/v3/evm/137/rpc,https://polygon-bor-rpc.publicnode.com
     - POLYGON_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations,tokenSearch
-    - POLYGON_AMOY_RPC_URL: https://testnet.api.perawallet.app/api/v3/evm/80002/rpc,https://polygon-amoy-bor-rpc.publicnode.com
+    - POLYGON_AMOY_RPC_URL: https://polygon-amoy-bor-rpc.publicnode.com,https://polygon-amoy.gateway.tenderly.co
     - POLYGON_AMOY_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations,tokenSearch
     - OPTIMISM_MAINNET_RPC_URL: https://mainnet.api.perawallet.app/api/v3/evm/10/rpc,https://optimism-rpc.publicnode.com
     - OPTIMISM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations,tokenSearch
-    - OPTIMISM_SEPOLIA_RPC_URL: https://testnet.api.perawallet.app/api/v3/evm/11155420/rpc,https://optimism-sepolia-rpc.publicnode.com
+    - OPTIMISM_SEPOLIA_RPC_URL: https://optimism-sepolia-rpc.publicnode.com,https://sepolia.optimism.io
     - OPTIMISM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations,tokenSearch
     - BITRISE_SCHEME: "$BITRISE_SCHEME_PRODUCTION"
     - USE_CACHE: 'false'
