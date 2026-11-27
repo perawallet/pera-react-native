@@ -748,7 +748,7 @@ describe('Across spoke pool', () => {
             recipient = SENDER,
             inputToken = BASE_WETH,
             inputAmount = 1_000n,
-            destinationChainId = 8453n,
+            destinationChainId = 1n,
             message = '0x',
         } = overrides
         return encodeFunctionData({
@@ -797,6 +797,7 @@ describe('Across spoke pool', () => {
         value = 0n,
         from: Address = SENDER,
         to: Address = SPOKE_POOL,
+        eip155ChainId = BASE,
     ) => {
         const contract = findKnownEvmContract(BASE, to)
         if (!contract) throw new Error(`${to} is not registered`)
@@ -804,6 +805,7 @@ describe('Across spoke pool', () => {
             { from, to, data, value },
             contract,
             wrappedNativeOf(BASE),
+            eip155ChainId,
         )
     }
     const decodeRecorded = (recorded: RecordedCall) =>
@@ -908,6 +910,11 @@ describe('Across spoke pool', () => {
         ['an input amount of zero', depositV3({ inputAmount: 0n }), 0n],
         ['destination id 0', depositV3({ destinationChainId: 0n }), 0n],
         [
+            'a destination that is the source network',
+            depositV3({ destinationChainId: 8453n }),
+            0n,
+        ],
+        [
             'a destination id past a safe integer',
             depositV3({ destinationChainId: 2n ** 64n }),
             0n,
@@ -924,6 +931,28 @@ describe('Across spoke pool', () => {
         ],
     ] as const)('gives nothing for %s', (_name, data, value) => {
         expect(decodeOnBase(data, value)).toBeUndefined()
+    })
+
+    it('gives nothing when the chain the call runs on is unknown', () => {
+        const contract = findKnownEvmContract(BASE, SPOKE_POOL)
+        if (!contract) throw new Error('not registered')
+
+        expect(
+            decodeEvmContractAction(
+                { from: SENDER, to: SPOKE_POOL, data: depositV3(), value: 0n },
+                contract,
+                wrappedNativeOf(BASE),
+            ),
+        ).toBeUndefined()
+    })
+
+    it('still reads a deposit whose payout the dApp set to 1 wei, leaving the caution to the review', () => {
+        const data = depositV3()
+        const outputAmountSlot = 10 + 64 * 5
+        const tiny =
+            `${data.slice(0, outputAmountSlot)}${'1'.padStart(64, '0')}${data.slice(outputAmountSlot + 64)}` as Hex
+
+        expect(decodeOnBase(tiny)).toMatchObject({ kind: 'bridge' })
     })
 
     it('reads native ether when the input token is wrapped native and the value matches', () => {

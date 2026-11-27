@@ -5428,7 +5428,9 @@
         "review_warnings": {
             "high_fee_title": "Ungewöhnlich hohe Netzwerkgebühr",
             "high_fee_body": "{{domain}} hat die Gebühr dieser Transaktion auf mehr als das Doppelte dessen gesetzt, was Pera in der Einstellung „Schnell“ verwenden würde. Du zahlst höchstens <0/> (maximale Gebühr), meist weniger.",
-            "high_fee_body_no_source": "Die App, die das gesendet hat, hat die Gebühr auf mehr als das Doppelte dessen gesetzt, was Pera in der Einstellung „Schnell“ verwenden würde. Du zahlst höchstens <0/> (maximale Gebühr), meist weniger."
+            "high_fee_body_no_source": "Die App, die das gesendet hat, hat die Gebühr auf mehr als das Doppelte dessen gesetzt, was Pera in der Einstellung „Schnell“ verwenden würde. Du zahlst höchstens <0/> (maximale Gebühr), meist weniger.",
+            "bridge_payout_title": "Pera kann nicht prüfen, was ankommt",
+            "bridge_payout_body": "Die App legt fest, welchen Token und welchen Betrag du im anderen Netzwerk erhältst, und Pera kann dieses Netzwerk nicht einsehen, um sie zu prüfen. Fahre nur fort, wenn du dieser App vertraust."
         },
         "simulation": {}
     }

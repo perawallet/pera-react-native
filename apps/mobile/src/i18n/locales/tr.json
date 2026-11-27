@@ -5428,7 +5428,9 @@
         "review_warnings": {
             "high_fee_title": "Alışılmadık şekilde yüksek ağ ücreti",
             "high_fee_body": "{{domain}} bu işlemin ücretini, Pera’nın Hızlı ayarında kullanacağı ücretin iki katından fazlasına ayarladı. En fazla <0/> (maksimum ücret) ödersin, genellikle daha azını.",
-            "high_fee_body_no_source": "Bu isteği gönderen uygulama, ücreti Pera’nın Hızlı ayarında kullanacağı ücretin iki katından fazlasına ayarladı. En fazla <0/> (maksimum ücret) ödersin, genellikle daha azını."
+            "high_fee_body_no_source": "Bu isteği gönderen uygulama, ücreti Pera’nın Hızlı ayarında kullanacağı ücretin iki katından fazlasına ayarladı. En fazla <0/> (maksimum ücret) ödersin, genellikle daha azını.",
+            "bridge_payout_title": "Pera, ne geleceğini kontrol edemez",
+            "bridge_payout_body": "Diğer ağda alacağın token'ı ve tutarı uygulama belirler, Pera da bunları kontrol etmek için o ağı göremez. Yalnızca bu uygulamaya güveniyorsan devam et."
         },
         "simulation": {}
     }

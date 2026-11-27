@@ -84,7 +84,7 @@ export type EvmContractAction =
           asset: EvmActionAsset
           /** Base units of `asset`. */
           amount: Decimal
-          /** The EIP-155 id of the network where the signer's own address is paid. */
+          /** The EIP-155 id of the network where the signer's own address is paid, never the source. Nothing here says what arrives: the dApp sets that. */
           destinationChainId: number
       }
     | {

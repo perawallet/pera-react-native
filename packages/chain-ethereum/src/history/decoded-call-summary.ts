@@ -90,6 +90,7 @@ export const decodedCallSummary = (
               { ...call, to },
               named,
               wrappedNativeOf(eip155ChainId),
+              eip155ChainId,
           )
     return {
         ...(action ? contractActionSummary(action, call, chain) : base),

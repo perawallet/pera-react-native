@@ -5428,7 +5428,9 @@
         "review_warnings": {
             "high_fee_title": "Comisión de red inusualmente alta",
             "high_fee_body": "{{domain}} fijó la comisión de esta transacción en más del doble de lo que Pera usaría con su configuración Rápida. Pagarás como máximo <0/> (comisión máxima), normalmente menos.",
-            "high_fee_body_no_source": "La app que envió esto fijó su comisión en más del doble de lo que Pera usaría con su configuración Rápida. Pagarás como máximo <0/> (comisión máxima), normalmente menos."
+            "high_fee_body_no_source": "La app que envió esto fijó su comisión en más del doble de lo que Pera usaría con su configuración Rápida. Pagarás como máximo <0/> (comisión máxima), normalmente menos.",
+            "bridge_payout_title": "Pera no puede comprobar lo que llega",
+            "bridge_payout_body": "La app define el token y el importe que recibes en la otra red, y Pera no puede ver esa red para comprobarlos. Continúa solo si confías en esta app."
         },
         "simulation": {}
     }

@@ -5456,7 +5456,9 @@
         "review_warnings": {
             "high_fee_title": "Taxa de rede muito acima do normal",
             "high_fee_body": "{{domain}} definiu a taxa desta transação em mais do dobro do que o Pera usaria na configuração Rápida. Você pagará no máximo <0/> (taxa máxima), geralmente menos.",
-            "high_fee_body_no_source": "O app que enviou isto definiu a taxa em mais do dobro do que o Pera usaria na configuração Rápida. Você pagará no máximo <0/> (taxa máxima), geralmente menos."
+            "high_fee_body_no_source": "O app que enviou isto definiu a taxa em mais do dobro do que o Pera usaria na configuração Rápida. Você pagará no máximo <0/> (taxa máxima), geralmente menos.",
+            "bridge_payout_title": "O Pera não consegue conferir o que chega",
+            "bridge_payout_body": "O app define o token e o valor que você recebe na outra rede, e o Pera não enxerga essa rede para conferi-los. Só continue se você confiar neste app."
         },
         "simulation": {}
     }

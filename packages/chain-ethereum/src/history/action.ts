@@ -413,6 +413,7 @@ const calldataAction = (
         facts.eip155ChainId === undefined
             ? undefined
             : wrappedNativeOf(facts.eip155ChainId),
+        facts.eip155ChainId,
     )
     if (!action) return undefined
     if (action.kind !== 'swap') return { kind: action.kind }

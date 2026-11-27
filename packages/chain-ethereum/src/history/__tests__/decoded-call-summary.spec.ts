@@ -14,8 +14,11 @@ import { describe, expect, it, vi } from 'vitest'
 import { encodeFunctionData, maxUint160, maxUint256, parseAbi } from 'viem'
 import type { Address } from 'viem'
 import type { TransactionSummary } from '@perawallet/wallet-core-chain-contract'
-import { ETHEREUM, evmScopeOf } from '../../__tests__/evm-chains'
-import { V3_EXACT_IN_PERMIT_SWEEP } from '../../signing/__tests__/contract-action-fixtures'
+import { BASE, ETHEREUM, evmScopeOf } from '../../__tests__/evm-chains'
+import {
+    ACROSS_NATIVE_DEPOSIT_V3,
+    V3_EXACT_IN_PERMIT_SWEEP,
+} from '../../signing/__tests__/contract-action-fixtures'
 import { SENDER } from '../../signing/__tests__/fixtures'
 import { getAssetsByIds, type PeraAsset } from '@perawallet/wallet-core-assets'
 import {
@@ -214,6 +217,19 @@ describe('decodedCallSummary', () => {
 
         expect(summary.title.key).toBe('transactions.list_item.wrap')
         expect(summary.subtitle).toBeDefined()
+    })
+
+    it('titles an Across deposit a bridge, so the chain id reaches the decoder', () => {
+        const { from, to, data, value } = ACROSS_NATIVE_DEPOSIT_V3
+
+        const summary = decodedCallSummary(
+            { from, to, data, value },
+            BASE,
+            evmScopeOf(BASE),
+            true,
+        )
+
+        expect(summary.title.key).toBe('transactions.list_item.bridge')
     })
 
     it('adds only the protocol subtitle to a known contract it cannot decode', () => {

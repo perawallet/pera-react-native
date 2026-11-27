@@ -176,7 +176,7 @@ describe('ethereumReviewWarningsOf', () => {
             ])
         })
 
-        it('does not caution for a decoded bridge to the signer on another network', () => {
+        it('cautions that Pera cannot check the payout of a decoded bridge, in place of vouching for it', () => {
             const warnings = ethereumReviewWarningsOf({
                 presentation: presentationOf({
                     contractAction: { kind: 'bridge' },
@@ -185,7 +185,7 @@ describe('ethereumReviewWarningsOf', () => {
                 simulation,
             })
 
-            expect(warnings).toEqual([])
+            expect(kindsOf(warnings)).toEqual(['bridge-payout'])
         })
 
         it('does not caution when the call receives something', () => {
@@ -201,5 +201,30 @@ describe('ethereumReviewWarningsOf', () => {
 
             expect(kindsOf(warnings)).toEqual(['unchecked-call'])
         })
+    })
+})
+
+describe('ethereumReviewWarningsOf for a decoded bridge', () => {
+    const bridge = presentationOf({
+        contractAction: { kind: 'bridge' },
+        view: { action: { kind: 'bridge' } },
+    } as unknown as Partial<EthereumTransactionPresentation>)
+
+    it('keeps the payout caution while the simulation is unavailable', () => {
+        const warnings = ethereumReviewWarningsOf({
+            presentation: bridge,
+            simulation: simulationOf({ status: 'unavailable' }),
+        })
+
+        expect(kindsOf(warnings)).toEqual(['bridge-payout'])
+    })
+
+    it('leaves a predicted failure to speak alone', () => {
+        const warnings = ethereumReviewWarningsOf({
+            presentation: bridge,
+            simulation: simulationOf({ status: 'reverted', reason: null }),
+        })
+
+        expect(kindsOf(warnings)).toEqual(['predicted-failure'])
     })
 })

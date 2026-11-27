@@ -23,7 +23,6 @@ import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     type BalanceImpactItem,
-    type EmptyReceiveSide,
     type ReviewTargetStatus,
     type ReviewWarningItem,
 } from '@modules/signing'
@@ -44,7 +43,6 @@ import {
     ethereumActionChangesOf,
     type EthereumActionChanges,
 } from './ethereumActionChanges'
-import { ethereumEmptyReceiveOf } from './ethereumEmptyReceive'
 import { ethereumReviewWarningsOf } from './ethereumReviewWarnings'
 import { ethereumReviewWarningItemOf } from './ethereumReviewWarningItemOf'
 
@@ -70,8 +68,6 @@ export type UseEthereumTransactionReviewResult = {
     transferSpend: BalanceImpactItem[]
     /** What a decoded call's calldata fixes it moves, for a review the simulation doesn't cover. */
     actionChanges: EthereumActionChanges
-    /** What an empty receive side says. */
-    emptyReceive: EmptyReceiveSide
     /** The site the request came from, as the platform observed it. */
     requesterHost: Optional<string>
 }
@@ -159,11 +155,6 @@ export const useEthereumTransactionReview = ({
             scope.chainId,
             actionPrices,
         ],
-    )
-
-    const emptyReceive = useMemo(
-        () => ethereumEmptyReceiveOf({ isTransfer, contractAction }),
-        [isTransfer, contractAction],
     )
 
     const warningItems = useMemo(
@@ -303,7 +294,6 @@ export const useEthereumTransactionReview = ({
         permissions,
         transferSpend,
         actionChanges,
-        emptyReceive,
         requesterHost: requesterHostOf(source, verifiedOrigin),
     }
 }

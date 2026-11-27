@@ -63,6 +63,14 @@ export const ethereumReviewWarningItemOf = (
                 isHighRisk: false,
             }
         }
+        case 'bridge-payout': {
+            return {
+                id: 'ethereum_bridge_payout_warning',
+                title: t('ethereum.review_warnings.bridge_payout_title'),
+                message: t('ethereum.review_warnings.bridge_payout_body'),
+                isHighRisk: false,
+            }
+        }
         case 'nothing-detected': {
             return {
                 id: 'ethereum_nothing_detected_warning',

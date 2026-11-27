@@ -5428,7 +5428,9 @@
         "review_warnings": {
             "high_fee_title": "Unusually high network fee",
             "high_fee_body": "{{domain}} set this transaction's fee to more than twice what Pera would use at its Fast setting. You'll pay at most <0/> (max fee), usually less.",
-            "high_fee_body_no_source": "The app that sent this set its fee to more than twice what Pera would use at its Fast setting. You'll pay at most <0/> (max fee), usually less."
+            "high_fee_body_no_source": "The app that sent this set its fee to more than twice what Pera would use at its Fast setting. You'll pay at most <0/> (max fee), usually less.",
+            "bridge_payout_title": "Pera can't check what arrives",
+            "bridge_payout_body": "The app sets the token and amount you get on the other network, and Pera can't see that network to check them. Only continue if you trust this app."
         },
         "simulation": {}
     }

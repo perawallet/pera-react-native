@@ -158,6 +158,7 @@ const FAILURE_ACKNOWLEDGE = 'review_warnings_acknowledge'
 const UNCHECKED_NOTICE = 'ethereum_contract_call_warning'
 const NOTHING_DETECTED_WARNING = 'ethereum_nothing_detected_warning'
 const NOTHING_BACK_WARNING = 'ethereum_nothing_back_warning'
+const BRIDGE_PAYOUT_WARNING = 'ethereum_bridge_payout_warning'
 
 const ETHEREUM_ACCOUNT = {
     id: 'eth-simulation',
@@ -446,7 +447,7 @@ describe('Flow: a dApp asks to sign a call whose outcome the backend predicts', 
         await expectSlideEnabled()
     })
 
-    it('Given an Across deposit paying the signer on Base, when it is reviewed, then the receive side says it arrives on Base and nothing cautions that nothing comes back', async () => {
+    it('Given an Across deposit paying the signer on Base, when it is reviewed, then the receive side says it arrives on Base, with a caution that Pera cannot check the payout in place of one that nothing comes back', async () => {
         await review(
             ACROSS_SPOKE_POOL,
             ACROSS_DEPOSIT_TO_BASE_DATA,
@@ -459,6 +460,7 @@ describe('Flow: a dApp asks to sign a call whose outcome the backend predicts', 
             { timeout: 15_000 },
         )
         expect(receive.textContent).toContain('signing.review.on_network')
+        expect(screen.getByTestId(BRIDGE_PAYOUT_WARNING)).toBeTruthy()
         expect(screen.queryByTestId(NOTHING_DETECTED_WARNING)).toBeNull()
         expect(screen.queryByTestId(NOTHING_BACK_WARNING)).toBeNull()
         expect(screen.queryByTestId(UNCHECKED_NOTICE)).toBeNull()

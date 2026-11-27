@@ -174,6 +174,7 @@ const decodeAaveGatewayAction = (call: Call): Optional<EvmContractAction> => {
 const decodeAcrossDeposit = (
     call: Call,
     wrappedNative: Optional<Address>,
+    eip155ChainId: Optional<number>,
 ): Optional<EvmContractAction> => {
     const read = readFunction(
         ACROSS_SPOKE_POOL_FUNCTIONS,
@@ -195,8 +196,10 @@ const decodeAcrossDeposit = (
     const destinationChainId = args[6] as bigint
     if (inputAmount <= 0n) return undefined
     if (
+        eip155ChainId === undefined ||
         destinationChainId <= 0n ||
-        destinationChainId > BigInt(Number.MAX_SAFE_INTEGER)
+        destinationChainId > BigInt(Number.MAX_SAFE_INTEGER) ||
+        destinationChainId === BigInt(eip155ChainId)
     ) {
         return undefined
     }
@@ -469,12 +472,14 @@ const decodeUniswapV3PositionAction = (
 
 /**
  * What a call to a known contract does, or undefined unless its calldata
- * decodes exactly to an action this knows. Never throws.
+ * decodes exactly to an action this knows. `eip155ChainId` is the chain the
+ * call runs on; no bridge decodes without it. Never throws.
  */
 export const decodeEvmContractAction = (
     call: Call,
     contract: KnownEvmContract,
     wrappedNative: Optional<Address>,
+    eip155ChainId?: number,
 ): Optional<EvmContractAction> => {
     try {
         switch (contract.kind) {
@@ -501,7 +506,7 @@ export const decodeEvmContractAction = (
                 return decodeUniswapV4PositionAction(call)
             }
             case 'across-spoke-pool': {
-                return decodeAcrossDeposit(call, wrappedNative)
+                return decodeAcrossDeposit(call, wrappedNative, eip155ChainId)
             }
             case 'uniswap-permit2':
             case 'aave-v3-rewards':

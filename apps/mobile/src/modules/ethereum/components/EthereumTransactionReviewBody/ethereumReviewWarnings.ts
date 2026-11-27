@@ -32,6 +32,8 @@ export type EthereumReviewWarning =
     | { kind: 'nothing-back' }
     /** A contract call whose simulation sees nothing come back on this network. */
     | { kind: 'nothing-detected' }
+    /** A decoded bridge: the dApp sets what arrives on the other network, which Pera can't see to check. */
+    | { kind: 'bridge-payout' }
 
 type EthereumReviewWarningsParams = {
     presentation: EthereumTransactionPresentation
@@ -66,6 +68,13 @@ export const ethereumReviewWarningsOf = ({
             notice: contractCallNoticeOf(source, verifiedOrigin),
         })
     }
+    const { kind: emptyReceiveKind } = ethereumEmptyReceiveOf(presentation)
+    if (
+        emptyReceiveKind === 'other-network' &&
+        simulation.status !== 'reverted'
+    ) {
+        warnings.push({ kind: 'bridge-payout' })
+    }
     // A failed simulation isn't listed: the changes card says so in its place.
     if (
         simulation.status === 'success' &&
@@ -73,9 +82,10 @@ export const ethereumReviewWarningsOf = ({
         simulation.receive.length === 0 &&
         simulation.approvals.length === 0
     ) {
-        const { kind } = ethereumEmptyReceiveOf(presentation)
-        if (kind === 'nothing') warnings.push({ kind: 'nothing-back' })
-        if (kind === 'not-detected') {
+        if (emptyReceiveKind === 'nothing') {
+            warnings.push({ kind: 'nothing-back' })
+        }
+        if (emptyReceiveKind === 'not-detected') {
             warnings.push({ kind: 'nothing-detected' })
         }
     }

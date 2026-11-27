@@ -321,8 +321,29 @@ describe('useEthereumContractAction', () => {
 
             expect(contractAction).toMatchObject({
                 kind: 'bridge',
+                assetContract: USDC,
                 amount: { asset: USDC_RECORD, value: new Decimal(95) },
                 destinationName: 'Ethereum',
+            })
+        })
+
+        it('keeps the token contract and flags raw base units when the token has no record', () => {
+            mockRecords({})
+
+            const { contractAction } = render(
+                viewWith(
+                    bridge(
+                        { kind: 'token', contract: USDC },
+                        new Decimal(95_000_000),
+                        1,
+                    ),
+                ),
+            )
+
+            expect(contractAction).toMatchObject({
+                kind: 'bridge',
+                assetContract: USDC,
+                amount: { isBaseUnits: true },
             })
         })
 
@@ -332,6 +353,7 @@ describe('useEthereumContractAction', () => {
             )
 
             expect(contractAction).not.toHaveProperty('destinationName')
+            expect(contractAction).not.toHaveProperty('assetContract')
         })
     })
 

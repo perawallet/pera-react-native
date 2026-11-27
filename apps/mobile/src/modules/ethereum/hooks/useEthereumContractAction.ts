@@ -14,21 +14,20 @@ import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import { useNativeAsset, type PeraAsset } from '@perawallet/wallet-core-assets'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import {
-    evmChainOfEip155Id,
-    type EthereumTransactionView,
-    type EvmActionAsset,
-    type EvmContractAction,
-    type EvmLiquidityPosition,
-    type EvmSwapLeg,
+import type {
+    EthereumTransactionView,
+    EvmContractAction,
+    EvmLiquidityPosition,
+    EvmSwapLeg,
 } from '@perawallet/wallet-core-chain-ethereum'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import {
     baseUnitsToDisplayUnits,
     type Nullable,
-    type Optional,
 } from '@perawallet/wallet-core-shared'
 import { useBaseUnitsAmount } from '@hooks/useBaseUnitsAmount'
+import { evmMainnetNameOf } from '../utils/evmMainnetNameOf'
+import { tokenSlotsOf } from './contractActionTokenSlots'
 import {
     useEthereumContractLabel,
     type EthereumContractLabel,
@@ -79,6 +78,8 @@ export type EthereumContractActionPresentation =
     | { kind: 'collect-fees'; tokenId: string }
     | {
           kind: 'bridge'
+          /** Absent when the native coin moves. */
+          assetContract?: string
           amount: EthereumActionAmount
           /** A proper noun from the chain table, never translated; unset when Pera doesn't carry the network. */
           destinationName?: string
@@ -88,49 +89,6 @@ export type UseEthereumContractActionResult = {
     contractAction: Nullable<EthereumContractActionPresentation>
     knownContract: Nullable<EthereumContractLabel>
     isLoading: boolean
-}
-
-type TokenSlot = { assetId: string; baseUnits: Optional<Decimal> }
-
-const NO_TOKEN: TokenSlot = { assetId: '', baseUnits: undefined }
-
-const tokenOf = (asset: EvmActionAsset, baseUnits: Decimal): TokenSlot =>
-    asset.kind === 'token' ? { assetId: asset.contract, baseUnits } : NO_TOKEN
-
-// The three token records an action needs, in the order `present` reads them;
-// the third is the swap's fee token, whose record sizes every fee, and a
-// liquidity add's two deposits take the first two.
-const tokenSlotsOf = (
-    action: Optional<EvmContractAction>,
-): [TokenSlot, TokenSlot, TokenSlot] => {
-    switch (action?.kind) {
-        case 'swap': {
-            const [fee] = action.fees
-            return [
-                tokenOf(action.input.asset, action.input.amount),
-                tokenOf(action.output.asset, action.output.amount),
-                { assetId: fee?.token ?? '', baseUnits: undefined },
-            ]
-        }
-        case 'supply':
-        case 'withdraw':
-        case 'borrow':
-        case 'repay':
-        case 'bridge': {
-            return [tokenOf(action.asset, action.amount), NO_TOKEN, NO_TOKEN]
-        }
-        case 'add-liquidity': {
-            const [first, second] = action.deposits
-            return [
-                first ? tokenOf(first.asset, first.maxAmount) : NO_TOKEN,
-                second ? tokenOf(second.asset, second.maxAmount) : NO_TOKEN,
-                NO_TOKEN,
-            ]
-        }
-        default: {
-            return [NO_TOKEN, NO_TOKEN, NO_TOKEN]
-        }
-    }
 }
 
 type TokenAmount = ReturnType<typeof useBaseUnitsAmount>
@@ -166,16 +124,6 @@ const nativeAmountOf = (
 })
 
 const BIPS_PER_PERCENT = 100
-
-const mainnetNameOf = (eip155ChainId: number): Optional<string> => {
-    const found = evmChainOfEip155Id(eip155ChainId)
-    const network = found?.chain.descriptor.networks.find(
-        candidate => candidate.id === found.networkId,
-    )
-    return network?.tier === 'mainnet'
-        ? found?.chain.descriptor.displayName
-        : undefined
-}
 
 const present = (
     action: EvmContractAction,
@@ -268,9 +216,12 @@ const present = (
             return { kind: 'collect-fees', tokenId: action.tokenId }
         }
         case 'bridge': {
-            const destinationName = mainnetNameOf(action.destinationChainId)
+            const destinationName = evmMainnetNameOf(action.destinationChainId)
             return {
                 kind: 'bridge',
+                ...(action.asset.kind === 'token' && {
+                    assetContract: action.asset.contract,
+                }),
                 amount:
                     action.asset.kind === 'native'
                         ? nativeAmountOf(nativeAsset, action.amount)

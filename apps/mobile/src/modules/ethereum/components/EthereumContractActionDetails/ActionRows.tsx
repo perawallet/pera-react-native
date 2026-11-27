@@ -137,34 +137,11 @@ export const ActionRows = ({ action, presentation }: ActionRowsProps) => {
                 </KeyValueRow>
             )
         }
-        case 'bridge': {
-            return (
-                <>
-                    <KeyValueRow
-                        testID='ethereum_action_amount'
-                        title={t('transactions.common.amount')}
-                    >
-                        <ActionAmount
-                            amount={action.amount}
-                            presentation={presentation}
-                        />
-                    </KeyValueRow>
-                    <KeyValueRow
-                        testID='ethereum_action_destination'
-                        title={t('ethereum.contract_action.destination')}
-                    >
-                        <PWText>
-                            {action.destinationName ??
-                                t('ethereum.contract_action.another_network')}
-                        </PWText>
-                    </KeyValueRow>
-                </>
-            )
-        }
         case 'supply':
         case 'withdraw':
         case 'borrow':
-        case 'repay': {
+        case 'repay':
+        case 'bridge': {
             return (
                 <>
                     <KeyValueRow
@@ -189,7 +166,7 @@ export const ActionRows = ({ action, presentation }: ActionRowsProps) => {
                         testID='ethereum_action_amount'
                         title={t('transactions.common.amount')}
                     >
-                        {action.isEntireBalance ? (
+                        {action.kind !== 'bridge' && action.isEntireBalance ? (
                             <PWText>
                                 {t('ethereum.contract_action.entire_balance')}
                             </PWText>
@@ -200,6 +177,19 @@ export const ActionRows = ({ action, presentation }: ActionRowsProps) => {
                             />
                         )}
                     </KeyValueRow>
+                    {action.kind === 'bridge' && (
+                        <KeyValueRow
+                            testID='ethereum_action_destination'
+                            title={t('ethereum.contract_action.destination')}
+                        >
+                            <PWText>
+                                {action.destinationName ??
+                                    t(
+                                        'ethereum.contract_action.another_network',
+                                    )}
+                            </PWText>
+                        </KeyValueRow>
+                    )}
                 </>
             )
         }

@@ -34,6 +34,7 @@ import {
 import type { SigningStackParamList } from '@modules/signing/routes'
 import type { EthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
 import { EthereumPermissionCard } from './EthereumPermissionCard'
+import { ethereumEmptyReceiveOf } from './ethereumEmptyReceive'
 import { EthereumReviewFeeRow } from './EthereumReviewFeeRow'
 import {
     useEthereumTransactionReview,
@@ -57,7 +58,6 @@ type ChangesProps = Pick<
     | 'permissions'
     | 'transferSpend'
     | 'actionChanges'
-    | 'emptyReceive'
     | 'requesterHost'
 > & {
     presentation: EthereumTransactionPresentation
@@ -69,12 +69,12 @@ const changesOf = ({
     permissions,
     transferSpend,
     actionChanges,
-    emptyReceive,
     requesterHost,
     presentation,
     isDappRequest,
 }: ChangesProps): ReactNode => {
     const { scope, isTransfer } = presentation
+    const emptyReceive = ethereumEmptyReceiveOf(presentation)
     const permissionCard = (isOnlyPermission: boolean) =>
         permissions.length > 0 ? (
             <EthereumPermissionCard

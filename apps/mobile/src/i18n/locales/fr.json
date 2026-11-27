@@ -5428,7 +5428,9 @@
         "review_warnings": {
             "high_fee_title": "Frais de réseau anormalement élevés",
             "high_fee_body": "{{domain}} a fixé les frais de cette transaction à plus du double de ce que Pera utiliserait avec son réglage Rapide. Vous paierez au maximum <0/> (frais maximum), généralement moins.",
-            "high_fee_body_no_source": "L’application à l’origine de cette demande a fixé ses frais à plus du double de ce que Pera utiliserait avec son réglage Rapide. Vous paierez au maximum <0/> (frais maximum), généralement moins."
+            "high_fee_body_no_source": "L’application à l’origine de cette demande a fixé ses frais à plus du double de ce que Pera utiliserait avec son réglage Rapide. Vous paierez au maximum <0/> (frais maximum), généralement moins.",
+            "bridge_payout_title": "Pera ne peut pas vérifier ce qui arrive",
+            "bridge_payout_body": "L’application fixe le jeton et le montant que vous recevez sur l’autre réseau, et Pera ne peut pas voir ce réseau pour les vérifier. Ne continuez que si vous faites confiance à cette application."
         },
         "simulation": {}
     }
