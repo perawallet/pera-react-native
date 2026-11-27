@@ -27,6 +27,7 @@ import {
     AssetClaimDetailScreen,
     TransactionSuccessScreen,
     ClaimProcessingScreen,
+    BulkClaimProcessingScreen,
     TokenRequestDetailScreen,
 } from '@modules/transactions/routes'
 import type { MessagesStackParamList } from './types'
@@ -91,6 +92,17 @@ export const MessagesStackNavigator = () => {
                 <MessagesStack.Screen
                     name='ClaimProcessing'
                     component={ClaimProcessingScreen}
+                    options={{
+                        headerShown: false,
+                        gestureEnabled: false,
+                    }}
+                />
+            )}
+
+            {canUseAssetInbox && (
+                <MessagesStack.Screen
+                    name='BulkClaimProcessing'
+                    component={BulkClaimProcessingScreen}
                     options={{
                         headerShown: false,
                         gestureEnabled: false,

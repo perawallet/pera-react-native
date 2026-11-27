@@ -14,6 +14,7 @@ export { AssetClaimDetailScreen } from '../screens/claim-assets/AssetClaimDetail
 export { AssetTransferRequestsScreen } from '../screens/claim-assets/AssetTransferRequestsScreen'
 export { TokenRequestDetailScreen } from '../screens/claim-assets/TokenRequestDetailScreen'
 export { ClaimProcessingScreen } from '../screens/claim-assets/ClaimProcessingScreen'
+export { BulkClaimProcessingScreen } from '../screens/claim-assets/BulkClaimProcessingScreen'
 export { TransactionSuccessScreen } from '../screens/send-funds/TransactionSuccessScreen'
 export { ReceiveFundsContent } from '../components/receive-funds/ReceiveFundsContent'
 export {

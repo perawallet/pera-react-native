@@ -34,6 +34,7 @@ import { Decimal } from 'decimal.js'
 
 import { server, http, HttpResponse } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
+import { longPress } from '@test-utils/rnw'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
     resetTestDatabase,
@@ -62,6 +63,7 @@ import { useClaimAssetsStore } from '@modules/transactions/hooks/claim-assets/us
 import {
     AssetTransferRequestsScreen,
     AssetClaimDetailScreen,
+    BulkClaimProcessingScreen,
     ClaimProcessingScreen,
     TransactionSuccessScreen,
 } from '@modules/transactions/routes'
@@ -263,6 +265,7 @@ const renderClaimFlow = (
             params: { assetIndex: 0, scope },
         },
         { name: 'ClaimProcessing', component: ClaimProcessingScreen },
+        { name: 'BulkClaimProcessing', component: BulkClaimProcessingScreen },
         { name: 'ClaimSuccess', component: TransactionSuccessScreen },
     ] as const
 
@@ -647,5 +650,76 @@ describe('Flow: Inbound ARC-59 asset claim (Requests → Detail → Processing �
         expect(
             screen.queryByTestId('asset_inbox_claim_confirm_slide'),
         ).toBeTruthy()
+    })
+
+    it('Given two inbound requests, when the user long-presses one, selects all and confirms Claim, then each ARC-59 claim group is signed and POSTed in turn and the list comes back', async () => {
+        await seedClaimingAccount()
+        const SECOND_ASSET_ID = '741234568'
+        await seedAssets(
+            [
+                {
+                    ...CLAIMED_ASSET,
+                    assetId: SECOND_ASSET_ID,
+                    name: 'Second Asset',
+                },
+            ],
+            'mainnet',
+        )
+        const [request] = rawAssetRequestsResponse.results
+        server.use(
+            http.get(`*/v1/asa-inboxes/requests/${ALGO25_TEST_ADDRESS}/`, () =>
+                HttpResponse.json(
+                    {
+                        ...rawAssetRequestsResponse,
+                        results: [
+                            request,
+                            {
+                                ...request,
+                                asset: {
+                                    ...request.asset,
+                                    asset_id: SECOND_ASSET_ID,
+                                    name: 'Second Asset',
+                                },
+                            },
+                        ],
+                    },
+                    { status: 200 },
+                ),
+            ),
+        )
+        const sendSpy = vi.fn(() =>
+            HttpResponse.json(
+                {
+                    txId: 'CLAIMTXID000000000000000000000000000000000000000000000',
+                },
+                { status: 200 },
+            ),
+        )
+        server.use(http.post('*/v2/transactions', sendSpy))
+
+        renderClaimFlow('AssetTransferRequests')
+
+        await longPress(
+            await screen.findByText('Test Asset', {}, { timeout: 5000 }),
+        )
+        fireEvent.click(await screen.findByTestId('asset_inbox_select_all'))
+        fireEvent.click(screen.getByTestId('asset_inbox_claim_selected'))
+        fireEvent.click(await screen.findByTestId('asset_inbox_bulk_confirm'))
+
+        await waitFor(() => expect(sendSpy).toHaveBeenCalledTimes(2), {
+            timeout: 15_000,
+        })
+        // The batch returns to the list, out of selection mode.
+        await waitFor(
+            () => {
+                expect(
+                    screen.queryByTestId('asset_inbox_claim_selected'),
+                ).toBeNull()
+                expect(
+                    screen.queryByTestId('asset_inbox_bulk_item_0'),
+                ).toBeNull()
+            },
+            { timeout: 5000 },
+        )
     })
 })

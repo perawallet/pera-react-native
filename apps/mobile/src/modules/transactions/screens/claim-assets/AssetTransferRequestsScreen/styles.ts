@@ -20,6 +20,21 @@ export const useStyles = makeStyles(theme => ({
     rejectAll: {
         marginTop: theme.spacing.md,
     },
+    selectionHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginTop: theme.spacing.md,
+    },
+    selectionFooter: {
+        flexDirection: 'row',
+        gap: theme.spacing.md,
+        paddingHorizontal: theme.spacing.xl,
+        paddingTop: theme.spacing.md,
+    },
+    selectionAction: {
+        flex: 1,
+    },
     sectionHeader: {
         marginTop: theme.spacing.xl,
     },

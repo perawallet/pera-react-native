@@ -36,6 +36,7 @@ vi.mock('@modules/transactions/routes', () => ({
     AssetClaimDetailScreen: () => null,
     TransactionSuccessScreen: () => null,
     ClaimProcessingScreen: () => null,
+    BulkClaimProcessingScreen: () => null,
 }))
 vi.mock('../../screens/MessagesScreen', () => ({ MessagesScreen: () => null }))
 vi.mock('../../screens/MultisigInvitationNameScreen', () => ({
@@ -70,6 +71,7 @@ describe('MessagesStackNavigator', () => {
                 'AssetTransferRequests',
                 'AssetClaimDetail',
                 'ClaimProcessing',
+                'BulkClaimProcessing',
                 'ClaimSuccess',
             ]),
         )

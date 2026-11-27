@@ -40,6 +40,12 @@ export type MessagesStackParamList = {
         shouldClaimAlgo: boolean
         scope: ChainScope
     }
+    /** Resolves several backend requests one after another, by index into the claim store. */
+    BulkClaimProcessing: {
+        mode: 'claim' | 'reject'
+        assetIndexes: number[]
+        scope: ChainScope
+    }
     ClaimSuccess: {
         transactionId: string
         variant?: 'claim' | 'reject'
