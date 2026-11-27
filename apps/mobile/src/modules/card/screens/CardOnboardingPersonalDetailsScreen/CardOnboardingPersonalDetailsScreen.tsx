@@ -93,7 +93,6 @@ export const CardOnboardingPersonalDetailsScreen = () => {
                                 label={t(
                                     'peraCard.personal_details.first_name_label',
                                 )}
-                                labelStyle={styles.label}
                                 value={value}
                                 onChangeText={onChange}
                                 onBlur={onBlur}
@@ -127,7 +126,6 @@ export const CardOnboardingPersonalDetailsScreen = () => {
                                 label={t(
                                     'peraCard.personal_details.middle_name_label',
                                 )}
-                                labelStyle={styles.label}
                                 value={value}
                                 onChangeText={onChange}
                                 onBlur={onBlur}
@@ -160,7 +158,6 @@ export const CardOnboardingPersonalDetailsScreen = () => {
                                 label={t(
                                     'peraCard.personal_details.last_name_label',
                                 )}
-                                labelStyle={styles.label}
                                 value={value}
                                 onChangeText={onChange}
                                 onBlur={onBlur}
@@ -192,7 +189,6 @@ export const CardOnboardingPersonalDetailsScreen = () => {
                         }) => (
                             <PWInput
                                 label={t('peraCard.personal_details.dob_label')}
-                                labelStyle={styles.label}
                                 value={value}
                                 onChangeText={text =>
                                     onChange(formatDobInput(text))
@@ -229,7 +225,6 @@ export const CardOnboardingPersonalDetailsScreen = () => {
                                     label={t(
                                         'peraCard.personal_details.ssn_label',
                                     )}
-                                    labelStyle={styles.label}
                                     value={value}
                                     onChangeText={text =>
                                         onChange(formatSsnInput(text))

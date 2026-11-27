@@ -52,7 +52,6 @@ export const CardOnboardingMailingAddressScreen = () => {
                                 label={t(
                                     'peraCard.address.address_line1_label',
                                 )}
-                                labelStyle={styles.label}
                                 value={value}
                                 onChangeText={onChange}
                                 onBlur={onBlur}
@@ -82,7 +81,6 @@ export const CardOnboardingMailingAddressScreen = () => {
                                 label={t(
                                     'peraCard.address.address_line2_label',
                                 )}
-                                labelStyle={styles.label}
                                 value={value ?? ''}
                                 onChangeText={onChange}
                                 onBlur={onBlur}
@@ -105,7 +103,6 @@ export const CardOnboardingMailingAddressScreen = () => {
                                 <PWInput
                                     containerStyle={styles.rowItem}
                                     label={t('peraCard.address.city_label')}
-                                    labelStyle={styles.label}
                                     value={value}
                                     onChangeText={onChange}
                                     onBlur={onBlur}
@@ -134,7 +131,6 @@ export const CardOnboardingMailingAddressScreen = () => {
                                 <PWInput
                                     containerStyle={styles.rowItem}
                                     label={t('peraCard.address.zip_label')}
-                                    labelStyle={styles.label}
                                     value={value}
                                     onChangeText={onChange}
                                     onBlur={onBlur}

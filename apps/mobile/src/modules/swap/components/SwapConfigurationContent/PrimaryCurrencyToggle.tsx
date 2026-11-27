@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWSwitch, PWText, PWView } from '@components/core'
+import { PWInputLabel, PWSwitch, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
@@ -30,12 +30,9 @@ export const PrimaryCurrencyToggle = ({
 
     return (
         <PWView style={styles.section}>
-            <PWText
-                variant='caption'
-                style={styles.sectionTitle}
-            >
+            <PWInputLabel>
                 {t('swap.configuration.primary_currency')}
-            </PWText>
+            </PWInputLabel>
             <PWView style={styles.currencyToggleRow}>
                 <PWText
                     variant='body'

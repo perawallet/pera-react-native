@@ -41,6 +41,33 @@ describe('PWInput', () => {
         expect(onChangeText).toHaveBeenCalledWith('hello')
     })
 
+    describe('label', () => {
+        it('shows its label through PWInputLabel', () => {
+            render(
+                <PWInput
+                    label='Name'
+                    testID='name'
+                />,
+            )
+
+            expect(screen.getByTestId('name-label')).toHaveProperty(
+                'textContent',
+                'Name',
+            )
+        })
+
+        it('renders no label for an empty label', () => {
+            render(
+                <PWInput
+                    label=''
+                    testID='name'
+                />,
+            )
+
+            expect(screen.queryByTestId('name-label')).toBeNull()
+        })
+    })
+
     // `isDisabled` is deliberately untested here: the suite mocks @rneui's
     // Input with a plain <input> that wires onChange unconditionally
     // (vitest.setup.ts), so neither `editable` nor the dim style is observable.

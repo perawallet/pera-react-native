@@ -47,8 +47,17 @@ vi.mock('@components/core', async () => {
         PWButton: () => <button type='button' />,
         PWIcon: () => null,
         PWLoadingOverlay: () => null,
-        PWInput: ({ rightIcon }: { rightIcon?: ReactNode }) => (
-            <div>{rightIcon}</div>
+        PWInput: ({
+            label,
+            rightIcon,
+        }: {
+            label?: string
+            rightIcon?: ReactNode
+        }) => (
+            <div>
+                {label}
+                {rightIcon}
+            </div>
         ),
         PWTouchableIcon,
     }

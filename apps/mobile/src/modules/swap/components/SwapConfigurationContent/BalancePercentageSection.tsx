@@ -38,13 +38,8 @@ export const BalancePercentageSection = ({
 
     return (
         <PWView style={styles.section}>
-            <PWText
-                variant='caption'
-                style={styles.sectionTitle}
-            >
-                {t('swap.configuration.balance_percentage')}
-            </PWText>
             <PWInput
+                label={t('swap.configuration.balance_percentage')}
                 variant='body'
                 value={text}
                 onChangeText={onTextChange}

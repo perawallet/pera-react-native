@@ -18,6 +18,10 @@ All external components (from `@rneui/themed`, `react-native`, third-party) **MU
 
 Exception: basic layout primitives used only inside PW components. Loading spinners are `PWLoadingIndicator`.
 
+### Input Labels
+
+An input's label is `PWInput`'s `label` prop; a label over a field `PWInput` can't label (a row of inputs, a switch group) is `PWInputLabel`. Neither takes a style; `pera/no-input-label-style` fails a `labelStyle`.
+
 ### Component Locations
 
 | Type            | Location                                           | Prefix          |

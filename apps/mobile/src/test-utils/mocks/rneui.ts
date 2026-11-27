@@ -202,11 +202,16 @@ vi.mock('@rneui/themed', () => {
             ),
         Text: (props: any) =>
             React.createElement(MockText, props, props.children),
-        Input: (props: any) =>
-            React.createElement(MockTextInput, {
-                ...props,
-                'data-testid': props.testID ?? 'RNEInput',
-            }),
+        Input: ({ label, ...props }: any) =>
+            React.createElement(
+                React.Fragment,
+                null,
+                label,
+                React.createElement(MockTextInput, {
+                    ...props,
+                    'data-testid': props.testID ?? 'RNEInput',
+                }),
+            ),
         Badge: ({ value, label, ...props }: any) =>
             React.createElement(
                 MockText,
