@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => ({
     getSurface: vi.fn(() => 'offscreen'),
     hydratePlatform: vi.fn(() => Promise.resolve()),
     installOffscreenStorageShim: vi.fn(),
+    installOffscreenManifestShim: vi.fn(() => Promise.resolve()),
     runOffscreenApp: vi.fn(() => Promise.resolve()),
     registerHardwareWalletTransports: vi.fn(),
     registerChainAdapters: vi.fn(),
@@ -30,6 +31,7 @@ vi.mock('@perawallet/wallet-extension-platform-chrome/bootstrap', () => ({
     getSurface: mocks.getSurface,
     hydratePlatform: mocks.hydratePlatform,
     installOffscreenStorageShim: mocks.installOffscreenStorageShim,
+    installOffscreenManifestShim: mocks.installOffscreenManifestShim,
 }))
 vi.mock('../AppShell.web', () => ({ AppShell: () => <div>Wallet ready</div> }))
 vi.mock('../bootstrap/preReact.web', () => ({ initRuntime: vi.fn() }))
@@ -68,6 +70,18 @@ describe('App (web) on the offscreen surface', () => {
         expect(mocks.hydratePlatform.mock.invocationCallOrder[0]).toBeLessThan(
             mocks.runOffscreenApp.mock.invocationCallOrder[0],
         )
+    })
+
+    it('gives the offscreen document its manifest before the app starts', async () => {
+        render(<App />)
+
+        await waitFor(() =>
+            expect(mocks.runOffscreenApp).toHaveBeenCalledOnce(),
+        )
+        expect(mocks.installOffscreenManifestShim).toHaveBeenCalledOnce()
+        expect(
+            mocks.installOffscreenManifestShim.mock.invocationCallOrder[0],
+        ).toBeLessThan(mocks.runOffscreenApp.mock.invocationCallOrder[0])
     })
 
     it('hands the offscreen document a broadcast on the signed transactions’ own scope', async () => {

@@ -14,6 +14,7 @@ import React, { useEffect, useState } from 'react'
 import {
     getSurface,
     hydratePlatform,
+    installOffscreenManifestShim,
     installOffscreenStorageShim,
 } from '@perawallet/wallet-extension-platform-chrome/bootstrap'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -42,10 +43,11 @@ export const App = (): React.JSX.Element => {
         const bootstrap = async (): Promise<void> => {
             const isOffscreen = getSurface() === 'offscreen'
             if (isOffscreen) {
-                // Offscreen documents expose only chrome.runtime — install
-                // the SW-proxied chrome.storage shim BEFORE any hydrator
-                // reads chrome.storage.local.
+                // Offscreen documents get only part of chrome.runtime: no
+                // chrome.storage and no getManifest. Both shims go in BEFORE
+                // any hydrator reads storage or the manifest.
                 installOffscreenStorageShim()
+                await installOffscreenManifestShim()
             }
             await hydratePlatform()
 
