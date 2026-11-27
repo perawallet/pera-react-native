@@ -32,13 +32,7 @@ export type DappLogoProps = {
 export const DappLogo = ({ logo, size = 'row', siteUrl }: DappLogoProps) => {
     const styles = useStyles({ size })
     const { uri, handleError } = useDappLogo({ logo, siteUrl })
-    return uri ? (
-        <PWImage
-            source={{ uri }}
-            style={styles.logo}
-            onError={handleError}
-        />
-    ) : (
+    const globe = (
         <PWView style={[styles.logo, styles.placeholder]}>
             <PWIcon
                 name='globe'
@@ -46,5 +40,16 @@ export const DappLogo = ({ logo, size = 'row', siteUrl }: DappLogoProps) => {
                 variant='secondary'
             />
         </PWView>
+    )
+    if (!uri) return globe
+    return (
+        <PWImage
+            source={{ uri }}
+            style={styles.logo}
+            onError={handleError}
+            // A site may be slow or have no icon at all: the globe stays up
+            // until one loads, instead of a spinner on every mount.
+            PlaceholderContent={logo ? undefined : globe}
+        />
     )
 }

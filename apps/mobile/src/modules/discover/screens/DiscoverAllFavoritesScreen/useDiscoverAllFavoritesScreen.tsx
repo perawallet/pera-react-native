@@ -11,14 +11,15 @@
  */
 
 import { useCallback, useState } from 'react'
+import { DiscoverEvent, trackEvent } from '@analytics'
 import { useDiscoverDirectory } from '../../hooks/useDiscoverDirectory'
 import { useFavoritesView } from '../../hooks/useFavoritesView'
 import { useOpenDapp } from '../../hooks/useOpenDapp'
 import { useOpenRearrangeFavorites } from '../../hooks/useOpenRearrangeFavorites'
-import { useToggleDiscoverFavorite } from '../../hooks/useToggleDiscoverFavorite'
 import { useDiscoverFavoritesStore } from '../../store/useDiscoverFavoritesStore'
 import type { DiscoverFavorite } from '../../types'
 import { dappSubtitle } from '../../utils/dappSubtitle'
+import { dappEventPayload } from '../../utils/discoverAnalytics'
 import { dappHostOf, normalizeDappUrl } from '../../utils/normalizeDappUrl'
 
 export type UseDiscoverAllFavoritesScreenResult = {
@@ -45,7 +46,8 @@ export const useDiscoverAllFavoritesScreen =
         )
         const { verifiedUrls } = useDiscoverDirectory()
         const { openDapp: open } = useOpenDapp()
-        const toggleFavorite = useToggleDiscoverFavorite()
+        const remove = useDiscoverFavoritesStore(s => s.removeFavorite)
+        const isFavorite = useDiscoverFavoritesStore(s => s.isFavorite)
         const openRearrange = useOpenRearrangeFavorites()
 
         const isVerified = useCallback(
@@ -70,12 +72,18 @@ export const useDiscoverAllFavoritesScreen =
             [query],
         )
 
-        // Every row here is a favorite, so the toggle only ever removes.
+        // Not the shared toggle: a second tap on a row that has not left the
+        // list yet would add the favorite back.
         const removeFavorite = useCallback(
             (dapp: DiscoverFavorite) => {
-                toggleFavorite(dapp, null)
+                if (!isFavorite(dapp.url)) return
+                remove(dapp.url)
+                trackEvent(
+                    DiscoverEvent.DappUnfavoriteTap,
+                    dappEventPayload(dapp, null),
+                )
             },
-            [toggleFavorite],
+            [isFavorite, remove],
         )
 
         return {

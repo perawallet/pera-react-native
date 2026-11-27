@@ -12,6 +12,7 @@
 
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { DiscoverEvent, trackEvent } from '@analytics'
 import { useOpenDapp } from '../../../hooks/useOpenDapp'
 import { useDiscoverDirectory } from '../../../hooks/useDiscoverDirectory'
 import { useDiscoverFavoritesStore } from '../../../store/useDiscoverFavoritesStore'
@@ -22,6 +23,10 @@ import { useDiscoverAllFavoritesScreen } from '../useDiscoverAllFavoritesScreen'
 vi.mock('../../../hooks/useOpenDapp', () => ({ useOpenDapp: vi.fn() }))
 vi.mock('../../../hooks/useDiscoverDirectory', () => ({
     useDiscoverDirectory: vi.fn(),
+}))
+vi.mock('@analytics', async () => ({
+    ...(await vi.importActual('@analytics')),
+    trackEvent: vi.fn(),
 }))
 const openRearrange = vi.fn()
 vi.mock('../../../hooks/useOpenRearrangeFavorites', () => ({
@@ -124,6 +129,23 @@ describe('useDiscoverAllFavoritesScreen', () => {
         act(() => result.current.removeFavorite(result.current.dapps[1]!))
 
         expect(names(result)).toEqual(['Vestige', 'Tinyman'])
+        expect(trackEvent).toHaveBeenCalledWith(
+            DiscoverEvent.DappUnfavoriteTap,
+            expect.anything(),
+        )
+    })
+
+    it('never adds a favorite back when its row is tapped twice', () => {
+        const { result } = renderHook(() => useDiscoverAllFavoritesScreen())
+        const allo = result.current.dapps[1]!
+
+        act(() => {
+            result.current.removeFavorite(allo)
+            result.current.removeFavorite(allo)
+        })
+
+        expect(names(result)).toEqual(['Vestige', 'Tinyman'])
+        expect(trackEvent).toHaveBeenCalledTimes(1)
     })
 
     it('opens Rearrange from the header', () => {

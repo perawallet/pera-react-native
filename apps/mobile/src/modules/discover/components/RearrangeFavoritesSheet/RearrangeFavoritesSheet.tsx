@@ -53,7 +53,10 @@ export const RearrangeFavoritesSheet = () => {
                     style={styles.row}
                     testID={`discover_rearrange_row_${item.key}`}
                 >
-                    <DappLogo logo={item.dapp.logo} />
+                    <DappLogo
+                        logo={item.dapp.logo}
+                        siteUrl={item.dapp.url}
+                    />
                     <PWView style={styles.info}>
                         <PWText
                             variant='bodyLarge'
