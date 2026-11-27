@@ -21,13 +21,18 @@ import { useAssetTransferRequestItem } from './useAssetTransferRequestItem'
 export type AssetTransferRequestItemProps = {
     item: AssetInboxRequest
     scope: ChainScope
+    /** Set while the list is selecting rows; undefined shows no checkbox. */
+    isSelected?: boolean
     onPress: () => void
+    onLongPress?: () => void
 }
 
 export const AssetTransferRequestItem = ({
     item,
     scope,
+    isSelected,
     onPress,
+    onLongPress,
 }: AssetTransferRequestItemProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -44,7 +49,9 @@ export const AssetTransferRequestItem = ({
             scope={scope}
             amount={amount}
             usdPrice={usdValue}
+            isSelected={isSelected}
             onPress={onPress}
+            onLongPress={onLongPress}
             footer={
                 <>
                     {firstSender ? (

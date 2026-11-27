@@ -33,3 +33,8 @@ export {
     type ResolveSwapAssetRef,
     type SwapLegResponse,
 } from './swapLegs'
+export {
+    isAssetInboxResolutionBlocked,
+    shouldUseAssetInboxFunds,
+    type AssetInboxResolution,
+} from './assetInboxResolution'

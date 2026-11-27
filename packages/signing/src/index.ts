@@ -165,6 +165,7 @@ export {
 export { isAuthDataOriginMismatch } from './utils/authDataOrigin'
 export {
     classifyLedgerErrorKind,
+    isLedgerError,
     ledgerAppNameOf,
 } from './utils/classifyLedgerErrorKind'
 export {

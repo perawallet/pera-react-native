@@ -214,6 +214,25 @@ describe('useAssetTransferRequestsScreen', () => {
         expect(render().result.current.canRejectAll).toBe(false)
     })
 
+    it('ticks rows instead of opening them once a long-press starts selecting, and hides Reject All meanwhile', () => {
+        const { result } = render()
+
+        act(() => result.current.handleRowLongPress(result.current.rows[1]!))
+        act(() => result.current.handleRowPress(result.current.rows[3]!))
+
+        expect([...result.current.selectedKeys!]).toEqual([
+            'claim|77|0',
+            'token|ethereum/mainnet|0xe',
+        ])
+        expect(mocks.push).not.toHaveBeenCalled()
+        expect(result.current.canRejectAll).toBe(false)
+
+        act(() => result.current.handleCancelSelection())
+
+        expect(result.current.selectedKeys).toBeNull()
+        expect(result.current.canRejectAll).toBe(true)
+    })
+
     it('flags a refusal for want of an integrity token', () => {
         setInbox({
             error: new IntegrityRequiredError({

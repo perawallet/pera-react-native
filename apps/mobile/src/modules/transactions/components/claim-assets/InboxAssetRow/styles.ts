@@ -18,6 +18,15 @@ export const useStyles = makeStyles(theme => ({
     row: {
         marginVertical: theme.spacing.lg,
     },
+    selectionRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.sm,
+        marginVertical: theme.spacing.lg,
+    },
+    selectableRow: {
+        flex: 1,
+    },
     amount: {
         color: theme.colors.textGray,
     },

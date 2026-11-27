@@ -15,6 +15,7 @@ import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { AssetAmount } from '@components/AssetAmount'
+import { PWCheckbox, PWView } from '@components/core'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { AssetItemView } from '@modules/assets'
 import { useStyles } from './styles'
@@ -28,7 +29,10 @@ export type InboxAssetRowProps = {
     usdPrice: Nullable<Decimal>
     /** Lines under the amount, such as who sent it. */
     footer?: ReactNode
+    /** Set while the list is selecting rows; undefined shows no checkbox. */
+    isSelected?: boolean
     onPress: () => void
+    onLongPress?: () => void
 }
 
 /** An incoming asset, laid out like a row of the account's asset list. */
@@ -38,10 +42,12 @@ export const InboxAssetRow = ({
     amount,
     usdPrice,
     footer,
+    isSelected,
     onPress,
+    onLongPress,
 }: InboxAssetRowProps) => {
     const styles = useStyles()
-    return (
+    const row = (
         <AssetItemView
             asset={asset}
             chainId={scope.chainId}
@@ -73,7 +79,31 @@ export const InboxAssetRow = ({
             shouldTopAlignRight
             footer={footer}
             onPress={onPress}
-            style={styles.row}
+            onLongPress={onLongPress}
+            style={isSelected === undefined ? styles.row : styles.selectableRow}
+            {...(isSelected === undefined
+                ? {}
+                : {
+                      accessibilityRole: 'checkbox' as const,
+                      accessibilityState: { checked: isSelected },
+                  })}
         />
+    )
+    if (isSelected === undefined) return row
+    return (
+        <PWView style={styles.selectionRow}>
+            {/* The row is the checkbox for screen readers; the box is only its picture. */}
+            <PWView
+                accessibilityElementsHidden
+                importantForAccessibility='no-hide-descendants'
+            >
+                <PWCheckbox
+                    isChecked={isSelected}
+                    onPress={onPress}
+                    testID={`asset_inbox_select_${asset.assetId}`}
+                />
+            </PWView>
+            {row}
+        </PWView>
     )
 }

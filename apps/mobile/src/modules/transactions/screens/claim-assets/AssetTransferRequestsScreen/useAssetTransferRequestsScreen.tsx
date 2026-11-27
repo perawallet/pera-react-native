@@ -11,7 +11,6 @@
  */
 import { useCallback, useMemo } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
-import type { Decimal } from 'decimal.js'
 import {
     assetFromHoldingLiteRow,
     receivesUnaskedAssets,
@@ -21,12 +20,8 @@ import {
     useTokenInboxQuery,
     settleInboxTokens,
 } from '@perawallet/wallet-core-accounts'
-import { toWholeUnits, type PeraAsset } from '@perawallet/wallet-core-assets'
-import {
-    toScopeKey,
-    type ChainId,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import { toWholeUnits } from '@perawallet/wallet-core-assets'
+import { toScopeKey } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     isIntegrityRequiredError,
@@ -34,7 +29,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import {
     useAssetInboxRequestsQuery,
-    type AssetInboxRequest,
+    type AssetInboxResolution,
 } from '@perawallet/wallet-core-transactions'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -43,30 +38,11 @@ import { useToast } from '@hooks/useToast'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import type { MessagesStackParamList } from '@modules/messages'
 import { useClaimAssets } from '@modules/transactions/hooks'
+import type { InboxRequestRow, TokenRow } from './inboxRequestRow'
+import { useInboxRowSelection } from './useInboxRowSelection'
+import { useResolveSelectedRequests } from './useResolveSelectedRequests'
 
-export type InboxRequestRow =
-    | { kind: 'header'; key: string; chainId: ChainId }
-    /** A request the inbox backend holds, claimed or rejected by transaction. */
-    | {
-          kind: 'claim'
-          key: string
-          scope: ChainScope
-          request: AssetInboxRequest
-          index: number
-      }
-    /** A token waiting on the device, accepted or rejected without one. */
-    | {
-          kind: 'token'
-          key: string
-          scope: ChainScope
-          address: string
-          asset: PeraAsset
-          /** Display units. */
-          amount: Decimal
-          usdPrice: Nullable<Decimal>
-      }
-
-type TokenRow = Extract<InboxRequestRow, { kind: 'token' }>
+export type { InboxRequestRow } from './inboxRequestRow'
 
 export type UseAssetTransferRequestsScreenResult = {
     rows: InboxRequestRow[]
@@ -74,8 +50,15 @@ export type UseAssetTransferRequestsScreenResult = {
     isIntegrityBlocked: boolean
     /** Reject All acts on the tokens waiting on the device; each is accepted on its own screen. */
     canRejectAll: boolean
+    /** Long-pressing a row starts selecting; null while not selecting. */
+    selectedKeys: Nullable<ReadonlySet<string>>
+    isAllSelected: boolean
     handleRowPress: (row: InboxRequestRow) => void
+    handleRowLongPress: (row: InboxRequestRow) => void
+    handleToggleSelectAll: () => void
+    handleCancelSelection: () => void
     handleRejectAll: () => void
+    handleResolveSelected: (mode: AssetInboxResolution) => void
 }
 
 export const useAssetTransferRequestsScreen =
@@ -161,8 +144,29 @@ export const useAssetTransferRequestsScreen =
                 ])
         }, [backend.data, backendScope, sources, tokenRows])
 
+        const {
+            selectedKeys,
+            isAllSelected,
+            toggleRow,
+            startWith,
+            toggleAll,
+            clear,
+        } = useInboxRowSelection(rows)
+        const resolveSelected = useResolveSelectedRequests({
+            rows,
+            selectedKeys,
+            backendRequests: backend.data,
+            backendScope,
+            backendAddress: backendSource?.address ?? null,
+            onConfirm: clear,
+        })
+
         const handleRowPress = useCallback(
             (row: InboxRequestRow) => {
+                if (selectedKeys !== null) {
+                    toggleRow(row)
+                    return
+                }
                 if (row.kind === 'claim') {
                     setAccountAddress(backendSource?.address ?? null)
                     setAssetRequests(backend.data)
@@ -182,6 +186,8 @@ export const useAssetTransferRequestsScreen =
                 }
             },
             [
+                selectedKeys,
+                toggleRow,
                 accountId,
                 backend.data,
                 backendSource?.address,
@@ -236,8 +242,14 @@ export const useAssetTransferRequestsScreen =
             isPending: backend.isPending || tokenInbox.isPending,
             isIntegrityBlocked:
                 backend.isError && isIntegrityRequiredError(backend.error),
-            canRejectAll: tokenRows.length > 0,
+            canRejectAll: tokenRows.length > 0 && selectedKeys === null,
+            selectedKeys,
+            isAllSelected,
             handleRowPress,
+            handleRowLongPress: startWith,
+            handleToggleSelectAll: toggleAll,
+            handleCancelSelection: clear,
             handleRejectAll: () => void handleRejectAll(),
+            handleResolveSelected: mode => void resolveSelected(mode),
         }
     }

@@ -13,7 +13,10 @@
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useCallback, useMemo } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
-import type { AssetInboxRequest } from '@perawallet/wallet-core-transactions'
+import {
+    isAssetInboxResolutionBlocked,
+    type AssetInboxRequest,
+} from '@perawallet/wallet-core-transactions'
 import {
     findAccountByAddressOn,
     useAllAccounts,
@@ -81,18 +84,11 @@ export const useAssetClaimDetailScreen =
             : undefined
         const canBuy = useCanFundAccount(account, scope.chainId)
 
-        // The opt-in this claim performs raises the account's minimum balance,
-        // so a claim the backend says is unaffordable can only be unblocked by
-        // adding native funds — unless the inbox itself carries enough to cover it.
+        // Claim and reject are stated separately rather than as one "no funds".
         const isClaimBlocked =
-            !!request?.insufficientNativeForClaiming &&
-            !request.shouldUseFundsBeforeClaiming
-
-        // Rejecting only pays a fee, so it can be affordable when claiming is
-        // not; the two are stated separately rather than as one "no funds".
+            !!request && isAssetInboxResolutionBlocked(request, 'claim')
         const isRejectBlocked =
-            !!request?.insufficientNativeForRejecting &&
-            !request.shouldUseFundsBeforeRejecting
+            !!request && isAssetInboxResolutionBlocked(request, 'reject')
 
         const handleAddFunds = useCallback(() => {
             navigate('TabBar', {

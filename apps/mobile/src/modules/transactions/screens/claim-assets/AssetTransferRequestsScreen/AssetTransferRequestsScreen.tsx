@@ -10,7 +10,13 @@
  limitations under the License
  */
 import { useCallback } from 'react'
-import { PWButton, PWFlatList, PWScreen, PWText } from '@components/core'
+import {
+    PWButton,
+    PWFlatList,
+    PWScreen,
+    PWText,
+    PWView,
+} from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { InfoButton } from '@components/InfoButton'
 import { OfflineTolerantView } from '@components/OfflineTolerantView'
@@ -36,9 +42,16 @@ export const AssetTransferRequestsScreen = () => {
         isPending,
         isIntegrityBlocked,
         canRejectAll,
+        selectedKeys,
+        isAllSelected,
         handleRowPress,
+        handleRowLongPress,
+        handleToggleSelectAll,
+        handleCancelSelection,
         handleRejectAll,
+        handleResolveSelected,
     } = useAssetTransferRequestsScreen()
+    const selectedCount = selectedKeys?.size ?? 0
 
     useNavigationHeader({
         right: (
@@ -51,6 +64,45 @@ export const AssetTransferRequestsScreen = () => {
             </InfoButton>
         ),
     })
+
+    const selectionHeader = selectedKeys ? (
+        <PWView style={styles.selectionHeader}>
+            <PWButton
+                variant='linkNeutral'
+                paddingStyle='dense'
+                title={t('common.cancel.label')}
+                onPress={handleCancelSelection}
+                testID='asset_inbox_cancel_selection'
+            />
+            <PWText variant='bodySemibold'>
+                {t('asset_inbox.requests.selected_count', {
+                    count: selectedCount,
+                })}
+            </PWText>
+            <PWButton
+                variant='link'
+                paddingStyle='dense'
+                title={
+                    isAllSelected
+                        ? t('asset_inbox.requests.deselect_all')
+                        : t('asset_inbox.requests.select_all')
+                }
+                onPress={handleToggleSelectAll}
+                testID='asset_inbox_select_all'
+            />
+        </PWView>
+    ) : null
+    const rejectAllButton = canRejectAll ? (
+        <PWButton
+            variant='secondary'
+            paddingStyle='dense'
+            title={t('asset_inbox.requests.reject_all')}
+            onPress={handleRejectAll}
+            style={styles.rejectAll}
+            testID='asset_inbox_reject_all'
+        />
+    ) : null
+    const listHeader = selectionHeader ?? rejectAllButton
 
     const renderItem = useCallback(
         ({ item: row }: { item: InboxRequestRow }) => {
@@ -68,7 +120,9 @@ export const AssetTransferRequestsScreen = () => {
                         <AssetTransferRequestItem
                             item={row.request}
                             scope={row.scope}
+                            isSelected={selectedKeys?.has(row.key)}
                             onPress={() => handleRowPress(row)}
+                            onLongPress={() => handleRowLongPress(row)}
                         />
                     )
                 }
@@ -79,19 +133,52 @@ export const AssetTransferRequestsScreen = () => {
                             scope={row.scope}
                             amount={row.amount}
                             usdPrice={row.usdPrice}
+                            isSelected={selectedKeys?.has(row.key)}
                             onPress={() => handleRowPress(row)}
+                            onLongPress={() => handleRowLongPress(row)}
                         />
                     )
                 }
             }
         },
-        [handleRowPress, styles.sectionHeader],
+        [
+            handleRowPress,
+            handleRowLongPress,
+            selectedKeys,
+            styles.sectionHeader,
+        ],
     )
 
     return (
         <PWScreen
             scroll='never'
             horizontalPadding='none'
+            footer={
+                selectedKeys ? (
+                    <PWView style={styles.selectionFooter}>
+                        <PWButton
+                            variant='secondary'
+                            title={t('asset_inbox.requests.reject_selected', {
+                                count: selectedCount,
+                            })}
+                            onPress={() => handleResolveSelected('reject')}
+                            isDisabled={selectedCount === 0}
+                            style={styles.selectionAction}
+                            testID='asset_inbox_reject_selected'
+                        />
+                        <PWButton
+                            variant='primary'
+                            title={t('asset_inbox.requests.claim_selected', {
+                                count: selectedCount,
+                            })}
+                            onPress={() => handleResolveSelected('claim')}
+                            isDisabled={selectedCount === 0}
+                            style={styles.selectionAction}
+                            testID='asset_inbox_claim_selected'
+                        />
+                    </PWView>
+                ) : undefined
+            }
         >
             <PWFlatList
                 data={rows}
@@ -99,18 +186,8 @@ export const AssetTransferRequestsScreen = () => {
                 keyExtractor={keyOf}
                 getItemType={typeOf}
                 contentContainerStyle={styles.contentContainer}
-                ListHeaderComponent={
-                    canRejectAll ? (
-                        <PWButton
-                            variant='secondary'
-                            paddingStyle='dense'
-                            title={t('asset_inbox.requests.reject_all')}
-                            onPress={handleRejectAll}
-                            style={styles.rejectAll}
-                            testID='asset_inbox_reject_all'
-                        />
-                    ) : null
-                }
+                extraData={selectedKeys}
+                ListHeaderComponent={listHeader}
                 ListEmptyComponent={
                     <OfflineTolerantView
                         isOffline={false}
