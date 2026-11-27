@@ -102,6 +102,23 @@ describe('titleKeyOf', () => {
         ).toBe('transactions.list_item.wrap')
     })
 
+    it('titles a bridge', () => {
+        expect(
+            titleKeyOf(
+                view({
+                    action: {
+                        kind: 'bridge',
+                        asset: { kind: 'native' },
+                        amount: new Decimal(1),
+                        destinationChainId: 8453,
+                    },
+                }),
+                null,
+                { kind: 'bridge', amount },
+            ),
+        ).toBe('transactions.list_item.bridge')
+    })
+
     it('titles a liquidity add and removal', () => {
         expect(
             titleKeyOf(
@@ -176,6 +193,9 @@ describe('iconNameOf', () => {
                 isEntireBalance: false,
             } as EthereumContractActionPresentation),
         ).toBe('fund')
+        expect(iconNameOf(view(), null, { kind: 'bridge', amount })).toBe(
+            'outflow',
+        )
     })
 
     it('uses the approval icon for an approval, even with an action', () => {

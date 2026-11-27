@@ -277,6 +277,64 @@ describe('useEthereumContractAction', () => {
         })
     })
 
+    describe('a bridge deposit', () => {
+        const bridge = (
+            asset: Extract<EvmContractAction, { kind: 'bridge' }>['asset'],
+            amount: Decimal,
+            destinationChainId: number,
+        ): EvmContractAction => ({
+            kind: 'bridge',
+            asset,
+            amount,
+            destinationChainId,
+        })
+
+        it('presents native ether in ether, naming the destination network', () => {
+            const { contractAction } = render(
+                viewWith(
+                    bridge({ kind: 'native' }, new Decimal(10n ** 15n), 8453),
+                ),
+            )
+
+            expect(contractAction).toMatchObject({
+                kind: 'bridge',
+                amount: {
+                    asset: expect.objectContaining({ unitName: 'ETH' }),
+                    value: new Decimal(0.001),
+                },
+                destinationName: 'Base',
+            })
+        })
+
+        it('sizes a token deposit by its record', () => {
+            mockRecords({ [USDC]: USDC_RECORD })
+
+            const { contractAction } = render(
+                viewWith(
+                    bridge(
+                        { kind: 'token', contract: USDC },
+                        new Decimal(95_000_000),
+                        1,
+                    ),
+                ),
+            )
+
+            expect(contractAction).toMatchObject({
+                kind: 'bridge',
+                amount: { asset: USDC_RECORD, value: new Decimal(95) },
+                destinationName: 'Ethereum',
+            })
+        })
+
+        it('names no destination for a network Pera does not carry', () => {
+            const { contractAction } = render(
+                viewWith(bridge({ kind: 'native' }, new Decimal(1), 57_073)),
+            )
+
+            expect(contractAction).not.toHaveProperty('destinationName')
+        })
+    })
+
     it('presents an unwrap with the native asset’s decimals, never raw wei, even with no record of the wrapped token', () => {
         mockRecords({})
 

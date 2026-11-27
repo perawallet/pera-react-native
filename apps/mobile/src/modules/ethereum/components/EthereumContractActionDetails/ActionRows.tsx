@@ -137,6 +137,30 @@ export const ActionRows = ({ action, presentation }: ActionRowsProps) => {
                 </KeyValueRow>
             )
         }
+        case 'bridge': {
+            return (
+                <>
+                    <KeyValueRow
+                        testID='ethereum_action_amount'
+                        title={t('transactions.common.amount')}
+                    >
+                        <ActionAmount
+                            amount={action.amount}
+                            presentation={presentation}
+                        />
+                    </KeyValueRow>
+                    <KeyValueRow
+                        testID='ethereum_action_destination'
+                        title={t('ethereum.contract_action.destination')}
+                    >
+                        <PWText>
+                            {action.destinationName ??
+                                t('ethereum.contract_action.another_network')}
+                        </PWText>
+                    </KeyValueRow>
+                </>
+            )
+        }
         case 'supply':
         case 'withdraw':
         case 'borrow':

@@ -21,6 +21,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { ApplicationDisplay } from '@modules/projects'
 import {
     PreviewUnavailableCard,
+    RECEIVE_UNKNOWN,
     ReviewActionHeader,
     ReviewFromRow,
     ReviewNetworkRow,
@@ -99,7 +100,9 @@ export const AlgorandTransactionReview = ({
                 spend={impact.spend}
                 receive={impact.receive}
                 isLoading={!impact.hasImpact && impact.isSimulating}
-                isReceiveUnknown={impact.isReceiveUnknown}
+                emptyReceive={
+                    impact.isReceiveUnknown ? RECEIVE_UNKNOWN : undefined
+                }
             />
         )
     }

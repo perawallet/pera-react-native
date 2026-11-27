@@ -20,6 +20,11 @@ import { useLanguage } from '@hooks/useLanguage'
 import type { BalanceImpactItem } from '../../BalanceImpactSummary'
 import { CollectibleRowText } from '../../BalanceImpactSummary/CollectibleRowText'
 import { FullBalanceRowText } from '../../BalanceImpactSummary/FullBalanceRowText'
+import {
+    NOTHING_RECEIVED,
+    emptyReceiveCopyOf,
+    type EmptyReceiveSide,
+} from '../emptyReceive'
 import { estimateOf } from './estimateOf'
 import { useStyles } from './styles'
 
@@ -27,8 +32,8 @@ export type WalletChangeRowProps = {
     label: string
     /** Unset when nothing moves on this side. */
     item?: Optional<BalanceImpactItem>
-    /** With no item: the user may still receive something Pera can't see. */
-    isReceiveUnknown?: boolean
+    /** With no item: what the empty side says. */
+    emptyReceive?: EmptyReceiveSide
     /** Where `item` is priced when it carries no price of its own. */
     scope?: ChainScope
     testID?: string
@@ -37,12 +42,13 @@ export type WalletChangeRowProps = {
 export const WalletChangeRow = ({
     label,
     item,
-    isReceiveUnknown = false,
+    emptyReceive = NOTHING_RECEIVED,
     scope,
     testID,
 }: WalletChangeRowProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const empty = emptyReceiveCopyOf(emptyReceive)
 
     const isPlainAmount = !!item && !item.isCollectible && !item.isFullBalance
 
@@ -61,7 +67,7 @@ export const WalletChangeRow = ({
             ) : (
                 <PWView style={styles.emptyIcon}>
                     <PWIcon
-                        name={isReceiveUnknown ? 'question-mark' : 'minus'}
+                        name={empty.iconName}
                         size='sm'
                         variant='secondary'
                     />
@@ -75,18 +81,16 @@ export const WalletChangeRow = ({
                         weight={600}
                         style={styles.amount}
                     >
-                        {isReceiveUnknown
-                            ? t('signing.review.unknown')
-                            : t('signing.review.nothing')}
+                        {t(empty.title.key, empty.title.params)}
                     </PWText>
                 )}
-                {!item && isReceiveUnknown && (
+                {!item && empty.captionKey && (
                     <PWText
                         variant='captionMedium'
                         weight={400}
                         style={styles.label}
                     >
-                        {t('signing.review.unknown_receive_body')}
+                        {t(empty.captionKey)}
                     </PWText>
                 )}
                 {isPlainAmount && (

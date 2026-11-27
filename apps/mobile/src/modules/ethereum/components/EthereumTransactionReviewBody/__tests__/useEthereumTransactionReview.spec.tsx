@@ -192,6 +192,17 @@ describe('useEthereumTransactionReview', () => {
         })
     })
 
+    it('reads an empty receive side as not detected for a contract call and as nothing for a transfer', () => {
+        vi.mocked(useEthereumSimulationSection).mockReturnValue({
+            status: 'hidden',
+        })
+
+        expect(review().emptyReceive).toEqual({ kind: 'not-detected' })
+        expect(review(undefined, { isTransfer: true }).emptyReceive).toEqual({
+            kind: 'nothing',
+        })
+    })
+
     it('names a wrap target without a stored record by its short address, in native decimals', () => {
         vi.mocked(useEthereumSimulationSection).mockReturnValue({
             status: 'unavailable',

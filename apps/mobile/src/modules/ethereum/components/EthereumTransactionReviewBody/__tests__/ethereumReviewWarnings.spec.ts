@@ -131,7 +131,7 @@ describe('ethereumReviewWarningsOf', () => {
         expect(kindsOf(unavailable)).toEqual(['high-fee', 'unchecked-call'])
     })
 
-    it('cautions when assets leave and nothing, not even a permission, comes back', () => {
+    it('cautions when a transfer sends assets and nothing, not even a permission, comes back', () => {
         const spend = [{ assetId: 'native' }] as never
         const nothingBack = ethereumReviewWarningsOf({
             presentation: presentationOf({ isTransfer: true }),
@@ -154,5 +154,52 @@ describe('ethereumReviewWarningsOf', () => {
 
         expect(kindsOf(nothingBack)).toEqual(['nothing-back'])
         expect(swap).toEqual([])
+    })
+
+    describe('a contract call whose simulation spends and sees nothing back', () => {
+        const simulation = simulationOf({
+            status: 'success',
+            spend: [{ assetId: 'native' }] as never,
+            receive: [],
+            approvals: [],
+        })
+
+        it('cautions that nothing was detected, in place of claiming nothing comes back', () => {
+            const warnings = ethereumReviewWarningsOf({
+                presentation: presentationOf(),
+                simulation,
+            })
+
+            expect(kindsOf(warnings)).toEqual([
+                'unchecked-call',
+                'nothing-detected',
+            ])
+        })
+
+        it('does not caution for a decoded bridge to the signer on another network', () => {
+            const warnings = ethereumReviewWarningsOf({
+                presentation: presentationOf({
+                    contractAction: { kind: 'bridge' },
+                    view: { action: { kind: 'bridge' } },
+                } as unknown as Partial<EthereumTransactionPresentation>),
+                simulation,
+            })
+
+            expect(warnings).toEqual([])
+        })
+
+        it('does not caution when the call receives something', () => {
+            const warnings = ethereumReviewWarningsOf({
+                presentation: presentationOf(),
+                simulation: simulationOf({
+                    status: 'success',
+                    spend: [{ assetId: 'native' }] as never,
+                    receive: [{ assetId: 'usdc' }] as never,
+                    approvals: [],
+                }),
+            })
+
+            expect(kindsOf(warnings)).toEqual(['unchecked-call'])
+        })
     })
 })

@@ -145,6 +145,18 @@ describe('ethereumActionChangesOf', () => {
         ).toEqual(NO_CHANGES)
     })
 
+    it('shows a bridge as its spend alone, with nothing unknown on the receive side', () => {
+        const changes = changesOf({
+            kind: 'bridge',
+            amount: amount(ETH, '0.001'),
+            destinationName: 'Base',
+        })
+
+        expect(summary(changes.spend)).toEqual(['0.001 ETH'])
+        expect(changes.receive).toEqual([])
+        expect(changes.isReceiveUnknown).toBe(false)
+    })
+
     it('lists the asset ids to price', () => {
         expect(
             ethereumActionAssetIdsOf(

@@ -63,5 +63,13 @@ export const ethereumReviewWarningItemOf = (
                 isHighRisk: false,
             }
         }
+        case 'nothing-detected': {
+            return {
+                id: 'ethereum_nothing_detected_warning',
+                title: t('signing.review.nothing_detected_title'),
+                message: t('signing.review.nothing_detected_body'),
+                isHighRisk: false,
+            }
+        }
     }
 }

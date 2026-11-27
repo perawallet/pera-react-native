@@ -16,6 +16,7 @@ import { PWIcon, PWLoadingIndicator, PWText, PWView } from '@components/core'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { useLanguage } from '@hooks/useLanguage'
 import type { BalanceImpactItem } from '../BalanceImpactSummary'
+import { NOTHING_RECEIVED, type EmptyReceiveSide } from './emptyReceive'
 import { WalletChangeRow } from './WalletChangeRow'
 import { useStyles } from './styles'
 import { useWalletChangesCard } from './useWalletChangesCard'
@@ -27,8 +28,8 @@ export type WalletChangesCardProps = {
     receive: readonly BalanceImpactItem[]
     /** Shown in place of the rows while the changes are still being worked out. */
     isLoading?: boolean
-    /** An empty receive side may still hold something Pera can't see. */
-    isReceiveUnknown?: boolean
+    /** What an empty receive side says; an empty spend side always reads as nothing. */
+    emptyReceive?: EmptyReceiveSide
 }
 
 export const WalletChangesCard = ({
@@ -36,7 +37,7 @@ export const WalletChangesCard = ({
     spend,
     receive,
     isLoading = false,
-    isReceiveUnknown = false,
+    emptyReceive = NOTHING_RECEIVED,
 }: WalletChangesCardProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -46,18 +47,18 @@ export const WalletChangesCard = ({
         items,
         label,
         testID,
-        isReceiveUnknown = false,
+        empty = NOTHING_RECEIVED,
     }: {
         items: readonly BalanceImpactItem[]
         label: string
         testID: string
-        isReceiveUnknown?: boolean
+        empty?: EmptyReceiveSide
     }) =>
         items.length === 0 ? (
             <WalletChangeRow
                 label={label}
-                isReceiveUnknown={isReceiveUnknown}
-                testID={`${testID}_${isReceiveUnknown ? 'unknown' : 'nothing'}`}
+                emptyReceive={empty}
+                testID={`${testID}_${empty.kind}`}
             />
         ) : (
             items.map(item => (
@@ -113,7 +114,7 @@ export const WalletChangesCard = ({
                 items: receive,
                 label: t('signing.review.you_receive'),
                 testID: 'review_wallet_receive',
-                isReceiveUnknown,
+                empty: emptyReceive,
             })}
             {netChange && (
                 <PWView

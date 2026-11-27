@@ -69,6 +69,7 @@ const ACTION_ICON_NAMES: Record<
     withdraw: 'inflow',
     borrow: 'inflow',
     repay: 'outflow',
+    bridge: 'outflow',
     'add-liquidity': 'plus',
     'remove-liquidity': 'minus',
     'collect-fees': 'inflow',

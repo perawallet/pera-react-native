@@ -14,12 +14,13 @@ import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import { useNativeAsset, type PeraAsset } from '@perawallet/wallet-core-assets'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import type {
-    EthereumTransactionView,
-    EvmActionAsset,
-    EvmContractAction,
-    EvmLiquidityPosition,
-    EvmSwapLeg,
+import {
+    evmChainOfEip155Id,
+    type EthereumTransactionView,
+    type EvmActionAsset,
+    type EvmContractAction,
+    type EvmLiquidityPosition,
+    type EvmSwapLeg,
 } from '@perawallet/wallet-core-chain-ethereum'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import {
@@ -76,6 +77,12 @@ export type EthereumContractActionPresentation =
       }
     | { kind: 'remove-liquidity'; tokenId: string; isClosing: boolean }
     | { kind: 'collect-fees'; tokenId: string }
+    | {
+          kind: 'bridge'
+          amount: EthereumActionAmount
+          /** A proper noun from the chain table, never translated; unset when Pera doesn't carry the network. */
+          destinationName?: string
+      }
 
 export type UseEthereumContractActionResult = {
     contractAction: Nullable<EthereumContractActionPresentation>
@@ -108,7 +115,8 @@ const tokenSlotsOf = (
         case 'supply':
         case 'withdraw':
         case 'borrow':
-        case 'repay': {
+        case 'repay':
+        case 'bridge': {
             return [tokenOf(action.asset, action.amount), NO_TOKEN, NO_TOKEN]
         }
         case 'add-liquidity': {
@@ -158,6 +166,16 @@ const nativeAmountOf = (
 })
 
 const BIPS_PER_PERCENT = 100
+
+const mainnetNameOf = (eip155ChainId: number): Optional<string> => {
+    const found = evmChainOfEip155Id(eip155ChainId)
+    const network = found?.chain.descriptor.networks.find(
+        candidate => candidate.id === found.networkId,
+    )
+    return network?.tier === 'mainnet'
+        ? found?.chain.descriptor.displayName
+        : undefined
+}
 
 const present = (
     action: EvmContractAction,
@@ -248,6 +266,17 @@ const present = (
         }
         case 'collect-fees': {
             return { kind: 'collect-fees', tokenId: action.tokenId }
+        }
+        case 'bridge': {
+            const destinationName = mainnetNameOf(action.destinationChainId)
+            return {
+                kind: 'bridge',
+                amount:
+                    action.asset.kind === 'native'
+                        ? nativeAmountOf(nativeAsset, action.amount)
+                        : tokenAmountOf(first, action.amount),
+                ...(destinationName && { destinationName }),
+            }
         }
     }
 }

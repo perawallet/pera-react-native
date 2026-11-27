@@ -110,6 +110,10 @@ const movesOf = (
         case 'borrow': {
             return [moveOf('receive', action.amount, !action.isEntireBalance)]
         }
+        // What arrives on the other network is out of Pera's sight, so only the spend is a move.
+        case 'bridge': {
+            return [moveOf('spend', action.amount)]
+        }
         default: {
             return []
         }

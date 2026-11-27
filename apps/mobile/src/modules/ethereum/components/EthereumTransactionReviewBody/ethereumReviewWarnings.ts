@@ -21,14 +21,17 @@ import {
     type ContractCallNotice,
 } from '../../utils/contractCallNotice'
 import type { EthereumSimulationSectionState } from '../EthereumSimulationSection'
+import { ethereumEmptyReceiveOf } from './ethereumEmptyReceive'
 
 export type EthereumReviewWarning =
     | { kind: 'predicted-failure'; reason: Nullable<string> }
     /** `maxFee` is in wei. */
     | { kind: 'high-fee'; maxFee: Decimal; requesterHost: Optional<string> }
     | { kind: 'unchecked-call'; notice: ContractCallNotice }
-    /** The simulation sends assets out and brings nothing, not even a permission, back. */
+    /** A transfer that sends assets and gets nothing back. */
     | { kind: 'nothing-back' }
+    /** A contract call whose simulation sees nothing come back on this network. */
+    | { kind: 'nothing-detected' }
 
 type EthereumReviewWarningsParams = {
     presentation: EthereumTransactionPresentation
@@ -70,7 +73,11 @@ export const ethereumReviewWarningsOf = ({
         simulation.receive.length === 0 &&
         simulation.approvals.length === 0
     ) {
-        warnings.push({ kind: 'nothing-back' })
+        const { kind } = ethereumEmptyReceiveOf(presentation)
+        if (kind === 'nothing') warnings.push({ kind: 'nothing-back' })
+        if (kind === 'not-detected') {
+            warnings.push({ kind: 'nothing-detected' })
+        }
     }
 
     return warnings

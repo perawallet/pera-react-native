@@ -20,6 +20,7 @@ import { AddressDisplay } from '@components/AddressDisplay'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     PreviewUnavailableCard,
+    RECEIVE_UNKNOWN,
     ReviewActionHeader,
     ReviewDetailRow,
     ReviewFromRow,
@@ -56,6 +57,7 @@ type ChangesProps = Pick<
     | 'permissions'
     | 'transferSpend'
     | 'actionChanges'
+    | 'emptyReceive'
     | 'requesterHost'
 > & {
     presentation: EthereumTransactionPresentation
@@ -67,6 +69,7 @@ const changesOf = ({
     permissions,
     transferSpend,
     actionChanges,
+    emptyReceive,
     requesterHost,
     presentation,
     isDappRequest,
@@ -86,7 +89,11 @@ const changesOf = ({
                 scope={scope}
                 spend={actionChanges.spend}
                 receive={actionChanges.receive}
-                isReceiveUnknown={actionChanges.isReceiveUnknown}
+                emptyReceive={
+                    actionChanges.isReceiveUnknown
+                        ? RECEIVE_UNKNOWN
+                        : emptyReceive
+                }
             />
         ) : null
 
@@ -110,6 +117,7 @@ const changesOf = ({
                             scope={scope}
                             spend={simulation.spend}
                             receive={simulation.receive}
+                            emptyReceive={emptyReceive}
                         />
                     )}
                     {permissionCard(simulation.spend.length === 0)}
