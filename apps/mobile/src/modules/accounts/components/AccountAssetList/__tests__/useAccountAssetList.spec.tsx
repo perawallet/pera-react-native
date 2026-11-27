@@ -150,6 +150,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     return {
         ...actual,
         useCanSignWith: () => mockCanSign.current,
+        useCanSignOnAnyChain: () => mockCanSign.current,
         useAccountAssetsQuery: vi.fn(() => ({
             holdings: mockAssetsQuery.holdings,
             isPending: mockAssetsQuery.isPending,
@@ -356,6 +357,28 @@ describe('useAccountAssetList', () => {
             { address: ETH_ADDRESS, scope: ETHEREUM_MAINNET },
         ])
         expect(result.current.canManageAssets).toBe(false)
+    })
+
+    it('offers Add Asset on an account that signs, though its own chain manages no assets', () => {
+        registerEthereum()
+        const ethAccount: WalletAccount = {
+            id: 'eth',
+            name: '',
+            custody: { kind: 'local', seed: null },
+            chains: { ethereum: { address: ETH_ADDRESS } },
+        } as WalletAccount
+        mockCanSign.current = true
+
+        const { result, rerender } = renderHook(() =>
+            useAccountAssetList({ account: ethAccount, t: mockT }),
+        )
+        expect(result.current.canManageAssets).toBe(false)
+        expect(result.current.canAddAsset).toBe(true)
+
+        mockCanSign.current = false
+        rerender()
+
+        expect(result.current.canAddAsset).toBe(false)
     })
 
     it("opens a holding's detail screen on the holding's own chain", () => {
