@@ -10,12 +10,13 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
 import {
     createVault,
     isPasskeyUnlockSupported,
 } from '@perawallet/wallet-extension-vault-chrome'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
+import type { PWInputRef } from '@components/core'
 import { usePasskeySetupStore } from '../../hooks/usePasskeySetupStore.web'
 import {
     usePasswordStrength,
@@ -33,9 +34,11 @@ type UseCreatePasswordScreenResult = {
     passwordScore: PasswordScore
     validationError: PasswordStrengthError | 'mismatch' | null
     canSubmit: boolean
+    confirmationRef: RefObject<Nullable<PWInputRef>>
     setPassword: (value: string) => void
     setConfirmation: (value: string) => void
     handleSubmit: () => Promise<void>
+    handlePasswordSubmitEditing: () => void
 }
 
 const validationErrorOf = (
@@ -57,6 +60,7 @@ export const useCreatePasswordScreen = ({
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [hasError, setHasError] = useState(false)
     const [isPasskeySupported, setIsPasskeySupported] = useState(false)
+    const confirmationRef = useRef<Nullable<PWInputRef>>(null)
     const setPasskeySetupPending = usePasskeySetupStore(
         state => state.setPending,
     )
@@ -116,6 +120,16 @@ export const useCreatePasswordScreen = ({
         setPasskeySetupPending,
     ])
 
+    // A password manager can fill both fields at once; Enter then submits
+    // rather than stopping on the already-filled confirmation.
+    const handlePasswordSubmitEditing = useCallback((): void => {
+        if (canSubmit) {
+            void handleSubmit()
+            return
+        }
+        confirmationRef.current?.focus()
+    }, [canSubmit, handleSubmit])
+
     return {
         password,
         confirmation,
@@ -124,8 +138,10 @@ export const useCreatePasswordScreen = ({
         passwordScore,
         validationError,
         canSubmit,
+        confirmationRef,
         setPassword,
         setConfirmation,
         handleSubmit,
+        handlePasswordSubmitEditing,
     }
 }

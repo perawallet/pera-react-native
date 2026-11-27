@@ -70,10 +70,14 @@ test('onboards in the expanded tab: password → create wallet → home', async 
     const pageErrors = trackPageErrors(page)
     await page.goto(`chrome-extension://${extensionId}/expanded.html`)
 
-    // --- Vault: create password ---
-    await page.getByTestId('create-password-input').fill(PASSWORD)
-    await page.getByTestId('create-password-confirm-input').fill(PASSWORD)
-    await page.getByTestId('create-password-submit').click()
+    // --- Vault: create password, by keyboard (the other specs click) ---
+    const passwordInput = page.getByTestId('create-password-input')
+    const confirmInput = page.getByTestId('create-password-confirm-input')
+    await passwordInput.fill(PASSWORD)
+    await passwordInput.press('Enter')
+    await expect(confirmInput).toBeFocused()
+    await confirmInput.fill(PASSWORD)
+    await confirmInput.press('Enter')
     await skipPasskeyUnlockStep(page)
 
     // --- Onboarding: tap "Create wallet" button ---
