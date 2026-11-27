@@ -14,8 +14,8 @@ failures=0
 # The Pera services the backend serves for every EVM network; change them only
 # with the backend. NFTs are served for Ethereum alone: the backend
 # answers 422 `nft_not_supported` on any other network that lists `nfts`.
-EVM_STAGING_SERVICES="prices,assets,history,blockFollowing,contracts,simulations"
-ETHEREUM_STAGING_SERVICES="prices,assets,history,blockFollowing,nfts,contracts,simulations"
+EVM_STAGING_SERVICES="prices,assets,history,blockFollowing,contracts,simulations,tokenSearch"
+ETHEREUM_STAGING_SERVICES="prices,assets,history,blockFollowing,nfts,contracts,simulations,tokenSearch"
 
 # Every build-gated chain and network, from the table generate-config.sh bakes
 # from. The expectations below are chain-ethereum's; another chain package
