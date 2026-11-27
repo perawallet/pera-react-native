@@ -337,7 +337,7 @@ describe('detail query keys', () => {
 })
 
 describe('getAssetMarketDataQueryKey', () => {
-    test('sits under the prices prefix so price invalidation reaches it', () => {
+    test('keys the entry by asset and scope and is not a price-history key', () => {
         const key = getAssetMarketDataQueryKey('123', {
             chainId: 'algorand',
             networkId: 'mainnet',
@@ -345,7 +345,10 @@ describe('getAssetMarketDataQueryKey', () => {
 
         expect(key.slice(0, 2)).toEqual([MODULE_PREFIX, 'prices'])
         expect(isAssetPriceHistoryQuery(key)).toBe(false)
-        expect(key.join('/').startsWith('assets/prices')).toBe(true)
+        expect(key[3]).toEqual({
+            assetID: '123',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
+        })
     })
 })
 
