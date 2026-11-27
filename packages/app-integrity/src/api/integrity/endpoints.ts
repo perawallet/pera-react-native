@@ -55,10 +55,10 @@ export const requestChallenge = async ({
         url: '/api/v3/public/integrity/challenge',
         data: { device_id: deviceInstallationId, platform },
         signal,
-        // The handshake fires once at boot and is not retried at the caller
-        // (see useAppIntegrityBootstrap's boot-once latch), so a single
-        // transport blip costs the session its attestation — and with it
-        // fee delegation. Minting a challenge has no side effect to repeat.
+        // A failed handshake is only run again by a later guarded request,
+        // after a cooldown, so a single transport blip would cost the launch
+        // its first guarded reads. Minting a challenge has no side effect to
+        // repeat.
         retry: IDEMPOTENT_POST_RETRY,
     })
     return challengeResponseSchema.parse(response.data).challenge

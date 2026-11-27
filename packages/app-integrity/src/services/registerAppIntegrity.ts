@@ -38,6 +38,16 @@ export const INTEGRITY_REGISTRATION_WAIT_MS = 10_000
 let inFlight: Nullable<{ promise: Promise<unknown>; startedAt: number }> = null
 
 /**
+ * The soonest a settled registration is run again for a request that still has
+ * no token, so a screen's retries don't spend the platform's attestation quota.
+ */
+export const INTEGRITY_REATTEMPT_COOLDOWN_MS = 30_000
+
+// What the launch registered with; null until it has, so nothing attests before boot does.
+let lastDeployment: Nullable<WalletMode> = null
+let lastSettledAt = 0
+
+/**
  * Resolves when the registration in flight settles, at once when none is, or
  * `timeoutMs` after it started: the deadline is the registration's, so a hung
  * attestation costs each later call nothing. Never rejects. Before the launch
@@ -132,8 +142,8 @@ const runRegistration = async ({
     } catch (error) {
         const message = toError(error).message
         if (isConnectivityError(error)) {
-            // The handshake runs once at boot, so it races the network coming
-            // up; an offline device retries on the next launch and needs no
+            // The launch's handshake races the network coming up; the next
+            // guarded request runs it again, so an offline device needs no
             // attention. The status still goes to the store for the UI.
             logger.warn('App integrity registration skipped: device offline', {
                 step: 'registerAppIntegrity',
@@ -158,9 +168,30 @@ export const registerAppIntegrity = (
     const registration = runRegistration(params)
     const entry = { promise: registration, startedAt: Date.now() }
     inFlight = entry
+    lastDeployment = params.deployment
     const clear = () => {
-        if (inFlight === entry) inFlight = null
+        if (inFlight !== entry) return
+        inFlight = null
+        lastSettledAt = Date.now()
     }
     registration.then(clear, clear)
     return registration
+}
+
+/**
+ * For a guarded request that holds no valid token. The token is memory-only and
+ * expires, and the launch's attestation can fail, so without this the request
+ * and every retry of it would go out refused until the app restarts. Joins the
+ * registration in flight, or runs it again once the last one has cooled down,
+ * and waits as {@link waitForIntegrityRegistration} does. Never rejects.
+ */
+export const ensureIntegrityRegistration = (): Promise<void> => {
+    if (
+        !inFlight &&
+        lastDeployment !== null &&
+        Date.now() - lastSettledAt >= INTEGRITY_REATTEMPT_COOLDOWN_MS
+    ) {
+        void registerAppIntegrity({ deployment: lastDeployment })
+    }
+    return waitForIntegrityRegistration()
 }
