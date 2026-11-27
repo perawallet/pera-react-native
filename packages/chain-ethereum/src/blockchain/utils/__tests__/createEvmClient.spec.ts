@@ -84,6 +84,7 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => {
     server.resetHandlers()
     testConfig.backendAPIKey = 'test-api-key'
+    vi.mocked(hasIntegrityRegistrationFailed).mockReturnValue(false)
 })
 afterAll(() => server.close())
 
@@ -598,7 +599,7 @@ describe('createEvmClient', () => {
         })
 
         it('skips the guarded Pera proxy once the launch attestation has failed', async () => {
-            vi.mocked(hasIntegrityRegistrationFailed).mockReturnValueOnce(true)
+            vi.mocked(hasIntegrityRegistrationFailed).mockReturnValue(true)
             server.use(...evmRpcHandlers({ rpcUrl: SECOND_RPC }))
             const reachedProxy = countCalls(PROXY_RPC)
             const client = createEvmClient(

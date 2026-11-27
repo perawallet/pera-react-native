@@ -20,12 +20,12 @@ import {
     type PublicClient,
     type Transport,
 } from 'viem'
+import { hasIntegrityRegistrationFailed } from '@perawallet/wallet-core-app-integrity'
 import type {
     ChainContext,
     ChainRequestTimeouts,
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { hasIntegrityRegistrationFailed } from '@perawallet/wallet-core-app-integrity'
 import { config } from '@perawallet/wallet-core-config'
 import {
     AppError,
