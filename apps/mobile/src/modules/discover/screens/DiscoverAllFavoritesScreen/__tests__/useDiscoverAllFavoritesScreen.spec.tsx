@@ -12,6 +12,7 @@
 
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { DiscoverEvent, trackEvent } from '@analytics'
 import { useOpenDapp } from '../../../hooks/useOpenDapp'
 import { useDiscoverDirectory } from '../../../hooks/useDiscoverDirectory'
 import { useDiscoverFavoritesStore } from '../../../store/useDiscoverFavoritesStore'
@@ -23,10 +24,13 @@ vi.mock('../../../hooks/useOpenDapp', () => ({ useOpenDapp: vi.fn() }))
 vi.mock('../../../hooks/useDiscoverDirectory', () => ({
     useDiscoverDirectory: vi.fn(),
 }))
-const request = vi.fn()
-vi.mock('@modules/bottom-sheet', async () => ({
-    ...(await vi.importActual('@modules/bottom-sheet')),
-    useBottomSheet: () => ({ request }),
+vi.mock('@analytics', async () => ({
+    ...(await vi.importActual('@analytics')),
+    trackEvent: vi.fn(),
+}))
+const openRearrange = vi.fn()
+vi.mock('../../../hooks/useOpenRearrangeFavorites', () => ({
+    useOpenRearrangeFavorites: () => openRearrange,
 }))
 
 const openDapp = vi.fn()
@@ -119,20 +123,36 @@ describe('useDiscoverAllFavoritesScreen', () => {
         expect(result.current.isVerified('https://allo.info')).toBe(false)
     })
 
-    it('opens Rearrange as a full sheet without pan gestures', () => {
+    it('removes a favorite from its row', () => {
+        const { result } = renderHook(() => useDiscoverAllFavoritesScreen())
+
+        act(() => result.current.removeFavorite(result.current.dapps[1]!))
+
+        expect(names(result)).toEqual(['Vestige', 'Tinyman'])
+        expect(trackEvent).toHaveBeenCalledWith(
+            DiscoverEvent.DappUnfavoriteTap,
+            expect.anything(),
+        )
+    })
+
+    it('never adds a favorite back when its row is tapped twice', () => {
+        const { result } = renderHook(() => useDiscoverAllFavoritesScreen())
+        const allo = result.current.dapps[1]!
+
+        act(() => {
+            result.current.removeFavorite(allo)
+            result.current.removeFavorite(allo)
+        })
+
+        expect(names(result)).toEqual(['Vestige', 'Tinyman'])
+        expect(trackEvent).toHaveBeenCalledTimes(1)
+    })
+
+    it('opens Rearrange from the header', () => {
         const { result } = renderHook(() => useDiscoverAllFavoritesScreen())
 
         result.current.openRearrange()
 
-        expect(request).toHaveBeenCalledWith(
-            expect.objectContaining({
-                options: expect.objectContaining({
-                    size: 'modal',
-                    enablePanDownToClose: false,
-                    enableContentPanningGesture: false,
-                    autoCreateContainer: false,
-                }),
-            }),
-        )
+        expect(openRearrange).toHaveBeenCalledTimes(1)
     })
 })

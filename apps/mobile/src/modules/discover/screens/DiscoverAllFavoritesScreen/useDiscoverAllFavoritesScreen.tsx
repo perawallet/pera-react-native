@@ -11,14 +11,15 @@
  */
 
 import { useCallback, useState } from 'react'
-import { useBottomSheet } from '@modules/bottom-sheet'
-import { RearrangeFavoritesSheet } from '../../components/RearrangeFavoritesSheet'
+import { DiscoverEvent, trackEvent } from '@analytics'
 import { useDiscoverDirectory } from '../../hooks/useDiscoverDirectory'
 import { useFavoritesView } from '../../hooks/useFavoritesView'
 import { useOpenDapp } from '../../hooks/useOpenDapp'
+import { useOpenRearrangeFavorites } from '../../hooks/useOpenRearrangeFavorites'
 import { useDiscoverFavoritesStore } from '../../store/useDiscoverFavoritesStore'
 import type { DiscoverFavorite } from '../../types'
 import { dappSubtitle } from '../../utils/dappSubtitle'
+import { dappEventPayload } from '../../utils/discoverAnalytics'
 import { dappHostOf, normalizeDappUrl } from '../../utils/normalizeDappUrl'
 
 export type UseDiscoverAllFavoritesScreenResult = {
@@ -31,16 +32,9 @@ export type UseDiscoverAllFavoritesScreenResult = {
     subtitleOf: (dapp: DiscoverFavorite) => string
     isVerified: (url: string) => boolean
     openDapp: (dapp: DiscoverFavorite) => void
+    removeFavorite: (dapp: DiscoverFavorite) => void
     openRearrange: () => void
 }
-
-// Full height and no pan gestures, so a drag never fights the sheet.
-const REARRANGE_SHEET_OPTIONS = {
-    size: 'modal',
-    enablePanDownToClose: false,
-    enableContentPanningGesture: false,
-    autoCreateContainer: false,
-} as const
 
 /** The Favorites screen: every favorite, searched and filtered by the shared chips. */
 export const useDiscoverAllFavoritesScreen =
@@ -52,7 +46,9 @@ export const useDiscoverAllFavoritesScreen =
         )
         const { verifiedUrls } = useDiscoverDirectory()
         const { openDapp: open } = useOpenDapp()
-        const { request } = useBottomSheet()
+        const remove = useDiscoverFavoritesStore(s => s.removeFavorite)
+        const isFavorite = useDiscoverFavoritesStore(s => s.isFavorite)
+        const openRearrange = useOpenRearrangeFavorites()
 
         const isVerified = useCallback(
             (url: string) => verifiedUrls.has(normalizeDappUrl(url) ?? ''),
@@ -76,12 +72,19 @@ export const useDiscoverAllFavoritesScreen =
             [query],
         )
 
-        const openRearrange = useCallback(() => {
-            void request({
-                contents: <RearrangeFavoritesSheet />,
-                options: REARRANGE_SHEET_OPTIONS,
-            })
-        }, [request])
+        // Not the shared toggle: a second tap on a row that has not left the
+        // list yet would add the favorite back.
+        const removeFavorite = useCallback(
+            (dapp: DiscoverFavorite) => {
+                if (!isFavorite(dapp.url)) return
+                remove(dapp.url)
+                trackEvent(
+                    DiscoverEvent.DappUnfavoriteTap,
+                    dappEventPayload(dapp, null),
+                )
+            },
+            [isFavorite, remove],
+        )
 
         return {
             dapps,
@@ -91,6 +94,7 @@ export const useDiscoverAllFavoritesScreen =
             subtitleOf,
             isVerified,
             openDapp,
+            removeFavorite,
             openRearrange,
         }
     }

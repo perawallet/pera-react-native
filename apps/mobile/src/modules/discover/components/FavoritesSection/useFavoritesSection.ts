@@ -14,6 +14,7 @@ import { useCallback, useMemo } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useDiscoverDirectory } from '../../hooks/useDiscoverDirectory'
 import { useOpenDapp } from '../../hooks/useOpenDapp'
+import { useOpenRearrangeFavorites } from '../../hooks/useOpenRearrangeFavorites'
 import { useToggleDiscoverFavorite } from '../../hooks/useToggleDiscoverFavorite'
 import { useFavoritesView } from '../../hooks/useFavoritesView'
 import { useDiscoverFavoritesStore } from '../../store/useDiscoverFavoritesStore'
@@ -36,6 +37,8 @@ export type UseFavoritesSectionResult = {
     addSuggestion: (dapp: DiscoverDapp) => void
     openDapp: (dapp: DiscoverDapp | DiscoverFavorite) => void
     openAll: () => void
+    /** Where a favorite is removed or moved; the grid's long press. */
+    openRearrange: () => void
 }
 
 export const useFavoritesSection = (): UseFavoritesSectionResult => {
@@ -45,6 +48,7 @@ export const useFavoritesSection = (): UseFavoritesSectionResult => {
     const { dapps } = useFavoritesView({ limit: FAVORITES_GRID_LIMIT })
     const isEmpty = favoriteCount === 0
     const toggleFavorite = useToggleDiscoverFavorite()
+    const openRearrange = useOpenRearrangeFavorites()
     // The directory arrives most popular first; it is only read while empty.
     const { projects } = useDiscoverDirectory({ isEnabled: isEmpty })
     const suggestions = useMemo(
@@ -74,5 +78,13 @@ export const useFavoritesSection = (): UseFavoritesSectionResult => {
         navigation.navigate('DiscoverAllFavorites')
     }, [navigation])
 
-    return { dapps, isEmpty, suggestions, addSuggestion, openDapp, openAll }
+    return {
+        dapps,
+        isEmpty,
+        suggestions,
+        addSuggestion,
+        openDapp,
+        openAll,
+        openRearrange,
+    }
 }

@@ -19,21 +19,29 @@ import { useStyles } from './styles'
 export type FavoriteTileProps = {
     dapp: DiscoverFavorite
     onPress: () => void
+    onLongPress?: () => void
     testID?: string
 }
 
 /** A favorite in the home grid: logo, name, category or domain. */
-export const FavoriteTile = ({ dapp, onPress, testID }: FavoriteTileProps) => {
+export const FavoriteTile = ({
+    dapp,
+    onPress,
+    onLongPress,
+    testID,
+}: FavoriteTileProps) => {
     const styles = useStyles()
     return (
         <PWTouchableOpacity
             style={styles.tile}
             onPress={onPress}
+            onLongPress={onLongPress}
             testID={testID}
         >
             <DappLogo
                 logo={dapp.logo}
                 size='tile'
+                siteUrl={dapp.url}
             />
             <PWView style={styles.texts}>
                 <PWText

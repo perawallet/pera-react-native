@@ -122,6 +122,7 @@ export const FavoritesSection = () => {
                                         key={dapp.url}
                                         dapp={dapp}
                                         onPress={() => section.openDapp(dapp)}
+                                        onLongPress={section.openRearrange}
                                         testID={`discover_home_favorite_${dapp.url}`}
                                     />
                                 ))}

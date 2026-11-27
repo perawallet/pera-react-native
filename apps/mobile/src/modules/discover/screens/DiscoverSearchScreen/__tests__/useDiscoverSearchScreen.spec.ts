@@ -56,7 +56,10 @@ const usdc: ScopedAssetSearchResult = {
         assetId: '31566704',
         name: 'USD Coin',
         unitName: 'USDC',
-        peraMetadata: { logo: 'https://pera.test/usdc.png' },
+        peraMetadata: {
+            logo: 'https://pera.test/usdc.png',
+            verificationTier: 'verified',
+        },
     },
 }
 
@@ -331,6 +334,31 @@ describe('useDiscoverSearchScreen', () => {
             act(() => result.current.setFilter('markets'))
 
             expect(result.current.assetResults).toEqual([uni, lookalike])
+        })
+
+        it('leaves out unverified assets that only resemble the query', () => {
+            const noise: ScopedAssetSearchResult = {
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
+                asset: {
+                    assetId: '84958523',
+                    name: '84958523;CAAVERO',
+                    peraMetadata: { verificationTier: 'unverified' },
+                },
+            }
+            const aave: ScopedAssetSearchResult = {
+                scope: { chainId: 'ethereum', networkId: 'mainnet' },
+                asset: {
+                    assetId: '0xaave',
+                    name: 'Aave',
+                    unitName: 'AAVE',
+                    peraMetadata: { verificationTier: 'verified' },
+                },
+            }
+            assetQuery({ results: [noise, aave] })
+            const { result } = setup()
+            typeQuery(result, 'aave')
+
+            expect(result.current.assetResults).toEqual([aave])
         })
 
         it('drops the dapp row for the typed domain on All, keeping it on dApps', () => {

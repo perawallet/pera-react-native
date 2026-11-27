@@ -92,7 +92,9 @@ export const DiscoverAllFavoritesScreen = () => {
                         isFavorite
                         isVerified={screen.isVerified(item.url)}
                         showChains={false}
+                        hasSiteIcon
                         onPress={() => screen.openDapp(item)}
+                        onToggleFavorite={() => screen.removeFavorite(item)}
                         testID={`discover_all_favorites_dapp_${item.url}`}
                     />
                 )}

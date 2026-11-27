@@ -13,6 +13,7 @@
 import { PWIcon, PWImage, PWView } from '@components/core'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
+import { useDappLogo } from './useDappLogo'
 
 const GLOBE_SIZE = { row: undefined, tile: 'lg' } as const
 
@@ -20,17 +21,18 @@ export type DappLogoProps = {
     logo: Nullable<string>
     /** `row`: a list row's leading logo; `tile`: the home grid. */
     size?: 'row' | 'tile'
+    /**
+     * The dApp's page, asked for its own icon when there is no logo. Only for
+     * a dApp the user chose to keep: each try is a request to that site.
+     */
+    siteUrl?: string
 }
 
-/** A dApp's round logo, or a globe when it has none. */
-export const DappLogo = ({ logo, size = 'row' }: DappLogoProps) => {
+/** A dApp's logo, else its site's icon when asked for, else a globe. */
+export const DappLogo = ({ logo, size = 'row', siteUrl }: DappLogoProps) => {
     const styles = useStyles({ size })
-    return logo ? (
-        <PWImage
-            source={{ uri: logo }}
-            style={styles.logo}
-        />
-    ) : (
+    const { uri, handleError } = useDappLogo({ logo, siteUrl })
+    const globe = (
         <PWView style={[styles.logo, styles.placeholder]}>
             <PWIcon
                 name='globe'
@@ -38,5 +40,16 @@ export const DappLogo = ({ logo, size = 'row' }: DappLogoProps) => {
                 variant='secondary'
             />
         </PWView>
+    )
+    if (!uri) return globe
+    return (
+        <PWImage
+            source={{ uri }}
+            style={styles.logo}
+            onError={handleError}
+            // A site may be slow or have no icon at all: the globe stays up
+            // until one loads, instead of a spinner on every mount.
+            PlaceholderContent={logo ? undefined : globe}
+        />
     )
 }
