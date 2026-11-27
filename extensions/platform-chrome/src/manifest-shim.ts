@@ -16,8 +16,6 @@
 // registry asks it on every dApp request. The packaged manifest.json is the
 // same object getManifest returns, a store install's update_url included.
 
-import { logger } from '@perawallet/wallet-core-shared'
-
 const readPackagedManifest = (): Promise<Response> =>
     // oxlint-disable-next-line no-restricted-globals -- reads the extension's own packaged file; no backend request
     fetch('/manifest.json', { signal: AbortSignal.timeout(5000) })
@@ -25,25 +23,21 @@ const readPackagedManifest = (): Promise<Response> =>
 /**
  * No-op where chrome.runtime.getManifest exists (every non-offscreen context).
  * MUST be awaited before anything reads the manifest.
+ *
+ * @throws when manifest.json cannot be read. A guessed manifest could flip the
+ * store check, and a document left without one fails every dApp request, so the
+ * bootstrap closes it and `ensure-offscreen` builds a new one.
  */
 export const installOffscreenManifestShim = async (
     chromeLike: typeof chrome = chrome,
     readManifest: () => Promise<Response> = readPackagedManifest,
 ): Promise<void> => {
     if (typeof chromeLike.runtime.getManifest === 'function') return
-    let manifest: chrome.runtime.Manifest
-    try {
-        const response = await readManifest()
-        if (!response.ok) {
-            throw new Error(`manifest.json answered ${response.status}`)
-        }
-        manifest = (await response.json()) as chrome.runtime.Manifest
-    } catch (error) {
-        // Left missing, the readers fail as before instead of taking a
-        // guessed manifest: a wrong update_url would flip the store check.
-        logger.warn('Offscreen manifest unavailable', { error })
-        return
+    const response = await readManifest()
+    if (!response.ok) {
+        throw new Error(`manifest.json answered ${response.status}`)
     }
+    const manifest = (await response.json()) as chrome.runtime.Manifest
     ;(
         chromeLike.runtime as { getManifest?: () => chrome.runtime.Manifest }
     ).getManifest = () => manifest

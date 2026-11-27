@@ -84,6 +84,24 @@ describe('App (web) on the offscreen surface', () => {
         ).toBeLessThan(mocks.runOffscreenApp.mock.invocationCallOrder[0])
     })
 
+    it('closes the offscreen document when its manifest cannot be read, so it is rebuilt', async () => {
+        const failure = new Error('manifest.json answered 404')
+        mocks.installOffscreenManifestShim.mockRejectedValueOnce(failure)
+        const close = vi.spyOn(window, 'close').mockImplementation(() => {})
+        const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+        mocks.runOffscreenApp.mockClear()
+
+        try {
+            render(<App />)
+
+            await waitFor(() => expect(close).toHaveBeenCalledOnce())
+            expect(mocks.runOffscreenApp).not.toHaveBeenCalled()
+        } finally {
+            close.mockRestore()
+            log.mockRestore()
+        }
+    })
+
     it('hands the offscreen document a broadcast on the signed transactions’ own scope', async () => {
         render(<App />)
         await waitFor(() =>

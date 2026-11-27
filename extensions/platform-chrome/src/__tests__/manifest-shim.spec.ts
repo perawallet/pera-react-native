@@ -66,14 +66,27 @@ describe('installOffscreenManifestShim', () => {
         expect(chromeLike.runtime.getManifest).toBe(getManifest)
     })
 
-    it('does not fail the boot when the manifest cannot be read', async () => {
+    it('fails the boot when the manifest answers with an error', async () => {
         const chromeLike = offscreenChrome()
 
         await expect(
             installOffscreenManifestShim(chromeLike, () =>
                 Promise.resolve(new Response('', { status: 404 })),
             ),
-        ).resolves.toBeUndefined()
+        ).rejects.toThrow('manifest.json answered 404')
+
+        expect(chromeLike.runtime.getManifest).toBeUndefined()
+    })
+
+    it('fails the boot when the manifest cannot be fetched', async () => {
+        const chromeLike = offscreenChrome()
+        const unreachable = new TypeError('Failed to fetch')
+
+        await expect(
+            installOffscreenManifestShim(chromeLike, () =>
+                Promise.reject(unreachable),
+            ),
+        ).rejects.toBe(unreachable)
 
         expect(chromeLike.runtime.getManifest).toBeUndefined()
     })
