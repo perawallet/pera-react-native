@@ -140,7 +140,7 @@ const { mockAssetsQuery, mockPreferences } = vi.hoisted(() => ({
 }))
 
 // Watch accounts sign nothing; a test flips this to reach the swipe rules.
-const mockCanSign = vi.hoisted(() => ({ current: false }))
+const mockCanSign = vi.hoisted(() => ({ current: false, anyChain: false }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -150,6 +150,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     return {
         ...actual,
         useCanSignWith: () => mockCanSign.current,
+        useCanSignOnAnyChain: () => mockCanSign.anyChain,
         useAccountAssetsQuery: vi.fn(() => ({
             holdings: mockAssetsQuery.holdings,
             isPending: mockAssetsQuery.isPending,
@@ -259,6 +260,7 @@ describe('useAccountAssetList', () => {
         mockPreferences.displayNfts = true
         mockPreferences.showSuspicious = false
         mockCanSign.current = false
+        mockCanSign.anyChain = false
         useHiddenTokensStore.getState().resetState()
         useHoldingsRefreshStore.getState().resetState()
         useAccountChainStateStore.getState().resetState()
@@ -356,6 +358,21 @@ describe('useAccountAssetList', () => {
             { address: ETH_ADDRESS, scope: ETHEREUM_MAINNET },
         ])
         expect(result.current.canManageAssets).toBe(false)
+    })
+
+    it('offers Add Asset while some chain the account is on signs, though its own chain does not', () => {
+        mockCanSign.anyChain = true
+
+        const { result, rerender } = renderHook(() =>
+            useAccountAssetList({ account: mockAccount, t: mockT }),
+        )
+        expect(result.current.isReadOnly).toBe(true)
+        expect(result.current.canAddAsset).toBe(true)
+
+        mockCanSign.anyChain = false
+        rerender()
+
+        expect(result.current.canAddAsset).toBe(false)
     })
 
     it("opens a holding's detail screen on the holding's own chain", () => {

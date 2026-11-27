@@ -13,6 +13,7 @@
 import { useCallback, useMemo } from 'react'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Maybe } from '@perawallet/wallet-core-shared'
+import { chainAccountOf } from '../credentials'
 import type { WalletAccount } from '../models'
 import { canSignWith } from '../signer-resolution'
 import { useAccountChainStateStore, useAccountsStore } from '../store'
@@ -48,5 +49,10 @@ export const useCanSignWithCheck = (): ((
 /** Whether something held signs for `account` on any registered chain it holds. */
 export const useCanSignOnAnyChain = (account: WalletAccount): boolean => {
     const canSignOn = useCanSignWithCheck()
-    return useRegisteredChainIds().some(chainId => canSignOn(account, chainId))
+    // Some resolvers answer on custody alone, so a chain the account isn't on can still say yes.
+    return useRegisteredChainIds().some(
+        chainId =>
+            chainAccountOf(account, chainId) !== undefined &&
+            canSignOn(account, chainId),
+    )
 }

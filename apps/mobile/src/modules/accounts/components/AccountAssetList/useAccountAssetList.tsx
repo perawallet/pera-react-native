@@ -20,6 +20,7 @@ import {
     receivesUnaskedAssets,
     useAccountAssetsQuery,
     useAccountHoldingSources,
+    useCanSignOnAnyChain,
     useCanSignWith,
     useHiddenTokensStore,
     useHasAccountChainState,
@@ -95,6 +96,8 @@ type UseAccountAssetListResult = {
     convertFiat: AssetFiatConverter
     isReadOnly: boolean
     canManageAssets: boolean
+    /** Something signs for the account on any of its chains; the sheet offers every chain it's on. */
+    canAddAsset: boolean
     /** Some chain the account holds receives tokens unasked, so it can hide them. */
     canHideTokens: boolean
     /** The Manage sheet has something to offer: asset management on the account's chain, or hiding. */
@@ -342,6 +345,7 @@ export const useAccountAssetList = ({
     }, [viewRequestKey, hasRowsForRequest, account.id])
 
     const isReadOnly = !useCanSignWith(account, scope.chainId)
+    const canAddAsset = useCanSignOnAnyChain(account)
 
     const goToAssetScreen = useCallback(
         (item: AccountHoldingsLiteRow) => {
@@ -615,6 +619,7 @@ export const useAccountAssetList = ({
         convertFiat,
         isReadOnly,
         canManageAssets,
+        canAddAsset,
         canHideTokens,
         canOpenManage,
         listRef,

@@ -63,8 +63,9 @@ const mockAccount = {
     },
 }
 
-const { mockGetSelectedAccount } = vi.hoisted(() => ({
+const { mockGetSelectedAccount, mockCanSign } = vi.hoisted(() => ({
     mockGetSelectedAccount: vi.fn((): unknown => mockAccount),
+    mockCanSign: { current: true },
 }))
 
 const { mockAddToken, mockRemoveToken, mockAddedTokens } = vi.hoisted(() => ({
@@ -94,6 +95,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         useAccountsStore: vi.fn((selector: (state: unknown) => unknown) =>
             selector({ getSelectedAccount: mockGetSelectedAccount }),
         ),
+        useCanSignWith: () => mockCanSign.current,
         // Unlike the real hook, keeps chains that aren't registered: the
         // offered chips must leave those out themselves.
         useAccountHoldingSources: (account: unknown) =>
@@ -264,6 +266,7 @@ describe('useAddAssetView', () => {
         vi.clearAllMocks()
         mockUseAssetSearch.mockReturnValue(defaultSearchResult)
         mockGetSelectedAccount.mockReturnValue(mockAccount)
+        mockCanSign.current = true
         mockAddedTokens.mockReturnValue([])
         setHasInternet(true)
     })
@@ -710,6 +713,17 @@ describe('useAddAssetView', () => {
 
             act(() => result.current.handleSelectChain('ethereum'))
 
+            expect(result.current.canAdd(onEthereum('0xToken'))).toBe(true)
+        })
+
+        it("offers no opt-in on Algorand when nothing held signs there, but still adds Ethereum's tokens", () => {
+            registerEthereumChain()
+            mockCanSign.current = false
+            const { result } = renderHook(() =>
+                useAddAssetView({ chainId: null }),
+            )
+
+            expect(result.current.canAdd(onAlgorand('999'))).toBe(false)
             expect(result.current.canAdd(onEthereum('0xToken'))).toBe(true)
         })
 

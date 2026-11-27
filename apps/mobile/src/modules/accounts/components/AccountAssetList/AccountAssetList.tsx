@@ -68,8 +68,7 @@ export const AccountAssetList = ({
         setSelectedChainId,
         toggleGroupExpanded,
         convertFiat,
-        isReadOnly,
-        canManageAssets,
+        canAddAsset,
         canOpenManage,
         listRef,
         headerState,
@@ -170,7 +169,7 @@ export const AccountAssetList = ({
                                     style={styles.manageButton}
                                 />
                             )}
-                            {!isReadOnly && canManageAssets && (
+                            {canAddAsset && (
                                 <PWButton
                                     testID='add_asset_button'
                                     icon='plus'
