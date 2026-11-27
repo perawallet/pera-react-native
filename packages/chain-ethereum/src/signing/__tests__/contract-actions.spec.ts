@@ -771,13 +771,17 @@ describe('Across spoke pool', () => {
         })
     }
     const deposit = (
-        overrides: Partial<{ inputToken: Hex; recipient: Hex }> = {},
+        overrides: Partial<{
+            depositor: Hex
+            inputToken: Hex
+            recipient: Hex
+        }> = {},
     ): Hex =>
         encodeFunctionData({
             abi: ACROSS_ABI,
             functionName: 'deposit',
             args: [
-                word(SENDER),
+                overrides.depositor ?? word(SENDER),
                 overrides.recipient ?? word(SENDER),
                 overrides.inputToken ?? word(BASE_USDC),
                 word(OTHER),
@@ -922,6 +926,11 @@ describe('Across spoke pool', () => {
         [
             'a bytes32 input token with dirty top bytes',
             deposit({ inputToken: `0x${'11'.repeat(32)}` }),
+            0n,
+        ],
+        [
+            'a bytes32 depositor that is not the signer',
+            deposit({ depositor: word(OTHER) }),
             0n,
         ],
         [

@@ -10,16 +10,15 @@
  limitations under the License
  */
 
+import { networkTierOf } from '@perawallet/wallet-core-chain-contract'
 import { evmChainOfEip155Id } from '@perawallet/wallet-core-chain-ethereum'
 import type { Optional } from '@perawallet/wallet-core-shared'
 
 /** Only a mainnet is named: Pera doesn't carry a testnet as a place funds are meant to arrive. */
 export const evmMainnetNameOf = (eip155ChainId: number): Optional<string> => {
     const found = evmChainOfEip155Id(eip155ChainId)
-    const network = found?.chain.descriptor.networks.find(
-        candidate => candidate.id === found.networkId,
-    )
-    return network?.tier === 'mainnet'
-        ? found?.chain.descriptor.displayName
+    return found &&
+        networkTierOf(found.chain.descriptor, found.networkId) === 'mainnet'
+        ? found.chain.descriptor.displayName
         : undefined
 }
