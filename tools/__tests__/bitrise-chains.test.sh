@@ -119,9 +119,10 @@ for source in bitrise pipelines; do
     done
 done
 
-# Mobile reads through Pera's RPC proxy on its own deployment first. The
-# extension carries no API key and the proxy refuses web tokens, so web stays
-# on public nodes.
+# Production mobile reads through Pera's RPC proxy first. Staging stays on
+# public nodes so testers don't spend the proxy's provider credits, and the
+# extension can't use the proxy: it carries no API key and the proxy refuses
+# web tokens.
 EVM_PROXY_ROUTES="$(node -e '
     const nets = require(process.argv[1])
     for (const [chain, { networks }] of Object.entries(nets))
@@ -132,17 +133,14 @@ for source in bitrise pipelines; do
     env_of="${source}_env"
     echo "${source} RPC proxy"
     for job in ios-staging android-staging ios-production android-production web-staging web-production; do
-        deployment="api"
-        [[ "$job" == *-staging ]] && deployment="staging.api"
         while read -r rpc_env tier eip155_id; do
-            first="$("$env_of" "$job" "$rpc_env")"
-            first="${first%%,*}"
-            if [[ "$job" == web-* ]]; then
-                [[ "$first" == *perawallet.app* ]] && first="pera" || first="public"
-                check "${job} keeps ${rpc_env} on public nodes" "public" "$first"
-            else
+            list="$("$env_of" "$job" "$rpc_env")"
+            if [[ "$job" == ios-production || "$job" == android-production ]]; then
                 check "${job} reads ${rpc_env} through the proxy first" \
-                    "https://${tier}.${deployment}.perawallet.app/api/v3/evm/${eip155_id}/rpc" "$first"
+                    "https://${tier}.api.perawallet.app/api/v3/evm/${eip155_id}/rpc" "${list%%,*}"
+            else
+                [[ "$list" == *perawallet.app* ]] && list="pera" || list="public"
+                check "${job} keeps ${rpc_env} on public nodes" "public" "$list"
             fi
         done <<< "$EVM_PROXY_ROUTES"
     done
