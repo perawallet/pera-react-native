@@ -416,6 +416,9 @@ describe('Flow: Fund an Ethereum account', () => {
         await screen.findByTestId('onramp-pay-input', {}, FORM_TIMEOUT)
         await waitForReceiveAmount('0.05')
 
+        expect(screen.getByTestId('onramp-receive-amount').textContent).toBe(
+            '0.05',
+        )
         expect(requestsTo('GET', '/pairs/').length).toBeGreaterThan(0)
         expect(lastQuoteBody()).toMatchObject({
             destination_asset_id: ETH_ID,

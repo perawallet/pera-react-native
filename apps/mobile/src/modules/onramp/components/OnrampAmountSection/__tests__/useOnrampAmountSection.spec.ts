@@ -24,6 +24,7 @@ import {
     makeRampToken,
 } from '@test-utils/rampFixtures'
 import {
+    formatReceiveAmount,
     getFiatBaseAmount,
     sanitizeAmountInput,
     useOnrampAmountSection,
@@ -113,6 +114,23 @@ describe('getFiatBaseAmount', () => {
     })
 })
 
+describe('formatReceiveAmount', () => {
+    it.each([
+        ['0.06246023', 18, '0.06246023'],
+        ['0.062460230000000000', 18, '0.06246023'],
+        ['1000', 6, '1000'],
+        ['15.000000', 6, '15'],
+        ['10.500000', 6, '10.5'],
+        ['999.5', 6, '999.5'],
+        ['10.456', 2, '10.46'],
+        ['0.000000000000000001', 18, '0.000000000000000001'],
+    ])('formats %s at %i decimals as %s', (amount, decimals, expected) => {
+        expect(formatReceiveAmount(new Decimal(amount), decimals)).toBe(
+            expected,
+        )
+    })
+})
+
 describe('useOnrampAmountSection', () => {
     beforeEach(() => {
         mockRampTokenAsset.mockReset().mockReturnValue(null)
@@ -167,6 +185,22 @@ describe('useOnrampAmountSection', () => {
         expect(result.current.inputValue).toBe('')
         expect(result.current.receiveValue).toBe('10.46')
         expect(result.current.fiatBaseAmount.toString()).toBe('10.456')
+    })
+
+    it('trims the padding of an 18-decimal receive amount', () => {
+        const { result } = renderHook(() =>
+            useOnrampAmountSection({
+                variant: 'receive',
+                token: makeRampToken({ fractionDecimals: 18 }),
+                amountText: '',
+                amount: new Decimal('0.06246023'),
+                usdPrice: null,
+                accountScope: null,
+            }),
+        )
+
+        expect(result.current.receiveValue).toBe('0.06246023')
+        expect(result.current.hasReceiveValue).toBe(true)
     })
 
     it('forwards sanitized pay text to onAmountTextChange', () => {
