@@ -17,10 +17,14 @@ import {
     type ChainScope,
     type ChainScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
-import { logger } from '@perawallet/wallet-core-shared'
-import { fetchVerificationTiers } from '../chain-adapter'
+import {
+    isChainRefusedError,
+    isPeraServiceUnavailableError,
+    logger,
+} from '@perawallet/wallet-core-shared'
+import { fetchAssetVerdicts, type AssetVerdict } from '../chain-adapter'
 import { getAssetsByIds } from '../db'
-import type { PeraAsset, PeraAssetVerificationTier } from '../models'
+import type { PeraAsset } from '../models'
 import { hashAssetIds, MODULE_PREFIX } from './querykeys'
 
 export type ScopedAssetIds = { scope: ChainScope; assetIds: string[] }
@@ -33,32 +37,45 @@ export type StoredAssetsByScope = ReadonlyMap<
 
 export type UseStoredAssetsAcrossScopesQueryResult = {
     assets: StoredAssetsByScope
-    /** Pera's tier for an id the DB lacks, when the backend describes it. */
-    unstoredTiers: ReadonlyMap<
+    /** What Pera says of an id the DB lacks, when the backend describes it. */
+    unstoredVerdicts: ReadonlyMap<
         ChainScopeKey,
-        ReadonlyMap<string, PeraAssetVerificationTier>
+        ReadonlyMap<string, AssetVerdict>
     >
     /**
      * The ids each scope has an answer for. A requested id missing here is
-     * still loading, or its tier lookup failed, so its absence from `assets`
-     * and `unstoredTiers` says nothing about it.
+     * still loading, or its lookup failed, so its absence from `assets` and
+     * `unstoredVerdicts` says nothing about it.
      */
     readIds: ReadonlyMap<ChainScopeKey, ReadonlySet<string>>
 }
 
+type QueryData = UseStoredAssetsAcrossScopesQueryResult & {
+    hasFailedLookup: boolean
+}
+
 const NOTHING_READ: UseStoredAssetsAcrossScopesQueryResult = {
     assets: new Map(),
-    unstoredTiers: new Map(),
+    unstoredVerdicts: new Map(),
     readIds: new Map(),
 }
 
-const NO_TIERS: ReadonlyMap<string, PeraAssetVerificationTier> = new Map()
+const NO_VERDICTS: ReadonlyMap<string, AssetVerdict> = new Map()
+
+const logLookupFailure = (context: Record<string, unknown>, error: unknown) => {
+    const message = 'Asset verdict lookup failed'
+    if (isChainRefusedError(error) || isPeraServiceUnavailableError(error)) {
+        logger.debug(message, { ...context, error })
+    } else {
+        logger.warn(message, { ...context, error })
+    }
+}
 
 /**
  * The local DB's rows for ids spread over several scopes, in one query: a list
  * mixing networks needs them before it renders, where a hook per scope can't
- * be called. `fetchMissingTiers` asks the backend for the tier of each id the
- * DB lacks, without storing it.
+ * be called. `fetchMissingTiers` asks the backend about each id the DB lacks,
+ * without storing the answer.
  */
 export const useStoredAssetsAcrossScopesQuery = (
     groups: readonly ScopedAssetIds[],
@@ -83,12 +100,13 @@ export const useStoredAssetsAcrossScopesQuery = (
             { fetchMissingTiers },
         ],
         enabled: keyParts.length > 0,
-        staleTime: Infinity,
+        // A failed lookup stays stale, so a reconnect or refocus asks again.
+        staleTime: query => (query.state.data?.hasFailedLookup ? 0 : Infinity),
         networkMode: 'always',
         // A list that grows page by page changes the key on every page; the
         // last answer keeps the ids it covers settled while the new ones load.
         placeholderData: keepPreviousData,
-        queryFn: async (): Promise<UseStoredAssetsAcrossScopesQueryResult> => {
+        queryFn: async (): Promise<QueryData> => {
             const entries = await Promise.all(
                 groups
                     .filter(group => group.assetIds.length > 0)
@@ -101,37 +119,45 @@ export const useStoredAssetsAcrossScopesQuery = (
                         const stored = new Set(rows.map(row => row.assetId))
                         const missing = ids.filter(id => !stored.has(id))
                         let readIds: ReadonlySet<string> = new Set(ids)
-                        let tiers = NO_TIERS
+                        let verdicts = NO_VERDICTS
+                        let hasFailedLookup = false
                         if (fetchMissingTiers && missing.length > 0) {
                             // ponytail: re-asks every unstored id on each page
                             // and sync; cache answers if that ever grows large.
-                            const answer = await fetchVerificationTiers(
+                            const answer = await fetchAssetVerdicts(
                                 missing,
                                 group.scope,
                             ).catch(error => {
-                                logger.warn('Asset tier lookup failed', {
-                                    scope: group.scope,
-                                    count: missing.length,
+                                logLookupFailure(
+                                    {
+                                        scope: group.scope,
+                                        count: missing.length,
+                                    },
                                     error,
-                                })
+                                )
+                                hasFailedLookup = true
                                 return null
                             })
-                            if (answer) tiers = answer
+                            if (answer) verdicts = answer
                             else readIds = stored
                         }
                         const scopeKey = toScopeKey(group.scope)
                         return {
                             scopeKey,
                             rows: new Map(rows.map(row => [row.assetId, row])),
-                            tiers,
+                            verdicts,
                             readIds,
+                            hasFailedLookup,
                         }
                     }),
             )
             return {
                 assets: new Map(entries.map(e => [e.scopeKey, e.rows])),
-                unstoredTiers: new Map(entries.map(e => [e.scopeKey, e.tiers])),
+                unstoredVerdicts: new Map(
+                    entries.map(e => [e.scopeKey, e.verdicts]),
+                ),
                 readIds: new Map(entries.map(e => [e.scopeKey, e.readIds])),
+                hasFailedLookup: entries.some(e => e.hasFailedLookup),
             }
         },
     })

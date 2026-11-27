@@ -20,8 +20,8 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     useStoredAssetsAcrossScopesQuery,
+    type AssetVerdict,
     type PeraAsset,
-    type PeraAssetVerificationTier,
     type ScopedAssetIds,
 } from '@perawallet/wallet-core-assets'
 import {
@@ -60,7 +60,7 @@ type Entry = {
 
 type ScopeAssets = {
     assets: Optional<ReadonlyMap<string, PeraAsset>>
-    unstoredTiers: Optional<ReadonlyMap<string, PeraAssetVerificationTier>>
+    unstoredVerdicts: Optional<ReadonlyMap<string, AssetVerdict>>
     readIds: Optional<ReadonlySet<string>>
 }
 
@@ -69,8 +69,8 @@ type ScopeAssets = {
  * airdrop or a spoofed transfer. The account's own stays, whatever it moved,
  * and so does one whose signer the history doesn't name unless it's marked
  * signed elsewhere (a transfer-log-only row, how most airdrops arrive). A
- * token is judged once its lookup has answered: by its stored row, else by the
- * backend's tier, and one the backend doesn't describe isn't verified.
+ * token is judged once its lookup has answered: by its stored row, else by
+ * what the backend says of it, and one it doesn't describe isn't verified.
  */
 const movesUnapprovedToken = (
     entry: Entry,
@@ -83,17 +83,14 @@ const movesUnapprovedToken = (
                 entry.accountAddress.toLowerCase())) &&
     summaryAmountsOf(entry.summary).some(({ assetRef: { assetId } }) => {
         if (!known.readIds?.has(assetId)) return false
-        const stored = known.assets?.get(assetId)
-        // Without a stored row only the summary says it's an NFT, and NFTs
-        // keep the suspicious-only rule, which an unstored one can't fail.
-        if (!stored && entry.summary.kind === 'nft-transfer') return false
-        const tier = known.unstoredTiers?.get(assetId)
         return isUnapprovedHolding(
             {
                 address: entry.accountAddress,
                 scope: entry.scope,
                 assetId,
-                asset: stored ?? { peraMetadata: { verificationTier: tier } },
+                asset: known.assets?.get(assetId) ?? {
+                    peraMetadata: known.unstoredVerdicts?.get(assetId),
+                },
             },
             keptTokens,
         )
@@ -169,7 +166,7 @@ export const useWithoutSuspiciousRows = ({
     }, [entries])
     const {
         assets: storedByScope,
-        unstoredTiers,
+        unstoredVerdicts,
         readIds,
     } = useStoredAssetsAcrossScopesQuery(assetGroups, {
         fetchMissingTiers: true,
@@ -188,7 +185,7 @@ export const useWithoutSuspiciousRows = ({
                                 assets: storedByScope.get(
                                     toScopeKey(entry.scope),
                                 ),
-                                unstoredTiers: unstoredTiers.get(
+                                unstoredVerdicts: unstoredVerdicts.get(
                                     toScopeKey(entry.scope),
                                 ),
                                 readIds: readIds.get(toScopeKey(entry.scope)),
@@ -224,7 +221,7 @@ export const useWithoutSuspiciousRows = ({
         rows,
         entries,
         storedByScope,
-        unstoredTiers,
+        unstoredVerdicts,
         readIds,
         suspectedPoisoningById,
         keptTokens,

@@ -424,7 +424,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     useAssetsQuery: vi.fn(() => ({ data: new Map(), isPending: false })),
     useStoredAssetsAcrossScopesQuery: vi.fn(() => ({
         assets: new Map(),
-        unstoredTiers: new Map(),
+        unstoredVerdicts: new Map(),
         readIds: new Map(),
     })),
     isSpamAssetText: vi.fn(() => false),

@@ -33,12 +33,12 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import type { Decimal } from 'decimal.js'
-import type {
-    DisplayableAsset,
-    PeraAsset,
-    PeraAssetVerificationTier,
-} from './models'
+import type { DisplayableAsset, PeraAsset, PeraAssetMetadata } from './models'
 import { useAssetSearchAvailabilityStore } from './store/search-availability-store'
+
+export type AssetVerdict = Partial<
+    Pick<PeraAssetMetadata, 'verificationTier' | 'type'>
+>
 
 export type AssetAuthorities = {
     hasFreeze: boolean
@@ -109,15 +109,16 @@ export interface AssetsChainAdapter {
         options?: SyncAssetsOptions,
     ): Promise<void>
     /**
-     * Pera's tier for each token ref the backend describes, by asset id; a ref
-     * it doesn't describe is absent. Asks only the backend and stores nothing,
-     * since a stored row needs the chain's half too. Absent on a chain whose
-     * tokens never need judging before they're stored.
+     * What Pera says of each ref the backend describes, by asset id; a ref it
+     * doesn't describe is absent, and null means the scope can't be asked. A
+     * collectible is marked by type alone. Asks only the backend and stores
+     * nothing, since a stored row needs the chain's half too. Absent on a chain
+     * whose assets never need judging before they're stored.
      */
-    fetchVerificationTiers?(
+    fetchAssetVerdicts?(
         refs: AssetRef[],
         scope: ChainScope,
-    ): Promise<ReadonlyMap<string, PeraAssetVerificationTier>>
+    ): Promise<Nullable<ReadonlyMap<string, AssetVerdict>>>
     /**
      * The asset as the chain's sources for `scope` describe it, with any
      * third-party opinion (verification tier, logo) merged in. Persists the
@@ -300,14 +301,14 @@ export const fetchAndPersistAssets = async (
     )
 }
 
-/** Null on a chain with no `fetchVerificationTiers`. */
-export const fetchVerificationTiers = async (
+/** Null on a chain with no `fetchAssetVerdicts`. */
+export const fetchAssetVerdicts = async (
     assetIds: string[],
     scope: ChainScope,
-): Promise<Nullable<ReadonlyMap<string, PeraAssetVerificationTier>>> => {
+): Promise<Nullable<ReadonlyMap<string, AssetVerdict>>> => {
     const adapter = assetsAdapterFor(scope)
-    return adapter.fetchVerificationTiers
-        ? adapter.fetchVerificationTiers(
+    return adapter.fetchAssetVerdicts
+        ? adapter.fetchAssetVerdicts(
               assetIds.map(id => assetRefOn(scope, id)),
               scope,
           )

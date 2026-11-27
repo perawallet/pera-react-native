@@ -22,12 +22,12 @@ const ETHEREUM = { chainId: 'ethereum', networkId: 'mainnet' } as const
 
 const mocks = vi.hoisted(() => ({
     getAssetsByIds: vi.fn(),
-    fetchVerificationTiers: vi.fn(),
+    fetchAssetVerdicts: vi.fn(),
 }))
 
 vi.mock('../../db', () => ({ getAssetsByIds: mocks.getAssetsByIds }))
 vi.mock('../../chain-adapter', () => ({
-    fetchVerificationTiers: mocks.fetchVerificationTiers,
+    fetchAssetVerdicts: mocks.fetchAssetVerdicts,
 }))
 
 describe('useStoredAssetsAcrossScopesQuery', () => {
@@ -102,13 +102,13 @@ describe('useStoredAssetsAcrossScopesQuery', () => {
                 result.current.readIds.get('ethereum/mainnet')?.has('0xabc'),
             ).toBe(true),
         )
-        expect(mocks.fetchVerificationTiers).not.toHaveBeenCalled()
+        expect(mocks.fetchAssetVerdicts).not.toHaveBeenCalled()
     })
 
-    it('asks the tier of only the ids the DB lacks', async () => {
+    it('asks about only the ids the DB lacks', async () => {
         mocks.getAssetsByIds.mockResolvedValue([{ assetId: '0xabc' }])
-        mocks.fetchVerificationTiers.mockResolvedValue(
-            new Map([['0xdef', 'verified']]),
+        mocks.fetchAssetVerdicts.mockResolvedValue(
+            new Map([['0xdef', { verificationTier: 'verified' }]]),
         )
 
         const { result } = renderHook(
@@ -127,12 +127,12 @@ describe('useStoredAssetsAcrossScopesQuery', () => {
 
         await waitFor(() =>
             expect(
-                result.current.unstoredTiers
+                result.current.unstoredVerdicts
                     .get('ethereum/mainnet')
                     ?.get('0xdef'),
-            ).toBe('verified'),
+            ).toEqual({ verificationTier: 'verified' }),
         )
-        expect(mocks.fetchVerificationTiers).toHaveBeenCalledWith(
+        expect(mocks.fetchAssetVerdicts).toHaveBeenCalledWith(
             ['0xdef', '0xfff'],
             ETHEREUM,
         )
@@ -143,9 +143,9 @@ describe('useStoredAssetsAcrossScopesQuery', () => {
         ])
     })
 
-    it('leaves the unstored ids unread when the tier lookup fails, or the chain has none', async () => {
+    it('leaves the unstored ids unread when the lookup fails, or the chain has none', async () => {
         mocks.getAssetsByIds.mockResolvedValue([{ assetId: '0xabc' }])
-        mocks.fetchVerificationTiers
+        mocks.fetchAssetVerdicts
             .mockRejectedValueOnce(new Error('offline'))
             .mockResolvedValueOnce(null)
 
@@ -167,6 +167,37 @@ describe('useStoredAssetsAcrossScopesQuery', () => {
                 ...result.current.readIds.get('ethereum/mainnet')!,
             ]).toEqual(['0xabc'])
         }
+    })
+
+    it('leaves a failed lookup stale, so the next refetch asks again, and settles once it answers', async () => {
+        mocks.getAssetsByIds.mockResolvedValue([])
+        mocks.fetchAssetVerdicts
+            .mockRejectedValueOnce(new Error('offline'))
+            .mockResolvedValueOnce(new Map())
+        const isStale = () => queryClient.getQueryCache().getAll()[0]!.isStale()
+
+        const { result } = renderHook(
+            () =>
+                useStoredAssetsAcrossScopesQuery(
+                    [{ scope: ETHEREUM, assetIds: ['0xdef'] }],
+                    { fetchMissingTiers: true },
+                ),
+            { wrapper: createWrapper(queryClient) },
+        )
+        await waitFor(() =>
+            expect(result.current.readIds.get('ethereum/mainnet')).toEqual(
+                new Set(),
+            ),
+        )
+        expect(isStale()).toBe(true)
+        await queryClient.refetchQueries({ stale: true })
+
+        await waitFor(() =>
+            expect(
+                result.current.readIds.get('ethereum/mainnet')?.has('0xdef'),
+            ).toBe(true),
+        )
+        expect(isStale()).toBe(false)
     })
 
     it('keeps the last answer while a grown id list loads', async () => {

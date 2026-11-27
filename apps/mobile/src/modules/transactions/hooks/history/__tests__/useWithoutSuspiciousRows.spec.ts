@@ -144,7 +144,7 @@ describe('useWithoutSuspiciousRows', () => {
             receive('log-only', undefined, '0xnew', {
                 isSignedElsewhere: true,
             }),
-            receive('unstored-nft', OTHER, '0xnft', { kind: 'nft-transfer' }),
+            receive('unstored-nft', OTHER, '0xnft', { kind: 'contract-call' }),
         ]
 
         beforeEach(() => {
@@ -161,8 +161,14 @@ describe('useWithoutSuspiciousRows', () => {
                         ]),
                     ],
                 ]),
-                unstoredTiers: new Map([
-                    [toScopeKey(SCOPE), new Map([['0xsold', 'verified']])],
+                unstoredVerdicts: new Map([
+                    [
+                        toScopeKey(SCOPE),
+                        new Map([
+                            ['0xsold', { verificationTier: 'verified' }],
+                            ['0xnft', { type: 'collectible' }],
+                        ]),
+                    ],
                 ]),
                 readIds: new Map([
                     [
@@ -188,7 +194,7 @@ describe('useWithoutSuspiciousRows', () => {
                 }),
             ).result.current.map(row => row.key)
 
-        it("drops someone else's transfer of it, log-only and unsynced ones included, and keeps the account's own, one with no named signer, an unsynced NFT and an unsynced token the backend verifies", () => {
+        it("drops someone else's transfer of it, log-only and unsynced ones included, and keeps the account's own, one with no named signer, an unsynced NFT whatever the row's kind, and an unsynced token the backend verifies", () => {
             expect(keysOf()).toEqual([
                 '2026-11-25',
                 'own-swap',
@@ -212,7 +218,7 @@ describe('useWithoutSuspiciousRows', () => {
         it('keeps every row while its assets are still being read', () => {
             vi.mocked(useStoredAssetsAcrossScopesQuery).mockReturnValue({
                 assets: new Map(),
-                unstoredTiers: new Map(),
+                unstoredVerdicts: new Map(),
                 readIds: new Map(),
             })
 
