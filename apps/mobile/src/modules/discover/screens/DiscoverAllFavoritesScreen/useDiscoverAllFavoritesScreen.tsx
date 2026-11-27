@@ -11,11 +11,11 @@
  */
 
 import { useCallback, useState } from 'react'
-import { useBottomSheet } from '@modules/bottom-sheet'
-import { RearrangeFavoritesSheet } from '../../components/RearrangeFavoritesSheet'
 import { useDiscoverDirectory } from '../../hooks/useDiscoverDirectory'
 import { useFavoritesView } from '../../hooks/useFavoritesView'
 import { useOpenDapp } from '../../hooks/useOpenDapp'
+import { useOpenRearrangeFavorites } from '../../hooks/useOpenRearrangeFavorites'
+import { useToggleDiscoverFavorite } from '../../hooks/useToggleDiscoverFavorite'
 import { useDiscoverFavoritesStore } from '../../store/useDiscoverFavoritesStore'
 import type { DiscoverFavorite } from '../../types'
 import { dappSubtitle } from '../../utils/dappSubtitle'
@@ -31,16 +31,9 @@ export type UseDiscoverAllFavoritesScreenResult = {
     subtitleOf: (dapp: DiscoverFavorite) => string
     isVerified: (url: string) => boolean
     openDapp: (dapp: DiscoverFavorite) => void
+    removeFavorite: (dapp: DiscoverFavorite) => void
     openRearrange: () => void
 }
-
-// Full height and no pan gestures, so a drag never fights the sheet.
-const REARRANGE_SHEET_OPTIONS = {
-    size: 'modal',
-    enablePanDownToClose: false,
-    enableContentPanningGesture: false,
-    autoCreateContainer: false,
-} as const
 
 /** The Favorites screen: every favorite, searched and filtered by the shared chips. */
 export const useDiscoverAllFavoritesScreen =
@@ -52,7 +45,8 @@ export const useDiscoverAllFavoritesScreen =
         )
         const { verifiedUrls } = useDiscoverDirectory()
         const { openDapp: open } = useOpenDapp()
-        const { request } = useBottomSheet()
+        const toggleFavorite = useToggleDiscoverFavorite()
+        const openRearrange = useOpenRearrangeFavorites()
 
         const isVerified = useCallback(
             (url: string) => verifiedUrls.has(normalizeDappUrl(url) ?? ''),
@@ -76,12 +70,13 @@ export const useDiscoverAllFavoritesScreen =
             [query],
         )
 
-        const openRearrange = useCallback(() => {
-            void request({
-                contents: <RearrangeFavoritesSheet />,
-                options: REARRANGE_SHEET_OPTIONS,
-            })
-        }, [request])
+        // Every row here is a favorite, so the toggle only ever removes.
+        const removeFavorite = useCallback(
+            (dapp: DiscoverFavorite) => {
+                toggleFavorite(dapp, null)
+            },
+            [toggleFavorite],
+        )
 
         return {
             dapps,
@@ -91,6 +86,7 @@ export const useDiscoverAllFavoritesScreen =
             subtitleOf,
             isVerified,
             openDapp,
+            removeFavorite,
             openRearrange,
         }
     }

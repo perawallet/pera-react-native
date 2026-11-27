@@ -140,6 +140,14 @@ describe('Flow: Discover Favorites screen', () => {
         const plain = screen.getByTestId(
             'discover_all_favorites_dapp_https://tinyman.example',
         )
+        // A logo-less favorite asks its site for an icon first; the globe is
+        // what is left once neither of the two it tries loads.
+        const siteIcon = () =>
+            plain.querySelector('[data-testid="expo-image"]') as Element
+        expect(siteIcon().getAttribute('src')).toBeNull()
+        fireEvent.error(siteIcon())
+        fireEvent.error(siteIcon())
+        expect(plain.querySelector('[data-testid="expo-image"]')).toBeNull()
         const globe = plain.querySelector('svg')
         expect(hasBackdrop(globe?.parentElement ?? null)).toBe(true)
         await flush()

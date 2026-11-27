@@ -15,6 +15,7 @@ import {
     PeraAssetVerificationTier,
     type ScopedAssetSearchResult,
 } from '@perawallet/wallet-core-assets'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 /** An NFT or a name (an NFD is a collectible too): not something Markets lists. */
 export const isCollectibleResult = ({
@@ -30,6 +31,43 @@ const groupOf = (result: ScopedAssetSearchResult): number => {
     if (tier === PeraAssetVerificationTier.verified) return 0
     if (tier === PeraAssetVerificationTier.suspicious) return 2
     return 1
+}
+
+const isWordChar = (char: string): boolean => /[\p{L}\p{N}]/u.test(char)
+
+const startsAWord = (text: Optional<string>, needle: string): boolean => {
+    const haystack = (text ?? '').toLowerCase()
+    let at = haystack.indexOf(needle)
+    while (at !== -1) {
+        if (at === 0 || !isWordChar(haystack[at - 1] ?? '')) return true
+        at = haystack.indexOf(needle, at + 1)
+    }
+    return false
+}
+
+/**
+ * The search service matches loosely, so it also answers with assets that only
+ * resemble the query. A verified asset stays whatever it matched on; any other
+ * has to carry the query at the start of a word of its name or symbol, or as
+ * its id, so an unvetted near-match never fills the list.
+ */
+export const isRelevantSearchResult = (
+    { asset }: ScopedAssetSearchResult,
+    query: string,
+): boolean => {
+    const needle = query.trim().toLowerCase()
+    if (needle === '') return true
+    if (
+        asset.peraMetadata?.verificationTier ===
+        PeraAssetVerificationTier.verified
+    ) {
+        return true
+    }
+    return (
+        asset.assetId.toLowerCase() === needle ||
+        startsAWord(asset.name, needle) ||
+        startsAWord(asset.unitName, needle)
+    )
 }
 
 const isExactMatch = (

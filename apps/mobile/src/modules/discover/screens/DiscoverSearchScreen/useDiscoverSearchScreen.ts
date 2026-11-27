@@ -52,6 +52,7 @@ import { looksLikeUrl } from '../../utils/looksLikeUrl'
 import { normalizeDappUrl } from '../../utils/normalizeDappUrl'
 import {
     isCollectibleResult,
+    isRelevantSearchResult,
     rankSearchAssets,
 } from '../../utils/rankSearchAssets'
 import { dappFromUrl } from '../../utils/toDiscoverDapp'
@@ -163,7 +164,13 @@ export const useDiscoverSearchScreen = (): UseDiscoverSearchScreenResult => {
     })
     // Ranked once for both chips; Markets then drops what is not a token.
     const rankedAssets = useMemo(
-        () => rankSearchAssets(assetSearch.results, debounced),
+        () =>
+            rankSearchAssets(
+                assetSearch.results.filter(result =>
+                    isRelevantSearchResult(result, debounced),
+                ),
+                debounced,
+            ),
         [assetSearch.results, debounced],
     )
     const assetResults = useMemo(() => {

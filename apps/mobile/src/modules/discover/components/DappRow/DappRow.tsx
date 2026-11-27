@@ -35,8 +35,10 @@ export type DappRowProps = {
     isVerified: boolean
     showChains: boolean
     onPress: () => void
-    /** The star; left out for rows that end in an open arrow instead (Favorites). */
+    /** The star; a row without it ends in an open arrow instead. */
     onToggleFavorite?: () => void
+    /** Falls back to the site's own icon when the dApp has no logo; see `DappLogo.siteUrl`. */
+    hasSiteIcon?: boolean
     /** Shows a Details button that opens the dApp's details; left out where rows have none. */
     onDetailsPress?: () => void
     testID?: string
@@ -50,6 +52,7 @@ export const DappRow = ({
     showChains,
     onPress,
     onToggleFavorite,
+    hasSiteIcon = false,
     onDetailsPress,
     testID,
 }: DappRowProps) => {
@@ -66,7 +69,10 @@ export const DappRow = ({
                 onPress={onPress}
                 testID={testID ? `${testID}_open` : undefined}
             >
-                <DappLogo logo={dapp.logo} />
+                <DappLogo
+                    logo={dapp.logo}
+                    siteUrl={hasSiteIcon ? dapp.url : undefined}
+                />
                 <PWView style={styles.info}>
                     <PWView style={styles.titleRow}>
                         <PWText

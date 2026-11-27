@@ -12,7 +12,11 @@
 
 import { describe, expect, it } from 'vitest'
 import type { ScopedAssetSearchResult } from '@perawallet/wallet-core-assets'
-import { isCollectibleResult, rankSearchAssets } from '../rankSearchAssets'
+import {
+    isCollectibleResult,
+    isRelevantSearchResult,
+    rankSearchAssets,
+} from '../rankSearchAssets'
 
 const result = (
     name: string,
@@ -126,5 +130,38 @@ describe('isCollectibleResult', () => {
         }
         expect(isCollectibleResult(withData)).toBe(true)
         expect(isCollectibleResult(result('t'))).toBe(false)
+    })
+})
+
+describe('isRelevantSearchResult', () => {
+    it('keeps an unverified asset only when a word of its name or symbol starts with the query', () => {
+        const keeps = (name: string, query: string, unitName?: string) =>
+            isRelevantSearchResult(result(name, { unitName }), query)
+
+        expect(keeps('Uniswap#0 Collection', 'uniswap')).toBe(true)
+        expect(keeps('Black Uniswap Reaper', ' Uniswap ')).toBe(true)
+        expect(keeps('uniswap.algo', 'uniswa')).toBe(true)
+        expect(keeps('Wrapped Token', 'aave', 'AAVE')).toBe(true)
+        expect(keeps('rug.ninja', 'uniswa')).toBe(false)
+        expect(keeps('84958523;CAAVERO', 'aave')).toBe(false)
+        expect(keeps('GloC-Net', 'aave', 'SAAVEDRA')).toBe(false)
+    })
+
+    it('keeps a verified asset however loosely it matched', () => {
+        expect(
+            isRelevantSearchResult(
+                result('United Stables', { tier: 'verified' }),
+                'uniswa',
+            ),
+        ).toBe(true)
+    })
+
+    it('keeps the asset whose id is the query', () => {
+        // The fixture uses the name as the asset id.
+        expect(isRelevantSearchResult(result('0xABC'), '0xabc')).toBe(true)
+    })
+
+    it('keeps everything for an empty query', () => {
+        expect(isRelevantSearchResult(result('rug.ninja'), '  ')).toBe(true)
     })
 })

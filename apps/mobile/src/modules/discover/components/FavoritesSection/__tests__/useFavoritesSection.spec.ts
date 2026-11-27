@@ -30,6 +30,10 @@ vi.mock('../../../hooks/useOpenDapp', () => ({ useOpenDapp: vi.fn() }))
 vi.mock('../../../hooks/useDiscoverDirectory', () => ({
     useDiscoverDirectory: vi.fn(),
 }))
+const openRearrange = vi.fn()
+vi.mock('../../../hooks/useOpenRearrangeFavorites', () => ({
+    useOpenRearrangeFavorites: () => openRearrange,
+}))
 vi.mock('../../../hooks/useToggleDiscoverFavorite', () => ({
     useToggleDiscoverFavorite: vi.fn(),
 }))
@@ -175,5 +179,13 @@ describe('useFavoritesSection', () => {
 
         expect(toggleFavorite).toHaveBeenCalledWith(suggestion, null)
         expect(openDapp).toHaveBeenCalledWith(suggestion, null)
+    })
+
+    it('offers Rearrange, where a favorite is removed', () => {
+        const { result } = renderHook(() => useFavoritesSection())
+
+        result.current.openRearrange()
+
+        expect(openRearrange).toHaveBeenCalledTimes(1)
     })
 })
