@@ -15,6 +15,8 @@ import {
     useNavigation,
     useRoute,
     type NavigationProp,
+    type NavigationState,
+    type ParamListBase,
     type RouteProp,
 } from '@react-navigation/native'
 import {
@@ -43,6 +45,10 @@ const TAB_EVENTS: Record<AccountTabKey, AccountDetailsEvent> = {
     Overview: AccountDetailsEvent.Assets,
     Nfts: AccountDetailsEvent.Collectibles,
     History: AccountDetailsEvent.History,
+}
+
+type HomeTabPressEventMap = {
+    tabPress: { data: undefined; canPreventDefault: true }
 }
 
 export type AccountTab = PWPagerTab & { key: AccountTabKey }
@@ -135,6 +141,25 @@ export const useAccountTabNavigator = (
         }
         navigation.setParams({ tab: undefined })
     }, [requestedTab, tabs, markVisited, navigation])
+
+    // The bottom tab emits tabPress on every press, including the one that
+    // switches to it; only a press while this screen is already focused resets.
+    useEffect(() => {
+        const tabNavigation =
+            navigation.getParent<
+                NavigationProp<
+                    ParamListBase,
+                    string,
+                    undefined,
+                    NavigationState,
+                    object,
+                    HomeTabPressEventMap
+                >
+            >()
+        return tabNavigation?.addListener('tabPress', () => {
+            if (navigation.isFocused()) setActiveKey('Overview')
+        })
+    }, [navigation])
 
     // Mount the incoming page as the drag passes halfway rather than when it
     // settles, so the mount lands while the finger is still moving instead of
