@@ -123,6 +123,20 @@ describe('hasIntegrityRegistrationFailed', () => {
         expect(hasIntegrityRegistrationFailed()).toBe(true)
     })
 
+    it('is true once this launch finds the device cannot attest', () => {
+        const store = useAppIntegrityStore.getState()
+        store.setLastAttemptAt(new Date().toISOString())
+        store.setStatus('skipped')
+
+        expect(hasIntegrityRegistrationFailed()).toBe(true)
+    })
+
+    it('is false for a skip made before any attempt, as a development build does', () => {
+        useAppIntegrityStore.getState().setStatus('skipped')
+
+        expect(hasIntegrityRegistrationFailed()).toBe(false)
+    })
+
     it('is false while the attestation is still running', () => {
         useAppIntegrityStore.getState().setStatus('registering')
 

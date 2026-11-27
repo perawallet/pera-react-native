@@ -177,10 +177,13 @@ const endpointListTransport = (
     rpcUrls: readonly string[],
     { readMs, submitMs }: ChainRequestTimeouts,
 ): Transport => {
-    // Each URL's read keeps back only the reserves of the URLs after it, so a
-    // hanging node still leaves them a turn, while a URL reached after a fast
-    // refusal (Pera's proxy answering 403 to a device without an integrity
-    // token) gets what is left. One deadline bounds the whole list.
+    // Each URL's read keeps back the reserves of the URLs after it, so a
+    // hanging first node still leaves the fallback its reserve, while a URL
+    // reached after a fast refusal (Pera's proxy answering 403 to a device
+    // without an integrity token) gets what is left. One deadline bounds the
+    // whole list. A cap runs from that URL's own start, so with three or more
+    // URLs a second node that also hangs can use up the third's turn; built-in
+    // lists have at most two.
     const reserves = splitCeilingMs(readMs, rpcUrls.length)
     const reads = reserves.map(
         (_, index) =>
@@ -246,9 +249,9 @@ const usableRpcUrls = (
     ctx: Pick<ChainContext, 'getEndpoints'>,
 ): readonly string[] => {
     const endpoints = ctx.getEndpoints()[scope.networkId] ?? []
-    // The proxy is integrity-guarded: once this launch's attestation has
-    // failed it refuses every read, so leaving it out spares each read the
-    // refused round trip and gives the next URL the primary batch size.
+    // The proxy is integrity-guarded: once this launch's attestation has ended
+    // without a token it refuses every read, so leaving it out spares each read
+    // the refused round trip and gives the next URL the primary batch size.
     const rpcUrls =
         config.backendAPIKey && !hasIntegrityRegistrationFailed()
             ? endpoints
@@ -272,9 +275,9 @@ const clientOver = (
 
 /**
  * `ctx.getEndpoints()` lists the network's RPC URLs in preference order.
- * Without an API key, or once the launch's integrity attestation has failed,
- * the Pera proxy cannot serve the client, so the first remaining endpoint gets
- * the primary time and batch budgets.
+ * Without an API key, or once the launch's integrity attestation has ended
+ * without a token, the Pera proxy cannot serve the client, so the first
+ * remaining endpoint gets the primary time and batch budgets.
  */
 export const createEvmClient = (
     scope: ChainScope,

@@ -320,6 +320,8 @@ type Detection = {
     listedPassAt: Map<string, number>
     /** Accounts read with only their held tokens since their last whole-list pass. */
     owedListedPasses: Set<string>
+    /** Scopes whose last token-list request the backend refused, as `chainId/networkId`. */
+    listRefusedScopes: Set<string>
     /** Each account's last NFT list, by `backfillKey`, answered again while its page one is unchanged. */
     nftListings: Map<string, NftHoldingsListing>
     /** When each account whose NFT read failed is read again, by `backfillKey`. */
@@ -584,7 +586,13 @@ const readBatch = async (
         storedTokenIdsOf(scope, reads, chain.nativeAsset.assetId),
     ])
     const isListRead = hasWhitelist && listRefusal === undefined
-    if (hasWhitelist && !isListRead) owePassesOnListReturn()
+    const scopeKey = `${scope.chainId}/${scope.networkId}`
+    if (isListRead) {
+        detection.listRefusedScopes.delete(scopeKey)
+    } else if (hasWhitelist) {
+        detection.listRefusedScopes.add(scopeKey)
+        owePassesOnListReturn()
+    }
     const tokenListError: unknown = !hasWhitelist
         ? new PeraServiceUnavailableError(scope, ASSETS_SERVICE)
         : listRefusal
@@ -958,9 +966,12 @@ const fetchChangeSignal = (
             return readHeadSignal(ctx, chain, scope, cursor)
         }
         // Reads made without the token list left holdings behind; with it
-        // back, report a change until one pass has caught them up.
+        // back, report a change until one pass has caught them up. While the
+        // backend refuses the list, the reads it would force are refused too,
+        // so the paced signal below decides and its reads retry the list.
         if (
             services.has(ASSETS_SERVICE) &&
+            !detection.listRefusedScopes.has(key) &&
             cursor !== null &&
             addresses.some(address => {
                 const accountKey = backfillKey(scope, address)
@@ -1039,6 +1050,7 @@ export const createEthereumAccountStateOps = (
         budget: scanBudget,
         listedPassAt: new Map(),
         owedListedPasses: new Set(),
+        listRefusedScopes: new Set(),
         nftListings: new Map(),
         nftRetryAt: new Map(),
         reportedUnreadTokens: new Set(),

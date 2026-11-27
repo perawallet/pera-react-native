@@ -54,18 +54,19 @@ export const canCallIntegrityGuardedRoute = (
     token: Nullable<string> = getValidIntegrityToken(),
 ): boolean => Boolean(token) || isBypassEnvironment()
 
-// The status is persisted, so an error from an earlier launch must not count.
+// The status is persisted, so an outcome from an earlier launch must not count.
 const LAUNCHED_AT = Date.now()
 
 /**
- * This launch's attestation failed and nothing else lets a guarded route
- * through, so every guarded call refuses until a handshake succeeds. While one
- * is still running this is false: callers wait for it instead.
+ * This launch's attestation ended without a token (it failed, or the device
+ * can't attest) and nothing else lets a guarded route through, so every guarded
+ * call refuses until a handshake succeeds. While one is still running this is
+ * false: callers wait for it instead.
  */
 export const hasIntegrityRegistrationFailed = (): boolean => {
     const { status, lastAttemptAt } = useAppIntegrityStore.getState()
     return (
-        status === 'error' &&
+        (status === 'error' || status === 'skipped') &&
         lastAttemptAt !== null &&
         Date.parse(lastAttemptAt) >= LAUNCHED_AT &&
         !canCallIntegrityGuardedRoute()

@@ -461,6 +461,32 @@ describe('fetchAccountState passes over the whole token list', () => {
         expect(targetsOf(calls)).toEqual(expect.arrayContaining([USDC, DAI]))
     })
 
+    it.each([
+        ['answers', { refresh: false }],
+        ['is refused too', 403],
+    ] as const)(
+        'reports no change while the backend refuses the list and block following %s',
+        async (_, blockFollowing) => {
+            storedHoldings.ids = [USDC]
+            const { ops } = setup()
+            server.use(
+                ...peraEvmHandlers({
+                    baseUrl: TEST_PERA_URL,
+                    whitelist: 403,
+                    blockFollowing,
+                }),
+            )
+            await ops.fetchAccountState(ADDRESS, SCOPE, FIRST_SYNC)
+
+            await expect(
+                ops.fetchChangeSignal([ADDRESS], SCOPE, 100),
+            ).resolves.toEqual({ changed: false, cursor: 100 })
+            await expect(
+                ops.fetchChangeSignal([ADDRESS], SCOPE, 100),
+            ).resolves.toEqual({ changed: false, cursor: 100 })
+        },
+    )
+
     it('logs a failed whole-list pass without the calldata it carried', async () => {
         storedHoldings.ids = [USDC]
         const warn = vi.spyOn(logger, 'warn')

@@ -281,8 +281,8 @@ reply (a later node's refusal then reads as an unknown outcome, since the earlie
 taken it). The first URL keeps the chain's ceilings less a short reserve for the fallback, so a slow
 but healthy main node is not cut off. A read that reaches the fallback early, after a fast refusal
 such as Pera's integrity-guarded proxy answering 403, gets what is left of the read ceiling rather
-than only the reserve; one deadline bounds the whole list. When the launch's integrity attestation
-has failed, the proxy is left out of the list altogether. A later URL gets reads in JSON-RPC
+than only the reserve; one deadline bounds the whole list. When the launch's attestation ends
+without a token, the proxy is left out of the list altogether. A later URL gets reads in JSON-RPC
 batches of at most 10, because free public nodes refuse a larger batch whole. A fallback must
 therefore take a batch of 10, and the burst of them that a failed-over tick sends at once, which
 free nodes also rate-limit per batch item. The app lays a developer's per-network endpoint override
