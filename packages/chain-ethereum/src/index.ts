@@ -37,7 +37,12 @@ export {
     type EvmErrorParams,
     type EvmNftStandard,
 } from './blockchain'
-export { ETHEREUM_CHAIN_ID, EVM_CHAINS, evmChainOf } from './chains/table'
+export {
+    ETHEREUM_CHAIN_ID,
+    EVM_CHAINS,
+    evmChainOf,
+    evmChainOfEip155Id,
+} from './chains/table'
 export {
     useEvmContractAbiQuery,
     type UseEvmContractAbiQueryParams,

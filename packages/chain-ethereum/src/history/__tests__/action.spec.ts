@@ -21,6 +21,7 @@ import {
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { ETHEREUM } from '../../__tests__/evm-chains'
 import { findKnownEvmContract } from '../../signing/known-contracts'
+import { ACROSS_NATIVE_DEPOSIT_V3 } from '../../signing/__tests__/contract-action-fixtures'
 import { classifyEvmHistoryCall, historyActionSummary } from '../action'
 
 const USDT: Address = '0xdAC17F958D2ee523a2206206994597C13D831ec7'
@@ -143,6 +144,47 @@ describe('classifyEvmHistoryCall', () => {
             ['repayWithATokens', 'repay'],
         ])('Given %s on the Aave pool, then %s', (method, kind) => {
             expect(classify(AAVE_POOL, method)).toEqual({ kind })
+        })
+
+        it('Given an Across deposit with calldata paying the signer, then bridge', () => {
+            const { from, to, data, value } = ACROSS_NATIVE_DEPOSIT_V3
+            const facts = {
+                to,
+                method: 'depositV3',
+                changes: [ethOut],
+                nftLegCount: 0,
+                nativeSymbol: 'ETH',
+                contract: findKnownEvmContract(8453, to),
+                isDecoding: true,
+                calldata: { from, data, value },
+                eip155ChainId: 8453,
+            }
+            const action = classifyEvmHistoryCall(facts)
+
+            expect(action).toEqual({ kind: 'bridge' })
+            expect(
+                action &&
+                    historyActionSummary(
+                        action,
+                        {
+                            kind: 'contract-call',
+                            title: {
+                                key: i18nKey(
+                                    'transactions.list_item.contract_interaction',
+                                ),
+                            },
+                            icon: 'contract-call',
+                            direction: 'none',
+                            counterparty: to,
+                            balanceChanges: [],
+                        },
+                        facts.contract,
+                        ETHEREUM,
+                    ),
+            ).toMatchObject({
+                kind: 'contract-call',
+                title: { key: 'transactions.list_item.bridge' },
+            })
         })
 
         it('Given a method the Aave pool reading does not know, then no action, not a shape guess', () => {

@@ -238,6 +238,7 @@ const KNOWN_CONTRACT_KINDS: readonly unknown[] = [
     'aave-v3-adapter',
     'uniswap-v3-position-manager',
     'uniswap-v4-position-manager',
+    'across-spoke-pool',
 ]
 
 const isKnownContract = (value: unknown): boolean =>
@@ -314,6 +315,14 @@ const isContractAction = (value: unknown): boolean => {
                 isActionAsset(value.asset) &&
                 Decimal.isDecimal(value.amount) &&
                 typeof value.isEntireBalance === 'boolean'
+            )
+        }
+        case 'bridge': {
+            return (
+                isActionAsset(value.asset) &&
+                Decimal.isDecimal(value.amount) &&
+                Number.isSafeInteger(value.destinationChainId) &&
+                (value.destinationChainId as number) > 0
             )
         }
         case 'add-liquidity': {

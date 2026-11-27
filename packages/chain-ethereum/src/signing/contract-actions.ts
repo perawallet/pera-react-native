@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { getAddress, maxUint256, parseAbi } from 'viem'
+import { getAddress, maxUint256, pad, parseAbi, slice } from 'viem'
 import type { Address, Hex } from 'viem'
 import {
     i18nKey,
@@ -20,7 +20,7 @@ import {
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { areEvmAddressesEqual } from '../accounts/address-codec'
 import type { EvmChain } from '../chains/types'
-import type { EvmContractAction } from './contract-action-types'
+import type { EvmActionAsset, EvmContractAction } from './contract-action-types'
 import type { KnownEvmContract } from './known-contracts'
 import { readFunction } from './read-function'
 import { decodeUniswapV4PositionAction } from './uniswap-v4-positions'
@@ -37,6 +37,7 @@ const TITLE_KEYS: Record<EvmContractAction['kind'], I18nKey> = {
     withdraw: i18nKey('transactions.list_item.withdraw'),
     borrow: i18nKey('transactions.list_item.borrow'),
     repay: i18nKey('transactions.list_item.repay'),
+    bridge: i18nKey('transactions.list_item.bridge'),
     'add-liquidity': i18nKey('transactions.list_item.add_liquidity'),
     'remove-liquidity': i18nKey('transactions.list_item.remove_liquidity'),
     'collect-fees': i18nKey('transactions.list_item.collect_fees'),
@@ -66,6 +67,16 @@ const AAVE_GATEWAY_FUNCTIONS = parseAbi([
     'function borrowETH(address pool, uint256 amount, uint16 referralCode)',
     'function repayETH(address pool, uint256 amount, address onBehalfOf)',
 ])
+
+const ACROSS_SPOKE_POOL_FUNCTIONS = parseAbi([
+    'function deposit(bytes32 depositor, bytes32 recipient, bytes32 inputToken, bytes32 outputToken, uint256 inputAmount, uint256 outputAmount, uint256 destinationChainId, bytes32 exclusiveRelayer, uint32 quoteTimestamp, uint32 fillDeadline, uint32 exclusivityParameter, bytes message)',
+    'function depositV3(address depositor, address recipient, address inputToken, address outputToken, uint256 inputAmount, uint256 outputAmount, uint256 destinationChainId, address exclusiveRelayer, uint32 quoteTimestamp, uint32 fillDeadline, uint32 exclusivityParameter, bytes message)',
+    'function depositNow(bytes32 depositor, bytes32 recipient, bytes32 inputToken, bytes32 outputToken, uint256 inputAmount, uint256 outputAmount, uint256 destinationChainId, bytes32 exclusiveRelayer, uint32 fillDeadlineOffset, uint32 exclusivityParameter, bytes message)',
+    'function depositV3Now(address depositor, address recipient, address inputToken, address outputToken, uint256 inputAmount, uint256 outputAmount, uint256 destinationChainId, address exclusiveRelayer, uint32 fillDeadlineOffset, uint32 exclusivityParameter, bytes message)',
+])
+
+// Integrators append a tag after the arguments that the pool never reads.
+const ACROSS_MAX_TRAILING_BYTES = 64
 
 const PERMIT2_FUNCTIONS = parseAbi([
     'function approve(address token, address spender, uint160 amount, uint48 expiration)',
@@ -156,6 +167,64 @@ const decodeAaveGatewayAction = (call: Call): Optional<EvmContractAction> => {
         }
     }
     return undefined
+}
+
+// Only a deposit that refunds and pays the signer, with no message for the
+// destination to run, proves the funds come back to the signer's own address.
+const decodeAcrossDeposit = (
+    call: Call,
+    wrappedNative: Optional<Address>,
+): Optional<EvmContractAction> => {
+    const read = readFunction(
+        ACROSS_SPOKE_POOL_FUNCTIONS,
+        call.data,
+        ACROSS_MAX_TRAILING_BYTES,
+    )
+    if (!read) return undefined
+    const { name, args } = read
+    const isBytes32 = name === 'deposit' || name === 'depositNow'
+    const isSigner = (value: unknown) =>
+        isBytes32
+            ? (value as Hex).toLowerCase() ===
+              pad(call.from, { size: 32 }).toLowerCase()
+            : areEvmAddressesEqual(value as Address, call.from)
+    if (!isSigner(args[0]) || !isSigner(args[1])) return undefined
+    if (args.at(-1) !== '0x') return undefined
+
+    const inputAmount = args[4] as bigint
+    const destinationChainId = args[6] as bigint
+    if (inputAmount <= 0n) return undefined
+    if (
+        destinationChainId <= 0n ||
+        destinationChainId > BigInt(Number.MAX_SAFE_INTEGER)
+    ) {
+        return undefined
+    }
+
+    const word = args[2] as Hex
+    if (isBytes32 && BigInt(word) >= 1n << 160n) return undefined
+    const inputToken = isBytes32
+        ? getAddress(slice(word, 12))
+        : getAddress(word)
+
+    let asset: EvmActionAsset
+    if (call.value === 0n) {
+        asset = { kind: 'token', contract: inputToken }
+    } else if (
+        wrappedNative &&
+        areEvmAddressesEqual(inputToken, wrappedNative) &&
+        call.value === inputAmount
+    ) {
+        asset = { kind: 'native' }
+    } else {
+        return undefined
+    }
+    return {
+        kind: 'bridge',
+        asset,
+        amount: toDecimal(inputAmount),
+        destinationChainId: Number(destinationChainId),
+    }
 }
 
 const decodeAavePoolAction = (call: Call): Optional<EvmContractAction> => {
@@ -430,6 +499,9 @@ export const decodeEvmContractAction = (
             }
             case 'uniswap-v4-position-manager': {
                 return decodeUniswapV4PositionAction(call)
+            }
+            case 'across-spoke-pool': {
+                return decodeAcrossDeposit(call, wrappedNative)
             }
             case 'uniswap-permit2':
             case 'aave-v3-rewards':

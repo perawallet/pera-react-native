@@ -79,6 +79,15 @@ export type EvmContractAction =
           isEntireBalance: boolean
       }
     | {
+          kind: 'bridge'
+          /** What leaves the signer's account: native when the call pays in the chain's coin, which the pool wraps. */
+          asset: EvmActionAsset
+          /** Base units of `asset`. */
+          amount: Decimal
+          /** The EIP-155 id of the network where the signer's own address is paid. */
+          destinationChainId: number
+      }
+    | {
           kind: 'add-liquidity'
           /** In pool token order, at most two; empty on an increase, whose calldata doesn't name the tokens. */
           deposits: EvmLiquidityDeposit[]
