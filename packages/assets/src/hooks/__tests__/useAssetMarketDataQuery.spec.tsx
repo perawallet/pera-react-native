@@ -14,7 +14,6 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { QueryClient, onlineManager } from '@tanstack/react-query'
-import { Decimal } from 'decimal.js'
 import { useAssetMarketDataQuery } from '../useAssetMarketDataQuery'
 import { createWrapper } from './test-utils'
 
@@ -22,13 +21,16 @@ const ETHEREUM_MAINNET = { chainId: 'ethereum', networkId: 'mainnet' } as const
 const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
 
 const mocks = vi.hoisted(() => ({
-    getAssetPricesByIds: vi.fn(),
     getPriceMissAssetIds: vi.fn(),
+    fetchAndPersistPrices: vi.fn(),
 }))
 
 vi.mock('../../db', () => ({
-    getAssetPricesByIds: mocks.getAssetPricesByIds,
     getPriceMissAssetIds: mocks.getPriceMissAssetIds,
+}))
+
+vi.mock('../../sync/price-syncer', () => ({
+    fetchAndPersistPrices: mocks.fetchAndPersistPrices,
 }))
 
 describe('useAssetMarketDataQuery', () => {
@@ -36,8 +38,8 @@ describe('useAssetMarketDataQuery', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-        mocks.getAssetPricesByIds.mockResolvedValue([])
         mocks.getPriceMissAssetIds.mockResolvedValue([])
+        mocks.fetchAndPersistPrices.mockResolvedValue(undefined)
         queryClient = new QueryClient({
             defaultOptions: { queries: { retry: false } },
         })
@@ -52,7 +54,7 @@ describe('useAssetMarketDataQuery', () => {
             wrapper: createWrapper(queryClient),
         })
 
-    it('reports no market data for a recorded miss with no price row', async () => {
+    it('reports no market data for a recorded miss', async () => {
         mocks.getPriceMissAssetIds.mockResolvedValue(['0xabc'])
 
         const { result } = render(ETHEREUM_MAINNET)
@@ -60,20 +62,35 @@ describe('useAssetMarketDataQuery', () => {
         await waitFor(() => expect(result.current.hasNoMarketData).toBe(true))
     })
 
-    it('reports market data when a price row exists, even with a miss', async () => {
+    it('asks the price source about the asset before reading its miss', async () => {
+        const order: string[] = []
+        mocks.fetchAndPersistPrices.mockImplementation(async () => {
+            order.push('fetch')
+        })
+        mocks.getPriceMissAssetIds.mockImplementation(async () => {
+            order.push('read')
+            return []
+        })
+
+        render(ETHEREUM_MAINNET)
+
+        await waitFor(() => expect(order).toEqual(['fetch', 'read']))
+        expect(mocks.fetchAndPersistPrices).toHaveBeenCalledWith(
+            ['0xabc'],
+            ETHEREUM_MAINNET,
+        )
+    })
+
+    it('reads the stored miss when the price source cannot be asked', async () => {
+        mocks.fetchAndPersistPrices.mockRejectedValue(new Error('offline'))
         mocks.getPriceMissAssetIds.mockResolvedValue(['0xabc'])
-        mocks.getAssetPricesByIds.mockResolvedValue([
-            { assetId: '0xabc', usdPrice: new Decimal('1.5') },
-        ])
 
         const { result } = render(ETHEREUM_MAINNET)
 
-        await waitFor(() => expect(queryClient.isFetching()).toBe(0))
-        expect(mocks.getPriceMissAssetIds).toHaveBeenCalledTimes(1)
-        expect(result.current.hasNoMarketData).toBe(false)
+        await waitFor(() => expect(result.current.hasNoMarketData).toBe(true))
     })
 
-    it('stays unknown when there is neither a price nor a miss', async () => {
+    it('stays unknown when there is no recorded miss', async () => {
         const { result } = render(ETHEREUM_MAINNET)
 
         await waitFor(() => expect(queryClient.isFetching()).toBe(0))
@@ -107,9 +124,9 @@ describe('useAssetMarketDataQuery', () => {
                 scope: ALGORAND_MAINNET,
             }),
         )
-        expect(mocks.getAssetPricesByIds).toHaveBeenCalledWith({
-            assetIds: ['0xabc'],
-            scope: ALGORAND_MAINNET,
-        })
+        expect(mocks.fetchAndPersistPrices).toHaveBeenCalledWith(
+            ['0xabc'],
+            ALGORAND_MAINNET,
+        )
     })
 })

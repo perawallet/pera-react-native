@@ -12,14 +12,16 @@
 
 import { useQuery } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { getAssetPricesByIds, getPriceMissAssetIds } from '../db'
+import { logger } from '@perawallet/wallet-core-shared'
+import { getPriceMissAssetIds } from '../db'
+import { fetchAndPersistPrices } from '../sync/price-syncer'
 import { getAssetMarketDataQueryKey } from './querykeys'
 
 export type UseAssetMarketDataQueryResult = {
     /**
      * True once the price source has answered that the asset has no price (a
-     * recorded miss and no stored price); false while that is unknown,
-     * including before any price pass has asked and while the read is pending.
+     * recorded miss); false while that is unknown, including while the read is
+     * pending and when the price source could not be asked.
      */
     hasNoMarketData: boolean
 }
@@ -32,13 +34,25 @@ export const useAssetMarketDataQuery = (
         queryKey: getAssetMarketDataQueryKey(assetId, scope),
         staleTime: Infinity,
         queryFn: async () => {
-            const [prices, misses] = await Promise.all([
-                getAssetPricesByIds({ assetIds: [assetId], scope }),
-                getPriceMissAssetIds({ assetIds: [assetId], scope }),
-            ])
-            return prices.length === 0 && misses.length > 0
+            // The background sync only asks about held assets, so a token
+            // opened from search or a link would never get an answer. The
+            // fetch skips an id whose price or miss is fresh.
+            try {
+                await fetchAndPersistPrices([assetId], scope)
+            } catch (error) {
+                logger.warn('Could not fetch the price of the opened asset', {
+                    error,
+                })
+            }
+            // A priced answer clears the miss, so a miss is the latest answer
+            // even when an older price row is still stored.
+            const misses = await getPriceMissAssetIds({
+                assetIds: [assetId],
+                scope,
+            })
+            return misses.length > 0
         },
-        // SQLite only: must not pause offline.
+        // The stored answer must still be read offline, where the fetch fails.
         networkMode: 'always',
     })
 

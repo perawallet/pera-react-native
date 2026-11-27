@@ -137,6 +137,22 @@ describe('Flow: Asset details for a token with no market data', () => {
         ).toHaveLength(0)
     })
 
+    it('Given an Ethereum token no price pass has asked about, when its details open and the price source has no price for it, then Markets says it has no market data and shows no error or Retry', async () => {
+        failChart()
+
+        renderDetails(LOOKALIKE)
+
+        expect(
+            await screen.findByTestId(
+                'asset_markets_no_market_data',
+                undefined,
+                { timeout: SLOW_WAIT_TIMEOUT_MS },
+            ),
+        ).toBeTruthy()
+        expect(screen.queryAllByTestId('balance-chart-retry')).toHaveLength(0)
+        expect(screen.queryAllByText('common.error.title')).toHaveLength(0)
+    })
+
     it('Given a priced Ethereum token, when its chart request fails, then the chart shows the error and Retry', async () => {
         failChart()
 
