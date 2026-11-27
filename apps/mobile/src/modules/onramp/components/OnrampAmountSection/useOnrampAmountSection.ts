@@ -39,8 +39,7 @@ import {
 import { getCircleFlagUrl } from '@components/CircleFlag'
 import { useHomeChainScope } from '@hooks/useHomeChainScope'
 
-// Receive amounts fall back to this many fraction digits when the token does
-// not declare its own.
+// Most fraction digits a receive amount shows when there is no token.
 const RECEIVE_FALLBACK_DECIMALS = 2
 
 type UseOnrampAmountSectionParams = {
@@ -114,6 +113,13 @@ export const sanitizeAmountInput = (
 export const getFiatBaseAmount = (amount: Nullable<Decimal>): Decimal =>
     amount?.greaterThan(0) ? amount : ZERO_DECIMAL
 
+// toFixed() without a precision, not toString(): plain notation never switches
+// to exponent form (1e-18), and unlike toFixed(n) it does not pad zeros.
+export const formatReceiveAmount = (
+    amount: Decimal,
+    fractionDecimals: number,
+): string => amount.toDecimalPlaces(fractionDecimals).toFixed()
+
 // The pay field binds the raw text and only sanitizes and forwards it: a
 // Decimal round-trip would re-format the field mid-edit ("12." → "12").
 export const useOnrampAmountSection = ({
@@ -138,7 +144,8 @@ export const useOnrampAmountSection = ({
     const receiveAmount = isPay ? null : amount
 
     const receiveValue = receiveAmount
-        ? receiveAmount.toFixed(
+        ? formatReceiveAmount(
+              receiveAmount,
               token?.fractionDecimals ?? RECEIVE_FALLBACK_DECIMALS,
           )
         : ''
