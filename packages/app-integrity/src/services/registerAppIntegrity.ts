@@ -38,6 +38,33 @@ export const INTEGRITY_REGISTRATION_WAIT_MS = 10_000
 let inFlight: Nullable<{ promise: Promise<unknown>; startedAt: number }> = null
 
 /**
+ * The soonest a settled registration is run again for a request that still has
+ * no token. Doubles with each failure in a row, up to
+ * {@link INTEGRITY_REATTEMPT_MAX_COOLDOWN_MS}: every attempt spends the
+ * platform's attestation quota, and a device that can never attest would
+ * otherwise spend it for as long as the app is open.
+ */
+export const INTEGRITY_REATTEMPT_COOLDOWN_MS = 30_000
+
+export const INTEGRITY_REATTEMPT_MAX_COOLDOWN_MS = 15 * 60 * 1000
+
+/** A registration still unsettled after this is given up on, so a native attest that never returns can't block every later attempt. */
+export const INTEGRITY_REGISTRATION_HANG_MS = 60_000
+
+// What the launch registered with; null until it has, so nothing attests before boot does.
+let lastDeployment: Nullable<WalletMode> = null
+let lastSettledAt = 0
+let lastStatus: Nullable<AppIntegrityStatus> = null
+// Failures in a row that spent an attestation; an offline attempt spends none.
+let failureStreak = 0
+
+const reattemptCooldownMs = (): number =>
+    Math.min(
+        INTEGRITY_REATTEMPT_COOLDOWN_MS * 2 ** Math.max(0, failureStreak - 1),
+        INTEGRITY_REATTEMPT_MAX_COOLDOWN_MS,
+    )
+
+/**
  * Resolves when the registration in flight settles, at once when none is, or
  * `timeoutMs` after it started: the deadline is the registration's, so a hung
  * attestation costs each later call nothing. Never rejects. Before the launch
@@ -128,17 +155,18 @@ const runRegistration = async ({
             keyId: payload.platform === 'ios' ? payload.keyId : null,
             deviceInstallationId,
         })
+        failureStreak = 0
         return { status: 'success' }
     } catch (error) {
         const message = toError(error).message
         if (isConnectivityError(error)) {
-            // The handshake runs once at boot, so it races the network coming
-            // up; an offline device retries on the next launch and needs no
+            // The launch's handshake races the network coming up; the next
+            // guarded request runs it again, so an offline device needs no
             // attention. The status still goes to the store for the UI.
             logger.warn('App integrity registration skipped: device offline', {
                 step: 'registerAppIntegrity',
             })
-        } else {
+        } else if (failureStreak === 0) {
             // Report the error itself rather than a fixed string. A constant
             // message collapses every distinct cause — native attestation
             // failure, backend rejection, response-schema drift — into one
@@ -146,6 +174,16 @@ const runRegistration = async ({
             logger.error(error instanceof Error ? error : message, {
                 step: 'registerAppIntegrity',
             })
+            failureStreak = 1
+        } else {
+            // A device that cannot attest fails every reattempt the same way;
+            // only the first of a streak goes to the crash reporter.
+            logger.warn('App integrity registration failed again', {
+                step: 'registerAppIntegrity',
+                error: message,
+                failureStreak,
+            })
+            failureStreak += 1
         }
         store.setError(message)
         return { status: 'error', error: message }
@@ -158,9 +196,53 @@ export const registerAppIntegrity = (
     const registration = runRegistration(params)
     const entry = { promise: registration, startedAt: Date.now() }
     inFlight = entry
-    const clear = () => {
-        if (inFlight === entry) inFlight = null
+    lastDeployment = params.deployment
+    const settle = (status: AppIntegrityStatus) => {
+        // An entry given up on as hung must not report over its successor.
+        if (inFlight !== entry) return
+        inFlight = null
+        lastSettledAt = Date.now()
+        lastStatus = status
     }
-    registration.then(clear, clear)
+    registration.then(
+        result => settle(result.status),
+        () => settle('error'),
+    )
     return registration
+}
+
+const giveUpOnHungRegistration = (): void => {
+    if (
+        !inFlight ||
+        Date.now() - inFlight.startedAt < INTEGRITY_REGISTRATION_HANG_MS
+    ) {
+        return
+    }
+    inFlight = null
+    lastSettledAt = Date.now()
+    lastStatus = 'error'
+    failureStreak += 1
+    useAppIntegrityStore.getState().setError('App integrity registration hung')
+}
+
+/**
+ * For a guarded request that holds no valid token. The token is memory-only and
+ * expires, and the launch's attestation can fail, so without this the request
+ * and every retry of it would go out refused until the app restarts. Joins the
+ * registration in flight, or runs it again once the last one has cooled down,
+ * and waits as {@link waitForIntegrityRegistration} does. A registration the
+ * device skipped is not run again: its answer can't change while the app runs.
+ * Never rejects.
+ */
+export const ensureIntegrityRegistration = (): Promise<void> => {
+    giveUpOnHungRegistration()
+    if (
+        !inFlight &&
+        lastDeployment !== null &&
+        lastStatus !== 'skipped' &&
+        Date.now() - lastSettledAt >= reattemptCooldownMs()
+    ) {
+        void registerAppIntegrity({ deployment: lastDeployment })
+    }
+    return waitForIntegrityRegistration()
 }

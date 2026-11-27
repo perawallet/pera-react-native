@@ -21,7 +21,7 @@ import {
 
 const waitMock = vi.hoisted(() => vi.fn())
 vi.mock('../registerAppIntegrity', () => ({
-    waitForIntegrityRegistration: waitMock,
+    ensureIntegrityRegistration: waitMock,
 }))
 
 const mockConfig = vi.hoisted(() => ({

@@ -60,7 +60,7 @@ import {
 import { useAppIntegrityStore } from '../../store'
 
 describe('registerAppIntegrity', () => {
-    beforeEach(() => {
+    const arrange = () => {
         loggerMocks.warn.mockReset()
         loggerMocks.error.mockReset()
         useAppIntegrityStore.getState().resetState()
@@ -75,6 +75,14 @@ describe('registerAppIntegrity', () => {
         providerMock.appIntegrity.attest
             .mockReset()
             .mockResolvedValue({ attestation: 'play-token' })
+    }
+
+    beforeEach(async () => {
+        arrange()
+        // The module counts failures in a row across tests, and logs only the
+        // first of a streak as an error; a success starts each test from none.
+        await registerAppIntegrity({ deployment: 'live' })
+        arrange()
     })
 
     it('runs the android handshake and stores the token', async () => {
@@ -266,5 +274,276 @@ describe('waitForIntegrityRegistration', () => {
         await registerAppIntegrity({ deployment: 'live' })
 
         await expect(waitForIntegrityRegistration()).resolves.toBeUndefined()
+    })
+})
+
+describe('ensureIntegrityRegistration', () => {
+    // The module remembers its last registration, so each test loads its own copy.
+    const load = async () => {
+        vi.resetModules()
+        const registration = await import('../registerAppIntegrity')
+        const { useAppIntegrityStore: store } = await import('../../store')
+        return { ...registration, store }
+    }
+
+    beforeEach(() => {
+        vi.useFakeTimers()
+        requestChallengeMock.mockReset().mockResolvedValue('challenge-1')
+        attestDeviceMock.mockReset().mockResolvedValue({
+            integrityToken: 'jwt',
+            expiresAt: '2026-07-01',
+        })
+        providerMock.deviceInfo.getDevicePlatform.mockReturnValue('android')
+        providerMock.deviceInfo.getAppEnvironment.mockReturnValue('production')
+        providerMock.appIntegrity.isSupported.mockResolvedValue(true)
+        providerMock.appIntegrity.attest
+            .mockReset()
+            .mockResolvedValue({ attestation: 'play-token' })
+    })
+
+    afterEach(() => {
+        vi.useRealTimers()
+    })
+
+    it('attests nothing before the launch registration has run', async () => {
+        const { ensureIntegrityRegistration } = await load()
+
+        await expect(ensureIntegrityRegistration()).resolves.toBeUndefined()
+        expect(providerMock.appIntegrity.attest).not.toHaveBeenCalled()
+    })
+
+    it('attests again once a failed registration has cooled down, and holds for the token', async () => {
+        const {
+            ensureIntegrityRegistration,
+            registerAppIntegrity: register,
+            INTEGRITY_REATTEMPT_COOLDOWN_MS,
+            store,
+        } = await load()
+        providerMock.appIntegrity.attest.mockRejectedValueOnce(
+            new Error('denied'),
+        )
+        await register({ deployment: 'live' })
+        expect(store.getState().integrityToken).toBeNull()
+
+        vi.advanceTimersByTime(INTEGRITY_REATTEMPT_COOLDOWN_MS)
+        await ensureIntegrityRegistration()
+
+        expect(requestChallengeMock).toHaveBeenLastCalledWith(
+            expect.objectContaining({ deployment: 'live' }),
+        )
+        expect(store.getState().integrityToken).toBe('jwt')
+    })
+
+    it('does not attest again while a failed registration is still cooling down', async () => {
+        const {
+            ensureIntegrityRegistration,
+            registerAppIntegrity: register,
+            INTEGRITY_REATTEMPT_COOLDOWN_MS,
+        } = await load()
+        providerMock.appIntegrity.attest.mockRejectedValueOnce(
+            new Error('denied'),
+        )
+        await register({ deployment: 'live' })
+
+        vi.advanceTimersByTime(INTEGRITY_REATTEMPT_COOLDOWN_MS - 1)
+        await ensureIntegrityRegistration()
+
+        expect(providerMock.appIntegrity.attest).toHaveBeenCalledOnce()
+    })
+
+    it('waits longer after each failed attempt in a row', async () => {
+        const {
+            ensureIntegrityRegistration,
+            registerAppIntegrity: register,
+            INTEGRITY_REATTEMPT_COOLDOWN_MS,
+        } = await load()
+        providerMock.appIntegrity.attest.mockRejectedValue(new Error('denied'))
+        await register({ deployment: 'live' })
+
+        vi.advanceTimersByTime(INTEGRITY_REATTEMPT_COOLDOWN_MS)
+        await ensureIntegrityRegistration()
+        expect(providerMock.appIntegrity.attest).toHaveBeenCalledTimes(2)
+
+        vi.advanceTimersByTime(INTEGRITY_REATTEMPT_COOLDOWN_MS)
+        await ensureIntegrityRegistration()
+        expect(providerMock.appIntegrity.attest).toHaveBeenCalledTimes(2)
+
+        vi.advanceTimersByTime(INTEGRITY_REATTEMPT_COOLDOWN_MS)
+        await ensureIntegrityRegistration()
+        expect(providerMock.appIntegrity.attest).toHaveBeenCalledTimes(3)
+    })
+
+    it('never waits longer than the maximum cooldown', async () => {
+        const {
+            ensureIntegrityRegistration,
+            registerAppIntegrity: register,
+            INTEGRITY_REATTEMPT_MAX_COOLDOWN_MS,
+        } = await load()
+        providerMock.appIntegrity.attest.mockRejectedValue(new Error('denied'))
+        await register({ deployment: 'live' })
+        for (let attempt = 0; attempt < 12; attempt++) {
+            vi.advanceTimersByTime(INTEGRITY_REATTEMPT_MAX_COOLDOWN_MS)
+            await ensureIntegrityRegistration()
+        }
+        const attempts = providerMock.appIntegrity.attest.mock.calls.length
+
+        vi.advanceTimersByTime(INTEGRITY_REATTEMPT_MAX_COOLDOWN_MS)
+        await ensureIntegrityRegistration()
+
+        expect(providerMock.appIntegrity.attest).toHaveBeenCalledTimes(
+            attempts + 1,
+        )
+    })
+
+    it('reports only the first failure in a row as an error', async () => {
+        const {
+            ensureIntegrityRegistration,
+            registerAppIntegrity: register,
+            INTEGRITY_REATTEMPT_COOLDOWN_MS,
+        } = await load()
+        loggerMocks.error.mockReset()
+        loggerMocks.warn.mockReset()
+        providerMock.appIntegrity.attest.mockRejectedValue(new Error('denied'))
+        await register({ deployment: 'live' })
+
+        vi.advanceTimersByTime(INTEGRITY_REATTEMPT_COOLDOWN_MS)
+        await ensureIntegrityRegistration()
+
+        expect(loggerMocks.error).toHaveBeenCalledOnce()
+        expect(loggerMocks.warn).toHaveBeenCalledOnce()
+    })
+
+    it('goes back to the shortest cooldown after a success', async () => {
+        const {
+            ensureIntegrityRegistration,
+            registerAppIntegrity: register,
+            INTEGRITY_REATTEMPT_COOLDOWN_MS,
+            store,
+        } = await load()
+        providerMock.appIntegrity.attest
+            .mockRejectedValueOnce(new Error('denied'))
+            .mockRejectedValueOnce(new Error('denied'))
+        await register({ deployment: 'live' })
+        vi.advanceTimersByTime(INTEGRITY_REATTEMPT_COOLDOWN_MS)
+        await ensureIntegrityRegistration()
+        vi.advanceTimersByTime(INTEGRITY_REATTEMPT_COOLDOWN_MS * 2)
+        await ensureIntegrityRegistration()
+        expect(store.getState().integrityToken).toBe('jwt')
+        providerMock.appIntegrity.attest.mockClear()
+
+        vi.advanceTimersByTime(INTEGRITY_REATTEMPT_COOLDOWN_MS)
+        await ensureIntegrityRegistration()
+
+        expect(providerMock.appIntegrity.attest).toHaveBeenCalledOnce()
+    })
+
+    it('attests again once the token of a successful launch has expired', async () => {
+        const {
+            ensureIntegrityRegistration,
+            registerAppIntegrity: register,
+            store,
+        } = await load()
+        const lifetimeMs = 60 * 60 * 1000
+        attestDeviceMock.mockResolvedValueOnce({
+            integrityToken: 'jwt-launch',
+            expiresAt: new Date(Date.now() + lifetimeMs).toISOString(),
+        })
+        await register({ deployment: 'live' })
+        expect(store.getState().integrityToken).toBe('jwt-launch')
+        attestDeviceMock.mockResolvedValueOnce({
+            integrityToken: 'jwt-renewed',
+            expiresAt: new Date(Date.now() + 2 * lifetimeMs).toISOString(),
+        })
+
+        vi.advanceTimersByTime(lifetimeMs + 1)
+        await ensureIntegrityRegistration()
+
+        expect(store.getState().integrityToken).toBe('jwt-renewed')
+    })
+
+    it('does not run again after a registration the device skipped', async () => {
+        const {
+            ensureIntegrityRegistration,
+            registerAppIntegrity: register,
+            INTEGRITY_REATTEMPT_COOLDOWN_MS,
+            store,
+        } = await load()
+        providerMock.appIntegrity.isSupported.mockResolvedValue(false)
+        await register({ deployment: 'live' })
+        const { lastAttemptAt } = store.getState()
+        providerMock.appIntegrity.isSupported.mockClear()
+
+        vi.advanceTimersByTime(INTEGRITY_REATTEMPT_COOLDOWN_MS)
+        await ensureIntegrityRegistration()
+
+        expect(providerMock.appIntegrity.isSupported).not.toHaveBeenCalled()
+        expect(store.getState().lastAttemptAt).toBe(lastAttemptAt)
+    })
+
+    it('gives up on a registration that never settles and attests again', async () => {
+        const {
+            ensureIntegrityRegistration,
+            registerAppIntegrity: register,
+            INTEGRITY_REATTEMPT_COOLDOWN_MS,
+            INTEGRITY_REGISTRATION_HANG_MS,
+            store,
+        } = await load()
+        providerMock.appIntegrity.attest.mockReturnValueOnce(
+            new Promise(() => {}),
+        )
+        void register({ deployment: 'live' })
+        await vi.advanceTimersByTimeAsync(INTEGRITY_REGISTRATION_HANG_MS)
+        await ensureIntegrityRegistration()
+
+        vi.advanceTimersByTime(INTEGRITY_REATTEMPT_COOLDOWN_MS)
+        await ensureIntegrityRegistration()
+
+        expect(store.getState().integrityToken).toBe('jwt')
+    })
+
+    it('stops holding a request once the attestation it started runs past the wait cap', async () => {
+        const {
+            ensureIntegrityRegistration,
+            registerAppIntegrity: register,
+            INTEGRITY_REATTEMPT_COOLDOWN_MS,
+            INTEGRITY_REGISTRATION_WAIT_MS,
+        } = await load()
+        providerMock.appIntegrity.attest.mockRejectedValueOnce(
+            new Error('denied'),
+        )
+        await register({ deployment: 'live' })
+        providerMock.appIntegrity.attest.mockReturnValueOnce(
+            new Promise(() => {}),
+        )
+        vi.advanceTimersByTime(INTEGRITY_REATTEMPT_COOLDOWN_MS)
+        let isSettled = false
+
+        void ensureIntegrityRegistration().then(() => {
+            isSettled = true
+        })
+        await vi.advanceTimersByTimeAsync(INTEGRITY_REGISTRATION_WAIT_MS - 1)
+        expect(isSettled).toBe(false)
+        await vi.advanceTimersByTimeAsync(1)
+
+        expect(isSettled).toBe(true)
+    })
+
+    it('joins the registration in flight instead of starting a second one', async () => {
+        const { ensureIntegrityRegistration, registerAppIntegrity: register } =
+            await load()
+        let release: (value: { attestation: string }) => void = () => {}
+        providerMock.appIntegrity.attest.mockReturnValue(
+            new Promise(resolve => {
+                release = resolve
+            }),
+        )
+        const registration = register({ deployment: 'live' })
+
+        const wait = ensureIntegrityRegistration()
+        release({ attestation: 'play-token' })
+        await registration
+        await wait
+
+        expect(providerMock.appIntegrity.attest).toHaveBeenCalledOnce()
     })
 })
