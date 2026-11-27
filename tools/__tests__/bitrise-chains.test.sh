@@ -119,6 +119,35 @@ for source in bitrise pipelines; do
     done
 done
 
+# Mobile reads through Pera's RPC proxy on its own deployment first. The
+# extension carries no API key and the proxy refuses web tokens, so web stays
+# on public nodes.
+EVM_PROXY_ROUTES="$(node -e '
+    const nets = require(process.argv[1])
+    for (const [chain, { networks }] of Object.entries(nets))
+        for (const n of networks)
+            console.log(`${chain}_${n.id}_RPC_URL`.toUpperCase(), n.tier, n.eip155ChainId)
+' "$ROOT_DIR/packages/chain-contract/src/models/evm-networks.json")"
+for source in bitrise pipelines; do
+    env_of="${source}_env"
+    echo "${source} RPC proxy"
+    for job in ios-staging android-staging ios-production android-production web-staging web-production; do
+        deployment="api"
+        [[ "$job" == *-staging ]] && deployment="staging.api"
+        while read -r rpc_env tier eip155_id; do
+            first="$("$env_of" "$job" "$rpc_env")"
+            first="${first%%,*}"
+            if [[ "$job" == web-* ]]; then
+                [[ "$first" == *perawallet.app* ]] && first="pera" || first="public"
+                check "${job} keeps ${rpc_env} on public nodes" "public" "$first"
+            else
+                check "${job} reads ${rpc_env} through the proxy first" \
+                    "https://${tier}.${deployment}.perawallet.app/api/v3/evm/${eip155_id}/rpc" "$first"
+            fi
+        done <<< "$EVM_PROXY_ROUTES"
+    done
+done
+
 echo "bitrise and pipelines agree"
 for job in ios-staging android-staging web-staging ios-production android-production web-production; do
     while read -r rpc_env; do
