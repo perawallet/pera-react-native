@@ -3992,6 +3992,8 @@
             "send_network": "Send network",
             "block": "Block",
             "view_in_explorer": "View in {{explorer}}",
+            "view_swap_payout_in": "View payout in {{explorer}}",
+            "swap_payout_on": "Payout on {{chain}}",
             "view_asset_url": "View Asset URL",
             "view_note": "View Note",
             "view_metadata": "View Metadata",

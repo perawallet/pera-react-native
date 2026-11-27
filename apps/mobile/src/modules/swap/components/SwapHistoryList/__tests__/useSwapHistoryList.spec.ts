@@ -24,6 +24,7 @@ const { SCOPE, ETH_SCOPE } = vi.hoisted(() => ({
 
 const {
     mockTransactionOf,
+    mockPayoutOf,
     mockNavigate,
     mockTrackEvent,
     mockHistory,
@@ -31,6 +32,7 @@ const {
     wallet,
 } = vi.hoisted(() => ({
     mockTransactionOf: vi.fn(),
+    mockPayoutOf: vi.fn(),
     mockNavigate: vi.fn(),
     mockTrackEvent: vi.fn(),
     mockHistory: vi.fn(),
@@ -43,6 +45,7 @@ const {
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
     swapTransactionOf: mockTransactionOf,
+    swapPayoutOf: mockPayoutOf,
     useSwapHistoryInfiniteQuery: mockHistory,
     useSwapSigningAccounts: () => wallet.accounts,
     useSwapAccountNames: (accounts: { id: string; name: string }[]) => {
@@ -120,6 +123,7 @@ describe('useSwapHistoryList', () => {
         vi.clearAllMocks()
         mockHistory.mockReturnValue(historyOf([]))
         mockTransactionOf.mockReturnValue(undefined)
+        mockPayoutOf.mockReturnValue(undefined)
         mockFormatAssetAmount.mockImplementation(
             (amount: Decimal, asset: { unitName: string }) =>
                 `${amount.toString()} ${asset.unitName}`,
@@ -557,6 +561,7 @@ describe('useSwapHistoryList', () => {
             scope: ETH_SCOPE,
             transactionId: '0x1',
             accountAddress: '0xETH2',
+            swapPayout: undefined,
         })
         result.current.handleItemPress(listed)
 
@@ -568,6 +573,35 @@ describe('useSwapHistoryList', () => {
         expect(mockTrackEvent).toHaveBeenCalledWith(
             'swapscr_swap_history_see_all_select',
             { chain_id: 'ethereum', swap_pairing: 'ETH/USDC' },
+        )
+    })
+
+    it("hands a cross-chain swap's payout to the details screen", () => {
+        const crossChain = {
+            ...item,
+            orderId: 'cross',
+            sourceAccount: { scope: SCOPE, address: 'ADDR1' },
+        } as unknown as SwapHistoryItem
+        const payout = { scope: ETH_SCOPE, transactionId: '0xpayout' }
+        mockHistory.mockReturnValue(historyOf([crossChain]))
+        mockTransactionOf.mockReturnValue({
+            scope: SCOPE,
+            transactionId: 'DEP',
+        })
+        mockPayoutOf.mockReturnValue(payout)
+        const { result } = render()
+
+        const [listed] = result.current.swaps
+        expect(mockPayoutOf).toHaveBeenCalledWith(crossChain)
+        result.current.handleItemPress(listed)
+
+        expect(mockNavigate).toHaveBeenCalledWith(
+            'TransactionDetails',
+            expect.objectContaining({
+                scope: SCOPE,
+                transactionId: 'DEP',
+                swapPayout: payout,
+            }),
         )
     })
 

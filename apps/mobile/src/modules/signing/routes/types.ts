@@ -20,6 +20,7 @@ import type {
     TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
 import type { PeraArbitraryDataMessage } from '@perawallet/wallet-core-signing'
+import type { SwapPayoutRef } from '@perawallet/wallet-core-swaps'
 import type { StackScreenProps } from '@react-navigation/stack'
 
 export type SigningStackParamList = {
@@ -59,6 +60,8 @@ export type SigningStackParamList = {
         /** Set when the history marked the entry; the screen explains it and guards copying its counterparty. */
         suspectedPoisoning?: SuspectedPoisoning
         groupId?: string
+        /** Set by Swap History for a cross-chain swap; the screen links its receive-chain leg. */
+        swapPayout?: SwapPayoutRef
         /**
          * Set by the signing-list / group-detail navigation when the wallet won't
          * sign this txn. Drives the inline callout on TransactionDetailsScreen.

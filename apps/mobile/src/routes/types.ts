@@ -30,6 +30,7 @@ import type {
     TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import type { SwapPayoutRef } from '@perawallet/wallet-core-swaps'
 import type { MessagesStackParamList } from '@modules/messages'
 import type { MultisigStackParamList } from '@modules/multisig'
 import type {
@@ -103,6 +104,8 @@ export type RootStackParamList = {
         /** Set when the history marked the entry; the screen explains it and guards copying its counterparty. */
         suspectedPoisoning?: SuspectedPoisoning
         groupId?: string
+        /** Set by Swap History for a cross-chain swap; the screen links its receive-chain leg. */
+        swapPayout?: SwapPayoutRef
     }
 } & PeraCardFlowParamList
 

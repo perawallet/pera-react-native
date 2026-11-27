@@ -17,6 +17,7 @@ import { formatAssetAmount } from '@perawallet/wallet-core-assets'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import {
     swapAccountKey,
+    swapPayoutOf,
     swapTransactionOf,
     useSwapAccountNames,
     useSwapAccountsAddresses,
@@ -24,6 +25,7 @@ import {
     useSwapSigningAccounts,
     type SwapAsset,
     type SwapHistoryItem,
+    type SwapPayoutRef,
     type SwapTransactionRef,
 } from '@perawallet/wallet-core-swaps'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
@@ -36,6 +38,8 @@ import { VISIBLE_SWAP_STATUSES } from '../../constants'
 export type SwapTransactionDetailsTarget = SwapTransactionRef & {
     /** The payer's address as the wallet stores it on `scope`, which the details screen reads history from. */
     accountAddress: string
+    /** A cross-chain swap's leg on its receive chain, which the details screen links to beside the pay-chain transaction. */
+    swapPayout: Optional<SwapPayoutRef>
 }
 
 /** A row the list can draw: rows naming an asset this wallet can't resolve are left out. */
@@ -180,7 +184,11 @@ export const useSwapHistoryList = ({
                         : undefined,
                 detailsTarget:
                     transaction && payer
-                        ? { ...transaction, accountAddress: payer.address }
+                        ? {
+                              ...transaction,
+                              accountAddress: payer.address,
+                              swapPayout: swapPayoutOf(item),
+                          }
                         : undefined,
             }
         })

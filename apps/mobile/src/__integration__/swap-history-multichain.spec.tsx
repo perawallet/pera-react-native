@@ -88,6 +88,7 @@ const { resetTestDatabase, setupTestDatabase, teardownTestDatabase } =
 const { renderWithNavigation } =
     await import('@test-utils/renderWithNavigation')
 const { TransactionDetailsScreen } = await import('@modules/signing/routes')
+const { Linking } = await import('react-native')
 const { evmHistoryItem } =
     await import('@perawallet/wallet-core-chain-ethereum/test-handlers')
 const { peraEvmHistoryHandlers } =
@@ -123,6 +124,7 @@ const USDC_ETH_ID = 'eip155:1/erc20:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'
 const ALGO_ID = `${ALGORAND_MAINNET_CAIP2}/asa:0`
 const USDC_ALGO_ID = `${ALGORAND_MAINNET_CAIP2}/asa:31566704`
 const SWAP_HASH = `0x${'aa'.repeat(32)}`
+const DEPOSIT_HASH = `0x${'bb'.repeat(32)}`
 const COUNTERPARTY = '0x1111111111111111111111111111111111111111'
 
 const routerAsset = (assetId: string, unitName: string, decimals: number) => ({
@@ -350,6 +352,118 @@ describe('Flow: Swap History across chains', () => {
         expect(sender.textContent).toContain('Main')
         expect(screen.getByText('Ethereum')).toBeTruthy()
         expect(screen.getByText('0xaaa...aaaaa')).toBeTruthy()
+    })
+
+    // An ETH-paid swap into ALGO: its deposit is an EVM transaction the history lists.
+    const openCrossChainDetails = async (
+        status: string,
+        payout: { chain: string; tx_hash: string; role: string }[],
+    ) => {
+        useRemoteConfigStore
+            .getState()
+            .setConfigOverride('enable_device_registration_v4', true)
+        server.use(
+            http.get('*/api/v4/swap/history/', () =>
+                HttpResponse.json({
+                    next: null,
+                    results: [
+                        {
+                            ...order(
+                                'cross-eth-to-algo',
+                                '2026-11-25T22:00:00Z',
+                                ETH_CAIP10,
+                                ETH_ASSET,
+                                ALGO_ASSET,
+                                [
+                                    {
+                                        chain: 'eip155:1',
+                                        tx_hash: DEPOSIT_HASH,
+                                        role: 'deposit',
+                                    },
+                                    ...payout,
+                                ],
+                            ),
+                            status,
+                        },
+                    ],
+                }),
+            ),
+            ...peraEvmHistoryHandlers({
+                history: {
+                    [ETH_ADDRESS]: [
+                        [
+                            evmHistoryItem({
+                                hash: DEPOSIT_HASH,
+                                block_time: '2026-11-25T22:00:00Z',
+                                from: ETH_ADDRESS,
+                                to: COUNTERPARTY,
+                                value: '1000000000000000000',
+                            }),
+                        ],
+                    ],
+                },
+            }),
+        )
+        renderWithNavigation(HistoryHost, 'Swap', {
+            additionalScreens: [
+                {
+                    name: 'TransactionDetails',
+                    component: TransactionDetailsScreen,
+                },
+            ],
+        })
+
+        fireEvent.click(
+            await screen.findByTestId(
+                'swap-history-item-cross-eth-to-algo',
+                {},
+                FORM_TIMEOUT,
+            ),
+        )
+        const card = await screen.findByTestId(
+            'transaction_detail_swap_payout',
+            {},
+            FORM_TIMEOUT,
+        )
+        expect(
+            (await screen.findByTestId('transaction_detail_from')).textContent,
+        ).toContain('Main')
+        return card
+    }
+
+    it("Given a cross-chain swap that has paid out, when its See all row is pressed, then its deposit details link the payout on the receive chain's explorer", async () => {
+        const openURL = vi.spyOn(Linking, 'openURL').mockResolvedValue(true)
+        const card = await openCrossChainDetails('completed', [
+            {
+                chain: ALGORAND_MAINNET_CAIP2,
+                tx_hash: 'ALGOPAYOUT',
+                role: 'payout',
+            },
+        ])
+
+        fireEvent.click(
+            within(card).getByText('transactions.common.view_swap_payout_in'),
+        )
+
+        await waitFor(() =>
+            expect(openURL).toHaveBeenLastCalledWith(
+                expect.stringMatching(/\/tx\/ALGOPAYOUT$/),
+            ),
+        )
+    })
+
+    it('Given a cross-chain swap still paying out, when its See all row is pressed, then its deposit details show the payout as pending, with nothing to open', async () => {
+        const card = await openCrossChainDetails('in_progress', [])
+
+        expect(
+            within(card).getByText('transactions.common.swap_payout_on'),
+        ).toBeTruthy()
+        expect(
+            within(card).getByText('transactions.common.pending'),
+        ).toBeTruthy()
+        expect(
+            screen.queryByTestId('transaction_detail_swap_payout_explorer'),
+        ).toBeNull()
     })
 
     it('Given a cross-chain pair, when its chip is pressed, then the swap form restores the destination network too', async () => {

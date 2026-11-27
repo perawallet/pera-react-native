@@ -3992,6 +3992,8 @@
             "send_network": "Red de envío",
             "block": "Bloque",
             "view_in_explorer": "Ver en {{explorer}}",
+            "view_swap_payout_in": "Ver el pago en {{explorer}}",
+            "swap_payout_on": "Pago en {{chain}}",
             "view_asset_url": "Ver URL del activo",
             "view_note": "Ver nota",
             "view_metadata": "Ver metadatos",
