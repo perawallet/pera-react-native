@@ -34,10 +34,25 @@ const mocks = vi.hoisted(() => {
             state.routeParams = { ...state.routeParams, ...params }
             if (params.tab === undefined) state.routeParams = {}
         }),
+        isFocused: vi.fn(() => true),
+        hasTabParent: true,
+        tabPressListeners: new Set<() => void>(),
     }
     return state
 })
-const navigation = { setParams: mocks.setParams }
+const tabParent = {
+    addListener: vi.fn((_event: 'tabPress', listener: () => void) => {
+        mocks.tabPressListeners.add(listener)
+        return () => mocks.tabPressListeners.delete(listener)
+    }),
+}
+const navigation = {
+    setParams: mocks.setParams,
+    isFocused: mocks.isFocused,
+    getParent: () => (mocks.hasTabParent ? tabParent : undefined),
+}
+const pressHomeTab = () =>
+    act(() => mocks.tabPressListeners.forEach(listener => listener()))
 
 vi.mock('@react-navigation/native', async importOriginal => ({
     ...(await importOriginal<typeof import('@react-navigation/native')>()),
@@ -75,6 +90,9 @@ describe('useAccountTabNavigator', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.routeParams = {}
+        mocks.isFocused.mockReturnValue(true)
+        mocks.hasTabParent = true
+        mocks.tabPressListeners.clear()
         useRemoteConfigStore.getState().resetState()
         vi.mocked(useAccountCapabilityScope).mockImplementation(
             actualAccounts.useAccountCapabilityScope,
@@ -238,6 +256,77 @@ describe('useAccountTabNavigator', () => {
             rerender()
 
             expect(result.current.index).toBe(2)
+        })
+    })
+
+    describe('a press on the bottom tab that hosts the screen', () => {
+        it('returns from History to the first tab without reporting a tab change', () => {
+            const { result } = renderHook(() =>
+                useAccountTabNavigator(ALGORAND_ACCOUNT),
+            )
+            act(() => result.current.handleIndexChange(2))
+            mocks.trackEvent.mockClear()
+
+            pressHomeTab()
+
+            expect(result.current.index).toBe(0)
+            expect(mocks.trackEvent).not.toHaveBeenCalled()
+        })
+
+        it('returns from NFTs to the first tab', () => {
+            const { result } = renderHook(() =>
+                useAccountTabNavigator(ALGORAND_ACCOUNT),
+            )
+            act(() => result.current.handleIndexChange(1))
+
+            pressHomeTab()
+
+            expect(result.current.index).toBe(0)
+        })
+
+        it('keeps the open tab when the screen is not the focused one', () => {
+            const { result } = renderHook(() =>
+                useAccountTabNavigator(ALGORAND_ACCOUNT),
+            )
+            act(() => result.current.handleIndexChange(2))
+            mocks.isFocused.mockReturnValue(false)
+
+            pressHomeTab()
+
+            expect(result.current.index).toBe(2)
+        })
+
+        it('changes nothing when the first tab is already open', () => {
+            const { result } = renderHook(() =>
+                useAccountTabNavigator(ALGORAND_ACCOUNT),
+            )
+
+            pressHomeTab()
+
+            expect(result.current.index).toBe(0)
+            expect(mocks.trackEvent).not.toHaveBeenCalled()
+        })
+
+        it('stops listening once unmounted', () => {
+            const { unmount } = renderHook(() =>
+                useAccountTabNavigator(ALGORAND_ACCOUNT),
+            )
+            expect(mocks.tabPressListeners.size).toBe(1)
+
+            unmount()
+
+            expect(mocks.tabPressListeners.size).toBe(0)
+        })
+
+        it('renders without a tab navigator above the screen', () => {
+            mocks.hasTabParent = false
+
+            const { result } = renderHook(() =>
+                useAccountTabNavigator(ALGORAND_ACCOUNT),
+            )
+
+            expect(result.current.index).toBe(0)
+            expect(mocks.tabPressListeners.size).toBe(0)
         })
     })
 })
