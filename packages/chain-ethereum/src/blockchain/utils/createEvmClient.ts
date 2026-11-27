@@ -15,17 +15,23 @@ import {
     defineChain,
     fallback,
     HttpRequestError,
+    TimeoutError,
     type Chain,
     type PublicClient,
     type Transport,
 } from 'viem'
+import { hasIntegrityRegistrationFailed } from '@perawallet/wallet-core-app-integrity'
 import type {
     ChainContext,
     ChainRequestTimeouts,
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
-import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    ErrorCategory,
+    withTimeout,
+} from '@perawallet/wallet-core-shared'
 import type { EvmChain } from '../../chains/types'
 import { eip155ChainIdOfNetwork } from './caip19'
 import { evmHttpTransport, isNotSent, isPeraRpcUrl } from './evmHttpTransport'
@@ -145,8 +151,9 @@ const broadcastInOrder = async (
     }
 }
 
-// Longest a later URL is given, in ms. A failover only has to answer, and a dead
-// first node fails fast, so the rest of the ceiling stays with the first.
+// The share of the ceiling held back for each later URL, in ms. A failover only
+// has to answer, and a dead first node fails fast, so the rest stays with the
+// first.
 const FAILOVER_RESERVE_MS = 3000
 
 /**
@@ -170,7 +177,18 @@ const endpointListTransport = (
     rpcUrls: readonly string[],
     { readMs, submitMs }: ChainRequestTimeouts,
 ): Transport => {
-    const reads = splitCeilingMs(readMs, rpcUrls.length)
+    // Each URL's read keeps back the reserves of the URLs after it, so a
+    // hanging first node still leaves the fallback its reserve, while a URL
+    // reached after a fast refusal (Pera's proxy answering 403 to a device
+    // without an integrity token) gets what is left. One deadline bounds the
+    // whole list. A cap runs from that URL's own start, so with three or more
+    // URLs a second node that also hangs can use up the third's turn; built-in
+    // lists have at most two.
+    const reserves = splitCeilingMs(readMs, rpcUrls.length)
+    const reads = reserves.map(
+        (_, index) =>
+            readMs - reserves.slice(index + 1).reduce((sum, ms) => sum + ms, 0),
+    )
     const submits = splitCeilingMs(submitMs, rpcUrls.length)
     const perUrl = rpcUrls.map((url, index) =>
         timeoutBoundedTransport(
@@ -188,9 +206,15 @@ const endpointListTransport = (
             request: ((args, options) =>
                 SUBMIT_METHODS.has(args.method)
                     ? broadcastInOrder(urlTransports, args, options)
-                    : readTransport.request(
-                          args,
-                          options,
+                    : withTimeout(
+                          readTransport.request(args, options),
+                          readMs,
+                          args.method,
+                          method =>
+                              new TimeoutError({
+                                  body: { method },
+                                  url: rpcUrls.at(-1)!,
+                              }),
                       )) as typeof readTransport.request,
         }
     }
@@ -225,9 +249,13 @@ const usableRpcUrls = (
     ctx: Pick<ChainContext, 'getEndpoints'>,
 ): readonly string[] => {
     const endpoints = ctx.getEndpoints()[scope.networkId] ?? []
-    const rpcUrls = config.backendAPIKey
-        ? endpoints
-        : endpoints.filter(url => !isPeraRpcUrl(url))
+    // The proxy is integrity-guarded: once this launch's attestation has ended
+    // without a token it refuses every read, so leaving it out spares each read
+    // the refused round trip and gives the next URL the primary batch size.
+    const rpcUrls =
+        config.backendAPIKey && !hasIntegrityRegistrationFailed()
+            ? endpoints
+            : endpoints.filter(url => !isPeraRpcUrl(url))
     if (rpcUrls.length === 0) {
         throw new UnconfiguredEvmRpcError(scope)
     }
@@ -247,7 +275,8 @@ const clientOver = (
 
 /**
  * `ctx.getEndpoints()` lists the network's RPC URLs in preference order.
- * Without an API key the Pera proxy cannot serve the client, so the first
+ * Without an API key, or once the launch's integrity attestation has ended
+ * without a token, the Pera proxy cannot serve the client, so the first
  * remaining endpoint gets the primary time and batch budgets.
  */
 export const createEvmClient = (

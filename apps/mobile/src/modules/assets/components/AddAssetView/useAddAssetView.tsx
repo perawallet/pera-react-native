@@ -15,6 +15,7 @@ import {
     useAccountHeldAssetsQuery,
     useAccountHoldingSources,
     useAccountsStore,
+    useCanSignWith,
     chainAccountOf,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -232,6 +233,8 @@ export const useAddAssetView = (
     const selectedAddress = selectedAccount
         ? chainAccountOf(selectedAccount, addScope.chainId)?.address
         : undefined
+    // Opting in is a transaction, so a chain whose authority isn't held can't add.
+    const canSignOptIn = useCanSignWith(selectedAccount, addScope.chainId)
     const { optIn } = useAssetOptInMutation(addScope)
     const { showToast } = useToast()
     const { showError } = useErrorToast()
@@ -273,8 +276,10 @@ export const useAddAssetView = (
         (result: ScopedAssetSearchResult) =>
             addsWithoutOptIn(result.scope.chainId)
                 ? canAddToken(result)
-                : canManageAssets && toScopeKey(result.scope) === addScopeKey,
-        [canAddToken, canManageAssets, addScopeKey],
+                : canManageAssets &&
+                  canSignOptIn &&
+                  toScopeKey(result.scope) === addScopeKey,
+        [canAddToken, canManageAssets, canSignOptIn, addScopeKey],
     )
 
     const handleRequestAdd = useCallback(

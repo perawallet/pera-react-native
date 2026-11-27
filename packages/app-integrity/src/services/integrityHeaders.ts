@@ -12,8 +12,9 @@
 
 import { config } from '@perawallet/wallet-core-config'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { useAppIntegrityStore } from '../store'
 import { getValidIntegrityToken } from './getValidIntegrityToken'
-import { waitForIntegrityRegistration } from './registerAppIntegrity'
+import { ensureIntegrityRegistration } from './registerAppIntegrity'
 
 export const INTEGRITY_TOKEN_HEADER = 'x-app-integrity-token'
 export const INTEGRITY_BYPASS_HEADER = 'x-bypass-integrity'
@@ -53,16 +54,36 @@ export const canCallIntegrityGuardedRoute = (
     token: Nullable<string> = getValidIntegrityToken(),
 ): boolean => Boolean(token) || isBypassEnvironment()
 
+// The status is persisted, so an outcome from an earlier launch must not count.
+const LAUNCHED_AT = Date.now()
+
+/**
+ * This launch's attestation ended without a token (it failed, or the device
+ * can't attest) and nothing else lets a guarded route through, so every guarded
+ * call refuses until a handshake succeeds. While one is still running this is
+ * false: callers wait for it instead.
+ */
+export const hasIntegrityRegistrationFailed = (): boolean => {
+    const { status, lastAttemptAt } = useAppIntegrityStore.getState()
+    return (
+        (status === 'error' || status === 'skipped') &&
+        lastAttemptAt !== null &&
+        Date.parse(lastAttemptAt) >= LAUNCHED_AT &&
+        !canCallIntegrityGuardedRoute()
+    )
+}
+
 /**
  * The headers for a guarded request. The native token is memory-only and minted
- * by the launch's attestation, so a production build holds for it (capped)
- * rather than going out refused; dev and staging send the bypass and never wait.
+ * by attestation, so a production build without one holds for the attestation
+ * (capped), running it again if the last one left no token, rather than going
+ * out refused; dev and staging send the bypass and never wait.
  */
 export const buildIntegrityHeadersWhenReady = async (): Promise<
     Record<string, string>
 > => {
     if (getValidIntegrityToken() === null && !isBypassEnvironment()) {
-        await waitForIntegrityRegistration()
+        await ensureIntegrityRegistration()
     }
     return buildIntegrityHeaders()
 }

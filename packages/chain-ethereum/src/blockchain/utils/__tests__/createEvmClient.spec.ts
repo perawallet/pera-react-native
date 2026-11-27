@@ -22,6 +22,7 @@ import {
 import { delay, http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import { keccak256, TimeoutError, type Hex } from 'viem'
+import { hasIntegrityRegistrationFailed } from '@perawallet/wallet-core-app-integrity'
 import type {
     ChainContext,
     ChainScope,
@@ -83,6 +84,7 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => {
     server.resetHandlers()
     testConfig.backendAPIKey = 'test-api-key'
+    vi.mocked(hasIntegrityRegistrationFailed).mockReturnValue(false)
 })
 afterAll(() => server.close())
 
@@ -421,6 +423,110 @@ describe('createEvmClient', () => {
             await expect(client.getBlockNumber()).resolves.toBe(16n)
         })
 
+        describe('behind a Pera proxy that refuses the device', () => {
+            const refusingProxy = () =>
+                http.post(PROXY_RPC, () =>
+                    HttpResponse.json(
+                        {
+                            error: 'App integrity token required',
+                            code: 'APP_INTEGRITY_TOKEN_REQUIRED',
+                        },
+                        { status: 403 },
+                    ),
+                )
+            const behindProxy = (
+                timeouts = { readMs: 1_000, submitMs: 1_000 },
+            ) =>
+                contextWith({
+                    endpoints: { mainnet: [PROXY_RPC, SECOND_RPC] },
+                    timeouts,
+                })
+
+            it('gives the next URL what is left of the ceiling, not only its reserve', async () => {
+                // The reserve here is 250ms; the refusal leaves nearly all 1s.
+                server.use(
+                    refusingProxy(),
+                    http.post(SECOND_RPC, async () => {
+                        await delay(500)
+                    }),
+                    ...evmRpcHandlers({
+                        rpcUrl: SECOND_RPC,
+                        responses: { eth_blockNumber: '0x20' },
+                    }),
+                )
+                const client = createEvmClient(MAINNET, behindProxy(), ETHEREUM)
+
+                await expect(client.getBlockNumber()).resolves.toBe(32n)
+            })
+
+            it('reads a batch through the next URL in batches it accepts', async () => {
+                const sizes: number[] = []
+                server.use(
+                    refusingProxy(),
+                    recordBatchSizes(SECOND_RPC, sizes),
+                    ...evmRpcHandlers({ rpcUrl: SECOND_RPC }),
+                )
+                const client = createEvmClient(MAINNET, behindProxy(), ETHEREUM)
+
+                const counts = await Promise.all(
+                    Array.from({ length: 25 }, (_, index) =>
+                        client.getTransactionCount({
+                            address: addressAt(index),
+                        }),
+                    ),
+                )
+
+                expect(counts).toHaveLength(25)
+                expect(Math.max(...sizes)).toBeLessThanOrEqual(10)
+            })
+        })
+
+        it('stops at the ceiling when the first URL hangs and the next is slow', async () => {
+            server.use(
+                http.post(FIRST_RPC, async () => {
+                    await delay(2_000)
+                }),
+                http.post(SECOND_RPC, async () => {
+                    await delay(2_000)
+                }),
+            )
+            const client = createEvmClient(
+                MAINNET,
+                withList({ readMs: 1_000, submitMs: 1_000 }),
+                ETHEREUM,
+            )
+            const startedAt = Date.now()
+
+            await expect(client.getBlockNumber()).rejects.toBeInstanceOf(
+                TimeoutError,
+            )
+            expect(Date.now() - startedAt).toBeLessThan(1_200)
+        })
+
+        it('leaves a third URL its turn when the second hangs after a refusal', async () => {
+            const THIRD_RPC = 'https://third.rpc.test/'
+            server.use(
+                http.post(FIRST_RPC, () => HttpResponse.error()),
+                http.post(SECOND_RPC, async () => {
+                    await delay(2_000)
+                }),
+                ...evmRpcHandlers({
+                    rpcUrl: THIRD_RPC,
+                    responses: { eth_blockNumber: '0x30' },
+                }),
+            )
+            const client = createEvmClient(
+                MAINNET,
+                contextWith({
+                    endpoints: { mainnet: [FIRST_RPC, SECOND_RPC, THIRD_RPC] },
+                    timeouts: { readMs: 1_000, submitMs: 1_000 },
+                }),
+                ETHEREUM,
+            )
+
+            await expect(client.getBlockNumber()).resolves.toBe(48n)
+        })
+
         it('does not take a contract revert to the next URL', async () => {
             server.use(
                 ...evmRpcHandlers({
@@ -477,6 +583,23 @@ describe('createEvmClient', () => {
 
         it('skips the guarded Pera proxy when no API key is available', async () => {
             testConfig.backendAPIKey = ''
+            server.use(...evmRpcHandlers({ rpcUrl: SECOND_RPC }))
+            const reachedProxy = countCalls(PROXY_RPC)
+            const client = createEvmClient(
+                MAINNET,
+                contextWith({
+                    endpoints: { mainnet: [PROXY_RPC, SECOND_RPC] },
+                }),
+                ETHEREUM,
+            )
+
+            await expect(client.getChainId()).resolves.toBe(1)
+            expect(client.chain?.rpcUrls.default.http).toEqual([SECOND_RPC])
+            expect(reachedProxy).not.toHaveBeenCalled()
+        })
+
+        it('skips the guarded Pera proxy once the launch attestation has failed', async () => {
+            vi.mocked(hasIntegrityRegistrationFailed).mockReturnValue(true)
             server.use(...evmRpcHandlers({ rpcUrl: SECOND_RPC }))
             const reachedProxy = countCalls(PROXY_RPC)
             const client = createEvmClient(

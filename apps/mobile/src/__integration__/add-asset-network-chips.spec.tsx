@@ -89,16 +89,16 @@ describe('Flow: Add Asset with a second chain registered', () => {
     beforeEach(() => {
         useAccountsStore.getState().setAccounts([
             {
-                id: 'watch-1',
-                name: 'Watch',
-                custody: { kind: 'watch' },
+                id: 'account-1',
+                name: 'Account',
+                custody: { kind: 'local', seed: null },
                 chains: {
-                    algorand: { address: ALGO25_TEST_ADDRESS },
+                    algorand: { address: ALGO25_TEST_ADDRESS, keyPairId: 'k' },
                     ethereum: { address: ETHEREUM_ADDRESS },
                 },
             },
         ])
-        useAccountsStore.getState().setSelectedAccountId('watch-1')
+        useAccountsStore.getState().setSelectedAccountId('account-1')
         server.use(
             mockAssetSearch({
                 response: {
@@ -210,10 +210,12 @@ describe('Flow: Add Asset with a second chain registered', () => {
     it('Given an account only on Algorand, then Add Asset shows no chips and lists Algorand assets only', async () => {
         useAccountsStore.getState().setAccounts([
             {
-                id: 'watch-1',
-                name: 'Watch',
-                custody: { kind: 'watch' },
-                chains: { algorand: { address: ALGO25_TEST_ADDRESS } },
+                id: 'account-1',
+                name: 'Account',
+                custody: { kind: 'local', seed: null },
+                chains: {
+                    algorand: { address: ALGO25_TEST_ADDRESS, keyPairId: 'k' },
+                },
             },
         ])
         renderAddAsset(null)

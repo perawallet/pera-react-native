@@ -16,11 +16,12 @@ import {
     buildIntegrityHeaders,
     buildIntegrityHeadersWhenReady,
     canCallIntegrityGuardedRoute,
+    hasIntegrityRegistrationFailed,
 } from '../integrityHeaders'
 
 const waitMock = vi.hoisted(() => vi.fn())
 vi.mock('../registerAppIntegrity', () => ({
-    waitForIntegrityRegistration: waitMock,
+    ensureIntegrityRegistration: waitMock,
 }))
 
 const mockConfig = vi.hoisted(() => ({
@@ -101,6 +102,58 @@ describe('canCallIntegrityGuardedRoute', () => {
         mockConfig.appEnvironment = environment
 
         expect(canCallIntegrityGuardedRoute(token)).toBe(expected)
+    })
+})
+
+describe('hasIntegrityRegistrationFailed', () => {
+    beforeEach(() => {
+        useAppIntegrityStore.getState().resetState()
+        mockConfig.appEnvironment = 'production'
+    })
+
+    const failAttestation = (attemptedAt = new Date()) => {
+        const store = useAppIntegrityStore.getState()
+        store.setLastAttemptAt(attemptedAt.toISOString())
+        store.setError('Attestation verification failed')
+    }
+
+    it('is true once a production attestation fails with no token held', () => {
+        failAttestation()
+
+        expect(hasIntegrityRegistrationFailed()).toBe(true)
+    })
+
+    it('is true once this launch finds the device cannot attest', () => {
+        const store = useAppIntegrityStore.getState()
+        store.setLastAttemptAt(new Date().toISOString())
+        store.setStatus('skipped')
+
+        expect(hasIntegrityRegistrationFailed()).toBe(true)
+    })
+
+    it('is false for a skip made before any attempt, as a development build does', () => {
+        useAppIntegrityStore.getState().setStatus('skipped')
+
+        expect(hasIntegrityRegistrationFailed()).toBe(false)
+    })
+
+    it('is false while the attestation is still running', () => {
+        useAppIntegrityStore.getState().setStatus('registering')
+
+        expect(hasIntegrityRegistrationFailed()).toBe(false)
+    })
+
+    it('is false for a failure persisted from an earlier launch', () => {
+        failAttestation(new Date(Date.now() - 60 * 60_000))
+
+        expect(hasIntegrityRegistrationFailed()).toBe(false)
+    })
+
+    it('is false after a failure when the build sends the bypass', () => {
+        mockConfig.appEnvironment = 'staging'
+        failAttestation()
+
+        expect(hasIntegrityRegistrationFailed()).toBe(false)
     })
 })
 

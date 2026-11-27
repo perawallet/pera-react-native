@@ -262,7 +262,11 @@ to the realm's bound for a token still on its way. A call to an integrity-guarde
 card, fee-delegation and EVM routes) also passes `headers: await buildIntegrityHeadersWhenReady()`
 from `@perawallet/wallet-core-app-integrity`, which carries the native token and the staging bypass.
 The native token lives in memory only, so every launch attests again; a production build's guarded
-call waits, capped, for that attestation instead of going out refused.
+call waits, capped, for that attestation instead of going out refused. A guarded call that still
+holds no valid token, because the attestation failed or the token expired while the app stayed
+open, runs the attestation again and waits for it the same way. Reattempts are spaced by a cooldown
+that doubles with each failure in a row up to a ceiling, so a device that can never attest does not
+spend the platform's attestation quota, and a registration the device skipped is never run again.
 
 `queryClient` serves the Pera and backup backends only, never a chain's nodes, so a Pera credential
 cannot reach a third-party node. Each chain builds its own node clients from the `ChainContext` it
@@ -279,12 +283,15 @@ node that misreports balances and nonces or censors broadcasts. `createEvmClient
 order: reads through `fallback()`, a broadcast moving on only after a failure that is not a node
 reply (a later node's refusal then reads as an unknown outcome, since the earlier one may have
 taken it). The first URL keeps the chain's ceilings less a short reserve for the fallback, so a slow
-but healthy main node is not cut off. A later URL gets reads in JSON-RPC batches of at most 10,
-because free public nodes refuse a larger batch whole. A fallback must therefore take a batch of
-10, and the burst of them that a failed-over tick sends at once, which free nodes also rate-limit
-per batch item. The app lays a developer's per-network endpoint override from the network store
-over that record, replacing the list, and only over test networks the chain's config already
-carries: the stored override is unauthenticated, so a mainnet one is ignored.
+but healthy main node is not cut off. A read that reaches the fallback early, after a fast refusal
+such as Pera's integrity-guarded proxy answering 403, gets what is left of the read ceiling rather
+than only the reserve; one deadline bounds the whole list. When the launch's attestation ends
+without a token, the proxy is left out of the list altogether. A later URL gets reads in JSON-RPC
+batches of at most 10, because free public nodes refuse a larger batch whole. A fallback must
+therefore take a batch of 10, and the burst of them that a failed-over tick sends at once, which
+free nodes also rate-limit per batch item. The app lays a developer's per-network endpoint override
+from the network store over that record, replacing the list, and only over test networks the
+chain's config already carries: the stored override is unauthenticated, so a mainnet one is ignored.
 `tools/check-evm-rpc-endpoints.mjs` checks every built-in URL's chain id before a build is signed
 (Pera's own proxy only answers its integrity guard, so its chain id is read from the route)
 and requires production mainnet URLs to be https, on any domain. Only hosts under

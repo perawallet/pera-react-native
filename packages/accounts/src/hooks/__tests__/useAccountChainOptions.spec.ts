@@ -258,6 +258,14 @@ describe('signability', () => {
         expect(result.current).toBe(true)
     })
 
+    test("useCanSignOnAnyChain ignores a chain that would sign but the account isn't on", () => {
+        signsOn([BASE])
+
+        const { result } = renderHook(() => useCanSignOnAnyChain(hd))
+
+        expect(result.current).toBe(false)
+    })
+
     test('useCanSignOnAnyChain is false when no chain the account holds signs', () => {
         signsOn([])
 
