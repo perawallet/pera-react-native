@@ -51,7 +51,10 @@ export const PriceTrend = ({
     }
 
     return (
-        <PWView style={styles.container}>
+        <PWView
+            style={styles.container}
+            testID='asset_markets_price_trend'
+        >
             {showAbsolute && (
                 <PWText
                     style={isPositive ? styles.itemUp : styles.itemDown}

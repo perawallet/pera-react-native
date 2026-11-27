@@ -484,6 +484,7 @@
         "markets": {
             "something_went_wrong_title": "Something went wrong",
             "something_went_wrong_body": "We were unable to load this asset's details. Please check your connection and try again.",
+            "no_market_data": "No market data available for this asset",
             "title": "Markets",
             "stats": "Statistics",
             "price": "Price",

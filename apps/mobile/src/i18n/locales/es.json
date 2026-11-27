@@ -484,6 +484,7 @@
         "markets": {
             "something_went_wrong_title": "Algo salió mal",
             "something_went_wrong_body": "No pudimos cargar los detalles de este activo. Comprueba tu conexión e inténtalo de nuevo.",
+            "no_market_data": "No hay datos de mercado disponibles para este activo",
             "title": "Mercados",
             "stats": "Estadísticas",
             "price": "Precio",

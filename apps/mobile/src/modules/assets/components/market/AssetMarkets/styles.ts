@@ -52,6 +52,11 @@ export const useStyles = makeStyles(theme => {
             gap: theme.spacing.md,
             marginBottom: theme.spacing.xl,
         },
+        noMarketData: {
+            color: theme.colors.textGray,
+            textAlign: 'center',
+            marginVertical: theme.spacing.xl,
+        },
         tagText,
         loadingContainer: {
             padding: theme.spacing.xl,

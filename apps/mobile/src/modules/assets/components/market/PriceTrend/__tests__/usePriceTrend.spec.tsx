@@ -37,10 +37,13 @@ const mockQuery = (
     data: ReturnType<typeof point>[] | undefined,
     isPaused: boolean,
     isUnavailableOnNetwork = false,
+    { isError = false, isSuccess = false } = {},
 ) => {
     vi.mocked(useAssetPriceHistoryQuery).mockReturnValue({
         data,
         isPaused,
+        isError,
+        isSuccess,
         isUnavailableOnNetwork,
     } as unknown as ReturnType<typeof useAssetPriceHistoryQuery>)
 }
@@ -152,6 +155,36 @@ describe('usePriceTrend', () => {
         )
 
         expect(result.current.isHidden).toBe(true)
+    })
+
+    it('hides the trend when the history failed with no data', () => {
+        mockQuery(undefined, false, false, { isError: true })
+
+        const { result } = renderHook(() =>
+            usePriceTrend({ assetId: '123', period: 'one-week', scope: SCOPE }),
+        )
+
+        expect(result.current.isHidden).toBe(true)
+    })
+
+    it('hides the trend when the history loaded an empty series', () => {
+        mockQuery([], false, false, { isSuccess: true })
+
+        const { result } = renderHook(() =>
+            usePriceTrend({ assetId: '123', period: 'one-week', scope: SCOPE }),
+        )
+
+        expect(result.current.isHidden).toBe(true)
+    })
+
+    it('keeps the trend when a refetch failed but stale points remain', () => {
+        mockQuery([point(100), point(150)], false, false, { isError: true })
+
+        const { result } = renderHook(() =>
+            usePriceTrend({ assetId: '123', period: 'one-week', scope: SCOPE }),
+        )
+
+        expect(result.current.isHidden).toBe(false)
     })
 
     it('does not hide the trend during an online load', () => {
