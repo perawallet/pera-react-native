@@ -21,6 +21,7 @@ import {
     getAssetById,
     getAssetsByIds,
     getStaleOrMissingAssetIds,
+    PeraAssetType,
     PeraAssetVerificationTier,
     upsertAssets,
     upsertNodeAssets,
@@ -28,6 +29,7 @@ import {
     type AssetGroup,
     type AssetSearchPage,
     type AssetsChainAdapter,
+    type AssetVerdict,
     type DisplayableAsset,
     type PeraAsset,
     type SyncAssetsOptions,
@@ -427,6 +429,44 @@ const syncAssets =
         ])
     }
 
+const fetchAssetVerdicts =
+    (
+        ctx: ChainContext,
+        chain: EvmChain,
+    ): AssetsChainAdapter['fetchAssetVerdicts'] =>
+    async (refs, scope) => {
+        eip155ChainIdOf(scope, chain)
+        if (!hasServices(ctx, scope, ASSETS_SERVICE)) return null
+        const verdicts = new Map<string, AssetVerdict>()
+        const idByToken = new Map<string, string>()
+        for (const ref of refs) {
+            const assetId = evmAssetIdOf(chain, ref)
+            const [tokenId] = toTokenIds([assetId])
+            if (tokenId) idByToken.set(tokenId, assetId)
+            else if (isEvmNftAssetId(assetId)) {
+                verdicts.set(assetId, { type: PeraAssetType.collectible })
+            }
+        }
+        for (const batch of partition([...idByToken.keys()], ASSETS_MAX_IDS)) {
+            const items = await fetchAssetItems(scope, chain, batch)
+            items.forEach((item, index) => {
+                if (!item) return
+                const tokenId = batch[index]!
+                const { asset, isQuarantined } = toAssetMetadata(tokenId, item)
+                // Stored, a quarantined token is a suspicious row.
+                const tier = isQuarantined
+                    ? PeraAssetVerificationTier.suspicious
+                    : asset?.peraMetadata?.verificationTier
+                if (tier) {
+                    verdicts.set(idByToken.get(tokenId)!, {
+                        verificationTier: tier,
+                    })
+                }
+            })
+        }
+        return verdicts
+    }
+
 const NFT_STANDARDS: readonly EvmNftStandard[] = ['erc721', 'erc1155']
 
 const isNftStandard = (value: unknown): value is EvmNftStandard =>
@@ -771,6 +811,7 @@ export const createEthereumAssetsAdapter = (
         maxPriceIdsPerRequest: ASSETS_MAX_IDS,
         getNativeAsset: () => chain.nativeAsset,
         syncAssets: syncAssets(ctx, chain, listedTokens),
+        fetchAssetVerdicts: fetchAssetVerdicts(ctx, chain),
         getAssetMetadata: getAssetMetadata(ctx, chain, listedTokens),
         findCollectibleMetadata: async (ref, scope) => {
             eip155ChainIdOf(scope, chain)

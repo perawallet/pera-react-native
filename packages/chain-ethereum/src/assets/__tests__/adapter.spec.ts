@@ -2451,3 +2451,95 @@ describe('search on every EVM chain and network', () => {
         },
     )
 })
+
+describe('fetchAssetVerdicts', () => {
+    beforeEach(async () => {
+        const { resetPeraScopeRefusals } =
+            await import('@perawallet/wallet-core-config')
+        resetPeraScopeRefusals()
+    })
+
+    it("answers each token's tier from the backend alone, keyed by the caller's id, and stores nothing", async () => {
+        const requested: unknown[] = []
+        server.use(
+            http.post(`${TEST_PERA_URL}${ASSETS_PATH}`, async ({ request }) => {
+                requested.push(await request.json())
+                return HttpResponse.json({
+                    results: [usdcFromPera, unknownAssetItem(DAI_CAIP19)],
+                })
+            }),
+        )
+        const ethCalls = recordEthCalls()
+        const { full, node } = memoryPersistence()
+        const ops = createEthereumAssetsAdapter(
+            testChainContext({ services: ['assets'] }),
+            ETHEREUM,
+        )
+
+        const verdicts = await ops.fetchAssetVerdicts!(
+            [USDC.toLowerCase(), DAI].map(ref),
+            SCOPE,
+        )
+
+        expect([...verdicts!]).toEqual([
+            [USDC.toLowerCase(), { verificationTier: 'verified' }],
+        ])
+        expect(requested).toEqual([{ ids: [USDC_CAIP19, DAI_CAIP19] }])
+        expect(ethCalls).toEqual([])
+        expect(full).toEqual([])
+        expect(node).toEqual([])
+    })
+
+    it('answers a quarantined token as suspicious', async () => {
+        server.use(
+            http.post(`${TEST_PERA_URL}${ASSETS_PATH}`, () =>
+                HttpResponse.json({ results: [quarantinedDai] }),
+            ),
+        )
+        const ops = createEthereumAssetsAdapter(
+            testChainContext({ services: ['assets'] }),
+            ETHEREUM,
+        )
+
+        const verdicts = await ops.fetchAssetVerdicts!([ref(DAI)], SCOPE)
+
+        expect(verdicts?.get(DAI)).toEqual({ verificationTier: 'suspicious' })
+    })
+
+    it('marks an NFT a collectible without asking', async () => {
+        const requested: unknown[] = []
+        server.use(
+            http.post(`${TEST_PERA_URL}${ASSETS_PATH}`, ({ request }) => {
+                requested.push(request.url)
+                return HttpResponse.json({ results: [] })
+            }),
+        )
+        const nftId = `${DAI}/7`
+        const ops = createEthereumAssetsAdapter(
+            testChainContext({ services: ['assets'] }),
+            ETHEREUM,
+        )
+
+        const verdicts = await ops.fetchAssetVerdicts!([ref(nftId)], SCOPE)
+
+        expect(verdicts?.get(nftId)).toEqual({ type: 'collectible' })
+        expect(requested).toEqual([])
+    })
+
+    it('answers null, asking nothing, on a scope without the assets service', async () => {
+        const requested: unknown[] = []
+        server.use(
+            http.post(`${TEST_PERA_URL}${ASSETS_PATH}`, ({ request }) => {
+                requested.push(request.url)
+                return HttpResponse.json({ results: [] })
+            }),
+        )
+        const ops = createEthereumAssetsAdapter(
+            testChainContext({ services: [] }),
+            ETHEREUM,
+        )
+
+        expect(await ops.fetchAssetVerdicts!([ref(DAI)], SCOPE)).toBeNull()
+        expect(requested).toEqual([])
+    })
+})

@@ -20,6 +20,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     useStoredAssetsAcrossScopesQuery,
+    type AssetVerdict,
     type PeraAsset,
     type ScopedAssetIds,
 } from '@perawallet/wallet-core-assets'
@@ -57,32 +58,41 @@ type Entry = {
     accountAddress: string
 }
 
+type ScopeAssets = {
+    assets: Optional<ReadonlyMap<string, PeraAsset>>
+    unstoredVerdicts: Optional<ReadonlyMap<string, AssetVerdict>>
+    readIds: Optional<ReadonlySet<string>>
+}
+
 /**
  * Someone else's transaction that moved a token waiting in the inbox: an
  * airdrop or a spoofed transfer. The account's own stays, whatever it moved,
- * and so does one whose signer the history doesn't name. A token with no
- * stored row is left in too, since nothing says it's unwanted.
+ * and so does one whose signer the history doesn't name unless it's marked
+ * signed elsewhere (a transfer-log-only row, how most airdrops arrive). A
+ * token is judged once its lookup has answered: by its stored row, else by
+ * what the backend says of it, and one it doesn't describe isn't verified.
  */
 const movesUnapprovedToken = (
     entry: Entry,
-    storedAssets: Optional<ReadonlyMap<string, PeraAsset>>,
+    known: ScopeAssets,
     keptTokens: KeptTokens,
 ): boolean =>
-    !!entry.signer &&
-    entry.signer.toLowerCase() !== entry.accountAddress.toLowerCase() &&
+    (entry.isSignedElsewhere === true ||
+        (!!entry.signer &&
+            entry.signer.toLowerCase() !==
+                entry.accountAddress.toLowerCase())) &&
     summaryAmountsOf(entry.summary).some(({ assetRef: { assetId } }) => {
-        const asset = storedAssets?.get(assetId)
-        return (
-            !!asset &&
-            isUnapprovedHolding(
-                {
-                    address: entry.accountAddress,
-                    scope: entry.scope,
-                    assetId,
-                    asset,
+        if (!known.readIds?.has(assetId)) return false
+        return isUnapprovedHolding(
+            {
+                address: entry.accountAddress,
+                scope: entry.scope,
+                assetId,
+                asset: known.assets?.get(assetId) ?? {
+                    peraMetadata: known.unstoredVerdicts?.get(assetId),
                 },
-                keptTokens,
-            )
+            },
+            keptTokens,
         )
     })
 
@@ -154,7 +164,13 @@ export const useWithoutSuspiciousRows = ({
         }
         return [...byScope.values()]
     }, [entries])
-    const storedByScope = useStoredAssetsAcrossScopesQuery(assetGroups)
+    const {
+        assets: storedByScope,
+        unstoredVerdicts,
+        readIds,
+    } = useStoredAssetsAcrossScopesQuery(assetGroups, {
+        fetchMissingTiers: true,
+    })
     const keptTokens = useKeptTokensStore(state => state.keptTokens)
 
     return useMemo(() => {
@@ -165,7 +181,15 @@ export const useWithoutSuspiciousRows = ({
                     entry =>
                         movesUnapprovedToken(
                             entry,
-                            storedByScope.get(toScopeKey(entry.scope)),
+                            {
+                                assets: storedByScope.get(
+                                    toScopeKey(entry.scope),
+                                ),
+                                unstoredVerdicts: unstoredVerdicts.get(
+                                    toScopeKey(entry.scope),
+                                ),
+                                readIds: readIds.get(toScopeKey(entry.scope)),
+                            },
                             keptTokens,
                         ) ||
                         assessHistoryEntry({
@@ -197,6 +221,8 @@ export const useWithoutSuspiciousRows = ({
         rows,
         entries,
         storedByScope,
+        unstoredVerdicts,
+        readIds,
         suspectedPoisoningById,
         keptTokens,
     ])

@@ -75,6 +75,13 @@ const receive = (
     id: string,
     initiator: Optional<string>,
     assetId: string,
+    {
+        isSignedElsewhere,
+        kind = 'token-transfer',
+    }: {
+        isSignedElsewhere?: boolean
+        kind?: TransactionRecord['summary']['kind']
+    } = {},
 ): TransactionListRow => ({
     kind: TRANSACTION_ROW_TYPES.record,
     key: id,
@@ -83,9 +90,10 @@ const receive = (
         scope: SCOPE,
         status: 'confirmed',
         initiator,
+        isSignedElsewhere,
         chainData: { family: 'evm' },
         summary: {
-            kind: 'token-transfer',
+            kind,
             title: { key: i18nKey('transactions.list_item.receive') },
             icon: 'receive',
             direction: 'in',
@@ -131,12 +139,17 @@ describe('useWithoutSuspiciousRows', () => {
             receive('own-swap', ME, '0xnew'),
             receive('listed', OTHER, '0xverified'),
             receive('unknown', OTHER, '0xunstored'),
+            receive('no-longer-held', OTHER, '0xsold'),
             receive('unsigned', undefined, '0xnew'),
+            receive('log-only', undefined, '0xnew', {
+                isSignedElsewhere: true,
+            }),
+            receive('unstored-nft', OTHER, '0xnft', { kind: 'contract-call' }),
         ]
 
         beforeEach(() => {
-            vi.mocked(useStoredAssetsAcrossScopesQuery).mockReturnValue(
-                new Map([
+            vi.mocked(useStoredAssetsAcrossScopesQuery).mockReturnValue({
+                assets: new Map([
                     [
                         toScopeKey(SCOPE),
                         new Map([
@@ -148,7 +161,28 @@ describe('useWithoutSuspiciousRows', () => {
                         ]),
                     ],
                 ]),
-            )
+                unstoredVerdicts: new Map([
+                    [
+                        toScopeKey(SCOPE),
+                        new Map([
+                            ['0xsold', { verificationTier: 'verified' }],
+                            ['0xnft', { type: 'collectible' }],
+                        ]),
+                    ],
+                ]),
+                readIds: new Map([
+                    [
+                        toScopeKey(SCOPE),
+                        new Set([
+                            '0xnew',
+                            '0xverified',
+                            '0xunstored',
+                            '0xsold',
+                            '0xnft',
+                        ]),
+                    ],
+                ]),
+            })
         })
 
         const keysOf = () =>
@@ -160,13 +194,14 @@ describe('useWithoutSuspiciousRows', () => {
                 }),
             ).result.current.map(row => row.key)
 
-        it("drops someone else's transfer of it, and keeps the account's own and one with no named signer", () => {
+        it("drops someone else's transfer of it, log-only and unsynced ones included, and keeps the account's own, one with no named signer, an unsynced NFT whatever the row's kind, and an unsynced token the backend verifies", () => {
             expect(keysOf()).toEqual([
                 '2026-11-25',
                 'own-swap',
                 'listed',
-                'unknown',
+                'no-longer-held',
                 'unsigned',
+                'unstored-nft',
             ])
         })
 
@@ -178,6 +213,16 @@ describe('useWithoutSuspiciousRows', () => {
             })
 
             expect(keysOf()).toContain('airdrop')
+        })
+
+        it('keeps every row while its assets are still being read', () => {
+            vi.mocked(useStoredAssetsAcrossScopesQuery).mockReturnValue({
+                assets: new Map(),
+                unstoredVerdicts: new Map(),
+                readIds: new Map(),
+            })
+
+            expect(keysOf()).toEqual(rows.map(row => row.key))
         })
     })
 
@@ -191,7 +236,9 @@ describe('useWithoutSuspiciousRows', () => {
         )
 
         expect(result.current).toBe(ROWS)
-        expect(useStoredAssetsAcrossScopesQuery).toHaveBeenCalledWith([])
+        expect(useStoredAssetsAcrossScopesQuery).toHaveBeenCalledWith([], {
+            fetchMissingTiers: true,
+        })
     })
 
     it('drops poisoned and spoofed entries, and a date header left with nothing under it', () => {
@@ -207,9 +254,10 @@ describe('useWithoutSuspiciousRows', () => {
             '2026-11-25',
             'own',
         ])
-        expect(useStoredAssetsAcrossScopesQuery).toHaveBeenLastCalledWith([
-            { scope: SCOPE, assetIds: ['0xusdc', '0xusdc', '0xusdc'] },
-        ])
+        expect(useStoredAssetsAcrossScopesQuery).toHaveBeenLastCalledWith(
+            [{ scope: SCOPE, assetIds: ['0xusdc', '0xusdc', '0xusdc'] }],
+            { fetchMissingTiers: true },
+        )
     })
 
     it('keeps every row of an ordinary history', () => {

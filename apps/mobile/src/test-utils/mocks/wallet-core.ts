@@ -429,7 +429,11 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     useAssetPriceHistoryQuery: vi.fn(() => ({ data: [], isPending: false })),
     // The real hook resolves to a Map keyed by asset id, not an array.
     useAssetsQuery: vi.fn(() => ({ data: new Map(), isPending: false })),
-    useStoredAssetsAcrossScopesQuery: vi.fn(() => new Map()),
+    useStoredAssetsAcrossScopesQuery: vi.fn(() => ({
+        assets: new Map(),
+        unstoredVerdicts: new Map(),
+        readIds: new Map(),
+    })),
     isSpamAssetText: vi.fn(() => false),
     useAssetPricesQuery: vi.fn(() => ({
         data: new Map(),
