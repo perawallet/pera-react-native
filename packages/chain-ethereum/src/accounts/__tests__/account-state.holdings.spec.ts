@@ -324,6 +324,39 @@ describe('fetchAccountState token holdings', () => {
         ).rejects.toBeInstanceOf(PeraNetworkError)
     })
 
+    it.each([401, 403])(
+        'reads the native balance and stored tokens when the backend refuses the token list with %i',
+        async status => {
+            storedHoldings.ids = ['native', USDC]
+            server.use(
+                ...rpcAtBlock(
+                    '0x64',
+                    erc20CallResponder({ [USDC]: token(60n) }),
+                ),
+                ...peraEvmHandlers({
+                    baseUrl: TEST_PERA_URL,
+                    whitelist: status,
+                }),
+            )
+            const ops = createEthereumAccountStateOps(
+                testChainContext({ services: ['assets'] }),
+                ETHEREUM,
+            )
+
+            const state = await ops.fetchAccountState(ADDRESS, SCOPE, HINT)
+
+            expect(
+                state.holdings.map(h => [h.assetId, h.amount.toFixed()]),
+            ).toEqual([
+                ['native', '1'],
+                [USDC, '60'],
+            ])
+            expect(state.unrefreshedHoldings?.fungibles?.error).toMatchObject({
+                status,
+            })
+        },
+    )
+
     it('rejects the whole read when the balance call fails', async () => {
         server.use(
             ...rpcAtBlock(

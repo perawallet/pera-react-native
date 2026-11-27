@@ -20,6 +20,7 @@ export {
 export {
     buildIntegrityHeadersWhenReady,
     canCallIntegrityGuardedRoute,
+    hasIntegrityRegistrationFailed,
     INTEGRITY_BYPASS_HEADER,
     INTEGRITY_TOKEN_HEADER,
 } from './integrityHeaders'

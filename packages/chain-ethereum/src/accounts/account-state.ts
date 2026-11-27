@@ -141,6 +141,7 @@ const unrefreshedOf = (
     readTokenIds: ReadonlySet<string>,
     nfts: NftRead,
     storedReadError: Optional<unknown>,
+    tokenListError: Optional<unknown>,
     unreadTokens: ReadonlyMap<string, unknown>,
     unansweredTokens: ReadonlyMap<string, unknown>,
 ): Optional<UnrefreshedHoldings> => {
@@ -176,7 +177,7 @@ const unrefreshedOf = (
             error: storedReadError,
         })
     }
-    if (!services.has(ASSETS_SERVICE)) {
+    if (tokenListError !== undefined) {
         missedTokens.push({
             includes: assetId =>
                 assetId !== nativeAssetId &&
@@ -184,7 +185,7 @@ const unrefreshedOf = (
                 !readTokenIds.has(
                     isAddress(assetId) ? getAddress(assetId) : assetId,
                 ),
-            error: new PeraServiceUnavailableError(scope, ASSETS_SERVICE),
+            error: tokenListError,
         })
     }
     if (!services.has(NFTS_SERVICE)) {
@@ -495,7 +496,9 @@ const readOffListBalances = async (
  * One block and one balance pass for every read in the batch; a failed block,
  * whitelist or balance read rejects them all, since the syncer replaces
  * holdings and a native-only snapshot would drop every token. Only the nonce
- * reads fail per account.
+ * reads fail per account. A whitelist the backend refuses (no API key or
+ * integrity token) is read as no whitelist for that pass: the stored rows it
+ * would have refreshed are kept, and the next pass asks for the list again.
  */
 const readBatch = async (
     ctx: ChainContext,
@@ -512,13 +515,13 @@ const readBatch = async (
     // Reads without the token list skip what only it lists while the change
     // cursor moves on, so each account is backfilled, and its pass is due, once
     // the list is back.
-    if (!hasWhitelist) {
+    const owePassesOnListReturn = () =>
         reads.forEach(read => {
             const key = backfillKey(scope, read.address)
             backfillAccounts.add(key)
             detection.listedPassAt.delete(key)
         })
-    }
+    if (!hasWhitelist) owePassesOnListReturn()
     // Settled per address, so one account's NFT outage never fails another's
     // read, nor its own balances.
     const nftKeys = reads.map(read => backfillKey(scope, read.address))
@@ -568,11 +571,23 @@ const readBatch = async (
             }
         })
     }
+    let listRefusal: unknown
     const [blockNumber, listedIds, stored] = await Promise.all([
         client.getBlockNumber(),
-        hasWhitelist ? listedTokenIds(scope) : Promise.resolve<string[]>([]),
+        hasWhitelist
+            ? listedTokenIds(scope).catch((error: unknown) => {
+                  if (!isRefusedCredential(error)) throw error
+                  listRefusal = error
+                  return []
+              })
+            : Promise.resolve<string[]>([]),
         storedTokenIdsOf(scope, reads, chain.nativeAsset.assetId),
     ])
+    const isListRead = hasWhitelist && listRefusal === undefined
+    if (hasWhitelist && !isListRead) owePassesOnListReturn()
+    const tokenListError: unknown = !hasWhitelist
+        ? new PeraServiceUnavailableError(scope, ASSETS_SERVICE)
+        : listRefusal
     // Checksummed, so a token named twice is read once; an id that isn't an
     // address is skipped, not thrown.
     // The native coin's mirror contract is the native balance again, never a token.
@@ -603,7 +618,7 @@ const readBatch = async (
     // every account read with it.
     const isPassDue = reads.map(
         (read, index) =>
-            hasWhitelist &&
+            isListRead &&
             (stored.error !== undefined ||
                 read.isFirstSync ||
                 isListedPassDue(detection, readKeys[index]!)),
@@ -736,7 +751,7 @@ const readBatch = async (
         // Cleared by this account's own read with the list, whatever the other
         // accounts or batches of the scope do. One that fell back to its held
         // tokens owes the pass instead, asked for once it is due.
-        if (hasWhitelist) {
+        if (isListRead) {
             backfillAccounts.delete(key)
             if (isWholeList(index)) {
                 detection.owedListedPasses.delete(key)
@@ -799,6 +814,7 @@ const readBatch = async (
                     new Set(holder.tokens.keys()),
                     nfts[index],
                     stored.error,
+                    tokenListError,
                     unreadTokens,
                     unansweredKept,
                 ),

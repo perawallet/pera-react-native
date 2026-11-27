@@ -65,4 +65,5 @@ vi.mock('@perawallet/wallet-core-app-integrity', () => ({
     buildIntegrityHeadersWhenReady: async () => ({
         'x-app-integrity-token': 'test-integrity-token',
     }),
+    hasIntegrityRegistrationFailed: vi.fn(() => false),
 }))

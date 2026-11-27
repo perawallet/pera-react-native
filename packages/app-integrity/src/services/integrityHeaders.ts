@@ -12,6 +12,7 @@
 
 import { config } from '@perawallet/wallet-core-config'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { useAppIntegrityStore } from '../store'
 import { getValidIntegrityToken } from './getValidIntegrityToken'
 import { waitForIntegrityRegistration } from './registerAppIntegrity'
 
@@ -52,6 +53,24 @@ export const buildIntegrityHeaders = (
 export const canCallIntegrityGuardedRoute = (
     token: Nullable<string> = getValidIntegrityToken(),
 ): boolean => Boolean(token) || isBypassEnvironment()
+
+// The status is persisted, so an error from an earlier launch must not count.
+const LAUNCHED_AT = Date.now()
+
+/**
+ * This launch's attestation failed and nothing else lets a guarded route
+ * through, so every guarded call refuses until a handshake succeeds. While one
+ * is still running this is false: callers wait for it instead.
+ */
+export const hasIntegrityRegistrationFailed = (): boolean => {
+    const { status, lastAttemptAt } = useAppIntegrityStore.getState()
+    return (
+        status === 'error' &&
+        lastAttemptAt !== null &&
+        Date.parse(lastAttemptAt) >= LAUNCHED_AT &&
+        !canCallIntegrityGuardedRoute()
+    )
+}
 
 /**
  * The headers for a guarded request. The native token is memory-only and minted
