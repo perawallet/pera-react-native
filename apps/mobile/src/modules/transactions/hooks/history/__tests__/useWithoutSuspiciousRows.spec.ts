@@ -139,6 +139,7 @@ describe('useWithoutSuspiciousRows', () => {
             receive('own-swap', ME, '0xnew'),
             receive('listed', OTHER, '0xverified'),
             receive('unknown', OTHER, '0xunstored'),
+            receive('no-longer-held', OTHER, '0xsold'),
             receive('unsigned', undefined, '0xnew'),
             receive('log-only', undefined, '0xnew', {
                 isSignedElsewhere: true,
@@ -147,8 +148,8 @@ describe('useWithoutSuspiciousRows', () => {
         ]
 
         beforeEach(() => {
-            vi.mocked(useStoredAssetsAcrossScopesQuery).mockReturnValue(
-                new Map([
+            vi.mocked(useStoredAssetsAcrossScopesQuery).mockReturnValue({
+                assets: new Map([
                     [
                         toScopeKey(SCOPE),
                         new Map([
@@ -160,7 +161,22 @@ describe('useWithoutSuspiciousRows', () => {
                         ]),
                     ],
                 ]),
-            )
+                unstoredTiers: new Map([
+                    [toScopeKey(SCOPE), new Map([['0xsold', 'verified']])],
+                ]),
+                readIds: new Map([
+                    [
+                        toScopeKey(SCOPE),
+                        new Set([
+                            '0xnew',
+                            '0xverified',
+                            '0xunstored',
+                            '0xsold',
+                            '0xnft',
+                        ]),
+                    ],
+                ]),
+            })
         })
 
         const keysOf = () =>
@@ -172,11 +188,12 @@ describe('useWithoutSuspiciousRows', () => {
                 }),
             ).result.current.map(row => row.key)
 
-        it("drops someone else's transfer of it, log-only and unsynced ones included, and keeps the account's own, one with no named signer and an unsynced NFT", () => {
+        it("drops someone else's transfer of it, log-only and unsynced ones included, and keeps the account's own, one with no named signer, an unsynced NFT and an unsynced token the backend verifies", () => {
             expect(keysOf()).toEqual([
                 '2026-11-25',
                 'own-swap',
                 'listed',
+                'no-longer-held',
                 'unsigned',
                 'unstored-nft',
             ])
@@ -191,6 +208,16 @@ describe('useWithoutSuspiciousRows', () => {
 
             expect(keysOf()).toContain('airdrop')
         })
+
+        it('keeps every row while its assets are still being read', () => {
+            vi.mocked(useStoredAssetsAcrossScopesQuery).mockReturnValue({
+                assets: new Map(),
+                unstoredTiers: new Map(),
+                readIds: new Map(),
+            })
+
+            expect(keysOf()).toEqual(rows.map(row => row.key))
+        })
     })
 
     it('returns the rows as given, and reads no assets, while off', () => {
@@ -203,7 +230,9 @@ describe('useWithoutSuspiciousRows', () => {
         )
 
         expect(result.current).toBe(ROWS)
-        expect(useStoredAssetsAcrossScopesQuery).toHaveBeenCalledWith([])
+        expect(useStoredAssetsAcrossScopesQuery).toHaveBeenCalledWith([], {
+            fetchMissingTiers: true,
+        })
     })
 
     it('drops poisoned and spoofed entries, and a date header left with nothing under it', () => {
@@ -219,9 +248,10 @@ describe('useWithoutSuspiciousRows', () => {
             '2026-11-25',
             'own',
         ])
-        expect(useStoredAssetsAcrossScopesQuery).toHaveBeenLastCalledWith([
-            { scope: SCOPE, assetIds: ['0xusdc', '0xusdc', '0xusdc'] },
-        ])
+        expect(useStoredAssetsAcrossScopesQuery).toHaveBeenLastCalledWith(
+            [{ scope: SCOPE, assetIds: ['0xusdc', '0xusdc', '0xusdc'] }],
+            { fetchMissingTiers: true },
+        )
     })
 
     it('keeps every row of an ordinary history', () => {

@@ -2451,3 +2451,40 @@ describe('search on every EVM chain and network', () => {
         },
     )
 })
+
+describe('fetchVerificationTiers', () => {
+    beforeEach(async () => {
+        const { resetPeraScopeRefusals } =
+            await import('@perawallet/wallet-core-config')
+        resetPeraScopeRefusals()
+    })
+
+    it("answers each token's tier from the backend alone, keyed by the caller's id, and stores nothing", async () => {
+        const requested: unknown[] = []
+        server.use(
+            http.post(`${TEST_PERA_URL}${ASSETS_PATH}`, async ({ request }) => {
+                requested.push(await request.json())
+                return HttpResponse.json({
+                    results: [usdcFromPera, unknownAssetItem(DAI_CAIP19)],
+                })
+            }),
+        )
+        const ethCalls = recordEthCalls()
+        const { full, node } = memoryPersistence()
+        const ops = createEthereumAssetsAdapter(
+            testChainContext({ services: ['assets'] }),
+            ETHEREUM,
+        )
+
+        const tiers = await ops.fetchVerificationTiers!(
+            [USDC.toLowerCase(), DAI].map(ref),
+            SCOPE,
+        )
+
+        expect([...tiers]).toEqual([[USDC.toLowerCase(), 'verified']])
+        expect(requested).toEqual([{ ids: [USDC_CAIP19, DAI_CAIP19] }])
+        expect(ethCalls).toEqual([])
+        expect(full).toEqual([])
+        expect(node).toEqual([])
+    })
+})

@@ -20,9 +20,15 @@ import { createWrapper } from './test-utils'
 const ALGORAND = { chainId: 'algorand', networkId: 'mainnet' } as const
 const ETHEREUM = { chainId: 'ethereum', networkId: 'mainnet' } as const
 
-const mocks = vi.hoisted(() => ({ getAssetsByIds: vi.fn() }))
+const mocks = vi.hoisted(() => ({
+    getAssetsByIds: vi.fn(),
+    fetchVerificationTiers: vi.fn(),
+}))
 
 vi.mock('../../db', () => ({ getAssetsByIds: mocks.getAssetsByIds }))
+vi.mock('../../chain-adapter', () => ({
+    fetchVerificationTiers: mocks.fetchVerificationTiers,
+}))
 
 describe('useStoredAssetsAcrossScopesQuery', () => {
     let queryClient: QueryClient
@@ -51,12 +57,14 @@ describe('useStoredAssetsAcrossScopesQuery', () => {
             { wrapper: createWrapper(queryClient) },
         )
 
-        await waitFor(() => expect(result.current.size).toBe(2))
+        await waitFor(() => expect(result.current.assets.size).toBe(2))
         expect(
-            result.current.get('algorand/mainnet')?.get('31566704')?.unitName,
+            result.current.assets.get('algorand/mainnet')?.get('31566704')
+                ?.unitName,
         ).toBe('USDC')
         expect(
-            result.current.get('ethereum/mainnet')?.get('0xabc')?.unitName,
+            result.current.assets.get('ethereum/mainnet')?.get('0xabc')
+                ?.unitName,
         ).toBe('DAI')
         expect(mocks.getAssetsByIds).toHaveBeenCalledTimes(2)
         expect(mocks.getAssetsByIds).toHaveBeenCalledWith({
@@ -74,7 +82,129 @@ describe('useStoredAssetsAcrossScopesQuery', () => {
             { wrapper: createWrapper(queryClient) },
         )
 
-        expect(result.current.size).toBe(0)
+        expect(result.current.assets.size).toBe(0)
         expect(mocks.getAssetsByIds).not.toHaveBeenCalled()
+    })
+
+    it('counts an id the DB lacks as read, and asks nothing, without fetchMissingTiers', async () => {
+        mocks.getAssetsByIds.mockResolvedValue([])
+
+        const { result } = renderHook(
+            () =>
+                useStoredAssetsAcrossScopesQuery([
+                    { scope: ETHEREUM, assetIds: ['0xabc'] },
+                ]),
+            { wrapper: createWrapper(queryClient) },
+        )
+
+        await waitFor(() =>
+            expect(
+                result.current.readIds.get('ethereum/mainnet')?.has('0xabc'),
+            ).toBe(true),
+        )
+        expect(mocks.fetchVerificationTiers).not.toHaveBeenCalled()
+    })
+
+    it('asks the tier of only the ids the DB lacks', async () => {
+        mocks.getAssetsByIds.mockResolvedValue([{ assetId: '0xabc' }])
+        mocks.fetchVerificationTiers.mockResolvedValue(
+            new Map([['0xdef', 'verified']]),
+        )
+
+        const { result } = renderHook(
+            () =>
+                useStoredAssetsAcrossScopesQuery(
+                    [
+                        {
+                            scope: ETHEREUM,
+                            assetIds: ['0xabc', '0xdef', '0xfff'],
+                        },
+                    ],
+                    { fetchMissingTiers: true },
+                ),
+            { wrapper: createWrapper(queryClient) },
+        )
+
+        await waitFor(() =>
+            expect(
+                result.current.unstoredTiers
+                    .get('ethereum/mainnet')
+                    ?.get('0xdef'),
+            ).toBe('verified'),
+        )
+        expect(mocks.fetchVerificationTiers).toHaveBeenCalledWith(
+            ['0xdef', '0xfff'],
+            ETHEREUM,
+        )
+        expect([...result.current.readIds.get('ethereum/mainnet')!]).toEqual([
+            '0xabc',
+            '0xdef',
+            '0xfff',
+        ])
+    })
+
+    it('leaves the unstored ids unread when the tier lookup fails, or the chain has none', async () => {
+        mocks.getAssetsByIds.mockResolvedValue([{ assetId: '0xabc' }])
+        mocks.fetchVerificationTiers
+            .mockRejectedValueOnce(new Error('offline'))
+            .mockResolvedValueOnce(null)
+
+        for (const assetIds of [
+            ['0xabc', '0xdef'],
+            ['0xabc', '0xeee'],
+        ]) {
+            const { result } = renderHook(
+                () =>
+                    useStoredAssetsAcrossScopesQuery(
+                        [{ scope: ETHEREUM, assetIds }],
+                        { fetchMissingTiers: true },
+                    ),
+                { wrapper: createWrapper(queryClient) },
+            )
+
+            await waitFor(() => expect(result.current.assets.size).toBe(1))
+            expect([
+                ...result.current.readIds.get('ethereum/mainnet')!,
+            ]).toEqual(['0xabc'])
+        }
+    })
+
+    it('keeps the last answer while a grown id list loads', async () => {
+        let release: () => void = () => {}
+        mocks.getAssetsByIds.mockResolvedValueOnce([{ assetId: '0xabc' }])
+        mocks.getAssetsByIds.mockImplementationOnce(
+            () =>
+                new Promise(resolve => {
+                    release = () =>
+                        resolve([{ assetId: '0xabc' }, { assetId: '0xdef' }])
+                }),
+        )
+
+        const { result, rerender } = renderHook(
+            ({ assetIds }: { assetIds: string[] }) =>
+                useStoredAssetsAcrossScopesQuery([
+                    { scope: ETHEREUM, assetIds },
+                ]),
+            {
+                wrapper: createWrapper(queryClient),
+                initialProps: { assetIds: ['0xabc'] },
+            },
+        )
+        await waitFor(() => expect(result.current.assets.size).toBe(1))
+
+        rerender({ assetIds: ['0xabc', '0xdef'] })
+
+        expect(
+            result.current.readIds.get('ethereum/mainnet')?.has('0xabc'),
+        ).toBe(true)
+        expect(
+            result.current.readIds.get('ethereum/mainnet')?.has('0xdef'),
+        ).toBe(false)
+        release()
+        await waitFor(() =>
+            expect(
+                result.current.readIds.get('ethereum/mainnet')?.has('0xdef'),
+            ).toBe(true),
+        )
     })
 })

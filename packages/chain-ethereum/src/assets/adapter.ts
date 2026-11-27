@@ -427,6 +427,31 @@ const syncAssets =
         ])
     }
 
+const fetchVerificationTiers =
+    (chain: EvmChain): AssetsChainAdapter['fetchVerificationTiers'] =>
+    async (refs, scope) => {
+        eip155ChainIdOf(scope, chain)
+        const idByToken = new Map<string, string>()
+        for (const ref of refs) {
+            const assetId = evmAssetIdOf(chain, ref)
+            const [tokenId] = toTokenIds([assetId])
+            if (tokenId) idByToken.set(tokenId, assetId)
+        }
+        const tiers = new Map<string, PeraAssetVerificationTier>()
+        for (const batch of partition([...idByToken.keys()], ASSETS_MAX_IDS)) {
+            const items = await fetchAssetItems(scope, chain, batch)
+            items.forEach((item, index) => {
+                const tokenId = batch[index]!
+                const tier =
+                    item &&
+                    toAssetMetadata(tokenId, item).asset?.peraMetadata
+                        ?.verificationTier
+                if (tier) tiers.set(idByToken.get(tokenId)!, tier)
+            })
+        }
+        return tiers
+    }
+
 const NFT_STANDARDS: readonly EvmNftStandard[] = ['erc721', 'erc1155']
 
 const isNftStandard = (value: unknown): value is EvmNftStandard =>
@@ -771,6 +796,7 @@ export const createEthereumAssetsAdapter = (
         maxPriceIdsPerRequest: ASSETS_MAX_IDS,
         getNativeAsset: () => chain.nativeAsset,
         syncAssets: syncAssets(ctx, chain, listedTokens),
+        fetchVerificationTiers: fetchVerificationTiers(chain),
         getAssetMetadata: getAssetMetadata(ctx, chain, listedTokens),
         findCollectibleMetadata: async (ref, scope) => {
             eip155ChainIdOf(scope, chain)
