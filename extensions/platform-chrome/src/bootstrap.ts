@@ -19,4 +19,5 @@
 /// <reference types="chrome" />
 export { getSurface, type ExtensionSurface } from './surface'
 export { hydratePlatform } from './key-value-singleton'
+export { installOffscreenManifestShim } from './manifest-shim'
 export { installOffscreenStorageShim } from './storage-proxy'
