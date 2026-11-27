@@ -262,7 +262,11 @@ to the realm's bound for a token still on its way. A call to an integrity-guarde
 card, fee-delegation and EVM routes) also passes `headers: await buildIntegrityHeadersWhenReady()`
 from `@perawallet/wallet-core-app-integrity`, which carries the native token and the staging bypass.
 The native token lives in memory only, so every launch attests again; a production build's guarded
-call waits, capped, for that attestation instead of going out refused.
+call waits, capped, for that attestation instead of going out refused. A guarded call that still
+holds no valid token, because the attestation failed or the token expired while the app stayed
+open, runs the attestation again and waits for it the same way. Reattempts are spaced by a cooldown
+that doubles with each failure in a row up to a ceiling, so a device that can never attest does not
+spend the platform's attestation quota, and a registration the device skipped is never run again.
 
 `queryClient` serves the Pera and backup backends only, never a chain's nodes, so a Pera credential
 cannot reach a third-party node. Each chain builds its own node clients from the `ChainContext` it
