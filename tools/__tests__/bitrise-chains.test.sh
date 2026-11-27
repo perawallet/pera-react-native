@@ -14,8 +14,8 @@ failures=0
 # The Pera services the backend serves for every EVM network; change them only
 # with the backend. NFTs are served for Ethereum alone: the backend
 # answers 422 `nft_not_supported` on any other network that lists `nfts`.
-EVM_STAGING_SERVICES="prices,assets,history,blockFollowing,contracts,simulations"
-ETHEREUM_STAGING_SERVICES="prices,assets,history,blockFollowing,nfts,contracts,simulations"
+EVM_STAGING_SERVICES="prices,assets,history,blockFollowing,contracts,simulations,tokenSearch"
+ETHEREUM_STAGING_SERVICES="prices,assets,history,blockFollowing,nfts,contracts,simulations,tokenSearch"
 
 # Every build-gated chain and network, from the table generate-config.sh bakes
 # from. The expectations below are chain-ethereum's; another chain package
@@ -116,6 +116,33 @@ for source in bitrise pipelines; do
             check "${job} lists the ${services_env}" \
                 "$expected" "$("$env_of" "$job" "$services_env")"
         done <<< "$EVM_SERVICES_ENVS"
+    done
+done
+
+# Production mobile reads its mainnets through Pera's RPC proxy first. Testnets
+# and staging stay on public nodes so they don't spend the proxy's provider
+# credits, and the extension can't use the proxy: it carries no API key and the
+# proxy refuses web tokens.
+EVM_PROXY_ROUTES="$(node -e '
+    const nets = require(process.argv[1])
+    for (const [chain, { networks }] of Object.entries(nets))
+        for (const n of networks)
+            console.log(`${chain}_${n.id}_RPC_URL`.toUpperCase(), n.tier, n.eip155ChainId)
+' "$ROOT_DIR/packages/chain-contract/src/models/evm-networks.json")"
+for source in bitrise pipelines; do
+    env_of="${source}_env"
+    echo "${source} RPC proxy"
+    for job in ios-staging android-staging ios-production android-production web-staging web-production; do
+        while read -r rpc_env tier eip155_id; do
+            list="$("$env_of" "$job" "$rpc_env")"
+            if [[ "$tier" == mainnet && ( "$job" == ios-production || "$job" == android-production ) ]]; then
+                check "${job} reads ${rpc_env} through the proxy first" \
+                    "https://${tier}.api.perawallet.app/api/v3/evm/${eip155_id}/rpc" "${list%%,*}"
+            else
+                [[ "$list" == *perawallet.app* ]] && list="pera" || list="public"
+                check "${job} keeps ${rpc_env} on public nodes" "public" "$list"
+            fi
+        done <<< "$EVM_PROXY_ROUTES"
     done
 done
 
