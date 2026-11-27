@@ -10,12 +10,17 @@
  limitations under the License
  */
 
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainScope,
+    WalletMode,
+} from '@perawallet/wallet-core-chain-contract'
 import { buildIntegrityHeadersWhenReady } from '@perawallet/wallet-core-app-integrity'
+import { peraDeploymentOf } from '@perawallet/wallet-core-config'
 import { Decimal } from 'decimal.js'
 import type { PriceHistoryPoint } from '@perawallet/wallet-core-assets'
 import {
     CHART_QUERY_TIMEOUT_MS,
+    isChainRefusedError,
     isPeraNetworkError,
     logger,
     PeraServiceUnavailableError,
@@ -150,27 +155,134 @@ export type TokenSearchPage = {
     nextCursor: Optional<string>
 }
 
+type WaitingSearch = {
+    scope: ChainScope
+    eip155ChainId: number
+    resolve: (page: TokenSearchPage) => void
+    reject: (error: unknown) => void
+}
+
+// A search across scopes starts one per EVM chain in the same tick, and the
+// backend counts every page-1 request against the device's 60 searches per 10
+// minutes, so the chains of one deployment share a request.
+const waitingSearches = new Map<string, WaitingSearch[]>()
+
 /**
- * One page of the backend's token search on the scope's chain; an item this
- * client can't read is skipped. Every page repeats `query`, which the cursor
- * is bound to. Rejects with a `PeraNetworkError` on a failed request,
- * including 422 `search_cursor_expired` once the search is 5 minutes old.
+ * One page of the backend's token search, shared with the other chains of the
+ * scope's deployment searched in the same tick: the page holds every chain's
+ * items, and an item of another chain is the caller's to drop. Every page
+ * repeats `query`, which the cursor is bound to. Rejects with a
+ * `PeraNetworkError` on a failed request, including 422 `search_cursor_expired`
+ * once the search is 5 minutes old.
  */
-export const fetchTokenSearchPage = async (
+export const fetchTokenSearchPage = (
     scope: ChainScope,
     chain: EvmChain,
     query: string,
     cursor?: string,
+): Promise<TokenSearchPage> =>
+    new Promise((resolve, reject) => {
+        const eip155ChainId = eip155ChainIdOf(scope, chain)
+        const deployment = peraDeploymentOf(scope)
+        const key = JSON.stringify([deployment ?? null, query, cursor ?? null])
+        let waiting = waitingSearches.get(key)
+        if (!waiting) {
+            const batch: WaitingSearch[] = []
+            waiting = batch
+            waitingSearches.set(key, batch)
+            queueMicrotask(() => {
+                waitingSearches.delete(key)
+                void searchTogether(deployment, batch, query, cursor)
+            })
+        }
+        waiting.push({ scope, eip155ChainId, resolve, reject })
+    })
+
+const byChain = (waiting: WaitingSearch[]): WaitingSearch[][] => {
+    const groups = new Map<number, WaitingSearch[]>()
+    for (const search of waiting) {
+        groups.set(search.eip155ChainId, [
+            ...(groups.get(search.eip155ChainId) ?? []),
+            search,
+        ])
+    }
+    return [...groups.values()]
+}
+
+const settleWith = (
+    page: Promise<TokenSearchPage>,
+    waiting: WaitingSearch[],
+): Promise<void> =>
+    page.then(
+        result => waiting.forEach(({ resolve }) => resolve(result)),
+        (error: unknown) => waiting.forEach(({ reject }) => reject(error)),
+    )
+
+const searchEachChain = async (
+    waiting: WaitingSearch[],
+    query: string,
+    cursor: Optional<string>,
+): Promise<void> => {
+    await Promise.all(
+        byChain(waiting).map(group =>
+            settleWith(
+                requestTokenSearchPage(
+                    { scope: group[0]!.scope },
+                    [group[0]!.eip155ChainId],
+                    query,
+                    cursor,
+                ),
+                group,
+            ),
+        ),
+    )
+}
+
+const searchTogether = async (
+    deployment: Optional<WalletMode>,
+    waiting: WaitingSearch[],
+    query: string,
+    cursor: Optional<string>,
+): Promise<void> => {
+    const chainIds = [...new Set(waiting.map(w => w.eip155ChainId))]
+    if (deployment === undefined || chainIds.length === 1) {
+        await searchEachChain(waiting, query, cursor)
+        return
+    }
+    try {
+        const page = await requestTokenSearchPage(
+            { deployment },
+            chainIds,
+            query,
+            cursor,
+        )
+        waiting.forEach(({ resolve }) => resolve(page))
+    } catch (error) {
+        if (!isChainRefusedError(error)) {
+            waiting.forEach(({ reject }) => reject(error))
+            return
+        }
+        // The refusal doesn't name its chain. Asked one by one, the refused
+        // chain's scope is remembered as refused and the others still answer.
+        await searchEachChain(waiting, query, cursor)
+    }
+}
+
+const requestTokenSearchPage = async (
+    target: { scope: ChainScope } | { deployment: WalletMode },
+    eip155ChainIds: readonly number[],
+    query: string,
+    cursor: Optional<string>,
 ): Promise<TokenSearchPage> => {
     const { data } = await queryClient<unknown>({
         backend: 'pera',
         service: TOKEN_SEARCH_SERVICE,
-        scope,
+        ...target,
         method: 'GET',
         url: TOKEN_SEARCH_PATH,
         params: {
             q: query,
-            chains: `eip155:${eip155ChainIdOf(scope, chain)}`,
+            chains: eip155ChainIds.map(id => `eip155:${id}`).join(','),
             ...(cursor === undefined ? {} : { cursor }),
         },
         headers: await buildIntegrityHeadersWhenReady(),
