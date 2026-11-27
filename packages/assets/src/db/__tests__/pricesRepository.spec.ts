@@ -24,6 +24,7 @@ import {
     getAssetPricesByIds,
     recordPriceMisses,
     clearPriceMisses,
+    getPriceMissAssetIds,
 } from '../pricesRepository'
 import { getStaleOrMissingPriceAssetIds } from '../syncQueries'
 
@@ -241,6 +242,69 @@ describe('asset prices repository', () => {
     })
 
     describe('price misses', () => {
+        it('getPriceMissAssetIds returns the recorded ids', async () => {
+            await recordPriceMisses({
+                db,
+                assetIds: ['777', '888'],
+                scope: TESTNET_SCOPE,
+            })
+
+            const result = await getPriceMissAssetIds({
+                db,
+                assetIds: ['777', '999'],
+                scope: TESTNET_SCOPE,
+            })
+
+            expect(result).toEqual(['777'])
+        })
+
+        it('getPriceMissAssetIds ignores a miss recorded in another scope', async () => {
+            await recordPriceMisses({
+                db,
+                assetIds: ['777'],
+                scope: MAINNET_SCOPE,
+            })
+
+            const result = await getPriceMissAssetIds({
+                db,
+                assetIds: ['777'],
+                scope: TESTNET_SCOPE,
+            })
+
+            expect(result).toEqual([])
+        })
+
+        it('getPriceMissAssetIds drops an id once its miss is cleared', async () => {
+            await recordPriceMisses({
+                db,
+                assetIds: ['777'],
+                scope: TESTNET_SCOPE,
+            })
+            await clearPriceMisses({
+                db,
+                assetIds: ['777'],
+                scope: TESTNET_SCOPE,
+            })
+
+            const result = await getPriceMissAssetIds({
+                db,
+                assetIds: ['777'],
+                scope: TESTNET_SCOPE,
+            })
+
+            expect(result).toEqual([])
+        })
+
+        it('getPriceMissAssetIds returns an empty list for no ids', async () => {
+            const result = await getPriceMissAssetIds({
+                db,
+                assetIds: [],
+                scope: TESTNET_SCOPE,
+            })
+
+            expect(result).toEqual([])
+        })
+
         it('defers ids with a fresh miss row when missRetryMs is given', async () => {
             await recordPriceMisses({
                 db,

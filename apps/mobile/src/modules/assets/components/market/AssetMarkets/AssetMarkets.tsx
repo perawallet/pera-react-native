@@ -14,6 +14,7 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     type AssetPriceHistoryItem,
     type PeraAsset,
+    useAssetMarketDataQuery,
     useSingleAssetDetailsQuery,
 } from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
@@ -30,7 +31,7 @@ import { PreferredAmount } from '@components/PreferredAmount'
 import { AssetPriceChart } from '../AssetPriceChart/AssetPriceChart'
 import { useChartInteraction } from '@hooks/useChartInteraction'
 import { Decimal } from 'decimal.js'
-import { PWScrollView, PWView } from '@components/core'
+import { PWScrollView, PWText, PWView } from '@components/core'
 import { AssetMarketStats } from '../AssetMarketStats/AssetMarketStats'
 import { AssetAbout } from '../AssetAbout/AssetAbout'
 import { useLanguage } from '@hooks/useLanguage'
@@ -84,6 +85,8 @@ export const AssetMarkets = ({
     const hasPriceHistory = useCapability({
         chain: { chainId: scope.chainId, capability: 'priceHistory' },
     })
+
+    const { hasNoMarketData } = useAssetMarketDataQuery(scope, asset.assetId)
 
     const {
         data: assetDetails,
@@ -176,33 +179,44 @@ export const AssetMarkets = ({
                             />
                         )}
 
-                        <PWView style={styles.trendContainer}>
-                            <PriceTrend
-                                assetId={asset.assetId}
-                                scope={scope}
-                                period={period}
-                                showAbsolute
-                                selectedDataPoint={selectedPoint}
-                            />
-                        </PWView>
+                        {!hasNoMarketData && (
+                            <PWView style={styles.trendContainer}>
+                                <PriceTrend
+                                    assetId={asset.assetId}
+                                    scope={scope}
+                                    period={period}
+                                    showAbsolute
+                                    selectedDataPoint={selectedPoint}
+                                />
+                            </PWView>
+                        )}
                     </PWView>
                 </PWView>
             </PWView>
 
             {hasPriceHistory && (
                 <ExpandablePanel isExpanded={chartVisible}>
-                    <PWView style={styles.chartContainer}>
-                        <AssetPriceChart
-                            asset={asset}
-                            scope={scope}
-                            period={period}
-                            onSelectionChanged={handleDataPointSelection}
-                        />
-                        <ChartPeriodSelection
-                            value={period}
-                            onChange={setPeriod}
-                        />
-                    </PWView>
+                    {hasNoMarketData ? (
+                        <PWText
+                            style={styles.noMarketData}
+                            testID='asset_markets_no_market_data'
+                        >
+                            {t('asset_details.markets.no_market_data')}
+                        </PWText>
+                    ) : (
+                        <PWView style={styles.chartContainer}>
+                            <AssetPriceChart
+                                asset={asset}
+                                scope={scope}
+                                period={period}
+                                onSelectionChanged={handleDataPointSelection}
+                            />
+                            <ChartPeriodSelection
+                                value={period}
+                                onChange={setPeriod}
+                            />
+                        </PWView>
+                    )}
                 </ExpandablePanel>
             )}
 

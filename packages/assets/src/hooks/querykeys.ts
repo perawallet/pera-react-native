@@ -77,6 +77,11 @@ export const getAssetPricesQueryKey = (
     return fetchMissing ? [...key, { fetchMissing: true }] : key
 }
 
+export const getAssetMarketDataQueryKey = (
+    assetID: string,
+    scope: ChainScope,
+) => [MODULE_PREFIX, 'prices', 'market-data', { assetID, scope }]
+
 export const getAssetPriceHistoryQueryKey = (
     assetID: string,
     period: HistoryPeriod,

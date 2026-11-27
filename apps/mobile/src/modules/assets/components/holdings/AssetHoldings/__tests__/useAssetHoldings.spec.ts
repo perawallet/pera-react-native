@@ -19,7 +19,10 @@ import {
     type AccountAssetBalanceHistoryItem,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import {
+    useAssetMarketDataQuery,
+    type PeraAsset,
+} from '@perawallet/wallet-core-assets'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { usePreferences, useSettings } from '@perawallet/wallet-core-settings'
 import { usePreferredAmount } from '@components/PreferredAmount'
@@ -41,6 +44,15 @@ vi.mock('@perawallet/wallet-core-settings', () => ({
     useSettings: vi.fn(),
     usePreferences: vi.fn(),
 }))
+
+vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-assets')>()
+    return {
+        ...actual,
+        useAssetMarketDataQuery: vi.fn(),
+    }
+})
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountAssetBalanceQuery: vi.fn(),
@@ -95,6 +107,9 @@ describe('useAssetHoldings', () => {
                 preferences.set(key, value),
         } as unknown as ReturnType<typeof usePreferences>)
         vi.mocked(useCapability).mockReturnValue(true)
+        vi.mocked(useAssetMarketDataQuery).mockReturnValue({
+            hasNoMarketData: false,
+        })
         vi.mocked(unvettedTierOf).mockReturnValue(null)
         holding('1.5')
         price(new Decimal('3000'))
@@ -204,8 +219,27 @@ describe('useAssetHoldings', () => {
 
         const { result } = render()
 
-        expect(result.current.hasBalanceHistory).toBe(false)
+        expect(result.current.hasChart).toBe(false)
         expect(result.current.isChartShown).toBe(false)
+    })
+
+    it('leaves out the chart for a token with no market data', () => {
+        vi.mocked(useAssetMarketDataQuery).mockReturnValue({
+            hasNoMarketData: true,
+        })
+        preferences.set(UserPreferences.chartVisible, true)
+
+        const { result } = render()
+
+        expect(result.current.hasChart).toBe(false)
+        expect(result.current.isChartShown).toBe(false)
+        expect(result.current.trendPeriod).toBe('one-day')
+    })
+
+    it('reads market data for the token and scope on screen', () => {
+        render()
+
+        expect(useAssetMarketDataQuery).toHaveBeenCalledWith(SCOPE, 'native')
     })
 
     it("follows the chart's period while the chart is shown", () => {

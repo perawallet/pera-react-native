@@ -273,6 +273,9 @@ describe('Flow: Asset details on its own network', () => {
         expect(
             screen.queryByText('common.network_unavailable.title'),
         ).toBeNull()
+        expect(
+            await screen.findByTestId('asset_markets_price_trend'),
+        ).toBeTruthy()
     })
 
     it('Given an Ethereum token, when its details open, then neither tab shows the price-alert or favorite button', async () => {

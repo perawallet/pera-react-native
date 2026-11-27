@@ -139,6 +139,29 @@ export async function recordPriceMisses({
     })
 }
 
+/** The ids from `assetIds` the price source has answered with no price for, in `scope`. */
+export async function getPriceMissAssetIds({
+    db = getDatabase(),
+    assetIds,
+    scope,
+}: PriceMissesParams): Promise<string[]> {
+    const scopeKey = toScopeKey(scope)
+    if (assetIds.length === 0) return []
+
+    const rows = await db
+        .select({ assetId: AssetPriceMissesSchema.assetId })
+        .from(AssetPriceMissesSchema)
+        .where(
+            and(
+                inArray(AssetPriceMissesSchema.assetId, assetIds),
+                eq(AssetPriceMissesSchema.scope, scopeKey),
+            ),
+        )
+        .all()
+
+    return rows.map(row => row.assetId)
+}
+
 /** Drops miss markers, e.g. once the endpoint starts returning a price. */
 export async function clearPriceMisses({
     db = getDatabase(),

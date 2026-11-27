@@ -21,6 +21,7 @@ import {
 import {
     PeraAssetVerificationTier,
     type PeraAsset,
+    useAssetMarketDataQuery,
 } from '@perawallet/wallet-core-assets'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { usePreferences, useSettings } from '@perawallet/wallet-core-settings'
@@ -51,8 +52,9 @@ export type UseAssetHoldingsResult = {
     isValueShown: boolean
     toggleAmount: () => void
     amountHint: string
-    hasBalanceHistory: boolean
-    /** The chain has balance history and the global chart preference is on. */
+    /** The chain has balance history and the token has market data; false leaves out the chart and its period selector. */
+    hasChart: boolean
+    /** `hasChart` and the global chart preference is on. */
     isChartShown: boolean
     period: HistoryPeriod
     /** The change line's period: the chart's while it's shown; with no chart there is none to follow, so the last 24 hours. */
@@ -80,9 +82,11 @@ export const useAssetHoldings = ({
     const hasBalanceHistory = useCapability({
         chain: { chainId: scope.chainId, capability: 'balanceHistory' },
     })
+    const { hasNoMarketData } = useAssetMarketDataQuery(scope, asset.assetId)
+    const hasChart = hasBalanceHistory && !hasNoMarketData
     const { getPreference } = usePreferences()
     const isChartShown =
-        hasBalanceHistory && !!getPreference(UserPreferences.chartVisible)
+        hasChart && !!getPreference(UserPreferences.chartVisible)
     const trendPeriod = isChartShown ? period : 'one-day'
 
     const { data: assetHolding } = useAccountAssetBalanceQuery(
@@ -143,7 +147,7 @@ export const useAssetHoldings = ({
         ]
             .filter(Boolean)
             .join('. '),
-        hasBalanceHistory,
+        hasChart,
         isChartShown,
         period,
         trendPeriod,

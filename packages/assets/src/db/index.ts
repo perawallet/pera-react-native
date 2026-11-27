@@ -37,6 +37,7 @@ export {
     deleteAssetPrices,
     recordPriceMisses,
     clearPriceMisses,
+    getPriceMissAssetIds,
     type AssetPriceRow,
 } from './pricesRepository'
 export {

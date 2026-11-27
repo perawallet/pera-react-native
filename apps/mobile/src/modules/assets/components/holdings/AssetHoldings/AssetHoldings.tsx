@@ -51,7 +51,7 @@ export const AssetHoldings = ({
         holdingAmount,
         tokenAmount,
         isPriced,
-        hasBalanceHistory,
+        hasChart,
         isChartShown,
         period,
         trendPeriod,
@@ -175,7 +175,7 @@ export const AssetHoldings = ({
                     </PWView>
                 </PWView>
 
-                {hasBalanceHistory && (
+                {hasChart && (
                     <ExpandablePanel isExpanded={isChartShown}>
                         <PWView style={styles.chartContainer}>
                             <AssetWealthChart

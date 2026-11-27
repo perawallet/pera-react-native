@@ -36,9 +36,9 @@ type UsePriceTrendResult = {
     isPositive: boolean
     /**
      * True when there is nothing truthful to show: the price fetch is
-     * offline-paused with no data (fresh or persisted), or the active
-     * network has no Pera backend at all. Rendering would fake a 0.00%
-     * trend.
+     * offline-paused, failed or settled with no data (fresh or persisted), or
+     * the active network has no Pera backend at all. Rendering would fake a
+     * 0.00% trend.
      */
     isHidden: boolean
 }
@@ -52,6 +52,8 @@ export const usePriceTrend = ({
     const {
         data: chartData,
         isPaused,
+        isError,
+        isSuccess,
         isUnavailableOnNetwork,
     } = useAssetPriceHistoryQuery(scope, assetId, period)
 
@@ -68,7 +70,9 @@ export const usePriceTrend = ({
     const isPositive = changePercentage.greaterThanOrEqualTo(new Decimal(0))
     // Unavailable is permanent, not a connectivity blip — hide unconditionally
     // rather than showing a trend against stale data from a different network.
-    const isHidden = isUnavailableOnNetwork || (isPaused && !chartData?.length)
+    const isHidden =
+        isUnavailableOnNetwork ||
+        (!chartData?.length && (isPaused || isError || isSuccess))
 
     return { changePercentage, changeValue, isPositive, isHidden }
 }
