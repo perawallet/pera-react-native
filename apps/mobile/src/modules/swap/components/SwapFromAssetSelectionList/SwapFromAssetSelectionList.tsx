@@ -70,14 +70,23 @@ export const SwapFromAssetSelectionList = ({
                 style={styles.item}
                 accountBalance={item}
                 scope={item.scope}
-                // One line, so a flagged token's contract address doesn't stack a third.
                 subtitle={
                     <PWText
                         style={styles.secondaryLabel}
                         numberOfLines={1}
                     >
                         {networkLabelOf(item.scope.chainId)}
-                        {' · '}
+                    </PWText>
+                }
+                footer={
+                    <PWText
+                        style={styles.secondaryLabel}
+                        // Only an account name may be cut; a total wraps so its count stays readable.
+                        numberOfLines={
+                            item.holders.length === 1 ? 1 : undefined
+                        }
+                        testID='swap-from-holder-label'
+                    >
                         {holderLabelOf(item)}
                     </PWText>
                 }

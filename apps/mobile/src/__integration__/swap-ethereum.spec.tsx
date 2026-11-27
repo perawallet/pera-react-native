@@ -786,9 +786,9 @@ describe('Flow: Swap from an Ethereum account', () => {
         fireEvent.click(await screen.findByTestId('swap-pay-asset-selector'))
         const row = await screen.findByTestId(`asset-list-item-${TOKEN}`)
         expect(row.textContent).toContain('350')
-        expect(row.textContent).toContain(
-            'swap.asset_selection.total_across_accounts',
-        )
+        expect(
+            within(row).getByTestId('swap-from-holder-label').textContent,
+        ).toBe('swap.asset_selection.total_across_accounts')
         fireEvent.click(row)
         expect(
             await screen.findByTestId('swap_source_account_header-title'),
@@ -845,8 +845,9 @@ describe('Flow: Swap from an Ethereum account', () => {
         fireEvent.click(await screen.findByTestId('swap-pay-asset-selector'))
         const row = await screen.findByTestId(`asset-list-item-${TOKEN}`)
         expect(row.textContent).toContain('250')
-        expect(row.textContent).toContain('Second')
-        expect(row.textContent).not.toContain('total_across_accounts')
+        expect(
+            within(row).getByTestId('swap-from-holder-label').textContent,
+        ).toBe('Second')
         fireEvent.click(row)
 
         await waitFor(() =>
@@ -897,8 +898,9 @@ describe('Flow: Swap from an Ethereum account', () => {
         fireEvent.click(await screen.findByTestId('swap-pay-asset-selector'))
         const row = await screen.findByTestId('asset-list-item-algorand-0')
         expect(row.textContent).toContain('2.3531')
-        expect(row.textContent).toContain(algoHolder.name)
-        expect(row.textContent).not.toContain('total_across_accounts')
+        expect(
+            within(row).getByTestId('swap-from-holder-label').textContent,
+        ).toBe(algoHolder.name)
         fireEvent.click(row)
 
         await waitFor(() =>
