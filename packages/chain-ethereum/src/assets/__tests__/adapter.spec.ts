@@ -2314,6 +2314,102 @@ describe('token search', () => {
 
         await expect(searchWith({ query: 'usd' })).rejects.toThrow()
     })
+
+    describe('across chains', () => {
+        const BASE = EVM_TEST_CHAINS.find(chain => chain.row.id === 'base')!
+        const searchOn = (chain: typeof ETHEREUM) =>
+            createEthereumAssetsAdapter(
+                testChainContext({ services: SERVICES, chain }),
+                chain,
+            ).search!({ query: 'usd' }, evmScopeOf(chain, 'mainnet'))
+        const answerSearch = (
+            answer: (chains: string) => Response,
+        ): string[] => {
+            const asked: string[] = []
+            server.use(
+                http.get(
+                    `${TEST_PERA_URL}${TOKEN_SEARCH_PATH}`,
+                    ({ request }) => {
+                        const chains =
+                            new URL(request.url).searchParams.get('chains') ??
+                            ''
+                        asked.push(chains)
+                        return answer(chains)
+                    },
+                ),
+            )
+            return asked
+        }
+
+        it('asks once for the chains of a deployment searched together, each keeping its own items', async () => {
+            const asked = answerSearch(() =>
+                HttpResponse.json({
+                    next: 'search-1',
+                    previous: null,
+                    results: [
+                        usdcFromPera,
+                        { ...usdcFromPera, asset_id: BASE_USDC },
+                    ],
+                }),
+            )
+
+            const [onEthereum, onBase] = await Promise.all([
+                searchOn(ETHEREUM),
+                searchOn(BASE),
+            ])
+
+            expect(asked).toEqual(['eip155:1,eip155:8453'])
+            expect(onEthereum.results.map(asset => asset.assetId)).toEqual([
+                USDC,
+            ])
+            expect(onBase.results.map(asset => asset.assetId)).toEqual([USDC])
+            expect(onBase.nextCursor).toBe('search-1')
+        })
+
+        it('asks each chain alone after a refusal, so only the refused chain reads as refused', async () => {
+            const { resetPeraScopeRefusals } =
+                await import('@perawallet/wallet-core-config')
+            const asked = answerSearch(chains =>
+                chains.includes('eip155:8453')
+                    ? HttpResponse.json(
+                          { error: 'Chain refused', code: 'unknown_chain' },
+                          { status: 422 },
+                      )
+                    : HttpResponse.json({
+                          next: null,
+                          previous: null,
+                          results: [usdcFromPera],
+                      }),
+            )
+
+            try {
+                const [onEthereum, onBase] = await Promise.allSettled([
+                    searchOn(ETHEREUM),
+                    searchOn(BASE),
+                ])
+
+                expect(asked[0]).toBe('eip155:1,eip155:8453')
+                expect(asked.slice(1).sort()).toEqual([
+                    'eip155:1',
+                    'eip155:8453',
+                ])
+                expect(onEthereum).toEqual({
+                    status: 'fulfilled',
+                    value: expect.objectContaining({
+                        results: [expect.objectContaining({ assetId: USDC })],
+                    }),
+                })
+                expect(onBase.status).toBe('rejected')
+                expect(
+                    isChainRefusedError(
+                        (onBase as PromiseRejectedResult).reason,
+                    ),
+                ).toBe(true)
+            } finally {
+                resetPeraScopeRefusals()
+            }
+        })
+    })
 })
 
 describe('search on every EVM chain and network', () => {
